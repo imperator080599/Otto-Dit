@@ -1,42 +1,74 @@
-# Prototype cliquable du noyau déterministe
+# Prototype cliquable — organisé par section d'audit
 
 `otto-prototype.html` — un fichier, aucune installation, aucun compte, aucun serveur.
 Ouvrez-le dans un navigateur, y compris sur téléphone.
 
 ## Ce que c'est
 
-Le **noyau déterministe** d'OTTO rendu manipulable : onze modules d'audit dont chaque
-chiffre est réellement calculé en JavaScript dans la page, à partir de données embarquées.
-Rien n'est écrit en dur — ni un total, ni un pourcentage, ni une conclusion.
+Le noyau déterministe d'OTTO, **rangé comme un auditeur travaille** : on ouvre une section —
+le chiffre d'affaires — et on y enchaîne comptes, risque, procédures, sélections, requêtes,
+papiers de travail, notes de revue et conclusion. Les moteurs sont partagés (ADR-026) ;
+c'est la navigation qui suit le travail.
 
-- **Zéro appel modèle.** Aucune requête réseau, aucune clé, aucun texte pré-rédigé se
-  faisant passer pour une sortie de modèle. Vérifié : l'onglet réseau ne montre que le
-  fichier lui-même.
-- **Le grand livre est engendré dans la page** par un générateur à germe fixe
-  (mulberry32) : 1 605 écritures, 3 210 lignes, chaque écriture équilibrée. La balance
-  affichée est **calculée à partir de ces écritures**, pas saisie à côté. Les deux seuls
-  écarts balance/FEC (411000 +25 000 €, 706000 −25 000 €) sont voulus et documentés.
-- **Les seuils pilotent tout.** Déplacez le curseur de matérialité : le scoping, la revue
-  analytique, la couverture d'échantillon, le tri des anomalies et la conclusion se
-  recomposent sous vos yeux.
+**Zéro appel modèle.** Aucune requête réseau, aucune clé, aucun texte pré-rédigé imitant une
+sortie de modèle. Chaque chiffre est calculé dans la page à partir d'un grand livre engendré
+à germe fixe (1 605 écritures, 3 210 lignes) dont la balance affichée est dérivée.
+
+## Les trois espaces
+
+| Espace | Contenu | Teinte |
+|---|---|---|
+| **Auditeur** | planification transverse + une section de travail par poste retenu au scoping | bleu |
+| **Portail client** | contacts, paramétrage, vue client | vert |
+| **Pilotage** | avancement, exports, notes de revue transverses | ambre |
+
+Le bandeau de seuils **n'est construit que dans l'espace auditeur** : le client ne voit pas
+la matérialité parce que le composant n'existe pas chez lui (ADR-027).
+
+## La section de travail (le cœur)
+
+1. Comptes de la section — solde N, N-1, variation en valeur et en %, **deux indicateurs
+   distincts** : position du compte / seuil de remontée (triage interne) et poids /
+   seuil de planification (décision de périmètre). Statut « non significatif » proposé et
+   surchargeable **avec motif obligatoire**. Revue analytique du poste, dans le sens du compte.
+2. **Évaluation du risque par assertion** — facteurs observés (calculés) et déclarés
+   (jugement), niveau calculé puis retenu, surcharge motivée. Le niveau **commande** la liste
+   des procédures et la taille du tirage.
+3. Sélections et paramètres — germe rejouable, strate exhaustive + tirage aléatoire.
+4. Requêtes de la section — enchaînées ou saisies, avec destinataire et échéance.
+5. Papiers de travail — une ligne, une pièce, un écart. Sans pièce déposée, aucun contrôle.
+6. Notes de revue de la section — ancrées sur un objet.
+7. Conclusion, visa et reprise N-1 — le visa est **impossible** tant qu'un obstacle subsiste.
 
 ## Contrôles automatisés passés sur ce fichier
 
 | Contrôle | Résultat |
 |---|---|
-| Pieds de tableau = somme de leur colonne | 7/7 exacts |
+| Pieds de tableau = somme de leur colonne (toutes vues) | 25/25 exacts |
 | Écritures déséquilibrées | 0 sur 1 605 |
-| Grand livre : total débit = total crédit | 30 123 073,62 € = 30 123 073,62 € |
+| Grand livre : débit = crédit | 30 123 073,62 € = 30 123 073,62 € |
 | Balance client équilibrée | 30 148 073,62 € = 30 148 073,62 € |
 | Comptes en écart balance/FEC | 2, tous deux voulus |
-| M / SP / seuil de remontée recalculés depuis la référence | exact au centime |
-| Citations des modules littérales du document d'idées | 12/12 |
+| M / SP / seuil de remontée recalculés | exacts au centime |
+| Citations littérales du document d'idées | 11/11 |
+| Vues rendues sans erreur | 21/21 |
 | Requêtes réseau hors `file://` | 0 |
 | Erreurs JavaScript | 0 |
-| Glissement du curseur au doigt, sept indicateurs visibles sur téléphone | conforme |
+| Glyphes manquants / U+FFFD | 0 |
+| Barre collante sur iPhone 13 | 293 px sur 844 · 3 seuils et 8 indicateurs visibles sans défilement |
+| Latence de frappe | 3,5 ms par touche |
+
+Chaînes vérifiées de bout en bout : risque → procédures → échantillon ; règle → requête →
+portail → dépôt → papier → synthèse ; note bloquante → visa impossible ; auteur ≠ clôtureur.
+
+## Lot 2 (non livré)
+
+Analyse sectorielle, parties liées, LCB-FT, pointage des états financiers, export paramétrable
+fin. Ces sections **affichent leur structure et ce qui leur manque** ; aucun résultat n'est
+inventé.
 
 ## Limites
 
-Voir la section « frontière déterministe / modèle » en bas de la page, et les réserves
-listées dans STATUS.md. Toutes les données sont **synthétiques** : Altiverre SAS, son
-SIREN, ses tiers et ses pièces sont fictifs.
+Voir la section « Déterministe / modèle » en bas de l'espace auditeur, et les réserves de
+STATUS.md. Toutes les données sont **synthétiques** : Altiverre SAS, son SIREN, ses tiers et
+ses pièces sont fictifs.

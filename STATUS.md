@@ -83,18 +83,36 @@ blind capture; S8a/S8b split.
   budget (ADR-019, `npm run cost:measure`); docs/10_FALSIFICATION.md; ADR-014 réécrit avec
   références sourcées.
 
-## Prototype cliquable du noyau déterministe (2026-08-25)
+## Prototype cliquable, réorganisé par section d'audit (2026-08-25, lot 1)
 
-`prototype/otto-prototype.html` — un fichier autonome, ouvrable dans un navigateur y compris
-sur téléphone, sans serveur ni installation ni compte. **Zéro appel modèle** : aucune requête
-réseau hors le fichier lui-même, aucune clé, aucun texte pré-rédigé imitant une sortie de
-modèle. Onze modules d'audit dont chaque chiffre est calculé dans la page ; le grand livre
-(1 605 écritures, 3 210 lignes) est engendré à germe fixe et la balance affichée en est
-dérivée. Les trois seuils pilotent le scoping, la revue analytique, l'échantillonnage, le tri
-des anomalies et la conclusion. Contrôles automatisés passés : 7/7 pieds de tableau exacts,
-0 écriture déséquilibrée, balance et grand livre équilibrés au centime, 2 écarts balance/FEC
-(voulus), 12/12 citations littérales du document d'idées, 0 requête réseau, 0 erreur JS.
-Détail dans `prototype/README.md`.
+`prototype/otto-prototype.html` — un fichier autonome, sans serveur ni installation ni compte,
+**zéro appel modèle**. Réorganisation demandée par le fondateur : le prototype était rangé par
+fonction (matérialité, scoping, revue analytique, échantillonnage), c'est-à-dire selon la
+machine et non selon le travail. Il est désormais rangé **par section d'audit**
+(ADR-026 à ADR-029).
+
+**Livré au lot 1** : trois espaces distincts par construction (auditeur / portail client /
+pilotage) ; une section de travail par poste retenu au scoping, avec évaluation du risque par
+assertion qui **commande** les procédures requises et la taille d'échantillon ; portail client
+réel (contacts, référent par section, paramétrage des relances, dépôt par élément avec accusé,
+fil de messages distinct des notes de revue, statuts exacts dont « en attente de revue par X »
+invisible du client) ; notes de revue refondues (ancrage obligatoire sur un objet, typage,
+clôture réservée au réviseur et jamais à l'auteur, blocage réel du visa et de la clôture, vue
+manager transverse, récurrence N-1) ; enchaînement câblé de la règle à la synthèse ; piste
+d'audit.
+
+**Non livré, structure montrée** : analyse sectorielle, parties liées, LCB-FT, pointage des
+états financiers, export paramétrable fin (lot 2). Ces vues affichent ce qui leur manque et
+n'affichent aucun résultat.
+
+**Point juridique porté UNVERIFIED** : le régime d'accès au registre des bénéficiaires
+effectifs (distinct du KBIS) n'a pas pu être vérifié sur le texte primaire depuis cet
+environnement. Aucune constante ne sera écrite dans le code tant qu'il ne l'est pas.
+
+Contrôles automatisés : 25/25 pieds de tableau exacts, 0 écriture déséquilibrée sur 1 605,
+balance et grand livre équilibrés au centime, 2 écarts voulus, 11/11 citations littérales,
+21/21 vues sans erreur, 0 requête réseau, 0 erreur JS, barre collante à 293 px sur 844 au
+téléphone. Détail dans `prototype/README.md`.
 
 ## Next actions (post-repo, founder-gated)
 

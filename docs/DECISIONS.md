@@ -641,3 +641,141 @@ ressortait en simple « deficiency », parce que seule la magnitude décidait.
 12 instances → 3 mois déviants sur 12 (25 %), natures `missing_evidence` et
 `wrong_performer`, exposition = solde de trésorerie de clôture ⇒ **material weakness**
 proposée et confirmée.
+
+## ADR-026 — Naviguer par section d'audit, pas par fonction ; moteurs partagés
+
+**Statut** : accepté (2026-08-25, revue fondateur — réorganisation du prototype, lot 1)
+
+**Contexte** : le prototype cliquable était rangé par fonction — matérialité, scoping,
+revue analytique, échantillonnage, test des écritures. Constat du fondateur, statutaire en
+exercice : « un auditeur ne travaille jamais ainsi. Il ouvre UNE section — le chiffre
+d'affaires — et y enchaîne évaluation du risque, périmètre des comptes, procédures,
+sélections, requêtes, papiers de travail, conclusion. L'organisation actuelle est celle de
+la machine, pas celle du travail. »
+
+**Décision** :
+
+1. **Les moteurs restent partagés ; c'est la navigation qui change.** Un seul calcul de
+   seuils, un seul tirage d'échantillon, une seule revue analytique, un seul moteur de
+   rapprochement. Ils sont appelés depuis les sections au lieu d'être exposés comme des
+   écrans. Aucune duplication de logique par cycle : un pack de cycle reste du contenu.
+
+2. **Trois espaces, distincts par construction et pas par filtrage.**
+   - *Espace auditeur* : planification transverse (import et rapprochement, matérialité,
+     scoping, test des écritures, circularisations, synthèse, piste d'audit, frontière
+     déterministe/modèle) **puis une section de travail par poste retenu au scoping**.
+   - *Portail client* : contacts, paramétrage, vue client.
+   - *Pilotage* : avancement, exports, vue transverse des notes de revue.
+   Le bandeau de seuils **n'est construit que dans l'espace auditeur**. Le client ne voit
+   pas la matérialité parce que le composant n'existe pas dans son espace — ce n'est pas une
+   case à décocher qui pourrait être décochée par erreur.
+
+3. **Le scoping crée les sections.** Le rail de navigation est dérivé de
+   `postesEnPerimetre()` : bouger le seuil de planification fait apparaître et disparaître
+   des sections de travail. Vérifié : 18 sections à 1 %, 16 à 5 %, 15 à 9 %.
+
+4. **L'évaluation du risque commande.** Facteurs *observés* (calculés sur le grand livre :
+   volume, part d'écritures manuelles, saisies par la direction, validations postérieures à
+   la clôture, concentration de décembre, variation N/N-1) et facteurs *déclarés* (jugement :
+   estimation, fraude, contrôle interne, présentation, litige). Règle : 0 facteur → faible,
+   1 → moyen, 2 et plus → élevé, **surchargeable par l'auditeur avec motif obligatoire**.
+   Le niveau retenu détermine la liste des procédures requises et la taille du tirage
+   aléatoire (6 / 15 / 30, table affichée à l'écran).
+   Vérifié sur le chiffre d'affaires : élevé → moyen → faible fait passer les procédures de
+   7 à 5 puis 3, et le tirage de 30 à 15 puis 6. **Deux leviers indépendants** : le risque
+   commande le nombre tiré, la matérialité commande la strate exhaustive (209 → 85 → 13
+   éléments à 1 %, 5 % et 10 %).
+
+5. **Un questionnaire de risque qui ne commande rien est décoratif.** C'est la raison d'être
+   du point 4 : la chaîne facteurs → niveau → procédures → échantillon → couverture est
+   visible à l'écran et bouge sous la main.
+
+**Conséquence de conception** : ajouter un cycle, c'est ajouter des entrées au catalogue de
+procédures et éventuellement des facteurs observés — pas un écran, pas une route, pas un
+moteur.
+
+## ADR-027 — Le portail client est un environnement, pas une vue filtrée
+
+**Statut** : accepté (2026-08-25, revue fondateur — lot 1)
+
+**Contexte** : le prototype précédent réduisait « la vue client » à une case à cocher
+masquant des colonnes. C'est un modèle de sécurité par omission d'affichage.
+
+**Décision** :
+
+1. **Statuts, mot pour mot ceux du fondateur** : « non reçu », « partiellement soumis »,
+   « tout est déposé » (bouton actionné par le client), puis côté auditeur « en cours de
+   traitement » et « en attente de revue par X ». Le dernier est marqué `client:false` dans
+   la table des statuts et **replié** par `statutVisibleClient()` avant tout rendu côté
+   client : le client ne peut pas déduire l'organisation ni l'avancement de la revue.
+2. **Le bouton « tout est déposé » appartient au client** et ne s'active que lorsque chaque
+   élément a reçu au moins un document. Sans ce signal, la demande reste partiellement
+   soumise et n'entre pas dans la file de traitement — c'est exactement le mécanisme
+   demandé pour ne pas faire perdre de temps à l'équipe.
+3. **Chacun voit ce dont il répond.** Un contact voit les requêtes qui lui sont adressées ;
+   seul le référent général voit l'ensemble. Un référent par section, avec repli explicite
+   et signalé sur le référent général quand aucun n'est déclaré.
+4. **Le fil de messages d'une requête est distinct des notes de revue.** Deux objets, deux
+   fils, deux visibilités. Aucune note de revue ne transite par le portail.
+5. **Vérifié automatiquement** : le corps de la vue client ne contient ni « en attente de
+   revue », ni aucun nom de membre de l'équipe d'audit, ni bandeau de seuils, ni le mot
+   « matérialité ». L'export « client » et l'export « auditeur du groupe » ne contiennent
+   aucun nom de réviseur ; l'export « équipe interne » en contient, et c'est son objet.
+
+## ADR-028 — Notes de revue : ancrage obligatoire, clôture par le réviseur, blocage réel
+
+**Statut** : accepté (2026-08-25, revue fondateur — lot 1)
+
+**Contexte** : le module de notes de revue précédent produisait des commentaires flottants,
+clôturables par n'importe qui, sans effet sur rien.
+
+**Décision** :
+
+1. **Ancrage obligatoire.** Une note se pose **sur un objet** : compte de la section, ligne
+   d'évaluation du risque, procédure, élément sélectionné, ligne de papier de travail,
+   requête, conclusion. L'ancre est un paramètre de construction — il n'existe aucun chemin
+   dans l'interface pour créer une note « sur la section ». Cliquer une note ramène à son
+   objet et le surligne.
+2. **Typage à quatre valeurs** : à corriger (bloquante) / à documenter / question /
+   remarque pour N+1. **Seules les bloquantes empêchent le visa.**
+3. **Le préparateur répond, seul le réviseur clôt — et jamais l'auteur de la note.**
+   `peutClore(uid, note)` exige un rôle réviseur ou associé **et** `note.auteur !== uid`.
+   Le bouton n'est pas masqué : il n'est pas rendu. Une note ne se supprime jamais.
+4. **Blocage réel.** `obstaclesVisa()` liste les obstacles ; le bouton « viser la section »
+   n'est pas rendu tant qu'il en reste un, et la clôture du dossier est refusée s'il
+   subsiste une note bloquante ouverte, toutes sections confondues. Les obstacles couvrent
+   aussi les pièces non reçues, les écarts sans explication, les surcharges de statut ou de
+   niveau de risque sans motif, la conclusion non rédigée et les papiers N-1 non
+   reconfirmés.
+5. **Récurrence.** Une note portant sur la même section et du même type qu'une note de
+   l'exercice précédent est marquée « récurrente ». C'est un signal de qualité obtenu par
+   simple rapprochement, pas une anomalie de plus.
+6. **Vue transverse par responsable, ancienneté, type et section** : c'est la vue de travail
+   d'un chef de mission, et elle porte le compteur de jours ouvrés paramétré au portail.
+
+## ADR-029 — Enchaînement : la règle crée la requête dans SA section
+
+**Statut** : accepté (2026-08-25, revue fondateur — lot 1)
+
+**Décision** : une règle qui se déclenche dans une section y crée une requête ; la requête
+apparaît au portail client chez le contact qui répond de cette section ; le dépôt d'une
+pièce rend testable la ligne de papier de travail correspondante ; l'écart relevé remonte à
+la synthèse des anomalies. Deux enchaînements sont câblés et vérifiés de bout en bout :
+
+- **Sélection → justificatifs.** Un bouton crée une requête portant un élément par écriture
+  sélectionnée, avec la référence de l'écriture. Le dépôt marque la ligne « reçue », inscrit
+  les noms de fichiers déposés et ouvre la saisie du montant relevé.
+- **Revue analytique → explication.** Une variation qui dépasse le seuil en montant ou en
+  pourcentage ouvre une requête d'explication portant la question composée.
+
+**Ce qui reste humain, délibérément** : la lecture du montant porté sur la pièce. Le dépôt
+rend le contrôle *exécutable* ; il ne remplit pas la colonne. Une ligne sans pièce ne porte
+aucun contrôle et le papier le dit — c'est ce qui distingue une diligence d'un tableau
+rempli. Dans l'application, l'échelle d'extraction propose une valeur qui reste à vérifier
+(≈ 1 à 2 min par pièce) ; dans le prototype, il n'y a ni pièce ni modèle, donc rien n'est
+lu.
+
+**Horloge de mission** : simulée et déterministe (départ 15/03/2026 09:12, +7 min par
+événement) pour que les horodatages du journal soient rejouables à l'identique. Le journal
+est en ajout seul ; le chaînage par hachage appartient à l'application, pas au prototype,
+et le prototype le dit.
