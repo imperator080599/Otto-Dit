@@ -47,11 +47,27 @@
   regeneration confirmed.** C1 acceptance suite: 12 tests green (zero false negatives,
   zero false positives on clean units).
 
+## Done (S1–S4)
+
+- S1/S2: generic TB importer (auto column mapping) + FEC adapter wiring (flags at import,
+  natural-key supersession, ADR-016 invalidation guard); TB↔GL reconciliation with
+  documented_difference + per-FSLI gate; FSLI mapping + lead sheets; materiality
+  (L3 propose/adjust/validate, M/PM/CTT/TE); scoping propose-and-confirm. A7 reseeded as
+  a balanced unposted top-side (Dr 411000 / Cr 706000).
+- S3/S4: population service (hash-bound, gate-checked), sampling propose→validate→draw
+  (app path reproduces the pinned manifest draw exactly, engine_run recorded), PBC request
+  generation (per-unit + BL + explanation + standing items), L2 send, lazy reminder
+  cadence + pause + time-warp, client portal FR/EN (uploads, explanation answers,
+  "Tous les justificatifs ont été transmis"), evidence engine (sha dedupe flags,
+  quarantine), inbound-email stub (allow-list + demo:email). Client-isolation
+  test-asserted.
+- Suite: 56 tests green; next build clean.
+
 ## Next actions
 
-1. S1: engagement data plumbing — TB/GL import services + UI, FEC adapter wiring,
-   reconciliation w/ documented_difference flow, FSLI mapping.
-2. S2 materiality/scoping; then S3… per docs/08_BACKLOG.md.
+1. S5 extraction ladder (Factur-X XML, text-layer parsers, OCR/LLM mock adapters,
+   verify UI) → S6 matching & exceptions + follow-ups + verification spot-check.
+2. S7 workpaper engine; S8 SOX; S9-S10; hardening per docs/08_BACKLOG.md.
 
 ## Done (Stage A gate + D13)
 

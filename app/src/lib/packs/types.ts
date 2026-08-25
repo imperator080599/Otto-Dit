@@ -50,6 +50,7 @@ export interface SubstantiveConfig {
   // selected; random remainder of randomSizeDefault items from the rest (Q3).
   coverageCapPctOfPM: number;
   randomSizeDefault: number;
+  seedDefault: string; // deterministic pack default, overridable at L3
   tolerances: VouchingTolerances;
 }
 
@@ -68,6 +69,7 @@ export interface VerificationConfig {
   // ADR-012.3 spot-check on machine-passed items.
   spotcheckPct: number;
   spotcheckMin: number;
+  seedDefault: string;
 }
 
 export interface DocRules {
@@ -99,6 +101,7 @@ export interface AssurancePack {
   substantive?: SubstantiveConfig;
   attributeSampleSizes?: Record<Frequency, number>;
   attributeSampleBasis?: string;
+  attributeSeedDefault?: string;
   exceptionTaxonomy: TaxonomyEntry[];
   deviationTaxonomy?: TaxonomyEntry[];
   deficiencyLadder?: DeficiencyLadderConfig;

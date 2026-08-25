@@ -1,0 +1,48 @@
+import Link from 'next/link';
+import { requireMember } from '@/lib/core/auth';
+import { listRequests, ensureReminders } from '@/lib/services/requests';
+
+const STATUS_BADGE: Record<string, string> = {
+  draft: 'gray', sent: 'blue', partially_submitted: 'amber', submitted: 'green', accepted: 'green', reopened: 'red',
+};
+
+export default async function RequestsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await requireMember(id);
+  await ensureReminders(id);
+  const requests = await listRequests(id);
+
+  return (
+    <div className="panel">
+      <h2>Client requests (PBC)</h2>
+      <p className="faint">
+        Per-tested-unit items are generated from the sample; standing items exist at
+        procedure level (Gate 2). Sending is an L2 gate. Reminders follow the pack cadence
+        (due +3 days, then weekly), visible and pausable.
+      </p>
+      <table className="data">
+        <thead>
+          <tr><th>#</th><th>Title</th><th>Status</th><th>Items</th><th>Due</th><th>Reminders sent</th></tr>
+        </thead>
+        <tbody>
+          {requests.map((r) => (
+            <tr key={r.id}>
+              <td className="mono">R-{String(r.seq_no).padStart(3, '0')}</td>
+              <td><Link href={`/eng/${id}/requests/${r.id}`}>{r.title}</Link></td>
+              <td><span className={`badge ${STATUS_BADGE[r.status] ?? 'gray'}`}>{r.status}</span></td>
+              <td>
+                {r.done_count}/{r.item_count}
+                <div className="progressbar" style={{ width: 90, marginTop: 3 }}>
+                  <div style={{ width: `${(Number(r.done_count) / Math.max(1, Number(r.item_count))) * 100}%` }} />
+                </div>
+              </td>
+              <td>{r.due_date}</td>
+              <td className="num">{r.reminder_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {requests.length === 0 && <p className="muted">No requests yet — draw a sample and generate the PBC request.</p>}
+    </div>
+  );
+}

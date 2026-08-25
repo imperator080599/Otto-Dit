@@ -21,7 +21,8 @@ export const nepFr: AssurancePack = {
   },
   substantive: {
     coverageCapPctOfPM: 1.0, // every item ≥ 100% of PM is covered individually
-    randomSizeDefault: 15,
+    randomSizeDefault: 4,
+    seedDefault: 'otto-demo-rev-1',
     tolerances: { amountAbs: 1, amountPct: 0.005, dateDays: 5, pricePct: 0.01, qtyAbs: 0 },
   },
   exceptionTaxonomy: [
@@ -37,7 +38,7 @@ export const nepFr: AssurancePack = {
     { code: 'verification_disagreement', label: { fr: 'Désaccord lors du contrôle de fiabilité', en: 'Verification spot-check disagreement' } },
     { code: 'quarantined_evidence', label: { fr: 'Pièce mise en quarantaine', en: 'Quarantined evidence' } },
   ],
-  verification: { spotcheckPct: 0.1, spotcheckMin: 3 },
+  verification: { spotcheckPct: 0.1, spotcheckMin: 3, seedDefault: 'otto-demo-verif-1' },
   docRules: {
     assemblyDays: 60,
     retentionYears: 10,

@@ -28,6 +28,7 @@ export const pcaobSox: AssurancePack = {
     annual: 1,
     adhoc: 10,
   },
+  attributeSeedDefault: 'otto-demo-sox-1',
   attributeSampleBasis:
     'Common-practice frequency table derived from AICPA Audit Sampling guidance (see docs/10_D13_RESEARCH §D). Firm-methodology convention, not a PCAOB/SEC requirement; overridable with justification.',
   exceptionTaxonomy: [
@@ -46,7 +47,7 @@ export const pcaobSox: AssurancePack = {
     significantPctOfMateriality: 0.2,
     materialPctOfMateriality: 1.0,
   },
-  verification: { spotcheckPct: 0.1, spotcheckMin: 2 },
+  verification: { spotcheckPct: 0.1, spotcheckMin: 2, seedDefault: 'otto-demo-verif-1' },
   docRules: {
     assemblyDays: 14,
     retentionYears: 7,
