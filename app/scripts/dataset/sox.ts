@@ -121,7 +121,13 @@ export function buildSox(): SoxDataset {
     const m = Number(label.slice(5, 7));
     return new Date(Date.UTC(2025, m, 0));
   }
-  const bankRecSpecs: BankRecSpec[] = [mA, mB].map((label) => {
+  // Every month of the population gets a reconciliation EXCEPT the seeded missing one
+  // (D4). Only two existed before, which made an extension to the full population
+  // meaningless — nine of the twelve months had nothing to test (founder review 2026-08-25).
+  const bankRecSpecs: BankRecSpec[] = bankRecInstances
+    .map((i) => i.label)
+    .filter((label) => label !== mC)
+    .map((label) => {
     const eom = eomOf(label);
     const isLate = label === mB;
     const preparedOn = new Date(eom.getTime() + (isLate ? 25 : 6) * 86400000).toISOString().slice(0, 10);

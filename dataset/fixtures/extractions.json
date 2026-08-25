@@ -1114,6 +1114,154 @@
     ]
   },
   {
+    "filename": "sox/evidence/bankrec_2025-02.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-02",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-03-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-03-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-03.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-03",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-04-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-04-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-04.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-04",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-05-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-05-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-05.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-06-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-06-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
     "filename": "sox/evidence/bankrec_2025-06.pdf",
     "docType": "reconciliation_sheet",
     "rungExpected": "text_layer",
@@ -1145,6 +1293,191 @@
       {
         "name": "approvedOn",
         "value": "2025-07-26",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-07.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-07",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-08-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-08-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-08.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-08",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-09-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-09-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-10.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-10",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-11-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-11-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-11.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-11",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2025-12-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2025-12-08",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-12.pdf",
+    "docType": "reconciliation_sheet",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "month",
+        "value": "2025-12",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedBy",
+        "value": "T. Girard",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "preparedOn",
+        "value": "2026-01-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedBy",
+        "value": "S. Marchand",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "approvedOn",
+        "value": "2026-01-08",
         "confidence": 1,
         "page": 1
       }

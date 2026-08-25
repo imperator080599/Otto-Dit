@@ -71,6 +71,31 @@ async function refreshRequestStatus(requestItemId: string): Promise<void> {
 }
 
 /** Client marks a request as fully submitted; items with uploads flip to complete. */
+/** Triage an inbound document onto the request item it answers.
+ *  Mail does not arrive pre-filed: something ingested from the engagement address sits
+ *  unlinked until a human (or a matching rule) says which request item it belongs to.
+ *  Linking is what makes it audit evidence for that item, so it is an event. */
+export async function attachEvidenceToItem(evidenceId: string, requestItemId: string, userId: string): Promise<void> {
+  const ev = await q1<{ id: string; engagement_id: string; filename: string; quarantined: boolean }>(
+    `select id, engagement_id, filename, quarantined from evidence where id = $1`,
+    [evidenceId],
+  );
+  if (ev.quarantined) throw new Error('a quarantined document must be released before it can answer a request item');
+  const item = await q1<{ id: string; request_id: string; description: string }>(
+    `select ri.id, ri.request_id, ri.description from request_item ri
+     join request r on r.id = ri.request_id where ri.id = $1 and r.engagement_id = $2`,
+    [requestItemId, ev.engagement_id],
+  );
+  await q(`update evidence set request_item_id = $2 where id = $1`, [evidenceId, requestItemId]);
+  await q(`update request_item set status = 'uploaded' where id = $1`, [requestItemId]);
+  const ctx = await engagementCtx(ev.engagement_id);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: ev.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'evidence_attached_to_item', objectType: 'evidence', objectId: evidenceId,
+    payload: { request_item_id: requestItemId, filename: ev.filename, item: item.description },
+  });
+}
+
 export async function markAllSubmitted(requestId: string, contactId: string): Promise<void> {
   const r = await q1<{ id: string; engagement_id: string }>(`select id, engagement_id from request where id = $1`, [requestId]);
   const ctx = await engagementCtx(r.engagement_id);

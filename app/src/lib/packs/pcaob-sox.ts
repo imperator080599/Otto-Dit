@@ -67,5 +67,12 @@ export const pcaobSox: AssurancePack = {
     modifications: 'Manual modifications (justified)',
     performedBy: 'Performed by OTTO — engine run',
     validatedBy: 'Validated by',
+    appendices: {
+      parameters: 'Appendix A — Parameters and provenance (self-contained)',
+      evidence: 'Appendix B — Evidence cited (sha256)',
+      modifications: 'Appendix C — Manual modifications (visible flag)',
+      reviewNotes: 'Appendix D — Review notes',
+      signoffs: 'Appendix E — Sign-offs (dates, immutable)',
+    },
   },
 };

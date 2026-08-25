@@ -498,3 +498,146 @@ shows up as an `fp`, and `fp` is the column an auditor cannot afford.
 **Rejected**: writing a parser per layout (does not survive the constraint); sending
 everything to the model (throws away a free, instant, offline rung that now covers 71 % of
 the corpus); letting the dictionary return partial reads (trades recall for cost silently).
+
+## ADR-022 — Le dossier clôturé : la base **et** un export scellé
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+**Question posée** : (a) qu'est-ce qui constitue le dossier clôturé ? (b) que reçoit un
+inspecteur H2A ? (c) que subsiste-t-il si le cabinet cesse son abonnement ?
+
+**Décision** — la position par défaut du fondateur est retenue, avec une précision qui la
+rend opérante : **les deux**, et l'un est une projection de l'autre.
+
+1. **La base est la source de vérité vivante.** Le contenu des papiers de travail n'existe
+   nulle part ailleurs qu'en enregistrements structurés (ADR-013). PDF, Word et Excel sont
+   des **projections en lecture** : un export supprimé se régénère à l'octet près
+   (`export.test.ts`, « a deleted export regenerates byte-for-byte from the database »).
+2. **La clôture produit en plus un export scellé**, horodaté, autoportant et lisible sans
+   la plateforme, dont l'empreinte est enregistrée (`file_archive`, migration 0009). Il
+   contient : les papiers de travail **régénérés depuis les enregistrements** (jamais
+   recopiés d'un fichier), toutes les pièces non mises en quarantaine, le journal
+   d'événements avec sa chaîne de hachage, les anomalies, les déficiences, les visas, un
+   `MANIFEST.json` (empreinte de chaque fichier, base légale des dates, état de la chaîne)
+   et un `README.html` sans script ni lien externe.
+3. **Ce que reçoit un inspecteur** : ce fichier scellé, dont chaque empreinte se recalcule
+   hors ligne (`sha256sum`). Rien à installer, rien à demander au cabinet. Si l'inspecteur
+   veut interroger le dossier plutôt que le lire, la base répond en plus — mais elle n'est
+   pas nécessaire.
+4. **Fin d'abonnement** : le scellé est autoportant **par construction**, précisément pour
+   que la conservation de six ans ne dépende pas de la survie d'un contrat SaaS. La
+   plateforme remet le scellé au cabinet ; l'obligation de conservation reste celle du
+   cabinet, pas celle de l'éditeur. Un dossier non scellé à la résiliation doit l'être
+   avant, ce qui est l'objet du délai de 60 jours (art. D. 821-186 III).
+
+**Ce qui bloque la clôture** : `closeFile` refuse tant que la porte de conclusion n'est pas
+ouverte — anomalie non traitée, évaluation non conclue, dépassement de l'anomalie tolérable
+sans réponse enregistrée, ou **grand livre provisoire**. On ne clôture pas un dossier
+audité sur un FEC provisoire.
+
+**Déterminisme** : l'archive est une fonction pure de l'état stocké (`buildArchive`) —
+entrées triées, horodatages issus de la date du rapport et jamais de l'horloge, requêtes
+totalement ordonnées. Deux constructions du même état donnent les mêmes octets. Sceller à
+nouveau **plus tard** produit une archive différente, et c'est correct : le scellement est
+lui-même un événement du dossier.
+
+**Rejeté** : le scellé seul (on perd la capacité d'interroger et la traçabilité vivante) ;
+la base seule (la conservation six ans dépendrait d'un abonnement, et l'inspecteur devrait
+utiliser l'outil de l'audité).
+
+## ADR-023 — Le rendu accepte l'Unicode utile ; le chrome vient du pack
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+**Contexte** : le PDF français imprimait « l?état des anomalies », « n?a été identifiée »,
+« (? 25 000,00 €) », et le papier SOX anglais portait des annexes en français. Deux
+instances avaient été corrigées une par une (le signe €, la ligne d'attribution). Le
+fondateur a eu raison de refuser le correctif : c'étaient des **classes**, pas des
+instances.
+
+**Décision** :
+1. **La police doit couvrir le contenu, pas l'inverse.** Une police Unicode est
+   *vendorisée* dans le dépôt (`app/assets/fonts`, DejaVu Sans) — pas lue sur la machine
+   hôte, sans quoi un export ne serait plus reproductible ailleurs. Rien n'est translittéré.
+2. **Une substitution est une erreur, pas un repli.** La couverture est lue dans la police
+   elle-même (`hasGlyphForCodePoint` ; `encodeText` **n'échoue pas** sur un glyphe absent —
+   il dessine .notdef, ce qui est exactement la substitution silencieuse qu'on veut
+   interdire). Un caractère non couvert fait **échouer l'export**. Un papier de travail qui
+   modifie discrètement son propre texte n'est pas un papier de travail.
+3. **Tout le chrome vient du pack** : titres d'annexes, ligne d'attribution, mentions
+   « aucune », en-têtes — au même titre que le corps. Le moteur n'écrit plus une seule
+   chaîne visible en dur.
+
+**Effet immédiat** : le contrôle a refusé un export et découvert `⇒` (U+21D2), absent de la
+première police retenue et jusque-là imprimé « ? » dans le papier SOX. La police a été
+changée pour une police qui le couvre — dans ce sens-là.
+
+## ADR-024 — Substance probante : trois issues, aucune générique
+
+**Statut** : accepté (2026-08-25, revue fondateur — motifs bloquants 1 à 3)
+**Contexte** : dix anomalies de six natures différentes portaient la même phrase
+(« Réponse du client examinée et corroborée — traité »), une double comptabilisation de
+36 800 € sortait de l'accumulation sans explication, et le papier constatait lui-même un
+dépassement de l'anomalie tolérable avant de conclure quand même. Complet en apparence,
+vide en substance : le mode de défaillance que le produit prétend éliminer.
+
+**Décision** — une anomalie a exactement **trois** issues terminales, et deux d'entre elles
+sont impossibles à atteindre sans substance (contraintes SQL, migration 0009) :
+
+| Issue | Ce que le système exige | Effet sur l'accumulation |
+|---|---|---|
+| `resolved` | l'explication reçue **mot pour mot**, la conclusion d'audit, une **disposition**, et un **lien** vers la pièce ou l'écriture qui corrobore, plus qui a conclu et quand | sort de l'accumulation, avec sa preuve |
+| `escalated` | une anomalie chiffrée à l'état des anomalies | entre dans connu + projeté |
+| `scope_limitation` | ce qui n'a pas pu être obtenu, **les procédures alternatives mises en œuvre**, le montant exposé | ne prétend jamais être corroborée ; remonte dans la conclusion |
+
+Une anomalie **chiffrée** ne peut pas être `resolved` sans disposition (`corrected`,
+`no_misstatement`, `compensated`, `already_accumulated`) : c'est ce qui empêche 36 800 €
+de disparaître. `already_accumulated` existe pour le cas de la double comptabilisation, qui
+lève deux anomalies (une par écriture) alors que les comptes ne sont surévalués **qu'une
+fois** — l'occurrence jumelle est close en le disant, liée à la même facture, ni supprimée
+ni comptée deux fois.
+
+**Dépassement de l'anomalie tolérable** : `concludeEvaluation` **refuse** tant que
+`evaluation_response` n'enregistre pas une réponse — `extend_testing`, `revise_strategy` ou
+`conclude_with_justification` — avec sa motivation. L'échantillon ne fournit plus une base
+raisonnable de conclusion sur la population : on étend, on révise, ou on documente pourquoi
+la conclusion tient malgré tout.
+
+**Grand livre provisoire** : auditer un FEC provisoire est légitime ; conclure dessus
+silencieusement ne l'est pas. `engagement.ledger_is_provisional` bloque la conclusion
+définitive et la clôture, et la raison figure dans le papier.
+
+**Conséquence mesurée sur le dossier de démonstration** : les anomalies connues passent de
+36 330 € à **127 545,80 €** — non parce que le moteur a changé d'avis, mais parce que les
+réponses du client admettent cinq anomalies dont aucune correction n'est comptabilisée à la
+date du rapport. Le dossier ne conclut plus « rien d'autre à signaler ».
+
+## ADR-025 — Déficience : le taux et la nature avant le montant ; extension obligatoire
+
+**Statut** : accepté (2026-08-25, revue fondateur — motif bloquant 4)
+**Contexte** : un contrôle clé de trésorerie testé sur 3 instances, 3 en échec — dont une
+sans aucun justificatif et une où le préparateur avait approuvé sa propre réconciliation —
+ressortait en simple « deficiency », parce que seule la magnitude décidait.
+
+**Décision** :
+1. **Le taux compte, et il compte en premier.** Un taux de déviation de 100 % sur un
+   contrôle clé propose **material weakness par défaut** : le contrôle n'a pas fonctionné
+   sur la période testée. La proposition se discute **vers le bas**, par une décision
+   humaine motivée (`decideDeficiency` refuse une réduction sans motif écrit) — l'inverse
+   de ce qui se passait.
+2. **La nature compte.** Absence totale de justificatif et défaut de séparation des tâches
+   sont des indicateurs qualitatifs : ils portent la proposition à *significant deficiency*
+   au minimum, quel que soit le montant.
+3. **On ne conclut pas d'un échantillon où rien n'est passé.** À 100 % de déviation,
+   `control_test.extension_required` est posé et `proposeDeficiency` **refuse** de tourner :
+   la population entière doit être testée (ou l'extension écartée avec motif). Le jeu de
+   données générait deux réconciliations pour une population de douze, ce qui rendait
+   l'extension vide de sens : il en génère désormais onze (le mois manquant restant la
+   déviation semée).
+4. **La magnitude dit d'où elle vient.** `deficiency.magnitude_basis` est obligatoire, et
+   l'exposition est **dérivée de la balance** (trésorerie 512x pour le rapprochement
+   bancaire, créances 411x pour la validation de crédit), non choisie. Les 15 000 € du
+   papier précédent ne venaient de nulle part.
+
+**Résultat sur le dossier de démonstration** : 3 instances → 3 déviations → extension aux
+12 instances → 3 mois déviants sur 12 (25 %), natures `missing_evidence` et
+`wrong_performer`, exposition = solde de trésorerie de clôture ⇒ **material weakness**
+proposée et confirmée.

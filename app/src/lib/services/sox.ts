@@ -3,7 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { controlPopulationHash } from '@/lib/kernel/canon';
 import { attributeDraw } from '@/lib/kernel/sampling';
-import { proposeDeficiencySeverity } from '@/lib/kernel/deficiency';
+import { proposeDeficiencySeverity, type DeviationNature } from '@/lib/kernel/deficiency';
 import { primaryPack } from '@/lib/packs';
 import type { Frequency } from '@/lib/packs/types';
 import { centsToNum } from '@/lib/util/num';
@@ -265,14 +265,14 @@ async function raiseDeviation(engagementId: string, controlId: string, sampleIte
   return true;
 }
 
-export async function runAttributeTesting(controlId: string, userId: string): Promise<{ tested: number; deviations: number }> {
+export async function runAttributeTesting(controlId: string, userId: string): Promise<{ tested: number; deviations: number; extensionRequired: boolean }> {
   const c = await q1<{ id: string; engagement_id: string; code: string }>(
     `select id, engagement_id, code from control where id = $1`,
     [controlId],
   );
   const ctx = await engagementCtx(c.engagement_id);
   const test = await q1<{ id: string; sample_id: string }>(
-    `select id, sample_id from control_test where control_id = $1 order by id desc limit 1`,
+    `select id, sample_id from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
     [controlId],
   );
   const items = await q<{ id: string; unit_id: string; label: string }>(
@@ -366,7 +366,38 @@ export async function runAttributeTesting(controlId: string, userId: string): Pr
     verb: 'attribute_testing_completed', objectType: 'control', objectId: controlId,
     payload: { control: c.code, tested: items.length, deviations, engineRun: run.id, requestedBy: userId },
   });
-  return { tested: items.length, deviations };
+  // Every tested instance failed: this is not a sample result, it is the absence of a
+  // control. The population must be tested in full before anything is concluded from it
+  // (founder review 2026-08-25, migration 0009).
+  const deviatedItems = await q1<{ n: string }>(
+    `select count(distinct si.id) n from sample_item si
+     join deviation d on d.sample_item_id = si.id where si.sample_id = $1`,
+    [test.sample_id],
+  );
+  const allFailed = items.length > 0 && Number(deviatedItems.n) === items.length;
+  const population = await q1<{ n: string }>(`select count(*) n from control_instance where control_id = $1`, [controlId]);
+  const extensionRequired = allFailed && Number(population.n) > items.length;
+  await q(
+    `update control_test set status = 'complete', extension_required = $2, extension_reason = $3 where id = $1`,
+    [
+      test.id, extensionRequired,
+      extensionRequired
+        ? `${deviatedItems.n}/${items.length} instances tested show a deviation (100 %). A conclusion cannot be drawn from a sample where nothing passed: the ${population.n} instances of the population must be tested.`
+        : null,
+    ],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'system', actorId: null,
+    verb: extensionRequired ? 'control_test_extension_required' : 'control_test_completed',
+    objectType: 'control_test', objectId: test.id,
+    payload: { control: c.code, tested: items.length, deviations, population: Number(population.n), extensionRequired },
+  });
+
+  const sampleDeviations = await q1<{ n: string }>(
+    `select count(*) n from deviation d join sample_item si on si.id = d.sample_item_id where si.sample_id = $1`,
+    [test.sample_id],
+  );
+  return { tested: items.length, deviations: Number(sampleDeviations.n), extensionRequired };
 }
 
 export async function attributeGrid(controlId: string) {
@@ -406,9 +437,67 @@ export async function resolveDeviation(deviationId: string, userId: string, reso
   });
 }
 
+/** Test the whole population after a 100 % deviation rate. Draws every instance as a new,
+ *  full-coverage test rather than editing the first one — both remain in the file, and the
+ *  conclusion is drawn from the extended test. */
+export async function extendToFullPopulation(
+  controlId: string,
+  userId: string,
+  reason: string,
+): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
+  const test = await q01<{ id: string; extension_required: boolean }>(
+    `select id, extension_required from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
+    [controlId],
+  );
+  if (!test?.extension_required) throw new Error('no extension is required on the latest test of this control');
+  const population = await q1<{ n: string }>(`select count(*) n from control_instance where control_id = $1`, [controlId]);
+  return drawAttributeSample(controlId, userId, Number(population.n), reason);
+}
+
+/** A human may decide the extension is unnecessary — with a reason, on the record. */
+export async function waiveExtension(controlId: string, userId: string, reason: string): Promise<void> {
+  if (!reason.trim()) throw new Error('waiving a required population extension needs a documented reason');
+  const test = await q1<{ id: string; control_id: string }>(
+    `select id, control_id from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
+    [controlId],
+  );
+  const c = await q1<{ engagement_id: string; code: string }>(`select engagement_id, code from control where id = $1`, [controlId]);
+  const ctx = await engagementCtx(c.engagement_id);
+  await q(
+    `update control_test set extension_waived_by = $2, extension_waiver_reason = $3 where id = $1`,
+    [test.id, userId, reason],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'control_test_extension_waived', objectType: 'control_test', objectId: test.id,
+    payload: { control: c.code, reason },
+  });
+}
+
+/** Blocks anything that would conclude from a test whose extension is still outstanding. */
+export async function assertNoOutstandingExtension(controlId: string): Promise<void> {
+  const test = await q01<{ extension_required: boolean; extension_reason: string | null; extension_waived_by: string | null }>(
+    `select extension_required, extension_reason, extension_waived_by from control_test
+     where control_id = $1 order by created_at desc, id desc limit 1`,
+    [controlId],
+  );
+  if (test?.extension_required && !test.extension_waived_by) {
+    throw new Error(`population extension outstanding — ${test.extension_reason ?? 'test the full population before concluding'}`);
+  }
+}
+
 // ---------- deficiency ladder (L3) + aggregation ----------
 
-export async function proposeDeficiency(controlId: string, userId: string, inputs: { magnitudeExposureCents: number; compensatingControl: boolean }): Promise<string> {
+export async function proposeDeficiency(
+  controlId: string,
+  userId: string,
+  inputs: { magnitudeExposureCents: number; compensatingControl: boolean; magnitudeBasis: string },
+): Promise<string> {
+  // The exposure is the number that decides severity, so it may not be an assertion:
+  // where it comes from is stored next to it (migration 0009).
+  if (!inputs.magnitudeBasis?.trim()) {
+    throw new Error('state where the magnitude exposure comes from — a severity proposal may not rest on an unexplained number');
+  }
   const c = await q1<{ id: string; engagement_id: string; code: string; name: string; is_key: boolean }>(
     `select id, engagement_id, code, name, is_key from control where id = $1`,
     [controlId],
@@ -418,11 +507,22 @@ export async function proposeDeficiency(controlId: string, userId: string, input
   const pack = primaryPack(fs as never);
   const thresholds = await validatedThresholds(c.engagement_id);
   if (!thresholds) throw new Error('validated materiality required (ICFR materiality = FS materiality)');
-  const devCount = await q1<{ n: string }>(`select count(*) n from deviation where control_id = $1`, [controlId]);
-  const sampleSize = await q1<{ n: string }>(
-    `select count(*) n from sample_item si join sample s on s.id = si.sample_id
-     join control_test ct on ct.sample_id = s.id where ct.control_id = $1`,
+  await assertNoOutstandingExtension(controlId);
+  // counts come from the LATEST test only: after an extension, the rate is 3/12, not 3/15
+  const latest = await q1<{ sample_id: string }>(
+    `select sample_id from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
     [controlId],
+  );
+  // the deviation RATE is deviating instances over instances tested — one month that fails
+  // three attributes is one month that failed, not three
+  const devCount = await q1<{ n: string }>(
+    `select count(distinct si.id) n from deviation d join sample_item si on si.id = d.sample_item_id where si.sample_id = $1`,
+    [latest.sample_id],
+  );
+  const sampleSize = await q1<{ n: string }>(`select count(*) n from sample_item where sample_id = $1`, [latest.sample_id]);
+  const natures = await q<{ taxonomy_code: string }>(
+    `select distinct d.taxonomy_code from deviation d join sample_item si on si.id = d.sample_item_id where si.sample_id = $1`,
+    [latest.sample_id],
   );
   const proposal = proposeDeficiencySeverity({
     deviationsCount: Number(devCount.n),
@@ -432,40 +532,72 @@ export async function proposeDeficiency(controlId: string, userId: string, input
     magnitudeExposureCents: inputs.magnitudeExposureCents,
     materialityCents: thresholds.materialityCents,
     ladder: pack.deficiencyLadder!,
+    deviationNatures: natures.map((n) => n.taxonomy_code as DeviationNature),
   });
   const run = await q1<{ id: string }>(
     `insert into engine_run (tenant_id, engagement_id, engine, engine_version, pack_id, config_hash, params, finished_at)
-     values ($1,$2,'deficiency_rules','v1',$3,$4,$5, now()) returning id`,
+     values ($1,$2,'deficiency_rules','v2',$3,$4,$5, now()) returning id`,
     [ctx.tenant_id, c.engagement_id, pack.id, hashObject(pack.deficiencyLadder), JSON.stringify(proposal.basis)],
   );
   const narrative =
-    `Operating deviations were identified in the OE sample for ${c.code} (${c.name}): ${devCount.n} deviation(s) over ${sampleSize.n} instance(s) tested. ` +
+    `Operating deviations were identified in the OE sample for ${c.code} (${c.name}): ${devCount.n} deviation(s) over ${sampleSize.n} instance(s) tested ` +
+    `(deviation rate ${(proposal.basis.deviationRate * 100).toFixed(0)} %)` +
+    (proposal.basis.severeNatures.length ? `, including ${proposal.basis.severeNatures.join(' and ')}` : '') + '. ' +
     `Rules-based severity proposal: ${proposal.severity.replace(/_/g, ' ')} — ${proposal.basis.rule}. ` +
     `Magnitude exposure considered: ${centsToNum(inputs.magnitudeExposureCents)} € vs materiality ${centsToNum(thresholds.materialityCents)} € ` +
-    `(significant threshold ${centsToNum(proposal.basis.thresholds.significantCents)} €). Human decision required (L3).`;
+    `(significant threshold ${centsToNum(proposal.basis.thresholds.significantCents)} €). Basis for that exposure: ${inputs.magnitudeBasis} ` +
+    (proposal.populationExtensionRequired
+      ? 'Every tested instance failed: the sample no longer supports a conclusion about the population — the full population must be tested before concluding. '
+      : '') +
+    'Human decision required (L3).';
   const row = await q1<{ id: string }>(
-    `insert into deficiency (engagement_id, control_id, severity_proposed, basis, narrative, status, engine_run_id)
-     values ($1,$2,$3,$4,$5,'proposed',$6) returning id`,
-    [c.engagement_id, controlId, proposal.severity, JSON.stringify(proposal.basis), narrative, run.id],
+    `insert into deficiency (engagement_id, control_id, severity_proposed, basis, narrative, status, engine_run_id, magnitude_basis)
+     values ($1,$2,$3,$4,$5,'proposed',$6,$7) returning id`,
+    [c.engagement_id, controlId, proposal.severity, JSON.stringify(proposal.basis), narrative, run.id, inputs.magnitudeBasis],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'system', actorId: null,
     verb: 'deficiency_proposed', objectType: 'deficiency', objectId: row.id,
-    payload: { control: c.code, severity: proposal.severity, engineRun: run.id, requestedBy: userId },
+    payload: {
+      control: c.code, severity: proposal.severity, deviationRate: proposal.basis.deviationRate,
+      severeNatures: proposal.basis.severeNatures, extensionRequired: proposal.populationExtensionRequired,
+      engineRun: run.id, requestedBy: userId,
+    },
   });
   return row.id;
 }
 
-export async function decideDeficiency(deficiencyId: string, userId: string, severity: 'deficiency' | 'significant_deficiency' | 'material_weakness'): Promise<void> {
-  const d = await q1<{ engagement_id: string }>(`select engagement_id from deficiency where id = $1`, [deficiencyId]);
+const SEVERITY_RANK = { deficiency: 0, significant_deficiency: 1, material_weakness: 2 } as const;
+
+export async function decideDeficiency(
+  deficiencyId: string,
+  userId: string,
+  severity: 'deficiency' | 'significant_deficiency' | 'material_weakness',
+  rationale?: string,
+): Promise<void> {
+  const d = await q1<{ engagement_id: string; severity_proposed: keyof typeof SEVERITY_RANK; narrative: string }>(
+    `select engagement_id, severity_proposed, narrative from deficiency where id = $1`,
+    [deficiencyId],
+  );
+  // The engine's proposal may be argued down, never silently: reducing severity below what
+  // the rules proposed is the decision an inspector will ask about, so it carries a reason.
+  const isReduction = SEVERITY_RANK[severity] < SEVERITY_RANK[d.severity_proposed];
+  if (isReduction && !rationale?.trim()) {
+    throw new Error(
+      `reducing the proposed severity (${d.severity_proposed} → ${severity}) requires a documented rationale`,
+    );
+  }
   const ctx = await engagementCtx(d.engagement_id);
   await q(
-    `update deficiency set severity_final = $2, status = 'confirmed', decided_by = $3, decided_at = now() where id = $1`,
-    [deficiencyId, severity, userId],
+    `update deficiency set severity_final = $2, status = 'confirmed', decided_by = $3, decided_at = now(),
+            narrative = case when $4::text is null then narrative else narrative || ' — Décision humaine : ' || $4 end
+     where id = $1`,
+    [deficiencyId, severity, userId, rationale?.trim() ? rationale.trim() : null],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: d.engagement_id, actorKind: 'user', actorId: userId,
-    verb: 'deficiency_decided', objectType: 'deficiency', objectId: deficiencyId, payload: { severity },
+    verb: 'deficiency_decided', objectType: 'deficiency', objectId: deficiencyId,
+    payload: { severity, proposed: d.severity_proposed, reduction: isReduction, rationale: rationale ?? null },
   });
 }
 

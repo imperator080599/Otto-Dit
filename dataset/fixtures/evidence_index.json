@@ -222,11 +222,83 @@
     ]
   },
   {
+    "filename": "sox/evidence/bankrec_2025-02.pdf",
+    "sha256": "78d1b73dc75d2c97fe57fa279926c0fdfa3c26593bd756c245ec8090359da1b6",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-02"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-03.pdf",
+    "sha256": "70ac4e5d0ec7b98cbe03169f7d514b7fd423c3ad84e21d945ff50477079f7a88",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-03"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-04.pdf",
+    "sha256": "d7d92b44e3a3bb0ce92aff390bae4fa5e71c6b399e0fad3b8c7738083b60ff89",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-04"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-05.pdf",
+    "sha256": "760d378d0958252c776d741107abd3ceb98a7be1a5269860cedbbe9021911947",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-05"
+    ]
+  },
+  {
     "filename": "sox/evidence/bankrec_2025-06.pdf",
     "sha256": "88112c5578650805b0c3f71df9a49b53c0e19076b4a09dd8d07e04ed581624d1",
     "docType": "reconciliation_sheet",
     "forUnits": [
       "2025-06"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-07.pdf",
+    "sha256": "6c63fd14680f1744c9fcfe64ccc66c55b8e65aee4c324cba061a96af8492a33a",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-07"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-08.pdf",
+    "sha256": "88c3ca329e6b0deb2d644f655d924622b2368e2892fdeaadc9c751a85def53a1",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-08"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-10.pdf",
+    "sha256": "47d36f390d0dc1a8214d7fd4564989c5d4c88f9f7eb40eef6bc55f6703b4b13e",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-10"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-11.pdf",
+    "sha256": "233e62f4df47aa9dd5700822efb89a4e21e3c857964897a0fbb2337a2129e8e8",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-11"
+    ]
+  },
+  {
+    "filename": "sox/evidence/bankrec_2025-12.pdf",
+    "sha256": "c220fe6b34f8ea84a9c5fda659f243b1282acca31e8d37e5634842da5140bb5b",
+    "docType": "reconciliation_sheet",
+    "forUnits": [
+      "2025-12"
     ]
   },
   {

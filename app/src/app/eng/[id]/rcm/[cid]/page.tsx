@@ -71,13 +71,18 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
     await proposeDeficiency(cid, user.id, {
       magnitudeExposureCents: Math.round(Number(formData.get('magnitude')) * 100),
       compensatingControl: formData.get('compensating') === 'on',
+      magnitudeBasis: String(formData.get('magnitude_basis') ?? ''),
     });
     revalidatePath(`/eng/${id}/rcm/${cid}`);
   }
   async function decideAction(formData: FormData) {
     'use server';
     const { user } = await requireMember(id);
-    await decideDeficiency(String(formData.get('deficiency_id')), user.id, String(formData.get('severity')) as 'deficiency' | 'significant_deficiency' | 'material_weakness');
+    await decideDeficiency(
+      String(formData.get('deficiency_id')), user.id,
+      String(formData.get('severity')) as 'deficiency' | 'significant_deficiency' | 'material_weakness',
+      String(formData.get('decision_rationale') ?? ''),
+    );
     revalidatePath(`/eng/${id}/rcm/${cid}`);
   }
   async function draftWpAction() {
@@ -170,6 +175,8 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
             {deviations.length > 0 && !deficiency && (
               <form action={deficiencyAction} className="row">
                 <input type="number" name="magnitude" step="0.01" placeholder="magnitude exposure €" style={{ width: 160 }} required />
+                <input type="text" name="magnitude_basis" required style={{ width: 320 }}
+                  placeholder="where that exposure comes from (account, balance, source)" />
                 <label className="row" style={{ gap: 3 }}><input type="checkbox" name="compensating" /> compensating control</label>
                 <button className="btn small">Propose deficiency (L3)</button>
               </form>
@@ -217,6 +224,8 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
                   <option value="significant_deficiency">significant deficiency</option>
                   <option value="material_weakness">material weakness</option>
                 </select>
+                <input type="text" name="decision_rationale" style={{ width: 340 }}
+                  placeholder="rationale — required to go below the proposed severity" />
                 <button className="btn small">Record decision (human)</button>
               </form>
             )}

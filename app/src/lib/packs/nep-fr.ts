@@ -60,5 +60,12 @@ export const nepFr: AssurancePack = {
     modifications: 'Modifications manuelles (justifiées)',
     performedBy: 'Travaux exécutés par OTTO — run moteur',
     validatedBy: 'Validé par',
+    appendices: {
+      parameters: 'Annexe A — Paramètres et provenance (auto-contenus)',
+      evidence: 'Annexe B — Pièces justificatives citées (sha256)',
+      modifications: 'Annexe C — Modifications manuelles (marqueur visible)',
+      reviewNotes: 'Annexe D — Notes de revue',
+      signoffs: 'Annexe E — Visas (dates, immuables)',
+    },
   },
 };

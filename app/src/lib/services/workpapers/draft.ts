@@ -9,8 +9,8 @@ import { frameworkSet } from '../fsli';
 import { currentMateriality } from '../materiality';
 import { currentRevenueSample } from '../sampling';
 import { latestTbGl } from '../reconciliation';
-import { listExceptions } from '../matching';
-import { currentEvaluation, conclusionGate } from '../evaluation';
+import { listExceptions, scopeLimitations } from '../matching';
+import { currentEvaluation, conclusionGate, evaluationResponses, blockerText } from '../evaluation';
 import { latestExtraction } from '../extraction/ladder';
 
 // S7 — documentation engine. Workpapers are STRUCTURED sections assembled from stored
@@ -31,6 +31,19 @@ export interface WpSection {
   meta?: Record<string, unknown>;
 }
 
+/** Why the projection is what it is. An empty projection is a conclusion about the sample,
+ *  and it has to read like one (founder review 2026-08-25). */
+function projectionRationale(method: string, lang: 'fr' | 'en'): string {
+  if (method === 'none') {
+    return lang === 'fr'
+      ? 'Aucune projection n’est pratiquée : toutes les anomalies relevées se situent dans la strate examinée à 100 % (éléments à fort enjeu et éléments porteurs d’indicateurs de risque), et la strate tirée aléatoirement n’a révélé aucune anomalie. Il n’y a donc rien à extrapoler à la population non testée — ce n’est pas une projection omise, c’est une projection nulle.'
+      : 'No projection is performed: every misstatement identified falls inside the 100 %-examined stratum (high-value and risk-flagged items), and the randomly drawn stratum returned no misstatement. There is nothing to extrapolate to the untested population — this is a nil projection, not an omitted one.';
+  }
+  return lang === 'fr'
+    ? `Méthode de projection : ${method} (extrapolation des anomalies de la strate aléatoire à la population non testée).`
+    : `Projection method: ${method} (extrapolation of random-stratum misstatements over the untested population).`;
+}
+
 export async function draftRevenueWorkpaper(engagementId: string, userId: string): Promise<string> {
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
@@ -46,6 +59,8 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
   const exceptions = await listExceptions(engagementId);
   const evaluation = await currentEvaluation(engagementId);
   const gate = await conclusionGate(engagementId);
+  const limitations = await scopeLimitations(engagementId);
+  const responses = evaluation ? await evaluationResponses(evaluation.id) : [];
 
   const eur = (c: number) => fmtEur(c, pack.language);
 
@@ -182,8 +197,17 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       title: wp.evaluation,
       body: evaluation
         ? fr
-          ? `Anomalies connues : ${eur(numToCents(evaluation.known_misstatement))}. Anomalies projetées (${evaluation.projection_method}) : ${eur(numToCents(evaluation.projected_misstatement))} sur une population non testée de ${eur(numToCents(evaluation.untested_amount))}. Total connu + projeté : ${eur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement))} à comparer à l'anomalie tolérable de ${eur(numToCents(evaluation.te_amount))}. ${evaluation.status === 'concluded' ? `Conclusion (validée) : ${evaluation.conclusion_basis}` : 'Évaluation non conclue.'}`
-          : `Known ${eur(numToCents(evaluation.known_misstatement))}; projected ${eur(numToCents(evaluation.projected_misstatement))}; untested ${eur(numToCents(evaluation.untested_amount))}; TE ${eur(numToCents(evaluation.te_amount))}. ${evaluation.status === 'concluded' ? `Conclusion: ${evaluation.conclusion_basis}` : 'Not concluded.'}`
+          ? `Anomalies connues : ${eur(numToCents(evaluation.known_misstatement))}. ` +
+            `Anomalies projetées : ${eur(numToCents(evaluation.projected_misstatement))} sur une population non testée de ${eur(numToCents(evaluation.untested_amount))}. ` +
+            // "(none)" invited the reading "we did not project". Say why there is nothing
+            // to project, so an inspector reads a reasoning and not an omission.
+            `${projectionRationale(evaluation.projection_method, 'fr')} ` +
+            `Total connu + projeté : ${eur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement))}, à comparer à l’anomalie tolérable de ${eur(numToCents(evaluation.te_amount))}. ` +
+            `${evaluation.status === 'concluded' ? `Conclusion (validée) : ${evaluation.conclusion_basis}` : 'Évaluation non conclue.'}`
+          : `Known ${eur(numToCents(evaluation.known_misstatement))}; projected ${eur(numToCents(evaluation.projected_misstatement))} over an untested population of ${eur(numToCents(evaluation.untested_amount))}. ` +
+            `${projectionRationale(evaluation.projection_method, 'en')} ` +
+            `Known + projected ${eur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement))} against tolerable misstatement ${eur(numToCents(evaluation.te_amount))}. ` +
+            `${evaluation.status === 'concluded' ? `Conclusion: ${evaluation.conclusion_basis}` : 'Not concluded.'}`
         : fr ? 'Évaluation non calculée.' : 'Not computed.',
     },
     {
@@ -200,9 +224,30 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       key: 'conclusion',
       title: wp.conclusion,
       body: fr
-        ? `${gate.ok ? 'Toutes les anomalies relevées ont été traitées (résolues ou portées à l’état des anomalies) et l’évaluation par rapport à l’anomalie tolérable a été conclue.' : `ATTENTION : ${gate.openExceptions} anomalie(s) non traitée(s)${gate.evaluationConcluded ? '' : ' ; évaluation non conclue'} — la conclusion ne peut pas être signée en l’état.`} [Projet de conclusion à compléter et valider par le signataire : sur la base des travaux décrits ci-dessus, aucune anomalie significative non traitée n'a été identifiée au titre du chiffre d'affaires, sous réserve des éléments portés à l'état des anomalies.]`
-        : `${gate.ok ? 'All exceptions dispositioned and evaluation concluded.' : `WARNING: ${gate.openExceptions} exception(s) open.`} [Draft conclusion to be completed by the signer.]`,
-      meta: { gate },
+        ? [
+            gate.ok
+              ? 'Toutes les anomalies relevées ont été traitées et l’évaluation par rapport à l’anomalie tolérable a été conclue.'
+              : `CONCLUSION DÉFINITIVE BLOQUÉE — ${gate.blockers.map((b) => blockerText(b, 'fr')).join(' ; ')}.`,
+            gate.withinTolerable === false
+              ? `Le total des anomalies connues et projetées dépasse l’anomalie tolérable. Réponse enregistrée : ${responses.map((r) => `${r.kind} — ${r.rationale}`).join(' ; ') || 'aucune'}`
+              : '',
+            limitations.length
+              ? `Limitations sur les éléments probants (${limitations.length}) : ` +
+                limitations.map((l) => `${l.taxonomy_code}${l.amount_impact ? ` (${eur(numToCents(l.amount_impact))})` : ''} — ${l.alternative_procedures}`).join(' ; ')
+              : 'Aucune limitation sur les éléments probants.',
+            evaluation?.status === 'concluded'
+              ? `Conclusion validée : ${evaluation.conclusion_basis}`
+              : '[Projet de conclusion à compléter et valider par le signataire.]',
+          ].filter(Boolean).join(' ')
+        : [
+            gate.ok ? 'All exceptions dispositioned and evaluation concluded.' : `FINAL CONCLUSION BLOCKED — ${gate.blockers.map((b) => blockerText(b, 'en')).join('; ')}.`,
+            limitations.length
+              ? `Limitations on available evidence (${limitations.length}): ` +
+                limitations.map((l) => `${l.taxonomy_code} — ${l.alternative_procedures}`).join('; ')
+              : 'No limitation on available evidence.',
+            evaluation?.status === 'concluded' ? `Conclusion: ${evaluation.conclusion_basis}` : '[Draft conclusion to be completed by the signer.]',
+          ].filter(Boolean).join(' '),
+      meta: { gate, limitations, responses },
     },
   ];
 

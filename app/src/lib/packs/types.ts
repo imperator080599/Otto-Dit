@@ -95,6 +95,15 @@ export interface WorkpaperStrings {
   modifications: string;
   performedBy: string; // attribution template (ADR-012.4)
   validatedBy: string;
+  /** Appendix headings. Chrome is content too: an English workpaper may not carry French
+   *  appendix titles (ADR-023). */
+  appendices: {
+    parameters: string;
+    evidence: string;
+    modifications: string;
+    reviewNotes: string;
+    signoffs: string;
+  };
 }
 
 export interface AssurancePack {

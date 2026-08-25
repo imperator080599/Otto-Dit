@@ -31,7 +31,23 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     const evalSection = sections.find((s) => s.key === 'evaluation')!;
     expect(evalSection.body).toContain('36'); // known misstatement figure appears
     const conclusion = sections.find((s) => s.key === 'conclusion')!;
-    expect((conclusion.meta as { gate: { ok: boolean } }).gate.ok).toBe(true);
+    // the file cannot be concluded definitively: the ledger audited is the provisional FEC
+    // and two limitations on available evidence are recorded. The workpaper says so in the
+    // conclusion itself rather than leaving the reader to discover it.
+    const meta = conclusion.meta as {
+      gate: { ok: boolean; blockers: { code: string }[]; withinTolerable: boolean | null };
+      limitations: { taxonomy_code: string }[];
+      responses: { kind: string }[];
+    };
+    expect(meta.gate.ok).toBe(false);
+    expect(meta.gate.blockers.map((b) => b.code)).toContain('ledger_provisional');
+    expect(meta.gate.withinTolerable).toBe(false);
+    expect(meta.limitations.map((l) => l.taxonomy_code).sort()).toEqual(
+      ['missing_document', 'missing_document', 'reconciliation_diff', 'reconciliation_diff'],
+    );
+    expect(meta.responses.map((r) => r.kind)).toEqual(['revise_strategy']);
+    expect(conclusion.body).toMatch(/CONCLUSION DÉFINITIVE BLOQUÉE/);
+    expect(conclusion.body).toMatch(/Limitations sur les éléments probants \(4\)/);
   });
 
   it('edits require justification and set the visible modification flag', async () => {

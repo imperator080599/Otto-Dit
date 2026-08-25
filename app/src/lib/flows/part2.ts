@@ -5,7 +5,7 @@ import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb } from '@/lib/services/imports';
 import { rebuildFslis } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
-import { importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls, proposeDeficiency, decideDeficiency, resolveDeviation, listDeviations } from '@/lib/services/sox';
+import { importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls, proposeDeficiency, decideDeficiency, resolveDeviation, listDeviations, extendToFullPopulation } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -106,17 +106,68 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
   for (const p of await pendingVerifications(IDS.engSox)) {
     await verifyExtraction(p.id, IDS.users.karim);
   }
-  const res = await runAttributeTesting(control.id, IDS.users.karim);
+  let res = await runAttributeTesting(control.id, IDS.users.karim);
+
+  // Every tested instance failed → a conclusion cannot be drawn from three months when the
+  // population is twelve. The engine says so, and the demo does what it says: the whole
+  // population is requested, ingested, extracted and tested (founder review 2026-08-25).
+  if (res.extensionRequired) {
+    const ext = await extendToFullPopulation(
+      control.id,
+      IDS.users.lea,
+      'Taux de déviation de 100 % sur l’échantillon initial : l’échantillon ne fournit aucune base de conclusion sur la population. Extension du test à l’intégralité des instances de la période.',
+    );
+    await approveSend(ext.requestId, IDS.users.karim);
+    await uploadControlEvidence(ext.requestId);
+    await extractAll(IDS.engSox, IDS.users.karim);
+    for (const p of await pendingVerifications(IDS.engSox)) {
+      await verifyExtraction(p.id, IDS.users.karim);
+    }
+    res = await runAttributeTesting(control.id, IDS.users.karim);
+  }
+
   if (res.deviations > 0) {
     for (const d of (await listDeviations(IDS.engSox)).filter((x) => x.control_code === controlCode && x.status === 'open')) {
       await resolveDeviation(d.id, IDS.users.karim, 'Client explanation obtained and evaluated; deviation stands as a control failure for the instance tested.');
     }
-    const defId = await proposeDeficiency(control.id, IDS.users.lea, { magnitudeExposureCents: 1500000, compensatingControl: false });
+    // The magnitude exposure is derived from the accounts the control covers, not chosen:
+    // for a bank reconciliation it is the cash the control is there to protect; for credit
+    // approval it is the receivables exposed to unapproved credit. Both come from the
+    // imported trial balance, and the basis travels with the number (migration 0009).
+    const exposure = await controlExposure(controlCode);
+    const defId = await proposeDeficiency(control.id, IDS.users.lea, {
+      magnitudeExposureCents: exposure.cents,
+      compensatingControl: false,
+      magnitudeBasis: exposure.basis,
+    });
     const proposed = await q1<{ severity_proposed: string }>(`select severity_proposed from deficiency where id = $1`, [defId]);
+    // the partner confirms the engine's proposal — reducing it would require a rationale
     await decideDeficiency(defId, IDS.users.claire, proposed.severity_proposed as 'deficiency' | 'significant_deficiency' | 'material_weakness');
   }
   const workpaperId = await draftOeWorkpaper(IDS.engSox, control.id, IDS.users.karim);
   return { controlId: control.id, workpaperId, deviations: res.deviations };
+}
+
+/** Magnitude exposure for a control, read from the trial balance the engagement imported. */
+async function controlExposure(controlCode: string): Promise<{ cents: number; basis: string }> {
+  const accounts = controlCode === 'C-BR-01'
+    ? { prefix: '512', label: 'comptes de trésorerie (512x)' }
+    : { prefix: '411', label: 'créances clients (411x)' };
+  const row = await q1<{ total: string }>(
+    `select coalesce(sum(abs(a.balance)),0)::text total
+     from account a join tb_snapshot t on t.id = a.tb_snapshot_id
+     where t.engagement_id = $1 and t.period_kind = 'current' and t.status = 'active'
+       and a.number like $2`,
+    [IDS.engSox, `${accounts.prefix}%`],
+  );
+  const cents = Math.round(Number(row.total) * 100);
+  return {
+    cents,
+    basis:
+      controlCode === 'C-BR-01'
+        ? `solde de clôture des ${accounts.label} au 31/12/2025 (${(cents / 100).toLocaleString('fr-FR')} €), montant que le rapprochement bancaire mensuel a précisément pour objet de sécuriser — source : balance importée tb_2025.csv`
+        : `solde de clôture des ${accounts.label} au 31/12/2025 (${(cents / 100).toLocaleString('fr-FR')} €), exposition aux ventes accordées sans validation de la limite de crédit — source : balance importée tb_2025.csv`,
+  };
 }
 
 export async function runPart2(): Promise<{ bankRec: Awaited<ReturnType<typeof runControlCycle>>; approvals: Awaited<ReturnType<typeof runControlCycle>> }> {

@@ -31,7 +31,14 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
   async function resolveAction(formData: FormData) {
     'use server';
     const { user } = await requireMember(id);
-    await resolveException(String(formData.get('exception_id')), user.id, String(formData.get('resolution') ?? ''));
+    const link = String(formData.get('corroboration') ?? '');
+    const [kind, refId] = link.split(':');
+    await resolveException(String(formData.get('exception_id')), user.id, {
+      explanation: String(formData.get('explanation') ?? ''),
+      conclusion: String(formData.get('conclusion') ?? ''),
+      disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
+      corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+    });
     revalidatePath(`/eng/${id}/exceptions`);
   }
   async function escalateAction(formData: FormData) {
@@ -48,6 +55,19 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
   }
 
   const open = exceptions.filter((x) => x.status === 'open');
+  // what may be linked as corroboration: any non-quarantined piece of evidence on the file,
+  // or an accounting entry (the correcting journal, a credit note posting)
+  const corroborations = [
+    ...(await q<{ id: string; filename: string; doc_type: string | null }>(
+      `select id, filename, doc_type from evidence where engagement_id = $1 and quarantined = false order by filename`,
+      [id],
+    )).map((e) => ({ value: `ev:${e.id}`, label: `pièce · ${e.filename}${e.doc_type ? ` [${e.doc_type}]` : ''}` })),
+    ...(await q<{ id: string; entry_no: string; piece_ref: string | null; entry_date: string }>(
+      `select id, entry_no, piece_ref, entry_date::text from gl_entry
+       where engagement_id = $1 and journal_code = 'OD' order by entry_date desc limit 25`,
+      [id],
+    )).map((g) => ({ value: `gl:${g.id}`, label: `écriture · ${g.entry_no} ${g.piece_ref ?? ''} (${g.entry_date})` })),
+  ];
 
   return (
     <div>
@@ -79,10 +99,27 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
                     {(x.status === 'explained' || x.status === 'open') && (
                       <details>
                         <summary className="muted">act…</summary>
-                        <form action={resolveAction} className="row" style={{ margin: '6px 0' }}>
+                        <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                           <input type="hidden" name="exception_id" value={x.id} />
-                          <input type="text" name="resolution" placeholder="resolution basis (required)" style={{ width: 220 }} required />
-                          <button className="btn small secondary">Resolve</button>
+                          <textarea name="explanation" rows={2} required
+                            placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                          <textarea name="conclusion" rows={2} required
+                            placeholder="Votre conclusion sur cette explication" />
+                          <div className="row" style={{ gap: 4 }}>
+                            <select name="disposition" defaultValue="no_misstatement">
+                              <option value="no_misstatement">aucune anomalie</option>
+                              <option value="corrected">corrigé (écriture liée)</option>
+                              <option value="compensated">couvert par un autre élément</option>
+                              <option value="already_accumulated">même événement, déjà accumulé</option>
+                            </select>
+                            <select name="corroboration" required style={{ flex: 1 }}>
+                              <option value="">— pièce ou écriture qui corrobore (obligatoire) —</option>
+                              {corroborations.map((c) => (
+                                <option key={c.value} value={c.value}>{c.label}</option>
+                              ))}
+                            </select>
+                            <button className="btn small secondary">Resolve</button>
+                          </div>
                         </form>
                         <form action={escalateAction} className="row">
                           <input type="hidden" name="exception_id" value={x.id} />

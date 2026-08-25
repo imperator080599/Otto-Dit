@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { initTestDb } from '@/lib/test/setup';
+import { dispositions } from '@/lib/flows/part1';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from './imports';
@@ -14,7 +15,7 @@ import { ingestEvidence, answerExplanation } from './evidence';
 import { extractAll, pendingVerifications, verifyExtraction } from './extraction/ladder';
 import { runMatching, listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement } from './matching';
 import { startVerificationRun, currentVerificationRun, submitBlindCheck } from './verification';
-import { computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate } from './evaluation';
+import { computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate, recordEvaluationResponse } from './evaluation';
 
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 
@@ -168,23 +169,71 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     expect(exceptions.filter((x) => x.status === 'explained').length).toBeGreaterThan(0);
   });
 
-  it('dispositions: resolve explained exceptions, escalate the cut-off to an uncorrected misstatement', async () => {
-    const exceptions = await listExceptions(IDS.engNep);
-    const cutoff = exceptions.find((x) => x.taxonomy_code === 'cutoff')!;
-    const mId = await escalateToMisstatement(cutoff.id, IDS.users.lea, {
-      kind: 'factual',
-      amountCents: 3633000, // the A5 invoice net booked in the wrong period
-      corrected: false,
-      notes: 'Produit 2026 constaté en 2025 — non corrigé par le client à date.',
-    });
-    expect(mId).toBeTruthy();
-    for (const x of await listExceptions(IDS.engNep)) {
-      if (x.status === 'explained') {
-        await resolveException(x.id, IDS.users.lea, 'Réponse client examinée — anomalie sans incidence significative ou corrigée.');
-      }
-    }
+  it('refuses a resolution that rests on an explanation alone (NEP 500)', async () => {
+    const x = (await listExceptions(IDS.engNep)).find((e) => e.status === 'explained')!;
+    await expect(
+      resolveException(x.id, IDS.users.lea, {
+        explanation: 'Réponse du client.',
+        conclusion: 'Examiné et corroboré — traité.',
+        disposition: 'no_misstatement',
+        corroboration: {},
+      }),
+    ).rejects.toThrow(/explanation alone|corroborating/i);
+
+    // and the same emptiness cannot be written straight into the row either: the CHECK
+    // constraint is the backstop behind the service
+    await expect(
+      q(`update exception set status = 'resolved', resolution = 'ok', resolved_by = $2, resolved_at = now() where id = $1`, [x.id, IDS.users.lea]),
+    ).rejects.toThrow(/exception_resolution_is_probative/);
+  });
+
+  it('dispositions: every admitted misstatement accumulates, the unprovable one stays open', async () => {
+    await dispositions();
     const after = await listExceptions(IDS.engNep);
-    expect(after.every((x) => ['resolved', 'escalated'].includes(x.status))).toBe(true);
+
+    // the client admits five of them; none of the promised corrections is booked
+    const escalated = after.filter((x) => x.status === 'escalated').map((x) => x.taxonomy_code).sort();
+    expect(escalated).toEqual(['cutoff', 'duplicate_document', 'manual_journal_flag', 'price_mismatch', 'qty_mismatch'].sort());
+
+    // 36 800 € of double booking may not leave the accumulation
+    const mis = await q<{ amount: string; notes: string }>(
+      `select amount::text, notes from misstatement where engagement_id = $1 and corrected = false`,
+      [IDS.engNep],
+    );
+    expect(mis.some((m) => Number(m.amount) === 36800)).toBe(true);
+    expect(mis.some((m) => /doublon d.intégration|comptabilisée deux fois/i.test(m.notes))).toBe(true);
+
+    // the delivery note that does not exist cannot be "resolved": nothing links to it.
+    // It becomes a recorded limitation instead — with the amount at risk and the
+    // alternative procedures attempted.
+    const missing = after.find((x) => x.taxonomy_code === 'missing_document')!;
+    expect(missing.status).toBe('scope_limitation');
+    const lim = await q1<{ alternative_procedures: string; amount_impact: string | null; corroboration_evidence_id: string | null }>(
+      `select alternative_procedures, amount_impact::text, corroboration_evidence_id from exception where id = $1`,
+      [missing.id],
+    );
+    expect(lim.alternative_procedures).toMatch(/aucune preuve de livraison/i);
+    expect(Number(lim.amount_impact)).toBeGreaterThan(0);
+    expect(lim.corroboration_evidence_id).toBeNull(); // it never pretends to be corroborated
+
+    // and the provisional ledger is flagged on the engagement, not buried in a note
+    const eng = await q1<{ ledger_is_provisional: boolean; ledger_provisional_reason: string }>(
+      `select ledger_is_provisional, ledger_provisional_reason from engagement where id = $1`,
+      [IDS.engNep],
+    );
+    expect(eng.ledger_is_provisional).toBe(true);
+    expect(eng.ledger_provisional_reason).toMatch(/FEC définitif/);
+
+    // the genuinely explained one is resolved, and carries its corroboration
+    const cn = after.find((x) => x.taxonomy_code === 'credit_note_pattern')!;
+    expect(cn.status).toBe('resolved');
+    const row = await q1<{ client_explanation: string; disposition: string; corroboration_evidence_id: string | null }>(
+      `select client_explanation, disposition, corroboration_evidence_id from exception where id = $1`,
+      [cn.id],
+    );
+    expect(row.client_explanation).toMatch(/litiges qualité/);
+    expect(row.disposition).toBe('no_misstatement');
+    expect(row.corroboration_evidence_id).toBeTruthy();
   });
 
   it('verification spot-check: seeded blind re-performance; agree stores, disagree raises + escalates', async () => {
@@ -226,22 +275,54 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     });
     expect(disagree.result).toBe('disagree');
     expect(disagree.exceptionId).toBeTruthy();
-    await resolveException(disagree.exceptionId!, IDS.users.lea, 'Vérification approfondie : divergence due à une saisie test — élément re-testé conforme.');
+    const reperformed = await q1<{ id: string }>(
+      `select e.id from evidence e join request_item ri on ri.id = e.request_item_id
+       where ri.sample_item_id = $1 and e.quarantined = false limit 1`,
+      [second.sample_item_id],
+    );
+    await resolveException(disagree.exceptionId!, IDS.users.lea, {
+      explanation: 'Saisie de test introduite lors du contrôle de fiabilité (valeur arbitraire).',
+      conclusion: 'Élément re-testé sur la pièce d’origine : montant et date conformes à l’extraction initiale.',
+      disposition: 'no_misstatement',
+      corroboration: { evidenceId: reperformed.id },
+    });
     // append-only: verification checks cannot be updated
     await expect(q(`update verification_check set result = 'agree'`)).rejects.toThrow(/append-only/);
   });
 
-  it('sample evaluation: known + projected vs TE computed (L0), concluded (L4); conclusion gate opens', async () => {
+  it('sample evaluation: the breach blocks the conclusion until a response is recorded', async () => {
     await computeSampleEvaluation(IDS.engNep, IDS.users.lea);
     const ev = await currentEvaluation(IDS.engNep);
-    expect(Number(ev!.known_misstatement)).toBeCloseTo(36330, 2); // the A5 uncorrected misstatement
-    expect(ev!.projection_method).toBe('none'); // misstatement sits in the 100%-coverage stratum
+    // 36 330 cut-off + 36 800 double booking + 1 800 overbilling + 2 615,80 undelivered
+    // units + 50 000 manual journal — every one admitted by the client, none corrected
+    expect(Number(ev!.known_misstatement)).toBeCloseTo(127545.8, 2);
+    expect(ev!.projection_method).toBe('none'); // all of it sits in the 100 %-coverage stratum
+    expect(Number(ev!.known_misstatement)).toBeGreaterThan(Number(ev!.te_amount));
+
+    // the engine refuses to conclude on a sample that no longer supports a conclusion
+    await expect(
+      concludeEvaluation(ev!.id, IDS.users.lea, 'Rien à signaler par ailleurs.'),
+    ).rejects.toThrow(/exceeds tolerable misstatement/);
+
     const gateBefore = await conclusionGate(IDS.engNep);
-    expect(gateBefore.ok).toBe(false); // evaluation not yet concluded
-    await concludeEvaluation(ev!.id, IDS.users.lea, 'Anomalie non corrigée de 36 330 € strictement inférieure à l’anomalie tolérable (27 000 €) ? Non — au-dessus : à reporter dans l’état des anomalies et à discuter avec la direction. Conclusion sur l’assertion maintenue sous réserve du dénouement.');
+    expect(gateBefore.ok).toBe(false);
+    expect(gateBefore.breachAnswered).toBe(false);
+    expect(gateBefore.blockers.map((b) => b.code)).toContain('tolerable_exceeded_unanswered');
+
+    // record the response, then the conclusion is allowed
+    await recordEvaluationResponse(
+      ev!.id, IDS.users.lea, 'revise_strategy',
+      'Les anomalies non corrigées (127 545,80 €) dépassent le seuil de signification : l’échantillon ne fournit plus une base raisonnable de conclusion sur la population. Extension des travaux au chiffre d’affaires du dernier trimestre et demande de correction adressée à la direction avant conclusion définitive.',
+    );
+    const gateMid = await conclusionGate(IDS.engNep);
+    expect(gateMid.breachAnswered).toBe(true);
+
+    await concludeEvaluation(
+      ev!.id, IDS.users.lea,
+      'Anomalies non corrigées de 127 545,80 € supérieures au seuil de signification (37 000 €) : conclusion défavorable en l’état sur l’assertion de rattachement, sous réserve des corrections annoncées par la direction.',
+    );
     const gate = await conclusionGate(IDS.engNep);
     expect(gate.evaluationConcluded).toBe(true);
     expect(gate.openExceptions).toBe(0);
-    expect(gate.ok).toBe(true);
   });
 });

@@ -53,7 +53,27 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
        where c.code = 'C-BR-01' order by ci.label`,
       [],
     );
-    expect(sampled.map((s) => s.label)).toEqual([...manifest.sampling.bankRec.sampled].sort());
+    // the FIRST draw is the pinned 3-instance sample …
+    const firstSample = await q1<{ sample_id: string }>(
+      `select ct.sample_id from control_test ct join control c on c.id = ct.control_id
+       where c.code = 'C-BR-01' and c.engagement_id = $1 order by ct.created_at limit 1`,
+      [IDS.engSox],
+    );
+    const firstLabels = await q<{ label: string }>(
+      `select ci.label from sample_item si join control_instance ci on ci.id = si.unit_id
+       where si.sample_id = $1 order by ci.label`,
+      [firstSample.sample_id],
+    );
+    expect(firstLabels.map((s) => s.label)).toEqual([...manifest.sampling.bankRec.sampled].sort());
+
+    // … all three failed, so the engine required the population and the flow tested it
+    const tests = await q<{ extension_required: boolean; n: string }>(
+      `select ct.extension_required, (select count(*) from sample_item si where si.sample_id = ct.sample_id)::text n
+       from control_test ct join control c on c.id = ct.control_id
+       where c.code = 'C-BR-01' and c.engagement_id = $1 order by ct.created_at`,
+      [IDS.engSox],
+    );
+    expect(tests.map((t) => [t.extension_required, Number(t.n)])).toEqual([[true, 3], [false, 12]]);
 
     // zero false negatives: every manifest deviation has a matching typed deviation
     const deviations = await listDeviations(IDS.engSox);
@@ -61,8 +81,21 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
       const hit = deviations.some((x) => x.control_code === d.control && x.instance_label === d.instance && x.taxonomy_code === d.taxonomy);
       expect(hit, `${d.id}: ${d.taxonomy} on ${d.instance}`).toBe(true);
     }
-    // no extra deviations beyond the seeded set (false positives)
-    expect(deviations.filter((x) => x.control_code === 'C-BR-01').length).toBe(manifest.deviations.length);
+    // no extra deviations beyond the seeded set — counted on the extended test, where the
+    // nine additional months are clean (false positives would show up here)
+    const latestSample = await q1<{ sample_id: string }>(
+      `select ct.sample_id from control_test ct join control c on c.id = ct.control_id
+       where c.code = 'C-BR-01' and c.engagement_id = $1 order by ct.created_at desc limit 1`,
+      [IDS.engSox],
+    );
+    const onLatest = await q<{ taxonomy_code: string; label: string }>(
+      `select d.taxonomy_code, ci.label from deviation d
+       join sample_item si on si.id = d.sample_item_id
+       join control_instance ci on ci.id = si.unit_id
+       where si.sample_id = $1 order by ci.label, d.taxonomy_code`,
+      [latestSample.sample_id],
+    );
+    expect(onLatest.length).toBe(manifest.deviations.length);
   });
 
   it('attribute grid renders per-instance results with their basis', async () => {
@@ -77,10 +110,19 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     const deficiencies = await listDeficiencies(IDS.engSox);
     expect(deficiencies.length).toBe(1);
     const d = deficiencies[0];
-    expect(['deficiency', 'significant_deficiency', 'material_weakness']).toContain(d.severity_proposed);
+    // a key cash control, an exposure at least equal to materiality, an instance nobody
+    // could evidence and one the preparer approved themselves ⇒ material weakness proposed
+    expect(d.severity_proposed).toBe('material_weakness');
     expect(d.status).toBe('confirmed');
     expect(d.narrative).toMatch(/Rules-based severity proposal/);
-    expect((d.basis as { rule: string }).rule).toBeTruthy();
+    expect(d.narrative).toMatch(/deviation rate 25 %/);
+    const basis = d.basis as { rule: string; deviationRate: number; severeNatures: string[]; sampleSize: number };
+    expect(basis.deviationRate).toBeCloseTo(0.25, 4); // 3 deviating months of 12 tested
+    expect(basis.sampleSize).toBe(12);
+    expect(basis.severeNatures.sort()).toEqual(['missing_evidence', 'wrong_performer']);
+    // the number that drove severity says where it came from
+    const mb = await q1<{ magnitude_basis: string }>(`select magnitude_basis from deficiency where id = $1`, [d.id]);
+    expect(mb.magnitude_basis).toMatch(/balance importée|solde de clôture/);
   });
 
   it('drafts the ENGLISH OE workpaper through the SAME documentation engine (pluggability proof)', async () => {

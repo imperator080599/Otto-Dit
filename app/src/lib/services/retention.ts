@@ -6,6 +6,7 @@ import {
 } from '@/lib/kernel/retention';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
+import { sealFile } from './archive';
 
 // ADR-014 rev. 2 — file deadlines are computed from the engagement's own facts and stored
 // with the provision that produced them. Nothing here is a hardcoded duration: the pack
@@ -41,9 +42,14 @@ export async function fileDeadlines(engagementId: string, reportDate?: string): 
 
 /** Signing the report starts both clocks. Writes the two dates and the provision behind
  *  each, then locks the file — after this the lock guard rejects further writes. */
-export async function closeFile(engagementId: string, userId: string, reportDate: string): Promise<FileDeadlines> {
+export async function closeFile(engagementId: string, userId: string, reportDate: string): Promise<FileDeadlines & { archive: { sha256: string; fileCount: number } }> {
   const ctx = await engagementCtx(engagementId);
   const d = await fileDeadlines(engagementId, reportDate);
+
+  // ADR-022 — closing produces the sealed archive BEFORE the lock, so the archive is made
+  // from a file that is still readable, and the lock is what makes it final.
+  const sealed = await sealFile(engagementId, userId, reportDate);
+
   await q(
     `update engagement set report_date = $2, doc_completion_due = $3, retention_until = $4,
             legal_basis = $5, status = 'locked', locked_at = now()
@@ -55,6 +61,7 @@ export async function closeFile(engagementId: string, userId: string, reportDate
         completion: { days: d.completion.days, ...d.completion.source, determined_by: d.completion.determinedBy },
         retention: { years: d.retention.years, ...d.retention.source },
         any_unverified: d.anyUnverified,
+        archive_sha256: sealed.sha256,
       }),
     ],
   );
@@ -73,7 +80,9 @@ export async function closeFile(engagementId: string, userId: string, reportDate
       completion_basis: d.completion.source.citation,
       retention_basis: d.retention.source.citation,
       any_unverified: d.anyUnverified,
+      archive_sha256: sealed.sha256,
+      archive_files: sealed.fileCount,
     },
   });
-  return d;
+  return { ...d, archive: { sha256: sealed.sha256, fileCount: sealed.fileCount } };
 }

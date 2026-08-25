@@ -1,7 +1,10 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib';
+import fs from 'node:fs';
+import path from 'node:path';
+import { PDFDocument, PDFFont, PDFPage, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { getAssurancePack } from '@/lib/packs';
 import ExcelJS from 'exceljs';
-import { q, q1 } from '@/lib/db/client';
+import { q, q1, repoRoot } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { hashObject, sha256 } from '@/lib/core/hash';
 import { saveBlob } from '@/lib/core/storage';
@@ -13,25 +16,49 @@ import type { WpSection } from './draft';
 // sample parameters, per-item evidence sha256s, modification history, review trail and
 // sign-off block. The archived artifact answers P7 without OTTO access.
 
-function winAnsiSafe(s: string): string {
-  // Helvetica (WinAnsi) cannot encode a few characters we use in the UI
-  return s
-    .replace(/[↳→⇒]/g, '->')
-    .replace(/[↔⇔]/g, '<->')
-    .replace(/≥/g, '>=')
-    .replace(/≤/g, '<=')
-    .replace(/≠/g, '!=')
-    .replace(/≈/g, '~')
-    .replace(/×/g, 'x')
-    .replace(/«\s?/g, '"').replace(/\s?»/g, '"')
-    .replace(/[  ]/g, ' ')
-    .replace(/[œ]/g, 'oe')
-    .replace(/[Œ]/g, 'OE')
-    .replace(/[—–]/g, '-')
-    .replace(/…/g, '...')
-    // € is U+20AC — above Latin-1 but present in WinAnsi (Windows-1252, 0x80), so it
-    // must be exempted from the catch-all or a French workpaper prints "27 000,00 ?"
-    .replace(/[^\x00-\xff€]/g, '?');
+/**
+ * Character coverage (ADR-023). The previous renderer replaced anything outside Latin-1
+ * with "?", so a French audit file printed « l?état des anomalies » and « ? 25 000 € ».
+ * Patching the euro sign fixed one instance of a class; this replaces the class.
+ *
+ * The document font is now a vendored Unicode face (Liberation Sans, app/assets/fonts),
+ * so typographic apostrophes, guillemets, €, ≥, ≤, — and the rest simply render. Nothing
+ * is transliterated. If a character has no glyph even there, the export FAILS LOUDLY
+ * rather than shipping a substitute into an audit file — a workpaper that quietly alters
+ * its own text is not a workpaper.
+ */
+export class UnrenderableCharacterError extends Error {
+  constructor(readonly characters: string[], readonly sample: string) {
+    super(
+      `the document font has no glyph for ${characters.map((c) => `"${c}" (U+${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')})`).join(', ')} ` +
+      `— refusing to export a workpaper with substituted characters. Context: "${sample.slice(0, 80)}"`,
+    );
+    this.name = 'UnrenderableCharacterError';
+  }
+}
+
+// Glyph coverage is read from the font itself. `encodeText` does NOT fail on a missing
+// glyph — it maps to .notdef and the PDF shows a blank or a box — which is precisely the
+// silent substitution this check exists to stop.
+let coverage: { hasGlyphForCodePoint(cp: number): boolean } | null = null;
+
+function fontCoverage(): { hasGlyphForCodePoint(cp: number): boolean } {
+  if (coverage) return coverage;
+  const file = path.join(repoRoot(), 'app', 'assets', 'fonts', 'DejaVuSans.ttf');
+  coverage = fontkit.create(fs.readFileSync(file)) as unknown as { hasGlyphForCodePoint(cp: number): boolean };
+  return coverage;
+}
+
+function assertRenderable(_font: PDFFont, text: string): string {
+  const cov = fontCoverage();
+  const missing = new Set<string>();
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)!;
+    if (cp === 10 || cp === 13 || cp === 9) continue;
+    if (!cov.hasGlyphForCodePoint(cp)) missing.add(ch);
+  }
+  if (missing.size > 0) throw new UnrenderableCharacterError([...missing], text);
+  return text;
 }
 
 class PdfWriter {
@@ -47,11 +74,16 @@ class PdfWriter {
 
   static async create(stamp: string): Promise<PdfWriter> {
     const doc = await PDFDocument.create();
+    doc.registerFontkit(fontkit);
     doc.setCreationDate(new Date('2026-02-01T09:00:00Z'));
     doc.setModificationDate(new Date('2026-02-01T09:00:00Z'));
     doc.setProducer('OTTO documentation engine');
-    const font = await doc.embedFont(StandardFonts.Helvetica);
-    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    // vendored so an export is byte-identical on any machine (assets/fonts/README.md).
+    // Subsetting keeps a workpaper ~40 kB instead of ~940 kB; the byte-identical
+    // regeneration test is what proves the subsetter is deterministic for our input.
+    const dir = path.join(repoRoot(), 'app', 'assets', 'fonts');
+    const font = await doc.embedFont(fs.readFileSync(path.join(dir, 'DejaVuSans.ttf')), { subset: true });
+    const bold = await doc.embedFont(fs.readFileSync(path.join(dir, 'DejaVuSans-Bold.ttf')), { subset: true });
     const w = new PdfWriter(font, bold, stamp);
     w.doc = doc;
     w.newPage();
@@ -62,7 +94,7 @@ class PdfWriter {
     this.pageNo += 1;
     this.page = this.doc.addPage([595, 842]);
     this.y = 800;
-    this.page.drawText(winAnsiSafe(this.stamp) + ` - page ${this.pageNo}`, {
+    this.page.drawText(assertRenderable(this.font, this.stamp) + ` - page ${this.pageNo}`, {
       x: 40, y: 16, size: 6.5, font: this.font, color: rgb(0.45, 0.5, 0.58),
     });
   }
@@ -72,7 +104,7 @@ class PdfWriter {
   }
 
   wrap(text: string, size: number, maxWidth: number, font: PDFFont): string[] {
-    const words = winAnsiSafe(text).split(/\s+/);
+    const words = assertRenderable(font, text).split(/\s+/);
     const lines: string[] = [];
     let line = '';
     for (const w of words) {
@@ -168,42 +200,60 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   }
 
   // ---------- self-contained appendix (ADR-013) ----------
+  // Appendix titles come from the pack, like the body: an English workpaper with French
+  // appendix headings is the same defect as a French attribution line on it (ADR-023).
+  const ap = pack.wp.appendices;
   w.newPage();
-  w.heading('Annexe A - Parametres et provenance (auto-contenus)');
+  w.heading(ap.parameters);
   const method = (wp.sections as WpSection[]).find((s) => s.key === 'method');
-  w.text('Parametres d\'echantillonnage : ' + JSON.stringify(method?.meta?.params ?? {}), { size: 8 });
-  w.text('Empreinte de population : ' + String(method?.meta?.populationHash ?? '-'), { size: 8, gap: 6 });
+  w.text((fr ? 'Paramètres d’échantillonnage : ' : 'Sampling parameters: ') + JSON.stringify(method?.meta?.params ?? {}), { size: 8 });
+  w.text((fr ? 'Empreinte de population : ' : 'Population hash: ') + String(method?.meta?.populationHash ?? '-'), { size: 8, gap: 6 });
 
-  const evidences = await q<{ filename: string; sha256: string; doc_type: string | null }>(
-    `select distinct e.filename, e.sha256, e.doc_type from evidence e
-     join request_item ri on ri.id = e.request_item_id
-     join sample_item si on si.id = ri.sample_item_id
-     join sample s on s.id = si.sample_id
-     where s.engagement_id = $1 and s.status = 'drawn'
-     order by e.filename`,
-    [wp.engagement_id],
-  );
-  w.heading('Annexe B - Pieces justificatives (sha256)');
+  // Appendix B is built from what the workpaper CITES, not from one hard-coded join. The
+  // previous query walked sample_item → sample, so the SOX paper — whose evidence hangs off
+  // control instances — cited two reconciliations and printed an empty appendix. Citing a
+  // document without carrying its fingerprint is the one thing this appendix exists to
+  // prevent, so a missing one is now an error, not a blank page.
+  const citedIds = [...new Set(
+    (wp.sections as WpSection[]).flatMap((s) => s.table?.rows?.flatMap((r) => r.refs?.evidenceIds ?? []) ?? []),
+  )];
+  const evidences = citedIds.length
+    ? await q<{ id: string; filename: string; sha256: string; doc_type: string | null }>(
+        `select id, filename, sha256, doc_type from evidence where id = any($1::uuid[]) order by filename`,
+        [citedIds],
+      )
+    : [];
+  const unresolved = citedIds.filter((id) => !evidences.some((e) => e.id === id));
+  if (unresolved.length > 0) {
+    throw new Error(
+      `workpaper ${wp.code} cites ${unresolved.length} evidence item(s) that cannot be resolved for the appendix ` +
+      `(${unresolved.map((i) => i.slice(0, 8)).join(', ')}) — refusing to export a paper whose citations have no fingerprint`,
+    );
+  }
+  w.heading(`${ap.evidence} (${evidences.length})`);
+  if (evidences.length === 0) {
+    w.text(fr ? 'Aucune pièce citée dans le corps du document.' : 'No evidence cited in the body of this workpaper.', { size: 8 });
+  }
   for (const e of evidences) {
     w.text(`${e.filename} [${e.doc_type ?? '-'}] ${e.sha256}`, { size: 6.8, gap: 0 });
   }
 
-  w.heading('Annexe C - Modifications manuelles (flag visible)');
-  if (edits.length === 0) w.text('Aucune.', { size: 8 });
+  w.heading(ap.modifications);
+  if (edits.length === 0) w.text(fr ? 'Aucune.' : 'None.', { size: 8 });
   for (const e of edits) {
-    w.text(`${e.edited_at.slice(0, 16)} - ${e.user_name} - section ${e.section} - justification : ${e.justification}`, { size: 7.5, gap: 1 });
+    w.text(`${e.edited_at.slice(0, 16)} - ${e.user_name} - section ${e.section} - ${fr ? 'justification' : 'justification'} : ${e.justification}`, { size: 7.5, gap: 1 });
   }
 
-  w.heading('Annexe D - Notes de revue');
-  if (notes.length === 0) w.text('Aucune.', { size: 8 });
+  w.heading(ap.reviewNotes);
+  if (notes.length === 0) w.text(fr ? 'Aucune.' : 'None.', { size: 8 });
   for (const n of notes) {
     w.text(`[${n.status}] ${n.author_name}${n.assignee_name ? ' -> ' + n.assignee_name : ''} : ${n.text}`, { size: 7.5, gap: 1 });
   }
 
-  w.heading('Annexe E - Visas (dates, immuables)');
-  if (signoffs.length === 0) w.text('Aucun visa - document non valide.', { size: 8 });
+  w.heading(ap.signoffs);
+  if (signoffs.length === 0) w.text(fr ? 'Aucun visa - document non validé.' : 'No sign-off - document not validated.', { size: 8 });
   for (const s of signoffs) {
-    w.text(`${s.sign_role} : ${s.user_name} le ${s.signed_at.slice(0, 16)}`, { size: 8, gap: 1 });
+    w.text(`${s.sign_role} : ${s.user_name} ${fr ? 'le' : 'on'} ${s.signed_at.slice(0, 16)}`, { size: 8, gap: 1 });
   }
 
   const bytes = await w.doc.save({ useObjectStreams: false });

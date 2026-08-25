@@ -156,6 +156,8 @@ export async function runMatching(engagementId: string, userId: string | null): 
         taxonomy: 'manual_journal_flag',
         sampleItemId: it.sampleItemId,
         description: `Écriture manuelle atypique ${it.gl.entryNo} (${it.gl.entryDate}) : week-end, montant rond (${centsToNum(Math.abs(it.gl.creditCents - it.gl.debitCents))} €), journal OD — explication requise.`,
+        // the whole entry is what is at risk until the explanation stands up
+        amountImpactCents: Math.abs(it.gl.creditCents - it.gl.debitCents) || null,
         severity: 'high',
       });
       if (id) exceptions++;
@@ -206,9 +208,13 @@ export async function runMatching(engagementId: string, userId: string | null): 
       await q(`update sample_item set status = 'exception' where id = $1`, [it.sampleItemId]);
       for (const code of checksToExceptionCodes(checks)) {
         const detail = failed.map((f) => `${f.check}: attendu ${f.expected}, obtenu ${f.found} (tolérance ${f.tolerance})`).join(' ; ');
-        const amountImpact = code === 'price_mismatch' || code === 'amount_mismatch'
-          ? failed.filter((f) => f.check === 'price' || f.check === 'amount').length > 0 ? estimateImpact(failed) : null
-          : null;
+        // Quantify wherever the checks allow it. An exception the engine leaves at "null"
+        // is one a human has to price by hand before it can be accumulated — so the engine
+        // does the arithmetic it can: price/amount deltas, quantity shortfalls valued at
+        // the billed unit price, and whole-entry misstatements (cut-off, duplicate booking,
+        // an unsupported manual journal) valued at the amount actually booked.
+        const bookedCents = Math.abs(it.gl.creditCents - it.gl.debitCents) || null;
+        const amountImpact = estimateImpact(code, failed, bookedCents);
         const id = await raiseException({
           engagementId,
           taxonomy: code,
@@ -255,16 +261,32 @@ export async function runMatching(engagementId: string, userId: string | null): 
   return { matched, exceptions, pending };
 }
 
-function estimateImpact(failed: CheckResult[]): number | null {
-  const price = failed.find((f) => f.check === 'price');
+function estimateImpact(code: string, failed: CheckResult[], bookedCents: number | null): number | null {
+  const num = (v: string | undefined) => {
+    const m = /(-?[\d]+(?:[.,]\d+)?)\s*$/.exec((v ?? '').trim());
+    return m ? Number(m[1].replace(',', '.')) : null;
+  };
+
+  const price = failed.find((f) => f.check === 'price' || f.check === 'amount');
   if (price) {
-    const expected = /=\s*([\d.]+)$/.exec(price.expected)?.[1];
-    const found = /([\d.]+)$/.exec(price.found)?.[1];
-    if (expected && found) return Math.abs(Math.round((Number(found) - Number(expected)) * 100));
+    const expected = num(price.expected);
+    const found = num(price.found);
+    if (expected !== null && found !== null) return Math.abs(Math.round((found - expected) * 100));
   }
-  const amount = failed.find((f) => f.check === 'amount');
-  if (amount) {
-    return Math.abs(Math.round((Number(amount.found) - Number(amount.expected)) * 100)) || null;
+
+  // a quantity shortfall is worth the units not delivered, at the price they were billed
+  const qty = failed.find((f) => f.check === 'qty');
+  if (qty && bookedCents) {
+    const billed = num(qty.expected);
+    const delivered = num(qty.found);
+    if (billed !== null && delivered !== null && billed > 0 && billed !== delivered) {
+      return Math.abs(Math.round((bookedCents / billed) * (billed - delivered)));
+    }
+  }
+
+  // whole-entry misstatements: the amount booked is the amount at risk
+  if (bookedCents && (code === 'cutoff' || code === 'duplicate_document' || code === 'manual_journal_flag')) {
+    return bookedCents;
   }
   return null;
 }
@@ -361,18 +383,113 @@ export async function draftClarificationRequest(engagementId: string, userId: st
   return request.id;
 }
 
-export async function resolveException(exceptionId: string, userId: string, resolution: string): Promise<void> {
-  if (!resolution.trim()) throw new Error('resolution text required');
-  const x = await q1<{ engagement_id: string }>(`select engagement_id from exception where id = $1`, [exceptionId]);
+/** What a resolution must carry to be probative (migration 0009, NEP 500).
+ *  An interview is not audit evidence: the client's words are recorded verbatim, and the
+ *  thing that corroborates them is LINKED, not described. */
+export interface ResolutionInput {
+  /** The explanation received, in the client's own words. */
+  explanation: string;
+  /** The auditor's conclusion on that explanation. */
+  conclusion: string;
+  /** What happened to the money. Anything else must be escalated to a misstatement. */
+  disposition: 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated';
+  /** At least one of the two: the document, or the accounting entry, that corroborates. */
+  corroboration: { evidenceId?: string; glEntryId?: string };
+}
+
+export async function resolveException(exceptionId: string, userId: string, input: ResolutionInput): Promise<void> {
+  const x = await q1<{ engagement_id: string; amount_impact: string | null; taxonomy_code: string }>(
+    `select engagement_id, amount_impact::text, taxonomy_code from exception where id = $1`,
+    [exceptionId],
+  );
+  if (!input.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
+  if (!input.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
+  const evidenceId = input.corroboration?.evidenceId ?? null;
+  const glEntryId = input.corroboration?.glEntryId ?? null;
+  if (!evidenceId && !glEntryId) {
+    throw new Error(
+      `exception ${x.taxonomy_code} cannot be resolved on an explanation alone: link the corroborating evidence or accounting entry (NEP 500)`,
+    );
+  }
+  if (evidenceId) {
+    const ev = await q01<{ id: string; quarantined: boolean }>(`select id, quarantined from evidence where id = $1 and engagement_id = $2`, [evidenceId, x.engagement_id]);
+    if (!ev) throw new Error('corroborating evidence not found on this engagement');
+    if (ev.quarantined) throw new Error('quarantined evidence cannot corroborate a resolution');
+  }
+  if (glEntryId) {
+    const gl = await q01<{ id: string }>(`select id from gl_entry where id = $1 and engagement_id = $2`, [glEntryId, x.engagement_id]);
+    if (!gl) throw new Error('corroborating ledger entry not found on this engagement');
+  }
   const ctx = await engagementCtx(x.engagement_id);
   await q(
-    `update exception set status = 'resolved', resolution = $2, resolved_by = $3, resolved_at = now() where id = $1`,
-    [exceptionId, resolution, userId],
+    `update exception set status = 'resolved', resolution = $2, client_explanation = $3,
+            disposition = $4, corroboration_evidence_id = $5, corroboration_gl_entry_id = $6,
+            resolved_by = $7, resolved_at = now()
+     where id = $1`,
+    [exceptionId, input.conclusion, input.explanation, input.disposition, evidenceId, glEntryId, userId],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: x.engagement_id, actorKind: 'user', actorId: userId,
-    verb: 'exception_resolved', objectType: 'exception', objectId: exceptionId, payload: { resolution },
+    verb: 'exception_resolved', objectType: 'exception', objectId: exceptionId,
+    payload: {
+      disposition: input.disposition,
+      amount_impact: x.amount_impact,
+      corroboration_evidence_id: evidenceId,
+      corroboration_gl_entry_id: glEntryId,
+      explanation: input.explanation.slice(0, 500),
+      conclusion: input.conclusion.slice(0, 500),
+    },
   });
+}
+
+/** The third terminal state (migration 0009). Not a resolution: nothing corroborates it,
+ *  and it says so. Used when the evidence cannot be obtained at all — the delivery note
+ *  that was never archived, the ledger that is not yet final. It carries the amount at
+ *  risk and what was attempted instead, and it follows through to the conclusion. */
+export async function recordScopeLimitation(
+  exceptionId: string,
+  userId: string,
+  input: { explanation: string; alternativeProcedures: string; amountAtRiskCents?: number | null },
+): Promise<void> {
+  if (!input.explanation?.trim()) throw new Error('record why the evidence could not be obtained, in the client’s words');
+  if (!input.alternativeProcedures?.trim()) {
+    throw new Error('record the alternative procedures performed (or state explicitly that none was possible)');
+  }
+  const x = await q1<{ engagement_id: string; amount_impact: string | null }>(
+    `select engagement_id, amount_impact::text from exception where id = $1`,
+    [exceptionId],
+  );
+  const ctx = await engagementCtx(x.engagement_id);
+  await q(
+    `update exception set status = 'scope_limitation', client_explanation = $2,
+            alternative_procedures = $3, resolution = $3,
+            amount_impact = coalesce($4, amount_impact),
+            resolved_by = $5, resolved_at = now()
+     where id = $1`,
+    [
+      exceptionId, input.explanation, input.alternativeProcedures,
+      input.amountAtRiskCents !== undefined && input.amountAtRiskCents !== null ? centsToNum(input.amountAtRiskCents) : null,
+      userId,
+    ],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: x.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'exception_scope_limitation', objectType: 'exception', objectId: exceptionId,
+    payload: {
+      explanation: input.explanation.slice(0, 500),
+      alternative_procedures: input.alternativeProcedures.slice(0, 500),
+      amount_at_risk: input.amountAtRiskCents ?? x.amount_impact,
+    },
+  });
+}
+
+/** Every limitation on the file, for the conclusion and the workpaper. */
+export async function scopeLimitations(engagementId: string) {
+  return q<{ id: string; taxonomy_code: string; description: string; amount_impact: string | null; client_explanation: string; alternative_procedures: string }>(
+    `select id, taxonomy_code, description, amount_impact::text, client_explanation, alternative_procedures
+     from exception where engagement_id = $1 and status = 'scope_limitation' order by created_at`,
+    [engagementId],
+  );
 }
 
 export async function escalateToMisstatement(
