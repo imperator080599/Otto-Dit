@@ -104,7 +104,10 @@
   ],
   "reconciliationAnomaly": {
     "id": "A7",
-    "account": "706000",
+    "accounts": [
+      "706000",
+      "411000"
+    ],
     "deltaCents": 2500000
   },
   "deviations": [

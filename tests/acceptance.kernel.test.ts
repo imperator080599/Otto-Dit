@@ -22,7 +22,7 @@ const ds = (...p: string[]) => path.join(root, 'dataset', ...p);
 
 interface Manifest {
   substantiveAnomalies: { id: string; taxonomy: string[]; units: string[]; evidence: string[]; stratum: string }[];
-  reconciliationAnomaly: { account: string; deltaCents: number };
+  reconciliationAnomaly: { accounts: string[]; deltaCents: number };
   deviations: { id: string; control: string; instance: string; taxonomy: string }[];
   sampling: {
     revenue: { populationHash: string; coverageCapCents: number; randomSize: number; seed: string; selectedUnits: string[] };
@@ -190,9 +190,8 @@ describe('acceptance — substantive anomalies (zero false negatives)', () => {
       const glBal = glByAccount.get(acc) ?? 0;
       if (tbBal !== glBal) diffs.push({ account: acc, delta: tbBal - glBal });
     }
-    expect(diffs.length).toBe(1);
-    expect(diffs[0].account).toBe(manifest.reconciliationAnomaly.account);
-    expect(Math.abs(diffs[0].delta)).toBe(manifest.reconciliationAnomaly.deltaCents);
+    expect(diffs.map((d) => d.account).sort()).toEqual([...manifest.reconciliationAnomaly.accounts].sort());
+    for (const d of diffs) expect(Math.abs(d.delta)).toBe(manifest.reconciliationAnomaly.deltaCents);
   });
 
   it('false positives are enumerated and triaged', () => {

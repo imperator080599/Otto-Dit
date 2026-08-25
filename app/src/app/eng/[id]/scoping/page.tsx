@@ -1,0 +1,112 @@
+import { revalidatePath } from 'next/cache';
+import { requireMember } from '@/lib/core/auth';
+import { listFslis, confirmScoping, fsliAccounts, rebuildFslis } from '@/lib/services/fsli';
+import { fmtEur } from '@/lib/kernel/canon';
+import { numToCents } from '@/lib/util/num';
+
+const SCOPING_BADGE: Record<string, string> = {
+  unscoped: 'gray',
+  in_scope: 'blue',
+  ns_proposed: 'amber',
+  ns_confirmed: 'gray',
+  in_scope_qualitative: 'violet',
+};
+
+export default async function ScopingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await requireMember(id);
+  const fslis = await listFslis(id);
+  const withAccounts = await Promise.all(
+    fslis.map(async (f) => ({ ...f, accounts: await fsliAccounts(id, f.code) })),
+  );
+
+  async function confirmAction(formData: FormData) {
+    'use server';
+    const { user } = await requireMember(id);
+    await confirmScoping(
+      String(formData.get('fsli_id')),
+      user.id,
+      String(formData.get('decision')) as 'ns_confirmed' | 'in_scope' | 'in_scope_qualitative',
+      String(formData.get('basis') ?? '') || undefined,
+    );
+    revalidatePath(`/eng/${id}/scoping`);
+  }
+
+  async function rebuildAction() {
+    'use server';
+    const { user } = await requireMember(id);
+    await rebuildFslis(id, user.id);
+    revalidatePath(`/eng/${id}/scoping`);
+  }
+
+  return (
+    <div className="panel">
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>FSLI scoping — propose &amp; confirm (D9: never silently NS)</h2>
+        <form action={rebuildAction}><button className="btn secondary small">Rebuild from TB</button></form>
+      </div>
+      <table className="data">
+        <thead>
+          <tr><th>FSLI</th><th>Statement</th><th className="num">Balance</th><th>Scoping</th><th>Basis</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          {withAccounts.map((f) => (
+            <tr key={f.id}>
+              <td>
+                <details>
+                  <summary><strong>{f.code}</strong> — {f.name}</summary>
+                  <table className="data" style={{ marginTop: 6 }}>
+                    <tbody>
+                      {f.accounts.map((a) => (
+                        <tr key={a.number}>
+                          <td className="mono">{a.number}</td>
+                          <td>{a.label}</td>
+                          <td className="num">{fmtEur(a.balanceCents, 'fr')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              </td>
+              <td>{f.statement}</td>
+              <td className="num">{fmtEur(numToCents(f.balance), 'fr')}</td>
+              <td><span className={`badge ${SCOPING_BADGE[f.scoping] ?? 'gray'}`}>{f.scoping}</span></td>
+              <td className="muted" style={{ maxWidth: 260 }}>{f.scoping_basis}</td>
+              <td>
+                {f.confirmed_by ? (
+                  <span className="faint">confirmed</span>
+                ) : f.scoping === 'ns_proposed' ? (
+                  <div>
+                    <form action={confirmAction} className="row" style={{ marginBottom: 4 }}>
+                      <input type="hidden" name="fsli_id" value={f.id} />
+                      <input type="hidden" name="decision" value="ns_confirmed" />
+                      <button className="btn small secondary">Confirm NS</button>
+                    </form>
+                    <form action={confirmAction} className="row">
+                      <input type="hidden" name="fsli_id" value={f.id} />
+                      <input type="hidden" name="decision" value="in_scope_qualitative" />
+                      <input type="text" name="basis" placeholder="qualitative basis (required)" style={{ width: 180 }} required />
+                      <button className="btn small secondary">Scope in</button>
+                    </form>
+                  </div>
+                ) : f.scoping === 'in_scope' ? (
+                  <form action={confirmAction} className="row">
+                    <input type="hidden" name="fsli_id" value={f.id} />
+                    <input type="hidden" name="decision" value="in_scope" />
+                    <button className="btn small secondary">Confirm in scope</button>
+                  </form>
+                ) : (
+                  <span className="faint">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="faint mt">
+        Proposed NS = |balance| below performance materiality; a human must confirm or
+        override with a qualitative basis. Confirmed decisions survive TB re-imports.
+      </p>
+    </div>
+  );
+}

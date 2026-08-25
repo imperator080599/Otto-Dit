@@ -1,8 +1,8 @@
 # ANOMALIES.md — the acceptance suite (generator-emitted, do not edit by hand)
 
 Dataset: **Altiverre SAS FY2025** (fictional French subsidiary of Meridian Industrial
-Group, Inc. — fictional US-listed parent). Seed `otto-altiverre-fy2025-v1`. 4727 FEC lines,
-revenue 5,606,895.30 €, PBT 717,463.44 €. Pinned materiality: M 37,000.00 €,
+Group, Inc. — fictional US-listed parent). Seed `otto-altiverre-fy2025-v1`. 4731 FEC lines,
+revenue 5,606,895.30 €, PBT 725,863.44 €. Pinned materiality: M 37,000.00 €,
 PM 27,000.00 €, CTT 1,800.00 €, TE 27,000.00 €
 (demo-params.json). **Every item below must be auto-detected — zero false negatives; false
 positives are listed and triaged by the acceptance suite** (build-time regression evidence
@@ -19,7 +19,7 @@ only, per Gate 1: not extraction-reliability evidence).
 | A5 | Invoice dated 2026-01-06 recognized in FY2025 (entry 2025-12-31). | units: VE|VE-2025-0707|2 | cutoff | high_value |
 | A6 | Round 50 000,00 € manual revenue JE posted on a Saturday (weekend + round + manual flags). | units: OD|OD-2025-0001|2 | manual_journal_flag | risk_flag |
 | A8 | 3 credit notes to the same customer (C009) across the year — unexplained pattern. | units: VE|VE-2025-0710|1, VE|VE-2025-0711|1, VE|VE-2025-0712|1 | credit_note_pattern | risk_flag |
-| A7 | TB credits 706000 by 25,000.00 € more than the FEC supports | tb_2025.csv vs FEC | reconciliation_diff (TB↔GL, account 706000) | reconciliation gate |
+| A7 | Unposted top-side entry (Dr 411000 / Cr 706000, 25,000.00 €) present only in the TB export | tb_2025.csv vs FEC — accounts 706000 and 411000 | reconciliation_diff on both accounts | reconciliation gate |
 
 Notes: A6 surfaces through the deterministic JE risk flags (ADR-003) and enters the sample
 as a risk-flag selection requiring an explanation; A8 surfaces as the credit-note-pattern

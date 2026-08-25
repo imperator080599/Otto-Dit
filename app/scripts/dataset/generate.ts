@@ -49,7 +49,7 @@ export interface DatasetManifest {
     description: string;
     stratum: 'high_value' | 'risk_flag';
   }[];
-  reconciliationAnomaly: { id: string; account: string; deltaCents: number };
+  reconciliationAnomaly: { id: string; accounts: string[]; deltaCents: number };
   deviations: { id: string; control: string; instance: string; taxonomy: string; note: string }[];
   sampling: {
     revenue: { populationHash: string; populationSize: number; coverageCapCents: number; randomSize: number; seed: string; selectedUnits: string[] };
@@ -322,7 +322,7 @@ async function main() {
   const manifest: DatasetManifest = {
     seedVersion: 'otto-altiverre-fy2025-v1',
     substantiveAnomalies: anomalyDefs,
-    reconciliationAnomaly: { id: 'A7', account: TB_MISMATCH.account, deltaCents: TB_MISMATCH.deltaCents },
+    reconciliationAnomaly: { id: 'A7', accounts: [TB_MISMATCH.creditAccount, TB_MISMATCH.debitAccount], deltaCents: TB_MISMATCH.deltaCents },
     deviations: sox.deviations,
     sampling: {
       revenue: {
@@ -435,7 +435,7 @@ only, per Gate 1: not extraction-reliability evidence).
 | id | What was seeded | Where it hides | Expected detection | Stratum |
 |---|---|---|---|---|
 ${m.substantiveAnomalies.map((a) => `| ${a.id} | ${a.description} | units: ${a.units.join(', ')} | ${a.taxonomy.join(', ')} | ${a.stratum} |`).join('\n')}
-| A7 | TB credits ${m.reconciliationAnomaly.account} by ${eur(m.reconciliationAnomaly.deltaCents)} more than the FEC supports | tb_2025.csv vs FEC | reconciliation_diff (TB↔GL, account ${m.reconciliationAnomaly.account}) | reconciliation gate |
+| A7 | Unposted top-side entry (Dr 411000 / Cr 706000, ${eur(m.reconciliationAnomaly.deltaCents)}) present only in the TB export | tb_2025.csv vs FEC — accounts ${m.reconciliationAnomaly.accounts.join(' and ')} | reconciliation_diff on both accounts | reconciliation gate |
 
 Notes: A6 surfaces through the deterministic JE risk flags (ADR-003) and enters the sample
 as a risk-flag selection requiring an explanation; A8 surfaces as the credit-note-pattern

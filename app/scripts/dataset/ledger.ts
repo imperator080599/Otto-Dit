@@ -100,6 +100,8 @@ export function buildWorld(): World {
 
   // ---------- opening balances (AN, 2025-01-01) ----------
   const opening: [string, string, number, number][] = [
+    ['205000', 'Licences et logiciels', 1800000, 0],
+    ['280500', 'Amort. licences et logiciels', 0, 600000],
     ['213500', 'Installations techniques', 240000000, 0],
     ['218300', 'Matériel de bureau et informatique', 12000000, 0],
     ['281350', 'Amort. installations techniques', 0, 115000000],
@@ -117,7 +119,7 @@ export function buildWorld(): World {
     ['151000', 'Provisions pour risques', 0, 6000000],
     ['101000', 'Capital social', 0, 50000000],
     ['106100', 'Réserve légale', 0, 5000000],
-    ['110000', 'Report à nouveau', 0, 108200000],
+    ['110000', 'Report à nouveau', 0, 109400000],
   ];
   push('AN', '2025-01-01', 'AN-2025', '2025-01-01', 'Reprise des à-nouveaux',
     opening.map(([account, accountLabel, debitCents, creditCents]) => ({ account, accountLabel, debitCents, creditCents })));
@@ -456,6 +458,10 @@ export function buildWorld(): World {
       { account: '512100', accountLabel: 'Banque', debitCents: 0, creditCents: 2800000 },
     ]);
   }
+  push('BQ', '2025-06-10', 'DIV-2025-01', '2025-06-10', 'Produits divers de gestion courante', [
+    { account: '512100', accountLabel: 'Banque', debitCents: 840000, creditCents: 0 },
+    { account: '758000', accountLabel: 'Produits divers de gestion courante', debitCents: 0, creditCents: 840000 },
+  ]);
   push('OD', '2025-12-31', 'DOT-2025', '2025-12-31', 'Dotations aux amortissements 2025', [
     { account: '681100', accountLabel: 'Dotations amortissements', debitCents: 24000000, creditCents: 0 },
     { account: '281350', accountLabel: 'Amort. installations techniques', debitCents: 0, creditCents: 22000000 },

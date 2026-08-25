@@ -6,7 +6,9 @@ import { SEED } from './config';
 // A7 mismatch applied to ONE account (706000, +25 000,00 € credit in the TB only —
 // documented in ANOMALIES.md); FY2024 comparative fabricated with plausible variances.
 
-export const TB_MISMATCH = { account: '706000', deltaCents: 2500000 }; // TB credit > FEC by 25k€
+// One unposted top-side entry (credit revenue / debit AR) present only in the TB export:
+// keeps the TB balanced while TWO accounts disagree with the FEC.
+export const TB_MISMATCH = { creditAccount: '706000', debitAccount: '411000', deltaCents: 2500000 };
 
 export function aggregateTb(rows: GlRow[]): TbRow[] {
   const map = new Map<string, TbRow>();
@@ -27,14 +29,19 @@ export function aggregateTb(rows: GlRow[]): TbRow[] {
   return [...map.values()].sort((a, b) => (a.accountNo < b.accountNo ? -1 : 1));
 }
 
-/** Apply the seeded TB↔FEC mismatch (A7): the TB credits 706000 by 25k more than the FEC
- *  supports (as if a late top-side landed only in the TB export). */
+/** Apply the seeded TB↔FEC mismatch (A7): a late top-side entry (Dr 411000 / Cr 706000,
+ *  25 000,00 €) recorded only in the TB export — the TB stays balanced, two accounts
+ *  disagree with the FEC. */
 export function applyTbMismatch(tb: TbRow[]): TbRow[] {
-  return tb.map((t) =>
-    t.accountNo === TB_MISMATCH.account
-      ? { ...t, creditCents: t.creditCents + TB_MISMATCH.deltaCents, balanceCents: t.balanceCents - TB_MISMATCH.deltaCents }
-      : t,
-  );
+  return tb.map((t) => {
+    if (t.accountNo === TB_MISMATCH.creditAccount) {
+      return { ...t, creditCents: t.creditCents + TB_MISMATCH.deltaCents, balanceCents: t.balanceCents - TB_MISMATCH.deltaCents };
+    }
+    if (t.accountNo === TB_MISMATCH.debitAccount) {
+      return { ...t, debitCents: t.debitCents + TB_MISMATCH.deltaCents, balanceCents: t.balanceCents + TB_MISMATCH.deltaCents };
+    }
+    return t;
+  });
 }
 
 /** FY2024 comparative: scale FY2025 with seeded per-account jitter, balanced via 110000. */

@@ -1,4 +1,6 @@
 JournalCode	JournalLib	EcritureNum	EcritureDate	CompteNum	CompteLib	CompAuxNum	CompAuxLib	PieceRef	PieceDate	EcritureLib	Debit	Credit	EcritureLet	DateLet	ValidDate	Montantdevise	Idevise
+AN	À-nouveaux	AN-2025-0001	20250101	205000	Licences et logiciels			AN-2025	20250101	Reprise des à-nouveaux	18000,00	0,00			20250131		
+AN	À-nouveaux	AN-2025-0001	20250101	280500	Amort. licences et logiciels			AN-2025	20250101	Reprise des à-nouveaux	0,00	6000,00			20250131		
 AN	À-nouveaux	AN-2025-0001	20250101	213500	Installations techniques			AN-2025	20250101	Reprise des à-nouveaux	2400000,00	0,00			20250131		
 AN	À-nouveaux	AN-2025-0001	20250101	218300	Matériel de bureau et informatique			AN-2025	20250101	Reprise des à-nouveaux	120000,00	0,00			20250131		
 AN	À-nouveaux	AN-2025-0001	20250101	281350	Amort. installations techniques			AN-2025	20250101	Reprise des à-nouveaux	0,00	1150000,00			20250131		
@@ -16,7 +18,7 @@ AN	À-nouveaux	AN-2025-0001	20250101	164000	Emprunts auprès des éts de crédit			A
 AN	À-nouveaux	AN-2025-0001	20250101	151000	Provisions pour risques			AN-2025	20250101	Reprise des à-nouveaux	0,00	60000,00			20250131		
 AN	À-nouveaux	AN-2025-0001	20250101	101000	Capital social			AN-2025	20250101	Reprise des à-nouveaux	0,00	500000,00			20250131		
 AN	À-nouveaux	AN-2025-0001	20250101	106100	Réserve légale			AN-2025	20250101	Reprise des à-nouveaux	0,00	50000,00			20250131		
-AN	À-nouveaux	AN-2025-0001	20250101	110000	Report à nouveau			AN-2025	20250101	Reprise des à-nouveaux	0,00	1082000,00			20250131		
+AN	À-nouveaux	AN-2025-0001	20250101	110000	Report à nouveau			AN-2025	20250101	Reprise des à-nouveaux	0,00	1094000,00			20250131		
 BQ	Banque	BQ-2025-0001	20250120	512100	Banque			REL-2025-01A	20250120	Encaissements clients ouverture	550000,00	0,00			20250131		
 BQ	Banque	BQ-2025-0001	20250120	411000	Clients			REL-2025-01A	20250120	Encaissements clients ouverture	0,00	550000,00			20250131		
 BQ	Banque	BQ-2025-0002	20250214	512100	Banque			REL-2025-02A	20250214	Encaissements clients ouverture (solde)	390000,00	0,00			20250228		
@@ -4723,6 +4725,8 @@ BQ	Banque	BQ-2025-0831	20250929	512100	Banque			EMP-2025-T3	20250929	Échéance em
 BQ	Banque	BQ-2025-0832	20251229	164000	Emprunts			EMP-2025-T4	20251229	Échéance emprunt T4	20000,00	0,00			20251231		
 BQ	Banque	BQ-2025-0832	20251229	661100	Intérêts des emprunts			EMP-2025-T4	20251229	Échéance emprunt T4	8000,00	0,00			20251231		
 BQ	Banque	BQ-2025-0832	20251229	512100	Banque			EMP-2025-T4	20251229	Échéance emprunt T4	0,00	28000,00			20251231		
+BQ	Banque	BQ-2025-0833	20250610	512100	Banque			DIV-2025-01	20250610	Produits divers de gestion courante	8400,00	0,00			20250630		
+BQ	Banque	BQ-2025-0833	20250610	758000	Produits divers de gestion courante			DIV-2025-01	20250610	Produits divers de gestion courante	0,00	8400,00			20250630		
 OD	Opérations diverses	OD-2025-0026	20251231	681100	Dotations amortissements			DOT-2025	20251231	Dotations aux amortissements 2025	240000,00	0,00			20251231		
 OD	Opérations diverses	OD-2025-0026	20251231	281350	Amort. installations techniques			DOT-2025	20251231	Dotations aux amortissements 2025	0,00	220000,00			20251231		
 OD	Opérations diverses	OD-2025-0026	20251231	281830	Amort. matériel de bureau			DOT-2025	20251231	Dotations aux amortissements 2025	0,00	20000,00			20251231		
