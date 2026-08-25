@@ -779,3 +779,81 @@ lu.
 événement) pour que les horodatages du journal soient rejouables à l'identique. Le journal
 est en ajout seul ; le chaînage par hachage appartient à l'application, pas au prototype,
 et le prototype le dit.
+
+## ADR-030 — Le registre des facteurs de risque : ce sont les constatations qui circulent
+
+**Statut** : accepté (2026-08-25, revue fondateur — « le point qui est la thèse du produit »)
+
+**Contexte** : après la réorganisation par section (ADR-026), la mécanique circulait — une
+requête créait une ligne de papier. Constat du fondateur : ce n'est pas la mécanique qui doit
+circuler, ce sont les **constatations**. « Si mon entretien avec le responsable du cycle vente
+révèle un changement d'ERP, cela doit apparaître seul dans l'évaluation du risque du chiffre
+d'affaires, des créances et des stocks — je ne dois pas le ressaisir. »
+
+**Décision** :
+
+1. **Le facteur de risque est un objet de première classe**, pas un champ d'une section.
+   Il porte : source (procédure qui l'a levé, vue où la relire, référence précise), nature
+   (qualitative / quantitative), description, FSLI **et assertions** touchés, statut
+   (proposé / confirmé / écarté), motif, effet retenu sur le niveau de risque, auteur et
+   horodatage de la décision.
+
+2. **Candidats dérivés, décisions conservées.** Les candidats sont re-calculés à chaque
+   rendu par les règles — ils suivent donc la matérialité et les seuils — tandis que la
+   décision humaine est conservée par identifiant stable. Bouger un seuil ne perd jamais un
+   arbitrage. C'est la propriété qui permet de régler les seuils en cours de mission.
+
+3. **Rien ne s'applique sans décision humaine.** Un facteur proposé est affiché dans la
+   section concernée mais ne compte pas dans le niveau de risque. Seul un facteur *confirmé*
+   et *retenu comme majorant* entre dans `facteursActifs()` et fait donc bouger le niveau,
+   les procédures requises et la taille d'échantillon. Confirmer **en neutralisant** exige un
+   motif, écarter aussi. Un facteur écarté sans motif écrit **ne compte pas comme statué**.
+
+4. **Un facteur non statué bloque le visa** de chaque section qu'il touche, au même titre
+   qu'une note bloquante ou qu'une pièce manquante.
+
+5. **Une constatation, un facteur.** L'identifiant est keyé sur la constatation métier, pas
+   sur la section : une pièce datée hors exercice qui touche le chiffre d'affaires et les
+   créances est **un** facteur à deux cibles, pas deux facteurs au même texte. Même règle
+   pour la facture comptabilisée deux fois, qui porte le même marqueur sur deux écritures.
+
+6. **Vue de triage unique** — point d'entrée du dossier, pas des facteurs éparpillés : tous
+   les facteurs proposés, par section, par source, par ancienneté, avec le lien retour vers
+   la procédure qui les a levés.
+
+### Le garde-fou, et ce qu'il a coûté
+
+Le fondateur a posé la contrainte avant de voir le code : « si chaque analyse se met à lever
+des facteurs, je noie. C'est le défaut classique des outils d'analyse de données en audit —
+trois cents alertes que personne ne lit. » Chaque règle porte donc un **seuil de pertinence
+explicite, nommé, modifiable en cours de mission**, le compteur est affiché en permanence
+dans le bandeau supérieur, et la vue de triage alerte au-delà de quinze.
+
+La règle « écritures saisies par la direction » a exigé trois formulations, et le chemin
+mérite d'être conservé parce qu'il dit ce que vaut le garde-fou :
+
+| Formulation | Facteurs levés |
+|---|---|
+| « la direction a saisi ≥ 5 écritures sur le poste » | 8 — un par poste, du bruit |
+| « … pour un cumul ≥ seuil de planification » | 13 — pire |
+| « … et porteuses d'un second marqueur (OD, week-end, montant rond, validation tardive) » | 11 |
+| **« … pesant ≥ 5 % de la masse du poste, plancher au seuil de remontée »** | **1** |
+
+En regardant la distribution : douze postes entre 11 k€ et 244 k€, **aucune coupure
+naturelle**. Il n'existait pas de seuil absolu défendable, parce que le générateur attribue
+la saisie par la direction au hasard (62 écritures sur 1 605, 3,9 %, réparties partout) :
+**il n'y a aucune concentration à trouver dans ce jeu de données**. Choisir un montant qui
+« donne trois facteurs » aurait été régler le nombre et non le critère. Le critère qui a un
+sens est **relatif** — la direction pèse-t-elle sur ce poste une part anormale de sa masse ?
+La vue de triage affiche explicitement qu'une règle qui ne lève rien n'est pas une règle
+cassée, et invite à baisser le seuil pour voir le compromis.
+
+**Résultat mesuré** : **8 facteurs** au réglage par défaut (2 écarts de rapprochement,
+1 concentration d'écritures de direction, 1 pièce hors exercice, 3 écritures particulières,
+1 compte hors listing de circularisation), pour une cible de 15. Le seuil est un levier réel
+et monotone : la règle « direction » passe de 1 facteur à 5 % à 10 facteurs à 1 %.
+
+**Ce que le mécanisme prépare** : l'entretien de cycle, l'analyse des balances auxiliaires et
+l'analyse sectorielle lèveront leurs constatations **par cette même porte**, avec leur source.
+Le chemin manuel — lever un facteur à la main, avec sa source libre, sur plusieurs postes et
+plusieurs assertions — est déjà le chemin qu'ils emprunteront ; il est implémenté et testé.

@@ -114,6 +114,28 @@ balance et grand livre équilibrés au centime, 2 écarts voulus, 11/11 citation
 21/21 vues sans erreur, 0 requête réseau, 0 erreur JS, barre collante à 293 px sur 844 au
 téléphone. Détail dans `prototype/README.md`.
 
+## Registre des facteurs de risque (2026-08-25, lot A)
+
+`prototype/otto-prototype.html` — ADR-030. Ce qui doit circuler entre les sections, ce ne
+sont pas des lignes de tableau, ce sont les **constatations** : une constatation levée par une
+procédure se pose seule sur les sections concernées, avec un lien vers sa source, et n'est
+appliquée nulle part sans décision humaine. Un facteur non statué bloque le visa.
+
+Cinq règles de levée branchées sur des procédures existantes (rapprochement, contrôle de forme
+du FEC, test des écritures, circularisations) plus le chemin manuel. **8 facteurs** au réglage
+par défaut pour une cible de 15 ; chaque règle porte un seuil de pertinence nommé et modifiable
+en cours de mission, et le compteur est au bandeau supérieur. La règle « écritures de
+direction » a exigé trois formulations avant d'être défendable — le chemin est conservé dans
+l'ADR parce qu'il montre ce que vaut le garde-fou.
+
+**Ordre retenu pour la suite** (arbitrage logé ici) : C (catalogue de preuve) **inclut la
+refonte par procédure** — le catalogue est keyé FSLI × assertion × procédure, or il n'existe
+aujourd'hui aucun objet « procédure » sur lequel accrocher des colonnes ; le construire sur la
+structure actuelle reviendrait à le refaire. Puis E (balances auxiliaires, déterministe), puis
+B (contrôle interne et processus, le plus lourd), puis D (résiduel qualitatif, qui découle de
+A et B). Le lot 2 (sectoriel, parties liées, LCB-FT, pointage) reste en dernier : ces modules
+dépendent de sources externes indisponibles, et leur valeur est précisément d'alimenter A.
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent

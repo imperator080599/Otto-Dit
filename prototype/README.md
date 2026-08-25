@@ -40,6 +40,20 @@ la matérialité parce que le composant n'existe pas chez lui (ADR-027).
 6. Notes de revue de la section — ancrées sur un objet.
 7. Conclusion, visa et reprise N-1 — le visa est **impossible** tant qu'un obstacle subsiste.
 
+## Le registre des facteurs de risque
+
+Ce qui circule entre les sections, ce ne sont pas des lignes de tableau : ce sont les
+**constatations**. Un écart de rapprochement, une pièce datée hors exercice, une écriture
+particulière relevée au test des écritures se posent **seuls** sur les postes qu'ils touchent,
+avec un lien retour vers la procédure qui les a levés — et n'entrent dans aucun niveau de
+risque tant qu'un humain n'a pas tranché. Un facteur non statué **bloque le visa**.
+
+Garde-fou : chaque règle porte un seuil de pertinence nommé et modifiable en cours de mission,
+le compteur est au bandeau supérieur, et la vue de triage alerte au-delà de quinze.
+**8 facteurs** au réglage par défaut ; le seuil est un levier monotone (la règle « direction »
+passe de 1 facteur à 5 % à 10 facteurs à 1 %). Une règle qui ne lève rien sur ce jeu de
+données le dit, plutôt que d'abaisser son seuil jusqu'à trouver quelque chose.
+
 ## Contrôles automatisés passés sur ce fichier
 
 | Contrôle | Résultat |
@@ -51,7 +65,7 @@ la matérialité parce que le composant n'existe pas chez lui (ADR-027).
 | Comptes en écart balance/FEC | 2, tous deux voulus |
 | M / SP / seuil de remontée recalculés | exacts au centime |
 | Citations littérales du document d'idées | 11/11 |
-| Vues rendues sans erreur | 21/21 |
+| Vues rendues sans erreur | 22/22 |
 | Requêtes réseau hors `file://` | 0 |
 | Erreurs JavaScript | 0 |
 | Glyphes manquants / U+FFFD | 0 |
