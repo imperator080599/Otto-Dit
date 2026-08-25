@@ -857,3 +857,123 @@ et monotone : la règle « direction » passe de 1 facteur à 5 % à 10 facteurs
 l'analyse sectorielle lèveront leurs constatations **par cette même porte**, avec leur source.
 Le chemin manuel — lever un facteur à la main, avec sa source libre, sur plusieurs postes et
 plusieurs assertions — est déjà le chemin qu'ils emprunteront ; il est implémenté et testé.
+
+## ADR-031 — La sélection appartient à la procédure, pas à la section
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+**Contexte** : après ADR-026, une section portait une sélection et un papier. Un réviseur ne
+pouvait donc pas savoir quelle sélection nourrissait quel test — et le catalogue de preuve
+(ADR-032), keyé FSLI × assertion × **procédure**, n'avait aucun objet sur lequel accrocher ses
+colonnes. Construire le catalogue sur la structure précédente aurait signifié le refaire.
+
+**Décision** : la procédure est l'unité de travail. Chaque procédure requise porte sa
+population, son unité d'échantillonnage, son germe, son papier de travail et sa conclusion.
+Une sélection affiche, faute de quoi elle n'est pas revoyable :
+
+- la **population définie à l'écran** — numéros de comptes visibles, période, filtre appliqué
+  en toutes lettres, nombre d'éléments, masse ;
+- l'**unité d'échantillonnage** (écriture comptable, tiers à circulariser) ;
+- la **procédure servie** et l'**assertion visée** ;
+- la **méthode**, le **seuil de la strate exhaustive**, le **germe** ;
+- la **référence du papier de travail** alimenté.
+
+En tête de section, un **plan de travail** : procédure → assertion → population → sélection →
+papier → statut. C'est la vue qu'un réviseur ouvre en premier ; les procédures s'ouvrent une à
+une depuis cette table. Effet secondaire mesuré : le rendu d'une section passe de 56 ms à
+21 ms, une seule procédure étant construite à la fois.
+
+**Populations réellement distinctes** : le test de détail porte sur la population entière du
+poste ; la séparation des exercices sur les dix jours encadrant la clôture ; l'examen des
+écritures manuelles sur le journal d'opérations diverses et les saisies de la direction ; le
+recalcul sur les mouvements au-dessus du seuil de remontée ; la circularisation sur les tiers
+auxiliaires, avec une unité d'échantillonnage différente. Sur le chiffre d'affaires : 268, 15,
+10 et 268 éléments selon la procédure — ce ne sont pas quatre vues de la même liste.
+
+## ADR-032 — Catalogue de preuve : la méthode livrée avec l'outil
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+**Contexte** : le tableau de testing arrivait vide. « C'est l'actif le plus précieux du
+produit : un cabinet sans département méthodologie achète la méthode avec l'outil. »
+
+**Décision** : un catalogue livré, keyé `FSLI/PROCÉDURE` avec repli générique `*/PROCÉDURE`.
+Chaque entrée déclare les **types de justificatifs attendus**, et pour chaque type les
+**champs à relever**, la **donnée de référence contre laquelle le champ est contrôlé**, la
+**règle de contrôle** et la **tolérance**. Exemple du test de détail sur le chiffre d'affaires :
+facture de vente (montant HT contre la ligne du grand livre ; date contre l'exercice ; client
+contre le compte auxiliaire ; numéro contre la référence de pièce) et bon de livraison
+(quantité contre la quantité facturée ; date antérieure ou égale à la clôture ; signature
+exigée).
+
+**Ce que le catalogue câble** :
+1. Les **colonnes du papier de travail** en découlent : une ligne par élément × document ×
+   champ, avec la valeur relevée à côté de la donnée qu'elle contrôle, l'écart et la tolérance.
+2. La **requête client est générée** depuis le catalogue : chaque élément nomme les documents
+   attendus, et la requête porte la liste des champs qui y seront relevés. Le client n'a plus à
+   deviner ce qu'on lui demande.
+3. Une ligne sans pièce ne porte aucun contrôle — la règle d'ADR-029 tient, au niveau du champ.
+
+**Une règle de contrôle n'est pas une égalité.** Premier jet : « date de facture » comparée à
+la date de comptabilisation, tolérance exacte. Résultat, une facture datée du 5 et comptabilisée
+le 8 — c'est-à-dire une facture normale — ressortait en écart. Chaque champ déclare donc sa
+règle : *dans l'exercice*, *antérieure ou égale*, *même exercice que la référence*, ou une
+tolérance en jours. Sur le jeu d'essai, les écarts relevés passent de 3 à 1, et celui qui reste
+est un vrai écart de montant.
+
+**La lecture des pièces reste humaine.** Un bouton « remplir comme si vous lisiez les pièces »
+peuple les champs depuis les données synthétiques, et dit ce qu'il est : le prototype ne
+contient aucun document, et la lecture d'une pièce relève de l'échelle d'extraction.
+
+## ADR-033 — Trois moments de revue analytique, deux masses, un espace d'achèvement
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+1. **Revue analytique : trois diligences, pas trois affichages.** *Préliminaire* en
+   planification, transverse, avec ratios calculés des deux exercices, requête d'explication
+   par ligne (texte composé, destinataire pré-rempli depuis le portail) et **alimentation du
+   registre des facteurs de risque**. *Substantive* dans la section, comme procédure à valeur
+   probante. *Finale* à l'achèvement, cohérence d'ensemble avant signature.
+
+2. **Bilan et compte de résultat**, avec double appartenance assumée : stocks, provisions et
+   dotations aux amortissements figurent dans les deux masses, marqués « aussi ». Le classement
+   n'est pas binaire et le rail ne le force pas.
+
+3. **Espace achèvement** — il n'existait aucun endroit où finir une mission : pointage des
+   états financiers, revue analytique finale, événements postérieurs, continuité
+   d'exploitation, évaluation finale des anomalies et incidence sur l'opinion, lettre
+   d'affirmation, communication à la gouvernance, assemblage et clôture. La clôture **refuse**
+   tant qu'une section n'est pas visée, qu'une note bloquante est ouverte, qu'un facteur n'est
+   pas statué, que l'opinion n'est pas arrêtée ou qu'un point de diligence manque. Le délai
+   d'assemblage (60 jours, *C. com., art. D. 821-186, III et IV*) et la durée de conservation
+   (6 ans, *C. com., art. R. 820-42*) sont ceux vérifiés sur le texte primaire lors des travaux
+   de rétention.
+
+4. **Pointage : trois natures de rapprochement**, parce que supposer que tout vient de la
+   balance ferait échouer le module sur la majorité des annexes — *solde de balance*,
+   *agrégat de comptes*, *calcul à documenter*. Sur onze montants, trois ne se lisent dans
+   aucun solde : ils se saisissent avec la documentation de leur origine, et restent non
+   rapprochés tant qu'elle manque.
+
+5. **Filtres cumulables** sur les requêtes, des deux côtés : statut, section, destinataire,
+   échéance (en retard / à venir), recherche texte. Le portail client n'expose que les statuts
+   qui lui sont visibles.
+
+6. **Classeur multi-feuilles** (SpreadsheetML, sans dépendance) : une feuille par section plus
+   une feuille de synthèse portant l'avancement et « qui doit quoi ». Trois périmètres de
+   colonnes ; vérifié : seul l'export « équipe interne » cite un réviseur. L'envoi périodique
+   est **composé** — destinataires réels choisis parmi les contacts du portail, objet, corps,
+   pièce jointe — et s'arrête là : ce fichier n'a ni serveur ni transport sortant.
+
+7. **La pédagogie se replie.** Chaque règle de conception s'exprime une fois, sous forme de
+   statut, de compteur ou de pastille ; sa justification vit dans une page « Principes de
+   conception » consultable à part. Les encadrés didactiques passent de 47 à 29, et les 29
+   restants sont fonctionnels — obstacles au visa, blocages, compteurs — non explicatifs.
+
+**Le garde-fou s'est refermé une deuxième fois, de la même façon.** La règle de levée depuis la
+revue analytique préliminaire, d'abord écrite « variation ≥ 3 × le seuil de planification »,
+levait cinq facteurs dont une **hausse de 1,7 % du chiffre d'affaires** : sur un compte de 5 M€,
+trois fois le seuil est un mouvement ordinaire, et le multiple absolu ne mesure que la taille du
+compte. Réécrite en **déformation relative** — montant au moins égal au seuil de planification
+ET variation d'au moins 25 % du solde N-1 — elle lève un seul facteur, sur le compte bancaire
+qui bouge de 39 %. Registre total : **9 facteurs** pour une cible de 15.

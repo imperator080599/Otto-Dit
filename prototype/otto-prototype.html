@@ -659,6 +659,10 @@ const S = {
   // règles, seule la DÉCISION humaine est conservée — bouger un seuil ne perd
   // jamais un arbitrage.
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
+  procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
+  achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{}, corrigees:{},
+               opinion:'', opinionMotif:'', raFinale:'', clos:null },
+  envoi:{ cadence:'hebdo', jour:1, destinataires:[], perimetre:'client' },
   premierRendu:'2026-03-15T09:12',
   events:[],
   aujourdhui:'2026-03-15',                  // date de référence pour les relances
@@ -782,77 +786,9 @@ function niveauMax(p){
   return ASSERTIONS.reduce((m, a) => Math.max(m, NIVEAUX.indexOf(niveau(p, a.code))), 0);
 }
 
-/* ── catalogue de procédures ──────────────────────────────────────────────
-   `min` = niveau de risque à partir duquel la procédure devient requise.
-   `postes` absent = procédure générique, applicable à tout poste.       */
-const PROCEDURES = [
-  { code:'RAPPRO', a:'exhaustivite', min:'faible', nature:'det',
-    lib:'Rapprochement du détail du compte au solde de la balance' },
-  { code:'RA', a:'presentation', min:'faible', nature:'det',
-    lib:'Revue analytique du poste et explication des variations au-delà des seuils' },
-  { code:'DETAIL', a:'realite', min:'faible', nature:'det',
-    lib:'Test de détail sur les éléments sélectionnés, pièce à l’appui' },
-  { code:'CUTOFF', a:'separation', min:'moyen', nature:'det',
-    lib:'Test de séparation des exercices sur les dix jours encadrant la clôture' },
-  { code:'SEQ', a:'exhaustivite', min:'moyen', nature:'det',
-    lib:'Contrôle de séquence des pièces et recherche de ruptures de numérotation' },
-  { code:'MANUEL', a:'realite', min:'moyen', nature:'det',
-    lib:'Examen exhaustif des écritures manuelles du poste et de leur justification' },
-  { code:'RECALC', a:'evaluation', min:'moyen', nature:'det',
-    lib:'Recalcul des montants et vérification des bases de calcul retenues' },
-  { code:'CONFIRM', a:'realite', min:'eleve', nature:'det',
-    lib:'Confirmation directe auprès des tiers (circularisation)', postes:['CLIENTS','TRESO','FOURN','PROV'] },
-  { code:'ENTRETIEN', a:'realite', min:'eleve', nature:'det',
-    lib:'Entretien avec le responsable du cycle et documentation du processus' },
-  { code:'ESTIM', a:'evaluation', min:'moyen', nature:'det',
-    lib:'Test de la base de données servant à l’estimation et des taux ou formules appliqués',
-    siFacteur:'estimation' },
-  { code:'FRAUDE', a:'realite', min:'moyen', nature:'det',
-    lib:'Test spécifique de réponse au risque de fraude sur le poste', siFacteur:'fraude' },
-  { code:'ANNEXE', a:'presentation', min:'eleve', nature:'det',
-    lib:'Rapprochement des montants d’annexe se rapportant au poste' },
-];
-function proceduresRequises(p){
-  const fa = facteursActifs(p);
-  return PROCEDURES.filter(pr => {
-    if (pr.postes && !pr.postes.includes(p.code)) return false;
-    if (pr.siFacteur && !fa.find(f => f.code === pr.siFacteur && f.actif)) return false;
-    return NIVEAUX.indexOf(niveau(p, pr.a)) >= NIVEAUX.indexOf(pr.min);
-  });
-}
-
 /* ── taille d'échantillon : table visible à l'écran, pas une formule cachée ── */
 const TAILLE = { faible:6, moyen:15, eleve:30 };
 function tailleEchantillon(p){ return TAILLE[NIVEAUX[niveauMax(p)]]; }
-
-/* ═══ 7. ÉCHANTILLONNAGE GÉNÉRALISÉ ════════════════════════════════════════
-   Deux strates : couverture exhaustive au-dessus du seuil de planification,
-   puis tirage aléatoire à germe dans le reliquat. Même germe ⇒ même tirage.
-   ═══════════════════════════════════════════════════════════════════════ */
-const _echCache = new Map();
-function echantillonPoste(p){
-  const s = seuils(), st = sec(p.code), n = tailleEchantillon(p);
-  // le tirage ne dépend que de ces quatre valeurs : on le mémoïse, sinon le
-  // même mélange de 1 300 éléments serait refait à chaque frappe au clavier.
-  const cle = p.code + '|' + st.seed + '|' + s.PM + '|' + n;
-  if (_echCache.has(cle)) return _echCache.get(cle);
-  const pop = LEDGER.entries
-    .filter(e => e.lines.some(l => p.re.test(l.compte)))
-    .map(e => ({ e, montant:e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0) }))
-    .filter(x => x.montant > 0);
-  const total = pop.reduce((a, x) => a + x.montant, 0);
-  const exhaustif = pop.filter(x => x.montant >= s.PM);
-  const reste = pop.filter(x => x.montant < s.PM);
-  const rnd = mulberry32(seedOf(st.seed));
-  const idx = reste.map((_, i) => i);
-  for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-  const alea = idx.slice(0, Math.min(n, idx.length)).sort((a, b) => a - b).map(i => reste[i]);
-  const couvert = exhaustif.reduce((a, x) => a + x.montant, 0) + alea.reduce((a, x) => a + x.montant, 0);
-  const r = { pop, total, exhaustif, alea, couvert, n, taux: total ? couvert / total : 0 };
-  if (_echCache.size > 400) _echCache.clear();
-  _echCache.set(cle, r);
-  return r;
-}
 
 /* ═══ 8. NOTES DE REVUE ════════════════════════════════════════════════════
    Une note se pose SUR un objet. Il n'existe aucune note flottante : l'ancre
@@ -1003,24 +939,24 @@ function seuils(){
 
 /* ═══ 5. POSTES DES COMPTES ANNUELS ════════════════════════════════════════ */
 const POSTES = [
-  { code:'IMMO_INC', lib:'Immobilisations incorporelles', re:/^(205|280)/ },
-  { code:'IMMO_COR', lib:'Immobilisations corporelles',   re:/^(213|218|2813|2818)/ },
-  { code:'STOCKS',   lib:'Stocks',                        re:/^3/ },
-  { code:'CLIENTS',  lib:'Clients et comptes rattachés',  re:/^41/ },
-  { code:'TRESO',    lib:'Trésorerie',                    re:/^(512|53)/ },
-  { code:'CAPITAUX', lib:'Capitaux propres',              re:/^(101|106|110)/ },
-  { code:'PROV',     lib:'Provisions pour risques',       re:/^15/ },
-  { code:'DETTES_FI',lib:'Dettes financières',            re:/^16/ },
-  { code:'FOURN',    lib:'Fournisseurs',                  re:/^40/ },
-  { code:'SOCIAL',   lib:'Dettes sociales et personnel',  re:/^(42|43)/ },
-  { code:'FISCAL',   lib:'Dettes fiscales (TVA)',         re:/^445/ },
-  { code:'CA',       lib:'Chiffre d’affaires',            re:/^70/ },
-  { code:'AUTRES_PR',lib:'Autres produits',               re:/^75/ },
-  { code:'ACHATS',   lib:'Achats consommés',              re:/^60/ },
-  { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/ },
-  { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/ },
-  { code:'FINANCIER',lib:'Charges financières',           re:/^66/ },
-  { code:'AMORT',    lib:'Dotations aux amortissements',  re:/^68/ },
+  { code:'IMMO_INC', lib:'Immobilisations incorporelles', re:/^(205|280)/, masse:'bilan' },
+  { code:'IMMO_COR', lib:'Immobilisations corporelles',   re:/^(213|218|2813|2818)/, masse:'bilan' },
+  { code:'STOCKS',   lib:'Stocks',                        re:/^3/, masse:'bilan', aussi:'resultat' },
+  { code:'CLIENTS',  lib:'Clients et comptes rattachés',  re:/^41/, masse:'bilan' },
+  { code:'TRESO',    lib:'Trésorerie',                    re:/^(512|53)/, masse:'bilan' },
+  { code:'CAPITAUX', lib:'Capitaux propres',              re:/^(101|106|110)/, masse:'bilan' },
+  { code:'PROV',     lib:'Provisions pour risques',       re:/^15/, masse:'bilan', aussi:'resultat' },
+  { code:'DETTES_FI',lib:'Dettes financières',            re:/^16/, masse:'bilan' },
+  { code:'FOURN',    lib:'Fournisseurs',                  re:/^40/, masse:'bilan' },
+  { code:'SOCIAL',   lib:'Dettes sociales et personnel',  re:/^(42|43)/, masse:'bilan' },
+  { code:'FISCAL',   lib:'Dettes fiscales (TVA)',         re:/^445/, masse:'bilan' },
+  { code:'CA',       lib:'Chiffre d’affaires',            re:/^70/, masse:'resultat' },
+  { code:'AUTRES_PR',lib:'Autres produits',               re:/^75/, masse:'resultat' },
+  { code:'ACHATS',   lib:'Achats consommés',              re:/^60/, masse:'resultat' },
+  { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/, masse:'resultat' },
+  { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/, masse:'resultat' },
+  { code:'FINANCIER',lib:'Charges financières',           re:/^66/, masse:'resultat' },
+  { code:'AMORT',    lib:'Dotations aux amortissements',  re:/^68/, masse:'resultat', aussi:'bilan' },
 ];
 let _postesCache = null;
 function postesCalcules(){
@@ -1034,7 +970,18 @@ function postesCalcules(){
   return _postesCache;
 }
 
-/* ═══ 6. SOCLE D'AFFICHAGE ═════════════════════════════════════════════════ */function table(cols, rows, opts){
+/* ═══ 6. SOCLE D'AFFICHAGE ═════════════════════════════════════════════════ */
+/* ── masses : bilan et compte de résultat ─────────────────────────────────
+   Un poste a une masse principale et peut en toucher une seconde : les
+   provisions et les stocks vivent au bilan mais leur variation passe par le
+   résultat ; les dotations sont une charge dont la contrepartie est au bilan.
+   Le classement n'est donc pas binaire — le poste apparaît dans les deux. */
+const MASSE_LIB = { bilan:'Bilan', resultat:'Compte de résultat' };
+function masseDe(p){ return p.masse || 'bilan'; }
+function postesDeMasse(m){
+  return postesEnPerimetre().filter(p => masseDe(p) === m || p.aussi === m);
+}
+function table(cols, rows, opts){
   opts = opts || {};
   const th = cols.map(c => `<th class="${c.n ? 'n' : ''}">${esc(c.t)}</th>`).join('');
   const tb = rows.map(r => '<tr>' + cols.map(c => {
@@ -1188,65 +1135,437 @@ const FAUSSEMENT_AGENT = [
     reel:'Suivi des demandes (module 8) — une comparaison de date d’échéance.' },
   { idee:'« Un chat bot général qui répond aux questions de l’associé »',
     reel:'Ce qui est utile ici n’est pas la conversation mais la requête : une question type se traduit en filtre sur les données et rend des enregistrements, pas de la prose.' },
-];/* ═══ 11. SECTION DE TRAVAIL PAR FSLI ══════════════════════════════════════
-   C'est ici que l'auditeur travaille : un poste, et dans ce poste tout ce
-   qu'il faut pour le boucler — comptes, risque, procédures, sélections,
-   requêtes, papiers, conclusion. Les moteurs sont partagés ; c'est la
-   navigation qui suit le travail et non l'inverse.
+];/* ═══ 26. PROCÉDURES, POPULATIONS, CATALOGUE DE PREUVE ═════════════════════
+   La sélection n'appartient pas à la section : elle appartient à LA PROCÉDURE.
+   Une section porte plusieurs procédures, chacune avec sa population, son
+   unité d'échantillonnage, son germe et son papier de travail. Sans quoi un
+   réviseur ne peut pas savoir quelle sélection nourrit quel test.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/** Montant que porte la pièce justificative, pour l'écriture donnée.
- *  Règle déterministe et vérifiable : une pièce sur dix-sept environ porte un
- *  écart avec la comptabilité. Le germe vient de la référence de pièce, donc
- *  la même écriture donne toujours le même écart. */
-function montantSurPiece(entry, comptabilise){
-  const h = seedOf(entry.pieceRef);
-  if (h % 17 !== 0) return comptabilise;
-  const delta = 50000 + (h % 250000);          // entre 500 € et 3 000 €
-  return comptabilise - delta;
-}
-/** Nature des documents obtenus, déterminée par la pièce elle-même. */
-function docsAttendus(entry){
-  const h = seedOf(entry.pieceRef) % 3;
-  const base = entry.journal === 'VE' ? 'facture de vente'
-             : entry.journal === 'AC' ? 'facture fournisseur'
-             : entry.journal === 'BQ' ? 'relevé bancaire'
-             : entry.journal === 'PA' ? 'journal de paie'
-             : 'pièce justificative';
-  if (h === 0) return [base, 'bon de livraison'];
-  if (h === 1) return [base];
-  return [base, 'contrat ou conditions tarifaires'];
-}
-function usageDuDoc(docs){
-  if (docs.some(d => /livraison/.test(d))) return 'Quantité livrée rapprochée de la quantité facturée et de l’écriture';
-  if (docs.some(d => /contrat|tarifaires/.test(d))) return 'Conditions tarifaires rapprochées du contrat, puis du montant comptabilisé';
-  return 'Montant, date et tiers rapprochés de l’écriture comptable';
+const CLOTURE = '2025-12-31', OUVERTURE = '2025-01-01';
+const CUTOFF_DEB = '2025-12-21', CUTOFF_FIN = '2026-01-10';
+
+/* ── données portées par les pièces justificatives ────────────────────────
+   Déterministes, dérivées de la référence de pièce : la même pièce porte
+   toujours les mêmes valeurs. Ce sont des DONNÉES SYNTHÉTIQUES, au même titre
+   que le grand livre — pas une lecture de document, qui n'existe pas ici.  */
+function pieceSynth(e, montantCompta){
+  const h = seedOf(e.pieceRef);
+  const qteFacturee = 1 + (h % 480);
+  return {
+    montant_ht:  h % 17 === 0 ? montantCompta - (50000 + h % 250000) : montantCompta,
+    date_piece:  e.pieceDate,
+    tiers:       e.lines.map(l => l.auxLib).find(Boolean) || '—',
+    num_piece:   e.pieceRef,
+    qte_facturee:qteFacturee,
+    qte_livree:  h % 23 === 0 ? qteFacturee - (1 + h % 12) : qteFacturee,
+    date_livraison: h % 29 === 0 ? addDays(CLOTURE, 2 + (h % 6)) : addDays(e.date, -(h % 5)),
+    signature:   h % 31 !== 0,
+    taux_contrat:h % 19 === 0 ? 'hors barème' : 'barème 2025 applicable',
+  };
 }
 
-/** Papiers de travail de la section : une ligne par élément sélectionné.
- *  La colonne « montant relevé » ne devient saisissable qu'une fois la pièce
- *  déposée par le client — c'est le contrat de preuve rendu visible. */
-function wpDe(p){
-  const st = sec(p.code), ech = echantillonPoste(p);
-  const voulu = [...ech.exhaustif, ...ech.alea];
-  const anc = new Map((st.wp || []).map(r => [r.num, r]));
-  st.wp = voulu.map(x => {
-    const garde = anc.get(x.e.num);
-    return garde || {
-      num:x.e.num, piece:x.e.pieceRef, tiers:x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
-      date:x.e.date, compta:x.montant, motif:x.montant >= seuils().PM ? 'couverture exhaustive' : 'tirage aléatoire',
-      recu:false, docs:[], releve:null, expl:'',
-    };
+/* ── catalogue des procédures ─────────────────────────────────────────────
+   `ech` : la procédure comporte-t-elle une sélection ?
+   `pop` : définition EXPLICITE de la population — c'est ce qui rend la
+           sélection revoyable, et c'est affiché tel quel à l'écran.        */
+const PROCEDURES = [
+  { code:'RAPPRO', a:'exhaustivite', min:'faible', ech:false, nature:'det',
+    lib:'Rapprochement du détail du compte au solde de la balance' },
+
+  { code:'RA', a:'presentation', min:'faible', ech:false, nature:'det',
+    lib:'Revue analytique substantive du poste et explication des variations' },
+
+  { code:'DETAIL', a:'realite', min:'faible', ech:true, unite:'écriture comptable', nature:'det',
+    lib:'Test de détail sur les éléments sélectionnés, pièce à l’appui',
+    pop:p => ({ lib:'Écritures mouvementant un compte du poste',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'aucun filtre — population entière du poste',
+                f:() => true }) },
+
+  { code:'CUTOFF', a:'separation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
+    lib:'Test de séparation des exercices sur les dix jours encadrant la clôture',
+    pop:p => ({ lib:'Écritures du poste comptabilisées autour de la clôture',
+                periode:frDate(CUTOFF_DEB) + ' au ' + frDate(CUTOFF_FIN),
+                filtre:'date de comptabilisation dans les dix jours ouvrés encadrant le ' + frDate(CLOTURE),
+                f:e => e.date >= CUTOFF_DEB }) },
+
+  { code:'MANUEL', a:'realite', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
+    lib:'Examen des écritures manuelles du poste et de leur justification',
+    pop:p => ({ lib:'Écritures manuelles du poste',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'journal d’opérations diverses OU saisie par la direction',
+                f:e => e.journal === 'OD' || /direction/.test(e.saisiePar) }) },
+
+  { code:'SEQ', a:'exhaustivite', min:'moyen', ech:false, nature:'det',
+    lib:'Contrôle de séquence des pièces et recherche de ruptures de numérotation' },
+
+  { code:'RECALC', a:'evaluation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
+    lib:'Recalcul des montants et vérification des bases de calcul retenues',
+    pop:p => ({ lib:'Écritures du poste supérieures au seuil de remontée',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'montant du mouvement supérieur au seuil de remontée',
+                f:() => true, min:() => seuils().CTT }) },
+
+  { code:'CONFIRM', a:'realite', min:'eleve', ech:true, unite:'tiers à circulariser', nature:'det',
+    postes:['CLIENTS','TRESO','FOURN','PROV'],
+    lib:'Confirmation directe auprès des tiers (circularisation)',
+    tiers:true,
+    pop:p => ({ lib:'Tiers auxiliaires mouvementés sur les comptes du poste',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'un élément par tiers auxiliaire, cumul des mouvements' }) },
+
+  { code:'ENTRETIEN', a:'realite', min:'eleve', ech:false, nature:'det',
+    lib:'Entretien avec le responsable du cycle et documentation du processus' },
+
+  { code:'ESTIM', a:'evaluation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
+    siFacteur:'estimation',
+    lib:'Test de la base servant à l’estimation et des taux ou formules appliqués',
+    pop:p => ({ lib:'Écritures du poste rattachées à l’estimation',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'journal d’opérations diverses',
+                f:e => e.journal === 'OD' }) },
+
+  { code:'FRAUDE', a:'realite', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
+    siFacteur:'fraude',
+    lib:'Test spécifique de réponse au risque de fraude sur le poste',
+    pop:p => ({ lib:'Écritures du poste porteuses d’un marqueur de fraude',
+                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
+                filtre:'week-end, montant rond au millier, validation après la clôture, ou saisie par la direction',
+                f:e => isWeekend(e.date) || e.validDate > CLOTURE || /direction/.test(e.saisiePar)
+                    || (() => { const m = e.lines[0].debit || e.lines[0].credit; return m >= 100000 && m % 100000 === 0; })() }) },
+
+  { code:'ANNEXE', a:'presentation', min:'eleve', ech:false, nature:'det',
+    lib:'Rapprochement des montants d’annexe se rapportant au poste' },
+];
+
+function proceduresRequises(p){
+  const fa = facteursActifs(p);
+  return PROCEDURES.filter(pr => {
+    if (pr.postes && !pr.postes.includes(p.code)) return false;
+    if (pr.siFacteur && !fa.find(f => f.code === pr.siFacteur && f.actif)) return false;
+    return NIVEAUX.indexOf(niveau(p, pr.a)) >= NIVEAUX.indexOf(pr.min);
   });
-  // le motif de sélection dépend du seuil : il doit suivre le curseur
-  for (const r of st.wp){ const x = voulu.find(v => v.e.num === r.num);
-    if (x) r.motif = x.montant >= seuils().PM ? 'couverture exhaustive' : 'tirage aléatoire'; }
+}
+function procRef(p, pr){ return p.code.slice(0, 4) + '-' + pr.code.slice(0, 3) + '-01'; }
+
+/* ── casier d'une procédure dans une section ─────────────────────────────── */
+function proc(code, prCode){
+  const st = sec(code);
+  if (!st.procs) st.procs = {};
+  if (!st.procs[prCode]) st.procs[prCode] = {
+    seed:'otto-' + code.toLowerCase() + '-' + prCode.toLowerCase() + '-01',
+    wp:null, conclusion:'',
+  };
+  return st.procs[prCode];
+}
+
+/* ── population d'une procédure : explicite, affichée, comptée ───────────── */
+const _popCache = new Map();
+function population(p, pr){
+  if (!pr.ech) return null;
+  const s = seuils();
+  const cle = p.code + '|' + pr.code + '|' + s.CTT;
+  if (_popCache.has(cle)) return _popCache.get(cle);
+  const d = pr.pop(p);
+  let items;
+  if (pr.tiers){
+    const m = new Map();
+    for (const e of LEDGER.entries){
+      const aux = e.lines.map(l => l.auxLib).find(Boolean);
+      if (!aux || !e.lines.some(l => p.re.test(l.compte))) continue;
+      const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
+      const cur = m.get(aux) || { cle:aux, lib:aux, montant:0, n:0, e:null };
+      cur.montant += mv; cur.n++; cur.e = cur.e || e;
+      m.set(aux, cur);
+    }
+    items = [...m.values()].sort((a, b) => b.montant - a.montant);
+  } else {
+    const min = d.min ? d.min() : 0;
+    items = LEDGER.entries
+      .filter(e => e.lines.some(l => p.re.test(l.compte)))
+      .filter(d.f)
+      .map(e => ({ cle:e.num, e, montant:e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0) }))
+      .filter(x => x.montant > min);
+  }
+  const r = { ...d, comptes:p.comptes, unite:pr.unite, items,
+              masse:items.reduce((a, x) => a + x.montant, 0) };
+  if (_popCache.size > 300) _popCache.clear();
+  _popCache.set(cle, r);
+  return r;
+}
+
+/** Tirage d'une procédure : strate exhaustive au-dessus du seuil de
+ *  planification, puis tirage aléatoire à germe dans le reliquat. */
+const _echProcCache = new Map();
+function echantillonProc(p, pr){
+  const pop = population(p, pr);
+  if (!pop) return null;
+  const s = seuils(), st = proc(p.code, pr.code), n = tailleEchantillon(p);
+  const cle = p.code + '|' + pr.code + '|' + st.seed + '|' + s.PM + '|' + s.CTT + '|' + n;
+  if (_echProcCache.has(cle)) return _echProcCache.get(cle);
+  const exhaustif = pop.items.filter(x => x.montant >= s.PM);
+  const reste = pop.items.filter(x => x.montant < s.PM);
+  const rnd = mulberry32(seedOf(st.seed));
+  const idx = reste.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  const alea = idx.slice(0, Math.min(n, idx.length)).sort((a, b) => a - b).map(i => reste[i]);
+  const couvert = exhaustif.reduce((a, x) => a + x.montant, 0) + alea.reduce((a, x) => a + x.montant, 0);
+  const r = { pop, exhaustif, alea, retenus:[...exhaustif, ...alea], n, couvert,
+              taux: pop.masse ? couvert / pop.masse : 0, seuilStrate:s.PM };
+  if (_echProcCache.size > 300) _echProcCache.clear();
+  _echProcCache.set(cle, r);
+  return r;
+}
+
+/* ═══ 27. CATALOGUE DE PREUVE ══════════════════════════════════════════════
+   Par FSLI × procédure : les types de justificatifs attendus, et pour chaque
+   type les CHAMPS à relever et le CONTRÔLE à opérer contre la ligne
+   sélectionnée. C'est la méthode livrée avec l'outil : un cabinet sans
+   département méthodologie achète l'une avec l'autre.
+
+   `ref(x)`  : la donnée de référence, tirée du grand livre ou du paramétrage.
+   `val(x)`  : ce que porte réellement la pièce (donnée synthétique).
+   `tol`     : tolérance admise avant de compter un écart.
+   ═══════════════════════════════════════════════════════════════════════ */
+const C_MONTANT = { type:'montant', tol:0, tolLib:'exact' };
+const C_DATE    = { type:'date',    tol:0, tolLib:'exact' };
+
+const CATALOGUE = {
+  /* ── chiffre d'affaires : test de détail ─────────────────────────────── */
+  'CA/DETAIL': [
+    { doc:'Facture de vente', champs:[
+      { code:'montant_ht', lib:'Montant HT', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'date_piece', lib:'Date de facture', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
+        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+      { code:'tiers', lib:'Client facturé', type:'texte', tolLib:'identité',
+        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
+        val:x => pieceSynth(x.e, x.montant).tiers },
+      { code:'num_piece', lib:'Numéro de pièce', type:'texte', tolLib:'identité',
+        contre:'référence de pièce du grand livre', ref:x => x.e.pieceRef, val:x => pieceSynth(x.e, x.montant).num_piece },
+    ]},
+    { doc:'Bon de livraison', champs:[
+      { code:'qte_livree', lib:'Quantité livrée', type:'nombre', tol:0, tolLib:'exact',
+        contre:'quantité facturée', ref:x => pieceSynth(x.e, x.montant).qte_facturee, val:x => pieceSynth(x.e, x.montant).qte_livree },
+      { code:'date_livraison', lib:'Date de livraison', type:'date', tolLib:'antérieure ou égale à la clôture',
+        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
+        regle:'antérieure ou égale' },
+      { code:'signature', lib:'Signature du client', type:'bool', tolLib:'présence exigée',
+        contre:'présence de la signature', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
+    ]},
+  ],
+  /* ── achats ───────────────────────────────────────────────────────────── */
+  'ACHATS/DETAIL': [
+    { doc:'Facture fournisseur', champs:[
+      { code:'montant_ht', lib:'Montant HT', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'date_piece', lib:'Date de facture', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
+        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+      { code:'tiers', lib:'Fournisseur', type:'texte', tolLib:'identité',
+        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
+        val:x => pieceSynth(x.e, x.montant).tiers },
+    ]},
+    { doc:'Bon de réception', champs:[
+      { code:'qte_livree', lib:'Quantité reçue', type:'nombre', tol:0, tolLib:'exact',
+        contre:'quantité facturée', ref:x => pieceSynth(x.e, x.montant).qte_facturee, val:x => pieceSynth(x.e, x.montant).qte_livree },
+      { code:'date_livraison', lib:'Date de réception', type:'date', tolLib:'antérieure ou égale à la clôture',
+        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
+        regle:'antérieure ou égale' },
+    ]},
+  ],
+  /* ── charges de personnel ─────────────────────────────────────────────── */
+  'PERSONNEL/DETAIL': [
+    { doc:'Bulletin de paie', champs:[
+      { code:'montant_ht', lib:'Brut du bulletin', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'date_piece', lib:'Période de paie', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
+        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+    ]},
+    { doc:'Contrat de travail ou avenant', champs:[
+      { code:'taux_contrat', lib:'Rémunération contractuelle', type:'texte', tolLib:'conformité au contrat',
+        contre:'barème de rémunération applicable', ref:() => 'barème 2025 applicable',
+        val:x => pieceSynth(x.e, x.montant).taux_contrat },
+    ]},
+  ],
+  /* ── trésorerie ───────────────────────────────────────────────────────── */
+  'TRESO/DETAIL': [
+    { doc:'Relevé bancaire', champs:[
+      { code:'montant_ht', lib:'Montant du mouvement', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'date_piece', lib:'Date de valeur', type:'date', tol:5, tolLib:'± 5 jours',
+        contre:'date de comptabilisation', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+    ]},
+  ],
+  /* ── circularisation ──────────────────────────────────────────────────── */
+  '*/CONFIRM': [
+    { doc:'Réponse de confirmation du tiers', champs:[
+      { code:'montant_ht', lib:'Solde confirmé', ...C_MONTANT,
+        contre:'cumul des mouvements en comptabilité', ref:x => x.montant, val:x => x.montant },
+      { code:'date_piece', lib:'Date d’arrêté confirmée', ...C_DATE,
+        contre:'date de clôture', ref:() => CLOTURE, val:() => CLOTURE },
+    ]},
+  ],
+  /* ── séparation des exercices ─────────────────────────────────────────── */
+  '*/CUTOFF': [
+    { doc:'Pièce justificative de l’opération', champs:[
+      { code:'date_piece', lib:'Date de la pièce', type:'date', regle:'même exercice que la référence',
+        tolLib:'même exercice que la comptabilisation',
+        contre:'date de comptabilisation', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+      { code:'montant_ht', lib:'Montant de la pièce', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+    ]},
+    { doc:'Preuve de la livraison ou du service fait', champs:[
+      { code:'date_livraison', lib:'Date du fait générateur', type:'date', tolLib:'antérieure ou égale à la clôture',
+        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
+        regle:'antérieure ou égale' },
+    ]},
+  ],
+  /* ── écritures manuelles et fraude ────────────────────────────────────── */
+  '*/MANUEL': [
+    { doc:'Justification de l’écriture manuelle', champs:[
+      { code:'montant_ht', lib:'Montant justifié', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'signature', lib:'Approbation d’un tiers autre que le préparateur', type:'bool', tolLib:'présence exigée',
+        contre:'présence de l’approbation', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
+    ]},
+  ],
+  '*/FRAUDE': [
+    { doc:'Justification de l’écriture relevée', champs:[
+      { code:'montant_ht', lib:'Montant justifié', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'signature', lib:'Approbation d’un tiers autre que le préparateur', type:'bool', tolLib:'présence exigée',
+        contre:'présence de l’approbation', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
+    ]},
+  ],
+  /* ── recalcul et estimation ───────────────────────────────────────────── */
+  '*/RECALC': [
+    { doc:'Base de calcul et pièce d’appui', champs:[
+      { code:'montant_ht', lib:'Montant recalculé', ...C_MONTANT,
+        contre:'montant comptabilisé', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'taux_contrat', lib:'Taux ou formule appliqué', type:'texte', tolLib:'conformité au barème',
+        contre:'barème ou contrat de référence', ref:() => 'barème 2025 applicable',
+        val:x => pieceSynth(x.e, x.montant).taux_contrat },
+    ]},
+  ],
+  '*/ESTIM': [
+    { doc:'Base de données servant à l’estimation', champs:[
+      { code:'montant_ht', lib:'Montant issu de la base', ...C_MONTANT,
+        contre:'montant comptabilisé', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'taux_contrat', lib:'Taux ou formule appliqué', type:'texte', tolLib:'justificatif exigé',
+        contre:'justificatif du taux retenu', ref:() => 'barème 2025 applicable',
+        val:x => pieceSynth(x.e, x.montant).taux_contrat },
+    ]},
+  ],
+  /* ── repli générique ──────────────────────────────────────────────────── */
+  '*/DETAIL': [
+    { doc:'Pièce justificative de l’opération', champs:[
+      { code:'montant_ht', lib:'Montant de la pièce', ...C_MONTANT,
+        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
+      { code:'date_piece', lib:'Date de la pièce', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
+        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
+      { code:'tiers', lib:'Tiers', type:'texte', tolLib:'identité',
+        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
+        val:x => pieceSynth(x.e, x.montant).tiers },
+    ]},
+  ],
+};
+/** Le catalogue applicable : spécifique au poste s'il existe, générique sinon. */
+function catalogue(p, pr){
+  return CATALOGUE[p.code + '/' + pr.code] || CATALOGUE['*/' + pr.code] || null;
+}
+function catalogueSpecifique(p, pr){ return !!CATALOGUE[p.code + '/' + pr.code]; }
+/** Documents attendus pour une procédure, dans l'ordre du catalogue. */
+function docsAttendusProc(p, pr){ const c = catalogue(p, pr); return c ? c.map(d => d.doc) : []; }
+
+/* ── comparaison d'un champ relevé à sa donnée de référence ──────────────── */
+function compare(ch, releve, x){
+  if (releve === undefined || releve === null || releve === '') return { saisi:false };
+  const r = ch.ref(x);
+  if (ch.type === 'montant'){
+    const v = Math.round((parseFloat(String(releve).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
+    return { saisi:true, ecart:v - r, conforme:Math.abs(v - r) <= (ch.tol || 0),
+             refLib:eur(r), valLib:eur(v), ecartLib:eur(v - r) };
+  }
+  if (ch.type === 'nombre'){
+    const v = parseFloat(String(releve).replace(',', '.'));
+    return { saisi:true, ecart:v - r, conforme:Math.abs(v - r) <= (ch.tol || 0),
+             refLib:String(r), valLib:String(v), ecartLib:(v - r > 0 ? '+' : '') + (v - r) };
+  }
+  if (ch.type === 'date'){
+    /* Une facture datée du 5 et comptabilisée le 8 n'est pas une anomalie :
+       comparer une date de pièce à la date de comptabilisation « à l'exact »
+       produisait un écart sur toute pièce normale. Chaque champ déclare donc
+       la RÈGLE qui le contrôle, et non une simple égalité. */
+    const j = Math.round((Date.parse(releve) - Date.parse(r)) / 86400000);
+    let conforme, refLib;
+    switch (ch.regle){
+      case 'dans l’exercice':
+        conforme = releve >= OUVERTURE && releve <= CLOTURE;
+        refLib = frDate(OUVERTURE) + ' – ' + frDate(CLOTURE);
+        break;
+      case 'antérieure ou égale':
+        conforme = releve <= r; refLib = '≤ ' + frDate(r); break;
+      case 'même exercice que la référence':
+        conforme = (releve <= CLOTURE) === (r <= CLOTURE);
+        refLib = frDate(r) + ' (même exercice)'; break;
+      default:
+        conforme = Math.abs(j) <= (ch.tol || 0); refLib = frDate(r);
+    }
+    return { saisi:true, ecart:j, conforme, refLib, valLib:frDate(releve),
+             ecartLib:ch.regle === 'dans l’exercice' ? 'hors exercice' : (j > 0 ? '+' : '') + j + ' j' };
+  }
+  if (ch.type === 'bool'){
+    const v = releve === 'oui' || releve === true;
+    return { saisi:true, ecart:v === !!r ? 0 : 1, conforme:v === !!r,
+             refLib:r ? 'exigée' : 'non exigée', valLib:v ? 'oui' : 'non', ecartLib:v === !!r ? '—' : 'absente' };
+  }
+  const conforme = String(releve).trim().toLowerCase() === String(r).trim().toLowerCase();
+  return { saisi:true, ecart:conforme ? 0 : 1, conforme,
+           refLib:String(r), valLib:String(releve), ecartLib:conforme ? '—' : 'divergent' };
+}
+
+/* ── papier de travail d'une procédure ───────────────────────────────────── */
+function wpProc(p, pr){
+  const e = echantillonProc(p, pr);
+  if (!e) return null;
+  const st = proc(p.code, pr.code);
+  const anc = new Map((st.wp || []).map(r => [r.cle, r]));
+  st.wp = e.retenus.map(x => {
+    const g = anc.get(x.cle);
+    return g || { cle:x.cle, x, recu:false, docs:{}, champs:{}, expl:'' };
+  });
+  for (const r of st.wp){ const x = e.retenus.find(v => v.cle === r.cle); if (x) r.x = x; }
   return st.wp;
 }
-function ecartsWp(p){
-  return wpDe(p).filter(r => r.recu && r.releve !== null && r.releve !== r.compta)
-                .map(r => ({ ...r, ecart:r.compta - r.releve }));
+/** Contrôles d'une procédure : un par (élément × document attendu × champ). */
+function controles(p, pr){
+  const cat = catalogue(p, pr), wp = wpProc(p, pr);
+  if (!cat || !wp) return [];
+  const out = [];
+  for (const r of wp){
+    for (const d of cat){
+      for (const ch of d.champs){
+        const cle = r.cle + '|' + d.doc + '|' + ch.code;
+        const c = compare(ch, r.champs[cle], r.x);
+        out.push({ ligne:r, doc:d.doc, ch, cle, recu:!!r.docs[d.doc], ...c });
+      }
+    }
+  }
+  return out;
 }
+function ecartsProc(p, pr){ return controles(p, pr).filter(c => c.saisi && !c.conforme); }
+/** Écarts chiffrés d'une procédure, pour la synthèse des anomalies. */
+function ecartsChiffresProc(p, pr){
+  return ecartsProc(p, pr).filter(c => c.ch.type === 'montant' && c.ecart !== 0)
+    .map(c => ({ ...c, montant:-c.ecart }));
+}
+/* ═══ 11. SECTION DE TRAVAIL PAR FSLI ══════════════════════════════════════
+   Un poste, et dans ce poste tout ce qu'il faut pour le boucler. Les
+   sélections et les papiers appartiennent aux PROCÉDURES, pas à la section :
+   une section porte plusieurs procédures, chacune avec sa population, son
+   germe et son papier.
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── papiers et notes de l'exercice précédent : visibles, jamais repris ──── */
 const PAPIERS_N1 = {
@@ -1259,10 +1578,9 @@ const PAPIERS_N1 = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   1. TABLEAU DE BORD DES COMPTES DE LA SECTION
-   Deux indicateurs qu'il ne faut surtout pas confondre :
-     · position du compte / seuil de remontée  → triage INTERNE à la section
-     · poids du compte  / seuil de planification → décision de PÉRIMÈTRE
+   1. COMPTES DE LA SECTION
+   Deux indicateurs distincts : position du compte / seuil de remontée
+   (triage interne) et poids / seuil de planification (périmètre).
    ───────────────────────────────────────────────────────────────────────── */
 function blocComptes(p){
   const s = seuils(), st = sec(p.code);
@@ -1270,18 +1588,16 @@ function blocComptes(p){
     const n = B25.get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
     const pr = n1 === 0 ? null : d / Math.abs(n1);
     const propose = Math.abs(n) < s.CTT ? 'ns' : 'sig';
-    const retenu = st.ns[c] || propose;
-    return { c, lib:B25.get(c).lib, n, n1, d, pr, propose, retenu,
+    return { c, lib:B25.get(c).lib, n, n1, d, pr, propose, retenu:st.ns[c] || propose,
              rCTT:Math.abs(n) / s.CTT, rPM:Math.abs(n) / s.PM };
   });
   const tot = rows.reduce((a, r) => a + r.n, 0), totN1 = rows.reduce((a, r) => a + r.n1, 0);
-  const nsRows = rows.filter(r => r.retenu === 'ns');
   const body = rows.map(r => ({
     c:`<span class="mono">${r.c}</span>`, lib:esc(r.lib),
     n1:eur(r.n1), n:eur(r.n), d:eur(r.d),
     pr:r.pr === null ? '<span class="smallcaps">—</span>' : pct(r.pr, 1),
-    ctt:`${r.rCTT >= 1 ? '<b>' : ''}${pct(r.rCTT, 0)}${r.rCTT >= 1 ? '</b>' : ''} <span class="smallcaps">${r.rCTT >= 1 ? 'à examiner' : 'sous le seuil'}</span>`,
-    pm:`${pct(r.rPM, 0)} <span class="smallcaps">${r.rPM >= 1 ? 'poids de périmètre' : 'hors périmètre seul'}</span>`,
+    ctt:`${r.rCTT >= 1 ? '<b>' : ''}${pct(r.rCTT, 0)}${r.rCTT >= 1 ? '</b>' : ''}`,
+    pm:pct(r.rPM, 0),
     st:`<select class="cell txt" data-ns="${r.c}" style="width:140px">
           <option value="auto" ${!st.ns[r.c] ? 'selected' : ''}>proposé : ${r.propose === 'ns' ? 'non significatif' : 'significatif'}</option>
           <option value="sig" ${st.ns[r.c] === 'sig' ? 'selected' : ''}>significatif (surchargé)</option>
@@ -1292,35 +1608,25 @@ function blocComptes(p){
   }));
   const sansMotif = rows.filter(r => st.ns[r.c] && !(st.nsMotif[r.c] || '').trim());
   return `
+    <p class="note">Soldes signés · « / remontée » ${eur0(s.CTT)} · « / planification » ${eur0(s.PM)}</p>
     ${table([{k:'c',t:'Compte'},{k:'lib',t:'Intitulé',cls:'wrapcell'},{k:'n1',t:'31/12/2024',n:1},
              {k:'n',t:'31/12/2025',n:1},{k:'d',t:'Variation',n:1},{k:'pr',t:'%',n:1},
-             {k:'ctt',t:'/ seuil de remontée',n:1},{k:'pm',t:'/ seuil de planification',n:1},
+             {k:'ctt',t:'/ remontée',n:1},{k:'pm',t:'/ planification',n:1},
              {k:'st',t:'Statut'},{k:'nt',t:''}], body,
             { foot:{ c:'Total', n1:eur(totN1), n:eur(tot), d:eur(tot - totN1) } })}
-    <p class="note">Soldes signés : débit positif, crédit négatif — c’est la convention de la balance, elle est
-    conservée ici pour que les totaux se vérifient. La revue analytique ci-dessous, elle, parle dans le
-    <b>sens du compte</b> : une hausse du chiffre d’affaires y est une augmentation.</p>
-    <div class="callout info"><b>Deux indicateurs, deux usages.</b>
-      La colonne « / seuil de remontée » (${eur0(s.CTT)}) trie <b>à l’intérieur</b> de la section : elle dit quels
-      comptes méritent un travail. La colonne « / seuil de planification » (${eur0(s.PM)}) mesure un <b>poids de
-      périmètre</b> : c’est elle qui a fait entrer le poste dans le champ des travaux. Un compte peut être
-      au-dessus du seuil de remontée et rester marginal en périmètre — les confondre revient à travailler
-      au mauvais niveau.</div>
-    ${nsRows.length ? `<p class="note">${nsRows.length} compte(s) porté(s) « non significatif » — total ${eur(nsRows.reduce((a, r) => a + r.n, 0))}. Ils restent affichés : rien n’est masqué.</p>` : ''}
-    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif.</b> ${sansMotif.map(r => r.c).join(', ')} :
-      le statut a été forcé à la main sans justification. La section ne peut pas être visée en l’état.</div>` : ''}
+    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif</b> : ${sansMotif.map(r => r.c).join(', ')}.</div>` : ''}
     ${blocRevueAnalytique(p)}`;
 }
 
-/** Revue analytique du poste. C'est le second enchaînement : une variation qui
- *  dépasse l'un des deux seuils ouvre une requête d'explication DANS la section. */
+/** Revue analytique SUBSTANTIVE du poste — l'un des trois moments (voir
+ *  vueRAPrelim en planification et vueRAFinale à l'achèvement). */
 function blocRevueAnalytique(p){
   const lignes = revueAnalytique().filter(l => p.re.test(l.compte));
   const flags = lignes.filter(l => l.flag);
-  const dejaDemande = c => requetesDe(p.code).some(r => r.origine === 'enchaînement : revue analytique'
-                                                    && r.items.some(i => i.ref === c));
+  const deja = c => requetesDe(p.code).some(r => r.origine === 'revue analytique substantive'
+                                              && r.items.some(i => i.ref === c));
   return `
-    <h3>Revue analytique du poste</h3>
+    <h3>Revue analytique substantive du poste</h3>
     <div class="row">
       <div class="ctrl"><label>Seuil en montant</label>
         <input type="number" id="ar-montant" value="${(arSeuilMontant() / 100).toFixed(0)}" step="1000"></div>
@@ -1338,15 +1644,10 @@ function blocRevueAnalytique(p){
         <td class="n">${l.p === null ? '—' : pct(Math.abs(l.p) * (l.d * sensNaturel(l) > 0 ? 1 : -1), 1)}</td>
         <td>${l.parMontant ? '<span class="tag">montant</span> ' : ''}${l.parPct ? '<span class="tag">%</span>' : ''}</td>
         <td class="wrapcell">${esc(questionVariation(l))}</td>
-        <td>${dejaDemande(l.compte)
-              ? '<span class="pill ok">requête émise</span>'
+        <td>${deja(l.compte) ? '<span class="pill ok">requête émise</span>'
               : `<button class="btn mini" data-ravar="${l.compte}">créer la requête d’explication</button>`}
             ${boutonNote(p.code, 'ra', l.compte, 'Revue analytique — compte ' + l.compte)}</td></tr>`).join('')}</tbody>
-    </table></div>
-    <p class="note">Le seuil en montant suit par défaut le seuil de planification : bougez la matérialité, la liste
-    change. La question est <b>assemblée</b> à partir de champs — soustraction, division, phrase à trous.
-    <span class="tag det">déterministe</span></p>`
-    : '<p class="note">Aucune variation au-dessus des seuils sur ce poste.</p>'}`;
+    </table></div>` : '<p class="note">Aucune variation au-dessus des seuils sur ce poste.</p>'}`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1357,28 +1658,26 @@ function blocRisque(p){
   const parA = a => fa.filter(f => f.a === a);
   const lignes = ASSERTIONS.map(a => {
     const fs = parA(a.code), actifs = fs.filter(f => f.actif);
-    const calc = niveauCalcule(p, a.code), ret = niveau(p, a.code);
-    const forced = !!st.override[a.code];
+    const calc = niveauCalcule(p, a.code), ret = niveau(p, a.code), forced = !!st.override[a.code];
     return `
       <tr>
         <td><b>${esc(a.lib)}</b><div class="smallcaps" style="white-space:normal">${esc(a.d)}</div></td>
         <td class="wrapcell">${fs.map(f => f.registre ? `
           <span class="chk" style="margin:2px 3px 2px 0;border-color:var(--bad);background:var(--bad-soft)">
             <span>⇄ ${esc(f.lib.length > 90 ? f.lib.slice(0, 90) + '…' : f.lib)}</span>
-            <span class="cnt">venu de : ${esc(f.preuve)}</span>
-          </span>` : `
+            <span class="cnt">${esc(f.preuve)}</span></span>` : `
           <label class="chk" style="margin:2px 3px 2px 0;${f.declare ? '' : 'cursor:default;opacity:' + (f.actif ? 1 : .55)}">
             <input type="checkbox" ${f.actif ? 'checked' : ''} ${f.declare ? `data-fac="${f.code}"` : 'disabled'}>
             <span>${esc(f.lib)}</span>
             <span class="cnt">${f.declare ? 'déclaré' : (f.preuve ? esc(f.preuve) : 'observé')}</span>
           </label>`).join('')}</td>
-        <td><span class="pill ${calc === 'eleve' ? 'bad' : calc === 'moyen' ? 'warn' : 'ok'}">${actifs.length} facteur(s) → ${NIV_LIB[calc]}</span></td>
+        <td><span class="pill ${calc === 'eleve' ? 'bad' : calc === 'moyen' ? 'warn' : 'ok'}">${actifs.length} → ${NIV_LIB[calc]}</span></td>
         <td>
           <select class="cell txt" data-niv="${a.code}" style="width:150px">
             <option value="">retenu = calculé (${NIV_LIB[calc]})</option>
             ${NIVEAUX.map(n => `<option value="${n}" ${st.override[a.code] === n ? 'selected' : ''}>forcé : ${NIV_LIB[n]}</option>`).join('')}
           </select>
-          ${forced ? `<input class="cell txt" data-nivm="${a.code}" placeholder="motif du jugement (obligatoire)" value="${esc(st.overrideMotif[a.code] || '')}" style="margin-top:3px">` : ''}
+          ${forced ? `<input class="cell txt" data-nivm="${a.code}" placeholder="motif obligatoire" value="${esc(st.overrideMotif[a.code] || '')}" style="margin-top:3px">` : ''}
         </td>
         <td><span class="pill ${ret === 'eleve' ? 'bad' : ret === 'moyen' ? 'warn' : 'ok'}">${NIV_LIB[ret]}</span></td>
         <td>${boutonNote(p.code, 'risque', a.code, 'Évaluation du risque — ' + a.lib)}</td>
@@ -1394,162 +1693,199 @@ function blocRisque(p){
       <thead><tr><th>Assertion</th><th>Facteurs de risque</th><th>Calculé</th><th>Jugement de l’auditeur</th><th>Retenu</th><th></th></tr></thead>
       <tbody>${lignes}</tbody>
     </table></div>
-    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> sur : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.
-       Un jugement qui écarte le calcul doit s’écrire. La section ne peut pas être visée en l’état.</div>` : ''}
-    <div class="grid2" style="margin-top:10px">
-      <div>
-        <h3>Procédures requises — ${procs.length}</h3>
-        ${procs.length ? `<div class="tw"><table>
-          <thead><tr><th>Procédure</th><th>Assertion</th><th>Requise à partir de</th><th></th></tr></thead>
-          <tbody>${procs.map(pr => `<tr>
-            <td class="wrapcell">${esc(pr.lib)} <span class="tag det">déterministe</span></td>
-            <td>${esc(ASSERTIONS.find(a => a.code === pr.a).lib)}</td>
-            <td><span class="pill">${NIV_LIB[pr.min]}</span></td>
-            <td>${boutonNote(p.code, 'procedure', pr.code, 'Procédure ' + pr.code)}</td></tr>`).join('')}</tbody>
-        </table></div>` : '<p class="note">Aucune procédure requise à ce niveau de risque.</p>'}
-        <p class="note">Cette liste n’est pas fixe : elle est <b>déduite</b> des niveaux retenus ci-dessus.
-        Cochez un facteur déclaré, ou forcez un niveau, et la liste change sous vos yeux.</p>
-      </div>
-      <div>
-        <h3>Taille d’échantillon</h3>
-        <div class="tw"><table>
-          <thead><tr><th>Risque le plus élevé du poste</th><th class="n">Éléments tirés</th></tr></thead>
-          <tbody>${NIVEAUX.map(n => `<tr${n === nMax ? ' style="font-weight:600"' : ''}>
-            <td>${NIV_LIB[n]}${n === nMax ? ' &nbsp;← retenu' : ''}</td><td class="n">${TAILLE[n]}</td></tr>`).join('')}</tbody>
-        </table></div>
-        <div class="callout">La table est <b>affichée</b>, pas cachée dans une formule : le tirage aléatoire porte sur
-        ${TAILLE[nMax]} éléments, <b>en plus</b> de la couverture exhaustive de tout élément supérieur au seuil de
-        planification (${eur0(seuils().PM)}). Deux leviers indépendants : le risque commande le nombre, la matérialité
-        commande la strate exhaustive.</div>
-      </div>
+    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}
+    <div class="row" style="margin-top:10px">
+      <span class="pill acc">${procs.length} procédure(s) requise(s)</span>
+      <span class="pill ${nMax === 'eleve' ? 'bad' : nMax === 'moyen' ? 'warn' : 'ok'}">risque le plus élevé : ${NIV_LIB[nMax]}</span>
+      <span class="pill">tirage aléatoire : ${TAILLE[nMax]} éléments par procédure</span>
+      <span class="smallcaps">faible ${TAILLE.faible} · moyen ${TAILLE.moyen} · élevé ${TAILLE.eleve}</span>
     </div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   3. SÉLECTIONS ET PARAMÈTRES
+   3. PLAN DE TRAVAIL — la vue qu'un réviseur ouvre en premier
+   Sélection → procédure → papier de travail → statut.
    ───────────────────────────────────────────────────────────────────────── */
-function blocSelection(p){
-  const st = sec(p.code), e = echantillonPoste(p), s = seuils();
-  const rows = [...e.exhaustif.map(x => ({ x, m:'couverture exhaustive' })),
-                ...e.alea.map(x => ({ x, m:'tirage aléatoire' }))].map(({ x, m }) => ({
-    num:`<span class="mono">${x.e.num}</span>`, date:`<span class="mono">${frDate(x.e.date)}</span>`,
-    piece:`<span class="mono">${esc(x.e.pieceRef)}</span>`,
-    tiers:esc(x.e.lines.map(l => l.auxLib).find(Boolean) || '—'),
-    montant:eur(x.montant),
-    m:`<span class="pill ${m === 'couverture exhaustive' ? 'acc' : ''}">${m}</span>`,
-    nt:boutonNote(p.code, 'selection', x.e.num, 'Élément sélectionné ' + x.e.num),
-  }));
-  const dejaDemande = requetesDe(p.code).some(r => r.origine === 'selection');
-  return `
-    <div class="row">
-      <div class="ctrl"><label>Méthode</label>
-        <select id="sel-methode" disabled><option>strates : exhaustive au-dessus du seuil + tirage aléatoire</option></select></div>
-      <div class="ctrl"><label>Germe du tirage</label>
-        <input type="text" id="sel-seed" value="${esc(st.seed)}"></div>
-      <div class="ctrl"><label>&nbsp;</label>
-        <button class="btn sec" id="sel-rejouer">rejouer à l’identique</button></div>
-      <div class="ctrl"><label>&nbsp;</label>
-        <button class="btn sec" id="sel-nouveau">nouveau germe</button></div>
-      <div class="ctrl"><label>&nbsp;</label>
-        <button class="btn" id="sel-requete" ${dejaDemande ? 'disabled' : ''}>créer la requête de justificatifs</button></div>
-    </div>
-    <div class="grid3">
-      <div class="kv"><span class="k">Population</span><span class="v">${e.pop.length} écritures</span>
-        <span class="k">Masse</span><span class="v">${eur(e.total)}</span></div>
-      <div class="kv"><span class="k">Strate exhaustive (≥ ${eur0(s.PM)})</span><span class="v">${e.exhaustif.length}</span>
-        <span class="k">Tirage aléatoire</span><span class="v">${e.alea.length} / ${e.n} demandés</span></div>
-      <div class="kv"><span class="k">Montant couvert</span><span class="v">${eur(e.couvert)}</span>
-        <span class="k">Couverture</span><span class="v">${pct(e.taux, 1)}</span></div>
-    </div>
-    ${table([{k:'num',t:'Écriture'},{k:'date',t:'Date'},{k:'piece',t:'Pièce'},{k:'tiers',t:'Tiers',cls:'wrapcell'},
-             {k:'montant',t:'Montant',n:1},{k:'m',t:'Motif de sélection'},{k:'nt',t:''}], rows)}
-    <p class="note">Le germe est écrit dans la feuille : un tiers qui le rejoue obtient exactement les mêmes
-    ${rows.length} éléments. Changer le germe change le tirage — et se voit.</p>
-    ${dejaDemande ? '<div class="callout ok">La requête de justificatifs de cette sélection a été émise : elle figure ci-dessous et dans le portail client.</div>' : ''}`;
+function etatProc(p, pr){
+  if (!pr.ech) return { lib:'sans sélection', cls:'', ok:true };
+  const wp = wpProc(p, pr) || [], recus = wp.filter(r => r.recu).length;
+  const ctr = controles(p, pr), saisis = ctr.filter(c => c.saisi).length;
+  const ec = ctr.filter(c => c.saisi && !c.conforme).length;
+  if (!recus) return { lib:'pièces non reçues', cls:'bad', ok:false, wp, ctr, recus, saisis, ec };
+  if (saisis < ctr.length) return { lib:saisis + '/' + ctr.length + ' contrôles', cls:'warn', ok:false, wp, ctr, recus, saisis, ec };
+  return { lib:ec ? ec + ' écart(s)' : 'exécutée', cls:ec ? 'warn' : 'ok', ok:true, wp, ctr, recus, saisis, ec };
+}
+function blocPlan(p){
+  const procs = proceduresRequises(p);
+  const rows = procs.map(pr => {
+    const e = echantillonProc(p, pr), st = etatProc(p, pr);
+    const ouvert = S.procOuverte === p.code + '/' + pr.code;
+    return {
+      pr:`<b>${esc(pr.lib)}</b><div class="smallcaps">${esc(procRef(p, pr))} · requise à partir de « ${NIV_LIB[pr.min]} »</div>`,
+      a:esc(libAssertion(pr.a)),
+      sel:e ? `<span class="mono">${e.retenus.length}</span> ${esc(pr.unite)}(s)
+               <div class="smallcaps">${e.exhaustif.length} exhaustifs + ${e.alea.length} tirés · ${pct(e.taux, 1)} de la masse</div>`
+            : '<span class="smallcaps">sans sélection</span>',
+      pop:e ? `<span class="mono">${e.pop.items.length}</span><div class="smallcaps">${eur0(e.pop.masse)}</div>` : '—',
+      wp:pr.ech ? `<span class="mono">${esc(procRef(p, pr))}</span>` : '<span class="smallcaps">—</span>',
+      st:`<span class="pill ${st.cls}">${st.lib}</span>`,
+      act:`<button class="btn mini ${ouvert ? '' : 'sec'}" data-proc="${p.code}/${pr.code}">${ouvert ? 'ouverte' : 'ouvrir'}</button>
+           ${boutonNote(p.code, 'procedure', pr.code, 'Procédure ' + procRef(p, pr))}`,
+    };
+  });
+  return procs.length ? table([{k:'pr',t:'Procédure',cls:'wrapcell'},{k:'a',t:'Assertion'},
+    {k:'pop',t:'Population',n:1},{k:'sel',t:'Sélection',cls:'wrapcell'},{k:'wp',t:'Papier'},
+    {k:'st',t:'Statut'},{k:'act',t:''}], rows)
+    : '<p class="note">Aucune procédure requise au niveau de risque retenu.</p>';
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   4. REQUÊTES DE LA SECTION
+   4. UNE PROCÉDURE : sa population, sa sélection, son papier
+   ───────────────────────────────────────────────────────────────────────── */
+const CTR_PAR_PAGE = 40;
+function blocProcedure(p, pr){
+  const stp = proc(p.code, pr.code), e = echantillonProc(p, pr), s = seuils();
+  const cat = catalogue(p, pr), spec = catalogueSpecifique(p, pr);
+  const deja = requetesDe(p.code).some(r => r.proc === pr.code);
+  if (!pr.ech) return `
+    <div class="row"><span class="pill acc">${esc(libAssertion(pr.a))}</span>
+      <span class="pill">sans sélection</span><span class="smallcaps">${esc(procRef(p, pr))}</span></div>
+    <p class="note">${esc(pr.lib)} — procédure exécutée sur la population entière, sans échantillonnage.</p>
+    <div class="ctrl"><label>Conclusion de la procédure</label>
+      <textarea data-pconcl="${pr.code}" rows="2" placeholder="résultat de la procédure">${esc(stp.conclusion)}</textarea></div>`;
+
+  /* ── définition de la population, affichée telle quelle ── */
+  const defPop = `
+    <h3>Population</h3>
+    <div class="kv">
+      <span class="k">Définition</span><span class="v" style="font-family:var(--sans)">${esc(e.pop.lib)}</span>
+      <span class="k">Comptes</span><span class="v">${p.comptes.join(' · ')}</span>
+      <span class="k">Période</span><span class="v">${esc(e.pop.periode)}</span>
+      <span class="k">Filtre appliqué</span><span class="v" style="font-family:var(--sans)">${esc(e.pop.filtre)}</span>
+      <span class="k">Unité d’échantillonnage</span><span class="v" style="font-family:var(--sans)">${esc(pr.unite)}</span>
+      <span class="k">Éléments</span><span class="v">${e.pop.items.length}</span>
+      <span class="k">Masse</span><span class="v">${eur(e.pop.masse)}</span>
+      <span class="k">Procédure servie</span><span class="v" style="font-family:var(--sans)">${esc(pr.lib)}</span>
+      <span class="k">Assertion visée</span><span class="v" style="font-family:var(--sans)">${esc(libAssertion(pr.a))}</span>
+      <span class="k">Papier alimenté</span><span class="v">${esc(procRef(p, pr))}</span>
+    </div>`;
+
+  /* ── paramètres de tirage ── */
+  const params = `
+    <h3>Sélection</h3>
+    <div class="row">
+      <div class="ctrl"><label>Méthode</label>
+        <select disabled><option>strate exhaustive au-dessus du seuil + tirage aléatoire</option></select></div>
+      <div class="ctrl"><label>Seuil de la strate exhaustive</label>
+        <input class="cell" value="${eur0(s.PM)}" disabled style="text-align:left"></div>
+      <div class="ctrl"><label>Germe</label>
+        <input type="text" data-pseed="${pr.code}" value="${esc(stp.seed)}"></div>
+      <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>
+      <div class="ctrl"><label>&nbsp;</label>
+        <button class="btn" data-preq="${pr.code}" ${deja ? 'disabled' : ''}>${deja ? 'requête émise' : 'générer la requête depuis le catalogue'}</button></div>
+    </div>
+    <div class="grid3">
+      <div class="kv"><span class="k">Strate exhaustive</span><span class="v">${e.exhaustif.length}</span>
+        <span class="k">Tirage aléatoire</span><span class="v">${e.alea.length} / ${e.n}</span></div>
+      <div class="kv"><span class="k">Retenus</span><span class="v">${e.retenus.length}</span>
+        <span class="k">Montant couvert</span><span class="v">${eur(e.couvert)}</span></div>
+      <div class="kv"><span class="k">Couverture</span><span class="v">${pct(e.taux, 1)}</span>
+        <span class="k">Papier</span><span class="v">${esc(procRef(p, pr))}</span></div>
+    </div>`;
+
+  /* ── catalogue de preuve appliqué ── */
+  const catBloc = cat ? `
+    <h3>Justificatifs attendus <span class="tag ${spec ? 'det' : ''}">${spec ? 'catalogue du cycle' : 'catalogue générique'}</span></h3>
+    ${table([{k:'d',t:'Document'},{k:'c',t:'Champ à relever'},{k:'r',t:'Contrôlé contre',cls:'wrapcell'},{k:'t',t:'Tolérance'}],
+      cat.flatMap(d => d.champs.map((ch, i) => ({
+        d:i === 0 ? '<b>' + esc(d.doc) + '</b>' : '', c:esc(ch.lib),
+        r:esc(ch.contre) + (ch.regle ? ' <span class="smallcaps">(' + esc(ch.regle) + ')</span>' : ''),
+        t:esc(ch.tolLib) }))))}` : '';
+
+  /* ── papier de travail : un contrôle par ligne ── */
+  const ctr = controles(p, pr);
+  const tout = S.ctrTout && S.ctrTout[p.code + '/' + pr.code];
+  const vus = tout ? ctr : ctr.slice(0, CTR_PAR_PAGE);
+  const wp = wpProc(p, pr), recus = wp.filter(r => r.recu).length;
+  const ecarts = ctr.filter(c => c.saisi && !c.conforme);
+  const rows = vus.map((c, i) => ({
+    el:`<span class="mono">${esc(String(c.ligne.cle))}</span>` +
+       (c.ligne.x.e ? `<div class="smallcaps">${esc(c.ligne.x.e.pieceRef)} · ${eur0(c.ligne.x.montant)}</div>`
+                    : `<div class="smallcaps">${eur0(c.ligne.x.montant)}</div>`),
+    doc:esc(c.doc) + (c.recu ? '' : ' <span class="pill bad">non reçu</span>'),
+    ch:esc(c.ch.lib),
+    v:c.recu ? champInput(p, pr, c) : '<span class="smallcaps">—</span>',
+    contre:esc(c.ch.contre),
+    ref:c.saisi ? esc(c.refLib) : (c.recu ? esc(String(refLisible(c))) : '<span class="smallcaps">—</span>'),
+    ec:c.saisi ? (c.conforme ? '<span class="pill ok">conforme</span>'
+                             : '<span class="pill bad">' + esc(c.ecartLib) + '</span>') : '',
+    tol:esc(c.ch.tolLib),
+    nt:i % Math.max(1, cat ? cat.reduce((a, d) => a + d.champs.length, 0) : 1) === 0
+       ? boutonNote(p.code, 'papier', c.ligne.cle, 'Papier ' + procRef(p, pr) + ' — ' + c.ligne.cle) : '',
+  }));
+  const papier = `
+    <h3>Papier de travail <span class="mono">${esc(procRef(p, pr))}</span></h3>
+    <div class="row">
+      <span class="pill ${recus === wp.length ? 'ok' : 'bad'}">${recus}/${wp.length} éléments avec pièce</span>
+      <span class="pill ${ctr.filter(c => c.saisi).length === ctr.length ? 'ok' : 'warn'}">${ctr.filter(c => c.saisi).length}/${ctr.length} contrôles saisis</span>
+      <span class="pill ${ecarts.length ? 'bad' : 'ok'}">${ecarts.length} écart(s)</span>
+      ${recus ? `<button class="btn sec mini" data-plire="${pr.code}">remplir comme si vous lisiez les pièces</button>` : ''}
+    </div>
+    ${table([{k:'el',t:'Élément'},{k:'doc',t:'Document'},{k:'ch',t:'Champ relevé'},{k:'v',t:'Valeur relevée',n:1},
+             {k:'contre',t:'Contrôlé contre',cls:'wrapcell'},{k:'ref',t:'Référence',n:1},
+             {k:'ec',t:'Écart'},{k:'tol',t:'Tolérance'},{k:'nt',t:''}], rows)}
+    ${ctr.length > vus.length ? `<button class="btn mini sec" data-ctrtout="${p.code}/${pr.code}" style="margin-top:6px">afficher les ${ctr.length} contrôles</button>`
+      : tout && ctr.length > CTR_PAR_PAGE ? `<button class="btn mini sec" data-ctrtout="${p.code}/${pr.code}" style="margin-top:6px">replier</button>` : ''}
+    <div class="ctrl" style="margin-top:8px"><label>Conclusion de la procédure</label>
+      <textarea data-pconcl="${pr.code}" rows="2" placeholder="résultat de la procédure au regard des contrôles exécutés">${esc(stp.conclusion)}</textarea></div>`;
+
+  return `<div class="row"><span class="pill acc">${esc(libAssertion(pr.a))}</span>
+      <span class="smallcaps">${esc(pr.lib)}</span></div>
+    ${defPop}${params}${catBloc}${papier}`;
+}
+function refLisible(c){
+  const r = c.ch.ref(c.ligne.x);
+  return c.ch.type === 'montant' ? eur(r) : c.ch.type === 'date' ? frDate(r) : c.ch.type === 'bool' ? (r ? 'exigée' : '—') : r;
+}
+function champInput(p, pr, c){
+  const v = c.ligne.champs[c.cle];
+  if (c.ch.type === 'bool') return `<select class="cell txt" data-ctr="${esc(c.cle)}" data-pcode="${pr.code}" style="width:80px">
+      <option value="">—</option><option value="oui" ${v === 'oui' ? 'selected' : ''}>oui</option>
+      <option value="non" ${v === 'non' ? 'selected' : ''}>non</option></select>`;
+  return `<input class="cell ${c.ch.type === 'texte' ? 'txt' : ''}" data-ctr="${esc(c.cle)}" data-pcode="${pr.code}"
+    value="${esc(v === undefined ? '' : v)}" placeholder="${c.ch.type === 'date' ? 'aaaa-mm-jj' : ''}">`;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   5. REQUÊTES DE LA SECTION
    ───────────────────────────────────────────────────────────────────────── */
 function blocRequetes(p){
   const rs = requetesDe(p.code);
-  if (!rs.length) return `<p class="note">Aucune requête sur cette section. Elles naissent soit d’un enchaînement
-    (une règle qui se déclenche dans la section), soit d’une saisie manuelle ci-dessous.</p>
-    ${formNouvelleRequete(p)}`;
-  const rows = rs.map(r => {
-    const a = avancement(r.items), ret = retard(r);
-    const c = S.contacts.find(x => x.id === r.contact);
-    return {
-      id:`<span class="mono">${r.id}</span>`, t:esc(r.titre),
-      dest:c ? esc(c.nom) + '<div class="smallcaps">' + esc(c.fonction) + '</div>' : '—',
-      ech:`<span class="mono">${frDate(r.echeance)}</span>` + (ret ? `<div class="smallcaps" style="color:var(--bad)">retard ${ancienneteRetard(r)} j ouvrés</div>` : ''),
-      av:`<div class="bar" style="width:90px"><i style="width:${(a * 100).toFixed(0)}%"></i></div><span class="smallcaps">${pct(a, 0)}</span>`,
-      st:r.items.map(i => `<span class="pill ${STATUTS[i.statut].cls}">${STATUTS[i.statut].lib}${i.statut === 'attente_revue' ? ' ' + esc(i.revoyeur || '') : ''}</span>`).join(' '),
-      org:r.origine ? `<span class="tag">${esc(r.origine)}</span>` : '<span class="tag">saisie manuelle</span>',
-      nt:boutonNote(p.code, 'requete', r.id, 'Requête ' + r.id) +
-         ` <button class="btn mini sec" data-goreq="${r.id}">voir au portail</button>`,
-    };
-  });
-  return `
-    ${table([{k:'id',t:'N°'},{k:'t',t:'Objet',cls:'wrapcell'},{k:'dest',t:'Destinataire côté client',cls:'wrapcell'},
-             {k:'ech',t:'Échéance'},{k:'av',t:'Avancement'},{k:'st',t:'États',cls:'wrapcell'},
-             {k:'org',t:'Origine'},{k:'nt',t:''}], rows)}
-    ${formNouvelleRequete(p)}`;
-}
-function formNouvelleRequete(p){
-  return `<div class="row" style="margin-top:10px">
+  const form = `<div class="row" style="margin-top:10px">
     <div class="ctrl" style="flex:1 1 320px"><label>Nouvelle requête (saisie manuelle)</label>
       <input type="text" id="req-titre" placeholder="ex. : détail du compte 706000 avec les contrats associés"></div>
     <div class="ctrl"><label>Échéance dans</label>
       <select id="req-delai"><option value="7">7 jours</option><option value="12" selected>12 jours</option><option value="20">20 jours</option></select></div>
     <div class="ctrl"><label>&nbsp;</label><button class="btn" id="req-add">créer</button></div>
   </div>`;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   5. PAPIERS DE TRAVAIL
-   ───────────────────────────────────────────────────────────────────────── */
-function blocPapiers(p){
-  const wp = wpDe(p), s = seuils();
-  const recus = wp.filter(r => r.recu);
-  const ec = ecartsWp(p);
-  const ecartTotal = ec.reduce((a, r) => a + r.ecart, 0);
-  const nonExpl = ec.filter(r => !r.expl.trim()).reduce((a, r) => a + r.ecart, 0);
-  const rows = wp.map((r, i) => ({
-    _anchor:'papier:' + r.num,
-    num:`<span class="mono">${r.num}</span>`, piece:`<span class="mono">${esc(r.piece)}</span>`,
-    tiers:esc(r.tiers), date:`<span class="mono">${frDate(r.date)}</span>`,
-    compta:eur(r.compta),
-    doc:r.recu ? r.docs.map(d => `<span class="tag">${esc(d)}</span>`).join(' ')
-              : '<span class="pill bad">pièce non reçue</span>',
-    usage:r.recu ? esc(usageDuDoc(r.docs)) : '<span class="smallcaps">le contrôle ne peut pas être exécuté sans la pièce</span>',
-    releve:r.recu ? `<input class="cell" data-wp="${i}" data-f="releve" value="${r.releve === null ? '' : (r.releve / 100).toFixed(2).replace('.', ',')}">`
-                  : '<span class="smallcaps">—</span>',
-    ecart:r.recu && r.releve !== null && r.releve !== r.compta ? '<b>' + eur(r.compta - r.releve) + '</b>' : '—',
-    expl:r.recu && r.releve !== null && r.releve !== r.compta
-         ? `<input class="cell txt" data-wp="${i}" data-f="expl" placeholder="explication de l’écart" value="${esc(r.expl)}">` : '',
-    nt:boutonNote(p.code, 'papier', r.num, 'Papier de travail — ligne ' + r.num),
-  }));
-  return `
-    <div class="grid3" style="margin-bottom:8px">
-      <div class="kv"><span class="k">Lignes à tester</span><span class="v">${wp.length}</span>
-        <span class="k">Pièces reçues</span><span class="v">${recus.length} / ${wp.length}</span></div>
-      <div class="kv"><span class="k">Écarts relevés</span><span class="v">${ec.length}</span>
-        <span class="k">Écart total</span><span class="v">${eur(ecartTotal)}</span></div>
-      <div class="kv"><span class="k">Seuil de remontée</span><span class="v">${eur0(s.CTT)}</span>
-        <span class="k">Écart non expliqué</span><span class="v">${eur(nonExpl)}</span></div>
-    </div>
-    ${table([{k:'num',t:'Écriture'},{k:'piece',t:'Pièce'},{k:'tiers',t:'Tiers',cls:'wrapcell'},{k:'date',t:'Date'},
-             {k:'compta',t:'Comptabilisé',n:1},{k:'doc',t:'Document obtenu',cls:'wrapcell'},
-             {k:'usage',t:'Comment il a servi au contrôle',cls:'wrapcell'},
-             {k:'releve',t:'Relevé sur la pièce',n:1},{k:'ecart',t:'Écart',n:1},
-             {k:'expl',t:'Explication',cls:'wrapcell'},{k:'nt',t:''}], rows)}
-    ${wp.length - recus.length > 0 ? `<div class="callout warn"><b>${wp.length - recus.length} pièce(s) manquante(s).</b>
-      Les lignes correspondantes ne portent aucun contrôle : rien n’a été relevé, donc rien n’est conclu.
-      Le prototype ne remplit pas une ligne sans pièce — c’est ce qui distingue une diligence d’un tableau rempli.</div>` : ''}
-    ${nonExpl ? `<div class="callout bad">⚑ <b>Écart non expliqué : ${eur(nonExpl)}</b> — le drapeau reste levé tant
-      qu’une explication n’est pas saisie en regard de chaque écart.</div>`
-      : ec.length ? `<div class="callout ok">✓ Les ${ec.length} écart(s) relevé(s) portent une explication — total ${eur(ecartTotal)}.</div>` : ''}`;
+  if (!rs.length) return '<p class="note">Aucune requête sur cette section.</p>' + form;
+  const rows = rs.map(r => {
+    const a = avancement(r.items), ret = retard(r), c = S.contacts.find(x => x.id === r.contact);
+    return {
+      id:`<span class="mono">${r.id}</span>`, t:esc(r.titre),
+      pr:r.proc ? `<span class="tag">${esc(r.proc)}</span>` : '<span class="smallcaps">—</span>',
+      dest:c ? esc(c.nom) + '<div class="smallcaps">' + esc(c.fonction) + '</div>' : '—',
+      ech:`<span class="mono">${frDate(r.echeance)}</span>` + (ret ? `<div class="smallcaps" style="color:var(--bad)">retard ${ancienneteRetard(r)} j</div>` : ''),
+      av:`<div class="bar" style="width:90px"><i style="width:${(a * 100).toFixed(0)}%"></i></div><span class="smallcaps">${pct(a, 0)}</span>`,
+      st:r.items.map(i => STATUTS[i.statut].lib).filter((v, i, s) => s.indexOf(v) === i)
+          .map(l => `<span class="pill">${esc(l)}</span>`).join(' '),
+      nt:boutonNote(p.code, 'requete', r.id, 'Requête ' + r.id) +
+         ` <button class="btn mini sec" data-goreq="${r.id}">portail</button>`,
+    };
+  });
+  return table([{k:'id',t:'N°'},{k:'t',t:'Objet',cls:'wrapcell'},{k:'pr',t:'Procédure'},
+                {k:'dest',t:'Destinataire',cls:'wrapcell'},{k:'ech',t:'Échéance'},
+                {k:'av',t:'Avancement'},{k:'st',t:'États',cls:'wrapcell'},{k:'nt',t:''}], rows) + form;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1559,15 +1895,21 @@ function obstaclesVisa(p){
   const st = sec(p.code), o = [];
   const bl = notesBloquantesOuvertes(p.code);
   if (bl.length) o.push(`${bl.length} note(s) de revue bloquante(s) ouverte(s)`);
-  // un facteur non statué bloque : la constatation existe, personne ne l'a tranchée
   const fp = facteursProposes(p.code);
   if (fp.length) o.push(`${fp.length} facteur(s) de risque non statué(s)`);
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
-  const wp = wpDe(p), manquantes = wp.filter(r => !r.recu).length;
-  if (manquantes) o.push(`${manquantes} pièce(s) justificative(s) non reçue(s)`);
-  const nonExpl = ecartsWp(p).filter(r => !r.expl.trim());
-  if (nonExpl.length) o.push(`${nonExpl.length} écart(s) sans explication`);
+  let manq = 0, nonSaisis = 0, sansConcl = 0;
+  for (const pr of proceduresRequises(p)){
+    if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
+    const wp = wpProc(p, pr) || [];
+    manq += wp.filter(r => !r.recu).length;
+    nonSaisis += controles(p, pr).filter(c => c.recu && !c.saisi).length;
+    if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++;
+  }
+  if (manq) o.push(`${manq} élément(s) sans pièce justificative`);
+  if (nonSaisis) o.push(`${nonSaisis} contrôle(s) non exécuté(s) alors que la pièce est reçue`);
+  if (sansConcl) o.push(`${sansConcl} procédure(s) sans conclusion`);
   const sansMotif = p.comptes.filter(c => st.ns[c] && !(st.nsMotif[c] || '').trim());
   if (sansMotif.length) o.push(`statut forcé sans motif sur ${sansMotif.join(', ')}`);
   const nivSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
@@ -1583,9 +1925,6 @@ function blocConclusion(p){
   return `
     <h3>Reprise de l’exercice précédent</h3>
     ${n1.length || notesN1.length ? `
-      <div class="callout info"><b>Rien n’est repris automatiquement.</b> Les travaux N-1 sont affichés pour mémoire
-      et marqués « à reconfirmer ». Tant qu’un papier N-1 n’a pas été explicitement reconfirmé ou écarté, la section
-      ne peut pas être visée.</div>
       ${n1.map(x => `<div class="nl n1">
         <div class="m"><span class="mono">${x.id}</span> · exercice 2024
           ${st.reprisN1Vues[x.id] ? '<span class="pill ok">reconfirmé</span>' : '<span class="pill warn">à reconfirmer</span>'}</div>
@@ -1599,49 +1938,51 @@ function blocConclusion(p){
     ` : '<p class="note">Aucun travail N-1 enregistré sur cette section.</p>'}
 
     <h3>Conclusion de section</h3>
-    <textarea id="sec-concl" rows="3" placeholder="Conclusion de l’auditeur sur le poste, au regard des procédures exécutées et des écarts relevés.">${esc(st.conclusion)}</textarea>
+    <textarea id="sec-concl" rows="3" placeholder="conclusion de l’auditeur sur le poste, au regard des procédures exécutées et des écarts relevés">${esc(st.conclusion)}</textarea>
     ${boutonNote(p.code, 'conclusion', 'concl', 'Conclusion de la section ' + p.lib)}
 
     <h3>Visa</h3>
     ${st.visa ? `<div class="callout ok"><b>Section visée</b> par ${esc(USERS[st.visa.par].nom)}
         (${ROLE_LIB[USERS[st.visa.par].role]}) le ${horo(st.visa.t)}.
         <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>`
-      : o.length ? `<div class="callout bad"><b>Visa impossible — ${o.length} obstacle(s) :</b>
-          <ul style="margin:5px 0 0 16px;padding:0">${o.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-          <div class="smallcaps" style="margin-top:5px">Le bouton n’est pas grisé pour la forme : il n’existe aucun chemin
-          qui vise une section dans cet état.</div></div>
+      : o.length ? `<div class="callout bad"><b>${o.length} obstacle(s) :</b>
+          <ul style="margin:5px 0 0 16px;padding:0">${o.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
           <button class="btn" disabled>viser la section</button>`
-      : `<div class="callout ok">Aucun obstacle. Le visa engage ${esc(USERS[S.moi].nom)} (${ROLE_LIB[USERS[S.moi].role]}).</div>
-         <button class="btn" id="sec-visa">viser la section</button>`}`;
+      : `<button class="btn" id="sec-visa">viser la section — engage ${esc(USERS[S.moi].nom)}</button>`}`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   ASSEMBLAGE DE LA SECTION
+   ASSEMBLAGE
    ───────────────────────────────────────────────────────────────────────── */
 function vueFsli(code){
   const p = postesCalcules().find(x => x.code === code);
   if (!p) return '<p class="note">Poste inconnu.</p>';
-  const s = seuils(), e = echantillonPoste(p), procs = proceduresRequises(p);
-  const st = sec(p.code), o = obstaclesVisa(p);
+  const s = seuils(), procs = proceduresRequises(p), st = sec(p.code), o = obstaclesVisa(p);
+  const ouvertKey = S.procOuverte && S.procOuverte.startsWith(p.code + '/') ? S.procOuverte.slice(p.code.length + 1) : null;
+  const prOuverte = procs.find(x => x.code === ouvertKey) || null;
   const bloc = (n, titre, why, html) => `<section class="blk" id="b${n}">
       <header><span class="num">${n}</span><h2>${esc(titre)}</h2><span class="why">${why}</span></header>
       <div class="body">${html}</div></section>`;
+  const nSel = procs.filter(x => x.ech).length;
   return `
     <div class="hd">
       <h1>${esc(p.lib)}</h1>
-      <span class="pill ${Math.abs(p.solde) >= s.PM ? 'acc' : ''}">${Math.abs(p.solde) >= s.PM ? 'dans le périmètre' : 'hors périmètre'}</span>
+      <span class="pill">${esc(MASSE_LIB[masseDe(p)])}</span>
       <span class="pill ${NIVEAUX[niveauMax(p)] === 'eleve' ? 'bad' : NIVEAUX[niveauMax(p)] === 'moyen' ? 'warn' : 'ok'}">risque ${NIV_LIB[NIVEAUX[niveauMax(p)]]}</span>
-      ${st.visa ? '<span class="pill ok">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length ? o.length + ' obstacle(s) au visa' : 'prête à viser'}</span>`}
-      <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${e.pop.length} écriture(s)
-        · ${procs.length} procédure(s) · ${e.exhaustif.length + e.alea.length} élément(s) sélectionné(s)</span>
+      ${st.visa ? '<span class="pill ok">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length ? o.length + ' obstacle(s)' : 'prête à viser'}</span>`}
+      <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
     </div>
     ${bloc(1, 'Comptes de la section', 'triage interne et poids de périmètre', blocComptes(p))}
     ${bloc(2, 'Évaluation du risque par assertion', 'commande les procédures et l’échantillon', blocRisque(p))}
-    ${bloc(3, 'Sélections et paramètres', 'rejouable au germe', blocSelection(p))}
-    ${bloc(4, 'Requêtes de la section', 'lien direct avec le portail client', blocRequetes(p))}
-    ${bloc(5, 'Papiers de travail', 'une ligne, une pièce, un écart', blocPapiers(p))}
+    ${bloc(3, 'Plan de travail', 'sélection → procédure → papier → statut', blocPlan(p))}
+    ${prOuverte ? bloc(4, 'Procédure : ' + prOuverte.lib, procRef(p, prOuverte), blocProcedure(p, prOuverte))
+      : (procs.filter(x => x.ech).length
+        ? `<section class="blk" id="b4"><header><span class="num">4</span><h2>Procédure</h2></header>
+           <div class="body"><p class="note">Ouvrez une procédure dans le plan de travail ci-dessus pour voir sa population,
+           sa sélection et son papier.</p></div></section>` : '')}
+    ${bloc(5, 'Requêtes de la section', 'lien direct avec le portail client', blocRequetes(p))}
     ${bloc(6, 'Notes de revue de la section', 'ancrées sur un objet', blocNotesSection(p.code))}
-    ${bloc(7, 'Conclusion, visa et reprise N-1', 'bloqué tant qu’un obstacle subsiste', blocConclusion(p))}`;
+    ${bloc(7, 'Conclusion, visa et reprise N-1', o.length ? o.length + ' obstacle(s)' : 'prête', blocConclusion(p))}`;
 }
 /* ═══ 12. NOTES DE REVUE — INTERFACE ═══════════════════════════════════════
    Il n'existe aucun chemin pour créer une note flottante : le bouton porte
@@ -1697,8 +2038,6 @@ function blocNotesSection(code){
   const ouvertes = list.filter(n => !n.clos);
   const c = S.noteCible && S.noteCible.section === code ? S.noteCible : null;
   return `
-    <div class="callout info">Les notes de revue sont <b>réservées aux humains</b> : aucun auteur automatique, aucune
-    réponse suggérée. Chaque note est <b>ancrée</b> sur un objet — on ne peut pas en poser une « sur la section ».</div>
     ${c ? `<div class="callout" style="margin-top:8px">
       <b>Nouvelle note sur :</b> ${esc(c.lib)}
       <div class="row" style="margin:7px 0 0">
@@ -1711,7 +2050,7 @@ function blocNotesSection(code){
         <div class="ctrl"><label>&nbsp;</label><button class="btn" id="nt-add">poser la note</button></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="nt-annul">annuler</button></div>
       </div></div>`
-      : '<p class="note" style="margin-top:8px">Pour poser une note, utilisez le bouton ✎ en regard de l’objet concerné, dans n’importe quel bloc ci-dessus.</p>'}
+      : '<p class="note">Bouton ✎ en regard de l’objet, dans n’importe quel bloc ci-dessus.</p>'}
     ${list.length ? `<div style="margin-top:8px">
         <div class="row"><span class="pill ${ouvertes.length ? 'warn' : 'ok'}">${ouvertes.length} ouverte(s)</span>
           <span class="pill">${list.length - ouvertes.length} close(s)</span>
@@ -1751,9 +2090,7 @@ function vueNotes(){
           : '<p class="note">Aucune.</p>'}</div>
       </div>
       ${ouvertes.filter(n => n.recurrente).length ? `<div class="callout warn" style="margin-top:10px">
-        <b>${ouvertes.filter(n => n.recurrente).length} note(s) récurrente(s)</b> — même section, même type qu’en N-1.
-        Une récurrence n’est pas une anomalie de plus : c’est un signal sur la qualité du dossier, obtenu par simple
-        rapprochement avec l’exercice précédent.</div>` : ''}
+        <b>${ouvertes.filter(n => n.recurrente).length} note(s) récurrente(s)</b> — même section et même type qu’en N-1.</div>` : ''}
     </div></section>
     <section class="blk"><header><h2>Notes ouvertes — bloquantes d’abord, puis les plus anciennes</h2>
       <span class="why">${ouvertes.length} note(s)</span></header><div class="body">
@@ -1764,7 +2101,7 @@ function vueNotes(){
       ${notesBloquantesOuvertes().length
         ? `<div class="callout bad"><b>Clôture impossible.</b> ${notesBloquantesOuvertes().length} note(s) bloquante(s)
             restent ouvertes : ${notesBloquantesOuvertes().map(n => '#' + n.id + ' (' + esc(n.ancre.lib) + ')').join(', ')}.
-            Une note ne se supprime jamais — elle se clôt, par le réviseur.</div>
+</div>
            <button class="btn" disabled>clôturer le dossier</button>`
         : `<div class="callout ok">Aucune note bloquante ouverte.</div>
            <button class="btn" id="clore-dossier" ${S.dossierClos ? 'disabled' : ''}>${S.dossierClos ? 'dossier clôturé' : 'clôturer le dossier'}</button>`}
@@ -1793,14 +2130,16 @@ function vueClientDemandes(){
   return `
     <div class="hd"><h1>Vos demandes de documents</h1>
       <span class="sub">Altiverre SAS — exercice clos le 31/12/2025 · ${esc(c.nom)}, ${esc(c.fonction)}</span></div>
-    <div class="callout">Déposez ici les pièces demandées par l’équipe d’audit. Lorsque vous avez fourni
-      <b>tout</b> ce qui est demandé pour une requête, appuyez sur <b>« tout est déposé »</b> : sans ce signal,
-      la demande reste « partiellement soumise » et l’équipe ne la traite pas.
-      Vous pouvez aussi envoyer vos pièces par courriel à <span class="mono">${esc(S.portail.adresse)}</span>.</div>
+    <p class="note">Dépôt sur cette page ou par courriel à <span class="mono">${esc(S.portail.adresse)}</span>.
+      Le bouton « tout est déposé » signale à l’équipe que la demande est complète.</p>
     ${enRetard.length ? `<div class="callout warn"><b>${enRetard.length} demande(s) en retard.</b>
       Une relance automatique part tous les ${S.portail.cadence} jours ouvrés ; passé ${S.portail.escalade} jours,
       elle est adressée à ${esc(S.contacts.find(x => x.role === 'referent_general').nom)}.</div>` : ''}
-    ${rs.length ? rs.map(r => carteRequeteClient(r)).join('') : '<p class="note">Aucune demande ne vous est adressée pour le moment.</p>'}`;
+    ${barreFiltres('client', rs.length, filtrer(rs, 'client').length)}
+    ${rs.length ? (filtrer(rs, 'client').length
+        ? filtrer(rs, 'client').map(r => carteRequeteClient(r)).join('')
+        : '<p class="note">Aucune demande ne correspond aux filtres.</p>')
+      : '<p class="note">Aucune demande ne vous est adressée pour le moment.</p>'}`;
 }
 
 const CLI_PAR_PAGE = 15;
@@ -1818,10 +2157,10 @@ function carteRequeteClient(r){
     <header><span class="num">${r.id}</span><h2>${esc(r.titre)}</h2>
       <span class="why">à fournir avant le ${frDate(r.echeance)}${ret ? ' — en retard de ' + ancienneteRetard(r) + ' jours ouvrés' : ''}</span></header>
     <div class="body">
-      ${r.items.length > vus.length ? `<div class="callout"><b>${r.items.length} documents demandés</b> —
-        ${r.items.length - restants.length} déjà déposé(s), ${restants.length} restant(s).
-        Les ${vus.length} premiers restants sont affichés.
-        <button class="btn mini sec" data-clitout="${r.id}">afficher les ${r.items.length} éléments</button></div>` : ''}
+      ${r.items.length > vus.length ? `<div class="row"><span class="pill">${r.items.length} demandés</span>
+        <span class="pill ok">${r.items.length - restants.length} déposés</span>
+        <span class="pill warn">${restants.length} restants</span>
+        <button class="btn mini sec" data-clitout="${r.id}">tout afficher</button></div>` : ''}
       ${vus.map(i => {
         const v = statutVisibleClient(i);
         return `<div class="cli-item">
@@ -1846,7 +2185,7 @@ function carteRequeteClient(r){
         <h3>Échanges sur cette demande</h3>
         ${r.messages.length ? r.messages.map(m => `<div class="m ${m.cote}">
             <span class="w">${esc(m.par)} · ${horo(m.t)}</span>${esc(m.texte)}</div>`).join('')
-          : '<p class="note">Aucun message. Ce fil est distinct des notes de revue internes à l’équipe d’audit : vous ne voyez jamais celles-ci.</p>'}
+          : '<p class="note">Aucun message.</p>'}
         <div class="row" style="margin:8px 0 0">
           <div class="ctrl" style="flex:1 1 300px"><input type="text" data-msg="${r.id}" placeholder="écrire à l’équipe d’audit"></div>
           <button class="btn sec" data-msgok="${r.id}">envoyer</button>
@@ -1924,12 +2263,11 @@ function vueClientParams(){
       </div>
       <div class="ctrl" style="max-width:460px"><label>Adresse de dépôt par courriel</label>
         <input type="text" id="pp-adr" value="${esc(p.adresse)}"></div>
-      <div class="callout"><b>Effet immédiat, calculé.</b> Avec ces réglages, ${S.requetes.filter(retard).length}
-        demande(s) sont en retard ; ${S.requetes.filter(r => retard(r) && ancienneteRetard(r) >= p.escalade).length}
-        ont dépassé le délai d’escalade et seraient portées au référent général.
-        Les jours ouvrés servent aussi à l’ancienneté des notes de revue — c’est le même compteur.</div>
-      <p class="note">Ce prototype n’envoie aucun message : il n’y a ni serveur de courriel, ni transport sortant.
-      Ce que vous voyez est le <b>calcul</b> des échéances et des escalades, pas une simulation d’envoi.</p>
+      <div class="row" style="margin-top:8px">
+        <span class="pill ${S.requetes.filter(retard).length ? 'warn' : 'ok'}">${S.requetes.filter(retard).length} demande(s) en retard</span>
+        <span class="pill ${S.requetes.filter(r => retard(r) && ancienneteRetard(r) >= p.escalade).length ? 'bad' : 'ok'}">${S.requetes.filter(r => retard(r) && ancienneteRetard(r) >= p.escalade).length} au-delà du délai d’escalade</span>
+        <span class="smallcaps">aucun message n’est envoyé : ni serveur, ni transport sortant</span>
+      </div>
     </div></section>
     <section class="blk"><header><h2>Ce que le client voit, et ce qu’il ne voit pas</h2></header><div class="body">
       ${table([{k:'q',t:'Élément'},{k:'v',t:'Visible du client'},{k:'p',t:'Pourquoi',cls:'wrapcell'}], [
@@ -1957,9 +2295,15 @@ function postesEnPerimetre(){
 function anomalies(){
   const s = seuils(), out = [];
   for (const p of postesEnPerimetre()){
-    for (const r of ecartsWp(p))
-      out.push({ src:p.lib, lib:'Écart sur pièce ' + r.piece + ' (' + r.tiers + ')', montant:r.ecart,
-                 expl:r.expl, section:p.code, objet:'papier', ref:r.num });
+    for (const pr of proceduresRequises(p)){
+      for (const c of ecartsChiffresProc(p, pr)){
+        out.push({ src:p.lib + ' · ' + procRef(p, pr),
+                   lib:c.ch.lib + ' — ' + (c.ligne.x.e ? 'pièce ' + c.ligne.x.e.pieceRef : c.ligne.cle)
+                      + ' (' + c.doc.toLowerCase() + ')',
+                   montant:c.montant, expl:c.ligne.expl,
+                   section:p.code, objet:'papier', ref:c.ligne.cle });
+      }
+    }
   }
   for (const r of rapprochement()) if (r.ecart !== 0 && r.sTB - r.sGL > 0)
     out.push({ src:'Rapprochement', lib:'Écriture de situation non reprise au FEC — compte ' + r.compte,
@@ -2032,16 +2376,11 @@ function vueMaterialite(){
     blk('Références possibles', 'toutes calculées depuis la balance',
       table([{k:'r',t:'Référence',cls:'wrapcell'},{k:'m',t:'Montant',n:1},{k:'u',t:'Taux usuel',n:1},
              {k:'a',t:'Taux appliqué',n:1},{k:'s',t:'Seuil de signification',n:1},{k:'p',t:'Planification',n:1}], rows) +
-      `<div class="callout"><b>Le calcul, en clair.</b> ${esc(s.bench.lib)} ${eur(s.bench.val)} × ${pct(S.pctM / 100, 1)}
-        = ${eur(s.brut)}, arrondi au millier d’euros inférieur → <b>${eur(s.M)}</b>.
-        Planification = ${S.pctPM}${NBSP}% du seuil → <b>${eur(s.PM)}</b>.
-        Remontée = ${S.pctCTT}${NBSP}% du seuil, arrondi à la centaine → <b>${eur(s.CTT)}</b>.
-        Aucun de ces trois nombres n’est écrit en dur : bougez un curseur, ils se recalculent, et avec eux
-        le périmètre, les échantillons et la conclusion.</div>
-      <div class="callout info"><b>Ce que ferait un modèle ici.</b> Proposer la référence et le taux, et rédiger la
-        motivation à partir des caractéristiques de l’entité. <span class="tag mod">modèle</span>
-        Vérification humaine : ≈ 10 min — la proposition n’a aucune valeur tant qu’un auditeur ne l’a pas arrêtée.
-        Le calcul lui-même reste déterministe. <span class="tag det">déterministe</span></div>`);
+      `<div class="callout">${esc(s.bench.lib)} ${eur(s.bench.val)} × ${pct(S.pctM / 100, 1)} = ${eur(s.brut)},
+        arrondi au millier inférieur → <b>${eur(s.M)}</b> · planification ${S.pctPM}${NBSP}% → <b>${eur(s.PM)}</b>
+        · remontée ${S.pctCTT}${NBSP}%, arrondi à la centaine → <b>${eur(s.CTT)}</b>.
+        <span class="tag mod">modèle</span> proposerait la référence, le taux et leur motivation ; le calcul reste
+        déterministe et la proposition ne vaut rien tant qu’un auditeur ne l’a pas arrêtée.</div>`);
 }
 
 function vueScoping(){
@@ -2117,10 +2456,8 @@ function vueCirc(){
         table([{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'},{k:'s',t:'Solde',n:1},{k:'p',t:'Listing client'}],
           banques.map(x => ({ c:`<span class="mono">${x.compte}</span>`, l:esc(x.lib), s:eur(x.solde),
                               p:x.declare ? oui : non }))) +
-        (bManq.length ? `<div class="callout bad"><b>Une différence entre deux ensembles, rien de plus.</b>
-          ${bManq.map(x => x.compte + ' « ' + esc(x.lib) + ' » (' + eur(x.solde) + ')').join(', ')} figure(nt) en
-          comptabilité et pas au listing transmis. Une requête d’explication doit être émise avant d’arrêter la liste
-          des banques à circulariser. <span class="tag det">déterministe</span></div>` : ''))}
+        (bManq.length ? `<div class="callout bad">${bManq.map(x => x.compte + ' « ' + esc(x.lib) + ' » (' + eur(x.solde) + ')').join(', ')}
+          en comptabilité et absent(s) du listing transmis.</div>` : ''))}
       ${blk('Conseils juridiques', aManq.length + ' tiers hors listing',
         table([{k:'t',t:'Tiers',cls:'wrapcell'},{k:'h',t:'Honoraires N',n:1},{k:'p',t:'Listing client'}],
           avocats.map(x => ({ t:esc(x.tiers), h:eur(x.montant), p:x.declare ? oui : non }))) +
@@ -2171,10 +2508,8 @@ function vuePiste(){
       (ev.length ? table([{k:'t',t:'Horodatage'},{k:'q',t:'Auteur'},{k:'a',t:'Action'},{k:'o',t:'Objet',cls:'wrapcell'},{k:'d',t:'Détail',cls:'wrapcell'}],
         ev.map(e => ({ t:`<span class="mono">${horo(e.t)}</span>`, q:esc(e.qui), a:esc(e.quoi), o:esc(e.objet), d:esc(e.detail) })))
         : '<p class="note">Aucun événement pour l’instant : agissez dans une section ou au portail client, puis revenez ici.</p>') +
-      `<div class="callout info"><b>Horloge de mission simulée.</b> Elle part du 15/03/2026 à 09:12 et avance de sept
-        minutes par événement : recharger la page rejoue exactement la même chronologie. Dans l’application, l’horodatage
-        est réel et le journal est chaîné par hachage — un événement retiré ou modifié casse la chaîne. Ici, il n’y a ni
-        base de données ni persistance : ce bloc montre <b>quels</b> événements sont écrits, pas leur inviolabilité.</div>`);
+      `<p class="note">Horloge de mission simulée : départ 15/03/2026 09:12, +7 min par événement, donc rejouable
+        à l’identique. Le chaînage par hachage appartient à l’application, pas à ce fichier.</p>`);
 }
 
 /* ── sections transverses prévues au lot 2 : structure montrée, rien d'inventé ── */
@@ -2239,9 +2574,7 @@ function vueIA(){
     blk('Ces idées, classées « agent », n’en ont pas besoin', FAUSSEMENT_AGENT.length + ' cas',
       table([{k:'i',t:'Votre note',cls:'wrapcell'},{k:'r',t:'Ce que c’est réellement',cls:'wrapcell'}],
         FAUSSEMENT_AGENT.map(x => ({ i:'« ' + esc(x.idee) + ' »', r:esc(x.reel) }))) +
-      `<div class="callout"><b>La règle qui en découle.</b> Un modèle sert à lire, classer, proposer et rédiger —
-        jamais à calculer, sélectionner ni conclure. Tout ce qui peut être une règle en est une : c’est reproductible,
-        ré-exécutable devant un inspecteur, et cela ne coûte rien à l’usage.</div>`) +
+      '') +
     blk('Ce que la réorganisation par section change', 'nature de chaque bloc ajouté',
       table([{k:'b',t:'Bloc',cls:'wrapcell'},{k:'n',t:'Nature'},{k:'v',t:'Vérification humaine',cls:'wrapcell'}], [
         { b:'Tableau de bord des comptes de la section', n:'<span class="tag det">déterministe</span>', v:'aucune — ce sont des soustractions et des comparaisons à un seuil' },
@@ -2261,14 +2594,21 @@ function vueIA(){
 function vuePilotage(){
   const postes = postesEnPerimetre();
   const rows = postes.map(p => {
-    const st = sec(p.code), wp = wpDe(p), recus = wp.filter(r => r.recu).length;
+    const st = sec(p.code), prs = proceduresRequises(p);
+    let recus = 0, tot = 0, ctrOk = 0, ctrTot = 0;
+    for (const pr of prs){
+      if (!pr.ech) continue;
+      const wp = wpProc(p, pr) || []; tot += wp.length; recus += wp.filter(r => r.recu).length;
+      const c = controles(p, pr); ctrTot += c.length; ctrOk += c.filter(x => x.saisi).length;
+    }
     const rs = requetesDe(p.code), av = rs.length ? rs.reduce((a, r) => a + avancement(r.items), 0) / rs.length : 0;
     const o = obstaclesVisa(p), bl = notesBloquantesOuvertes(p.code).length;
     return {
-      s:`<b>${esc(p.lib)}</b>`,
+      s:`<b>${esc(p.lib)}</b><div class="smallcaps">${esc(MASSE_LIB[masseDe(p)])}</div>`,
       r:`<span class="pill ${NIVEAUX[niveauMax(p)] === 'eleve' ? 'bad' : NIVEAUX[niveauMax(p)] === 'moyen' ? 'warn' : 'ok'}">${NIV_LIB[NIVEAUX[niveauMax(p)]]}</span>`,
       p:String(proceduresRequises(p).length),
-      e:`${recus} / ${wp.length}`,
+      e:`${recus} / ${tot}`,
+      ct:ctrTot ? `${ctrOk} / ${ctrTot}` : '<span class="smallcaps">—</span>',
       q:rs.length ? `<div class="bar" style="width:80px"><i style="width:${(av * 100).toFixed(0)}%"></i></div><span class="smallcaps">${pct(av, 0)}</span>` : '<span class="smallcaps">aucune</span>',
       n:bl ? `<span class="pill bad">${bl} bloquante(s)</span>` : '<span class="smallcaps">—</span>',
       v:st.visa ? '<span class="pill ok">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length || 'prête'}</span>`,
@@ -2285,29 +2625,19 @@ function vuePilotage(){
   return entete('Avancement de la mission', 'état réel des sections et des demandes — rien de saisi à côté') +
     blk('Sections', postes.length + ' dans le périmètre',
       table([{k:'s',t:'Section',cls:'wrapcell'},{k:'r',t:'Risque'},{k:'p',t:'Procédures',n:1},
-             {k:'e',t:'Pièces reçues',n:1},{k:'q',t:'Requêtes'},{k:'n',t:'Notes bloquantes'},
-             {k:'v',t:'Visa'},{k:'a',t:''}], rows)) +
+             {k:'e',t:'Pièces reçues',n:1},{k:'ct',t:'Contrôles saisis',n:1},{k:'q',t:'Requêtes'},
+             {k:'n',t:'Notes bloquantes'},{k:'v',t:'Visa'},{k:'a',t:''}], rows)) +
     blk('Qui doit quoi, côté client', enRetard.length + ' demande(s) en retard',
       Object.keys(parPersonne).length
         ? table([{k:'p',t:'Personne',cls:'wrapcell'},{k:'n',t:'Demandes',n:1},{k:'i',t:'Éléments',n:1},{k:'a',t:'Ancienneté',n:1}],
             Object.values(parPersonne).sort((a, b) => b.age - a.age).map(x => ({
               p:x.c ? `<b>${esc(x.c.nom)}</b><div class="smallcaps">${esc(x.c.fonction)} · ${esc(x.c.societe)}</div>` : '—',
               n:String(x.n), i:String(x.items), a:x.age + ' j ouvrés' }))) +
-          `<div class="callout"><b>C’est cette ligne qui rend un suivi actionnable</b> — « ${esc(Object.values(parPersonne).sort((a, b) => b.age - a.age)[0].c.nom)}
-            doit ${Object.values(parPersonne).sort((a, b) => b.age - a.age)[0].items} élément(s) depuis
-            ${Object.values(parPersonne).sort((a, b) => b.age - a.age)[0].age} jours ouvrés » — et non un pourcentage global.</div>`
+          ''
         : '<p class="note">Aucune demande en retard.</p>') +
-    blk('Export du statut de mission', 'paramétrable par destinataire — lot 2',
-      `<div class="row">
-        <button class="btn sec" data-exp="equipe">export équipe interne</button>
-        <button class="btn sec" data-exp="groupe">export auditeur du groupe</button>
-        <button class="btn sec" data-exp="client">export client</button>
-      </div>
-      <div id="exp-out"></div>
-      <div class="callout warn"><b>Version minimale.</b> Les trois périmètres de colonnes existent et diffèrent
-        réellement, mais le paramétrage fin (choix des colonnes, ancienneté par personne dans l’export, impression)
-        est le lot 2. Ce qui est déjà vrai ici : l’export client ne contient aucun nom de réviseur ni aucun
-        statut interne.</div>`);
+    blk('Export du statut de mission', 'trois périmètres de destinataire',
+      `<p class="note">Le classeur, les périmètres de colonnes et la composition de l’envoi périodique se trouvent
+      dans <a data-vue="pil.export" style="cursor:pointer">Exports et envoi</a>.</p>`);
 }
 /* ═══ 25. REGISTRE DES FACTEURS DE RISQUE ══════════════════════════════════
    Ce que doivent faire circuler les sections, ce ne sont pas des lignes de
@@ -2487,6 +2817,42 @@ const REGLES_FACTEUR = [
     },
   },
   {
+    /* Deuxième fois que le même piège se referme, et de la même façon.
+       Premier essai : « variation ≥ 3 × le seuil de planification ». Résultat,
+       cinq facteurs — dont une HAUSSE DE 1,7 % DU CHIFFRE D'AFFAIRES. Sur un
+       compte de 5 M€, trois fois le seuil est un mouvement ordinaire ; le
+       multiple absolu ne mesure que la taille du compte.
+       Ce qui rend une variation inhabituelle, c'est son ampleur RELATIVE à ce
+       que le compte pèse. La règle exige donc les deux : un montant qui compte
+       (au moins le seuil de planification, sinon on parle de bruit) ET une
+       déformation du compte au-delà du taux réglé ci-contre. Une croissance de
+       1,7 % ne lève plus rien ; un compte qui double, oui. */
+    code:'RA_PRELIM', lib:'Variation d’ampleur inhabituelle à la revue analytique préliminaire',
+    srcLib:'Revue analytique préliminaire', srcVue:'plan.ra',
+    seuilLib:'déformation minimale du compte', seuilUnite:'%', seuilDefaut:() => 25, pas:5,
+    nature:'quantitatif',
+    calc(seuil){
+      const out = [];
+      for (const l of revueAnalytique()){
+        if (Math.abs(l.d) < seuils().PM) continue;              // plancher : le montant doit compter
+        if (l.p === null || Math.abs(l.p) < seuil / 100) continue;  // et la déformation doit être réelle
+        const postes = postesDuCompte(l.compte);
+        if (!postes.length) continue;
+        const k = sensNaturel(l), sens = l.d * k > 0 ? 'augmentation' : 'diminution';
+        out.push({
+          id:'RA_PRELIM:' + l.compte,
+          description:`Le compte ${l.compte} « ${l.lib} » présente une ${sens} de ${eur(Math.abs(l.d))}, soit `
+                    + `${pct(Math.abs(l.p), 1)} de son solde de l’exercice précédent (${eur(Math.abs(l.n1))}). `
+                    + `Une déformation de cette ampleur oriente les travaux avant même leur programmation.`,
+          cibles:postes.map(x => ({ fsli:x.code, assertions:['realite', 'presentation'] })),
+          pertinence:`${pct(Math.abs(l.p), 1)} de déformation ≥ seuil ${seuil}${NBSP}% · montant ${eur(Math.abs(l.d))} ≥ plancher ${eur0(seuils().PM)}`,
+          srcRef:'compte ' + l.compte,
+        });
+      }
+      return out;
+    },
+  },
+  {
     code:'CIRC', lib:'Compte en comptabilité absent du listing à circulariser',
     srcLib:'Exhaustivité des circularisations', srcVue:'plan.circ',
     seuilLib:'solde minimal retenu', seuilUnite:'€', seuilDefaut:() => seuils().CTT / 100, pas:100,
@@ -2619,10 +2985,8 @@ function blocFacteursSection(p){
   if (!l.length) return `<p class="note">Aucune constatation venue d’une autre procédure ne touche ce poste
     pour l’instant. Le registre est <a data-vue="plan.facteurs" style="cursor:pointer">ici</a>.</p>`;
   return `
-    ${props.length ? `<div class="callout bad"><b>${props.length} constatation(s) à statuer.</b> Elles ont été levées
-      ailleurs dans le dossier et se sont posées seules sur ce poste. Rien ne s’applique tant qu’un humain n’a pas
-      tranché — et tant qu’il reste un facteur non statué, la section ne peut pas être visée.</div>`
-      : `<div class="callout ok">Les ${l.length} constatation(s) touchant ce poste sont statuées.</div>`}
+    <div class="row"><span class="pill ${props.length ? 'bad' : 'ok'}">${props.length} à statuer</span>
+      <span class="pill">${l.length - props.length} statuée(s)</span></div>
     ${l.map(f => carteFacteur(f, true)).join('')}`;
 }
 
@@ -2652,14 +3016,8 @@ function vueFacteurs(){
         <div class="kv"><span class="k">Écartés</span><span class="v">${l.filter(f => f.statut === 'ecarte').length}</span>
           <span class="k">Sections touchées</span><span class="v">${new Set(l.flatMap(f => f.cibles.map(c => c.fsli))).size}</span></div>
       </div>
-      <div class="callout ${l.length > CIBLE_VOLUME ? 'bad' : 'ok'}">
-        ${l.length > CIBLE_VOLUME
-          ? `<b>${l.length} facteurs — au-delà de la cible de ${CIBLE_VOLUME} pour une mission de cette taille.</b>
-             Un registre qui déborde ne se lit plus : personne n’a jamais trié trois cents alertes. Remontez les seuils
-             de pertinence ci-dessous plutôt que de laisser filer le volume.`
-          : `<b>${l.length} facteurs</b> pour une cible de ${CIBLE_VOLUME}. Le registre reste lisible.
-             C’est une contrainte de conception, pas une conséquence heureuse : chaque règle porte un seuil, et le seuil
-             se règle.`}</div>
+      <div class="row"><span class="pill ${l.length > CIBLE_VOLUME ? 'bad' : 'ok'}">${l.length} facteurs — cible ${CIBLE_VOLUME}</span>
+        ${l.length > CIBLE_VOLUME ? '<span class="smallcaps">remontez les seuils de pertinence ci-dessous</span>' : ''}</div>
       <h3>Seuils de pertinence, par règle</h3>
       ${table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'s',t:'Source'},{k:'n',t:'Nature'},
                {k:'v',t:'Seuil de pertinence'},{k:'c',t:'Facteurs levés',n:1}],
@@ -2671,12 +3029,8 @@ function vueFacteurs(){
                    c:String(n) }; }))}
       <p class="note">Ces seuils sont <b>des paramètres de la mission</b>, pas des constantes du produit : ils se
       règlent ici, l’effet est immédiat dans la colonne de droite, et le seuil retenu figure sur chaque facteur levé.</p>
-      ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).length ? `<div class="callout info">
-        <b>Une règle qui ne lève rien n’est pas une règle cassée.</b>
-        ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).map(r => esc(r.lib)).join(' · ')} —
-        sur ce jeu de données, il n’y a rien à trouver, et le dire vaut mieux que baisser le seuil jusqu’à obtenir
-        un résultat. Baissez-le vous-même pour voir la règle se déclencher : c’est précisément le compromis que
-        vous devez tenir en main, et non un réglage caché dans le code.</div>` : ''}
+      ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).length ? `<p class="note">
+        Règle(s) sans levée sur ce jeu de données : ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).map(r => esc(r.lib)).join(' · ')}.</p>` : ''}
     </div></section>
 
     <section class="blk"><header><h2>À statuer</h2>
@@ -2714,9 +3068,8 @@ function vueFacteurs(){
             ${ASSERTIONS.map(a => `<option value="${a.code}">${esc(a.lib)}</option>`).join('')}</select></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn" id="mf-add">lever le facteur</button></div>
       </div>
-      <div class="callout info">C’est exactement le chemin qu’emprunteront l’entretien de cycle, l’analyse des
-      balances auxiliaires et l’analyse sectorielle : ils lèveront des facteurs par cette porte, avec leur source.
-      Le mécanisme est ici ; les producteurs viendront s’y brancher.</div>
+      <p class="note">C’est la porte qu’emprunteront l’entretien de cycle, l’analyse des balances auxiliaires et
+      l’analyse sectorielle.</p>
     </div></section>
 
     <section class="blk"><header><h2>Déjà statués</h2>
@@ -2725,30 +3078,665 @@ function vueFacteurs(){
         : '<p class="note">Aucun facteur statué pour l’instant.</p>'}
     </div></section>`;
 }
+/* ═══ 28. REVUE ANALYTIQUE — TROIS MOMENTS ═════════════════════════════════
+   Ce ne sont pas trois affichages d'un même module : ce sont trois diligences
+   différentes, à trois moments différents, avec trois finalités.
+     · préliminaire — en planification, transverse, elle ALIMENTE le registre
+       des facteurs de risque ;
+     · substantive  — dans une section, comme procédure à valeur probante ;
+     · finale       — à l'achèvement, cohérence d'ensemble avant signature.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Ratios calculés des deux exercices. Aucun n'est saisi. */
+function ratios(){
+  const q = (b, re) => { let s = 0; for (const [c, v] of b) if (re.test(c)) s += v.solde; return s; };
+  const f = b => {
+    const ca = -q(b, /^70/), achats = q(b, /^60/), perso = q(b, /^64/),
+          stocks = q(b, /^3/), clients = q(b, /^41/), fourn = -q(b, /^40/),
+          produits = -q(b, /^7/), charges = q(b, /^6/), fin = q(b, /^66/);
+    return { ca, achats, perso, stocks, clients, fourn, resultat:produits - charges, fin };
+  };
+  const a = f(B25), b = f(B24);
+  const L = [
+    { lib:'Marge sur achats consommés', u:'%', formule:'(chiffre d’affaires − achats consommés) ÷ chiffre d’affaires',
+      n:a.ca ? (a.ca - a.achats) / a.ca : 0, n1:b.ca ? (b.ca - b.achats) / b.ca : 0, type:'pct' },
+    { lib:'Poids des charges de personnel', u:'%', formule:'charges de personnel ÷ chiffre d’affaires',
+      n:a.ca ? a.perso / a.ca : 0, n1:b.ca ? b.perso / b.ca : 0, type:'pct' },
+    { lib:'Résultat courant rapporté au chiffre d’affaires', u:'%', formule:'résultat courant ÷ chiffre d’affaires',
+      n:a.ca ? a.resultat / a.ca : 0, n1:b.ca ? b.resultat / b.ca : 0, type:'pct' },
+    { lib:'Délai de règlement clients', u:'jours', formule:'créances clients ÷ chiffre d’affaires × 365',
+      n:a.ca ? a.clients / a.ca * 365 : 0, n1:b.ca ? b.clients / b.ca * 365 : 0, type:'jours' },
+    { lib:'Délai de règlement fournisseurs', u:'jours', formule:'dettes fournisseurs ÷ achats consommés × 365',
+      n:a.achats ? a.fourn / a.achats * 365 : 0, n1:b.achats ? b.fourn / b.achats * 365 : 0, type:'jours' },
+    { lib:'Rotation des stocks', u:'jours', formule:'stocks ÷ achats consommés × 365',
+      n:a.achats ? a.stocks / a.achats * 365 : 0, n1:b.achats ? b.stocks / b.achats * 365 : 0, type:'jours' },
+    { lib:'Couverture des charges financières', u:'×', formule:'résultat courant ÷ charges financières',
+      n:a.fin ? a.resultat / a.fin : 0, n1:b.fin ? b.resultat / b.fin : 0, type:'fois' },
+  ];
+  return L.map(r => ({ ...r, d:r.n - r.n1,
+    fmt:v => r.type === 'pct' ? pct(v, 1) : r.type === 'jours' ? v.toFixed(0).replace('.', ',') + NBSP + 'j'
+           : v.toFixed(1).replace('.', ',') + NBSP + '×' }));
+}
+
+function vueRAPrelim(){
+  const lignes = revueAnalytique().filter(l => l.flag);
+  const rt = ratios();
+  const deja = c => S.requetes.some(r => r.origine === 'revue analytique préliminaire' && r.items.some(i => i.ref === c));
+  return entete('Revue analytique préliminaire', 'planification — elle sert à orienter les travaux, pas à conclure') +
+    cite('Revue analytique générée automatiquement, variation comptes entre l’année N (auditée) et N-1 et FSLI, en haut de cette revue analytique un threshold monétaire et un % de variation, si la variation du compte dépasse l’un ou l’autre ou les 2 (à faire valider par un auditeur humain) des questions sur l’explication de la variation sont automatiquement envoyée au client sur l’interface des requêtes.') +
+    blk('Seuils', 'le seuil en montant suit par défaut le seuil de planification',
+      `<div class="row">
+        <div class="ctrl"><label>Seuil en montant</label>
+          <input type="number" id="ar-montant" value="${(arSeuilMontant() / 100).toFixed(0)}" step="1000"></div>
+        <div class="ctrl"><label>Seuil en pourcentage</label>
+          <input type="number" id="ar-pct" value="${S.arPct}" step="1"></div>
+        <div class="ctrl"><label>&nbsp;</label>
+          <span class="pill ${lignes.length ? 'warn' : 'ok'}">${lignes.length} compte(s) au-dessus d’un seuil</span></div>
+      </div>`) +
+    blk('Variations de compte', lignes.length + ' au-dessus d’un seuil',
+      lignes.length ? `<div class="tw"><table>
+        <thead><tr><th>Compte</th><th class="n">Variation</th><th class="n">%</th><th>Ressort</th>
+          <th>Poste</th><th>Destinataire</th><th>Question composée</th><th></th></tr></thead>
+        <tbody>${lignes.map(l => {
+          const ps = postesDuCompte(l.compte), c = ps.length ? referentSection(ps[0].code) : S.contacts[0];
+          return `<tr>
+            <td class="mono">${l.compte}<div class="smallcaps">${sensNaturel(l) < 0 ? 'créditeur' : 'débiteur'}</div></td>
+            <td class="n">${eur(l.d * sensNaturel(l))}</td>
+            <td class="n">${l.p === null ? '—' : pct(Math.abs(l.p) * (l.d * sensNaturel(l) > 0 ? 1 : -1), 1)}</td>
+            <td>${l.parMontant ? '<span class="tag">montant</span> ' : ''}${l.parPct ? '<span class="tag">%</span>' : ''}</td>
+            <td>${ps.map(x => `<button class="btn mini sec" data-open="${x.code}">${esc(x.lib)}</button>`).join(' ') || '<span class="smallcaps">—</span>'}</td>
+            <td class="wrapcell">${c ? '<b>' + esc(c.nom) + '</b><div class="smallcaps">' + esc(c.fonction) + '</div>' : '—'}</td>
+            <td class="wrapcell">${esc(questionVariation(l))}</td>
+            <td>${deja(l.compte) ? '<span class="pill ok">requête émise</span>'
+                  : `<button class="btn mini" data-raprelim="${l.compte}">envoyer la requête</button>`}</td></tr>`;
+        }).join('')}</tbody></table></div>`
+        : '<p class="note">Aucune variation au-dessus des seuils.</p>') +
+    blk('Ratios', 'tous calculés depuis les deux balances',
+      table([{k:'l',t:'Ratio',cls:'wrapcell'},{k:'f',t:'Formule',cls:'wrapcell'},
+             {k:'a',t:'2024',n:1},{k:'b',t:'2025',n:1},{k:'d',t:'Variation',n:1}],
+        rt.map(r => ({ l:esc(r.lib), f:'<span class="smallcaps">' + esc(r.formule) + '</span>',
+                       a:r.fmt(r.n1), b:r.fmt(r.n),
+                       d:(r.d > 0 ? '+' : '') + r.fmt(r.d).replace('+', '') })))) +
+    blk('Effet sur le registre des facteurs de risque',
+      registre().filter(f => f.regle === 'RA_PRELIM').length + ' facteur(s) levé(s)',
+      `${registre().filter(f => f.regle === 'RA_PRELIM').length
+        ? registre().filter(f => f.regle === 'RA_PRELIM').map(f => carteFacteur(f, false)).join('')
+        : '<p class="note">Aucune variation ne dépasse le multiple retenu pour lever un facteur. Le seuil se règle dans le registre.</p>'}`);
+}
+
+/* ═══ 29. ESPACE ACHÈVEMENT ════════════════════════════════════════════════ */
+const DATE_RAPPORT = '2026-04-15';
+const DELAI_ASSEMBLAGE = 60;      // jours — C. com., art. D. 821-186, III et IV
+const RETENTION_ANS = 6;          // ans  — C. com., art. R. 820-42
+
+/* ── pointage des états financiers : trois natures de rapprochement ──────── */
+function soldeDe(comptes){ return comptes.reduce((a, c) => a + (B25.get(c) ? B25.get(c).solde : 0), 0); }
+const PLAQUETTE = [
+  { ref:'B-01', lib:'Capital social', nature:'solde', comptes:['101000'], ecart:0 },
+  { ref:'B-02', lib:'Réserve légale', nature:'solde', comptes:['106100'], ecart:0 },
+  { ref:'B-03', lib:'Immobilisations corporelles nettes', nature:'agregat',
+    comptes:['213500','218300','281350','281830'],
+    formule:'valeurs brutes 213500 + 218300 − amortissements 281350 + 281830', ecart:0 },
+  { ref:'B-04', lib:'Stocks', nature:'agregat', comptes:['301000','355000'],
+    formule:'matières premières 301000 + produits finis 355000', ecart:0 },
+  { ref:'B-05', lib:'Créances clients', nature:'solde', comptes:['411000'], ecart:-120000 },
+  { ref:'B-06', lib:'Trésorerie', nature:'agregat', comptes:['512100','512200'],
+    formule:'somme des comptes de banque', ecart:0 },
+  { ref:'R-01', lib:'Chiffre d’affaires', nature:'agregat', comptes:['701000','706000','709000'],
+    formule:'ventes 701000 + prestations 706000 − rabais 709000', ecart:0 },
+  { ref:'R-02', lib:'Charges de personnel', nature:'agregat', comptes:['641000','645000'],
+    formule:'rémunérations 641000 + charges sociales 645000', ecart:0 },
+  { ref:'A-01', lib:'Annexe — acquisitions d’immobilisations de l’exercice', nature:'calcul',
+    formule:'valeur brute à la clôture − valeur brute à l’ouverture + valeur brute des cessions de l’exercice',
+    aide:'Le montant ne se lit dans aucun solde : il résulte du tableau de variation. Il doit être documenté.' },
+  { ref:'A-02', lib:'Annexe — échéancier des dettes financières à plus d’un an', nature:'calcul',
+    formule:'capital restant dû au 31/12/2025 diminué des échéances contractuelles des douze mois suivants',
+    aide:'Le solde 164000 ne se ventile pas seul : la ventilation vient du tableau d’amortissement de l’emprunt.' },
+  { ref:'A-03', lib:'Annexe — ventilation du chiffre d’affaires par nature', nature:'calcul',
+    formule:'ventes de produits finis d’une part, prestations de services d’autre part, nettes des rabais affectés',
+    aide:'L’affectation des rabais par nature ne figure pas en comptabilité : elle doit être obtenue et documentée.' },
+];
+function montantAudite(e){
+  if (e.nature === 'calcul') return null;
+  return Math.abs(soldeDe(e.comptes));
+}
+function montantPlaquette(e){
+  const a = montantAudite(e);
+  return a === null ? null : a + (e.ecart || 0);
+}
+const NATURE_LIB = { solde:'solde de balance', agregat:'agrégat de comptes', calcul:'calcul à documenter' };
+
+function vueAchPointage(){
+  const st = S.achevement;
+  const rows = PLAQUETTE.map(e => {
+    const aud = e.nature === 'calcul'
+      ? (st.calculs[e.ref] && st.calculs[e.ref].montant !== undefined ? st.calculs[e.ref].montant : null)
+      : montantAudite(e);
+    const pl = e.nature === 'calcul'
+      ? (st.plaquette[e.ref] !== undefined ? st.plaquette[e.ref] : null)
+      : montantPlaquette(e);
+    const ec = (aud === null || pl === null) ? null : pl - aud;
+    return {
+      ref:`<span class="mono">${e.ref}</span>`,
+      lib:`<b>${esc(e.lib)}</b>${e.formule ? '<div class="smallcaps">' + esc(e.formule) + '</div>' : ''}`,
+      nat:`<span class="tag ${e.nature === 'calcul' ? 'abs' : 'det'}">${NATURE_LIB[e.nature]}</span>`,
+      pl:e.nature === 'calcul'
+         ? `<input class="cell" data-plaq="${e.ref}" value="${pl === null ? '' : (pl / 100).toFixed(2).replace('.', ',')}" placeholder="montant plaquette">`
+         : eur(pl),
+      or:e.nature === 'calcul' ? '<span class="smallcaps">à documenter</span>'
+         : `<span class="smallcaps">${e.comptes.join(' · ')}</span>`,
+      aud:e.nature === 'calcul'
+          ? `<input class="cell" data-calcm="${e.ref}" value="${aud === null ? '' : (aud / 100).toFixed(2).replace('.', ',')}" placeholder="montant audité">`
+          : eur(aud),
+      ec:ec === null ? '<span class="pill warn">non rapproché</span>'
+         : ec === 0 ? '<span class="pill ok">nul</span>' : '<span class="pill bad">' + eur(ec) + '</span>',
+      doc:e.nature === 'calcul'
+          ? `<input class="cell txt" data-calcd="${e.ref}" value="${esc((st.calculs[e.ref] || {}).doc || '')}" placeholder="d’où vient le montant">`
+          : '<span class="smallcaps">rapproché de la balance</span>',
+    };
+  });
+  const nonRappro = PLAQUETTE.filter(e => {
+    const aud = e.nature === 'calcul' ? (st.calculs[e.ref] || {}).montant : montantAudite(e);
+    const pl = e.nature === 'calcul' ? st.plaquette[e.ref] : montantPlaquette(e);
+    return aud === undefined || aud === null || pl === undefined || pl === null;
+  });
+  const ecarts = PLAQUETTE.filter(e => {
+    const aud = e.nature === 'calcul' ? (st.calculs[e.ref] || {}).montant : montantAudite(e);
+    const pl = e.nature === 'calcul' ? st.plaquette[e.ref] : montantPlaquette(e);
+    return aud != null && pl != null && pl - aud !== 0;
+  });
+  const sansDoc = PLAQUETTE.filter(e => e.nature === 'calcul' && !((st.calculs[e.ref] || {}).doc || '').trim());
+  return entete('Pointage des états financiers', 'plaquette à gauche, montant audité à droite, écart et origine') +
+    cite('Une fonction pointage des états financiers et données chiffrées des annexes où après réception de la plaquette du client, un agent IA vient s’assurer que chaque chiffre cadre bien avec les montants que nous avons audité, dans notre TB et documente un réconciliation sur un Template intégré avec à gauche montant plaquette et à droite montant interne et validé avec une cross reference vers l’origine du montant validé.') +
+    blk('Rapprochement', `${PLAQUETTE.length} montants · ${ecarts.length} écart(s) · ${nonRappro.length} non rapproché(s)`,
+      table([{k:'ref',t:'Réf.'},{k:'lib',t:'Poste de la plaquette',cls:'wrapcell'},{k:'nat',t:'Nature'},
+             {k:'pl',t:'Montant plaquette',n:1},{k:'aud',t:'Montant audité',n:1},
+             {k:'or',t:'Origine',cls:'wrapcell'},{k:'ec',t:'Écart',n:1},{k:'doc',t:'Documentation du calcul',cls:'wrapcell'}], rows) +
+      `<div class="row" style="margin-top:8px">
+        <span class="pill ${ecarts.length ? 'bad' : 'ok'}">${ecarts.length} écart(s)</span>
+        <span class="pill ${nonRappro.length ? 'warn' : 'ok'}">${nonRappro.length} non rapproché(s)</span>
+        <span class="pill ${sansDoc.length ? 'warn' : 'ok'}">${sansDoc.length} calcul(s) sans documentation</span>
+        <span class="smallcaps">${PLAQUETTE.filter(e => e.nature === 'calcul').length} des ${PLAQUETTE.length} montants ne se lisent dans aucun solde</span>
+      </div>
+      <p class="note">Aucune plaquette n’existe dans ce fichier : les montants « solde » et « agrégat » viennent de la
+      balance auditée augmentée des écarts semés, ceux marqués « calcul » se saisissent. Lire une plaquette réelle
+      relève de l’échelle d’extraction <span class="tag mod">modèle</span>.</p>`);
+}
+
+function vueAchRA(){
+  const rt = ratios(), st = S.achevement;
+  const lignes = revueAnalytique().filter(l => l.flag);
+  return entete('Revue analytique finale', 'achèvement — cohérence d’ensemble avant signature') +
+    blk('Ce que la revue finale ajoute', 'elle ne refait pas la préliminaire',
+      `<div class="kv">
+        <span class="k">Variations encore au-dessus des seuils</span><span class="v">${lignes.length}</span>
+        <span class="k">Dont ayant reçu une explication du client</span><span class="v">${lignes.filter(l => S.requetes.some(r => r.items.some(i => i.ref === l.compte && i.depots.length))).length}</span>
+        <span class="k">Anomalies non corrigées cumulées</span><span class="v">${eur(anomalies().filter(a => !a.souSeuil).reduce((t, a) => t + a.montant, 0))}</span>
+        <span class="k">Sections visées</span><span class="v">${postesEnPerimetre().filter(p => sec(p.code).visa).length} / ${postesEnPerimetre().length}</span>
+      </div>`) +
+    blk('Ratios de clôture', 'mêmes formules qu’en planification, sur les comptes arrêtés',
+      table([{k:'l',t:'Ratio',cls:'wrapcell'},{k:'a',t:'2024',n:1},{k:'b',t:'2025',n:1},{k:'d',t:'Variation',n:1}],
+        rt.map(r => ({ l:esc(r.lib), a:r.fmt(r.n1), b:r.fmt(r.n), d:(r.d > 0 ? '+' : '') + r.fmt(r.d).replace('+', '') })))) +
+    blk('Conclusion', st.raFinale.trim() ? 'rédigée' : 'à rédiger',
+      `<textarea id="ach-ra" rows="4" placeholder="les comptes arrêtés sont-ils cohérents avec la connaissance acquise de l’entité et de son environnement ? les variations et ratios s’expliquent-ils par ce qui a été constaté au cours de la mission ?">${esc(st.raFinale)}</textarea>`);
+}
+
+/* ── diligences d'achèvement à liste de points ───────────────────────────── */
+const ACH = {
+  evenements:{ t:'Événements postérieurs à la clôture',
+    sub:'du 31/12/2025 à la date du rapport',
+    pts:['Procès-verbaux des organes sociaux postérieurs à la clôture obtenus et lus',
+         'Situation intermédiaire et évolution de la trésorerie depuis la clôture examinées',
+         'Litiges nés ou révélés depuis la clôture recensés auprès des conseils',
+         'Engagements et opérations significatives postérieurs identifiés',
+         'Distinction faite entre événements donnant lieu à ajustement et événements à mentionner'] },
+  continuite:{ t:'Continuité d’exploitation',
+    sub:'appréciation à la date du rapport',
+    pts:['Prévisions de trésorerie à douze mois obtenues et rapprochées des hypothèses',
+         'Respect des engagements bancaires et clauses contractuelles vérifié',
+         'Capacité de financement et lignes disponibles confirmées',
+         'Position de la direction obtenue par écrit',
+         'Incidence éventuelle sur le rapport appréciée'] },
+  affirmation:{ t:'Lettre d’affirmation',
+    sub:'déclarations écrites de la direction',
+    pts:['Périmètre des déclarations arrêté au regard des travaux effectués',
+         'Anomalies non corrigées annexées à la lettre',
+         'Parties liées, litiges et engagements couverts',
+         'Événements postérieurs couverts',
+         'Lettre datée du jour du rapport et signée par la direction'] },
+  gouvernance:{ t:'Communication aux organes de gouvernance',
+    sub:'avant la signature du rapport',
+    pts:['Étendue et calendrier des travaux communiqués',
+         'Faiblesses du contrôle interne relevées et communiquées',
+         'Anomalies non corrigées portées à la connaissance de l’organe compétent',
+         'Difficultés rencontrées et désaccords éventuels signalés',
+         'Indépendance de l’équipe confirmée par écrit'] },
+};
+function vueAchSimple(k){
+  const d = ACH[k], st = S.achevement.points[k] || (S.achevement.points[k] = {});
+  const faits = d.pts.filter((_, i) => st[i]).length;
+  return entete(d.t, d.sub) +
+    blk('Points de diligence', faits + ' / ' + d.pts.length,
+      d.pts.map((x, i) => `<label class="chk" style="display:flex;margin:4px 0">
+        <input type="checkbox" data-achpt="${k}|${i}" ${st[i] ? 'checked' : ''}>
+        <span style="white-space:normal">${esc(x)}</span></label>`).join('') +
+      `<div class="ctrl" style="margin-top:10px"><label>Conclusion</label>
+        <textarea data-achc="${k}" rows="3" placeholder="conclusion de l’auditeur">${esc(S.achevement.concl[k] || '')}</textarea></div>` +
+      (faits < d.pts.length ? `<div class="callout warn">${d.pts.length - faits} point(s) non exécuté(s).</div>` : '')) +
+    blk('Pièces requises', 'non fournies dans ce fichier',
+      `<p class="note">Procès-verbaux, prévisions de trésorerie et confirmations de conseils se demandent par le
+      portail ; leur lecture relève de l’échelle d’extraction <span class="tag mod">modèle</span>. Aucun résultat
+      n’est simulé ici.</p>`);
+}
+
+function vueAchAnomalies(){
+  const s = seuils(), a = anomalies(), st = S.achevement;
+  const retenues = a.filter(x => !x.souSeuil);
+  const corrigees = retenues.filter(x => st.corrigees[x.ref + '|' + x.lib]);
+  const nonCorr = retenues.filter(x => !st.corrigees[x.ref + '|' + x.lib]);
+  const cumul = nonCorr.reduce((t, x) => t + x.montant, 0);
+  const depasse = Math.abs(cumul) > s.M;
+  const opinions = [
+    { v:'certification', lib:'Certification sans réserve' },
+    { v:'reserve', lib:'Certification avec réserve' },
+    { v:'refus', lib:'Refus de certifier' },
+    { v:'impossibilite', lib:'Impossibilité de certifier' },
+  ];
+  const propose = depasse ? 'reserve' : 'certification';
+  return entete('Anomalies non corrigées et incidence sur l’opinion', 'évaluation finale') +
+    blk('Anomalies au-dessus du seuil de remontée', retenues.length + ' — dont ' + nonCorr.length + ' non corrigées',
+      table([{k:'src',t:'Origine',cls:'wrapcell'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'m',t:'Montant',n:1},
+             {k:'c',t:'Corrigée par le client'},{k:'v',t:''}],
+        retenues.map(x => ({
+          src:esc(x.src), lib:esc(x.lib), m:eur(x.montant),
+          c:`<label class="chk"><input type="checkbox" data-corr="${esc(x.ref + '|' + x.lib)}" ${st.corrigees[x.ref + '|' + x.lib] ? 'checked' : ''}><span>corrigée</span></label>`,
+          v:x.section ? `<button class="btn mini sec" data-open="${x.section}">section</button>` : '',
+        })), { foot:{ src:'Cumul non corrigé', m:eur(cumul) } })) +
+    blk('Incidence sur l’opinion', depasse ? 'le cumul dépasse le seuil de signification' : 'le cumul reste sous le seuil',
+      `<div class="kv">
+        <span class="k">Cumul non corrigé</span><span class="v">${eur(cumul)}</span>
+        <span class="k">Seuil de signification</span><span class="v">${eur(s.M)}</span>
+        <span class="k">Rapport au seuil</span><span class="v">${pct(Math.abs(cumul) / s.M, 0)}</span>
+        <span class="k">Corrigées par le client</span><span class="v">${corrigees.length} — ${eur(corrigees.reduce((t, x) => t + x.montant, 0))}</span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="ctrl"><label>Opinion retenue — proposition : ${esc(opinions.find(o => o.v === propose).lib)}</label>
+          <select id="ach-op">${opinions.map(o => `<option value="${o.v}" ${st.opinion === o.v ? 'selected' : ''}>${esc(o.lib)}</option>`).join('')}</select></div>
+      </div>
+      <div class="ctrl"><label>Motivation${st.opinion && st.opinion !== propose ? ' — obligatoire : l’opinion retenue s’écarte de la proposition' : ''}</label>
+        <textarea id="ach-opm" rows="3" placeholder="motivation de l’opinion retenue">${esc(st.opinionMotif)}</textarea></div>
+      ${st.opinion && st.opinion !== propose && !st.opinionMotif.trim()
+        ? '<div class="callout bad">L’opinion retenue s’écarte de la proposition et n’est pas motivée.</div>' : ''}`);
+}
+
+function vueAchCloture(){
+  const st = S.achevement, postes = postesEnPerimetre();
+  const nonVisees = postes.filter(p => !sec(p.code).visa);
+  const bloq = notesBloquantesOuvertes();
+  const facteursOuverts = registre().filter(f => f.statut === 'propose');
+  const echeance = addDays(DATE_RAPPORT, DELAI_ASSEMBLAGE);
+  const jours = Math.round((Date.parse(echeance) - Date.parse(S.aujourdhui)) / 86400000);
+  const obstacles = [];
+  if (nonVisees.length) obstacles.push(`${nonVisees.length} section(s) non visée(s) : ${nonVisees.map(p => p.lib).join(', ')}`);
+  if (bloq.length) obstacles.push(`${bloq.length} note(s) de revue bloquante(s) ouverte(s)`);
+  if (facteursOuverts.length) obstacles.push(`${facteursOuverts.length} facteur(s) de risque non statué(s)`);
+  if (!st.opinion) obstacles.push('opinion non arrêtée');
+  if (!st.raFinale.trim()) obstacles.push('revue analytique finale non conclue');
+  for (const k of Object.keys(ACH)){
+    const f = ACH[k].pts.filter((_, i) => (st.points[k] || {})[i]).length;
+    if (f < ACH[k].pts.length) obstacles.push(`${ACH[k].t} : ${ACH[k].pts.length - f} point(s) non exécuté(s)`);
+    if (!(st.concl[k] || '').trim()) obstacles.push(`${ACH[k].t} : conclusion manquante`);
+  }
+  return entete('Assemblage et clôture du dossier', 'le dossier devient définitif et se verrouille') +
+    blk('Délai d’assemblage', jours >= 0 ? jours + ' jour(s) restant(s)' : 'délai dépassé',
+      `<div class="kv">
+        <span class="k">Date du rapport</span><span class="v">${frDate(DATE_RAPPORT)}</span>
+        <span class="k">Délai d’assemblage</span><span class="v">${DELAI_ASSEMBLAGE} jours</span>
+        <span class="k">Échéance</span><span class="v">${frDate(echeance)}</span>
+        <span class="k">Aujourd’hui</span><span class="v">${frDate(S.aujourdhui)}</span>
+        <span class="k">Conservation</span><span class="v">${RETENTION_ANS} ans</span>
+      </div>
+      <p class="note">Délai d’assemblage : <b>C. com., art. D. 821-186, III et IV</b> — 60 jours.
+      Durée de conservation : <b>C. com., art. R. 820-42</b> — 6 ans. Ces deux références ont été vérifiées sur le
+      texte primaire lors des travaux de rétention du dépôt ; elles sont portées ici telles que le noyau les
+      enregistre, avec leur source.</p>`) +
+    blk('Conditions de clôture', obstacles.length ? obstacles.length + ' obstacle(s)' : 'réunies',
+      obstacles.length
+        ? `<div class="callout bad"><ul style="margin:0 0 0 16px;padding:0">${obstacles.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+           <button class="btn" disabled>clôturer et verrouiller le dossier</button>`
+        : st.clos
+          ? `<div class="callout ok"><b>Dossier clôturé</b> par ${esc(USERS[st.clos.par].nom)} le ${horo(st.clos.t)}.
+             Le dossier est en lecture seule ; toute pièce ajoutée après cette date porte sa propre date et ne se
+             substitue à rien.</div>`
+          : `<button class="btn" id="ach-clore">clôturer et verrouiller le dossier</button>`) +
+    blk('Ce que contient le dossier clôturé', '',
+      table([{k:'q',t:'Élément'},{k:'n',t:'Nombre',n:1}], [
+        { q:'Sections de travail visées', n:String(postes.filter(p => sec(p.code).visa).length) },
+        { q:'Procédures exécutées', n:String(postes.reduce((a, p) => a + proceduresRequises(p).length, 0)) },
+        { q:'Éléments sélectionnés', n:String(postes.reduce((a, p) => a + proceduresRequises(p).reduce((b, pr) => { const e = echantillonProc(p, pr); return b + (e ? e.retenus.length : 0); }, 0), 0)) },
+        { q:'Requêtes émises', n:String(S.requetes.length) },
+        { q:'Pièces déposées', n:String(S.requetes.reduce((a, r) => a + r.items.reduce((b, i) => b + i.depots.length, 0), 0)) },
+        { q:'Notes de revue', n:String(S.notes.length) },
+        { q:'Facteurs de risque statués', n:String(registre().filter(f => f.statut !== 'propose').length) },
+        { q:'Événements au journal', n:String(S.events.length) },
+      ]));
+}
+
+/* ═══ 30. PRINCIPES DE CONCEPTION ══════════════════════════════════════════
+   Les règles s'appliquent dans le comportement de l'écran ; leur
+   justification se lit ici, une fois, et pas à chaque ligne.
+   ═══════════════════════════════════════════════════════════════════════ */
+const PRINCIPES = [
+  { r:'Une ligne sans pièce ne porte aucun contrôle',
+    o:'le papier affiche « non reçu » et le contrôle reste vide',
+    j:'Remplir une ligne dont la pièce n’est pas arrivée, c’est fabriquer une diligence. Le compteur « n/n éléments avec pièce » suffit à le dire ; il n’a pas besoin d’être commenté.' },
+  { r:'Le seuil de la strate exhaustive suit la matérialité, le nombre tiré suit le risque',
+    o:'deux compteurs distincts sur chaque sélection',
+    j:'Deux leviers indépendants. Les confondre revient à croire qu’un poste risqué se traite en baissant la matérialité.' },
+  { r:'Rien ne s’applique sans décision humaine',
+    o:'un facteur « proposé » n’entre dans aucun niveau de risque',
+    j:'Une constatation automatique qui modifierait seule une évaluation de risque ferait de l’outil l’auteur du jugement.' },
+  { r:'Une constatation, un facteur',
+    o:'l’identifiant du facteur porte la constatation, pas la section',
+    j:'Deux facteurs au même texte sur deux sections, c’est déjà le bruit que le garde-fou combat.' },
+  { r:'Chaque règle de levée porte un seuil de pertinence explicite',
+    o:'colonne « seuil » réglable dans le registre, compteur au bandeau',
+    j:'Trois cents alertes que personne ne lit, c’est le défaut classique de l’analyse de données en audit. Un seuil calibré pour produire un joli compte est un seuil faux.' },
+  { r:'Le préparateur répond, seul le réviseur clôt, jamais l’auteur',
+    o:'le bouton « clore » n’est pas rendu pour l’auteur',
+    j:'Une note qu’on peut clore soi-même n’est pas une revue.' },
+  { r:'Le client ne voit pas la matérialité',
+    o:'le bandeau de seuils n’est pas construit dans son espace',
+    j:'Un masquage se désactive par erreur ; une absence de composant, non.' },
+  { r:'Le statut « en attente de revue par X » est interne',
+    o:'replié sur « en cours de traitement » avant tout rendu client',
+    j:'Il révélerait l’organisation et l’avancement de la revue.' },
+  { r:'Les travaux N-1 ne sont jamais repris automatiquement',
+    o:'marqués « à reconfirmer », bloquants tant qu’ils ne le sont pas',
+    j:'La reprise automatique transforme une diligence de l’an dernier en diligence de cette année.' },
+  { r:'Un jugement qui écarte le calcul s’écrit',
+    o:'motif obligatoire sur toute surcharge de statut, de périmètre ou de niveau',
+    j:'Sans motif, la surcharge est indistinguable d’une erreur de manipulation.' },
+  { r:'Le tirage est rejouable',
+    o:'le germe est écrit sur la sélection',
+    j:'Un tiers doit pouvoir obtenir exactement les mêmes éléments.' },
+  { r:'Aucun montant écrit en dur',
+    o:'tout se recalcule quand un curseur bouge',
+    j:'C’est la seule façon de vérifier qu’un chiffre affiché est un chiffre calculé.' },
+];
+function vuePrincipes(){
+  return entete('Principes de conception', 'les règles s’appliquent dans l’écran ; leur justification se lit ici') +
+    blk('Règles', PRINCIPES.length,
+      table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'o',t:'Où elle se voit',cls:'wrapcell'},{k:'j',t:'Pourquoi',cls:'wrapcell'}],
+        PRINCIPES.map(x => ({ r:'<b>' + esc(x.r) + '</b>', o:esc(x.o), j:esc(x.j) })))) +
+    vueIA();
+}
+/* ═══ 31. FILTRES DE REQUÊTES ══════════════════════════════════════════════
+   Cumulables, et les mêmes des deux côtés : ce qui change entre l'auditeur et
+   le client, c'est le jeu de requêtes visibles et les statuts lisibles, pas
+   la façon de filtrer.
+   ═══════════════════════════════════════════════════════════════════════ */
+function filtrer(liste, cote){
+  const f = S.filtres;
+  return liste.filter(r => {
+    if (f.section && r.section !== f.section) return false;
+    if (f.contact && r.contact !== f.contact) return false;
+    if (f.statut){
+      const st = r.items.map(i => cote === 'client' ? statutVisibleClient(i) : i.statut);
+      if (!st.includes(f.statut)) return false;
+    }
+    if (f.echeance === 'retard' && !retard(r)) return false;
+    if (f.echeance === 'avenir' && (retard(r) || r.echeance < S.aujourdhui)) return false;
+    if (f.q){
+      const q = f.q.toLowerCase();
+      const hay = (r.id + ' ' + r.titre + ' ' + r.items.map(i => i.desc).join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function barreFiltres(cote, total, retenus){
+  const f = S.filtres;
+  const sections = [...new Set(S.requetes.map(r => r.section))];
+  const statuts = Object.entries(STATUTS).filter(([, v]) => cote !== 'client' || v.client);
+  return `<div class="row" style="align-items:flex-end">
+    <div class="ctrl" style="flex:1 1 190px"><label>Recherche</label>
+      <input type="text" id="f-q" value="${esc(f.q)}" placeholder="numéro, objet, élément"></div>
+    <div class="ctrl"><label>Statut</label>
+      <select id="f-statut"><option value="">tous</option>
+        ${statuts.map(([k, v]) => `<option value="${k}" ${f.statut === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}</select></div>
+    ${cote === 'client' ? '' : `<div class="ctrl"><label>Section</label>
+      <select id="f-section"><option value="">toutes</option>
+        ${sections.map(c => `<option value="${c}" ${f.section === c ? 'selected' : ''}>${esc(libFsli(c))}</option>`).join('')}</select></div>`}
+    ${cote === 'client' ? '' : `<div class="ctrl"><label>Destinataire</label>
+      <select id="f-contact"><option value="">tous</option>
+        ${S.contacts.map(c => `<option value="${c.id}" ${f.contact === c.id ? 'selected' : ''}>${esc(c.nom)}</option>`).join('')}</select></div>`}
+    <div class="ctrl"><label>Échéance</label>
+      <select id="f-echeance"><option value="">toutes</option>
+        <option value="retard" ${f.echeance === 'retard' ? 'selected' : ''}>en retard</option>
+        <option value="avenir" ${f.echeance === 'avenir' ? 'selected' : ''}>à venir</option></select></div>
+    <div class="ctrl"><label>&nbsp;</label>
+      <span class="pill ${retenus < total ? 'acc' : ''}">${retenus} / ${total}</span></div>
+    ${Object.values(f).some(Boolean) ? '<div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="f-raz">effacer</button></div>' : ''}
+  </div>`;
+}
+
+/** Vue auditeur de toutes les requêtes, filtrable. */
+function vueRequetes(){
+  const vus = filtrer(S.requetes, 'auditeur');
+  const rows = vus.map(r => {
+    const a = avancement(r.items), c = S.contacts.find(x => x.id === r.contact), ret = retard(r);
+    return {
+      id:`<span class="mono">${r.id}</span>`,
+      sec:esc(libFsli(r.section)),
+      t:esc(r.titre) + (r.proc ? ` <span class="tag">${esc(r.proc)}</span>` : ''),
+      dest:c ? esc(c.nom) : '—',
+      ech:`<span class="mono">${frDate(r.echeance)}</span>` + (ret ? `<div class="smallcaps" style="color:var(--bad)">retard ${ancienneteRetard(r)} j</div>` : ''),
+      n:`${r.items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length} / ${r.items.length}`,
+      av:`<div class="bar" style="width:80px"><i style="width:${(a * 100).toFixed(0)}%"></i></div>`,
+      st:[...new Set(r.items.map(i => i.statut))].map(k => `<span class="pill ${STATUTS[k].cls}">${STATUTS[k].lib}</span>`).join(' '),
+      v:`<button class="btn mini sec" data-open="${r.section}">section</button>
+         <button class="btn mini sec" data-goreq="${r.id}">portail</button>`,
+    };
+  });
+  return entete('Requêtes de la mission', 'toutes sections, filtrables') +
+    blk('Filtres', '', barreFiltres('auditeur', S.requetes.length, vus.length)) +
+    blk('Requêtes', vus.length + ' affichée(s)',
+      vus.length ? table([{k:'id',t:'N°'},{k:'sec',t:'Section',cls:'wrapcell'},{k:'t',t:'Objet',cls:'wrapcell'},
+        {k:'dest',t:'Destinataire'},{k:'ech',t:'Échéance'},{k:'n',t:'En attente',n:1},
+        {k:'av',t:'Avancement'},{k:'st',t:'États',cls:'wrapcell'},{k:'v',t:''}], rows)
+      : '<p class="note">Aucune requête ne correspond aux filtres.</p>');
+}
+
+/* ═══ 32. EXPORT DU STATUT DE MISSION ══════════════════════════════════════
+   Trois périmètres de destinataire. Le classeur porte une feuille par section
+   et une feuille de synthèse.
+   ═══════════════════════════════════════════════════════════════════════ */
+const PERIMETRES = {
+  equipe:{ lib:'équipe interne',
+    cols:['N°','Objet','Procédure','Élément','Statut interne','En attente de revue par','Échéance','Retard (j ouvrés)','Responsable côté client'] },
+  groupe:{ lib:'auditeur du groupe',
+    cols:['N°','Objet','Éléments','Avancement','Échéance','Retard (j ouvrés)'] },
+  client:{ lib:'client',
+    cols:['N°','Objet','Élément','Statut','Échéance','Responsable côté client'] },
+};
+function lignesExport(kind, requetes){
+  const out = [];
+  for (const r of requetes){
+    const c = S.contacts.find(x => x.id === r.contact);
+    if (kind === 'groupe'){
+      out.push([r.id, r.titre, String(r.items.length), pct(avancement(r.items), 0),
+                frDate(r.echeance), String(ancienneteRetard(r))]);
+      continue;
+    }
+    for (const i of r.items){
+      if (kind === 'equipe') out.push([r.id, r.titre, r.proc || '', i.desc, STATUTS[i.statut].lib,
+        i.revoyeur || '', frDate(r.echeance), String(ancienneteRetard(r)), c ? c.nom : '']);
+      else out.push([r.id, r.titre, i.desc, STATUTS[statutVisibleClient(i)].lib,
+        frDate(r.echeance), c ? c.nom : '']);
+    }
+  }
+  return out;
+}
+/** Feuille de synthèse : avancement par section, et qui doit quoi. */
+function feuilleSynthese(kind){
+  const l = [['Section', 'Requêtes', 'Éléments', 'En attente', 'Avancement', 'Retard max (j ouvrés)']];
+  const sections = [...new Set(S.requetes.map(r => r.section))];
+  for (const c of sections){
+    const rs = requetesDe(c);
+    const items = rs.flatMap(r => r.items);
+    l.push([libFsli(c), String(rs.length), String(items.length),
+            String(items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length),
+            pct(rs.length ? rs.reduce((a, r) => a + avancement(r.items), 0) / rs.length : 0, 0),
+            String(Math.max(0, ...rs.map(ancienneteRetard)))]);
+  }
+  l.push([]);
+  l.push(['Responsable côté client', 'Société', 'Demandes en retard', 'Éléments dus', 'Ancienneté max (j ouvrés)']);
+  for (const ct of S.contacts){
+    const rs = S.requetes.filter(r => r.contact === ct.id && retard(r));
+    if (!rs.length) continue;
+    l.push([ct.nom, ct.societe, String(rs.length),
+            String(rs.flatMap(r => r.items).filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length),
+            String(Math.max(...rs.map(ancienneteRetard)))]);
+  }
+  return l;
+}
+const xmlEsc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+const nomFeuille = s => s.replace(/[\[\]:*?\/\\]/g, ' ').slice(0, 31);
+/** Classeur au format SpreadsheetML — plusieurs feuilles, aucune dépendance. */
+function classeur(kind){
+  const d = PERIMETRES[kind];
+  const feuilles = [{ nom:'Synthèse', lignes:feuilleSynthese(kind) }];
+  for (const c of [...new Set(S.requetes.map(r => r.section))]){
+    feuilles.push({ nom:nomFeuille(libFsli(c)), lignes:[d.cols, ...lignesExport(kind, requetesDe(c))] });
+  }
+  const xml = '<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n'
+    + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" '
+    + 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
+    + feuilles.map(f => `<Worksheet ss:Name="${xmlEsc(f.nom)}"><Table>\n`
+        + f.lignes.map(r => '<Row>' + r.map(v =>
+            `<Cell><Data ss:Type="String">${xmlEsc(v)}</Data></Cell>`).join('') + '</Row>').join('\n')
+        + '\n</Table></Worksheet>').join('\n')
+    + '\n</Workbook>';
+  return { xml, feuilles };
+}
+function telecharger(nom, contenu, type){
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([contenu], { type }));
+    a.download = nom; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    return true;
+  } catch (e){ return false; }
+}
+
+/* ── message d'envoi : composé, montré, jamais envoyé ────────────────────── */
+function messageEnvoi(kind){
+  const d = PERIMETRES[kind], enRetard = S.requetes.filter(retard);
+  const dest = S.envoi.destinataires.length
+    ? S.contacts.filter(c => S.envoi.destinataires.includes(c.id))
+    : (kind === 'client' ? S.contacts.filter(c => c.role === 'referent_general') : []);
+  const objet = `Altiverre SAS — exercice 2025 — suivi des demandes au ${frDate(S.aujourdhui)}`;
+  const corps = kind === 'client'
+    ? `Bonjour,\n\nVous trouverez ci-joint l’état des demandes de documents au ${frDate(S.aujourdhui)}.\n\n`
+      + `${S.requetes.reduce((a, r) => a + r.items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length, 0)} `
+      + `élément(s) restent attendus, dont ${enRetard.reduce((a, r) => a + r.items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length, 0)} `
+      + `au-delà de l’échéance.\n\nLe dépôt se fait sur le portail ou par courriel à ${S.portail.adresse}.\n\n`
+      + `Bien cordialement,\nL’équipe d’audit`
+    : `Bonjour,\n\nÉtat d’avancement de la mission Altiverre SAS au ${frDate(S.aujourdhui)}.\n\n`
+      + `${postesEnPerimetre().filter(p => sec(p.code).visa).length} section(s) visée(s) sur ${postesEnPerimetre().length}, `
+      + `${notesBloquantesOuvertes().length} note(s) bloquante(s) ouverte(s), `
+      + `${registre().filter(f => f.statut === 'propose').length} facteur(s) de risque à statuer.\n\n`
+      + `Le détail figure dans le classeur joint.\n\nBien cordialement,\nL’équipe d’audit`;
+  return { objet, corps, dest, piece:`suivi-altiverre-2025-${kind}.xls` };
+}
+
+function vueExports(){
+  const st = S.envoi, m = messageEnvoi(st.perimetre), c = classeur(st.perimetre);
+  return entete('Exports et envoi du statut de mission', 'trois périmètres de destinataire, un classeur par périmètre') +
+    cite('J’ai envie de faire en sorte que l’on puisse directement à partir de la plateforme d’audit générer un excel ou autre fichier de suivi. Le fichier doit être modulable (par exemple on ne va pas montrer la même chose au client et à l’équipe d’audit).') +
+    blk('Périmètre', PERIMETRES[st.perimetre].lib,
+      `<div class="seg" style="margin-bottom:8px">
+        ${Object.entries(PERIMETRES).map(([k, v]) =>
+          `<button data-perim="${k}" class="${st.perimetre === k ? 'on' : ''}">${esc(v.lib)}</button>`).join('')}
+      </div>
+      ${table([{k:'c',t:'Colonne'},{k:'e',t:'équipe interne'},{k:'g',t:'auditeur du groupe'},{k:'l',t:'client'}],
+        [...new Set(Object.values(PERIMETRES).flatMap(v => v.cols))].map(col => ({
+          c:esc(col),
+          e:PERIMETRES.equipe.cols.includes(col) ? '<span class="pill ok">✓</span>' : '<span class="pill">—</span>',
+          g:PERIMETRES.groupe.cols.includes(col) ? '<span class="pill ok">✓</span>' : '<span class="pill">—</span>',
+          l:PERIMETRES.client.cols.includes(col) ? '<span class="pill ok">✓</span>' : '<span class="pill">—</span>',
+        })))}`) +
+    blk('Classeur', c.feuilles.length + ' feuille(s) · ' + c.feuilles.reduce((a, f) => a + f.lignes.length - 1, 0) + ' ligne(s)',
+      `<div class="row">
+        <button class="btn" data-xls="${st.perimetre}">télécharger le classeur (.xls)</button>
+        <button class="btn sec" data-csv="${st.perimetre}">télécharger en CSV</button>
+        <button class="btn sec" data-imprime="1">version imprimable</button>
+      </div>
+      ${table([{k:'f',t:'Feuille'},{k:'n',t:'Lignes',n:1},{k:'a',t:'Aperçu de la première ligne',cls:'wrapcell'}],
+        c.feuilles.map(f => ({ f:esc(f.nom), n:String(Math.max(0, f.lignes.length - 1)),
+          a:'<span class="smallcaps">' + esc((f.lignes[1] || f.lignes[0] || []).join(' · ').slice(0, 120)) + '</span>' })))}
+      <div id="exp-out"></div>`) +
+    blk('Envoi automatique', st.cadence === 'aucun' ? 'désactivé' : 'cadence : ' + st.cadence,
+      `<div class="row">
+        <div class="ctrl"><label>Cadence</label>
+          <select id="env-cad">
+            <option value="hebdo" ${st.cadence === 'hebdo' ? 'selected' : ''}>hebdomadaire</option>
+            <option value="bihebdo" ${st.cadence === 'bihebdo' ? 'selected' : ''}>deux fois par semaine</option>
+            <option value="mensuel" ${st.cadence === 'mensuel' ? 'selected' : ''}>mensuelle</option>
+            <option value="aucun" ${st.cadence === 'aucun' ? 'selected' : ''}>aucun envoi</option>
+          </select></div>
+        <div class="ctrl"><label>Destinataires (parmi les contacts du portail)</label>
+          <select id="env-dest" multiple size="4" style="min-width:260px">
+            ${S.contacts.map(x => `<option value="${x.id}" ${st.destinataires.includes(x.id) ? 'selected' : ''}>${esc(x.nom)} — ${esc(x.societe)}</option>`).join('')}</select></div>
+      </div>
+      <div class="callout">
+        <div class="kv">
+          <span class="k">À</span><span class="v" style="font-family:var(--sans)">${m.dest.length ? m.dest.map(x => esc(x.nom) + ' &lt;' + esc(x.mail) + '&gt;').join(', ') : '<i>aucun destinataire sélectionné</i>'}</span>
+          <span class="k">Objet</span><span class="v" style="font-family:var(--sans)">${esc(m.objet)}</span>
+          <span class="k">Pièce jointe</span><span class="v">${esc(m.piece)}</span>
+        </div>
+        <pre style="white-space:pre-wrap;font:12px/1.5 var(--mono);margin:8px 0 0">${esc(m.corps)}</pre>
+      </div>
+      <div class="callout warn"><b>Aucun envoi n’a lieu.</b> Ce fichier n’a ni serveur ni transport sortant : le message
+      ci-dessus est <b>composé</b>, avec ses destinataires réels et sa pièce jointe réelle, et s’arrête là. L’envoi
+      appartient à l’application.</div>`);
+}
 /* ═══ 18. NAVIGATION ═══════════════════════════════════════════════════════
    Trois espaces. Dans l'espace auditeur, deux groupes : la planification
    transverse, puis UNE SECTION PAR POSTE RETENU AU SCOPING. Le rail suit le
    travail — il n'y a plus de liste de fonctions.
    ═══════════════════════════════════════════════════════════════════════ */
 const ESPACES = [
-  { id:'auditeur', lib:'Espace auditeur',  defaut:'plan.rappro' },
-  { id:'client',   lib:'Portail client',   defaut:'cli.vue' },
-  { id:'pilotage', lib:'Pilotage',         defaut:'pil.avance' },
+  { id:'auditeur',  lib:'Espace auditeur', defaut:'plan.rappro' },
+  { id:'achevement',lib:'Achèvement',      defaut:'ach.pointage' },
+  { id:'client',    lib:'Portail client',  defaut:'cli.vue' },
+  { id:'pilotage',  lib:'Pilotage',        defaut:'pil.avance' },
 ];
 const TRANSVERSES = [
   { id:'plan.rappro',  lib:'Import et rapprochement' },
   { id:'plan.mat',     lib:'Matérialité' },
   { id:'plan.scope',   lib:'Scoping des postes' },
+  { id:'plan.ra',      lib:'Revue analytique préliminaire' },
   { id:'plan.facteurs',lib:'Facteurs de risque' },
   { id:'plan.secteur', lib:'Analyse sectorielle',      lot2:true },
   { id:'plan.parties', lib:'Parties liées',            lot2:true },
   { id:'plan.lcbft',   lib:'LCB-FT et bénéficiaires',  lot2:true },
   { id:'plan.je',      lib:'Test des écritures' },
   { id:'plan.circ',    lib:'Circularisations' },
-  { id:'plan.pointage',lib:'Pointage des états financiers', lot2:true },
   { id:'plan.synth',   lib:'Synthèse des anomalies' },
   { id:'plan.piste',   lib:'Piste d’audit' },
-  { id:'plan.ia',      lib:'Déterministe / modèle' },
+  { id:'plan.principes', lib:'Principes de conception' },
+];
+const VUES_ACHEVEMENT = [
+  { id:'ach.pointage', lib:'Pointage des états financiers' },
+  { id:'ach.ra',       lib:'Revue analytique finale' },
+  { id:'ach.evenements',lib:'Événements postérieurs' },
+  { id:'ach.continuite',lib:'Continuité d’exploitation' },
+  { id:'ach.anomalies',lib:'Anomalies non corrigées et opinion' },
+  { id:'ach.affirmation',lib:'Lettre d’affirmation' },
+  { id:'ach.gouvernance',lib:'Communication à la gouvernance' },
+  { id:'ach.cloture',  lib:'Assemblage et clôture du dossier' },
 ];
 const VUES_CLIENT = [
   { id:'cli.vue',      lib:'Vue client — les demandes' },
@@ -2756,17 +3744,22 @@ const VUES_CLIENT = [
   { id:'cli.params',   lib:'Paramétrage du portail' },
 ];
 const VUES_PILOTAGE = [
-  { id:'pil.avance', lib:'Avancement et exports' },
-  { id:'pil.notes',  lib:'Notes de revue — transverse' },
+  { id:'pil.avance',   lib:'Avancement de la mission' },
+  { id:'pil.requetes', lib:'Requêtes — toutes sections' },
+  { id:'pil.notes',    lib:'Notes de revue — transverse' },
+  { id:'pil.export',   lib:'Exports et envoi' },
 ];
 
 function railItems(){
-  if (S.espace === 'client')   return [{ grp:'Portail', items:VUES_CLIENT }];
-  if (S.espace === 'pilotage') return [{ grp:'Pilotage', items:VUES_PILOTAGE }];
+  if (S.espace === 'client')     return [{ grp:'Portail', items:VUES_CLIENT }];
+  if (S.espace === 'pilotage')   return [{ grp:'Pilotage', items:VUES_PILOTAGE }];
+  if (S.espace === 'achevement') return [{ grp:'Achèvement de la mission', items:VUES_ACHEVEMENT }];
+  const g = m => postesDeMasse(m).map(p => ({ id:'fsli:' + p.code, lib:p.lib, poste:p,
+                                              second:masseDe(p) !== m }));
   return [
     { grp:'Planification transverse', items:TRANSVERSES },
-    { grp:'Sections de travail — ' + postesEnPerimetre().length + ' poste(s)',
-      items:postesEnPerimetre().map(p => ({ id:'fsli:' + p.code, lib:p.lib, poste:p })) },
+    { grp:'Bilan — ' + postesDeMasse('bilan').length + ' poste(s)', items:g('bilan') },
+    { grp:'Compte de résultat — ' + postesDeMasse('resultat').length + ' poste(s)', items:g('resultat') },
   ];
 }
 function badgeRail(it){
@@ -2777,6 +3770,7 @@ function badgeRail(it){
   }
   if (!it.poste) return '';
   const p = it.poste, st = sec(p.code);
+  if (it.second) return '<span class="b">aussi</span>';
   if (st.visa) return '<span class="b ok">visée</span>';
   const bl = notesBloquantesOuvertes(p.code).length;
   if (bl) return `<span class="b bad">${bl} ⚑</span>`;
@@ -2863,9 +3857,13 @@ function renderImpact(){
   const s = seuils(), postes = postesEnPerimetre();
   let procs = 0, sel = 0, couvert = 0, total = 0;
   for (const p of postes){
-    procs += proceduresRequises(p).length;
-    const e = echantillonPoste(p);
-    sel += e.exhaustif.length + e.alea.length; couvert += e.couvert; total += e.total;
+    const prs = proceduresRequises(p);
+    procs += prs.length;
+    for (const pr of prs){
+      const e = echantillonProc(p, pr);
+      if (!e) continue;
+      sel += e.retenus.length; couvert += e.couvert; total += e.pop.masse;
+    }
   }
   const a = anomalies(), nc = a.filter(x => !x.souSeuil).reduce((t, x) => t + x.montant, 0);
   const cells = {
@@ -2893,17 +3891,29 @@ function contenu(){
     case 'plan.rappro': return vueRappro();
     case 'plan.mat':    return vueMaterialite();
     case 'plan.scope':  return vueScoping();
+    case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.principes': return vuePrincipes();
     case 'plan.je':     return vueJE();
     case 'plan.circ':   return vueCirc();
     case 'plan.synth':  return vueSynthese();
     case 'plan.piste':  return vuePiste();
     case 'plan.ia':     return vueIA();
+    case 'ach.pointage':   return vueAchPointage();
+    case 'ach.ra':         return vueAchRA();
+    case 'ach.evenements': return vueAchSimple('evenements');
+    case 'ach.continuite': return vueAchSimple('continuite');
+    case 'ach.anomalies':  return vueAchAnomalies();
+    case 'ach.affirmation':return vueAchSimple('affirmation');
+    case 'ach.gouvernance':return vueAchSimple('gouvernance');
+    case 'ach.cloture':    return vueAchCloture();
     case 'cli.vue':      return vueClientDemandes();
     case 'cli.contacts': return vueClientContacts();
     case 'cli.params':   return vueClientParams();
     case 'pil.avance':  return vuePilotage();
+    case 'pil.requetes':return vueRequetes();
     case 'pil.notes':   return vueNotes();
+    case 'pil.export':  return vueExports();
   }
   return '<p class="note">Vue inconnue.</p>';
 }
@@ -2968,11 +3978,18 @@ function ouvrirSection(code){ aller('fsli:' + code, 'auditeur'); }
    Règle → requête DANS la section → portail client → dépôt → papier de
    travail de la même section → écart → synthèse. Chaque maillon est ici.
    ═══════════════════════════════════════════════════════════════════════ */
-function requeteJustificatifs(p){
-  const wp = wpDe(p);
-  const items = wp.map(r => ({ desc:`Justificatifs de l’écriture ${r.num} — pièce ${r.piece}, ${r.tiers}, ${frDate(r.date)} (${eur(r.compta)})`, ref:r.num }));
-  const r = creerRequete(p.code, 'Justificatifs des éléments sélectionnés — ' + p.lib, items, 12);
-  r.origine = 'enchaînement : sélection';
+function requeteJustificatifsProc(p, pr){
+  const e = echantillonProc(p, pr); if (!e) return null;
+  const cat = catalogue(p, pr), docs = docsAttendusProc(p, pr);
+  const items = e.retenus.map(x => ({
+    desc:`${pr.tiers ? 'Tiers' : 'Écriture'} ${x.cle}${x.e ? ' — pièce ' + x.e.pieceRef : ''}`
+       + `${x.e ? ' du ' + frDate(x.e.date) : ''} (${eur(x.montant)}) — à fournir : ${docs.join(' + ')}`,
+    ref:x.cle }));
+  const r = creerRequete(p.code, 'Justificatifs — ' + pr.lib, items, 12);
+  r.proc = pr.code;
+  r.origine = 'catalogue de preuve';
+  // ce que le client doit trouver sur chaque document : rédigé par le catalogue
+  r.detail = cat ? cat.map(d => d.doc + ' — ' + d.champs.map(c => c.lib.toLowerCase()).join(', ')).join(' ; ') : '';
   return r;
 }
 function requeteVariation(p, compte, l){
@@ -2980,57 +3997,27 @@ function requeteVariation(p, compte, l){
     desc:`Le compte ${compte} « ${l.lib} » passe de ${eur(l.n1)} au 31/12/2024 à ${eur(l.n)} au 31/12/2025, `
        + `soit ${eur(l.d)}${l.pr === null ? '' : ' (' + pct(l.pr, 1) + ')'}. Merci d’en indiquer l’explication et `
        + `de préciser les éléments justificatifs disponibles.`, ref:compte }], 10);
-  r.origine = 'enchaînement : revue analytique';
+  r.origine = 'revue analytique substantive';
   return r;
 }
-/** Dépôt d'une pièce par le client : c'est ce dépôt qui rend la ligne de
- *  papier de travail testable. Sans lui, aucun contrôle n'est exécutable. */
+/** Dépôt d'une pièce par le client : il rend testable la ligne du papier de
+ *  travail de LA PROCÉDURE qui a demandé la pièce. */
 function deposer(reqId, itemId){
   const r = S.requetes.find(x => x.id === reqId); if (!r) return;
   const it = r.items.find(i => i.id === itemId); if (!it) return;
-  const ent = it.ref ? LEDGER.entries.find(e => e.num === it.ref) : null;
-  const noms = ent ? docsAttendus(ent).map(d => ent.pieceRef + '_' + d.replace(/[^a-zà-ÿ]+/gi, '-').toLowerCase() + '.pdf')
-                   : ['piece_' + r.id + '_' + it.id + '.pdf'];
-  const dejaN = it.depots.length;
-  const nom = noms[Math.min(dejaN, noms.length - 1)];
-  it.depots.push({ nom, t:tick(), par:contactCourant().nom });
-  it.statut = it.depots.length >= noms.length ? 'depose' : 'partiel';
-  logEvent('pièce déposée', r.id + ' · ' + nom, contactCourant().nom + ' (' + contactCourant().societe + ')');
-  // maillon suivant : la ligne de papier de travail devient testable
-  if (ent){
-    const p = postesCalcules().find(x => requetesDe(x.code).some(q => q.id === r.id));
-    if (p){ const w = wpDe(p).find(x => x.num === ent.num);
-      if (w){ w.recu = true; w.docs = it.depots.map(d => d.nom.replace(/^.*?_/, '').replace(/\.pdf$/, '').replace(/-/g, ' ')); } }
+  const p = postesCalcules().find(x => x.code === r.section);
+  const pr = r.proc ? PROCEDURES.find(x => x.code === r.proc) : null;
+  const docs = (p && pr && docsAttendusProc(p, pr).length) ? docsAttendusProc(p, pr) : ['pièce justificative'];
+  const doc = docs[Math.min(it.depots.length, docs.length - 1)];
+  const base = it.ref ? String(it.ref).replace(/[^\w-]+/g, '') : r.id;
+  const nom = base + '_' + doc.toLowerCase().replace(/[^a-zà-ÿ0-9]+/gi, '-').replace(/^-|-$/g, '') + '.pdf';
+  it.depots.push({ nom, doc, t:tick(), par:contactCourant().nom });
+  it.statut = it.depots.length >= docs.length ? 'depose' : 'partiel';
+  logEvent('pièce déposée', r.id + ' · ' + nom, contactCourant().nom);
+  if (p && pr){
+    const w = (wpProc(p, pr) || []).find(x => String(x.cle) === String(it.ref));
+    if (w){ w.recu = true; w.docs[doc] = true; }
   }
-}
-
-/* ═══ 22. EXPORT DU STATUT DE MISSION ══════════════════════════════════════ */
-const EXPORTS = {
-  equipe: { lib:'équipe interne',
-    cols:['N°','Section','Objet','Échéance','Élément','Statut interne','En attente de revue par','Retard (j ouvrés)','Responsable côté client'] },
-  groupe: { lib:'auditeur du groupe',
-    cols:['N°','Section','Objet','Échéance','Avancement','Retard (j ouvrés)'] },
-  client: { lib:'client',
-    cols:['N°','Objet','Échéance','Élément','Statut','Responsable côté client'] },
-};
-function exporter(kind){
-  const d = EXPORTS[kind], lignes = [d.cols];
-  for (const r of S.requetes){
-    const c = S.contacts.find(x => x.id === r.contact), lib = (POSTES.find(p => p.code === r.section) || {}).lib || r.section;
-    if (kind === 'groupe'){ lignes.push([r.id, lib, r.titre, frDate(r.echeance), pct(avancement(r.items), 0), String(ancienneteRetard(r))]); continue; }
-    for (const i of r.items){
-      if (kind === 'equipe') lignes.push([r.id, lib, r.titre, frDate(r.echeance), i.desc,
-        STATUTS[i.statut].lib, i.revoyeur || '', String(ancienneteRetard(r)), c ? c.nom : '']);
-      else lignes.push([r.id, r.titre, frDate(r.echeance), i.desc,
-        STATUTS[statutVisibleClient(i)].lib, c ? c.nom : '']);
-    }
-  }
-  const csv = lignes.map(l => l.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\n');
-  logEvent('export généré', 'statut de mission — ' + d.lib, lignes.length - 1 + ' ligne(s)');
-  document.getElementById('exp-out').innerHTML = `
-    <div class="callout"><b>Export « ${esc(d.lib)} »</b> — ${lignes.length - 1} ligne(s), ${d.cols.length} colonne(s).
-      ${kind === 'client' ? 'Aucun nom de réviseur, aucun statut interne.' : ''}</div>
-    <textarea rows="8" readonly>${esc(csv)}</textarea>`;
 }
 
 /* ═══ 23. INTERACTIONS ═════════════════════════════════════════════════════ */
@@ -3042,22 +4029,34 @@ document.addEventListener('input', e => {
   if (t.id === 'pm'){ S.pctM = parseFloat(t.value); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'ppm'){ S.pctPM = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'pctt'){ S.pctCTT = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
-  if (t.id === 'sel-seed' && p){ sec(p.code).seed = t.value; sec(p.code).wp = null; return; }
+  if (d.pseed !== undefined && p){ proc(p.code, d.pseed).seed = t.value; proc(p.code, d.pseed).wp = null; return; }
+  if (d.pconcl !== undefined && p){ proc(p.code, d.pconcl).conclusion = t.value; return renderMainDiff(); }
+  if (d.ctr !== undefined && p){
+    const pr = PROCEDURES.find(x => x.code === d.pcode);
+    const wp = wpProc(p, pr) || [];
+    const cle = String(d.ctr).split('|')[0];
+    const l = wp.find(x => String(x.cle) === cle);
+    if (l){ l.champs[d.ctr] = t.value; }
+    return renderMainDiff();
+  }
   if (t.id === 'ar-montant'){ S.arMontant = Math.round((parseFloat(t.value) || 0) * 100); return renderMainDiff(); }
   if (t.id === 'ar-pct'){ S.arPct = parseFloat(t.value) || 0; return renderMainDiff(); }
   if (t.id === 'sec-concl' && p){ sec(p.code).conclusion = t.value; return renderMainDiff(); }
   if (t.id === 'pp-adr'){ S.portail.adresse = t.value; return; }
+  if (t.id === 'f-q'){ S.filtres.q = t.value; return renderMainDiff(); }
+  const cts = v => Math.round((parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
+  if (d.plaq !== undefined){ S.achevement.plaquette[d.plaq] = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
+  if (d.calcm !== undefined){ const c = S.achevement.calculs[d.calcm] = S.achevement.calculs[d.calcm] || {};
+    c.montant = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
+  if (d.calcd !== undefined){ const c = S.achevement.calculs[d.calcd] = S.achevement.calculs[d.calcd] || {};
+    c.doc = t.value; return renderMainDiff(); }
+  if (t.id === 'ach-ra'){ S.achevement.raFinale = t.value; return renderMainDiff(); }
+  if (t.id === 'ach-opm'){ S.achevement.opinionMotif = t.value; return renderMainDiff(); }
+  if (d.achc !== undefined){ S.achevement.concl[d.achc] = t.value; return renderMainDiff(); }
   if (d.fseuil !== undefined){ S.seuilsFacteurs[d.fseuil] = parseFloat(t.value) || 0; return renderMainDiff(); }
   if (d.scopem !== undefined){ S.scopingMotif[d.scopem] = t.value; return renderMainDiff(); }
   if (d.nsm !== undefined && p){ sec(p.code).nsMotif[d.nsm] = t.value; return renderMainDiff(); }
   if (d.nivm !== undefined && p){ sec(p.code).overrideMotif[d.nivm] = t.value; return renderMainDiff(); }
-  if (d.wp !== undefined && p){
-    const r = wpDe(p)[+d.wp]; if (!r) return;
-    if (d.f === 'releve'){ const v = String(t.value).replace(/\s/g, '').replace(',', '.');
-      r.releve = t.value.trim() === '' ? null : Math.round((parseFloat(v) || 0) * 100); }
-    else r[d.f] = t.value;
-    return renderMainDiff();
-  }
 });
 
 document.addEventListener('change', e => {
@@ -3087,8 +4086,27 @@ document.addEventListener('change', e => {
     logEvent('niveau de risque arbitré', p.lib + ' · ' + d.niv, t.value ? 'forcé : ' + NIV_LIB[t.value] : 'retour au calcul');
     renderImpact(); return renderMain();
   }
+  if (d.ctr !== undefined && p){
+    const pr = PROCEDURES.find(x => x.code === d.pcode);
+    const l = (wpProc(p, pr) || []).find(x => String(x.cle) === String(d.ctr).split('|')[0]);
+    if (l) l.champs[d.ctr] = t.value;
+    return renderMain();
+  }
+  if (d.achpt !== undefined){ const [k, i] = d.achpt.split('|');
+    (S.achevement.points[k] = S.achevement.points[k] || {})[i] = t.checked;
+    logEvent('point de diligence ' + (t.checked ? 'exécuté' : 'décoché'), ACH[k].t, ACH[k].pts[+i].slice(0, 60));
+    return renderMain(); }
+  if (d.corr !== undefined){ S.achevement.corrigees[d.corr] = t.checked; return renderMain(); }
+  if (t.id === 'ach-op'){ S.achevement.opinion = t.value;
+    logEvent('opinion arrêtée', 'Altiverre SAS FY2025', t.value); return renderMain(); }
   if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; return renderMain(); }
   if (t.id === 'je-an'){ S.jeSansAN = t.checked; return renderMain(); }
+  if (t.id === 'f-statut'){ S.filtres.statut = t.value; return renderMain(); }
+  if (t.id === 'f-section'){ S.filtres.section = t.value; return renderMain(); }
+  if (t.id === 'f-contact'){ S.filtres.contact = t.value; return renderMain(); }
+  if (t.id === 'f-echeance'){ S.filtres.echeance = t.value; return renderMain(); }
+  if (t.id === 'env-cad'){ S.envoi.cadence = t.value; return renderMain(); }
+  if (t.id === 'env-dest'){ S.envoi.destinataires = [...t.selectedOptions].map(o => o.value); return renderMain(); }
   if (d.crole !== undefined){ const c = S.contacts.find(x => x.id === d.crole); if (c) c.role = t.value; return renderMain(); }
   if (t.id === 'pp-cad'){ S.portail.cadence = +t.value; return renderMain(); }
   if (t.id === 'pp-esc'){ S.portail.escalade = +t.value; return renderMain(); }
@@ -3115,15 +4133,34 @@ document.addEventListener('click', e => {
     return aller('cli.vue', 'client'); }
 
   /* ── sélection et enchaînement ── */
-  if (t.id === 'sel-rejouer' && p){ logEvent('tirage rejoué', p.lib, 'germe ' + sec(p.code).seed); return renderMain(); }
-  if (t.id === 'sel-nouveau' && p){
-    const st = sec(p.code);
-    st.seed = 'otto-' + p.code.toLowerCase() + '-' + String(seedOf(st.seed) % 9000 + 1000);
+  if (d.proc){ S.procOuverte = S.procOuverte === d.proc ? null : d.proc; renderMain();
+    const b = document.getElementById('b4'); if (b) b.scrollIntoView({ block:'start' }); return; }
+  if (d.ctrtout){ S.ctrTout[d.ctrtout] = !S.ctrTout[d.ctrtout]; return renderMain(); }
+  if (d.pnouveau && p){
+    const st = proc(p.code, d.pnouveau);
+    st.seed = 'otto-' + p.code.toLowerCase() + '-' + d.pnouveau.toLowerCase() + '-' + String(seedOf(st.seed) % 9000 + 1000);
     st.wp = null;
-    logEvent('nouveau germe', p.lib, st.seed);
+    logEvent('nouveau germe', p.lib + ' · ' + d.pnouveau, st.seed);
     renderImpact(); return renderMain();
   }
-  if (t.id === 'sel-requete' && p){ requeteJustificatifs(p); renderImpact(); return renderMain(); }
+  if (d.preq && p){
+    const pr = PROCEDURES.find(x => x.code === d.preq);
+    if (pr) requeteJustificatifsProc(p, pr);
+    renderImpact(); return renderMain();
+  }
+  if (d.plire && p){
+    const pr = PROCEDURES.find(x => x.code === d.plire);
+    let n = 0;
+    for (const c of controles(p, pr)){
+      if (!c.recu || c.saisi) continue;
+      const v = c.ch.val(c.ligne.x);
+      c.ligne.champs[c.cle] = c.ch.type === 'montant' ? (v / 100).toFixed(2).replace('.', ',')
+                            : c.ch.type === 'bool' ? (v ? 'oui' : 'non') : String(v);
+      n++;
+    }
+    logEvent('valeurs relevées saisies', p.lib + ' · ' + procRef(p, pr), n + ' champ(s)');
+    renderImpact(); return renderMain();
+  }
   if (d.ravar && p){
     const l = revueAnalytique().find(x => x.compte === d.ravar);
     if (l) requeteVariation(p, d.ravar, l);
@@ -3270,7 +4307,44 @@ document.addEventListener('click', e => {
     logEvent('facteur de risque levé à la main', id, desc.slice(0, 80) + ' → ' + fsli.join(', '));
     renderImpact(); return renderMain();
   }
-  if (d.exp) return exporter(d.exp);
+  if (t.id === 'ach-clore'){ S.achevement.clos = { par:S.moi, t:tick() };
+    logEvent('dossier clôturé et verrouillé', 'Altiverre SAS FY2025',
+             USERS[S.moi].nom + ' — assemblage dans les ' + DELAI_ASSEMBLAGE + ' jours du rapport');
+    return renderMain(); }
+  if (d.raprelim){
+    const l = revueAnalytique().find(x => x.compte === d.raprelim);
+    if (l){
+      const ps = postesDuCompte(d.raprelim);
+      const r = creerRequete(ps.length ? ps[0].code : 'CA', 'Explication de variation — compte ' + d.raprelim,
+        [{ desc:questionVariation(l), ref:d.raprelim }], 10);
+      r.origine = 'revue analytique préliminaire';
+    }
+    renderImpact(); return renderMain();
+  }
+  if (t.id === 'f-raz'){ S.filtres = { statut:'', section:'', contact:'', echeance:'', q:'' }; return renderMain(); }
+  if (d.perim){ S.envoi.perimetre = d.perim; return renderMain(); }
+  if (d.xls){
+    const c = classeur(d.xls);
+    const ok = telecharger('suivi-altiverre-2025-' + d.xls + '.xls', c.xml, 'application/vnd.ms-excel');
+    logEvent('classeur généré', 'statut de mission — ' + PERIMETRES[d.xls].lib,
+             c.feuilles.length + ' feuille(s)');
+    document.getElementById('exp-out').innerHTML = ok
+      ? `<div class="callout ok">Classeur généré : ${c.feuilles.length} feuille(s), format SpreadsheetML lisible par
+         Excel et LibreOffice. Si rien ne s’est téléchargé, c’est que la page est ouverte dans un cadre qui bloque les
+         téléchargements : ouvrez le fichier directement dans le navigateur.</div>`
+      : '<div class="callout bad">Le téléchargement a été refusé par le navigateur.</div>';
+    return;
+  }
+  if (d.csv){
+    const l = [PERIMETRES[d.csv].cols, ...lignesExport(d.csv, S.requetes)];
+    const csv = l.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\n');
+    telecharger('suivi-altiverre-2025-' + d.csv + '.csv', '\uFEFF' + csv, 'text/csv');
+    logEvent('export CSV généré', PERIMETRES[d.csv].lib, l.length - 1 + ' ligne(s)');
+    document.getElementById('exp-out').innerHTML =
+      `<div class="callout"><b>${l.length - 1} ligne(s)</b></div><textarea rows="8" readonly>${esc(csv)}</textarea>`;
+    return;
+  }
+  if (d.imprime){ window.print(); return; }
 });
 
 /* ═══ 24. DÉMARRAGE ════════════════════════════════════════════════════════ */

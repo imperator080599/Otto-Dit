@@ -136,6 +136,36 @@ B (contrôle interne et processus, le plus lourd), puis D (résiduel qualitatif,
 A et B). Le lot 2 (sectoriel, parties liées, LCB-FT, pointage) reste en dernier : ces modules
 dépendent de sources externes indisponibles, et leur valeur est précisément d'alimenter A.
 
+## Refonte par procédure et catalogue de preuve (2026-08-25, lot C)
+
+`prototype/otto-prototype.html` — ADR-031 à ADR-033.
+
+**La sélection appartient à la procédure.** Chaque procédure requise porte sa population
+(comptes numérotés, période, filtre en toutes lettres, éléments, masse), son unité
+d'échantillonnage, son germe, son papier et sa conclusion. Un plan de travail en tête de section
+donne procédure → assertion → population → sélection → papier → statut. Sur le chiffre
+d'affaires les populations sont réellement distinctes : 268, 15 et 10 éléments selon la
+procédure.
+
+**Catalogue de preuve livré** : par FSLI × procédure, les documents attendus, les champs à
+relever, la donnée contrôlée, la règle et la tolérance. Il pré-remplit les colonnes du papier et
+**génère** la requête client. Une règle de contrôle n'est pas une égalité : *dans l'exercice*,
+*antérieure ou égale*, *même exercice*, tolérance en jours — sans quoi une facture datée du 5 et
+comptabilisée le 8 ressortait en écart.
+
+**Ajouts** : revue analytique en trois moments (préliminaire alimentant le registre, substantive,
+finale) ; bilan / compte de résultat avec double appartenance ; espace achèvement complet dont
+le pointage à trois natures de rapprochement et une clôture qui refuse tant qu'un obstacle
+subsiste ; filtres cumulables sur les requêtes des deux côtés ; classeur multi-feuilles et
+composition de l'envoi périodique ; pédagogie repliée dans une page « Principes ».
+
+Contrôles : 26/26 pieds de tableau exacts, 42 vues sans erreur, 13/13 citations littérales,
+0 requête réseau, 0 erreur JS, rendu d'une section 21 ms, frappe 2,8 ms/touche, barre collante
+293 px sur 844 au téléphone.
+
+**Reste devant** : lot 2 (analyse sectorielle, parties liées, LCB-FT), E (balances auxiliaires),
+B (contrôle interne et processus), D (résiduel qualitatif).
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent
