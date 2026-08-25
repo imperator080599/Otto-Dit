@@ -130,8 +130,11 @@ sorted by (label), fields `[label, occurred_on, performer_name]`.
    verb=`post_lock_amendment` + new versioned rows flagged `post_lock=true` carrying
    date added, preparer, reason (matches AS 1215.16 verbatim). Enforced by trigger on
    every engagement-scoped table.
-5. **Retention (ADR-014)**: `engagement.retention_until` = pack rule (France **10 years**
-   per Code de commerce former art. R.823-10; PCAOB **7 years** from report release per
+5. **Retention (ADR-014 rev. 2)**: `engagement.retention_until` and
+   `engagement.doc_completion_due` are computed from the engagement's own facts and stored
+   with `engagement.legal_basis` (the provision behind each date, and its verification
+   status). France **6 years** per C. com. art. **R. 820-42** (in force 2024-02-01) and
+   **60 days** to close the file per art. **D. 821-186 III-IV**; PCAOB **7 years** from report release per
    AS 1215.14); nothing is deletable before it (enforced procedurally + prod ops runbook);
    superseded analyses reflecting differing professional judgments are never purged
    (SEC Rule 2-06(c)-shaped).

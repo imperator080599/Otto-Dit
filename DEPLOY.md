@@ -98,7 +98,7 @@ select cron.schedule('otto-reminders', '0 7 * * 1-5', $$select otto_dispatch_rem
 
 ## 6. Retention and lock (ADR-014)
 
-- France (NEP pack): assembly lock at report date + 60 days; retention **10 years**.
+- France (NEP pack): file closed ≤ **60 days** after report signature (C. com. D. 821-186 III-IV); retention **6 years** (C. com. R. 820-42). ADR-014 rev. 2.
 - PCAOB pack: documentation completion ≤ 14 days after report release (45-day legacy tier
   configurable); retention **7 years** from report release; SEC Rule 2-06 extends scope to
   qualifying correspondence — include portal messages and review notes in the retention job.

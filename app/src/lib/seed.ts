@@ -35,7 +35,10 @@ export async function seedBase(): Promise<void> {
   const exists = await q01(`select id from tenant where id = $1`, [IDS.tenant]);
   if (exists) return;
 
-  await q(`insert into tenant (id, name) values ($1, $2)`, [IDS.tenant, 'Vermeil Audit (cabinet fictif)']);
+  // issuer_reports_2024 drives the AS 1215.15 phase-in test (ADR-014 rev. 2): a small
+  // French firm doing referred component work is well under the 100-report threshold,
+  // so the 14-day window only reaches it for fiscal years beginning on/after 2025-12-15.
+  await q(`insert into tenant (id, name, issuer_reports_2024) values ($1, $2, 0)`, [IDS.tenant, 'Vermeil Audit (cabinet fictif)']);
 
   await q(
     `insert into app_user (id, tenant_id, name, email, firm_role) values

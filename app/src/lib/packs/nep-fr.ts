@@ -1,4 +1,5 @@
 import type { AssurancePack } from './types';
+import { basisNote } from '@/lib/kernel/retention';
 
 // NEP/France pack — French statutory audit content. Public-standards-shaped content only
 // (input hygiene §2): benchmark menus and % ranges are common published practice, not any
@@ -42,10 +43,8 @@ export const nepFr: AssurancePack = {
   ],
   verification: { spotcheckPct: 0.1, spotcheckMin: 3, seedDefault: 'otto-demo-verif-1' },
   docRules: {
-    assemblyDays: 60,
-    retentionYears: 10,
-    basisNote:
-      'Conservation 10 ans, même après la cessation des fonctions (dossier constitué en application du C. com., art. R. 823-10 — cf. docs/DECISIONS.md ADR-014 pour la référence et son statut de vérification); assemblage du dossier ~60 jours (pratique NEP-230/ISA 230).',
+    ruleSet: 'nep-fr-2024',
+    basisNote: basisNote('nep-fr-2024', 'fr'),
   },
   extractionConfidenceThreshold: 0.9,
   wp: {

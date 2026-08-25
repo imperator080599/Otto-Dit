@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
+import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { runLadder } from '../../src/lib/services/extraction/ladder';
 import { getOcrAdapter } from '../../src/lib/services/extraction/adapters';
 import {
@@ -29,9 +30,18 @@ interface DocResult {
 }
 
 async function main() {
+  loadEnvLocal();
   const args = process.argv.slice(2);
   const skipGenerate = args.includes('--no-generate');
+  const flag = (name: string, dflt: string) =>
+    (args.find((a) => a.startsWith(`--${name}=`)) ?? `--${name}=${dflt}`).split('=')[1];
+  // the adapter is selected per run, never by exporting a key into a shell (ADR-020)
+  process.env.OTTO_OCR_ADAPTER = flag('adapter', process.env.OTTO_OCR_ADAPTER ?? 'mock');
+  // a $ ceiling on the eval itself: at these volumes it is a BUG DETECTOR, not a budget —
+  // reaching it means a loop or a retry storm, so the run stops and says so (ADR-020)
+  const budget = Number(flag('budget', '5'));
   const adapter = getOcrAdapter();
+  console.log(`adapter: ${adapter.name} · key: ${keyFingerprint()} · budget guard: $${budget.toFixed(2)}`);
   const root = repoRoot();
   const synthDir = path.join(root, 'dataset', 'eval', 'synthetic');
   const publicDir = path.join(root, 'dataset', 'eval', 'public');
@@ -45,15 +55,19 @@ async function main() {
   if (publicDocs.length) console.log(`public corpus: ${publicDocs.length} documents in ${path.relative(root, publicDir)}`);
 
   const results: DocResult[] = [];
+  let spent = 0;
+  let budgetStop: string | null = null;
   for (const [corpus, dir, docs] of [
     ['synthetic', synthDir, synthetic],
     ['public', publicDir, publicDocs],
   ] as const) {
     for (const doc of docs) {
+      if (spent >= budget) { budgetStop = doc.filename; break; }
       const bytes = new Uint8Array(fs.readFileSync(path.join(dir, doc.filename)));
       const t0 = Date.now();
       try {
         const res = await runLadder(bytes, doc.filename, adapter);
+        spent += res.ai?.costUsd ?? 0;
         const cmp = compareDoc(doc.truth as unknown as Record<string, string>, res.fields);
         results.push({
           doc, corpus,
@@ -78,7 +92,10 @@ async function main() {
     }
   }
 
-  const report = buildReport(results, adapter.name);
+  if (budgetStop) {
+    console.error(`\nBUDGET GUARD TRIPPED at ${budgetStop} after $${spent.toFixed(4)} — this is a bug detector, not a budget. Find the loop or the retry storm before re-running.`);
+  }
+  const report = buildReport(results, adapter.name, budgetStop);
   const out = path.join(root, 'docs', 'EVAL_EXTRACTION.md');
   fs.writeFileSync(out, report);
   console.log(`\n${summary(results)}\nreport written to ${path.relative(root, out)}`);
@@ -101,7 +118,14 @@ function table(rows: string[][], headers: string[]): string {
   ].join('\n');
 }
 
-const sc = (s: Scored) => [String(s.tp), String(s.fp), String(s.fn), pct(s.precision), pct(s.recall), pct(s.f1)];
+// every rate is printed next to the count it was computed from — a 100 % on n=3 and a
+// 100 % on n=196 are not the same claim
+const sc = (s: Scored) => [
+  String(s.tp), String(s.fp), String(s.fn),
+  `${pct(s.precision)} (n=${s.tp + s.fp})`,
+  `${pct(s.recall)} (n=${s.tp + s.fp + s.fn})`,
+  pct(s.f1),
+];
 
 function summary(results: DocResult[]): string {
   const all = results.flatMap((r) => r.comparisons);
@@ -114,7 +138,7 @@ function summary(results: DocResult[]): string {
   );
 }
 
-function buildReport(results: DocResult[], adapterName: string): string {
+function buildReport(results: DocResult[], adapterName: string, budgetStop: string | null): string {
   const all = results.flatMap((r) => r.comparisons);
   const overall = score(all.reduce((c: Counts, x) => add(c, x.verdict), emptyCounts()));
   const byField = tally(all, (c) => c.field);
@@ -161,7 +185,8 @@ deterministically (\`scripts/eval/corpus.ts\`, seeded); every company, number an
 it is fabricated. The public slot (\`dataset/eval/public/\`) is where published annual
 reports and vendor sample invoices are dropped locally; those files are **not committed**.
 
-- Adapter under test (rungs 3–4): \`${adapterName}\`${adapterName === 'mock' ? ' — record/replay, so no OCR/LLM ran: rung 3 is *not* measured in this run' : ''}
+- Adapter under test (rungs 3–4): \`${adapterName}\`${adapterName === 'mock' ? ' — record/replay, so no OCR/LLM ran: rung 3 is *not* measured in this run' : ` (${process.env.OTTO_EXTRACT_MODEL ?? 'claude-opus-5'}, effort ${process.env.OTTO_EXTRACT_EFFORT ?? 'low'})`}
+${budgetStop ? `- **RUN TRUNCATED BY THE BUDGET GUARD** at \`${budgetStop}\` — the numbers below cover only the documents processed before that point.\n` : ''}
 - Documents scored: **${results.length}** (${results.length - publicCount} synthetic, ${publicCount} public)
 - Same code path as the app: \`runLadder()\` in \`src/lib/services/extraction/ladder.ts\`
 
@@ -175,13 +200,13 @@ reports and vendor sample invoices are dropped locally; those files are **not co
 
 | Measure | Value |
 |---|---|
-| Fields scored | ${overall.tp + overall.fp + overall.fn} |
-| Precision | **${pct(overall.precision)}** |
-| Recall | **${pct(overall.recall)}** |
+| Fields scored | ${overall.tp + overall.fp + overall.fn} (n) |
+| Precision | **${pct(overall.precision)}** (${overall.tp}/${overall.tp + overall.fp} returned values correct) |
+| Recall | **${pct(overall.recall)}** (${overall.tp}/${overall.tp + overall.fp + overall.fn} fields present in the documents) |
 | F1 | ${pct(overall.f1)} |
 | **False-positive rate on amounts** | **${pct(amt.rate)}** (${amt.wrong} wrong of ${amt.returned} returned) |
 | **False-positive rate on dates** | **${pct(dt.rate)}** (${dt.wrong} wrong of ${dt.returned} returned) |
-| Document classification correct | ${classOk}/${results.length} (${pct(classOk / results.length)}) |
+| Document classification correct | ${classOk}/${results.length} (${pct(classOk / results.length)}, n=${results.length}) |
 | Documents yielding no field at all | ${noField}/${results.length} |
 | Adapter failures (exception raised) | ${failures}/${results.length} |
 | Latency p50 / p95 | ${p50} ms / ${p95} ms |
@@ -189,7 +214,7 @@ reports and vendor sample invoices are dropped locally; those files are **not co
 
 ## Rung reached
 
-${table(Object.entries(rungCount).map(([k, v]) => [k, String(v), pct(v / results.length)]), ['Rung', 'Documents', 'Share'])}
+${table(Object.entries(rungCount).map(([k, v]) => [k, `${v}/${results.length}`, pct(v / results.length)]), ['Rung', 'Documents (n)', 'Share'])}
 
 ## Per field
 

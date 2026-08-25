@@ -1,4 +1,5 @@
 import type { AssurancePack } from './types';
+import { basisNote } from '@/lib/kernel/retention';
 
 // PCAOB AS / SOX 404(b) + COSO 2013 pack — English ICFR content. Sample sizes are common
 // practice derived from AICPA Audit Sampling guidance — NOT a PCAOB/SEC requirement
@@ -49,10 +50,8 @@ export const pcaobSox: AssurancePack = {
   },
   verification: { spotcheckPct: 0.1, spotcheckMin: 2, seedDefault: 'otto-demo-verif-1' },
   docRules: {
-    assemblyDays: 14,
-    retentionYears: 7,
-    basisNote:
-      'Documentation completion ≤14 days after report release (AS 1215.15 as amended with AS 1000, PCAOB release 13 May 2024; 45-day legacy tier configurable); retention 7 years from report release (AS 1215.14); broader record retention 7 years under SEC Rule 2-06 — see docs/DECISIONS.md ADR-014.',
+    ruleSet: 'pcaob-as1215',
+    basisNote: basisNote('pcaob-as1215', 'en'),
   },
   extractionConfidenceThreshold: 0.9,
   wp: {

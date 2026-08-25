@@ -1,6 +1,7 @@
 # COST.md — LLM/OCR spend for the build and the demo
 
-**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $0.00.**
+**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $1.27** — measured, not
+estimated, against a $20 prepaid ceiling with auto-recharge disabled (ADR-020).
 
 Read the two sections below in order and do not confuse them: **§1 is what was measured by
 executing code**, §3 is what was *computed on paper*. A figure that has never been produced
@@ -10,38 +11,70 @@ by a real call is an extrapolation, whatever its number of decimals.
 
 <!-- MEASURED:BEGIN -->
 
-**Status: the live run has NOT been executed. Measured spend remains $0.00 — because no
-call was made, not because calls were free.**
+**Status: measured.** Adapter `anthropic`, model `claude-opus-5`, prices
+$5/$25 per MTok (supplied at run time), budget
+$5.00.
 
-Attempted: `npm run cost:measure` over the 23 synthetic evidence documents, adapter
-`anthropic`, model `claude-sonnet-4-5`, budget $20.00. The command refused to start:
+| Measure | Value |
+|---|---|
+| Documents processed | 23 / 23 |
+| Reached the model rung (3–4) | 1 (4.3 %) |
+| Rungs reached | text_layer: 21, ocr: 1, xml: 1 |
+| Tokens in / out | 2730 / 415 |
+| **Total spend** | **$0.0240** |
+| Cost per document (all documents) | $0.0010 |
+| Cost per document that reached the model | $0.0240 |
+| **Cost per engagement (×100 documents)** | **$0.10** |
+| Gap vs the ≈$0.30 extrapolation | 0.3× (lower) |
+| Model-rung latency p50 / p95 | 5606 ms / 5606 ms |
+| Failure rate (call raised) | 0/23 (0.0 %) |
 
-- ANTHROPIC_API_KEY is not set in this environment.
-- OTTO_PRICE_IN_PER_MTOK / OTTO_PRICE_OUT_PER_MTOK are not set — without today’s price list a $ budget cannot be enforced, so the run is refused rather than run blind.
+No call failed.
 
-Everything below the "Extrapolated" heading is therefore still an **extrapolation, not a
-measurement**. To turn it into one, from an environment that has the credentials:
+Per-document detail:
 
-```bash
-export OTTO_OCR_ADAPTER=anthropic
-export ANTHROPIC_API_KEY=…
-export OTTO_PRICE_IN_PER_MTOK=…      # today's price list, in USD per million tokens
-export OTTO_PRICE_OUT_PER_MTOK=…
-cd app && npm run cost:measure -- --budget=20 --yes
-```
-
-The command meters every call through `ai_run`, stops the moment cumulative spend reaches
-the budget, and rewrites this block with measured cost per document, cost per engagement,
-latency, failure rate and the gap against the ≈$0.30 extrapolation.
+| Document | Rung | Fields | Tokens in/out | Cost | Latency |
+|---|---|---|---|---|---|
+| `AV2025-0001.pdf` | text_layer | 8 | 0/0 | $0.0000 | 180 ms |
+| `AV2025-0002.pdf` | text_layer | 8 | 0/0 | $0.0000 | 11 ms |
+| `AV2025-0003.pdf` | text_layer | 8 | 0/0 | $0.0000 | 11 ms |
+| `BL2025-0095.pdf` | text_layer | 5 | 0/0 | $0.0000 | 6 ms |
+| `BL2025-0314.pdf` | text_layer | 5 | 0/0 | $0.0000 | 8 ms |
+| `BL2025-0472.pdf` | text_layer | 5 | 0/0 | $0.0000 | 6 ms |
+| `BL2025-0473.pdf` | text_layer | 5 | 0/0 | $0.0000 | 6 ms |
+| `BL2025-0474.pdf` | text_layer | 5 | 0/0 | $0.0000 | 6 ms |
+| `BL2025-0475.pdf` | text_layer | 5 | 0/0 | $0.0000 | 12 ms |
+| `BL2025-0476.pdf` | text_layer | 5 | 0/0 | $0.0000 | 6 ms |
+| `FA2025-0060.pdf` | text_layer | 8 | 0/0 | $0.0000 | 5 ms |
+| `FA2025-0145.pdf` | text_layer | 9 | 0/0 | $0.0000 | 5 ms |
+| `FA2025-0477.pdf` | text_layer | 8 | 0/0 | $0.0000 | 4 ms |
+| `FA2025-0481.pdf` | ocr | 7 | 2730/415 | $0.0240 | 5606 ms |
+| `FA2025-0702.pdf` | text_layer | 9 | 0/0 | $0.0000 | 7 ms |
+| `FA2025-0703.pdf` | text_layer | 8 | 0/0 | $0.0000 | 7 ms |
+| `FA2025-0704.pdf` | text_layer | 9 | 0/0 | $0.0000 | 8 ms |
+| `FA2025-0705.pdf` | text_layer | 9 | 0/0 | $0.0000 | 6 ms |
+| `FA2025-0706.pdf` | text_layer | 9 | 0/0 | $0.0000 | 7 ms |
+| `FA2025-0707.pdf` | text_layer | 9 | 0/0 | $0.0000 | 6 ms |
+| `FA2025-0708_facturx.pdf` | xml | 9 | 0/0 | $0.0000 | 15 ms |
+| `releve_512100_2025-11.pdf` | text_layer | 3 | 0/0 | $0.0000 | 15 ms |
+| `releve_512100_2025-12.pdf` | text_layer | 3 | 0/0 | $0.0000 | 10 ms |
 
 <!-- MEASURED:END -->
 
-**Why no key exists here.** This repository was built in a remote execution environment
-with no vendor credentials: a direct `POST /v1/messages` returns
-`401 authentication_error: x-api-key header is required`. That is a fact about the build
-environment, not a claim about the product. The adapter, the metering and the budget guard
-are written and unit-tested (`src/lib/services/extraction/adapters.test.ts`); only the
-credential is missing.
+**Session total, 2026-08-25.** The founder supplied a prepaid key, so the AI layer has now
+actually run:
+
+| Run | Documents | Model-rung calls | Spend |
+|---|---|---|---|
+| Smoke test (one bitmap scan) | 1 | 1 | $0.024 |
+| Eval, before ADR-021 | 28 | 24 | $0.578 |
+| Eval, dictionary partially in place | 28 | 18 | $0.426 |
+| Eval, ADR-021 complete | 28 | 8 | **$0.189** |
+| Cost measurement (synthetic dataset) | 23 | 1 | **$0.024** |
+| **Total** | | | **$1.27 of the $20 ceiling** |
+
+The budget guard sat at **$5** throughout — a bug detector, not a budget (ADR-020). It never
+tripped.
 
 ## 2. Build + demo spend to date
 
@@ -62,11 +95,12 @@ so the demo cannot silently spend (ADR-009, OPEN_QUESTIONS Q1).
 
 | Claim | How it is established |
 |---|---|
-| The demo and the suite spend $0 | **By execution.** 116 tests and the two-part demo run with zero network; `select sum(cost_usd) from ai_run` returns 0. |
-| The deterministic rungs (1–2) parse the dataset correctly | **By execution.** `npm run eval:extraction` scores them per field on a corpus the parsers never saw. |
+| The demo and the suite spend $0 | **By execution.** 135 tests and the two-part demo run with zero network; `select sum(cost_usd) from ai_run` returns 0. |
+| The deterministic rungs (1–2) read 20/28 corpus documents correctly | **By execution.** `npm run eval:extraction`, per field, on a corpus the readers never saw. |
 | A live adapter refuses to run unconfigured | **By execution** (adapters.test.ts). |
-| Rung 3–4 precision, latency and cost | **Not established.** No live call has ever run. The mock is a replay of fixtures, so any number derived from it describes the fixture, not a model. |
-| ≈$0.30 per engagement | **Extrapolation only** (§3). Turn it into a measurement with `npm run cost:measure`. |
+| Rung 3–4 precision, latency and cost | **By execution.** 51 live calls across four runs: precision 100 % (n=194 returned values), 0 wrong amounts of 84, 0 wrong dates of 28, latency p50 ≈5.1 s, failure rate 0/51. |
+| Cost per document and per engagement | **By execution** — §1 below. |
+| ≈$0.30 per engagement | **Superseded by measurement.** Measured $0.10 (dataset mix) to $0.68 (corpus mix, 29 % of documents on the model rung). The extrapolation was the right order of magnitude for the wrong reason: it assumed a rung split that neither corpus shows. |
 
 Spend is not self-reported: every OCR/LLM call must go through the `ai_run` registry
 (model, prompt id + version, input/output hash, tokens, cost). The dashboard reads that
@@ -76,7 +110,16 @@ table, so the figure above is queryable, not asserted:
 select count(*) runs, sum(tokens_in) tin, sum(tokens_out) tout, sum(cost_usd) usd from ai_run;
 ```
 
-## 3. Extrapolated cost per engagement (live adapters enabled) — NOT a measurement
+## 3. The original extrapolation, kept for comparison — NOT a measurement
+
+The table below is what was computed on paper before anything ran. It is retained so the
+gap against §1 stays visible: it predicted ≈$0.30 per engagement; measurement gives $0.10 on
+the synthetic dataset (4 % of documents reach the model) and ≈$0.68 on the eval corpus
+(29 % reach it, because it is deliberately full of scans). The prediction landed close on
+the total while being wrong about the mechanism — it assumed OCR-per-page pricing and a
+20-call drafting line, neither of which exists in the shipped path.
+
+### Original extrapolation
 
 [ESTIMATE — basis stated per line; verified 2026-08-25 price points from the program brief.]
 

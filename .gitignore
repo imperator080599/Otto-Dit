@@ -8,3 +8,11 @@ app/coverage/
 # ADR-018: the public eval corpus is local-only, never committed
 dataset/eval/public/*
 !dataset/eval/public/README.md
+
+# Secrets: never committed. The API key lives only in app/.env.local (ADR-020).
+.env
+.env.local
+.env.*.local
+app/.env
+app/.env.local
+app/.env.*.local

@@ -13,12 +13,18 @@ describe('live adapters — no accidental spend, no invented prices', () => {
   });
 
   it('the live extraction adapter refuses to run without a key', async () => {
-    const a = new AnthropicDocAdapter('claude-sonnet-4-5', '', 'https://example.invalid');
-    await expect(a.extract(new Uint8Array([1, 2, 3]), 'invoice')).rejects.toThrow(/ANTHROPIC_API_KEY is not set/);
+    const saved = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    try {
+      const a = new AnthropicDocAdapter('claude-opus-5');
+      await expect(a.extract(new Uint8Array([1, 2, 3]), 'invoice')).rejects.toThrow(/ANTHROPIC_API_KEY is not set/);
+    } finally {
+      if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
+    }
   });
 
   it('the live query planner refuses to run without a key', async () => {
-    const p = new AnthropicQueryPlanner('claude-sonnet-4-5', '', 'https://example.invalid');
+    const p = new AnthropicQueryPlanner('claude-opus-5', '', 'https://example.invalid');
     await expect(p.plan('anything', 'fr')).rejects.toThrow(/ANTHROPIC_API_KEY is not set/);
   });
 
@@ -28,8 +34,8 @@ describe('live adapters — no accidental spend, no invented prices', () => {
   });
 
   it('cost is zero when no price list is configured — never a guessed rate', () => {
-    expect(rateFor('claude-sonnet-4-5')).toEqual({ inPerMTok: 0, outPerMTok: 0 });
-    expect(costUsd('claude-sonnet-4-5', 1_000_000, 1_000_000)).toBe(0);
+    expect(rateFor('claude-opus-5')).toEqual({ inPerMTok: 0, outPerMTok: 0 });
+    expect(costUsd('claude-opus-5', 1_000_000, 1_000_000)).toBe(0);
   });
 
   it('applies the configured price list exactly', () => {

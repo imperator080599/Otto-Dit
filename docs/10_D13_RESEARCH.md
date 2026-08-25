@@ -82,10 +82,15 @@ the master context were not re-researched (final per D13).
   version, human review) per NEP 500 + EU AI Act; model *charte IA* for firms.
   **Correction**: good-practice guidance, not a norme — soften any "CNCC requires review
   before the file" wording to "CNCC good practice expects systematized human review".
-- [FACT] **CORRECTION — France retention is 10 years**: Code de commerce (former)
-  art. R.823-10 — dossiers "conservés pendant dix ans, même après la cessation des
-  fonctions" (Legifrance LEGIARTI000048539934; corroborated by an H2A sanctions decision).
-  The "6+ years" figure we carried matches no current provision → all docs updated to 10y.
+- ~~[FACT] France retention is 10 years (art. R.823-10)~~ — **RETRACTED 2026-08-26. This
+  finding was wrong.** R. 823-10 is **abrogé** since 2024-02-01 and never carried a
+  retention period; the ten-year sentence comes from the **2007 version of NEP 230**, out of
+  date. The rule in force is **six years**, C. com. art. **R. 820-42** (décret 2023-1394,
+  art. 9), with the file closed within **60 days** under art. **D. 821-186 III-IV**; NEP 230
+  is now art. **A. 821-66**. Verified on the primary text at Légifrance by the founder — see
+  ADR-014 rev. 2. This pass reached only search-result content quoting Légifrance, which
+  returned a repealed provision verbatim and confidently: **a quoted citation is not a
+  current one**.
 - [ESTIMATE] OE sample-size tables are **not** codified (AS 2315 sets principles only);
   they are firm-methodology conventions attributed to the AICPA Audit Guide: Audit
   Sampling (public secondary sources: kfinancial.com, linfordco.com publish

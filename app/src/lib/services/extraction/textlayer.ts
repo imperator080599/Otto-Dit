@@ -1,5 +1,6 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import type { ExtractedField } from './fields';
+import { DATE_ORDER_MARKERS, DOC_TYPE_KEYWORDS, INVOICE_LABELS, REQUIRED_FIELDS, type DateOrder, type FieldLabels } from '@/lib/packs/labels';
 
 // Rung 2 — PDF text layer + deterministic per-doc-type parsers (ADR-002). Free, exact,
 // offline. Parsers target the labeled layouts real French invoices commonly carry; a
@@ -138,6 +139,155 @@ export function parseBankStatementText(text: string): ExtractedField[] | null {
   ];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Generic label-driven reader (ADR-021). One code path; the languages it covers are
+// data in packs/labels.ts. It abstains rather than guesses — an ambiguous date is left
+// unread so the document escalates to the layout-agnostic rung, exactly as the model
+// abstains on the same input.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACCENTS: Record<string, string> = {
+  à: 'a', á: 'a', â: 'a', ä: 'a', ã: 'a', å: 'a', ç: 'c', è: 'e', é: 'e', ê: 'e', ë: 'e',
+  ì: 'i', í: 'i', î: 'i', ï: 'i', ñ: 'n', ò: 'o', ó: 'o', ô: 'o', ö: 'o', õ: 'o',
+  ù: 'u', ú: 'u', û: 'u', ü: 'u', ý: 'y', ÿ: 'y',
+};
+
+/** Length-PRESERVING fold: accents flattened, punctuation turned into spaces, lowercased.
+ *  Length matters — the reader slices the original line at an offset found in the folded
+ *  one, so a fold that changes length silently misreads every accented label. */
+function fold(s: string): string {
+  let out = '';
+  for (const ch of s.toLowerCase()) {
+    if (ACCENTS[ch]) out += ACCENTS[ch];
+    else if ('.\'\u2019-_/'.includes(ch)) out += ' ';
+    else out += ch;
+  }
+  return out;
+}
+
+/** "1 234,56" / "1.234,56" / "1,234.56" → cents. Returns undefined when the grouping and
+ *  decimal separators cannot be told apart. */
+export function amountToCents(raw: string): number | undefined {
+  const cleaned = raw.replace(/[^\d.,-]/g, '').trim();
+  if (!cleaned) return undefined;
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  let normalized: string;
+  if (lastComma === -1 && lastDot === -1) {
+    normalized = cleaned;
+  } else if (lastComma > lastDot) {
+    normalized = cleaned.replace(/\./g, '').replace(',', '.');       // 1.234,56
+  } else if (lastDot > lastComma) {
+    normalized = cleaned.replace(/,/g, '');                          // 1,234.56
+  } else {
+    return undefined;
+  }
+  const v = Number(normalized);
+  return Number.isFinite(v) ? Math.round(v * 100) : undefined;
+}
+
+/** Reads a date only when the order is unambiguous. dd/mm vs mm/dd with both parts ≤ 12
+ *  is undecidable from the page alone, so it abstains (ADR-021). */
+export function dateToIso(raw: string, order: DateOrder = 'unknown'): string | undefined {
+  const iso = /(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const m = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/.exec(raw);
+  if (!m) return undefined;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  const iso2 = (d: number, mo: number) =>
+    d >= 1 && d <= 31 && mo >= 1 && mo <= 12
+      ? `${m[3]}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      : undefined;
+  // the numbers themselves settle it when one part cannot be a month
+  if (a > 12 && b <= 12) return iso2(a, b);
+  if (b > 12 && a <= 12) return iso2(b, a);
+  // otherwise only the document's own language may settle it
+  if (order === 'dmy') return iso2(a, b);
+  if (order === 'mdy') return iso2(b, a);
+  return undefined; // ambiguous and unattributable → abstain, never guess
+}
+
+/** Which date order the document's own wording implies. Unanimous evidence only: if both
+ *  families of markers appear, the document does not settle it and the reader abstains. */
+export function detectDateOrder(text: string): DateOrder {
+  const folded = fold(text);
+  const hit = (words: string[]) => words.some((w) => folded.includes(fold(w)));
+  const dmy = hit(DATE_ORDER_MARKERS.dmy);
+  const mdy = hit(DATE_ORDER_MARKERS.mdy);
+  if (dmy && !mdy) return 'dmy';
+  if (mdy && !dmy) return 'mdy';
+  return 'unknown';
+}
+
+const isWordChar = (c: string | undefined) => c !== undefined && /[a-z0-9]/.test(c);
+
+/** Word-boundary search. Substring matching is not good enough here: the German VAT label
+ *  `ust` occurs inside `Customer`, and a dictionary that reads a buyer name as a VAT
+ *  amount is worse than one that reads nothing. Boundaries are the difference between a
+ *  dictionary that scales and one that rots as entries accumulate (ADR-021). */
+function findLabel(folded: string, label: string): number {
+  const needle = fold(label);
+  let from = 0;
+  for (;;) {
+    const at = folded.indexOf(needle, from);
+    if (at === -1) return -1;
+    const before = at === 0 ? undefined : folded[at - 1];
+    const after = folded[at + needle.length];
+    if (!isWordChar(before) && !isWordChar(after)) return at;
+    from = at + 1;
+  }
+}
+
+function readLabel(text: string, spec: FieldLabels): string | undefined {
+  const lines = text.split('\n').map((l) => [l, fold(l)] as const);
+  // Label priority is DOCUMENT-wide, not per line: the most specific label wins wherever
+  // it sits on the page. Scanning line-first instead lets the generic `Total` on the
+  // `Total HT` line claim the gross amount before `Total TTC` is ever tried.
+  const labels = [...spec.labels].sort((a, b) => b.length - a.length);
+  for (const label of labels) {
+    for (const [line, folded] of lines) {
+      const at = findLabel(folded, label);
+      if (at === -1) continue;
+      const after = line.slice(at + label.length);
+      const sep = after.search(/[:=]/);
+      if (sep === -1) continue;
+      const value = after.slice(sep + 1).trim();
+      if (value) return value;
+    }
+  }
+  return undefined;
+}
+
+/** Reads a document from the label dictionary. Returns null unless EVERY required field
+ *  for the type resolves — a partial read would cost recall the model rung already has. */
+export function parseByLabels(docType: DocType, text: string): ExtractedField[] | null {
+  const required = REQUIRED_FIELDS[docType];
+  if (!required) return null;
+  const order = detectDateOrder(text);
+  const specs = INVOICE_LABELS;
+  const out: ExtractedField[] = [];
+  for (const spec of specs) {
+    const raw = readLabel(text, spec);
+    if (raw === undefined) continue;
+    let value: string | undefined;
+    if (spec.kind === 'amount') {
+      const c = amountToCents(raw);
+      value = c === undefined ? undefined : String(c);
+    } else if (spec.kind === 'date') {
+      value = dateToIso(raw, order);
+    } else {
+      value = raw.replace(/\s{2,}.*$/, '').trim() || undefined;
+    }
+    if (value !== undefined) out.push({ name: spec.field, value, confidence: 1, page: 1 });
+  }
+  const seller = text.split('\n').map((l) => l.trim())
+    .find((l) => l.length > 2 && !l.includes(':') && !/SPECIMEN/i.test(l) && !DOC_TYPE_KEYWORDS.some((k) => k.words.includes(fold(l))));
+  if (seller) out.push({ name: 'sellerName', value: seller, confidence: 1, page: 1 });
+  const got = new Set(out.map((f) => f.name));
+  return required.every((f) => got.has(f)) ? out : null;
+}
+
 export type DocType = 'invoice' | 'credit_note' | 'delivery_note' | 'bank_statement' | 'reconciliation_sheet' | 'approval_record' | 'other';
 
 /** Deterministic classification (P4): text keywords first, filename as fallback. */
@@ -148,6 +298,11 @@ export function classify(text: string, filename: string): { docType: DocType; co
   if (/RELEVE DE COMPTE/.test(text)) return { docType: 'bank_statement', confidence: 0.99 };
   if (/BANK RECONCILIATION/.test(text)) return { docType: 'reconciliation_sheet', confidence: 0.99 };
   if (/CREDIT APPROVAL/.test(text)) return { docType: 'approval_record', confidence: 0.99 };
+  // multilingual content keywords (ADR-021): data, so a new language is a dictionary entry
+  const folded = fold(text);
+  for (const k of DOC_TYPE_KEYWORDS) {
+    if (k.words.some((w) => folded.includes(w))) return { docType: k.docType, confidence: 0.9 };
+  }
   const f = filename.toUpperCase();
   if (f.startsWith('AV')) return { docType: 'credit_note', confidence: 0.7 };
   if (f.startsWith('FA')) return { docType: 'invoice', confidence: 0.7 };
@@ -162,7 +317,9 @@ export function parseByType(docType: DocType, text: string): ExtractedField[] | 
   switch (docType) {
     case 'invoice':
     case 'credit_note':
-      return parseInvoiceText(text);
+      // the existing layout parser first (it also reads line items), then the generic
+      // dictionary reader; anything neither resolves escalates to the model rung
+      return parseInvoiceText(text) ?? parseByLabels(docType, text);
     case 'delivery_note':
       return parseDeliveryText(text);
     case 'reconciliation_sheet':

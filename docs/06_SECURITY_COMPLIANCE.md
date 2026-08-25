@@ -48,7 +48,7 @@ data-access layer; production adds infrastructure enforcement (RLS, storage poli
   engagement FY/firm size). Lock semantics per Q2: writes rejected except justified
   post-lock amendments, recorded as `post_lock_amendment` events with author/date/reason —
   matching AS 1215.16's added-documentation requirements verbatim.
-- Retention (ADR-014): France **10 years** (Code de commerce former art. R.823-10, "même
+- Retention (ADR-014 rev. 2): France **6 years** (C. com. art. **R. 820-42**, in force 2024-02-01; the former art. R. 823-10 is abrogé and carried no duration — "même
   après la cessation des fonctions"); PCAOB **7 years** from report release (AS 1215.14);
   SEC Rule 2-06 extends scope to qualifying correspondence/communications and requires
   keeping records inconsistent with final conclusions → supersede-never-delete +

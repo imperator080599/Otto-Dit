@@ -1,6 +1,8 @@
 // Framework pack = content/configuration, never code (D1/P3, docs/03 §3).
 // Packs are versioned TS content modules; engagement.framework_set binds them.
 
+import type { DocRuleSetId } from '@/lib/kernel/retention';
+
 export type Lang = 'fr' | 'en';
 export type Frequency = 'many_daily' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual' | 'adhoc';
 
@@ -73,8 +75,10 @@ export interface VerificationConfig {
 }
 
 export interface DocRules {
-  assemblyDays: number;
-  retentionYears: number;
+  /** Which legal rule set governs the file. The numbers themselves live in the kernel
+   *  with their citations (ADR-014 rev. 2): a pack names the regime, it does not restate
+   *  a duration that a decree can change under it. */
+  ruleSet: DocRuleSetId;
   basisNote: string;
 }
 

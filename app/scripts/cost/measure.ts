@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
+import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { runLadder } from '../../src/lib/services/extraction/ladder';
 import { getOcrAdapter } from '../../src/lib/services/extraction/adapters';
 import { rateFor } from '../../src/lib/core/pricing';
@@ -29,8 +30,13 @@ interface DocRun {
 }
 
 async function main() {
+  loadEnvLocal();
   const args = process.argv.slice(2);
-  const budget = Number((args.find((a) => a.startsWith('--budget=')) ?? '--budget=20').split('=')[1]);
+  // $5 is a BUG DETECTOR, not a budget: the expected spend here is a few tens of cents,
+  // so reaching this ceiling means a loop or a retry storm, not an expensive run (ADR-020)
+  const budget = Number((args.find((a) => a.startsWith('--budget=')) ?? '--budget=5').split('=')[1]);
+  const adapterFlag = args.find((a) => a.startsWith('--adapter='));
+  if (adapterFlag) process.env.OTTO_OCR_ADAPTER = adapterFlag.split('=')[1];
   const confirmed = args.includes('--yes');
   const root = repoRoot();
   const dir = path.join(root, 'dataset', 'evidence');
@@ -48,7 +54,7 @@ async function main() {
   }
   if (!confirmed) blockers.push('--yes was not passed (this command spends real money).');
 
-  console.log(`documents: ${files.length} · adapter: ${which} · model: ${model} · budget: $${budget.toFixed(2)}`);
+  console.log(`documents: ${files.length} · adapter: ${which} · model: ${model} · key: ${keyFingerprint()} · guard: $${budget.toFixed(2)}`);
   if (blockers.length) {
     console.log('\nRUN NOT PERFORMED — blockers:');
     for (const b of blockers) console.log(`  - ${b}`);

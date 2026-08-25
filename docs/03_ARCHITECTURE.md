@@ -137,7 +137,7 @@ Contents of a pack (stored under `app/src/lib/packs/<id>/`, loaded into DB at se
 | Workpaper formats | FR-language substantive workpaper layout | EN-language OE workpaper layout |
 | Checklists | France statutory set (roadmap items listed in 01 §2a) | AS 2201-shaped OE prerequisites (D&I gate) |
 | Importers | FEC adapter binding + PCG CoA map | generic importer + US GAAP/IFRS map |
-| Doc rules | lock at report date + 60 days (config), retention **10 years** (ADR-014) | completion ≤ **14 days** (45d legacy tier), retention **7 years** from report release (ADR-014) |
+| Doc rules | file closed ≤ **60 days** after report signature (C. com. D. 821-186 III-IV), retention **6 years** (C. com. R. 820-42) — ADR-014 rev. 2 | completion **14 or 45 days** per the AS 1215.15 phase-in (computed per engagement from fiscal year + firm size), retention **7 years** (AS 1215.14) — ADR-014 rev. 2 |
 
 The **ISA core pack** carries the shared skeleton (assertion set, risk levels, generic
 templates in EN); national packs override/extend it. Adding UK ISA / IDW PS later =

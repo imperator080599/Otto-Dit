@@ -1,6 +1,7 @@
 import { q, q01 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { primaryPack } from '@/lib/packs';
+import { fileDeadlines } from '@/lib/services/retention';
 
 export default async function EngagementOverview({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +17,7 @@ export default async function EngagementOverview({ params }: { params: Promise<{
      join app_user u on u.id = m.user_id where m.engagement_id = $1 order by m.eng_role`,
     [id],
   );
+  const deadlines = await fileDeadlines(id);
   const referral = await q<{ title: string; body: string; issued_by: string }>(
     `select ri.title, ri.body, ri.issued_by
      from engagement e
@@ -35,6 +37,30 @@ export default async function EngagementOverview({ params }: { params: Promise<{
           <span className="muted">Workpaper language: {pack.language.toUpperCase()}</span>
         </p>
         <p className="faint">{pack.docRules.basisNote}</p>
+        <h2>Documentation file — deadlines</h2>
+        <table className="data">
+          <tbody>
+            <tr>
+              <td>Close the assembled file</td>
+              <td>{deadlines.completionDue} <span className="faint">({deadlines.completion.days} d)</span></td>
+              <td className="faint">{deadlines.completion.source.citation}</td>
+            </tr>
+            <tr>
+              <td>Retain until</td>
+              <td>{deadlines.retentionUntil} <span className="faint">({deadlines.retention.years} y)</span></td>
+              <td className="faint">{deadlines.retention.source.citation}</td>
+            </tr>
+          </tbody>
+        </table>
+        {deadlines.completion.determinedBy && (
+          <p className="faint">Basis: {deadlines.completion.determinedBy}</p>
+        )}
+        {deadlines.anyUnverified && (
+          <p className="mod-flag">
+            At least one governing provision could not be checked against its primary text in this
+            build — treat it as UNVERIFIED before it governs a real file (ADR-014).
+          </p>
+        )}
         <h2>Team</h2>
         <table className="data">
           <thead>

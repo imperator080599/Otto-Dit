@@ -65,12 +65,23 @@ describe('extraction eval harness (ADR-018)', () => {
     expect(falsePositiveRate(comparisons, 'date').wrong).toBe(0);
   }, 120000);
 
-  it('foreign layouts and scans fall through to the human rung with the mock adapter', async () => {
-    for (const d of docs.filter((x) => x.variant === 'de' || x.rendering === 'bitmap').slice(0, 6)) {
+  it('foreign text layouts now resolve deterministically, offline and free (ADR-021)', async () => {
+    for (const d of docs.filter((x) => ['de', 'es', 'it', 'en', 'fr-variant'].includes(x.variant))) {
       const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename);
-      expect(res.rung, `${d.filename} unexpectedly parsed`).toBe('human');
+      expect(res.rung, `${d.filename} escalated`).toBe('text_layer');
+      expect(res.ai).toBeNull(); // no OCR/LLM call: the dictionary is data, not inference
+      const { comparisons } = compareDoc(d.truth as unknown as Record<string, string>, res.fields);
+      // and it is read correctly, not merely read
+      expect(comparisons.filter((c) => c.verdict === 'fp'), `${d.filename} returned a wrong value`).toEqual([]);
+    }
+  }, 120000);
+
+  it('bitmap scans still have nothing for a dictionary to read, and say so', async () => {
+    for (const d of docs.filter((x) => x.rendering === 'bitmap')) {
+      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename);
+      expect(res.rung, `${d.filename} unexpectedly parsed offline`).toBe('human');
       expect(res.fields.length).toBe(0);
-      expect(res.ai).toBeNull(); // offline: no OCR/LLM call happened
+      expect(res.ai).toBeNull();
     }
   }, 120000);
 

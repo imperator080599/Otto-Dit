@@ -12,7 +12,8 @@ deterministically (`scripts/eval/corpus.ts`, seeded); every company, number and 
 it is fabricated. The public slot (`dataset/eval/public/`) is where published annual
 reports and vendor sample invoices are dropped locally; those files are **not committed**.
 
-- Adapter under test (rungs 3–4): `mock` — record/replay, so no OCR/LLM ran: rung 3 is *not* measured in this run
+- Adapter under test (rungs 3–4): `anthropic` (claude-opus-5, effort low)
+
 - Documents scored: **28** (28 synthetic, 0 public)
 - Same code path as the app: `runLadder()` in `src/lib/services/extraction/ladder.ts`
 
@@ -26,55 +27,55 @@ reports and vendor sample invoices are dropped locally; those files are **not co
 
 | Measure | Value |
 |---|---|
-| Fields scored | 196 |
-| Precision | **100.0 %** |
-| Recall | **14.3 %** |
-| F1 | 25.0 % |
-| **False-positive rate on amounts** | **0.0 %** (0 wrong of 12 returned) |
-| **False-positive rate on dates** | **0.0 %** (0 wrong of 4 returned) |
-| Document classification correct | 8/28 (28.6 %) |
-| Documents yielding no field at all | 24/28 |
+| Fields scored | 196 (n) |
+| Precision | **100.0 %** (196/196 returned values correct) |
+| Recall | **100.0 %** (196/196 fields present in the documents) |
+| F1 | 100.0 % |
+| **False-positive rate on amounts** | **0.0 %** (0 wrong of 84 returned) |
+| **False-positive rate on dates** | **0.0 %** (0 wrong of 28 returned) |
+| Document classification correct | 20/28 (71.4 %, n=28) |
+| Documents yielding no field at all | 0/28 |
 | Adapter failures (exception raised) | 0/28 |
-| Latency p50 / p95 | 4 ms / 7 ms |
-| Measured spend for this run | $0.0000 |
+| Latency p50 / p95 | 8 ms / 5617 ms |
+| Measured spend for this run | $0.1896 |
 
 ## Rung reached
 
-| Rung | Documents | Share |
+| Rung | Documents (n) | Share |
 |---|---|---|
-| text_layer | 4 | 14.3 % |
-| human | 24 | 85.7 % |
+| text_layer | 20/28 | 71.4 % |
+| ocr | 8/28 | 28.6 % |
 
 ## Per field
 
 | Field | tp | fp | fn | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
-| invoiceNumber | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| invoiceDate | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| buyerName | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| sellerName | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| totalNetCents | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| vatCents | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
-| totalGrossCents | 4 | 0 | 24 | 100.0 % | 14.3 % | 25.0 % |
+| invoiceNumber | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| invoiceDate | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| buyerName | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| sellerName | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| totalNetCents | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| vatCents | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| totalGrossCents | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
 
 ## Per corpus variant
 
 | Variant | Docs | Rung(s) | tp | fp | fn | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|---|
-| fr-canonical (text_layer) | 4 | text_layer | 28 | 0 | 0 | 100.0 % | 100.0 % | 100.0 % |
-| fr-variant (text_layer) | 4 | human | 0 | 0 | 28 | 0.0 % | 0.0 % | 0.0 % |
-| de (text_layer) | 3 | human | 0 | 0 | 21 | 0.0 % | 0.0 % | 0.0 % |
-| es (text_layer) | 3 | human | 0 | 0 | 21 | 0.0 % | 0.0 % | 0.0 % |
-| it (text_layer) | 3 | human | 0 | 0 | 21 | 0.0 % | 0.0 % | 0.0 % |
-| en (text_layer) | 3 | human | 0 | 0 | 21 | 0.0 % | 0.0 % | 0.0 % |
-| fr-canonical / clean (bitmap) | 2 | human | 0 | 0 | 14 | 0.0 % | 0.0 % | 0.0 % |
-| fr-canonical / noise+rotation (bitmap) | 2 | human | 0 | 0 | 14 | 0.0 % | 0.0 % | 0.0 % |
-| fr-canonical / photo (bitmap) | 2 | human | 0 | 0 | 14 | 0.0 % | 0.0 % | 0.0 % |
-| fr-canonical / handwritten (bitmap) | 2 | human | 0 | 0 | 14 | 0.0 % | 0.0 % | 0.0 % |
+| fr-canonical (text_layer) | 4 | text_layer | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| fr-variant (text_layer) | 4 | text_layer | 28 | 0 | 0 | 100.0 % (n=28) | 100.0 % (n=28) | 100.0 % |
+| de (text_layer) | 3 | text_layer | 21 | 0 | 0 | 100.0 % (n=21) | 100.0 % (n=21) | 100.0 % |
+| es (text_layer) | 3 | text_layer | 21 | 0 | 0 | 100.0 % (n=21) | 100.0 % (n=21) | 100.0 % |
+| it (text_layer) | 3 | text_layer | 21 | 0 | 0 | 100.0 % (n=21) | 100.0 % (n=21) | 100.0 % |
+| en (text_layer) | 3 | text_layer | 21 | 0 | 0 | 100.0 % (n=21) | 100.0 % (n=21) | 100.0 % |
+| fr-canonical / clean (bitmap) | 2 | ocr | 14 | 0 | 0 | 100.0 % (n=14) | 100.0 % (n=14) | 100.0 % |
+| fr-canonical / noise+rotation (bitmap) | 2 | ocr | 14 | 0 | 0 | 100.0 % (n=14) | 100.0 % (n=14) | 100.0 % |
+| fr-canonical / photo (bitmap) | 2 | ocr | 14 | 0 | 0 | 100.0 % (n=14) | 100.0 % (n=14) | 100.0 % |
+| fr-canonical / handwritten (bitmap) | 2 | ocr | 14 | 0 | 0 | 100.0 % (n=14) | 100.0 % (n=14) | 100.0 % |
 
 ## What this run does NOT establish
 
-- **Rungs 3–4 are unmeasured.** The record/replay adapter returns nothing for corpus documents, so bitmap scans fall straight to rung 5 (human). Re-run with `OTTO_OCR_ADAPTER=<live adapter>` and a key to measure OCR/LLM precision, latency and cost.
+- Nothing about documents unlike this corpus: layouts, languages and degradations outside the table above are untested.
 - Nothing about **real client documents**: their layouts, their scan quality, their edge
   cases. That measurement belongs to a pilot, under A12 in docs/ASSUMPTIONS.md.
 - Nothing about **human verification time** (A11) — that is a stopwatch measurement at a

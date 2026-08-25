@@ -50,7 +50,7 @@ const SYSTEM = [
 export class AnthropicQueryPlanner implements QueryPlannerAdapter {
   readonly name = 'anthropic';
   constructor(
-    private readonly model = process.env.OTTO_QUERY_MODEL ?? 'claude-sonnet-4-5',
+    private readonly model = process.env.OTTO_QUERY_MODEL ?? 'claude-opus-5',
     private readonly apiKey = process.env.ANTHROPIC_API_KEY ?? '',
     private readonly baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com',
   ) {}

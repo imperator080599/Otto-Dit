@@ -7,27 +7,34 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 116 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 135 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
-Le tableau ci-dessous est la réponse au retour #4. Rien d'autre dans ce dépôt ne doit être
-lu comme « mesuré » s'il n'y figure pas.
+Mise à jour après exécution réelle de la couche IA (2026-08-25, 51 appels, 1,27 $ sur le
+plafond de 20 $). Effectif indiqué à côté de chaque taux. Rien dans ce dépôt ne doit être lu
+comme « mesuré » s'il ne figure pas ici.
 
 | Affirmation | Statut | Établi comment |
 |---|---|---|
-| Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 116 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
-| Les barreaux 1–2 (XML Factur-X, couche texte) extraient correctement | **Prouvé par exécution** | `npm run eval:extraction` : précision/rappel par champ sur un corpus que les parseurs n'avaient jamais vu |
-| Le barreau 2 ne couvre **qu'une** mise en page | **Prouvé par exécution** | même eval : rappel 14,3 % sur l'ensemble du corpus, 100 % sur la mise en page FR canonique, 0 % sur DE/ES/IT/EN et sur toutes les variantes scannées |
+| Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
+| **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |
+| **Rappel de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196). Avant ADR-021 : 14,3 % (n=196) sans le barreau modèle |
+| **Barreau 3–4 (modèle) : précision, latence, taux d'échec** | **Prouvé par exécution** | 51 appels réels : précision 100 % (n=194 valeurs rendues), latence p50 ≈ 5,1 s, **échecs 0/51** |
+| **Coût réel par document et par mandat** | **Prouvé par exécution** | 0,0240 $ par document au barreau modèle (n=1 sur le dataset, n=8 sur le corpus) ; **0,10 $ par mandat** (mix dataset, 100 doc.) à **0,68 $** (mix corpus, 29 % au modèle). COST.md §1 |
+| Le barreau déterministe lit 20/28 documents du corpus, hors ligne et gratuitement | **Prouvé par exécution** | `npm run eval:extraction` : 71,4 % (n=28) au barreau gratuit, latence p50 **7 ms** |
+| Le dictionnaire d'étiquettes s'étend par contenu, pas par code (ADR-021) | **Prouvé par exécution** | 6 mises en page (fr ×2, de, es, it, en) lues par un seul chemin de code ; tests de régression sur les deux collisions trouvées par l'eval |
+| Une date ambiguë est refusée, jamais devinée | **Prouvé par exécution** | tests unitaires + eval : les seuls échecs du modèle avant ADR-021 étaient des abstentions, pas des valeurs fausses |
 | Les scans n'ont réellement aucune couche texte | **Prouvé par exécution** | test dédié : extraction de texte vide sur les 8 documents bitmap |
+| **Délais du dossier (60 j / 6 ans / échelonnement PCAOB)** | **Prouvé par exécution** | 11 tests sur `kernel/retention.ts` + service : citations et statut de vérification assertés, pas seulement l'arithmétique |
 | La chaîne de hachage de l'event_log, les verrous documentaires, les exports auto-portants | **Prouvé par exécution** | tests S7/S9/S10 + acceptation |
 | Les deux packs (NEP, PCAOB/SOX) tournent sur les mêmes moteurs | **Prouvé par exécution** | acceptation : mêmes services, contenu de pack différent |
 | « Interroger » ne produit jamais de prose et refuse ce qu'il ne traduit pas | **Prouvé par exécution** | 13 tests, dont le rejet d'un plan proposant du SQL |
-| Un adaptateur live refuse de tourner sans clé | **Prouvé par exécution** | `adapters.test.ts` |
-| Le barreau 3 (OCR/LLM) extrait correctement | **Non établi** | l'adaptateur mock rejoue des fixtures : tout chiffre qui en sort décrit la fixture, pas un modèle |
-| Coût réel par document et par mandat, latence, taux d'échec du barreau 3–4 | **Non établi** | aucun appel réel n'a jamais tourné : cet environnement n'a pas de clé (`401 x-api-key header is required`). Commande prête : `npm run cost:measure -- --budget=20 --yes` (ADR-019) |
-| ≈ 0,30 $ par mandat | **Extrapolation** | arithmétique sur des prix et des parts de barreaux supposés (COST.md §3) |
+| Un adaptateur live refuse de tourner sans clé ; le défaut ne dépense rien | **Prouvé par exécution** | `adapters.test.ts` |
+| Classification documentaire | **Prouvé par exécution, insuffisant** | 20/28 (71,4 %, n=28). Les 8 échecs sont les scans bitmap : aucun mot-clé à lire, ils partent au barreau modèle de toute façon |
+| Rétention PCAOB (7 ans) et fenêtre AS 1215.15 | **[UNVERIFIED]** | pcaobus.org bloqué par le proxy : chiffres confirmés par le fondateur, **non relus sur texte primaire**. Marqué `unverified` dans le code, visible dans l'écran mandat |
 | Le temps de vérification L2 (A11) | **Non établi** | chronométrage chez un pilote, pas mesurable sur corpus |
+| Fiabilité sur **pièces clients réelles** | **Non établi, et ne le sera pas ici** | eval en environnement pilote, sur autorisation écrite (ADR-018) |
 
 ## Done
 
@@ -35,9 +42,10 @@ lu comme « mesuré » s'il n'y figure pas.
 capability sweep), 02 target concept; DECISIONS/ASSUMPTIONS/OPEN_QUESTIONS seeded.
 **Gate 1** (6 lenses + red team) → ADR-012 L2 evidence contract, ADR-013 export boundary,
 ADR-014 lock/retention; A8 reclassified kill-criterion; A11–A13 added.
-**D13 research** — docs/10: SOX auditor-side gap confirmed; PCAOB AS 1215 (7y retention,
-14d/45d completion); ViDA timeline; FRC/CNCC citations; **France retention corrected to
-10 years**.
+**D13 research** — docs/10: SOX auditor-side gap confirmed; PCAOB AS 1215 (7y retention;
+14d/45d completion, **phased in**); ViDA timeline; FRC/CNCC citations. Its France-retention
+finding was **wrong and has been retracted** — the rule is **6 years** (C. com. R. 820-42)
+with the file closed in **60 days** (D. 821-186 III-IV): ADR-014 rev. 2.
 **Stage B** — docs/03 architecture, 04 data model, 05 integrations, 06 security/compliance,
 07 MVP PRD + demo script, 08 backlog. **Gate 2** (6 lenses + red team) → ADR-015
 kernel-first dataset contract, ADR-016 re-import invalidation; sample evaluation vs TE;
@@ -72,14 +80,13 @@ blind capture; S8a/S8b split.
    (non-network) component-auditor segment exist at buyable scale? A8 falsification test
    defined in ASSUMPTIONS; the six phone questions and their kill thresholds are in
    docs/10_FALSIFICATION.md.
-2. **Founder review item #2 — run the AI layer once** (ADR-019): with a key and today's
-   price list, `cd app && npm run cost:measure -- --budget=20 --yes`, then
-   `OTTO_OCR_ADAPTER=anthropic npm run eval:extraction` to score rungs 3–4 against the
-   corpus. Both rewrite their own reports. Nothing else in the repo is blocked on this.
-3. **Founder review item #3 — retention references** (ADR-014): confirm which article now
-   carries the French 10-year sentence post-2023 recodification, and that R. 820-42's
-   6 years captures no part of the statutory file. The primary sites are unreachable from
-   this environment; the citations came from search-result content quoting them.
+2. ~~Founder review item #2 — run the AI layer once~~ **DONE** (2026-08-25): 51 live calls,
+   $1.27 of the $20 ceiling. Results in COST.md §1 and docs/EVAL_EXTRACTION.md; the recall
+   strategy they forced is ADR-021.
+3. **Founder review item #3 — PCAOB primary text** (ADR-014 rev. 2): AS 1215.14/.15/.16 and
+   the 14-day phase-in are carried as **[UNVERIFIED]** — pcaobus.org is blocked from this
+   environment. The French side is now verified on the primary text (6 years, R. 820-42;
+   60 days, D. 821-186 III-IV) and corrected throughout.
 4. Wire live inbound email transport (Q12) — the first deployment task.
 5. Legal: secret professionnel / GDPR analysis + DPA (A13) before any real client data.
 6. First fast-follows if the wedge holds: analytical review + auto variance questions,

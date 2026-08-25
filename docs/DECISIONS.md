@@ -183,46 +183,89 @@ a deterministic catalogue query, answered with stored records, never with prose.
 - **Confidence**: H. **Reverse**: when OTTO becomes the file of record (v2+), sign-off
   authority flips by pack config; the export machinery remains for component reporting.
 
-## ADR-014 — Lock & retention configuration (sources, verification status)
+## ADR-014 (rev. 2) — Documentation-file deadlines: sources, verification status, and the phase-in
 
-- **Decision**: pack config, engagement-overridable with justification.
+**Status**: accepted 2026-08-25; **rev. 1 was factually wrong and is superseded** (2026-08-26).
 
-### NEP/France — retention **10 years**, assembly lock report date + 60 days (config)
+### What rev. 1 got wrong, and why
 
-| Element | Reference | Wording relied on | Source consulted | Date |
+Rev. 1 stated a **10-year** French retention period and attributed it to **C. com., art.
+R. 823-10**. Both halves were wrong:
+
+- **R. 823-10 is abrogé** since **2024-02-01**, and it never carried a retention period at
+  all. Its successor is **art. D. 821-186**.
+- The 10-year figure comes from the **2007 version of NEP 230**, long out of date.
+
+The failure mode is worth recording because it will recur: rev. 1 was built from
+search-result content quoting the primary text, because this environment cannot reach
+legifrance.gouv.fr. Secondary sources return **repealed provisions with complete
+confidence** — the quoted sentence was real, it was simply from a text no longer in force.
+A citation that is verbatim is not thereby current.
+
+### The rule, corrected
+
+**France — commissariat aux comptes.** Verified on the primary text at Légifrance by the
+founder (statutory auditor) on 2026-08-25.
+
+| Rule | Value | Provision | In force since | Verification |
 |---|---|---|---|---|
-| Obligation to constitute a per-entity audit file | **C. com., art. R. 823-10** (Légifrance id `LEGIARTI000048539934`) | "Le commissaire aux comptes constitue pour chaque personne […] un dossier contenant la documentation de l'audit des comptes" | legifrance.gouv.fr article page — **found via web search only** | 2026-08-25 |
-| 10-year retention | Provision retaining "les dossiers et documents établis […] en application de l'article R. 823-10 […] **conservés pendant dix ans, même après la cessation des fonctions**" — carried today in the Book VIII regulatory part (the historical carrier, art. R. 821-27, is **abrogé**; the post-2023 recodification places the rule alongside art. R. 820-42, which sets a **6-year** period for a *different* set of documents — those established under R. 821-186 / R. 822-26) | verbatim clause above | search-result content quoting Légifrance + CNCC "Titre deuxième du livre VIII — partie réglementaire" (éd. sept. 2024) | 2026-08-26 |
-| Documentation standard | **NEP-230** (arrêté du 10 avril 2007 portant homologation), documentation formalisée sur un support conservable pendant la durée légale de conservation | — | legifrance JORF listing | 2026-08-26 |
+| Retention of the file | **6 years** | **C. com., art. R. 820-42** (décret n° 2023-1394, art. 9) | 2024-02-01 | **Primary text** (founder, Légifrance) |
+| Closing the assembled file | **60 days** after report signature | **C. com., art. D. 821-186, III et IV** | 2024-02-01 | **Primary text** (founder, Légifrance) |
+| NEP 230 | now codified | **C. com., art. A. 821-66** (arrêté du 28 décembre 2023): §09 = 60 days, §11 = six years, referring to R. 820-42 | 2024 | **Primary text** (founder, Légifrance) |
+| ~~R. 823-10~~ | ~~—~~ | **abrogé au 2024-02-01**; carried no duration | — | — |
 
-- **Verification status — read this before freezing the constant.** `legifrance.gouv.fr`,
-  `doc.cncc.fr` and `pcaobus.org` are **blocked by this build environment's egress proxy**;
-  every citation above was obtained from search-result content that quoted the primary text,
-  not from the primary document itself. Two points genuinely need the founder's eye on
-  Légifrance: (a) **which article now carries** the 10-year sentence after the 2023
-  recodification of Book VIII, and (b) that the **6-year** period of art. R. 820-42 does not
-  capture any part of the statutory audit file we retain. The 10-year figure itself was
-  corroborated twice independently (Légifrance article text and an H2A sanctions decision,
-  CS-2025-13, 2026-02); the previously carried "6+ years" was wrong and is corrected.
+The 60 days is a **Code de commerce rule**, not merely doctrinal practice — rev. 1 called it
+"pratique NEP-230/ISA 230", which understated it.
 
-### PCAOB/SOX — retention **7 years**, documentation completion **≤ 14 days**
+**PCAOB — issuer audits and referred component work.** `pcaobus.org` is blocked by this
+environment's egress proxy, so **nothing below was read from the primary text in this
+session**. The figures were confirmed and the phase-in supplied by the founder; every
+PCAOB source is therefore carried as **[UNVERIFIED]** in the code as well as here, and must
+be re-read against AS 1215 before it governs a real engagement.
 
-| Element | Reference | Wording relied on | Source consulted | Date |
-|---|---|---|---|---|
-| Retention 7 years | **AS 1215.14** | "retained for seven years from the report release date"; if no report is issued, seven years from the date fieldwork was substantially completed; if the engagement ceased, seven years from that date | pcaobus.org AS 1215 (search-result content quoting the paragraph) | 2026-08-26 |
-| Completion date ≤ 14 days | **AS 1215.15 as amended** | "A complete and final set of audit documentation should be assembled for retention (i.e., archived) as of a date not more than **14 days** after the report release date (documentation completion date)" — reduced from 45 days by the amendments adopted with **AS 1000** (PCAOB release of **13 May 2024**) | pcaobus.org AS 1215 + AS 1000 adopting release (search-result content) | 2026-08-26 |
-| No deletion after completion; additions must record date added, preparer, reason | **AS 1215.16** | verbatim requirement implemented as our post-lock amendment record | pcaobus.org AS 1215 | 2026-08-25 |
-| Broader record retention (7 years, incl. correspondence and records inconsistent with final conclusions) | **SEC Rule 2-06 of Regulation S-X** (17 CFR 210.2-06) | 7-year retention of records relevant to the audit or review | sec.gov / law.cornell.edu (search-result content) | 2026-08-25 |
+| Rule | Value | Provision | Verification |
+|---|---|---|---|
+| Retention | 7 years from report release | AS 1215.14 | **[UNVERIFIED]** |
+| Completion of documentation | **14 or 45 days — phased in**, see below | AS 1215.15 | **[UNVERIFIED]** |
+| Post-completion additions | record date, preparer, reason | AS 1215.16 | **[UNVERIFIED]** |
+| Broader record retention | 7 years | SEC Rule 2-06 | **[UNVERIFIED]** |
 
-- **Verification status**: same egress caveat. A separate page "AS 1215 (effective on
-  12/15/2026)" exists on the PCAOB site — confirm which version governs the engagement's
-  fiscal year before shipping the tier logic. The 45-day legacy tier stays configurable per
-  engagement (firm issuer-count tiering of the AS 1000 phase-in).
+### Decision: the completion window is a function, not a constant
 
-- **Confidence**: H on the figures (10y / 7y / 14d), **M on the exact French article number**
-  post-recodification. **Reverse**: edit pack config (`docRules` in
-  `app/src/lib/packs/*.ts`) — no code change, and the pack note renders the basis in every
-  workpaper.
+The 14-day period phases in by **fiscal year under audit** and **firm size**:
+
+- fiscal years beginning **on or after 2024-12-15** for firms that issued **more than 100
+  issuer audit reports in 2024**;
+- fiscal years beginning **on or after 2025-12-15** for **all other firms**;
+- before the applicable date, the legacy **45-day** period governs.
+
+Modelling that as a constant would be wrong for most engagements for another year, so it is
+`pcaobCompletionRule(fiscalYearStart, firm)` in `app/src/lib/kernel/retention.ts`. The
+firm-level fact it turns on (`tenant.issuer_reports_2024`) is stored data; **null resolves
+to the later phase-in**, because the conservative reading is the one that does not assume a
+shorter deadline has already bitten.
+
+### Decision: legal constants carry their provenance in the code
+
+Every rule is a `LegalSource` — citation, enacting instrument, in-force date, what it
+supersedes, verification status, who verified it and when. Consequences:
+
+1. A pack **names a regime** (`docRules.ruleSet`), it does not restate a duration a decree
+   can change under it. The human-readable basis note is **generated** from the sources, so
+   the screen and the rule cannot drift apart.
+2. `engagement.legal_basis` (migration 0008) stores which provision produced each stored
+   date, so P7 answers "why does this date exist?" from stored facts.
+3. `anyUnverified` is surfaced **in the UI**, not only in a comment: the engagement overview
+   shows a warning while any governing provision is unverified.
+4. Tests assert the **citations and the verification status**, not only the arithmetic —
+   changing 6 back to 10 now requires changing a citation to make the suite pass.
+
+### Standing rule
+
+No legal or normative constant enters the code or the data model without reaching the
+**primary text** and confirming it is **still in force**. Where the environment forbids it,
+the constant is marked `[UNVERIFIED]` in the code and in the docs, never quietly asserted
+from a secondary source.
 
 ## ADR-015 — Kernel-first dataset contract (adopted from Gate 2)
 
@@ -353,3 +396,105 @@ to it. `OTTO_OCR_ADAPTER=mock` (the default) can never spend.
 future cost figure); shipping an unrun adapter for a second vendor merely to look
 multi-provider — an adapter that has never executed is a liability, so the second provider
 stays a deployment task.
+
+## ADR-020 — API credentials live in one ignored file, and never in a shell
+
+**Status**: accepted (2026-08-25)
+**Context**: the founder supplied a prepaid API key with a $20 hard ceiling and no
+auto-recharge. Two risks, both realistic: committing the key, and *leaking billing* — an
+exported `ANTHROPIC_API_KEY` is picked up by any Anthropic-aware tool in the same terminal,
+so an agent's own model calls would silently drain the project's prepaid credits.
+
+**Decision**:
+1. The key lives in **`app/.env.local`**, mode 600, ignored at **both** the repo root and
+   `app/`. Nothing else in the tree contains it; `git log --all -p` was searched for
+   `sk-ant-api` before the first commit.
+2. **It is never exported into a shell.** Next.js loads `.env.local` natively; the two
+   measurement scripts call `loadEnvLocal()` and populate **their own process** only.
+   Existing `process.env` values win, so a deliberate per-run override still works.
+3. The adapter is chosen **per run** (`--adapter=anthropic`), never by a global export, so
+   the default path (`mock`) cannot spend by accident. Logs print `keyFingerprint()` —
+   length and last four characters — never the key.
+4. **Token prices are runtime configuration** (`OTTO_PRICE_*` in the same file), never
+   hardcoded (ADR-019).
+
+**The budget guard is a bug detector, not a budget.** It is set to **$5** while the expected
+spend of a full eval is ~$0.19 and of a cost run ~$0.02. Reaching $5 therefore means a loop
+or a retry storm, not an expensive workload — the run aborts and says so instead of
+continuing. The SDK client is constructed with `maxRetries: 1` for the same reason: the
+default retry behaviour is the cheapest way to turn one bug into a bill.
+
+**Consequences**: a fresh clone cannot spend anything until someone writes `.env.local`.
+Measured spend for everything in this session: **$1.27** of the $20 ceiling.
+
+## ADR-021 — Recall strategy: the deterministic rung grows by dictionary, never by parser
+
+**Status**: accepted (2026-08-25). Supersedes the per-layout parsing approach in ADR-002.
+**Context**: the first live eval settled the question the ladder had been ducking. Measured
+on the 28-document corpus (rungs 1–2 only, no model):
+
+| | Deterministic rungs alone | With the model rung |
+|---|---|---|
+| Recall | **14.3 %** (n=196) | **99.0 %** (n=196) |
+| Precision | 100 % (n=28) | 100 % (n=194) |
+| Wrong amounts | 0 of 12 returned | 0 of 84 returned |
+
+Rung 2 scored 100 % on the one layout it was written for and 0 % on the other five. Its
+recall is therefore a function of **how many parsers have been written**, i.e. O(layouts) of
+code. The model rung, which had never seen any of these layouts or any of the four scan
+degradations, reached 99 % at 100 % precision with **no code per layout at all**.
+
+**The constraint**: the answer must stay maintainable as the number of layouts tends to
+infinity. That rules out the obvious response — write more parsers.
+
+**Decision**:
+1. **No new per-layout parser code, ever.** The parser count is frozen. This is the
+   maintainability invariant, and it is the reason the rest follows.
+2. **The deterministic rung grows along one axis only: a label dictionary**
+   (`app/src/lib/packs/labels.ts`) — field synonyms, document-type keywords and date-order
+   markers, per language. Adding German is adding strings; it is **content, not code**
+   (CLAUDE.md rule 9). One code path reads them all.
+3. **Escalate rather than half-read.** The dictionary claims a document only if **every**
+   required field for its type resolves. A partial deterministic read would silently give
+   back recall the model rung already has.
+4. **Abstain rather than guess.** `05/03/2025` is a different day in Lyon and in Chicago.
+   The reader resolves a date only when the numbers settle it (a part > 12) or the
+   document's own wording does, and the wording evidence must be **unanimous** — a
+   bilingual page settles nothing and escalates. The model is instructed identically
+   ("a wrong figure is far worse than a null"), and the eval shows it complies: every one
+   of its failures was an abstention, never a wrong value.
+5. **Everything else is the model rung**, which is layout-agnostic by construction, and
+   whose output remains **always** human-verified (ADR-012 is untouched).
+
+**Measured result of adopting it** (same corpus, same 28 documents):
+
+| | Before | After |
+|---|---|---|
+| Recall | 14.3 % | **100 %** (n=196) |
+| Precision | 100 % | **100 %** (n=196) |
+| Wrong amounts / dates | 0 / 0 | **0 of 84 / 0 of 28** |
+| Documents on the free rung | 4/28 | **20/28** |
+| Document classification | 8/28 | **20/28** |
+| Cost per 28-document run | — | $0.578 → **$0.189** |
+| Latency p50 | — | 5 062 ms → **7 ms** |
+
+**Two dictionary failure modes found by the eval, both now pinned by tests.** They are the
+price of this design and the reason the escalation rule matters:
+
+- `ust` (German VAT) matched **inside** `Customer`, so an English invoice read a buyer name
+  as a VAT amount. Labels now match on **word boundaries**.
+- The generic `Total` on a `Total HT` line claimed the gross amount before `Total TTC` was
+  tried. Label specificity is now resolved **document-wide**, not line by line.
+
+Neither produced a wrong figure in the file: rule 3 turned both into escalations. They cost
+money, not correctness — which is the trade this design is built to make.
+
+**Consequences**: cost scales with the share of documents no dictionary can read (scans,
+photographs, handwriting) rather than with the number of layouts in circulation. Entry
+sprawl is the new maintenance risk, and it is bounded by the two rules above plus the eval,
+which re-measures precision on every run. A dictionary entry that starts stealing fields
+shows up as an `fp`, and `fp` is the column an auditor cannot afford.
+
+**Rejected**: writing a parser per layout (does not survive the constraint); sending
+everything to the model (throws away a free, instant, offline rung that now covers 71 % of
+the corpus); letting the dictionary return partial reads (trades recall for cost silently).
