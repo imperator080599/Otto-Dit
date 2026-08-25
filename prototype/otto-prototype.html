@@ -1,0 +1,1496 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OTTO — prototype noyau déterministe · Altiverre SAS FY2025</title>
+<style>
+/* ───────────────────────────────────────────────────────────────────────────
+   Aucune ressource externe : pas de police distante, pas de script distant,
+   pas de requête réseau. Le fichier fonctionne hors ligne, sur téléphone.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#fbfcfd; --ink:#12161c; --ink-2:#4c5563;
+  --ink-3:#79828f; --line:#e2e6ec; --line-2:#eef1f5;
+  --accent:#1f4fd8; --accent-soft:#eaf0ff;
+  --ok:#127a43; --ok-soft:#e6f5ec; --warn:#9a6100; --warn-soft:#fdf3e2;
+  --bad:#b32020; --bad-soft:#fdecec; --info:#5b3fb8; --info-soft:#f0ecfd;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#0d1117; --panel:#151b23; --panel-2:#1b222c; --ink:#e6edf3; --ink-2:#aeb9c6;
+  --ink-3:#7d8794; --line:#262e39; --line-2:#1f262f;
+  --accent:#6f9bff; --accent-soft:#18233c;
+  --ok:#4ec27f; --ok-soft:#122a1d; --warn:#e0a54a; --warn-soft:#2c2413;
+  --bad:#f2726f; --bad-soft:#301818; --info:#a892ff; --info-soft:#221d38;
+}
+@media (prefers-color-scheme:dark){
+  html:not([data-theme="light"]){
+    --bg:#0d1117; --panel:#151b23; --panel-2:#1b222c; --ink:#e6edf3; --ink-2:#aeb9c6;
+    --ink-3:#7d8794; --line:#262e39; --line-2:#1f262f;
+    --accent:#6f9bff; --accent-soft:#18233c;
+    --ok:#4ec27f; --ok-soft:#122a1d; --warn:#e0a54a; --warn-soft:#2c2413;
+    --bad:#f2726f; --bad-soft:#301818; --info:#a892ff; --info-soft:#221d38;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);
+     -webkit-text-size-adjust:100%;overflow-x:hidden}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
+h2{font-size:15px}
+h3{font-size:13px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit;color:inherit}
+
+/* ── barre supérieure : seuils toujours visibles, ils pilotent tous les modules ── */
+.top{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--line);
+     box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.top .id{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 88px 6px 14px}
+.top .id b{font-size:14px}
+.top .id span{color:var(--ink-3);font-size:12px}
+.pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;border:1px solid var(--line);
+      background:var(--panel-2);color:var(--ink-2);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.info{background:var(--info-soft);color:var(--info);border-color:transparent}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
+.seuils{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:2px 14px 8px}
+.ctrl{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ctrl label{font-size:11px;color:var(--ink-3)}
+.ctrl select,.ctrl input[type=number],.ctrl input[type=text]{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:13px;min-width:0}
+.ctrl input[type=range]{accent-color:var(--accent);width:100%}
+.seuilbox{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px}
+.seuilbox .s{flex:1 1 120px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.seuilbox .s .k{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.seuilbox .s .v{font:600 16px/1.2 var(--mono);font-variant-numeric:tabular-nums;margin-top:1px}
+.seuilbox .s .d{font-size:10.5px;color:var(--ink-3)}
+
+/* bandeau d'impact : ce qui se recompose quand on bouge un seuil */
+.impact{display:flex;gap:6px;overflow-x:auto;padding:0 14px 8px;scrollbar-width:thin}
+.impact .c{flex:0 0 auto;background:var(--accent-soft);border-radius:8px;padding:5px 9px;min-width:0}
+.impact .c .k{font-size:10px;color:var(--ink-3);white-space:nowrap}
+.impact .c .k .sm{display:none}
+.impact .c .v{font:600 13px/1.3 var(--mono);font-variant-numeric:tabular-nums;color:var(--accent);white-space:nowrap}
+.impact .c.flash{animation:flash .5s ease-out}
+@keyframes flash{from{background:var(--warn-soft)}to{background:var(--accent-soft)}}
+
+nav.jump{display:flex;gap:2px;overflow-x:auto;padding:0 8px 6px;border-top:1px solid var(--line-2);scrollbar-width:thin}
+nav.jump a{flex:0 0 auto;padding:5px 8px;font-size:12px;color:var(--ink-2);text-decoration:none;border-radius:6px;white-space:nowrap}
+nav.jump a:hover,nav.jump a.on{background:var(--accent-soft);color:var(--accent)}
+/* le bouton est DANS la barre collante et au-dessus d'elle : hors de .top,
+   la barre (z-index 50) le recouvrait et il devenait incliquable. */
+.themebtn{position:absolute;top:6px;right:10px;z-index:2;background:var(--panel-2);border:1px solid var(--line);
+          border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink-2);
+          min-height:28px;min-width:64px}
+
+/* ── modules ── */
+main{padding:12px;display:flex;flex-direction:column;gap:14px;max-width:1500px;margin:0 auto}
+section.mod{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+            /* --topH est mesurée en JS : la barre collante n'a pas la même hauteur
+               sur téléphone et sur écran large, un décalage figé masquerait le titre. */
+            scroll-margin-top:calc(var(--topH, 200px) + 10px)}
+.mod > header{padding:10px 12px;border-bottom:1px solid var(--line-2);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.mod > header .num{font:600 11px/1 var(--mono);color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:3px 5px}
+.mod .body{padding:10px 12px 12px}
+blockquote.idea{margin:0 0 10px;padding:7px 10px;border-left:3px solid var(--info);background:var(--info-soft);
+                border-radius:0 6px 6px 0;font-size:12.5px;color:var(--ink-2)}
+blockquote.idea .src{display:block;margin-top:3px;font-size:10.5px;color:var(--ink-3)}
+p.note{margin:6px 0 0;font-size:12px;color:var(--ink-3)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+
+/* ── tableaux : défilement dans leur propre conteneur, jamais la page ── */
+.tw{overflow-x:auto;max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line-2);border-radius:8px;background:var(--panel-2)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:4px 8px;text-align:left;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:top}
+th{position:sticky;top:0;background:var(--panel-2);font-size:11px;color:var(--ink-3);text-transform:uppercase;
+   letter-spacing:.04em;font-weight:600;z-index:1}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--accent-soft)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.mono{font-family:var(--mono);font-size:11.5px}
+tfoot td{font-weight:600;background:var(--panel-2);border-top:1px solid var(--line)}
+.wrapcell{white-space:normal;min-width:220px;max-width:420px}
+
+button.btn{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+button.btn.sec{background:var(--panel-2);color:var(--ink);border:1px solid var(--line)}
+button.btn.mini{padding:2px 7px;font-size:11.5px}
+button.btn:active{transform:translateY(1px)}
+.chk{display:inline-flex;gap:5px;align-items:center;background:var(--panel-2);border:1px solid var(--line);
+     border-radius:6px;padding:4px 8px;font-size:12.5px;cursor:pointer}
+.chk input{accent-color:var(--accent);margin:0}
+.chk .cnt{font-family:var(--mono);color:var(--ink-3);font-size:11.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px}
+.kv .k{color:var(--ink-3)}
+.kv .v{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--panel-2);
+         border-radius:0 6px 6px 0;padding:7px 10px;font-size:12.5px;margin-top:8px}
+.callout.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.callout.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:60px}
+.bar > i{display:block;height:100%;background:var(--accent)}
+textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px;font:12px var(--mono)}
+input.cell{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:2px 4px;
+           font:12px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+input.cell:focus{border-color:var(--accent);background:var(--panel);outline:none}
+input.cell.txt{text-align:left;font-family:var(--sans)}
+.smallcaps{font-size:11px;color:var(--ink-3)}
+@media (max-width:640px){
+  main{padding:8px;gap:10px}
+  .mod .body{padding:8px}
+  /* la barre de seuils reste collée en haut : elle doit tenir dans un quart d'écran */
+  .top .id{padding:6px 78px 4px 10px;gap:6px}
+  .top .id > span:not(.pill){display:none}
+  .top .id .pill{font-size:10px}
+  .seuils{grid-template-columns:1fr 1fr;gap:5px;padding:0 10px 5px}
+  .ctrl label{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctrl select{font-size:12px;padding:3px 5px}
+  /* les trois seuils doivent rester visibles SANS défilement : ce sont eux qui
+     pilotent tous les modules. La référence est déjà lisible dans le sélecteur
+     au-dessus (« Résultat courant avant impôt — 750 863 € »), on la retire ici. */
+  .seuilbox{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 10px 5px;overflow:visible}
+  .seuilbox .s{padding:4px 7px;min-width:0}
+  .seuilbox .s.ref{display:none}
+  .seuilbox .s .k{font-size:9px}
+  .seuilbox .s .v{font-size:15px}
+  .seuilbox .s .d{font-size:9.5px}
+  /* au doigt : la bande ne défile plus, elle se replie en pastilles courtes —
+     les sept indicateurs, conclusion comprise, restent sous les yeux. */
+  .impact{flex-wrap:wrap;overflow:visible;gap:4px;padding:0 10px 6px}
+  .impact .c{padding:3px 7px;display:flex;align-items:baseline;gap:5px}
+  .impact .c .k .lg{display:none}
+  .impact .c .k .sm{display:inline}
+  .impact .c .k{font-size:9.5px}
+  .impact .c .v{font-size:12px}
+  nav.jump a{padding:4px 6px;font-size:11.5px}
+  /* libellé au-dessus de la valeur : les longs intitulés ne se coupent plus en biais */
+  .kv{grid-template-columns:1fr;gap:0 0}
+  .kv .k{margin-top:5px;font-size:11px}
+  .grid2{gap:10px}
+  blockquote.idea{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <button class="themebtn" id="themebtn" type="button">◐ thème</button>
+  <div class="id">
+    <b>Altiverre SAS</b><span>SIREN 999&nbsp;888&nbsp;777 (fictif)</span>
+    <span>exercice du 01/01/2025 au 31/12/2025</span>
+    <span class="pill">audit légal · NEP</span>
+    <span class="pill info">prototype déterministe — aucun appel modèle</span>
+  </div>
+  <div class="seuils" id="seuils"></div>
+  <div class="seuilbox" id="seuilbox"></div>
+  <div class="impact" id="impact"></div>
+  <nav class="jump" id="jump"></nav>
+</div>
+<main id="main"></main>
+<script>
+"use strict";
+/* ═══ 1. DONNÉES ═══════════════════════════════════════════════════════════
+   Balance transmise par le client, reprise du jeu de données Altiverre SAS
+   FY2025 du dépôt (dataset/tb_2025.csv, tb_2024.csv). Montants en CENTIMES :
+   aucun calcul d'audit ne passe par un flottant.
+   ═══════════════════════════════════════════════════════════════════════ */
+// Balance transmise par le client — valeurs en centimes [compte, intitulé, débit, crédit]
+const TB_2025 = [
+  ["101000","Capital social",0,50000000],
+  ["106100","Réserve légale",0,5000000],
+  ["110000","Report à nouveau",0,109400000],
+  ["151000","Provisions pour risques",0,6000000],
+  ["164000","Emprunts auprès des éts de crédit",8000000,80000000],
+  ["205000","Licences et logiciels",1800000,0],
+  ["213500","Installations techniques",240000000,0],
+  ["218300","Matériel de bureau et informatique",12000000,0],
+  ["280500","Amort. licences et logiciels",0,600000],
+  ["281350","Amort. installations techniques",0,137000000],
+  ["281830","Amort. matériel de bureau",0,10000000],
+  ["301000","Stocks matières premières",42000000,0],
+  ["355000","Stocks produits finis",38000000,0],
+  ["401000","Fournisseurs — collectif",276335624,302898849],
+  ["411000","Clients — collectif",769334296,613932532],
+  ["421000","Personnel — rémunérations dues",137474953,149013572],
+  ["431000","Sécurité sociale",102830032,111406033],
+  ["437000","Autres organismes sociaux",19726004,21441205],
+  ["445510","TVA à décaisser",73636356,80421433],
+  ["445660","TVA déductible",40316473,40316473],
+  ["445710","TVA collectée",111305716,111305716],
+  ["512100","Banque Lyonnaise de Crédit (fictive)",571000000,543200000],
+  ["512200","Banque des Alpes (fictive)",81265672,78002969],
+  ["601000","Achats matières premières — verre",149763774,0],
+  ["601100","Achats matières — silices et intercalaires",7511055,0],
+  ["602100","Achats profilés et consommables",13701000,0],
+  ["606100","Fournitures non stockables — énergie",8503727,0],
+  ["615500","Entretien et maintenance des fours",3624635,0],
+  ["616000","Primes d'assurances",1241121,0],
+  ["621100","Personnel intérimaire",9242039,0],
+  ["622600","Honoraires juridiques et de conseil",2400000,0],
+  ["624100","Transports sur ventes",5595025,0],
+  ["641000","Rémunérations du personnel",185829150,0],
+  ["645000","Charges de sécurité sociale",74331660,0],
+  ["661100","Intérêts des emprunts",3200000,0],
+  ["681100","Dotations amortissements",24000000,0],
+  ["701000","Ventes de produits finis",0,512111180],
+  ["706000","Prestations de services",0,51917400],
+  ["709000","RRR accordés par l’entreprise",839050,0],
+  ["758000","Produits divers de gestion courante",0,840000]
+];
+const TB_2024 = [
+  ["101000","Capital social",0,50107647],
+  ["106100","Réserve légale",0,4243123],
+  ["110000","Report à nouveau",0,95272940],
+  ["151000","Provisions pour risques",0,5631348],
+  ["164000","Emprunts auprès des éts de crédit",7194531,71945312],
+  ["205000","Licences et logiciels",1686155,0],
+  ["213500","Installations techniques",236129804,0],
+  ["218300","Matériel de bureau et informatique",12381375,0],
+  ["280500","Amort. licences et logiciels",0,498772],
+  ["281350","Amort. installations techniques",0,128169757],
+  ["281830","Amort. matériel de bureau",0,9812093],
+  ["301000","Stocks matières premières",40750418,0],
+  ["355000","Stocks produits finis",38056741,0],
+  ["401000","Fournisseurs — collectif",229213072,251246562],
+  ["411000","Clients — collectif",766110969,611360301],
+  ["421000","Personnel — rémunérations dues",119233419,129240981],
+  ["431000","Sécurité sociale",99228330,107503950],
+  ["437000","Autres organismes sociaux",18448489,20052608],
+  ["445510","TVA à décaisser",76341297,83375616],
+  ["445660","TVA déductible",40577747,40577747],
+  ["445710","TVA collectée",115405387,115405387],
+  ["512100","Banque Lyonnaise de Crédit (fictive)",470000000,450000000],
+  ["512200","Banque des Alpes (fictive)",66858251,61291570],
+  ["601000","Achats matières premières — verre",132005271,0],
+  ["601100","Achats matières — silices et intercalaires",7053538,0],
+  ["602100","Achats profilés et consommables",14183172,0],
+  ["606100","Fournitures non stockables — énergie",8142548,0],
+  ["615500","Entretien et maintenance des fours",3102149,0],
+  ["616000","Primes d'assurances",1212369,0],
+  ["621100","Personnel intérimaire",9211218,0],
+  ["622600","Honoraires juridiques et de conseil",2400000,0],
+  ["624100","Transports sur ventes",5706444,0],
+  ["641000","Rémunérations du personnel",169743354,0],
+  ["645000","Charges de sécurité sociale",67413418,0],
+  ["661100","Intérêts des emprunts",3240276,0],
+  ["681100","Dotations amortissements",23372828,0],
+  ["701000","Ventes de produits finis",0,503460543],
+  ["706000","Prestations de services",0,45218683],
+  ["709000","RRR accordés par l’entreprise",849353,0],
+  ["758000","Produits divers de gestion courante",0,836983]
+];
+
+/* ═══ 2. OUTILS ════════════════════════════════════════════════════════════ */
+
+/** Générateur pseudo-aléatoire à germe (mulberry32) : même germe ⇒ même suite.
+ *  C'est ce qui rend le tirage d'échantillon rejouable à l'identique. */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/** Germe entier stable à partir d'une chaîne (FNV-1a 32 bits). */
+function seedOf(str){
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+
+const NBSP = '\u00A0';
+/** Format français : espace insécable pour les milliers, virgule décimale, € après. */
+function eur(cents){
+  const neg = cents < 0, v = Math.abs(Math.round(cents));
+  const ent = String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+  return (neg ? '-' : '') + ent + ',' + String(v % 100).padStart(2, '0') + NBSP + '€';
+}
+function eur0(cents){
+  const neg = cents < 0, v = Math.abs(Math.round(cents / 100));
+  return (neg ? '-' : '') + String(v).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP) + NBSP + '€';
+}
+function pct(x, d){ return (x * 100).toFixed(d === undefined ? 1 : d).replace('.', ',') + NBSP + '%'; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function frDate(iso){ return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4); }
+function isWeekend(iso){ const d = new Date(iso + 'T00:00:00Z').getUTCDay(); return d === 0 || d === 6; }
+function addDays(iso, n){ const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
+
+/* ═══ 3. GRAND LIVRE ═══════════════════════════════════════════════════════
+   Le grand livre n'est PAS saisi : il est engendré, à germe fixe, de façon à
+   totaliser exactement la balance client compte par compte — moins l'écriture
+   de situation volontairement absente (l'écart que le rapprochement doit
+   trouver) et moins les écritures particulières créées nommément.
+   Conséquences vérifiables à l'écran :
+     · total des débits = total des crédits (chaque écriture est équilibrée) ;
+     · solde du grand livre = solde de la balance sur tous les comptes sauf deux.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const CLIENTS = ['Groupe Immovance SA','Promoteurs du Forez SA','Bâtiplace SARL','Constructions Peyrelle SAS',
+  'Tertiaire Bâtir SAS','Menuiseries Chartier SAS','Habitat Confluence SAS','Négoce Vitrages Réunis SARL',
+  'Sogexim Façades SA','Atelier Lumière & Verre EURL'];
+const FOURNISSEURS = ['Silices du Vercors SA','Intercalaires Rhodia SARL','Profilés Aluvin SAS','Énergie Rhône Sud',
+  'Fours & Réfractaires SA','Assurances Belleville','Intérim Delorme','Transports Cabrol SAS'];
+const AVOCATS = ['Cabinet Vasseur & Associés','SELARL Perrin Contentieux'];
+const SAISIE = ['S. Marchand (comptabilité)','T. Girard (comptabilité)','M. Ferrand (direction)'];
+
+/** Écriture de situation présente dans la balance client et absente du FEC.
+ *  C'est l'anomalie A7 du jeu de données : 25 000 € en Dr 411000 / Cr 706000. */
+const ECART_SITUATION = { debit: '411000', credit: '706000', montant: 2500000 };
+
+function buildLedger(){
+  const rnd = mulberry32(seedOf('otto-altiverre-fy2025-v1'));
+  const label = Object.fromEntries(TB_2025.map(r => [r[0], r[1]]));
+
+  // cibles = balance client, par compte et par sens
+  const needD = new Map(), needC = new Map();
+  for (const [c,, d, cr] of TB_2025){ if (d) needD.set(c, d); if (cr) needC.set(c, cr); }
+  // on retire l'écriture de situation : le grand livre ne la contient pas
+  needD.set(ECART_SITUATION.debit, needD.get(ECART_SITUATION.debit) - ECART_SITUATION.montant);
+  needC.set(ECART_SITUATION.credit, needC.get(ECART_SITUATION.credit) - ECART_SITUATION.montant);
+
+  const entries = [];
+  let num = 0;
+  function push(e){
+    e.num = e.journal + '-2025-' + String(++num).padStart(4, '0');
+    for (const l of e.lines){
+      if (l.debit)  needD.set(l.compte, (needD.get(l.compte) || 0) - l.debit);
+      if (l.credit) needC.set(l.compte, (needC.get(l.compte) || 0) - l.credit);
+    }
+    entries.push(e);
+    return e;
+  }
+  function line(compte, debit, credit, auxLib){
+    return { compte, libelleCompte: label[compte] || compte, debit: debit || 0, credit: credit || 0,
+             auxNum: auxLib ? 'T' + String(seedOf(auxLib) % 900 + 100) : '', auxLib: auxLib || '' };
+  }
+
+  /* ── 3a. écritures particulières (les anomalies du scénario) ───────────── */
+  const client = CLIENTS[0];
+  // A1 — la même facture comptabilisée deux fois, juin puis juillet
+  for (const [d, p] of [['2025-06-17','FA2025-0702'], ['2025-07-15','FA2025-0702']]){
+    push({ journal:'VE', date:d, pieceRef:p, pieceDate:d, libelle:'Facture ' + p + ' — ' + client,
+           saisiePar:SAISIE[0], validDate:addDays(d,3), tag:'A1',
+           lines:[ line('411000', 3680000, 0, client), line('701000', 0, 3680000) ] });
+  }
+  // A5 — produit de janvier 2026 rattaché à 2025 (séparation des exercices)
+  push({ journal:'VE', date:'2025-12-31', pieceRef:'FA2025-0706', pieceDate:'2026-01-06',
+         libelle:'Facture FA2025-0706 — Promoteurs du Forez SA', saisiePar:SAISIE[1],
+         validDate:'2026-01-08', tag:'A5',
+         lines:[ line('411000', 3633000, 0, CLIENTS[1]), line('701000', 0, 3633000) ] });
+  // A6 — écriture manuelle ronde, un samedi, saisie par la direction
+  push({ journal:'OD', date:'2025-11-15', pieceRef:'OD-2025-089', pieceDate:'2025-11-15',
+         libelle:'Régularisation contrat-cadre — décision de direction', saisiePar:SAISIE[2],
+         validDate:'2025-11-17', tag:'A6',
+         lines:[ line('411000', 5000000, 0, CLIENTS[0]), line('706000', 0, 5000000) ] });
+  // honoraires juridiques : deux cabinets, dont un seul sera déclaré par le client
+  {
+    const tot = needD.get('622600') || 0;
+    const part = Math.round(tot * 0.62);
+    push({ journal:'AC', date:'2025-03-20', pieceRef:'FF2025-0311', pieceDate:'2025-03-18',
+           libelle:'Honoraires — ' + AVOCATS[0], saisiePar:SAISIE[0], validDate:'2025-03-25',
+           lines:[ line('622600', part, 0, AVOCATS[0]), line('401000', 0, part, AVOCATS[0]) ] });
+    push({ journal:'AC', date:'2025-09-08', pieceRef:'FF2025-0742', pieceDate:'2025-09-04',
+           libelle:'Honoraires contentieux — ' + AVOCATS[1], saisiePar:SAISIE[1], validDate:'2025-09-12',
+           lines:[ line('622600', tot - part, 0, AVOCATS[1]), line('401000', 0, tot - part, AVOCATS[1]) ] });
+  }
+
+  /* ── 3b. table des contreparties plausibles ───────────────────────────── */
+  const PREF = [
+    { d:/^411/, c:/^(701|706|445710)/, j:'VE', lib:'Facture de vente' },
+    { d:/^709/, c:/^411/,              j:'VE', lib:'Avoir accordé' },
+    { d:/^512/, c:/^411/,              j:'BQ', lib:'Encaissement client' },
+    { d:/^401/, c:/^512/,              j:'BQ', lib:'Règlement fournisseur' },
+    { d:/^(60|61|62|624|606|615|616)/, c:/^401/, j:'AC', lib:'Facture fournisseur' },
+    { d:/^445660/, c:/^401/,           j:'AC', lib:'TVA déductible sur achats' },
+    { d:/^(641|645|621)/, c:/^(421|431|437)/, j:'PA', lib:'Paie du mois' },
+    { d:/^(421|431|437)/, c:/^512/,    j:'BQ', lib:'Versement social / salaires' },
+    { d:/^(661|164)/, c:/^512/,        j:'BQ', lib:'Échéance emprunt' },
+    { d:/^445510/, c:/^512/,           j:'BQ', lib:'Paiement TVA' },
+    { d:/^445710/, c:/^(445510|445660)/, j:'OD', lib:'Déclaration de TVA' },
+    { d:/^681/, c:/^28/,               j:'OD', lib:'Dotation aux amortissements' },
+    { d:/^(2|3)/, c:/^(401|512)/,      j:'AC', lib:'Acquisition' },
+  ];
+  const CAP = { VE:[300000,6500000], AC:[50000,3500000], BQ:[80000,9000000],
+                PA:[1500000,18000000], OD:[100000,4000000], AN:[0,0] };
+
+  function pickDate(){
+    // dates réparties sur l'exercice, décalées au lundi suivant dans 9 cas sur 10
+    // lorsqu'elles tombent un week-end : une comptabilité ne saisit presque jamais
+    // le samedi, ce qui fait du critère « week-end » un vrai signal (~3 % ici).
+    let d = addDays('2025-01-01', Math.floor(rnd() * 365));
+    if (isWeekend(d) && rnd() < 0.9){
+      d = addDays(d, new Date(d + 'T00:00:00Z').getUTCDay() === 6 ? 2 : 1);
+      if (d > '2025-12-31') d = addDays(d, -3);
+    }
+    return d;
+  }
+  function mkEntry(dc, cc, amount, j, lib){
+    const date = j === 'AN' ? '2025-01-01' : pickDate();
+    const aux = dc.startsWith('411') ? CLIENTS[Math.floor(rnd()*CLIENTS.length)]
+              : cc.startsWith('401') ? FOURNISSEURS[Math.floor(rnd()*FOURNISSEURS.length)]
+              : cc.startsWith('411') ? CLIENTS[Math.floor(rnd()*CLIENTS.length)]
+              : dc.startsWith('401') ? FOURNISSEURS[Math.floor(rnd()*FOURNISSEURS.length)] : '';
+    const prefix = { VE:'FA', AC:'FF', BQ:'BQ', PA:'PA', OD:'OD', AN:'AN' }[j];
+    const piece = prefix + '2025-' + String(1000 + Math.floor(rnd() * 8999));
+    // validation : quelques écritures validées après la clôture (critère de test)
+    const late = rnd() < 0.03;
+    let pd = j === 'AN' ? date : addDays(date, -Math.floor(rnd() * 4));
+    if (pd < '2025-01-01') pd = '2025-01-01';
+    return { journal:j, date, pieceRef:piece, pieceDate:pd,
+             libelle: lib + (aux ? ' — ' + aux : ''), saisiePar: SAISIE[rnd() < 0.04 ? 2 : (rnd() < .5 ? 0 : 1)],
+             validDate: late ? addDays('2026-01-05', Math.floor(rnd()*20)) : addDays(date, 1 + Math.floor(rnd()*6)),
+             lines: [ line(dc, amount, 0, aux), line(cc, 0, amount, aux) ] };
+  }
+
+  /* ── 3c. appariement glouton jusqu'à consommer toutes les cibles ───────── */
+  const alive = m => [...m.entries()].filter(([, v]) => v > 0);
+  let guard = 0;
+  while (guard++ < 40000){
+    const ds = alive(needD), cs = alive(needC);
+    if (!ds.length || !cs.length) break;
+    // on prend la cible débit la plus lourde : la boucle converge vite
+    ds.sort((a, b) => b[1] - a[1]);
+    const [dc, dRem] = ds[0];
+    let rule = PREF.find(p => p.d.test(dc) && cs.some(([c]) => p.c.test(c) ));
+    let cc, j, lib;
+    if (rule){
+      const cands = cs.filter(([c]) => rule.c.test(c));
+      cc = cands[Math.floor(rnd() * cands.length)][0]; j = rule.j; lib = rule.lib;
+    } else {
+      // pas de contrepartie naturelle disponible : opération diverse
+      const bs = c => /^[1-5]/.test(c);
+      const cands = cs.filter(([c]) => bs(c) === bs(dc)).concat(cs);
+      cc = cands[Math.floor(rnd() * cands.length)][0];
+      j = (/^[1-3]/.test(dc) && /^[1-3]/.test(cc)) ? 'AN' : 'OD';
+      lib = j === 'AN' ? 'À nouveau' : 'Opération diverse';
+    }
+    const cRem = needC.get(cc);
+    const [lo, hi] = CAP[j];
+    let amount;
+    if (j === 'AN') amount = Math.min(dRem, cRem);
+    else {
+      // rnd()^2,6 : la masse des écritures est petite, la queue est longue
+      amount = Math.min(dRem, cRem, lo + Math.floor(Math.pow(rnd(), 2.6) * (hi - lo)));
+      // reliquat trop petit pour une écriture crédible : on le solde d'un coup
+      if (dRem - amount < lo) amount = Math.min(dRem, cRem);
+      // ~8 % des montants sont ronds au millier (critère « montant rond »)
+      if (amount > 500000 && rnd() < 0.08) amount = Math.floor(amount / 100000) * 100000;
+    }
+    if (amount <= 0) { needD.set(dc, 0); continue; }
+    push(mkEntry(dc, cc, amount, j, lib));
+  }
+
+  // numérotation par journal, comme dans un FEC réel
+  const perJournal = {};
+  for (const e of entries){
+    perJournal[e.journal] = (perJournal[e.journal] || 0) + 1;
+    e.num = e.journal + String(perJournal[e.journal]).padStart(5, '0');
+  }
+  entries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.num < b.num ? -1 : 1));
+
+  // aplatissement en lignes de FEC
+  const rows = [];
+  for (const e of entries){
+    e.lines.forEach((l, i) => rows.push({
+      JournalCode:e.journal, JournalLib:{VE:'Ventes',AC:'Achats',BQ:'Banque',PA:'Paie',OD:'Opérations diverses',AN:'À nouveaux'}[e.journal],
+      EcritureNum:e.num, EcritureDate:e.date, CompteNum:l.compte, CompteLib:l.libelleCompte,
+      CompAuxNum:l.auxNum, CompAuxLib:l.auxLib, PieceRef:e.pieceRef, PieceDate:e.pieceDate,
+      EcritureLib:e.libelle, Debit:l.debit, Credit:l.credit, EcritureLet:'', DateLet:'',
+      ValidDate:e.validDate, Montantdevise:'', Idevise:'', saisiePar:e.saisiePar, tag:e.tag || '', ligne:i + 1
+    }));
+  }
+  return { entries, rows };
+}
+
+const LEDGER = buildLedger();
+const FEC = LEDGER.rows;
+
+/** Balance recalculée à partir des écritures — jamais saisie à côté. */
+function balanceFromLedger(){
+  const m = new Map();
+  for (const r of FEC){
+    const a = m.get(r.CompteNum) || { compte:r.CompteNum, lib:r.CompteLib, debit:0, credit:0 };
+    a.debit += r.Debit; a.credit += r.Credit; m.set(r.CompteNum, a);
+  }
+  return [...m.values()].sort((a, b) => a.compte < b.compte ? -1 : 1);
+}
+const GL_BAL = balanceFromLedger();
+
+/* ═══ 4. ÉTAT ══════════════════════════════════════════════════════════════
+   Un seul objet d'état. Tout module lit les seuils ici : c'est la source
+   unique de vérité que la démonstration doit rendre visible.
+   ═══════════════════════════════════════════════════════════════════════ */
+const S = {
+  benchmark:'pbt', pctM:5, pctPM:75, pctCTT:5,
+  scopingOverride:{},                       // code poste -> 'in' | 'out'
+  arMontant:null, arPct:10,                 // null = suit le seuil de planification
+  jeCrit:{ weekend:true, rond:true, od:false, valid:true, direction:true, gros:true },
+  sampleSeed:'otto-demo-rev-1', sampleN:4, sampleRun:0, jeSansAN:true,
+  clientView:false, requests:null,
+  wp:null, wpExtra:[], wpJustif:'',
+  notes:[], author:'Léa Moreau (superviseur)',
+  ms:null,
+  aujourdhui:'2026-03-15',                  // date de référence pour les relances
+};
+
+/* ── agrégats de la balance client (classes du plan comptable général) ──── */
+function soldes(tb){ const m = new Map(); for (const [c, l, d, cr] of tb) m.set(c, { lib:l, solde:d - cr, debit:d, credit:cr }); return m; }
+const B25 = soldes(TB_2025), B24 = soldes(TB_2024);
+function sumWhere(bal, re){ let s = 0; for (const [c, v] of bal) if (re.test(c)) s += v.solde; return s; }
+
+/** Références possibles pour la matérialité, toutes calculées depuis la balance.
+ *  Signe : produits et capitaux propres sont créditeurs, on les rend positifs. */
+function benchmarks(bal){
+  const produits = -sumWhere(bal, /^7/);
+  const charges  =  sumWhere(bal, /^6/);
+  const ca       = -sumWhere(bal, /^70/);                    // 701+706 moins 709 (RRR)
+  const resultat = produits - charges;                        // résultat courant avant impôt
+  // total actif net = soldes débiteurs des classes 2 à 5, nets des amortissements
+  let actif = 0;
+  for (const [c, v] of bal){
+    if (/^(28|29|39|49)/.test(c)) actif += v.solde;           // amortissements : solde créditeur, donc négatif
+    else if (/^[2345]/.test(c) && v.solde > 0) actif += v.solde;
+  }
+  const capitaux = -sumWhere(bal, /^(101|106|110)/) + resultat;
+  return {
+    ca:{ code:'ca', lib:'Chiffre d’affaires', val:ca, defaut:1 },
+    pbt:{ code:'pbt', lib:'Résultat courant avant impôt', val:resultat, defaut:5 },
+    equity:{ code:'equity', lib:'Capitaux propres', val:capitaux, defaut:3 },
+    actif:{ code:'actif', lib:'Total de l’actif', val:actif, defaut:2 },
+    charges:{ code:'charges', lib:'Total des charges', val:charges, defaut:1 },
+  };
+}
+const BM25 = benchmarks(B25), BM24 = benchmarks(B24);
+
+/** Arrondi prudent vers le bas au pas indiqué (pratique de place). */
+function arrondiBas(cents, pas){ return Math.floor(cents / pas) * pas; }
+
+/** Les trois seuils. Recalculés à chaque mouvement de curseur. */
+function seuils(){
+  const b = BM25[S.benchmark];
+  const brut = Math.round(b.val * S.pctM / 100);
+  const M  = arrondiBas(brut, 100000);            // au millier d'euros inférieur
+  const PM = arrondiBas(Math.round(M * S.pctPM / 100), 100000);
+  const CTT= arrondiBas(Math.round(M * S.pctCTT / 100), 10000); // à la centaine d'euros
+  return { bench:b, brut, M, PM, CTT };
+}
+
+/* ═══ 5. POSTES DES COMPTES ANNUELS ════════════════════════════════════════ */
+const POSTES = [
+  { code:'IMMO_INC', lib:'Immobilisations incorporelles', re:/^(205|280)/ },
+  { code:'IMMO_COR', lib:'Immobilisations corporelles',   re:/^(213|218|2813|2818)/ },
+  { code:'STOCKS',   lib:'Stocks',                        re:/^3/ },
+  { code:'CLIENTS',  lib:'Clients et comptes rattachés',  re:/^41/ },
+  { code:'TRESO',    lib:'Trésorerie',                    re:/^(512|53)/ },
+  { code:'CAPITAUX', lib:'Capitaux propres',              re:/^(101|106|110)/ },
+  { code:'PROV',     lib:'Provisions pour risques',       re:/^15/ },
+  { code:'DETTES_FI',lib:'Dettes financières',            re:/^16/ },
+  { code:'FOURN',    lib:'Fournisseurs',                  re:/^40/ },
+  { code:'SOCIAL',   lib:'Dettes sociales et personnel',  re:/^(42|43)/ },
+  { code:'FISCAL',   lib:'Dettes fiscales (TVA)',         re:/^445/ },
+  { code:'CA',       lib:'Chiffre d’affaires',            re:/^70/ },
+  { code:'AUTRES_PR',lib:'Autres produits',               re:/^75/ },
+  { code:'ACHATS',   lib:'Achats consommés',              re:/^60/ },
+  { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/ },
+  { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/ },
+  { code:'FINANCIER',lib:'Charges financières',           re:/^66/ },
+  { code:'AMORT',    lib:'Dotations aux amortissements',  re:/^68/ },
+];
+function postesCalcules(){
+  return POSTES.map(p => {
+    const comptes = TB_2025.filter(r => p.re.test(r[0])).map(r => r[0]);
+    const n = comptes.reduce((s, c) => s + B25.get(c).solde, 0);
+    const n1 = comptes.reduce((s, c) => s + (B24.get(c) ? B24.get(c).solde : 0), 0);
+    return { ...p, comptes, solde:n, soldeN1:n1 };
+  }).filter(p => p.comptes.length);
+}
+
+/* ═══ 6. SOCLE D'AFFICHAGE ═════════════════════════════════════════════════ */
+const MODULES = [];
+function mod(id, num, titre, quote, build){ MODULES.push({ id, num, titre, quote, build }); }
+function table(cols, rows, opts){
+  opts = opts || {};
+  const th = cols.map(c => `<th class="${c.n ? 'n' : ''}">${esc(c.t)}</th>`).join('');
+  const tb = rows.map(r => '<tr>' + cols.map(c => {
+    const v = r[c.k];
+    return `<td class="${c.n ? 'n' : ''} ${c.cls || ''} ${r._cls && r._cls[c.k] || ''}">${v === undefined || v === null ? '' : v}</td>`;
+  }).join('') + '</tr>').join('');
+  const tf = opts.foot ? '<tfoot><tr>' + cols.map(c => `<td class="${c.n ? 'n' : ''}">${opts.foot[c.k] === undefined ? '' : opts.foot[c.k]}</td>`).join('') + '</tr></tfoot>' : '';
+  return `<div class="tw"><table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody>${tf}</table></div>`;
+}
+
+/* ═══ 7. MODULE 1 — IMPORT ET RAPPROCHEMENT ═══════════════════════════════ */
+const CHAMPS_FEC = ['JournalCode','JournalLib','EcritureNum','EcritureDate','CompteNum','CompteLib',
+  'CompAuxNum','CompAuxLib','PieceRef','PieceDate','EcritureLib','Debit','Credit','EcritureLet',
+  'DateLet','ValidDate','Montantdevise','Idevise'];
+
+/** Contrôles de forme du fichier des écritures comptables.
+ *  Chaque contrôle renvoie le nombre de lignes ou d'écritures en anomalie. */
+function controlesFec(){
+  const tot = { d:0, c:0 };
+  let deuxColonnes = 0, horsExercice = 0, compteInvalide = 0, validAvant = 0, auxIncomplet = 0, pieceHors = 0;
+  const parEcriture = new Map();
+  for (const r of FEC){
+    tot.d += r.Debit; tot.c += r.Credit;
+    if ((r.Debit > 0 && r.Credit > 0) || (r.Debit === 0 && r.Credit === 0)) deuxColonnes++;
+    if (r.EcritureDate < '2025-01-01' || r.EcritureDate > '2025-12-31') horsExercice++;
+    if (!/^\d{3,}$/.test(r.CompteNum)) compteInvalide++;
+    if (r.ValidDate && r.ValidDate < r.EcritureDate) validAvant++;
+    if ((r.CompAuxNum === '') !== (r.CompAuxLib === '')) auxIncomplet++;
+    if (r.PieceDate && (r.PieceDate < '2025-01-01' || r.PieceDate > '2025-12-31')) pieceHors++;
+    const e = parEcriture.get(r.EcritureNum) || { d:0, c:0 };
+    e.d += r.Debit; e.c += r.Credit; parEcriture.set(r.EcritureNum, e);
+  }
+  let ecrituresDesequilibrees = 0;
+  for (const [, v] of parEcriture) if (v.d !== v.c) ecrituresDesequilibrees++;
+  const champsManquants = CHAMPS_FEC.filter(f => FEC.some(r => r[f] === undefined));
+  return { tot, deuxColonnes, horsExercice, compteInvalide, validAvant, auxIncomplet, pieceHors,
+           ecrituresDesequilibrees, nbEcritures:parEcriture.size, champsManquants };
+}
+
+/** Rapprochement balance client ↔ grand livre, compte par compte. */
+function rapprochement(){
+  const gl = new Map(GL_BAL.map(r => [r.compte, r]));
+  const comptes = [...new Set([...TB_2025.map(r => r[0]), ...GL_BAL.map(r => r.compte)])].sort();
+  return comptes.map(c => {
+    const t = B25.get(c), g = gl.get(c);
+    const sTB = t ? t.solde : 0, sGL = g ? g.debit - g.credit : 0;
+    return { compte:c, lib:(t ? t.lib : g.lib), sTB, sGL, ecart:sTB - sGL,
+             presentTB:!!t, presentGL:!!g };
+  });
+}
+
+mod('m1', '1', 'Import et rapprochement balance ↔ grand livre',
+  'Upload de la TB à l’année auditée · Upload du Grand livre (transactions de l’année auditée) · Fonction réconciliation grand livre /TB',
+  function(){
+    const c = controlesFec(), rap = rapprochement();
+    const ecarts = rap.filter(r => r.ecart !== 0);
+    const ligne = (t, ok, detail) => ({ t, s:ok ? '<span class="pill ok">conforme</span>' : '<span class="pill bad">à examiner</span>', d:detail });
+    const ctrls = [
+      ligne('Structure : 18 champs de l’article A.47 A-1 présents', c.champsManquants.length === 0,
+            c.champsManquants.length ? 'manquants : ' + c.champsManquants.join(', ') : CHAMPS_FEC.join(' · ')),
+      ligne('Équilibre général du fichier', c.tot.d === c.tot.c,
+            'débit ' + eur(c.tot.d) + ' / crédit ' + eur(c.tot.c) + ' — écart ' + eur(c.tot.d - c.tot.c)),
+      ligne('Équilibre de chaque écriture', c.ecrituresDesequilibrees === 0,
+            c.nbEcritures + ' écritures contrôlées, ' + c.ecrituresDesequilibrees + ' déséquilibrée(s)'),
+      ligne('Une seule colonne servie par ligne (débit ou crédit)', c.deuxColonnes === 0, c.deuxColonnes + ' ligne(s) en anomalie'),
+      ligne('Dates d’écriture dans l’exercice', c.horsExercice === 0, c.horsExercice + ' ligne(s) hors exercice'),
+      ligne('Numéros de compte numériques (≥ 3 caractères)', c.compteInvalide === 0, c.compteInvalide + ' ligne(s) en anomalie'),
+      ligne('Date de validation postérieure à la date d’écriture', c.validAvant === 0, c.validAvant + ' ligne(s) en anomalie'),
+      ligne('Compte auxiliaire : numéro et libellé renseignés ensemble', c.auxIncomplet === 0, c.auxIncomplet + ' ligne(s) en anomalie'),
+      ligne('Date de pièce dans l’exercice', c.pieceHors === 0,
+            c.pieceHors + ' pièce(s) datée(s) hors exercice — indice de séparation des exercices'),
+    ];
+    return `
+      <div class="grid2">
+        <div>
+          <h3>Contrôle de forme du FEC</h3>
+          ${table([{k:'t',t:'Contrôle'},{k:'s',t:'Résultat'},{k:'d',t:'Détail',cls:'wrapcell'}], ctrls)}
+          <p class="note">${FEC.length.toLocaleString('fr-FR')} lignes · ${c.nbEcritures.toLocaleString('fr-FR')} écritures ·
+             journaux ${[...new Set(FEC.map(r => r.JournalCode))].sort().join(', ')}.
+             Le grand livre est engendré dans la page à germe fixe et totalise la balance client compte par compte :
+             les deux seuls écarts ci-contre sont voulus.</p>
+        </div>
+        <div>
+          <h3>Rapprochement compte par compte</h3>
+          <p class="note" style="margin:0 0 6px">Soldes signés : débit positif, crédit négatif.</p>
+          ${table([
+            {k:'compte',t:'Compte',cls:'mono'},{k:'lib',t:'Intitulé',cls:'wrapcell'},
+            {k:'tb',t:'Balance client (solde signé)',n:1},{k:'gl',t:'Grand livre (solde signé)',n:1},{k:'ec',t:'Écart',n:1},{k:'q',t:'Qualification'}
+          ], rap.map(r => ({
+            compte:r.compte, lib:esc(r.lib), tb:eur(r.sTB), gl:eur(r.sGL),
+            ec:r.ecart ? '<b>' + eur(r.ecart) + '</b>' : '—',
+            q:r.ecart ? '<span class="pill bad">écart isolé</span>' : '<span class="pill ok">rapproché</span>'
+          })), { foot:{ compte:'Total', tb:eur(rap.reduce((s, r) => s + r.sTB, 0)), gl:eur(rap.reduce((s, r) => s + r.sGL, 0)),
+                        ec:eur(rap.reduce((s, r) => s + r.ecart, 0)) } })}
+          ${ecarts.length ? `<div class="callout bad"><b>${ecarts.length} compte(s) en écart pour ${eur(Math.abs(ecarts[0].ecart))}.</b>
+            ${ecarts.map(e => e.compte + ' (' + esc(e.lib) + ') : ' + eur(e.ecart)).join(' · ')}.
+            Les deux écarts sont de sens opposé et de même montant : une écriture équilibrée figure dans la balance
+            transmise et pas dans le fichier des écritures — écriture de situation non reprise au FEC.
+            Requête d’explication à émettre ; le rapprochement sera re-exécuté sur le FEC définitif.</div>` :
+            '<div class="callout ok">Aucun écart.</div>'}
+        </div>
+      </div>`;
+  });
+
+/* ═══ 8. MODULE 2 — MATÉRIALITÉ ═══════════════════════════════════════════ */
+mod('m2', '2', 'Matérialité',
+  'Le benchmark et % doivent être proposés par un agent IA et expliqué pourquoi mais validé par un auditeur humain puis le calcul de la matérialité se fera automatiquement',
+  function(){
+    const s = seuils();
+    const rows = Object.values(BM25).map(b => {
+      const m = arrondiBas(Math.round(b.val * S.pctM / 100), 100000);
+      return {
+        _cls:{ lib: b.code === S.benchmark ? 'wrapcell' : 'wrapcell' },
+        lib:(b.code === S.benchmark ? '<b>' + esc(b.lib) + '</b> <span class="pill acc">retenu</span>' : esc(b.lib)),
+        val:eur(b.val), usuel:pct(b.defaut / 100, 0),
+        applique:pct(S.pctM / 100, 1),
+        m:eur(m), pm:eur(arrondiBas(Math.round(m * S.pctPM / 100), 100000)),
+      };
+    });
+    return `
+      <div class="callout"><b>La référence n’est pas proposée par un modèle dans ce prototype :</b> vous la choisissez,
+      et les cinq calculs sont faits sur la balance. Le taux « usuel » est un repère de place, pas une règle : il ne
+      contraint rien. Une proposition automatisée du couple référence/taux relèverait, elle, d’un modèle — voir la
+      dernière section.</div>
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <h3>Seuils retenus</h3>
+          <div class="kv">
+            <span class="k">Référence</span><span class="v">${esc(s.bench.lib)}</span>
+            <span class="k">Montant de la référence</span><span class="v">${eur(s.bench.val)}</span>
+            <span class="k">Taux appliqué</span><span class="v">${pct(S.pctM / 100, 1)}</span>
+            <span class="k">Produit brut</span><span class="v">${eur(s.brut)}</span>
+            <span class="k">Seuil de signification (arrondi au millier inférieur)</span><span class="v">${eur(s.M)}</span>
+            <span class="k">Seuil de planification (${S.pctPM}${NBSP}% du seuil)</span><span class="v">${eur(s.PM)}</span>
+            <span class="k">Seuil de remontée (${S.pctCTT}${NBSP}% du seuil, arrondi à la centaine)</span><span class="v">${eur(s.CTT)}</span>
+          </div>
+          <p class="note">Arrondis prudents vers le bas. Le seuil de planification borne le scoping et la couverture
+          exhaustive de l’échantillon ; le seuil de remontée borne l’accumulation des anomalies.</p>
+        </div>
+        <div>
+          <h3>Ce qu’auraient donné les autres références</h3>
+          ${table([{k:'lib',t:'Référence'},{k:'val',t:'Montant',n:1},{k:'usuel',t:'Taux usuel'},
+                   {k:'applique',t:'Taux appliqué'},{k:'m',t:'Seuil',n:1},{k:'pm',t:'Planification',n:1}], rows)}
+          <p class="note">Les cinq références sont recalculées depuis la balance N : produits 7xx, charges 6xx,
+          soldes débiteurs des classes 2 à 5 nets des amortissements, capitaux propres 101/106/110 augmentés du résultat.</p>
+        </div>
+      </div>`;
+  });
+
+/* ═══ 9. MODULE 3 — SCOPING DES POSTES ════════════════════════════════════ */
+mod('m3', '3', 'Scoping des postes',
+  'Un scoping automatique des FSLIs selon la matérialité (montant déterminer par un % d’un benchmark, exemple le revenue, les COGS, l’equity etc.); possibilité de scoper qualitativement un FSLI inférieur à la matérialité',
+  function(){
+    const s = seuils(), postes = postesCalcules();
+    const rows = postes.map(p => {
+      const prop = Math.abs(p.solde) >= s.PM ? 'in' : 'out';
+      const eff = S.scopingOverride[p.code] || prop;
+      const derog = S.scopingOverride[p.code] && S.scopingOverride[p.code] !== prop;
+      return {
+        lib:esc(p.lib), comptes:'<span class="smallcaps">' + p.comptes.join(' ') + '</span>',
+        solde:eur(p.solde), ratio:pct(Math.abs(p.solde) / s.PM, 0),
+        prop:prop === 'in' ? '<span class="pill">dans le périmètre</span>' : '<span class="pill">non significatif</span>',
+        eff:(eff === 'in' ? '<span class="pill ok">dans le périmètre</span>' : '<span class="pill">non significatif</span>') +
+            (derog ? ' <span class="pill warn">dérogation</span>' : ''),
+        act:`<button class="btn mini sec" data-scope="${p.code}">${eff === 'in' ? 'sortir du périmètre' : 'inclure (qualitatif)'}</button>`
+      };
+    });
+    const nIn = postes.filter(p => (S.scopingOverride[p.code] || (Math.abs(p.solde) >= s.PM ? 'in' : 'out')) === 'in').length;
+    return `
+      <p class="note">Règle appliquée : un poste est proposé dans le périmètre si son solde absolu atteint le
+      <b>seuil de planification</b> (${eur(s.PM)}). Toute décision contraire est conservée et affichée comme dérogation.</p>
+      ${table([{k:'lib',t:'Poste'},{k:'comptes',t:'Comptes',cls:'wrapcell'},{k:'solde',t:'Solde N',n:1},
+               {k:'ratio',t:'% du seuil de planification',n:1},{k:'prop',t:'Proposition'},{k:'eff',t:'Décision'},{k:'act',t:''}], rows)}
+      <div class="callout">${nIn} poste(s) sur ${postes.length} dans le périmètre au seuil actuel.
+      Déplacez le taux de matérialité en haut de l’écran : cette liste se recompose immédiatement.</div>`;
+  });
+
+/* ═══ 10. MODULE 4 — REVUE ANALYTIQUE ═════════════════════════════════════ */
+/** Variation N / N-1 par compte. Une ligne ressort si elle dépasse le seuil en
+ *  montant OU le seuil en pourcentage : les deux critères sont indépendants. */
+/** Seuil en montant de la revue analytique : par défaut le seuil de planification,
+ *  sauf saisie explicite de l'auditeur. C'est pourquoi il bouge avec la matérialité. */
+function arSeuilMontant(){ return S.arMontant === null ? seuils().PM : S.arMontant; }
+
+function revueAnalytique(){
+  const comptes = [...new Set([...TB_2025.map(r => r[0]), ...TB_2024.map(r => r[0])])].sort();
+  return comptes.map(c => {
+    const n = B25.get(c) ? B25.get(c).solde : 0;
+    const n1 = B24.get(c) ? B24.get(c).solde : 0;
+    const lib = (B25.get(c) || B24.get(c)).lib;
+    const d = n - n1;
+    const p = n1 === 0 ? (n === 0 ? 0 : null) : d / Math.abs(n1);   // null = pas de base N-1
+    const parMontant = Math.abs(d) >= arSeuilMontant();
+    const parPct = p !== null && Math.abs(p) >= S.arPct / 100;
+    return { compte:c, lib, n, n1, d, p, parMontant, parPct, flag:parMontant || parPct };
+  });
+}
+/** Question composée automatiquement — assemblage déterministe, aucun texte de modèle. */
+function questionVariation(l){
+  const sens = l.d > 0 ? 'une hausse' : 'une baisse';
+  const pctTxt = l.p === null ? 'sans base comparative en N-1' : 'soit ' + pct(Math.abs(l.p), 1);
+  const motif = l.parMontant && l.parPct ? 'seuil en montant et seuil en pourcentage'
+              : l.parMontant ? 'seuil en montant' : 'seuil en pourcentage';
+  return `Le compte ${l.compte} « ${l.lib} » présente ${sens} de ${eur(Math.abs(l.d))} entre le 31/12/2024 (${eur(l.n1)}) `
+       + `et le 31/12/2025 (${eur(l.n)}), ${pctTxt}. Cette variation dépasse le ${motif} retenu pour la revue analytique `
+       + `(${eur(arSeuilMontant())} / ${S.arPct}${NBSP}%). Merci d’en indiquer l’explication et de préciser les éléments justificatifs disponibles.`;
+}
+mod('m4', '4', 'Revue analytique',
+  'Revue analytique générée automatiquement, variation comptes entre l’année N (auditée) et N-1 et FSLI, en haut de cette revue analytique un threshold monétaire et un % de variation, si la variation du compte dépasse l’un ou l’autre ou les 2 (à faire valider par un auditeur humain) des questions sur l’explication de la variation sont automatiquement envoyée au client sur l’interface des requêtes.',
+  function(){
+    const lignes = revueAnalytique(), flags = lignes.filter(l => l.flag);
+    const rows = lignes.map(l => ({
+      _cls:{ d:l.flag ? '' : '' },
+      compte:l.compte, lib:esc(l.lib), n:eur(l.n), n1:eur(l.n1),
+      d:(l.flag ? '<b>' : '') + eur(l.d) + (l.flag ? '</b>' : ''),
+      p:l.p === null ? '—' : pct(l.p, 1),
+      f:l.flag ? '<span class="pill bad">' + (l.parMontant && l.parPct ? 'montant + %' : l.parMontant ? 'montant' : '%') + '</span>' : ''
+    }));
+    return `
+      <div class="row">
+        <div class="ctrl"><label>Seuil en montant ${S.arMontant === null ? '<span class="pill acc">suit le seuil de planification</span>' : '<span class="pill warn">saisi</span>'}</label>
+          <input type="number" id="ar-montant" step="1000" min="0" value="${Math.round(arSeuilMontant() / 100)}"> </div>
+        <div class="ctrl"><label>Seuil en pourcentage</label>
+          <input type="number" id="ar-pct" step="1" min="0" value="${S.arPct}"></div>
+        <div class="ctrl"><label>&nbsp;</label>
+          <button class="btn sec" id="ar-sync">revenir au seuil de planification</button></div>
+      </div>
+      <div class="grid2">
+        <div>
+          <h3>Variations par compte</h3>
+          ${table([{k:'compte',t:'Compte',cls:'mono'},{k:'lib',t:'Intitulé',cls:'wrapcell'},
+                   {k:'n1',t:'31/12/2024',n:1},{k:'n',t:'31/12/2025',n:1},{k:'d',t:'Variation',n:1},
+                   {k:'p',t:'%',n:1},{k:'f',t:'Ressort'}], rows)}
+        </div>
+        <div>
+          <h3>Questions composées (${flags.length})</h3>
+          ${flags.length === 0 ? '<div class="callout ok">Aucune variation au-delà des seuils.</div>' :
+            flags.slice(0, 12).map(l => `<div class="callout"><b>${l.compte} — ${esc(l.lib)}</b><br>${esc(questionVariation(l))}</div>`).join('')}
+          ${flags.length > 12 ? `<p class="note">… et ${flags.length - 12} autre(s) question(s) composée(s) sur le même modèle.</p>` : ''}
+        </div>
+      </div>`;
+  });
+
+/* ═══ 11. MODULE 5 — TEST DES ÉCRITURES ═══════════════════════════════════ */
+/** Critères déterministes appliqués écriture par écriture. Chaque critère est
+ *  un prédicat lisible : c'est ce qui rend la sélection défendable en inspection. */
+function critereJE(seuilGros){
+  return {
+    weekend:   { lib:'Comptabilisée un week-end', f:e => isWeekend(e.date) },
+    rond:      { lib:'Montant rond (multiple de 1 000 €)', f:e => { const m = e.lines[0].debit || e.lines[0].credit; return m >= 100000 && m % 100000 === 0; } },
+    od:        { lib:'Journal d’opérations diverses', f:e => e.journal === 'OD' },
+    valid:     { lib:'Validée après la clôture', f:e => e.validDate > '2025-12-31' },
+    direction: { lib:'Saisie par la direction', f:e => /direction/.test(e.saisiePar) },
+    gros:      { lib:'Montant supérieur au seuil de planification', f:e => (e.lines[0].debit || e.lines[0].credit) > seuilGros },
+  };
+}
+mod('m5', '5', 'Test des écritures (journal entry testing)',
+  'Un journal entry testing sem-automatisé, un agent IA pré-rempli des tests qui vont faire ressortir des écritures dont il faudra demander les justificatifs au client, un être humain auditeur doit venir valider les paramètres puis l’agent IA sélectionne automatiquement sur le GL les écritures.',
+  function(){
+    const s = seuils(), C = critereJE(s.PM);
+    const actifs = Object.keys(C).filter(k => S.jeCrit[k]);
+    // les à-nouveaux sont la reprise du bilan d'ouverture : ils ne relèvent pas d'un test
+    // d'écritures de l'exercice, on les écarte de la population par défaut
+    const pop = LEDGER.entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
+    const sel = pop.filter(e => actifs.some(k => C[k].f(e)));
+    const chips = Object.entries(C).map(([k, v]) =>
+      `<label class="chk"><input type="checkbox" data-je="${k}" ${S.jeCrit[k] ? 'checked' : ''}>
+        ${esc(v.lib)} <span class="cnt">${pop.filter(v.f).length}</span></label>`).join('');
+    const rows = sel.slice(0, 150).map(e => {
+      const montant = e.lines[0].debit || e.lines[0].credit;
+      return {
+        num:e.num, date:frDate(e.date), j:e.journal,
+        lib:esc(e.libelle), montant:eur(montant), saisie:esc(e.saisiePar),
+        motifs:actifs.filter(k => C[k].f(e)).map(k => '<span class="pill warn">' + esc(C[k].lib) + '</span>').join(' ')
+      };
+    });
+    return `
+      <p class="note">Les paramètres sont validés par l’auditeur ; la sélection s’exécute sur le grand livre.
+      Aucun modèle n’intervient : chaque critère est un prédicat vérifiable, et chaque écriture retenue porte le motif
+      qui l’a fait sortir.</p>
+      <div class="row">${chips}
+        <label class="chk"><input type="checkbox" id="je-an" ${S.jeSansAN ? 'checked' : ''}>
+          exclure les à-nouveaux <span class="cnt">${LEDGER.entries.filter(e => e.journal === 'AN').length}</span></label>
+      </div>
+      <div class="callout"><b>${sel.length}</b> écriture(s) retenue(s) sur ${pop.length}
+        (${pct(sel.length / pop.length, 1)} de la population) —
+        cumul débit ${eur(sel.reduce((a, e) => a + e.lines.reduce((x, l) => x + l.debit, 0), 0))}.
+        Le critère « montant supérieur au seuil de planification » suit le curseur de matérialité : ${eur(s.PM)}.</div>
+      ${table([{k:'num',t:'Écriture',cls:'mono'},{k:'date',t:'Date',cls:'mono'},{k:'j',t:'Jrn'},
+               {k:'lib',t:'Libellé',cls:'wrapcell'},{k:'montant',t:'Montant',n:1},
+               {k:'saisie',t:'Saisie par'},{k:'motifs',t:'Motif de sélection',cls:'wrapcell'}], rows)}
+      ${sel.length > 150 ? `<p class="note">Affichage limité aux 150 premières écritures (${sel.length} retenues).</p>` : ''}`;
+  });
+
+/* ═══ 12. MODULE 6 — ÉCHANTILLONNAGE ══════════════════════════════════════ */
+/** Deux strates : couverture exhaustive au-dessus du seuil de planification,
+ *  puis tirage aléatoire à germe dans le reliquat. Même germe ⇒ même tirage. */
+function echantillon(){
+  const s = seuils();
+  const pop = LEDGER.entries
+    .filter(e => e.lines.some(l => /^70/.test(l.compte)))
+    .map(e => ({ e, montant:e.lines.reduce((a, l) => a + (/^70/.test(l.compte) ? (l.credit - l.debit) : 0), 0) }))
+    .filter(x => x.montant > 0);
+  const total = pop.reduce((a, x) => a + x.montant, 0);
+  const exhaustif = pop.filter(x => x.montant >= s.PM);
+  const reste = pop.filter(x => x.montant < s.PM);
+  const rnd = mulberry32(seedOf(S.sampleSeed));
+  // tirage sans remise : on mélange une copie de l'index avec le germe fourni
+  const idx = reste.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  const alea = idx.slice(0, Math.min(S.sampleN, idx.length)).sort((a, b) => a - b).map(i => reste[i]);
+  const couvert = exhaustif.reduce((a, x) => a + x.montant, 0) + alea.reduce((a, x) => a + x.montant, 0);
+  return { pop, total, exhaustif, alea, couvert, s };
+}
+mod('m6', '6', 'Échantillonnage',
+  'font les sélections selon des paramètres prédéfinis (niveau de risque déterminé dans le GRA = Guided risk assessment […] et le seuil d’audit)',
+  function(){
+    const r = echantillon();
+    const rows = [...r.exhaustif.map(x => ({ x, m:'couverture exhaustive' })), ...r.alea.map(x => ({ x, m:'tirage aléatoire' }))]
+      .map(({ x, m }) => ({
+        num:x.e.num, date:frDate(x.e.date), piece:x.e.pieceRef,
+        tiers:esc(x.e.lines[0].auxLib || '—'), montant:eur(x.montant),
+        motif:m === 'couverture exhaustive' ? '<span class="pill acc">couverture exhaustive</span>' : '<span class="pill info">tirage aléatoire</span>'
+      }));
+    return `
+      <div class="row">
+        <div class="ctrl"><label>Germe du tirage</label><input type="text" id="s-seed" value="${esc(S.sampleSeed)}" size="18"></div>
+        <div class="ctrl"><label>Taille du tirage aléatoire</label><input type="number" id="s-n" min="0" max="40" value="${S.sampleN}"></div>
+        <div class="ctrl"><label>&nbsp;</label><button class="btn" id="s-replay">rejouer le tirage</button></div>
+        <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="s-newseed">germe aléatoire</button></div>
+      </div>
+      <div class="callout"><b>Population :</b> ${r.pop.length} écritures de produits, ${eur(r.total)}.
+        <b>Couverture exhaustive</b> au-dessus du seuil de planification (${eur(r.s.PM)}) : ${r.exhaustif.length} écritures.
+        <b>Tirage aléatoire</b> : ${r.alea.length} écritures.
+        <b>Couverture totale : ${eur(r.couvert)}</b>, soit ${pct(r.couvert / r.total, 1)} de la population.
+        <br><span class="smallcaps">Rejoué ${S.sampleRun} fois depuis le chargement — la sélection ci-dessous est identique à chaque fois, à germe égal.</span></div>
+      ${table([{k:'num',t:'Écriture',cls:'mono'},{k:'date',t:'Date',cls:'mono'},{k:'piece',t:'Pièce',cls:'mono'},
+               {k:'tiers',t:'Tiers'},{k:'montant',t:'Montant',n:1},{k:'motif',t:'Motif de sélection'}], rows)}`;
+  });
+
+/* ═══ 13. MODULE 7 — EXHAUSTIVITÉ DES CIRCULARISATIONS ════════════════════ */
+/** Listings déclarés par le client. L'exhaustivité se contrôle en confrontant
+ *  ces listings à la comptabilité — c'est une comparaison d'ensembles, pas une
+ *  interprétation : aucun modèle n'est nécessaire. */
+const LISTING_BANQUES = [{ compte:'512100', banque:'Banque Lyonnaise de Crédit (fictive)', contact:'confirmations@blc.example' }];
+const LISTING_AVOCATS = [{ cabinet:'Cabinet Vasseur & Associés', contact:'contentieux@vasseur-avocats.example' }];
+
+function exhaustiviteBanques(){
+  const enCompta = GL_BAL.filter(r => /^(512|53)/.test(r.compte))
+    .map(r => ({ compte:r.compte, lib:r.lib, solde:r.debit - r.credit }));
+  const declares = new Set(LISTING_BANQUES.map(b => b.compte));
+  return enCompta.map(c => ({ ...c, declare:declares.has(c.compte) }));
+}
+function exhaustiviteAvocats(){
+  const parTiers = new Map();
+  for (const r of FEC) if (/^622/.test(r.CompteNum) && r.Debit > 0){
+    parTiers.set(r.CompAuxLib || '(sans tiers)', (parTiers.get(r.CompAuxLib || '(sans tiers)') || 0) + r.Debit);
+  }
+  const declares = new Set(LISTING_AVOCATS.map(a => a.cabinet));
+  return [...parTiers.entries()].map(([tiers, montant]) => ({ tiers, montant, declare:declares.has(tiers) }));
+}
+function requeteExplication(objet, detail){
+  return `Requête d’explication — ${objet}. ${detail} Merci de préciser la nature de ce compte/tiers, `
+       + `de confirmer s’il doit faire l’objet d’une demande de confirmation à la clôture, et de communiquer `
+       + `le cas échéant le contact (nom, adresse électronique) à circulariser.`;
+}
+mod('m7', '7', 'Exhaustivité des circularisations',
+  'un agent IA regarde la comptabilité et vérifie qu’il ne manque pas de banque si oui il envoi une requête pour demander au client à quoi corresponde les comptes (présents en comptabilité mais absent du listing des banques du client)',
+  function(){
+    const banques = exhaustiviteBanques(), avocats = exhaustiviteAvocats();
+    const bManquantes = banques.filter(b => !b.declare), aManquants = avocats.filter(a => !a.declare);
+    return `
+      <div class="callout"><b>Ce contrôle ne demande aucun modèle.</b> Il compare deux ensembles : les comptes de
+      trésorerie mouvementés dans le grand livre, et le listing déclaré par le client. Ce qui figure dans l’un et pas
+      dans l’autre est une question à poser, pas une interprétation à produire.</div>
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <h3>Banques — comptes 51x/53x</h3>
+          ${table([{k:'compte',t:'Compte',cls:'mono'},{k:'lib',t:'Intitulé',cls:'wrapcell'},{k:'solde',t:'Solde',n:1},{k:'d',t:'Listing client'}],
+            banques.map(b => ({ compte:b.compte, lib:esc(b.lib), solde:eur(b.solde),
+              d:b.declare ? '<span class="pill ok">déclaré</span>' : '<span class="pill bad">absent du listing</span>' })))}
+          <p class="note">Listing transmis : ${LISTING_BANQUES.map(b => esc(b.banque)).join(', ')}.</p>
+          ${bManquantes.map(b => `<div class="callout bad">${esc(requeteExplication('compte de trésorerie non déclaré',
+            `Le compte ${b.compte} « ${b.lib} », de solde ${eur(b.solde)} au 31/12/2025, est mouvementé en comptabilité mais n’apparaît pas dans le listing des banques que vous nous avez transmis.`))}</div>`).join('')}
+        </div>
+        <div>
+          <h3>Avocats — comptes d’honoraires 622x</h3>
+          ${table([{k:'tiers',t:'Tiers',cls:'wrapcell'},{k:'montant',t:'Honoraires N',n:1},{k:'d',t:'Listing client'}],
+            avocats.map(a => ({ tiers:esc(a.tiers), montant:eur(a.montant),
+              d:a.declare ? '<span class="pill ok">déclaré</span>' : '<span class="pill bad">absent du listing</span>' })))}
+          <p class="note">Listing transmis : ${LISTING_AVOCATS.map(a => esc(a.cabinet)).join(', ')}.</p>
+          ${aManquants.map(a => `<div class="callout bad">${esc(requeteExplication('cabinet non déclaré',
+            `Des honoraires de ${eur(a.montant)} ont été comptabilisés en N au profit de « ${a.tiers} », qui n’apparaît pas dans le listing des conseils que vous nous avez transmis.`))}</div>`).join('')}
+        </div>
+      </div>`;
+  });
+
+/* ═══ 14. MODULE 8 — SUIVI DES DEMANDES ═══════════════════════════════════ */
+function initRequests(){
+  if (S.requests) return S.requests;
+  const R = (seq, section, titre, echeance, items) => ({ seq, section, titre, echeance, items, clotureClient:false });
+  const I = (desc, statut, revoyeur) => ({ desc, statut, revoyeur:revoyeur || null });
+  S.requests = [
+    R(1,'Chiffre d’affaires','Justificatifs des ventes sélectionnées','2026-02-10',[
+      I('Factures de vente de la sélection','recu_complet'), I('Bons de livraison associés','recu_partiel'),
+      I('Conditions tarifaires applicables','recu_complet','Léa Moreau')]),
+    R(2,'Chiffre d’affaires','Explications sur les écritures relevées','2026-02-17',[
+      I('Explication écriture OD-2025-089','recu_complet','Karim Benali'), I('Explication séparation des exercices','non_recu')]),
+    R(3,'Trésorerie','Confirmations bancaires et relevés','2026-02-24',[
+      I('Listing des banques et contacts','recu_complet'), I('Relevés au 31/12/2025','recu_partiel'),
+      I('Explication compte 512200 hors listing','non_recu')]),
+    R(4,'Achats et charges externes','Justificatifs des achats sélectionnés','2026-03-03',[
+      I('Factures fournisseurs','recu_partiel'), I('Contrats de maintenance','non_recu')]),
+    R(5,'Litiges','Listing des conseils et confirmations','2026-03-20',[
+      I('Listing des cabinets','recu_complet'), I('Confirmations reçues','non_recu')]),
+    R(6,'Personnel','Justificatifs de paie','2026-03-31',[
+      I('Journal de paie annuel','recu_complet'), I('Contrats des entrées de l’exercice','recu_complet','Léa Moreau')]),
+  ];
+  return S.requests;
+}
+const STATUTS = { non_recu:{ lib:'non reçu', cls:'bad' }, recu_partiel:{ lib:'reçu partiel', cls:'warn' },
+                  recu_complet:{ lib:'reçu complet', cls:'ok' } };
+function avancement(items){
+  const poids = { non_recu:0, recu_partiel:0.5, recu_complet:1 };
+  return items.reduce((a, i) => a + poids[i.statut], 0) / items.length;
+}
+mod('m8', '8', 'Suivi des demandes',
+  'il faut qu’il y ait bien préciser : le numéro de la requête faite pour demander les documents comme ça le client saura s’il manque des documents où les uploader […] un statut : "Not received", "In progress" […] "Awaiting Review from XXX"',
+  function(){
+    const reqs = initRequests();
+    const parSection = {};
+    for (const r of reqs){ (parSection[r.section] = parSection[r.section] || []).push(...r.items); }
+    const secRows = Object.entries(parSection).map(([sec, items]) => {
+      const a = avancement(items);
+      return { sec:esc(sec), n:items.length,
+               bar:`<div class="bar" style="width:110px"><i style="width:${(a * 100).toFixed(0)}%"></i></div>`,
+               p:pct(a, 0) };
+    });
+    const rows = reqs.map(r => {
+      const a = avancement(r.items), retard = !r.clotureClient && r.echeance < S.aujourdhui && a < 1;
+      return {
+        num:'R-' + String(r.seq).padStart(3, '0'), sec:esc(r.section), titre:esc(r.titre),
+        ech:frDate(r.echeance),
+        items:r.items.map(i => {
+          const st = STATUTS[i.statut];
+          const revue = (!S.clientView && i.revoyeur && i.statut !== 'non_recu')
+            ? ` <span class="pill info">en attente de revue par ${esc(i.revoyeur)}</span>` : '';
+          return `<div>${esc(i.desc)} <span class="pill ${st.cls}">${st.lib}</span>${revue}</div>`;
+        }).join(''),
+        p:pct(a, 0),
+        etat:(r.clotureClient ? '<span class="pill ok">tout déposé (client)</span> ' : '') +
+             (retard ? '<span class="pill bad">relance automatique — échéance dépassée</span>' : ''),
+        act:S.clientView
+          ? (r.clotureClient ? '' : `<button class="btn mini" data-close="${r.seq}">tout est déposé</button>`)
+          : `<button class="btn mini sec" data-bump="${r.seq}">avancer un élément</button>`
+      };
+    });
+    const cols = [{k:'num',t:'N°',cls:'mono'},{k:'sec',t:'Section'},{k:'titre',t:'Demande',cls:'wrapcell'},
+                  {k:'ech',t:'Échéance',cls:'mono'},{k:'items',t:'Éléments',cls:'wrapcell'},{k:'p',t:'Avancement',n:1},
+                  {k:'etat',t:'État',cls:'wrapcell'},{k:'act',t:''}];
+    if (S.clientView) cols.splice(1, 1);   // le client ne voit pas le découpage interne des sections
+    return `
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="clientview" ${S.clientView ? 'checked' : ''}> vue client</label>
+        <button class="btn sec" id="exp-req">exporter le suivi (CSV)</button>
+        <span class="pill">${S.clientView ? 'le client ne voit ni la documentation d’audit ni le nom du réviseur' : 'vue auditeur'}</span>
+      </div>
+      <div class="grid2">
+        <div><h3>Avancement par section</h3>
+          ${table([{k:'sec',t:'Section'},{k:'n',t:'Éléments',n:1},{k:'bar',t:''},{k:'p',t:'%',n:1}], secRows)}</div>
+        <div><h3>Demandes</h3>${table(cols, rows)}</div>
+      </div>
+      <div id="exp-out"></div>`;
+  });
+
+/* ═══ 15. MODULE 9 — FEUILLE DE TRAVAIL ═══════════════════════════════════ */
+function initWp(){
+  if (S.wp) return S.wp;
+  const r = echantillon();
+  S.wp = [...r.exhaustif, ...r.alea].slice(0, 10).map((x, i) => ({
+    piece:x.e.pieceRef, tiers:x.e.lines[0].auxLib || '—', date:x.e.date,
+    compta:x.montant,
+    // montant relevé sur le justificatif : identique sauf deux écarts volontaires
+    justif:i === 2 ? x.montant - 180000 : i === 5 ? x.montant - 261580 : x.montant,
+    doc:i % 3 === 0 ? 'Facture + bon de livraison' : i % 3 === 1 ? 'Facture' : 'Facture + contrat',
+    usage:i % 3 === 0 ? 'Quantité livrée rapprochée de la quantité facturée'
+        : i % 3 === 1 ? 'Montant et date rapprochés de l’écriture'
+        : 'Conditions tarifaires rapprochées du contrat',
+    expl:''
+  }));
+  return S.wp;
+}
+mod('m9', '9', 'Feuille de travail intégrée',
+  'il faut qu’il y ait la possibilité de joindre des fichiers excel au cas où, et un flag d’écart totaux repérés à expliquer; aussi il faut que les auditeurs humains soient capables d’éditer / modifier le template intégéré (rajout colonnes, cellules ect. dans le cas où le testing sortirait du cadre normalisé) dans ce cas le template intégré portera un signe visible indiquant qu’il a été modifié, et la modification devra être justifiée. · une claire vision de quel type de document a été obtenu et comment il a été utilisé',
+  function(){
+    const wp = initWp();
+    const ecartTotal = wp.reduce((a, r) => a + (r.compta - r.justif), 0);
+    const nonExplique = wp.filter(r => r.compta !== r.justif && !r.expl.trim()).reduce((a, r) => a + (r.compta - r.justif), 0);
+    const extraTh = S.wpExtra.map(c => `<th>${esc(c)}</th>`).join('');
+    const body = wp.map((r, i) => `<tr>
+        <td class="mono">${esc(r.piece)}</td><td>${esc(r.tiers)}</td><td class="mono">${frDate(r.date)}</td>
+        <td class="n">${eur(r.compta)}</td>
+        <td class="n"><input class="cell" data-wp="${i}" data-f="justif" value="${(r.justif / 100).toFixed(2).replace('.', ',')}"></td>
+        <td class="n ${r.compta !== r.justif ? '' : ''}">${r.compta !== r.justif ? '<b>' + eur(r.compta - r.justif) + '</b>' : '—'}</td>
+        <td class="wrapcell">${esc(r.doc)}</td><td class="wrapcell">${esc(r.usage)}</td>
+        <td class="wrapcell"><input class="cell txt" data-wp="${i}" data-f="expl" placeholder="explication de l’écart" value="${esc(r.expl)}"></td>
+        ${S.wpExtra.map(c => `<td><input class="cell txt" data-wpx="${i}" data-c="${esc(c)}" value="${esc(r[c] || '')}"></td>`).join('')}
+      </tr>`).join('');
+    const modifie = S.wpExtra.length > 0;
+    const bloque = modifie && !S.wpJustif.trim();
+    return `
+      <div class="row">
+        <button class="btn sec" id="wp-col">ajouter une colonne hors cadre standard</button>
+        ${modifie ? '<span class="pill warn">⚑ feuille modifiée — hors cadre standard</span>' : ''}
+      </div>
+      ${modifie ? `<div class="callout ${bloque ? 'bad' : 'warn'}">
+        <b>Modification du modèle intégré.</b> Colonne(s) ajoutée(s) : ${S.wpExtra.map(esc).join(', ')}.
+        La justification est obligatoire.<br>
+        <textarea id="wp-justif" rows="2" placeholder="Pourquoi le testing sort-il du cadre standard ?">${esc(S.wpJustif)}</textarea>
+        ${bloque ? '<b>La feuille est bloquée tant que la justification est vide : elle ne peut être ni signée ni exportée.</b>' : '<span class="pill ok">justification enregistrée</span>'}
+      </div>` : ''}
+      <div class="tw"><table>
+        <thead><tr><th>Pièce</th><th>Tiers</th><th>Date</th><th class="n">Montant comptabilisé</th>
+          <th class="n">Montant justificatif</th><th class="n">Écart</th><th>Document obtenu</th>
+          <th>Comment il a servi au contrôle</th><th>Explication</th>${extraTh}</tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td colspan="3">Total</td>
+          <td class="n">${eur(wp.reduce((a, r) => a + r.compta, 0))}</td>
+          <td class="n">${eur(wp.reduce((a, r) => a + r.justif, 0))}</td>
+          <td class="n">${eur(ecartTotal)}</td><td colspan="${3 + S.wpExtra.length}"></td></tr></tfoot>
+      </table></div>
+      <div class="callout ${nonExplique ? 'bad' : 'ok'}">
+        ${nonExplique ? '⚑' : '✓'} <b>Écart total relevé : ${eur(ecartTotal)}</b> — dont <b>${eur(nonExplique)}</b> non expliqué.
+        ${nonExplique ? 'Le drapeau reste levé tant qu’une explication n’est pas saisie en regard de chaque écart.' : 'Tous les écarts portent une explication.'}
+        ${bloque ? ' La feuille est par ailleurs bloquée : modification non justifiée.' : ''}
+      </div>
+      <p class="note">Le montant relevé sur le justificatif est saisi par l’auditeur : c’est une lecture humaine.
+      Faire lire la pièce par un modèle est possible — c’est précisément le point où une vérification humaine
+      redevient obligatoire (dernière section).</p>`;
+  });
+
+/* ═══ 16. MODULE 10 — NOTES DE REVUE ══════════════════════════════════════ */
+const AUTEURS = ['Karim Benali (senior)','Léa Moreau (superviseur)','Claire Fontaine (associée)'];
+mod('m10', '10', 'Notes de revue',
+  'Possibilité de laisser des review notes (commentaires des auditeurs humains seulement)',
+  function(){
+    const rows = S.notes.map((n, i) => ({
+      d:'<span class="mono">' + n.date + '</span>', a:esc(n.auteur), t:esc(n.texte),
+      r:n.reponses.map(r => `<div>↳ <b>${esc(r.auteur)}</b> <span class="smallcaps">${r.date}</span> : ${esc(r.texte)}</div>`).join('') || '<span class="smallcaps">—</span>',
+      s:n.close ? '<span class="pill ok">close</span>' : '<span class="pill warn">ouverte</span>',
+      act:n.close ? '' : `<button class="btn mini sec" data-rep="${i}">répondre</button> <button class="btn mini sec" data-close-note="${i}">clore</button>`
+    }));
+    return `
+      <div class="callout">Les notes de revue sont <b>réservées aux humains</b> : aucun auteur automatique, aucune
+      réponse suggérée. C’est une décision de conception, pas une limite technique.</div>
+      <div class="row" style="margin-top:8px">
+        <div class="ctrl"><label>Auteur</label><select id="note-auteur">${AUTEURS.map(a => `<option ${a === S.author ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>
+        <div class="ctrl" style="flex:1 1 320px"><label>Nouvelle note</label><input type="text" id="note-txt" placeholder="ex. : préciser le rapprochement du bon de livraison sur la pièce FA2025-0702"></div>
+        <div class="ctrl"><label>&nbsp;</label><button class="btn" id="note-add">ajouter</button></div>
+      </div>
+      ${S.notes.length ? table([{k:'d',t:'Horodatage'},{k:'a',t:'Auteur'},{k:'t',t:'Note',cls:'wrapcell'},
+                                {k:'r',t:'Réponses',cls:'wrapcell'},{k:'s',t:'État'},{k:'act',t:''}], rows)
+                       : '<p class="note">Aucune note pour l’instant.</p>'}`;
+  });
+
+/* ═══ 17. MODULE 11 — SYNTHÈSE DES ANOMALIES ══════════════════════════════
+   Le cumul n'est pas saisi : il agrège ce que les modules ont produit —
+   les écarts de la feuille de travail, l'écart de rapprochement, et les
+   anomalies relevées sur les écritures. Le tri par rapport au seuil de
+   remontée et la conclusion suivent donc le curseur de matérialité.
+   ═══════════════════════════════════════════════════════════════════════ */
+function anomalies(){
+  const s = seuils(), out = [];
+  // 1. écarts constatés sur la feuille de travail (module 9)
+  for (const r of initWp()){
+    const d = r.compta - r.justif;
+    if (d !== 0) out.push({ src:'Feuille REV-01', lib:'Écart pièce ' + r.piece + ' (' + r.tiers + ')',
+                            montant:d, corrigee:false, expl:r.expl });
+  }
+  // 2. écart de rapprochement balance ↔ grand livre (module 1)
+  for (const r of rapprochement()) if (r.ecart !== 0 && r.sTB - r.sGL > 0){
+    out.push({ src:'Rapprochement', lib:'Écriture de situation non reprise au FEC — compte ' + r.compte,
+               montant:r.ecart, corrigee:false, expl:'Écart documenté ; rapprochement à re-exécuter sur le FEC définitif.' });
+  }
+  // 3. anomalies relevées sur les écritures particulières (module 5)
+  const parTag = t => LEDGER.entries.filter(e => e.tag === t);
+  const dupe = parTag('A1');
+  if (dupe.length === 2) out.push({ src:'Test des écritures', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
+    montant:dupe[1].lines[0].debit, corrigee:false, expl:'Doublon d’intégration reconnu par le client ; extourne non comptabilisée à date.' });
+  for (const e of parTag('A5')) out.push({ src:'Test des écritures', lib:'Produit de 2026 rattaché à 2025 (' + e.pieceRef + ')',
+    montant:e.lines[0].debit, corrigee:false, expl:'Facture datée du ' + frDate(e.pieceDate) + ', comptabilisée le ' + frDate(e.date) + '.' });
+  for (const e of parTag('A6')) out.push({ src:'Test des écritures', lib:'Écriture manuelle de direction (' + e.pieceRef + ')',
+    montant:e.lines[0].debit, corrigee:false, expl:'Prestation démarrant en janvier 2026 selon l’explication reçue.' });
+  return out.map(a => ({ ...a, souSeuil:Math.abs(a.montant) < s.CTT }));
+}
+mod('m11', '11', 'Synthèse des anomalies',
+  'Un moyen simple d’accéder à la synthèse des déficiences de contrôle interne et des "misstatements" écarts observés lors du testing',
+  function(){
+    const s = seuils(), a = anomalies();
+    const retenues = a.filter(x => !x.souSeuil), triviales = a.filter(x => x.souSeuil);
+    const nonCorr = retenues.filter(x => !x.corrigee), corr = retenues.filter(x => x.corrigee);
+    const cumulNC = nonCorr.reduce((t, x) => t + x.montant, 0);
+    const depasse = Math.abs(cumulNC) > s.M;
+    const rows = a.map(x => ({
+      src:esc(x.src), lib:esc(x.lib), montant:eur(x.montant),
+      st:x.souSeuil ? '<span class="pill">sous le seuil de remontée</span>'
+        : x.corrigee ? '<span class="pill ok">corrigée</span>' : '<span class="pill bad">non corrigée</span>',
+      expl:esc(x.expl || '—')
+    }));
+    return `
+      ${table([{k:'src',t:'Origine'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'montant',t:'Montant',n:1},
+               {k:'st',t:'Traitement'},{k:'expl',t:'Explication',cls:'wrapcell'}], rows,
+              { foot:{ src:'Cumul non corrigé', montant:eur(cumulNC) } })}
+      <div class="grid2" style="margin-top:10px">
+        <div class="kv">
+          <span class="k">Anomalies relevées</span><span class="v">${a.length}</span>
+          <span class="k">Sous le seuil de remontée (${eur(s.CTT)})</span><span class="v">${triviales.length}</span>
+          <span class="k">Corrigées</span><span class="v">${corr.length} — ${eur(corr.reduce((t, x) => t + x.montant, 0))}</span>
+          <span class="k">Non corrigées</span><span class="v">${nonCorr.length} — ${eur(cumulNC)}</span>
+          <span class="k">Seuil de signification</span><span class="v">${eur(s.M)}</span>
+          <span class="k">Rapport au seuil</span><span class="v">${pct(Math.abs(cumulNC) / s.M, 0)}</span>
+        </div>
+        <div class="callout ${depasse ? 'bad' : 'ok'}">
+          <b>Conséquence.</b> ${depasse
+            ? `Le cumul des anomalies non corrigées (${eur(cumulNC)}) <b>dépasse le seuil de signification</b> (${eur(s.M)}).
+               En l’état, les comptes sont affectés d’anomalies significatives : correction à demander à la direction,
+               à défaut de quoi la conclusion sur les comptes doit en tirer les conséquences.`
+            : `Le cumul des anomalies non corrigées (${eur(cumulNC)}) reste <b>inférieur au seuil de signification</b> (${eur(s.M)}).
+               Les anomalies sont portées à l’état de synthèse et communiquées à la direction ; elles ne remettent pas en
+               cause, à elles seules, la conclusion sur les comptes.`}
+          <br><span class="smallcaps">Déplacez le taux de matérialité : le tri sous/au-dessus du seuil de remontée et cette
+          conclusion changent avec lui.</span>
+        </div>
+      </div>`;
+  });
+
+/* ═══ 18. FRONTIÈRE DÉTERMINISTE / MODÈLE ═════════════════════════════════ */
+const BESOIN_MODELE = [
+  { idee:'Lecture des pièces justificatives reçues (OCR puis extraction des champs)',
+    apport:'transforme un PDF ou un scan en champs exploitables : numéro, date, montant, quantité',
+    verif:'≈ 1 à 2 min par pièce : chaque champ qui entre au dossier est relu sur la pièce d’origine' },
+  { idee:'Pointage de la plaquette client contre la balance auditée',
+    apport:'lit les états financiers publiés et les rapproche poste à poste des montants audités',
+    verif:'≈ 20 à 40 min par plaquette : le rapprochement est relu ligne à ligne, chaque écart tranché' },
+  { idee:'Vidéo/transcript d’entretien de contrôle interne, documentation de la compréhension',
+    apport:'restitue le déroulé décrit et en tire une première description du processus',
+    verif:'≈ 30 à 60 min par entretien : la description devient une diligence, elle est réécrite et validée' },
+  { idee:'Comparaison du discours client au flowchart fourni',
+    apport:'signale les points où ce qui est dit ne correspond pas au schéma remis',
+    verif:'≈ 15 à 30 min : chaque incohérence signalée est confirmée avant d’être opposée au client' },
+  { idee:'Analyse macroéconomique et facteurs externes',
+    apport:'rassemble et résume un contexte sectoriel dispersé',
+    verif:'≈ 30 min : rien n’entre au dossier sans source vérifiée ; c’est un support de réflexion, pas un élément probant' },
+  { idee:'Détection de liens entre l’organigramme et les tiers (risque de fraude)',
+    apport:'rapproche des noms et des entités entre deux listes hétérogènes',
+    verif:'≈ 10 min par rapprochement proposé, et aucun ne devient une conclusion sans vérification externe' },
+  { idee:'Proposition du couple référence/taux de matérialité, avec sa justification',
+    apport:'propose et rédige la motivation à partir des caractéristiques de l’entité',
+    verif:'≈ 10 min : la proposition n’a aucune valeur tant qu’un humain ne l’a pas arrêtée' },
+];
+const FAUSSEMENT_AGENT = [
+  { idee:'« un agent IA pré-remplit des tests qui vont faire ressortir des écritures »',
+    reel:'Test des écritures (module 5) — ce sont des prédicats : week-end, montant rond, journal, date de validation, auteur de la saisie.' },
+  { idee:'« un scoping automatique des FSLIs selon la matérialité »',
+    reel:'Scoping (module 3) — une comparaison de solde à un seuil.' },
+  { idee:'« Revue analytique générée automatiquement […] des questions […] automatiquement envoyée au client »',
+    reel:'Revue analytique (module 4) — soustraction, division, et une phrase assemblée à partir de champs.' },
+  { idee:'« un agent IA regarde la comptabilité et vérifie qu’il ne manque pas de banque »',
+    reel:'Exhaustivité des circularisations (module 7) — une différence entre deux ensembles.' },
+  { idee:'« font la réconciliation de ce compte à notre solde en TB »',
+    reel:'Rapprochement (module 1) — une somme par compte et une comparaison.' },
+  { idee:'« l’agent IA devra aussi relancer le client pour les demandes non-remplies »',
+    reel:'Suivi des demandes (module 8) — une comparaison de date d’échéance.' },
+  { idee:'« Un chat bot général qui répond aux questions de l’associé »',
+    reel:'Ce qui est utile ici n’est pas la conversation mais la requête : une question type se traduit en filtre sur les données et rend des enregistrements, pas de la prose.' },
+];
+mod('ia', '—', 'Ce que ce prototype ne peut pas faire sans modèle',
+  'Donc besoin d’OCR pour lire les documents reçus.',
+  function(){
+    return `
+      <p class="note">Tout ce qui précède tourne sans le moindre appel à un modèle : arithmétique, comparaisons,
+      tri, tirage à germe. Voici la limite exacte, et son prix en minutes humaines.</p>
+      <h3>Ces idées exigent un modèle</h3>
+      ${table([{k:'i',t:'Idée',cls:'wrapcell'},{k:'a',t:'Ce que le modèle apporte',cls:'wrapcell'},
+               {k:'v',t:'Vérification humaine imposée',cls:'wrapcell'}],
+        BESOIN_MODELE.map(x => ({ i:esc(x.idee), a:esc(x.apport), v:esc(x.verif) })))}
+      <h3 style="margin-top:12px">Ces idées, classées « agent », n’en ont pas besoin</h3>
+      ${table([{k:'i',t:'Votre note',cls:'wrapcell'},{k:'r',t:'Ce que c’est réellement',cls:'wrapcell'}],
+        FAUSSEMENT_AGENT.map(x => ({ i:'« ' + esc(x.idee) + ' »', r:esc(x.reel) })))}
+      <div class="callout" style="margin-top:10px"><b>La règle qui en découle.</b> Un modèle sert à lire, classer,
+      proposer et rédiger — jamais à calculer, sélectionner ni conclure. Tout ce qui peut être une règle en est une :
+      c’est reproductible, ré-exécutable devant un inspecteur, et cela ne coûte rien à l’usage.</div>`;
+  });
+
+/* ═══ 19. RENDU ET INTERACTIONS ═══════════════════════════════════════════ */
+/* Les curseurs sont construits UNE SEULE FOIS. Les reconstruire à chaque
+   événement « input » détruirait l'élément en cours de glissement : au doigt,
+   le drag s'arrêterait au premier mouvement. Seuls les libellés sont réécrits. */
+function buildSeuils(){
+  document.getElementById('seuils').innerHTML = `
+    <div class="ctrl"><label>Référence de matérialité</label>
+      <select id="bm">${Object.values(BM25).map(b => `<option value="${b.code}" ${b.code === S.benchmark ? 'selected' : ''}>${esc(b.lib)} — ${eur0(b.val)}</option>`).join('')}</select></div>
+    <div class="ctrl"><label>Taux : <b id="lab-pm"></b></label>
+      <input type="range" id="pm" min="0.5" max="10" step="0.1" value="${S.pctM}"></div>
+    <div class="ctrl"><label>Seuil de planification : <b id="lab-ppm"></b> du seuil</label>
+      <input type="range" id="ppm" min="50" max="90" step="5" value="${S.pctPM}"></div>
+    <div class="ctrl"><label>Seuil de remontée : <b id="lab-pctt"></b> du seuil</label>
+      <input type="range" id="pctt" min="1" max="10" step="1" value="${S.pctCTT}"></div>`;
+}
+function renderSeuils(){
+  const s = seuils();
+  document.getElementById('lab-pm').textContent   = pct(S.pctM / 100, 1);
+  document.getElementById('lab-ppm').textContent  = S.pctPM + NBSP + '%';
+  document.getElementById('lab-pctt').textContent = S.pctCTT + NBSP + '%';
+  // le curseur n'est pas remplacé ; on ne le recale que s'il a bougé autrement (changement de référence)
+  const pmEl = document.getElementById('pm');
+  if (parseFloat(pmEl.value) !== S.pctM) pmEl.value = S.pctM;
+  document.getElementById('seuilbox').innerHTML = `
+    <div class="s ref"><div class="k">Référence</div><div class="v">${eur0(s.bench.val)}</div><div class="d">${esc(s.bench.lib)}</div></div>
+    <div class="s"><div class="k">Seuil de signification</div><div class="v">${eur0(s.M)}</div><div class="d">${pct(S.pctM / 100, 1)} · brut ${eur0(s.brut)}</div></div>
+    <div class="s"><div class="k">Seuil de planification</div><div class="v">${eur0(s.PM)}</div><div class="d">${S.pctPM}${NBSP}% du seuil</div></div>
+    <div class="s"><div class="k">Seuil de remontée</div><div class="v">${eur0(s.CTT)}</div><div class="d">${S.pctCTT}${NBSP}% du seuil</div></div>`;
+}
+let lastImpact = {};
+function renderImpact(){
+  const s = seuils(), postes = postesCalcules();
+  const nIn = postes.filter(p => (S.scopingOverride[p.code] || (Math.abs(p.solde) >= s.PM ? 'in' : 'out')) === 'in').length;
+  const ar = revueAnalytique().filter(l => l.flag).length;
+  const ech = echantillon();
+  const a = anomalies(), nc = a.filter(x => !x.souSeuil && !x.corrigee).reduce((t, x) => t + x.montant, 0);
+  const C = critereJE(s.PM);
+  const je = LEDGER.entries.filter(e => !(S.jeSansAN && e.journal === 'AN'))
+                           .filter(e => Object.keys(C).some(k => S.jeCrit[k] && C[k].f(e))).length;
+  // libellé long (écran large) et libellé court (téléphone) : les SEPT indicateurs
+  // doivent rester visibles au doigt, sinon on ne voit pas la conclusion bouger.
+  const cells = {
+    'postes dans le périmètre':                 [nIn + '/' + postes.length,                    'postes'],
+    'lignes de revue analytique':               [String(ar),                                   'lignes RA'],
+    'écritures sélectionnées':                  [String(je),                                   'écritures'],
+    'couverture de l’échantillon':              [pct(ech.couvert / ech.total, 1),              'couverture'],
+    'anomalies au-dessus du seuil de remontée': [String(a.filter(x => !x.souSeuil).length),    'anomalies'],
+    'cumul non corrigé':                        [eur0(nc),                                     'cumul'],
+    'conclusion':                               [Math.abs(nc) > s.M ? 'au-dessus du seuil' : 'sous le seuil', 'conclusion'],
+  };
+  document.getElementById('impact').innerHTML = Object.entries(cells).map(([k, [v, court]]) =>
+    `<div class="c ${lastImpact[k] !== undefined && lastImpact[k] !== v ? 'flash' : ''}"><div class="k"><span class="lg">${k}</span><span class="sm">${court}</span></div><div class="v">${v}</div></div>`).join('');
+  lastImpact = Object.fromEntries(Object.entries(cells).map(([k, [v]]) => [k, v]));
+}
+function renderModules(){
+  const main = document.getElementById('main');
+  main.innerHTML = MODULES.map(m => `
+    <section class="mod" id="${m.id}">
+      <header><span class="num">${m.num}</span><h2>${esc(m.titre)}</h2></header>
+      <div class="body">
+        <blockquote class="idea">« ${esc(m.quote)} »<span class="src">extrait, mot pour mot, de votre document d’idées</span></blockquote>
+        <div class="content"></div>
+      </div>
+    </section>`).join('');
+  for (const m of MODULES) main.querySelector('#' + m.id + ' .content').innerHTML = m.build();
+  document.getElementById('jump').innerHTML = MODULES.map(m =>
+    `<a href="#${m.id}">${m.num === '—' ? 'IA / déterministe' : m.num + '. ' + esc(m.titre.split(' ').slice(0, 3).join(' '))}</a>`).join('');
+}
+function render(){ renderSeuils(); renderImpact(); renderModules(); }
+function renderTout(){ buildSeuils(); render(); }
+/** Hauteur réelle de la barre collante → décalage des ancres de navigation. */
+function syncTopHeight(){
+  const h = Math.round(document.querySelector('.top').getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--topH', h + 'px');
+}
+if (window.ResizeObserver) new ResizeObserver(syncTopHeight).observe(document.querySelector('.top'));
+addEventListener('resize', syncTopHeight);
+
+/* délégation d'événements : un seul écouteur, le DOM est reconstruit à chaque rendu */
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = BM25[t.value].defaut; return render(); }  // le taux par défaut change : renderSeuils recale le curseur
+  if (t.id === 'pm'){ S.pctM = parseFloat(t.value); renderSeuils(); renderImpact(); return renderModules(); }
+  if (t.id === 'ppm'){ S.pctPM = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderModules(); }
+  if (t.id === 'pctt'){ S.pctCTT = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderModules(); }
+  if (t.id === 'ar-montant'){ S.arMontant = Math.round((parseFloat(t.value) || 0) * 100); renderImpact(); return refresh('m4', t); }
+  if (t.id === 'ar-pct'){ S.arPct = parseFloat(t.value) || 0; renderImpact(); return refresh('m4', t); }
+  if (t.id === 's-seed'){ S.sampleSeed = t.value; return; }
+  if (t.id === 's-n'){ S.sampleN = Math.max(0, parseInt(t.value, 10) || 0); return; }
+  if (t.id === 'wp-justif'){ S.wpJustif = t.value; return refresh('m9', t); }
+  if (t.dataset.wp !== undefined){
+    const r = S.wp[+t.dataset.wp];
+    if (t.dataset.f === 'justif') r.justif = Math.round((parseFloat(String(t.value).replace(',', '.')) || 0) * 100);
+    else r[t.dataset.f] = t.value;
+    // la synthèse (module 11) agrège les écarts de cette feuille : elle doit suivre la saisie
+    renderImpact(); refresh('m11'); return refresh('m9', t);
+  }
+  if (t.dataset.wpx !== undefined){ S.wp[+t.dataset.wpx][t.dataset.c] = t.value; return; }
+});
+/** Re-rend un seul module et rend le focus au champ modifié (frappe fluide). */
+function refresh(id, focused){
+  const m = MODULES.find(x => x.id === id);
+  document.querySelector('#' + id + ' .content').innerHTML = m.build();
+  if (focused && focused.id){
+    const again = document.getElementById(focused.id);
+    if (again){ again.focus(); if (again.setSelectionRange && again.type === 'text') { const v = again.value; again.setSelectionRange(v.length, v.length); } }
+  } else if (focused && focused.dataset && focused.dataset.wp !== undefined){
+    const again = document.querySelector(`[data-wp="${focused.dataset.wp}"][data-f="${focused.dataset.f}"]`);
+    if (again){ again.focus(); const v = again.value; if (again.setSelectionRange) again.setSelectionRange(v.length, v.length); }
+  }
+}
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.je !== undefined){ S.jeCrit[t.dataset.je] = t.checked; renderImpact(); return refresh('m5'); }
+  if (t.id === 'je-an'){ S.jeSansAN = t.checked; renderImpact(); return refresh('m5'); }
+  if (t.id === 'clientview'){ S.clientView = t.checked; return refresh('m8'); }
+  if (t.id === 'note-auteur'){ S.author = t.value; return; }
+});
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'themebtn'){
+    const cur = document.documentElement.getAttribute('data-theme');
+    const sysDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', cur ? (cur === 'dark' ? 'light' : 'dark') : (sysDark ? 'light' : 'dark'));
+    return;
+  }
+  if (t.dataset.scope){
+    const p = postesCalcules().find(x => x.code === t.dataset.scope);
+    const prop = Math.abs(p.solde) >= seuils().PM ? 'in' : 'out';
+    const cur = S.scopingOverride[p.code] || prop;
+    const next = cur === 'in' ? 'out' : 'in';
+    if (next === prop) delete S.scopingOverride[p.code]; else S.scopingOverride[p.code] = next;
+    renderImpact(); return refresh('m3');
+  }
+  if (t.id === 'ar-sync'){ S.arMontant = null; renderImpact(); return refresh('m4'); }
+  if (t.id === 's-replay'){ S.sampleRun++; renderImpact(); return refresh('m6'); }
+  if (t.id === 's-newseed'){ S.sampleSeed = 'germe-' + Math.floor(Math.random() * 1e6); S.sampleRun++; renderImpact(); return refresh('m6'); }
+  if (t.dataset.bump){
+    const r = S.requests.find(x => x.seq === +t.dataset.bump);
+    const i = r.items.find(x => x.statut !== 'recu_complet');
+    if (i) i.statut = i.statut === 'non_recu' ? 'recu_partiel' : 'recu_complet';
+    return refresh('m8');
+  }
+  if (t.dataset.close){ S.requests.find(x => x.seq === +t.dataset.close).clotureClient = true; return refresh('m8'); }
+  if (t.id === 'exp-req'){
+    const lignes = [['Numéro','Section','Demande','Échéance','Élément','Statut','Revue attendue de']];
+    for (const r of S.requests) for (const i of r.items)
+      lignes.push(['R-' + String(r.seq).padStart(3, '0'), S.clientView ? '' : r.section, r.titre, r.echeance,
+                   i.desc, STATUTS[i.statut].lib, S.clientView ? '' : (i.revoyeur || '')]);
+    const csv = lignes.map(l => l.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
+    document.getElementById('exp-out').innerHTML =
+      `<div class="callout"><b>Export ${S.clientView ? 'vue client' : 'vue auditeur'} (CSV, séparateur point-virgule)</b>
+       <textarea rows="6" readonly>${esc(csv)}</textarea>
+       <a download="suivi-demandes.csv" href="data:text/csv;charset=utf-8,${encodeURIComponent('﻿' + csv)}">télécharger le fichier</a>
+       — ou copier le contenu ci-dessus.</div>`;
+    return;
+  }
+  if (t.id === 'wp-col'){
+    const n = 'Colonne ' + (S.wpExtra.length + 1);
+    const nom = prompt('Intitulé de la colonne ajoutée (hors cadre standard)', n);
+    if (!nom) return;
+    S.wpExtra.push(nom); return refresh('m9');
+  }
+  if (t.id === 'note-add'){
+    const txt = document.getElementById('note-txt').value.trim();
+    if (!txt) return;
+    S.notes.unshift({ date:new Date().toISOString().slice(0, 16).replace('T', ' '), auteur:S.author, texte:txt, reponses:[], close:false });
+    return refresh('m10');
+  }
+  if (t.dataset.rep !== undefined){
+    const txt = prompt('Réponse à la note');
+    if (!txt) return;
+    S.notes[+t.dataset.rep].reponses.push({ date:new Date().toISOString().slice(0, 16).replace('T', ' '), auteur:S.author, texte:txt });
+    return refresh('m10');
+  }
+  if (t.dataset.closeNote !== undefined){ S.notes[+t.dataset.closeNote].close = true; return refresh('m10'); }
+});
+
+renderTout();
+syncTopHeight();
+</script>
+</body>
+</html>

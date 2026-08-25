@@ -83,6 +83,19 @@ blind capture; S8a/S8b split.
   budget (ADR-019, `npm run cost:measure`); docs/10_FALSIFICATION.md; ADR-014 réécrit avec
   références sourcées.
 
+## Prototype cliquable du noyau déterministe (2026-08-25)
+
+`prototype/otto-prototype.html` — un fichier autonome, ouvrable dans un navigateur y compris
+sur téléphone, sans serveur ni installation ni compte. **Zéro appel modèle** : aucune requête
+réseau hors le fichier lui-même, aucune clé, aucun texte pré-rédigé imitant une sortie de
+modèle. Onze modules d'audit dont chaque chiffre est calculé dans la page ; le grand livre
+(1 605 écritures, 3 210 lignes) est engendré à germe fixe et la balance affichée en est
+dérivée. Les trois seuils pilotent le scoping, la revue analytique, l'échantillonnage, le tri
+des anomalies et la conclusion. Contrôles automatisés passés : 7/7 pieds de tableau exacts,
+0 écriture déséquilibrée, balance et grand livre équilibrés au centime, 2 écarts balance/FEC
+(voulus), 12/12 citations littérales du document d'idées, 0 requête réseau, 0 erreur JS.
+Détail dans `prototype/README.md`.
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent
