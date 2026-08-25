@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib';
+import { getAssurancePack } from '@/lib/packs';
 import ExcelJS from 'exceljs';
 import { q, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
@@ -16,13 +17,21 @@ function winAnsiSafe(s: string): string {
   // Helvetica (WinAnsi) cannot encode a few characters we use in the UI
   return s
     .replace(/[↳→⇒]/g, '->')
-    .replace(/[«»]/g, '"')
+    .replace(/[↔⇔]/g, '<->')
+    .replace(/≥/g, '>=')
+    .replace(/≤/g, '<=')
+    .replace(/≠/g, '!=')
+    .replace(/≈/g, '~')
+    .replace(/×/g, 'x')
+    .replace(/«\s?/g, '"').replace(/\s?»/g, '"')
     .replace(/[  ]/g, ' ')
     .replace(/[œ]/g, 'oe')
     .replace(/[Œ]/g, 'OE')
     .replace(/[—–]/g, '-')
     .replace(/…/g, '...')
-    .replace(/[^\x00-\xff]/g, '?');
+    // € is U+20AC — above Latin-1 but present in WinAnsi (Windows-1252, 0x80), so it
+    // must be exempted from the catch-all or a French workpaper prints "27 000,00 ?"
+    .replace(/[^\x00-\xff€]/g, '?');
 }
 
 class PdfWriter {
@@ -118,15 +127,24 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   w.text(eng.entity + ' - ' + eng.period, { size: 9, color: [0.4, 0.45, 0.55] });
   w.text(wp.title, { size: 15, bold: true, gap: 2 });
   w.text(`${wp.pack_id} - v${wp.version} - ${wp.status.toUpperCase()}`, { size: 8, color: [0.4, 0.45, 0.55], gap: 4 });
+  // Attribution comes from the pack (ADR-012.4), never from the renderer: an English SOX
+  // workpaper must not carry French chrome, and vice versa.
+  const pack = getAssurancePack(wp.pack_id);
+  const fr = pack.language === 'fr';
   w.text(
-    `Travaux executes par OTTO - run moteur ${wp.engine_run_id ?? '-'} (empreinte du dossier ${wp.based_on_hash?.slice(0, 20) ?? '-'}). ` +
+    `${pack.wp.performedBy} ${wp.engine_run_id ?? '-'} (${fr ? 'empreinte du dossier' : 'facts hash'} ${wp.based_on_hash?.slice(0, 20) ?? '-'}). ` +
     (signoffs.length
-      ? 'Valide par : ' + signoffs.map((s) => `${s.user_name} (${s.sign_role}, ${s.signed_at.slice(0, 10)})`).join(' ; ')
-      : 'NON VALIDE - projet.'),
+      ? `${pack.wp.validatedBy} : ` + signoffs.map((s) => `${s.user_name} (${s.sign_role}, ${s.signed_at.slice(0, 10)})`).join(' ; ')
+      : fr ? 'NON VALIDE - projet.' : 'NOT VALIDATED - draft.'),
     { size: 8, color: [0.35, 0.25, 0.55], gap: 6 },
   );
   if (edits.length > 0) {
-    w.text(`DOCUMENT MODIFIE MANUELLEMENT - ${edits.length} modification(s) justifiee(s), voir annexe.`, { size: 8, bold: true, color: [0.6, 0.4, 0.05], gap: 6 });
+    w.text(
+      fr
+        ? `DOCUMENT MODIFIE MANUELLEMENT - ${edits.length} modification(s) justifiee(s), voir annexe.`
+        : `MANUALLY MODIFIED - ${edits.length} justified modification(s), see appendix.`,
+      { size: 8, bold: true, color: [0.6, 0.4, 0.05], gap: 6 },
+    );
   }
 
   for (const s of wp.sections as WpSection[]) {
