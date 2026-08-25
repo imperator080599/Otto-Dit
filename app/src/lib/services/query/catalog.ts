@@ -2,7 +2,7 @@
 // this file and fill typed params; it never emits SQL and never writes prose about the
 // answer. Every SQL string here is hand-written and reviewed.
 
-export type ParamType = 'int' | 'money_eur' | 'threshold_ref' | 'enum';
+export type ParamType = 'int' | 'money_eur' | 'threshold_ref' | 'date_ref' | 'enum';
 
 export interface ParamSpec {
   name: string;
@@ -12,6 +12,7 @@ export interface ParamSpec {
   min?: number;
   max?: number;
   options?: string[]; // for enum / threshold_ref
+
 }
 
 export interface QueryTemplate {
@@ -71,7 +72,12 @@ export const CATALOG: QueryTemplate[] = [
       fr: 'quelles demandes sont en retard de plus de 10 jours ?',
       en: 'which requests are more than 10 days late?',
     },
-    params: [{ name: 'days', type: 'int', label: { fr: 'Jours de retard', en: 'Days late' }, default: 10, min: 0, max: 365 }],
+    params: [
+      { name: 'days', type: 'int', label: { fr: 'Jours de retard', en: 'Days late' }, default: 10, min: 0, max: 365 },
+      // lateness is measured against the engagement clock, not the server's wall clock:
+      // an answer about a file is always "as of" a date, and that date is shown with it
+      { name: 'as_of', type: 'date_ref', label: { fr: 'Au', en: 'As of' }, default: 'today' },
+    ],
     columns: [
       { key: 'seq', label: { fr: 'N°', en: '#' } },
       { key: 'title', label: { fr: 'Demande', en: 'Request' } },
@@ -81,13 +87,13 @@ export const CATALOG: QueryTemplate[] = [
       { key: 'pending_items', label: { fr: 'Éléments manquants', en: 'Pending items' } },
     ],
     sql: `select r.id, 'R-' || lpad(r.seq_no::text, 3, '0') seq, r.title, r.status, r.due_date::text,
-                 (current_date - r.due_date)::text days_late,
+                 ($3::date - r.due_date)::text days_late,
                  (select count(*) from request_item i where i.request_id = r.id and i.status = 'pending')::text pending_items
           from request r
           where r.engagement_id = $1
             and r.due_date is not null
             and r.status in ('sent','partially_submitted','reopened')
-            and (current_date - r.due_date) > $2
+            and ($3::date - r.due_date) > $2
           order by r.due_date`,
     link: (r, eng) => `/eng/${eng}/requests/${r.id}`,
   },

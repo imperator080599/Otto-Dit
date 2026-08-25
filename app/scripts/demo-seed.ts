@@ -6,6 +6,8 @@ import { draftRevenueWorkpaper } from '../src/lib/services/workpapers/draft';
 import { addReviewNote, transitionNote, signWorkpaper } from '../src/lib/services/workpapers/lifecycle';
 import { exportWorkpaper } from '../src/lib/services/workpapers/render';
 import { runPart2 } from '../src/lib/flows/part2';
+import { ensureReminders } from '../src/lib/services/requests';
+import { warp, resetClock, DAY_MS } from '../src/lib/core/clock';
 import { signWorkpaper as signOe } from '../src/lib/services/workpapers/lifecycle';
 
 // npm run demo:seed — drives BOTH demo parts end-to-end through the real services, so a
@@ -16,6 +18,7 @@ async function main() {
   const stage = process.argv[2] ?? 'all';
   await migrate();
   await seedBase();
+  await resetClock();
 
   if (stage === 'all' || stage === 'part1') {
     console.log('Part 1 — NEP revenue cycle…');
@@ -33,6 +36,14 @@ async function main() {
     const pdf = await exportWorkpaper(wpId, IDS.users.claire, 'pdf');
     await exportWorkpaper(wpId, IDS.users.claire, 'xlsx');
     console.log(`  REV-01 signed and exported (pdf sha256 ${pdf.sha256.slice(0, 16)}…)`);
+
+    // Fieldwork spans weeks: advance the demo clock so the file shows a realistic
+    // follow-up position — some requested items never arrived, the deadline has passed
+    // and the reminder cadence has fired. This is the real reminder engine on the real
+    // clock (docs/07 story 11), not a backdated row.
+    await warp(25 * DAY_MS);
+    await ensureReminders(IDS.engNep);
+    console.log('  clock advanced 25 days — reminders sent; the revenue request is now overdue');
   }
 
   if (stage === 'all' || stage === 'part2') {

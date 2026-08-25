@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { recordAiRun } from '@/lib/core/airuns';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents, centsToNum } from '@/lib/util/num';
+import { now } from '@/lib/core/clock';
 import { engagementCtx } from '../imports';
 import { frameworkSet } from '../fsli';
 import { validatedThresholds } from '../materiality';
@@ -257,6 +258,10 @@ async function bindParams(engagementId: string, plan: ValidPlan, lang: 'fr' | 'e
         label: spec.label[lang],
         value: `${THRESHOLD_LABEL[key][lang]}${key === 'zero' ? '' : ` — ${fmtEur(cents, lang)}`}`,
       });
+    } else if (spec.type === 'date_ref') {
+      const iso = value === 'today' ? (await now()).toISOString().slice(0, 10) : String(value);
+      values.push(iso);
+      display.push({ label: spec.label[lang], value: iso });
     } else {
       values.push(value);
       display.push({ label: spec.label[lang], value: String(value) });

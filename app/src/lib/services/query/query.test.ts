@@ -48,6 +48,7 @@ describe('« Interroger » — NL → deterministic catalogue query (ADR-017)', 
 
     const b = planByRules('quelles demandes sont en retard de plus de 10 jours ?');
     expect(b.plan).toEqual({ templateId: 'requests_overdue', params: { days: 10 } });
+    // the as_of parameter is not guessed from the question: it defaults to the file's clock
 
     const res = await ask(IDS.engNep, 'quelles demandes sont en retard de plus de 10 jours ?', IDS.users.karim);
     expect(res.status).toBe('answered');
@@ -55,7 +56,9 @@ describe('« Interroger » — NL → deterministic catalogue query (ADR-017)', 
     expect(res.planner).toBe('rules');
     expect(res.aiRunId).toBeNull();
     expect(res.templateId).toBe('requests_overdue');
-    expect(res.params).toEqual([{ label: 'Jours de retard', value: '10' }]);
+    expect(res.params[0]).toEqual({ label: 'Jours de retard', value: '10' });
+    expect(res.params[1].label).toBe('Au');
+    expect(res.params[1].value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('answers with stored records and clickable links, never prose', async () => {

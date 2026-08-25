@@ -66,6 +66,10 @@ function coerce(spec: ParamSpec, value: unknown): string | number | null {
       if (!Number.isFinite(n) || n < 0) return null;
       return n.toFixed(2);
     }
+    case 'date_ref': {
+      const v = String(value);
+      return v === 'today' || /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    }
     case 'enum':
     case 'threshold_ref': {
       const s = String(value);

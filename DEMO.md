@@ -26,7 +26,10 @@ Two ways to run the demo:
 - **Live walkthrough** (recommended for a first showing) — follow §1–§2 below and click
   every step yourself, starting from an empty engagement.
 - **Pre-driven state** — `npm run demo:seed` executes both parts through the *same service
-  calls the UI makes*, then you browse the finished engagements. `npm run demo:seed part1`
+  calls the UI makes*, then you browse the finished engagements. It advances the demo clock
+  by 25 days between the two parts (real reminder engine, real clock — docs/07 story 11), so
+  the file shows a realistic follow-up position: reminders sent, one request past its
+  deadline, some items never received. `npm run demo:seed part1`
   or `part2` runs one part. Reset anytime with `npm run db:reset && npm run db:setup`.
 
 Time-warp for the reminder cadence: reminders materialize lazily against a demo clock;
@@ -123,13 +126,18 @@ The overview shows the **group-auditor referral instructions**.
       with its sha256 and extraction rung, AI involvement, manual modifications.
     - *Where did this figure come from?* → ledger row + import file + natural key →
       extraction fields → vouching checks.
-23. **Interroger** (`Ask the file`) → type *« quelles demandes sont en retard de plus de
-    10 jours ? »* then *« quelles sections ont des exceptions non résolues au-dessus du
-    seuil de signification ? »*. Each returns a table of stored records with a link on
-    every row, plus the query that was actually executed and how it was translated
-    (deterministic rule, no model). Then ask *« penses-tu que le chiffre d'affaires est
-    raisonnable ? »*: OTTO refuses and shows what it can answer instead. It never writes
-    prose (ADR-017).
+23. **Interroger** (`Ask the file`) — type the questions, do not click the catalogue:
+    - *« quelles demandes sont en retard de plus de 10 jours ? »* → R-001, 15 jours de
+      retard, 3 éléments manquants, with a link straight to the request. The panel shows
+      the query that ran (`requests_overdue`, *Jours de retard = 10*, *Au = <clock date>*)
+      and that it was translated **by a deterministic rule, with no model involved**.
+    - *« quelles anomalies restent non corrigées ? »* → the 36 330 € cut-off misstatement.
+    - *« quelles sections ont des exceptions non résolues au-dessus du seuil de
+      signification ? »* → **none**, with the resolved threshold shown (37 000 €). That is
+      the point: the "no" is a query over the file, not a sentence someone wrote.
+    - *« penses-tu que le chiffre d'affaires est raisonnable cette année ? »* → OTTO
+      **refuses**, states why, and lists the 14 queries it can answer. It never improvises
+      prose about a signed file (ADR-017).
 24. **Event log** → filter by actor (user/system/ai) or verb; the hash chain verifies live.
 25. **Dashboard** → progress, exceptions, deviations, deficiencies, workpaper states, AI
     spend; export the tracker in **team / client / group** variants (the client workbook
