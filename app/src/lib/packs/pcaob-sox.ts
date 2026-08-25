@@ -52,7 +52,7 @@ export const pcaobSox: AssurancePack = {
     assemblyDays: 14,
     retentionYears: 7,
     basisNote:
-      'Documentation completion ≤14 days after report release (AS 1215.15 as amended; 45-day legacy tier configurable); retention 7 years from report release (AS 1215.14; SEC Rule 2-06).',
+      'Documentation completion ≤14 days after report release (AS 1215.15 as amended with AS 1000, PCAOB release 13 May 2024; 45-day legacy tier configurable); retention 7 years from report release (AS 1215.14); broader record retention 7 years under SEC Rule 2-06 — see docs/DECISIONS.md ADR-014.',
   },
   extractionConfidenceThreshold: 0.9,
   wp: {

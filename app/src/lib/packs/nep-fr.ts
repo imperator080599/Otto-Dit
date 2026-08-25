@@ -45,7 +45,7 @@ export const nepFr: AssurancePack = {
     assemblyDays: 60,
     retentionYears: 10,
     basisNote:
-      'Conservation 10 ans, même après cessation des fonctions (C. com., anc. art. R.823-10); assemblage du dossier ~60 jours (pratique ISA 230).',
+      'Conservation 10 ans, même après la cessation des fonctions (dossier constitué en application du C. com., art. R. 823-10 — cf. docs/DECISIONS.md ADR-014 pour la référence et son statut de vérification); assemblage du dossier ~60 jours (pratique NEP-230/ISA 230).',
   },
   extractionConfidenceThreshold: 0.9,
   wp: {

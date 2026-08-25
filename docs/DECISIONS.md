@@ -180,22 +180,46 @@ new decisions appear here.
 - **Confidence**: H. **Reverse**: when OTTO becomes the file of record (v2+), sign-off
   authority flips by pack config; the export machinery remains for component reporting.
 
-## ADR-014 — Lock & retention configuration (per D13 findings)
+## ADR-014 — Lock & retention configuration (sources, verification status)
 
-- **Decision**: Pack config, engagement-overridable with justification:
-  - **NEP/France**: assembly lock at report date + 60 days [ISA 230-shaped, config];
-    retention **10 years** (Code de commerce former art. R.823-10 — "conservés pendant dix
-    ans, même après la cessation des fonctions"). The previously carried "6+ years" was
-    wrong and is corrected everywhere.
-  - **PCAOB/SOX**: documentation completion ≤ **14 days** after report release date
-    (AS 1000-era amendment; 45 days legacy option per engagement FY/firm tier), retention
-    **7 years** from report release (AS 1215.14); post-completion additions record date
-    added, preparer, reason (AS 1215.16) — implemented as the post-lock amendment record.
-    SEC Rule 2-06 broader-scope retention (correspondence/communications) noted for the
-    production store; superseded analyses reflecting differing judgments are never purged.
-- **Confidence**: H (sources in 10_D13_RESEARCH.md; exact phase-in tiers to re-verify from
-  an unblocked environment before compliance-grade publication). **Reverse**: edit pack
-  config.
+- **Decision**: pack config, engagement-overridable with justification.
+
+### NEP/France — retention **10 years**, assembly lock report date + 60 days (config)
+
+| Element | Reference | Wording relied on | Source consulted | Date |
+|---|---|---|---|---|
+| Obligation to constitute a per-entity audit file | **C. com., art. R. 823-10** (Légifrance id `LEGIARTI000048539934`) | "Le commissaire aux comptes constitue pour chaque personne […] un dossier contenant la documentation de l'audit des comptes" | legifrance.gouv.fr article page — **found via web search only** | 2026-08-25 |
+| 10-year retention | Provision retaining "les dossiers et documents établis […] en application de l'article R. 823-10 […] **conservés pendant dix ans, même après la cessation des fonctions**" — carried today in the Book VIII regulatory part (the historical carrier, art. R. 821-27, is **abrogé**; the post-2023 recodification places the rule alongside art. R. 820-42, which sets a **6-year** period for a *different* set of documents — those established under R. 821-186 / R. 822-26) | verbatim clause above | search-result content quoting Légifrance + CNCC "Titre deuxième du livre VIII — partie réglementaire" (éd. sept. 2024) | 2026-08-26 |
+| Documentation standard | **NEP-230** (arrêté du 10 avril 2007 portant homologation), documentation formalisée sur un support conservable pendant la durée légale de conservation | — | legifrance JORF listing | 2026-08-26 |
+
+- **Verification status — read this before freezing the constant.** `legifrance.gouv.fr`,
+  `doc.cncc.fr` and `pcaobus.org` are **blocked by this build environment's egress proxy**;
+  every citation above was obtained from search-result content that quoted the primary text,
+  not from the primary document itself. Two points genuinely need the founder's eye on
+  Légifrance: (a) **which article now carries** the 10-year sentence after the 2023
+  recodification of Book VIII, and (b) that the **6-year** period of art. R. 820-42 does not
+  capture any part of the statutory audit file we retain. The 10-year figure itself was
+  corroborated twice independently (Légifrance article text and an H2A sanctions decision,
+  CS-2025-13, 2026-02); the previously carried "6+ years" was wrong and is corrected.
+
+### PCAOB/SOX — retention **7 years**, documentation completion **≤ 14 days**
+
+| Element | Reference | Wording relied on | Source consulted | Date |
+|---|---|---|---|---|
+| Retention 7 years | **AS 1215.14** | "retained for seven years from the report release date"; if no report is issued, seven years from the date fieldwork was substantially completed; if the engagement ceased, seven years from that date | pcaobus.org AS 1215 (search-result content quoting the paragraph) | 2026-08-26 |
+| Completion date ≤ 14 days | **AS 1215.15 as amended** | "A complete and final set of audit documentation should be assembled for retention (i.e., archived) as of a date not more than **14 days** after the report release date (documentation completion date)" — reduced from 45 days by the amendments adopted with **AS 1000** (PCAOB release of **13 May 2024**) | pcaobus.org AS 1215 + AS 1000 adopting release (search-result content) | 2026-08-26 |
+| No deletion after completion; additions must record date added, preparer, reason | **AS 1215.16** | verbatim requirement implemented as our post-lock amendment record | pcaobus.org AS 1215 | 2026-08-25 |
+| Broader record retention (7 years, incl. correspondence and records inconsistent with final conclusions) | **SEC Rule 2-06 of Regulation S-X** (17 CFR 210.2-06) | 7-year retention of records relevant to the audit or review | sec.gov / law.cornell.edu (search-result content) | 2026-08-25 |
+
+- **Verification status**: same egress caveat. A separate page "AS 1215 (effective on
+  12/15/2026)" exists on the PCAOB site — confirm which version governs the engagement's
+  fiscal year before shipping the tier logic. The 45-day legacy tier stays configurable per
+  engagement (firm issuer-count tiering of the AS 1000 phase-in).
+
+- **Confidence**: H on the figures (10y / 7y / 14d), **M on the exact French article number**
+  post-recodification. **Reverse**: edit pack config (`docRules` in
+  `app/src/lib/packs/*.ts`) — no code change, and the pack note renders the basis in every
+  workpaper.
 
 ## ADR-015 — Kernel-first dataset contract (adopted from Gate 2)
 
@@ -230,3 +254,61 @@ new decisions appear here.
   chain-verification job/test either way.
 - **Confidence**: H. **Reverse**: pack-level config could later allow "amend population"
   flows (delta reconciliation + top-up) without full supersession; schema already permits.
+
+## ADR-017 — "Interroger" : traduction langage naturel → requête déterministe (rouvre ADR-004)
+
+- **Contexte** : le fondateur rouvre la décision de rejet du chatbot. Le rejet de la prose
+  libre est maintenu (une réponse hallucinée qui oriente le jugement de l'associé sur un
+  dossier signé est indéfendable) ; mais ses exemples — « quelles sections ont des exceptions
+  non résolues au-dessus du seuil ? », « quelles demandes ont plus de 10 jours de retard ? »
+  — ne sont pas des jugements, ce sont des **requêtes**.
+- **Décision** : une troisième voie, ni chatbot ni vue figée.
+  1. **Catalogue fermé** de requêtes paramétrées (`app/src/lib/services/query/catalog.ts`) :
+     chaque entrée = identifiant, libellé FR/EN, schéma de paramètres typés, SQL écrit à la
+     main, colonnes de résultat, constructeur de liens.
+  2. **Planificateur** : le LLM reçoit la question et le catalogue, et renvoie en sortie
+     structurée `{templateId, params}` — **un identifiant du catalogue et des paramètres
+     typés, jamais du SQL, jamais de prose**. Un planificateur déterministe (mots-clés +
+     extraction de nombres/unités) sert de repli hors ligne et de garde-fou.
+  3. **Validation** : `templateId` doit exister dans le catalogue ; chaque paramètre est
+     validé contre son schéma (type, bornes, énumération). Toute violation ⇒ refus.
+  4. **Exécution** : la plateforme exécute le SQL **du catalogue** avec paramètres liés.
+  5. **Rendu** : toujours une table d'enregistrements stockés avec liens cliquables, plus la
+     requête interprétée en clair (modifiable). **Jamais de phrase générée sur le fond.**
+  6. **Refus explicite** : si aucune entrée du catalogue ne convient, le système répond
+     « je ne sais pas traduire cette question en requête » et propose les questions voisines
+     du catalogue. Il ne répond pas approximativement.
+- **Ce que cela ne fait pas** : pas de conclusion, pas d'interprétation, pas d'agrégat
+  inventé, aucun accès aux tables hors catalogue, aucune écriture.
+- **Traçabilité** : chaque traduction est un `ai_run` (purpose `suggestion`, prompt versionné,
+  hachage entrée/sortie) ; chaque exécution est un `event_log` (`nl_query_executed` avec
+  templateId + params) ou `nl_query_refused`. L'associé voit donc *ce qui a été demandé à la
+  base*, pas seulement la réponse.
+- **Alternatives écartées** : (a) text-to-SQL libre — surface d'injection et requêtes
+  invérifiables ; (b) RAG sur le dossier — ramène la prose non sourcée ; (c) statu quo (vues
+  figées) — ne couvre pas les questions transverses, ce qui était l'objection.
+- **Confiance** : H. **Réversible** : supprimer la page `/eng/[id]/ask` ; le catalogue reste
+  utilisable comme vues.
+
+## ADR-018 — Évaluation d'extraction sur corpus public et synthétique uniquement
+
+- **Contexte** : le gate pré-pilote demandait un corpus de documents clients réels. Le
+  fondateur écarte définitivement cette voie : secret professionnel et obligations
+  contractuelles. La demande est retirée.
+- **Décision** : la fiabilité d'extraction se mesure sur un **corpus public et synthétique**
+  construit et versionné dans le repo (`app/scripts/eval/`), avec vérité terrain générée en
+  même temps que les documents :
+  - variantes de mise en page et de langue (FR, DE, ES, IT, EN), libellés et ordres
+    différents, TVA multi-taux, pièces sans libellés ;
+  - variantes « scan » : rendu bitmap sans couche texte, bruit poivre-et-sel, rotation,
+    gradient de luminosité type photo, tracé irrégulier type manuscrit ;
+  - métriques **par champ** : précision, rappel, F1, et **taux de faux positifs distinct sur
+    les montants et les dates** (un montant faux avec confiance haute est le pire cas) ;
+    plus latence, taux d'échec et coût par document par barreau.
+- **Limite assumée et écrite dans le rapport** : un bitmap bruité rendu par nos soins n'est
+  pas la photo d'une facture froissée. Le harnais mesure la **dégradation relative** entre
+  barreaux et entre formats, pas une performance terrain absolue.
+- **Évaluation sur documents réels** : uniquement chez un client pilote, dans son
+  environnement, sur autorisation écrite, hors de ce repo. Ce n'est plus un pré-requis de
+  construction mais une étape du pilote.
+- **Confiance** : H. **Réversible** : n/a (contrainte du fondateur, non négociable).
