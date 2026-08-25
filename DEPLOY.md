@@ -51,9 +51,13 @@ adapters). Deployment turns on the production substrate; no application code cha
 | `DATABASE_URL` | Supabase Postgres connection string (pooled) |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Auth + Storage |
 | `OTTO_STORAGE=supabase` | switch the blob store from the local filesystem |
-| `OTTO_OCR_ADAPTER` | `mock` (default) · `mistral` · `azure_di` |
-| `MISTRAL_API_KEY` / `AZURE_DI_KEY`+`AZURE_DI_ENDPOINT` | OCR credentials (only if enabled) |
-| `ANTHROPIC_API_KEY` *or* Bedrock/Vertex credentials | LLM drafting/classification (only if enabled) |
+| `OTTO_OCR_ADAPTER` | `mock` (default, record/replay) · `anthropic` (written and unit-tested) · any other name → refuses to run |
+| `OTTO_EXTRACT_MODEL` | model id for the `anthropic` extraction adapter (default `claude-sonnet-4-5`) |
+| `OTTO_QUERY_PLANNER` | `disabled` (default) · `anthropic` — the « Interroger » fallback planner (ADR-017); the deterministic rules planner works with it disabled |
+| `OTTO_QUERY_MODEL` | model id for the query planner |
+| `ANTHROPIC_API_KEY` *or* Bedrock/Vertex credentials | extraction, planning, drafting (only if enabled) |
+| `OTTO_PRICE_IN_PER_MTOK`, `OTTO_PRICE_OUT_PER_MTOK` | today's token prices, USD per million. **Unset ⇒ `cost_usd` is 0 and `npm run cost:measure` refuses to run** — prices are never hardcoded (ADR-019) |
+| `MISTRAL_API_KEY` / `AZURE_DI_KEY`+`AZURE_DI_ENDPOINT` | reserved: a dedicated-OCR adapter is a deployment task, not shipped code — no adapter is written for a provider that could not be executed and verified during the build (ADR-019) |
 | `OTTO_INFERENCE_REGION` | `eu` → Bedrock EU / Vertex EU (zero-retention); `us` → US inference |
 | `OTTO_INBOUND_SECRET` | shared secret for the inbound-email webhook |
 

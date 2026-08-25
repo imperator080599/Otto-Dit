@@ -87,7 +87,10 @@ SOC/risk-advisory, not integrated-audit methodology.
 
 ## What OTTO deliberately is NOT
 
-- **Not a chatbot UI.** AI is embedded in the workflow; partner questions are answered by
+- **Not a chatbot UI.** Transverse questions go through « Interroger » (ADR-017): the
+  question is translated into one entry of a closed, human-written query catalogue and
+  answered with a table of stored records; an untranslatable question is refused, not
+  improvised. AI is embedded in the workflow; partner questions are answered by
   provenance views with sources, not a conversation box.
 - **Not a methodology.** OTTO executes and documents the firm's decisions under public
   standards; it does not sell judgment. Parameters are proposals (L3), conclusions are human

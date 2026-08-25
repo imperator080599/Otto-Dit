@@ -44,12 +44,19 @@ export function parseInvoiceText(text: string): ExtractedField[] | null {
   const ttc = grab(text, 'Total TTC');
   const bl = grab(text, 'Bon de livraison');
   if (!number || !totalHt) return null;
+  // the issuer is the first standalone header line — reading it beats hardcoding one
+  // seller, which the ADR-018 eval corpus (six fictional issuers) would score as a
+  // confident wrong value on every document
+  const seller = text
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l.length > 2 && !l.includes(':') && !/^(FACTURE|AVOIR)$/i.test(l) && !/SPECIMEN/i.test(l));
 
   const fields: ExtractedField[] = [
     ...F('invoiceNumber', number),
     ...F('invoiceDate', dateRaw ? frDateToIso(dateRaw) : undefined),
     ...F('buyerName', buyer),
-    ...F('sellerName', 'Altiverre SAS'),
+    ...F('sellerName', seller),
     ...F('totalNetCents', totalHt ? frAmountToCents(totalHt) : undefined),
     ...F('vatCents', tva ? frAmountToCents(tva) : undefined),
     ...F('totalGrossCents', ttc ? frAmountToCents(ttc) : undefined),

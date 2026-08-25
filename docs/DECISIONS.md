@@ -49,6 +49,9 @@ new decisions appear here.
 - **Confidence**: H. **Reverse**: promote the flags UI to a full module in a later slice.
 
 ## ADR-004 — Partner chatbot rejected; provenance answer views instead
+**Superseded in part by ADR-017** (2026-08-25): the rejection of free prose stands, but the
+transverse-query gap it left is closed by « Interroger » — natural language translated into
+a deterministic catalogue query, answered with stored records, never with prose.
 
 - **Decision**: No conversational UI in v1. The partner-question need is served by
   deterministic provenance views (S9: "why does this evidence exist / what supports this
@@ -312,3 +315,41 @@ new decisions appear here.
   environnement, sur autorisation écrite, hors de ce repo. Ce n'est plus un pré-requis de
   construction mais une étape du pilote.
 - **Confiance** : H. **Réversible** : n/a (contrainte du fondateur, non négociable).
+
+## ADR-019 — Cost and extraction accuracy are measured, or declared unmeasured; never quietly extrapolated
+
+**Status**: accepted (2026-08-25, founder retour #4)
+**Context**: COST.md carried a $0.00 headline and a ≈$0.30/engagement extrapolation. Both
+were true and both were misleading together: $0.00 meant *the AI layer had never run*, and
+the $0.30 was arithmetic on assumed prices and assumed rung shares, sitting one heading away
+from a number that looked measured. The founder's objection is correct: an unexecuted ladder
+is not a cheap ladder, it is an unknown one.
+
+**Decision**:
+1. **Every quantitative claim carries its provenance**: *proven by execution*, *proven by
+   test with mocks*, or *extrapolated*. STATUS.md and COST.md both carry that split as a
+   table, and the words "measured" and "extrapolated" are never used interchangeably.
+2. **A live adapter exists behind the existing interface** (`AnthropicDocAdapter`, forced
+   tool use, native PDF input, no prose channel), metered into `ai_run` on every call:
+   tokens, cost, latency, model, prompt id + version, input/output hashes.
+3. **`npm run cost:measure`** runs the ladder end to end over the synthetic dataset with a
+   live adapter and rewrites the measured block of COST.md with cost per document, cost per
+   engagement, latency p50/p95, failure rate and the gap against the extrapolation. It
+   refuses to start unless a live adapter is selected, its key is present, **today's token
+   prices are supplied**, and `--yes` is passed; it aborts the moment cumulative spend
+   reaches `--budget` (default $20).
+4. **Prices are never hardcoded.** `rateFor()` returns zero unless the price list is given
+   at run time. A build cannot invent a rate, and a dollar budget cannot be enforced against
+   an invented one — so the run is refused rather than run blind.
+5. **This environment cannot execute step 3**: it holds no vendor credential
+   (`401 x-api-key header is required`). The blocked run is recorded verbatim in COST.md
+   rather than papered over. The measurement is a founder action, not a missing feature.
+
+**Consequences**: the $0.30 figure stays flagged as an extrapolation until someone runs the
+command with a key. The guard rails mean the first live run costs at most the budget passed
+to it. `OTTO_OCR_ADAPTER=mock` (the default) can never spend.
+
+**Rejected**: hardcoding a price table (rates move, and a stale rate silently corrupts every
+future cost figure); shipping an unrun adapter for a second vendor merely to look
+multi-provider — an adapter that has never executed is a liability, so the second provider
+stays a deployment task.

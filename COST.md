@@ -2,7 +2,48 @@
 
 **Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $0.00.**
 
-## Actual spend
+Read the two sections below in order and do not confuse them: **§1 is what was measured by
+executing code**, §3 is what was *computed on paper*. A figure that has never been produced
+by a real call is an extrapolation, whatever its number of decimals.
+
+## 1. Live-execution measurement (`npm run cost:measure`)
+
+<!-- MEASURED:BEGIN -->
+
+**Status: the live run has NOT been executed. Measured spend remains $0.00 — because no
+call was made, not because calls were free.**
+
+Attempted: `npm run cost:measure` over the 23 synthetic evidence documents, adapter
+`anthropic`, model `claude-sonnet-4-5`, budget $20.00. The command refused to start:
+
+- ANTHROPIC_API_KEY is not set in this environment.
+- OTTO_PRICE_IN_PER_MTOK / OTTO_PRICE_OUT_PER_MTOK are not set — without today’s price list a $ budget cannot be enforced, so the run is refused rather than run blind.
+
+Everything below the "Extrapolated" heading is therefore still an **extrapolation, not a
+measurement**. To turn it into one, from an environment that has the credentials:
+
+```bash
+export OTTO_OCR_ADAPTER=anthropic
+export ANTHROPIC_API_KEY=…
+export OTTO_PRICE_IN_PER_MTOK=…      # today's price list, in USD per million tokens
+export OTTO_PRICE_OUT_PER_MTOK=…
+cd app && npm run cost:measure -- --budget=20 --yes
+```
+
+The command meters every call through `ai_run`, stops the moment cumulative spend reaches
+the budget, and rewrites this block with measured cost per document, cost per engagement,
+latency, failure rate and the gap against the ≈$0.30 extrapolation.
+
+<!-- MEASURED:END -->
+
+**Why no key exists here.** This repository was built in a remote execution environment
+with no vendor credentials: a direct `POST /v1/messages` returns
+`401 authentication_error: x-api-key header is required`. That is a fact about the build
+environment, not a claim about the product. The adapter, the metering and the budget guard
+are written and unit-tested (`src/lib/services/extraction/adapters.test.ts`); only the
+credential is missing.
+
+## 2. Build + demo spend to date
 
 | Item | Runs | Tokens | Cost |
 |---|---|---|---|
@@ -17,6 +58,16 @@ pack templates rather than a model (P4 — no LLM where a rule suffices). The li
 are implemented behind the same interface and refuse to run unless explicitly configured,
 so the demo cannot silently spend (ADR-009, OPEN_QUESTIONS Q1).
 
+**Proven by execution vs proven by mocks** — the same split as STATUS.md:
+
+| Claim | How it is established |
+|---|---|
+| The demo and the suite spend $0 | **By execution.** 116 tests and the two-part demo run with zero network; `select sum(cost_usd) from ai_run` returns 0. |
+| The deterministic rungs (1–2) parse the dataset correctly | **By execution.** `npm run eval:extraction` scores them per field on a corpus the parsers never saw. |
+| A live adapter refuses to run unconfigured | **By execution** (adapters.test.ts). |
+| Rung 3–4 precision, latency and cost | **Not established.** No live call has ever run. The mock is a replay of fixtures, so any number derived from it describes the fixture, not a model. |
+| ≈$0.30 per engagement | **Extrapolation only** (§3). Turn it into a measurement with `npm run cost:measure`. |
+
 Spend is not self-reported: every OCR/LLM call must go through the `ai_run` registry
 (model, prompt id + version, input/output hash, tokens, cost). The dashboard reads that
 table, so the figure above is queryable, not asserted:
@@ -25,7 +76,7 @@ table, so the figure above is queryable, not asserted:
 select count(*) runs, sum(tokens_in) tin, sum(tokens_out) tout, sum(cost_usd) usd from ai_run;
 ```
 
-## Extrapolated cost per engagement (live adapters enabled)
+## 3. Extrapolated cost per engagement (live adapters enabled) — NOT a measurement
 
 [ESTIMATE — basis stated per line; verified 2026-08-25 price points from the program brief.]
 

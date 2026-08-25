@@ -2,12 +2,10 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { recordAiRun } from '@/lib/core/airuns';
 import { readBlob } from '@/lib/core/storage';
-import { primaryPack } from '@/lib/packs';
 import { engagementCtx } from '../imports';
-import { frameworkSet } from '../fsli';
 import { findEmbeddedFacturx, parseCiiXml } from './facturx-read';
-import { classify, parseByType, pdfText } from './textlayer';
-import { getOcrAdapter } from './adapters';
+import { classify, parseByType, pdfText, type DocType } from './textlayer';
+import { getOcrAdapter, type OcrAdapter } from './adapters';
 import type { ExtractedField } from './fields';
 
 // The extraction ladder (ADR-002/ADR-012): XML → text layer → OCR/LLM → human.
@@ -19,8 +17,78 @@ export interface ExtractionOutcome {
   extractionId: string;
   rung: 'xml' | 'text_layer' | 'ocr' | 'human';
   status: 'complete' | 'pending_verify' | 'failed';
-  docType: string;
+  docType: DocType;
   fieldCount: number;
+}
+
+/** Pure ladder over bytes — no database. The DB path (extractEvidence) and the eval
+ *  harness (ADR-018) MUST share this function, so a measured number always describes the
+ *  code the app actually runs. Adapter errors propagate: the caller decides whether a
+ *  failure is fatal (app) or a counted failure (eval). */
+export interface LadderResult {
+  rung: 'xml' | 'text_layer' | 'ocr' | 'human';
+  status: 'complete' | 'pending_verify';
+  docType: DocType;
+  classConfidence: number;
+  fields: ExtractedField[];
+  ai: { adapter: string; model: string; tokensIn: number; tokensOut: number; costUsd: number } | null;
+  latencyMs: number;
+}
+
+export async function runLadder(
+  bytes: Uint8Array,
+  filename: string,
+  adapter: OcrAdapter = getOcrAdapter(),
+): Promise<LadderResult> {
+  const t0 = Date.now();
+  let text = '';
+  try {
+    text = await pdfText(bytes);
+  } catch {
+    text = '';
+  }
+  const cls = classify(text, filename);
+  const base = { docType: cls.docType, classConfidence: cls.confidence };
+
+  // rung 1: embedded Factur-X XML
+  const xml = findEmbeddedFacturx(bytes);
+  if (xml) {
+    const fields = parseCiiXml(xml);
+    if (fields.length >= 4) {
+      return { ...base, rung: 'xml', status: 'complete', fields, ai: null, latencyMs: Date.now() - t0 };
+    }
+  }
+
+  // rung 2: text layer + deterministic parser
+  if (text) {
+    const fields = parseByType(cls.docType, text);
+    if (fields && fields.length >= 3) {
+      return { ...base, rung: 'text_layer', status: 'complete', fields, ai: null, latencyMs: Date.now() - t0 };
+    }
+  }
+
+  // rung 3: OCR/LLM adapter — ALWAYS pending_verify (ADR-012)
+  const started = Date.now();
+  const result = await adapter.extract(bytes, cls.docType);
+  if (result) {
+    return {
+      ...base,
+      rung: 'ocr',
+      status: 'pending_verify',
+      fields: result.fields,
+      ai: {
+        adapter: adapter.name,
+        model: result.model,
+        tokensIn: result.tokensIn,
+        tokensOut: result.tokensOut,
+        costUsd: result.costUsd,
+      },
+      latencyMs: Date.now() - started,
+    };
+  }
+
+  // rung 5: fully human
+  return { ...base, rung: 'human', status: 'pending_verify', fields: [], ai: null, latencyMs: Date.now() - t0 };
 }
 
 export async function extractEvidence(evidenceId: string, userId: string | null): Promise<ExtractionOutcome> {
@@ -29,70 +97,32 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
     [evidenceId],
   );
   const ctx = await engagementCtx(ev.engagement_id);
-  const fs = await frameworkSet(ev.engagement_id);
-  const pack = primaryPack(fs as never);
   const bytes = readBlob(ev.storage_path);
 
-  // classification (deterministic heuristics, P4)
-  let text = '';
-  try {
-    text = await pdfText(bytes);
-  } catch {
-    text = '';
-  }
-  const cls = classify(text, ev.filename);
-  await q(`update evidence set doc_type = $2, class_confidence = $3 where id = $1`, [evidenceId, cls.docType, cls.confidence]);
+  const res = await runLadder(bytes, ev.filename);
+  await q(`update evidence set doc_type = $2, class_confidence = $3 where id = $1`, [evidenceId, res.docType, res.classConfidence]);
 
-  // rung 1: embedded Factur-X XML
-  const xml = findEmbeddedFacturx(bytes);
-  if (xml) {
-    const fields = parseCiiXml(xml);
-    if (fields.length >= 4) {
-      const id = await insertExtraction(evidenceId, 'xml', 'complete', fields, null);
-      await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, 'xml', 'complete', userId);
-      return { extractionId: id, rung: 'xml', status: 'complete', docType: cls.docType, fieldCount: fields.length };
-    }
-  }
-
-  // rung 2: text layer + deterministic parser
-  if (text) {
-    const fields = parseByType(cls.docType, text);
-    if (fields && fields.length >= 3) {
-      const id = await insertExtraction(evidenceId, 'text_layer', 'complete', fields, null);
-      await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, 'text_layer', 'complete', userId);
-      return { extractionId: id, rung: 'text_layer', status: 'complete', docType: cls.docType, fieldCount: fields.length };
-    }
-  }
-
-  // rung 3: OCR/LLM adapter (record/replay in demo) — ALWAYS pending_verify (ADR-012)
-  const adapter = getOcrAdapter();
-  const started = Date.now();
-  const result = await adapter.extract(bytes, cls.docType);
-  if (result) {
-    const aiRunId = await recordAiRun({
+  let aiRunId: string | null = null;
+  if (res.ai) {
+    aiRunId = await recordAiRun({
       tenantId: ctx.tenant_id,
       engagementId: ev.engagement_id,
       purpose: 'ocr',
-      adapter: adapter.name,
-      model: result.model,
+      adapter: res.ai.adapter,
+      model: res.ai.model,
       promptId: 'ocr-extract',
       promptVersion: 'v1',
       input: ev.storage_path,
-      output: JSON.stringify(result.fields),
-      tokensIn: result.tokensIn,
-      tokensOut: result.tokensOut,
-      costUsd: result.costUsd,
-      latencyMs: Date.now() - started,
+      output: JSON.stringify(res.fields),
+      tokensIn: res.ai.tokensIn,
+      tokensOut: res.ai.tokensOut,
+      costUsd: res.ai.costUsd,
+      latencyMs: res.latencyMs,
     });
-    const id = await insertExtraction(evidenceId, 'ocr', 'pending_verify', result.fields, aiRunId);
-    await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, 'ocr', 'pending_verify', userId);
-    return { extractionId: id, rung: 'ocr', status: 'pending_verify', docType: cls.docType, fieldCount: result.fields.length };
   }
-
-  // rung 5: fully human — empty pending_verify shell for manual capture
-  const id = await insertExtraction(evidenceId, 'human', 'pending_verify', [], null);
-  await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, 'human', 'pending_verify', userId);
-  return { extractionId: id, rung: 'human', status: 'pending_verify', docType: cls.docType, fieldCount: 0 };
+  const id = await insertExtraction(evidenceId, res.rung, res.status, res.fields, aiRunId);
+  await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, res.rung, res.status, userId);
+  return { extractionId: id, rung: res.rung, status: res.status, docType: res.docType, fieldCount: res.fields.length };
 }
 
 async function insertExtraction(

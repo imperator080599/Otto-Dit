@@ -20,7 +20,14 @@ npm install
 npm run db:setup      # applies supabase/migrations to a local PGlite store + seeds the world
 npm run demo:seed     # drives BOTH demo parts end-to-end through the real services
 npm run dev           # http://localhost:3000
-npm test              # 90 tests, zero network calls
+npm test              # 116 tests, zero network calls
+```
+
+Two measurement commands, optional and incapable of spending anything by default:
+
+```bash
+npm run eval:extraction   # per-field precision/recall of the extraction ladder → docs/EVAL_EXTRACTION.md (ADR-018)
+npm run cost:measure      # live-adapter cost/latency/failure under a $ budget guard → COST.md (ADR-019)
 ```
 
 Sign in as any of the three demo auditors (no passwords — demo mode). Client portal:
@@ -32,13 +39,14 @@ See **DEMO.md** for the step-by-step two-part walkthrough.
 
 | Path | Contents |
 |---|---|
-| `docs/` | **Source of truth.** 00 founder ideas · 01 idea assessment · 02 target concept · 03 architecture · 04 data model · 05 integrations · 06 security/compliance · 07 MVP PRD (+ demo script) · 08 backlog · 09 gates (two adversarial review rounds) · 10 research pass · DECISIONS (ADR-001..016) · ASSUMPTIONS · OPEN_QUESTIONS |
+| `docs/` | **Source of truth.** 00 founder ideas · 01 idea assessment · 02 target concept · 03 architecture · 04 data model · 05 integrations · 06 security/compliance · 07 MVP PRD (+ demo script) · 08 backlog · 09 gates (two adversarial review rounds) · 10 research pass · EVAL_EXTRACTION (measured) · 10_FALSIFICATION · DECISIONS (ADR-001..019) · ASSUMPTIONS · OPEN_QUESTIONS |
 | `dataset/` | Synthetic dataset: FEC (4 731 lines), TB N/N-1, 30 evidence PDFs (incl. Factur-X with embedded CII XML), SOX RCM + control listings, pinned demo params, extraction fixtures, **ANOMALIES.md** (the acceptance contract) |
 | `app/src/lib/kernel/` | Deterministic kernel — canonicalization, FEC validator, JE flags, sampling (monetary/attribute/verification), materiality, FSLI mapping, vouching, misstatement projection, deficiency rules. Pure functions, no DB/network |
 | `app/src/lib/services/` | Engines wired to Postgres: imports, reconciliation, materiality/scoping, population, sampling, requests, evidence, extraction ladder, matching, verification, evaluation, SOX, workpapers, provenance, dashboard |
 | `app/src/lib/packs/` | Framework packs (content/config only, never a code fork) |
 | `app/src/app/` | Next.js UI — auditor workspace + client portal |
 | `supabase/migrations/` | Postgres SQL (applies unchanged to PGlite locally and Supabase in production) |
+| `dataset/eval/` | Extraction-eval corpus: `synthetic/` generated and seeded, `public/` a local-only slot for published documents (never committed). **No client document, ever** (ADR-018) |
 | `tests/` | Cross-cutting acceptance suites |
 
 ## Architecture in one paragraph

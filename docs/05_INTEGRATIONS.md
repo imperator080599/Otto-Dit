@@ -43,7 +43,7 @@ JE risk flags computed at import (ADR-003).
 | Rung | Adapter | Cost basis | When |
 |---|---|---|---|
 | 2. PDF text layer | local (unpdf/pdfjs) + deterministic field parsers per doc_type | $0 | digitally-born PDFs (most invoices/statements today) |
-| 3. OCR | pluggable: Mistral OCR 3 ($2/1k pages, $1 batch, EU) default; Azure Doc Intelligence prebuilt-invoice ($10/1k, EU+US) alternative | per page | scans/images or rung-2 field parse below threshold |
+| 3. OCR | pluggable: Mistral OCR 3 ($2/1k pages, $1 batch, EU) or Azure Doc Intelligence prebuilt-invoice ($10/1k, EU+US). **[UNVERIFIED prices; no adapter shipped]** — neither could be executed during the build, so neither is written: they are deployment tasks (ADR-019) | per page | scans/images or rung-2 field parse below threshold |
 | 4. LLM structured extraction | Anthropic API (Sonnet default, Haiku for classification) behind `LlmClient`; native PDF read ~1.5–3k tok/page | per tokens | complex/degraded docs; always structured output, document text treated strictly as data (06 §AI) |
 | 5. Human verify | UI | — | any field below pack confidence threshold (default 0.9) or auditor spot-check |
 

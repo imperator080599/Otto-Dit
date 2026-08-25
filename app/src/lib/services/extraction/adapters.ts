@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '@/lib/db/client';
 import { sha256 } from '@/lib/core/hash';
+import { costUsd } from '@/lib/core/pricing';
 import type { ExtractedField } from './fields';
 
 // Rungs 3–4 — pluggable OCR/LLM adapters (docs/05 §4, ADR-009). The interface is real;
@@ -56,6 +57,94 @@ export class ReplayOcrAdapter implements OcrAdapter {
   }
 }
 
+const FIELD_SPEC: { name: string; type: 'string' | 'integer'; note: string }[] = [
+  { name: 'invoiceNumber', type: 'string', note: 'document number exactly as printed' },
+  { name: 'invoiceDate', type: 'string', note: 'ISO yyyy-mm-dd; convert from the printed format' },
+  { name: 'buyerName', type: 'string', note: 'the customer / recipient' },
+  { name: 'sellerName', type: 'string', note: 'the issuer, usually the header line' },
+  { name: 'totalNetCents', type: 'integer', note: 'net amount in cents, no separators' },
+  { name: 'vatCents', type: 'integer', note: 'VAT amount in cents' },
+  { name: 'totalGrossCents', type: 'integer', note: 'gross amount in cents' },
+  { name: 'deliveryNoteNumber', type: 'string', note: 'delivery notes only' },
+  { name: 'deliveryDate', type: 'string', note: 'delivery notes only, ISO' },
+  { name: 'qtyTotal', type: 'integer', note: 'delivery notes only, total quantity' },
+];
+
+/** Rung 4 — structured extraction from the document itself (Anthropic Messages API,
+ *  native PDF input, forced tool use so the model returns fields and never prose).
+ *  Output is ALWAYS pending_verify upstream (ADR-012): this adapter cannot self-approve.
+ *  Enabled by OTTO_OCR_ADAPTER=anthropic + ANTHROPIC_API_KEY (DEPLOY.md). */
+export class AnthropicDocAdapter implements OcrAdapter {
+  readonly name = 'anthropic';
+  constructor(
+    private readonly model = process.env.OTTO_EXTRACT_MODEL ?? 'claude-sonnet-4-5',
+    private readonly apiKey = process.env.ANTHROPIC_API_KEY ?? '',
+    private readonly baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com',
+  ) {}
+
+  async extract(bytes: Uint8Array, docTypeHint: string | null): Promise<OcrResult | null> {
+    if (!this.apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is not set — the live extraction adapter cannot run (DEPLOY.md)');
+    }
+    const properties: Record<string, unknown> = {};
+    for (const f of FIELD_SPEC) {
+      properties[f.name] = { type: [f.type, 'null'], description: f.note };
+    }
+    properties.confidence = {
+      type: 'object',
+      description: 'per-field self-assessed confidence 0..1; triage only, never an approval',
+      additionalProperties: { type: 'number' },
+    };
+    const res = await fetch(`${this.baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: 2048,
+        system:
+          'You transcribe accounting documents. Report only what is legible on the page. ' +
+          'Never infer, never compute a missing total, never guess a date format: return null ' +
+          'for anything you cannot read. A wrong figure is far worse than a null.',
+        tools: [{ name: 'emit_fields', description: 'Return the fields read from the document.', input_schema: { type: 'object', properties } }],
+        tool_choice: { type: 'tool', name: 'emit_fields' },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Buffer.from(bytes).toString('base64') } },
+              { type: 'text', text: `Document type hint: ${docTypeHint ?? 'unknown'}. Read the fields.` },
+            ],
+          },
+        ],
+      }),
+    });
+    const body = await res.text();
+    if (!res.ok) throw new Error(`anthropic extraction HTTP ${res.status}: ${body.slice(0, 300)}`);
+    const json = JSON.parse(body) as {
+      content: { type: string; name?: string; input?: Record<string, unknown> }[];
+      usage?: { input_tokens?: number; output_tokens?: number };
+    };
+    const call = json.content.find((c) => c.type === 'tool_use' && c.name === 'emit_fields');
+    if (!call?.input) return null;
+    const conf = (call.input.confidence ?? {}) as Record<string, number>;
+    const fields: ExtractedField[] = [];
+    for (const f of FIELD_SPEC) {
+      const v = call.input[f.name];
+      if (v === null || v === undefined || v === '') continue;
+      fields.push({ name: f.name, value: String(v), confidence: clamp(conf[f.name]), page: 1 });
+    }
+    if (fields.length === 0) return null;
+    const tokensIn = json.usage?.input_tokens ?? 0;
+    const tokensOut = json.usage?.output_tokens ?? 0;
+    return { fields, model: this.model, tokensIn, tokensOut, costUsd: costUsd(this.model, tokensIn, tokensOut) };
+  }
+}
+
+function clamp(v: number | undefined): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return 0.5;
+  return Math.max(0, Math.min(1, v));
+}
+
 /** Live-adapter placeholder: refuses to run without explicit configuration so the demo
  *  can never silently call out (D12 cost discipline). */
 export class UnconfiguredLiveAdapter implements OcrAdapter {
@@ -70,5 +159,8 @@ export class UnconfiguredLiveAdapter implements OcrAdapter {
 export function getOcrAdapter(): OcrAdapter {
   const which = process.env.OTTO_OCR_ADAPTER ?? 'mock';
   if (which === 'mock') return new ReplayOcrAdapter();
+  if (which === 'anthropic') return new AnthropicDocAdapter();
+  // No adapter is written for a provider we cannot execute and verify here (e.g. a
+  // dedicated OCR vendor): it stays a deployment task rather than unrun speculative code.
   return new UnconfiguredLiveAdapter(which);
 }

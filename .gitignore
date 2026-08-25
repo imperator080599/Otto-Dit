@@ -4,3 +4,7 @@ app/.data/
 *.log
 .DS_Store
 app/coverage/
+
+# ADR-018: the public eval corpus is local-only, never committed
+dataset/eval/public/*
+!dataset/eval/public/README.md

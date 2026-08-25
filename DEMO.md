@@ -123,8 +123,15 @@ The overview shows the **group-auditor referral instructions**.
       with its sha256 and extraction rung, AI involvement, manual modifications.
     - *Where did this figure come from?* → ledger row + import file + natural key →
       extraction fields → vouching checks.
-23. **Event log** → filter by actor (user/system/ai) or verb; the hash chain verifies live.
-24. **Dashboard** → progress, exceptions, deviations, deficiencies, workpaper states, AI
+23. **Interroger** (`Ask the file`) → type *« quelles demandes sont en retard de plus de
+    10 jours ? »* then *« quelles sections ont des exceptions non résolues au-dessus du
+    seuil de signification ? »*. Each returns a table of stored records with a link on
+    every row, plus the query that was actually executed and how it was translated
+    (deterministic rule, no model). Then ask *« penses-tu que le chiffre d'affaires est
+    raisonnable ? »*: OTTO refuses and shows what it can answer instead. It never writes
+    prose (ADR-017).
+24. **Event log** → filter by actor (user/system/ai) or verb; the hash chain verifies live.
+25. **Dashboard** → progress, exceptions, deviations, deficiencies, workpaper states, AI
     spend; export the tracker in **team / client / group** variants (the client workbook
     carries no exceptions, deviations or internal review statuses).
 
@@ -138,3 +145,18 @@ negatives); provenance and the audit trail hold at every step.
 the L2 verification-time economics, or any market/adoption hypothesis. Those are pre-pilot
 gates (ASSUMPTIONS A11/A12) and require permissioned real evidence, which this repo
 deliberately does not contain.
+
+## 4. Two measurement commands (not part of the walkthrough)
+
+```bash
+npm run eval:extraction     # scores the extraction ladder per field on a public/synthetic
+                            # corpus → docs/EVAL_EXTRACTION.md (ADR-018)
+npm run cost:measure        # runs the ladder with a LIVE adapter under a $ budget guard and
+                            # rewrites the measured block of COST.md (ADR-019)
+```
+
+`eval:extraction` runs offline and generates its own corpus (foreign layouts, foreign date
+and number formats, and bitmap scans with no text layer at all). `cost:measure` refuses to
+start without a live adapter, its key, today's price list and `--yes`; with the default
+`mock` adapter neither command can spend anything. **No client document ever goes in either
+corpus** — a real-document eval happens only at a pilot client, with written authorization.
