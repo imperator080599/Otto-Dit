@@ -92,10 +92,21 @@ export async function markAllSubmitted(requestId: string, contactId: string): Pr
 
 export async function answerExplanation(requestItemId: string, contactId: string, text: string): Promise<void> {
   if (!text.trim()) throw new Error('empty answer');
-  const item = await q1<{ id: string; request_id: string }>(`select id, request_id from request_item where id = $1`, [requestItemId]);
+  const item = await q1<{ id: string; request_id: string; exception_id: string | null }>(
+    `select id, request_id, exception_id from request_item where id = $1`,
+    [requestItemId],
+  );
   const r = await q1<{ engagement_id: string }>(`select engagement_id from request where id = $1`, [item.request_id]);
   const ctx = await engagementCtx(r.engagement_id);
   await q(`update request_item set client_note = $2, status = 'complete' where id = $1`, [requestItemId, text]);
+  if (item.exception_id) {
+    // clarification answered → exception explained (auditor still resolves/escalates)
+    await q(
+      `update exception set status = 'explained', resolution = $2 where id = $1 and status = 'clarification_requested'`,
+      [item.exception_id, text],
+    );
+    await q(`update followup set status = 'answered' where exception_id = $1 and request_id = $2`, [item.exception_id, item.request_id]);
+  }
   await refreshRequestStatus(requestItemId);
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: r.engagement_id, actorKind: 'system', actorId: null,

@@ -37,6 +37,8 @@ export const nepFr: AssurancePack = {
     { code: 'reconciliation_diff', label: { fr: 'Écart de rapprochement GL/Balance', en: 'TB/GL reconciliation difference' } },
     { code: 'verification_disagreement', label: { fr: 'Désaccord lors du contrôle de fiabilité', en: 'Verification spot-check disagreement' } },
     { code: 'quarantined_evidence', label: { fr: 'Pièce mise en quarantaine', en: 'Quarantined evidence' } },
+    { code: 'manual_journal_flag', label: { fr: 'Écriture manuelle atypique (week-end / montant rond)', en: 'Atypical manual journal entry' } },
+    { code: 'credit_note_pattern', label: { fr: 'Avoirs récurrents inexpliqués (même tiers)', en: 'Recurring unexplained credit notes' } },
   ],
   verification: { spotcheckPct: 0.1, spotcheckMin: 3, seedDefault: 'otto-demo-verif-1' },
   docRules: {

@@ -20,6 +20,7 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     items.push(
       { href: `${base}/population`, label: 'Population' },
       { href: `${base}/sampling`, label: 'Sampling' },
+      { href: `${base}/testing`, label: 'Testing' },
     );
   }
   if (packs.includes('pcaob-sox')) {
