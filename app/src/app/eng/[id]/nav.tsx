@@ -32,6 +32,7 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     { href: `${base}/exceptions`, label: packs.includes('pcaob-sox') ? 'Deviations' : 'Exceptions' },
     { href: `${base}/workpapers`, label: 'Workpapers' },
     { href: `${base}/dashboard`, label: 'Dashboard' },
+    { href: `${base}/provenance`, label: 'Provenance' },
     { href: `${base}/events`, label: 'Event log' },
   );
   return (
