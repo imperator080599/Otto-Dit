@@ -81,7 +81,7 @@ export function buildWorld(): World {
   const rng = seededRng(SEED);
   const entries: Entry[] = [];
   const invoices: SalesInvoice[] = [];
-  const seq: Record<string, number> = { AN: 0, VE: 0, AC: 0, BQ: 0, OD: 0 };
+  const seq: Record<'AN' | 'VE' | 'AC' | 'BQ' | 'OD', number> = { AN: 0, VE: 0, AC: 0, BQ: 0, OD: 0 };
   let invoiceSeq = 0;
   let blSeq = 0;
 
