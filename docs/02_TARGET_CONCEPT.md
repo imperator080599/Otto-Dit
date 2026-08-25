@@ -43,7 +43,12 @@ LLMs appear only where they beat deterministic code: field extraction below the 
 rungs, document classification, drafting (rationales, workpaper prose, clarification
 requests), suggestion (benchmark, deficiency classification). Everything else is SQL, rules
 and arithmetic (P4). Every AI output is logged (model, prompt version, tokens, output hash)
-and gated at **L2 before it enters the file**, in every pack (D5).
+and gated at **L2 before it enters the file**, in every pack (D5). The L2 act itself is
+specified, not hand-waved (ADR-012): deterministic rungs pass at L0/L1 under a
+spot-check control; OCR/LLM extractions are item-verified side-by-side in v1 (confidence
+= triage order, never a bypass); a seeded subsample of machine-passed items is blind
+re-performed per procedure; and workpapers attribute honestly — "performed by OTTO engine
+run #x, validated by [name, date]".
 
 ## The pack system (D1/P3)
 
@@ -70,11 +75,15 @@ workpaper) on the same synthetic subsidiary.**
 v1 proves the middle loop end-to-end on **two cycle types** with the same engines:
 (a) revenue/receivables substantive testing, (b) SOX operating-effectiveness control
 testing. OTTO runs **alongside** incumbent audit-file software and exports formatted
-workpapers into it (D3) — no rip-and-replace sale. The verified market gap this attacks:
-no shipped product does ledger-native evidence ingestion → automatic vouching/attribute
-testing → typed exceptions → auto-drafted traceable workpaper for audit firms (France
-verified; globally, Fieldguide's claims are marketing-stage, DataSnipper still has the
-auditor build the workbook).
+workpapers into it (D3) — no rip-and-replace sale. The export boundary is a first-class
+contract (ADR-013): OTTO holds the preparation/detailed-review record, the incumbent file's
+final sign-off stays authoritative in v1, and every export is terminal, versioned,
+hash-stamped and self-contained for inspection. The market gap this attacks [basis: market
+scan of 2026-08-25 in the master context §3 + D13 pass, 10_D13_RESEARCH]: no shipped
+product does ledger-native evidence ingestion → automatic vouching/attribute testing →
+typed exceptions → auto-drafted traceable workpaper for audit firms — DataSnipper
+automates tickmarks inside an auditor-built workbook; Fieldguide (closest, US) grew from
+SOC/risk-advisory, not integrated-audit methodology.
 
 ## What OTTO deliberately is NOT
 
@@ -98,10 +107,12 @@ auditor build the workbook).
    is ISA-shaped, France is a pack, SOX/ICFR is a pack — which also unlocks the strongest
    beachhead the founder actually lives in: European component auditors of US-listed groups,
    who need NEP + SOX on the same engagement.
-3. **Inverted the OCR assumption.** France mandates machine-readable invoices from Sept 2026;
-   the extraction ladder starts at structured XML (exact, free), falls back to PDF text and
-   only then to OCR/LLM. Cost per evidence page drops by an order of magnitude and accuracy
-   rises exactly when the product ships.
+3. **Inverted the OCR assumption — for invoice legs.** EU e-invoicing mandates (France
+   Sept 2026; majority of EU domestic B2B volume structured by end-2027, D13 §C) make
+   structured XML the first extraction rung: exact, free, offline. Honest scope: this
+   covers invoices; delivery notes, contracts, PODs and remittances remain OCR/LLM work
+   gated by the L2 evidence contract (ADR-012) — which is why extraction economics (A11/
+   A12) are named kill-criteria, not assumed away.
 4. **Typed exceptions and deviations as first-class objects.** The original had "relance
    client si écart"; the redesign makes every gap a typed, lifecycle-tracked object that
    drives follow-up, misstatement/deficiency evaluation and the aggregation views — this is

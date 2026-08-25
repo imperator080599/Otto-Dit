@@ -133,3 +133,66 @@ new decisions appear here.
 - **Rationale**: without typed downstream objects the wedge's exceptions dead-end (assessment
   #21); full workflows are not needed to prove the loop.
 - **Confidence**: H. **Reverse**: extend, don't restructure.
+
+## ADR-012 — The L2 evidence contract (adopted from Gate 1)
+
+- **Decision**: L2 is defined per extraction rung and per act, resolving the
+  threshold-vs-ceiling ambiguity:
+  1. **Rungs 1–2 (structured XML, PDF text layer)**: deterministic, L0/L1. Fields enter
+     matching without per-item human verification; reliability is covered by (3).
+  2. **Rungs 3–4 (OCR/LLM)**: in v1, **every** extracted item used in testing is
+     human-verified in a side-by-side UI (source evidence + extracted fields); confidence
+     scores order the queue (triage) and are **never a bypass**.
+  3. **Verification spot-check control (machine-passed items)**: per procedure, a seeded
+     random subsample of machine-PASSED sample items is re-performed blind by a human
+     (`verification_check` rows: item, verifier, result, time spent). Result is part of the
+     workpaper. This is the engagement-level tool-reliability control (ISA 500-shaped
+     evaluation of the automated tool's output); the synthetic-dataset suite is build-time
+     regression only, never reliability evidence.
+  4. **Attribution**: workpapers state "Performed by OTTO engine run #… (adapters, params,
+     evidence hashes) — Validated by [name, date]"; humans are validators/reviewers, not
+     fictitious preparers.
+  5. **Injection boundary**: untrusted document content reaches drafting prompts only via
+     deterministic-match outputs (typed fields), never as raw text.
+- **Rationale**: Gate 1 (audit partner + AI architect): the undefined L2 act made the hours
+  claim and the safety claim mutually destructive; this contract makes the validation act
+  explicit, priced, and inspectable.
+- **Confidence**: H on structure, M on the spot-check default rate (pack config, default
+  10% min 3). **Reverse**: relax rung-3/4 per-item verification only when a real-corpus
+  calibration benchmark (A11/A12) justifies threshold-gated verification, per pack.
+
+## ADR-013 — Export boundary contract (adopted from Gate 1)
+
+- **Decision**: While OTTO runs alongside an incumbent audit file (D3):
+  1. OTTO sign-offs constitute the **preparation and detailed-review record**; the
+     incumbent file's final sign-off remains authoritative in v1.
+  2. Export is a **terminal, versioned, hash-stamped event** (export id + content hash
+     rendered on every page; logged in event_log).
+  3. Exports are **self-contained for inspection**: embedded sample parameters (seed,
+     method, population hash), per-item evidence references with sha256s, exception log
+     with resolutions, modification history (workpaper_edit), review-note trail, sign-off
+     block, and OTTO version — the archived artifact answers P7 without OTTO access.
+  4. Re-export after review changes **supersedes**: new version carries a supersession
+     notice naming the replaced export id; the founder's pilot kill-metric is review
+     round-trip count per workpaper.
+  5. OTTO content is treated as audit documentation (Q11 default): retention per pack
+     applies to OTTO's own store regardless of the incumbent file.
+- **Confidence**: H. **Reverse**: when OTTO becomes the file of record (v2+), sign-off
+  authority flips by pack config; the export machinery remains for component reporting.
+
+## ADR-014 — Lock & retention configuration (per D13 findings)
+
+- **Decision**: Pack config, engagement-overridable with justification:
+  - **NEP/France**: assembly lock at report date + 60 days [ISA 230-shaped, config];
+    retention **10 years** (Code de commerce former art. R.823-10 — "conservés pendant dix
+    ans, même après la cessation des fonctions"). The previously carried "6+ years" was
+    wrong and is corrected everywhere.
+  - **PCAOB/SOX**: documentation completion ≤ **14 days** after report release date
+    (AS 1000-era amendment; 45 days legacy option per engagement FY/firm tier), retention
+    **7 years** from report release (AS 1215.14); post-completion additions record date
+    added, preparer, reason (AS 1215.16) — implemented as the post-lock amendment record.
+    SEC Rule 2-06 broader-scope retention (correspondence/communications) noted for the
+    production store; superseded analyses reflecting differing judgments are never purged.
+- **Confidence**: H (sources in 10_D13_RESEARCH.md; exact phase-in tiers to re-verify from
+  an unblocked environment before compliance-grade publication). **Reverse**: edit pack
+  config.
