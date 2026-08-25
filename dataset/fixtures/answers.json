@@ -1,0 +1,10 @@
+{
+  "A1": "Vous avez raison : la facture a été comptabilisée deux fois suite à un doublon d'intégration. Une correction sera passée (extourne de la seconde écriture).",
+  "A2": "Le bon de livraison n'a pas été archivé par le transporteur. Nous ne sommes pas en mesure de le fournir.",
+  "A3": "Erreur de facturation identifiée : le prix unitaire appliqué diffère du tarif catalogue. Un avoir de 1 800,00 € sera émis.",
+  "A4": "Litige transport : 22 m² cassés à la livraison, refacturés par erreur. Avoir en préparation.",
+  "A5": "La prestation a été livrée début janvier 2026 ; la facturation a été anticipée pour atteindre l'objectif annuel.",
+  "A6": "Écriture d'ajustement passée par la direction pour reconnaître un contrat signé fin d'année ; la prestation démarre en janvier 2026.",
+  "A7": "La balance transmise incluait un ajustement manuel de 25 000,00 € non repris dans le FEC (écriture de situation).",
+  "A8": "Les avoirs concernent des litiges qualité récurrents avec ce client ; un plan d’action qualité est en cours."
+}

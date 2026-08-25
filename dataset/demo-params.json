@@ -1,0 +1,38 @@
+{
+  "materiality": {
+    "benchmarkCode": "pbt",
+    "benchmarkAmountCents": 74246344,
+    "pct": 0.05,
+    "amountCents": 3700000,
+    "perfPct": 0.75,
+    "perfAmountCents": 2700000,
+    "cttPct": 0.05,
+    "cttAmountCents": 180000,
+    "tePct": 0.75,
+    "teAmountCents": 2700000,
+    "basisRule": "profit-oriented entity with stable pre-tax result (PBT ≥ 2% of revenue) ⇒ benchmark PBT at 5%"
+  },
+  "revenueSampling": {
+    "seed": "otto-demo-rev-1",
+    "coverageCapCents": 2700000,
+    "randomSize": 4
+  },
+  "soxSampling": {
+    "seed": "otto-demo-sox-1",
+    "sizes": {
+      "C-BR-01": 3,
+      "C-REV-01": 5
+    }
+  },
+  "verification": {
+    "seed": "otto-demo-verif-1",
+    "rate": 0.1,
+    "min": 3
+  },
+  "deficiencyInputs": {
+    "C-BR-01": {
+      "magnitudeExposureCents": 1500000,
+      "compensatingControl": false
+    }
+  }
+}

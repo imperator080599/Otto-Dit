@@ -1,0 +1,184 @@
+{
+  "seedVersion": "otto-altiverre-fy2025-v1",
+  "substantiveAnomalies": [
+    {
+      "id": "A1",
+      "taxonomy": [
+        "duplicate_document"
+      ],
+      "units": [
+        "VE|VE-2025-0702|2",
+        "VE|VE-2025-0703|2"
+      ],
+      "evidence": [
+        "evidence/FA2025-0702.pdf"
+      ],
+      "description": "Same invoice booked twice (June + July), same invoice number and amount.",
+      "stratum": "high_value"
+    },
+    {
+      "id": "A2",
+      "taxonomy": [
+        "missing_document"
+      ],
+      "units": [
+        "VE|VE-2025-0704|2"
+      ],
+      "evidence": [],
+      "description": "Goods invoice without any delivery note — client cannot provide it.",
+      "stratum": "high_value"
+    },
+    {
+      "id": "A3",
+      "taxonomy": [
+        "price_mismatch"
+      ],
+      "units": [
+        "VE|VE-2025-0705|2"
+      ],
+      "evidence": [
+        "evidence/FA2025-0704.pdf"
+      ],
+      "description": "Invoice line: qty × unit price ≠ printed line total (1 800,00 € overbilling).",
+      "stratum": "high_value"
+    },
+    {
+      "id": "A4",
+      "taxonomy": [
+        "qty_mismatch"
+      ],
+      "units": [
+        "VE|VE-2025-0706|2"
+      ],
+      "evidence": [
+        "evidence/FA2025-0705.pdf",
+        "evidence/BL2025-0474.pdf"
+      ],
+      "description": "Delivery note shows 238 units delivered; invoice bills 260.",
+      "stratum": "high_value"
+    },
+    {
+      "id": "A5",
+      "taxonomy": [
+        "cutoff"
+      ],
+      "units": [
+        "VE|VE-2025-0707|2"
+      ],
+      "evidence": [
+        "evidence/FA2025-0706.pdf"
+      ],
+      "description": "Invoice dated 2026-01-06 recognized in FY2025 (entry 2025-12-31).",
+      "stratum": "high_value"
+    },
+    {
+      "id": "A6",
+      "taxonomy": [
+        "manual_journal_flag"
+      ],
+      "units": [
+        "OD|OD-2025-0001|2"
+      ],
+      "evidence": [],
+      "description": "Round 50 000,00 € manual revenue JE posted on a Saturday (weekend + round + manual flags).",
+      "stratum": "risk_flag"
+    },
+    {
+      "id": "A8",
+      "taxonomy": [
+        "credit_note_pattern"
+      ],
+      "units": [
+        "VE|VE-2025-0710|1",
+        "VE|VE-2025-0711|1",
+        "VE|VE-2025-0712|1"
+      ],
+      "evidence": [
+        "evidence/AV2025-0001.pdf",
+        "evidence/AV2025-0002.pdf",
+        "evidence/AV2025-0003.pdf"
+      ],
+      "description": "3 credit notes to the same customer (C009) across the year — unexplained pattern.",
+      "stratum": "risk_flag"
+    }
+  ],
+  "reconciliationAnomaly": {
+    "id": "A7",
+    "account": "706000",
+    "deltaCents": 2500000
+  },
+  "deviations": [
+    {
+      "id": "D1",
+      "control": "C-BR-01",
+      "instance": "2025-01",
+      "taxonomy": "missing_approval",
+      "note": "Reconciliation prepared but never approved (Approved by empty)."
+    },
+    {
+      "id": "D2",
+      "control": "C-BR-01",
+      "instance": "2025-06",
+      "taxonomy": "late_performance",
+      "note": "Prepared 25 days after month end (requirement: ≤10 days)."
+    },
+    {
+      "id": "D3",
+      "control": "C-BR-01",
+      "instance": "2025-06",
+      "taxonomy": "wrong_performer",
+      "note": "Prepared and approved by the same person (SoD conflict)."
+    },
+    {
+      "id": "D4",
+      "control": "C-BR-01",
+      "instance": "2025-09",
+      "taxonomy": "missing_evidence",
+      "note": "No reconciliation could be provided for this month."
+    }
+  ],
+  "sampling": {
+    "revenue": {
+      "populationHash": "pophash-v1:489420a8686886179af7ddbf22723fd0c1611f28f06b5fe78c2761031acfed62",
+      "populationSize": 713,
+      "coverageCapCents": 2700000,
+      "randomSize": 4,
+      "seed": "otto-demo-rev-1",
+      "selectedUnits": [
+        "OD|OD-2025-0001|2",
+        "VE|VE-2025-0702|2",
+        "VE|VE-2025-0703|2",
+        "VE|VE-2025-0707|2",
+        "VE|VE-2025-0705|2",
+        "VE|VE-2025-0704|2",
+        "VE|VE-2025-0709|2",
+        "VE|VE-2025-0708|2",
+        "VE|VE-2025-0706|2",
+        "VE|VE-2025-0710|1",
+        "VE|VE-2025-0711|1",
+        "VE|VE-2025-0712|1",
+        "VE|VE-2025-0477|2",
+        "VE|VE-2025-0481|2",
+        "VE|VE-2025-0145|2",
+        "VE|VE-2025-0060|2"
+      ]
+    },
+    "bankRec": {
+      "sampled": [
+        "2025-01",
+        "2025-06",
+        "2025-09"
+      ]
+    },
+    "approvals": {
+      "sampled": [
+        "2025-W06",
+        "2025-W11",
+        "2025-W13",
+        "2025-W31",
+        "2025-W52"
+      ]
+    }
+  },
+  "robustness": "Substantive anomalies A1–A5 sit in the 100%-coverage stratum (each ≥ 1.1 × the pinned coverage cap of 2700000 cents), A6/A8 in the risk-flag stratum — detection is invariant to the random seed and to any coverage cap below the smallest anomaly amount. SOX deviations are placed inside the pinned attribute draw (seed otto-demo-sox-1); changing that seed re-draws other months and the deviations may fall outside the sample."
+}

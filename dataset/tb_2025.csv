@@ -1,0 +1,36 @@
+Compte;Intitulé;Débit;Crédit
+101000;Capital social;0,00;500000,00
+106100;Réserve légale;0,00;50000,00
+110000;Report à nouveau;0,00;1082000,00
+151000;Provisions pour risques;0,00;60000,00
+164000;Emprunts auprès des éts de crédit;80000,00;800000,00
+213500;Installations techniques;2400000,00;0,00
+218300;Matériel de bureau et informatique;120000,00;0,00
+281350;Amort. installations techniques;0,00;1370000,00
+281830;Amort. matériel de bureau;0,00;100000,00
+301000;Stocks matières premières;420000,00;0,00
+355000;Stocks produits finis;380000,00;0,00
+401000;Fournisseurs — collectif;2763356,24;3028988,49
+411000;Clients — collectif;7668342,96;6139325,32
+421000;Personnel — rémunérations dues;1374749,53;1490135,72
+431000;Sécurité sociale;1028300,32;1114060,33
+437000;Autres organismes sociaux;197260,04;214412,05
+445510;TVA à décaisser;736363,56;804214,33
+445660;TVA déductible;403164,73;403164,73
+445710;TVA collectée;1113057,16;1113057,16
+512100;Banque Lyonnaise de Crédit (fictive);6514256,72;6212029,69
+601000;Achats matières premières — verre;1497637,74;0,00
+601100;Achats matières — silices et intercalaires;75110,55;0,00
+602100;Achats profilés et consommables;137010,00;0,00
+606100;Fournitures non stockables — énergie;85037,27;0,00
+615500;Entretien et maintenance des fours;36246,35;0,00
+616000;Primes d'assurances;12411,21;0,00
+621100;Personnel intérimaire;116420,39;0,00
+624100;Transports sur ventes;55950,25;0,00
+641000;Rémunérations du personnel;1858291,50;0,00
+645000;Charges de sécurité sociale;743316,60;0,00
+661100;Intérêts des emprunts;32000,00;0,00
+681100;Dotations amortissements;240000,00;0,00
+701000;Ventes de produits finis;0,00;5121111,80
+706000;Prestations de services;0,00;519174,00
+709000;RRR accordés par l’entreprise;8390,50;0,00

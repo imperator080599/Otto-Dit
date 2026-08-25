@@ -30,12 +30,28 @@
   (2 engagements); packs (nep-fr, pcaob-sox, pcg + skeleton maps); UI shell + dev auth +
   portal tokens; `npm run db:setup && npm run dev` works; `npm test` green (4 tests).
 
+## Done (C1a + C1b)
+
+- C1a kernel: canon (cents, dates, pophash-v1, party normalization), flags (ADR-003),
+  sampling (monetary/attribute/verification), materiality (M/PM/CTT/TE), fsli-map,
+  matching (vouching + taxonomy + duplicates), projection (ISA 530-shaped), deficiency
+  ladder, FEC validator. 27 unit tests green.
+- C1b generator (imports the kernel, ADR-015): Altiverre FY2025 — 4,727 FEC lines
+  (validator-clean), revenue 5.61M€, PBT 0.72M€ (pinned), TB N/N-1 CSVs, 30 evidence
+  files (invoices incl. Factur-X w/ CII XML, delivery notes, 3 avoirs, 2 bank statements,
+  2 bank recs, 5 credit approvals incl. 1 unlabeled OCR-mock), RCM (7 controls incl.
+  ITGC), instance listings, pinned demo-params.json, extraction fixtures + evidence index
+  + expected-anomaly manifest + generator-emitted ANOMALIES.md.
+- Placement verified: A1–A5 in the 100%-coverage stratum, A6 high-value+flagged, A8
+  risk-flag; SOX deviations inside the pinned attribute draw. **Byte-identical
+  regeneration confirmed.** C1 acceptance suite: 12 tests green (zero false negatives,
+  zero false positives on clean units).
+
 ## Next actions
 
-1. C1a: deterministic kernel (canonicalization, population_hash, population+flags,
-   materiality math, sampling, tolerances, projection, deficiency rules) + unit tests.
-2. C1b: dataset generator importing the kernel; commit dataset + ANOMALIES.md.
-3. S1… per docs/08_BACKLOG.md.
+1. S1: engagement data plumbing — TB/GL import services + UI, FEC adapter wiring,
+   reconciliation w/ documented_difference flow, FSLI mapping.
+2. S2 materiality/scoping; then S3… per docs/08_BACKLOG.md.
 
 ## Done (Stage A gate + D13)
 
