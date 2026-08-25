@@ -4,7 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:setup": "tsx scripts/db-setup.ts",
+    "db:reset": "tsx scripts/db-setup.ts --reset",
+    "dataset:generate": "tsx scripts/dataset/generate.ts",
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "demo:email": "tsx scripts/demo-email.ts"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +33,9 @@
     "@types/node": "^26.3.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
-    "typescript": "^7.0.2",
+    "@vitejs/plugin-react": "^6.1.0",
+    "tsx": "^4.23.12",
+    "typescript": "5.9",
     "vitest": "^4.1.11"
   }
 }

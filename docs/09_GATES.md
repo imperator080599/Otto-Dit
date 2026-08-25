@@ -156,3 +156,100 @@ named independent component-auditor list). Founder review item #1 (same as CPO).
 **Gate 1 verdict**: proceed to Stage B with ADR-012/013 and register updates applied. The
 two standing structural objections (buyer intersection; sidecar moat ceiling) are founder
 review items #1 and #2 — they change GTM and v2 positioning, not the v1 build mandate.
+
+---
+
+# GATE 2 — after Stage B (2026-08-25)
+
+## Lens objections (condensed) and dispositions
+
+### Audit partner — the substantive loop concludes without a sample-evaluation mechanic
+No tolerable misstatement, no projection of random-stratum errors to the untested
+population, wrong conclusion gate ("exceptions resolved?" — contradicted by the demo's own
+uncorrected misstatement at step 10 vs sign-off at step 12), and `verification_check`
+disagree had no consequence flow.
+**Response: ADOPTED in full.** `materiality.te_pct/te_amount` + `sample_evaluation`
+(known/projected misstatement, method, untested remainder, vs-TE comparison) added to the
+schema (0001/0002 before first commit of the migrations); projection math is kernel
+arithmetic (S3/S6 DoD, unit-tested); NEP/PCAOB workpaper formats gain a mandatory
+evaluation section (`wp.evaluation`); conclusion gate re-specified: *all exceptions
+dispositioned (resolved or promoted to misstatement) AND aggregate known+projected
+misstatement evaluated against TE — human concludes (L4)*; verification disagree
+auto-raises a `verification_disagreement` exception + documented expand-or-reperform
+decision rendered in the spot-check section.
+
+### Senior manager — one-pass pipeline vs how fieldwork actually runs
+(a) Request items restricted to sampled units would block standing PBC; (b) re-import
+supersession orphans sample/request/match provenance; (c) the seeded TB↔FEC mismatch
+collides with an absolute reconciliation hard gate.
+**Response: ADOPTED.** (a) 03 §1.1 corrected — the over-asking mitigation applies to
+*evidence-per-tested-unit* items; procedure-level standing items (listings, TB/GL/FEC,
+explanations) exist from day one (schema always allowed it). (b) `gl_entry.natural_key`
+(journal|entry|line) + `gl_entry_supersession` carry-forward + **ADR-016 hard rule**:
+TB/GL re-import after a drawn sample requires an explicit invalidation confirmation that
+supersedes dependent samples (events logged); top-up draws (`supersedes_sample_id`,
+`carried_from_item_id`) preserve tested items. (c) `reconciliation_item` rows carry
+`open|documented_difference|resolved`; the population gate is **per tested FSLI's
+accounts**, and a documented difference passes with the difference rendered in the
+workpaper.
+
+### CPO + CTO + skeptical engineer + red team (convergent) — the acceptance oracle freezes before the semantics that define it exist
+C1 committed a dataset whose "zero false negatives" contract depends on importer
+canonicalization (S1), materiality caps (S2), population/flags (S3), tolerances (S6) and
+the draw itself; any later fix silently moves the draw off the seeded anomalies and
+detonates a regeneration cascade (PDFs → sha256s → extraction fixtures → export
+expectations) at the worst point of the run. The SOX attribute loop is maximally coupled
+(12 instances, draw of 3). Demo's "adjust materiality" step can unsample the anomalies.
+**Response: ADOPTED — build order restructured (ADR-015).** C1 splits:
+- **C1a — deterministic kernel (before any dataset bytes)**: gl_entry canonicalization +
+  natural-key spec, population_hash canonical serialization (versioned, single module),
+  PCG→FSLI map, population builder + ADR-003 flags, materiality math, sampling engine
+  (both methods), vouching tolerance checks, projection math — pure unit-tested libraries.
+- **C1b — generator imports the kernel**: computes the real draw under **pinned demo
+  params** (`dataset/demo-params.json`, which the demo script's "adjust" steps land on),
+  places anomalies robustly (substantive anomalies pinned to deterministic strata —
+  high-value above coverage cap or risk-flagged — wherever possible; SOX deviations placed
+  inside the pinned draw), and emits each PDF **together with** its extraction fixture and
+  an expected-exception manifest so all fixtures co-move on regeneration; ANOMALIES.md is
+  generator-emitted.
+- **Placement-invariant test from C1 onward**: recompute population → flags → draw with
+  current engine + pack config and assert every manifest anomaly is detectable; drift
+  fails at the slice that caused it. Zero-FN is testable at C1, not S6.
+- S8 split into S8a (RCM/D&I/instances/listing import) and S8b (attribute testing/
+  deficiencies/OE workpaper); S8 UI held to four surfaces + deficiency panel. The
+  listing→control_instance importer is **owned by S8a**; the SOX request flow is two
+  requests (population listing first; per-sampled-instance evidence after the draw) — demo
+  script fixed.
+
+### AI architect — ADR-012 not implementable in the schema as specified
+No engine-run identity for deterministic runs; drafted artifacts lacked ai_run links; the
+spot-check subsample had no stored seed/params/population-hash (the one draw an inspector
+probes); agree/disagree forecloses blind re-performance; disagree was a dead end.
+**Response: ADOPTED** (migration 0006, before S6 consumes it): `engine_run` table (engine,
+version, pack id, config hash, params) referenced from sample, match batches,
+reconciliation, workpaper, deficiency; `ai_run_id` linkage for drafted workpaper sections
+(per-section in sections jsonb), deficiency narrative, evidence classification;
+`verification_run` header (seed, params, machine-passed population hash, rate) parenting
+`verification_check`; blind capture: verifier's independent values recorded before the
+machine result is revealed, agreement computed, disagree auto-raises an exception with a
+pack escalation note. 07 S7/S8 ACs updated.
+
+## Red-team kill-list dispositions
+
+| Item | Disposition |
+|---|---|
+| Kill group/component/referral tables + demo step 14 | REJECTED — mandated by the master data model (component-auditor beachhead); already built and tested; near-zero carry cost |
+| Kill inbound-email fixtures + demo:email | PARTIAL — kept (S4 mandate: interface real, transport mocked) but held to one minimal fixture path |
+| Kill walkthrough table | REJECTED — mandated data-model-only; one table |
+| Kill Excel exports / audience-variant tracker | REJECTED — P6 + S7/S10 are explicit founder mandates; Excel scope held to one-sheet workpaper + tracker variants |
+| Kill IFRS/US-GAAP thin maps | KEPT as labeled skeletons (Gate 1 disposition) |
+| Simplify reminders to manual | PARTIAL — cadence kept (S4 mandate) but computed lazily (no background scheduler locally); time-warp stays for the demo |
+| Simplify notification service | ADOPTED — table stays, no separate delivery abstraction |
+| Simplify injection-quarantine to structural checks + manual flag | ADOPTED — no classifier claims in v1 (06 §6.1 reworded) |
+| Event-log chain: test-verified, concurrency ADR | PARTIAL — chain + verify stay (single-writer local is sound); production write-serialization noted in ADR-016; UI indicator kept (cheap) |
+| RLS split / auth shim | ALREADY SOLVED — 0004_rls.sql uses `current_setting`-based helpers (no auth.* references); applies cleanly on PGlite; Supabase JWT mapping in DEPLOY.md |
+| Assign lock/amendment triggers to a slice | DONE in S0 (0003_infra.sql, test-asserted) |
+
+**Gate 2 verdict**: proceed to Stage C under the restructured order (C1a kernel → C1b
+generator → S1…) with schema amendments 0006 landed first. The standing meta-risk from
+Gate 1 (v1 is an engineering artifact; first reality contact is the pilot) remains logged.

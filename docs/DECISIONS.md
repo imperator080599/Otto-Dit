@@ -196,3 +196,37 @@ new decisions appear here.
 - **Confidence**: H (sources in 10_D13_RESEARCH.md; exact phase-in tiers to re-verify from
   an unblocked environment before compliance-grade publication). **Reverse**: edit pack
   config.
+
+## ADR-015 — Kernel-first dataset contract (adopted from Gate 2)
+
+- **Decision**: The deterministic kernel (gl_entry canonicalization + natural keys,
+  population_hash canonical serialization, CoA→FSLI mapping, population builder + JE
+  flags, materiality math, sampling engine both methods, vouching tolerance checks,
+  misstatement projection math) is built as pure unit-tested libraries **before** any
+  dataset bytes exist (slice C1a). The generator (C1b) imports that kernel, computes the
+  real draw under pinned demo params (`dataset/demo-params.json`), places anomalies
+  robustly (substantive anomalies pinned to deterministic strata — high-value or
+  risk-flagged — wherever possible), and emits each evidence PDF together with its
+  extraction fixture and an expected-exception manifest, so all fixtures co-move on
+  regeneration. A placement-invariant test runs from C1 onward: recompute population →
+  flags → draw with the current engine + pack config and assert every manifest
+  anomaly/deviation is detectable — drift fails at the slice that caused it.
+- **Rationale**: Gate 2 (CPO/CTO/engineer/red team convergent): committing an acceptance
+  oracle before the semantics that define it exist guarantees late, cascading breakage.
+- **Confidence**: H. **Reverse**: n/a — strictly safer ordering.
+
+## ADR-016 — Re-import invalidation rule + audit-chain serialization
+
+- **Decision**: (1) TB/GL re-import into an engagement with a drawn sample requires an
+  explicit "invalidate downstream" confirmation: dependent samples are marked superseded
+  (their tested items preserved and carriable via `carried_from_item_id` top-up draws),
+  affected workpapers flip to `outdated`, and the cascade is event-logged. Silent
+  cross-version provenance is impossible; the inspector question "the GL changed after the
+  draw — why is this sample valid?" has a stored answer. gl_entry natural keys +
+  `gl_entry_supersession` keep request/evidence links resolvable across versions.
+  (2) Event-log hash chain: local PGlite writes are single-connection serialized; on
+  Supabase the chain per engagement must be written through a serialized path (pg advisory
+  lock per engagement id in the insert function) — documented for DEPLOY, verified by the
+  chain-verification job/test either way.
+- **Confidence**: H. **Reverse**: pack-level config could later allow "amend population"
+  flows (delta reconciliation + top-up) without full supersession; schema already permits.

@@ -90,6 +90,21 @@ deletes** anywhere provenance flows — supersede with versions.
 | `review_note` | engagement_id, workpaper_id?, author_id, assignee_id?, status(open\|addressed\|closed), text, addressed_at?, closed_at? | Human-only (idea #17); never client-visible; excluded from exports by audience rules. |
 | `signoff` | workpaper_id, user_id, sign_role(preparer\|reviewer\|partner), signed_at | **Append-only, immutable.** Re-draft after sign-off ⇒ new version requiring re-sign. |
 
+## 7bis. Run identity & verification (Gate 2 / ADR-012)
+
+| Table | Key fields | Notes |
+|---|---|---|
+| `engine_run` | engagement_id, engine(importer\|reconciliation\|population\|sampling\|matching\|attribute_testing\|workpaper_draft\|deficiency_rules\|projection), engine_version, pack_id, config_hash, params, started/finished | Identity for deterministic runs; referenced from sample, reconciliation, match, workpaper, deficiency. Workpaper attribution cites this run. |
+| `verification_run` | procedure_id, engine_run_id, seed, rate, min_items, machine_passed_population_hash, counts | The spot-check subsample is itself a seeded reproducible draw — stored, never recomputed. |
+| `verification_check` (+) | verification_run_id, **blind_values jsonb** (verifier's independent values captured before machine-result reveal), result computed, escalation(none\|expand_subsample\|reperform_procedure), exception_id on disagree | Blind re-performance, with a consequence flow. |
+| `sample_evaluation` | sample_id, known_misstatement, projected_misstatement, projection_method(ratio\|difference\|none), tested coverage/random amounts, untested_amount, te_amount, conclusion_basis, concluded_by/at | ISA/NEP 530-shaped evaluation inside the procedure workpaper; conclusion gate = all exceptions dispositioned AND known+projected evaluated vs TE (human concludes, L4). |
+
+**population_hash canonical spec (v1)**: rows sorted by (entry_date, entry_no, line_no);
+serialized fields `[natural_key, account_no, debit_cents, credit_cents]` (amounts as
+integer cents); joined with `\n`, sha256, prefixed `pophash-v1:`. One kernel module defines
+it; generator and app both import that module (ADR-015). For control populations: rows
+sorted by (label), fields `[label, occurred_on, performer_name]`.
+
 ## 8. Infrastructure
 
 | Table | Key fields | Notes |

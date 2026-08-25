@@ -35,9 +35,13 @@ suggestion.
   (`draft → sent → partially_submitted → submitted → accepted/reopened`).
 - **HITL**: request generation L2 (auditor approves send); reminders L1 (cadence visible,
   pausable, logged); client "All supporting evidence submitted" flips status L0.
-- **Failure modes**: over-asking (mitigation: items generated only from sampled units, not
-  populations); reminder spam (cadence config + log); orphan requests (FK to procedure
-  mandatory).
+- **Request kinds** (Gate 2): *standing/procedure-level* items (listings, TB/GL/FEC,
+  explanations) exist from engagement setup, before any sampling; *per-tested-unit* items
+  are generated only from sampled units (the over-asking mitigation applies to these, never
+  to standing PBC). The SOX flow is two requests: population listing first, per-sampled-
+  instance evidence after the draw.
+- **Failure modes**: over-asking (per-unit items only from samples); reminder spam
+  (cadence config + log); orphan requests (FK to procedure mandatory).
 - **Audit-trail writes**: every status transition, send, reminder, and reopen → `event_log`.
 
 ### 1.2 Evidence engine
@@ -68,10 +72,16 @@ suggestion.
   follow-up drafts.
 - **HITL**: population build L0; sampling parameters L3 (proposed + rationale, auditor
   validates); sample execution L0; vouching L0 (deterministic) with L2 verification where
-  extraction confidence was low; exception raising L1; exception resolution L2–L4.
+  extraction confidence was low; exception raising L1; exception resolution L2–L4;
+  **sample evaluation** (known + projected misstatement vs tolerable misstatement, Gate 2)
+  computed L0, concluded L4.
 - **Failure modes**: tolerance misconfiguration (pack defaults + per-engagement override
-  logged); population incompleteness (population always reconciled to TB first — hard gate);
-  extraction garbage-in (confidence threshold routes to human verify before matching).
+  logged); population incompleteness (**per-FSLI gate**: the tested FSLI's accounts must
+  each be clean or carry a `documented_difference` reconciliation state — an absolute
+  engagement-wide gate would deadlock on any open difference, Gate 2); extraction
+  garbage-in (confidence threshold routes to human verify before matching); mid-engagement
+  re-import (ADR-016 invalidation rule: explicit confirmation supersedes dependent samples,
+  tested items carriable via top-up draws; natural keys keep links resolvable).
 - **Audit-trail writes**: population built, params proposed/validated, sample drawn (with
   seed), each test executed, each exception raised/transitioned → `event_log`.
 

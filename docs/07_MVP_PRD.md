@@ -73,9 +73,11 @@ log, dashboard with client-safe view + Excel tracker export.
 **S4 Requests & portal**
 9. As a senior, I approve the auto-generated PBC request. *AC: items link to sampled GL
    lines; L2 send gate; request numbered (R-001…).*
-10. As a client contact, I open my magic link, see my requests, upload files per item, and
-    press "All supporting evidence submitted". *AC: statuses flow
-    sent→partially_submitted→submitted; portal is French (engagement language); client can
+10. As a client contact, I open my magic link, see my requests, upload files per item,
+    answer explanation items in text (Gate 2), and press "All supporting evidence
+    submitted". *AC: statuses flow sent→partially_submitted→submitted; explanation-type
+    items accept typed answers feeding exception resolution; standing (procedure-level)
+    items exist before any sampling; portal is French (engagement language); client can
     reach zero audit documentation (test-asserted).*
 11. As a senior, I see reminders fire on the configured cadence with a visible log.
     *AC: cadence configurable/pausable; reminders logged; demo time-warp helper advances
@@ -93,7 +95,13 @@ log, dashboard with client-safe view + Excel tracker export.
 13. As a senior, I run vouching and consume typed exceptions, not raw matches.
     *AC: tolerances from pack config; all seeded substantive anomalies produce exceptions
     (acceptance suite: zero false negatives; false positives listed+triaged); exception
-    lifecycle transitions logged; clarification request drafts require approval (L2).*
+    lifecycle transitions logged; clarification request drafts require approval (L2);
+    an exception can be promoted to a misstatement (factual/judgmental/projected,
+    corrected/uncorrected — ADR-011); the sample evaluation (known + projected
+    misstatement vs TE, kernel arithmetic) recomputes on every disposition (Gate 2);
+    blind verification spot-check: verifier enters independent values BEFORE the machine
+    result is revealed; disagreement auto-raises an exception with an escalation decision
+    (expand subsample / re-perform), all stored on verification_run/check.*
 
 **S7 Workpaper (NEP)**
 14. As a senior, I open the auto-drafted French revenue workpaper; every figure
@@ -168,8 +176,10 @@ Dataset: `dataset/` (committed, regenerable via seeded generator; anomalies in
    validation report (clean file passes; violations demo on mutated fixture).
 3. Reconciliation view: **one account mismatch surfaces (seeded)** → exception raised;
    other accounts tie.
-4. Materiality: proposal (benchmark + % + French rationale) → adjust/validate → PM + CTT
-   computed. FSLI scoping: NS proposals → confirm (one qualitative in-scope override).
+4. Materiality: proposal (benchmark + % + French rationale) → validate (the demo
+   validates the proposal's pinned values from dataset/demo-params.json — free adjustment
+   is possible but moves the acceptance path, see DEMO.md) → M, PM, CTT and TE computed.
+   FSLI scoping: NS proposals → confirm (one qualitative in-scope override).
 5. Revenue population: JE risk flags visible (**seeded weekend round-amount manual JE,
    credit-note pattern**). Sampling: params proposed → validate → deterministic draw
    (high-value + random, reasons shown).
@@ -183,8 +193,11 @@ Dataset: `dataset/` (committed, regenerable via seeded generator; anomalies in
    quantity mismatch, cut-off error** (all seeded) as typed objects with lifecycles.
 10. Follow-ups: auto-drafted clarification (FR) → approve → client answers (fixture) →
     resolve two, escalate one → **misstatement proposed (uncorrected)**.
-11. Verification spot-check (ADR-012.3): blind re-perform the seeded subsample of
-    machine-passed items → record agree/disagree → section appears in the workpaper.
+11. Verification spot-check (ADR-012.3): a seeded verification_run draws the subsample
+    of machine-passed items; blind re-perform (independent values entered before reveal)
+    → agreement computed → section appears in the workpaper. Sample evaluation: known +
+    projected misstatement computed against TE; senior records the conclusion basis
+    ("Évaluation des anomalies", Gate 2).
 12. Workpaper **REV-01 (FR)** drafted: attribution "Performed by OTTO engine run … —
     Validated by …"; sample table with per-item evidence links + extracted fields; edit
     one cell → justification + visible flag; review note (Claire) → address → close;
@@ -198,10 +211,12 @@ Dataset: `dataset/` (committed, regenerable via seeded generator; anomalies in
 14. Switch engagement: referral instructions from group auditor visible (data model).
 15. RCM: revenue + treasury controls incl. **1 ITGC**; D&I gate demo (one control blocked
     until assessed).
-16. Control C-BR-01 "Monthly bank reconciliation": instance population (12 months) via
-    request R-101 → client provides listing + signed reconciliations.
-17. Attribute sampling per frequency table (monthly → pack default size, overridable) →
-    deterministic draw.
+16. Control C-BR-01 "Monthly bank reconciliation": population listing requested first
+    (R-101, standing item) → client provides the 12-month listing → instances imported;
+    attribute sampling per frequency table (monthly → pack default, overridable) →
+    deterministic draw → per-sampled-instance evidence request (R-102) sent (Gate 2
+    two-request flow).
+17. Client uploads the signed reconciliations for the sampled months via the portal.
 18. Attribute testing (prepared timely / preparer≠approver / approval present / items
     resolved): **seeded deviations surface — missing approval, performed late, wrong
     performer, missing evidence for one instance**.

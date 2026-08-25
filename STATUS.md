@@ -4,8 +4,8 @@
 
 ## Current state
 
-- **Stage**: B (development plan) — docs 03–07 drafted, Gate 1 + D13 research applied;
-  writing 08_BACKLOG, then Gate 2.
+- **Stage**: C (execution) — Stage B complete (docs 03–08 + Gate 2 applied); S0 scaffold
+  built and tested; next: C1a deterministic kernel per ADR-015.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
 
 ## Done
@@ -17,10 +17,25 @@
 - docs/02_TARGET_CONCEPT.md — spine, pack system, workspaces, wedge, NOT-list, 5 improvements.
 - docs/DECISIONS.md (ADR-001..011), ASSUMPTIONS.md (A1..A10), OPEN_QUESTIONS.md (Q1..Q10).
 
+## Done (Stage B + Gate 2 + S0)
+
+- docs 03–08 complete; Gate 2 (7 agents) executed → 09_GATES.md Gate 2 section.
+  Adopted: sample evaluation vs TE (materiality.te_*, sample_evaluation), per-FSLI
+  reconciliation gate with documented_difference, standing request items, gl_entry
+  natural keys + ADR-016 re-import invalidation, ADR-015 kernel-first dataset contract
+  (C1a/C1b split, pinned demo params, placement-invariant test), engine_run +
+  verification_run + blind capture (migration 0006), S8a/S8b split.
+- S0 scaffold: Next.js 15 + TS app in app/; PGlite + migrations 0001–0006 (all apply,
+  tested); hash-chained event log + append-only + lock triggers (tested); seed demo world
+  (2 engagements); packs (nep-fr, pcaob-sox, pcg + skeleton maps); UI shell + dev auth +
+  portal tokens; `npm run db:setup && npm run dev` works; `npm test` green (4 tests).
+
 ## Next actions
 
-1. docs/08_BACKLOG.md, then Gate 2 (Stage B lenses + red team) → 09_GATES.md; commit+push.
-2. Stage C: app scaffold → dataset generator → slices S1–S10 per backlog.
+1. C1a: deterministic kernel (canonicalization, population_hash, population+flags,
+   materiality math, sampling, tolerances, projection, deficiency rules) + unit tests.
+2. C1b: dataset generator importing the kernel; commit dataset + ANOMALIES.md.
+3. S1… per docs/08_BACKLOG.md.
 
 ## Done (Stage A gate + D13)
 
