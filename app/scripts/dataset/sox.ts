@@ -174,11 +174,17 @@ export function buildSox(): SoxDataset {
   };
 }
 
+/** RFC4180-style quoting so free-text fields (which contain ';' and ',') survive. */
+function csvCell(v: string): string {
+  return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
 export function serializeRcmCsv(): string {
   const head = 'code;name;description;frequency;nature;effect;is_key;itgc_area;owner;process;risk_desc;assertions;coso_component;di_status';
   const rows = RCM.map((c) =>
     [c.code, c.name, c.description, c.frequency, c.nature, c.effect, c.isKey ? 'yes' : 'no',
-      c.itgcArea ?? '', c.owner, c.process, c.riskDesc, c.assertions.join('|'), c.cosoComponent, c.diStatus].join(';'),
+      c.itgcArea ?? '', c.owner, c.process, c.riskDesc, c.assertions.join('|'), c.cosoComponent, c.diStatus]
+      .map(csvCell).join(';'),
   );
   return [head, ...rows].join('\n') + '\n';
 }
