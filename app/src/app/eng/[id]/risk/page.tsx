@@ -5,6 +5,10 @@ import { listFslis } from '@/lib/services/fsli';
 import {
   assessFsli, risksFor, overrideLevel, requiredProcedures, excludedProcedures,
 } from '@/lib/services/risk';
+import {
+  questionsOfScope, answers, answerQuestion, register, decideFactor,
+  questionnaireObstacles, quantitativeShare,
+} from '@/lib/services/questionnaire';
 
 // Le risque par assertion, et CE QU'IL COMMANDE.
 //
@@ -45,11 +49,46 @@ export default async function RiskPage({
   const risks = await risksFor(id, code);
   const required = await requiredProcedures(id, code);
   const excluded = await excludedProcedures(id, code);
+  const sectionAnswers = await answers(id, code);
+  const entityAnswers = await answers(id, null);
+  const obstaclesSection = await questionnaireObstacles(id, code);
+  const obstaclesEntity = await questionnaireObstacles(id, null);
+  const reg = await register(id);
+  const share = await quantitativeShare(cat);
+  const byCode = new Map([...sectionAnswers, ...entityAnswers].map((a) => [a.question_code, a]));
 
   async function assessAction(formData: FormData) {
     'use server';
     const { user } = await requireMember(id);
     await assessFsli(id, String(formData.get('fsli')), user.id);
+    revalidatePath(`/eng/${id}/risk`);
+  }
+
+  async function answerAction(formData: FormData) {
+    'use server';
+    const { user } = await requireMember(id);
+    const scope = String(formData.get('scope'));
+    await answerQuestion({
+      engagementId: id,
+      fsliCode: scope === 'entite' ? null : String(formData.get('fsli')),
+      questionCode: String(formData.get('question')),
+      answer: String(formData.get('answer')) as 'oui' | 'non',
+      detail: String(formData.get('detail') ?? ''),
+      actorUserId: user.id,
+    });
+    revalidatePath(`/eng/${id}/risk`);
+  }
+
+  async function decideAction(formData: FormData) {
+    'use server';
+    const { user } = await requireMember(id);
+    await decideFactor(
+      id,
+      String(formData.get('factor')),
+      String(formData.get('status')) as 'confirmed' | 'dismissed',
+      String(formData.get('reason') ?? ''),
+      user.id,
+    );
     revalidatePath(`/eng/${id}/risk`);
   }
 
@@ -155,6 +194,125 @@ export default async function RiskPage({
           {cat.risque.paliers.map((p) => `${p.facteurs_min}+ → ${p.niveau}`).join(' · ')} (méthode
           v{cat.risque.version}, modifiable dans <span className="mono">methodology/risque.json</span>).
         </p>
+      </div>
+
+      {/* ── LE QUALITATIF ─────────────────────────────────────────────
+          Sans lui l'évaluation ne verrait que ce qui se compte : un changement
+          de dirigeant, une pression sur le résultat, un litige non provisionné
+          ne sont dans aucun grand livre. */}
+      <div className="panel">
+        <h2>Questionnaire résiduel</h2>
+        <p className="faint">
+          Uniquement ce qu’<strong>aucune autre source du dossier</strong> ne peut lever. Une réponse
+          « oui » ne coche rien : elle <strong>crée un facteur au registre</strong>, avec son texte.
+          Évaluation actuelle : <strong>{share.quantitative} règles calculées</strong> et{' '}
+          <strong>{share.qualitative} sources déclarées</strong> — {share.pctQuantitative.toFixed(1)} %
+          de quantitatif.
+        </p>
+
+        {(obstaclesEntity.length > 0 || obstaclesSection.length > 0) && (
+          <div className="callout warn">
+            <strong>Obstacles au visa</strong>
+            <ul>
+              {obstaclesEntity.map((o) => <li key={`e-${o}`}>entité — {o}</li>)}
+              {obstaclesSection.map((o) => <li key={`s-${o}`}>{code} — {o}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {(['entite', 'section'] as const).map((scope) => (
+          <div key={scope}>
+            <h3>{scope === 'entite' ? 'Questions d’entité — posées une fois' : `Questions de section — ${code}`}</h3>
+            <table className="data">
+              <tbody>
+                {questionsOfScope(cat, scope).map((x) => {
+                  const a = byCode.get(x.code);
+                  const manque = a?.answer === 'oui' && !a.detail.trim();
+                  return (
+                    <tr key={x.code}>
+                      <td>
+                        <strong>{x.question}</strong>
+                        <div className="faint">Pourquoi elle existe encore : {x.pourquoi}</div>
+                        <div className="faint">Effet d’un « oui » : {x.effet}</div>
+                        {x.disparait_quand && (
+                          <div className="faint">Elle disparaîtra quand {x.disparait_quand}.</div>
+                        )}
+                      </td>
+                      <td style={{ minWidth: 380 }}>
+                        <form action={answerAction} className="row">
+                          <input type="hidden" name="scope" value={scope} />
+                          <input type="hidden" name="fsli" value={code} />
+                          <input type="hidden" name="question" value={x.code} />
+                          <select name="answer" defaultValue={a?.answer ?? ''} required>
+                            <option value="" disabled>— à répondre —</option>
+                            <option value="non">non</option>
+                            <option value="oui">oui</option>
+                          </select>
+                          <input type="text" name="detail" defaultValue={a?.detail ?? ''}
+                            placeholder="précision — obligatoire si « oui »"
+                            style={{ width: 240, borderColor: manque ? 'var(--red)' : undefined }} />
+                          <button className="btn small secondary">enregistrer</button>
+                        </form>
+                        {manque && (
+                          <div className="faint" style={{ color: 'var(--red)' }}>
+                            Un « oui » sans précision crée un facteur que personne ne pourra relire.
+                            La réponse est gardée ; le visa reste bloqué.
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+
+      <div className="panel">
+        <h2>Registre des facteurs déclarés — {reg.length}</h2>
+        <p className="faint">
+          Une constatation faite <strong>ailleurs</strong> se pose seule sur les sections concernées,
+          avec un lien vers sa source. Un facteur <strong>non statué bloque le visa</strong> ; l’écarter
+          exige un motif écrit, sans quoi « écarté » et « oublié » se ressemblent.
+        </p>
+        <table className="data">
+          <thead>
+            <tr><th>Source</th><th>Nature</th><th>Constatation</th><th>Vise</th><th>Statut</th><th /></tr>
+          </thead>
+          <tbody>
+            {reg.length === 0 ? (
+              <tr><td colSpan={6} className="faint">Aucun facteur déclaré.</td></tr>
+            ) : reg.map((f) => (
+              <tr key={f.id}>
+                <td className="mono">{f.source}{f.source_ref ? ` · ${f.source_ref}` : ''}</td>
+                <td>{cat.questionnaire.naturesRi[f.nature]?.libelle ?? f.nature}</td>
+                <td style={{ maxWidth: 320 }}>
+                  {f.description}
+                  {f.decision_reason && <div className="faint">décision : {f.decision_reason}</div>}
+                </td>
+                <td className="faint">
+                  {f.targets.map((t) => `${t.fsli} (${t.assertions.join(', ')})`).join(' · ')}
+                </td>
+                <td>
+                  <span className={`badge ${f.status === 'confirmed' ? 'blue' : f.status === 'dismissed' ? 'gray' : 'amber'}`}>
+                    {f.status}
+                  </span>
+                </td>
+                <td>
+                  {f.status === 'proposed' && (
+                    <form action={decideAction} className="row">
+                      <input type="hidden" name="factor" value={f.id} />
+                      <input type="text" name="reason" placeholder="motif" style={{ width: 160 }} />
+                      <button className="btn small secondary" name="status" value="confirmed">retenir</button>
+                      <button className="btn small secondary" name="status" value="dismissed">écarter</button>
+                    </form>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* ── CE QUE LE RISQUE COMMANDE ─────────────────────────────────── */}

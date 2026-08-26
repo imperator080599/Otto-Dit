@@ -63,7 +63,7 @@ function validerObjet(obj, def, chemin, erreurs){
  * @param {object} schema  contenu de schema.json
  * @returns {string[]}
  */
-export function validerCatalogue(cat, src, schema){
+export function validerCatalogue(cat, src, schema, echelle){
   const erreurs = [];
   const defProc = schema.definitions.procedure;
   const defJust = defProc.properties.justificatifs.items;
@@ -113,6 +113,13 @@ export function validerCatalogue(cat, src, schema){
     }
     if (p.sens && cat.sens_de_test && !cat.sens_de_test[p.sens])
       erreurs.push(`${ou} : sens « ${p.sens} » absent de sens_de_test`);
+    /* Le niveau exigé se valide contre L'ÉCHELLE DU CABINET, pas contre une
+       liste figée dans le schéma. C'est ce qui autorise quatre niveaux, deux,
+       ou « limité / normal / accru » — et c'est plus strict qu'une énumération,
+       parce que cela attrape en plus une divergence entre les deux fichiers. */
+    if (echelle && p.risque_minimum && !echelle.includes(p.risque_minimum))
+      erreurs.push(`${ou} : risque_minimum « ${p.risque_minimum} » absent de l’échelle du cabinet `
+        + `(${echelle.join(' | ')})`);
   }
 
   const codes = (cat.procedures || []).map(p => p.cycle + '/' + p.code);
@@ -266,7 +273,10 @@ export function chargerCatalogue(racine){
   const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
   const ind = lire('independance.json'), schemaI = lire('schema-independance.json');
   const risq = lire('risque.json'), schemaR = lire('schema-risque.json');
-  const erreurs = validerCatalogue(cat, src, schema)
+  /* L'échelle est lue AVANT le catalogue : c'est elle qui dit quels niveaux
+     une procédure a le droit d'exiger. */
+  const echelle = ((risq || {}).echelle || {}).niveaux || [];
+  const erreurs = validerCatalogue(cat, src, schema, echelle)
     .concat(validerQuestionnaire(quest, src, schemaQ))
     .concat(validerIndependance(ind, src, schemaI))
     .concat(validerRisque(risq, src, schemaR));

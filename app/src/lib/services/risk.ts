@@ -21,9 +21,10 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { chargerCatalogue } from '@/lib/methodology/catalogue';
-import { proceduresDuCycle } from '@/lib/methodology/catalogue';
+import { proceduresDuCycle, rangNiveau } from '@/lib/methodology/catalogue';
 import type { Catalogue, Procedure } from '@/lib/methodology/types';
 import { engagementContext } from './team';
+import { declaredFactorsFor } from './questionnaire';
 import { numToCents } from '@/lib/util/num';
 import { engagementRules } from './fsli';
 import { mapAccount } from '@/lib/kernel/fsli-map';
@@ -202,10 +203,15 @@ export function levelForCount(cat: Catalogue, n: number): Level {
   return applicable.niveau;
 }
 
+/** Le rang d'un niveau. Une seule implémentation dans le dépôt : celle du
+ *  chargeur de méthode. La dupliquer ici la ferait diverger le jour où un
+ *  cabinet change d'échelle. */
 export function rank(cat: Catalogue, level: Level): number {
-  const i = cat.risque.niveaux.indexOf(level);
-  if (i < 0) throw new RiskRuleError(`niveau « ${level} » absent de l’échelle du cabinet`);
-  return i;
+  try {
+    return rangNiveau(cat, level);
+  } catch (e) {
+    throw new RiskRuleError(e instanceof Error ? e.message : String(e));
+  }
 }
 
 /* ── évaluer un poste ────────────────────────────────────────────────────── */
@@ -241,6 +247,22 @@ export async function assessFsli(
   const facts = await factsFor(engagementId, fsliCode);
 
   const active = new Map<string, { factor_code: string; label: string; evidence: string; predicate: string }[]>();
+  /* LES FACTEURS DÉCLARÉS COMPTENT COMME LES OBSERVÉS.
+     C'est ici que la circulation produit son EFFET plutôt qu'un affichage : une
+     constatation confirmée qui vise (ce poste, cette assertion) pèse sur le
+     niveau au même titre qu'un fait calculé. Sans cela, le registre serait une
+     liste qu'on lit, et le risque resterait à 100 % quantitatif. */
+  for (const d of await declaredFactorsFor(engagementId, fsliCode)) {
+    const list = active.get(d.assertion) ?? [];
+    list.push({
+      factor_code: `${d.source}:${d.source_ref ?? '—'}`,
+      label: d.description,
+      evidence: `déclaré · ${cat.questionnaire.naturesRi[d.nature]?.libelle ?? d.nature}`
+        + (d.source_ref ? ` · source ${d.source_ref}` : ''),
+      predicate: 'declare',
+    });
+    active.set(d.assertion, list);
+  }
   await q(`delete from risk_factor_observed where engagement_id = $1 and fsli_code = $2`, [engagementId, fsliCode]);
   for (const f of cat.risque.facteurs) {
     const fn = PREDICATES[f.predicat];
@@ -259,7 +281,9 @@ export async function assessFsli(
 
   const assertions = new Set<string>([
     ...cat.risque.facteurs.map((f) => f.assertion),
+    ...cat.questionnaire.questions.map((x) => x.assertion),
     ...cat.procedures.map((p) => p.assertion),
+    ...active.keys(),
   ]);
   const out: AssertionRisk[] = [];
   for (const a of [...assertions].sort()) {
@@ -325,22 +349,40 @@ export async function levelFor(engagementId: string, fsliCode: string, assertion
   return r ? (r.retained_level ?? r.computed_level) : null;
 }
 
+/**
+ * Les niveaux d'un poste, AVEC les facteurs qui les ont produits — observés ET
+ * déclarés.
+ *
+ * Les deux doivent être rendus ensemble : le niveau compte les deux sortes, et
+ * un écran qui afficherait « 2 facteurs » au-dessus d'une liste qui n'en montre
+ * qu'un serait pire qu'un écran muet. C'est le test qui l'a relevé : le compte
+ * montait, la liste ne suivait pas.
+ */
 export async function risksFor(engagementId: string, fsliCode: string): Promise<AssertionRisk[]> {
+  const cat = await chargerCatalogue();
   const rows = await q<Omit<AssertionRisk, 'level' | 'factors'>>(
     `select fsli_code, assertion, computed_level, factor_count, retained_level,
             override_reason, decided_by
      from fsli_assertion_risk where engagement_id = $1 and fsli_code = $2 order by assertion`,
     [engagementId, fsliCode],
   );
-  const factors = await q<{ assertion: string; factor_code: string; label: string; evidence: string }>(
+  const observed = await q<{ assertion: string; factor_code: string; label: string; evidence: string }>(
     `select assertion, factor_code, label, evidence from risk_factor_observed
      where engagement_id = $1 and fsli_code = $2 order by assertion, factor_code`,
     [engagementId, fsliCode],
   );
+  const declared = (await declaredFactorsFor(engagementId, fsliCode)).map((d) => ({
+    assertion: d.assertion,
+    factor_code: `${d.source}:${d.source_ref ?? '—'}`,
+    label: d.description,
+    evidence: `déclaré · ${cat.questionnaire.naturesRi[d.nature]?.libelle ?? d.nature}`
+      + (d.source_ref ? ` · source ${d.source_ref}` : ''),
+  }));
+  const all = [...observed, ...declared];
   return rows.map((r) => ({
     ...r,
     level: r.retained_level ?? r.computed_level,
-    factors: factors.filter((f) => f.assertion === r.assertion)
+    factors: all.filter((f) => f.assertion === r.assertion)
       .map(({ factor_code, label, evidence }) => ({ factor_code, label, evidence })),
   }));
 }

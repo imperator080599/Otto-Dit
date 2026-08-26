@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 229 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 252 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -630,6 +630,30 @@ sondages changent**.
   retient ne se conteste pas.
 
 **Vérification** : 229 tests applicatifs (212 → 229) · `tsc --noEmit` propre.
+
+## Application — tranche livrée : le qualitatif, et l'échelle du cabinet (point 5b)
+
+**Ratio quantitatif / qualitatif : 5 règles calculées, 10 sources déclarées — 33,3 % de quantitatif**
+(le prototype est à 45,5 %). Mesuré par un test, pas affirmé. Avant cette passe l'application était à
+**100 %** — l'état du prototype qui avait été rejeté, en plus prononcé.
+
+Livré (ADR-071, ADR-072) : migration `0013`, service `questionnaire.ts`, questionnaire et registre
+sur l'écran `/eng/[id]/risk`, `docs/12_CONFIGURABLE.md`, et 23 tests de plus.
+
+- **Le questionnaire ne coche rien** : un « oui » **crée un facteur au registre**, avec sa nature, sa
+  source et le texte écrit. Une question d'entité vise tous les postes retenus.
+- **Le registre fait CIRCULER** : une constatation faite ailleurs se pose seule sur les sections
+  visées. Confirmée, elle **monte le niveau et fait entrer des procédures** — proposée, elle ne
+  compte pas : un moteur qui lève n'a pas décidé.
+- **Trois règles bloquent** : question sans réponse, « oui » sans précision, facteur non statué.
+- **L'échelle appartient au cabinet** (ADR-071) : quatre niveaux ou deux, nommés librement, chargés
+  sans toucher au code — vérifié en chargeant réellement une méthode à quatre niveaux. Une table
+  `{faible:0, moyen:1, eleve:2}` écrite en dur a été supprimée.
+- **`docs/12_CONFIGURABLE.md`** : ce qui se configure sans code, ce qui exige un développement, et
+  pourquoi la frontière est là. Y compris ce qui n'est **pas** possible — la taille d'échantillon par
+  formule, chiffrée à une séance et rattachée au point 6.
+
+**Vérification** : 252 tests applicatifs (229 → 252) · `tsc --noEmit` propre.
 
 ## Convergence prototype → application
 

@@ -193,11 +193,8 @@
           }
         },
         "risque_minimum": {
-          "enum": [
-            "faible",
-            "moyen",
-            "eleve"
-          ]
+          "type": "string",
+          "description": "Niveau à partir duquel la procédure est requise. Validé contre l'échelle du cabinet (risque.json → echelle.niveaux), PAS contre une liste figée : un cabinet qui travaille à quatre niveaux, ou qui les nomme « limité / normal / accru », doit pouvoir le faire sans toucher au code."
         },
         "echantillonnee": {
           "type": "boolean"

@@ -51,7 +51,19 @@ export function oublierCatalogue(): void { _cache = null; }
    « cette procédure est-elle requise ici » appartient au moteur de risque,
    pas au catalogue.                                                        */
 
-const RANG: Record<string, number> = { faible: 0, moyen: 1, eleve: 2 };
+/**
+ * Le rang d'un niveau dans l'échelle DU CABINET.
+ *
+ * Il y avait ici une table `{ faible:0, moyen:1, eleve:2 }` écrite en dur —
+ * un doublon de la même logique dans `services/risk.ts`, et le seul endroit du
+ * dépôt qui empêchait un cabinet de travailler à quatre niveaux. Elle est
+ * remplacée par une lecture de l'échelle chargée.
+ */
+export function rangNiveau(cat: Catalogue, niveau: string): number {
+  const i = cat.risque.niveaux.indexOf(niveau);
+  if (i < 0) throw new Error(`niveau « ${niveau} » absent de l’échelle du cabinet (${cat.risque.niveaux.join(', ')})`);
+  return i;
+}
 
 /** Procédures d'un cycle : celles du cycle et les transverses (« * »). */
 export function proceduresDuCycle(cat: Catalogue, cycle: string): Procedure[] {
@@ -67,7 +79,7 @@ export function proceduresRequises(
   niveauParAssertion: (a: Procedure['assertion']) => Procedure['risque_minimum'],
 ): Procedure[] {
   return proceduresDuCycle(cat, cycle).filter(
-    (p) => RANG[niveauParAssertion(p.assertion)] >= RANG[p.risque_minimum],
+    (p) => rangNiveau(cat, niveauParAssertion(p.assertion)) >= rangNiveau(cat, p.risque_minimum),
   );
 }
 

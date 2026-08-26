@@ -20,7 +20,20 @@ export type SensDeTest =
   | 'recalcul' | 'confirmation' | 'observation' | 'analytique' | 'inspection';
 
 export type TypeChamp = 'montant' | 'date' | 'texte' | 'nombre' | 'bool';
-export type NiveauRisque = 'faible' | 'moyen' | 'eleve';
+/**
+ * Un niveau de risque est une CHAÎNE, pas une union figée.
+ *
+ * Les niveaux appartiennent au cabinet : ils vivent dans
+ * `methodology/risque.json` → `echelle.niveaux`, ils peuvent être deux, trois
+ * ou quatre, et s'appeler « limité / normal / accru ». Les figer ici en union
+ * TypeScript signifierait « votre méthode reste la vôtre, à condition qu'elle
+ * ressemble à la nôtre » — et un auditeur le teste en trente secondes.
+ *
+ * Ce qui les valide n'est donc pas le type mais le validateur, qui compare
+ * chaque `risque_minimum` à l'échelle du cabinet : plus strict qu'une
+ * énumération, parce qu'il attrape en plus une divergence entre les fichiers.
+ */
+export type NiveauRisque = string;
 
 /** « exhaustive_au_seuil » : aucun tirage, l'étendue se règle par le seuil. */
 export type ModeSelection = 'sondage' | 'exhaustive_au_seuil';

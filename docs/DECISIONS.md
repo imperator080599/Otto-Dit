@@ -2349,3 +2349,74 @@ arrêté) est **inactif et le dit** ; jamais supposé actif.
 
 **L'écran montre aussi les procédures ÉCARTÉES**, avec le niveau atteint et le minimum exigé. Une
 liste qui ne dit que ce qu'elle retient ne se conteste pas.
+
+---
+
+## ADR-071 — L'échelle de risque appartient au cabinet, pas au code
+
+**La question qui a provoqué cette décision** : « un cabinet qui travaille à QUATRE niveaux, ou qui
+les nomme *limité / normal / accru*, peut-il le faire ? » Réponse honnête après vérification :
+**non**, et il fallait le dire plutôt que le supposer.
+
+Trois endroits figeaient exactement `faible / moyen / eleve` : l'énumération de `risque_minimum` dans
+`schema.json`, l'union TypeScript `NiveauRisque`, et surtout **une table `{ faible:0, moyen:1,
+eleve:2 } écrite en dur** dans `catalogue.ts` — doublon de la même logique dans `risk.ts`, et le seul
+endroit du dépôt qui interdisait une autre échelle.
+
+**Ce que la validation devient** : `risque_minimum` n'est plus une énumération figée, il est comparé
+à **l'échelle du cabinet**. C'est **plus strict** qu'avant, parce que cela attrape en plus une
+divergence entre `procedures.json` et `risque.json` — une procédure exigeant un niveau que le cabinet
+n'a pas arrête l'assemblage.
+
+**Vérifié en le faisant** : un test charge réellement une méthode à **quatre niveaux nommés
+autrement**, une autre à **deux**, et vérifie que trois incohérences arrêtent l'assemblage (niveau
+absent de l'échelle, niveau sans taille d'échantillon, échelle ne couvrant pas zéro facteur).
+
+**Ce qui reste impossible, et qui est écrit** : une taille d'échantillon **par formule** plutôt que
+par table. Chiffré à une séance, à faire avec le point 6 — une formule a besoin de la population, et
+la population est le point 6. `docs/12_CONFIGURABLE.md` le dit noir sur blanc plutôt que de le
+laisser découvrir.
+
+---
+
+## ADR-072 — Le qualitatif entre dans l'application, et il COMMANDE
+
+**Le constat qui l'a imposé** : après l'ADR-070, l'évaluation du risque de l'application était à
+**100 % quantitative** — cinq facteurs calculés sur des écritures, rien d'autre. C'était l'état du
+prototype qui avait été rejeté (83 %), en plus prononcé. Une évaluation qui ne voit que ce qui se
+compte ne voit pas ce qui compte : un changement de dirigeant, une pression sur le résultat, un
+litige non provisionné ne sont dans aucun grand livre.
+
+**Ratio après cette passe : 5 règles calculées et 10 sources déclarées — 33,3 % de quantitatif**
+(le prototype est à 45,5 %). Le chiffre est **mesuré par un test**, pas affirmé.
+
+**Deux objets distincts, et c'est délibéré.**
+
+- Le **questionnaire résiduel** — ce qu'aucune autre source du dossier ne peut lever. Il **ne coche
+  rien** : une réponse « oui » **crée un facteur au registre**, avec sa nature, sa source et le texte
+  écrit par l'auditeur. Une question d'entité vise **tous les postes retenus au périmètre**.
+- Le **registre des facteurs déclarés** — les constatations qui **circulent**. Une constatation faite
+  dans une procédure se pose seule sur les sections concernées, sans ressaisie. Sans lui, chaque
+  section redécouvre ce que la voisine a déjà vu, et c'est la thèse du produit qui tombe.
+
+**Le facteur déclaré compte comme un fait calculé.** C'est le point qui distingue une circulation
+d'un affichage : un facteur **confirmé** visant (ce poste, cette assertion) monte le niveau, donc
+fait entrer des procédures. **Proposé, il ne compte pas** — ce n'est pas parce qu'un moteur a levé
+quelque chose qu'il a décidé.
+
+**Trois règles qui bloquent par elles-mêmes** : une question sans réponse, un « oui » sans précision
+écrite, un facteur non statué. Un « oui » sans précision est **accepté et gardé** — on répond d'abord,
+on rédige ensuite, et refuser ferait perdre le fait — mais il bloque le visa, ce qui est la vraie
+sanction.
+
+**Trois défauts trouvés par les tests, tous réels.**
+
+1. **Le compte et la liste divergeaient.** `risksFor` — le chemin de lecture de l'écran — ne rendait
+   que les facteurs observés, alors que le niveau comptait aussi les déclarés. L'écran aurait affiché
+   « 2 facteurs » au-dessus d'une liste qui n'en montre qu'un. Pire qu'un écran muet.
+2. **Un test passait à vide** : aucun scoping n'avait été fait, donc un facteur d'entité ne visait
+   aucun poste — et deux listes vides sont égales. Le périmètre est désormais posé, et une assertion
+   vérifie qu'il n'est pas vide.
+3. **Une contrainte testée sur la mauvaise ligne** : « écarter sans motif » était vérifié sur un
+   facteur qui portait déjà un motif de confirmation, donc la contrainte était satisfaite. Elle se
+   vérifie maintenant sur un facteur non encore statué.
