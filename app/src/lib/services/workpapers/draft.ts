@@ -4,6 +4,8 @@ import { hashObject } from '@/lib/core/hash';
 import { fmtEur } from '@/lib/kernel/canon';
 import { primaryPack } from '@/lib/packs';
 import { numToCents } from '@/lib/util/num';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { gabarit, colonnes, referencePapier } from '@/lib/methodology/catalogue';
 import { engagementCtx } from '../imports';
 import { frameworkSet } from '../fsli';
 import { currentMateriality } from '../materiality';
@@ -17,6 +19,15 @@ import { latestExtraction } from '../extraction/ladder';
 // facts (never recomputed): every figure carries its source refs (P7). Attribution per
 // ADR-012.4: "Performed by OTTO engine run — validated by [human]". Drafted prose is
 // template-based here (engine_run); a live LLM redraft would be an ai_run (both logged).
+//
+// LE GABARIT VIENT DE LA MÉTHODE DU CABINET, PLUS DU PACK (ADR-079). L'ordre des
+// sections, leurs intitulés et les colonnes des tableaux étaient écrits ici, en dur.
+// Or le format d'un papier n'est ni un nom ni un calcul : c'est de la PRÉSENTATION,
+// et c'est la signature du cabinet — le papier entre dans SON dossier et se fait
+// relire par SON réviseur. Le code CALCULE le contenu de chaque bloc ; la méthode
+// NOMME les blocs, leur ordre et leurs colonnes. Un bloc nommé que le moteur ne sait
+// pas remplir, ou un bloc implémenté que le gabarit ne nomme pas, arrête le
+// chargement de la méthode — dans les deux sens, comme partout ailleurs.
 
 export interface WpTableRow {
   cells: (string | number)[];
@@ -63,6 +74,8 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
   const responses = evaluation ? await evaluationResponses(evaluation.id) : [];
 
   const eur = (c: number) => fmtEur(c, pack.language);
+  /* Le gabarit du CABINET : sections, ordre, intitulés, colonnes, référence. */
+  const cat = await catalogueDeLaMission(engagementId);
 
   // sample table with per-item evidence refs + extracted fields (idea #15 / P7)
   const sampleRows: WpTableRow[] = [];
@@ -95,19 +108,24 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
         : match.status
       : fr ? 'non testé' : 'not tested';
     const itemExceptions = exceptions.filter((x) => x.sample_item_id === it.id);
+    /* Les champs sont NOMMÉS, et les colonnes du cabinet en choisissent
+       l'ordre et le sous-ensemble. Une liste de cellules positionnelle rendait
+       l'ordre des colonnes impossible à changer sans toucher au code — et une
+       colonne retirée aurait décalé toutes les suivantes en silence. */
+    const champs: Record<string, string> = {
+      piece: it.piece_ref ?? it.entry_no,
+      tiers: it.aux_label ?? '',
+      date: it.entry_date,
+      montant: eur(numToCents(it.amount)),
+      selection: it.selection_reason,
+      justificatifs: extractedSummary,
+      controles: checksSummary,
+      anomalies: itemExceptions.length
+        ? itemExceptions.map((x) => `${x.taxonomy_code} (${x.status})`).join('; ')
+        : fr ? 'RAS' : 'none',
+    };
     sampleRows.push({
-      cells: [
-        it.piece_ref ?? it.entry_no,
-        it.aux_label ?? '',
-        it.entry_date,
-        eur(numToCents(it.amount)),
-        it.selection_reason,
-        extractedSummary,
-        checksSummary,
-        itemExceptions.length
-          ? itemExceptions.map((x) => `${x.taxonomy_code} (${x.status})`).join('; ')
-          : fr ? 'RAS' : 'none',
-      ],
+      cells: colonnes(cat, 'substantif', 'echantillon').map((c) => champs[c.champ] ?? ''),
       refs: {
         evidenceIds: evidences.map((e) => e.id),
         sampleItemId: it.id,
@@ -118,16 +136,19 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
 
   const exceptionRows: WpTableRow[] = exceptions
     .filter((x) => x.kind !== 'verification')
-    .map((x) => ({
-      cells: [
-        x.taxonomy_code,
-        x.description.slice(0, 160),
-        x.amount_impact ? eur(numToCents(x.amount_impact)) : '—',
-        x.status,
-        x.resolution ?? '—',
-      ],
-      refs: { exceptionIds: [x.id] },
-    }));
+    .map((x) => {
+      const champs: Record<string, string> = {
+        type: x.taxonomy_code,
+        description: x.description.slice(0, 160),
+        impact: x.amount_impact ? eur(numToCents(x.amount_impact)) : '—',
+        statut: x.status,
+        suite: x.resolution ?? '—',
+      };
+      return {
+        cells: colonnes(cat, 'substantif', 'exceptions').map((c) => champs[c.champ] ?? ''),
+        refs: { exceptionIds: [x.id] },
+      };
+    });
 
   const verifChecks = await q<{ piece_ref: string | null; result: string; seconds_spent: number | null; escalation: string | null }>(
     `select g.piece_ref, vc.result, vc.seconds_spent, vc.escalation
@@ -145,46 +166,35 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
 
   const documentedDiffs = (recon?.items ?? []).filter((i) => i.status !== 'open');
 
-  const sections: WpSection[] = [
-    {
-      key: 'objective',
-      title: wp.objective,
+  /* Chaque bloc est CALCULÉ ici et rangé sous son nom. L'ordre et les
+     intitulés viennent du gabarit, plus bas : le moteur ne décide plus ni de
+     ce qui apparaît, ni dans quel ordre. */
+  const blocs: Record<string, Omit<WpSection, 'key' | 'title'>> = {
+    objectif: {
       body: fr
         ? `Vérifier la réalité, l'exactitude et la séparation des exercices du chiffre d'affaires (comptes 70x) de l'exercice clos le 31/12/2025, par rapprochement des écritures comptables sélectionnées avec les pièces justificatives (factures, bons de livraison), conformément au programme de travail du pack ${pack.name}. Seuil de signification : ${eur(numToCents(mat.amount))} ; seuil de planification : ${eur(numToCents(mat.perf_amount))} ; anomalie tolérable : ${eur(numToCents(mat.te_amount))}.`
         : `Test occurrence, accuracy and cut-off of revenue for FY2025 by vouching selected GL entries to supporting evidence. Materiality ${eur(numToCents(mat.amount))}; performance materiality ${eur(numToCents(mat.perf_amount))}; tolerable misstatement ${eur(numToCents(mat.te_amount))}.`,
     },
-    {
-      key: 'scope',
-      title: wp.scope,
+    etendue: {
       body: fr
         ? `Population : ${sample.population_size} lignes d'écritures sur les comptes 70x, total ${eur(numToCents(sample.population_amount))} (empreinte ${sample.population_hash.slice(0, 24)}…). Rapprochement GL↔Balance : ${recon?.items.length === 0 ? 'aucun écart' : `${recon?.items.length} écart(s), dont ${documentedDiffs.length} documenté(s)`}${documentedDiffs.length ? ' — ' + documentedDiffs.map((d) => `${d.account_no} (${d.note ?? ''})`).join(' ; ') : ''}.`
         : `Population: ${sample.population_size} GL lines on 70x accounts, total ${eur(numToCents(sample.population_amount))}. TB↔GL reconciliation: ${recon?.items.length ?? 0} difference(s), ${documentedDiffs.length} documented.`,
     },
-    {
-      key: 'method',
-      title: wp.method,
+    methode: {
       body: (sample.rationale ?? '') + (fr
         ? ` Tirage exécuté le ${sample.validated_at?.slice(0, 10) ?? ''} — germe « ${sample.seed} », reproductible à l'identique.`
         : ` Draw executed with seed "${sample.seed}" — reproducible.`),
       meta: { params: sample.params, populationHash: sample.population_hash },
     },
-    {
-      key: 'sampleTable',
-      title: wp.sampleTable,
+    tableau_echantillon: {
       table: {
-        headers: fr
-          ? ['Pièce', 'Tiers', 'Date', 'Montant HT', 'Sélection', 'Justificatifs obtenus (extraction)', 'Contrôles', 'Anomalies']
-          : ['Piece', 'Counterparty', 'Date', 'Net amount', 'Selection', 'Evidence obtained (extraction)', 'Checks', 'Exceptions'],
+        headers: colonnes(cat, 'substantif', 'echantillon').map((c) => c.titre),
         rows: sampleRows,
       },
     },
-    {
-      key: 'exceptions',
-      title: wp.exceptions,
+    exceptions: {
       table: {
-        headers: fr
-          ? ['Type', 'Description', 'Impact', 'Statut', 'Suite donnée']
-          : ['Type', 'Description', 'Impact', 'Status', 'Disposition'],
+        headers: colonnes(cat, 'substantif', 'exceptions').map((c) => c.titre),
         rows: exceptionRows,
       },
       body: misstatements.length
@@ -192,9 +202,7 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
           misstatements.map((m) => `${m.kind} ${eur(numToCents(m.amount))} ${m.corrected ? (fr ? '(corrigée)' : '(corrected)') : (fr ? '(non corrigée)' : '(uncorrected)')}`).join(' ; ')
         : undefined,
     },
-    {
-      key: 'evaluation',
-      title: wp.evaluation,
+    evaluation: {
       body: evaluation
         ? fr
           ? `Anomalies connues : ${eur(numToCents(evaluation.known_misstatement))}. ` +
@@ -210,9 +218,7 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
             `${evaluation.status === 'concluded' ? `Conclusion: ${evaluation.conclusion_basis}` : 'Not concluded.'}`
         : fr ? 'Évaluation non calculée.' : 'Not computed.',
     },
-    {
-      key: 'verification',
-      title: wp.verification,
+    verification: {
       body: verifChecks.length
         ? (fr
             ? `Contrôle de fiabilité (re-exécution à l'aveugle d'un sous-échantillon aléatoire d'éléments conformes, ADR-012) : ${verifChecks.length} élément(s) re-exécuté(s), ${verifChecks.filter((v) => v.result === 'agree').length} concordant(s). `
@@ -220,9 +226,7 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
           verifChecks.map((v) => `${v.piece_ref ?? '—'}: ${v.result}${v.escalation && v.escalation !== 'none' ? ` → ${v.escalation}` : ''}`).join(' ; ')
         : fr ? 'Non réalisé à la date du présent document.' : 'Not performed yet.',
     },
-    {
-      key: 'conclusion',
-      title: wp.conclusion,
+    conclusion: {
       body: fr
         ? [
             gate.ok
@@ -249,7 +253,23 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
           ].filter(Boolean).join(' '),
       meta: { gate, limitations, responses },
     },
-  ];
+  };
+
+  /* LE GABARIT DÉCIDE : quelles sections, dans quel ordre, sous quel intitulé.
+     Le validateur a déjà refusé un bloc nommé que le moteur ne remplit pas, et
+     un bloc rempli que le gabarit ne nomme pas — donc ici, un bloc absent est
+     un défaut du MOTEUR, et il lève au lieu de sortir une section vide. */
+  const g = gabarit(cat, 'substantif');
+  const sections: WpSection[] = g.sections.map((sec) => {
+    const contenu = blocs[sec.bloc];
+    if (!contenu) {
+      throw new Error(
+        `bloc « ${sec.bloc} » nommé par le gabarit et non produit par le moteur — `
+        + `le papier sortirait avec une section vide`,
+      );
+    }
+    return { key: sec.bloc, title: sec.titre, ...contenu };
+  });
 
   const basedOnHash = hashObject({
     sampleId: sample.id,
@@ -265,23 +285,42 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
     [ctx.tenant_id, engagementId, pack.id, hashObject(pack.wp), JSON.stringify({ code: 'REV-01', basedOnHash })],
   );
 
-  const prev = await q<{ id: string; version: number }>(
-    `select id, version from workpaper where engagement_id = $1 and code = 'REV-01' order by version desc`,
+  const prev = await q<{ id: string; version: number; reference: string | null }>(
+    `select id, version, reference from workpaper where engagement_id = $1 and code = 'REV-01' order by version desc`,
     [engagementId],
   );
   if (prev.length > 0) {
     await q(`update workpaper set status = 'outdated' where engagement_id = $1 and code = 'REV-01' and status <> 'outdated'`, [engagementId]);
   }
   const version = (prev[0]?.version ?? 0) + 1;
+
+  /* LA RÉFÉRENCE DU CABINET, calculée par SON modèle et FIGÉE.
+     Elle se calcule une fois — au premier projet — puis se reprend d'une
+     version à l'autre : un papier signé garde la référence sous laquelle il a
+     été signé, même si le cabinet change son plan de classement l'an prochain.
+     La séquence compte les papiers DÉJÀ référencés du même poste, pour que
+     deux papiers d'un même poste ne se marchent pas dessus. */
+  let reference = prev[0]?.reference ?? null;
+  if (!reference) {
+    const dejaVus = await q1<{ n: string }>(
+      `select count(distinct code) n from workpaper
+       where engagement_id = $1 and reference is not null and code <> 'REV-01'`,
+      [engagementId],
+    );
+    reference = referencePapier(cat, {
+      poste: 'REVENUE', sequence: Number(dejaVus.n) + 1, code: 'REV-01', version,
+    });
+  }
+
   const row = await q1<{ id: string }>(
-    `insert into workpaper (engagement_id, pack_id, code, procedure_id, title, language, sections, status, version, based_on_hash, engine_run_id)
-     values ($1,$2,'REV-01',
+    `insert into workpaper (engagement_id, pack_id, code, reference, procedure_id, title, language, sections, status, version, based_on_hash, engine_run_id)
+     values ($1,$2,'REV-01',$10,
        (select procedure_id from sample where id = $3),
        $4,$5,$6,'draft',$7,$8,$9) returning id`,
     [
       engagementId, pack.id, sample.id,
       fr ? "REV-01 — Contrôle substantif du chiffre d'affaires" : 'REV-01 — Revenue substantive testing',
-      pack.language, JSON.stringify(sections), version, basedOnHash, run.id,
+      pack.language, JSON.stringify(sections), version, basedOnHash, run.id, reference,
     ],
   );
   await logEvent({

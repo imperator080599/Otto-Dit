@@ -13,11 +13,20 @@ import { balayer, rapporter, erreursServeur, ServeurTombe } from './sweep';
 
 const PORT = Number(process.env.SCREENS_PORT ?? 3210);
 
+/* `detached` crée un GROUPE de processus : sans lui, `kill` ne tue que le
+   lanceur npx et `next-server` survit en gardant le port — le lancement
+   suivant meurt alors sur EADDRINUSE, à cause d'un fantôme du précédent. */
 function lancer(cmd: string, args: string[]): ChildProcess {
   return spawn(cmd, args, {
     env: { ...process.env, PORT: String(PORT) },
     stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
   });
+}
+
+function tuer(p: ChildProcess | null): void {
+  if (!p?.pid) return;
+  try { process.kill(-p.pid, 'SIGTERM'); } catch { /* déjà mort */ }
 }
 
 /**
@@ -128,7 +137,7 @@ async function main() {
 
     console.log(`\n${verdicts.length} routes ouvertes · ${echecs} échec(s)\n`);
   } finally {
-    serveur.kill('SIGTERM');
+    tuer(serveur);
   }
 
   if (echecs > 0) {

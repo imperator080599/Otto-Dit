@@ -4,6 +4,8 @@ import { hashObject } from '@/lib/core/hash';
 import { fmtEur } from '@/lib/kernel/canon';
 import { primaryPack } from '@/lib/packs';
 import { numToCents } from '@/lib/util/num';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { referencePapier } from '@/lib/methodology/catalogue';
 import { engagementCtx } from '../imports';
 import { frameworkSet } from '../fsli';
 import { attributeGrid, listDeficiencies, listDeviations } from '../sox';
@@ -158,20 +160,44 @@ export async function draftOeWorkpaper(engagementId: string, controlId: string, 
     [ctx.tenant_id, engagementId, pack.id, hashObject(pack.wp), JSON.stringify({ code: `OE-${control.code}`, basedOnHash })],
   );
   const code = `OE-${control.code}`;
-  const prev = await q<{ version: number }>(
-    `select version from workpaper where engagement_id = $1 and code = $2 order by version desc`,
+  const prev = await q<{ version: number; reference: string | null }>(
+    `select version, reference from workpaper where engagement_id = $1 and code = $2 order by version desc`,
     [engagementId, code],
   );
   if (prev.length > 0) {
     await q(`update workpaper set status = 'outdated' where engagement_id = $1 and code = $2 and status <> 'outdated'`, [engagementId, code]);
   }
+  /* LE PLAN DE CLASSEMENT EST CELUI DU CABINET, pour TOUS ses papiers. Le
+     contenu de ce papier vient du pack SOX, gelé ; sa référence, non : un
+     cabinet ne tient pas deux plans de classement selon l'origine du papier.
+     Le poste est celui que le contrôle sert. */
+  const cat = await catalogueDeLaMission(engagementId);
+  let reference = prev[0]?.reference ?? null;
+  if (!reference) {
+    const dejaVus = await q1<{ n: string }>(
+      `select count(distinct code) n from workpaper
+       where engagement_id = $1 and reference is not null and code <> $2`,
+      [engagementId, code],
+    );
+    reference = referencePapier(cat, {
+      /* Le poste sert la lettre du plan de classement. Un contrôle SOX n'en
+         déclare pas : la lettre de secours du cabinet s'applique, et c'est
+         elle qui existe pour ça. */
+      poste: '_sox',
+      sequence: Number(dejaVus.n) + 1,
+      code,
+      version: (prev[0]?.version ?? 0) + 1,
+    });
+  }
+
   const row = await q1<{ id: string }>(
-    `insert into workpaper (engagement_id, pack_id, code, control_test_id, title, language, sections, status, version, based_on_hash, engine_run_id)
-     values ($1,$2,$3,$4,$5,$6,$7,'draft',$8,$9,$10) returning id`,
+    `insert into workpaper (engagement_id, pack_id, code, reference, control_test_id, title, language, sections, status, version, based_on_hash, engine_run_id)
+     values ($1,$2,$3,$11,$4,$5,$6,$7,'draft',$8,$9,$10) returning id`,
     [
       engagementId, pack.id, code, test.id,
       `${code} — Operating effectiveness: ${control.name}`,
       pack.language, JSON.stringify(sections), (prev[0]?.version ?? 0) + 1, basedOnHash, run.id,
+      reference,
     ],
   );
   await logEvent({

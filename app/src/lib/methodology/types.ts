@@ -217,4 +217,59 @@ export interface Catalogue {
   independance: Independance;
   risque: Risque;
   assertions: JeuAssertions;
+  papier: Papier;
+}
+
+/* ── le gabarit du papier de travail ──────────────────────────────────────
+   La présentation n'est ni un nom ni un calcul : c'est la signature du
+   cabinet. Elle vit donc dans la méthode, pas dans un pack (ADR-079).      */
+
+export interface SectionGabarit { bloc: string; titre: string; }
+export interface ColonneGabarit { champ: string; titre: string; }
+export interface GabaritPapier {
+  libelle: string;
+  sections: SectionGabarit[];
+  tableaux: Record<string, { colonnes: ColonneGabarit[] }>;
+}
+/**
+ * Les annexes, NOMMÉMENT. Un `Record<string, string>` laissait passer une
+ * faute de frappe côté lecteur — `annexes.parameters` au lieu de
+ * `annexes.parametres` — qui rendait `undefined` et faisait échouer l'export
+ * sur « text is not iterable », loin de la cause. Le schéma garantit qu'elles
+ * sont toutes présentes ; ce type garantit qu'on les lit toutes correctement.
+ */
+export interface AnnexesPapier {
+  parametres: string;
+  evidence: string;
+  modifications: string;
+  reviewNotes: string;
+  signoffs: string;
+}
+
+/** Les mentions, nommément, pour la même raison. */
+export interface MentionsPapier {
+  etabli_par: string;
+  valide_par: string;
+  modifications: string;
+  visas: string;
+}
+
+export interface Papier {
+  version: string;
+  papiers: Record<string, GabaritPapier>;
+  annexes: AnnexesPapier;
+  mentions: MentionsPapier;
+  entete: { cabinet: string; sous_titre?: string; logo_data_uri?: string | null; pied?: string };
+  miseEnPage: {
+    corps_pt: number; titre_pt: number; section_pt: number; tableau_pt: number;
+    couleur_titre: [number, number, number];
+    couleur_texte: [number, number, number];
+    couleur_discrete: [number, number, number];
+    marge_gauche: number; marge_droite: number;
+  };
+  referencement: {
+    modele: string;
+    sequence_chiffres: number;
+    lettres_par_poste: Record<string, string>;
+  };
 }

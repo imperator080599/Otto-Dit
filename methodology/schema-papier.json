@@ -1,0 +1,64 @@
+{
+  "_note": "Schéma du gabarit de papier de travail. IL APPARTIENT AU PRODUIT, jamais au cabinet : il énumère ce que le MOTEUR sait remplir. Un cabinet qui livrerait son propre schéma pourrait nommer n'importe quel bloc et obtenir un document silencieusement incomplet.",
+
+  "_note_blocs": "LA FRONTIÈRE, ICI COMME AILLEURS : la méthode NOMME un bloc, le code sait le REMPLIR. Cette liste est celle des blocs implémentés. Un bloc déclaré et non implémenté sortirait une section VIDE sans que rien ne le dise ; un bloc implémenté et non déclaré disparaîtrait du papier sans que rien ne le dise non plus. Le validateur refuse les deux sens.",
+  "blocs_implementes": [
+    "objectif", "etendue", "methode", "tableau_echantillon",
+    "exceptions", "evaluation", "verification", "conclusion"
+  ],
+
+  "_note_natures": "Les natures de papier que le moteur sait produire.",
+  "natures_implementees": ["substantif"],
+
+  "_note_champs": "Les champs disponibles par ligne de tableau. Une colonne qui nomme un champ absent d'ici sortirait une colonne vide.",
+  "champs_echantillon": [
+    "piece", "tiers", "date", "montant", "selection",
+    "justificatifs", "controles", "anomalies"
+  ],
+  "champs_exceptions": ["type", "description", "impact", "statut", "suite"],
+
+  "_note_annexes": "Les annexes que le moteur sait produire. Toutes sont OBLIGATOIRES : elles portent ce qui rend l'export auto-portant.",
+  "annexes_implementees": ["parametres", "evidence", "modifications", "reviewNotes", "signoffs"],
+
+  "_note_mentions": "Les mentions obligatoires du pied et du bloc de visas.",
+  "mentions_requises": ["etabli_par", "valide_par", "modifications", "visas"],
+
+  "_note_reference": "Les variables que le schéma de référencement sait résoudre. Une variable hors liste laisserait un trou dans la référence d'un papier — et une référence trouée ne se cherche pas dans un dossier.",
+  "variables_reference": ["lettre", "sequence", "code", "version"],
+
+  "definitions": {
+    "section": {
+      "requis": ["bloc", "titre"],
+      "champs": {
+        "bloc": { "type": "string" },
+        "titre": { "type": "string", "nonVide": true }
+      }
+    },
+    "colonne": {
+      "requis": ["champ", "titre"],
+      "champs": {
+        "champ": { "type": "string" },
+        "titre": { "type": "string", "nonVide": true }
+      }
+    },
+    "entete": {
+      "requis": ["cabinet"],
+      "champs": {
+        "cabinet": { "type": "string", "nonVide": true },
+        "sous_titre": { "type": "string" },
+        "logo_data_uri": { "type": "string" },
+        "pied": { "type": "string" }
+      }
+    }
+  },
+
+  "_note_mise_en_page": "Bornes de lisibilité. Un papier illisible imprimé n'est pas un papier.",
+  "bornes": {
+    "corps_pt": [6, 14],
+    "titre_pt": [8, 30],
+    "section_pt": [7, 20],
+    "tableau_pt": [5.5, 12],
+    "marge_gauche": [10, 200],
+    "marge_droite": [300, 800]
+  }
+}

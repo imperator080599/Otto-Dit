@@ -8,6 +8,7 @@ import { q, q1, repoRoot } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { hashObject, sha256 } from '@/lib/core/hash';
 import { saveBlob } from '@/lib/core/storage';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { engagementCtx } from '../imports';
 import { getWorkpaper, listEdits, listNotes, listSignoffs } from './lifecycle';
 import type { WpSection } from './draft';
@@ -27,6 +28,22 @@ import type { WpSection } from './draft';
  * rather than shipping a substitute into an audit file — a workpaper that quietly alters
  * its own text is not a workpaper.
  */
+/**
+ * LA MISE EN PAGE VIENT DE LA MÉTHODE DU CABINET (ADR-079).
+ *
+ * Les tailles, couleurs et marges étaient des littéraux dispersés dans ce
+ * fichier, et il n'y avait ni en-tête de cabinet ni logo : le papier sortait
+ * avec notre allure, pas la sienne. Or c'est LUI qui entre dans son dossier.
+ */
+export interface Allure {
+  corps: number; titre: number; section: number; tableau: number;
+  couleurTitre: [number, number, number];
+  couleurTexte: [number, number, number];
+  couleurDiscrete: [number, number, number];
+  gauche: number; droite: number;
+  cabinet: string; sousTitre: string; logo: string | null; pied: string;
+}
+
 export class UnrenderableCharacterError extends Error {
   constructor(readonly characters: string[], readonly sample: string) {
     super(
@@ -72,7 +89,9 @@ class PdfWriter {
     private stamp: string,
   ) {}
 
-  static async create(stamp: string): Promise<PdfWriter> {
+  allure!: Allure;
+
+  static async create(stamp: string, allure: Allure): Promise<PdfWriter> {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
     doc.setCreationDate(new Date('2026-02-01T09:00:00Z'));
@@ -86,6 +105,7 @@ class PdfWriter {
     const bold = await doc.embedFont(fs.readFileSync(path.join(dir, 'DejaVuSans-Bold.ttf')), { subset: true });
     const w = new PdfWriter(font, bold, stamp);
     w.doc = doc;
+    w.allure = allure;
     w.newPage();
     return w;
   }
@@ -94,9 +114,39 @@ class PdfWriter {
     this.pageNo += 1;
     this.page = this.doc.addPage([595, 842]);
     this.y = 800;
-    this.page.drawText(assertRenderable(this.font, this.stamp) + ` - page ${this.pageNo}`, {
-      x: 40, y: 16, size: 6.5, font: this.font, color: rgb(0.45, 0.5, 0.58),
+    const a = this.allure;
+    /* Le pied porte l'empreinte et le numéro de page. Il ne devient PAS
+       optionnel : c'est lui qui rend un papier relisible sans OTTO. Son
+       libellé, en revanche, est au cabinet. */
+    const pied = a.pied ? `${a.pied} — ${this.stamp}` : this.stamp;
+    this.page.drawText(assertRenderable(this.font, pied) + ` - page ${this.pageNo}`, {
+      x: a.gauche, y: 16, size: 6.5, font: this.font, color: rgb(...a.couleurDiscrete),
     });
+  }
+
+  /** L'en-tête du cabinet, en tête du document. */
+  async entete() {
+    const a = this.allure;
+    if (a.logo) {
+      try {
+        const brut = a.logo.split(',')[1] ?? '';
+        const octets = Buffer.from(brut, 'base64');
+        const img = /^data:image\/png/.test(a.logo)
+          ? await this.doc.embedPng(octets) : await this.doc.embedJpg(octets);
+        const h = 26;
+        this.page.drawImage(img, { x: a.gauche, y: this.y - h + 8, width: (img.width / img.height) * h, height: h });
+      } catch {
+        /* Un logo illisible ne doit pas empêcher un papier de sortir : le
+           document reste complet et l'en-tête textuel suffit. */
+      }
+    }
+    this.text(a.cabinet, { size: a.section, bold: true, color: a.couleurTitre, gap: 0 });
+    if (a.sousTitre) this.text(a.sousTitre, { size: a.corps - 1, color: a.couleurDiscrete, gap: 2 });
+    this.page.drawLine({
+      start: { x: a.gauche, y: this.y + 2 }, end: { x: a.droite, y: this.y + 2 },
+      thickness: 0.8, color: rgb(...a.couleurTitre),
+    });
+    this.y -= 8;
   }
 
   ensure(h: number) {
@@ -121,22 +171,24 @@ class PdfWriter {
   }
 
   text(t: string, opts: { size?: number; bold?: boolean; indent?: number; color?: [number, number, number]; gap?: number } = {}) {
-    const size = opts.size ?? 9;
+    const a = this.allure;
+    const size = opts.size ?? a.corps;
     const font = opts.bold ? this.bold : this.font;
-    const x = 40 + (opts.indent ?? 0);
-    for (const line of this.wrap(t, size, 555 - x, font)) {
+    const x = a.gauche + (opts.indent ?? 0);
+    for (const line of this.wrap(t, size, a.droite - x, font)) {
       this.ensure(size + 4);
-      this.page.drawText(line, { x, y: this.y, size, font, color: opts.color ? rgb(...opts.color) : rgb(0.1, 0.12, 0.16) });
+      this.page.drawText(line, { x, y: this.y, size, font, color: rgb(...(opts.color ?? a.couleurTexte)) });
       this.y -= size + 3;
     }
     this.y -= opts.gap ?? 3;
   }
 
   heading(t: string) {
+    const a = this.allure;
     this.ensure(30);
     this.y -= 6;
-    this.text(t, { size: 11, bold: true, color: [0.12, 0.3, 0.55], gap: 2 });
-    this.page.drawLine({ start: { x: 40, y: this.y + 2 }, end: { x: 555, y: this.y + 2 }, thickness: 0.6, color: rgb(0.75, 0.8, 0.86) });
+    this.text(t, { size: a.section, bold: true, color: a.couleurTitre, gap: 2 });
+    this.page.drawLine({ start: { x: a.gauche, y: this.y + 2 }, end: { x: a.droite, y: this.y + 2 }, thickness: 0.6, color: rgb(0.75, 0.8, 0.86) });
     this.y -= 6;
   }
 }
@@ -153,43 +205,66 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
     [wp.engagement_id],
   );
   const contentHash = hashObject({ sections: wp.sections, version: wp.version, code: wp.code });
-  const stamp = `OTTO export - ${wp.code} v${wp.version} - hash ${contentHash.slice(0, 16)}`;
-  const w = await PdfWriter.create(stamp);
+  /* Le tampon porte la RÉFÉRENCE du cabinet en plus du code : c'est ce qu'un
+     réviseur cherche dans un dossier. La version et l'empreinte restent :
+     elles font l'auto-portance. */
+  const stamp = `${wp.reference ?? wp.code} - ${wp.code} v${wp.version} - hash ${contentHash.slice(0, 16)}`;
 
-  w.text(eng.entity + ' - ' + eng.period, { size: 9, color: [0.4, 0.45, 0.55] });
-  w.text(wp.title, { size: 15, bold: true, gap: 2 });
-  w.text(`${wp.pack_id} - v${wp.version} - ${wp.status.toUpperCase()}`, { size: 8, color: [0.4, 0.45, 0.55], gap: 4 });
+  const cat = await catalogueDeLaMission(wp.engagement_id);
+  const m = cat.papier.miseEnPage;
+  const e = cat.papier.entete;
+  const allure: Allure = {
+    corps: m.corps_pt, titre: m.titre_pt, section: m.section_pt, tableau: m.tableau_pt,
+    couleurTitre: m.couleur_titre, couleurTexte: m.couleur_texte, couleurDiscrete: m.couleur_discrete,
+    gauche: m.marge_gauche, droite: m.marge_droite,
+    cabinet: e.cabinet, sousTitre: e.sous_titre ?? '', logo: e.logo_data_uri ?? null, pied: e.pied ?? '',
+  };
+  const w = await PdfWriter.create(stamp, allure);
+  await w.entete();
+
+  w.text(eng.entity + ' - ' + eng.period, { size: allure.corps, color: allure.couleurDiscrete });
+  w.text(`${wp.reference ? wp.reference + ' — ' : ''}${wp.title}`, { size: allure.titre, bold: true, gap: 2 });
+  w.text(`${wp.pack_id} - v${wp.version} - ${wp.status.toUpperCase()}`, { size: allure.corps - 1, color: allure.couleurDiscrete, gap: 4 });
   // Attribution comes from the pack (ADR-012.4), never from the renderer: an English SOX
   // workpaper must not carry French chrome, and vice versa.
   const pack = getAssurancePack(wp.pack_id);
   const fr = pack.language === 'fr';
+  /* Les mentions d'attribution viennent du GABARIT DU CABINET (ADR-079) : ce
+     sont ses mots, sur son papier. Le pack ne porte plus que la langue. */
+  const mentions = cat.papier.mentions;
   w.text(
-    `${pack.wp.performedBy} ${wp.engine_run_id ?? '-'} (${fr ? 'empreinte du dossier' : 'facts hash'} ${wp.based_on_hash?.slice(0, 20) ?? '-'}). ` +
+    `${mentions.etabli_par} ${wp.engine_run_id ?? '-'} (${fr ? 'empreinte du dossier' : 'facts hash'} ${wp.based_on_hash?.slice(0, 20) ?? '-'}). ` +
     (signoffs.length
-      ? `${pack.wp.validatedBy} : ` + signoffs.map((s) => `${s.user_name} (${s.sign_role}, ${s.signed_at.slice(0, 10)})`).join(' ; ')
+      ? `${mentions.valide_par} : ` + signoffs.map((s) => `${s.user_name} (${s.sign_role}, ${s.signed_at.slice(0, 10)})`).join(' ; ')
       : fr ? 'NON VALIDE - projet.' : 'NOT VALIDATED - draft.'),
-    { size: 8, color: [0.35, 0.25, 0.55], gap: 6 },
+    { size: allure.corps - 1, color: [0.35, 0.25, 0.55], gap: 6 },
   );
   if (edits.length > 0) {
     w.text(
       fr
         ? `DOCUMENT MODIFIE MANUELLEMENT - ${edits.length} modification(s) justifiee(s), voir annexe.`
         : `MANUALLY MODIFIED - ${edits.length} justified modification(s), see appendix.`,
-      { size: 8, bold: true, color: [0.6, 0.4, 0.05], gap: 6 },
+      { size: allure.corps - 1, bold: true, color: [0.6, 0.4, 0.05], gap: 6 },
     );
   }
 
   for (const s of wp.sections as WpSection[]) {
     w.heading(s.title);
-    if (s.body) w.text(s.body, { size: 9 });
+    if (s.body) w.text(s.body, { size: allure.corps });
     if (s.table) {
-      w.text(s.table.headers.join('  |  '), { size: 7.5, bold: true, gap: 2 });
+      w.text(s.table.headers.join('  |  '), { size: allure.tableau, bold: true, gap: 2 });
+      /* Les premières colonnes tiennent sur une ligne, les suivantes passent
+         en détail. Le point de coupe suit le NOMBRE de colonnes du cabinet :
+         il était figé à 5, donc un gabarit à trois colonnes aurait tout mis
+         sur une ligne et un gabarit à douze aurait débordé. */
+      const enTete = Math.min(5, Math.max(2, Math.ceil(s.table.headers.length / 2)));
       for (const row of s.table.rows) {
-        const main = row.cells.slice(0, 5).map(String).join('  |  ');
-        w.text('- ' + main, { size: 8, bold: true, indent: 4, gap: 0 });
-        const rest = row.cells.slice(5).map(String).filter(Boolean);
+        const main = row.cells.slice(0, enTete).map(String).join('  |  ');
+        w.text('- ' + main, { size: allure.corps - 1, bold: true, indent: 4, gap: 0 });
+        const rest = row.cells.slice(enTete).map(String);
         for (const [i, cell] of rest.entries()) {
-          w.text(`${s.table.headers[5 + i] ?? ''}: ${cell}`, { size: 7.5, indent: 14, gap: 0 });
+          if (!cell) continue;
+          w.text(`${s.table.headers[enTete + i] ?? ''}: ${cell}`, { size: allure.tableau, indent: 14, gap: 0 });
         }
         if (row.refs?.evidenceIds?.length) {
           w.text(`refs evidence: ${row.refs.evidenceIds.map((x) => x.slice(0, 8)).join(', ')}`, { size: 6.5, indent: 14, color: [0.5, 0.55, 0.62], gap: 1 });
@@ -200,12 +275,17 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   }
 
   // ---------- self-contained appendix (ADR-013) ----------
-  // Appendix titles come from the pack, like the body: an English workpaper with French
-  // appendix headings is the same defect as a French attribution line on it (ADR-023).
-  const ap = pack.wp.appendices;
+  // Les intitulés d'annexes viennent du GABARIT DU CABINET (ADR-079), comme le corps.
+  // Ils sont typés nommément : lire `parameters` au lieu de `parametres` rendait
+  // `undefined` et faisait échouer l'export loin de la cause.
+  const ap = cat.papier.annexes;
   w.newPage();
-  w.heading(ap.parameters);
-  const method = (wp.sections as WpSection[]).find((s) => s.key === 'method');
+  w.heading(ap.parametres);
+  /* Deux vocabulaires cohabitent : le papier substantif suit les blocs NOMMÉS
+     par le gabarit du cabinet (« methode »), le papier d'efficacité SOX suit
+     les clés du pack, gelé (« method »). Chercher une seule des deux aurait
+     vidé l'annexe A de l'autre — sans erreur, juste sans paramètres. */
+  const method = (wp.sections as WpSection[]).find((s) => s.key === 'methode' || s.key === 'method');
   w.text((fr ? 'Paramètres d’échantillonnage : ' : 'Sampling parameters: ') + JSON.stringify(method?.meta?.params ?? {}), { size: 8 });
   w.text((fr ? 'Empreinte de population : ' : 'Population hash: ') + String(method?.meta?.populationHash ?? '-'), { size: 8, gap: 6 });
 

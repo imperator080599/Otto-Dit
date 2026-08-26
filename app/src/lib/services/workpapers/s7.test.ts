@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
+import { chargerCatalogue, gabarit } from '@/lib/methodology/catalogue';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { draftRevenueWorkpaper, type WpSection } from './draft';
 import { getWorkpaper, editSection, listEdits, addReviewNote, transitionNote, listNotes, signWorkpaper, listSignoffs } from './lifecycle';
@@ -22,8 +23,13 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     expect(wp!.engine_run_id).toBeTruthy();
     const sections = wp!.sections as WpSection[];
     const keys = sections.map((s) => s.key);
-    expect(keys).toEqual(['objective', 'scope', 'method', 'sampleTable', 'exceptions', 'evaluation', 'verification', 'conclusion']);
-    const sampleTable = sections.find((s) => s.key === 'sampleTable')!;
+    // L'ORDRE ET LES NOMS VIENNENT DU GABARIT DU CABINET (ADR-079), plus du code :
+    // ce test lit donc la méthode chargée plutôt que de répéter une liste, sinon il
+    // vérifierait que le code se souvient de lui-même.
+    const attendu = gabarit(await chargerCatalogue(), 'substantif');
+    expect(keys).toEqual(attendu.sections.map((s) => s.bloc));
+    expect(sections.map((s) => s.title)).toEqual(attendu.sections.map((s) => s.titre));
+    const sampleTable = sections.find((s) => s.key === 'tableau_echantillon')!;
     expect(sampleTable.table!.rows.length).toBe(16);
     // every row with evidence carries click-through refs (P7)
     const withRefs = sampleTable.table!.rows.filter((r) => (r.refs?.evidenceIds?.length ?? 0) > 0);

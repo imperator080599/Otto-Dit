@@ -2685,3 +2685,68 @@ repart maintenant dans l'URL et l'écran le rend.
 **Ce que le balayage ne couvre pas, dit ici pour ne pas être cru par omission** : il ouvre les
 écrans, il ne clique sur rien. Un écran qui rend n'est pas un écran qui marche — c'est le parcours
 rejouable de `DEMO_APP.md` qui vérifie que les actions agissent.
+
+---
+
+## ADR-079 — Le gabarit du papier de travail est de la méthode, pas du code
+
+**Contexte, et c'est une incohérence reconnue avant d'être trouvée par un client.** Ce produit pose
+une frontière — *la méthode NOMME, le code CALCULE* — et elle se tient pour un prédicat de risque ou
+une population. Elle **ne dit rien** du format d'un papier : une colonne, un ordre de sections, un
+logo, une référence de classement ne sont ni un nom ni un calcul, ce sont de la **présentation**.
+Qu'ils vivent dans un pack TypeScript exigeant un déploiement n'était justifié par aucun principe :
+c'était un reste d'architecture.
+
+Et c'était le reste le plus visible. Un catalogue de procédures se lit dans OTTO ; **un papier de
+travail sort d'OTTO** et va vivre dans le dossier du cabinet, sous les yeux de son réviseur puis d'un
+inspecteur. Le **schéma de référencement** — ce dont un réviseur se sert pour savoir où les travaux
+ont été faits — n'existait même pas.
+
+**Décision.** `methodology/papier.json` devient le **septième fichier de contenu**, validé, publié et
+chargé exactement comme les six autres : par cabinet, isolé, immuable une fois publié, refusé s'il
+est invalide. Il porte l'ordre et les intitulés des sections, les colonnes des deux tableaux, les
+intitulés d'annexes, les mentions d'attribution, l'en-tête et le logo, la mise en page, et le schéma
+de référencement.
+
+**La frontière est la même, et elle joue dans les deux sens.** La méthode nomme un **bloc**, le code
+sait le **remplir**. Le validateur arrête l'assemblage quand :
+
+- un bloc est **nommé et non implémenté** — la section sortirait **vide** ;
+- un bloc est **implémenté et non nommé** — il **disparaîtrait** du papier (un contrôle de fiabilité
+  effectué mais absent du document) ;
+- une colonne nomme un **champ que la procédure ne relève pas** — la colonne sortirait vide ;
+- une **variable de référence** est inconnue — elle laisserait un trou, et une référence trouée ne se
+  cherche pas dans un dossier ;
+- un bloc est **en double**, un corps de texte est **illisible imprimé** (< 6 pt), ou un logo est une
+  **URL réseau** — un papier qui dépend d'un serveur pour s'afficher n'est pas auto-portant.
+
+**Ce qui ne devient pas optionnel, et pourquoi c'est un argument.** Le bloc de visas, la mention de
+version et l'empreinte de population restent sur chaque papier. Ce n'est pas une contrainte imposée :
+c'est ce qui fait que **si OTTO disparaît demain, le papier dit encore à un inspecteur qui l'a signé,
+sur quelle version et sur quelle population** — sans nous, sans licence, sans accès (ADR-013). Leur
+**place** et leur **libellé** sont au cabinet ; leur **présence**, non. Un cabinet qui demanderait à
+les retirer demanderait à rendre son propre dossier illisible sans nous.
+
+**La référence est calculée puis FIGÉE.** Elle se calcule au premier projet, par le modèle du
+cabinet, et se reprend d'une version à l'autre : un papier signé garde la référence sous laquelle il
+a été signé, même si le cabinet change son plan de classement l'année suivante. Elle couvre **tous**
+les papiers, y compris ceux du pack SOX gelé : un cabinet ne tient pas deux plans de classement selon
+l'origine du papier.
+
+**Une contrainte que la suite a attrapée, et qui disait le contraire de la règle voulue.** La règle
+est : deux papiers **différents** ne partagent pas une référence, mais les **versions** d'un même
+papier la partagent. `unique (engagement_id, code, reference)` interdisait précisément la seconde
+moitié. Un index unique ne sait pas exprimer « pour une mission et une référence, un seul code » :
+c'est une garde (`guard_workpaper_reference`).
+
+**Un défaut de lecture, corrigé par le type.** `annexes` était un `Record<string, string>` : lire
+`annexes.parameters` au lieu de `annexes.parametres` rendait `undefined` et faisait échouer l'export
+sur « text is not iterable », très loin de la cause. Les annexes et les mentions sont désormais
+**typées nommément** — le schéma garantit qu'elles sont présentes, le type garantit qu'on les lit
+correctement.
+
+**Coût, contre l'estimation précédente.** ~4½ séances contre les 3½ chiffrées pour la version
+incohérente. L'écart n'est pas le prix de la cohérence : c'est le **schéma de référencement**, absent
+des 3½ parce que la question avait été chiffrée comme « rendre configurable ce qui existe » et non
+« rendre le papier celui du cabinet ». La plomberie économisée par le mécanisme de méthodologie-
+comme-donnée (ADR-075) compense le travail de frontière en plus.

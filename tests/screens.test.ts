@@ -20,7 +20,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
-import { routes, auditeur, baseSemee } from '../app/scripts/screens/routes';
+import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
 import { balayer, erreursServeur, ServeurTombe } from '../app/scripts/screens/sweep';
 
 const PORT = Number(process.env.SCREENS_TEST_PORT ?? 3299);
@@ -35,27 +35,64 @@ async function libre(): Promise<boolean> {
   catch { return true; }
 }
 
+/**
+ * Le monde de démonstration, déroulé si besoin.
+ *
+ * POURQUOI LE HARNAIS LE CONSTRUIT LUI-MÊME : un balayage sur une base vide ne
+ * prouve rien — une page sans données n'est pas une page qui rend — et six
+ * routes sur paramètre dynamique ne seraient même pas ouvrables. Exiger un
+ * `npm run demo:seed` préalable, c'est un contrôle qu'on doit se rappeler de
+ * préparer, donc un contrôle qui cassera. On lance le script DOCUMENTÉ, ce qui
+ * vérifie au passage que ce chemin marche encore.
+ */
+async function assurerMondeDemo(): Promise<void> {
+  const v = await parametres();
+  if (v.id && v.wid && v.rid && v.evidenceId && v.cid && v.exportId) return;
+  await new Promise<void>((res, rej) => {
+    const p = spawn('npx', ['tsx', 'scripts/demo-seed.ts'], { cwd: RACINE, stdio: 'ignore' });
+    p.on('close', (c) => (c === 0 ? res() : rej(new Error(`demo:seed a échoué (code ${c})`))));
+  });
+}
+
 describe('tous les écrans rendent', () => {
   beforeAll(async () => {
+    await assurerMondeDemo();
     if (!(await libre())) {
       throw new Error(`le port ${PORT} est occupé : le balayage refuse de vérifier un serveur qu'il n'a pas lancé`);
     }
+    /* `detached` crée un GROUPE de processus. Sans lui, `kill` ne tue que le
+       lanceur npx : `next-server` survit, garde le port, et le lancement
+       SUIVANT meurt sur EADDRINUSE — un serveur fantôme d'une exécution
+       précédente qui fait échouer la suivante. */
     serveur = spawn('npx', ['next', 'dev', '-p', String(PORT)], {
-      cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'],
+      cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
     });
     serveur.stdout?.on('data', (d) => journal.push(String(d)));
     serveur.stderr?.on('data', (d) => journal.push(String(d)));
     const fin = Date.now() + 150000;
     while (Date.now() < fin) {
-      if (serveur.exitCode !== null) throw new Error('le serveur de développement s’est arrêté immédiatement');
+      if (serveur.exitCode !== null) {
+        /* Dire POURQUOI. « Il s'est arrêté » sans le journal oblige à tout
+           refaire à la main pour apprendre ce que le processus avait déjà dit. */
+        throw new Error(
+          `le serveur de développement s'est arrêté immédiatement (code ${serveur.exitCode}) :\n`
+          + journal.join('').split('\n').filter(Boolean).slice(-25).join('\n'),
+        );
+      }
       try { const r = await fetch(BASE + '/', { signal: AbortSignal.timeout(3000) }); if (r.status > 0) return; }
       catch { /* pas encore */ }
       await new Promise((r) => setTimeout(r, 700));
     }
     throw new Error('le serveur de développement n’est pas debout après 150 s');
-  }, 200000);
+  }, 900000);
 
-  afterAll(() => { serveur?.kill('SIGTERM'); });
+  afterAll(async () => {
+    if (!serveur?.pid) return;
+    try { process.kill(-serveur.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+    // Laisser le port se libérer : le lancement suivant le vérifie.
+    await new Promise((r) => setTimeout(r, 800));
+    try { process.kill(-serveur.pid, 'SIGKILL'); } catch { /* déjà mort */ }
+  });
 
   it('chaque route s’ouvre, rend du contenu, et ne lève rien côté serveur', async () => {
     /* La base du balayage est celle du dépôt, semée par `npm run db:setup` (et

@@ -304,6 +304,123 @@ export function validerAssertions(a, cat, schema){
   return erreurs;
 }
 
+
+/**
+ * Erreurs du GABARIT DE PAPIER DE TRAVAIL, liste vide s'il est valide.
+ *
+ * Le format d'un papier n'est ni un nom ni un calcul : c'est de la
+ * PRÉSENTATION. Le laisser dans le code exigeait un déploiement pour changer
+ * une colonne — contraire au principe du produit, et à l'endroit le plus
+ * visible pour un client : le papier entre dans SON dossier et se fait relire
+ * par SON réviseur.
+ *
+ * LA FRONTIÈRE RESTE LA MÊME. La méthode NOMME un bloc, le code sait le
+ * REMPLIR. Le contrôle joue DANS LES DEUX SENS, pour la raison habituelle :
+ *   · un bloc déclaré et non implémenté sortirait une section VIDE ;
+ *   · un bloc implémenté et non déclaré DISPARAÎTRAIT du papier ;
+ * et dans les deux cas aucun écran ne le dirait.
+ */
+export function validerPapier(pap, schema){
+  const erreurs = [];
+  if (!pap.version) erreurs.push('papier : version manquante');
+
+  const natures = Object.keys(pap.papiers || {});
+  if (!natures.length) erreurs.push('papier : aucun gabarit — aucun papier de travail ne pourrait être produit');
+  for (const n of natures){
+    if (!schema.natures_implementees.includes(n))
+      erreurs.push(`papier : nature « ${n} » inconnue du moteur (connues : ${schema.natures_implementees.join(' | ')})`);
+  }
+  for (const n of schema.natures_implementees){
+    if (!natures.includes(n))
+      erreurs.push(`papier : la nature « ${n} » est implémentée mais n'est pas déclarée — le moteur sait produire ce papier et le gabarit ne le décrit pas`);
+  }
+
+  for (const [nom, g] of Object.entries(pap.papiers || {})){
+    const ou = `papier ${nom}`;
+    const sections = g.sections || [];
+    if (!sections.length) erreurs.push(`${ou} : aucune section`);
+    const blocs = [];
+    for (const sec of sections){
+      validerObjet(sec, schema.definitions.section, `${ou} section « ${sec.bloc || '(sans bloc)'} »`, erreurs);
+      if (sec.bloc && !schema.blocs_implementes.includes(sec.bloc))
+        erreurs.push(`${ou} : bloc « ${sec.bloc} » inconnu du moteur (connus : ${schema.blocs_implementes.join(' | ')}) `
+          + `— une section nommée que le moteur ne sait pas remplir sortirait VIDE`);
+      blocs.push(sec.bloc);
+    }
+    const dbl = blocs.filter((b, i) => blocs.indexOf(b) !== i);
+    if (dbl.length) erreurs.push(`${ou} : bloc(s) en double : ${[...new Set(dbl)].join(', ')}`);
+    for (const b of schema.blocs_implementes){
+      if (!blocs.includes(b))
+        erreurs.push(`${ou} : le bloc « ${b} » est implémenté mais absent du gabarit — il disparaîtrait du papier `
+          + `sans que rien ne le dise. Retirez-le du moteur, ou déclarez-le.`);
+    }
+
+    for (const [tab, champsOk] of [['echantillon', schema.champs_echantillon], ['exceptions', schema.champs_exceptions]]){
+      const t = (g.tableaux || {})[tab];
+      if (!t || !(t.colonnes || []).length){ erreurs.push(`${ou} : tableau « ${tab} » sans colonnes`); continue; }
+      const vus = [];
+      for (const c of t.colonnes){
+        validerObjet(c, schema.definitions.colonne, `${ou} tableau ${tab} colonne « ${c.champ || '(sans champ)'} »`, erreurs);
+        if (c.champ && !champsOk.includes(c.champ))
+          erreurs.push(`${ou} tableau ${tab} : champ « ${c.champ} » non relevé par la procédure `
+            + `(disponibles : ${champsOk.join(' | ')}) — la colonne sortirait vide`);
+        vus.push(c.champ);
+      }
+      const d2 = vus.filter((x, i) => vus.indexOf(x) !== i);
+      if (d2.length) erreurs.push(`${ou} tableau ${tab} : champ(s) en double : ${[...new Set(d2)].join(', ')}`);
+    }
+  }
+
+  /* Les annexes et les mentions portent ce qui rend l'export AUTO-PORTANT :
+     visas, version, empreinte de population. Leur libellé est au cabinet ;
+     leur présence, non — un papier incapable de dire qui l'a signé et sur
+     quelle population n'est plus relisible sans nous. */
+  for (const a of schema.annexes_implementees){
+    if (!(pap.annexes || {})[a])
+      erreurs.push(`papier : annexe « ${a} » sans libellé — son libellé est à vous, sa présence non : `
+        + `c'est elle qui rend l'export relisible sans OTTO`);
+  }
+  for (const m of schema.mentions_requises){
+    if (!(pap.mentions || {})[m])
+      erreurs.push(`papier : mention « ${m} » manquante`);
+  }
+
+  validerObjet(pap.entete || {}, schema.definitions.entete, 'papier entete', erreurs);
+  if (pap.entete && pap.entete.logo_data_uri && !/^data:image\//.test(pap.entete.logo_data_uri)){
+    erreurs.push('papier entete : le logo doit être une data: URI d\'image — rien n\'est chargé depuis le réseau, '
+      + 'un papier qui dépend d\'un serveur pour s\'afficher n\'est pas auto-portant');
+  }
+
+  const mep = pap.mise_en_page || {};
+  for (const [cle, [min, max]] of Object.entries(schema.bornes)){
+    const v = mep[cle];
+    if (typeof v !== 'number') { erreurs.push(`papier mise_en_page : « ${cle} » manquant`); continue; }
+    if (v < min || v > max) erreurs.push(`papier mise_en_page : « ${cle} » = ${v} hors bornes [${min}, ${max}]`);
+  }
+  for (const cle of ['couleur_titre', 'couleur_texte', 'couleur_discrete']){
+    const c = mep[cle];
+    if (!Array.isArray(c) || c.length !== 3 || c.some(x => typeof x !== 'number' || x < 0 || x > 1))
+      erreurs.push(`papier mise_en_page : « ${cle} » doit être trois nombres RVB entre 0 et 1`);
+  }
+
+  const ref = pap.referencement || {};
+  if (typeof ref.modele !== 'string' || !ref.modele.trim()){
+    erreurs.push('papier referencement : modèle manquant');
+  } else {
+    const vars = [...ref.modele.matchAll(/\{(\w+)\}/g)].map(m => m[1]);
+    if (!vars.length) erreurs.push('papier referencement : le modèle ne porte aucune variable — tous les papiers auraient la même référence');
+    for (const v of vars){
+      if (!schema.variables_reference.includes(v))
+        erreurs.push(`papier referencement : variable « ${v} » inconnue (connues : ${schema.variables_reference.join(' | ')}) `
+          + `— elle laisserait un trou dans la référence, et une référence trouée ne se cherche pas dans un dossier`);
+    }
+  }
+  if (!(ref.lettres_par_poste || {})._defaut)
+    erreurs.push('papier referencement : « _defaut » manquant dans lettres_par_poste — un poste non listé n\'aurait pas de lettre');
+
+  return erreurs;
+}
+
 /* ── les deux entrées, et une seule validation ─────────────────────────────
 
    Le catalogue peut venir de DEUX endroits : le dépôt (méthode livrée avec le
@@ -322,13 +439,13 @@ export function validerAssertions(a, cat, schema){
 /** Les six fichiers de CONTENU qu'un cabinet fournit. */
 export const FICHIERS_CONTENU = [
   'procedures.json', 'sources.json', 'questionnaire.json',
-  'independance.json', 'risque.json', 'assertions.json',
+  'independance.json', 'risque.json', 'assertions.json', 'papier.json',
 ];
 
 /** Les cinq schémas, propriété du PRODUIT. Jamais fournis par un cabinet. */
 export const FICHIERS_SCHEMA = [
   'schema.json', 'schema-questionnaire.json', 'schema-independance.json',
-  'schema-risque.json', 'schema-assertions.json',
+  'schema-risque.json', 'schema-assertions.json', 'schema-papier.json',
 ];
 
 function lireDossier(dir, noms){
@@ -356,9 +473,10 @@ export function erreursDuPaquet(contenu, schemas){
   const cat = contenu['procedures.json'], src = contenu['sources.json'];
   const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
   const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
+  const pap = contenu['papier.json'];
   const schema = schemas['schema.json'], schemaQ = schemas['schema-questionnaire.json'];
   const schemaI = schemas['schema-independance.json'], schemaR = schemas['schema-risque.json'];
-  const schemaA = schemas['schema-assertions.json'];
+  const schemaA = schemas['schema-assertions.json'], schemaP = schemas['schema-papier.json'];
   /* L'échelle est lue AVANT le catalogue : c'est elle qui dit quels niveaux
      une procédure a le droit d'exiger. */
   const echelle = ((risq || {}).echelle || {}).niveaux || [];
@@ -369,7 +487,8 @@ export function erreursDuPaquet(contenu, schemas){
     .concat(validerCatalogue(cat, src, schema, echelle, codesAssertions))
     .concat(validerQuestionnaire(quest, src, schemaQ, codesAssertions))
     .concat(validerIndependance(ind, src, schemaI))
-    .concat(validerRisque(risq, src, schemaR, codesAssertions));
+    .concat(validerRisque(risq, src, schemaR, codesAssertions))
+    .concat(validerPapier(pap, schemaP));
 }
 
 function assembler(contenu, schemas){
@@ -380,6 +499,7 @@ function assembler(contenu, schemas){
   const cat = contenu['procedures.json'], src = contenu['sources.json'];
   const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
   const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
+  const pap = contenu['papier.json'];
   /* Seuls ces deux schémas servent à l'ASSEMBLAGE : le premier voyage avec le
      catalogue, le second porte l'énumération des prédicats implémentés. Les
      trois autres n'existent que pour valider, et la validation est faite. */
@@ -394,7 +514,10 @@ function assembler(contenu, schemas){
                     niveaux:risq.echelle.niveaux, paliers:risq.echelle.paliers,
                     tailles:sansNotes(risq.tailles_echantillon),
                     predicats:schemaR.predicats_facteur },
-           assertions:{ version:asrt.version, liste:asrt.assertions } };
+           assertions:{ version:asrt.version, liste:asrt.assertions },
+           papier:{ version:pap.version, papiers:sansNotes(pap.papiers),
+                    annexes:pap.annexes, mentions:pap.mentions, entete:pap.entete,
+                    miseEnPage:pap.mise_en_page, referencement:pap.referencement } };
 }
 
 /**

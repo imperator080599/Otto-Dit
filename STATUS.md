@@ -7,7 +7,8 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 286 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 299 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+  Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
@@ -762,6 +763,41 @@ qu'il déclare invalide, elle le refuse. Une seule fonction produit les erreurs 
 
 **Vérification** : 286 tests applicatifs (278 → 286) · `tsc --noEmit` propre · **six écrans conduits
 dans Chromium sur base fraîche**, dont le parcours complet publier → refuser → corriger → publier.
+
+## Application — tranche livrée : le gabarit du papier est de la méthode
+
+Le format d'un papier n'est ni un nom ni un calcul : c'est de la **présentation**, donc la signature
+du cabinet — et le papier **sort** d'OTTO pour vivre dans son dossier, sous les yeux de son réviseur
+puis d'un inspecteur. Le laisser dans un pack TypeScript exigeait un déploiement pour changer une
+colonne : une incohérence avec la frontière du produit, à l'endroit le plus visible pour un client.
+
+`methodology/papier.json` est le **septième fichier de contenu** (ADR-079, migration `0016`), chargé,
+isolé et versionné comme les six autres. Il porte l'ordre et les intitulés des sections, les colonnes
+des tableaux, les intitulés d'annexes, les mentions, l'en-tête et le logo, la mise en page, et le
+**schéma de référencement** — qui n'existait pas du tout, alors que c'est ce dont un réviseur se sert
+pour savoir où les travaux ont été faits.
+
+- **La frontière joue dans les deux sens** : un bloc nommé et non implémenté sortirait une section
+  **vide** ; un bloc implémenté et non nommé **disparaîtrait** du papier. Les deux arrêtent
+  l'assemblage. Idem pour une colonne sur un champ non relevé et pour une variable de référence
+  inconnue — elle laisserait un trou, et une référence trouée ne se cherche pas dans un dossier.
+- **La référence est calculée puis FIGÉE** : un papier signé garde la référence sous laquelle il a
+  été signé, même si le cabinet change son plan de classement l'an prochain. Elle couvre aussi les
+  papiers du pack SOX gelé — un cabinet ne tient pas deux plans de classement.
+- **Ce qui ne se retire pas** : visas, version, empreinte de population. Leur place et leur libellé
+  sont au cabinet ; leur présence non, parce que c'est ce qui rend le papier lisible **si OTTO
+  disparaît**. Un logo chargé depuis une URL est refusé pour la même raison.
+- **Deux défauts trouvés par la suite.** Une contrainte d'unicité disait le **contraire** de la règle
+  voulue : elle empêchait deux versions d'un papier de partager leur référence, alors que la règle
+  est « deux papiers différents ne la partagent pas ». Remplacée par une garde. Et `annexes` était un
+  `Record<string, string>` : lire `parameters` au lieu de `parametres` rendait `undefined` et faisait
+  échouer l'export loin de la cause — les annexes et mentions sont maintenant **typées nommément**.
+
+**Coût réel : ~4½ séances contre les 3½ annoncées.** L'écart est le schéma de référencement, absent
+de l'estimation parce qu'elle avait chiffré « rendre configurable ce qui existe » et non « rendre le
+papier celui du cabinet ».
+
+**Vérification** : 299 tests (286 → 299) · `tsc --noEmit` propre · 48/48 écrans en production.
 
 ## Convergence prototype → application
 

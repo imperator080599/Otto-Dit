@@ -14,23 +14,20 @@ Ce document existe pour que cette phrase soit **vérifiable** plutôt que rassur
 commercial que technique : il dit ce qu'on promet, ce qu'on ne promet pas, ce qui est daté, et
 pourquoi la frontière est là.
 
-**Les deux marqueurs du §1**, à lire avant le tableau :
+**Le marqueur du §1** : **✓ donnée** — un fichier JSON validé, publié pour **votre** cabinet et lu
+depuis la base. Le modifier ne demande ni compilation, ni développeur, ni déploiement : vous le faites
+vous-même depuis l'écran « la méthode du cabinet » (§3.1).
 
-| Marqueur | Ce qu'il signifie |
-|---|---|
-| **✓ donnée** | Un fichier JSON validé, publié pour **votre** cabinet et lu depuis la base. Le modifier ne demande ni compilation, ni développeur, ni déploiement — vous le faites vous-même depuis l'écran « la méthode du cabinet » (§3.1) |
-| **⚠⚠ code** | C'est configuré, mais **dans un pack TypeScript**, pas dans `methodology/`. Le changer suppose donc **un développeur et un déploiement**, même si aucune logique ne bouge. Levée chiffrée au §1.2 |
-
-État daté du **26 août 2026**. Une ligne du §1 porte encore **⚠⚠ code** — le gabarit du papier de
-travail — et le document dit laquelle avant le tableau plutôt que de la laisser découvrir au §2.
+État daté du **26 août 2026**. **Toutes** les lignes du §1 portent ce marqueur. Le gabarit du papier
+de travail vivait encore dans un pack TypeScript — il est devenu une donnée (§1.2), parce que la
+présentation n'est ni un nom ni un calcul et n'avait rien à faire dans du code.
 
 ---
 
 ## 1. Ce qui se configure sans code
 
-Tout ce qui porte **✓ donnée** est du JSON versionné, validé, publié pour votre cabinet. On modifie
-le fichier, on republie, c'est en vigueur : aucune compilation, aucun développeur. Ce qui porte
-**⚠⚠ code** est configuré aussi, mais au mauvais endroit — dit ici plutôt que découvert.
+Tout ce qui suit est du JSON versionné, validé, publié pour votre cabinet. On modifie le fichier, on
+republie, c'est en vigueur : aucune compilation, aucun développeur, aucun déploiement.
 
 | Ce que vous changez | Où | Effet immédiat | État |
 |---|---|---|---|
@@ -46,7 +43,8 @@ le fichier, on republie, c'est en vigueur : aucune compilation, aucun développe
 | **Vos rubriques de déclaration d'indépendance** | `independance.json` | Ce que chaque membre doit déclarer avant qu'on puisse lui attribuer un travail | ✓ donnée |
 | **Vos seuils d'indépendance** — cadeaux, familiarité, rotation, plafond d'honoraires non-audit | `independance.json` → `parametres` | Les calculs et les alertes correspondants | ✓ donnée |
 | **Vos natures de services autres que la certification** | `independance.json` → `natures_sacc` | La liste proposée à la saisie | ✓ donnée |
-| **Les intitulés de vos papiers de travail** — titres de sections, titres d'annexes, mentions « établi par » / « validé par », langue | `src/lib/packs/nep-fr.ts`, `pcaob-sox.ts` → `WorkpaperStrings` | Le PDF et le classeur exportés portent vos intitulés | **⚠⚠ code** — voir §1.2 |
+| **Le gabarit de vos papiers de travail** — ordre et intitulés des sections, colonnes des tableaux, intitulés d'annexes, mentions, en-tête et logo, mise en page | `papier.json` | Le PDF et le classeur sortent à votre signature | ✓ donnée |
+| **Votre schéma de référencement** — A-01, R-100, selon votre plan de classement | `papier.json` → `referencement` | Chaque papier porte VOTRE référence, et la garde jusqu'à l'archivage | ✓ donnée |
 
 **Ce que le validateur garantit en échange.** Un fichier invalide **n'est pas chargé** : il arrête
 l'assemblage avec la liste des erreurs en toutes lettres. On ne peut donc pas casser silencieusement
@@ -80,68 +78,57 @@ croisé protège contre une **divergence entre quatre**. Vérifié par un test q
 jeu à découpage `presentation` / `informations` distinct, plus **un test par mode de défaillance** —
 les six ci-dessus, pas un résumé des six.
 
-### 1.2 Le gabarit du papier de travail — l'incohérence, dite avant d'être trouvée
+### 1.2 Le gabarit du papier de travail — fait, et voici pourquoi il devait l'être
 
-**La question.** Un cabinet a ses colonnes, ses en-têtes, sa mise en page. C'est sa signature, c'est
-ce qui entre dans son dossier, ce que son réviseur relit et ce qu'un inspecteur lit.
+**La question qu'un cabinet pose.** Il a ses colonnes, ses en-têtes, sa mise en page, ses références.
+C'est sa signature, c'est ce qui entre dans son dossier, ce que son réviseur relit et ce qu'un
+inspecteur lit.
 
-**La réponse en un mot : partiellement — et pas la partie qui fait la signature.**
+**La réponse aujourd'hui : c'est une donnée, comme le reste.** `papier.json` est le septième fichier
+de votre méthode, chargé, isolé et versionné exactement comme les six autres.
 
-| Élément du papier | Aujourd'hui | Où c'est écrit |
-|---|---|---|
-| **Intitulés de sections** (Objectif, Étendue, Méthode, Échantillon, Exceptions, Évaluation, Vérification, Conclusion) | **Configurable, mais dans un pack TypeScript** — donc un déploiement | `packs/types.ts` → `WorkpaperStrings` |
-| **Intitulés d'annexes**, mentions d'attribution et de validation, langue du document | **Configurable, même réserve** | idem |
-| **Liste et ordre des sections** | **Pas configurable.** Huit sections, dans cet ordre, en dur | `services/workpapers/draft.ts` |
-| **Colonnes des tableaux** (échantillon : Pièce, Tiers, Date, Montant HT, Sélection, Justificatifs, Contrôles, Anomalies — exceptions : Type, Description, Impact, Statut, Suite) | **Pas configurable.** Deux tableaux de colonnes littérales, une variante française et une anglaise | `draft.ts`, deux tableaux littéraux |
-| **Mise en page** — corps de texte, tailles, couleurs de titres, marges, filets | **Pas configurable.** Valeurs littérales dans le rendu PDF | `services/workpapers/render.ts` |
-| **En-tête de cabinet / logo** | **N'existe pas.** Le PDF ne porte ni papier à en-tête ni marque | — |
-| **Schéma de référencement des papiers** (A-3.2, R-100…) | **N'existe pas.** Un `code` libre, aucune numérotation imposable | — |
+| Ce que vous changez | Effet |
+|---|---|
+| **Ordre et intitulés des sections** | Vous déplacez « Évaluation » avant « Exceptions », vous renommez tout |
+| **Colonnes des tableaux** — lesquelles, dans quel ordre, sous quel intitulé | Vos colonnes, sur les champs que la procédure relève |
+| **Intitulés d'annexes et mentions** d'attribution et de validation | Vos mots sur votre papier |
+| **En-tête, sous-titre, logo, pied de page** | Le PDF sort sur votre papier à en-tête |
+| **Mise en page** — corps, titres, couleurs, marges | Votre allure, dans des bornes de lisibilité |
+| **Schéma de référencement** — `{lettre}-{sequence}`, et la lettre de chaque poste | Vos papiers portent vos références, et les gardent jusqu'à l'archivage |
 
-#### Pourquoi c'est une incohérence, et pas une limite de principe
+**Pourquoi c'était une incohérence de notre côté, dite franchement.** Ce document pose une frontière —
+la méthode NOMME, le code CALCULE — et elle se tient pour un prédicat ou une population. Elle **ne
+dit rien** du format d'un papier : une colonne, un ordre de sections, un logo ne sont ni un nom ni un
+calcul. Les laisser dans un pack exigeant un déploiement n'était justifié par aucun principe. Et
+c'était le reste le plus visible : un catalogue se lit dans OTTO, **un papier en sort**.
 
-Ce document pose une frontière : **la méthode NOMME, le code CALCULE.** Elle se tient pour un
-prédicat de risque ou une population — quelqu'un doit écrire comment on mesure. Elle **ne dit rien**
-du format d'un papier : une colonne, un ordre de sections, un logo ne sont ni un nom ni un calcul,
-ce sont de la **présentation**. Qu'ils vivent dans un pack exigeant un déploiement n'est justifié par
-aucun principe de ce produit : c'est un reste d'architecture, pas une décision.
+**La frontière s'applique quand même, dans les deux sens.** La méthode nomme un **bloc**, le moteur
+sait le **remplir**. L'assemblage s'arrête si un bloc est nommé sans être implémenté (la section
+sortirait **vide**), si un bloc implémenté n'est pas nommé (il **disparaîtrait** du papier — un
+contrôle de fiabilité effectué mais absent du document), si une colonne nomme un champ que la
+procédure ne relève pas, ou si le modèle de référence porte une variable inconnue — elle laisserait
+un trou, et une référence trouée ne se cherche pas dans un dossier.
 
-Et c'est le reste le plus visible. Un catalogue de procédures se lit dans OTTO ; **un papier de
-travail sort d'OTTO** et va vivre dans le dossier du cabinet, sous les yeux d'un réviseur puis d'un
-inspecteur. C'est la pièce sur laquelle « votre méthode reste la vôtre » se vérifie sans qu'on ait
-rien à expliquer.
-
-#### Ce qu'on fait : le gabarit devient un septième fichier de méthode
-
-`methodology/papier.json`, validé, publié et chargé **exactement comme les six autres** — donc
-par cabinet, isolé, immuable une fois publié, et refusé s'il est invalide.
-
-| Pièce | Coût | Ce que ça change |
-|---|---|---|
-| `papier.json` + son schéma + sa validation croisée | ~1 séance | Le gabarit entre dans le paquet : la plomberie (publication, isolation, désignation, immuabilité) est déjà là et ne se repaie pas |
-| Liste et ordre des sections en données, avec énumération des blocs nommés | ~1 séance | Vous retirez « Vérification », vous déplacez « Évaluation » avant « Exceptions ». Même frontière : la méthode **nomme** un bloc, le code sait le **remplir** ; un bloc nommé et non implémenté **arrête l'assemblage** au lieu de sortir une section vide |
-| Colonnes de tableaux en données, sur une énumération des champs relevés | ~1 séance | Vos colonnes, vos intitulés, votre ordre — les champs disponibles restant ceux que la procédure relève, et une colonne qui nomme un champ inexistant arrête l'assemblage |
-| En-tête, logo, pied de page | ~1 séance | Le PDF sort sur votre papier |
-| **Schéma de référencement** (A-3.2, R-100…) | ~½ séance | Vos papiers portent **vos** références, dans **votre** plan de classement — c'est ce dont un réviseur se sert pour savoir où les travaux ont été faits |
-
-**Total ~4½ séances, contre les 3½ chiffrées pour la version incohérente** — et l'écart d'une séance
-n'est pas le coût de la cohérence : c'est le **schéma de référencement**, qui n'était pas dans les
-3½ parce qu'il n'existe pas du tout et que j'avais chiffré « rendre configurable ce qui existe »
-plutôt que « rendre le papier celui du cabinet ». La plomberie économisée par le mécanisme déjà en
-place compense le travail de frontière en plus. **Les deux chiffres sont donc proches, et la version
-cohérente est celle qu'on prend.**
-
-#### Ce qui ne deviendra pas optionnel, et pourquoi c'est un argument
+#### Ce qui ne se retire pas, et pourquoi c'est un argument
 
 Le **bloc de visas**, la **mention de version** et l'**empreinte de population** restent sur chaque
 papier. Ce n'est pas une contrainte qu'on vous impose : c'est ce qui fait que **si OTTO disparaît
-demain, votre papier dit encore à un inspecteur qui l'a signé, sur quelle version, et sur quelle
-population** — sans nous, sans licence, sans accès. C'est la propriété qui rend le dossier
-**auto-portant** (ADR-013).
+demain, votre papier dit encore à un inspecteur qui l'a signé, sur quelle version et sur quelle
+population** — sans nous, sans licence, sans accès.
 
-Leur **place** et leur **libellé** sont dans les ~4½ séances ci-dessus : vous les mettez où vous
-voulez, vous les appelez comme vous voulez. Leur **présence**, non. Un cabinet qui demanderait à les
-retirer demanderait à rendre son propre dossier illisible sans nous — ce serait notre intérêt
-commercial, et ce serait contre le sien.
+Leur **place** et leur **libellé** sont à vous : vous les mettez où vous voulez et vous les appelez
+comme vous voulez. Leur **présence**, non. Un cabinet qui demanderait à les retirer demanderait à
+rendre son propre dossier illisible sans nous — ce serait notre intérêt commercial, et ce serait
+contre le sien. Un logo chargé depuis une URL est refusé pour la même raison : un papier qui dépend
+d'un serveur pour s'afficher n'est pas auto-portant.
+
+#### Ce que ça a coûté, contre ce qui avait été annoncé
+
+**~4½ séances, contre les 3½** chiffrées pour la version incohérente (intitulés déplacés, ordre,
+colonnes, en-tête). L'écart d'une séance n'est pas le prix de la cohérence : c'est le **schéma de
+référencement**, absent des 3½ parce que la question avait été chiffrée comme « rendre configurable
+ce qui existe » plutôt que « rendre le papier celui du cabinet ». La plomberie de publication et
+d'isolation, déjà en place (§3), ne s'est pas repayée.
 
 ## 2. Ce qui exige un développement
 
@@ -248,7 +235,7 @@ moteur refuse.*
 | Demande | État | Coût estimé |
 |---|---|---|
 | **Taille d'échantillon par formule** (par exemple un intervalle de sondage en unités monétaires ramené au seuil de planification) plutôt qu'une table par niveau | **Non supporté.** `tailles_echantillon` est une table `niveau → nombre` | ~1 séance, à faire **avec le point 6** : une formule a besoin de la valeur de la population, et la population est le point 6. Même frontière que les prédicats — la méthode nommerait `formule: "mus_intervalle_au_seuil"`, le code la calculerait |
-| **Gabarit du papier de travail comme donnée** — ordre des sections, colonnes, libellés, en-tête, logo, schéma de référencement | **Non fait**, et c'est l'incohérence assumée du produit : la présentation n'est ni un nom ni un calcul, elle n'a rien à faire dans un pack | voir §1.2 |
+| *(rien d'autre à ce jour)* | | |
 
 *(Les assertions figuraient ici. Elles n'y figurent plus : la question est tranchée au §1.1.)*
 
@@ -277,14 +264,15 @@ Un auditeur qui veut éprouver la promesse posera l'une de ces questions. Voici 
 > découvrir.
 
 > **« Et mon papier de travail, avec mes colonnes, mon en-tête et mes références ? »**
-> **Partiellement, et pas encore la partie qui fait la signature** — les intitulés se changent, mais
-> dans un pack, donc avec un déploiement ; l'ordre des sections, les colonnes, la mise en page et
-> l'en-tête sont en dur ; le schéma de référencement n'existe pas.
+> Oui, et c'est une donnée comme le reste : ordre et intitulés des sections, colonnes, annexes,
+> mentions, en-tête, logo, mise en page, et votre schéma de référencement. Un bloc que vous nommez et
+> que le moteur ne sait pas remplir **arrête l'assemblage** au lieu de sortir une section vide ; un
+> bloc que le moteur remplit et que vous ne nommez pas l'arrête aussi, parce qu'il disparaîtrait du
+> papier sans que rien ne le dise.
 >
-> Et je vous le donne comme une **incohérence de notre côté**, pas comme une limite : la présentation
-> n'est ni un nom ni un calcul, elle n'a rien à faire dans un pack. Le gabarit devient un septième
-> fichier de méthode, chargé comme les six autres. **~4½ séances**, décomposées au §1.2 — dont une
-> pour le schéma de référencement, qui n'existe pas du tout.
+> La seule chose qui ne se retire pas : le bloc de visas, la version et l'empreinte de population.
+> Vous choisissez où et comment ils s'appellent. Ils restent parce que ce sont eux qui font que votre
+> papier reste lisible par un inspecteur **si OTTO disparaît**. Voir §1.2.
 
 > **« Je peux la charger moi-même, ou il faut vous appeler ? »**
 > Vous-même, depuis un écran. Vous collez, vous **vérifiez sans rien écrire**, vous lisez la liste

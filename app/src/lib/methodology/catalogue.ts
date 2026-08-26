@@ -14,7 +14,7 @@ import path from 'node:path';
 import url from 'node:url';
 import type {
   Catalogue, Procedure, Source, SensDeTest, QuestionResiduelle, NatureRi,
-  ParametreIndependance,
+  ParametreIndependance, GabaritPapier, ColonneGabarit,
 } from './types';
 
 type Valideur = {
@@ -116,6 +116,59 @@ export function oublierCatalogue(): void { _cache = null; }
    déclare : le niveau de risque exigé, le cycle, le poste. La décision
    « cette procédure est-elle requise ici » appartient au moteur de risque,
    pas au catalogue.                                                        */
+
+/* ── le gabarit du papier de travail ──────────────────────────────────────
+   Le format d'un papier n'est ni un nom ni un calcul : c'est de la
+   présentation, donc la signature du cabinet. Les accesseurs ci-dessous
+   n'appliquent AUCUN défaut de secours : un gabarit incomplet a été refusé au
+   chargement, et retomber sur une valeur du produit ici masquerait ce que le
+   validateur vient d'interdire (ADR-079).                                   */
+
+/** Le gabarit d'une nature de papier. */
+export function gabarit(cat: Catalogue, nature: string): GabaritPapier {
+  const g = cat.papier.papiers[nature];
+  if (!g) {
+    throw new Error(
+      `gabarit « ${nature} » absent de la méthode du cabinet `
+      + `(présents : ${Object.keys(cat.papier.papiers).join(', ')})`,
+    );
+  }
+  return g;
+}
+
+/** Les intitulés d'un tableau, dans l'ordre du cabinet. */
+export function colonnes(cat: Catalogue, nature: string, tableau: string): ColonneGabarit[] {
+  const t = gabarit(cat, nature).tableaux[tableau];
+  if (!t) throw new Error(`tableau « ${tableau} » absent du gabarit « ${nature} »`);
+  return t.colonnes;
+}
+
+/**
+ * La référence d'un papier dans le plan de classement DU CABINET.
+ *
+ * C'est ce dont un réviseur se sert pour savoir où les travaux ont été faits.
+ * Une variable inconnue laisserait un trou : le validateur les a énumérées au
+ * chargement, donc ici toute variable non résolue est un défaut du moteur, pas
+ * de la méthode — et elle lève plutôt que de laisser un trou.
+ */
+export function referencePapier(
+  cat: Catalogue,
+  v: { poste: string; sequence: number; code: string; version: number },
+): string {
+  const r = cat.papier.referencement;
+  const lettre = r.lettres_par_poste[v.poste] ?? r.lettres_par_poste._defaut;
+  const valeurs: Record<string, string> = {
+    lettre,
+    sequence: String(v.sequence).padStart(r.sequence_chiffres, '0'),
+    code: v.code,
+    version: String(v.version),
+  };
+  return r.modele.replace(/\{(\w+)\}/g, (_m, nom: string) => {
+    const val = valeurs[nom];
+    if (val === undefined) throw new Error(`référence : variable « ${nom} » non résolue par le moteur`);
+    return val;
+  });
+}
 
 /** Le libellé d'une assertion, depuis le jeu du cabinet. */
 export function libAssertion(cat: Catalogue, code: string): string {
@@ -239,4 +292,5 @@ export type {
   Catalogue, Procedure, Source, QuestionResiduelle, NatureRi,
   Independance, RubriqueIndependance, ParametreIndependance,
   Risque, FacteurObserve, JeuAssertions, AssertionDef,
+  Papier, GabaritPapier, SectionGabarit, ColonneGabarit,
 } from './types';

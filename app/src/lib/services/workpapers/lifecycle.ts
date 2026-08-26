@@ -10,10 +10,11 @@ import type { WpSection } from './draft';
 export async function getWorkpaper(workpaperId: string) {
   return q01<{
     id: string; engagement_id: string; pack_id: string; code: string; title: string;
+    reference: string | null;
     language: string; sections: WpSection[]; status: string; version: number;
     based_on_hash: string | null; engine_run_id: string | null; created_at: string;
   }>(
-    `select id, engagement_id, pack_id, code, title, language, sections, status, version,
+    `select id, engagement_id, pack_id, code, title, reference, language, sections, status, version,
             based_on_hash, engine_run_id, created_at::text
      from workpaper where id = $1`,
     [workpaperId],

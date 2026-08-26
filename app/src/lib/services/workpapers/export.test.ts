@@ -6,7 +6,7 @@ import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { draftRevenueWorkpaper } from './draft';
 import { signWorkpaper } from './lifecycle';
 import { renderWorkpaperPdf, exportWorkpaper, UnrenderableCharacterError } from './render';
-import { getAssurancePack } from '@/lib/packs';
+import { chargerCatalogue } from '@/lib/methodology/catalogue';
 import { readBlob } from '@/lib/core/storage';
 
 // Founder review 2026-08-25. Four invariants an exported workpaper must hold, each one
@@ -51,7 +51,7 @@ describe('workpaper export invariants (ADR-023)', () => {
       wpId,
       JSON.stringify([
         {
-          key: 'sampleTable', title: 'Tableau', table: {
+          key: 'tableau_echantillon', title: 'Tableau', table: {
             headers: ['Pièce'],
             rows: [{ cells: ['FA2025-0702'], refs: { evidenceIds: ['00000000-0000-0000-0000-0000000000ff'] } }],
           },
@@ -77,9 +77,11 @@ describe('workpaper export invariants (ADR-023)', () => {
     // the PDF is compressed per stream, so assert on the rendered text via the appendix
     // heading coming from the pack rather than on raw bytes
     expect(raw.length).toBeGreaterThan(1000);
-    const pack = getAssurancePack('nep-fr');
-    expect(pack.wp.appendices.evidence).toMatch(/Annexe B/);
-    expect(getAssurancePack('pcaob-sox').wp.appendices.evidence).toMatch(/Appendix B/);
+    /* Les intitulés d'annexes viennent du GABARIT DU CABINET, plus du pack
+       (ADR-079) : c'est SON papier, et son réviseur y cherche SES intitulés. */
+    const cat = await chargerCatalogue();
+    expect(cat.papier.annexes.evidence).toMatch(/Annexe B/);
+    expect(cat.papier.annexes.signoffs).toBeTruthy();
   });
 
   it('a deleted export regenerates byte-for-byte from the database', async () => {
