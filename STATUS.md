@@ -166,6 +166,37 @@ Contrôles : 26/26 pieds de tableau exacts, 42 vues sans erreur, 13/13 citations
 **Reste devant** : lot 2 (analyse sectorielle, parties liées, LCB-FT), E (balances auxiliaires),
 B (contrôle interne et processus), D (résiduel qualitatif).
 
+## Corrections, programme de travail, système visuel (2026-08-25, lots 1-2-3)
+
+`prototype/otto-prototype.html` — ADR-034 à ADR-038. 413 Ko, polices comprises.
+
+**Lot 1 — trois corrections.** L'étendue des travaux (taille de tirage ET seuil de strate
+exhaustive) suit le risque de **l'assertion** testée, plus le risque maximum du poste : une
+section porte des échantillons de tailles différentes. Le test de séparation des exercices est
+borné à ce qui existe, n'annonce que ce qu'il teste, et déclare sur le papier qu'il est
+unidirectionnel faute du grand livre N+1. Le taux d'anomalie des pièces devient un paramètre
+déclaré (1,00 % de montants faux au lieu de ~6 % tombés d'un modulo), avec des pièces nommées,
+leurs motifs métier et une vue « Jeu de données » qui compare taux visé et taux constaté.
+
+**Lot 2 — un seul objet.** Tout travail de la mission est la même chose : 106 travaux
+(7 planification, 91 section, 8 achèvement), les procédures étant migrées et non dupliquées.
+Préparateur ≠ réviseur refusé par le système ; le niveau de revue découle du risque et un
+niveau 2 exige un associé ; « achevé » par le préparateur seul, « revu » par le réviseur seul ;
+travail non affecté = obstacle au visa. Heures budgétées (barème affiché, modifiable) et
+réalisées, agrégées par phase, section et personne. **L'espace achèvement est supprimé** : les
+trois espaces sont trois audiences, l'achèvement est une phase de l'espace auditeur. Vue globale
+de la mission dans l'ordre des questions d'un chef de mission.
+
+**Lot 3 — système visuel.** Jeu de jetons fermé, accent unique dans les trois espaces, la
+couleur ne signale que les problèmes, marques de pointage à la place des pastilles d'état,
+référence du papier en chasse fixe sur chaque panneau. Polices intégrées (IBM Plex Mono ;
+Instrument Sans en substitution déclarée de Public Sans, indisponible hors ligne), 71 Ko en
+base64. Compteurs : 2 rayons, 0 couleur hors jetons, 5 tailles de police, 0 espacement hors
+échelle.
+
+**Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
+qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent

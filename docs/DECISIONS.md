@@ -977,3 +977,151 @@ trois fois le seuil est un mouvement ordinaire, et le multiple absolu ne mesure 
 compte. Réécrite en **déformation relative** — montant au moins égal au seuil de planification
 ET variation d'au moins 25 % du solde N-1 — elle lève un seul facteur, sur le compte bancaire
 qui bouge de 39 %. Registre total : **9 facteurs** pour une cible de 15.
+
+## ADR-034 — L'étendue des travaux suit l'assertion, pas le poste
+
+**Statut** : accepté (2026-08-25, revue fondateur — troisième signalement)
+
+**Contexte** : `tailleEchantillon(p)` appelait `niveauMax(p)`, le risque le plus élevé du poste
+toutes assertions confondues. La refonte par procédure (ADR-031) avait fait de la procédure
+l'unité de travail sans en tirer la conséquence méthodologique : sur le chiffre d'affaires, le
+test de séparation des exercices recevait la taille d'échantillon de l'exhaustivité. Le point
+avait été signalé trois fois et n'avait jamais figuré dans une déclaration d'omissions.
+
+**Décision** : une procédure répond à UNE assertion ; les deux tables d'étendue s'appliquent
+au niveau de risque de cette assertion.
+
+| Risque de l'assertion | Tirage aléatoire | Seuil de la strate exhaustive |
+|---|---|---|
+| faible | 6 | seuil de planification |
+| moyen | 15 | moitié du seuil de planification |
+| élevé | 30 | tiers du seuil de planification |
+
+Plus le risque est élevé, plus le seuil descend, donc plus d'éléments sont couverts un par un.
+Les deux tables sont affichées dans le bloc d'évaluation du risque, avec le niveau retenu par
+assertion et les procédures qu'il commande. **Une section porte des échantillons de tailles
+différentes, et c'est normal.** Conséquence mesurée sur le chiffre d'affaires : la strate
+exhaustive du test de détail passe de 85 à 148 éléments — c'est le prix de la règle, pas un
+effet de bord.
+
+## ADR-035 — Un test unidirectionnel doit le dire ; une population annoncée doit être testée
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+**Contexte** : le filtre de séparation des exercices était `e.date >= CUTOFF_DEB`, sans borne
+haute, sur un grand livre qui s'arrête au 31/12/2025. La procédure ne pouvait donc trouver que
+des opérations de 2025 relevant de 2026 ; la période affichée annonçait pourtant « du
+21/12/2025 au 10/01/2026 ». La population déclarée était plus large que la population testée.
+
+**Décision** : le filtre est borné à ce qui existe (21/12/2025 au 31/12/2025), la période
+annoncée est celle qui est testée, et la limitation est écrite sur le papier :
+
+> Sens couvert : opérations comptabilisées en 2025 dont le fait générateur relève de 2026. Le
+> sens inverse exige le grand livre de l'exercice suivant, indisponible à la date de ces
+> travaux. Le test est donc unidirectionnel et ne fonde aucune conclusion sur l'exhaustivité du
+> rattachement.
+
+Une pastille « unidirectionnel » figure au plan de travail. Un test de séparation des exercices
+est bidirectionnel par nature ; s'il ne l'est qu'à moitié, le papier le dit.
+
+## ADR-036 — Le taux d'anomalie du jeu d'essai est un paramètre, pas un artefact
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+**Contexte** : `pieceSynth` produisait les écarts par modulos premiers sur l'empreinte de la
+référence de pièce — `h % 17` pour les montants, `h % 23` pour les quantités, `h % 31` pour les
+signatures. Le taux n'était pas décidé, il tombait : environ **6 % de factures au montant faux**,
+soit le portrait d'une entreprise en perdition et un contre-argument en démonstration
+commerciale.
+
+**Décision** : cinq taux déclarés, réalistes, avec leur base, leur motif métier, et des pièces
+**nommément désignées** — retenues à la construction du jeu de données pour couvrir plusieurs
+journaux, plusieurs tiers et plusieurs ordres de grandeur. Aucun écart ne provient d'une
+fonction du numéro de pièce.
+
+| Anomalie | Base | Taux visé | Pièces posées |
+|---|---|---|---|
+| Montant de la pièce ≠ montant comptabilisé | 1 598 écritures | 1,00 % | 16 |
+| Quantité livrée < quantité facturée | 323 ventes | 1,24 % | 4 |
+| Bon de livraison non signé | 323 ventes | 1,55 % | 5 |
+| Livraison postérieure à la clôture | 323 ventes | 0,62 % | 2 |
+| Taux appliqué hors barème | 1 598 écritures | 0,50 % | 8 |
+
+Chaque pièce porte un **motif écrit** (avoir de fin d'exercice non comptabilisé, livraison
+partielle, bon signé par un intérimaire non habilité…) et un **delta écrit**, pas calculé. Une
+vue « Jeu de données » affiche le taux visé, le taux constaté et signale toute divergence entre
+la cible déclarée et les pièces réellement posées. Effet mesuré : sur les 163 éléments du test
+de détail du chiffre d'affaires, 8 écarts sur 1 141 contrôles, soit **0,61 % de factures au
+montant faux** contre 6 % auparavant.
+
+## ADR-037 — Le travail est l'objet unique de la mission ; l'achèvement est une phase
+
+**Statut** : accepté (2026-08-25, revue fondateur)
+
+1. **Un seul objet.** « Détermination de la matérialité », « test de détail sur le chiffre
+   d'affaires » et « événements postérieurs » sont trois instances du même objet : code,
+   nature, intitulé, rattachement, assertion, préparateur, réviseur, niveau de revue exigé,
+   échéance, heures budgétées, heures réalisées, statut, référence du papier. Les procédures
+   d'ADR-031 sont **migrées**, pas dupliquées : leur casier d'exécution reste dans `proc()`,
+   leur casier d'organisation vit dans `trav()`. 106 travaux : 7 de planification, 91 de
+   section, 8 d'achèvement. Le **programme de travail** est la liste, filtrable et imprimable.
+
+2. **Responsabilités, en règles refusées par le système.** Préparateur et réviseur sont
+   obligatoirement deux personnes différentes. Le niveau de revue **découle du risque** : une
+   procédure sur une assertion « élevé », une section à risque « élevé », la matérialité,
+   l'opinion et la clôture appellent une revue de second niveau — et un travail de niveau 2 ne
+   peut être revu que par un associé. Un travail passe « achevé » par son préparateur seul,
+   « revu » par son réviseur seul, et jamais avant d'être achevé. Un travail sans préparateur
+   ou sans réviseur est un **obstacle au visa** de sa section.
+
+3. **Heures.** Budget proposé par un barème affiché (base + heures par élément sélectionné),
+   modifiable travail par travail parce que c'est une décision ; réalisé saisi. Agrégation par
+   phase, par section et par personne, avec l'écart. La plateforme mesure ainsi sa propre
+   proposition de valeur : 343,75 h de budget sur cette mission, ventilées.
+
+4. **Correction de structure : l'espace « achèvement » est supprimé.** Les trois espaces sont
+   trois **audiences** — auditeur, client, pilotage — avec des droits distincts. L'achèvement
+   est une **phase** : en faire un espace mélangeait deux axes, la preuve étant que la
+   planification, phase elle aussi, vivait déjà dans l'espace auditeur. L'espace auditeur porte
+   désormais le dossier entier ordonné par phase : Dossier · 1 Planification · 2 Contrôle
+   interne · 3 Bilan · 4 Compte de résultat · 5 Achèvement.
+
+5. **Vue globale de la mission**, dans l'ordre des questions d'un chef de mission : avancement
+   par phase puis par section, **charge par personne** avec détection de surcharge, notes de
+   revue par destinataire et ancienneté, facteurs non statués, demandes clients en retard par
+   contact, obstacles au visa agrégés avec le chemin vers chacun, jalons avec décompte.
+   Exportable dans les trois périmètres, imprimable.
+
+## ADR-038 — Système visuel : jeu de jetons fermé, la couleur ne signale que les problèmes
+
+**Statut** : accepté (2026-08-25, revue fondateur — lot design)
+
+**Diagnostic accepté** : le prototype avait huit rayons de bordure, quatre accents dont un
+violet d'information, la pile de polices système, et une pastille pastel sur chaque cellule
+d'état. Le facteur décisif n'était pas la teinte mais l'incohérence.
+
+**Décision** :
+
+1. **La couleur ne signale que les problèmes.** « Conforme », « reçu », « rapproché » sont
+   l'état par défaut d'un dossier et ne portent aucune couleur. Deux teintes sémantiques
+   seulement : anomalie `#9B2C2C`, attention `#8A5A00`. Le vert et le violet sémantiques sont
+   supprimés, la classe `pill.ok` n'existe plus.
+2. **Jeu fermé.** Fond `#F4F6F3`, panneau `#FFFFFF`, encres `#14171A` / `#4A534E` / `#79837D`,
+   filet `#DFE4DE`, accent unique `#1F4D3D` **identique dans les trois espaces** — les espaces
+   se distinguent par un libellé et un filet. Rayon : deux valeurs (3 px, 999 px). Espacement :
+   échelle stricte 4/8/12/16/24/32. Cinq tailles de police.
+3. **Typographie intégrée**, aucune requête réseau : IBM Plex Mono pour les chiffres,
+   références et empreintes, en chiffres tabulaires. **Substitution déclarée** : Public Sans
+   était demandée ; elle n'est pas disponible hors ligne dans cet environnement et aucun réseau
+   n'est autorisé. Instrument Sans est retenue — même famille de grotesques neutres — et la
+   substitution est écrite dans la feuille de style pour être remplacée d'un seul bloc
+   `@font-face`. Quatre graisses sous-ensemblées en WOFF2 : **71 Ko en base64**.
+4. **Signature** : la référence du papier de travail en chasse fixe, petite, coin supérieur
+   droit de chaque panneau, sous le filet. Second emprunt : les pastilles d'état du papier de
+   travail sont remplacées par des **marques de pointage** (`p` pointé, `a` à exécuter,
+   `x` écart, `n` non reçu) avec leur légende sous le tableau ; seules `x` et `n` sont colorées.
+
+**Compteurs de conformité, mesurés sur la feuille de style livrée** : rayons distincts **2**
+(cible 2) · couleurs littérales hors jetons **0** (cible 0) · tailles de police **5** (cible ≤ 5)
+· espacements hors échelle **0** (cible 0). Teintes d'encre effectivement rendues à l'écran : 6,
+toutes issues du jeu.
