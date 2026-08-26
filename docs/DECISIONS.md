@@ -3097,3 +3097,113 @@ avec l'écart pour source.
 `open` après un flux qui les résout tous : la liste était vide, la boucle ne s'exécutait pas, et le
 test aurait été vert. La garde `expect(…, 'le test vérifierait le vide').toBeTruthy()` l'a arrêté.
 *Écrire la garde coûte une ligne ; ne pas l'écrire coûte une confiance.*
+
+---
+
+## ADR-088 — Le dossier créé que personne ne pouvait ouvrir
+
+**Le défaut.** `creerMission` insérait la mission et s'arrêtait là. Le dossier existait — bonne
+entité, bon exercice, méthode en vigueur désignée, ligne au journal — et **personne ne pouvait
+l'atteindre** : la liste d'accueil joint `engagement_member`, `requireMember` garde l'écran
+d'acceptation. Le dossier naissait donc **hors du champ de vision de son créateur**, sans erreur,
+sans message : le clic « Créer » renvoyait à l'accueil, et l'accueil n'affichait rien de neuf.
+
+**Comment il a été trouvé — et comment il ne l'a pas été.** 403 tests verts, `tsc` propre, 60 écrans
+sur 60 rendus en production : **aucun** de ces harnais ne pouvait le voir. Les tests appellent le
+service et interrogent la base, donc voient une mission qui existe ; le balayage ouvre des routes
+avec des identifiants **déjà peuplés**, donc jamais une mission fraîchement créée. Il a fallu
+*cliquer sur le bouton et chercher le dossier dans la liste*. C'est la règle 10 de CLAUDE.md prise au
+mot : **un écran qui rend n'est pas un écran qui marche.**
+
+**Pourquoi `assignMember` ne pouvait pas servir.** Il exige que la mission soit **acceptée** — et
+l'acceptation ne peut être décidée que par quelqu'un capable d'**ouvrir** le dossier. La circularité
+est réelle et se casse au seul endroit possible : **la personne qui crée le dossier y entre**, pour
+pouvoir décider. Toute autre coupure affaiblirait une règle qui compte (accepter avant de travailler,
+ou n'entrer dans un dossier que par affectation).
+
+**Ce que ça n'affaiblit pas.** Le créateur entre `partner` **sans droit de signature** (`can_sign =
+false`) et sa déclaration d'indépendance reste exigée comme celle de tout autre membre : les
+obstacles au visa la réclameront. *Ouvrir un dossier n'est pas y travailler, et y travailler n'est pas
+le signer.* L'insertion est `on conflict do nothing` : re-créer ne double pas l'appartenance.
+
+**La leçon, pas le correctif.** La classe de défaut n'est pas « il manquait un insert » : c'est
+**l'objet créé qui n'est relié à rien**. Un état neuf dont aucun chemin de lecture ne part est
+invisible, et l'invisible passe tous les tests. La question à poser à toute création future est
+*« par quel chemin l'utilisateur revient-il à ce qu'il vient de créer ? »* — et si la réponse est
+« il ne revient pas », l'objet n'est pas créé, il est perdu.
+
+---
+
+## ADR-089 — Ce qu'une base recréée a révélé : trois silences en série
+
+Le correctif d'ADR-088 a fait tomber cinq suites d'un coup, sur une erreur qui ne parlait pas de
+lui : `update or delete on table "engagement" violates foreign key constraint`. Trois défauts
+distincts se tenaient derrière, chacun **muet tant que rien ne le sollicitait**.
+
+**1. Une clé primaire réécrite après coup.** Le dossier N-1 de démonstration voulait un identifiant
+déterministe ; il appelait `creerMission`, puis faisait `update engagement set id = …`. Ça a marché
+exactement tant que la création ne reliait la mission à **rien**. Le jour où elle y a relié son
+premier membre, la clé étrangère a refusé — et elle avait raison : *déplacer une clé primaire déjà
+référencée est un défaut, pas une commodité.* L'identifiant se choisit désormais **avant**
+l'insertion (`CreationMission.id`), ce qui supprime la fragilité au lieu de la déplacer.
+
+**2. Une branche de repli qui n'avait jamais tourné.** Le harnais d'écrans construit lui-même le
+monde de démonstration s'il manque. Ce chemin ne s'emprunte que sur une base **sans** monde ; tant
+qu'il en restait un d'un lancement précédent, la fonction rendait la main à la première ligne. La
+première fois qu'il a tourné pour de vrai, il a échoué de **deux façons à la fois** : PGlite n'admet
+qu'un écrivain, et le parent — qui avait déjà chargé le répertoire dans sa propre mémoire — aurait de
+toute façon relu une base vide après le peuplement de l'enfant. Le harnais annonçait alors « six
+routes non résolues » : un aveu, pas un diagnostic. Correctif : `closeDb()` avant de céder la main,
+puis **vérification que le peuplement a produit ce qu'on attendait**. *Un chemin de repli qu'on
+n'exécute jamais n'est pas un repli : c'est du code non testé placé là où on ne le vérifiera pas.*
+
+**3. Une panne illisible.** Le répertoire de données, abîmé par un arrêt brutal du conteneur, faisait
+sortir `RuntimeError: Aborted()` avec une pile de wasm — ni ce qui a échoué, ni quoi faire. Il a
+coûté **deux exécutions complètes de la suite** avant d'être attribué au bon endroit, et il a
+d'abord été imputé au changement en cours. `open()` traduit maintenant l'abandon en français, nomme
+les deux causes possibles (un autre processus écrivain, un répertoire abîmé) et donne la commande.
+*Une panne qu'on ne sait pas lire est une panne qu'on impute au mauvais changement.*
+
+**Ce que ça dit du reste.** Les trois n'ont été visibles qu'après avoir **détruit et refait la base**.
+Une base qui traîne d'un lancement à l'autre masque exactement les chemins de démarrage — et ce sont
+ceux qu'un nouveau venu emprunte en premier.
+
+---
+
+## ADR-090 — Le parcours cliqué entre dans ce qu'on lance (`npm run clics`)
+
+Le balayage ouvre les 60 routes et vérifie qu'elles **rendent**. Il ne clique sur rien. Les deux
+défauts les plus coûteux du dépôt lui étaient donc invisibles : six formulaires **inertes** en
+production (ADR-078) et un dossier créé **inatteignable** (ADR-088). Les deux fois, le contrôle
+manquant n'était pas difficile — *il était absent de ce qu'on lance.*
+
+`npm run clics` conduit le parcours dans Chromium sur un **build de production** : création et
+acceptation, jalons, reprise N-1, pointage, achèvement, obstacles. Il hérite des garde-fous du
+balayage (port occupé = refus, groupe de processus tué, serveur mort détecté) et en ajoute deux :
+une exception côté navigateur est un **échec**, et moins de dix étapes conduites est une **panne du
+harnais**, pas un parcours réussi. Il entre dans `npm run verify`.
+
+**Ce que le parcours vérifie n'est presque jamais une réussite.** Une action qui aboutit prouve peu.
+Ce qui prouve, c'est qu'une action **interdite** soit refusée **et que le refus s'affiche** : décider
+sans motif, écarter une reprise sans motif, documenter un chiffre sans pièce, conclure sans
+conclusion. Douze des quinze étapes sont de cette nature.
+
+**Trois pièges du harnais lui-même, corrigés en le construisant** — ils valent d'être notés parce
+qu'ils sont la version « outil » du défaut qu'ils cherchent :
+- **Chercher le refus dans le texte de la page** attrape les explications de la méthode (« Le système
+  refuse, il ne rappelle pas ») et annonce un refus là où l'action a **réussi**. Le refus voyage dans
+  `?erreur=` : il se lit là, et nulle part ailleurs.
+- **Répondre « au premier formulaire »** n'importe combien de fois : le formulaire d'un critère reste
+  affiché après la réponse — on doit pouvoir se corriger — donc la boucle répondait douze fois au
+  même. L'application refusait alors la décision en nommant les critères manquants : elle avait
+  raison, mais la règle visée n'était jamais touchée.
+- **Viser « le dernier bouton *Sans objet* »** tombait sur une autre nature, que le service accepte à
+  juste titre, et annonçait « accepté » pour une règle jamais sollicitée. *Un contrôle qui vise à
+  côté ne dit rien, mais il le dit d'un ton rassurant.*
+
+**Deux écrans corrigés par la conduite, sur le même principe.** Le bouton « sans objet » n'était pas
+offert sur la lettre d'affirmation — juste, mais **muet** : qui cherche l'action croit à un oubli
+d'écran plutôt qu'à une règle. Et la reprise N-1 affirmait « aucune mission sur l'exercice précédent
+pour cette entité » alors qu'elle cherche aussi la **même nature** de mission : sur un dossier
+intégré dont le N-1 était un audit légal, elle affirmait faux. *Un écran qui affirme plus que ce
+qu'il a vérifié se fait croire une fois, puis plus jamais.*

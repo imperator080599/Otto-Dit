@@ -28,7 +28,27 @@ export function dataDir(): string {
 async function open(): Promise<PGlite> {
   const target = process.env.OTTO_DB === 'memory' ? undefined : path.join(dataDir(), 'pg');
   const db = target ? new PGlite(target) : new PGlite();
-  await db.waitReady;
+  try {
+    await db.waitReady;
+  } catch (e) {
+    /* TRADUIRE L'ABANDON DU WASM. Quand le répertoire de données est tenu par
+       un autre processus (PGlite n'admet QU'UN écrivain) ou abîmé par un arrêt
+       brutal, postgres s'arrête et l'appelant reçoit `RuntimeError: Aborted()`
+       avec une pile de wasm — un message qui ne dit ni ce qui a échoué ni quoi
+       faire. Il m'a coûté deux exécutions complètes de la suite avant d'être
+       attribué. Une panne qu'on ne sait pas lire est une panne qu'on impute au
+       mauvais changement (règle 13). */
+    if (!target) throw e;
+    throw new Error(
+      `la base locale ne s'ouvre pas (${target}). Deux causes, et une seule commande :\n`
+      + `  • un autre processus la tient — PGlite n'admet QU'UN écrivain : un `
+      + `\`next dev\`/\`next start\` ou un script encore vivant. Arrêtez-le.\n`
+      + `  • elle a été abîmée par un arrêt brutal (conteneur tué en cours d'écriture).\n`
+      + `  \`npm run db:setup\` la recrée : elle ne contient que des données `
+      + `synthétiques, régénérables par construction.\n`
+      + `  cause d'origine : ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
   return db;
 }
 
@@ -71,6 +91,26 @@ export async function tx<T>(fn: (run: (sql: string, params?: unknown[]) => Promi
     result = await fn(async (sql, params = []) => (await t.query(sql, params as never[])).rows);
   });
   return result;
+}
+
+/**
+ * FERMER LA BASE, ET POURQUOI CE N'EST PAS DE L'HYGIÈNE MAIS UNE CORRECTION.
+ *
+ * PGlite est un postgres complet en wasm : le répertoire de données est chargé
+ * DANS le processus. Un processus enfant qui écrit sur le même répertoire n'est
+ * donc pas vu par le parent — et il n'admet qu'un écrivain. Un harnais qui
+ * ouvre la base, puis lance un script de peuplement en enfant, puis relit,
+ * relit sa PROPRE mémoire : le monde a été construit sur le disque et le
+ * parent voit toujours une base vide. Il ne plante pas, il constate à tort.
+ *
+ * Fermer avant de céder la main est le seul moyen de relire ce que l'autre a
+ * écrit. Le prochain accès rouvre depuis le disque.
+ */
+export async function closeDb(): Promise<void> {
+  const db = g.__ottoDb;
+  g.__ottoDb = undefined;
+  g.__ottoDbReady = undefined;
+  if (db) await db.close();
 }
 
 /** Test helper: fresh in-memory database (caller applies migrations). */

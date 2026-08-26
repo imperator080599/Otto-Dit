@@ -111,13 +111,25 @@ export default async function CompletionPage({
                     <button className="btn">Conclure</button>
                   </p>
                 </form>
-                {x.nature !== 'lettre_affirmation' && (
+                {x.nature !== 'lettre_affirmation' ? (
                   <form action={sansObjetAction} className="row" style={{ gap: 6 }}>
                     <input type="hidden" name="engagement_id" value={id} />
                     <input type="hidden" name="nature" value={x.nature} />
                     <input name="reason" placeholder="motif du « sans objet » (obligatoire)" style={{ width: 380 }} />
                     <button className="btn secondary small">Sans objet</button>
                   </form>
+                ) : (
+                  /* NE PAS OFFRIR L'ACTION IMPOSSIBLE — ET DIRE POURQUOI. Le
+                     service refuse « sans objet » sur la lettre d'affirmation ;
+                     l'écran ne proposait simplement pas le bouton, ce qui est
+                     juste mais muet : qui cherche l'action croit à un oubli
+                     d'écran plutôt qu'à une règle. Un contrôle absent sans
+                     raison affichée se lit comme un manque. */
+                  <p className="faint">
+                    Pas de « sans objet » ici : une mission peut se passer de communication
+                    à la gouvernance, jamais de lettre d’affirmation. La déclarer sans objet
+                    reviendrait à conclure sans elle.
+                  </p>
                 )}
               </>
             ) : (

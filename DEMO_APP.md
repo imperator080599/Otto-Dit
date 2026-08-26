@@ -252,4 +252,14 @@ Dit ici pour ne pas être cru par omission.
 | L'arc entier, de l'acceptation à l'archive scellée | `cd app && npx vitest run ../tests/parcours.test.ts` |
 | Toutes les règles, tous les refus | `cd app && npm test` |
 | Tous les écrans rendent, en **production** | `cd app && npm run screens` |
-| Base fraîche + dossier déroulé + types + tests + écrans | `cd app && npm run verify` |
+| Le parcours se **clique** vraiment, en production | `cd app && npm run clics` |
+| Base fraîche + dossier déroulé + types + tests + écrans + clics | `cd app && npm run verify` |
+
+`npm run screens` **ouvre** les 60 routes ; `npm run clics` **agit** dessus. Les deux sont
+nécessaires et ne se remplacent pas : six formulaires ont été inertes en production pendant une
+tranche entière avec tous les écrans à 200 (ADR-078), et un dossier créé a été inatteignable en
+étant parfaitement rendu (ADR-088). *Un écran qui rend n'est pas un écran qui marche.*
+
+Sur les quinze étapes de `npm run clics`, **douze vérifient un refus** — décider sans motif, écarter
+une reprise sans motif, documenter un chiffre sans pièce, conclure sans conclusion — parce qu'une
+action qui aboutit prouve peu, et qu'un refus qui ne s'affiche pas n'existe pas pour l'utilisateur.

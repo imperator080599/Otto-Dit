@@ -267,6 +267,16 @@ describe('créer un dossier', () => {
     expect(eng.name.length).toBeGreaterThan(5);
     // et il n'est PAS accepté : c'est la première étape, pas un acquis
     await expect(assertAccepte(row.id)).rejects.toThrow(/pas encore acceptée/);
+
+    /* LE CRÉATEUR EST MEMBRE, sinon le dossier existe et PERSONNE NE PEUT
+       L'ATTEINDRE : la liste d'accueil et l'écran d'acceptation exigent
+       l'appartenance. Défaut trouvé en cliquant, pas en testant. */
+    const membre = await q1<{ can_sign: boolean }>(
+      `select can_sign from engagement_member where engagement_id = $1 and user_id = $2`,
+      [row.id, IDS.users.claire]);
+    expect(membre, 'le créateur doit être membre, sinon le dossier est inatteignable').toBeTruthy();
+    // …mais SANS droit de signature : ouvrir un dossier n'est pas y travailler
+    expect(membre.can_sign).toBe(false);
   });
 
   it('créer sur l’entité d’un AUTRE cabinet est refusé', async () => {

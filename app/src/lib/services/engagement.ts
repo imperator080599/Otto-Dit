@@ -18,6 +18,14 @@ export class EngagementRuleError extends Error {
 }
 
 export interface CreationMission {
+  /* IDENTIFIANT IMPOSÉ — et pourquoi il se donne ICI plutôt qu'après coup.
+     Un appelant qui veut un identifiant déterministe (le dossier N-1 de la
+     démonstration) le réécrivait ensuite : `update engagement set id = …`.
+     Ça a marché tant que la création ne reliait la mission à RIEN. Le jour où
+     elle y a relié son premier membre, la clé étrangère a refusé — et elle
+     avait raison : déplacer une clé primaire déjà référencée est un défaut,
+     pas une commodité. L'identifiant se choisit donc AVANT l'insertion. */
+  id?: string;
   tenantId: string;
   entityId: string;
   periodId: string;
@@ -74,11 +82,28 @@ export async function creerMission(input: CreationMission): Promise<{ id: string
   }
 
   const row = await q1<{ id: string }>(
-    `insert into engagement (tenant_id, entity_id, period_id, kind, name, framework_set, status, methodology_id)
-     values ($1,$2,$3,$4,$5,$6::jsonb,'setup',$7) returning id`,
+    `insert into engagement (id, tenant_id, entity_id, period_id, kind, name, framework_set, status, methodology_id)
+     values (coalesce($8::uuid, gen_random_uuid()),$1,$2,$3,$4,$5,$6::jsonb,'setup',$7) returning id`,
     [input.tenantId, input.entityId, input.periodId, input.kind, input.name.trim() || `${ent.name} — ${per.label}`,
      JSON.stringify({ assurance_packs: input.packs, accounting_map: input.accountingMap, language: input.language }),
-     meth.id],
+     meth.id, input.id ?? null],
+  );
+  /* LE PREMIER MEMBRE — ET POURQUOI IL N'EST PAS AJOUTÉ PAR `assignMember`.
+     Sans lui, le dossier existe et PERSONNE NE PEUT L'ATTEINDRE : la liste
+     d'accueil joint `engagement_member`, et l'écran d'acceptation exige
+     l'appartenance. Défaut trouvé en cliquant, pas en testant (ADR-088).
+     `assignMember` ne peut pas servir ici : il exige que la mission soit
+     ACCEPTÉE, et l'acceptation ne peut être décidée que par quelqu'un capable
+     d'ouvrir le dossier. La circularité se casse au seul endroit possible : la
+     personne qui crée le dossier y entre, pour pouvoir décider.
+     Ce que ça n'affaiblit PAS : elle entre SANS droit de signature, et sa
+     déclaration d'indépendance reste exigée comme pour tout autre membre.
+     Ouvrir un dossier n'est pas y travailler. */
+  await q(
+    `insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on)
+     values ($1, $2, 'partner', false, current_date)
+     on conflict (engagement_id, user_id) do nothing`,
+    [row.id, input.actorUserId],
   );
   await logEvent({
     tenantId: input.tenantId, engagementId: row.id, actorKind: 'user', actorId: input.actorUserId,

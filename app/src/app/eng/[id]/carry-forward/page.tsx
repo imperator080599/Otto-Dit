@@ -45,9 +45,18 @@ export default async function CarryForwardPage({
       <div className="panel">
         <h2>Reprise de l’exercice précédent</h2>
         {!prev ? (
+          /* DIRE CE QU'ON A CHERCHÉ, pas seulement qu'on n'a rien trouvé. Le
+             message annonçait « aucune mission sur l'exercice précédent pour
+             cette entité » alors que la recherche porte aussi sur la NATURE de
+             la mission : sur un dossier intégré dont le N-1 était un audit
+             légal, il affirmait faux. Un écran qui affirme plus que ce qu'il a
+             vérifié se fait croire une fois, puis plus jamais. */
           <p className="faint">
-            Aucune mission sur l’exercice précédent pour cette entité : il n’y a rien à reprendre.
-            <strong> Une première année se planifie, elle ne se reprend pas.</strong>
+            Rien à reprendre : aucune mission <strong>de même nature</strong> sur l’exercice
+            précédent de cette entité — la recherche suit le chaînage des exercices, pas les
+            dates. <strong>Une première année se planifie, elle ne se reprend pas</strong> ; et
+            un dossier d’une autre nature ne se reprend pas non plus, ses conclusions ne
+            portent pas sur le même travail.
           </p>
         ) : (
           <>

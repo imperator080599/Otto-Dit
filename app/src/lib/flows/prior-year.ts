@@ -39,12 +39,12 @@ export async function construireDossierN1(): Promise<string> {
   if (deja) return ID_MISSION_N1;
 
   // 1. La mission FY2024, par le service — pas par une insertion.
-  const cree = await creerMission({
+  await creerMission({
+    id: ID_MISSION_N1,
     tenantId: IDS.tenant, entityId: IDS.entity, periodId: IDS.periodFY2024,
     kind: 'statutory_audit', name: 'Altiverre FY2024 — Audit légal (NEP)',
     packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
   });
-  await q(`update engagement set id = $1 where id = $2`, [ID_MISSION_N1, cree.id]);
   const id = ID_MISSION_N1;
 
   // 2. L'acceptation : première année sur cette entité, donc « acceptation ».

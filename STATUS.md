@@ -8,8 +8,10 @@
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
 - **Suite**: 403 tests green (`cd app && npm test`), zero network calls. Prod build clean.
-  Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
-  Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
+  Le balayage des 60 écrans est DANS la suite, et `npm run screens` le refait en production.
+  `npm run clics` **conduit** le parcours dans Chromium sur le build de production — 15 étapes,
+  dont douze vérifient un refus (ADR-090). Les deux entrent dans `npm run verify`.
+  Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -28,6 +30,7 @@ comme « mesuré » s'il ne figure pas ici.
 | **Un export supprimé se régénère à l'octet près** | **Prouvé par exécution** | `export.test.ts` compare les octets du PDF stocké et du PDF re-rendu |
 | **Le dossier scellé est autoportant et déterministe** | **Prouvé par exécution** | archive rejouable octet pour octet ; empreintes du manifeste re-vérifiées ; README sans script ni lien externe |
 | **Les écrans de méthode RENDENT dans l'application qui tourne** | **Prouvé par exécution** | six écrans conduits dans Chromium sur base fraîche (200), dont le parcours publier → refuser → corriger → publier. Avant ADR-076 : trois d'entre eux rendaient **500** avec 278 tests verts |
+| **Le parcours se CLIQUE dans l'application en production** | **Prouvé par exécution** | `npm run clics` : 15 étapes conduites dans Chromium sur un build de production, 0 échec, dont douze refus attendus effectivement affichés. C'est ce contrôle qui a trouvé le dossier créé inatteignable (ADR-088), invisible aux 403 tests et aux 60 écrans à 200 |
 | **Les visas suivent la hiérarchie de revue** | **Prouvé par exécution** | trigger + service : un visa associé avant celui du reviewer est refusé |
 | Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
 | **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |

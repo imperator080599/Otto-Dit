@@ -1,0 +1,130 @@
+import { spawn, type ChildProcess } from 'node:child_process';
+import { chromium } from 'playwright';
+import { q01, getDb } from '../../src/lib/db/client';
+import { auditeur, baseSemee } from '../screens/routes';
+import { conduire, type Etape } from './scenario';
+
+// npm run clics [-- --dev] : CONDUIT le parcours dans un navigateur, sur un
+// build de production, et sort en échec sur la première règle qui ne tient pas.
+//
+// POURQUOI IL EXISTE À CÔTÉ DE `npm run screens` : le balayage ouvre les 60
+// routes et vérifie qu'elles RENDENT. Il ne clique sur rien, donc il n'a rien
+// vu quand six formulaires étaient inertes en production (ADR-078), ni quand un
+// dossier créé était inatteignable (ADR-088). Les deux fois, le contrôle
+// manquant n'était pas difficile : il était absent de ce qu'on lance.
+
+const PORT = Number(process.env.CLICS_PORT ?? 3211);
+const NAVIGATEUR = process.env.PLAYWRIGHT_CHROMIUM ?? '/opt/pw-browsers/chromium';
+
+function lancer(cmd: string, args: string[]): ChildProcess {
+  // `detached` crée un GROUPE : sans lui `kill` laisse `next-server` tenir le port.
+  return spawn(cmd, args, { env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+}
+function tuer(p: ChildProcess | null): void {
+  if (!p?.pid) return;
+  try { process.kill(-p.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+}
+async function portLibre(port: number): Promise<boolean> {
+  try { await fetch(`http://localhost:${port}/`, { signal: AbortSignal.timeout(1500) }); return false; }
+  catch { return true; }
+}
+async function attendre(url: string, enfant: ChildProcess, secondes = 150): Promise<void> {
+  const fin = Date.now() + secondes * 1000;
+  while (Date.now() < fin) {
+    if (enfant.exitCode !== null || enfant.signalCode !== null) {
+      throw new Error(`le serveur s'est arrêté immédiatement (code ${enfant.exitCode ?? enfant.signalCode})`);
+    }
+    try { const r = await fetch(url, { signal: AbortSignal.timeout(3000) }); if (r.status > 0) return; }
+    catch { /* pas encore */ }
+    await new Promise((r) => setTimeout(r, 700));
+  }
+  throw new Error(`le serveur n'est pas debout après ${secondes}s sur ${url}`);
+}
+
+async function main() {
+  const dev = process.argv.includes('--dev');
+
+  if (!(await baseSemee())) {
+    throw new Error('base vide : lancez `npm run db:setup && npm run demo:seed`. '
+      + 'Cliquer dans une base vide ne prouve rien.');
+  }
+  if (!(await portLibre(PORT))) {
+    /* Vérifier ce qu'on n'a pas démarré soi-même, c'est ne rien vérifier : un
+       serveur oublié garde SA base en mémoire et répond des vérités périmées. */
+    throw new Error(`le port ${PORT} est occupé — un serveur d'un lancement précédent, probablement. `
+      + `Le parcours REFUSE de conduire un serveur qu'il n'a pas lancé. Libérez-le, ou CLICS_PORT=<autre>.`);
+  }
+
+  /* Le dossier RICHE — celui qui porte un exercice précédent, des demandes et
+     des papiers. Choisir « le premier » a déjà fait tomber le harnais sur le
+     dossier N-1, qui n'a rien à montrer (ADR-076). */
+  const riche = await q01<{ id: string }>(
+    `select e.id::text id from engagement e join period p on p.id = e.period_id
+     where e.kind = 'statutory_audit'
+     order by (select count(*) from workpaper w where w.engagement_id = e.id) desc, p.end_date desc, e.id
+     limit 1`);
+  if (!riche) throw new Error('aucune mission d’audit légal en base');
+  const cookie = await auditeur();
+  await (await getDb()).close();
+
+  console.log(`\nParcours cliqué — mode ${dev ? 'développement' : 'PRODUCTION'}, dossier ${riche.id}\n`);
+
+  if (!dev) {
+    console.log('  build…');
+    const build = lancer('npx', ['next', 'build']);
+    const sortie: string[] = [];
+    build.stdout?.on('data', (d) => sortie.push(String(d)));
+    build.stderr?.on('data', (d) => sortie.push(String(d)));
+    const code = await new Promise<number>((r) => build.on('close', (c) => r(c ?? 1)));
+    if (code !== 0) { console.log(sortie.join('')); throw new Error('le build de production a échoué'); }
+  }
+
+  const serveur = lancer('npx', dev ? ['next', 'dev', '-p', String(PORT)] : ['next', 'start', '-p', String(PORT)]);
+  const journal: string[] = [];
+  serveur.stdout?.on('data', (d) => journal.push(String(d)));
+  serveur.stderr?.on('data', (d) => journal.push(String(d)));
+
+  let etapes: Etape[] = [];
+  const durs: string[] = [];
+  try {
+    await attendre(`http://localhost:${PORT}/`, serveur);
+    const nav = await chromium.launch({ executablePath: NAVIGATEUR });
+    const ctx = await nav.newContext();
+    await ctx.addCookies([{ name: 'otto_user', value: cookie, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    const page = await ctx.newPage();
+    /* Une exception côté navigateur ne fait pas échouer une étape : elle passe
+       inaperçue si personne ne l'écoute. C'est un échec à part entière. */
+    page.on('pageerror', (e) => durs.push('EXCEPTION : ' + e.message));
+    page.on('console', (m) => {
+      if (m.type() === 'error' && !/Failed to load resource|DevTools/.test(m.text())) durs.push('CONSOLE : ' + m.text());
+    });
+    page.on('response', (r) => { if (r.status() >= 500) durs.push(`HTTP ${r.status()} ${r.url()}`); });
+    try {
+      etapes = await conduire(page, `http://localhost:${PORT}`, riche.id);
+    } finally {
+      await nav.close();
+    }
+  } finally {
+    tuer(serveur);
+  }
+
+  for (const e of etapes) console.log(`  ${e.ok ? 'ok  ' : 'ÉCHEC'}  ${e.nom}\n         ${e.detail}`);
+
+  /* LE HARNAIS NE DOIT PAS POUVOIR SE TAIRE. Zéro étape conduite est une panne
+     du harnais, pas un parcours réussi. */
+  if (etapes.length < 10) {
+    console.log(`\nseulement ${etapes.length} étape(s) conduites — le parcours s'est interrompu\n`);
+    process.exit(1);
+  }
+  const echecs = etapes.filter((e) => !e.ok);
+  if (durs.length) { console.log('\nErreurs côté navigateur :'); for (const d of durs.slice(0, 12)) console.log('  ' + d); }
+  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + durs.length} échec(s)\n`);
+
+  if (echecs.length || durs.length) {
+    const err = journal.join('').split('\n').filter((l) => /Error:|at async|at [A-Z]/.test(l)).slice(0, 30);
+    if (err.length) console.log('Journal du serveur :\n' + err.join('\n') + '\n');
+    process.exit(1);
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });

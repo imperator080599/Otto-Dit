@@ -32,15 +32,16 @@ current state.**
 10. **Tout écran neuf est conduit dans un navigateur avant d'être annoncé.** Un écran qui
     compile n'est pas un écran qui rend, et un écran qui rend n'est pas un écran qui marche.
     `npm test` inclut le balayage de toutes les routes ; `npm run screens` le refait sur un
-    build de PRODUCTION, et c'est celui-là qui doit passer avant une livraison (ADR-076,
-    ADR-078).
+    build de PRODUCTION et `npm run clics` y CLIQUE, et ce sont ces deux-là qui doivent passer
+    avant une livraison (ADR-076, ADR-078, ADR-090).
 11. **Un test vert sur un chemin que la production n'emprunte pas ne prouve rien.** Les deux
     exécutions — Vitest et le bundle Next — ne sont pas la même.
 12. **Une vérification que personne ne peut rejouer est une affirmation.** Toute mesure citée
     dans une livraison doit avoir une commande qui la reproduit.
 13. **Le silence lu comme un succès est le défaut à traquer** : un harnais muet, un prédicat
     déclaré et non implémenté, une règle inconnue ignorée, un compteur qui ne compte pas les
-    plantages, un refus calculé puis jeté.
+    plantages, un refus calculé puis jeté, un objet créé qu'aucun chemin de lecture n'atteint,
+    une branche de repli que rien n'exécute jamais (ADR-088, ADR-089).
 14. **Périmètre gelé** : aucun cycle au-delà du chiffre d'affaires, aucun contenu de procédure
     nouveau, pack SOX gelé. La mécanique est le produit ; les procédures sont du contenu.
 
@@ -64,6 +65,8 @@ current state.**
 - Tests: `cd app && npm test` (Vitest; zero network). Inclut le balayage des écrans, qui
   lance un serveur local — comptez ~3 minutes de plus.
 - Écrans en production : `cd app && npm run screens` (build + `next start` + navigateur).
+- Parcours **cliqué** en production : `cd app && npm run clics` (ADR-090). Le balayage OUVRE les
+  écrans, le parcours AGIT dessus ; les deux sont nécessaires.
 - Tout : `cd app && npm run verify` (base fraîche, dossier de démonstration déroulé, types,
-  tests, balayage de production).
+  tests, balayage de production, parcours cliqué).
 - Dataset regeneration: `cd app && npm run dataset:generate` (deterministic, seeded).

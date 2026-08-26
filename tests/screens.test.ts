@@ -21,6 +21,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
+import { closeDb } from '../app/src/lib/db/client';
 import { balayer, erreursServeur, ServeurTombe } from '../app/scripts/screens/sweep';
 
 const PORT = Number(process.env.SCREENS_TEST_PORT ?? 3299);
@@ -48,10 +49,43 @@ async function libre(): Promise<boolean> {
 async function assurerMondeDemo(): Promise<void> {
   const v = await parametres();
   if (v.id && v.wid && v.rid && v.evidenceId && v.cid && v.exportId) return;
+
+  /* FERMER AVANT DE CÉDER LA MAIN — la branche qui n'avait jamais tourné.
+     Ce chemin ne s'emprunte que sur une base SANS monde de démonstration ;
+     tant qu'il en restait un d'un lancement précédent, la fonction rendait la
+     main à la première ligne et ce qui suit n'a jamais été exécuté. La
+     première fois qu'il a tourné pour de vrai (base recréée), il a échoué de
+     deux façons à la fois : PGlite n'admet qu'un écrivain, et le parent, qui
+     avait déjà chargé le répertoire dans sa propre mémoire, aurait de toute
+     façon relu une base vide après le peuplement de l'enfant. Le harnais
+     annonçait alors « six routes non résolues » — un aveu, pas un diagnostic.
+     Un chemin de repli qu'on n'exécute jamais n'est pas un repli : c'est du
+     code non testé placé exactement là où on ne le vérifiera pas. */
+  const journalSeed: string[] = [];
+  await closeDb();
   await new Promise<void>((res, rej) => {
-    const p = spawn('npx', ['tsx', 'scripts/demo-seed.ts'], { cwd: RACINE, stdio: 'ignore' });
-    p.on('close', (c) => (c === 0 ? res() : rej(new Error(`demo:seed a échoué (code ${c})`))));
+    const p = spawn('npx', ['tsx', 'scripts/demo-seed.ts'], {
+      cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    p.stdout?.on('data', (d) => journalSeed.push(String(d)));
+    p.stderr?.on('data', (d) => journalSeed.push(String(d)));
+    p.on('close', (c) => (c === 0 ? res() : rej(new Error(
+      `demo:seed a échoué (code ${c}) :\n`
+      + journalSeed.join('').split('\n').filter(Boolean).slice(-20).join('\n'),
+    ))));
   });
+
+  /* Et VÉRIFIER que le peuplement a produit ce qu'on attendait, plutôt que de
+     laisser le balayage le découvrir six routes plus loin. */
+  const apres = await parametres();
+  const manquants = Object.entries(apres)
+    .filter(([, val]) => !val).map(([cle]) => cle);
+  if (manquants.length) {
+    throw new Error(
+      `demo:seed s'est terminé sans erreur mais le monde reste incomplet `
+      + `(${manquants.join(', ')}) — la base a-t-elle été relue ?`,
+    );
+  }
 }
 
 describe('tous les écrans rendent', () => {

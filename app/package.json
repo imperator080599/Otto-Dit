@@ -17,7 +17,9 @@
     "cost:measure": "tsx scripts/cost/measure.ts",
     "screens": "tsx scripts/screens/run.ts",
     "screens:dev": "tsx scripts/screens/run.ts -- --dev",
-    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens"
+    "clics": "tsx scripts/clics/run.ts",
+    "clics:dev": "tsx scripts/clics/run.ts -- --dev",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run clics"
   },
   "keywords": [],
   "author": "",
