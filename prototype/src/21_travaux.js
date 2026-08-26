@@ -358,8 +358,8 @@ function vueProgramme(){
       as:t.assertion ? esc(libAssertion(t.assertion)) : '<span class="smallcaps">—</span>',
       p:a.prep, v:a.rev,
       nr:`<span class="pill ${t.niveauRevue === 2 ? 'warn' : ''}">niveau ${t.niveauRevue}</span>`,
-      e:`<input class="cell txt" type="date" data-tech="${t.code}" value="${esc(t.echeance)}" style="width:132px">
-         <div class="smallcaps">${t.echeance === t.echeanceDeduite
+      e:champDate(`data-tech="${t.code}"`, t.echeance, 'width:118px')
+        + `<div class="smallcaps">${t.echeance === t.echeanceDeduite
             ? esc(regleEcheance(t).jalon) : 'écrite — règle : ' + frDate(t.echeanceDeduite)}</div>`,
       hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
       hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
@@ -406,7 +406,7 @@ function vueProgramme(){
       barreSelection(vus) +
       `<div class="row" style="margin:-2px 0 8px">
         <div class="ctrl"><label>Échéance en lot — ${S.selTrav.length} sélectionné(s)</label>
-          <input class="cell txt" type="date" id="tv-lotech" ${S.selTrav.length ? '' : 'disabled'}></div>
+          ${champDate('id="tv-lotech"' + (S.selTrav.length ? '' : ' disabled'), '', 'width:118px')}</div>
         <div class="ctrl"><label>&nbsp;</label>
           <button class="btn sec" id="tv-lotech-rgl" ${S.selTrav.length ? '' : 'disabled'}>rendre à la règle des jalons</button></div>
         <div class="ctrl" style="flex:1 1 220px"><label>Ajouter un travail — intitulé</label>
@@ -443,11 +443,14 @@ function blocJalons(l){
   const dec = n => n === 0 ? 'le jour même' : n > 0 ? '+' + n + ' j' : n + ' j';
   /* Le panneau ne reprend pas le titre de la vue : « Jalons et échéances »
      deux fois de suite n'apprend rien et coûte une ligne. */
-  return blk('Les quatre dates', 'les échéances des travaux s’en déduisent',
+  /* Le titre du panneau ne reprend pas celui de la vue — « Jalons et
+     échéances » deux fois de suite n'apprend rien — et il commence par un mot
+     porteur : la référence de papier en dérive (« LES-QUA-01 » disait moins
+     que « QUA-DAT-01 »). */
+  return blk('Quatre dates, et tout se déduit', 'les échéances des travaux s’en déduisent',
     `<div class="row">
       ${JALONS.map(j => `<div class="ctrl"><label>${esc(j.lib)}</label>
-        <input class="cell txt" type="date" data-jalon="${j.id}" value="${esc(jalon(j.id))}"
-          ${j.derive ? 'disabled' : ''} style="width:150px">
+        ${champDate(`data-jalon="${j.id}"` + (j.derive ? ' disabled' : ''), jalon(j.id), 'width:126px')}
         <span class="smallcaps">${j.derive ? 'déduite — ' + DELAI_ASSEMBLAGE + ' jours après le rapport'
           : jours(jalon(j.id)) >= 0 ? 'dans ' + jours(jalon(j.id)) + ' j' : 'il y a ' + (-jours(jalon(j.id))) + ' j'}</span>
       </div>`).join('')}

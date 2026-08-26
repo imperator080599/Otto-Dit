@@ -35,6 +35,45 @@ function pct(x, d){ return (x * 100).toFixed(d === undefined ? 1 : d).replace('.
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 function frDate(iso){ return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4); }
+
+/* ── LES DATES SONT FRANÇAISES, ET NE DÉPENDENT PAS DU NAVIGATEUR ─────────
+   Un <input type="date"> affiche le format de la LOCALE DU NAVIGATEUR, jamais
+   celui du document : sur un navigateur configuré en anglais, la date de
+   rapport d'un dossier français s'écrit « 04/15/2026 ». L'ambiguïté n'est pas
+   cosmétique — « 04/03 » ne dit alors ni le 4 mars ni le 3 avril, et c'est une
+   date d'échéance légale. Toute saisie de date passe donc par un champ TEXTE
+   au format JJ/MM/AAAA, rendu et relu ici. Il n'y a plus un seul
+   `type="date"` dans le prototype ; un harnais le vérifie.
+
+   Ce que cela coûte : le sélecteur de calendrier natif. On l'assume — un
+   auditeur tape une date, et `inputmode="numeric"` lui donne le pavé numérique
+   sur téléphone. */
+function champDate(attrs, iso, style){
+  return `<input class="cell txt dt" type="text" inputmode="numeric" maxlength="10"
+    placeholder="JJ/MM/AAAA" autocomplete="off" spellcheck="false" ${attrs || ''}
+    value="${esc(iso ? frDate(iso) : '')}"${style ? ' style="' + style + '"' : ''}>`;
+}
+/** JJ/MM/AAAA → AAAA-MM-JJ. Rend '' pour un champ vide — c'est une valeur —
+ *  et **null** pour une date impossible : le 31/02 n'est pas le 3 mars. */
+function isoDepuisFr(txt){
+  const t = String(txt === undefined || txt === null ? '' : txt).trim();
+  if (!t) return '';
+  const m = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(t);
+  if (!m) return null;
+  const j = +m[1], mo = +m[2], a = +m[3];
+  const d = new Date(Date.UTC(a, mo - 1, j));
+  if (d.getUTCFullYear() !== a || d.getUTCMonth() !== mo - 1 || d.getUTCDate() !== j) return null;
+  return a + '-' + String(mo).padStart(2, '0') + '-' + String(j).padStart(2, '0');
+}
+/** Lit un champ de date. Une date illisible MARQUE le champ et n'est pas
+ *  appliquée : garder silencieusement l'ancienne valeur ferait croire que la
+ *  saisie a été prise en compte. */
+function litDate(el){
+  const iso = isoDepuisFr(el.value);
+  el.classList.toggle('faux', iso === null);
+  el.title = iso === null ? 'Date attendue au format JJ/MM/AAAA' : '';
+  return iso;
+}
 function isWeekend(iso){ const d = new Date(iso + 'T00:00:00Z').getUTCDay(); return d === 0 || d === 6; }
 function addDays(iso, n){ const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 

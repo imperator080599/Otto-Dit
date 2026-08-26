@@ -1,6 +1,6 @@
 # prototype/pw — les harnais du prototype
 
-Trente et un harnais Playwright qui s'exécutent **sur le fichier livré**, `otto-prototype.html`.
+Trente-quatre harnais Playwright qui s'exécutent **sur le fichier livré**, `otto-prototype.html`.
 Ils ne testent pas des fonctions isolées : ils ouvrent la page, cliquent, saisissent, mesurent le
 rendu, et **relèvent la moindre requête réseau et la moindre erreur JavaScript**. C'est ce qui rend
 opposable la phrase « prototype déterministe, aucun appel modèle ».
@@ -37,6 +37,9 @@ plantage, une `TypeError` ou une `ReferenceError`. Un harnais isolé se lance de
 | `ajust`, `graphes`, `final` | ajustements et retraitements · graphiques à l'encre · état final du dossier |
 | `rail` | partition par nature, **un seul groupe déployé**, « Mes travaux », recherche et filtres, mesure des hauteurs |
 | `portail` | le portail s'ouvre sur la **dette**, filtre par domaine métier, règle des jours ouvrés |
+| `dates` | **zéro `type="date"`** dans le fichier, aucune date non formatée à l'écran, et une date impossible refusée plutôt que devinée |
+| `persist` | l'état survit à un rafraîchissement, y compris les gestes qui ne re-rendent rien ; un instantané d'une autre version est écarté ; le stockage refusé est **dit**, pas tu |
+| `parcours` | **DEMO.md dit vrai** : le parcours de démonstration est rejoué étape par étape et chaque chiffre cité est comparé |
 
 ## Ce qu'ils ne prouvent pas
 

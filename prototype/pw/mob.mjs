@@ -44,6 +44,23 @@ for (const esp of ['auditeur','client','pilotage']){
     seuils:!!document.getElementById('seuilbox'), bord:getComputedStyle(document.querySelector('.top')).borderTopColor }));
   console.log(`espace ${esp.padEnd(9)} accent ${c.accent.padEnd(20)} bandeau de seuils : ${c.seuils}`);
 }
+/* L'identité de la personne connectée : entièrement DANS l'écran, sur une
+   seule ligne, et sans faire grossir le bandeau collant. Les trois se tiennent
+   — corriger l'un en cassant l'autre est le piège que ce bloc garde. */
+for (const esp of ['auditeur','client','pilotage']){
+  await p.evaluate(x=>{const b=document.querySelector(`#spaces button[data-espace="${x}"]`); b.click();}, esp);
+  await p.waitForTimeout(120);
+  const q = await p.evaluate(()=>{
+    const s=document.querySelector('#spaces .qui select'), r=s.getBoundingClientRect();
+    return { droite:Math.round(r.right), vp:innerWidth,
+      barre:Math.round(document.getElementById('spaces').getBoundingClientRect().height),
+      top:Math.round(document.querySelector('.top').getBoundingClientRect().height),
+      page:document.documentElement.scrollWidth, choisi:s.options[s.selectedIndex].textContent.trim() };
+  });
+  const bon = q.droite<=q.vp && q.page<=q.vp && q.barre<=40 && q.top<=300;
+  console.log((bon?'  ok  ':'ÉCHEC ')+`identité lisible à 390 px · ${esp} — `
+    + `bord droit ${q.droite}/${q.vp} · barre ${q.barre} px · bandeau ${q.top} px · « ${q.choisi} »`);
+}
 await p.click('#themebtn',{timeout:4000}); await p.waitForTimeout(150);
 console.log('thème sombre :', await p.evaluate(()=>getComputedStyle(document.body).backgroundColor));
 console.log('erreurs :', errs.length?errs.join(' | '):'aucune');

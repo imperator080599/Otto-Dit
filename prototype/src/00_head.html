@@ -266,6 +266,25 @@ button.btn:active:not(:disabled){transform:translateY(1px)}
 .rangc > summary::before{content:'▸';color:var(--ink-3);font-size:var(--t1)}
 .rangc[open] > summary::before{content:'▾'}
 .rangc .rt b,.rangc > summary b{font-size:var(--t3)}
+/* Une date illisible se voit SUR le champ : un message ailleurs dans la page
+   ne dit pas laquelle des cent quarante-sept lignes est en cause. */
+.cell.dt.faux{border-color:var(--anomalie);color:var(--anomalie)}
+/* ── indicateur de sauvegarde ─────────────────────────────────────────────
+   Fixe en bas à gauche : il ne dispute sa place à rien, aucun bandeau ne peut
+   le couper, et il reste atteignable sur téléphone. Ce n'est pas du contenu
+   d'audit — il ne s'imprime pas. */
+/* La pastille flotte : sans dégagement, elle masquerait en permanence le bas
+   de la dernière ligne du dossier. Le dégagement est ici, pas dans la pastille. */
+.shell{padding-bottom:56px}
+.sauve{position:fixed;left:var(--s2);bottom:var(--s2);z-index:6;display:flex;gap:var(--s2);
+       align-items:center;flex-wrap:wrap;max-width:calc(100vw - var(--s3));
+       background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+       padding:var(--s1) var(--s2);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sauve .e{font:400 var(--t1)/1 var(--mono);color:var(--ink-3);white-space:nowrap}
+.sauve .p{font-size:var(--t1);color:var(--anomalie);max-width:44ch}
+.sauve.bad{border-color:var(--anomalie);background:var(--anomalie-soft)}
+.sauve.bad .e{color:var(--anomalie);font-weight:700}
+@media print{ .sauve{display:none} }
 .callout{border-left:2px solid var(--line);padding:var(--s2) var(--s3);font-size:var(--t2);
          margin-top:var(--s2);color:var(--ink-2)}
 .callout.bad{border-left-color:var(--anomalie);background:var(--anomalie-soft);color:var(--ink)}
@@ -420,8 +439,20 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   .brand .pill{display:none}
   .spaces{padding:0 var(--s2) var(--s1);gap:var(--s1)}
   .spaces button{padding:var(--s1) var(--s2);font-size:var(--t1);min-height:28px}
-  .spaces .qui{margin-left:var(--s2);padding-left:0}
-  .spaces .qui select{font-size:var(--t1);padding:2px var(--s1);max-width:150px}
+  /* Le sélecteur d'identité débordait de 31 px et n'était atteignable qu'en
+     faisant défiler la barre. Or c'est la première chose qu'on montre — « je
+     suis Karim, préparateur » : une identité qu'il faut aller chercher n'est
+     pas une identité affichée.
+
+     Il RÉTRÉCIT donc au lieu de déborder, sur la même ligne que les espaces.
+     Le faire passer à la ligne réglait le débordement mais ajoutait 30 px au
+     bandeau collant, qui occupait alors 38 % d'un écran de téléphone — le
+     harnais de lisibilité l'a refusé, et il avait raison. Un nom un peu
+     tronqué vaut mieux qu'une ligne de chrome en plus : c'est le NOM qui est
+     en tête, et c'est lui qui reste lisible. */
+  .spaces{flex-wrap:nowrap;overflow-x:visible}
+  .spaces .qui{flex:1 1 auto;margin-left:auto;padding-left:var(--s1);min-width:0}
+  .spaces .qui select{font-size:var(--t1);padding:2px var(--s1);width:100%;max-width:100%}
   .seuils{grid-template-columns:1fr 1fr;gap:var(--s1) var(--s2);padding:0 var(--s3) var(--s1)}
   .ctrl label{font-size:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ctrl input[type=range]{height:18px}
@@ -453,5 +484,6 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   <aside class="rail" id="rail"></aside>
   <main id="main"></main>
 </div>
+<div class="sauve" id="sauvegarde"></div>
 <script>
 "use strict";

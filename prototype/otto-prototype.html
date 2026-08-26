@@ -266,6 +266,25 @@ button.btn:active:not(:disabled){transform:translateY(1px)}
 .rangc > summary::before{content:'▸';color:var(--ink-3);font-size:var(--t1)}
 .rangc[open] > summary::before{content:'▾'}
 .rangc .rt b,.rangc > summary b{font-size:var(--t3)}
+/* Une date illisible se voit SUR le champ : un message ailleurs dans la page
+   ne dit pas laquelle des cent quarante-sept lignes est en cause. */
+.cell.dt.faux{border-color:var(--anomalie);color:var(--anomalie)}
+/* ── indicateur de sauvegarde ─────────────────────────────────────────────
+   Fixe en bas à gauche : il ne dispute sa place à rien, aucun bandeau ne peut
+   le couper, et il reste atteignable sur téléphone. Ce n'est pas du contenu
+   d'audit — il ne s'imprime pas. */
+/* La pastille flotte : sans dégagement, elle masquerait en permanence le bas
+   de la dernière ligne du dossier. Le dégagement est ici, pas dans la pastille. */
+.shell{padding-bottom:56px}
+.sauve{position:fixed;left:var(--s2);bottom:var(--s2);z-index:6;display:flex;gap:var(--s2);
+       align-items:center;flex-wrap:wrap;max-width:calc(100vw - var(--s3));
+       background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+       padding:var(--s1) var(--s2);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sauve .e{font:400 var(--t1)/1 var(--mono);color:var(--ink-3);white-space:nowrap}
+.sauve .p{font-size:var(--t1);color:var(--anomalie);max-width:44ch}
+.sauve.bad{border-color:var(--anomalie);background:var(--anomalie-soft)}
+.sauve.bad .e{color:var(--anomalie);font-weight:700}
+@media print{ .sauve{display:none} }
 .callout{border-left:2px solid var(--line);padding:var(--s2) var(--s3);font-size:var(--t2);
          margin-top:var(--s2);color:var(--ink-2)}
 .callout.bad{border-left-color:var(--anomalie);background:var(--anomalie-soft);color:var(--ink)}
@@ -420,8 +439,20 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   .brand .pill{display:none}
   .spaces{padding:0 var(--s2) var(--s1);gap:var(--s1)}
   .spaces button{padding:var(--s1) var(--s2);font-size:var(--t1);min-height:28px}
-  .spaces .qui{margin-left:var(--s2);padding-left:0}
-  .spaces .qui select{font-size:var(--t1);padding:2px var(--s1);max-width:150px}
+  /* Le sélecteur d'identité débordait de 31 px et n'était atteignable qu'en
+     faisant défiler la barre. Or c'est la première chose qu'on montre — « je
+     suis Karim, préparateur » : une identité qu'il faut aller chercher n'est
+     pas une identité affichée.
+
+     Il RÉTRÉCIT donc au lieu de déborder, sur la même ligne que les espaces.
+     Le faire passer à la ligne réglait le débordement mais ajoutait 30 px au
+     bandeau collant, qui occupait alors 38 % d'un écran de téléphone — le
+     harnais de lisibilité l'a refusé, et il avait raison. Un nom un peu
+     tronqué vaut mieux qu'une ligne de chrome en plus : c'est le NOM qui est
+     en tête, et c'est lui qui reste lisible. */
+  .spaces{flex-wrap:nowrap;overflow-x:visible}
+  .spaces .qui{flex:1 1 auto;margin-left:auto;padding-left:var(--s1);min-width:0}
+  .spaces .qui select{font-size:var(--t1);padding:2px var(--s1);width:100%;max-width:100%}
   .seuils{grid-template-columns:1fr 1fr;gap:var(--s1) var(--s2);padding:0 var(--s3) var(--s1)}
   .ctrl label{font-size:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ctrl input[type=range]{height:18px}
@@ -453,6 +484,7 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   <aside class="rail" id="rail"></aside>
   <main id="main"></main>
 </div>
+<div class="sauve" id="sauvegarde"></div>
 <script>
 "use strict";
 const TB_2025 = [
@@ -580,6 +612,45 @@ function pct(x, d){ return (x * 100).toFixed(d === undefined ? 1 : d).replace('.
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 function frDate(iso){ return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4); }
+
+/* ── LES DATES SONT FRANÇAISES, ET NE DÉPENDENT PAS DU NAVIGATEUR ─────────
+   Un <input type="date"> affiche le format de la LOCALE DU NAVIGATEUR, jamais
+   celui du document : sur un navigateur configuré en anglais, la date de
+   rapport d'un dossier français s'écrit « 04/15/2026 ». L'ambiguïté n'est pas
+   cosmétique — « 04/03 » ne dit alors ni le 4 mars ni le 3 avril, et c'est une
+   date d'échéance légale. Toute saisie de date passe donc par un champ TEXTE
+   au format JJ/MM/AAAA, rendu et relu ici. Il n'y a plus un seul
+   `type="date"` dans le prototype ; un harnais le vérifie.
+
+   Ce que cela coûte : le sélecteur de calendrier natif. On l'assume — un
+   auditeur tape une date, et `inputmode="numeric"` lui donne le pavé numérique
+   sur téléphone. */
+function champDate(attrs, iso, style){
+  return `<input class="cell txt dt" type="text" inputmode="numeric" maxlength="10"
+    placeholder="JJ/MM/AAAA" autocomplete="off" spellcheck="false" ${attrs || ''}
+    value="${esc(iso ? frDate(iso) : '')}"${style ? ' style="' + style + '"' : ''}>`;
+}
+/** JJ/MM/AAAA → AAAA-MM-JJ. Rend '' pour un champ vide — c'est une valeur —
+ *  et **null** pour une date impossible : le 31/02 n'est pas le 3 mars. */
+function isoDepuisFr(txt){
+  const t = String(txt === undefined || txt === null ? '' : txt).trim();
+  if (!t) return '';
+  const m = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(t);
+  if (!m) return null;
+  const j = +m[1], mo = +m[2], a = +m[3];
+  const d = new Date(Date.UTC(a, mo - 1, j));
+  if (d.getUTCFullYear() !== a || d.getUTCMonth() !== mo - 1 || d.getUTCDate() !== j) return null;
+  return a + '-' + String(mo).padStart(2, '0') + '-' + String(j).padStart(2, '0');
+}
+/** Lit un champ de date. Une date illisible MARQUE le champ et n'est pas
+ *  appliquée : garder silencieusement l'ancienne valeur ferait croire que la
+ *  saisie a été prise en compte. */
+function litDate(el){
+  const iso = isoDepuisFr(el.value);
+  el.classList.toggle('faux', iso === null);
+  el.title = iso === null ? 'Date attendue au format JJ/MM/AAAA' : '';
+  return iso;
+}
 function isWeekend(iso){ const d = new Date(iso + 'T00:00:00Z').getUTCDay(); return d === 0 || d === 6; }
 function addDays(iso, n){ const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 
@@ -9194,8 +9265,8 @@ function vueProgramme(){
       as:t.assertion ? esc(libAssertion(t.assertion)) : '<span class="smallcaps">—</span>',
       p:a.prep, v:a.rev,
       nr:`<span class="pill ${t.niveauRevue === 2 ? 'warn' : ''}">niveau ${t.niveauRevue}</span>`,
-      e:`<input class="cell txt" type="date" data-tech="${t.code}" value="${esc(t.echeance)}" style="width:132px">
-         <div class="smallcaps">${t.echeance === t.echeanceDeduite
+      e:champDate(`data-tech="${t.code}"`, t.echeance, 'width:118px')
+        + `<div class="smallcaps">${t.echeance === t.echeanceDeduite
             ? esc(regleEcheance(t).jalon) : 'écrite — règle : ' + frDate(t.echeanceDeduite)}</div>`,
       hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
       hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
@@ -9242,7 +9313,7 @@ function vueProgramme(){
       barreSelection(vus) +
       `<div class="row" style="margin:-2px 0 8px">
         <div class="ctrl"><label>Échéance en lot — ${S.selTrav.length} sélectionné(s)</label>
-          <input class="cell txt" type="date" id="tv-lotech" ${S.selTrav.length ? '' : 'disabled'}></div>
+          ${champDate('id="tv-lotech"' + (S.selTrav.length ? '' : ' disabled'), '', 'width:118px')}</div>
         <div class="ctrl"><label>&nbsp;</label>
           <button class="btn sec" id="tv-lotech-rgl" ${S.selTrav.length ? '' : 'disabled'}>rendre à la règle des jalons</button></div>
         <div class="ctrl" style="flex:1 1 220px"><label>Ajouter un travail — intitulé</label>
@@ -9279,11 +9350,14 @@ function blocJalons(l){
   const dec = n => n === 0 ? 'le jour même' : n > 0 ? '+' + n + ' j' : n + ' j';
   /* Le panneau ne reprend pas le titre de la vue : « Jalons et échéances »
      deux fois de suite n'apprend rien et coûte une ligne. */
-  return blk('Les quatre dates', 'les échéances des travaux s’en déduisent',
+  /* Le titre du panneau ne reprend pas celui de la vue — « Jalons et
+     échéances » deux fois de suite n'apprend rien — et il commence par un mot
+     porteur : la référence de papier en dérive (« LES-QUA-01 » disait moins
+     que « QUA-DAT-01 »). */
+  return blk('Quatre dates, et tout se déduit', 'les échéances des travaux s’en déduisent',
     `<div class="row">
       ${JALONS.map(j => `<div class="ctrl"><label>${esc(j.lib)}</label>
-        <input class="cell txt" type="date" data-jalon="${j.id}" value="${esc(jalon(j.id))}"
-          ${j.derive ? 'disabled' : ''} style="width:150px">
+        ${champDate(`data-jalon="${j.id}"` + (j.derive ? ' disabled' : ''), jalon(j.id), 'width:126px')}
         <span class="smallcaps">${j.derive ? 'déduite — ' + DELAI_ASSEMBLAGE + ' jours après le rapport'
           : jours(jalon(j.id)) >= 0 ? 'dans ' + jours(jalon(j.id)) + ' j' : 'il y a ' + (-jours(jalon(j.id))) + ' j'}</span>
       </div>`).join('')}
@@ -9769,8 +9843,8 @@ function blocEquipe(){
       g:sel(m.id, 'grade', ORDRE_GRADE.map(g => [g, g])),
       r:sel(m.id, 'role', Object.entries(ROLE_LIB)),
       c:`<input class="cell txt" data-mem="${m.id}|mail" value="${esc(m.mail || '')}" placeholder="courriel">`,
-      en:`<input class="cell txt" type="date" data-mem="${m.id}|entree" value="${esc(m.entree || '')}">`,
-      so:`<input class="cell txt" type="date" data-mem="${m.id}|sortie" value="${esc(m.sortie || '')}">`,
+      en:champDate(`data-mem="${m.id}|entree"`, m.entree || ''),
+      so:champDate(`data-mem="${m.id}|sortie"`, m.sortie || ''),
       x:`<input class="cell" data-mem="${m.id}|exercices" value="${m.exercices}" style="width:52px">`,
       d:`<span class="pill ${e.cls}">${esc(e.lib)}</span>`,
       t:tr.total ? `<span class="smallcaps">${tr.total} trace(s)</span>` : '<span class="smallcaps">aucune</span>',
@@ -9962,7 +10036,7 @@ function blocSacc(){
       <div class="ctrl" style="flex:1 1 200px"><label>Service rendu</label>
         <input type="text" id="sacc-lib" placeholder="intitulé de la prestation"></div>
       <div class="ctrl"><label>Honoraires</label><input class="cell" id="sacc-mont" placeholder="0,00"></div>
-      <div class="ctrl"><label>Date</label><input class="cell txt" type="date" id="sacc-date" value="${S.aujourdhui}"></div>
+      <div class="ctrl"><label>Date</label>${champDate('id="sacc-date"', S.aujourdhui)}</div>
       <div class="ctrl"><label>&nbsp;</label><button class="btn" id="sacc-add">inscrire au registre</button></div>
     </div>
     ${S.saccErreur ? `<div class="callout bad">${esc(S.saccErreur)}</div>` : ''}`,
@@ -12448,6 +12522,159 @@ function blocRetenues(ent){
     ${sel.length > vus.length ? `<button class="btn mini sec" id="je-tout">afficher les ${sel.length} écritures</button>`
       : tout && sel.length > JE_PAR_PAGE ? '<button class="btn mini sec" id="je-tout">replier</button>' : ''}`);
 }
+/* ═══ 50. PERSISTANCE — LE PROTOTYPE SURVIT À UN RAFRAÎCHISSEMENT ══════════
+   Elle a été refusée sept fois, et pour une bonne raison : un prototype qui
+   garde un état est un prototype dont on ne sait plus dans quel état il est,
+   et la fidélité au produit ne se joue pas là. Ce n'est plus l'argument qui
+   compte. Le prototype n'a plus qu'un emploi — être montré à des auditeurs —
+   et un rafraîchissement accidenté en pleine démonstration renvoyait tout le
+   dossier à son état d'amorce, devant le confrère.
+
+   Ce qui est écrit : TOUT l'état, `S` en entier, plus l'horloge. Pas de liste
+   blanche — une liste blanche oublie un jour une décision, et l'oubli est
+   silencieux. Mesuré : 1,3 Mo, ~13 ms de sérialisation et ~35 ms d'écriture,
+   sous le plafond usuel de localStorage (≈ 5 Mo) et invisible derrière une
+   temporisation d'inactivité.
+
+   Ce qui N'EST PAS écrit : les caches dérivés. Ils se recalculent — les
+   ranger serait garantir qu'un jour ils reviennent périmés.
+
+   L'EMPREINTE. Un instantané pris sur une version antérieure du fichier
+   rendrait un dossier à moitié cohérent, et c'est pire qu'un dossier vide.
+   L'instantané porte donc la liste des clés de `S` et un numéro de schéma ;
+   au moindre écart il est ÉCARTÉ, et l'écran le dit.
+   ═══════════════════════════════════════════════════════════════════════ */
+const CLE_ETAT = 'otto.prototype.etat';
+const SCHEMA_ETAT = 1;
+/** Les clés de l'état de départ. Un instantané qui n'a pas exactement
+ *  celles-là vient d'une autre version du prototype. */
+const CLES_ETAT = Object.keys(S).sort().join(',');
+
+/* Ce que l'écran a le droit de dire de la sauvegarde. Un « enregistré » qui
+   mentirait serait la pire des trois. */
+const SAUVE = { etat:'vierge', quand:null, pourquoi:'' };
+
+/* Une remise à zéro efface puis RECHARGE. Or le rechargement déclenche
+   `pagehide`, donc une dernière écriture — qui remettait aussitôt en place
+   l'état qu'on venait d'effacer. « Repartir de zéro » ne repartait de rien.
+   Le harnais l'a relevé : dès que la remise à zéro est engagée, on n'écrit
+   plus, quoi qu'il arrive. */
+let _razEnCours = false;
+
+/** Écrit l'état. Rend false et DIT pourquoi — jamais un échec muet. */
+function sauverEtat(){
+  if (_razEnCours) return false;
+  let charge;
+  try {
+    charge = JSON.stringify({ schema:SCHEMA_ETAT, cles:CLES_ETAT, horloge:HORLOGE, s:S });
+  } catch (e){
+    SAUVE.etat = 'erreur'; SAUVE.pourquoi = 'état non sérialisable : ' + (e && e.message);
+    return rendreSauvegarde(), false;
+  }
+  try {
+    localStorage.setItem(CLE_ETAT, charge);
+    SAUVE.etat = 'ok'; SAUVE.quand = new Date(); SAUVE.pourquoi = '';
+  } catch (e){
+    /* Mode privé, stockage désactivé, quota dépassé : trois causes réelles et
+       trois messages différents. « Échec » tout court n'aide personne. */
+    const q = e && (e.name === 'QuotaExceededError' || e.code === 22);
+    SAUVE.etat = 'erreur';
+    SAUVE.pourquoi = q ? 'espace de stockage du navigateur saturé (' + Math.round(charge.length / 1024) + ' Ko à écrire)'
+                       : 'stockage refusé par le navigateur (' + (e && e.name ? e.name : 'inconnu') + ')';
+    return rendreSauvegarde(), false;
+  }
+  rendreSauvegarde();
+  return true;
+}
+
+/** Relit l'état. Rend ce qui s'est passé, en toutes lettres. */
+function restaurerEtat(){
+  let brut;
+  try { brut = localStorage.getItem(CLE_ETAT); }
+  catch (e){ return { charge:false, why:'stockage illisible (' + (e && e.name) + ')' }; }
+  if (!brut) return { charge:false, why:'aucun instantané' };
+  let o;
+  try { o = JSON.parse(brut); }
+  catch { oublierEtat(); return { charge:false, why:'instantané illisible — écarté' }; }
+  if (!o || o.schema !== SCHEMA_ETAT || o.cles !== CLES_ETAT || !o.s){
+    oublierEtat();
+    return { charge:false, why:'instantané d’une autre version du prototype — écarté' };
+  }
+  /* On n'écrase que les clés que l'état de départ connaît : un instantané ne
+     doit pas pouvoir introduire un champ que le code ne lit jamais. */
+  for (const k of Object.keys(S)) if (o.s[k] !== undefined) S[k] = o.s[k];
+  if (typeof o.horloge === 'string') HORLOGE = o.horloge;
+  oublierCaches();
+  SAUVE.etat = 'ok'; SAUVE.quand = null;
+  return { charge:true, why:'' };
+}
+
+/** Les caches dérivés, remis à zéro : ils ont été calculés sur l'état d'amorce. */
+function oublierCaches(){
+  _postesCache = null;
+  _travCache.cle = ''; _travCache.v = null;
+  _regCache = null; _regCle = '';
+  _echProcCache.clear(); _entCache.clear(); _jeStat.clear(); _statCache.clear();
+  _ledgerBase = null;
+  _refSeq = {};
+}
+
+function oublierEtat(){
+  try { localStorage.removeItem(CLE_ETAT); } catch { /* rien à faire, et rien à taire : voir l'indicateur */ }
+}
+
+/* ── quand écrire ─────────────────────────────────────────────────────────
+   Pas dans render() : plusieurs gestes ne re-rendent rien (le germe d'une
+   sélection, une conclusion en cours de frappe) et seraient perdus. On écoute
+   donc les gestes eux-mêmes, en phase de capture pour passer avant tout le
+   reste, avec une temporisation d'inactivité — puis un écrit immédiat quand la
+   page part, qui est exactement le moment qu'on cherche à couvrir. */
+const DELAI_SAUVEGARDE = 700;
+let _sauveTimer = null;
+function planifierSauvegarde(){
+  if (_sauveTimer) clearTimeout(_sauveTimer);
+  SAUVE.etat = SAUVE.etat === 'erreur' ? 'erreur' : 'attente';
+  rendreSauvegarde();
+  _sauveTimer = setTimeout(() => { _sauveTimer = null; sauverEtat(); }, DELAI_SAUVEGARDE);
+}
+function sauverMaintenant(){
+  if (_sauveTimer){ clearTimeout(_sauveTimer); _sauveTimer = null; }
+  sauverEtat();
+}
+
+/* ── l'indicateur, et le bouton qui remet tout à zéro ─────────────────────
+   Discret et fixe en bas : il ne dispute aucune place au dossier, il ne peut
+   pas être coupé par un bandeau, et il reste visible sur téléphone. Ce n'est
+   pas du contenu d'audit — il ne s'imprime pas. */
+function rendreSauvegarde(){
+  const el = document.getElementById('sauvegarde');
+  if (!el) return;
+  const h = SAUVE.quand
+    ? String(SAUVE.quand.getHours()).padStart(2, '0') + ':' + String(SAUVE.quand.getMinutes()).padStart(2, '0')
+    : '';
+  const dit = SAUVE.etat === 'erreur' ? 'NON ENREGISTRÉ'
+            : SAUVE.etat === 'attente' ? 'enregistrement…'
+            : SAUVE.quand ? 'enregistré ' + h
+            : 'enregistré';
+  el.className = 'sauve' + (SAUVE.etat === 'erreur' ? ' bad' : '');
+  el.innerHTML =
+    `<span class="e" title="${esc(SAUVE.pourquoi || 'l’état du dossier est gardé dans ce navigateur, sur cet appareil')}">${esc(dit)}</span>`
+    + (SAUVE.pourquoi ? `<span class="p">${esc(SAUVE.pourquoi)}</span>` : '')
+    + `<button class="btn mini sec" id="raz-etat" type="button">repartir de zéro</button>`;
+}
+
+/** Remise à zéro : on efface et on RECHARGE. Reconstruire l'état d'amorce à
+ *  chaud laisserait derrière lui des caches et des replis d'une autre partie ;
+ *  un rechargement rejoue exactement le chemin du premier ouvrant. */
+function repartirDeZero(){
+  if (!confirm('Repartir de zéro ?\n\nTout ce qui a été saisi dans ce navigateur — affectations, '
+             + 'papiers de travail, notes, visas — sera effacé, et le dossier reviendra à son état d’amorce.'))
+    return;
+  _razEnCours = true;
+  if (_sauveTimer){ clearTimeout(_sauveTimer); _sauveTimer = null; }
+  oublierEtat();
+  location.reload();
+}
 /* ═══ 18. NAVIGATION ═══════════════════════════════════════════════════════
    Trois espaces. Dans l'espace auditeur, deux groupes : la planification
    transverse, puis UNE SECTION PAR POSTE RETENU AU SCOPING. Le rail suit le
@@ -13145,13 +13372,10 @@ document.addEventListener('input', e => {
   if (t.id === 'ft-q'){ S.filtreTrav.q = t.value; return renderMainDiff(); }
   const hrs = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 4) / 4);
   if (d.hb !== undefined){ trav(d.hb).heuresBudget = t.value.trim() === '' ? null : hrs(t.value); return renderMainDiff(); }
-  if (d.tech !== undefined){ fixerEcheance(d.tech, t.value); return renderMainDiff(); }
-  if (t.id === 'tv-lotech' && t.value){
-    const r = fixerEcheanceEnLot(S.selTrav, t.value);
-    S.travErreur = r.n ? '' : 'aucun travail sélectionné';
-    return renderMain();
-  }
-  if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, t.value); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
+  /* Les dates ne se lisent PLUS à la frappe : un champ JJ/MM/AAAA est
+     incomplet tant qu'il n'est pas fini, et re-rendre à chaque touche
+     chasserait le curseur. Elles sont traitées dans « change ». */
+  if (t.classList && t.classList.contains('dt')) return;
   if (d.hr !== undefined){ trav(d.hr).heuresReel = hrs(t.value); return renderMainDiff(); }
   const cts = v => Math.round((parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
   if (d.plaq !== undefined){ S.achevement.plaquette[d.plaq] = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
@@ -13180,6 +13404,29 @@ document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
   if (t.id === 'rail-f'){ S.railFiltre = t.value; return appliquerFiltreRail(); }
+  /* ── dates, au format français, refusées si illisibles ────────────────
+     litDate() marque le champ. On n'applique rien et on ne re-rend pas :
+     laisser l'ancienne valeur reprendre sa place ferait croire que la
+     saisie a été prise en compte. */
+  if (t.classList && t.classList.contains('dt')){
+    const iso = litDate(t);
+    if (iso === null) return;
+    if (d.tech !== undefined){ fixerEcheance(d.tech, iso); return renderMainDiff(); }
+    if (t.id === 'tv-lotech'){
+      if (!iso) return;
+      const r = fixerEcheanceEnLot(S.selTrav, iso);
+      S.travErreur = r.n ? '' : 'aucun travail sélectionné';
+      return renderMain();
+    }
+    if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, iso); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
+    if (d.mem !== undefined){
+      const [uid, champ] = d.mem.split('|');
+      const r = majMembre(uid, champ, iso);
+      S.memErreur = r.ok ? '' : r.why;
+      return render();
+    }
+    return;
+  }
   if (t.id === 'whoaud'){ S.moi = t.value; return render(); }
   if (d.decl !== undefined){
     const dc = declarationCourante(S.moi);
@@ -13285,6 +13532,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
   const d = t.dataset, p = posteCourant();
 
+  if (t.id === 'raz-etat') return repartirDeZero();
   if (t.id === 'themebtn'){
     const cur = document.documentElement.dataset.theme
       || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
@@ -13327,10 +13575,12 @@ document.addEventListener('click', e => {
   }
   if (t.id === 'ind-conf'){ const r = confirmerEquipe(); S.indErreur = r.ok ? '' : r.why; return render(); }
   if (t.id === 'sacc-add'){
+    const dt = litDate(document.getElementById('sacc-date'));
+    if (dt === null){ S.saccErreur = 'date attendue au format JJ/MM/AAAA'; return renderMain(); }
     const res = ajouterSacc(document.getElementById('sacc-nat').value,
                             document.getElementById('sacc-lib').value,
                             document.getElementById('sacc-mont').value,
-                            document.getElementById('sacc-date').value);
+                            dt);
     S.saccErreur = res.ok ? '' : res.why;
     return renderMain();
   }
@@ -13740,7 +13990,29 @@ seedEquipe();
   if (!d.ok) console.error('déroulé du chiffre d’affaires interrompu :', d.why);
   S.events.length = 0; HORLOGE = '2026-03-15T09:12';   // l'amorce n'est pas un événement de la session
 })();
+
+/* ── reprise ──────────────────────────────────────────────────────────────
+   L'amorce vient de s'exécuter : elle est le dossier tel qu'on l'ouvre la
+   première fois. S'il existe un instantané de CETTE version du prototype, il
+   la remplace intégralement. Sinon on garde l'amorce, et on dit pourquoi
+   quand l'instantané a été écarté — un état qui disparaît sans un mot est ce
+   qu'on cherche justement à ne plus faire vivre. */
+const _repris = restaurerEtat();
+if (!_repris.charge && _repris.why && _repris.why !== 'aucun instantané'){
+  SAUVE.etat = 'erreur'; SAUVE.pourquoi = _repris.why;
+}
 render();
+rendreSauvegarde();
+
+/* Les gestes, pas les rendus : plusieurs gestes ne re-rendent rien et seraient
+   perdus. En capture, pour passer avant les gestionnaires qui, eux, rendent. */
+for (const ev of ['input', 'change', 'click'])
+  document.addEventListener(ev, planifierSauvegarde, true);
+/* Et un écrit immédiat quand la page part — c'est exactement le moment que la
+   temporisation ne couvre pas, et exactement celui qu'on veut couvrir. */
+addEventListener('pagehide', sauverMaintenant);
+addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sauverMaintenant(); });
+
 if (window.ResizeObserver) new ResizeObserver(syncTopHeight).observe(document.querySelector('.top'));
 addEventListener('resize', syncTopHeight);
 

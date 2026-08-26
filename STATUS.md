@@ -555,8 +555,45 @@ Ils vivaient jusqu'ici dans un répertoire de travail éphémère : STATUS.md af
 refaire n'est pas une vérification. Ils s'exécutent **sur le fichier livré**, relèvent toute requête
 réseau et toute erreur JavaScript, et `tout.sh` sort en échec sur le moindre `ÉCHEC` ou plantage.
 
-**Vérification** : 31 harnais du prototype sans échec ni plantage (dont `rail` et `portail`, neufs) ·
-186 tests applicatifs · `tsc --noEmit` propre.
+### Dernière passe sur le prototype — il ne sert plus qu'à être montré
+
+Quatre corrections, aucune fonctionnalité. Le prototype est **arrêté** après celle-ci.
+
+**Persistance** (ADR-064) — refusée sept fois, acceptée pour un autre critère : le prototype n'a plus
+qu'un emploi, et un rafraîchissement accidentel renvoyait tout le dossier à son amorce devant le
+confrère. Tout `S` est écrit (1,3 Mo, ~50 ms, débouncé à 700 ms), les gestes sont écoutés plutôt que
+les rendus, un instantané d'une autre version est écarté et l'écran le dit, trois causes d'échec ont
+trois messages. Défaut trouvé par le harnais : `pagehide` réécrivait l'état juste après « repartir de
+zéro » — le bouton ne repartait de rien.
+
+**Dates** (ADR-065) — plus un seul `<input type="date">` : ils suivent la locale du navigateur, donc
+`04/03` ne disait ni le 4 mars ni le 3 avril. Champ texte `JJ/MM/AAAA` partout, parseur qui **refuse**
+une date impossible en marquant le champ, harnais qui vérifie qu'aucune date non formatée ne subsiste.
+`build.sh` publie désormais lui-même le fichier livré.
+
+**Identité sur téléphone** (ADR-066) — le sélecteur débordait de 31 px. Il rétrécit au lieu de
+déborder ; le faire passer à la ligne ajoutait 30 px au bandeau collant et le harnais de lisibilité
+l'a refusé.
+
+**`DEMO.md` porte le parcours** (ADR-067) — cinq minutes, écran par écran, avec la phrase à dire, les
+questions qu'on reçoit et leur réponse, et ce que le parcours ne montre pas. `pw/parcours.mjs` le
+rejoue et échoue si un chiffre cité bouge.
+
+**Vérification** : 34 harnais du prototype sans échec ni plantage (dont `dates`, `persist` et
+`parcours`, neufs) · 186 tests applicatifs · `tsc --noEmit` propre.
+
+## Prochaine tranche — dans l'application, plus dans le prototype
+
+**Équipe et indépendance en premier**, avant le cycle chiffre d'affaires. La raison n'est pas
+l'ampleur : c'est la tranche qui **force l'isolation par cabinet dès la première migration** —
+`firm_id` sur chaque table, RLS, notion d'utilisateur — là où le CA la contournerait et obligerait à
+tout reprendre. Elle est petite mais complète (déclaration signée, révision qui empile sans écraser,
+refus d'affecter), et elle produit une règle qui **refuse** : c'est ce qui se teste de bout en bout le
+plus honnêtement. Le CA est plus spectaculaire mais repose sur des moteurs déjà écrits et testés côté
+application ; il gagne à venir en second, sur des fondations d'isolation éprouvées.
+
+Ce que la tranche doit porter : migration SQL, isolation par cabinet vérifiée par un test qui
+**tente** la fuite, persistance réelle, écran, et acceptation de bout en bout.
 
 ## Next actions (post-repo, founder-gated)
 

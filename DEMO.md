@@ -12,27 +12,196 @@ Cast (all fictional): **Vermeil Audit** — Claire Fontaine (partner, signs), L�
 (manager, reviews), Karim Benali (senior, prepares). Client: Sophie Marchand (CFO),
 Théo Girard (chef comptable).
 
-## Le prototype cliquable — la démonstration de trente secondes
+## Le prototype cliquable — `prototype/otto-prototype.html`
 
-`prototype/otto-prototype.html` s'ouvre sans rien installer, y compris sur téléphone. Il porte le
-**testing du chiffre d'affaires entièrement déroulé** : échantillon, requête, dépôts, contrôles,
+Un seul fichier. Aucune installation, aucun compte, aucun réseau, y compris sur téléphone. Il porte
+le **testing du chiffre d'affaires entièrement déroulé** — échantillon, requête, dépôts, contrôles,
 un écart résolu, un écart au cumul, une note posée puis close, travail achevé et revu, papier
-imprimable. Le chemin le plus court pour le voir :
+imprimable — et il **garde ce qu'on y tape** dans le navigateur où il tourne.
 
-1. l'outil s'ouvre sur **Pilotage** — cinq lectures graphiques de l'état du dossier ;
-2. **Espace auditeur** s'ouvre sur **« Mes travaux »** : ce que Karim Benali doit préparer, trié
-   par échéance, avec ce qui bloque chaque ligne. « Ouvrir le papier » va **directement** au papier
-   de travail, sans passer par la section ;
-3. **Chiffre d'affaires → Procédures d'audit → Test de détail** : le papier déroulé de bout en bout ;
-4. dans le rail, tapez **`411`** dans la recherche du groupe *Bilan* : seule « Clients et comptes
-   rattachés » reste ; le filtre **hors périmètre** montre le poste sorti du scoping ;
-5. **Équipe et indépendance** : essayez d'attribuer un travail à Hugo Vasseur — le système refuse ;
-6. **Versions du fichier → prendre en compte la version 4**, puis **Ajustements et retraitements** :
-   trois anomalies passent de « non corrigée » à « corrigée » sans aucune saisie ;
-7. **Portail client** : il s'ouvre sur ce que le client doit **maintenant** — en retard d'abord,
-   déjà déposé replié en bas — et se filtre par **domaine métier**, pas par code de section.
+## LE PARCOURS — cinq minutes devant un auditeur
 
-Le reste de ce document décrit la démonstration de l'application Next.js, qui est un autre objet.
+Ceci est le script de la démonstration du prototype. Chaque étape dit **où cliquer**, **ce qu'il
+faut montrer du doigt**, et **la phrase à dire**. Les chiffres cités sont ceux que le fichier
+produit réellement : le harnais `prototype/pw/parcours.mjs` rejoue ce parcours et échoue si l'un
+d'eux bouge. Si ce document et l'écran divergent un jour, c'est le harnais qui tranche.
+
+**Avant d'ouvrir la bouche.** Ouvrez `prototype/otto-prototype.html` (aucune installation, aucun
+compte, aucun réseau). Si vous avez déjà cliqué dedans, appuyez sur **« repartir de zéro »** en bas
+à gauche : le dossier revient à son état d'amorce. Vérifiez que la pastille dit *enregistré* — si
+elle dit *NON ENREGISTRÉ*, votre navigateur refuse le stockage local (fenêtre privée) : la
+démonstration marche quand même, mais un rafraîchissement vous ferait tout recommencer.
+
+**La phrase d'ouverture, avant le premier clic :**
+
+> « Ce que je vous montre n'appelle aucun modèle de langage. Tout ce qui s'affiche est calculé, ici,
+> dans votre navigateur, à partir d'un jeu d'écritures fictif. Vous pouvez le prendre en défaut. »
+
+---
+
+### 1 · On ouvre sur l'état du dossier, pas sur un écran de travail  *(20 s)*
+
+L'outil s'ouvre sur **Pilotage**. Cinq lectures : avancement par section, budget contre réalisé,
+achèvements dans le temps contre l'échéance, charge par personne, âge des demandes en retard.
+
+Montrez du doigt : les graphiques sont **à l'encre** — pas une couleur, sauf sur les problèmes.
+
+> « Un associé qui ouvre son dossier veut savoir où il en est, pas commencer à travailler. Et vous
+> remarquerez qu'il n'y a aucune couleur : la couleur est réservée à ce qui ne va pas. Un tableau
+> de bord bariolé ne dit plus rien de ce qui est grave. »
+
+---
+
+### 2 · On ouvre SA liste, pas l'arborescence du dossier  *(30 s)*
+
+Cliquez **Espace auditeur**. Il s'ouvre sur **« Mes travaux »** — Karim Benali, senior.
+
+Montrez : **six travaux**, triés par échéance ; la colonne **« ce qui bloque »** en toutes lettres
+(*32 justificatifs attendus du client*, *conclusion de la procédure non rédigée*) ; et le bouton
+**« ouvrir le papier »**.
+
+> « Voilà comment on se sert vraiment d'un logiciel d'audit : on ouvre sa liste. Ce qui bloque chaque
+> ligne est écrit — ce n'est pas à moi de le deviner. Et ce bouton n'ouvre pas la section : il ouvre
+> le papier de travail. Trois clics en un. »
+
+Cliquez **« ouvrir le papier »** sur *Test de séparation des exercices — Chiffre d'affaires*.
+
+---
+
+### 3 · Le testing, déroulé de bout en bout  *(90 s — le cœur)*
+
+Vous êtes dans **Chiffre d'affaires → Procédures d'audit**. Ouvrez **« Test de détail sur les
+éléments sélectionnés, pièce à l'appui »**.
+
+Montrez, dans cet ordre :
+
+1. **La méthode est écrite là où elle s'exécute** — objectif, *sens du test*, ce qui compte comme
+   exception, sources. Toutes marquées **UNVERIFIED**.
+2. **La sélection** : sondage en unités monétaires, **167 éléments**, germe rejouable.
+3. **Le garde-fou d'exhaustivité**, qui a fait changer de méthode : la strate exhaustive retenait
+   presque toute la masse **sans rencontrer les anomalies de montant**.
+4. **Le papier** : 167 lignes, une pièce par ligne, les champs relevés et ce à quoi ils se comparent.
+5. **Deux écarts chiffrés** : une remise commerciale de **620 €**, expliquée, corroborée par l'avoir
+   et par l'écriture, **résolue** ; un retour de marchandise de **4 850 €**, **non résolu, au cumul**.
+
+> « Le sondage est parti d'une strate exhaustive qui prenait presque tout — et qui ne rencontrait
+> aucune des deux anomalies de montant. L'écran l'a dit, et il a proposé de sonder en unités
+> monétaires : cent soixante-sept éléments au lieu de cent quinze. **Plus de travail, pas moins.**
+> Un outil qui vous propose toujours d'en faire moins ne vous rend pas service. »
+
+Puis, sur l'écart de 620 € :
+
+> « Regardez ce qu'il a fallu pour le déclarer résolu : l'explication du client mot pour mot, ma
+> conclusion, la disposition retenue, **et le lien vers la pièce qui la corrobore**. Sans ce lien,
+> le système refuse. C'est là que se joue la différence entre un dossier et un tableur. »
+
+---
+
+### 4 · Le travail est revu — et la section n'est toujours pas visée  *(45 s)*
+
+Allez à **Conclusion et visa**.
+
+Montrez : le travail est **achevé par son préparateur et revu par sa réviseuse**. Une note de revue
+a été posée, répondue, **close**. Et pourtant le visa est **impossible** : **dix obstacles**
+subsistent, énumérés — facteurs de risque non statués, questions sans réponse, écarts sans
+résolution probante, papiers N-1 non reconfirmés, conclusion non rédigée.
+
+> « C'est le point que je veux vraiment vous montrer. Le travail est fait, il est revu, et la section
+> n'est pas visable. Le bouton n'est pas grisé pour la forme : il n'existe pas tant qu'un obstacle
+> tient. On ne peut pas viser par distraction. »
+
+---
+
+### 5 · Une constatation circule toute seule  *(40 s)*
+
+Rail → **Planification → Facteurs de risque**.
+
+Montrez : **seize constatations** posées sur **onze sections**, chacune avec **sa règle**, sa source
+et le lien vers ce qui l'a produite. Aucune n'a été ressaisie.
+
+> « Un écart de rapprochement dans une section, une écriture passée par la direction, une pièce datée
+> hors exercice : ça doit se poser tout seul sur les sections concernées, avec un lien vers sa source.
+> Personne ne recopie rien. Et chaque facteur dit **par quelle règle** il est là — c'est ce que votre
+> réviseur vous demandera. »
+
+---
+
+### 6 · Le système refuse  *(25 s)*
+
+Rail → **Mission → Équipe et indépendance**. Essayez d'attribuer un travail à **Hugo Vasseur**.
+
+> « Hugo n'a pas signé sa déclaration d'indépendance. Le système ne me le rappelle pas : il refuse.
+> Et regardez Inès — ses travaux lui ont été attribués en novembre, quand sa déclaration valait ; la
+> révision de mars les rend caducs, et **ça bloque le visa de sa section**. Une règle qui se contente
+> de prévenir n'est pas une règle. »
+
+---
+
+### 7 · La version 4 du fichier, et la bascule  *(45 s)*
+
+Rail → **Données du dossier → Versions du fichier**. La version 4 est reçue et en attente.
+Montrez d'abord **ce que l'écran annonce** qu'il va se passer. Puis **prenez-la en compte**.
+
+Allez à **Ajustements et retraitements**.
+
+Chiffres exacts : **zéro anomalie corrigée avant, trois après** ; le résiduel passe de
+**127 980 € à 31 050 €**. Aucune saisie.
+
+> « Le client nous envoie une version corrigée du fichier. Je ne repointe rien, je ne ressaisis rien :
+> je dis à l'outil que je prends cette version. Trois anomalies passent de « non corrigée » à
+> « corrigée » parce qu'une écriture les corrige réellement, et le cumul non corrigé tombe de cent
+> vingt-huit mille à trente et un mille. Et l'écran l'avait **annoncé au centime avant** que je clique. »
+
+---
+
+### 8 · Le portail du client, vu par le client  *(40 s)*
+
+Cliquez **Portail client**.
+
+Montrez : la page s'ouvre sur **ce qu'il doit maintenant** — *« il vous reste 9 documents à déposer,
+sur 4 demandes »* —, **en retard d'abord**, puis *à rendre avant la prochaine relance*, puis
+*ensuite*, et **déjà déposées repliées en bas**. Le filtre est par **domaine métier** — Ventes et
+clients, Paie et personnel — pas par code de section.
+
+Montrez surtout **ce qui n'est pas là** : aucun seuil de matérialité, aucun papier, aucune note de
+revue, aucun statut interne de revue.
+
+> « Un client qui ouvre le portail doit voir sa dette, pas un inventaire. Et il ne voit ni notre
+> matérialité, ni nos papiers, ni où en est notre revue : ce n'est pas une case décochée, le bandeau
+> de seuils **n'est pas construit** dans cet espace. »
+
+---
+
+### 9 · Pourquoi cette preuve existe  *(25 s — la sortie)*
+
+Cliquez **Pilotage → Piste d'audit**.
+
+> « Chaque geste que je viens de faire est là, horodaté, avec son auteur. « Pourquoi cette preuve
+> existe-t-elle », « qu'est-ce qui appuie cette conclusion », « d'où sort ce chiffre » : ces trois
+> questions doivent avoir une réponse à tout moment, pas au moment de l'assemblage. »
+
+---
+
+### Ce qu'il faut dire si on vous pose la question
+
+| La question | La réponse |
+|---|---|
+| « C'est de l'IA ? » | « Pas ici. Zéro appel modèle, zéro requête réseau — vous pouvez couper le wifi. Dans le produit, le modèle sert à extraire et à proposer ; il ne conclut jamais, et rien n'entre au dossier sans qu'un humain l'ait approuvé. » |
+| « Les normes citées sont justes ? » | « Non vérifiées, et c'est écrit à l'écran. Aucun texte primaire n'a pu être atteint depuis l'environnement de développement : toutes les sources portent **UNVERIFIED**, et aucun numéro de paragraphe n'est cité nulle part. C'est de la pratique structurée, à confronter aux textes. » |
+| « C'est mon dossier là-dedans ? » | « Non. Altiverre SAS, son SIREN, ses tiers, ses pièces : tout est fabriqué. Aucune donnée client réelle n'entre dans ce dépôt, jamais. » |
+| « Ça garde ce que j'ai tapé ? » | « Dans ce navigateur, sur cet appareil, oui — c'est la pastille en bas à gauche. Rien ne part nulle part. » |
+| « Et si je casse quelque chose ? » | « « Repartir de zéro », en bas à gauche. » |
+
+### Ce que ce parcours ne montre pas
+
+Le pack SOX (il n'est pas construit dans le prototype), l'extraction documentaire, l'envoi réel des
+demandes, le contrôle interne, et le journal d'événements haché — qui existe dans l'application, pas
+ici. Dites-le avant qu'on vous le demande.
+
+---
+
+Le reste de ce document décrit la démonstration de **l'application Next.js**, qui est un autre objet :
+deux mandats, deux référentiels, une base de données, des exports scellés.
 
 ## 0. Start
 

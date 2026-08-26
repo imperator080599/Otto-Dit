@@ -4,7 +4,7 @@
 P="$1"
 [ -n "$P" ] || { echo "usage : sh tout.sh <chemin du fichier html>"; exit 2; }
 fail=0
-for h in smoke2 verif lot4 lot2v lot3je lot1rep lisi sond sond2 chaine2 perf design mob theme doubl couv couv2 toutes haut final bandeau cat2 ajust libelles equipe jalons qualitatif deroule graphes rail portail; do
+for h in smoke2 verif lot4 lot2v lot3je lot1rep lisi sond sond2 chaine2 perf design mob theme doubl couv couv2 toutes haut final bandeau cat2 ajust libelles equipe jalons qualitatif deroule graphes rail portail dates persist parcours; do
   out=$(node "$h.mjs" "$P" 2>&1)
   n=$(printf '%s' "$out" | grep -cE "^ÉCHEC")
   crash=$(printf '%s' "$out" | grep -cE "triggerUncaughtException|TimeoutError|ReferenceError|TypeError|ERR_MODULE_NOT_FOUND")

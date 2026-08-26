@@ -322,8 +322,8 @@ function blocEquipe(){
       g:sel(m.id, 'grade', ORDRE_GRADE.map(g => [g, g])),
       r:sel(m.id, 'role', Object.entries(ROLE_LIB)),
       c:`<input class="cell txt" data-mem="${m.id}|mail" value="${esc(m.mail || '')}" placeholder="courriel">`,
-      en:`<input class="cell txt" type="date" data-mem="${m.id}|entree" value="${esc(m.entree || '')}">`,
-      so:`<input class="cell txt" type="date" data-mem="${m.id}|sortie" value="${esc(m.sortie || '')}">`,
+      en:champDate(`data-mem="${m.id}|entree"`, m.entree || ''),
+      so:champDate(`data-mem="${m.id}|sortie"`, m.sortie || ''),
       x:`<input class="cell" data-mem="${m.id}|exercices" value="${m.exercices}" style="width:52px">`,
       d:`<span class="pill ${e.cls}">${esc(e.lib)}</span>`,
       t:tr.total ? `<span class="smallcaps">${tr.total} trace(s)</span>` : '<span class="smallcaps">aucune</span>',
@@ -515,7 +515,7 @@ function blocSacc(){
       <div class="ctrl" style="flex:1 1 200px"><label>Service rendu</label>
         <input type="text" id="sacc-lib" placeholder="intitulé de la prestation"></div>
       <div class="ctrl"><label>Honoraires</label><input class="cell" id="sacc-mont" placeholder="0,00"></div>
-      <div class="ctrl"><label>Date</label><input class="cell txt" type="date" id="sacc-date" value="${S.aujourdhui}"></div>
+      <div class="ctrl"><label>Date</label>${champDate('id="sacc-date"', S.aujourdhui)}</div>
       <div class="ctrl"><label>&nbsp;</label><button class="btn" id="sacc-add">inscrire au registre</button></div>
     </div>
     ${S.saccErreur ? `<div class="callout bad">${esc(S.saccErreur)}</div>` : ''}`,

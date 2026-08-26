@@ -28,6 +28,21 @@ Le bandeau de seuils **n'est construit que dans l'espace auditeur** : le client 
 la matérialité parce que le composant n'existe pas chez lui (ADR-027). « Mes travaux » non plus :
 elle porte les affectations, les statuts de revue et les visas de l'équipe.
 
+## Ce qu'on y tape reste — et deux règles de format
+
+**Persistance** (ADR-064). Tout l'état est écrit dans le navigateur à chaque geste, avec un indicateur
+en bas à gauche et un bouton **« repartir de zéro »**. Un instantané pris sur une autre version du
+fichier est **écarté** et l'écran le dit ; si le navigateur refuse le stockage (fenêtre privée), le
+prototype fonctionne et affiche `NON ENREGISTRÉ`. Rien ne sort de l'appareil.
+
+**Dates** (ADR-065). Aucun `<input type="date">` : ils s'affichent au format de la locale du
+navigateur, si bien que `04/03` ne dirait ni le 4 mars ni le 3 avril. Toute saisie est un champ texte
+**`JJ/MM/AAAA`**, et une date impossible est **refusée** — le champ se marque, la saisie fautive
+reste visible, rien n'est écrit.
+
+**Le parcours de démonstration est dans `DEMO.md`**, écran par écran avec la phrase à dire, et
+`pw/parcours.mjs` le rejoue pour garantir que les chiffres cités sont ceux que le fichier produit.
+
 ## La navigation — par nature d'objet, un groupe à la fois
 
 Le rail portait quarante-six destinations, dont **quinze sous « Planification »** : ce n'était plus
@@ -185,7 +200,9 @@ sur ce jeu de données le dit, plutôt que d'abaisser son seuil jusqu'à trouver
 | Glyphes manquants / U+FFFD | 0 |
 | Bandeau collant au repos / réduit | 294 px → **47 px** (5,6 % de l'écran) dès le premier défilement, rétabli en remontant, sans dérive du contenu |
 | Destinations visibles au premier écran du rail / hauteur du rail | **13 / 13 · 436 px** (avant : 18 / 46 · 1 624 px) |
-| Harnais passés sur ce fichier | **31**, zéro échec, zéro plantage — `prototype/pw/`, rejouables : `sh tout.sh ../otto-prototype.html` |
+| Champs de date au format du navigateur (`type="date"`) | **0** |
+| État perdu à un rafraîchissement | **0** — tout est réécrit, et le parcours de démonstration se retrouve où il en était |
+| Harnais passés sur ce fichier | **34**, zéro échec, zéro plantage — `prototype/pw/`, rejouables : `sh tout.sh ../otto-prototype.html` |
 | Compteurs de design (rayons / couleurs hors jeton / tailles / espacements hors échelle) | **2 / 0 / 5 / 0** |
 | Couleurs employées dans les graphiques, hors jetons du système | **0**, dans les deux thèmes |
 | Contenu perdu à l'impression d'un panneau replié | **0** — les panneaux s'ouvrent à `beforeprint` |

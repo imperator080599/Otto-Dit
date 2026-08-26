@@ -1,6 +1,12 @@
 node_modules/
 # lien symbolique vers l'installation locale de Playwright (prototype/pw)
 node_modules
+
+# Sondes jetables du répertoire des harnais : elles servent à mesurer une fois,
+# pas à garder. Seuls les harnais nommés dans tout.sh sont versionnés.
+prototype/pw/_q*.mjs
+prototype/pw/_shot*.mjs
+prototype/pw/_taille*.mjs
 app/.next/
 app/.data/
 *.log

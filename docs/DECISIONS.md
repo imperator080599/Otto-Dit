@@ -2113,3 +2113,98 @@ ligne — et `tout.sh` les a rendus **« ok + PLANTAGE »**, l'« ok » venant d
 `ÉCHEC` n'avait pu être écrite. Un harnais **muet** passait donc pour vert. `tout.sh` compte
 désormais les lignes rendues : **zéro ligne est un échec**, et un plantage n'est plus précédé d'un
 « ok ». C'est le même défaut qu'ailleurs dans ce dépôt — le silence lu comme un succès.
+
+---
+
+## ADR-064 — La persistance, refusée sept fois, acceptée pour une autre raison
+
+Elle a été écartée à chaque passe, et pour un motif qui tenait : un prototype qui garde un état est
+un prototype dont on ne sait plus dans quel état il est, et la fidélité au produit ne se joue pas là.
+
+**Ce n'est plus l'argument qui compte.** Le prototype n'a plus qu'un emploi — être montré à des
+auditeurs — et un rafraîchissement accidentel renvoyait le dossier entier à son état d'amorce, devant
+le confrère. La décision ne renverse pas la précédente : elle change de critère.
+
+**Ce qui est écrit : tout `S`, plus l'horloge.** Pas de liste blanche — une liste blanche oublie un
+jour une décision, et l'oubli est silencieux. Mesuré : **1,3 Mo**, ~13 ms de sérialisation, ~35 ms
+d'écriture ; sous le plafond usuel de `localStorage` (≈ 5 Mo) et invisible derrière une temporisation
+d'inactivité de 700 ms. Les caches dérivés ne sont **pas** rangés : les restituer serait garantir
+qu'ils reviennent un jour périmés.
+
+**On écoute les gestes, pas les rendus.** Plusieurs gestes ne re-rendent rien — le germe d'une
+sélection, une conclusion en cours de frappe — et un `sauver()` posé dans `render()` les aurait
+perdus. Les écouteurs sont donc sur `input`, `change` et `click`, **en capture**, plus un écrit
+immédiat sur `pagehide` et sur le passage en arrière-plan : c'est exactement le moment que la
+temporisation ne couvre pas, et exactement celui qu'on cherche à couvrir.
+
+**L'empreinte.** Un instantané pris sur une version antérieure du fichier rendrait un dossier à
+moitié cohérent — pire qu'un dossier vide. L'instantané porte la liste des clés de `S` et un numéro
+de schéma ; au moindre écart il est **écarté, effacé, et l'écran le dit**.
+
+**Trois échecs possibles, trois messages.** Quota dépassé, stockage refusé (fenêtre privée), état non
+sérialisable. « Échec » tout court n'aiderait personne ; l'indicateur nomme la cause. Vérifié en
+provoquant le refus : le prototype **fonctionne** sans stockage, et affiche `NON ENREGISTRÉ`.
+
+**Le défaut que le harnais a trouvé, et qui aurait ruiné la fonction.** « Repartir de zéro » efface
+puis recharge — et le rechargement déclenche `pagehide`, donc une **dernière écriture**, qui remettait
+aussitôt en place l'état qu'on venait d'effacer. Le bouton ne repartait de rien. Un verrou
+`_razEnCours` interdit toute écriture dès que la remise à zéro est engagée.
+
+---
+
+## ADR-065 — Plus un seul `<input type="date">` : les dates sont françaises
+
+Un `<input type="date">` affiche le format de la **locale du navigateur**, jamais celui du document :
+le `lang="fr"` n'y change rien. Sur un navigateur configuré en anglais, la date de rapport d'un
+dossier français s'écrit `04/15/2026`.
+
+L'ambiguïté n'est pas cosmétique. **« 04/03 » ne dit alors ni le 4 mars ni le 3 avril**, et c'est une
+date d'échéance légale. Devant un confrère, c'est un tue-crédibilité.
+
+**Décision : un champ TEXTE au format `JJ/MM/AAAA`**, rendu par `champDate()` et relu par
+`isoDepuisFr()`. Une seule écriture de la règle, six sites de saisie, et un harnais qui vérifie qu'il
+ne reste **aucun** `type="date"` dans le fichier livré et **aucune date non formatée à l'écran**.
+
+**Le parseur refuse au lieu de deviner.** Le 31/02 n'est pas le 3 mars : il est **rejeté**. Un champ
+vide reste une valeur ; une date illisible **marque le champ en rouge, garde la saisie fautive
+visible pour qu'on la corrige, et n'écrit rien**. Garder silencieusement l'ancienne valeur ferait
+croire que la saisie a été prise en compte — c'est le défaut silencieux de l'ADR-057, une fois de
+plus.
+
+**Ce que cela coûte, et qui est assumé** : le sélecteur de calendrier natif. Un auditeur tape une
+date, et `inputmode="numeric"` donne le pavé numérique sur téléphone.
+
+**Corollaire :** `build.sh` copie désormais lui-même le fichier assemblé vers `prototype/`. La copie
+à la main avait déjà produit une mesure faite sur un fichier et une livraison d'un autre.
+
+---
+
+## ADR-066 — Le sélecteur d'identité passe à la ligne sur téléphone
+
+À 390 px, la barre des espaces défilait horizontalement et le sélecteur d'identité débordait de
+31 px : il n'était atteignable qu'en faisant défiler la barre. Or c'est la première chose qu'on
+montre — « je suis Karim, préparateur ». **Une identité qu'il faut aller chercher n'est pas une
+identité affichée.**
+
+La barre **passe à la ligne** au lieu de défiler, et l'identité prend sa propre ligne entière. Coût :
+une trentaine de pixels de chrome vertical sur téléphone, absorbés par `--sTop`, qui est mesuré au
+rendu et non écrit en dur.
+
+---
+
+## ADR-067 — DEMO.md porte le parcours, et un harnais garantit qu'il dit vrai
+
+Un script de démonstration qui cite des chiffres vieillit mal : le jour où une règle bouge, le
+document promet un chiffre que l'écran ne rend plus, et on s'en aperçoit **devant l'auditeur**.
+
+`prototype/pw/parcours.mjs` **rejoue le parcours de DEMO.md étape par étape** sur le fichier livré et
+échoue si l'un des chiffres cités bouge : 5 lectures graphiques · 6 travaux dans « Mes travaux » ·
+167 éléments retenus et 167 lignes de papier · les anomalies de 620 € et 4 850 € · **10 obstacles**
+au visa du chiffre d'affaires alors que le travail est revu · 16 constatations sur 11 sections ·
+le refus d'affecter Hugo Vasseur · la bascule **0 → 3 anomalies corrigées** et **127 980 € → 31 050 €**
+de résiduel, **annoncée au centime avant** d'être jouée · 9 documents dus et 4 rangs au portail ·
+l'absence totale de seuil dans l'espace client.
+
+Le document porte aussi **la phrase à dire** à chaque étape, un tableau des questions qu'on reçoit
+(« c'est de l'IA ? », « les normes sont justes ? ») avec leur réponse, et **ce que le parcours ne
+montre pas** — à dire avant qu'on le demande.

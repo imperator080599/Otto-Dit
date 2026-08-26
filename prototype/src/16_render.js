@@ -695,13 +695,10 @@ document.addEventListener('input', e => {
   if (t.id === 'ft-q'){ S.filtreTrav.q = t.value; return renderMainDiff(); }
   const hrs = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 4) / 4);
   if (d.hb !== undefined){ trav(d.hb).heuresBudget = t.value.trim() === '' ? null : hrs(t.value); return renderMainDiff(); }
-  if (d.tech !== undefined){ fixerEcheance(d.tech, t.value); return renderMainDiff(); }
-  if (t.id === 'tv-lotech' && t.value){
-    const r = fixerEcheanceEnLot(S.selTrav, t.value);
-    S.travErreur = r.n ? '' : 'aucun travail sélectionné';
-    return renderMain();
-  }
-  if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, t.value); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
+  /* Les dates ne se lisent PLUS à la frappe : un champ JJ/MM/AAAA est
+     incomplet tant qu'il n'est pas fini, et re-rendre à chaque touche
+     chasserait le curseur. Elles sont traitées dans « change ». */
+  if (t.classList && t.classList.contains('dt')) return;
   if (d.hr !== undefined){ trav(d.hr).heuresReel = hrs(t.value); return renderMainDiff(); }
   const cts = v => Math.round((parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
   if (d.plaq !== undefined){ S.achevement.plaquette[d.plaq] = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
@@ -730,6 +727,29 @@ document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
   if (t.id === 'rail-f'){ S.railFiltre = t.value; return appliquerFiltreRail(); }
+  /* ── dates, au format français, refusées si illisibles ────────────────
+     litDate() marque le champ. On n'applique rien et on ne re-rend pas :
+     laisser l'ancienne valeur reprendre sa place ferait croire que la
+     saisie a été prise en compte. */
+  if (t.classList && t.classList.contains('dt')){
+    const iso = litDate(t);
+    if (iso === null) return;
+    if (d.tech !== undefined){ fixerEcheance(d.tech, iso); return renderMainDiff(); }
+    if (t.id === 'tv-lotech'){
+      if (!iso) return;
+      const r = fixerEcheanceEnLot(S.selTrav, iso);
+      S.travErreur = r.n ? '' : 'aucun travail sélectionné';
+      return renderMain();
+    }
+    if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, iso); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
+    if (d.mem !== undefined){
+      const [uid, champ] = d.mem.split('|');
+      const r = majMembre(uid, champ, iso);
+      S.memErreur = r.ok ? '' : r.why;
+      return render();
+    }
+    return;
+  }
   if (t.id === 'whoaud'){ S.moi = t.value; return render(); }
   if (d.decl !== undefined){
     const dc = declarationCourante(S.moi);
@@ -835,6 +855,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
   const d = t.dataset, p = posteCourant();
 
+  if (t.id === 'raz-etat') return repartirDeZero();
   if (t.id === 'themebtn'){
     const cur = document.documentElement.dataset.theme
       || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
@@ -877,10 +898,12 @@ document.addEventListener('click', e => {
   }
   if (t.id === 'ind-conf'){ const r = confirmerEquipe(); S.indErreur = r.ok ? '' : r.why; return render(); }
   if (t.id === 'sacc-add'){
+    const dt = litDate(document.getElementById('sacc-date'));
+    if (dt === null){ S.saccErreur = 'date attendue au format JJ/MM/AAAA'; return renderMain(); }
     const res = ajouterSacc(document.getElementById('sacc-nat').value,
                             document.getElementById('sacc-lib').value,
                             document.getElementById('sacc-mont').value,
-                            document.getElementById('sacc-date').value);
+                            dt);
     S.saccErreur = res.ok ? '' : res.why;
     return renderMain();
   }
@@ -1290,6 +1313,28 @@ seedEquipe();
   if (!d.ok) console.error('déroulé du chiffre d’affaires interrompu :', d.why);
   S.events.length = 0; HORLOGE = '2026-03-15T09:12';   // l'amorce n'est pas un événement de la session
 })();
+
+/* ── reprise ──────────────────────────────────────────────────────────────
+   L'amorce vient de s'exécuter : elle est le dossier tel qu'on l'ouvre la
+   première fois. S'il existe un instantané de CETTE version du prototype, il
+   la remplace intégralement. Sinon on garde l'amorce, et on dit pourquoi
+   quand l'instantané a été écarté — un état qui disparaît sans un mot est ce
+   qu'on cherche justement à ne plus faire vivre. */
+const _repris = restaurerEtat();
+if (!_repris.charge && _repris.why && _repris.why !== 'aucun instantané'){
+  SAUVE.etat = 'erreur'; SAUVE.pourquoi = _repris.why;
+}
 render();
+rendreSauvegarde();
+
+/* Les gestes, pas les rendus : plusieurs gestes ne re-rendent rien et seraient
+   perdus. En capture, pour passer avant les gestionnaires qui, eux, rendent. */
+for (const ev of ['input', 'change', 'click'])
+  document.addEventListener(ev, planifierSauvegarde, true);
+/* Et un écrit immédiat quand la page part — c'est exactement le moment que la
+   temporisation ne couvre pas, et exactement celui qu'on veut couvrir. */
+addEventListener('pagehide', sauverMaintenant);
+addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sauverMaintenant(); });
+
 if (window.ResizeObserver) new ResizeObserver(syncTopHeight).observe(document.querySelector('.top'));
 addEventListener('resize', syncTopHeight);
