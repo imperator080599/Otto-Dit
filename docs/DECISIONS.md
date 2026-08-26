@@ -1916,3 +1916,200 @@ documenter. L'autre, un retour de marchandise de 4 850 €, reste **non résolue
 écarts non chiffrés (signatures, quantités, livraisons) restent ouverts : le travail est *achevé et
 revu*, la **section n'est pas visée** — et cette distinction est précisément ce que le dossier doit
 montrer.
+
+---
+
+## ADR-058 — Le rail se partitionne par NATURE d'objet, et n'en déploie qu'un groupe
+
+**Le constat du fondateur, et sa cause.** Quarante-six destinations dans le rail, dont **quinze sous
+« 1 · Planification »**. La cause n'est pas la largeur : « Planification » n'était plus une phase,
+c'était un **fourre-tout** mêlant cinq natures — la mise en place de la mission, les données du
+dossier, la planification proprement dite, des **procédures transverses** et des **sorties**. « Le
+test des écritures n'est pas de la planification, c'est un travail. La synthèse des anomalies non
+plus, c'est un résultat. »
+
+**Décision. Un groupe réunit des objets de même nature**, et rien d'autre :
+
+| Groupe | Ce qu'il réunit | n |
+|---|---|---|
+| Mission | équipe et indépendance · **jalons et échéances** · programme de travail · jeu de données · principes | 5 |
+| Données du dossier | import et rapprochement · versions du fichier · ajustements et retraitements | 3 |
+| Planification | matérialité · scoping · revue analytique préliminaire · facteurs de risque · analyse sectorielle · parties liées · LCB-FT | 7 |
+| Travaux transverses | test des écritures · circularisations · revues de processus | 3 |
+| Bilan / Compte de résultat | les sections, inchangées | 12 / 9 |
+| Achèvement | les huit, inchangés | 8 |
+
+**Synthèse des anomalies** et **piste d'audit** quittent la planification pour le **Pilotage** : ce
+sont des **états du dossier**, pas des travaux de planification.
+
+**Deux écarts assumés par rapport à la proposition reçue.** *Programme de travail* rejoint **Mission**
+— c'est le roster des travaux, donc de la mise en place. Et les **jalons deviennent leur propre
+destination** : quatre dates dont **toutes** les échéances se déduisent sont un réglage de mission,
+pas la tête d'un tableau de soixante lignes qu'on ouvre pour autre chose. Renommés **« Jalons et
+échéances »** : trois destinations finissant par « de la mission » se lisent mal hors contexte, et le
+nom retenu dit en plus ce que les quatre dates commandent. Le harnais de libellés l'a exigé.
+
+**Un seul groupe déployé.** Le rail **suit la destination courante** : aller quelque part déploie son
+groupe, d'où qu'on vienne. Ouvrir un en-tête à la main n'est qu'un cas particulier de la même règle,
+et une destination sans groupe (« Mes travaux ») ne le défait pas. La première version pinglait le
+groupe ouvert **au-dessus** de la navigation : ouvrir une section depuis « Mes travaux » laissait
+alors le rail déployé ailleurs, et la destination courante devenait invisible. Le harnais l'a relevé.
+
+**Mesure, avant et après**, sur le fichier livré :
+
+| | avant | après |
+|---|---|---|
+| destinations visibles au premier écran (1500 × 900) | **18 sur 46** | **13 sur 13** — 7 en-têtes + les 6 du groupe déployé |
+| hauteur du rail | **1 624 px** (fenêtre : 900) | **436 px** |
+| hauteur du rail à 390 px de large | **1 608 px** | **436 px** |
+| options du sélecteur mobile | 46 | 48 |
+
+Le rail ne défile plus : il tient dans la fenêtre, et l'arborescence complète reste à un clic.
+
+**Ce que la mesure ne dit pas.** Le nombre total de destinations a **augmenté** (46 → 48 : « Mes
+travaux », les jalons, et les deux sections hors périmètre désormais atteignables). Ce n'est pas une
+contradiction : le problème n'a jamais été le nombre de portes, c'était le nombre de portes ouvertes
+en même temps.
+
+**Une dépendance à déclarer.** Les quatre dates de l'écran des jalons sont des `<input type="date">`
+natifs : leur format d'affichage suit la **locale du navigateur**, pas le `lang="fr"` du document. Sur
+un navigateur configuré en anglais — ceux des harnais, notamment — elles se lisent `MM/JJ/AAAA`. Tous
+les autres affichages de date du prototype passent par `frDate()` et sont en `JJ/MM/AAAA`, y compris
+la même date rendue juste en dessous dans le tableau des règles.
+
+---
+
+## ADR-059 — « Mes travaux » : on ouvre sa liste, pas l'arborescence du dossier
+
+Le rail est organisé selon la structure du **dossier**. C'est la bonne organisation pour retrouver un
+objet — ce n'est pas celle avec laquelle on travaille. **« Mes travaux » est donc la première entrée,
+au-dessus des groupes**, et l'espace auditeur **s'y ouvre par défaut**.
+
+Elle porte quatre blocs, tous en **lecture** de ce que les autres écrans ont produit : à préparer
+(triés par échéance, puis par nombre d'obstacles), à revoir, mes notes de revue ouvertes, les visas
+que je peux poser. Chaque ligne dit **ce qui la bloque** en toutes lettres — déclaration
+d'indépendance non signée, travail à reconfirmer sur la version courante, obstacle de procédure,
+absence de réviseur, notes ouvertes — et porte le lien **direct vers le papier** : la section s'ouvre
+sur sa destination « Procédures d'audit », la procédure déjà dépliée. Trois clics deviennent un.
+
+Un tableau de bord personnel qui porterait un état à lui serait un **second dossier** : rien ne s'y
+saisit.
+
+**JAMAIS dans le portail client.** « Mes travaux » porte les affectations, les statuts de revue et
+les visas de l'équipe. La première version la rendait dans les trois espaces — le harnais du rail
+l'a relevée comme fuite, et le portail est un environnement distinct, pas un filtre d'affichage.
+
+**Amorce.** Le senior du cycle des ventes n'a pas attendu qu'on ouvre l'outil pour avoir ses travaux :
+une seconde affectation d'amorce pose la section CA sur Karim Benali. Contrairement à celle d'Inès —
+posée hors règle, exprès, pour produire l'obstacle au visa — elle **emprunte `affecter()`** et subit
+donc toutes les règles. Sans elle, « Mes travaux » s'ouvrait vide : ce n'est pas l'état d'une mission
+en mars, et une porte d'entrée vide ne démontre rien.
+
+---
+
+## ADR-060 — Chercher et filtrer les sections sans re-rendre le rail
+
+Dix-neuf sections dans deux groupes, c'est trop pour l'œil nu. Le groupe des sections porte donc une
+**recherche** — nom, code, ou **numéro de compte** (`411` isole « Clients ») — et cinq filtres :
+sections retenues (défaut) · avec obstacles au visa · affectées à moi · non visées · **hors
+périmètre**.
+
+**Le filtre masque, il ne re-rend pas.** Toutes les sections sont dans le DOM ; la recherche pose
+`hidden` sur celles qu'elle écarte et met à jour les deux en-têtes. Re-rendre à chaque frappe
+sortirait le curseur du champ — le harnais le vérifie caractère par caractère.
+
+**Un défaut trouvé en écrivant le filtre.** `postesDeMasse()` filtrait déjà sur le périmètre : sortir
+un poste du périmètre le faisait **disparaître du rail**, et on ne pouvait plus l'ouvrir pour relire
+le motif de sa sortie. Un « dans le périmètre seulement » n'aurait donc rien filtré du tout. Corrigé
+par `postesDeMasseTous()`, et l'option devient son inverse — « hors périmètre ». L'en-tête dit
+désormais **« Bilan — 11 / 12 poste(s) »** : un poste sorti existe toujours, et le rail doit le dire.
+
+---
+
+## ADR-061 — Le portail client s'ouvre sur la DETTE, pas sur un inventaire
+
+« Un client qui ouvre le portail doit voir sa dette, pas un inventaire. » L'ordre par défaut n'est
+donc ni celui de création, ni celui des sections d'audit : c'est celui dans lequel il doit s'y mettre.
+**Quatre rangs** — en retard · à rendre avant la prochaine relance · ensuite · déjà déposées — chacun
+trié par échéance croissante, le dernier **replié** : c'est de l'archive, elle n'occupe pas le haut de
+l'écran de quelqu'un qui a du retard. En tête, la dette chiffrée : *« il vous reste 9 documents à
+déposer, sur 4 demandes »*.
+
+**Le seuil de « bientôt » n'est pas un nombre choisi pour faire joli** : c'est la **cadence de
+relance du portail** (5 jours ouvrés). Ce qui rend une demande visible dans ce rang est exactement ce
+qui déclenchera son rappel. Bouger la cadence bouge le rang.
+
+**Filtre par DOMAINE MÉTIER, jamais par code de section.** « CLIENTS » et « CA » sont deux sections
+d'audit ; pour la DAF, c'est un seul sujet — les ventes. Chaque poste porte donc un `dom` parmi neuf
+domaines, et le portail ne propose que ceux réellement représentés. Un poste sans domaine, ou avec un
+domaine inconnu du registre, **empêche le démarrage** : le filtre deviendrait silencieusement
+incomplet et une demande introuvable sans qu'aucun écran ne le dise.
+
+**Un défaut trouvé en écrivant la règle des jours ouvrés.** `ancienneteRetard()` écrivait « pas un
+week-end, sauf samedi ouvré » — formulation qui compte le **dimanche** comme ouvré dès qu'on ouvre le
+samedi. Une règle de jours ouvrés, **une seule écriture** : `ouvrePortail()`, partagée, et le harnais
+vérifie les deux configurations.
+
+**Deux demandes non échues ont été ajoutées à l'amorce** (inventaire physique à +3 jours,
+immobilisations à +20). Sans elles le portail n'avait que du retard et du soldé, et l'ordre de la
+dette ne se lisait sur aucun écran.
+
+---
+
+## ADR-062 — Le questionnaire résiduel de risque rejoint `methodology/`
+
+Il était écrit dans `11_state.js` du prototype : dix questions, cinq natures de risque inhérent, la
+raison d'exister de chacune. **C'est de la méthode, pas du code de démonstration** — au même titre
+que les 56 procédures. Il vit désormais dans `methodology/questionnaire.json`, validé contre
+`methodology/schema-questionnaire.json` par le **même** `valider.mjs`, consommé par l'application
+(`app/src/lib/methodology/`) et intégré au prototype à la construction.
+
+**Ce que le déplacement a permis de rendre opposable.**
+
+- **La portée et la nature sont des énumérations déclarées, et le validateur arrête l'assemblage.**
+  C'est la leçon de l'ADR-057 appliquée avant l'accident : un `portee` mal orthographié tomberait
+  silencieusement du côté « section », et la question d'entité serait posée dix-neuf fois au lieu
+  d'une. Une portée entière vide est refusée aussi — elle rendrait un écran vide sans rien dire.
+- **`disparait_quand`** nomme la condition qui rendra une question inutile : `CI` s'en va le jour où
+  le module de contrôle interne existe, `GOUVERNANCE` le jour où les procès-verbaux entrent au
+  dossier. C'est le seul moyen qu'un questionnaire résiduel ne devienne pas un questionnaire de
+  confort.
+- **Les sources sont au registre, et non vérifiées.** Le vocabulaire des natures (changement,
+  complexité, incertitude, biais possible de la direction) vient des référentiels d'audit : une
+  entrée `ISA-315` a été ajoutée à `sources.json`, `verifie: false`, comme les dix-huit autres.
+  L'accès aux textes primaires a été **retenté le 2026-08-26** : `iaasb.org` et `legifrance.gouv.fr`
+  répondent toujours par un refus du proxy (CONNECT 403). Chaque question **affiche désormais à
+  l'écran** sa source et la mention `[UNVERIFIED]`.
+
+**Un test écarté.** Une assertion vérifiait par expression régulière que la raison d'exister « oppose
+quelque chose au reste du dossier ». Elle a recalé une raison parfaitement écrite. Un motif sur de la
+prose française recale les bonnes formulations et laisse passer les mauvaises : remplacé par ce qui
+se vérifie vraiment — aucune raison n'est recopiée d'une autre question, et l'effet ne répète pas la
+raison.
+
+---
+
+## ADR-063 — Les harnais du prototype entrent au dépôt
+
+Ils vivaient dans un répertoire de travail éphémère. STATUS.md affirmait « 29 harnais sans échec »
+et **rien dans le dépôt ne permettait de le rejouer** : une vérification que personne ne peut refaire
+n'est pas une vérification, c'est une affirmation. `prototype/pw/` porte désormais les **31 harnais**
+et leur lanceur, avec un README qui dit pour chacun **ce qu'il empêche de casser** — et ce qu'aucun
+d'eux ne prouve.
+
+Deux défauts corrigés en les déplaçant, tous deux du même genre — un chemin en dur qui marche ici et
+nulle part ailleurs :
+
+- Le chemin du navigateur était écrit **trente et une fois**. Il est écrit une fois, dans `_nav.mjs`,
+  et se résout par `OTTO_CHROMIUM`, puis `PLAYWRIGHT_BROWSERS_PATH`, puis la résolution par défaut
+  de Playwright.
+- `'file://' + process.argv[2]` exige un chemin **absolu** : donné relatif, le navigateur rend
+  `ERR_INVALID_URL` sans dire pourquoi. `cible()` résout, vérifie l'existence du fichier, et dit
+  lequel manque.
+
+**Et le lanceur lui-même avait le défaut qu'il est censé attraper.** Trois harnais importaient
+`{ chromium, devices }` : la réécriture d'import ne les a pas touchés, ils sont morts à la première
+ligne — et `tout.sh` les a rendus **« ok + PLANTAGE »**, l'« ok » venant de ce qu'aucune ligne
+`ÉCHEC` n'avait pu être écrite. Un harnais **muet** passait donc pour vert. `tout.sh` compte
+désormais les lignes rendues : **zéro ligne est un échec**, et un plantage n'est plus précédé d'un
+« ok ». C'est le même défaut qu'ailleurs dans ce dépôt — le silence lu comme un succès.

@@ -19,6 +19,15 @@
    volume sort de l'ordre de la dizaine.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Le questionnaire résiduel vient de methodology/questionnaire.json, intégré à
+   la construction. Deux portées, et c'est ce qui évite le questionnaire de
+   cinquante lignes : ENTITÉ, posée une fois pour le dossier ; SECTION, posée
+   dans chaque section retenue parce que la réponse peut différer d'un cycle à
+   l'autre. Une portée inconnue arrête l'assemblage — voir valider.mjs. */
+const QUEST_ENTITE = QUESTIONNAIRE.filter(q => q.portee === 'entite');
+const QUEST_SECTION = QUESTIONNAIRE.filter(q => q.portee === 'section');
+
+
 const CIBLE_VOLUME = 15;   // au-delà, le registre prévient qu'il devient du bruit
 
 /** Postes touchés par un compte donné. */
@@ -595,6 +604,18 @@ function ligneQuestion(q, code){
     </div>
     <div class="m" style="margin-top:3px">
       <span class="smallcaps">Pourquoi cette question existe encore : ${esc(q.pourquoi)}</span>
+    </div>
+    <div class="m" style="margin-top:2px">
+      <span class="smallcaps">Effet d’un « oui » : ${esc(q.effet)}</span>
+    </div>
+    <div class="m" style="margin-top:2px">
+      ${/* D'où vient le vocabulaire de la question, et dans quel état de
+            vérification. Une question posée à un auditeur doit savoir dire
+            sur quoi elle s'appuie — et dire quand ce n'est pas vérifié. */''}
+      <span class="smallcaps">Source : ${q.sources.map(c =>
+        esc(CAT_SOURCES[c] ? CAT_SOURCES[c].reference : c)
+        + (CAT_SOURCES[c] && !CAT_SOURCES[c].verifie ? ' [UNVERIFIED]' : '')).join(' · ')}</span>
+      ${q.disparaitQuand ? `<span class="smallcaps">Cette question disparaîtra quand ${esc(q.disparaitQuand)}.</span>` : ''}
     </div>
     ${oui && !(r.prec || '').trim() ? `<div class="callout bad" style="margin-top:5px">
       Un « oui » sans précision écrite crée un facteur que personne ne pourra relire.

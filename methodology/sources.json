@@ -12,6 +12,17 @@
         "recherche documentaire 2026-08-26"
       ]
     },
+    "ISA-315": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 315 — Identifying and Assessing the Risks of Material Misstatement",
+      "objet": "Facteurs de risque inhérent — changement, complexité, incertitude, biais possible de la direction — et évaluation du dispositif de contrôle interne.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau de l'environnement (vérifié à nouveau le 2026-08-26 : CONNECT refusé, 403).",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
     "ISA-500": {
       "type": "normatif",
       "referentiel": "ISA (IAASB)",

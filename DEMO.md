@@ -20,10 +20,17 @@ un écart résolu, un écart au cumul, une note posée puis close, travail achev
 imprimable. Le chemin le plus court pour le voir :
 
 1. l'outil s'ouvre sur **Pilotage** — cinq lectures graphiques de l'état du dossier ;
-2. **Espace auditeur → Chiffre d'affaires → Procédures d'audit → Test de détail** : le papier ;
-3. **Équipe et indépendance** : essayez d'attribuer un travail à Hugo Vasseur — le système refuse ;
-4. **Versions du fichier → prendre en compte la version 4**, puis **Ajustements et retraitements** :
-   trois anomalies passent de « non corrigée » à « corrigée » sans aucune saisie.
+2. **Espace auditeur** s'ouvre sur **« Mes travaux »** : ce que Karim Benali doit préparer, trié
+   par échéance, avec ce qui bloque chaque ligne. « Ouvrir le papier » va **directement** au papier
+   de travail, sans passer par la section ;
+3. **Chiffre d'affaires → Procédures d'audit → Test de détail** : le papier déroulé de bout en bout ;
+4. dans le rail, tapez **`411`** dans la recherche du groupe *Bilan* : seule « Clients et comptes
+   rattachés » reste ; le filtre **hors périmètre** montre le poste sorti du scoping ;
+5. **Équipe et indépendance** : essayez d'attribuer un travail à Hugo Vasseur — le système refuse ;
+6. **Versions du fichier → prendre en compte la version 4**, puis **Ajustements et retraitements** :
+   trois anomalies passent de « non corrigée » à « corrigée » sans aucune saisie ;
+7. **Portail client** : il s'ouvre sur ce que le client doit **maintenant** — en retard d'abord,
+   déjà déposé replié en bas — et se filtre par **domaine métier**, pas par code de section.
 
 Le reste de ce document décrit la démonstration de l'application Next.js, qui est un autre objet.
 

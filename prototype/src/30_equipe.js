@@ -620,6 +620,23 @@ const AFFECTATIONS_AMORCE = [
     poser(){ for (const t of travauxDe(this.section)){
       const st = trav(t.code); st.preparateur = this.prep; st.reviseur = this.rev(t); } },
   },
+  /* La seconde passe, elle, est d'aujourd'hui : elle emprunte affecter() et
+     subit donc TOUTES les règles — déclaration signée, préparateur ≠ réviseur,
+     niveau de revue exigé. Si l'une refusait, l'amorce le dirait à la console
+     plutôt que d'écrire une affectation que l'outil aurait refusée à l'écran.
+     Elle existe parce qu'un dossier réel n'attend pas d'être ouvert pour que
+     le senior du cycle des ventes ait ses travaux : sans elle, « Mes travaux »
+     s'ouvrirait vide, ce qui n'est pas l'état d'une mission en mars. */
+  { section:'CA', prep:'karim', rev:t => t.niveauRevue === 2 ? 'claire' : 'lea',
+    regle:true,
+    pourquoi:'Karim Benali est le senior du cycle des ventes ; ses travaux lui ont été '
+           + 'attribués au lancement de la phase intérimaire',
+    poser(){ for (const t of travauxDe(this.section)){
+      const a = affecter(t.code, 'preparateur', this.prep);
+      const b = affecter(t.code, 'reviseur', this.rev(t));
+      if (!a.ok || !b.ok) console.error('amorce ' + this.section + ' — ' + t.code + ' : ' + (a.why || b.why));
+    } },
+  },
 ];
 /** Codes des travaux affectés à l'amorce — pour vérifier qu'il n'y en a pas d'autres. */
 function codesAffectesAmorce(){

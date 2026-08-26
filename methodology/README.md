@@ -1,4 +1,4 @@
-# methodology/ — le catalogue de procédures par cycle
+# methodology/ — le catalogue de procédures et le questionnaire de risque
 
 Ce dossier contient le **contenu méthodologique** d'OTTO, sous forme de **données structurées**.
 Ce n'est pas du code, et il ne vit ni dans le prototype ni dans l'application : les deux le
@@ -13,8 +13,10 @@ compte dans une impasse.
 | Fichier | Rôle |
 |---|---|
 | `procedures.json` | le catalogue : une entrée par procédure, par cycle |
+| `questionnaire.json` | le questionnaire **résiduel** de risque : ce qu'aucune autre source du dossier ne peut lever |
 | `sources.json` | le registre des sources, avec leur état de vérification |
 | `schema.json` | le schéma JSON qui valide `procedures.json` — les deux consommateurs le vérifient |
+| `schema-questionnaire.json` | le schéma JSON qui valide `questionnaire.json` |
 | `valider.mjs` | **le** validateur et le chargeur, sans dépendance. Appelé par l'application et par le générateur du prototype : une seule implémentation, versionnée avec les données qu'elle valide |
 
 ## Ce que porte une procédure
@@ -73,6 +75,42 @@ C'est la donnée qui manquait le plus. Sept valeurs, dont deux symétriques :
 
 Les cinq autres : `recalcul`, `confirmation`, `observation`, `analytique`, `inspection`.
 
+## Le questionnaire résiduel de risque
+
+La plupart des facteurs qualitatifs **remontent** par le registre depuis les procédures qui les
+captent : un écart de rapprochement, une écriture de direction, une pièce datée hors exercice se
+posent seuls sur les sections concernées. Le questionnaire ne garde que le **résiduel** — ce
+qu'aucune autre source du dossier ne couvre.
+
+C'est pourquoi chaque question porte `pourquoi` : **la raison pour laquelle elle existe encore**,
+c'est-à-dire ce que le reste du dossier ne sait pas dire. Si cette raison tombe, la question doit
+**disparaître**, pas rester « au cas où ». Quand l'échéance est connue, `disparait_quand` la nomme :
+la question `CI` s'en va le jour où le module de contrôle interne existe, `GOUVERNANCE` le jour où
+les procès-verbaux entrent au dossier.
+
+Chaque question porte aussi `effet` : ce qu'une réponse « oui » **change** à l'approche. Une
+question dont la réponse ne change rien ne doit pas être posée.
+
+### Deux portées, et c'est ce qui évite le questionnaire de cinquante lignes
+
+- **`entite`** — posée **une fois** pour le dossier ; le facteur qu'elle crée touche tous les
+  postes retenus (la direction, la pression sur le résultat, la fraude, la gouvernance).
+- **`section`** — posée **dans la section**, parce que la réponse peut différer d'un cycle à
+  l'autre.
+
+Six questions par section, quatre pour l'entité. Une portée inconnue **arrête l'assemblage** :
+sans cela, un `portee` mal orthographié tomberait silencieusement du côté « section » et la
+question d'entité serait posée dix-neuf fois au lieu d'une. Même règle pour la `nature` de risque
+inhérent, qui doit exister dans `natures_ri` — et le validateur refuse aussi un questionnaire dont
+une portée entière serait vide, parce que cela rendrait un écran vide sans rien dire.
+
+### Le vocabulaire des natures est NON VÉRIFIÉ, comme le reste
+
+`natures_ri` — changement, complexité, incertitude, biais possible de la direction, plus le risque
+de contrôle qui n'est pas un facteur inhérent — reprend le vocabulaire des référentiels d'audit.
+Il cite `ISA-315` et `ISA-240`, tous deux `verifie: false` : voir la section sur la vérification
+des sources plus bas. Aucune de ces natures n'a été confrontée à un texte primaire.
+
 ## Prédicats et résolveurs : où passe la frontière
 
 Une population ne se décrit pas entièrement en données — il faut un jour lire le grand livre.
@@ -107,7 +145,8 @@ tout usage réel.
 
 ## Couverture
 
-56 procédures, 15 cycles, sept sens de test. Les postes `AMORT`, `AUTRES_PR`, `CHARGES_EXT` et
+56 procédures, 15 cycles, sept sens de test ; 10 questions résiduelles (4 d'entité, 6 de
+section) et 5 natures de risque. Les postes `AMORT`, `AUTRES_PR`, `CHARGES_EXT` et
 `FINANCIER` ne portent aujourd'hui que les six procédures transverses : c'est un choix assumé —
 leur audit passe par le test de détail, la revue analytique et les procédures du cycle qui les
 alimente (immobilisations pour les dotations, achats pour les charges externes) — et non un oubli.
@@ -119,7 +158,10 @@ alimente (immobilisations pour les dotations, achats pour les charges externes) 
 - **Application** : `app/src/lib/methodology/` charge les JSON par `valider.mjs` et les expose
   typés (`types.ts`). `catalogue.test.ts` échoue si le catalogue et le schéma divergent, si une
   source non vérifiée n'a pas de raison écrite, si un numéro de paragraphe est cité, ou si une
-  procédure nomme une source absente du registre.
+  procédure nomme une source absente du registre. `questionnaire.test.ts` échoue si une portée
+  ou une nature est inconnue, si une portée entière est vide, si une raison d'exister est recopiée
+  d'une autre question, ou si une source citée cessait d'être marquée non vérifiée sans qu'on l'ait
+  décidé.
 
 Les deux passent par **le même validateur**. Un catalogue invalide arrête l'assemblage du
 prototype (`exit 1`) et fait échouer la suite de l'application : on ne livre pas un produit bâti

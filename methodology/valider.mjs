@@ -120,15 +120,65 @@ export function validerCatalogue(cat, src, schema){
   return erreurs;
 }
 
+/**
+ * Erreurs du questionnaire résiduel de risque, liste vide s'il est valide.
+ *
+ * Le questionnaire est de la MÉTHODE, pas du code de démonstration : les
+ * questions, la raison de leur survivance et l'effet d'un « oui » se relisent
+ * et se versionnent comme les procédures. Il est donc validé ici, par le même
+ * moteur et les mêmes règles — dont celle qui compte le plus : une portée ou
+ * une nature inconnue ARRÊTE l'assemblage. Un `portee` mal orthographié
+ * tomberait sinon du côté « section » sans que rien ne le dise, et la question
+ * d'entité serait posée dix-neuf fois au lieu d'une.
+ *
+ * @param {object} q       contenu de questionnaire.json
+ * @param {object} src     contenu de sources.json
+ * @param {object} schema  contenu de schema-questionnaire.json
+ * @returns {string[]}
+ */
+export function validerQuestionnaire(q, src, schema){
+  const erreurs = [];
+  const defQ = schema.definitions.question, defN = schema.definitions.nature_ri;
+  if (!q.version) erreurs.push('questionnaire : version manquante');
+  if (!q.natures_ri) erreurs.push('questionnaire : natures_ri manquant');
+
+  for (const [code, n] of Object.entries(q.natures_ri || {})){
+    validerObjet(n, defN, `nature ${code}`, erreurs);
+    for (const s of n.sources || [])
+      if (!src.sources[s]) erreurs.push(`nature ${code} : source « ${s} » absente du registre`);
+  }
+  for (const x of q.questions || []){
+    const ou = `question ${x.code || '(sans code)'}`;
+    validerObjet(x, defQ, ou, erreurs);
+    if (x.nature && !(q.natures_ri || {})[x.nature])
+      erreurs.push(`${ou} : nature « ${x.nature} » absente de natures_ri`);
+    for (const s of x.sources || [])
+      if (!src.sources[s]) erreurs.push(`${ou} : source « ${s} » absente du registre`);
+  }
+  const codes = (q.questions || []).map(x => x.code);
+  const dbl = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if (dbl.length) erreurs.push('codes de question en double : ' + [...new Set(dbl)].join(', '));
+  /* Une portée sans aucune question n'est pas une erreur de données, mais elle
+     rend un écran vide : on le dit à l'assemblage plutôt qu'à l'écran. */
+  for (const portee of defQ.properties.portee.enum)
+    if (!codes.length || !(q.questions || []).some(x => x.portee === portee))
+      erreurs.push(`questionnaire : aucune question de portée « ${portee} »`);
+  return erreurs;
+}
+
 /** Lit, valide et rend le catalogue. Lève si les données sont invalides. */
 export function chargerCatalogue(racine){
   const dir = path.join(racine || racineDepot(), 'methodology');
   const lire = f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const cat = lire('procedures.json'), src = lire('sources.json'), schema = lire('schema.json');
-  const erreurs = validerCatalogue(cat, src, schema);
+  const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
+  const erreurs = validerCatalogue(cat, src, schema)
+    .concat(validerQuestionnaire(quest, src, schemaQ));
   if (erreurs.length){
     throw new Error('CATALOGUE INVALIDE :\n  ' + erreurs.join('\n  '));
   }
   return { version:cat.version, sensDeTest:cat.sens_de_test,
-           procedures:cat.procedures, sources:src.sources, schema };
+           procedures:cat.procedures, sources:src.sources, schema,
+           questionnaire:{ version:quest.version, naturesRi:quest.natures_ri,
+                           questions:quest.questions } };
 }

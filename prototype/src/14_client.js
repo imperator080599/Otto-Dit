@@ -15,20 +15,85 @@ function requetesVisiblesClient(){
   return S.requetes.filter(r => c.role === 'referent_general' || r.contact === c.id);
 }
 
+/* ── ce que le client doit MAINTENANT ─────────────────────────────────────
+   Un client qui ouvre le portail doit voir sa DETTE, pas un inventaire. Ni
+   l'ordre de création, ni l'ordre des sections d'audit ne l'intéressent : le
+   seul ordre utile est celui dans lequel il doit s'y mettre. Quatre rangs, et
+   le dernier — ce qui est déjà déposé — est replié : c'est de l'archive, elle
+   ne doit pas occuper le haut de l'écran de quelqu'un qui a du retard.
+   ═══════════════════════════════════════════════════════════════════════ */
+const RANGS_CLIENT = [
+  { id:'retard',  lib:'En retard',                  cls:'bad',  pourquoi:'l’échéance est passée' },
+  { id:'bientot', lib:'À rendre avant la prochaine relance', cls:'warn', pourquoi:'l’échéance tombe dans les jours qui viennent' },
+  { id:'suite',   lib:'Ensuite',                    cls:'',     pourquoi:'l’échéance est plus lointaine' },
+  { id:'fait',    lib:'Déjà déposées',              cls:'ok',   pourquoi:'plus rien n’est attendu de vous' },
+];
+/** Un jour ouvré au sens du portail : le samedi ne l'est que si on l'a dit,
+ *  le dimanche ne l'est jamais. Règle unique — deux copies divergeraient. */
+function ouvrePortail(iso){
+  const j = new Date(iso + 'T00:00:00Z').getUTCDay();
+  return j !== 0 && (j !== 6 || S.portail.samediOuvre);
+}
+function addOuvres(iso, n){ let d = iso, k = 0; while (k < n){ d = addDays(d, 1); if (ouvrePortail(d)) k++; } return d; }
+/** Une demande est soldée quand plus aucun élément n'est attendu du client. */
+function requeteSoldee(r){
+  return r.clotureClient || r.items.every(i => i.statut !== 'non_recu' && i.statut !== 'partiel');
+}
+/** Le rang d'urgence. « Bientôt » n'est pas un nombre choisi pour faire joli :
+ *  c'est le délai de relance du portail. Passé lui, la demande sera relancée —
+ *  ce qui la rend visible ici est exactement ce qui déclenchera le rappel. */
+function rangClient(r){
+  if (requeteSoldee(r)) return 'fait';
+  if (retard(r)) return 'retard';
+  return r.echeance <= addOuvres(S.aujourdhui, S.portail.cadence) ? 'bientot' : 'suite';
+}
+function elementsDus(r){ return r.items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel').length; }
+/** Les demandes rangées par urgence, chaque rang trié par échéance croissante. */
+function parUrgenceClient(rs){
+  const g = {};
+  for (const x of RANGS_CLIENT) g[x.id] = [];
+  for (const r of rs) g[rangClient(r)].push(r);
+  for (const k of Object.keys(g))
+    g[k].sort((a, b) => (a.echeance < b.echeance ? -1 : a.echeance > b.echeance ? 1
+                        : (a.id < b.id ? -1 : 1)));
+  return g;
+}
+
 function vueClientDemandes(){
   const c = contactCourant(), rs = requetesVisiblesClient();
-  const enRetard = rs.filter(retard);
+  const vus = filtrer(rs, 'client');
+  const g = parUrgenceClient(vus);
+  const dus = vus.filter(r => !requeteSoldee(r));
+  const nDocs = dus.reduce((a, r) => a + elementsDus(r), 0);
+  const bloc = x => {
+    const l = g[x.id];
+    const corps = l.map(r => carteRequeteClient(r)).join('');
+    const tete = `<span class="pill ${x.cls}">${l.length}</span>
+      <b>${esc(x.lib)}</b> <span class="smallcaps">${esc(x.pourquoi)}</span>`;
+    if (!l.length) return '';
+    /* Le rang « déjà déposé » est replié : de l'archive, jamais le haut de
+       l'écran de quelqu'un qui a du retard. Les trois autres sont déployés. */
+    return x.id === 'fait'
+      ? `<details class="rangc"><summary>${tete}</summary><div>${corps}</div></details>`
+      : `<div class="rangc"><div class="rt">${tete}</div>${corps}</div>`;
+  };
   return `
     <div class="hd"><h1>Vos demandes de documents</h1>
       <span class="sub">Altiverre SAS — exercice clos le 31/12/2025 · ${esc(c.nom)}, ${esc(c.fonction)}</span></div>
+    ${rs.length ? `<div class="callout ${g.retard.length ? 'bad' : nDocs ? 'warn' : ''}">
+      ${nDocs
+        ? `<b>Il vous reste ${nDocs} document(s) à déposer, sur ${dus.length} demande(s).</b>
+           ${g.retard.length ? g.retard.length + ' demande(s) sont en retard — elles sont en tête de liste.' : ''}`
+        : '<b>Vous êtes à jour : plus aucun document n’est attendu de vous.</b>'}
+      <div class="smallcaps">Une relance part tous les ${S.portail.cadence} jours ouvrés ;
+        passé ${S.portail.escalade} jours, elle est adressée à
+        ${esc(S.contacts.find(x => x.role === 'referent_general').nom)}.</div>
+    </div>` : ''}
     <p class="note">Dépôt sur cette page ou par courriel à <span class="mono">${esc(S.portail.adresse)}</span>.
       Le bouton « tout est déposé » signale à l’équipe que la demande est complète.</p>
-    ${enRetard.length ? `<div class="callout warn"><b>${enRetard.length} demande(s) en retard.</b>
-      Une relance automatique part tous les ${S.portail.cadence} jours ouvrés ; passé ${S.portail.escalade} jours,
-      elle est adressée à ${esc(S.contacts.find(x => x.role === 'referent_general').nom)}.</div>` : ''}
-    ${barreFiltres('client', rs.length, filtrer(rs, 'client').length)}
-    ${rs.length ? (filtrer(rs, 'client').length
-        ? filtrer(rs, 'client').map(r => carteRequeteClient(r)).join('')
+    ${barreFiltres('client', rs.length, vus.length)}
+    ${rs.length ? (vus.length
+        ? RANGS_CLIENT.map(bloc).join('')
         : '<p class="note">Aucune demande ne correspond aux filtres.</p>')
       : '<p class="note">Aucune demande ne vous est adressée pour le moment.</p>'}`;
 }
@@ -44,9 +109,12 @@ function carteRequeteClient(r){
   const restants = r.items.filter(i => i.statut === 'non_recu' || i.statut === 'partiel');
   const vus = tout ? r.items : (restants.length > CLI_PAR_PAGE ? restants.slice(0, CLI_PAR_PAGE)
                                                                : r.items.slice(0, Math.max(CLI_PAR_PAGE, restants.length)));
+  const jrs = Math.round((Date.parse(r.echeance) - Date.parse(S.aujourdhui)) / 86400000);
   return `<section class="blk">
     <header><span class="num">${r.id}</span><h2>${esc(r.titre)}</h2>
-      <span class="why">à fournir avant le ${frDate(r.echeance)}${ret ? ' — en retard de ' + ancienneteRetard(r) + ' jours ouvrés' : ''}</span></header>
+      <span class="why">${esc(libDomaine(r.section))} — à fournir avant le ${frDate(r.echeance)}${
+        ret ? ' — en retard de ' + ancienneteRetard(r) + ' jours ouvrés'
+            : requeteSoldee(r) ? '' : jrs === 0 ? ' — c’est aujourd’hui' : ' — dans ' + jrs + ' jours'}</span></header>
     <div class="body">
       ${r.items.length > vus.length ? `<div class="row"><span class="pill">${r.items.length} demandés</span>
         <span class="pill">${r.items.length - restants.length} déposés</span>

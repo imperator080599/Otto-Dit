@@ -11,11 +11,14 @@
 
 import path from 'node:path';
 import url from 'node:url';
-import type { Catalogue, Procedure, Source, SensDeTest } from './types';
+import type {
+  Catalogue, Procedure, Source, SensDeTest, QuestionResiduelle, NatureRi,
+} from './types';
 
 type Valideur = {
   chargerCatalogue: (racine?: string) => Catalogue;
   validerCatalogue: (cat: unknown, src: unknown, schema: unknown) => string[];
+  validerQuestionnaire: (q: unknown, src: unknown, schema: unknown) => string[];
   racineDepot: () => string;
 };
 
@@ -103,4 +106,33 @@ export function referencesNonVerifiees(cat: Catalogue, p: Procedure): string[] {
   return sources(cat, p).filter((x) => !x.source.verifie).map((x) => x.code);
 }
 
-export type { Catalogue, Procedure, Source } from './types';
+/* ── questionnaire résiduel de risque ─────────────────────────────────────
+   Il vit dans le même dossier de méthode, pour la même raison : les questions,
+   la nature de risque qu'elles portent et la raison de leur survivance se
+   relisent et se versionnent, elles ne se codent pas.                       */
+
+/** Questions d'une portée donnée. */
+export function questions(cat: Catalogue, portee: QuestionResiduelle['portee']): QuestionResiduelle[] {
+  return cat.questionnaire.questions.filter((q) => q.portee === portee);
+}
+
+/** La nature de risque inhérent d'une question, depuis le registre. */
+export function natureRi(cat: Catalogue, q: QuestionResiduelle): NatureRi | undefined {
+  return cat.questionnaire.naturesRi[q.nature];
+}
+
+/**
+ * Questions dont la raison d'exister est datée : elles DOIVENT disparaître
+ * quand la condition écrite se réalise. Les lister est le seul moyen qu'un
+ * questionnaire résiduel ne devienne pas un questionnaire de confort.
+ */
+export function questionsADurerLimitee(cat: Catalogue): QuestionResiduelle[] {
+  return cat.questionnaire.questions.filter((q) => !!q.disparait_quand);
+}
+
+/** Références non vérifiées portées par une question. Même règle que plus haut. */
+export function referencesNonVerifieesQuestion(cat: Catalogue, q: QuestionResiduelle): string[] {
+  return q.sources.filter((code) => cat.sources[code] && !cat.sources[code].verifie);
+}
+
+export type { Catalogue, Procedure, Source, QuestionResiduelle, NatureRi } from './types';

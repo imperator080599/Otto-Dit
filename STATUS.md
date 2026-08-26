@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 148 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 186 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -513,8 +513,50 @@ Tracées **à l'encre**, la couleur réservée aux problèmes ; barres et lignes
 harnais relève toute teinte hors jetons, tout dégradé, tout filtre, **dans les deux thèmes**.
 **Compteurs de design : 2 / 0 / 5 / 0** — le quatrième était à 1 avant cette passe.
 
-**Vérification** : 29 harnais du prototype sans échec ni plantage · 177 tests applicatifs ·
-`tsc --noEmit` propre.
+### Passe suivante — la navigation, et le questionnaire qui rejoint la méthode
+
+**Le rail se partitionne par NATURE d'objet** (ADR-058). « Planification » était devenu un
+fourre-tout de quinze destinations mêlant cinq natures. Sept groupes désormais, chacun réunissant des
+objets de même nature : Mission (5) · Données du dossier (3) · Planification (7) · Travaux
+transverses (3) · Bilan (12) · Compte de résultat (9) · Achèvement (8). **Synthèse des anomalies** et
+**piste d'audit** passent au Pilotage : ce sont des états du dossier, pas des travaux. Les **jalons**
+deviennent leur propre destination — « Jalons et échéances ».
+
+**Un seul groupe déployé, et le rail suit la destination courante.** Mesure demandée, avant / après :
+**18 destinations visibles sur 46 → 13 sur 13** au premier écran (1500 × 900) ; **hauteur du rail
+1 624 px → 436 px** ; **à 390 px de large, 1 608 px → 436 px**. Le rail ne défile plus.
+
+**« Mes travaux »** (ADR-059) est la première entrée et l'ouverture par défaut de l'espace auditeur :
+à préparer, à revoir, notes ouvertes, visas possibles — chaque ligne disant **ce qui la bloque** et
+portant le lien **direct vers le papier**. Jamais dans le portail client. Le harnais a relevé la fuite
+sur la première version.
+
+**Recherche et filtres sur les sections** (ADR-060) — nom, code ou **numéro de compte** ; cinq
+filtres. Le filtre **masque sans re-rendre**, pour que le curseur ne quitte pas le champ. Défaut
+trouvé au passage : sortir un poste du périmètre le faisait **disparaître du rail**, on ne pouvait
+plus lire le motif de sa sortie.
+
+**Le portail client s'ouvre sur la dette** (ADR-061) : quatre rangs — en retard · avant la prochaine
+relance · ensuite · déjà déposées (repliées) — triés par échéance, la dette chiffrée en tête. Filtre
+par **domaine métier**, jamais par code de section d'audit. Le seuil de « bientôt » **est** la cadence
+de relance, pas un nombre choisi. Défaut trouvé : la règle de jours ouvrés comptait le **dimanche**
+comme ouvré dès qu'on ouvrait le samedi.
+
+**Le questionnaire résiduel rejoint `methodology/`** (ADR-062) : `questionnaire.json`, son schéma, le
+même validateur, consommé par l'application et par le prototype. Portée et nature sont des
+**énumérations déclarées qui arrêtent l'assemblage** ; `disparait_quand` nomme ce qui rendra une
+question inutile ; une entrée **ISA-315** rejoint le registre, `verifie: false` comme les dix-huit
+autres — accès aux textes primaires **retenté le 2026-08-26**, toujours refusé par le proxy. Chaque
+question affiche désormais sa source et `[UNVERIFIED]` à l'écran.
+
+**Les harnais du prototype entrent au dépôt** — `prototype/pw/`, 31 harnais Playwright + `tout.sh`.
+Ils vivaient jusqu'ici dans un répertoire de travail éphémère : STATUS.md affirmait « 29 harnais sans
+échec » et **rien dans le dépôt ne permettait de le rejouer**. Une vérification que personne ne peut
+refaire n'est pas une vérification. Ils s'exécutent **sur le fichier livré**, relèvent toute requête
+réseau et toute erreur JavaScript, et `tout.sh` sort en échec sur le moindre `ÉCHEC` ou plantage.
+
+**Vérification** : 31 harnais du prototype sans échec ni plantage (dont `rail` et `portail`, neufs) ·
+186 tests applicatifs · `tsc --noEmit` propre.
 
 ## Next actions (post-repo, founder-gated)
 

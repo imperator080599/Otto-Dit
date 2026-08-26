@@ -381,7 +381,6 @@ function vueProgramme(){
   const tb = vus.filter(t => !t.sansObjet).reduce((a, t) => a + budget(t), 0);
   const tr = vus.reduce((a, t) => a + t.heuresReel, 0);
   return entete('Programme de travail', 'tout travail de la mission est le même objet — livrable du dossier') +
-    blocJalons(l) +
     blk('Filtres', vus.length + ' / ' + l.length,
       `<div class="row">
         <div class="ctrl"><label>Phase</label><select id="ft-phase"><option value="">toutes</option>
@@ -430,10 +429,21 @@ function vueProgramme(){
       Corriger une ligne ne change pas la proposition : l’écart reste visible, c’est votre décision.</p>`);
 }
 
+/* Les jalons sont un réglage de la mission, pas le programme : quatre dates
+   posées une fois, dont TOUTES les échéances se déduisent. Ils ont donc leur
+   propre destination dans le groupe « Mission », et ne s'empilent plus en tête
+   d'un tableau de 60 lignes qu'on ouvre pour autre chose. */
+function vueJalons(){
+  return entete('Jalons et échéances', 'quatre dates — les échéances des travaux s’en déduisent') +
+    blocJalons(travaux());
+}
+
 function blocJalons(l){
   const jours = d => Math.round((Date.parse(d) - Date.parse(S.aujourdhui)) / 86400000);
   const dec = n => n === 0 ? 'le jour même' : n > 0 ? '+' + n + ' j' : n + ' j';
-  return blk('Jalons de la mission', 'quatre dates — les échéances des travaux s’en déduisent',
+  /* Le panneau ne reprend pas le titre de la vue : « Jalons et échéances »
+     deux fois de suite n'apprend rien et coûte une ligne. */
+  return blk('Les quatre dates', 'les échéances des travaux s’en déduisent',
     `<div class="row">
       ${JALONS.map(j => `<div class="ctrl"><label>${esc(j.lib)}</label>
         <input class="cell txt" type="date" data-jalon="${j.id}" value="${esc(jalon(j.id))}"

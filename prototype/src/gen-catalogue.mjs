@@ -23,6 +23,21 @@ const CATALOGUE_VERSION = ${JSON.stringify(cat.version)};
 const SENS_TEST = ${JSON.stringify(cat.sensDeTest, null, 2)};
 const CAT_PROCEDURES = ${JSON.stringify(cat.procedures, null, 1)};
 const CAT_SOURCES = ${JSON.stringify(cat.sources, null, 1)};
+
+/* Questionnaire résiduel de risque — methodology/questionnaire.json.
+   C'est de la MÉTHODE : les questions, la raison pour laquelle chacune
+   existe encore et l'effet d'un « oui » se relisent et se versionnent
+   comme les procédures, pas dans le code de la démonstration. */
+const QUESTIONNAIRE_VERSION = ${JSON.stringify(cat.questionnaire.version)};
+const NATURES_RI = ${JSON.stringify(
+  Object.fromEntries(Object.entries(cat.questionnaire.naturesRi)
+    .map(([k, v]) => [k, { lib:v.libelle, d:v.definition, sources:v.sources }])), null, 1)};
+const QUESTIONNAIRE = ${JSON.stringify(
+  cat.questionnaire.questions.map(q => ({
+    code:q.code, portee:q.portee, a:q.assertion, nat:q.nature,
+    q:q.question, pourquoi:q.pourquoi, effet:q.effet,
+    disparaitQuand:q.disparait_quand || null, sources:q.sources })), null, 1)};
 `;
 fs.writeFileSync(path.join(process.argv[3] || '.', '_catalogue.gen.js'), sortie);
-console.error(`catalogue : ${cat.procedures.length} procédures, ${Object.keys(cat.sources).length} sources — valide`);
+console.error(`catalogue : ${cat.procedures.length} procédures, ${Object.keys(cat.sources).length} sources, `
+  + `${cat.questionnaire.questions.length} questions résiduelles — valide`);

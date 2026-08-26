@@ -1,9 +1,9 @@
 /* ═══ 14. PÉRIMÈTRE ET SYNTHÈSE ════════════════════════════════════════════ */
-function postesEnPerimetre(){
+function enPerimetre(p){
   const s = seuils();
-  return postesCalcules().filter(p =>
-    (S.scopingOverride[p.code] || (Math.abs(p.solde) >= s.PM ? 'in' : 'out')) === 'in');
+  return (S.scopingOverride[p.code] || (Math.abs(p.solde) >= s.PM ? 'in' : 'out')) === 'in';
 }
+function postesEnPerimetre(){ return postesCalcules().filter(enPerimetre); }
 
 /** Écarts nés hors papier de travail : rapprochement et test des écritures.
  *  Ils passent par le MÊME casier de résolution que les écarts de papier.
@@ -123,8 +123,12 @@ function refPapier(t){
    deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
    coûterait un clic sans rien rendre lisible. Le portail client y figure
    malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
+/* 'cli.vue' N'Y EST PLUS : la vue client ne construit aucun panneau — ses
+   demandes sont des cartes, ses rangs d'urgence des titres — et la barre
+   « tout déplier / tout replier » qu'elle affichait n'agissait donc sur rien.
+   Un bouton mort dans l'écran du client est pire qu'un bouton absent. */
 const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'plan.equipe', 'pil.mission',
-  'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
+  'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export']);
 let _panSeq = 0;
 function blk(t, why, html, att){
   const ref = refPapier(t);

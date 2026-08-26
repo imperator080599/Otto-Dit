@@ -1,0 +1,169 @@
+{
+  "_note": "Questionnaire RÉSIDUEL de risque : uniquement ce qu’aucune autre source du dossier ne peut lever. Chaque question porte la raison pour laquelle elle existe encore ; si cette raison tombe, la question doit DISPARAÎTRE, pas rester « au cas où ». Le vocabulaire des natures de risque inhérent est repris des référentiels d’audit ; comme tout le catalogue, il est NON VÉRIFIÉ contre le texte primaire — voir sources.json.",
+  "version": "1.0.0",
+  "natures_ri": {
+    "changement": {
+      "libelle": "changement",
+      "definition": "ce qui n’était pas là l’an dernier n’a pas encore de contrôle rodé",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    "complexite": {
+      "libelle": "complexité",
+      "definition": "une opération dont la traduction comptable demande un raisonnement",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    "incertitude": {
+      "libelle": "incertitude",
+      "definition": "un montant qui dépend d’un événement futur",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    "biais": {
+      "libelle": "biais possible de la direction",
+      "definition": "un intérêt à ce que le résultat soit d’un certain côté",
+      "sources": [
+        "ISA-315",
+        "ISA-240"
+      ]
+    },
+    "controle": {
+      "libelle": "risque de contrôle",
+      "definition": "ce n’est pas un facteur inhérent : c’est ce que le dispositif du client ne couvre pas",
+      "sources": [
+        "ISA-315"
+      ]
+    }
+  },
+  "questions": [
+    {
+      "code": "DIRIGEANTS",
+      "portee": "entite",
+      "assertion": "realite",
+      "nature": "changement",
+      "question": "L’équipe dirigeante ou le responsable comptable ont-ils changé pendant l’exercice ?",
+      "pourquoi": "Aucune source du dossier ne porte l’organigramme du client : ni le grand livre, ni les versions du fichier, ni les circularisations. Rien ne peut le lever à notre place.",
+      "effet": "Un changement de personne au sommet ou à la tenue des comptes défait des habitudes de contrôle et ouvre une période où les erreurs passent.",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "PRESSION",
+      "portee": "entite",
+      "assertion": "realite",
+      "nature": "biais",
+      "question": "La direction subit-elle une pression sur le résultat — covenant bancaire, cession en cours, complément de prix, rémunération variable liée au résultat ?",
+      "pourquoi": "Les covenants, les protocoles de cession et les schémas de rémunération ne sont dans aucune donnée comptable. C’est le facteur de biais le mieux documenté, et le moins dérivable.",
+      "effet": "Un intérêt chiffré à ce que le résultat tombe d’un certain côté est le premier facteur à documenter : il oriente le sens des anomalies attendues, pas seulement leur probabilité.",
+      "sources": [
+        "ISA-240",
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "FRAUDE",
+      "portee": "entite",
+      "assertion": "realite",
+      "nature": "biais",
+      "question": "Une circonstance porte-t-elle un risque de fraude au niveau de l’entité — signalement, plainte, faiblesse connue de la séparation des tâches, antécédent ?",
+      "pourquoi": "Le test des écritures lève des marqueurs de FORME (journal, heure, montant rond). Il ne sait rien d’un signalement, d’une plainte ou d’un antécédent.",
+      "effet": "Le risque de fraude ne se déduit d’aucun montant : il se déclare, ou il n’est pas au dossier.",
+      "sources": [
+        "ISA-240"
+      ]
+    },
+    {
+      "code": "GOUVERNANCE",
+      "portee": "entite",
+      "assertion": "presentation",
+      "nature": "controle",
+      "question": "La gouvernance a-t-elle changé de composition, ou cessé de se réunir régulièrement ?",
+      "pourquoi": "Les procès-verbaux ne sont pas dans le dossier tant que le module de contrôle interne n’existe pas.",
+      "effet": "Une surveillance qui se relâche est le contexte dans lequel les deux facteurs précédents produisent leur effet.",
+      "sources": [
+        "ISA-315"
+      ],
+      "disparait_quand": "les procès-verbaux de gouvernance entrent au dossier (lot B)"
+    },
+    {
+      "code": "SI",
+      "portee": "section",
+      "assertion": "exhaustivite",
+      "nature": "changement",
+      "question": "Le système d’information qui alimente ce cycle a-t-il changé pendant l’exercice ?",
+      "pourquoi": "Une migration ne laisse aucune trace lisible dans un fichier des écritures conforme : les numéros se suivent, les journaux existent. Seul le client le sait.",
+      "effet": "Une reprise de données incomplète est la cause d’exhaustivité la plus fréquente, et la plus invisible au contrôle de forme.",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "NOUVEAU",
+      "portee": "section",
+      "assertion": "realite",
+      "nature": "changement",
+      "question": "Un nouveau produit, un nouveau marché ou un nouveau canal de vente alimente-t-il ce poste ?",
+      "pourquoi": "Un compte nouveau se voit au rapprochement ; un produit nouveau comptabilisé dans un compte existant, non.",
+      "effet": "Les règles de comptabilisation d’une activité nouvelle sont rarement écrites la première année.",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "METHODE",
+      "portee": "section",
+      "assertion": "presentation",
+      "nature": "complexite",
+      "question": "Une méthode comptable applicable à ce poste a-t-elle changé, ou une règle de présentation nouvelle s’y applique-t-elle ?",
+      "pourquoi": "Le registre voit les retraitements DÉJÀ PASSÉS en écriture (règle RETRAITEMENT). Il ne voit pas un changement décidé et non encore traduit, ni une règle de présentation nouvelle.",
+      "effet": "Un changement de méthode déplace des montants sans qu’aucune transaction n’ait eu lieu : c’est le cas où la variation N/N-1 ment.",
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "INHABITUEL",
+      "portee": "section",
+      "assertion": "realite",
+      "nature": "complexite",
+      "question": "Ce poste porte-t-il des opérations inhabituelles ou hors exploitation — cession, abandon de créance, opération avec une partie liée, montage ponctuel ?",
+      "pourquoi": "Le test des écritures voit des marqueurs de forme, pas la NATURE ÉCONOMIQUE d’une opération. Une cession d’actif régulièrement comptabilisée ne porte aucun marqueur.",
+      "effet": "Une opération unique n’a pas de contrôle de routine derrière elle, et sa traduction comptable est souvent discutable.",
+      "sources": [
+        "ISA-240",
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "LITIGE",
+      "portee": "section",
+      "assertion": "evaluation",
+      "nature": "incertitude",
+      "question": "Un litige ou une incertitude affecte-t-il ce poste, y compris s’il n’est pas provisionné ?",
+      "pourquoi": "Le registre voit les litiges PROVISIONNÉS (par le compte 15 et par les retraitements). Le litige non provisionné — celui qui compte — n’est dans aucune donnée.",
+      "effet": "C’est exactement le cas où l’absence d’écriture est l’anomalie.",
+      "sources": [
+        "ISA-501",
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "CI",
+      "portee": "section",
+      "assertion": "exhaustivite",
+      "nature": "controle",
+      "question": "Le contrôle interne de ce cycle est-il non testé, ou jugé non fiable ?",
+      "pourquoi": "Le module de contrôle interne n’est pas construit (lot B) : rien dans le dossier ne peut répondre à cette question aujourd’hui. La question disparaîtra quand il existera.",
+      "effet": "Sans appui sur les contrôles, l’approche est intégralement substantive — c’est ce que dit le garde-fou d’économie de l’approche.",
+      "sources": [
+        "ISA-315"
+      ],
+      "disparait_quand": "le module de contrôle interne existe et porte l’évaluation du dispositif du cycle (lot B)"
+    }
+  ]
+}

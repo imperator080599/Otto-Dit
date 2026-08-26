@@ -25,7 +25,34 @@ sortie de modèle. Chaque chiffre est calculé dans la page à partir d'un grand
 Un associé qui ouvre l'outil doit voir **l'état du dossier**, pas un écran de travail.
 
 Le bandeau de seuils **n'est construit que dans l'espace auditeur** : le client ne voit pas
-la matérialité parce que le composant n'existe pas chez lui (ADR-027).
+la matérialité parce que le composant n'existe pas chez lui (ADR-027). « Mes travaux » non plus :
+elle porte les affectations, les statuts de revue et les visas de l'équipe.
+
+## La navigation — par nature d'objet, un groupe à la fois
+
+Le rail portait quarante-six destinations, dont **quinze sous « Planification »** : ce n'était plus
+une phase mais un fourre-tout mêlant la mise en place de la mission, les données du dossier, la
+planification, des procédures transverses et des sorties. Sept groupes désormais, chacun réunissant
+des objets **de même nature** : Mission · Données du dossier · Planification · Travaux transverses ·
+Bilan · Compte de résultat · Achèvement. La synthèse des anomalies et la piste d'audit sont passées
+au Pilotage — ce sont des **états** du dossier, pas des travaux (ADR-058).
+
+**Un seul groupe déployé**, et le rail **suit la destination courante**. Mesure, avant / après :
+
+| | avant | après |
+|---|---|---|
+| destinations visibles au premier écran (1500 × 900) | 18 sur 46 | **13 sur 13** |
+| hauteur du rail | 1 624 px | **436 px** |
+| hauteur du rail à 390 px de large | 1 608 px | **436 px** |
+
+**« Mes travaux » est la première entrée et l'écran d'ouverture** de l'espace auditeur (ADR-059) :
+ce qui est à préparer — trié par échéance, puis par nombre d'obstacles — ce qui attend votre revue,
+vos notes ouvertes, les visas que vous pouvez poser. Chaque ligne dit **ce qui la bloque** en toutes
+lettres et porte le lien **direct vers le papier**. On ouvre sa liste, pas l'arborescence du dossier.
+
+Le groupe des sections porte une **recherche** (nom, code, ou **numéro de compte** : `411` isole
+« Clients ») et cinq filtres, dont **hors périmètre** — un poste sorti du scoping reste atteignable,
+sans quoi on ne pourrait plus lire le motif de sa sortie (ADR-060).
 
 ## La section de travail (le cœur)
 
@@ -45,6 +72,21 @@ la matérialité parce que le composant n'existe pas chez lui (ADR-027).
 5. Papiers de travail — une ligne, une pièce, un écart. Sans pièce déposée, aucun contrôle.
 6. Notes de revue de la section — ancrées sur un objet.
 7. Conclusion, visa et reprise N-1 — le visa est **impossible** tant qu'un obstacle subsiste.
+
+## Le portail client — la dette, pas l'inventaire
+
+Un client qui ouvre le portail doit voir **ce qu'il doit maintenant**. L'ordre par défaut n'est ni
+celui de création ni celui des sections d'audit : **quatre rangs** — en retard · à rendre avant la
+prochaine relance · ensuite · déjà déposées, **repliées en bas** — chacun trié par échéance
+croissante, la dette chiffrée en tête (ADR-061).
+
+Le seuil de « bientôt » **est la cadence de relance du portail**, pas un nombre choisi : ce qui rend
+une demande visible dans ce rang est exactement ce qui déclenchera son rappel.
+
+Le filtre porte sur le **domaine métier** — Ventes et clients, Achats et fournisseurs, Paie et
+personnel… — **jamais sur le code de section d'audit**. « CLIENTS » et « CA » sont deux sections pour
+nous ; pour la DAF, c'est un seul sujet. Un poste dont le domaine serait inconnu **empêche le
+démarrage** : le filtre deviendrait silencieusement incomplet.
 
 ## Un testing entièrement déroulé — le chiffre d'affaires
 
@@ -142,7 +184,8 @@ sur ce jeu de données le dit, plutôt que d'abaisser son seuil jusqu'à trouver
 | Erreurs JavaScript | 0 |
 | Glyphes manquants / U+FFFD | 0 |
 | Bandeau collant au repos / réduit | 294 px → **47 px** (5,6 % de l'écran) dès le premier défilement, rétabli en remontant, sans dérive du contenu |
-| Harnais passés sur ce fichier | **29**, zéro échec, zéro plantage |
+| Destinations visibles au premier écran du rail / hauteur du rail | **13 / 13 · 436 px** (avant : 18 / 46 · 1 624 px) |
+| Harnais passés sur ce fichier | **31**, zéro échec, zéro plantage — `prototype/pw/`, rejouables : `sh tout.sh ../otto-prototype.html` |
 | Compteurs de design (rayons / couleurs hors jeton / tailles / espacements hors échelle) | **2 / 0 / 5 / 0** |
 | Couleurs employées dans les graphiques, hors jetons du système | **0**, dans les deux thèmes |
 | Contenu perdu à l'impression d'un panneau replié | **0** — les panneaux s'ouvrent à `beforeprint` |

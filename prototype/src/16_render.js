@@ -14,19 +14,37 @@
    ensuite, et le portail client est la troisième porte. */
 const ESPACES = [
   { id:'pilotage', lib:'Pilotage',        defaut:'pil.mission' },
-  { id:'auditeur', lib:'Espace auditeur', defaut:'plan.programme' },
+  /* L'espace auditeur s'ouvre sur « Mes travaux », pas sur le programme :
+     on ouvre sa liste, pas l'arborescence du dossier. */
+  { id:'auditeur', lib:'Espace auditeur', defaut:'plan.moi' },
   { id:'client',   lib:'Portail client',  defaut:'cli.vue' },
 ];
-const DOSSIER = [
-  { id:'plan.programme', lib:'Programme de travail' },
-  { id:'plan.donnees',   lib:'Jeu de données' },
-  { id:'plan.principes', lib:'Principes de conception' },
+/* ═══ LE RAIL EST PARTITIONNÉ PAR NATURE, PAS PAR PHASE ═══════════════════
+   « Planification » était devenu un fourre-tout de quinze destinations qui
+   mélangeait cinq natures : la mise en place de la mission, les données du
+   dossier, la vraie planification, des PROCÉDURES transverses et des SORTIES.
+   Le test des écritures n'est pas de la planification, c'est un travail ; la
+   synthèse des anomalies non plus, c'est un résultat.
+
+   Un groupe réunit désormais des objets de MÊME NATURE, et les deux sorties
+   — synthèse des anomalies, piste d'audit — rejoignent le pilotage, qui est
+   l'endroit où l'on regarde l'état du dossier.                              */
+const G_MISSION = [
+  { id:'plan.equipe',   lib:'Équipe et indépendance' },
+  /* « Jalons et échéances », pas « Jalons de la mission » : trois destinations
+     finissant par « de la mission » se lisent mal hors contexte, et le nom
+     retenu dit en plus ce que les quatre dates COMMANDENT. */
+  { id:'plan.jalons',   lib:'Jalons et échéances' },
+  { id:'plan.programme',lib:'Programme de travail' },
+  { id:'plan.donnees',  lib:'Jeu de données' },
+  { id:'plan.principes',lib:'Principes de conception' },
 ];
-const TRANSVERSES = [
-  { id:'plan.equipe',  lib:'Équipe et indépendance' },
+const G_DONNEES = [
+  { id:'plan.rappro',  lib:'Import et rapprochement' },
   { id:'plan.versions',lib:'Versions du fichier' },
   { id:'plan.ajust',   lib:'Ajustements et retraitements' },
-  { id:'plan.rappro',  lib:'Import et rapprochement' },
+];
+const G_PLANIF = [
   { id:'plan.mat',     lib:'Matérialité' },
   { id:'plan.scope',   lib:'Scoping des postes' },
   { id:'plan.ra',      lib:'Revue analytique préliminaire' },
@@ -34,10 +52,11 @@ const TRANSVERSES = [
   { id:'plan.secteur', lib:'Analyse sectorielle',      lot2:true },
   { id:'plan.parties', lib:'Parties liées',            lot2:true },
   { id:'plan.lcbft',   lib:'LCB-FT et bénéficiaires',  lot2:true },
+];
+const G_TRAVAUX = [
   { id:'plan.je',      lib:'Test des écritures' },
   { id:'plan.circ',    lib:'Circularisations' },
-  { id:'plan.synth',   lib:'Synthèse des anomalies' },
-  { id:'plan.piste',   lib:'Piste d’audit' },
+  { id:'plan.ci',      lib:'Revues de processus',      lot2:true },
 ];
 const ACHEVEMENT = [
   { id:'ach.pointage', lib:'Pointage des états financiers' },
@@ -57,26 +76,96 @@ const VUES_CLIENT = [
 const VUES_PILOTAGE = [
   { id:'pil.mission',  lib:'Vue globale de la mission' },
   { id:'pil.avance',   lib:'Avancement et demandes' },
+  /* Ces deux-là viennent de la planification : ce sont des ÉTATS du dossier,
+     pas des travaux de planification. Leur place est ici. */
+  { id:'plan.synth',   lib:'Synthèse des anomalies' },
+  { id:'plan.piste',   lib:'Piste d’audit' },
   { id:'pil.requetes', lib:'Requêtes — toutes sections' },
   { id:'pil.notes',    lib:'Notes de revue — transverse' },
   { id:'pil.export',   lib:'Exports et envoi' },
 ];
 
-/** Le rail de l'espace auditeur suit les PHASES du dossier. */
+/* ── recherche et filtre sur les sections ─────────────────────────────────
+   Dix-neuf postes dans deux groupes, c'est déjà trop pour de l'œil nu. Le
+   filtre porte sur les SECTIONS seulement — les autres groupes sont courts et
+   n'en ont pas besoin — et il ne re-rend rien : il masque des lignes, ce qui
+   laisse le curseur dans le champ de recherche. */
+const FILTRES_RAIL = {
+  '':          { lib:'sections retenues',      f:p => enPerimetre(p) },
+  obstacles:   { lib:'avec obstacles au visa',  f:p => enPerimetre(p) && obstaclesVisa(p).length > 0 },
+  moi:         { lib:'affectées à moi',         f:p => travauxDe(p.code).some(t => t.preparateur === S.moi || t.reviseur === S.moi) },
+  nonvisees:   { lib:'non visées',              f:p => enPerimetre(p) && !sec(p.code).visa },
+  /* Sortir un poste du périmètre le faisait disparaître du rail : on ne
+     pouvait plus l'ouvrir pour relire le motif de sa sortie. */
+  hors:        { lib:'hors périmètre',          f:p => !enPerimetre(p) },
+};
+/** Un poste répond-il à la recherche ? Nom, code, ou numéro de compte. */
+function railCorrespond(p, q){
+  if (!q) return true;
+  const t = q.toLowerCase().trim();
+  return p.lib.toLowerCase().includes(t) || p.code.toLowerCase().includes(t)
+      || p.comptes.some(c => c.startsWith(t));
+}
+function sectionsFiltrees(masse){
+  const f = (FILTRES_RAIL[S.railFiltre] || FILTRES_RAIL['']).f;
+  return postesDeMasseTous(masse).filter(p => f(p) && railCorrespond(p, S.railQ));
+}
+
+/** Le rail de l'espace auditeur regroupe par NATURE d'objet. */
 function railItems(){
-  if (S.espace === 'client')   return [{ grp:'Portail', items:VUES_CLIENT }];
-  if (S.espace === 'pilotage') return [{ grp:'Pilotage', items:VUES_PILOTAGE }];
-  const g = m => postesDeMasse(m).map(p => ({ id:'fsli:' + p.code, lib:p.lib, poste:p,
-                                              second:masseDe(p) !== m }));
-  const nCI = travaux().filter(t => t.nature === 'controle_interne').length;
+  if (S.espace === 'client')   return [{ id:'portail', grp:'Portail', items:VUES_CLIENT }];
+  if (S.espace === 'pilotage') return [{ id:'pilotage', grp:'Pilotage', items:VUES_PILOTAGE }];
+  /* TOUTES les sections sont rendues, y compris celles que le filtre écarte :
+     le filtre les masque ensuite en place (appliquerFiltreRail). Les rendre
+     déjà filtrées obligerait à re-rendre à chaque frappe, ce qui sortirait le
+     curseur du champ de recherche. */
+  const g = m => postesDeMasseTous(m).map(p => ({ id:'fsli:' + p.code, lib:p.lib, poste:p,
+                                                  second:masseDe(p) !== m }));
   return [
-    { grp:'Dossier', items:DOSSIER },
-    { grp:'1 · Planification', items:TRANSVERSES },
-    { grp:'2 · Contrôle interne', items:nCI ? [] : [{ id:'plan.ci', lib:'Revues de processus', lot2:true }] },
-    { grp:'3 · Bilan — ' + postesDeMasse('bilan').length + ' poste(s)', items:g('bilan') },
-    { grp:'4 · Compte de résultat — ' + postesDeMasse('resultat').length + ' poste(s)', items:g('resultat') },
-    { grp:'5 · Achèvement', items:ACHEVEMENT },
+    { id:'mission',  grp:'Mission', items:G_MISSION },
+    { id:'donnees',  grp:'Données du dossier', items:G_DONNEES },
+    { id:'planif',   grp:'Planification', items:G_PLANIF },
+    { id:'travaux',  grp:'Travaux transverses', items:G_TRAVAUX },
+    { id:'bilan',    grp:'Bilan', items:g('bilan'), sections:true, n:libMasse('bilan') },
+    { id:'resultat', grp:'Compte de résultat', items:g('resultat'), sections:true,
+      n:libMasse('resultat') },
+    { id:'achevement', grp:'Achèvement', items:ACHEVEMENT },
   ];
+}
+/** Le compteur d'un groupe de sections : combien le filtre retient sur combien
+ *  il en existe. « 11 / 12 » et non « 11 » — un poste sorti du périmètre
+ *  existe toujours, et le rail doit le dire, sinon l'en sortir revient à le
+ *  faire disparaître. Le compte va dans le COMPTEUR, pas dans le nom : répété
+ *  dans les deux, il tronquait le nom du groupe sans rien apprendre. */
+function libMasse(m){
+  const tous = postesDeMasseTous(m).length, vus = sectionsFiltrees(m).length;
+  return vus === tous ? String(tous) : vus + ' / ' + tous;
+}
+/** Toutes les destinations de l'espace courant, groupe déployé ou non.
+ *  Le rail n'en montre qu'un groupe à la fois : leur énumération ne se lit
+ *  plus dans le DOM, elle se demande ici — y compris par les harnais. */
+function toutesDestinations(){
+  return (S.espace === 'client' ? [] : ['plan.moi'])
+    .concat(railItems().flatMap(g => g.items.map(i => i.id)));
+}
+/** Le groupe auquel appartient une vue — c'est lui qu'on déploie. */
+function groupeDeVue(vue){
+  if (vue === 'plan.moi') return null;
+  const l = railItems().find(g => g.items.some(x => x.id === vue));
+  return l ? l.id : (vue.startsWith('fsli:') ? 'bilan' : null);
+}
+/** Le groupe DÉPLOYÉ. La règle : le rail SUIT la destination courante — aller
+ *  quelque part y déploie son groupe, d'où qu'on vienne (« Mes travaux », un
+ *  lien de section, le sélecteur mobile). Ouvrir un en-tête à la main n'est
+ *  qu'un cas particulier de la même règle : on déploie pour parcourir, et ce
+ *  choix tient jusqu'à ce qu'on aille ailleurs — une destination sans groupe
+ *  (« Mes travaux ») ne le défait pas. */
+function groupeOuvert(){
+  const g = railItems();
+  if (S.railGroupe && g.some(x => x.id === S.railGroupe)) return S.railGroupe;
+  const auto = groupeDeVue(S.vue);
+  if (auto) return auto;
+  return g.length ? g[0].id : null;
 }
 function badgeRail(it){
   if (it.lot2) return '<span class="b warn">lot 2</span>';
@@ -97,16 +186,101 @@ function badgeRail(it){
   const o = obstaclesVisa(p).length;
   return `<span class="b">${o}</span>`;
 }
+/* ── « Mes travaux » : la porte d'entrée ──────────────────────────────────
+   Le rail est organisé selon la structure du DOSSIER. Un préparateur, lui,
+   ne veut pas quarante-cinq destinations : il veut LES SIENNES. C'est ainsi
+   qu'on se sert d'un logiciel d'audit — on ouvre sa liste, pas l'arborescence.
+   Cette entrée est donc AU-DESSUS de tout le reste, et hors des groupes. */
+function compteursMoi(){
+  const l = travaux().filter(t => !t.sansObjet);
+  const prep = l.filter(t => t.preparateur === S.moi && t.statut !== 'revu');
+  const rev = l.filter(t => t.reviseur === S.moi && t.statut === 'acheve');
+  const notes = S.notes.filter(n => !n.clos && (n.pour === S.moi || n.auteur === S.moi));
+  const visas = postesEnPerimetre().filter(p => !sec(p.code).visa
+    && peutViser(S.moi) && obstaclesVisa(p).length === 0);
+  return { prep, rev, notes, visas, total:prep.length + rev.length + notes.length + visas.length };
+}
+function peutViser(uid){
+  const u = USERS[uid];
+  return !!u && (u.role === 'reviseur' || u.role === 'associe');
+}
+
+/* ── un seul groupe déployé à la fois ────────────────────────────────────
+   Quarante-cinq portes derrière sept en-têtes est lisible ; quarante-cinq
+   portes ouvertes ne l'est pas. Le groupe déployé est celui de la destination
+   courante, jusqu'à ce qu'on en ouvre un autre — et ce choix est mémorisé. */
 function renderRail(){
-  const html = railItems().map(g => `<div class="grp">${esc(g.grp)}</div>` +
-    g.items.map(it => `<a data-vue="${it.id}" class="${S.vue === it.id ? 'on' : ''}">
-        <span class="t">${esc(it.lib)}</span>${badgeRail(it)}</a>`).join('')).join('');
+  const groupes = railItems(), ouvert = groupeOuvert();
+  const m = compteursMoi();
+  const lien = it => `<a data-vue="${it.id}" class="${S.vue === it.id ? 'on' : ''}">
+      <span class="t">${esc(it.lib)}</span>${badgeRail(it)}</a>`;
+  const entete = g => `<button class="grp" data-railg="${g.id}" aria-expanded="${g.id === ouvert}">
+      <span class="ch">${g.id === ouvert ? '▾' : '▸'}</span>
+      <span class="t">${esc(g.grp)}</span>
+      <span class="n">${g.n === undefined ? g.items.length : g.n}</span></button>`;
+  /* JAMAIS dans le portail client : « Mes travaux » porte les affectations,
+     les statuts de revue et les visas de l'équipe d'audit. Le portail est un
+     environnement distinct, pas un filtre — cette entrée n'y est pas construite. */
+  const html =
+    (S.espace === 'client' ? '' :
+    `<a data-vue="plan.moi" class="moi ${S.vue === 'plan.moi' ? 'on' : ''}">
+       <span class="t">Mes travaux</span>
+       <span class="b ${m.total ? 'bad' : 'ok'}">${m.total}</span></a>`) +
+    groupes.map(g => entete(g)
+      + (g.id === ouvert
+         ? `<div class="lst">${g.sections ? filtreSections() : ''}` +
+           (g.items.length ? g.items.map(lien).join('')
+                           : '<span class="vide">aucune section ne répond au filtre</span>')
+           + '</div>'
+         : '')).join('');
   document.getElementById('rail').innerHTML = html;
-  const opts = railItems().map(g => `<optgroup label="${esc(g.grp)}">` +
-    g.items.map(it => `<option value="${it.id}" ${S.vue === it.id ? 'selected' : ''}>${esc(it.lib)}</option>`).join('') +
-    '</optgroup>').join('');
-  return `<div class="railm"><div class="ctrl"><label>Section</label>
+  appliquerFiltreRail();
+  /* Le sélecteur mobile n'est PAS filtré : il n'a pas de champ de recherche,
+     un filtre posé sur grand écran y deviendrait invisible et indéfaisable. */
+  const opts = (S.espace === 'client' ? ''
+      : `<optgroup label="À moi"><option value="plan.moi" ${S.vue === 'plan.moi' ? 'selected' : ''}>Mes travaux (${m.total})</option></optgroup>`)
+    + groupes.map(g => `<optgroup label="${esc(g.grp)}">` +
+      g.items.map(it => `<option value="${it.id}" ${S.vue === it.id ? 'selected' : ''}>${esc(it.lib)}</option>`).join('') +
+      '</optgroup>').join('');
+  return `<div class="railm"><div class="ctrl"><label>Destination</label>
     <select id="railm">${opts}</select></div></div>`;
+}
+/* ── le filtre masque, il ne re-rend pas ──────────────────────────────────
+   Re-rendre le rail à chaque frappe sortirait le curseur du champ. On pose
+   donc `hidden` sur les lignes écartées et on remet à jour les deux en-têtes
+   de sections — les deux, car le compte « x / y » doit rester juste dans le
+   groupe replié comme dans le groupe ouvert. */
+function appliquerFiltreRail(){
+  const rail = document.getElementById('rail');
+  if (!rail) return;
+  for (const m of ['bilan', 'resultat']){
+    const gardes = new Set(sectionsFiltrees(m).map(p => 'fsli:' + p.code));
+    const en = rail.querySelector('[data-railg="' + m + '"]');
+    if (!en) continue;
+    en.querySelector('.n').textContent = libMasse(m);
+    const lst = en.nextElementSibling;
+    if (!lst || !lst.classList.contains('lst')) continue;
+    for (const a of lst.querySelectorAll('a[data-vue^="fsli:"]')) a.hidden = !gardes.has(a.dataset.vue);
+    let vide = lst.querySelector('.vide');
+    if (!gardes.size && !vide){
+      vide = document.createElement('span');
+      vide.className = 'vide';
+      vide.textContent = 'aucune section ne répond au filtre';
+      lst.appendChild(vide);
+    }
+    if (gardes.size && vide) vide.remove();
+  }
+}
+
+/** Recherche et filtre, rendus DANS le groupe des sections. */
+function filtreSections(){
+  return `<div class="rfil">
+    <input type="search" id="rail-q" value="${esc(S.railQ)}" placeholder="nom ou n° de compte"
+      autocomplete="off" spellcheck="false">
+    <select id="rail-f">
+      ${Object.entries(FILTRES_RAIL).map(([k, v]) => `<option value="${k}" ${S.railFiltre === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}
+    </select>
+  </div>`;
 }
 
 /* ═══ 19. CHROME ═══════════════════════════════════════════════════════════ */
@@ -267,6 +441,8 @@ function contenuVue(v){
     case 'plan.scope':  return vueScoping();
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.moi':    return vueMoi();
+    case 'plan.jalons': return vueJalons();
     case 'plan.equipe': return vueEquipe();
     case 'plan.versions': return vueVersions();
     case 'plan.ajust':  return vueAjustements();
@@ -360,6 +536,11 @@ function aller(vue, espace){
   const e = espace || espaceDeVue(vue);
   if (e !== S.espace) S.espace = e;
   S.vue = vue; S.noteCible = null;
+  /* Le rail suit : la destination impose son groupe. Sans cela, ouvrir une
+     section depuis « Mes travaux » laissait le rail déployé ailleurs, et la
+     destination courante restait invisible — un fil de navigation coupé. */
+  const g = groupeDeVue(vue);
+  if (g) S.railGroupe = g;
   render();
   const m = document.getElementById('main');
   if (m) m.scrollIntoView({ block:'start' });
@@ -436,6 +617,9 @@ function resolDeCle(k){
 
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
+  /* Recherche du rail : on masque des lignes, on ne re-rend rien — le curseur
+     doit rester dans le champ, frappe après frappe. */
+  if (t.id === 'rail-q'){ S.railQ = t.value; return appliquerFiltreRail(); }
   if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = bm()[t.value].defaut; return render(); }
   if (t.id === 'pm'){ S.pctM = parseFloat(t.value); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'ppm'){ S.pctPM = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
@@ -545,6 +729,7 @@ document.addEventListener('toggle', e => {
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
+  if (t.id === 'rail-f'){ S.railFiltre = t.value; return appliquerFiltreRail(); }
   if (t.id === 'whoaud'){ S.moi = t.value; return render(); }
   if (d.decl !== undefined){
     const dc = declarationCourante(S.moi);
@@ -632,6 +817,7 @@ document.addEventListener('change', e => {
   if (t.id === 'ft-statut'){ S.filtreTrav.statut = t.value; return renderMain(); }
   if (t.id === 'f-statut'){ S.filtres.statut = t.value; return renderMain(); }
   if (t.id === 'f-section'){ S.filtres.section = t.value; return renderMain(); }
+  if (t.id === 'f-domaine'){ S.filtres.domaine = t.value; return renderMain(); }
   if (t.id === 'f-contact'){ S.filtres.contact = t.value; return renderMain(); }
   if (t.id === 'f-echeance'){ S.filtres.echeance = t.value; return renderMain(); }
   if (t.id === 'env-cad'){ S.envoi.cadence = t.value; return renderMain(); }
@@ -701,6 +887,21 @@ document.addEventListener('click', e => {
   if (d.saccdel !== undefined){ retirerSacc(d.saccdel); return renderMain(); }
   if (d.espace){ const x = ESPACES.find(y => y.id === d.espace); return aller(x.defaut, x.id); }
   if (d.open) return ouvrirSection(d.open);
+  /* Un groupe du rail : on l'ouvre, les autres se referment, et le choix est
+     mémorisé — sinon la navigation courante le reprendrait aussitôt. */
+  if (d.railg !== undefined){
+    S.railGroupe = S.railGroupe === d.railg ? null : d.railg;
+    renderRail();
+    return;
+  }
+  /* « ouvrir le papier » : la section, sa destination « procédures d'audit »,
+     et la procédure déjà dépliée. Trois clics deviennent un. */
+  if (d.gopapier !== undefined){
+    const [code, pr] = d.gopapier.split('|');
+    S.dest[code] = 'plan';
+    S.procOuverte = code + '/' + pr;
+    return ouvrirSection(code);
+  }
   if (d.goreq){ const r = S.requetes.find(x => x.id === d.goreq);
     if (r){ const c = S.contacts.find(x => x.id === r.contact); if (c) S.moiClient = c.id; }
     return aller('cli.vue', 'client'); }
@@ -1009,7 +1210,7 @@ document.addEventListener('click', e => {
     if (o) o.innerHTML = `<div class="callout">Classeur « ${esc(PERIMETRES[d.xlsm].lib)} » — ${c.feuilles.length} feuille(s).</div>`;
     return;
   }
-  if (t.id === 'f-raz'){ S.filtres = { statut:'', section:'', contact:'', echeance:'', q:'' }; return renderMain(); }
+  if (t.id === 'f-raz'){ S.filtres = { statut:'', section:'', domaine:'', contact:'', echeance:'', q:'' }; return renderMain(); }
   if (d.perim){ S.envoi.perimetre = d.perim; return renderMain(); }
   if (d.xls){
     const c = classeur(d.xls);
@@ -1070,6 +1271,16 @@ seedEquipe();
   r1.items[0].statut = 'depose'; r1.items[0].depots = [{ nom:'listing-banques-2025.pdf', t:tick(), par:'Delphine Martin' }];
   r1.items[1].statut = 'partiel'; r1.items[1].depots = [{ nom:'releve-blc-decembre.pdf', t:tick(), par:'Delphine Martin' }];
   const r2 = creerRequete('PERSONNEL', 'Justificatifs de paie', ['Journal de paie annuel', 'Contrats des entrées de l’exercice'], -6);
+  /* Deux demandes NON échues : sans elles, le portail n'aurait que du retard
+     et du soldé, et l'ordre de la dette — retard, puis proche, puis le reste —
+     ne se lirait sur aucun écran. Les échéances sont posées de part et d'autre
+     de la cadence de relance (5 jours ouvrés), pas choisies pour être jolies. */
+  creerRequete('STOCKS', 'Inventaire physique du 31/12/2025',
+    ['Feuilles de comptage signées', 'Rapprochement comptage / stock théorique',
+     'Liste des articles à rotation lente'], 3);
+  creerRequete('IMMO_COR', 'Immobilisations — mouvements de l’exercice',
+    ['Tableau des acquisitions et cessions', 'Factures des cinq acquisitions les plus élevées',
+     'Justificatif des durées d’amortissement retenues'], 20);
   r2.items[0].statut = 'attente_revue'; r2.items[0].revoyeur = USERS.lea.nom;
   r2.items[0].depots = [{ nom:'journal-paie-2025.pdf', t:tick(), par:'Sophie Brun' }];
   /* Le testing du chiffre d'affaires est DÉROULÉ de bout en bout, par les

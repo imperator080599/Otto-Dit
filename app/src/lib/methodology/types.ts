@@ -89,9 +89,44 @@ export interface Source {
   url?: string;
 }
 
+/** Nature de risque inhérent portée par une question résiduelle. */
+export interface NatureRi {
+  libelle: string;
+  definition: string;
+  sources: string[];
+}
+
+/**
+ * Question du questionnaire RÉSIDUEL de risque : uniquement ce qu'aucune autre
+ * source du dossier ne peut lever. `pourquoi` porte la raison pour laquelle la
+ * question existe encore — si cette raison tombe, la question doit disparaître,
+ * pas rester « au cas où ». `disparait_quand` nomme cette échéance quand elle
+ * est connue.
+ */
+export interface QuestionResiduelle {
+  code: string;
+  /** entite : posée une fois. section : posée dans chaque section retenue. */
+  portee: 'entite' | 'section';
+  assertion: Assertion;
+  /** Clé de natures_ri. */
+  nature: string;
+  question: string;
+  pourquoi: string;
+  effet: string;
+  disparait_quand?: string;
+  sources: string[];
+}
+
+export interface Questionnaire {
+  version: string;
+  naturesRi: Record<string, NatureRi>;
+  questions: QuestionResiduelle[];
+}
+
 export interface Catalogue {
   version: string;
   sensDeTest: Record<SensDeTest, { libelle: string; d: string }>;
   procedures: Procedure[];
   sources: Record<string, Source>;
+  questionnaire: Questionnaire;
 }

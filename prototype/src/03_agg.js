@@ -39,27 +39,55 @@ function seuils(){
   return { bench:b, brut, M, PM, CTT };
 }
 
-/* ═══ 5. POSTES DES COMPTES ANNUELS ════════════════════════════════════════ */
+/* ═══ 5. POSTES DES COMPTES ANNUELS ════════════════════════════════════════
+   `dom` est le DOMAINE MÉTIER du poste : le nom que le client lui donne, et
+   accessoirement la personne qui en répond chez lui. « CLIENTS » et « CA »
+   sont deux sections d'audit ; pour la DAF, c'est un seul sujet — les ventes.
+   Le portail client filtre là-dessus, jamais sur le code de section : lui
+   demander de connaître notre découpage, c'est lui demander de faire notre
+   travail avant de faire le sien.
+   ═══════════════════════════════════════════════════════════════════════ */
+const DOMAINES = {
+  ventes:   'Ventes et clients',
+  achats:   'Achats et fournisseurs',
+  stocks:   'Stocks et production',
+  paie:     'Paie et personnel',
+  immo:     'Immobilisations',
+  treso:    'Trésorerie et financement',
+  fiscal:   'Fiscalité',
+  juridique:'Juridique et capitaux propres',
+  autres:   'Autres produits et charges',
+};
 const POSTES = [
-  { code:'IMMO_INC', lib:'Immobilisations incorporelles', re:/^(205|280)/, masse:'bilan' },
-  { code:'IMMO_COR', lib:'Immobilisations corporelles',   re:/^(213|218|2813|2818)/, masse:'bilan' },
-  { code:'STOCKS',   lib:'Stocks',                        re:/^3/, masse:'bilan', aussi:'resultat' },
-  { code:'CLIENTS',  lib:'Clients et comptes rattachés',  re:/^41/, masse:'bilan' },
-  { code:'TRESO',    lib:'Trésorerie',                    re:/^(512|53)/, masse:'bilan' },
-  { code:'CAPITAUX', lib:'Capitaux propres',              re:/^(101|106|110)/, masse:'bilan' },
-  { code:'PROV',     lib:'Provisions pour risques',       re:/^15/, masse:'bilan', aussi:'resultat' },
-  { code:'DETTES_FI',lib:'Dettes financières',            re:/^16/, masse:'bilan' },
-  { code:'FOURN',    lib:'Fournisseurs',                  re:/^40/, masse:'bilan' },
-  { code:'SOCIAL',   lib:'Dettes sociales et personnel',  re:/^(42|43)/, masse:'bilan' },
-  { code:'FISCAL',   lib:'Dettes fiscales (TVA)',         re:/^445/, masse:'bilan' },
-  { code:'CA',       lib:'Chiffre d’affaires',            re:/^70/, masse:'resultat' },
-  { code:'AUTRES_PR',lib:'Autres produits',               re:/^75/, masse:'resultat' },
-  { code:'ACHATS',   lib:'Achats consommés',              re:/^60/, masse:'resultat' },
-  { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/, masse:'resultat' },
-  { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/, masse:'resultat' },
-  { code:'FINANCIER',lib:'Charges financières',           re:/^66/, masse:'resultat' },
-  { code:'AMORT',    lib:'Dotations aux amortissements et provisions', re:/^68/, masse:'resultat', aussi:'bilan' },
+  { code:'IMMO_INC', lib:'Immobilisations incorporelles', re:/^(205|280)/, masse:'bilan', dom:'immo' },
+  { code:'IMMO_COR', lib:'Immobilisations corporelles',   re:/^(213|218|2813|2818)/, masse:'bilan', dom:'immo' },
+  { code:'STOCKS',   lib:'Stocks',                        re:/^3/, masse:'bilan', aussi:'resultat', dom:'stocks' },
+  { code:'CLIENTS',  lib:'Clients et comptes rattachés',  re:/^41/, masse:'bilan', dom:'ventes' },
+  { code:'TRESO',    lib:'Trésorerie',                    re:/^(512|53)/, masse:'bilan', dom:'treso' },
+  { code:'CAPITAUX', lib:'Capitaux propres',              re:/^(101|106|110)/, masse:'bilan', dom:'juridique' },
+  { code:'PROV',     lib:'Provisions pour risques',       re:/^15/, masse:'bilan', aussi:'resultat', dom:'juridique' },
+  { code:'DETTES_FI',lib:'Dettes financières',            re:/^16/, masse:'bilan', dom:'treso' },
+  { code:'FOURN',    lib:'Fournisseurs',                  re:/^40/, masse:'bilan', dom:'achats' },
+  { code:'SOCIAL',   lib:'Dettes sociales et personnel',  re:/^(42|43)/, masse:'bilan', dom:'paie' },
+  { code:'FISCAL',   lib:'Dettes fiscales (TVA)',         re:/^445/, masse:'bilan', dom:'fiscal' },
+  { code:'CA',       lib:'Chiffre d’affaires',            re:/^70/, masse:'resultat', dom:'ventes' },
+  { code:'AUTRES_PR',lib:'Autres produits',               re:/^75/, masse:'resultat', dom:'autres' },
+  { code:'ACHATS',   lib:'Achats consommés',              re:/^60/, masse:'resultat', dom:'achats' },
+  { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/, masse:'resultat', dom:'achats' },
+  { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/, masse:'resultat', dom:'paie' },
+  { code:'FINANCIER',lib:'Charges financières',           re:/^66/, masse:'resultat', dom:'treso' },
+  { code:'AMORT',    lib:'Dotations aux amortissements et provisions', re:/^68/, masse:'resultat', aussi:'bilan', dom:'immo' },
 ];
+/* Une section sans domaine, ou avec un domaine inconnu, rendrait le filtre du
+   portail silencieusement incomplet : une demande deviendrait introuvable sans
+   qu'aucun écran ne le dise. On refuse de démarrer plutôt que de le taire. */
+for (const p of POSTES)
+  if (!p.dom || !DOMAINES[p.dom])
+    throw new Error('POSTES : domaine métier inconnu sur ' + p.code + ' — ' + String(p.dom));
+/** Le domaine métier d'une section, et son libellé côté client. */
+function domaineDe(code){ const p = POSTES.find(x => x.code === code); return p ? p.dom : null; }
+function libDomaine(code){ const d = domaineDe(code); return d ? DOMAINES[d] : 'Autres demandes'; }
+
 let _postesCache = null;
 function postesCalcules(){
   if (_postesCache) return _postesCache;
@@ -83,4 +111,10 @@ const MASSE_LIB = { bilan:'Bilan', resultat:'Compte de résultat' };
 function masseDe(p){ return p.masse || 'bilan'; }
 function postesDeMasse(m){
   return postesEnPerimetre().filter(p => masseDe(p) === m || p.aussi === m);
+}
+/** Tous les postes d'une masse, périmètre ou non — le rail peut vouloir
+ *  rendre atteignable un poste sorti du périmètre, sans quoi le sortir revient
+ *  à le faire disparaître de la navigation. */
+function postesDeMasseTous(m){
+  return postesCalcules().filter(p => masseDe(p) === m || p.aussi === m);
 }

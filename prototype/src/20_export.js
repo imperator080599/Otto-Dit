@@ -7,6 +7,7 @@ function filtrer(liste, cote){
   const f = S.filtres;
   return liste.filter(r => {
     if (f.section && r.section !== f.section) return false;
+    if (f.domaine && (domaineDe(r.section) || 'autres') !== f.domaine) return false;
     if (f.contact && r.contact !== f.contact) return false;
     if (f.statut){
       const st = r.items.map(i => cote === 'client' ? statutVisibleClient(i) : i.statut);
@@ -25,6 +26,10 @@ function filtrer(liste, cote){
 function barreFiltres(cote, total, retenus){
   const f = S.filtres;
   const sections = [...new Set(S.requetes.map(r => r.section))];
+  /* Seuls les domaines réellement représentés : une liste de neuf entrées dont
+     sept sont vides n'est pas un filtre, c'est un catalogue. */
+  const doms = [...new Set(S.requetes.map(r => domaineDe(r.section) || 'autres'))];
+  const domainesPresents = Object.entries(DOMAINES).filter(([k]) => doms.includes(k));
   const statuts = Object.entries(STATUTS).filter(([, v]) => cote !== 'client' || v.client);
   return `<div class="row" style="align-items:flex-end">
     <div class="ctrl" style="flex:1 1 190px"><label>Recherche</label>
@@ -32,7 +37,14 @@ function barreFiltres(cote, total, retenus){
     <div class="ctrl"><label>Statut</label>
       <select id="f-statut"><option value="">tous</option>
         ${statuts.map(([k, v]) => `<option value="${k}" ${f.statut === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}</select></div>
-    ${cote === 'client' ? '' : `<div class="ctrl"><label>Section</label>
+    ${cote === 'client'
+      /* Côté client, le découpage est le SIEN — le domaine métier — et jamais
+         notre code de section : on ne lui demande pas d'apprendre notre plan
+         de travail pour retrouver ce qu'il doit fournir. */
+      ? `<div class="ctrl"><label>Domaine</label>
+          <select id="f-domaine"><option value="">tous</option>
+            ${domainesPresents.map(([k, lib]) => `<option value="${k}" ${f.domaine === k ? 'selected' : ''}>${esc(lib)}</option>`).join('')}</select></div>`
+      : `<div class="ctrl"><label>Section</label>
       <select id="f-section"><option value="">toutes</option>
         ${sections.map(c => `<option value="${c}" ${f.section === c ? 'selected' : ''}>${esc(libFsli(c))}</option>`).join('')}</select></div>`}
     ${cote === 'client' ? '' : `<div class="ctrl"><label>Destinataire</label>

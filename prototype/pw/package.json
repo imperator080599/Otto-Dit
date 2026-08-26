@@ -1,0 +1,12 @@
+{
+  "name": "otto-prototype-harnais",
+  "private": true,
+  "type": "module",
+  "description": "Harnais Playwright exécutés sur le fichier livré prototype/otto-prototype.html.",
+  "scripts": {
+    "tout": "sh tout.sh ../otto-prototype.html"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
