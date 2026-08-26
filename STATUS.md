@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 352 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 372 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -903,6 +903,29 @@ personne ne saurait pourquoi. Un cabinet sans méthode publiée est refusé **en
   n'a pas prise.
 
 **Vérification** : 352 tests (340 → 352) · `tsc --noEmit` propre · **54/54** écrans en production.
+
+## Application — tranches livrées : pointage des états financiers (9) et obstacles au visa (8)
+
+**Le pointage** (ADR-084, migration `0019`). Tous les travaux servent à conclure sur des états
+financiers, et rien ne rattachait un chiffre de la plaquette à ce qui le fonde. **On pointe le
+montant présenté, pas le sien** — recalculer et comparer à son propre calcul vérifie qu'on sait
+additionner. Trois natures : deux se **calculent** (solde de balance, agrégat de comptes), la
+troisième se **justifie** — un effectif moyen ne vient d'aucun compte, donc explication écrite **et
+pièce liée**, ou la ligne reste ouverte. La nature se **déclare** : la deviner produirait un pointage
+plausible et faux, pire qu'un pointage absent. Le statut est **dérivé** du calcul, et un écart sans
+explication reste **ouvert**.
+
+**Les obstacles au visa** (ADR-085). Chaque tranche avait ses blocages sur son propre écran : un
+signataire qui doit visiter huit écrans finit par signer sans les avoir tous vus. Une **seule liste**
+interroge maintenant chaque service qui connaît un blocage, et chaque obstacle dit **où aller le
+lever**. Rien n'est stocké — un test vérifie qu'aucune table ne porte cet état et que la liste est
+bien la réunion de ce que chaque service refuse. Le corollaire est écrit : **un obstacle qui n'y
+figure pas n'en est pas un**. Un dossier non accepté n'affiche **que** cet obstacle-là.
+
+Et ce que la page **n'affirme pas**, dit à l'écran : « aucun obstacle » ne veut pas dire que le
+dossier est bon — il veut dire qu'aucune règle ne le refuse. Le jugement reste au signataire.
+
+**Vérification** : 372 tests (352 → 372) · `tsc --noEmit` propre · **58/58** écrans en production.
 
 ## Convergence prototype → application
 

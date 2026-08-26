@@ -1,0 +1,157 @@
+import { requireMember } from '@/lib/core/auth';
+import { q } from '@/lib/db/client';
+import { fmtEur } from '@/lib/kernel/canon';
+import { lignes, totaux, obstaclesPointage } from '@/lib/services/tieout';
+import { chargerAction, pointerAction, documenterAction, expliquerAction } from './actions';
+
+// LE POINTAGE DES ÉTATS FINANCIERS (point 9).
+//
+// C'est l'autre bout de l'arc : tous les travaux du dossier servent à conclure
+// sur des états financiers, et sans pointage on conclut sur une plaquette qu'on
+// n'a jamais regardée.
+
+export const dynamic = 'force-dynamic';
+
+const ETATS: Record<string, string> = {
+  IS: 'Compte de résultat',
+  BS_ASSET: 'Bilan — actif',
+  BS_LIAB: 'Bilan — passif',
+  NOTES: 'Annexe',
+};
+
+const NATURES: Record<string, string> = {
+  solde_balance: 'solde de balance',
+  agregat_comptes: 'agrégat de comptes',
+  calcul_documente: 'calcul à documenter',
+};
+
+export default async function TieOutPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
+  const { id } = await params;
+  await requireMember(id);
+  const { erreur } = await searchParams;
+
+  const l = await lignes(id);
+  const t = await totaux(id);
+  const obstacles = await obstaclesPointage(id);
+  const pieces = await q<{ id: string; filename: string }>(
+    `select id, filename from evidence where engagement_id = $1 and quarantined = false
+     order by filename limit 40`,
+    [id],
+  );
+  const eur = (v: string | null) => (v === null ? '—' : fmtEur(Math.round(Number(v) * 100), 'fr'));
+
+  return (
+    <div className="stack">
+      {erreur && (
+        <div className="panel warn">
+          <p><span className="badge amber">refusé</span> {erreur}</p>
+        </div>
+      )}
+
+      <div className="panel">
+        <h2>Pointage des états financiers</h2>
+        <p className="faint">
+          On pointe le <strong>montant présenté</strong>, pas le sien : recalculer la ligne et la
+          comparer à son propre calcul ne pointe rien, ça vérifie qu’on sait additionner.
+          Trois natures, et elles ne se valent pas — deux se <strong>calculent</strong>, la
+          troisième se <strong>justifie</strong>.
+        </p>
+        <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
+          <input type="hidden" name="engagement_id" value={id} />
+          <button className="btn">{l.length === 0 ? 'Charger la plaquette' : 'Repointer'}</button>
+        </form>
+        {t.length > 0 && (
+          <p className="mt">
+            {t.map((x) => (
+              <span key={x.statement} style={{ marginRight: 14 }}>
+                <strong>{ETATS[x.statement] ?? x.statement}</strong> :{' '}
+                {x.pointees}/{x.lignes} pointée(s)
+              </span>
+            ))}
+          </p>
+        )}
+      </div>
+
+      {l.length > 0 && (
+        <div className="panel">
+          <table className="data">
+            <thead>
+              <tr>
+                <th>État</th><th>Ligne</th><th>Nature</th>
+                <th className="num">Présenté</th><th className="num">Calculé</th><th className="num">Écart</th>
+                <th>Pointage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {l.map((x) => (
+                <tr key={x.id} className={!x.status || x.status === 'open' ? 'warn' : undefined}>
+                  <td className="faint" style={{ fontSize: 11 }}>{ETATS[x.statement] ?? x.statement}</td>
+                  <td>
+                    <span className="mono">{x.ref}</span> {x.label}
+                    {x.explanation && (
+                      <div className="faint" style={{ fontSize: 11, maxWidth: 420 }}><em>{x.explanation}</em></div>
+                    )}
+                  </td>
+                  <td className="faint" style={{ fontSize: 11 }}>{NATURES[x.nature ?? ''] ?? '—'}</td>
+                  <td className="num">{eur(x.presented)}</td>
+                  <td className="num">{x.nature === 'calcul_documente' ? <span className="faint">—</span> : eur(x.computed)}</td>
+                  <td className="num">
+                    {x.difference === null || x.nature === 'calcul_documente'
+                      ? <span className="faint">—</span>
+                      : Number(x.difference) === 0
+                        ? <span className="badge green">0</span>
+                        : <strong style={{ color: '#8a6412' }}>{eur(x.difference)}</strong>}
+                  </td>
+                  <td>
+                    {x.status === 'tied' && <span className="badge green">pointé</span>}
+                    {x.status === 'documented' && <span className="badge green">documenté</span>}
+                    {x.status === 'difference' && <span className="badge amber">écart expliqué</span>}
+                    {(!x.status || x.status === 'open') && (
+                      x.nature === 'calcul_documente' ? (
+                        <form action={documenterAction} className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                          <input type="hidden" name="engagement_id" value={id} />
+                          <input type="hidden" name="ligne_id" value={x.id} />
+                          <input name="explanation" placeholder="comment ce chiffre est obtenu" style={{ width: 240 }} />
+                          <select name="evidence_id" defaultValue="">
+                            <option value="">— pièce —</option>
+                            {pieces.map((p) => <option key={p.id} value={p.id}>{p.filename}</option>)}
+                          </select>
+                          <button className="btn secondary small">Documenter</button>
+                        </form>
+                      ) : (
+                        <form action={expliquerAction} className="row" style={{ gap: 4 }}>
+                          <input type="hidden" name="engagement_id" value={id} />
+                          <input type="hidden" name="ligne_id" value={x.id} />
+                          <input name="explanation" placeholder="explication de l’écart" style={{ width: 240 }} />
+                          <button className="btn secondary small">Expliquer</button>
+                        </form>
+                      )
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="faint">
+            Un <strong>calcul à documenter</strong> — un effectif moyen, un résultat par action —
+            ne vient d’aucun compte : le seul pointage possible est une explication écrite{' '}
+            <strong>avec la pièce qui la porte</strong>. Une justification sans pièce n’est pas une
+            justification.
+          </p>
+        </div>
+      )}
+
+      {obstacles.length > 0 && (
+        <div className="panel warn">
+          <h2>Obstacles au visa — pointage</h2>
+          <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}

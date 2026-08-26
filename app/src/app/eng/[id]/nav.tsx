@@ -47,7 +47,11 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     { href: `${base}/evidence`, label: 'Evidence' },
     { href: `${base}/exceptions`, label: packs.includes('pcaob-sox') ? 'Deviations' : 'Exceptions' },
     { href: `${base}/workpapers`, label: 'Workpapers' },
+    // Le pointage des états financiers : l'autre bout de l'arc.
+    { href: `${base}/fs-tieout`, label: 'États financiers' },
     { href: `${base}/ask`, label: 'Ask the file' },
+    // Les obstacles au visa : une seule liste, calculée, transverse.
+    { href: `${base}/obstacles`, label: 'Obstacles au visa' },
     { href: `${base}/dashboard`, label: 'Dashboard' },
     { href: `${base}/provenance`, label: 'Provenance' },
     { href: `${base}/events`, label: 'Event log' },

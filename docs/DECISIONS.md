@@ -2948,3 +2948,65 @@ avait qu'un audit légal, c'était juste. Le jour où le dossier N-1 est arrivé
 résolues », donc le balayage a échoué… en accusant les écrans. Le choix est désormais déterministe et
 va au dossier **le plus riche** : *balayer un dossier vide ne prouve rien.* Un `limit` sans `order by`
 est une décision qu'on n'a pas prise.
+
+---
+
+## ADR-084 — Le pointage des états financiers : trois natures, et elles ne se valent pas (point 9)
+
+**Contexte.** Tous les travaux d'un dossier servent à conclure sur des **états financiers**, et rien
+ne rattachait un chiffre de la plaquette à ce qui le fonde. *Un dossier qui teste le chiffre
+d'affaires sans pointer la ligne « Chiffre d'affaires » du compte de résultat conclut sur quelque
+chose qu'il n'a jamais regardé.*
+
+**On pointe le montant PRÉSENTÉ, pas le sien.** Recalculer la ligne et la comparer à son propre
+calcul ne pointe rien : ça vérifie qu'on sait additionner. En production, la plaquette est **déposée
+par le client** — c'est son document. Le constructeur de plaquette de démonstration vit dans un
+fichier **séparé** du service, pour que la différence reste visible : `tieout.ts` ne sait pas
+fabriquer une plaquette, et ne doit pas savoir.
+
+**Trois natures.**
+
+1. **Solde de balance** — la ligne EST un compte : le rapprochement se **calcule**.
+2. **Agrégat de comptes** — la ligne est une somme : il se calcule aussi.
+3. **Calcul à documenter** — la ligne ne vient d'aucun compte (effectif moyen, résultat par action,
+   variation retraitée). **Aucune somme ne la reproduit** : le seul pointage possible est une
+   explication écrite **avec la pièce qui la porte**. Une justification sans pièce n'est pas une
+   justification — même famille que la résolution probante d'un écart (ADR-024).
+
+**La nature se DÉCLARE, elle ne se devine pas.** Deviner qu'une ligne est un agrégat parce qu'elle
+ressemble à une somme produirait un pointage **plausible et faux** — et un pointage faux est pire
+qu'un pointage absent. Le service refuse une ligne calculée sans compte, et un « calcul à documenter »
+rattaché à des comptes : *si des comptes la fondent, c'est un agrégat, et il se calcule.*
+
+**Le statut est DÉRIVÉ du calcul.** Le laisser saisir permettrait de déclarer « pointé » une ligne
+qui ne l'est pas — précisément ce qu'un inspecteur cherche. Un écart **sans explication** ne prend
+pas le statut « écart » : il reste **ouvert**, et il bloque.
+
+---
+
+## ADR-085 — Les obstacles au visa : une seule liste, calculée (point 8)
+
+**Contexte.** Chaque tranche avait ses blocages, chacun affiché sur son propre écran : indépendance
+sur l'écran équipe, questionnaire sur l'écran risque, reprise sur l'écran reprise, pointage sur
+l'écran états financiers. Personne ne pouvait dire, **en un endroit**, ce qui empêche de signer — et
+*un signataire qui doit visiter huit écrans pour le savoir finit par signer sans les avoir tous vus.*
+
+**Décision.** `obstaclesAuVisa(engagementId)` interroge **chaque service qui connaît un blocage** et
+rend une liste unique : acceptation, indépendance, reprise, questionnaire, boucle, pointage,
+évaluation, jalons. Chaque obstacle porte **où aller le lever** — *un obstacle sans destination se
+contemple.*
+
+**Rien n'est stocké, rien n'est rédigé là.** Un test vérifie qu'aucune table ne porte cet état, et
+que la liste est bien la **réunion** de ce que chaque service refuse. *Une liste tenue à part diverge
+un jour de ce qu'elle liste — et c'est toujours la liste qu'on croit.*
+
+**Le corollaire, dit franchement :** un obstacle qui n'apparaît pas dans cette liste **n'en est pas
+un**. Si une règle bloque ailleurs sans figurer ici, c'est un défaut, pas une subtilité.
+
+**Un dossier non accepté n'affiche QUE cet obstacle-là.** Lister quarante blocages sur une mission
+qu'on n'a pas acceptée noierait le seul qui compte. Même principe que l'ordre des refus (ADR-069),
+appliqué à une liste plutôt qu'à un message.
+
+**Ce que la page n'affirme pas**, écrit à l'écran : « aucun obstacle » ne veut pas dire que le
+dossier est **bon**. Il veut dire qu'aucune règle ne le **refuse**. Le jugement reste au signataire —
+un produit qui laisserait croire l'inverse serait dangereux.
