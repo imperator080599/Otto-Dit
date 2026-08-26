@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 334 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 340 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -874,7 +874,13 @@ il commence par une **décision** d'accepter ou de maintenir la mission (ADR-082
   d'isolation, donc quelqu'un visant le dossier d'un autre cabinet s'entendait répondre « faites
   accepter la mission ». Troisième fois que cette règle sert.
 
-**Vérification** : 334 tests (313 → 334) · `tsc --noEmit` propre · 52/52 écrans en production.
+**La création du dossier**, l'autre moitié : un dossier se créait par le peuplement, donc jamais
+devant personne. Il se crée maintenant depuis l'accueil, avec l'isolation vérifiée, le doublon
+refusé (deux dossiers de même nature sur le même exercice feraient deux vérités sur les mêmes
+comptes), et **la méthode en vigueur désignée à la création** — sans elle il naîtrait déjà cassé, et
+personne ne saurait pourquoi. Un cabinet sans méthode publiée est refusé **en le disant**.
+
+**Vérification** : 340 tests (313 → 340) · `tsc --noEmit` propre · 52/52 écrans en production.
 
 ## Convergence prototype → application
 

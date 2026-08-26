@@ -16,6 +16,7 @@ import {
 } from './acceptance';
 import { assignMember } from './team';
 import { assessFsli } from './risk';
+import { creerMission } from './engagement';
 
 /* Une mission NEUVE, non acceptée : elle existe pour être refusée. */
 const NEUVE = '00000000-0000-4000-8000-0000000000e1';
@@ -237,5 +238,101 @@ describe('l’acceptation commande, elle ne décore pas', () => {
     expect(verbes).toContain('acceptance.opened');
     expect(verbes).toContain('acceptance.accepted');
     expect(verbes).toContain('acceptance.declined');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA CRÉATION DU DOSSIER — l'autre moitié du point 1.
+   Un dossier se créait par le peuplement, donc jamais devant personne.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+describe('créer un dossier', () => {
+  beforeAll(async () => { await initTestDb(); });
+
+  it('un dossier neuf naît avec la méthode EN VIGUEUR désignée', async () => {
+    /* Sans elle il naîtrait déjà cassé : le premier chargement de catalogue le
+       refuserait, et l'utilisateur ne saurait pas pourquoi. */
+    const per = await q1<{ id: string }>(
+      `select id from period where entity_id = $1 and prior_period_id is null limit 1`, [IDS.entity]);
+    const row = await creerMission({
+      tenantId: IDS.tenant, entityId: IDS.entity, periodId: per.id,
+      kind: 'integrated', name: '', packs: ['nep-fr'], accountingMap: 'pcg',
+      language: 'fr', actorUserId: IDS.users.claire,
+    });
+    const eng = await q1<{ methodology_id: string; status: string; name: string }>(
+      `select methodology_id, status, name from engagement where id = $1`, [row.id]);
+    expect(eng.methodology_id).toBe(IDS.methodology);
+    expect(eng.status).toBe('setup');
+    // sans nom donné, il en reçoit un lisible plutôt que d'être vide
+    expect(eng.name.length).toBeGreaterThan(5);
+    // et il n'est PAS accepté : c'est la première étape, pas un acquis
+    await expect(assertAccepte(row.id)).rejects.toThrow(/pas encore acceptée/);
+  });
+
+  it('créer sur l’entité d’un AUTRE cabinet est refusé', async () => {
+    const t2 = '00000000-0000-4000-8000-0000000000f1';
+    const e2 = '00000000-0000-4000-8000-0000000000f2';
+    await q(`insert into tenant (id, name, issuer_reports_2024) values ($1,'Cabinet quatre (fictif)',0)`, [t2]);
+    await q(
+      `insert into entity (id, tenant_id, name, country, registry_type, currency)
+       values ($1,$2,'Cliente d''un autre (fictive)','FR','fictional','EUR')`, [e2, t2]);
+    const per = await q1<{ id: string }>(`select id from period where entity_id = $1 limit 1`, [IDS.entity]);
+    await expect(creerMission({
+      tenantId: IDS.tenant, entityId: e2, periodId: per.id, kind: 'statutory_audit',
+      name: 'x', packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    })).rejects.toThrow(/isolation/);
+  });
+
+  it('un exercice qui n’est pas celui de l’entité est refusé', async () => {
+    const t2 = '00000000-0000-4000-8000-0000000000f3';
+    const e2 = '00000000-0000-4000-8000-0000000000f4';
+    const p2 = '00000000-0000-4000-8000-0000000000f5';
+    await q(`insert into tenant (id, name, issuer_reports_2024) values ($1,'Cabinet cinq (fictif)',0)`, [t2]);
+    await q(
+      `insert into entity (id, tenant_id, name, country, registry_type, currency)
+       values ($1,$2,'Autre entité (fictive)','FR','fictional','EUR')`, [e2, t2]);
+    await q(
+      `insert into period (id, entity_id, label, start_date, end_date)
+       values ($1,$2,'FY2025','2025-01-01','2025-12-31')`, [p2, e2]);
+    await expect(creerMission({
+      tenantId: IDS.tenant, entityId: IDS.entity, periodId: p2, kind: 'statutory_audit',
+      name: 'x', packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    })).rejects.toThrow(/pas celui de cette entité/);
+  });
+
+  it('deux dossiers de même nature sur le même exercice sont refusés', async () => {
+    /* Ils feraient deux vérités sur les mêmes comptes. */
+    const per = await q1<{ id: string }>(
+      `select period_id as id from engagement where id = $1`, [IDS.engNep]);
+    await expect(creerMission({
+      tenantId: IDS.tenant, entityId: IDS.entity, periodId: per.id, kind: 'statutory_audit',
+      name: 'doublon', packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    })).rejects.toThrow(/existe déjà/);
+  });
+
+  it('une mission sans référentiel est refusée', async () => {
+    const per = await q1<{ id: string }>(
+      `select id from period where entity_id = $1 and prior_period_id is null limit 1`, [IDS.entity]);
+    await expect(creerMission({
+      tenantId: IDS.tenant, entityId: IDS.entity, periodId: per.id, kind: 'sox_component',
+      name: 'sans pack', packs: [], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    })).rejects.toThrow(/sans référentiel/);
+  });
+
+  it('un cabinet SANS méthode publiée ne peut pas créer de dossier, et on lui dit pourquoi', async () => {
+    const t3 = '00000000-0000-4000-8000-0000000000f6';
+    const e3 = '00000000-0000-4000-8000-0000000000f7';
+    const p3 = '00000000-0000-4000-8000-0000000000f8';
+    await q(`insert into tenant (id, name, issuer_reports_2024) values ($1,'Cabinet sans méthode',0)`, [t3]);
+    await q(
+      `insert into entity (id, tenant_id, name, country, registry_type, currency)
+       values ($1,$2,'Cliente (fictive)','FR','fictional','EUR')`, [e3, t3]);
+    await q(
+      `insert into period (id, entity_id, label, start_date, end_date)
+       values ($1,$2,'FY2025','2025-01-01','2025-12-31')`, [p3, e3]);
+    await expect(creerMission({
+      tenantId: t3, entityId: e3, periodId: p3, kind: 'statutory_audit',
+      name: 'x', packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    })).rejects.toThrow(/chargez-la avant de créer un dossier/);
   });
 });

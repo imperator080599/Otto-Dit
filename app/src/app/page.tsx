@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { q } from '@/lib/db/client';
 import { getSessionUser } from '@/lib/core/auth';
 import { PORTAL_TOKENS } from '@/lib/seed';
+import { NouvelleMission } from './nouvelle-mission';
 
 // Home: dev sign-in switcher (ADR-006) + engagement list for the signed-in auditor.
 
@@ -24,7 +25,12 @@ async function logoutAction() {
   redirect('/');
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ erreur?: string }>;
+}) {
+  const { erreur } = await searchParams;
   const user = await getSessionUser();
   const users = await q<{ id: string; name: string; firm_role: string }>(
     `select id, name, firm_role from app_user order by name`,
@@ -84,6 +90,8 @@ export default async function Home() {
           </form>
         </span>
       </div>
+      <NouvelleMission tenantId={user.tenant_id} erreur={erreur} />
+
       <div className="panel">
         <table className="data">
           <thead>
