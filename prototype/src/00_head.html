@@ -218,6 +218,13 @@ input.cell{width:100%;background:transparent;border:1px solid transparent;border
            padding:2px var(--s1);font:var(--t2) var(--mono);text-align:right;min-height:24px;color:var(--ink)}
 input.cell:focus{border-color:var(--accent);background:var(--panel);outline:none}
 input.cell.txt{text-align:left;font-family:var(--sans)}
+/* Un select portant .cell ne recevait aucune règle : le navigateur lui donnait
+   son fond blanc par défaut, illisible en thème sombre. Les contrôles de
+   formulaire ne suivent pas les jetons sans qu'on le leur dise. */
+select.cell{width:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:var(--r);padding:2px var(--s1);font:var(--t2) var(--mono);min-height:24px}
+select.cell.txt{font-family:var(--sans)}
+select.cell:focus{border-color:var(--accent);outline:none}
 .smallcaps{font-size:var(--t1);color:var(--ink-3)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .seg button{background:var(--panel);border:0;border-right:1px solid var(--line);

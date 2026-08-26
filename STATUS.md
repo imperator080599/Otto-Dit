@@ -305,6 +305,14 @@ l'associée revoit 74 travaux sur 112. Ce n'est pas la règle de dotation qui es
 procédures répondent à une assertion évaluée « élevé ». Le levier est l'évaluation du risque, et
 l'écran le dit au lieu d'aplatir les heures.
 
+**Vérification finale des cinq points** — 41 vues × 2 thèmes × 2 largeurs (1600 px et 390 px) :
+zéro erreur, zéro débordement horizontal, zéro texte à contraste insuffisant. Un défaut trouvé et
+corrigé à cette occasion : `select.cell` ne recevait aucune règle et prenait le fond blanc du
+navigateur, illisible en thème sombre — les sélecteurs d'affectation du programme de travail et
+les champs booléens des papiers de travail étaient concernés. Le harnais de contraste ne balayait
+que `#main` et l'avait manqué ; il balaie désormais tout le document, contrôles de formulaire
+compris. Suite applicative : 148 tests verts.
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent
