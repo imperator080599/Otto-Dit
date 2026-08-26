@@ -49,6 +49,12 @@
   /* ── géométrie ── */
   --r:3px; --rond:999px;
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  /* Hauteur du bandeau collant. C'est un espacement du système au même titre
+     que les six autres — simplement MESURÉ au rendu plutôt que choisi. Il
+     était écrit « var(--sTop) » sur cinq sites : autant de littéraux
+     hors échelle, et cinq endroits à corriger si la valeur de repli change.
+     Un seul jeton, déclaré ici. */
+  --sTop:180px;
   --ombre:0 1px 2px rgba(20,23,26,.06);
 }
 html[data-theme="dark"]{
@@ -153,7 +159,7 @@ html[data-bandeau="reduit"] .themebtn{top:2px;min-height:24px;padding:0 var(--s2
 /* ══ coquille ═════════════════════════════════════════════════════════════ */
 .shell{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1680px;margin:0 auto}
 .rail{border-right:1px solid var(--line);padding:var(--s3) var(--s2) var(--s5);position:sticky;
-      top:var(--topH,180px);align-self:start;max-height:calc(100vh - var(--topH,180px));
+      top:var(--sTop);align-self:start;max-height:calc(100vh - var(--sTop));
       overflow-y:auto;scrollbar-width:thin}
 .rail .grp{font-size:var(--t1);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);
            padding:var(--s3) var(--s2) var(--s1);font-weight:700}
@@ -167,17 +173,17 @@ html[data-bandeau="reduit"] .themebtn{top:2px;min-height:24px;padding:0 var(--s2
 .rail a .b.bad{color:var(--anomalie)}
 .rail a .b.warn{color:var(--attention)}
 .railm{display:none;padding:var(--s2) var(--s3) 0}
-main{padding:var(--s4);min-width:0;scroll-margin-top:var(--topH,180px)}
+main{padding:var(--s4);min-width:0;scroll-margin-top:var(--sTop)}
 /* La barre est collante : sans cette marge de défilement, `scrollIntoView`
    amenait le haut du contenu SOUS la barre — au téléphone, les 294 premiers
    pixels de chaque vue étaient invisibles à l'arrivée. */
-.blk,.destnav{scroll-margin-top:calc(var(--topH,180px) + var(--s2))}
+.blk,.destnav{scroll-margin-top:calc(var(--sTop) + var(--s2))}
 
 /* ══ blocs ════════════════════════════════════════════════════════════════ */
 .hd{display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;margin-bottom:var(--s1)}
 .hd .sub{color:var(--ink-3);font-size:var(--t2)}
 .blk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-     margin-top:var(--s3);overflow:hidden;scroll-margin-top:calc(var(--topH,180px) + var(--s3))}
+     margin-top:var(--s3);overflow:hidden;scroll-margin-top:calc(var(--sTop) + var(--s3))}
 .blk > header{padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);
               display:flex;gap:var(--s2);align-items:baseline;flex-wrap:wrap}
 .blk > header .num{font:700 var(--t1)/1 var(--mono);color:var(--ink-3)}
@@ -360,6 +366,17 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   .blk{break-inside:avoid;box-shadow:none}
   .tw{max-height:none;overflow:visible}
   body{background:#FFFFFF}
+  /* UN PANNEAU REPLIÉ S'IMPRIMAIT REPLIÉ. Le navigateur masque le contenu
+     d'un <details> fermé ; à l'impression, le papier de travail sortait donc
+     amputé de tout ce que l'auditeur avait replié pour lire à l'écran. Un
+     dossier ne se plie pas : tout s'ouvre au papier. */
+  details > *:not(summary){display:block!important}
+  details > summary{list-style:none}
+  details > summary::-webkit-details-marker{display:none}
+  details > summary::marker{content:''}
+  /* et l'on ne coupe pas une ligne de papier de travail en deux pages */
+  tr,.nl,.msg{break-inside:avoid}
+  thead{display:table-header-group}
 }
 @media (max-width:900px){
   .shell{grid-template-columns:1fr}
@@ -792,8 +809,8 @@ function horo(t){ return frDate(t.slice(0, 10)) + ' ' + t.slice(11, 16); }
    chaque section de travail y a son propre casier.
    ═══════════════════════════════════════════════════════════════════════ */
 const S = {
-  espace:'auditeur',                        // auditeur | client | pilotage
-  vue:'plan.programme',                     // identifiant de vue, ou 'fsli:<CODE>'
+  espace:'pilotage',                        // pilotage | auditeur | client
+  vue:'pil.mission',                        // identifiant de vue, ou 'fsli:<CODE>'
   moi:'karim',                              // auditeur connecté (espace auditeur)
   moiClient:'dmartin',                      // contact connecté (portail client)
   benchmark:'pbt', pctM:5, pctPM:75, pctCTT:5,
@@ -825,6 +842,8 @@ const S = {
                  rotationSignataire:6 },   // exercices du signataire [UNVERIFIED]
   sacc:[], seqSacc:0, honorairesMission:8500000, plafondSacc:70,
   memErreur:'', indErreur:'', saccErreur:'', travErreur:'',
+  /* Questionnaire d'entité : posé une fois pour le dossier. */
+  questEntite:{},
   /* Quatre dates posées, et non cent : les échéances des travaux s'en
      déduisent (voir REGLE_ECHEANCE). L'assemblage n'est pas ici — il se
      déduit de la date du rapport. */
@@ -853,7 +872,8 @@ function sec(code){
     code,
     ns:{},            // compte -> 'ns' | 'sig'  (surcharge du statut proposé)
     nsMotif:{},
-    declares:{},      // code facteur déclaré -> true/false
+    quest:{},         // code question -> 'oui' | 'non'
+    questPrec:{},     // code question -> précision écrite (obligatoire si « oui »)
     override:{},      // assertion -> niveau forcé par l'auditeur
     overrideMotif:{},
     seed:'otto-' + code.toLowerCase() + '-01',
@@ -916,19 +936,107 @@ const FACTEURS = [
   { code:'concentration', a:'separation', lib:'Plus de 15 % des écritures concentrées en décembre',
     obs:p => statsPoste(p).n > 0 && statsPoste(p).decembre / statsPoste(p).n > 0.15,
     dit:p => statsPoste(p).decembre + ' écritures en décembre sur ' + statsPoste(p).n },
-  { code:'estimation', a:'evaluation', lib:'Le poste comporte une estimation comptable', declare:true },
-  { code:'fraude', a:'realite', lib:'Poste porteur d’un risque de fraude identifié', declare:true },
-  { code:'ci_faible', a:'exhaustivite', lib:'Contrôle interne non testé ou jugé non fiable sur ce cycle', declare:true },
-  { code:'complexe', a:'presentation', lib:'Règle de présentation ou d’annexe complexe sur ce poste', declare:true },
-  { code:'litige', a:'evaluation', lib:'Poste exposé à un litige ou à une incertitude', declare:true },
 ];
+/* Les cinq facteurs « déclarés » ont quitté cette table : ils étaient des cases
+   à cocher sans justification et sans source. Ils sont devenus soit une RÈGLE
+   DE LEVÉE qualitative (estimation → ESTIM, litige provisionné → RETRAITEMENT
+   et NOTE_N1), soit une QUESTION du questionnaire résiduel ci-dessous — qui,
+   lui, crée un facteur au registre avec sa source. Voir 17_facteurs.js. */
+
+/* ═══ QUESTIONNAIRE RÉSIDUEL DE RISQUE ═════════════════════════════════════
+   La plupart des facteurs qualitatifs REMONTENT par le registre depuis les
+   procédures qui les captent. Le questionnaire ne garde que le RÉSIDUEL :
+   ce qu'aucune autre source du dossier ne couvre. Chaque question porte donc
+   la raison pour laquelle elle existe encore — si cette raison tombe, la
+   question doit disparaître, pas rester « au cas où ».
+
+   Deux portées, et c'est ce qui évite le questionnaire de cinquante lignes :
+     — ENTITÉ : posée UNE FOIS pour le dossier, elle touche tous les postes
+       retenus (la direction, la pression sur le résultat, la fraude).
+     — SECTION : posée dans la section, parce que la réponse peut différer
+       d'un cycle à l'autre.
+   Six questions par section, quatre pour l'entité.
+
+   Le vocabulaire des natures — changement, complexité, incertitude, biais
+   possible de la direction — est celui des facteurs de risque inhérent des
+   référentiels d'audit. [UNVERIFIED] : sources secondaires seulement.
+   ═══════════════════════════════════════════════════════════════════════ */
+const NATURES_RI = {
+  changement: { lib:'changement', d:'ce qui n’était pas là l’an dernier n’a pas encore de contrôle rodé' },
+  complexite: { lib:'complexité', d:'une opération dont la traduction comptable demande un raisonnement' },
+  incertitude:{ lib:'incertitude', d:'un montant qui dépend d’un événement futur' },
+  biais:      { lib:'biais possible de la direction', d:'un intérêt à ce que le résultat soit d’un certain côté' },
+  controle:   { lib:'risque de contrôle', d:'ce n’est pas un facteur inhérent : c’est ce que le dispositif du client ne couvre pas' },
+};
+const QUESTIONNAIRE = [
+  { code:'DIRIGEANTS', portee:'entite', a:'realite', nat:'changement',
+    q:'L’équipe dirigeante ou le responsable comptable ont-ils changé pendant l’exercice ?',
+    pourquoi:'Aucune source du dossier ne porte l’organigramme du client : ni le grand livre, ni les versions '
+           + 'du fichier, ni les circularisations. Rien ne peut le lever à notre place.',
+    effet:'Un changement de personne au sommet ou à la tenue des comptes défait des habitudes de contrôle et '
+        + 'ouvre une période où les erreurs passent.' },
+  { code:'PRESSION', portee:'entite', a:'realite', nat:'biais',
+    q:'La direction subit-elle une pression sur le résultat — covenant bancaire, cession en cours, complément '
+    + 'de prix, rémunération variable liée au résultat ?',
+    pourquoi:'Les covenants, les protocoles de cession et les schémas de rémunération ne sont dans aucune '
+           + 'donnée comptable. C’est le facteur de biais le mieux documenté, et le moins dérivable.',
+    effet:'Un intérêt chiffré à ce que le résultat tombe d’un certain côté est le premier facteur à documenter : '
+        + 'il oriente le sens des anomalies attendues, pas seulement leur probabilité.' },
+  { code:'FRAUDE', portee:'entite', a:'realite', nat:'biais',
+    q:'Une circonstance porte-t-elle un risque de fraude au niveau de l’entité — signalement, plainte, '
+    + 'faiblesse connue de la séparation des tâches, antécédent ?',
+    pourquoi:'Le test des écritures lève des marqueurs de FORME (journal, heure, montant rond). Il ne sait rien '
+           + 'd’un signalement, d’une plainte ou d’un antécédent.',
+    effet:'Le risque de fraude ne se déduit d’aucun montant : il se déclare, ou il n’est pas au dossier.' },
+  { code:'GOUVERNANCE', portee:'entite', a:'presentation', nat:'controle',
+    q:'La gouvernance a-t-elle changé de composition, ou cessé de se réunir régulièrement ?',
+    pourquoi:'Les procès-verbaux ne sont pas dans le dossier tant que le module de contrôle interne n’existe pas.',
+    effet:'Une surveillance qui se relâche est le contexte dans lequel les deux facteurs précédents produisent '
+        + 'leur effet.' },
+
+  { code:'SI', portee:'section', a:'exhaustivite', nat:'changement',
+    q:'Le système d’information qui alimente ce cycle a-t-il changé pendant l’exercice ?',
+    pourquoi:'Une migration ne laisse aucune trace lisible dans un fichier des écritures conforme : les numéros '
+           + 'se suivent, les journaux existent. Seul le client le sait.',
+    effet:'Une reprise de données incomplète est la cause d’exhaustivité la plus fréquente, et la plus invisible '
+        + 'au contrôle de forme.' },
+  { code:'NOUVEAU', portee:'section', a:'realite', nat:'changement',
+    q:'Un nouveau produit, un nouveau marché ou un nouveau canal de vente alimente-t-il ce poste ?',
+    pourquoi:'Un compte nouveau se voit au rapprochement ; un produit nouveau comptabilisé dans un compte '
+           + 'existant, non.',
+    effet:'Les règles de comptabilisation d’une activité nouvelle sont rarement écrites la première année.' },
+  { code:'METHODE', portee:'section', a:'presentation', nat:'complexite',
+    q:'Une méthode comptable applicable à ce poste a-t-elle changé, ou une règle de présentation nouvelle '
+    + 's’y applique-t-elle ?',
+    pourquoi:'Le registre voit les retraitements DÉJÀ PASSÉS en écriture (règle RETRAITEMENT). Il ne voit pas '
+           + 'un changement décidé et non encore traduit, ni une règle de présentation nouvelle.',
+    effet:'Un changement de méthode déplace des montants sans qu’aucune transaction n’ait eu lieu : c’est le '
+        + 'cas où la variation N/N-1 ment.' },
+  { code:'INHABITUEL', portee:'section', a:'realite', nat:'complexite',
+    q:'Ce poste porte-t-il des opérations inhabituelles ou hors exploitation — cession, abandon de créance, '
+    + 'opération avec une partie liée, montage ponctuel ?',
+    pourquoi:'Le test des écritures voit des marqueurs de forme, pas la NATURE ÉCONOMIQUE d’une opération. Une '
+           + 'cession d’actif régulièrement comptabilisée ne porte aucun marqueur.',
+    effet:'Une opération unique n’a pas de contrôle de routine derrière elle, et sa traduction comptable est '
+        + 'souvent discutable.' },
+  { code:'LITIGE', portee:'section', a:'evaluation', nat:'incertitude',
+    q:'Un litige ou une incertitude affecte-t-il ce poste, y compris s’il n’est pas provisionné ?',
+    pourquoi:'Le registre voit les litiges PROVISIONNÉS (par le compte 15 et par les retraitements). Le litige '
+           + 'non provisionné — celui qui compte — n’est dans aucune donnée.',
+    effet:'C’est exactement le cas où l’absence d’écriture est l’anomalie.' },
+  { code:'CI', portee:'section', a:'exhaustivite', nat:'controle',
+    q:'Le contrôle interne de ce cycle est-il non testé, ou jugé non fiable ?',
+    pourquoi:'Le module de contrôle interne n’est pas construit (lot B) : rien dans le dossier ne peut répondre '
+           + 'à cette question aujourd’hui. La question disparaîtra quand il existera.',
+    effet:'Sans appui sur les contrôles, l’approche est intégralement substantive — c’est ce que dit le garde-fou '
+        + 'd’économie de l’approche.' },
+];
+const QUEST_ENTITE = QUESTIONNAIRE.filter(q => q.portee === 'entite');
+const QUEST_SECTION = QUESTIONNAIRE.filter(q => q.portee === 'section');
 
 /** Facteurs actifs d'un poste : les observés sont calculés, les déclarés sont lus dans le casier. */
 function facteursActifs(p){
-  const st = sec(p.code);
-  const locaux = FACTEURS.map(f => ({ ...f,
-    actif: f.declare ? !!st.declares[f.code] : !!f.obs(p),
-    preuve: f.declare ? null : f.dit(p) }));
+  const locaux = FACTEURS.map(f => ({ ...f, actif:!!f.obs(p), preuve:f.dit(p) }));
   // Les constatations venues d'ailleurs, CONFIRMÉES et retenues comme
   // majorantes, comptent comme des facteurs de la section : c'est là que la
   // circulation produit son effet, et pas seulement un affichage.
@@ -5035,21 +5143,34 @@ function compare(ch, releve, x){
        la RÈGLE qui le contrôle, et non une simple égalité. */
     const j = Math.round((Date.parse(releve) - Date.parse(r)) / 86400000);
     let conforme, refLib;
-    switch (ch.regle){
-      case 'dans l’exercice':
+    /* L'apostrophe est NORMALISÉE avant comparaison. Le catalogue est écrit en
+       JSON, où l'apostrophe droite est la seule commode ; le code était écrit
+       avec l'apostrophe typographique. « dans l'exercice » ne tombait donc sur
+       aucun cas, filait au défaut — comparaison à la tolérance, ici nulle — et
+       relevait comme ANOMALIE toute facture datée d'un jour avant sa
+       comptabilisation. Soixante-seize écarts sur cent quinze factures
+       parfaitement normales. Le vrai défaut n'est pas la lettre : c'est un
+       DÉFAUT SILENCIEUX sur une règle inconnue. Le schéma du catalogue refuse
+       désormais une règle de date hors énumération, et l'assemblage s'arrête. */
+    switch (String(ch.regle || '').replace(/[’‘]/g, "'")){
+      case "dans l'exercice":
         conforme = releve >= OUVERTURE && releve <= CLOTURE;
         refLib = frDate(OUVERTURE) + ' – ' + frDate(CLOTURE);
         break;
       case 'antérieure ou égale':
         conforme = releve <= r; refLib = '≤ ' + frDate(r); break;
+      case 'postérieure':
+        conforme = releve > r; refLib = '> ' + frDate(r); break;
       case 'même exercice que la référence':
         conforme = (releve <= CLOTURE) === (r <= CLOTURE);
         refLib = frDate(r) + ' (même exercice)'; break;
       default:
+        /* Pas de règle nommée : comparaison à la tolérance déclarée. C'est le
+           cas légitime — et le seul — où l'on arrive ici. */
         conforme = Math.abs(j) <= (ch.tol || 0); refLib = frDate(r);
     }
     return { saisi:true, ecart:j, conforme, refLib, valLib:frDate(releve),
-             ecartLib:ch.regle === 'dans l’exercice' ? 'hors exercice' : (j > 0 ? '+' : '') + j + ' j' };
+             ecartLib:/exercice/.test(String(ch.regle || '')) ? 'hors exercice' : (j > 0 ? '+' : '') + j + ' j' };
   }
   if (ch.type === 'bool'){
     const v = releve === 'oui' || releve === true;
@@ -5624,6 +5745,24 @@ function partAssertions(p){
     ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}`;
 }
 
+/** Le questionnaire résiduel de la section : six questions, chacune portant
+ *  la raison pour laquelle aucune autre source du dossier n'y répond. */
+function partQuestionnaire(p){
+  const sans = questionsSansReponse(p.code).section;
+  const oui = QUEST_SECTION.filter(q => sec(p.code).quest[q.code] === 'oui');
+  return `<p class="note">La plupart des facteurs qualitatifs <b>remontent</b> par le registre depuis les
+    procédures qui les captent — estimations, concentration sur un tiers, retraitements, corrections sur
+    constat, notes de l’exercice précédent. Ce questionnaire ne garde que le <b>résiduel</b> :
+    ${QUEST_SECTION.length} questions, chacune parce qu’aucune autre source ne peut y répondre. Une réponse
+    « oui » crée un facteur au registre, avec sa source ; elle n’a pas de chemin à elle.</p>
+    <div class="row">
+      <span class="pill ${sans.length ? 'warn' : ''}">${sans.length} sans réponse</span>
+      <span class="pill ${oui.length ? 'bad' : ''}">${oui.length} « oui » → ${oui.length} facteur(s) au registre</span>
+      <button class="btn mini sec" data-vue="plan.facteurs">registre ↗</button>
+    </div>
+    ${QUEST_SECTION.map(q => ligneQuestion(q, p.code)).join('')}`;
+}
+
 /** L'étendue que le risque commande : taille de tirage et coupure d'exhaustivité. */
 function partEtendue(p){
   const procs = proceduresRequises(p);
@@ -5793,6 +5932,8 @@ function blocProcedure(p, pr){
            <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>`}
       <div class="ctrl"><label>&nbsp;</label>
         <button class="btn" data-preq="${pr.code}" ${deja ? 'disabled' : ''}>${deja ? 'requête émise' : 'générer la requête depuis le catalogue'}</button></div>
+      <div class="ctrl"><label>&nbsp;</label>
+        <button class="btn sec" data-imprime="1">imprimer ce papier de travail</button></div>
     </div>
     <div class="callout"><b>Méthode ${e.imposee ? 'imposée' : 'retenue'} : ${esc(m.lib)}.</b> ${esc(m.d)} ${esc(m.quand)}
       ${e.imposee
@@ -6079,6 +6220,14 @@ function obstaclesVisa(p){
   if (fp.length) o.push(`${fp.length} facteur(s) de risque non statué(s)`);
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
+  /* Une évaluation de risque à laquelle on n'a pas répondu n'est pas une
+     évaluation. Six questions, et elles bloquent — sinon elles sont décoratives. */
+  const qs = questionsSansReponse(p.code).section;
+  if (qs.length) o.push(`${qs.length} question(s) du questionnaire de risque sans réponse`);
+  const qi = facteursDe(p.code).filter(f => f.incomplet);
+  if (qi.length) o.push(`${qi.length} réponse(s) « oui » sans précision écrite`);
+  const qe = QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep);
+  if (qe.length) o.push(`${qe.length} question(s) du questionnaire d’entité sans réponse`);
   for (const x of obstaclesTravaux(p.code)) o.push(x);
   let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){
@@ -7197,6 +7346,191 @@ const REGLES_FACTEUR = [
       return out;
     },
   },
+  /* ═══ RÈGLES QUALITATIVES ══════════════════════════════════════════════
+     Le registre comptait CINQ règles quantitatives et UNE qualitative :
+     l'évaluation du risque du produit reposait donc à 83 % sur des variations
+     chiffrées, ce qu'un auditeur reproche au premier coup d'œil. Les cinq
+     règles qui suivent lèvent des facteurs QUALITATIFS depuis des procédures
+     qui les captent déjà — c'est la conception demandée : la plupart des
+     facteurs qualitatifs doivent REMONTER, et le questionnaire ne garde que
+     le résiduel.
+
+     Le vocabulaire retenu — complexité, subjectivité, changement, incertitude,
+     biais de la direction — est celui des facteurs de risque inhérent des
+     référentiels d'audit. [UNVERIFIED] : il vient de sources secondaires,
+     aucun texte normatif primaire n'ayant pu être atteint depuis cet
+     environnement (voir methodology/README.md). Il organise les questions ;
+     il ne fonde aucune obligation. */
+  {
+    code:'ESTIM', lib:'Le poste est porté par des estimations comptables',
+    srcLib:'Composition du poste', srcVue:'plan.scope',
+    seuilLib:'part du poste portée par des comptes d’estimation', seuilUnite:'%',
+    seuilDefaut:() => 10, pas:1,
+    nature:'qualitatif',
+    calc(seuil){
+      /* Provisions, dépréciations et dotations : ce sont les comptes dont le
+         solde résulte d'un JUGEMENT et non d'une transaction. La subjectivité
+         d'un poste se mesure donc — c'est la part de sa masse qu'ils portent. */
+      const RE_ESTIM = /^(15|29|39|49|59|68|78)/;
+      const out = [];
+      for (const p of postesCalcules()){
+        const comptes = p.comptes.filter(c => RE_ESTIM.test(c));
+        if (!comptes.length) continue;
+        const tot = p.comptes.reduce((a, c) => a + Math.abs(bal().get(c).solde), 0);
+        const est = comptes.reduce((a, c) => a + Math.abs(bal().get(c).solde), 0);
+        if (!tot) continue;
+        const part = est / tot;
+        if (part < seuil / 100 || est < seuils().CTT) continue;
+        out.push({
+          id:'ESTIM:' + p.code,
+          description:`${pct(part, 0)} de la masse du poste (${eur(est)} sur ${eur(tot)}) est portée par des `
+                    + `comptes d’estimation — ${comptes.join(', ')}. Un solde qui résulte d’un jugement et non `
+                    + `d’une transaction ne se prouve pas par une pièce : il se prouve par la méthode et les `
+                    + `hypothèses. C’est un facteur de SUBJECTIVITÉ, et il ne se déduit d’aucune variation.`,
+          cibles:[{ fsli:p.code, assertions:['evaluation'] }],
+          pertinence:`${pct(part, 0)} de la masse ≥ seuil ${seuil}${NBSP}% (plancher ${eur(seuils().CTT)})`,
+          srcRef:p.lib,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'TIERS_UNIQUE', lib:'Dépendance à un tiers unique sur le poste',
+    srcLib:'Grand livre auxiliaire du poste', srcVue:'plan.rappro',
+    seuilLib:'part du poste portée par un seul tiers', seuilUnite:'%',
+    seuilDefaut:() => 25, pas:1,
+    nature:'qualitatif',
+    /* Chemin parcouru, parce qu'il dit ce que vaut le seuil.
+       Au premier essai — part ≥ 25 %, sans autre garde — la règle levait HUIT
+       facteurs. En regardant la distribution : les quatre plus concentrés
+       (77 %, 76 %, 62 %, 56 %) portent tous DEUX À QUATRE TIERS. Avec deux
+       tiers, l'un des deux pèse forcément plus de la moitié : le nombre est
+       une conséquence arithmétique de la population, pas une dépendance.
+       On a donc ajouté un PLANCHER DE POPULATION — cinq tiers — et gardé la
+       part absolue, parce que c'est elle qui répond à la question de
+       l'auditeur : si ce tiers disparaît, le poste tient-il ? Un fournisseur
+       à 35 % est une dépendance qu'il y en ait huit ou huit cents.
+       Quatre facteurs restent. Deux seront sans doute écartés au triage, avec
+       un motif : c'est un taux de triage normal, pas du bruit. */
+    minTiers:5,
+    calc(seuil){
+      const out = [];
+      for (const p of postesCalcules()){
+        const m = new Map();
+        let tot = 0;
+        for (const e of lg().entries){
+          const aux = e.lines.map(l => l.auxLib).find(Boolean);
+          if (!aux) continue;
+          const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
+          if (!mv) continue;
+          m.set(aux, (m.get(aux) || 0) + mv); tot += mv;
+        }
+        if (!tot || m.size < this.minTiers) continue;
+        const [tiers, mv] = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
+        const part = mv / tot;
+        if (part < seuil / 100 || mv < seuils().CTT) continue;
+        out.push({
+          id:'TIERS_UNIQUE:' + p.code,
+          description:`Le tiers « ${tiers} » porte ${pct(part, 0)} des mouvements du poste (${eur(mv)} sur `
+                    + `${eur(tot)}, ${m.size} tiers au total). La dépendance à un partenaire unique est un `
+                    + `facteur d’audit — continuité, pouvoir de négociation, concentration du risque de `
+                    + `recouvrement ou d’approvisionnement — et elle ne se lit sur aucune variation N/N-1. `
+                    + `À répartition égale, chacun en porterait ${pct(1 / m.size, 0)}.`,
+          cibles:[{ fsli:p.code, assertions:['evaluation', 'realite'] }],
+          pertinence:`${pct(part, 0)} des mouvements ≥ seuil ${seuil}${NBSP}% · ${m.size} tiers ≥ plancher ${this.minTiers}`,
+          srcRef:tiers,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'RETRAITEMENT', lib:'Changement d’estimation ou de méthode passé en cours de mission',
+    srcLib:'Ajustements et retraitements', srcVue:'plan.ajust',
+    seuilLib:'montant minimal du retraitement', seuilUnite:'€',
+    seuilDefaut:() => seuils().CTT / 100, pas:100,
+    nature:'qualitatif',
+    calc(seuil){
+      const out = [];
+      for (const a of ajustements()){
+        if (a.nature !== 'retraitement' || !a.prise) continue;
+        const i = impactAjustement(a);
+        if (montantAjustement(a) < seuil * 100) continue;
+        const cibles = i.postes.map(x => ({ fsli:x.code, assertions:['evaluation', 'presentation'] }));
+        if (!cibles.length) continue;
+        out.push({
+          id:'RETRAITEMENT:' + a.ref,
+          description:`L’écriture ${a.ref} « ${a.lib} » est un retraitement de ${eur(montantAjustement(a))} passé `
+                    + `à la version ${a.v} : ${a.motif}. Un reclassement ou un changement d’estimation en cours `
+                    + `d’exercice est un facteur de CHANGEMENT : ce qui a été jugé une fois peut l’être encore, `
+                    + `et le poste touché mérite d’être regardé pour ce qu’il est devenu.`,
+          cibles,
+          pertinence:`${eur(montantAjustement(a))} ≥ seuil ${eur(seuil * 100)}`,
+          srcRef:a.ref,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'CORRECTION_N', lib:'Le poste a exigé une correction sur constat d’audit',
+    srcLib:'Ajustements et retraitements', srcVue:'plan.ajust',
+    seuilLib:'montant minimal de la correction', seuilUnite:'€',
+    seuilDefaut:() => seuils().CTT / 100, pas:100,
+    nature:'qualitatif',
+    calc(seuil){
+      const out = [];
+      for (const a of correctionsEnVigueur()){
+        if (montantAjustement(a) < seuil * 100) continue;
+        const i = impactAjustement(a);
+        const cibles = i.postes.map(x => ({ fsli:x.code, assertions:['realite', 'exhaustivite'] }));
+        if (!cibles.length) continue;
+        out.push({
+          id:'CORRECTION_N:' + a.ref,
+          description:`Le client a passé l’écriture ${a.ref} « ${a.lib} » (${eur(montantAjustement(a))}) EN RÉPONSE `
+                    + `à un constat d’audit. Un poste qui a exigé une correction cette année est un poste où le `
+                    + `dispositif du client a laissé passer quelque chose : c’est un facteur, indépendamment du `
+                    + `fait que la correction ait été passée.`,
+          cibles,
+          pertinence:`${eur(montantAjustement(a))} ≥ seuil ${eur(seuil * 100)}`,
+          srcRef:a.ref,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'NOTE_N1', lib:'Anomalie relevée sur ce poste à l’exercice précédent',
+    srcLib:'Notes de revue — reprise N-1', srcVue:'plan.synth',
+    seuilLib:'types de note retenus', seuilUnite:'niveau', seuilDefaut:() => 1, pas:1,
+    nature:'qualitatif',
+    calc(seuil){
+      /* seuil 1 : notes bloquantes seules · 2 : + « à documenter » · 3 : toutes */
+      const rang = { bloq:1, doc:2, q:3, n1:3 };
+      const out = [];
+      const parSection = {};
+      for (const n of NOTES_N1){
+        if ((rang[n.type] || 3) > seuil) continue;
+        (parSection[n.section] = parSection[n.section] || []).push(n);
+      }
+      for (const [code, l] of Object.entries(parSection)){
+        const p = postesCalcules().find(x => x.code === code);
+        if (!p) continue;
+        out.push({
+          id:'NOTE_N1:' + code,
+          description:`${l.length} note(s) de revue de l’exercice précédent portaient sur ce poste : `
+                    + l.map(x => '« ' + x.texte + ' »').join(' ')
+                    + ` Une anomalie relevée l’an dernier n’est pas une anomalie de cette année, mais elle dit où `
+                    + `regarder — et sa RÉCURRENCE, si elle se confirme, est le fait le plus significatif du dossier.`,
+          cibles:[{ fsli:code, assertions:[...new Set(l.map(x => x.type === 'bloq' ? 'exhaustivite' : 'presentation'))] }],
+          pertinence:`${l.length} note(s) N-1 de type ${[...new Set(l.map(x => TYPES_NOTE[x.type].lib))].join(', ')}`,
+          srcRef:libFsli(code),
+        });
+      }
+      return out;
+    },
+  },
 ];
 
 const _regleCache = new Map();
@@ -7217,12 +7551,84 @@ function seuilRegle(code){
   return S.seuilsFacteurs[code] !== undefined ? S.seuilsFacteurs[code] : r.seuilDefaut();
 }
 
+/* ── le questionnaire alimente LE MÊME registre ───────────────────────────
+   Une réponse « oui » CRÉE un facteur, avec sa source — le questionnaire n'a
+   pas son chemin à lui. Une différence avec les candidats des règles : le
+   facteur naît CONFIRMÉ, parce que la réponse EST la décision humaine.
+   Redemander à quelqu'un de confirmer ce qu'il vient de répondre est la
+   cérémonie qui fait qu'on cesse de lire. Il reste écartable, avec motif,
+   comme n'importe quel autre facteur.
+
+   Un « oui » sans précision écrite produit un facteur INCOMPLET : il compte,
+   mais l'écran le dit et le visa s'en trouve bloqué — même règle qu'un facteur
+   écarté sans motif. */
+function reponseQuestion(q, code){
+  return q.portee === 'entite' ? (S.questEntite[q.code] || {})
+                               : { rep:sec(code).quest[q.code], prec:sec(code).questPrec[q.code] };
+}
+function facteursQuestionnaire(){
+  const out = [];
+  for (const q of QUEST_ENTITE){
+    const r = S.questEntite[q.code] || {};
+    if (r.rep !== 'oui') continue;
+    const cibles = postesEnPerimetre().map(p => ({ fsli:p.code, assertions:[q.a] }));
+    if (!cibles.length) continue;
+    out.push({
+      id:'QUEST:' + q.code, questionnaire:true, question:q, portee:'entite',
+      description:q.q + ' — répondu OUI. ' + (r.prec || '').trim() + ' ' + q.effet,
+      cibles, incomplet:!(r.prec || '').trim(),
+      pertinence:'réponse d’entité · nature ' + NATURES_RI[q.nat].lib,
+      srcRef:'questionnaire d’entité', par:r.par, t:r.t,
+    });
+  }
+  for (const p of postesEnPerimetre()){
+    const st = sec(p.code);
+    for (const q of QUEST_SECTION){
+      if (st.quest[q.code] !== 'oui') continue;
+      const prec = (st.questPrec[q.code] || '').trim();
+      out.push({
+        id:'QUEST:' + q.code + ':' + p.code, questionnaire:true, question:q, portee:'section',
+        description:q.q + ' — répondu OUI sur ' + p.lib + '. ' + prec + ' ' + q.effet,
+        cibles:[{ fsli:p.code, assertions:[q.a] }], incomplet:!prec,
+        pertinence:'réponse de section · nature ' + NATURES_RI[q.nat].lib,
+        srcRef:p.lib, par:st.questPar && st.questPar[q.code], t:st.questT && st.questT[q.code],
+      });
+    }
+  }
+  return out;
+}
+/** Questions restées sans réponse — une évaluation de risque incomplète. */
+function questionsSansReponse(code){
+  const st = sec(code);
+  const s = QUEST_SECTION.filter(q => !st.quest[q.code]);
+  const e = code === undefined ? QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep) : [];
+  return { section:s, entite:e };
+}
+function repondreQuestion(q, code, rep, prec){
+  if (q.portee === 'entite'){
+    const av = (S.questEntite[q.code] || {}).rep;
+    S.questEntite[q.code] = { rep, prec:prec !== undefined ? prec : (S.questEntite[q.code] || {}).prec || '',
+                              par:S.moi, t:tick() };
+    if (av !== rep) logEvent('questionnaire de risque — entité', q.q.slice(0, 70), 'réponse : ' + rep);
+  } else {
+    const st = sec(code);
+    const av = st.quest[q.code];
+    st.quest[q.code] = rep;
+    if (prec !== undefined) st.questPrec[q.code] = prec;
+    st.questPar = st.questPar || {}; st.questT = st.questT || {};
+    st.questPar[q.code] = S.moi; st.questT[q.code] = tick();
+    if (av !== rep) logEvent('questionnaire de risque — ' + libFsli(code), q.q.slice(0, 70), 'réponse : ' + rep);
+  }
+  _regCache = null; _regCle = '';
+}
+
 /** Registre complet : candidats re-dérivés + facteurs saisis à la main,
  *  chacun portant la décision humaine conservée par identifiant. */
 let _regCache = null, _regCle = '';
 function registre(){
   const sq = seuils();
-  const cle = JSON.stringify([S.seuilsFacteurs, S.decisionsFacteurs, S.facteursManuels.length, sq.PM, sq.CTT]);
+  const cle = JSON.stringify([S.seuilsFacteurs, S.decisionsFacteurs, S.facteursManuels.length, sq.PM, sq.CTT,
+    S.questEntite, postesEnPerimetre().map(p => p.code + JSON.stringify(sec(p.code).quest)).join('|')]);
   if (_regCache && _regCle === cle) return _regCache;
   const out = [];
   for (const r of REGLES_FACTEUR){
@@ -7241,6 +7647,17 @@ function registre(){
                statut:d.statut || 'propose', motif:d.motif || '',
                effet:d.effet || 'majore', par:d.par, t:d.t });
   }
+  for (const f of facteursQuestionnaire()){
+    const d = S.decisionsFacteurs[f.id] || {};
+    out.push({ ...f, regle:'QUESTIONNAIRE', regleLib:'Questionnaire résiduel de risque',
+               nature:'qualitatif', auto:false,
+               source:{ lib:f.portee === 'entite' ? 'Questionnaire d’entité' : 'Questionnaire de la section',
+                        vue:f.portee === 'entite' ? 'plan.facteurs' : 'fsli:' + f.cibles[0].fsli,
+                        ref:f.srcRef },
+               statut:d.statut || 'confirme', motif:d.motif || '',
+               effet:d.effet || 'majore',
+               par:d.par || f.par, t:d.t || f.t, cree:d.cree || S.premierRendu });
+  }
   _regCache = out; _regCle = cle;
   return out;
 }
@@ -7257,6 +7674,55 @@ function statuerFacteur(id, statut, motif, effet){
                               par:S.moi, t:tick(), cree:f.cree };
   logEvent('facteur de risque ' + (statut === 'confirme' ? 'confirmé' : statut === 'ecarte' ? 'écarté' : 'remis en attente'),
            id, (motif ? motif.slice(0, 80) : '') + (statut === 'confirme' ? ' · effet : ' + effet : ''));
+}
+
+/* ── le questionnaire, à l'écran ──────────────────────────────────────────
+   Chaque question porte la RAISON pour laquelle elle existe encore. C'est la
+   règle de conception du questionnaire résiduel : si une autre source du
+   dossier peut y répondre, la question ne doit pas être posée. */
+function ligneQuestion(q, code){
+  const r = reponseQuestion(q, code);
+  const cle = q.portee === 'entite' ? q.code : q.code + '|' + code;
+  const oui = r.rep === 'oui';
+  return `<div class="nl ${oui ? (r.prec || '').trim() ? 'bloq' : 'warn' : r.rep ? '' : 'doc'}" style="margin-top:6px">
+    <div class="m">
+      <span class="tag">${esc(NATURES_RI[q.nat].lib)}</span>
+      <span class="tag">${esc(libAssertion(q.a))}</span>
+      ${r.rep ? `<span class="pill ${oui ? 'bad' : ''}">${oui ? 'oui' : 'non'}</span>`
+              : '<span class="pill warn">sans réponse</span>'}
+      ${r.par ? `<span class="smallcaps">${esc(USERS[r.par] ? USERS[r.par].nom : r.par)}${r.t ? ' · ' + horo(r.t) : ''}</span>` : ''}
+    </div>
+    <div class="txt">${esc(q.q)}</div>
+    <div class="row" style="margin-top:5px">
+      <div class="ctrl"><label>Réponse</label>
+        <select data-qrep="${esc(cle)}" style="width:150px">
+          <option value="" ${!r.rep ? 'selected' : ''}>— à répondre —</option>
+          <option value="non" ${r.rep === 'non' ? 'selected' : ''}>non</option>
+          <option value="oui" ${oui ? 'selected' : ''}>oui</option>
+        </select></div>
+      ${oui ? `<div class="ctrl" style="flex:1 1 320px"><label>Précision — obligatoire</label>
+        <input class="cell txt" data-qprec="${esc(cle)}" value="${esc(r.prec || '')}"
+          placeholder="ce qui a changé, qui, quand — c’est ce texte qui part au registre"></div>` : ''}
+    </div>
+    <div class="m" style="margin-top:3px">
+      <span class="smallcaps">Pourquoi cette question existe encore : ${esc(q.pourquoi)}</span>
+    </div>
+    ${oui && !(r.prec || '').trim() ? `<div class="callout bad" style="margin-top:5px">
+      Un « oui » sans précision écrite crée un facteur que personne ne pourra relire.
+      Tant qu’elle manque, le visa de la section reste bloqué.</div>` : ''}
+  </div>`;
+}
+function blocQuestionnaireEntite(){
+  const sans = QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep);
+  const oui = QUEST_ENTITE.filter(q => (S.questEntite[q.code] || {}).rep === 'oui');
+  return blk('Questionnaire d’entité', QUEST_ENTITE.length + ' question(s) · ' + oui.length + ' réponse(s) « oui »'
+      + (sans.length ? ' · ' + sans.length + ' sans réponse' : ''),
+    `<p class="note">Quatre questions posées <b>une fois pour le dossier</b>. Une réponse « oui » crée un facteur
+    qui porte sur <b>tous les postes retenus</b> : la pression sur le résultat ou un changement de direction ne
+    s’arrêtent pas à un cycle. Le questionnaire n’a pas de chemin à lui — il alimente le même registre, avec sa
+    source, et le facteur reste écartable avec motif.</p>
+    ${QUEST_ENTITE.map(q => ligneQuestion(q, undefined)).join('')}`,
+    sans.length ? sans.length + ' sans réponse' : '');
 }
 
 /* ── rendu d'un facteur ───────────────────────────────────────────────────── */
@@ -7327,6 +7793,7 @@ function vueFacteurs(){
     <div class="hd"><h1>Registre des facteurs de risque</h1>
       <span class="sub">une constatation levée quelque part se pose seule là où elle compte — et n’est appliquée nulle part sans décision humaine</span></div>
     ${barreReplis('plan.facteurs')}
+    ${blocQuestionnaireEntite()}
 
     <details class="blk pan" data-repli="plan.facteurs/volume" ${ouvertParDefaut("plan.facteurs/volume", `${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}`) ? "open" : ""}><summary><h2>Volume</h2><span class="pill bad">${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}</span>
       <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></summary><div class="body">
@@ -7340,6 +7807,10 @@ function vueFacteurs(){
       </div>
       <div class="row"><span class="pill ${l.length > CIBLE_VOLUME ? 'bad' : ''}">${l.length} facteurs — cible ${CIBLE_VOLUME}</span>
         ${l.length > CIBLE_VOLUME ? '<span class="smallcaps">remontez les seuils de pertinence ci-dessous</span>' : ''}</div>
+      <div class="row"><span class="pill">${REGLES_FACTEUR.filter(r => r.nature === 'quantitatif').length} règle(s) quantitative(s)</span>
+        <span class="pill">${REGLES_FACTEUR.filter(r => r.nature === 'qualitatif').length} règle(s) qualitative(s)</span>
+        <span class="smallcaps">soit ${pct(REGLES_FACTEUR.filter(r => r.nature === 'quantitatif').length / REGLES_FACTEUR.length, 0)}
+        de règles quantitatives · ${QUESTIONNAIRE.length} question(s) résiduelle(s) au questionnaire</span></div>
       <h3>Seuils de pertinence, par règle</h3>
       ${table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'s',t:'Source'},{k:'n',t:'Nature'},
                {k:'v',t:'Seuil de pertinence'},{k:'c',t:'Facteurs levés',n:1}],
@@ -8581,6 +9052,7 @@ function vueMission(){
   const tb = l.filter(t => !t.sansObjet).reduce((a, t) => a + budget(t), 0);
   const tr = l.reduce((a, t) => a + t.heuresReel, 0);
   return entete('Vue globale de la mission', 'Altiverre SAS — exercice clos le ' + frDate(CLOTURE)) +
+    blocGraphes() +
     blk('Avancement par phase', l.length + ' travaux · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
       table([{k:'p',t:'Phase'},{k:'n',t:'Travaux',n:1},{k:'a',t:'Achevés',n:1},{k:'r',t:'Revus',n:1},
              {k:'x',t:'Restants',n:1},{k:'b',t:'Budget',n:1},{k:'e',t:'Réalisé',n:1},{k:'d',t:'Écart',n:1}],
@@ -9302,7 +9774,8 @@ const AFFECTATIONS_AMORCE = [
 ];
 /** Codes des travaux affectés à l'amorce — pour vérifier qu'il n'y en a pas d'autres. */
 function codesAffectesAmorce(){
-  return AFFECTATIONS_AMORCE.flatMap(a => travauxDe(a.section).map(t => t.code));
+  return [...AFFECTATIONS_AMORCE.flatMap(a => travauxDe(a.section).map(t => t.code)),
+          ...codesDeroules()];
 }
 
 /* ═══ 43. LA SECTION COMME LIEU, ET NON COMME PAGE ═════════════════════════
@@ -9467,6 +9940,11 @@ function destinationSection(p, id){
           facteursDe(p.code).length + ' facteur(s) au registre', blocFacteursSection(p), fp) +
         repli(k('assertions'), 'Évaluation par assertion', 'jugement de l’auditeur',
           partAssertions(p), nivSansMotif) +
+        repli(k('questionnaire'), 'Questionnaire résiduel de risque',
+          QUEST_SECTION.length + ' question(s) — ce qu’aucune autre source ne couvre',
+          partQuestionnaire(p),
+          questionsSansReponse(p.code).section.length
+          + facteursQuestionnaire().filter(f => f.incomplet && f.cibles.some(c => c.fsli === p.code)).length) +
         repli(k('etendue'), 'Étendue des travaux, par assertion', 'ce que le risque commande',
           partEtendue(p), 0);
     }
@@ -10543,6 +11021,417 @@ function blocCumulBascule(){
     présente dans une version prise en compte. Il n’y a pas de troisième chemin, et pas de case à cocher.</p>`);
 }
 
+/* ═══ 48. REPRÉSENTATIONS GRAPHIQUES — À L'ENCRE ═══════════════════════════
+   Cinq représentations pour l'associé qui ouvre le dossier : avancement par
+   section, budget contre réalisé, achèvements dans le temps rapportés à
+   l'échéance, charge par personne, et âge des demandes en retard.
+
+   CONTRAINTE, et c'est elle qui décide de tout : le système visuel existant
+   s'applique intégralement. Les graphiques se tracent à l'ENCRE — les trois
+   gris du texte et le filet — et la COULEUR reste réservée aux PROBLÈMES :
+   retard, blocage, dépassement de budget. Aucune palette de graphique, aucun
+   dégradé, aucune teinte hors jetons. Un camembert à sept couleurs dirait
+   « regardez-moi » là où le dossier dit « regardez ce qui ne va pas ».
+
+   Conséquence de conception : ce sont des BARRES et des LIGNES, jamais des
+   secteurs, parce qu'une série sans couleur ne se distingue que par sa
+   position et sa longueur. La densité fait le reste — hachures pour ce qui
+   est fait, plein pour ce qui reste.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Les seules « couleurs » admises dans un graphe. Trois encres, un filet, et
+   deux teintes de problème — exactement les jetons du système. */
+const ENCRE = { fort:'var(--ink)', moyen:'var(--ink-2)', faible:'var(--ink-3)',
+                filet:'var(--line)', probleme:'var(--anomalie)', attention:'var(--attention)' };
+
+/* `preserveAspectRatio` par défaut CENTRE le dessin quand le conteneur est
+   plus large que le viewBox : les graphiques flottaient au milieu d'une page
+   large, décrochés de la colonne de texte. On les cale à gauche et on borne
+   leur largeur — au-delà, un graphique étiré ne se lit pas mieux. */
+function svg(w, h, contenu, titre){
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img"
+    preserveAspectRatio="xMinYMid meet" aria-label="${esc(titre)}"
+    style="display:block;overflow:visible;max-width:${w}px">${contenu}</svg>`;
+}
+function txt(x, y, s, o){
+  o = o || {};
+  return `<text x="${x}" y="${y}" fill="${o.fill || ENCRE.faible}"
+    font-family="${o.mono ? 'var(--mono)' : 'var(--sans)'}" font-size="${o.taille || 11}"
+    text-anchor="${o.ancre || 'start'}"${o.gras ? ' font-weight="700"' : ''}>${esc(s)}</text>`;
+}
+function rect(x, y, w, h, fill, o){
+  o = o || {};
+  return `<rect x="${x}" y="${y}" width="${Math.max(0, w)}" height="${h}" fill="${fill}"
+    ${o.opacite ? `opacity="${o.opacite}"` : ''} ${o.rx ? `rx="${o.rx}"` : ''}></rect>`;
+}
+/** Hachures : ce qui est FAIT, sans recourir à une seconde couleur. */
+/* `fill="none"` partout où rien ne doit être peint : sans lui, ces éléments
+   portent le noir par défaut de SVG. Ils ne peignent rien — un trait n'a pas
+   de surface, un <defs> ne se rend pas — mais le contrôle de couleur les
+   relève, et il a raison de les relever : une teinte non voulue dans le
+   document reste une teinte non voulue. On la retire plutôt que de l'excuser. */
+const HACHURE = `<defs fill="none">
+  <pattern id="hach" width="4" height="4" patternTransform="rotate(45)" patternUnits="userSpaceOnUse" fill="none">
+    <rect width="4" height="4" fill="var(--panel)"></rect>
+    <line x1="0" y1="0" x2="0" y2="4" stroke="var(--ink-2)" stroke-width="2" fill="none"></line>
+  </pattern>
+</defs>`;
+
+/* ── 1. avancement par section ──────────────────────────────────────────── */
+function grapheAvancement(){
+  const postes = postesEnPerimetre().map(p => {
+    const l = travauxDe(p.code).filter(t => !t.sansObjet);
+    return { p, n:l.length,
+             revus:l.filter(t => t.statut === 'revu').length,
+             acheves:l.filter(t => t.statut === 'acheve').length,
+             obst:obstaclesVisa(p).length, visa:!!sec(p.code).visa };
+  }).filter(x => x.n).sort((a, b) => (b.revus + b.acheves) / b.n - (a.revus + a.acheves) / a.n);
+  /* Colonnes FIXES : nom, barre, décompte, obstacles. En texte proportionnel
+     on ne sait pas où finit une chaîne, et deux étiquettes finissaient l'une
+     sur l'autre. Chaque colonne a donc sa position, et le décompte est en
+     chasse fixe pour que les nombres s'alignent. */
+  const H = 19, LG = 152, BAR = 260, CPT = LG + BAR + 12, OBS = CPT + 92, W = OBS + 106;
+  const h = postes.length * H + 26;
+  const lignes = postes.map((x, i) => {
+    const y = i * H + 16;
+    const u = BAR / Math.max(1, x.n);
+    const wr = x.revus * u, wa = x.acheves * u, wo = (x.n - x.revus - x.acheves) * u;
+    return txt(0, y + 9, x.p.lib.length > 25 ? x.p.lib.slice(0, 24) + '…' : x.p.lib, { fill:ENCRE.moyen })
+      + rect(LG, y, BAR, 11, ENCRE.filet)
+      + rect(LG, y, wr, 11, ENCRE.fort)
+      + rect(LG + wr, y, wa, 11, 'url(#hach)')
+      + (x.obst ? rect(LG + wr + wa + wo - 2, y, 2, 11, ENCRE.probleme) : '')
+      + txt(CPT, y + 9, `${String(x.revus).padStart(2)} · ${String(x.acheves).padStart(2)} · ${String(x.n).padStart(2)}`,
+            { mono:true, fill:ENCRE.faible })
+      + (x.obst ? txt(OBS, y + 9, String(x.obst).padStart(2) + ' obstacle(s)',
+            { mono:true, fill:ENCRE.probleme }) : '');
+  }).join('');
+  return svg(W, h, HACHURE
+    + txt(CPT, 8, 'revu · achevé · total', { mono:true, fill:ENCRE.faible })
+    + lignes
+    + txt(0, h - 2, 'plein : revu · hachuré : achevé · filet : reste — le trait rouge marque une section qui porte un obstacle au visa',
+          { fill:ENCRE.faible }),
+    'Avancement par section');
+}
+
+/* ── 2. budget contre réalisé, par phase ────────────────────────────────── */
+function grapheBudget(){
+  const l = travaux().filter(t => !t.sansObjet);
+  const par = PHASES.map(ph => {
+    const t = l.filter(x => x.phase === ph.id);
+    return { ph, b:t.reduce((a, x) => a + budget(x), 0), r:t.reduce((a, x) => a + x.heuresReel, 0) };
+  }).filter(x => x.b || x.r);
+  const max = Math.max(1, ...par.map(x => Math.max(x.b, x.r)));
+  const H = 30, LG = 150, BAR = 300, W = LG + BAR + 150;
+  const h = par.length * H + 26;
+  const lignes = par.map((x, i) => {
+    const y = i * H + 12;
+    const depasse = x.r > x.b;
+    return txt(0, y + 8, x.ph.lib, { fill:ENCRE.moyen })
+      + rect(LG, y, BAR * x.b / max, 9, ENCRE.filet)
+      + txt(LG + BAR * x.b / max + 6, y + 8, hFmt(x.b), { mono:true, fill:ENCRE.faible })
+      + rect(LG, y + 11, BAR * x.r / max, 9, depasse ? ENCRE.probleme : ENCRE.moyen)
+      + txt(LG + BAR * x.r / max + 6, y + 19, hFmt(x.r) + (depasse ? ' — dépassement' : ''),
+            { mono:true, fill:depasse ? ENCRE.probleme : ENCRE.faible });
+  }).join('');
+  return svg(W, h, lignes
+    + txt(LG, h - 2, 'barre claire : budget · barre pleine : réalisé — rouge dès que le réalisé dépasse',
+          { fill:ENCRE.faible }),
+    'Budget contre réalisé, par phase');
+}
+
+/* ── 3. achèvements dans le temps, rapportés à l'échéance ───────────────── */
+function grapheCourbe(){
+  const l = travaux().filter(t => !t.sansObjet);
+  const faits = l.filter(t => t.acheve).map(t => t.acheve.t.slice(0, 10)).sort();
+  const deb = jalon('interim'), fin = jalon('rapport');
+  const jours = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+  const total = Math.max(1, jours(deb, fin));
+  const W = 520, h = 150, G = 40, B = 26;
+  const x = d => G + (W - G - 10) * Math.min(1, Math.max(0, jours(deb, d) / total));
+  const y = n => h - B - (h - B - 14) * (n / Math.max(1, l.length));
+  /* La courbe RÉELLE : un palier par achèvement. */
+  let pts = `${x(deb)},${y(0)}`, n = 0;
+  for (const d of faits){ pts += ` ${x(d)},${y(n)} ${x(d)},${y(++n)}`; }
+  pts += ` ${x(S.aujourdhui)},${y(n)}`;
+  /* La droite ATTENDUE : de zéro au premier jalon à tout à la date du rapport.
+     Ce n'est pas une prévision, c'est une référence — et elle est en pointillé
+     pour qu'on ne la confonde pas avec une mesure. */
+  const retard = n < l.length * Math.min(1, jours(deb, S.aujourdhui) / total);
+  return svg(W, h, `
+    <line x1="${G}" y1="${h - B}" x2="${W - 10}" y2="${h - B}" stroke="${ENCRE.filet}" stroke-width="1" fill="none"></line>
+    <line x1="${G}" y1="14" x2="${G}" y2="${h - B}" stroke="${ENCRE.filet}" stroke-width="1" fill="none"></line>
+    <line x1="${x(deb)}" y1="${y(0)}" x2="${x(fin)}" y2="${y(l.length)}"
+      stroke="${ENCRE.faible}" stroke-width="1" stroke-dasharray="3 3" fill="none"></line>
+    <line x1="${x(S.aujourdhui)}" y1="10" x2="${x(S.aujourdhui)}" y2="${h - B}"
+      stroke="${ENCRE.moyen}" stroke-width="1" fill="none"></line>
+    <polyline points="${pts}" fill="none" stroke="${retard ? ENCRE.probleme : ENCRE.fort}" stroke-width="2"></polyline>
+    ${txt(G - 6, y(l.length) + 4, String(l.length), { mono:true, ancre:'end' })}
+    ${txt(G - 6, y(0) + 4, '0', { mono:true, ancre:'end' })}
+    ${txt(x(deb), h - B + 14, frDate(deb), { mono:true })}
+    ${txt(x(fin), h - B + 14, frDate(fin), { mono:true, ancre:'end' })}
+    ${txt(x(S.aujourdhui) + 4, 18, 'aujourd’hui', { fill:ENCRE.moyen })}
+    ${txt(G, h - 4, `trait plein : travaux achevés · pointillé : rythme qu’exige la date du rapport`
+      + (retard ? ' — la courbe est sous la référence' : ''),
+      { fill:retard ? ENCRE.probleme : ENCRE.faible })}`,
+    'Travaux achevés dans le temps');
+}
+
+/* ── 4. charge par personne ─────────────────────────────────────────────── */
+function grapheCharge(){
+  const c = chargeParPersonne('reelle').filter(x => !USERS[x.k].sortie);
+  const prop = chargeParPersonne('proposee');
+  const max = Math.max(1, ...c.map(x => x.h), ...prop.map(x => x.h));
+  const H = 26, LG = 150, BAR = 280, W = LG + BAR + 170;
+  const h = c.length * H + 26;
+  const lignes = c.map((x, i) => {
+    const y = i * H + 12, pr = prop.find(z => z.k === x.k) || { h:0 };
+    return txt(0, y + 8, x.u.nom, { fill:ENCRE.moyen })
+      + txt(0, y + 19, x.u.grade, { fill:ENCRE.faible })
+      + rect(LG, y, BAR * pr.h / max, 8, ENCRE.filet)
+      + rect(LG, y + 10, BAR * x.h / max, 8, x.indispo ? ENCRE.probleme : ENCRE.fort)
+      + txt(LG + BAR + 8, y + 8, hFmt(pr.h) + ' proposé', { mono:true, fill:ENCRE.faible })
+      + txt(LG + BAR + 8, y + 19, x.indispo ? esc(x.indispo) : hFmt(x.h) + ' attribué',
+            { mono:!x.indispo, fill:x.indispo ? ENCRE.probleme : ENCRE.moyen });
+  }).join('');
+  return svg(W, h, lignes
+    + txt(LG, h - 2, 'barre claire : charge proposée · barre pleine : charge réellement attribuée',
+          { fill:ENCRE.faible }),
+    'Charge par personne');
+}
+
+/* ── 5. âge des demandes clients en retard ──────────────────────────────── */
+function grapheRetards(){
+  const l = S.requetes.filter(retard).map(r => ({ r, age:ancienneteRetard(r) }))
+    .sort((a, b) => b.age - a.age);
+  if (!l.length) return `<p class="note">Aucune demande en retard : rien à tracer.</p>`;
+  const max = Math.max(...l.map(x => x.age), 1);
+  const H = 20, LG = 230, BAR = 240, W = LG + BAR + 110;
+  const h = l.length * H + 26;
+  const seuil = S.portail.escalade;
+  const lignes = l.map((x, i) => {
+    const y = i * H + 14;
+    const grave = x.age >= seuil;
+    return txt(0, y + 9, (x.r.titre.length > 38 ? x.r.titre.slice(0, 37) + '…' : x.r.titre), { fill:ENCRE.moyen })
+      + rect(LG, y, BAR * x.age / max, 11, grave ? ENCRE.probleme : ENCRE.attention)
+      + txt(LG + BAR * x.age / max + 6, y + 9, x.age + ' j ouvrés', { mono:true,
+            fill:grave ? ENCRE.probleme : ENCRE.moyen });
+  }).join('');
+  return svg(W, h, lignes
+    + `<line x1="${LG + BAR * seuil / max}" y1="6" x2="${LG + BAR * seuil / max}" y2="${h - 20}"
+        stroke="${ENCRE.probleme}" stroke-width="1" stroke-dasharray="2 2" fill="none"></line>`
+    + txt(LG, h - 2, `pointillé : seuil d’escalade du portail (${seuil} jours ouvrés)`, { fill:ENCRE.faible }),
+    'Âge des demandes en retard');
+}
+
+/** Le bloc entier, pour la vue de pilotage. */
+function blocGraphes(){
+  return blk('Où en est le dossier', 'cinq lectures, à l’encre — la couleur ne dit qu’un problème',
+    `<h3>Avancement par section</h3>${grapheAvancement()}
+     <h3>Budget contre réalisé</h3>${grapheBudget()}
+     <h3>Travaux achevés dans le temps</h3>${grapheCourbe()}
+     <h3>Charge par personne</h3>${grapheCharge()}
+     <h3>Demandes clients en retard</h3>${grapheRetards()}
+     <p class="note">Tout est tracé avec les jetons du système : trois encres, le filet, et les deux teintes
+     de problème. Aucune palette de graphique, aucun dégradé. Une série ne se distingue donc jamais par sa
+     couleur mais par sa <b>position</b>, sa <b>longueur</b> et sa <b>densité</b> — et quand quelque chose
+     devient rouge, c’est que quelque chose ne va pas, pas que c’est la deuxième série.</p>`);
+}
+
+/* ═══ 47. UN TESTING ENTIÈREMENT DÉROULÉ — CHIFFRE D'AFFAIRES ══════════════
+   Un outil d'audit se juge sur le papier qu'il produit, pas sur ses écrans
+   vides. Le test de détail du chiffre d'affaires est donc DÉROULÉ dans l'état
+   initial du fichier, de bout en bout :
+
+     échantillon tiré → requête émise → pièces déposées côté client → états
+     dérivés à « reçue » → champs relevés selon le catalogue de preuve → un
+     écart constaté, expliqué, corroboré et RÉSOLU → un second écart laissé
+     NON RÉSOLU qui remonte au cumul → une note de revue posée par la
+     réviseuse, répondue par le préparateur, close par la réviseuse → travail
+     achevé par son préparateur, revu par sa réviseuse.
+
+   RIEN ICI N'EST FABRIQUÉ. Chaque étape passe par la MÊME fonction que le
+   clic correspondant : creerRequete, deposer, les champs du papier, la carte
+   de résolution, ajouterNote, changerStatut. Si une règle refusait une de ces
+   étapes, l'amorce échouerait au lieu de produire un faux papier — et c'est
+   la seule façon de garantir que ce qu'on montre est ce que l'outil fait.
+
+   L'horloge est remise à sa valeur de départ à la fin : ces travaux ont eu
+   lieu AVANT qu'on ouvre l'outil, comme les affectations de l'amorce.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const DEROULE = {
+  poste:'CA', proc:'DETAIL',
+  prep:'karim', rev:'sonia',
+  heures:12.5,          // heures réellement passées — donnée déclarée du jeu d'essai
+  /* Les deux écarts sont NOMMÉS : on ne compte pas sur le tirage pour en
+     rencontrer un. Le premier est résolu, le second reste au cumul. */
+  note:{
+    type:'doc',
+    texte:'Point à valider avant revue : pour les ventes à installation différée, je me suis appuyé sur le bon '
+        + 'de livraison signé, faute de procès-verbal de réception au dossier. Est-ce que cela te suffit comme '
+        + 'preuve de la réalité de la livraison, ou faut-il demander le procès-verbal au client ?',
+    reponse:'Le bon de livraison signé du client suffit pour l’assertion de réalité : il porte la date et '
+          + 'l’identité du signataire. Le procès-verbal de réception n’ajouterait rien ici, il relèverait de '
+          + 'l’acceptation contractuelle. Point clos, la conclusion peut être rédigée en l’état.',
+  },
+};
+
+/** Les travaux que le déroulé affecte. Ils s'ajoutent à ceux de l'amorce
+ *  d'équipe : c'est l'ensemble des affectations présentes au démarrage, et
+ *  rien d'autre ne doit être écrit tant que personne n'accepte la
+ *  proposition de répartition. */
+function codesDeroules(){ return ['SEC-' + DEROULE.poste + '-' + DEROULE.proc]; }
+
+/** Le déroulé complet. Rendu : ce qu'il a réellement produit, pour le harnais. */
+function derouler(){
+  const p = postesCalcules().find(x => x.code === DEROULE.poste);
+  const pr = proceduresRequises(p).find(x => x.code === DEROULE.proc);
+  if (!p || !pr) return { ok:false, why:'section ou procédure absente' };
+  const moiAvant = S.moi;
+
+  /* 1 — affectation. Elle passe par affecter(), donc par la règle
+         d'indépendance : si le préparateur n'avait pas signé, tout s'arrête. */
+  const a1 = affecter('SEC-CA-DETAIL', 'preparateur', DEROULE.prep);
+  const a2 = affecter('SEC-CA-DETAIL', 'reviseur', DEROULE.rev);
+  if (!a1.ok || !a2.ok) return { ok:false, why:(a1.why || a2.why) };
+
+  /* 1 bis — LA MÉTHODE DE SÉLECTION, et pourquoi elle change ici.
+     Le garde-fou d'exhaustivité se déclenche sur cette procédure : 115
+     éléments retenus sur 269, soit 73 % de la masse — à ce niveau on ne sonde
+     plus, on teste presque tout. Et la mesure est sans appel : cette
+     sélection-là ne rencontre AUCUNE des deux anomalies de montant présentes
+     dans la population. Le déroulé applique donc ce que l'écran recommande :
+     sondage en unités monétaires, à la taille qui ramène l'intervalle au seuil
+     de planification. 167 éléments au lieu de 115 — plus de travail, pas moins
+     — et les deux anomalies de montant sont rencontrées. C'est le résultat de
+     l'ADR-047, reproduit ici sur le dossier vivant. */
+  const st0 = proc(p.code, pr.code);
+  st0.methode = 'sum';
+  _echProcCache.clear();
+  const e0 = echantillonProc(p, pr);
+  st0.taille = e0.nAdequate;
+  _echProcCache.clear();
+  logEvent('méthode de sélection modifiée', p.lib + ' · ' + pr.code,
+           'sondage en unités monétaires, taille ' + e0.nAdequate + ' — intervalle ramené au seuil');
+
+  /* 2 — la requête, engendrée depuis le catalogue de preuve. */
+  const req = requeteJustificatifsProc(p, pr);
+  if (!req) return { ok:false, why:'aucune sélection à demander' };
+
+  /* 3 — le client dépose. Chaque dépôt passe par deposer(), donc l'état
+         « reçue » se DÉRIVE : aucune case n'est cochée nulle part. */
+  const espaceAvant = S.espace, clientAvant = S.moiClient;
+  S.espace = 'client';
+  const ref = referentSection(p.code);
+  if (ref) S.moiClient = ref.id;
+  const docs = docsAttendusProc(p, pr);
+  for (const it of req.items){
+    for (let k = 0; k < docs.length; k++) deposer(req.id, it.id);
+  }
+  S.espace = espaceAvant; S.moiClient = clientAvant;
+
+  /* 4 — les champs sont relevés selon le catalogue. C'est la lecture des
+         pièces : la valeur portée par la pièce synthétique est saisie telle
+         quelle, exactement comme le ferait un auditeur qui la lit. */
+  S.moi = DEROULE.prep;
+  let releves = 0;
+  for (const c of controles(p, pr)){
+    if (etatControle(c) !== 'recue') continue;
+    const v = c.ch.val(c.ligne.x);
+    c.ligne.champs[c.cle] = c.ch.type === 'montant' ? (v / 100).toFixed(2).replace('.', ',')
+                          : c.ch.type === 'bool' ? (v ? 'oui' : 'non') : String(v);
+    releves++;
+  }
+  marquerExecution(p, pr);
+
+  /* 5 — les écarts. Le jeu de données en produit ; on en RÉSOUT UN et on
+         laisse l'autre. Le premier est le plus gros écart chiffré, parce que
+         c'est celui qu'un auditeur traite d'abord. */
+  /* Les écarts CHIFFRÉS sont pris du plus PETIT au plus grand : on résout le
+     premier, on laisse le second. C'est l'ordre réel d'un dossier — la remise
+     de 620 € s'explique et se corrobore en une pièce, le retour de 4 850 €
+     attend son avoir. Et c'est le plus gros qui reste au cumul, pas l'inverse. */
+  const chiffres = ecartsProc(p, pr).filter(c => constateDe(c) !== 0)
+    .sort((x, y) => Math.abs(constateDe(x)) - Math.abs(constateDe(y)));
+  let resolu = null, laisse = null;
+  if (chiffres.length){
+    const c = chiffres[0];
+    const r = resol(c);
+    const cst = constateDe(c);
+    r.expl = 'Remise commerciale de fin d’année accordée à ce client et non déduite de la facture : l’avoir '
+           + 'correspondant a été émis le 12 janvier, il vous est joint.';
+    r.concl = 'La remise est corroborée par l’avoir déposé et par l’écriture qui le porte au grand livre. Le '
+            + 'montant facturé excède le montant dû de la remise ; l’avoir ayant été émis, l’écart est qualifié '
+            + 'corrigé et sort du cumul pour sa totalité. Rapporté au seuil de remontée, il n’y entrait pas — '
+            + 'ce qui ne dispense pas de le documenter, seulement de le cumuler.';
+    r.disposition = 'corrigee';
+    r.explique = cst;
+    const dep = depotsElement(p, pr, c.ligne.cle);
+    if (dep.length) r.corrobPiece = dep[0].nom;
+    const ecr = lg().entries.find(e => String(e.pieceRef) === String(c.ligne.x.e && c.ligne.x.e.pieceRef));
+    if (ecr) r.corrobEcriture = ecr.num;
+    const res = conclureResolution(r, cst, p.lib + ' · ' + c.ch.lib + ' — ' + c.ligne.cle);
+    resolu = { cle:c.ligne.cle, champ:c.ch.lib, constate:cst, ok:res.ok, why:res.why };
+  }
+  if (chiffres.length > 1){
+    const c = chiffres[1];
+    laisse = { cle:c.ligne.cle, champ:c.ch.lib, constate:constateDe(c) };
+  }
+
+  /* 6 — la note de revue. Le PRÉPARATEUR pose le point sur son papier et
+         l'adresse à sa réviseuse ; elle répond et elle clôt. C'est la règle
+         déjà écrite : on ne clôt pas sa propre note, et seul un réviseur ou un
+         associé clôt. Si la réviseuse avait posé la note, elle n'aurait pas pu
+         la clore — et l'amorce le dirait au lieu de le cacher. */
+  S.moi = DEROULE.prep;
+  const n = ajouterNote(DEROULE.note.type,
+    ancre(p.code, 'procedure', pr.code, 'Procédure ' + procRef(p, pr)), DEROULE.note.texte);
+  n.pour = DEROULE.rev;
+  S.moi = DEROULE.rev;
+  n.reponses.push({ par:S.moi, t:tick(), texte:DEROULE.note.reponse });
+  logEvent('réponse à une note', '#' + n.id + ' — ' + n.ancre.lib, USERS[S.moi].nom);
+  const closable = peutClore(S.moi, n);
+  if (closable){
+    n.clos = { par:S.moi, t:tick() };
+    logEvent('note close', '#' + n.id + ' — ' + n.ancre.lib,
+             USERS[S.moi].nom + ' (' + ROLE_LIB[USERS[S.moi].role] + ')');
+  }
+
+  /* 7 — la conclusion de la procédure, puis les statuts : achevé par le
+         préparateur seul, revu par la réviseuse seule. changerStatut refuse
+         tout le reste. */
+  S.moi = DEROULE.prep;
+  proc(p.code, pr.code).conclusion =
+    'Test de détail exécuté sur ' + (echantillonProc(p, pr) || { retenus:[] }).retenus.length + ' éléments '
+    + 'sélectionnés par sondage en unités monétaires, à la taille qui ramène l’intervalle de sondage au seuil '
+    + 'de planification — la strate exhaustive retenait 73 % de la masse sans rencontrer aucune des deux '
+    + 'anomalies de montant de la population. Les pièces ont été obtenues pour la '
+    + 'totalité des éléments. Deux écarts de montant ont été relevés : le premier est corroboré par l’avoir '
+    + 'et par l’écriture de correction, et sort du cumul ; le second reste non résolu et y demeure. Sous '
+    + 'réserve de ce second écart, l’assertion de réalité du chiffre d’affaires est couverte pour la '
+    + 'population testée.';
+  /* La conclusion cite la méthode retenue, parce que c'est elle qui explique
+     l'étendue — et parce qu'un réviseur qui lit « 167 éléments » sans savoir
+     d'où sort le nombre ne peut rien en faire. */
+  /* Les heures passées sont une DONNÉE DÉCLARÉE du jeu d'essai, comme les
+     taux d'anomalie : sans elles, la lecture « budget contre réalisé » du
+     pilotage n'aurait rien à montrer. Le dépassement est voulu — 167 éléments
+     au lieu des 115 de la strate, c'est le coût de la méthode adéquate. */
+  trav('SEC-CA-DETAIL').heuresReel = DEROULE.heures;
+  const s1 = changerStatut('SEC-CA-DETAIL', 'acheve');
+  S.moi = DEROULE.rev;
+  const s2 = changerStatut('SEC-CA-DETAIL', 'revu');
+  S.moi = moiAvant;
+
+  const n5 = comptesEtats(controles(p, pr));
+  return { ok:true, requete:req.id, elements:req.items.length, releves,
+           etats:n5, resolu, laisse, note:{ id:n.id, close:closable },
+           acheve:s1.ok, revu:s2.ok,
+           cumul:anomalies().filter(x => !x.souSeuil && x.section === p.code)
+                   .reduce((t, x) => t + x.montant, 0) };
+}
+
 /* ═══ 39. CRITÈRES DU TEST DES ÉCRITURES ═══════════════════════════════════
    « 457 écritures en journal d'OD » ne veut rien dire isolément. Ce qui a un
    sens, c'est l'ENTONNOIR : d'où l'on part, ce que chaque critère retient,
@@ -11103,10 +11992,14 @@ function blocRetenues(ent){
    axes — la preuve étant que la planification, phase elle aussi, vivait déjà
    dans l'espace auditeur. L'espace auditeur porte donc le dossier entier,
    ordonné par phase. */
+/* PILOTAGE EN PREMIER, et par défaut. Un associé qui ouvre l'outil doit voir
+   l'état du dossier, pas un écran de travail. L'ordre des espaces est celui
+   dans lequel on les ouvre : on regarde d'abord où l'on en est, on travaille
+   ensuite, et le portail client est la troisième porte. */
 const ESPACES = [
+  { id:'pilotage', lib:'Pilotage',        defaut:'pil.mission' },
   { id:'auditeur', lib:'Espace auditeur', defaut:'plan.programme' },
   { id:'client',   lib:'Portail client',  defaut:'cli.vue' },
-  { id:'pilotage', lib:'Pilotage',        defaut:'pil.mission' },
 ];
 const DOSSIER = [
   { id:'plan.programme', lib:'Programme de travail' },
@@ -11433,11 +12326,23 @@ function renderMainDiff(){
 /** Hauteur réelle de la barre collante → décalage des ancres de navigation. */
 function syncTopHeight(){
   const h = Math.round(document.querySelector('.top').getBoundingClientRect().height);
-  document.documentElement.style.setProperty('--topH', h + 'px');
+  document.documentElement.style.setProperty('--sTop', h + 'px');
 }
 
+/** L'espace d'une vue se DÉDUIT de son identifiant : une vue de section ou de
+ *  planification appartient à l'espace auditeur, « cli. » au portail, « pil. »
+ *  au pilotage. Sans cela, naviguer vers une vue d'un autre espace la rendait
+ *  DANS l'espace courant — bandeau de seuils absent, rail incohérent. Le cas
+ *  ne se produisait pas tant que l'espace auditeur était celui d'ouverture ;
+ *  il apparaît dès que le pilotage passe devant. */
+function espaceDeVue(vue){
+  if (vue.startsWith('cli.')) return 'client';
+  if (vue.startsWith('pil.')) return 'pilotage';
+  return 'auditeur';
+}
 function aller(vue, espace){
-  if (espace && espace !== S.espace) S.espace = espace;
+  const e = espace || espaceDeVue(vue);
+  if (e !== S.espace) S.espace = e;
   S.vue = vue; S.noteCible = null;
   render();
   const m = document.getElementById('main');
@@ -11531,6 +12436,16 @@ document.addEventListener('input', e => {
     return renderMainDiff();
   }
   /* Équipe et indépendance */
+  if (d.qprec !== undefined){
+    const [code, poste] = d.qprec.split('|');
+    const q = QUESTIONNAIRE.find(x => x.code === code);
+    if (q){
+      if (q.portee === 'entite'){ S.questEntite[q.code] = { ...(S.questEntite[q.code] || {}), prec:t.value }; }
+      else sec(poste).questPrec[q.code] = t.value;
+      _regCache = null; _regCle = '';
+    }
+    return renderMainDiff();
+  }
   if (d.sauve !== undefined){ S.independance.sauvegardes[d.sauve] = t.value; return renderMainDiff(); }
   if (d.declp !== undefined){
     const dc = declarationCourante(S.moi); if (dc && !dc.signee) dc.precisions[d.declp] = t.value;
@@ -11638,10 +12553,12 @@ document.addEventListener('change', e => {
     logEvent('statut de compte modifié', d.ns, t.value);
     return renderMain();
   }
-  if (d.fac !== undefined && p){
-    sec(p.code).declares[d.fac] = t.checked;
-    logEvent('facteur de risque déclaré', p.lib, (FACTEURS.find(f => f.code === d.fac) || {}).lib + ' : ' + (t.checked ? 'oui' : 'non'));
-    renderImpact(); return renderMain();
+  /* Questionnaire résiduel : la réponse crée le facteur, elle ne coche rien. */
+  if (d.qrep !== undefined){
+    const [code, poste] = d.qrep.split('|');
+    const q = QUESTIONNAIRE.find(x => x.code === code);
+    if (q) repondreQuestion(q, poste, t.value);
+    renderImpact(); return render();
   }
   if (d.niv !== undefined && p){
     const st = sec(p.code);
@@ -12102,6 +13019,29 @@ document.addEventListener('click', e => {
   if (d.imprime){ window.print(); return; }
 });
 
+/* ── impression : un dossier ne se plie pas ───────────────────────────────
+   La règle CSS « details:not([open]) > * { display:block } » ne suffit PAS :
+   le navigateur supprime le rendu du contenu d'un <details> fermé au niveau
+   de l'élément lui-même, et forcer l'affichage de l'enfant n'y change rien —
+   mesuré, le contenu sortait à zéro caractère au papier. Il faut OUVRIR les
+   panneaux, puis les refermer. On retient ceux qu'on a ouverts pour ne pas
+   déplier ce que l'auditeur avait laissé ouvert de son propre chef.
+
+   Un papier de travail amputé de ce qui était replié à l'écran n'est pas un
+   papier de travail : c'est une capture d'écran. */
+let _repliesImpression = [];
+function ouvrirPourImpression(){
+  _repliesImpression = [...document.querySelectorAll('details')].filter(d => !d.open);
+  for (const d of _repliesImpression) d.open = true;
+  return _repliesImpression.length;
+}
+function refermerApresImpression(){
+  for (const d of _repliesImpression) d.open = false;
+  _repliesImpression = [];
+}
+addEventListener('beforeprint', ouvrirPourImpression);
+addEventListener('afterprint', refermerApresImpression);
+
 /* ═══ 24. DÉMARRAGE ════════════════════════════════════════════════════════ */
 initPortail();
 seedEquipe();
@@ -12116,6 +13056,11 @@ seedEquipe();
   const r2 = creerRequete('PERSONNEL', 'Justificatifs de paie', ['Journal de paie annuel', 'Contrats des entrées de l’exercice'], -6);
   r2.items[0].statut = 'attente_revue'; r2.items[0].revoyeur = USERS.lea.nom;
   r2.items[0].depots = [{ nom:'journal-paie-2025.pdf', t:tick(), par:'Sophie Brun' }];
+  /* Le testing du chiffre d'affaires est DÉROULÉ de bout en bout, par les
+     mêmes fonctions que les clics correspondants. Si une règle refusait une
+     étape, l'amorce le dirait ici plutôt que de produire un faux papier. */
+  const d = derouler();
+  if (!d.ok) console.error('déroulé du chiffre d’affaires interrompu :', d.why);
   S.events.length = 0; HORLOGE = '2026-03-15T09:12';   // l'amorce n'est pas un événement de la session
 })();
 render();

@@ -12,6 +12,21 @@ Cast (all fictional): **Vermeil Audit** — Claire Fontaine (partner, signs), L�
 (manager, reviews), Karim Benali (senior, prepares). Client: Sophie Marchand (CFO),
 Théo Girard (chef comptable).
 
+## Le prototype cliquable — la démonstration de trente secondes
+
+`prototype/otto-prototype.html` s'ouvre sans rien installer, y compris sur téléphone. Il porte le
+**testing du chiffre d'affaires entièrement déroulé** : échantillon, requête, dépôts, contrôles,
+un écart résolu, un écart au cumul, une note posée puis close, travail achevé et revu, papier
+imprimable. Le chemin le plus court pour le voir :
+
+1. l'outil s'ouvre sur **Pilotage** — cinq lectures graphiques de l'état du dossier ;
+2. **Espace auditeur → Chiffre d'affaires → Procédures d'audit → Test de détail** : le papier ;
+3. **Équipe et indépendance** : essayez d'attribuer un travail à Hugo Vasseur — le système refuse ;
+4. **Versions du fichier → prendre en compte la version 4**, puis **Ajustements et retraitements** :
+   trois anomalies passent de « non corrigée » à « corrigée » sans aucune saisie.
+
+Le reste de ce document décrit la démonstration de l'application Next.js, qui est un autre objet.
+
 ## 0. Start
 
 ```bash

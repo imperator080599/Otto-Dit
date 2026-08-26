@@ -235,6 +235,191 @@ const REGLES_FACTEUR = [
       return out;
     },
   },
+  /* ═══ RÈGLES QUALITATIVES ══════════════════════════════════════════════
+     Le registre comptait CINQ règles quantitatives et UNE qualitative :
+     l'évaluation du risque du produit reposait donc à 83 % sur des variations
+     chiffrées, ce qu'un auditeur reproche au premier coup d'œil. Les cinq
+     règles qui suivent lèvent des facteurs QUALITATIFS depuis des procédures
+     qui les captent déjà — c'est la conception demandée : la plupart des
+     facteurs qualitatifs doivent REMONTER, et le questionnaire ne garde que
+     le résiduel.
+
+     Le vocabulaire retenu — complexité, subjectivité, changement, incertitude,
+     biais de la direction — est celui des facteurs de risque inhérent des
+     référentiels d'audit. [UNVERIFIED] : il vient de sources secondaires,
+     aucun texte normatif primaire n'ayant pu être atteint depuis cet
+     environnement (voir methodology/README.md). Il organise les questions ;
+     il ne fonde aucune obligation. */
+  {
+    code:'ESTIM', lib:'Le poste est porté par des estimations comptables',
+    srcLib:'Composition du poste', srcVue:'plan.scope',
+    seuilLib:'part du poste portée par des comptes d’estimation', seuilUnite:'%',
+    seuilDefaut:() => 10, pas:1,
+    nature:'qualitatif',
+    calc(seuil){
+      /* Provisions, dépréciations et dotations : ce sont les comptes dont le
+         solde résulte d'un JUGEMENT et non d'une transaction. La subjectivité
+         d'un poste se mesure donc — c'est la part de sa masse qu'ils portent. */
+      const RE_ESTIM = /^(15|29|39|49|59|68|78)/;
+      const out = [];
+      for (const p of postesCalcules()){
+        const comptes = p.comptes.filter(c => RE_ESTIM.test(c));
+        if (!comptes.length) continue;
+        const tot = p.comptes.reduce((a, c) => a + Math.abs(bal().get(c).solde), 0);
+        const est = comptes.reduce((a, c) => a + Math.abs(bal().get(c).solde), 0);
+        if (!tot) continue;
+        const part = est / tot;
+        if (part < seuil / 100 || est < seuils().CTT) continue;
+        out.push({
+          id:'ESTIM:' + p.code,
+          description:`${pct(part, 0)} de la masse du poste (${eur(est)} sur ${eur(tot)}) est portée par des `
+                    + `comptes d’estimation — ${comptes.join(', ')}. Un solde qui résulte d’un jugement et non `
+                    + `d’une transaction ne se prouve pas par une pièce : il se prouve par la méthode et les `
+                    + `hypothèses. C’est un facteur de SUBJECTIVITÉ, et il ne se déduit d’aucune variation.`,
+          cibles:[{ fsli:p.code, assertions:['evaluation'] }],
+          pertinence:`${pct(part, 0)} de la masse ≥ seuil ${seuil}${NBSP}% (plancher ${eur(seuils().CTT)})`,
+          srcRef:p.lib,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'TIERS_UNIQUE', lib:'Dépendance à un tiers unique sur le poste',
+    srcLib:'Grand livre auxiliaire du poste', srcVue:'plan.rappro',
+    seuilLib:'part du poste portée par un seul tiers', seuilUnite:'%',
+    seuilDefaut:() => 25, pas:1,
+    nature:'qualitatif',
+    /* Chemin parcouru, parce qu'il dit ce que vaut le seuil.
+       Au premier essai — part ≥ 25 %, sans autre garde — la règle levait HUIT
+       facteurs. En regardant la distribution : les quatre plus concentrés
+       (77 %, 76 %, 62 %, 56 %) portent tous DEUX À QUATRE TIERS. Avec deux
+       tiers, l'un des deux pèse forcément plus de la moitié : le nombre est
+       une conséquence arithmétique de la population, pas une dépendance.
+       On a donc ajouté un PLANCHER DE POPULATION — cinq tiers — et gardé la
+       part absolue, parce que c'est elle qui répond à la question de
+       l'auditeur : si ce tiers disparaît, le poste tient-il ? Un fournisseur
+       à 35 % est une dépendance qu'il y en ait huit ou huit cents.
+       Quatre facteurs restent. Deux seront sans doute écartés au triage, avec
+       un motif : c'est un taux de triage normal, pas du bruit. */
+    minTiers:5,
+    calc(seuil){
+      const out = [];
+      for (const p of postesCalcules()){
+        const m = new Map();
+        let tot = 0;
+        for (const e of lg().entries){
+          const aux = e.lines.map(l => l.auxLib).find(Boolean);
+          if (!aux) continue;
+          const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
+          if (!mv) continue;
+          m.set(aux, (m.get(aux) || 0) + mv); tot += mv;
+        }
+        if (!tot || m.size < this.minTiers) continue;
+        const [tiers, mv] = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
+        const part = mv / tot;
+        if (part < seuil / 100 || mv < seuils().CTT) continue;
+        out.push({
+          id:'TIERS_UNIQUE:' + p.code,
+          description:`Le tiers « ${tiers} » porte ${pct(part, 0)} des mouvements du poste (${eur(mv)} sur `
+                    + `${eur(tot)}, ${m.size} tiers au total). La dépendance à un partenaire unique est un `
+                    + `facteur d’audit — continuité, pouvoir de négociation, concentration du risque de `
+                    + `recouvrement ou d’approvisionnement — et elle ne se lit sur aucune variation N/N-1. `
+                    + `À répartition égale, chacun en porterait ${pct(1 / m.size, 0)}.`,
+          cibles:[{ fsli:p.code, assertions:['evaluation', 'realite'] }],
+          pertinence:`${pct(part, 0)} des mouvements ≥ seuil ${seuil}${NBSP}% · ${m.size} tiers ≥ plancher ${this.minTiers}`,
+          srcRef:tiers,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'RETRAITEMENT', lib:'Changement d’estimation ou de méthode passé en cours de mission',
+    srcLib:'Ajustements et retraitements', srcVue:'plan.ajust',
+    seuilLib:'montant minimal du retraitement', seuilUnite:'€',
+    seuilDefaut:() => seuils().CTT / 100, pas:100,
+    nature:'qualitatif',
+    calc(seuil){
+      const out = [];
+      for (const a of ajustements()){
+        if (a.nature !== 'retraitement' || !a.prise) continue;
+        const i = impactAjustement(a);
+        if (montantAjustement(a) < seuil * 100) continue;
+        const cibles = i.postes.map(x => ({ fsli:x.code, assertions:['evaluation', 'presentation'] }));
+        if (!cibles.length) continue;
+        out.push({
+          id:'RETRAITEMENT:' + a.ref,
+          description:`L’écriture ${a.ref} « ${a.lib} » est un retraitement de ${eur(montantAjustement(a))} passé `
+                    + `à la version ${a.v} : ${a.motif}. Un reclassement ou un changement d’estimation en cours `
+                    + `d’exercice est un facteur de CHANGEMENT : ce qui a été jugé une fois peut l’être encore, `
+                    + `et le poste touché mérite d’être regardé pour ce qu’il est devenu.`,
+          cibles,
+          pertinence:`${eur(montantAjustement(a))} ≥ seuil ${eur(seuil * 100)}`,
+          srcRef:a.ref,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'CORRECTION_N', lib:'Le poste a exigé une correction sur constat d’audit',
+    srcLib:'Ajustements et retraitements', srcVue:'plan.ajust',
+    seuilLib:'montant minimal de la correction', seuilUnite:'€',
+    seuilDefaut:() => seuils().CTT / 100, pas:100,
+    nature:'qualitatif',
+    calc(seuil){
+      const out = [];
+      for (const a of correctionsEnVigueur()){
+        if (montantAjustement(a) < seuil * 100) continue;
+        const i = impactAjustement(a);
+        const cibles = i.postes.map(x => ({ fsli:x.code, assertions:['realite', 'exhaustivite'] }));
+        if (!cibles.length) continue;
+        out.push({
+          id:'CORRECTION_N:' + a.ref,
+          description:`Le client a passé l’écriture ${a.ref} « ${a.lib} » (${eur(montantAjustement(a))}) EN RÉPONSE `
+                    + `à un constat d’audit. Un poste qui a exigé une correction cette année est un poste où le `
+                    + `dispositif du client a laissé passer quelque chose : c’est un facteur, indépendamment du `
+                    + `fait que la correction ait été passée.`,
+          cibles,
+          pertinence:`${eur(montantAjustement(a))} ≥ seuil ${eur(seuil * 100)}`,
+          srcRef:a.ref,
+        });
+      }
+      return out;
+    },
+  },
+  {
+    code:'NOTE_N1', lib:'Anomalie relevée sur ce poste à l’exercice précédent',
+    srcLib:'Notes de revue — reprise N-1', srcVue:'plan.synth',
+    seuilLib:'types de note retenus', seuilUnite:'niveau', seuilDefaut:() => 1, pas:1,
+    nature:'qualitatif',
+    calc(seuil){
+      /* seuil 1 : notes bloquantes seules · 2 : + « à documenter » · 3 : toutes */
+      const rang = { bloq:1, doc:2, q:3, n1:3 };
+      const out = [];
+      const parSection = {};
+      for (const n of NOTES_N1){
+        if ((rang[n.type] || 3) > seuil) continue;
+        (parSection[n.section] = parSection[n.section] || []).push(n);
+      }
+      for (const [code, l] of Object.entries(parSection)){
+        const p = postesCalcules().find(x => x.code === code);
+        if (!p) continue;
+        out.push({
+          id:'NOTE_N1:' + code,
+          description:`${l.length} note(s) de revue de l’exercice précédent portaient sur ce poste : `
+                    + l.map(x => '« ' + x.texte + ' »').join(' ')
+                    + ` Une anomalie relevée l’an dernier n’est pas une anomalie de cette année, mais elle dit où `
+                    + `regarder — et sa RÉCURRENCE, si elle se confirme, est le fait le plus significatif du dossier.`,
+          cibles:[{ fsli:code, assertions:[...new Set(l.map(x => x.type === 'bloq' ? 'exhaustivite' : 'presentation'))] }],
+          pertinence:`${l.length} note(s) N-1 de type ${[...new Set(l.map(x => TYPES_NOTE[x.type].lib))].join(', ')}`,
+          srcRef:libFsli(code),
+        });
+      }
+      return out;
+    },
+  },
 ];
 
 const _regleCache = new Map();
@@ -255,12 +440,84 @@ function seuilRegle(code){
   return S.seuilsFacteurs[code] !== undefined ? S.seuilsFacteurs[code] : r.seuilDefaut();
 }
 
+/* ── le questionnaire alimente LE MÊME registre ───────────────────────────
+   Une réponse « oui » CRÉE un facteur, avec sa source — le questionnaire n'a
+   pas son chemin à lui. Une différence avec les candidats des règles : le
+   facteur naît CONFIRMÉ, parce que la réponse EST la décision humaine.
+   Redemander à quelqu'un de confirmer ce qu'il vient de répondre est la
+   cérémonie qui fait qu'on cesse de lire. Il reste écartable, avec motif,
+   comme n'importe quel autre facteur.
+
+   Un « oui » sans précision écrite produit un facteur INCOMPLET : il compte,
+   mais l'écran le dit et le visa s'en trouve bloqué — même règle qu'un facteur
+   écarté sans motif. */
+function reponseQuestion(q, code){
+  return q.portee === 'entite' ? (S.questEntite[q.code] || {})
+                               : { rep:sec(code).quest[q.code], prec:sec(code).questPrec[q.code] };
+}
+function facteursQuestionnaire(){
+  const out = [];
+  for (const q of QUEST_ENTITE){
+    const r = S.questEntite[q.code] || {};
+    if (r.rep !== 'oui') continue;
+    const cibles = postesEnPerimetre().map(p => ({ fsli:p.code, assertions:[q.a] }));
+    if (!cibles.length) continue;
+    out.push({
+      id:'QUEST:' + q.code, questionnaire:true, question:q, portee:'entite',
+      description:q.q + ' — répondu OUI. ' + (r.prec || '').trim() + ' ' + q.effet,
+      cibles, incomplet:!(r.prec || '').trim(),
+      pertinence:'réponse d’entité · nature ' + NATURES_RI[q.nat].lib,
+      srcRef:'questionnaire d’entité', par:r.par, t:r.t,
+    });
+  }
+  for (const p of postesEnPerimetre()){
+    const st = sec(p.code);
+    for (const q of QUEST_SECTION){
+      if (st.quest[q.code] !== 'oui') continue;
+      const prec = (st.questPrec[q.code] || '').trim();
+      out.push({
+        id:'QUEST:' + q.code + ':' + p.code, questionnaire:true, question:q, portee:'section',
+        description:q.q + ' — répondu OUI sur ' + p.lib + '. ' + prec + ' ' + q.effet,
+        cibles:[{ fsli:p.code, assertions:[q.a] }], incomplet:!prec,
+        pertinence:'réponse de section · nature ' + NATURES_RI[q.nat].lib,
+        srcRef:p.lib, par:st.questPar && st.questPar[q.code], t:st.questT && st.questT[q.code],
+      });
+    }
+  }
+  return out;
+}
+/** Questions restées sans réponse — une évaluation de risque incomplète. */
+function questionsSansReponse(code){
+  const st = sec(code);
+  const s = QUEST_SECTION.filter(q => !st.quest[q.code]);
+  const e = code === undefined ? QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep) : [];
+  return { section:s, entite:e };
+}
+function repondreQuestion(q, code, rep, prec){
+  if (q.portee === 'entite'){
+    const av = (S.questEntite[q.code] || {}).rep;
+    S.questEntite[q.code] = { rep, prec:prec !== undefined ? prec : (S.questEntite[q.code] || {}).prec || '',
+                              par:S.moi, t:tick() };
+    if (av !== rep) logEvent('questionnaire de risque — entité', q.q.slice(0, 70), 'réponse : ' + rep);
+  } else {
+    const st = sec(code);
+    const av = st.quest[q.code];
+    st.quest[q.code] = rep;
+    if (prec !== undefined) st.questPrec[q.code] = prec;
+    st.questPar = st.questPar || {}; st.questT = st.questT || {};
+    st.questPar[q.code] = S.moi; st.questT[q.code] = tick();
+    if (av !== rep) logEvent('questionnaire de risque — ' + libFsli(code), q.q.slice(0, 70), 'réponse : ' + rep);
+  }
+  _regCache = null; _regCle = '';
+}
+
 /** Registre complet : candidats re-dérivés + facteurs saisis à la main,
  *  chacun portant la décision humaine conservée par identifiant. */
 let _regCache = null, _regCle = '';
 function registre(){
   const sq = seuils();
-  const cle = JSON.stringify([S.seuilsFacteurs, S.decisionsFacteurs, S.facteursManuels.length, sq.PM, sq.CTT]);
+  const cle = JSON.stringify([S.seuilsFacteurs, S.decisionsFacteurs, S.facteursManuels.length, sq.PM, sq.CTT,
+    S.questEntite, postesEnPerimetre().map(p => p.code + JSON.stringify(sec(p.code).quest)).join('|')]);
   if (_regCache && _regCle === cle) return _regCache;
   const out = [];
   for (const r of REGLES_FACTEUR){
@@ -279,6 +536,17 @@ function registre(){
                statut:d.statut || 'propose', motif:d.motif || '',
                effet:d.effet || 'majore', par:d.par, t:d.t });
   }
+  for (const f of facteursQuestionnaire()){
+    const d = S.decisionsFacteurs[f.id] || {};
+    out.push({ ...f, regle:'QUESTIONNAIRE', regleLib:'Questionnaire résiduel de risque',
+               nature:'qualitatif', auto:false,
+               source:{ lib:f.portee === 'entite' ? 'Questionnaire d’entité' : 'Questionnaire de la section',
+                        vue:f.portee === 'entite' ? 'plan.facteurs' : 'fsli:' + f.cibles[0].fsli,
+                        ref:f.srcRef },
+               statut:d.statut || 'confirme', motif:d.motif || '',
+               effet:d.effet || 'majore',
+               par:d.par || f.par, t:d.t || f.t, cree:d.cree || S.premierRendu });
+  }
   _regCache = out; _regCle = cle;
   return out;
 }
@@ -295,6 +563,55 @@ function statuerFacteur(id, statut, motif, effet){
                               par:S.moi, t:tick(), cree:f.cree };
   logEvent('facteur de risque ' + (statut === 'confirme' ? 'confirmé' : statut === 'ecarte' ? 'écarté' : 'remis en attente'),
            id, (motif ? motif.slice(0, 80) : '') + (statut === 'confirme' ? ' · effet : ' + effet : ''));
+}
+
+/* ── le questionnaire, à l'écran ──────────────────────────────────────────
+   Chaque question porte la RAISON pour laquelle elle existe encore. C'est la
+   règle de conception du questionnaire résiduel : si une autre source du
+   dossier peut y répondre, la question ne doit pas être posée. */
+function ligneQuestion(q, code){
+  const r = reponseQuestion(q, code);
+  const cle = q.portee === 'entite' ? q.code : q.code + '|' + code;
+  const oui = r.rep === 'oui';
+  return `<div class="nl ${oui ? (r.prec || '').trim() ? 'bloq' : 'warn' : r.rep ? '' : 'doc'}" style="margin-top:6px">
+    <div class="m">
+      <span class="tag">${esc(NATURES_RI[q.nat].lib)}</span>
+      <span class="tag">${esc(libAssertion(q.a))}</span>
+      ${r.rep ? `<span class="pill ${oui ? 'bad' : ''}">${oui ? 'oui' : 'non'}</span>`
+              : '<span class="pill warn">sans réponse</span>'}
+      ${r.par ? `<span class="smallcaps">${esc(USERS[r.par] ? USERS[r.par].nom : r.par)}${r.t ? ' · ' + horo(r.t) : ''}</span>` : ''}
+    </div>
+    <div class="txt">${esc(q.q)}</div>
+    <div class="row" style="margin-top:5px">
+      <div class="ctrl"><label>Réponse</label>
+        <select data-qrep="${esc(cle)}" style="width:150px">
+          <option value="" ${!r.rep ? 'selected' : ''}>— à répondre —</option>
+          <option value="non" ${r.rep === 'non' ? 'selected' : ''}>non</option>
+          <option value="oui" ${oui ? 'selected' : ''}>oui</option>
+        </select></div>
+      ${oui ? `<div class="ctrl" style="flex:1 1 320px"><label>Précision — obligatoire</label>
+        <input class="cell txt" data-qprec="${esc(cle)}" value="${esc(r.prec || '')}"
+          placeholder="ce qui a changé, qui, quand — c’est ce texte qui part au registre"></div>` : ''}
+    </div>
+    <div class="m" style="margin-top:3px">
+      <span class="smallcaps">Pourquoi cette question existe encore : ${esc(q.pourquoi)}</span>
+    </div>
+    ${oui && !(r.prec || '').trim() ? `<div class="callout bad" style="margin-top:5px">
+      Un « oui » sans précision écrite crée un facteur que personne ne pourra relire.
+      Tant qu’elle manque, le visa de la section reste bloqué.</div>` : ''}
+  </div>`;
+}
+function blocQuestionnaireEntite(){
+  const sans = QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep);
+  const oui = QUEST_ENTITE.filter(q => (S.questEntite[q.code] || {}).rep === 'oui');
+  return blk('Questionnaire d’entité', QUEST_ENTITE.length + ' question(s) · ' + oui.length + ' réponse(s) « oui »'
+      + (sans.length ? ' · ' + sans.length + ' sans réponse' : ''),
+    `<p class="note">Quatre questions posées <b>une fois pour le dossier</b>. Une réponse « oui » crée un facteur
+    qui porte sur <b>tous les postes retenus</b> : la pression sur le résultat ou un changement de direction ne
+    s’arrêtent pas à un cycle. Le questionnaire n’a pas de chemin à lui — il alimente le même registre, avec sa
+    source, et le facteur reste écartable avec motif.</p>
+    ${QUEST_ENTITE.map(q => ligneQuestion(q, undefined)).join('')}`,
+    sans.length ? sans.length + ' sans réponse' : '');
 }
 
 /* ── rendu d'un facteur ───────────────────────────────────────────────────── */
@@ -365,6 +682,7 @@ function vueFacteurs(){
     <div class="hd"><h1>Registre des facteurs de risque</h1>
       <span class="sub">une constatation levée quelque part se pose seule là où elle compte — et n’est appliquée nulle part sans décision humaine</span></div>
     ${barreReplis('plan.facteurs')}
+    ${blocQuestionnaireEntite()}
 
     <details class="blk pan" data-repli="plan.facteurs/volume" ${ouvertParDefaut("plan.facteurs/volume", `${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}`) ? "open" : ""}><summary><h2>Volume</h2><span class="pill bad">${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}</span>
       <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></summary><div class="body">
@@ -378,6 +696,10 @@ function vueFacteurs(){
       </div>
       <div class="row"><span class="pill ${l.length > CIBLE_VOLUME ? 'bad' : ''}">${l.length} facteurs — cible ${CIBLE_VOLUME}</span>
         ${l.length > CIBLE_VOLUME ? '<span class="smallcaps">remontez les seuils de pertinence ci-dessous</span>' : ''}</div>
+      <div class="row"><span class="pill">${REGLES_FACTEUR.filter(r => r.nature === 'quantitatif').length} règle(s) quantitative(s)</span>
+        <span class="pill">${REGLES_FACTEUR.filter(r => r.nature === 'qualitatif').length} règle(s) qualitative(s)</span>
+        <span class="smallcaps">soit ${pct(REGLES_FACTEUR.filter(r => r.nature === 'quantitatif').length / REGLES_FACTEUR.length, 0)}
+        de règles quantitatives · ${QUESTIONNAIRE.length} question(s) résiduelle(s) au questionnaire</span></div>
       <h3>Seuils de pertinence, par règle</h3>
       ${table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'s',t:'Source'},{k:'n',t:'Nature'},
                {k:'v',t:'Seuil de pertinence'},{k:'c',t:'Facteurs levés',n:1}],

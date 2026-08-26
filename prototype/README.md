@@ -14,13 +14,15 @@ c'est la navigation qui suit le travail.
 sortie de modèle. Chaque chiffre est calculé dans la page à partir d'un grand livre engendré
 à germe fixe (1 605 écritures, 3 210 lignes) dont la balance affichée est dérivée.
 
-## Les trois espaces
+## Les trois espaces — le pilotage d'abord
 
-| Espace | Contenu | Teinte |
-|---|---|---|
-| **Auditeur** | planification transverse + une section de travail par poste retenu au scoping | bleu |
-| **Portail client** | contacts, paramétrage, vue client | vert |
-| **Pilotage** | avancement, exports, notes de revue transverses | ambre |
+| Espace | Contenu |
+|---|---|
+| **Pilotage** *(espace d'ouverture)* | où en est le dossier : cinq lectures graphiques, avancement, charge, obstacles, jalons |
+| **Auditeur** | planification transverse + une section de travail par poste retenu au scoping |
+| **Portail client** | contacts, paramétrage, vue client |
+
+Un associé qui ouvre l'outil doit voir **l'état du dossier**, pas un écran de travail.
 
 Le bandeau de seuils **n'est construit que dans l'espace auditeur** : le client ne voit pas
 la matérialité parce que le composant n'existe pas chez lui (ADR-027).
@@ -43,6 +45,33 @@ la matérialité parce que le composant n'existe pas chez lui (ADR-027).
 5. Papiers de travail — une ligne, une pièce, un écart. Sans pièce déposée, aucun contrôle.
 6. Notes de revue de la section — ancrées sur un objet.
 7. Conclusion, visa et reprise N-1 — le visa est **impossible** tant qu'un obstacle subsiste.
+
+## Un testing entièrement déroulé — le chiffre d'affaires
+
+Le test de détail du chiffre d'affaires est **exécuté de bout en bout dans l'état initial du
+fichier** : 167 éléments sélectionnés, requête émise depuis le catalogue de preuve, 167 dépôts côté
+client, états dérivés, 1 158 contrôles traités sans écart, **un écart expliqué, corroboré et
+résolu**, **un écart de 4 850 € laissé au cumul**, une note de revue posée par le préparateur,
+répondue et close par la réviseuse, travail achevé puis revu, papier **imprimable**.
+
+Rien n'y est fabriqué : chaque étape passe par la **même fonction que le clic correspondant**. Si une
+règle refusait une étape, l'amorce échouerait au lieu de produire un faux papier.
+
+C'est aussi la seule section de démonstration : la chaîne « état vide → requête → dépôt → papier »
+se vérifie, elle, sur les fournisseurs, où rien n'a été fait.
+
+## Équipe et indépendance
+
+Grade, rôle, courriel, dates d'entrée et de sortie, **exercices consécutifs sur le client**. On ne
+retire pas quelqu'un qui porte une trace au dossier : il reçoit une date de sortie.
+
+Déclaration d'indépendance par membre et par exercice, sept rubriques, **signée soi-même**, révisable
+en empilant sans écraser. **Aucun travail n'est attribuable à qui n'a pas signé** — le système refuse
+— et un travail attribué à quelqu'un dont la déclaration est devenue caduque **bloque le visa** de sa
+section. Registre des services autres que la certification, avec ratio d'honoraires.
+
+Tous les seuils de cet écran — rotation du signataire, familiarité, cadeaux, plafond du ratio, liste
+des services interdits — sont des **paramètres déclarés marqués [UNVERIFIED]**.
 
 ## Le catalogue méthodologique — dans le dépôt, pas dans ce fichier
 
@@ -81,11 +110,21 @@ particulière relevée au test des écritures se posent **seuls** sur les postes
 avec un lien retour vers la procédure qui les a levés — et n'entrent dans aucun niveau de
 risque tant qu'un humain n'a pas tranché. Un facteur non statué **bloque le visa**.
 
+**Onze règles de levée : cinq quantitatives, six qualitatives.** Les qualitatives remontent depuis
+des procédures qui les captent déjà — subjectivité des estimations (elle se *mesure* : la part du
+poste portée par des comptes d'estimation), dépendance à un tiers unique, retraitement passé en cours
+de mission, correction sur constat d'audit, anomalie relevée l'exercice précédent. Sur les facteurs
+réellement levés : **neuf qualitatifs pour sept quantitatifs**.
+
+Le reste est un **questionnaire résiduel** — six questions par section, quatre pour l'entité —
+chacune portant *la raison pour laquelle aucune autre source du dossier n'y répond*. Une réponse
+« oui » crée un facteur au registre, avec sa source. Une question sans réponse, ou un « oui » sans
+précision écrite, **bloque le visa** : sinon le questionnaire serait décoratif.
+
 Garde-fou : chaque règle porte un seuil de pertinence nommé et modifiable en cours de mission,
-le compteur est au bandeau supérieur, et la vue de triage alerte au-delà de quinze.
-**8 facteurs** au réglage par défaut ; le seuil est un levier monotone (la règle « direction »
-passe de 1 facteur à 5 % à 10 facteurs à 1 %). Une règle qui ne lève rien sur ce jeu de
-données le dit, plutôt que d'abaisser son seuil jusqu'à trouver quelque chose.
+le compteur est au bandeau supérieur, et la vue de triage alerte au-delà de quinze —
+**16 facteurs** au réglage par défaut, donc au-delà, et l'écran le dit. Une règle qui ne lève rien
+sur ce jeu de données le dit, plutôt que d'abaisser son seuil jusqu'à trouver quelque chose.
 
 ## Contrôles automatisés passés sur ce fichier
 
@@ -103,7 +142,10 @@ données le dit, plutôt que d'abaisser son seuil jusqu'à trouver quelque chose
 | Erreurs JavaScript | 0 |
 | Glyphes manquants / U+FFFD | 0 |
 | Bandeau collant au repos / réduit | 294 px → **47 px** (5,6 % de l'écran) dès le premier défilement, rétabli en remontant, sans dérive du contenu |
-| Harnais passés sur ce fichier | 23, zéro échec, zéro plantage |
+| Harnais passés sur ce fichier | **29**, zéro échec, zéro plantage |
+| Compteurs de design (rayons / couleurs hors jeton / tailles / espacements hors échelle) | **2 / 0 / 5 / 0** |
+| Couleurs employées dans les graphiques, hors jetons du système | **0**, dans les deux thèmes |
+| Contenu perdu à l'impression d'un panneau replié | **0** — les panneaux s'ouvrent à `beforeprint` |
 | Latence de frappe | 3,5 ms par touche |
 
 Chaînes vérifiées de bout en bout : risque → procédures → échantillon ; règle → requête →

@@ -147,6 +147,24 @@ function partAssertions(p){
     ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}`;
 }
 
+/** Le questionnaire résiduel de la section : six questions, chacune portant
+ *  la raison pour laquelle aucune autre source du dossier n'y répond. */
+function partQuestionnaire(p){
+  const sans = questionsSansReponse(p.code).section;
+  const oui = QUEST_SECTION.filter(q => sec(p.code).quest[q.code] === 'oui');
+  return `<p class="note">La plupart des facteurs qualitatifs <b>remontent</b> par le registre depuis les
+    procédures qui les captent — estimations, concentration sur un tiers, retraitements, corrections sur
+    constat, notes de l’exercice précédent. Ce questionnaire ne garde que le <b>résiduel</b> :
+    ${QUEST_SECTION.length} questions, chacune parce qu’aucune autre source ne peut y répondre. Une réponse
+    « oui » crée un facteur au registre, avec sa source ; elle n’a pas de chemin à elle.</p>
+    <div class="row">
+      <span class="pill ${sans.length ? 'warn' : ''}">${sans.length} sans réponse</span>
+      <span class="pill ${oui.length ? 'bad' : ''}">${oui.length} « oui » → ${oui.length} facteur(s) au registre</span>
+      <button class="btn mini sec" data-vue="plan.facteurs">registre ↗</button>
+    </div>
+    ${QUEST_SECTION.map(q => ligneQuestion(q, p.code)).join('')}`;
+}
+
 /** L'étendue que le risque commande : taille de tirage et coupure d'exhaustivité. */
 function partEtendue(p){
   const procs = proceduresRequises(p);
@@ -316,6 +334,8 @@ function blocProcedure(p, pr){
            <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>`}
       <div class="ctrl"><label>&nbsp;</label>
         <button class="btn" data-preq="${pr.code}" ${deja ? 'disabled' : ''}>${deja ? 'requête émise' : 'générer la requête depuis le catalogue'}</button></div>
+      <div class="ctrl"><label>&nbsp;</label>
+        <button class="btn sec" data-imprime="1">imprimer ce papier de travail</button></div>
     </div>
     <div class="callout"><b>Méthode ${e.imposee ? 'imposée' : 'retenue'} : ${esc(m.lib)}.</b> ${esc(m.d)} ${esc(m.quand)}
       ${e.imposee
@@ -602,6 +622,14 @@ function obstaclesVisa(p){
   if (fp.length) o.push(`${fp.length} facteur(s) de risque non statué(s)`);
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
+  /* Une évaluation de risque à laquelle on n'a pas répondu n'est pas une
+     évaluation. Six questions, et elles bloquent — sinon elles sont décoratives. */
+  const qs = questionsSansReponse(p.code).section;
+  if (qs.length) o.push(`${qs.length} question(s) du questionnaire de risque sans réponse`);
+  const qi = facteursDe(p.code).filter(f => f.incomplet);
+  if (qi.length) o.push(`${qi.length} réponse(s) « oui » sans précision écrite`);
+  const qe = QUEST_ENTITE.filter(q => !(S.questEntite[q.code] || {}).rep);
+  if (qe.length) o.push(`${qe.length} question(s) du questionnaire d’entité sans réponse`);
   for (const x of obstaclesTravaux(p.code)) o.push(x);
   let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){

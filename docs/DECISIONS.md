@@ -1712,3 +1712,207 @@ dans les deux vues, et le harnais vérifie que le pied s'additionne.
 une règle du produit, pas un effet de démonstration. Les tests couvrent la borne, le signe, la
 correction partielle, l'ordre de service, les deux signaux, et la correction annoncée qui ne corrige
 rien.
+
+---
+
+## ADR-052 — L'indépendance ne se rappelle pas, elle refuse
+
+**Demande du fondateur, 2026-08-26.** Un écran d'équipe et d'indépendance, avec une règle qui le
+rende réel : aucun travail attribuable à un membre dont la déclaration n'est pas signée, et un travail
+attribué à quelqu'un dont la déclaration est devenue caduque comme obstacle au visa de sa section.
+
+**Décision.**
+
+1. **L'équipe est une donnée**, plus une liste figée : grade, rôle, courriel, dates d'entrée et de
+   sortie, et **nombre d'exercices consécutifs sur ce client**. On ajoute, on modifie.
+2. **On ne retire pas quelqu'un qui a signé quelque chose.** Un membre portant une trace au dossier —
+   un travail, une note, un visa, une déclaration — reçoit une **date de sortie**. Même famille de
+   règle que le journal d'événements, qui ne se réécrit pas.
+3. **Déclaration par membre et par exercice, sept rubriques.** Elle se **signe soi-même** : le bouton
+   n'est pas rendu ailleurs, et la fonction refuse. Un « oui » sans précision écrite ne se signe pas.
+4. **Une révision empile, elle n'écrase pas.** La version signée reste lisible avec sa signature ; la
+   nouvelle part de ses réponses ; tant qu'elle n'est pas signée, le membre est **caduque**.
+5. **La règle qui rend tout cela réel** : `affecter()` refuse un membre sans déclaration valide, et
+   `obstaclesVisa()` porte les travaux attribués à un membre devenu caduque. La **répartition
+   proposée** filtre les mêmes personnes — proposer quelqu'un que l'affectation refuserait ensuite
+   serait une proposition fausse.
+6. **Confirmation de l'associé signataire pour l'ensemble**, impossible tant qu'un membre n'a pas
+   signé ou qu'une menace n'a pas de sauvegarde écrite.
+7. **Deux menaces déduites de l'ancienneté** — rotation du signataire, familiarité — exigeant chacune
+   une **sauvegarde décrite**.
+8. **Registre des services autres que la certification** : nature, montant, date, prestataire,
+   admissibilité, et ratio d'honoraires rapporté à la mission.
+
+**Réserve, portée à l'écran et non seulement ici.** Durée de rotation, seuil de familiarité, seuil de
+déclaration des cadeaux, plafond du ratio et **liste des services interdits** sont des **paramètres
+déclarés**, modifiables, marqués **[UNVERIFIED]**. Aucun texte primaire n'est atteignable depuis cet
+environnement. C'est la même réserve que celle du catalogue méthodologique — et sur l'indépendance,
+une valeur fausse coûte plus cher qu'ailleurs.
+
+**État du dossier à l'amorce, choisi pour que la règle se voie** : Hugo n'a pas signé, Inès a ouvert
+une révision en mars, et les dix travaux de la section Clients qui lui avaient été attribués en
+novembre bloquent désormais le visa de cette section.
+
+---
+
+## ADR-053 — Quatre dates, pas cent
+
+**Décision.** Les échéances des travaux ne se saisissent plus : elles se **déduisent de quatre jalons
+de mission** — intervention intérimaire, intervention finale, date du rapport, et échéance
+d'assemblage. Une règle écrite et affichée fait la correspondance.
+
+- **L'échéance d'assemblage ne se saisit pas** : c'est un délai légal compté depuis la date du
+  rapport. Une date qu'on peut taper à la main est une date qu'on peut taper fausse.
+- Chaque échéance **reste modifiable** ligne par ligne et **en lot** sur la sélection. Une échéance
+  écrite ne bouge plus quand le jalon bouge — c'est une décision — et se rend à la règle quand on
+  l'efface.
+- **Ajout d'un travail à la main**, rattachable à une section, portant les mêmes règles que les
+  autres : affectation, budget, échéance déduite, niveau de revue, statuts.
+- **« Sans objet » plutôt qu'une suppression**, avec **motif obligatoire**. Le travail reste au
+  programme, motivé, cesse de produire des obstacles et de consommer du budget. Un travail **déjà
+  achevé n'est pas sans objet** : c'est une diligence exécutée.
+
+**Corollaire (ADR-054 ci-dessous)** : le barème de budget et les règles de revue **quittent** le
+programme de travail. Ce sont des explications de règles, pas des surfaces de travail — la règle
+agit, dans la colonne « budget » et dans le refus d'affecter un réviseur de niveau insuffisant.
+
+---
+
+## ADR-054 — Deux noms proches pour deux objets différents est un défaut, et il se mesure
+
+**Constat du fondateur.** « Plan de travail » (destination d'une section) et « Programme de travail »
+(livrable d'organisation de la mission) désignaient deux objets sans rapport.
+
+**Décision.** La destination devient **« Procédures d'audit »**, et sa référence de papier suit
+(`PGM-01` → `PRO-01`). Surtout, la vérification devient **mesurable** : un harnais compare tous les
+libellés navigants deux à deux — inclusion, distance d'édition ≤ 2, deux mots partagés en tête ou en
+queue — et **exige une raison écrite** pour chaque couple à risque admis. Un couple non admis fait
+échouer le harnais. Le harnais se vérifie lui-même : il retrouve le défaut d'origine si on le
+réintroduit.
+
+Quatre autres collisions corrigées : « Règles » → « Règles de conception », « Ratios » → « Ratios de
+planification », « Rapprochement » (achèvement) → « Pointage plaquette ↔ comptes audités »,
+« Export » (mission) → « Exporter cette vue ». Sept couples restent admis, chacun avec sa raison
+écrite — pour l'essentiel le même objet à deux portées.
+
+---
+
+## ADR-055 — Les facteurs qualitatifs remontent ; le questionnaire ne garde que le résiduel
+
+**Mesure de départ, donnée par le fondateur.** Le registre comptait **cinq règles de levée
+quantitatives et une seule qualitative** : l'évaluation du risque reposait à **83 %** sur des
+variations chiffrées.
+
+**Décision, en deux temps.**
+
+1. **Cinq règles qualitatives de plus**, qui lèvent depuis des procédures qui les captent déjà :
+   `ESTIM` (part du poste portée par des comptes d'estimation — la subjectivité se **mesure**),
+   `TIERS_UNIQUE` (dépendance à un tiers unique), `RETRAITEMENT` (changement d'estimation ou de
+   méthode passé en cours de mission), `CORRECTION_N` (le poste a exigé une correction sur constat
+   d'audit), `NOTE_N1` (anomalie relevée sur ce poste l'exercice précédent).
+2. **Un questionnaire RÉSIDUEL** : dix questions au total, **six par section** et quatre pour
+   l'entité, chacune portant **la raison pour laquelle aucune autre source du dossier n'y répond**.
+   Si cette raison tombe, la question doit disparaître. Les cinq anciennes cases à cocher
+   « déclarées » sont supprimées : elles n'avaient ni justification ni source.
+
+**Une réponse « oui » crée un facteur au registre**, avec sa source — le questionnaire n'a pas de
+chemin à lui. Le facteur naît **confirmé** : la réponse EST la décision humaine, et redemander à
+quelqu'un de confirmer ce qu'il vient de répondre est la cérémonie qui fait qu'on cesse de lire. Il
+reste écartable avec motif comme tout autre facteur.
+
+**Ce qui bloque, et pourquoi.** Une question **sans réponse** et un « oui » **sans précision écrite**
+sont des obstacles au visa. Sans cela le questionnaire serait décoratif — exactement le défaut qu'on
+cherchait à corriger.
+
+**Ce que le seuil de `TIERS_UNIQUE` a coûté, parce qu'il dit ce que vaut un seuil.** Au premier essai
+— part ≥ 25 %, sans autre garde — la règle levait **huit** facteurs. En regardant la distribution,
+les quatre plus concentrés (77 %, 76 %, 62 %, 56 %) portaient tous **deux à quatre tiers** : avec
+deux tiers, l'un des deux pèse forcément plus de la moitié. Le nombre était une conséquence
+arithmétique de la population, pas une dépendance. Un **plancher de population** — cinq tiers — a
+été ajouté, et la part absolue conservée, parce que c'est elle qui répond à la question de
+l'auditeur : si ce tiers disparaît, le poste tient-il ? **Quatre facteurs** restent ; deux seront
+sans doute écartés au triage, avec un motif.
+
+**Mesure d'arrivée** : **onze règles, cinq quantitatives et six qualitatives — 45,5 % de règles
+quantitatives**, contre 83 %. Sur les facteurs réellement levés : **neuf qualitatifs pour sept
+quantitatifs**. Le registre passe de huit à seize facteurs, **au-delà de la cible de quinze** : le
+garde-fou de volume le dit, et il a raison de le dire.
+
+**Vocabulaire.** Les natures — changement, complexité, incertitude, biais possible de la direction —
+sont celles des facteurs de risque inhérent des référentiels d'audit. **[UNVERIFIED]** : sources
+secondaires seulement, aucun texte primaire n'ayant pu être atteint.
+
+---
+
+## ADR-056 — Le pilotage d'abord, et la couleur ne dit qu'un problème
+
+**Décision.** L'espace **Pilotage passe en premier** et devient l'espace d'ouverture. Un associé qui
+ouvre l'outil doit voir l'état du dossier, pas un écran de travail. Corollaire trouvé en le faisant :
+`aller()` **déduit désormais l'espace de la vue** — naviguer vers une vue d'un autre espace la
+rendait dans l'espace courant, bandeau de seuils absent et rail incohérent. Le cas ne se produisait
+pas tant que l'espace auditeur était celui d'ouverture.
+
+**Cinq représentations** : avancement par section, budget contre réalisé, achèvements dans le temps
+rapportés à l'échéance, charge par personne, âge des demandes en retard.
+
+**La contrainte décide de tout.** Les graphiques se tracent **à l'encre** — les trois gris du texte
+et le filet — et la **couleur reste réservée aux problèmes**. Aucune palette de graphique, aucun
+dégradé, aucune teinte hors jetons. Conséquence de conception : ce sont des **barres et des lignes,
+jamais des secteurs**, parce qu'une série sans couleur ne se distingue que par sa **position**, sa
+**longueur** et sa **densité** — d'où les hachures pour ce qui est fait.
+
+Un harnais mesure la contrainte au lieu de la promettre : il relève toute teinte employée dans un
+`<svg>` qui n'est pas un jeton du système, tout dégradé, tout filtre, **dans les deux thèmes**. Il a
+relevé au premier passage le noir par défaut de SVG sur des traits et des `<defs>` — des éléments qui
+ne peignent rien, mais dont la teinte n'était pas voulue. Elle a été retirée plutôt qu'excusée.
+
+**Compteurs de design après cette passe : 2 / 0 / 5 / 0.** Le quatrième était à **1** avant :
+`var(--topH,180px)` était écrit sur cinq sites, autant de littéraux hors échelle. La hauteur du
+bandeau collant est désormais un **jeton déclaré** (`--sTop`) — c'est un espacement du système au
+même titre que les six autres, simplement mesuré au rendu plutôt que choisi.
+
+---
+
+## ADR-057 — Un testing déroulé de bout en bout, et les deux défauts qu'il a trouvés
+
+**Demande du fondateur.** « Je veux voir ce que le produit rend, pas la machinerie vide. » Le test de
+détail du chiffre d'affaires est donc **déroulé dans l'état initial du fichier** : échantillon,
+requête, dépôts, états dérivés, champs relevés, un écart résolu, un écart laissé au cumul, une note
+posée puis close, travail achevé par son préparateur et revu par sa réviseuse, papier imprimable.
+
+**Décision de méthode : rien n'est fabriqué.** Chaque étape passe par la **même fonction que le clic
+correspondant** — `affecter`, `requeteJustificatifsProc`, `deposer`, les champs du papier,
+`conclureResolution`, `ajouterNote`, `changerStatut`. Si une règle refusait une étape, l'amorce
+échouerait au lieu de produire un faux papier. C'est la seule façon de garantir que ce qu'on montre
+est ce que l'outil fait.
+
+**LE DÉROULÉ A TROUVÉ DEUX DÉFAUTS RÉELS, dont un grave.**
+
+1. **Soixante-seize écarts sur cent quinze factures parfaitement normales.** La règle de date
+   `dans l'exercice` est écrite en JSON avec l'apostrophe **droite** ; le `switch` du moteur était
+   écrit avec l'apostrophe **typographique**. Aucun cas ne correspondait, l'exécution filait au
+   **défaut silencieux** — comparaison à la tolérance, ici nulle — et toute facture datée d'un jour
+   avant sa comptabilisation devenait une anomalie. *Le vrai défaut n'est pas la lettre : c'est
+   qu'une règle inconnue tombe silencieusement sur autre chose.* Le schéma du catalogue déclare
+   désormais l'énumération des règles de date, le validateur **arrête l'assemblage** sur une règle
+   inconnue (vérifié en le provoquant), et la comparaison normalise l'apostrophe. **76 écarts → 1**,
+   et celui qui reste est la vraie anomalie de cut-off du jeu de données.
+2. **Un panneau replié s'imprimait replié.** La règle CSS `details:not([open]) > * { display:block }`
+   **ne suffit pas** : le navigateur supprime le rendu au niveau du `<details>` lui-même. Mesuré :
+   le contenu sortait à **zéro caractère** au papier alors que le `display` de l'enfant était bien
+   `block`. Il faut **ouvrir** les panneaux à `beforeprint` et les refermer à `afterprint`, en ne
+   refermant que ceux qu'on a ouverts. Mesuré après correction : 1 907 caractères au papier pour un
+   panneau qui en rendait 0 à l'écran.
+
+**Le résultat, et ce qu'il dit de l'échantillonnage.** La strate exhaustive retenait 115 éléments sur
+269 — 73 % de la masse — **sans rencontrer aucune des deux anomalies de montant présentes dans la
+population**. C'est l'ADR-047 reproduit sur le dossier vivant. Le déroulé applique donc ce que
+l'écran recommande : sondage en unités monétaires à la taille qui ramène l'intervalle au seuil de
+planification. **167 éléments — plus de travail, pas moins — et les deux anomalies rencontrées.**
+
+L'une, une remise commerciale de 620 €, est expliquée, corroborée par l'avoir et l'écriture, et
+résolue ; sous le seuil de remontée, elle n'entrait pas au cumul — ce qui ne dispense pas de la
+documenter. L'autre, un retour de marchandise de 4 850 €, reste **non résolue et au cumul**. Neuf
+écarts non chiffrés (signatures, quantités, livraisons) restent ouverts : le travail est *achevé et
+revu*, la **section n'est pas visée** — et cette distinction est précisément ce que le dossier doit
+montrer.

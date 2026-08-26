@@ -159,7 +159,8 @@
                       "type": "string"
                     },
                     "regle": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "règle de contrôle. Pour un champ de type « date », elle doit appartenir à l'énumération connue du moteur (regles_date) : une règle inconnue tomberait silencieusement sur la comparaison à la tolérance et relèverait comme anomalie des pièces normales."
                     },
                     "tolerance": {
                       "type": "string"
@@ -228,5 +229,11 @@
         }
       }
     }
-  }
+  },
+  "regles_date": [
+    "dans l'exercice",
+    "antérieure ou égale",
+    "postérieure",
+    "même exercice que la référence"
+  ]
 }

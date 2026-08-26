@@ -49,8 +49,8 @@ function horo(t){ return frDate(t.slice(0, 10)) + ' ' + t.slice(11, 16); }
    chaque section de travail y a son propre casier.
    ═══════════════════════════════════════════════════════════════════════ */
 const S = {
-  espace:'auditeur',                        // auditeur | client | pilotage
-  vue:'plan.programme',                     // identifiant de vue, ou 'fsli:<CODE>'
+  espace:'pilotage',                        // pilotage | auditeur | client
+  vue:'pil.mission',                        // identifiant de vue, ou 'fsli:<CODE>'
   moi:'karim',                              // auditeur connecté (espace auditeur)
   moiClient:'dmartin',                      // contact connecté (portail client)
   benchmark:'pbt', pctM:5, pctPM:75, pctCTT:5,
@@ -82,6 +82,8 @@ const S = {
                  rotationSignataire:6 },   // exercices du signataire [UNVERIFIED]
   sacc:[], seqSacc:0, honorairesMission:8500000, plafondSacc:70,
   memErreur:'', indErreur:'', saccErreur:'', travErreur:'',
+  /* Questionnaire d'entité : posé une fois pour le dossier. */
+  questEntite:{},
   /* Quatre dates posées, et non cent : les échéances des travaux s'en
      déduisent (voir REGLE_ECHEANCE). L'assemblage n'est pas ici — il se
      déduit de la date du rapport. */
@@ -110,7 +112,8 @@ function sec(code){
     code,
     ns:{},            // compte -> 'ns' | 'sig'  (surcharge du statut proposé)
     nsMotif:{},
-    declares:{},      // code facteur déclaré -> true/false
+    quest:{},         // code question -> 'oui' | 'non'
+    questPrec:{},     // code question -> précision écrite (obligatoire si « oui »)
     override:{},      // assertion -> niveau forcé par l'auditeur
     overrideMotif:{},
     seed:'otto-' + code.toLowerCase() + '-01',
@@ -173,19 +176,107 @@ const FACTEURS = [
   { code:'concentration', a:'separation', lib:'Plus de 15 % des écritures concentrées en décembre',
     obs:p => statsPoste(p).n > 0 && statsPoste(p).decembre / statsPoste(p).n > 0.15,
     dit:p => statsPoste(p).decembre + ' écritures en décembre sur ' + statsPoste(p).n },
-  { code:'estimation', a:'evaluation', lib:'Le poste comporte une estimation comptable', declare:true },
-  { code:'fraude', a:'realite', lib:'Poste porteur d’un risque de fraude identifié', declare:true },
-  { code:'ci_faible', a:'exhaustivite', lib:'Contrôle interne non testé ou jugé non fiable sur ce cycle', declare:true },
-  { code:'complexe', a:'presentation', lib:'Règle de présentation ou d’annexe complexe sur ce poste', declare:true },
-  { code:'litige', a:'evaluation', lib:'Poste exposé à un litige ou à une incertitude', declare:true },
 ];
+/* Les cinq facteurs « déclarés » ont quitté cette table : ils étaient des cases
+   à cocher sans justification et sans source. Ils sont devenus soit une RÈGLE
+   DE LEVÉE qualitative (estimation → ESTIM, litige provisionné → RETRAITEMENT
+   et NOTE_N1), soit une QUESTION du questionnaire résiduel ci-dessous — qui,
+   lui, crée un facteur au registre avec sa source. Voir 17_facteurs.js. */
+
+/* ═══ QUESTIONNAIRE RÉSIDUEL DE RISQUE ═════════════════════════════════════
+   La plupart des facteurs qualitatifs REMONTENT par le registre depuis les
+   procédures qui les captent. Le questionnaire ne garde que le RÉSIDUEL :
+   ce qu'aucune autre source du dossier ne couvre. Chaque question porte donc
+   la raison pour laquelle elle existe encore — si cette raison tombe, la
+   question doit disparaître, pas rester « au cas où ».
+
+   Deux portées, et c'est ce qui évite le questionnaire de cinquante lignes :
+     — ENTITÉ : posée UNE FOIS pour le dossier, elle touche tous les postes
+       retenus (la direction, la pression sur le résultat, la fraude).
+     — SECTION : posée dans la section, parce que la réponse peut différer
+       d'un cycle à l'autre.
+   Six questions par section, quatre pour l'entité.
+
+   Le vocabulaire des natures — changement, complexité, incertitude, biais
+   possible de la direction — est celui des facteurs de risque inhérent des
+   référentiels d'audit. [UNVERIFIED] : sources secondaires seulement.
+   ═══════════════════════════════════════════════════════════════════════ */
+const NATURES_RI = {
+  changement: { lib:'changement', d:'ce qui n’était pas là l’an dernier n’a pas encore de contrôle rodé' },
+  complexite: { lib:'complexité', d:'une opération dont la traduction comptable demande un raisonnement' },
+  incertitude:{ lib:'incertitude', d:'un montant qui dépend d’un événement futur' },
+  biais:      { lib:'biais possible de la direction', d:'un intérêt à ce que le résultat soit d’un certain côté' },
+  controle:   { lib:'risque de contrôle', d:'ce n’est pas un facteur inhérent : c’est ce que le dispositif du client ne couvre pas' },
+};
+const QUESTIONNAIRE = [
+  { code:'DIRIGEANTS', portee:'entite', a:'realite', nat:'changement',
+    q:'L’équipe dirigeante ou le responsable comptable ont-ils changé pendant l’exercice ?',
+    pourquoi:'Aucune source du dossier ne porte l’organigramme du client : ni le grand livre, ni les versions '
+           + 'du fichier, ni les circularisations. Rien ne peut le lever à notre place.',
+    effet:'Un changement de personne au sommet ou à la tenue des comptes défait des habitudes de contrôle et '
+        + 'ouvre une période où les erreurs passent.' },
+  { code:'PRESSION', portee:'entite', a:'realite', nat:'biais',
+    q:'La direction subit-elle une pression sur le résultat — covenant bancaire, cession en cours, complément '
+    + 'de prix, rémunération variable liée au résultat ?',
+    pourquoi:'Les covenants, les protocoles de cession et les schémas de rémunération ne sont dans aucune '
+           + 'donnée comptable. C’est le facteur de biais le mieux documenté, et le moins dérivable.',
+    effet:'Un intérêt chiffré à ce que le résultat tombe d’un certain côté est le premier facteur à documenter : '
+        + 'il oriente le sens des anomalies attendues, pas seulement leur probabilité.' },
+  { code:'FRAUDE', portee:'entite', a:'realite', nat:'biais',
+    q:'Une circonstance porte-t-elle un risque de fraude au niveau de l’entité — signalement, plainte, '
+    + 'faiblesse connue de la séparation des tâches, antécédent ?',
+    pourquoi:'Le test des écritures lève des marqueurs de FORME (journal, heure, montant rond). Il ne sait rien '
+           + 'd’un signalement, d’une plainte ou d’un antécédent.',
+    effet:'Le risque de fraude ne se déduit d’aucun montant : il se déclare, ou il n’est pas au dossier.' },
+  { code:'GOUVERNANCE', portee:'entite', a:'presentation', nat:'controle',
+    q:'La gouvernance a-t-elle changé de composition, ou cessé de se réunir régulièrement ?',
+    pourquoi:'Les procès-verbaux ne sont pas dans le dossier tant que le module de contrôle interne n’existe pas.',
+    effet:'Une surveillance qui se relâche est le contexte dans lequel les deux facteurs précédents produisent '
+        + 'leur effet.' },
+
+  { code:'SI', portee:'section', a:'exhaustivite', nat:'changement',
+    q:'Le système d’information qui alimente ce cycle a-t-il changé pendant l’exercice ?',
+    pourquoi:'Une migration ne laisse aucune trace lisible dans un fichier des écritures conforme : les numéros '
+           + 'se suivent, les journaux existent. Seul le client le sait.',
+    effet:'Une reprise de données incomplète est la cause d’exhaustivité la plus fréquente, et la plus invisible '
+        + 'au contrôle de forme.' },
+  { code:'NOUVEAU', portee:'section', a:'realite', nat:'changement',
+    q:'Un nouveau produit, un nouveau marché ou un nouveau canal de vente alimente-t-il ce poste ?',
+    pourquoi:'Un compte nouveau se voit au rapprochement ; un produit nouveau comptabilisé dans un compte '
+           + 'existant, non.',
+    effet:'Les règles de comptabilisation d’une activité nouvelle sont rarement écrites la première année.' },
+  { code:'METHODE', portee:'section', a:'presentation', nat:'complexite',
+    q:'Une méthode comptable applicable à ce poste a-t-elle changé, ou une règle de présentation nouvelle '
+    + 's’y applique-t-elle ?',
+    pourquoi:'Le registre voit les retraitements DÉJÀ PASSÉS en écriture (règle RETRAITEMENT). Il ne voit pas '
+           + 'un changement décidé et non encore traduit, ni une règle de présentation nouvelle.',
+    effet:'Un changement de méthode déplace des montants sans qu’aucune transaction n’ait eu lieu : c’est le '
+        + 'cas où la variation N/N-1 ment.' },
+  { code:'INHABITUEL', portee:'section', a:'realite', nat:'complexite',
+    q:'Ce poste porte-t-il des opérations inhabituelles ou hors exploitation — cession, abandon de créance, '
+    + 'opération avec une partie liée, montage ponctuel ?',
+    pourquoi:'Le test des écritures voit des marqueurs de forme, pas la NATURE ÉCONOMIQUE d’une opération. Une '
+           + 'cession d’actif régulièrement comptabilisée ne porte aucun marqueur.',
+    effet:'Une opération unique n’a pas de contrôle de routine derrière elle, et sa traduction comptable est '
+        + 'souvent discutable.' },
+  { code:'LITIGE', portee:'section', a:'evaluation', nat:'incertitude',
+    q:'Un litige ou une incertitude affecte-t-il ce poste, y compris s’il n’est pas provisionné ?',
+    pourquoi:'Le registre voit les litiges PROVISIONNÉS (par le compte 15 et par les retraitements). Le litige '
+           + 'non provisionné — celui qui compte — n’est dans aucune donnée.',
+    effet:'C’est exactement le cas où l’absence d’écriture est l’anomalie.' },
+  { code:'CI', portee:'section', a:'exhaustivite', nat:'controle',
+    q:'Le contrôle interne de ce cycle est-il non testé, ou jugé non fiable ?',
+    pourquoi:'Le module de contrôle interne n’est pas construit (lot B) : rien dans le dossier ne peut répondre '
+           + 'à cette question aujourd’hui. La question disparaîtra quand il existera.',
+    effet:'Sans appui sur les contrôles, l’approche est intégralement substantive — c’est ce que dit le garde-fou '
+        + 'd’économie de l’approche.' },
+];
+const QUEST_ENTITE = QUESTIONNAIRE.filter(q => q.portee === 'entite');
+const QUEST_SECTION = QUESTIONNAIRE.filter(q => q.portee === 'section');
 
 /** Facteurs actifs d'un poste : les observés sont calculés, les déclarés sont lus dans le casier. */
 function facteursActifs(p){
-  const st = sec(p.code);
-  const locaux = FACTEURS.map(f => ({ ...f,
-    actif: f.declare ? !!st.declares[f.code] : !!f.obs(p),
-    preuve: f.declare ? null : f.dit(p) }));
+  const locaux = FACTEURS.map(f => ({ ...f, actif:!!f.obs(p), preuve:f.dit(p) }));
   // Les constatations venues d'ailleurs, CONFIRMÉES et retenues comme
   // majorantes, comptent comme des facteurs de la section : c'est là que la
   // circulation produit son effet, et pas seulement un affichage.

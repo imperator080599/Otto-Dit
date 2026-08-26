@@ -458,6 +458,64 @@ Le noyau de cette réconciliation existe aussi côté application (`app/src/lib/
 `ajust` 24, `bandeau` 9), 177 tests applicatifs, `tsc --noEmit` propre, et la construction depuis
 le dépôt reproduit le livrable à l'octet près.
 
+## Équipe, indépendance, jalons, facteurs qualitatifs, pilotage (2026-08-26)
+
+**Équipe et indépendance** (ADR-052) — nouvel écran en planification. L'équipe est une donnée : grade,
+rôle, courriel, dates d'entrée et de sortie, exercices consécutifs sur le client. On ne retire pas
+quelqu'un qui porte une trace au dossier — il reçoit une date de sortie. Déclaration d'indépendance
+par membre et par exercice, sept rubriques, **signée soi-même**, révisable en **empilant** sans
+écraser. **La règle qui rend tout cela réel** : aucun travail attribuable sans déclaration signée — le
+système refuse — et un travail attribué à quelqu'un devenu caduque est un obstacle au visa de sa
+section. Sur ce dossier : Hugo n'a pas signé, Inès a ouvert une révision, et les dix travaux de la
+section Clients qui lui avaient été attribués en novembre bloquent son visa. Registre des services
+autres que la certification avec ratio d'honoraires. **Tous les seuils sont [UNVERIFIED]**, marqués à
+l'écran.
+
+**Quatre dates, pas cent** (ADR-053) — intervention intérimaire, intervention finale, date du
+rapport ; l'échéance d'assemblage se **déduit** du délai légal et ne se saisit pas. L'échéance de
+chaque travail s'en déduit par une règle affichée, reste modifiable ligne par ligne et en lot, et une
+échéance écrite ne bouge plus quand le jalon bouge. Ajout d'un travail à la main ; marquage « sans
+objet » avec motif obligatoire plutôt que suppression.
+
+**Libellés** (ADR-054) — « Plan de travail » (destination) devient « Procédures d'audit », parce qu'il
+entrait en collision avec « Programme de travail ». Un harnais compare tous les libellés navigants
+deux à deux et exige une **raison écrite** pour chaque couple à risque admis ; il retrouve le défaut
+d'origine si on le réintroduit. Quatre autres collisions corrigées.
+
+**Facteurs qualitatifs** (ADR-055) — **le ratio demandé : 83 % → 45,5 % de règles quantitatives.**
+Cinq règles qualitatives de plus, qui remontent depuis des procédures qui les captent déjà :
+subjectivité des estimations (elle se **mesure**), dépendance à un tiers unique, retraitement passé en
+cours de mission, correction sur constat d'audit, anomalie relevée l'exercice précédent. Plus un
+questionnaire **résiduel** — six questions par section, quatre pour l'entité — chacune portant la
+raison pour laquelle aucune autre source du dossier n'y répond. Une réponse « oui » crée un facteur au
+registre avec sa source ; une question sans réponse et un « oui » sans précision bloquent le visa.
+Sur les facteurs réellement levés : **neuf qualitatifs pour sept quantitatifs**. Le registre passe de
+8 à 16 facteurs, au-delà de la cible de 15 — le garde-fou de volume le dit.
+
+**Un testing entièrement déroulé sur le chiffre d'affaires** (ADR-057), par les mêmes fonctions que
+les clics correspondants : 167 éléments, requête émise, 167 dépôts, 1 158 contrôles traités sans
+écart, un écart résolu et corroboré, un écart de 4 850 € laissé au cumul, une note posée par le
+préparateur, répondue et close par la réviseuse, travail achevé puis revu, papier imprimable.
+
+**Il a trouvé deux défauts réels.** (1) **76 écarts sur 115 factures normales** : la règle de date
+`dans l'exercice` est écrite avec l'apostrophe droite en JSON et l'apostrophe typographique dans le
+moteur ; aucun cas ne correspondait et l'exécution filait au **défaut silencieux**. Le schéma déclare
+désormais l'énumération des règles de date, le validateur arrête l'assemblage sur une règle inconnue,
+et la comparaison normalise l'apostrophe : **76 → 1**, le dernier étant la vraie anomalie de cut-off.
+(2) **Un panneau replié s'imprimait replié** : la règle CSS ne suffit pas, le navigateur supprime le
+rendu au niveau du `<details>`. Il faut les ouvrir à `beforeprint` et les refermer après. Mesuré :
+0 caractère au papier avant, 1 907 après.
+
+**Pilotage d'abord** (ADR-056) — l'espace passe en premier et devient celui d'ouverture ; `aller()`
+déduit désormais l'espace de la vue. Cinq représentations : avancement par section, budget contre
+réalisé, achèvements dans le temps contre l'échéance, charge par personne, âge des demandes en retard.
+Tracées **à l'encre**, la couleur réservée aux problèmes ; barres et lignes, jamais de secteurs. Un
+harnais relève toute teinte hors jetons, tout dégradé, tout filtre, **dans les deux thèmes**.
+**Compteurs de design : 2 / 0 / 5 / 0** — le quatrième était à 1 avant cette passe.
+
+**Vérification** : 29 harnais du prototype sans échec ni plantage · 177 tests applicatifs ·
+`tsc --noEmit` propre.
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent

@@ -407,21 +407,34 @@ function compare(ch, releve, x){
        la RÈGLE qui le contrôle, et non une simple égalité. */
     const j = Math.round((Date.parse(releve) - Date.parse(r)) / 86400000);
     let conforme, refLib;
-    switch (ch.regle){
-      case 'dans l’exercice':
+    /* L'apostrophe est NORMALISÉE avant comparaison. Le catalogue est écrit en
+       JSON, où l'apostrophe droite est la seule commode ; le code était écrit
+       avec l'apostrophe typographique. « dans l'exercice » ne tombait donc sur
+       aucun cas, filait au défaut — comparaison à la tolérance, ici nulle — et
+       relevait comme ANOMALIE toute facture datée d'un jour avant sa
+       comptabilisation. Soixante-seize écarts sur cent quinze factures
+       parfaitement normales. Le vrai défaut n'est pas la lettre : c'est un
+       DÉFAUT SILENCIEUX sur une règle inconnue. Le schéma du catalogue refuse
+       désormais une règle de date hors énumération, et l'assemblage s'arrête. */
+    switch (String(ch.regle || '').replace(/[’‘]/g, "'")){
+      case "dans l'exercice":
         conforme = releve >= OUVERTURE && releve <= CLOTURE;
         refLib = frDate(OUVERTURE) + ' – ' + frDate(CLOTURE);
         break;
       case 'antérieure ou égale':
         conforme = releve <= r; refLib = '≤ ' + frDate(r); break;
+      case 'postérieure':
+        conforme = releve > r; refLib = '> ' + frDate(r); break;
       case 'même exercice que la référence':
         conforme = (releve <= CLOTURE) === (r <= CLOTURE);
         refLib = frDate(r) + ' (même exercice)'; break;
       default:
+        /* Pas de règle nommée : comparaison à la tolérance déclarée. C'est le
+           cas légitime — et le seul — où l'on arrive ici. */
         conforme = Math.abs(j) <= (ch.tol || 0); refLib = frDate(r);
     }
     return { saisi:true, ecart:j, conforme, refLib, valLib:frDate(releve),
-             ecartLib:ch.regle === 'dans l’exercice' ? 'hors exercice' : (j > 0 ? '+' : '') + j + ' j' };
+             ecartLib:/exercice/.test(String(ch.regle || '')) ? 'hors exercice' : (j > 0 ? '+' : '') + j + ' j' };
   }
   if (ch.type === 'bool'){
     const v = releve === 'oui' || releve === true;

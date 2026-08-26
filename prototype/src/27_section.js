@@ -161,6 +161,11 @@ function destinationSection(p, id){
           facteursDe(p.code).length + ' facteur(s) au registre', blocFacteursSection(p), fp) +
         repli(k('assertions'), 'Évaluation par assertion', 'jugement de l’auditeur',
           partAssertions(p), nivSansMotif) +
+        repli(k('questionnaire'), 'Questionnaire résiduel de risque',
+          QUEST_SECTION.length + ' question(s) — ce qu’aucune autre source ne couvre',
+          partQuestionnaire(p),
+          questionsSansReponse(p.code).section.length
+          + facteursQuestionnaire().filter(f => f.incomplet && f.cibles.some(c => c.fsli === p.code)).length) +
         repli(k('etendue'), 'Étendue des travaux, par assertion', 'ce que le risque commande',
           partEtendue(p), 0);
     }

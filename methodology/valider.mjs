@@ -84,6 +84,18 @@ export function validerCatalogue(cat, src, schema){
              choses contraires au même endroit. */
           if (ch.releve_seul && ch.regle)
             erreurs.push(`${oud} · ${ch.code} : « relevé seul » et une règle de contrôle à la fois`);
+          /* Une règle de DATE inconnue du moteur tomberait silencieusement sur
+             la comparaison à la tolérance et relèverait comme anomalie des
+             pièces parfaitement normales. Le catalogue ne doit pas pouvoir
+             nommer une règle que personne n'implémente : c'est un défaut de
+             construction, il arrête l'assemblage. L'apostrophe est normalisée,
+             parce que la typographique et la droite désignent la même règle. */
+          if (ch.type === 'date' && ch.regle && Array.isArray(schema.regles_date)){
+            const norm = x => String(x).replace(/[’‘]/g, "'");
+            if (!schema.regles_date.map(norm).includes(norm(ch.regle)))
+              erreurs.push(`${oud} · ${ch.code} : règle de date « ${ch.regle} » inconnue du moteur `
+                + `(connues : ${schema.regles_date.join(' | ')})`);
+          }
         }
       }
     }

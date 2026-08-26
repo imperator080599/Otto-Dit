@@ -49,6 +49,12 @@
   /* ── géométrie ── */
   --r:3px; --rond:999px;
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  /* Hauteur du bandeau collant. C'est un espacement du système au même titre
+     que les six autres — simplement MESURÉ au rendu plutôt que choisi. Il
+     était écrit « var(--sTop) » sur cinq sites : autant de littéraux
+     hors échelle, et cinq endroits à corriger si la valeur de repli change.
+     Un seul jeton, déclaré ici. */
+  --sTop:180px;
   --ombre:0 1px 2px rgba(20,23,26,.06);
 }
 html[data-theme="dark"]{
@@ -153,7 +159,7 @@ html[data-bandeau="reduit"] .themebtn{top:2px;min-height:24px;padding:0 var(--s2
 /* ══ coquille ═════════════════════════════════════════════════════════════ */
 .shell{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1680px;margin:0 auto}
 .rail{border-right:1px solid var(--line);padding:var(--s3) var(--s2) var(--s5);position:sticky;
-      top:var(--topH,180px);align-self:start;max-height:calc(100vh - var(--topH,180px));
+      top:var(--sTop);align-self:start;max-height:calc(100vh - var(--sTop));
       overflow-y:auto;scrollbar-width:thin}
 .rail .grp{font-size:var(--t1);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);
            padding:var(--s3) var(--s2) var(--s1);font-weight:700}
@@ -167,17 +173,17 @@ html[data-bandeau="reduit"] .themebtn{top:2px;min-height:24px;padding:0 var(--s2
 .rail a .b.bad{color:var(--anomalie)}
 .rail a .b.warn{color:var(--attention)}
 .railm{display:none;padding:var(--s2) var(--s3) 0}
-main{padding:var(--s4);min-width:0;scroll-margin-top:var(--topH,180px)}
+main{padding:var(--s4);min-width:0;scroll-margin-top:var(--sTop)}
 /* La barre est collante : sans cette marge de défilement, `scrollIntoView`
    amenait le haut du contenu SOUS la barre — au téléphone, les 294 premiers
    pixels de chaque vue étaient invisibles à l'arrivée. */
-.blk,.destnav{scroll-margin-top:calc(var(--topH,180px) + var(--s2))}
+.blk,.destnav{scroll-margin-top:calc(var(--sTop) + var(--s2))}
 
 /* ══ blocs ════════════════════════════════════════════════════════════════ */
 .hd{display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;margin-bottom:var(--s1)}
 .hd .sub{color:var(--ink-3);font-size:var(--t2)}
 .blk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-     margin-top:var(--s3);overflow:hidden;scroll-margin-top:calc(var(--topH,180px) + var(--s3))}
+     margin-top:var(--s3);overflow:hidden;scroll-margin-top:calc(var(--sTop) + var(--s3))}
 .blk > header{padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);
               display:flex;gap:var(--s2);align-items:baseline;flex-wrap:wrap}
 .blk > header .num{font:700 var(--t1)/1 var(--mono);color:var(--ink-3)}
@@ -360,6 +366,17 @@ body[data-espace="client"] main{max-width:960px;margin:0 auto}
   .blk{break-inside:avoid;box-shadow:none}
   .tw{max-height:none;overflow:visible}
   body{background:#FFFFFF}
+  /* UN PANNEAU REPLIÉ S'IMPRIMAIT REPLIÉ. Le navigateur masque le contenu
+     d'un <details> fermé ; à l'impression, le papier de travail sortait donc
+     amputé de tout ce que l'auditeur avait replié pour lire à l'écran. Un
+     dossier ne se plie pas : tout s'ouvre au papier. */
+  details > *:not(summary){display:block!important}
+  details > summary{list-style:none}
+  details > summary::-webkit-details-marker{display:none}
+  details > summary::marker{content:''}
+  /* et l'on ne coupe pas une ligne de papier de travail en deux pages */
+  tr,.nl,.msg{break-inside:avoid}
+  thead{display:table-header-group}
 }
 @media (max-width:900px){
   .shell{grid-template-columns:1fr}

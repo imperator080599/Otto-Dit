@@ -502,6 +502,7 @@ function vueMission(){
   const tb = l.filter(t => !t.sansObjet).reduce((a, t) => a + budget(t), 0);
   const tr = l.reduce((a, t) => a + t.heuresReel, 0);
   return entete('Vue globale de la mission', 'Altiverre SAS — exercice clos le ' + frDate(CLOTURE)) +
+    blocGraphes() +
     blk('Avancement par phase', l.length + ' travaux · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
       table([{k:'p',t:'Phase'},{k:'n',t:'Travaux',n:1},{k:'a',t:'Achevés',n:1},{k:'r',t:'Revus',n:1},
              {k:'x',t:'Restants',n:1},{k:'b',t:'Budget',n:1},{k:'e',t:'Réalisé',n:1},{k:'d',t:'Écart',n:1}],

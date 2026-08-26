@@ -8,10 +8,14 @@
    axes — la preuve étant que la planification, phase elle aussi, vivait déjà
    dans l'espace auditeur. L'espace auditeur porte donc le dossier entier,
    ordonné par phase. */
+/* PILOTAGE EN PREMIER, et par défaut. Un associé qui ouvre l'outil doit voir
+   l'état du dossier, pas un écran de travail. L'ordre des espaces est celui
+   dans lequel on les ouvre : on regarde d'abord où l'on en est, on travaille
+   ensuite, et le portail client est la troisième porte. */
 const ESPACES = [
+  { id:'pilotage', lib:'Pilotage',        defaut:'pil.mission' },
   { id:'auditeur', lib:'Espace auditeur', defaut:'plan.programme' },
   { id:'client',   lib:'Portail client',  defaut:'cli.vue' },
-  { id:'pilotage', lib:'Pilotage',        defaut:'pil.mission' },
 ];
 const DOSSIER = [
   { id:'plan.programme', lib:'Programme de travail' },
@@ -338,11 +342,23 @@ function renderMainDiff(){
 /** Hauteur réelle de la barre collante → décalage des ancres de navigation. */
 function syncTopHeight(){
   const h = Math.round(document.querySelector('.top').getBoundingClientRect().height);
-  document.documentElement.style.setProperty('--topH', h + 'px');
+  document.documentElement.style.setProperty('--sTop', h + 'px');
 }
 
+/** L'espace d'une vue se DÉDUIT de son identifiant : une vue de section ou de
+ *  planification appartient à l'espace auditeur, « cli. » au portail, « pil. »
+ *  au pilotage. Sans cela, naviguer vers une vue d'un autre espace la rendait
+ *  DANS l'espace courant — bandeau de seuils absent, rail incohérent. Le cas
+ *  ne se produisait pas tant que l'espace auditeur était celui d'ouverture ;
+ *  il apparaît dès que le pilotage passe devant. */
+function espaceDeVue(vue){
+  if (vue.startsWith('cli.')) return 'client';
+  if (vue.startsWith('pil.')) return 'pilotage';
+  return 'auditeur';
+}
 function aller(vue, espace){
-  if (espace && espace !== S.espace) S.espace = espace;
+  const e = espace || espaceDeVue(vue);
+  if (e !== S.espace) S.espace = e;
   S.vue = vue; S.noteCible = null;
   render();
   const m = document.getElementById('main');
@@ -436,6 +452,16 @@ document.addEventListener('input', e => {
     return renderMainDiff();
   }
   /* Équipe et indépendance */
+  if (d.qprec !== undefined){
+    const [code, poste] = d.qprec.split('|');
+    const q = QUESTIONNAIRE.find(x => x.code === code);
+    if (q){
+      if (q.portee === 'entite'){ S.questEntite[q.code] = { ...(S.questEntite[q.code] || {}), prec:t.value }; }
+      else sec(poste).questPrec[q.code] = t.value;
+      _regCache = null; _regCle = '';
+    }
+    return renderMainDiff();
+  }
   if (d.sauve !== undefined){ S.independance.sauvegardes[d.sauve] = t.value; return renderMainDiff(); }
   if (d.declp !== undefined){
     const dc = declarationCourante(S.moi); if (dc && !dc.signee) dc.precisions[d.declp] = t.value;
@@ -543,10 +569,12 @@ document.addEventListener('change', e => {
     logEvent('statut de compte modifié', d.ns, t.value);
     return renderMain();
   }
-  if (d.fac !== undefined && p){
-    sec(p.code).declares[d.fac] = t.checked;
-    logEvent('facteur de risque déclaré', p.lib, (FACTEURS.find(f => f.code === d.fac) || {}).lib + ' : ' + (t.checked ? 'oui' : 'non'));
-    renderImpact(); return renderMain();
+  /* Questionnaire résiduel : la réponse crée le facteur, elle ne coche rien. */
+  if (d.qrep !== undefined){
+    const [code, poste] = d.qrep.split('|');
+    const q = QUESTIONNAIRE.find(x => x.code === code);
+    if (q) repondreQuestion(q, poste, t.value);
+    renderImpact(); return render();
   }
   if (d.niv !== undefined && p){
     const st = sec(p.code);
@@ -1007,6 +1035,29 @@ document.addEventListener('click', e => {
   if (d.imprime){ window.print(); return; }
 });
 
+/* ── impression : un dossier ne se plie pas ───────────────────────────────
+   La règle CSS « details:not([open]) > * { display:block } » ne suffit PAS :
+   le navigateur supprime le rendu du contenu d'un <details> fermé au niveau
+   de l'élément lui-même, et forcer l'affichage de l'enfant n'y change rien —
+   mesuré, le contenu sortait à zéro caractère au papier. Il faut OUVRIR les
+   panneaux, puis les refermer. On retient ceux qu'on a ouverts pour ne pas
+   déplier ce que l'auditeur avait laissé ouvert de son propre chef.
+
+   Un papier de travail amputé de ce qui était replié à l'écran n'est pas un
+   papier de travail : c'est une capture d'écran. */
+let _repliesImpression = [];
+function ouvrirPourImpression(){
+  _repliesImpression = [...document.querySelectorAll('details')].filter(d => !d.open);
+  for (const d of _repliesImpression) d.open = true;
+  return _repliesImpression.length;
+}
+function refermerApresImpression(){
+  for (const d of _repliesImpression) d.open = false;
+  _repliesImpression = [];
+}
+addEventListener('beforeprint', ouvrirPourImpression);
+addEventListener('afterprint', refermerApresImpression);
+
 /* ═══ 24. DÉMARRAGE ════════════════════════════════════════════════════════ */
 initPortail();
 seedEquipe();
@@ -1021,6 +1072,11 @@ seedEquipe();
   const r2 = creerRequete('PERSONNEL', 'Justificatifs de paie', ['Journal de paie annuel', 'Contrats des entrées de l’exercice'], -6);
   r2.items[0].statut = 'attente_revue'; r2.items[0].revoyeur = USERS.lea.nom;
   r2.items[0].depots = [{ nom:'journal-paie-2025.pdf', t:tick(), par:'Sophie Brun' }];
+  /* Le testing du chiffre d'affaires est DÉROULÉ de bout en bout, par les
+     mêmes fonctions que les clics correspondants. Si une règle refusait une
+     étape, l'amorce le dirait ici plutôt que de produire un faux papier. */
+  const d = derouler();
+  if (!d.ok) console.error('déroulé du chiffre d’affaires interrompu :', d.why);
   S.events.length = 0; HORLOGE = '2026-03-15T09:12';   // l'amorce n'est pas un événement de la session
 })();
 render();

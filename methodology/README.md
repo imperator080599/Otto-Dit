@@ -38,6 +38,20 @@ de cette dette au bilan de clôture. Traiter la date comme un contrôle relevait
 toute facture normale du cycle : le validateur interdit désormais qu'un champ porte à la fois
 `releve_seul` et une `regle`.
 
+### Les règles de date sont une ÉNUMÉRATION, et le validateur la fait respecter
+
+`schema.json` porte `regles_date` : la liste des règles que le moteur sait appliquer à un champ de
+type `date` — `dans l'exercice`, `antérieure ou égale`, `postérieure`, `même exercice que la
+référence`. Une règle de date **hors de cette liste arrête l'assemblage**.
+
+Ce n'est pas de la coquetterie. Le catalogue écrivait `dans l'exercice` avec l'apostrophe **droite**
+(la seule commode en JSON) tandis que le moteur comparait à l'apostrophe **typographique** : aucun
+cas ne correspondait, l'exécution filait au comportement par défaut — comparaison à la tolérance,
+nulle — et le contrôle relevait comme anomalie **soixante-seize factures parfaitement normales sur
+cent quinze**. Le vrai défaut n'était pas la lettre, c'était le **défaut silencieux**. La comparaison
+normalise désormais l'apostrophe, et l'énumération empêche qu'une règle que personne n'implémente
+puisse être nommée.
+
 ### Étendue imposée : `selection`
 
 `"selection": "exhaustive_au_seuil"` dit qu'il n'y a **aucun tirage** : tous les éléments de la

@@ -623,5 +623,6 @@ const AFFECTATIONS_AMORCE = [
 ];
 /** Codes des travaux affectés à l'amorce — pour vérifier qu'il n'y en a pas d'autres. */
 function codesAffectesAmorce(){
-  return AFFECTATIONS_AMORCE.flatMap(a => travauxDe(a.section).map(t => t.code));
+  return [...AFFECTATIONS_AMORCE.flatMap(a => travauxDe(a.section).map(t => t.code)),
+          ...codesDeroules()];
 }
