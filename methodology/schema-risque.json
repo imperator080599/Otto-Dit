@@ -36,6 +36,19 @@
     "ecritures_validees_apres_cloture",
     "part_dernier_mois_au_dessus_de"
   ],
+  "_note_formules": "Les formules de taille d'échantillon que le MOTEUR sait calculer. Même frontière que les prédicats, et dans les deux sens : une formule nommée et non implémentée rendrait une taille silencieusement absente ; une formule implémentée et jamais nommée serait du code mort qu'aucune méthode ne peut atteindre.",
+  "formules_taille": {
+    "mus_intervalle_au_seuil": {
+      "libelle": "Sondage en unités monétaires — intervalle ramené au seuil de planification",
+      "calcul": "n = arrondi_sup(valeur_population × facteur_confiance / seuil_de_planification), borné à [minimum, maximum]",
+      "parametres": [
+        "facteur_confiance",
+        "minimum",
+        "maximum"
+      ],
+      "_besoin": "Elle a besoin de la VALEUR DE LA POPULATION et du seuil de planification : elle ne se calcule donc pas au chargement du catalogue, mais au moment où la procédure s'exécute sur un poste."
+    }
+  },
   "definitions": {
     "facteur": {
       "type": "object",

@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { fmtEur } from '@/lib/kernel/canon';
 import { listFslis } from '@/lib/services/fsli';
 import {
   assessFsli, risksFor, overrideLevel, requiredProcedures, excludedProcedures,
@@ -337,6 +338,7 @@ export default async function RiskPage({
           <thead>
             <tr>
               <th>Procédure</th><th>Assertion</th><th>Sens</th>
+              <th>Population et sélection</th>
               <th>Requise parce que</th><th className="num">Taille</th>
             </tr>
           </thead>
@@ -349,9 +351,41 @@ export default async function RiskPage({
                 </td>
                 <td>{p.assertion}</td>
                 <td className="faint">{cat.sensDeTest[p.procedure.sens]?.libelle ?? p.procedure.sens}</td>
-                <td className="faint" style={{ maxWidth: 320 }}>{p.because}</td>
+                {/* LA MÉTHODE LÀ OÙ ELLE S'EXÉCUTE (point 6). Une procédure sans
+                    population explicite est une intention, pas une procédure :
+                    on dit sur QUOI elle porte et COMMENT on y choisit. */}
+                <td className="faint" style={{ maxWidth: 260 }}>
+                  <div className="mono" style={{ fontSize: 11 }}>{p.procedure.population.predicat}</div>
+                  {Object.keys(p.procedure.population.parametres ?? {}).length > 0 && (
+                    <div style={{ fontSize: 11 }}>
+                      {Object.entries(p.procedure.population.parametres ?? {})
+                        .map(([k, v]) => `${k} : ${String(v)}`).join(' · ')}
+                    </div>
+                  )}
+                  <div>{p.procedure.selection === 'exhaustive_au_seuil'
+                    ? 'exhaustive au seuil — aucun tirage'
+                    : `sélection : ${p.procedure.selection}`}</div>
+                </td>
+                <td className="faint" style={{ maxWidth: 300 }}>{p.because}</td>
                 <td className="num">
-                  {p.sampleSize === null ? <span className="faint">—</span> : <strong>{p.sampleSize}</strong>}
+                  {p.sampleSize === null
+                    ? <span className="faint" title={p.taille.obstacle ?? ''}>
+                        {p.taille.origine === 'sans_objet' ? '—' : (p.taille.obstacle ?? 'à calculer')}
+                      </span>
+                    : <strong>{p.sampleSize}</strong>}
+                  {/* Un chiffre affiché doit savoir dire D'OÙ IL VIENT (P7). */}
+                  {p.taille.origine === 'formule' && (
+                    <div className="faint" style={{ fontSize: 10, fontWeight: 400 }}>
+                      {p.taille.libelle}
+                      {p.taille.entrees && (
+                        <> — population {fmtEur(p.taille.entrees.valeurPopulationCents, 'fr')},
+                          seuil {fmtEur(p.taille.entrees.seuilPlanificationCents, 'fr')}</>
+                      )}
+                    </div>
+                  )}
+                  {p.taille.origine === 'table' && (
+                    <div className="faint" style={{ fontSize: 10, fontWeight: 400 }}>table du cabinet</div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -360,8 +394,20 @@ export default async function RiskPage({
         <p className="faint mt">
           <strong>La taille suit l’assertion testée</strong>, jamais le risque le plus élevé du poste :
           une procédure répond à UNE assertion. Une section porte donc des échantillons de tailles
-          différentes — c’est la conséquence normale, pas une incohérence. Table du cabinet :{' '}
-          {Object.entries(cat.risque.tailles).map(([k, v]) => `${k} → ${v}`).join(' · ')}.
+          différentes — c’est la conséquence normale, pas une incohérence.
+        </p>
+        <p className="faint">
+          <strong>Ce que le cabinet a écrit</strong> :{' '}
+          {Object.entries(cat.risque.tailles).map(([k, v]) =>
+            typeof v === 'number'
+              ? `${k} → ${v}`
+              : `${k} → ${cat.risque.formules?.[v.formule]?.calcul ?? v.formule}`,
+          ).join(' · ')}.
+          {' '}Une taille par <strong>formule</strong> tient compte de la population :
+          trente lignes sur 12 M€ ne couvrent pas la même chose que trente lignes sur 800 k€.
+          La méthode <strong>nomme</strong> la formule et fixe ses paramètres ; le moteur la{' '}
+          <strong>calcule</strong> — une formule nommée qu’il ne saurait pas calculer arrête le
+          chargement de la méthode, elle ne rend pas une taille au hasard.
         </p>
       </div>
 

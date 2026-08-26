@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 299 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 306 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -798,6 +798,34 @@ de l'estimation parce qu'elle avait chiffré « rendre configurable ce qui exist
 papier celui du cabinet ».
 
 **Vérification** : 299 tests (286 → 299) · `tsc --noEmit` propre · 48/48 écrans en production.
+
+## Application — tranche livrée : point 6, la taille par formule et la méthode là où elle s'exécute
+
+**La formule attendait la population, et la population est le point 6** (ADR-080). `tailles_echantillon`
+accepte désormais, par niveau, **soit un nombre, soit une formule NOMMÉE** avec ses paramètres —
+`mus_intervalle_au_seuil`, facteur de confiance 3,0, bornes 20–80. La méthode nomme, le moteur
+calcule : c'était la dernière des trois questions à trente secondes dont la réponse était « pas
+aujourd'hui ».
+
+**Trois refus plutôt que trois chiffres plausibles** : sans population la taille est `null` et
+l'écran nomme l'obstacle ; une population ou un seuil nul lèvent ; le seuil lu est le seuil
+**validé**, pas le dernier proposé. Le chiffre affiché **porte ses entrées** — population et seuil —
+sous lui : P7 vaut pour une taille d'échantillon comme pour un montant.
+
+**Une erreur de frontière, corrigée parce que la suite l'a fait tomber.** La première version
+exigeait qu'un niveau **nomme chaque formule connue** — le « dans les deux sens » appliqué
+mécaniquement. Cela aurait forcé chaque cabinet à utiliser toutes les formules que le moteur
+implémente, donc laissé l'implémentation du produit **dicter la méthode**. Le contrôle bidirectionnel
+est remonté d'un cran : entre le **schéma du produit** et le **moteur**, où il a un sens.
+*« Dans les deux sens » vaut entre deux parties du produit ; entre le produit et la méthode d'un
+cabinet, un seul sens est légitime.*
+
+**La méthode s'affiche là où elle s'exécute** : le tableau « ce que ce risque commande » porte, pour
+chaque procédure, sa **population** (prédicat et paramètres) et son mode de **sélection**, à côté de
+la taille et de sa provenance. Une procédure sans population explicite est une intention, pas une
+procédure.
+
+**Vérification** : 306 tests (299 → 306) · `tsc --noEmit` propre · 48/48 écrans en production.
 
 ## Convergence prototype → application
 

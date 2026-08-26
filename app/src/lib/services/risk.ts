@@ -444,6 +444,17 @@ export interface RequiredProcedure {
   /** Le minimum que la procédure exige pour être requise. */
   requires: string;
   sampleSize: number | null;
+  /** Comment la taille est obtenue : lue dans la table, ou calculée. */
+  taille: {
+    origine: 'table' | 'formule' | 'sans_objet';
+    formule?: string;
+    libelle?: string;
+    calcul?: string;
+    /** Les entrées réelles du calcul, pour qu'un chiffre affiché sache d'où il vient. */
+    entrees?: { valeurPopulationCents: number; seuilPlanificationCents: number };
+    /** Pourquoi elle n'est pas calculable, le cas échéant. */
+    obstacle?: string;
+  };
   /** Pourquoi elle est là, en une phrase relisible. */
   because: string;
 }
@@ -461,19 +472,38 @@ export async function requiredProcedures(
   fsliCode: string,
 ): Promise<RequiredProcedure[]> {
   const cat = await catalogueDeLaMission(engagementId);
+  assertFormulasImplemented(cat);
   const risks = await risksFor(engagementId, fsliCode);
   const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
+
+  /* LE CONTEXTE DE LA FORMULE — et c'est pour cela que la formule attendait le
+     point 6 : elle a besoin de la VALEUR de la population et du seuil de
+     planification. Ni l'un ni l'autre n'est connu au chargement du catalogue ;
+     les deux le sont ici, au moment où la procédure s'exécute sur un poste. */
+  const ctx = await contexteTaille(engagementId, fsliCode);
+
   const out: RequiredProcedure[] = [];
   for (const p of proceduresDuCycle(cat, fsliCode)) {
     const r = byAssertion.get(p.assertion);
     if (!r) continue;
     if (rank(cat, r.level) < rank(cat, p.risque_minimum)) continue;
+    const f = formuleDeTaille(cat, r.level);
+    const taille: RequiredProcedure['taille'] = !p.echantillonnee
+      ? { origine: 'sans_objet' }
+      : f
+        ? {
+            origine: 'formule', formule: f.nom, libelle: f.libelle, calcul: f.calcul,
+            entrees: ctx.valeurs ?? undefined,
+            obstacle: ctx.obstacle ?? undefined,
+          }
+        : { origine: 'table' };
     out.push({
       procedure: p,
       assertion: p.assertion,
       level: r.level,
       requires: p.risque_minimum,
-      sampleSize: p.echantillonnee ? sampleSize(cat, r.level) : null,
+      sampleSize: p.echantillonnee ? sampleSize(cat, r.level, ctx.valeurs ?? undefined) : null,
+      taille,
       because: `risque « ${r.level} » sur « ${p.assertion} »`
         + (r.retained_level ? ' (niveau retenu par l’auditeur)' : ` (${r.factor_count} facteur(s) observé(s))`)
         + ` ≥ minimum « ${p.risque_minimum} » de la procédure`,
@@ -482,11 +512,138 @@ export async function requiredProcedures(
   return out.sort((a, b) => a.procedure.code.localeCompare(b.procedure.code));
 }
 
-/** La taille suit l'assertion testée. Elle vient de la méthode, pas du code. */
-export function sampleSize(cat: Catalogue, level: Level): number {
-  const n = cat.risque.tailles[level];
-  if (typeof n !== 'number') throw new RiskRuleError(`aucune taille d’échantillon pour le niveau « ${level} »`);
-  return n;
+/**
+ * Les entrées de la formule, pour CE poste.
+ *
+ * Elle rend un obstacle NOMMÉ plutôt que des zéros : sans population évaluée ou
+ * sans seuil validé, la taille n'est pas calculable, et l'écran doit le dire
+ * au lieu d'afficher un nombre dont personne ne saurait dire d'où il vient.
+ */
+export async function contexteTaille(
+  engagementId: string,
+  fsliCode: string,
+): Promise<{ valeurs: ContexteTaille | null; obstacle: string | null }> {
+  /* Le seuil VALIDÉ, pas le dernier proposé : une étendue réglée sur une
+     proposition non validée serait réglée sur rien. */
+  const mat = await q01<{ perf_amount: string; status: string }>(
+    `select perf_amount::text as perf_amount, status from materiality
+     where engagement_id = $1 and status = 'validated' order by version desc limit 1`,
+    [engagementId],
+  );
+  if (!mat || mat.status !== 'validated') {
+    return { valeurs: null, obstacle: 'seuil de planification non validé' };
+  }
+  /* La valeur de la population du poste : le solde du POSTE, pas une somme
+     re-calculée sur le grand livre. C'est le chiffre qui figure aux états
+     financiers, donc celui sur lequel l'étendue doit se régler. */
+  const poste = await q01<{ balance: string }>(
+    `select balance::text as balance from fsli where engagement_id = $1 and code = $2`,
+    [engagementId, fsliCode],
+  );
+  const valeur = Math.round(Math.abs(Number(poste?.balance ?? 0)) * 100);
+  if (!valeur) return { valeurs: null, obstacle: 'population du poste non évaluée' };
+  return {
+    valeurs: {
+      valeurPopulationCents: valeur,
+      seuilPlanificationCents: Math.round(Number(mat.perf_amount) * 100),
+    },
+    obstacle: null,
+  };
+}
+
+/* ── la taille d'échantillon : table OU formule nommée ────────────────────
+   La méthode NOMME la formule et fixe ses paramètres ; le code la CALCULE.
+   Même frontière que les prédicats, pour la même raison : une expression
+   exécutable chargée par un cabinet serait du code sans revue, et le jour où
+   elle se trompe, elle se trompe sur un dossier signé (ADR-050).            */
+
+/** Les formules que le moteur sait calculer. */
+export const FORMULES_TAILLE: Record<string, (p: Record<string, number>, ctx: ContexteTaille) => number> = {
+  /**
+   * Sondage en unités monétaires : l'intervalle de sondage ramené au seuil de
+   * planification. n = valeur de population × facteur de confiance / seuil,
+   * borné.
+   *
+   * POURQUOI UNE FORMULE PLUTÔT QU'UN NOMBRE, au niveau élevé : trente lignes
+   * sur un chiffre d'affaires de 12 M€ ne couvrent pas la même chose que trente
+   * lignes sur 800 k€. Une table par niveau ignore la population ; c'est
+   * défendable au niveau faible, ça ne l'est pas là où le risque est le plus
+   * élevé.
+   */
+  mus_intervalle_au_seuil(p, ctx) {
+    if (ctx.seuilPlanificationCents <= 0) {
+      throw new RiskRuleError(
+        'formule « mus_intervalle_au_seuil » : le seuil de planification n’est pas fixé — '
+        + 'la taille ne se calcule pas, et une taille inventée serait pire qu’une taille absente',
+      );
+    }
+    if (ctx.valeurPopulationCents <= 0) {
+      throw new RiskRuleError(
+        'formule « mus_intervalle_au_seuil » : la population n’est pas évaluée — '
+        + 'elle est la donnée d’entrée de la formule, pas un détail',
+      );
+    }
+    const brut = (ctx.valeurPopulationCents * p.facteur_confiance) / ctx.seuilPlanificationCents;
+    return Math.min(p.maximum, Math.max(p.minimum, Math.ceil(brut)));
+  },
+};
+
+/** Ce dont une formule a besoin, et que seule l'exécution sur un poste connaît. */
+export interface ContexteTaille {
+  valeurPopulationCents: number;
+  seuilPlanificationCents: number;
+}
+
+/**
+ * Toute formule déclarée est implémentée, toute formule implémentée est
+ * déclarée. Les DEUX sens, comme pour les prédicats : une formule nommée et
+ * absente rendrait une taille silencieusement manquante ; une formule
+ * implémentée et jamais nommée serait du code que rien ne peut atteindre.
+ */
+export function assertFormulasImplemented(cat: Catalogue): void {
+  const declarees = Object.keys(cat.risque.formules ?? {});
+  const implementees = Object.keys(FORMULES_TAILLE);
+  const manquantes = declarees.filter((f) => !implementees.includes(f));
+  const orphelines = implementees.filter((f) => !declarees.includes(f));
+  if (manquantes.length || orphelines.length) {
+    throw new RiskRuleError(
+      [
+        manquantes.length ? `formule(s) déclarée(s) et non implémentée(s) : ${manquantes.join(', ')}` : '',
+        orphelines.length ? `formule(s) implémentée(s) et non déclarée(s) : ${orphelines.join(', ')}` : '',
+      ].filter(Boolean).join(' · '),
+    );
+  }
+}
+
+/**
+ * La taille suit l'assertion testée. Elle vient de la méthode, pas du code.
+ *
+ * Le contexte est OPTIONNEL, et son absence n'invente rien : une formule sans
+ * population rend `null`, ce que l'écran affiche comme « à calculer sur la
+ * population » — jamais un nombre plausible tiré d'on ne sait où.
+ */
+export function sampleSize(cat: Catalogue, level: Level, ctx?: ContexteTaille): number | null {
+  const t = cat.risque.tailles[level];
+  if (typeof t === 'number') return t;
+  if (!t || typeof t !== 'object') {
+    throw new RiskRuleError(`aucune taille d’échantillon pour le niveau « ${level} »`);
+  }
+  const calcul = FORMULES_TAILLE[t.formule];
+  if (!calcul) {
+    throw new RiskRuleError(
+      `formule « ${t.formule} » inconnue du moteur (connues : ${Object.keys(FORMULES_TAILLE).join(', ')})`,
+    );
+  }
+  if (!ctx) return null;
+  return calcul(t.parametres, ctx);
+}
+
+/** La taille est-elle calculée par une formule, et laquelle ? */
+export function formuleDeTaille(cat: Catalogue, level: Level): { nom: string; libelle: string; calcul: string } | null {
+  const t = cat.risque.tailles[level];
+  if (typeof t === 'number' || !t) return null;
+  const def = cat.risque.formules?.[t.formule];
+  return { nom: t.formule, libelle: def?.libelle ?? t.formule, calcul: def?.calcul ?? '' };
 }
 
 /** Les procédures ÉCARTÉES, et pourquoi — une liste qui ne dit que ce qu'elle

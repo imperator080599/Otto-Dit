@@ -36,7 +36,7 @@ republie, c'est en vigueur : aucune compilation, aucun développeur, aucun dépl
 | **Votre jeu d'assertions** — lesquelles, comment elles s'appellent, ce que chacune couvre | `assertions.json` | Sept, cinq, ou neuf ; « présentation » séparée de « informations à fournir », ou le découpage PCAOB. Voir §1.1 | ✓ donnée |
 | **Votre échelle de risque** — combien de niveaux, comment ils s'appellent | `risque.json` → `echelle.niveaux` | Deux, trois, quatre niveaux ; « limité / normal / accru » plutôt que « faible / moyen / élevé » | ✓ donnée |
 | **La règle qui convertit les facteurs en niveau** | `risque.json` → `echelle.paliers` | « 3 facteurs et plus → accru » au lieu de 2 | ✓ donnée |
-| **Vos tailles d'échantillon**, par niveau | `risque.json` → `tailles_echantillon` | La taille proposée sur chaque procédure échantillonnée | ✓ donnée |
+| **Vos tailles d'échantillon** — un **nombre** par niveau, ou une **formule nommée** avec ses paramètres | `risque.json` → `tailles_echantillon` | La taille proposée sur chaque procédure échantillonnée, et ce qui l'explique sous le chiffre | ✓ donnée |
 | **Les seuils de vos facteurs de risque** — 200 écritures, 5 % d'OD, 15 % sur le dernier mois | `risque.json` → `facteurs_observes[].parametres` | Le facteur s'active plus tôt ou plus tard | ✓ donnée |
 | **Le libellé et la justification de chaque facteur** | `risque.json` | Ce que l'écran affiche et ce que le dossier garde | ✓ donnée |
 | **Vos questions de risque résiduel** — lesquelles, leur portée, leur nature, ce qu'un « oui » change | `questionnaire.json` | Le questionnaire posé dans chaque section et au niveau de l'entité | ✓ donnée |
@@ -138,7 +138,6 @@ Il y a **une seule** frontière, et elle est toujours la même : **la méthode N
 |---|---|
 | Un **type de facteur** qui n'existe pas — « écritures passées un jour férié », « clients créés dans les 30 jours précédant la clôture » | Un facteur est un **prédicat** sur les données. Le catalogue peut le nommer et le paramétrer, mais quelqu'un doit écrire comment on le mesure dans un grand livre |
 | Une **population** de procédure d'une forme nouvelle — « les avoirs émis après la clôture rattachés à une facture de l'exercice » | Idem : le catalogue nomme `predicat` et ses paramètres, le code sait lire les écritures |
-| Une **taille d'échantillon calculée par formule** plutôt que lue dans une table | Non supporté aujourd'hui. Voir §4 |
 | Une **règle de contrôle de champ** d'un type nouveau — au-delà de « dans l'exercice », « antérieure ou égale », « postérieure », « même exercice que la référence » | Le schéma énumère les règles de date que le moteur applique. Une règle hors liste arrête l'assemblage plutôt que d'être ignorée |
 | Un **bloc de papier de travail** d'une forme nouvelle — une section que le moteur ne sait pas remplir | Un bloc est **nommé** par le gabarit et **rempli** par le code, comme un prédicat. Ce qui existe se réordonne et se renomme ; ce qui n'existe pas s'écrit. Voir §1.2 |
 | Un **référentiel comptable** autre que le PCG, ou un nouveau pack normatif | C'est un pack, pas un paramètre |
@@ -234,7 +233,6 @@ moteur refuse.*
 
 | Demande | État | Coût estimé |
 |---|---|---|
-| **Taille d'échantillon par formule** (par exemple un intervalle de sondage en unités monétaires ramené au seuil de planification) plutôt qu'une table par niveau | **Non supporté.** `tailles_echantillon` est une table `niveau → nombre` | ~1 séance, à faire **avec le point 6** : une formule a besoin de la valeur de la population, et la population est le point 6. Même frontière que les prédicats — la méthode nommerait `formule: "mus_intervalle_au_seuil"`, le code la calculerait |
 | *(rien d'autre à ce jour)* | | |
 
 *(Les assertions figuraient ici. Elles n'y figurent plus : la question est tranchée au §1.1.)*
@@ -259,9 +257,14 @@ Un auditeur qui veut éprouver la promesse posera l'une de ces questions. Voici 
 > au lieu de passer. Vérifié par un test qui charge un jeu à découpage distinct.
 
 > **« Et si ma taille d'échantillon vient d'une formule ? »**
-> **Pas aujourd'hui.** C'est une table par niveau. La formule est chiffrée à une séance et attend le
-> point 6, parce qu'elle a besoin de la population. Je préfère vous le dire que vous laisser le
-> découvrir.
+> Oui. Un niveau porte soit un nombre, soit une **formule nommée** avec ses paramètres — par exemple
+> un intervalle de sondage en unités monétaires ramené à votre seuil de planification, borné. La
+> méthode **nomme** la formule, le moteur la **calcule** : une formule qu'il ne sait pas calculer
+> **arrête le chargement**, elle ne rend pas une taille au hasard.
+>
+> Et sans population évaluée ou sans seuil validé, l'écran affiche **l'obstacle**, jamais un nombre :
+> un chiffre qui ne sait pas dire d'où il vient est pire qu'une absence. Le chiffre affiché porte
+> d'ailleurs ses entrées — population et seuil — sous lui.
 
 > **« Et mon papier de travail, avec mes colonnes, mon en-tête et mes références ? »**
 > Oui, et c'est une donnée comme le reste : ordre et intitulés des sections, colonnes, annexes,

@@ -11,6 +11,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { detectTbMapping, importTb, importFec } from './imports';
 import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconciliation';
 import { rebuildFslis } from './fsli';
@@ -18,6 +19,7 @@ import { propose, validate } from './materiality';
 import {
   assessFsli, risksFor, levelFor, overrideLevel, requiredProcedures, excludedProcedures,
   sampleSize, levelForCount, rank, assertPredicatesImplemented, PREDICATES, RiskRuleError,
+  formuleDeTaille, assertFormulasImplemented, contexteTaille,
 } from './risk';
 
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
@@ -271,5 +273,117 @@ describe('risque par assertion — il commande, il ne décore pas', () => {
       [IDS.engNep],
     );
     expect(rows.map((r) => r.methodology_version)).toEqual([cat.risque.version]);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA TAILLE PAR FORMULE — point 6.
+   Une table par niveau ignore la taille de la population : trente lignes sur
+   12 M€ ne couvrent pas la même chose que trente lignes sur 800 k€. La méthode
+   NOMME la formule, le code la CALCULE — même frontière que les prédicats.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+describe('la taille d’échantillon par formule', () => {
+  beforeAll(async () => {
+    await initTestDb();
+    await runPart1UpToWorkpaper();
+  });
+
+  it('la formule est NOMMÉE par la méthode et CALCULÉE par le code', async () => {
+    const cat = await chargerCatalogue();
+    const f = formuleDeTaille(cat, 'eleve');
+    expect(f?.nom).toBe('mus_intervalle_au_seuil');
+    expect(f?.calcul).toMatch(/facteur_confiance/);
+    // et le niveau faible reste une table : les deux formes cohabitent
+    expect(formuleDeTaille(cat, 'faible')).toBeNull();
+    expect(sampleSize(cat, 'faible')).toBe(6);
+  });
+
+  it('le calcul est celui qui est écrit, pas un autre', async () => {
+    const cat = await chargerCatalogue();
+    // 12 000 000 € × 3 / 300 000 € = 120 → borné à 80
+    expect(sampleSize(cat, 'eleve', {
+      valeurPopulationCents: 1_200_000_000, seuilPlanificationCents: 30_000_000,
+    })).toBe(80);
+    // 800 000 € × 3 / 300 000 € = 8 → relevé au minimum 20
+    expect(sampleSize(cat, 'eleve', {
+      valeurPopulationCents: 80_000_000, seuilPlanificationCents: 30_000_000,
+    })).toBe(20);
+    // 4 000 000 € × 3 / 300 000 € = 40 → dans les bornes, donc tel quel
+    expect(sampleSize(cat, 'eleve', {
+      valeurPopulationCents: 400_000_000, seuilPlanificationCents: 30_000_000,
+    })).toBe(40);
+  });
+
+  it('SANS population, la taille est NULLE — jamais un nombre plausible', async () => {
+    /* Le défaut qu'on interdit : rendre une valeur par défaut. Un chiffre
+       affiché qui ne sait pas dire d'où il vient est pire qu'une absence. */
+    const cat = await chargerCatalogue();
+    expect(sampleSize(cat, 'eleve')).toBeNull();
+  });
+
+  it('une population nulle ou un seuil nul LÈVENT au lieu de rendre zéro', async () => {
+    const cat = await chargerCatalogue();
+    expect(() => sampleSize(cat, 'eleve', { valeurPopulationCents: 0, seuilPlanificationCents: 30_000_000 }))
+      .toThrow(/population n’est pas évaluée/);
+    expect(() => sampleSize(cat, 'eleve', { valeurPopulationCents: 1_000, seuilPlanificationCents: 0 }))
+      .toThrow(/seuil de planification n’est pas fixé/);
+  });
+
+  it('SCHÉMA ↔ MOTEUR : les deux sens, mais entre le produit et lui-même', async () => {
+    /* La frontière est ici entre le SCHÉMA DU PRODUIT et le MOTEUR, pas entre
+       le cabinet et nous. Une formule déclarée et non implémentée rendrait une
+       taille silencieusement manquante ; une formule implémentée et non
+       déclarée serait inatteignable par toute méthode.
+       Un CABINET, lui, n'est pas tenu d'utiliser toutes les formules connues :
+       une première version l'exigeait, ce qui aurait laissé l'implémentation du
+       produit dicter sa méthode. */
+    const cat = await chargerCatalogue();
+    expect(() => assertFormulasImplemented(cat)).not.toThrow();
+
+    const inventee = { ...cat, risque: { ...cat.risque, formules: { ...cat.risque.formules, boule_de_cristal: { libelle: '', calcul: '', parametres: [] } } } };
+    expect(() => assertFormulasImplemented(inventee)).toThrow(/non implémentée/);
+
+    const amputee = { ...cat, risque: { ...cat.risque, formules: {} } };
+    expect(() => assertFormulasImplemented(amputee)).toThrow(/non déclarée/);
+  });
+
+  it('sur le dossier réel, la taille est calculée ET dit d’où elle vient', async () => {
+    // Le risque doit avoir été évalué, sinon aucune procédure n'est requise et
+    // le test passerait à vide sur deux listes vides.
+    await assessFsli(IDS.engNep, 'REVENUE', IDS.users.karim);
+    const reqs = await requiredProcedures(IDS.engNep, 'REVENUE');
+    expect(reqs.length, 'aucune procédure requise : le test vérifierait deux listes vides').toBeGreaterThan(0);
+    const echantillonnees = reqs.filter((r) => r.taille.origine !== 'sans_objet');
+    expect(echantillonnees.length).toBeGreaterThan(0);
+
+    /* SANS CETTE ASSERTION, LA BOUCLE CI-DESSOUS PASSERAIT À VIDE si aucune
+       assertion n'atteignait le niveau qui porte la formule. On force donc le
+       niveau élevé sur une assertion, et on vérifie qu'il y a bien matière. */
+    await overrideLevel(IDS.engNep, 'REVENUE', 'realite', 'eleve',
+      'Test : vérifier que la formule s’applique réellement.', IDS.users.claire);
+    const reqs2 = await requiredProcedures(IDS.engNep, 'REVENUE');
+    const parFormule = reqs2.filter((r) => r.taille.origine === 'formule');
+    expect(parFormule.length, 'aucune procédure au niveau porteur de formule').toBeGreaterThan(0);
+    for (const r of parFormule) {
+      expect(r.taille.formule).toBe('mus_intervalle_au_seuil');
+      // les ENTRÉES du calcul sont portées avec le résultat : un chiffre
+      // affiché doit savoir dire d'où il vient (P7)
+      expect(r.taille.entrees?.valeurPopulationCents).toBeGreaterThan(0);
+      expect(r.taille.entrees?.seuilPlanificationCents).toBeGreaterThan(0);
+      expect(r.sampleSize).toBeGreaterThanOrEqual(20);
+      expect(r.sampleSize).toBeLessThanOrEqual(80);
+    }
+    // et une procédure non échantillonnée n'invente pas de taille
+    for (const r of reqs.filter((x) => x.taille.origine === 'sans_objet')) {
+      expect(r.sampleSize).toBeNull();
+    }
+  });
+
+  it('sans seuil validé, l’obstacle est NOMMÉ, pas contourné', async () => {
+    const ctx = await contexteTaille(IDS.engSox, 'REVENUE');
+    // le dossier SOX n'a ni seuil validé ni poste chiffré sur ce code
+    expect(ctx.valeurs).toBeNull();
+    expect(ctx.obstacle).toBeTruthy();
   });
 });

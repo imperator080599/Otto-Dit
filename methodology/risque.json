@@ -89,8 +89,17 @@
   },
   "tailles_echantillon": {
     "_note": "La taille suit l'assertion TESTÉE, jamais le risque le plus élevé du poste : une procédure répond à UNE assertion. Appliquer le maximum du poste revient à traiter la séparation des exercices comme l'exhaustivité sous prétexte qu'elles partagent un compte. Une section porte donc des échantillons de tailles différentes — c'est la conséquence normale, pas une incohérence.",
+    "_note_formule": "Un niveau porte SOIT un nombre, SOIT une formule NOMMÉE. La frontière est la même que pour les prédicats : la méthode nomme « mus_intervalle_au_seuil » et fixe ses paramètres, le code sait le calculer. Une formule inconnue arrête l'assemblage ; une formule implémentée et jamais nommée aussi.",
     "faible": 6,
     "moyen": 15,
-    "eleve": 30
+    "eleve": {
+      "_pourquoi": "Au niveau élevé, une taille fixe ignore la taille de la population : trente lignes sur un chiffre d'affaires de 12 M€ ne couvrent pas la même chose que trente lignes sur 800 k€. La formule ramène l'intervalle de sondage au seuil de planification.",
+      "formule": "mus_intervalle_au_seuil",
+      "parametres": {
+        "facteur_confiance": 3.0,
+        "minimum": 20,
+        "maximum": 80
+      }
+    }
   }
 }

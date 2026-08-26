@@ -20,11 +20,21 @@ export function racineDepot(){
   return path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 }
 
-/** Les clés « _note » documentent le fichier pour qui le relit ; elles ne sont
- *  pas de la donnée. Les laisser passer ferait apparaître « _note » comme un
- *  niveau de risque dans la table des tailles. */
+/**
+ * Les clés « _note » documentent le fichier pour qui le relit ; elles ne sont
+ * pas de la donnée. Les laisser passer ferait apparaître « _note » comme un
+ * niveau de risque dans la table des tailles.
+ *
+ * RÉCURSIF, et il ne l'était pas : une note posée dans un objet imbriqué —
+ * « pourquoi ce niveau utilise une formule » — traversait jusqu'au moteur. Rien
+ * n'aurait planté ; le paramètre inconnu serait simplement passé au calcul.
+ */
 function sansNotes(o){
-  return Object.fromEntries(Object.entries(o || {}).filter(([k]) => !k.startsWith('_')));
+  if (Array.isArray(o)) return o.map(sansNotes);
+  if (!o || typeof o !== 'object') return o;
+  return Object.fromEntries(
+    Object.entries(o).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, sansNotes(v)]),
+  );
 }
 
 function validerObjet(obj, def, chemin, erreurs){
@@ -265,10 +275,58 @@ export function validerRisque(r, src, schema, assertions){
     if (!niveaux.includes(p.niveau))
       erreurs.push(`risque : palier vers un niveau « ${p.niveau} » absent de l’échelle`);
   /* Chaque niveau doit avoir une taille : un niveau sans taille rendrait un
-     échantillon vide là où le risque est le plus élevé. */
-  for (const n of niveaux)
-    if (typeof (r.tailles_echantillon || {})[n] !== 'number')
+     échantillon vide là où le risque est le plus élevé.
+     UN NIVEAU PORTE SOIT UN NOMBRE, SOIT UNE FORMULE NOMMÉE. La frontière est
+     celle des prédicats : la méthode nomme, le code calcule — et elle joue
+     dans les DEUX SENS, parce qu'une formule nommée et non implémentée rendrait
+     une taille silencieusement absente, tandis qu'une formule implémentée et
+     jamais nommée serait du code mort qu'aucune méthode ne peut atteindre. */
+  const formulesConnues = Object.keys(schema.formules_taille || {});
+  const formulesNommees = new Set();
+  for (const n of niveaux){
+    const t = (r.tailles_echantillon || {})[n];
+    if (typeof t === 'number'){
+      if (!Number.isInteger(t) || t < 1)
+        erreurs.push(`risque : niveau « ${n} » — taille « ${t} » n'est pas un entier positif`);
+      continue;
+    }
+    if (!t || typeof t !== 'object'){
       erreurs.push(`risque : niveau « ${n} » sans taille d’échantillon`);
+      continue;
+    }
+    const def = schema.formules_taille[t.formule];
+    if (!def){
+      erreurs.push(`risque : niveau « ${n} » — formule « ${t.formule} » inconnue du moteur `
+        + `(connues : ${formulesConnues.join(' | ') || 'aucune'}) — la taille serait silencieusement absente`);
+      continue;
+    }
+    formulesNommees.add(t.formule);
+    const donnes = Object.keys(t.parametres || {});
+    for (const attendu of def.parametres){
+      if (typeof (t.parametres || {})[attendu] !== 'number')
+        erreurs.push(`risque : niveau « ${n} », formule « ${t.formule} » — paramètre « ${attendu} » manquant ou non numérique`);
+    }
+    for (const donne of donnes){
+      if (!def.parametres.includes(donne))
+        erreurs.push(`risque : niveau « ${n} », formule « ${t.formule} » — paramètre « ${donne} » inconnu `
+          + `(attendus : ${def.parametres.join(' | ')}) — il serait ignoré en silence`);
+    }
+    const mini = (t.parametres || {}).minimum, maxi = (t.parametres || {}).maximum;
+    if (typeof mini === 'number' && typeof maxi === 'number' && mini > maxi)
+      erreurs.push(`risque : niveau « ${n} » — minimum ${mini} supérieur au maximum ${maxi}`);
+  }
+  /* PAS D'AUTRE SENS ICI, et c'est une correction : la première version exigeait
+     qu'un niveau nomme chaque formule connue. C'était faux, et du même défaut
+     que tout le reste — cela aurait forcé CHAQUE cabinet à utiliser TOUTES les
+     formules que le moteur implémente, donc laissé l'implémentation du produit
+     dicter la méthode du cabinet. Un cabinet qui travaille à trois tailles
+     fixes est parfaitement en règle.
+     Le contrôle « implémenté mais non déclaré » existe bien, mais un cran plus
+     haut, entre le SCHÉMA du produit et le MOTEUR : c'est
+     `assertFormulasImplemented`, et là il a un sens — une formule que le moteur
+     calcule sans que le schéma la déclare serait inatteignable par toute
+     méthode. */
+  void formulesNommees;
   return erreurs;
 }
 
@@ -513,7 +571,8 @@ function assembler(contenu, schemas){
            risque:{ version:risq.version, facteurs:risq.facteurs_observes,
                     niveaux:risq.echelle.niveaux, paliers:risq.echelle.paliers,
                     tailles:sansNotes(risq.tailles_echantillon),
-                    predicats:schemaR.predicats_facteur },
+                    predicats:schemaR.predicats_facteur,
+                    formules:schemaR.formules_taille },
            assertions:{ version:asrt.version, liste:asrt.assertions },
            papier:{ version:pap.version, papiers:sansNotes(pap.papiers),
                     annexes:pap.annexes, mentions:pap.mentions, entete:pap.entete,

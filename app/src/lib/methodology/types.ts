@@ -197,15 +197,29 @@ export interface FacteurObserve {
   sources: string[];
 }
 
+/** Une taille : un nombre, ou une formule NOMMÉE avec ses paramètres. */
+export type TailleEchantillon =
+  | number
+  | { formule: string; parametres: Record<string, number> };
+
+/** Ce que le moteur sait calculer, énuméré par le schéma du PRODUIT. */
+export interface FormuleTaille {
+  libelle: string;
+  calcul: string;
+  parametres: string[];
+}
+
 export interface Risque {
   version: string;
   facteurs: FacteurObserve[];
   /** Les niveaux du cabinet, du plus faible au plus élevé. */
   niveaux: string[];
   paliers: { facteurs_min: number; niveau: string }[];
-  tailles: Record<string, number>;
+  tailles: Record<string, TailleEchantillon>;
   /** Prédicats que le schéma autorise — le code doit les implémenter tous. */
   predicats: string[];
+  /** Formules de taille que le moteur sait calculer, énumérées par le schéma. */
+  formules: Record<string, FormuleTaille>;
 }
 
 export interface Catalogue {

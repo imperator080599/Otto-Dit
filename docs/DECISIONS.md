@@ -2750,3 +2750,57 @@ incohérente. L'écart n'est pas le prix de la cohérence : c'est le **schéma d
 des 3½ parce que la question avait été chiffrée comme « rendre configurable ce qui existe » et non
 « rendre le papier celui du cabinet ». La plomberie économisée par le mécanisme de méthodologie-
 comme-donnée (ADR-075) compense le travail de frontière en plus.
+
+---
+
+## ADR-080 — La taille d'échantillon par formule nommée (point 6)
+
+**Contexte.** `tailles_echantillon` était une table `niveau → nombre`. C'était la seule des trois
+questions à trente secondes du §5 de `docs/12_CONFIGURABLE.md` à laquelle la réponse était « pas
+aujourd'hui ». Elle attendait le point 6 pour une raison de fond : **une formule a besoin de la
+valeur de la population**, et la population n'est connue ni au chargement du catalogue, ni au
+moment où le risque est évalué — seulement quand la procédure s'exécute sur un poste.
+
+**Pourquoi une formule, et pas seulement une table.** Une table ignore la taille de la population :
+trente lignes sur un chiffre d'affaires de 12 M€ ne couvrent pas la même chose que trente lignes sur
+800 k€. C'est défendable au niveau faible ; ça ne l'est pas là où le risque est le plus élevé.
+
+**Décision.** Un niveau porte **soit un nombre, soit une formule nommée** avec ses paramètres. La
+méthode NOMME (`mus_intervalle_au_seuil`, `facteur_confiance: 3.0`, bornes 20–80), le code CALCULE
+— même frontière qu'ADR-050, pour la même raison : une expression exécutable chargée par un cabinet
+serait du code sans revue, et le jour où elle se trompe, elle se trompe sur un dossier signé.
+
+**Trois refus, plutôt que trois chiffres plausibles.**
+
+1. **Sans population, la taille est `null`**, pas une valeur par défaut. L'écran affiche l'obstacle
+   nommé — « population du poste non évaluée », « seuil de planification non validé ». *Un chiffre
+   affiché qui ne sait pas dire d'où il vient est pire qu'une absence.*
+2. **Une population nulle ou un seuil nul lèvent**, au lieu de rendre zéro ou l'infini.
+3. Le seuil lu est le seuil **validé**, pas le dernier proposé : une étendue réglée sur une
+   proposition non validée serait réglée sur rien.
+
+**Le chiffre porte ses entrées.** `taille.entrees` transporte la valeur de population et le seuil
+utilisés, et l'écran les affiche sous le nombre — P7 s'applique à une taille d'échantillon comme à
+un montant.
+
+**UNE ERREUR DE FRONTIÈRE, CORRIGÉE PARCE QUE LA SUITE L'A FAIT TOMBER.** La première version
+exigeait qu'un niveau **nomme chaque formule connue** — le « dans les deux sens » appliqué
+mécaniquement. C'était faux, et du défaut même que ce produit passe son temps à retirer : cela aurait
+forcé **chaque cabinet à utiliser toutes les formules que le moteur implémente**, laissant
+l'implémentation du produit dicter la méthode. Un cabinet qui travaille à trois tailles fixes est
+parfaitement en règle. Le contrôle bidirectionnel existe toujours, mais **un cran plus haut** : entre
+le **schéma du produit** et le **moteur** (`assertFormulasImplemented`), où il a un sens — une formule
+que le moteur calcule sans que le schéma la déclare est inatteignable par toute méthode.
+
+*La leçon : « dans les deux sens » vaut entre deux parties du PRODUIT. Entre le produit et la méthode
+d'un cabinet, un seul sens est légitime — ce qu'il nomme doit exister ; ce qui existe ne l'oblige à
+rien.*
+
+**Aussi, `sansNotes` est devenu récursif.** Une note posée dans un objet imbriqué — « pourquoi ce
+niveau utilise une formule » — traversait jusqu'au moteur et serait arrivée dans les paramètres du
+calcul. Rien n'aurait planté ; le paramètre inconnu aurait simplement été passé.
+
+**La méthode s'affiche là où elle s'exécute.** Le tableau « ce que ce risque commande » porte
+désormais, pour chaque procédure, sa **population** (prédicat et paramètres) et son mode de
+**sélection**, à côté de la taille et de sa provenance. Une procédure sans population explicite est
+une intention, pas une procédure.
