@@ -2208,3 +2208,40 @@ l'absence totale de seuil dans l'espace client.
 Le document porte aussi **la phrase à dire** à chaque étape, un tableau des questions qu'on reçoit
 (« c'est de l'IA ? », « les normes sont justes ? ») avec leur réponse, et **ce que le parcours ne
 montre pas** — à dire avant qu'on le demande.
+
+---
+
+## ADR-068 — DEMO.md fait écouter, pas parler
+
+Le parcours ne comportait **aucun moment de silence**. Or ce n'est pas une démonstration qu'on va
+faire : c'est un test d'hypothèse, et `docs/10_FALSIFICATION.md` existe depuis des semaines sans
+avoir servi une seule fois.
+
+**Trois pauses, à des endroits choisis, chacune rattachée à une question de falsification.**
+Après le testing (« est-ce que c'est comme ça que vous le faites ? ») → **Q2**, les heures par cycle
+et le grade de qui les passe. Après le visa refusé (« qu'est-ce qui vous arrêterait, vous, à ce
+moment-là ? ») → **Q3**, l'acceptabilité du positionnement à côté du dossier. Après le portail
+(« qu'est-ce qui manque pour que votre client s'en serve ? ») → **Q4**, le dépôt de pièces. Chaque
+pause dit **de se taire**, donne une relance unique, et nomme ce qu'on cherche.
+
+**Le budget de temps est ferme et vérifié** : neuf étapes (5 min 30), trois pauses (1 min), la
+demande de fin (30 s) — **420 secondes exactement**, sur un entretien de vingt minutes. Il en reste
+treize pour écouter. `pw/parcours.mjs` additionne les durées écrites dans le document et **échoue
+au-delà de 420 s** : un script qui déborde n'est plus un script, c'est un monologue.
+
+**Une feuille de capture, une page par entretien**, à remplir dans les dix minutes — ce qui n'est pas
+écrit tout de suite devient un souvenir arrangé. Elle recueille ce sur quoi il s'est arrêté, **ce
+qu'il a ignoré** (aussi instructif : c'est ce qu'on a construit pour rien), ce qu'il a demandé à
+revoir, ses objections **mot pour mot**, son outillage et son coût, et le circuit de décision. Les
+six questions y sont cochables `confirme / tue / sans réponse` — et « sans réponse » n'est pas une
+demi-confirmation, c'est une question à reposer.
+
+**Trois demandes de fin**, par engagement croissant : l'essai sur un dossier clos (risque nul pour
+lui, seule demande qui produise une observation et non une opinion), deux confrères (**deux**, pas
+« des » : un chiffre appelle des noms), puis le prix. Règle absolue : **ne jamais citer un chiffre en
+premier** — Q5 ne compte comme confirmation que si le montant vient spontanément, et un ancrage rend
+la réponse sans valeur. On s'arrête à la première demande qui reçoit un non franc.
+
+Le tableau de dépouillement est recopié de `docs/10_FALSIFICATION.md`, qui reste la source, avec
+trois règles qui valent autant que les seuils : une case vide ne compte pas et n'est pas neutre ; on
+dépouille à douze entretiens, pas à quatre ; **le verbatim l'emporte sur la case cochée**.

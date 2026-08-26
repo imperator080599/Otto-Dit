@@ -19,12 +19,20 @@ le **testing du chiffre d'affaires entièrement déroulé** — échantillon, re
 un écart résolu, un écart au cumul, une note posée puis close, travail achevé et revu, papier
 imprimable — et il **garde ce qu'on y tape** dans le navigateur où il tourne.
 
-## LE PARCOURS — cinq minutes devant un auditeur
+## LE PARCOURS — sept minutes de démonstration sur vingt d'entretien
 
-Ceci est le script de la démonstration du prototype. Chaque étape dit **où cliquer**, **ce qu'il
-faut montrer du doigt**, et **la phrase à dire**. Les chiffres cités sont ceux que le fichier
-produit réellement : le harnais `prototype/pw/parcours.mjs` rejoue ce parcours et échoue si l'un
-d'eux bouge. Si ce document et l'écran divergent un jour, c'est le harnais qui tranche.
+Ceci est le script de la démonstration. Chaque étape dit **où cliquer**, **ce qu'il faut montrer du
+doigt**, et **la phrase à dire**. Les chiffres cités sont ceux que le fichier produit réellement : le
+harnais `prototype/pw/parcours.mjs` rejoue ce parcours et échoue si l'un d'eux bouge. Si ce document
+et l'écran divergent un jour, c'est le harnais qui tranche.
+
+**Le budget de temps, et il est ferme.** Neuf étapes de démonstration (5 min 30), trois pauses où
+c'est vous qui vous taisez (1 min), la demande de fin (30 s) : **sept minutes**. Sur un entretien de
+vingt, il en reste **treize pour écouter**. Ce rapport n'est pas un confort — c'est l'objet du
+rendez-vous. Vous n'allez pas vendre : vous allez chercher les six réponses de
+`docs/10_FALSIFICATION.md`, et vous ne les obtiendrez pas en parlant.
+
+**Si vous débordez, coupez dans les étapes 5, 6 et 7 — jamais dans les pauses.**
 
 **Avant d'ouvrir la bouche.** Ouvrez `prototype/otto-prototype.html` (aucune installation, aucun
 compte, aucun réseau). Si vous avez déjà cliqué dedans, appuyez sur **« repartir de zéro »** en bas
@@ -68,7 +76,7 @@ Cliquez **« ouvrir le papier »** sur *Test de séparation des exercices — Ch
 
 ---
 
-### 3 · Le testing, déroulé de bout en bout  *(90 s — le cœur)*
+### 3 · Le testing, déroulé de bout en bout  *(80 s — le cœur)*
 
 Vous êtes dans **Chiffre d'affaires → Procédures d'audit**. Ouvrez **« Test de détail sur les
 éléments sélectionnés, pièce à l'appui »**.
@@ -97,7 +105,26 @@ Puis, sur l'écart de 620 € :
 
 ---
 
-### 4 · Le travail est revu — et la section n'est toujours pas visée  *(45 s)*
+### ⏸ PAUSE 1 — vous vous taisez  *(20 s pour poser, puis vous écoutez)*
+
+> « Est-ce que c'est comme ça que vous le faites ? »
+
+Puis **taisez-vous**. Comptez jusqu'à cinq dans votre tête si nécessaire. La première chose qu'un
+auditeur dit après avoir vu un testing n'est presque jamais une politesse.
+
+Relances, une seule à la fois, et seulement s'il s'arrête :
+
+- « Sur votre dernier contrôle du chiffre d'affaires, combien d'heures entre la sélection et la
+  feuille signée ? Et qui les passe ? »
+- « Vous sondez, ou vous faites de l'analytique ? »
+
+**Ce que vous cherchez** : la réponse à **Q2** de `docs/10_FALSIFICATION.md` — ≥ 8 h par cycle,
+passées par un collaborateur, confirme ; moins de 3 h, ou « on ne teste pas par sondage », tue.
+Notez les heures **et le grade de qui les passe**. Notez aussi le verbatim, pas votre résumé.
+
+---
+
+### 4 · Le travail est revu — et la section n'est toujours pas visée  *(40 s)*
 
 Allez à **Conclusion et visa**.
 
@@ -112,7 +139,25 @@ résolution probante, papiers N-1 non reconfirmés, conclusion non rédigée.
 
 ---
 
-### 5 · Une constatation circule toute seule  *(40 s)*
+### ⏸ PAUSE 2 — vous vous taisez  *(20 s pour poser, puis vous écoutez)*
+
+> « Qu'est-ce qui vous arrêterait, vous, à ce moment-là ? »
+
+C'est la question la plus utile du parcours et la plus facile à gâcher. Ne proposez **aucune**
+réponse. S'il dit « rien », c'est une donnée : notez-la telle quelle.
+
+Relance unique, s'il ne vient rien :
+
+- « Ce que vous voyez là devrait être natif dans votre outil de dossier, ou un PDF qui arrive dedans
+  vous va ? »
+
+**Ce que vous cherchez** : la réponse à **Q3** — « acceptable, on y colle déjà des Excel » confirme
+le positionnement à côté du dossier ; « tout doit être natif dans l'outil » le tue. Et sa liste
+d'obstacles à lui vaut mieux que la nôtre : c'est le contenu du produit, pas un avis.
+
+---
+
+### 5 · Une constatation circule toute seule  *(35 s)*
 
 Rail → **Planification → Facteurs de risque**.
 
@@ -137,7 +182,7 @@ Rail → **Mission → Équipe et indépendance**. Essayez d'attribuer un travai
 
 ---
 
-### 7 · La version 4 du fichier, et la bascule  *(45 s)*
+### 7 · La version 4 du fichier, et la bascule  *(40 s)*
 
 Rail → **Données du dossier → Versions du fichier**. La version 4 est reçue et en attente.
 Montrez d'abord **ce que l'écran annonce** qu'il va se passer. Puis **prenez-la en compte**.
@@ -172,7 +217,24 @@ revue, aucun statut interne de revue.
 
 ---
 
-### 9 · Pourquoi cette preuve existe  *(25 s — la sortie)*
+### ⏸ PAUSE 3 — vous vous taisez  *(20 s pour poser, puis vous écoutez)*
+
+> « Qu'est-ce qui manque pour que votre client s'en serve ? »
+
+Pas « est-ce que ça vous plaît » : **qu'est-ce qui manque**. La forme négative appelle une réponse
+utilisable ; la forme positive appelle une politesse.
+
+Relances, une à la fois :
+
+- « Vos clients déposent déjà des pièces dans un portail ? Lequel ? »
+- « Quel pourcentage vous arrive quand même par mail — et est-ce que ça vous agace ? »
+
+**Ce que vous cherchez** : la réponse à **Q4** — un portail déjà en usage, **ou** plus de la moitié
+par mail et ça les agace, confirme ; « le client refuse tout portail, on récupère sur place » tue.
+
+---
+
+### 9 · Pourquoi cette preuve existe  *(20 s)*
 
 Cliquez **Pilotage → Piste d'audit**.
 
@@ -182,7 +244,52 @@ Cliquez **Pilotage → Piste d'audit**.
 
 ---
 
-### Ce qu'il faut dire si on vous pose la question
+## LA DEMANDE DE FIN  *(30 s — ne finissez jamais sur une phrase)*
+
+Le parcours se termine par une **demande**, pas par une conclusion. Trois, par engagement croissant.
+Faites-les **dans cet ordre** et **arrêtez-vous à la première qui reçoit un non franc** : enchaîner
+après un refus transforme un entretien en démarchage, et vous perdez le troisième rendez-vous.
+
+### Demande 1 — l'essai sur un dossier déjà clos
+
+> « Est-ce que vous accepteriez de l'essayer sur un dossier passé, déjà clos ? Pas pour l'utiliser —
+> pour me dire où ça casse. Vous ne changez rien à votre méthode, le dossier est archivé, et je ne
+> vois aucune de vos données : le fichier tourne chez vous. »
+
+Pourquoi elle passe en premier : le risque pour lui est **nul** — le dossier est clos, aucune donnée
+ne circule — et c'est la seule demande qui produise une observation plutôt qu'une opinion.
+
+**Ce qu'on note** : oui / non / « il faudrait que j'en parle à… ». Cette dernière réponse est une
+information sur le **circuit de décision**, pas un refus : demandez à qui.
+
+### Demande 2 — deux confrères
+
+> « Est-ce que vous connaissez deux confrères à qui je devrais montrer ça ? Pas pour leur vendre
+> quelque chose — pour la même conversation que celle-ci. »
+
+**Deux**, pas « des » : un chiffre appelle des noms, un pluriel vague appelle « oui, j'y penserai ».
+S'il en donne un seul, c'est un vrai signal. S'il n'en donne aucun mais qu'il a été chaleureux
+pendant vingt minutes, c'est un signal plus fort encore, et dans l'autre sens.
+
+**Ce qu'on note** : les noms, ou l'absence de noms. Rien d'autre.
+
+### Demande 3 — le prix, et jamais avant
+
+> « Dernière question, et elle est brutale : pour un outil qui prend en charge la boucle sélection →
+> justificatifs → feuille de travail sur deux cycles, qu'est-ce que ça vaudrait par mandat et par an
+> dans votre cabinet ? Et qui signe ce chèque ? »
+
+**Ne donnez jamais de chiffre en premier.** Q5 ne compte comme confirmation que si le montant est
+cité **spontanément** : si vous ancrez, la réponse ne vaut rien et l'entretien est perdu pour ce qui
+compte le plus. S'il retourne la question — « et vous, vous demandez combien ? » — la seule réponse
+est : « je ne sais pas encore, c'est pour ça que je vous le demande. »
+
+**Ce qu'on note** : le montant exact cité, l'unité (par mandat ? par cabinet ? par utilisateur ?),
+et **qui signe**. Un montant sans le nom du signataire est une demi-réponse.
+
+---
+
+## Ce qu'il faut dire si on vous pose la question
 
 | La question | La réponse |
 |---|---|
@@ -192,7 +299,7 @@ Cliquez **Pilotage → Piste d'audit**.
 | « Ça garde ce que j'ai tapé ? » | « Dans ce navigateur, sur cet appareil, oui — c'est la pastille en bas à gauche. Rien ne part nulle part. » |
 | « Et si je casse quelque chose ? » | « « Repartir de zéro », en bas à gauche. » |
 
-### Ce que ce parcours ne montre pas
+## Ce que ce parcours ne montre pas
 
 Le pack SOX (il n'est pas construit dans le prototype), l'extraction documentaire, l'envoi réel des
 demandes, le contrôle interne, et le journal d'événements haché — qui existe dans l'application, pas
@@ -202,6 +309,132 @@ ici. Dites-le avant qu'on vous le demande.
 
 Le reste de ce document décrit la démonstration de **l'application Next.js**, qui est un autre objet :
 deux mandats, deux référentiels, une base de données, des exports scellés.
+
+---
+
+## FEUILLE DE CAPTURE — une page par entretien
+
+**À remplir dans les dix minutes qui suivent, jamais le lendemain.** Ce qui n'est pas écrit tout de
+suite devient un souvenir arrangé. Copiez ce bloc dans un fichier par entretien.
+
+```
+ENTRETIEN N° ___    date ______________    durée réelle ______ min
+
+Cabinet ......................................................................
+Interlocuteur ................................  fonction .....................
+Est-il l'associé signataire ?   oui / non — si non, qui l'est ? ..............
+
+── CE QU'IL A REGARDÉ ────────────────────────────────────────────────────────
+Ce sur quoi il s'est ARRÊTÉ (l'écran, et ce qu'il a dit) :
+  1. ..........................................................................
+  2. ..........................................................................
+  3. ..........................................................................
+
+Ce qu'il a IGNORÉ — un écran devant lequel il n'a rien dit, ou qu'il a fait
+défiler. Aussi instructif que le reste : c'est ce qu'on a construit pour rien.
+  1. ..........................................................................
+  2. ..........................................................................
+
+Ce qu'il a demandé à REVOIR (le meilleur signal de tous) :
+  ............................................................................
+
+── SES OBJECTIONS, MOT POUR MOT ──────────────────────────────────────────────
+Verbatim, pas de reformulation. Si vous ne vous rappelez pas la phrase exacte,
+écrivez « (approximatif) » — ne la lissez pas.
+  1. « ...................................................................... »
+  2. « ...................................................................... »
+  3. « ...................................................................... »
+
+── SON OUTILLAGE D'AUJOURD'HUI ───────────────────────────────────────────────
+Outil de dossier ....................................  depuis ........ ans
+Ce qu'il lui coûte : ............. € / an, base : par cabinet / par utilisateur
+                                                  / par mandat / ne sait pas
+Ce qu'il en dit de mal : ....................................................
+Ce qu'il ne remplacerait pour rien : ........................................
+Portail de dépôt client :   oui, lequel ..................  / non
+Part des pièces reçues par mail : ....... %   Est-ce que ça l'agace ? oui / non
+
+── QUI DÉCIDE DE L'ACHAT ─────────────────────────────────────────────────────
+Qui signe le chèque : .......................................................
+Qui doit dire oui avant lui : ...............................................
+Y a-t-il un cycle (budget annuel, comité, réseau) ? ..........................
+
+── LES SIX RÉPONSES (docs/10_FALSIFICATION.md) ───────────────────────────────
+Cochez CONFIRME / TUE / SANS RÉPONSE. Une case « sans réponse » n'est pas une
+demi-confirmation : c'est une question à reposer au prochain entretien.
+
+ Q1  mandats CAC / an : ......   collaborateurs en production : ......
+     ≥ 15 et ≥ 3 → CONFIRME  |  ≤ 8, ou production 100 % associé → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse
+
+ Q2  heures entre sélection et feuille signée : ...... h, passées par ........
+     ≥ 8 h par un collaborateur → CONFIRME  |  < 3 h, ou pas de sondage → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse            ← issue de la PAUSE 1
+
+ Q3  feuilles en PDF/Excel dans son outil de dossier :
+     « acceptable » → CONFIRME  |  « tout doit être natif » → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse            ← issue de la PAUSE 2
+
+ Q4  portail client : ............   part par mail : ...... %
+     portail en usage, OU > 50 % par mail et ça les agace → CONFIRME
+     « le client refuse tout portail » → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse            ← issue de la PAUSE 3
+
+ Q5  montant cité SPONTANÉMENT : ......... € par ...................... / an
+     qui signe : ..................................................
+     ≥ 300 €/mandat/an et décision de l'associé seul → CONFIRME
+     < 150 €/mandat, ou « ça devrait venir de la CNCC / c'est gratuit
+     ailleurs » → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse          ← issue de la DEMANDE 3
+     ⚠ si VOUS avez cité un chiffre en premier, cochez « sans réponse ».
+
+ Q6  travaux de composant SOX 404 :   oui, ...... mandat(s)  /  non
+     outil imposé par le groupe ?   oui / non
+     oui, ≥ 1 mandat et outil libre → CONFIRME
+     non, OU « le groupe impose sa plateforme » → TUE
+     [ ] confirme   [ ] tue   [ ] sans réponse
+
+── LES TROIS DEMANDES ────────────────────────────────────────────────────────
+ 1. Essai sur un dossier clos   [ ] oui  [ ] non  [ ] doit en parler à ........
+ 2. Deux confrères              noms : .......................................
+ 3. Prix par mandat             (reporté en Q5 ci-dessus)
+
+── UNE PHRASE ────────────────────────────────────────────────────────────────
+Si je ne devais retenir qu'une chose de cet entretien :
+  ............................................................................
+```
+
+---
+
+## DÉPOUILLEMENT — quand l'hypothèse bascule
+
+**Cible : 12 entretiens**, associé signataire, cabinets inscrits CAC de 5 à 50 mandats. Le tableau se
+remplit **avant** tout arbitrage, jamais après — et les seuils s'appliquent **sans discussion**. Ils
+sont recopiés de `docs/10_FALSIFICATION.md`, qui reste la source ; s'ils divergent un jour, c'est ce
+document-là qui fait foi.
+
+| Signal | Bascule à | Ce qu'on fait, sans discuter |
+|---|---|---|
+| **Q5 tue** | **≥ 6 / 12** | Le prix par mandat est mort. On repasse à un prix **par cabinet** et on refait le test avant toute dépense commerciale. |
+| **Q3 tue** | **≥ 5 / 12** | Le positionnement « à côté du dossier » (D3) est invalidé. La v2 vise le dossier lui-même, pas l'export. C'est une décision d'architecture, pas de marketing. |
+| **Q6 tue** | **≥ 9 / 12**, ou **< 3 confirmations** | Bascule **France seule** : le pack SOX est gelé en l'état, zéro maintenance, zéro investissement commercial côté US. Le noyau et les moteurs ne bougent pas. |
+| **Q1 + Q2 tuent** | **≥ 6 / 12** | Le segment est mal choisi : viser les cabinets de 50 mandats et plus, ou le mid-tier, et re-tester avant d'écrire une ligne de plus. |
+| **Q4 tue** | **≥ 8 / 12** | L'intake par portail est mort : l'intake par mail devient le chemin principal et passe en tête du backlog. |
+
+**Cas de passage** : **≥ 8 / 12 confirmations sur Q5 et sur Q3**, quel que soit Q6 → on avance,
+France d'abord, pack SOX conservé sans investissement commercial jusqu'à preuve d'un acheteur
+indépendant.
+
+**Trois règles de dépouillement, qui valent autant que les seuils.**
+
+1. **Une case « sans réponse » ne compte ni d'un côté ni de l'autre**, et elle n'est pas neutre :
+   c'est une question mal posée, à reposer au suivant. Si Q5 finit avec cinq « sans réponse », le
+   test n'a pas eu lieu — ne concluez pas, refaites-le.
+2. **On dépouille à 12, pas à 4.** La tentation d'arrêter après trois entretiens enthousiastes est
+   exactement ce que ce document existe pour empêcher.
+3. **Le verbatim l'emporte sur la case cochée.** Si les cases disent « confirme » et que les trois
+   phrases notées disent « je ne vois pas ce que ça m'apporte », c'est le verbatim qui a raison.
+
 
 ## 0. Start
 

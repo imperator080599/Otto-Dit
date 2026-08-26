@@ -144,6 +144,38 @@ ok(r.evenements>0 && r.lu && r.qui,
    '10 · chaque geste de la séance est au journal, avec son auteur',
    r.evenements + ' événement(s) : ' + r.quoi.join(' · '));
 
+/* ── LE DOCUMENT LUI-MÊME ─────────────────────────────────────────────────
+   Un script de démonstration qui déborde n'est pas un script : c'est un
+   monologue. Le budget est ferme — sept minutes de démonstration sur vingt
+   d'entretien — et il se vérifie ici, pas à la montre devant l'auditeur. */
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const doc = fs.readFileSync(path.resolve(process.argv[2], '..', '..', 'DEMO.md'), 'utf8');
+  const par = doc.slice(doc.indexOf('## LE PARCOURS'), doc.indexOf('## Ce qu’il faut dire') + 1
+                     || doc.indexOf("## Ce qu'il faut dire"));
+  const sec = [...par.matchAll(/\*\((\d+)\s*s/g)].map(m=>+m[1]);
+  const total = sec.reduce((a,x)=>a+x,0);
+  console.log(`     DEMO.md : ${sec.length} segments chronométrés · ${total} s = ${Math.floor(total/60)} min ${total%60} s`);
+  ok(total<=420, 'le parcours tient en sept minutes', `${total} s sur 420`);
+  ok(sec.length>=13, 'chaque étape et chaque pause porte sa durée', sec.length + ' segments');
+
+  const pauses = (par.match(/### ⏸ PAUSE \d/g)||[]).length;
+  ok(pauses===3, 'trois moments où c’est l’auditeur qui parle', pauses + ' pause(s)');
+
+  /* La feuille de capture doit couvrir les SIX questions de la falsification,
+     et le dépouillement porter les cinq seuils de bascule. Un document qui les
+     perdrait de vue redeviendrait une plaquette. */
+  const q = [1,2,3,4,5,6].filter(n=>new RegExp('\\bQ'+n+'\\b').test(doc));
+  ok(q.length===6, 'la feuille de capture couvre les six questions de docs/10_FALSIFICATION.md',
+     'Q' + q.join(' · Q'));
+  const seuils = ['≥ 6 / 12','≥ 5 / 12','≥ 9 / 12','≥ 8 / 12'].filter(x=>doc.includes(x));
+  ok(seuils.length===4, 'le tableau de dépouillement porte les seuils de bascule', seuils.join(' · '));
+  const demandes = (doc.match(/### Demande \d/g)||[]).length;
+  ok(demandes===3, 'trois demandes de fin, par engagement croissant', demandes + ' demande(s)');
+  ok(/spontanément/.test(doc), 'la règle du prix cité SPONTANÉMENT est écrite');
+}
+
 console.log('erreurs :', errs.length?errs.join(' | '):'aucune');
 console.log('réseau :', net.length?net.join(','):'aucun');
 if (errs.length){ ko++; console.log('ÉCHEC — erreurs page'); }
