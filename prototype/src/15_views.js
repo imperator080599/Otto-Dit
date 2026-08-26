@@ -123,7 +123,7 @@ function refPapier(t){
    deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
    coûterait un clic sans rien rendre lisible. Le portail client y figure
    malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
-const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'pil.mission',
+const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'plan.equipe', 'pil.mission',
   'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
 let _panSeq = 0;
 function blk(t, why, html, att){

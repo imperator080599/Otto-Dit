@@ -39,13 +39,21 @@ const REGLE_REPARTITION = [
     prep:'senior', rev:'superviseur', quoi:() => true },
 ];
 function regleDe(t){ return REGLE_REPARTITION.find(r => r.quoi(t)) || REGLE_REPARTITION[REGLE_REPARTITION.length - 1]; }
-function gensDuGrade(g){ return Object.entries(USERS).filter(([, u]) => u.grade === g).map(([k]) => k); }
+/* La proposition ne propose que des gens à qui l'on peut RÉELLEMENT attribuer
+   un travail : proposer quelqu'un que l'affectation refusera ensuite serait
+   une proposition fausse. Le filtre est le même que la règle. */
+function gensDuGrade(g){
+  return Object.entries(USERS)
+    .filter(([k, u]) => u.grade === g && !u.sortie && peutRecevoirTravail(k))
+    .map(([k]) => k);
+}
 
 /** La proposition complète, dérivée. Jamais écrite tant qu'on ne l'accepte pas. */
 const _repCache = { cle:'', v:null };
 function repartitionProposee(){
   const l = travaux();
-  const cle = l.length + '|' + JSON.stringify(l.map(t => t.code + t.niveauRevue));
+  const cle = l.length + '|' + JSON.stringify(l.map(t => t.code + t.niveauRevue))
+    + '|' + membres().map(m => m.id + m.grade + (declarationValide(m.id) ? '1' : '0') + (m.sortie ? 'x' : '')).join(',');
   if (_repCache.cle === cle && _repCache.v) return _repCache.v;
   const chargePrep = {}, chargeRev = {};
   for (const k of Object.keys(USERS)){ chargePrep[k] = 0; chargeRev[k] = 0; }
@@ -126,6 +134,10 @@ function chargeParPersonne(source){
       ? l.filter(t => (prop.get(t.code) || {}).rev === k)
       : l.filter(t => t.reviseur === k);
     return { k, u, nPrep:p.length, nRev:r.length,
+             /* Quelqu'un qui ne peut pas recevoir de travail apparaît à zéro
+                AVEC SA RAISON : le faire disparaître de la charge donnerait
+                une équipe plus petite qu'elle n'est. */
+             indispo:!peutRecevoirTravail(k) ? etatDeclaration(k).lib : u.sortie ? 'sorti le ' + frDate(u.sortie) : '',
              h:p.reduce((a, t) => a + budget(t), 0) + r.reduce((a, t) => a + budget(t) * 0.2, 0) };
   });
 }
@@ -145,12 +157,20 @@ function blocRepartition(vus){
     `<p class="note">À grade égal, le travail va à la personne dont la charge est la plus faible, les travaux
     étant parcourus dans un ordre fixe : la proposition est rejouable à l’identique. La revue est comptée pour
     un cinquième de la préparation. Rien n’est écrit tant que vous n’acceptez pas.</p>
+    ${prop.some(x => x.indispo) ? `<div class="callout warn">
+      <b>${prop.filter(x => x.indispo).length} membre(s) ne reçoivent aucune proposition</b> —
+      ${prop.filter(x => x.indispo).map(x => esc(x.u.nom) + ' (' + esc(x.indispo) + ')').join(', ')}.
+      La proposition ne propose que ce que l’affectation accepterait : proposer quelqu’un qu’elle
+      refuserait ensuite serait une proposition fausse.
+      <button class="btn mini sec" data-vue="plan.equipe">Équipe et indépendance ↗</button></div>` : ''}
     ${diagnosticRepartition()}
     <h3>Charge — proposée et réelle</h3>
     ${table([{k:'n',t:'Personne',cls:'wrapcell'},{k:'g',t:'Grade'},
              {k:'pp',t:'Prépare (proposé)',n:1},{k:'pr',t:'Revoit (proposé)',n:1},{k:'ph',t:'Heures (proposé)',n:1},
              {k:'rp',t:'Prépare (réel)',n:1},{k:'rr',t:'Revoit (réel)',n:1},{k:'rh',t:'Heures (réel)',n:1}],
-      prop.map((x, i) => ({ n:`<b>${esc(x.u.nom)}</b>`, g:esc(x.u.grade),
+      prop.map((x, i) => ({ n:`<b>${esc(x.u.nom)}</b>`
+          + (x.indispo ? `<div class="smallcaps" style="color:var(--anomalie)">${esc(x.indispo)} — aucun travail attribuable</div>` : ''),
+        g:esc(x.u.grade),
         pp:String(x.nPrep), pr:String(x.nRev), ph:hFmt(x.h),
         rp:String(reel[i].nPrep), rr:String(reel[i].nRev), rh:hFmt(reel[i].h) })),
       { foot:{ n:'Total', ph:hFmt(tot), rh:hFmt(reel.reduce((a, x) => a + x.h, 0)) } })}

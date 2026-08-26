@@ -8,14 +8,26 @@
    faire. La répartition proposée s'appuie sur le premier, les règles de visa
    sur le second. Deux seniors et deux superviseurs : sans cela, la question
    de l'équilibrage de charge ne se pose pas et la règle est décorative. */
+/* USERS n'est plus une liste figée : c'est le REGISTRE VIVANT de l'équipe.
+   L'objet est constant, son contenu ne l'est pas — on y ajoute et on en
+   retire depuis l'écran « Équipe et indépendance ». Chaque membre porte donc
+   ce qu'une mission doit savoir de lui : son courriel, ses dates d'entrée et
+   de sortie, et le nombre d'exercices consécutifs passés sur ce client. */
 const USERS = {
-  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit' },
-  karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit' },
-  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit' },
-  lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit' },
-  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit' },
-  claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit' },
+  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit',
+            mail:'h.vasseur@revisia-audit.example',  entree:'2026-01-12', sortie:'', exercices:1 },
+  karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit',
+            mail:'k.benali@revisia-audit.example',   entree:'2025-11-03', sortie:'', exercices:3 },
+  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit',
+            mail:'i.rodrigues@revisia-audit.example', entree:'2025-11-03', sortie:'', exercices:5 },
+  lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit',
+            mail:'l.moreau@revisia-audit.example',   entree:'2025-10-20', sortie:'', exercices:4 },
+  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit',
+            mail:'s.dacosta@revisia-audit.example',  entree:'2026-02-02', sortie:'', exercices:2 },
+  claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit',
+            mail:'c.fontaine@revisia-audit.example', entree:'2025-10-06', sortie:'', exercices:7 },
 };
+const CABINET = 'Revisia Audit (cabinet fictif)';
 const ORDRE_GRADE = ['assistant', 'senior', 'superviseur', 'associée'];
 const ROLE_LIB = { preparateur:'préparateur', reviseur:'réviseur', associe:'associé signataire' };
 /** Seuls le réviseur et l'associé peuvent clore une note — et jamais la leur. */
@@ -61,6 +73,20 @@ const S = {
   replis:{},      // replis que l'auditeur a ouverts ou fermés lui-même
   selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
+  /* Équipe et indépendance — voir 30_equipe.js. Les déclarations sont un
+     historique par membre : une révision n'écrase pas, elle empile. */
+  declarations:{}, seqMembre:0,
+  independance:{ sauvegardes:{}, confirmation:null,
+                 seuilCadeau:15000,        // 150 € — seuil déclaré, modifiable
+                 seuilFamiliarite:7,       // exercices consécutifs [UNVERIFIED]
+                 rotationSignataire:6 },   // exercices du signataire [UNVERIFIED]
+  sacc:[], seqSacc:0, honorairesMission:8500000, plafondSacc:70,
+  memErreur:'', indErreur:'', saccErreur:'', travErreur:'',
+  /* Quatre dates posées, et non cent : les échéances des travaux s'en
+     déduisent (voir REGLE_ECHEANCE). L'assemblage n'est pas ici — il se
+     déduit de la date du rapport. */
+  jalons:{ interim:'2026-01-19', final:'2026-03-23', rapport:'2026-04-15' },
+  travauxManuels:[], seqTravManuel:0,
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
   impactDe:null, impactVers:null, balTout:false,
   achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{},

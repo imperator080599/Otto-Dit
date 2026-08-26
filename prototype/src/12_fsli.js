@@ -198,7 +198,10 @@ function blocPlan(p){
             : '<span class="smallcaps">sans sélection</span>',
       pop:e ? `<span class="mono">${e.pop.items.length}</span><div class="smallcaps">${eur0(e.pop.masse)}</div>` : '—',
       wp:pr.ech ? `<span class="mono">${esc(procRef(p, pr))}</span>` : '<span class="smallcaps">—</span>',
-      st:`<span class="pill ${st.cls}">${st.lib}</span>`
+      st:(sansObjet('SEC-' + p.code + '-' + pr.code)
+          ? `<span class="pill">sans objet</span>
+             <div class="smallcaps">${esc(sansObjet('SEC-' + p.code + '-' + pr.code).motif)}</div>`
+          : `<span class="pill ${st.cls}">${st.lib}</span>`)
          + (pr.unidirectionnel ? ' <span class="pill warn">unidirectionnel</span>' : ''),
       act:`<button class="btn mini ${ouvert ? '' : 'sec'}" data-proc="${p.code}/${pr.code}">${ouvert ? 'ouverte' : 'ouvrir'}</button>
            ${boutonNote(p.code, 'procedure', pr.code, 'Procédure ' + procRef(p, pr))}`,
@@ -602,6 +605,9 @@ function obstaclesVisa(p){
   for (const x of obstaclesTravaux(p.code)) o.push(x);
   let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){
+    /* Une procédure marquée « sans objet », avec son motif écrit, ne produit
+       plus d'obstacle : c'est une décision documentée, pas un oubli. */
+    if (sansObjet('SEC-' + p.code + '-' + pr.code)) continue;
     if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
     const wp = wpProc(p, pr) || [];
     manq += wp.filter(r => !ligneRecue(p, pr, r.cle)).length;

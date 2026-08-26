@@ -19,6 +19,7 @@ const DOSSIER = [
   { id:'plan.principes', lib:'Principes de conception' },
 ];
 const TRANSVERSES = [
+  { id:'plan.equipe',  lib:'Équipe et indépendance' },
   { id:'plan.versions',lib:'Versions du fichier' },
   { id:'plan.ajust',   lib:'Ajustements et retraitements' },
   { id:'plan.rappro',  lib:'Import et rapprochement' },
@@ -262,6 +263,7 @@ function contenuVue(v){
     case 'plan.scope':  return vueScoping();
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.equipe': return vueEquipe();
     case 'plan.versions': return vueVersions();
     case 'plan.ajust':  return vueAjustements();
     case 'plan.donnees': return vueJeuDonnees();
@@ -433,6 +435,22 @@ document.addEventListener('input', e => {
     if (l){ l.champs[d.ctr] = t.value; marquerExecution(p, pr); }
     return renderMainDiff();
   }
+  /* Équipe et indépendance */
+  if (d.sauve !== undefined){ S.independance.sauvegardes[d.sauve] = t.value; return renderMainDiff(); }
+  if (d.declp !== undefined){
+    const dc = declarationCourante(S.moi); if (dc && !dc.signee) dc.precisions[d.declp] = t.value;
+    return renderMainDiff();
+  }
+  if (d.mem !== undefined){
+    const [uid, champ] = d.mem.split('|');
+    if (champ === 'mail' || champ === 'exercices'){ majMembre(uid, champ, t.value); return renderMainDiff(); }
+    return;
+  }
+  if (t.id === 'hon-mission'){ S.honorairesMission = eurCents(t.value); return renderMainDiff(); }
+  if (t.id === 'sacc-plaf' || t.id === 'ind-plaf'){ S.plafondSacc = Math.max(0, parseFloat(t.value.replace(',', '.')) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-rot'){ S.independance.rotationSignataire = Math.max(0, parseInt(t.value, 10) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-fam'){ S.independance.seuilFamiliarite = Math.max(0, parseInt(t.value, 10) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-cad'){ S.independance.seuilCadeau = eurCents(t.value); return renderMainDiff(); }
   if (d.rexpl !== undefined){ const x = resolDeCle(d.rexpl); if (x) x.r.expl = t.value; return renderMainDiff(); }
   if (d.rconcl !== undefined){ const x = resolDeCle(d.rconcl); if (x) x.r.concl = t.value; return renderMainDiff(); }
   if (d.recr !== undefined){ const x = resolDeCle(d.recr); if (x) x.r.corrobEcriture = t.value; return renderMainDiff(); }
@@ -467,6 +485,13 @@ document.addEventListener('input', e => {
   if (t.id === 'ft-q'){ S.filtreTrav.q = t.value; return renderMainDiff(); }
   const hrs = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 4) / 4);
   if (d.hb !== undefined){ trav(d.hb).heuresBudget = t.value.trim() === '' ? null : hrs(t.value); return renderMainDiff(); }
+  if (d.tech !== undefined){ fixerEcheance(d.tech, t.value); return renderMainDiff(); }
+  if (t.id === 'tv-lotech' && t.value){
+    const r = fixerEcheanceEnLot(S.selTrav, t.value);
+    S.travErreur = r.n ? '' : 'aucun travail sélectionné';
+    return renderMain();
+  }
+  if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, t.value); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
   if (d.hr !== undefined){ trav(d.hr).heuresReel = hrs(t.value); return renderMainDiff(); }
   const cts = v => Math.round((parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
   if (d.plaq !== undefined){ S.achevement.plaquette[d.plaq] = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
@@ -495,6 +520,17 @@ document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
   if (t.id === 'whoaud'){ S.moi = t.value; return render(); }
+  if (d.decl !== undefined){
+    const dc = declarationCourante(S.moi);
+    if (dc && !dc.signee){ if (t.value) dc.reponses[d.decl] = t.value; else delete dc.reponses[d.decl]; }
+    return renderMain();
+  }
+  if (d.mem !== undefined){
+    const [uid, champ] = d.mem.split('|');
+    const r = majMembre(uid, champ, t.value);
+    S.memErreur = r.ok ? '' : r.why;
+    return render();
+  }
   if (t.id === 'whoclient'){ S.moiClient = t.value; return render(); }
   if (d.scope !== undefined){
     if (t.value) S.scopingOverride[d.scope] = t.value; else { delete S.scopingOverride[d.scope]; delete S.scopingMotif[d.scope]; }
@@ -591,6 +627,50 @@ document.addEventListener('click', e => {
     document.documentElement.dataset.theme = cur === 'dark' ? 'light' : 'dark';
     return;
   }
+  if (t.id === 'tv-lotech-rgl'){ fixerEcheanceEnLot(S.selTrav, ''); return renderMain(); }
+  if (t.id === 'tv-add'){
+    const r = ajouterTravail(document.getElementById('tv-add-lib').value,
+                             document.getElementById('tv-add-phase').value,
+                             document.getElementById('tv-add-poste').value);
+    S.travErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (d.tdel !== undefined){ const r = retirerTravailManuel(d.tdel); S.travErreur = r.ok ? '' : r.why; return render(); }
+  if (d.tso !== undefined){
+    const motif = prompt('Motif — pourquoi ce travail est-il sans objet sur ce dossier ?', '');
+    if (motif === null) return;
+    const r = marquerSansObjet(d.tso, motif);
+    S.travErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (d.tso0 !== undefined){ annulerSansObjet(d.tso0); return render(); }
+  if (t.id === 'mem-add'){
+    const g = document.getElementById('mem-grade'), r = document.getElementById('mem-role');
+    const res = ajouterMembre(document.getElementById('mem-nom').value, g.value, r.value,
+                              document.getElementById('mem-mail').value);
+    S.memErreur = res.ok ? '' : res.why;
+    return render();
+  }
+  if (d.memdel !== undefined){ const r = retirerMembre(d.memdel); S.memErreur = r.ok ? '' : r.why; return render(); }
+  if (d.declopen !== undefined){ ouvrirDeclaration(d.declopen); return renderMain(); }
+  if (t.id === 'decl-sign'){ const r = signerDeclaration(S.moi); S.indErreur = r.ok ? '' : r.why; return render(); }
+  if (d.revis !== undefined){
+    const motif = prompt('Motif de la révision — ce qui a changé dans les circonstances :', '');
+    if (motif === null) return;
+    const r = reviserDeclaration(d.revis, motif);
+    S.indErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (t.id === 'ind-conf'){ const r = confirmerEquipe(); S.indErreur = r.ok ? '' : r.why; return render(); }
+  if (t.id === 'sacc-add'){
+    const res = ajouterSacc(document.getElementById('sacc-nat').value,
+                            document.getElementById('sacc-lib').value,
+                            document.getElementById('sacc-mont').value,
+                            document.getElementById('sacc-date').value);
+    S.saccErreur = res.ok ? '' : res.why;
+    return renderMain();
+  }
+  if (d.saccdel !== undefined){ retirerSacc(d.saccdel); return renderMain(); }
   if (d.espace){ const x = ESPACES.find(y => y.id === d.espace); return aller(x.defaut, x.id); }
   if (d.open) return ouvrirSection(d.open);
   if (d.goreq){ const r = S.requetes.find(x => x.id === d.goreq);
@@ -929,6 +1009,7 @@ document.addEventListener('click', e => {
 
 /* ═══ 24. DÉMARRAGE ════════════════════════════════════════════════════════ */
 initPortail();
+seedEquipe();
 /* Quelques requêtes préexistantes, pour que le dossier ne parte pas d'un écran
    vide : elles sont créées par le même chemin que celles de l'enchaînement. */
 (function amorce(){

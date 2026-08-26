@@ -71,7 +71,7 @@ function vueRAPrelim(){
                   : `<button class="btn mini" data-raprelim="${l.compte}">envoyer la requête</button>`}</td></tr>`;
         }).join('')}</tbody></table></div>`
         : '<p class="note">Aucune variation au-dessus des seuils.</p>') +
-    blk('Ratios', 'tous calculés depuis les deux balances',
+    blk('Ratios de planification', 'tous calculés depuis les deux balances',
       table([{k:'l',t:'Ratio',cls:'wrapcell'},{k:'f',t:'Formule',cls:'wrapcell'},
              {k:'a',t:'2024',n:1},{k:'b',t:'2025',n:1},{k:'d',t:'Variation',n:1}],
         rt.map(r => ({ l:esc(r.lib), f:'<span class="smallcaps">' + esc(r.formule) + '</span>',
@@ -85,7 +85,10 @@ function vueRAPrelim(){
 }
 
 /* ═══ 29. ESPACE ACHÈVEMENT ════════════════════════════════════════════════ */
-const DATE_RAPPORT = '2026-04-15';
+/* La date du rapport est un JALON DE MISSION, modifiable à l'écran : cette
+   constante n'est plus que sa valeur de départ (voir S.jalons et 21_travaux). */
+const DATE_RAPPORT_DEFAUT = '2026-04-15';
+function DATE_RAPPORT_(){ return S.jalons.rapport || DATE_RAPPORT_DEFAUT; }
 const DELAI_ASSEMBLAGE = 60;      // jours — C. com., art. D. 821-186, III et IV
 const RETENTION_ANS = 6;          // ans  — C. com., art. R. 820-42
 
@@ -168,7 +171,7 @@ function vueAchPointage(){
   const sansDoc = PLAQUETTE.filter(e => e.nature === 'calcul' && !((st.calculs[e.ref] || {}).doc || '').trim());
   return entete('Pointage des états financiers', 'plaquette à gauche, montant audité à droite, écart et origine') +
     cite('Une fonction pointage des états financiers et données chiffrées des annexes où après réception de la plaquette du client, un agent IA vient s’assurer que chaque chiffre cadre bien avec les montants que nous avons audité, dans notre TB et documente un réconciliation sur un Template intégré avec à gauche montant plaquette et à droite montant interne et validé avec une cross reference vers l’origine du montant validé.') +
-    blk('Rapprochement', `${PLAQUETTE.length} montants · ${ecarts.length} écart(s) · ${nonRappro.length} non rapproché(s)`,
+    blk('Pointage plaquette ↔ comptes audités', `${PLAQUETTE.length} montants · ${ecarts.length} écart(s) · ${nonRappro.length} non rapproché(s)`,
       table([{k:'ref',t:'Réf.'},{k:'lib',t:'Poste de la plaquette',cls:'wrapcell'},{k:'nat',t:'Nature'},
              {k:'pl',t:'Montant plaquette',n:1},{k:'aud',t:'Montant audité',n:1},
              {k:'or',t:'Origine',cls:'wrapcell'},{k:'ec',t:'Écart',n:1},{k:'doc',t:'Documentation du calcul',cls:'wrapcell'}], rows) +
@@ -316,7 +319,7 @@ function vueAchCloture(){
   const nonVisees = postes.filter(p => !sec(p.code).visa);
   const bloq = notesBloquantesOuvertes();
   const facteursOuverts = registre().filter(f => f.statut === 'propose');
-  const echeance = addDays(DATE_RAPPORT, DELAI_ASSEMBLAGE);
+  const echeance = addDays(DATE_RAPPORT_(), DELAI_ASSEMBLAGE);
   const jours = Math.round((Date.parse(echeance) - Date.parse(S.aujourdhui)) / 86400000);
   const obstacles = [];
   if (nonVisees.length) obstacles.push(`${nonVisees.length} section(s) non visée(s) : ${nonVisees.map(p => p.lib).join(', ')}`);
@@ -332,7 +335,7 @@ function vueAchCloture(){
   return entete('Assemblage et clôture du dossier', 'le dossier devient définitif et se verrouille') +
     blk('Délai d’assemblage', jours >= 0 ? jours + ' jour(s) restant(s)' : 'délai dépassé',
       `<div class="kv">
-        <span class="k">Date du rapport</span><span class="v">${frDate(DATE_RAPPORT)}</span>
+        <span class="k">Date du rapport</span><span class="v">${frDate(DATE_RAPPORT_())}</span>
         <span class="k">Délai d’assemblage</span><span class="v">${DELAI_ASSEMBLAGE} jours</span>
         <span class="k">Échéance</span><span class="v">${frDate(echeance)}</span>
         <span class="k">Aujourd’hui</span><span class="v">${frDate(S.aujourdhui)}</span>
@@ -408,8 +411,24 @@ const PRINCIPES = [
 ];
 function vuePrincipes(){
   return entete('Principes de conception', 'les règles s’appliquent dans l’écran ; leur justification se lit ici') +
-    blk('Règles', PRINCIPES.length,
+    blk('Règles de conception', PRINCIPES.length,
       table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'o',t:'Où elle se voit',cls:'wrapcell'},{k:'j',t:'Pourquoi',cls:'wrapcell'}],
         PRINCIPES.map(x => ({ r:'<b>' + esc(x.r) + '</b>', o:esc(x.o), j:esc(x.j) })))) +
+    /* Ces deux tables vivaient dans le programme de travail. Elles n'y
+       décrivaient pas un travail : elles expliquaient une règle qui agit
+       ailleurs. Elles rejoignent donc les encadrés pédagogiques, et le
+       programme de travail redevient une surface de travail. */
+    blk('Barème de budget — d’où vient l’heure proposée', 'la règle agit dans la colonne « budget » du programme de travail',
+      table([{k:'l',t:'Nature',cls:'wrapcell'},{k:'b',t:'Base',n:1},{k:'p',t:'Par élément',n:1}],
+        BAREME_HEURES.map(b => ({ l:esc(b.lib), b:hFmt(b.base), p:b.parElement ? hFmt(b.parElement) : '—' }))) +
+      `<p class="note">Le budget proposé par le barème est modifiable travail par travail : c’est une décision de
+      chef de mission, pas une constante. Un budget corrigé reste corrigé quand le barème change.</p>`) +
+    blk('Niveau de revue exigé — d’où vient le refus d’affecter', 'la règle agit dans le sélecteur de réviseur',
+      table([{k:'s',t:'Cas',cls:'wrapcell'},{k:'n',t:'Revue exigée'}],
+        REGLE_REVUE.map(r => ({ s:esc(r.si), n:esc(NIVEAU_REVUE_LIB[r.niveau]) }))) +
+      `<p class="note">Le préparateur et le réviseur sont obligatoirement deux personnes différentes.
+      Un travail de niveau 2 ne peut être revu que par un associé. Un travail passe « achevé » par son
+      préparateur seul, « revu » par son réviseur seul. Ces trois règles sont opposées à l’écran au
+      moment de l’affectation : elles ne sont pas rappelées, elles refusent.</p>`) +
     vueIA();
 }

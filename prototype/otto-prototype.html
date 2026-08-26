@@ -519,6 +519,12 @@ function eur(cents){
   const ent = String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
   return (neg ? '-' : '') + ent + ',' + String(v % 100).padStart(2, '0') + NBSP + '€';
 }
+/** Lit un montant saisi en français et rend des centimes entiers.
+ *  Le noyau est en centimes de bout en bout : c'est ici, et seulement ici,
+ *  qu'une chaîne devient un montant. */
+function eurCents(txt){
+  return Math.round((parseFloat(String(txt).replace(/[\s\u202f\u00a0]/g, '').replace(',', '.')) || 0) * 100);
+}
 function eur0(cents){
   const neg = cents < 0, v = Math.abs(Math.round(cents / 100));
   return (neg ? '-' : '') + String(v).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP) + NBSP + '€';
@@ -745,14 +751,26 @@ function balanceFromLedger(rows){
    faire. La répartition proposée s'appuie sur le premier, les règles de visa
    sur le second. Deux seniors et deux superviseurs : sans cela, la question
    de l'équilibrage de charge ne se pose pas et la règle est décorative. */
+/* USERS n'est plus une liste figée : c'est le REGISTRE VIVANT de l'équipe.
+   L'objet est constant, son contenu ne l'est pas — on y ajoute et on en
+   retire depuis l'écran « Équipe et indépendance ». Chaque membre porte donc
+   ce qu'une mission doit savoir de lui : son courriel, ses dates d'entrée et
+   de sortie, et le nombre d'exercices consécutifs passés sur ce client. */
 const USERS = {
-  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit' },
-  karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit' },
-  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit' },
-  lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit' },
-  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit' },
-  claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit' },
+  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit',
+            mail:'h.vasseur@revisia-audit.example',  entree:'2026-01-12', sortie:'', exercices:1 },
+  karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit',
+            mail:'k.benali@revisia-audit.example',   entree:'2025-11-03', sortie:'', exercices:3 },
+  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit',
+            mail:'i.rodrigues@revisia-audit.example', entree:'2025-11-03', sortie:'', exercices:5 },
+  lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit',
+            mail:'l.moreau@revisia-audit.example',   entree:'2025-10-20', sortie:'', exercices:4 },
+  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit',
+            mail:'s.dacosta@revisia-audit.example',  entree:'2026-02-02', sortie:'', exercices:2 },
+  claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit',
+            mail:'c.fontaine@revisia-audit.example', entree:'2025-10-06', sortie:'', exercices:7 },
 };
+const CABINET = 'Revisia Audit (cabinet fictif)';
 const ORDRE_GRADE = ['assistant', 'senior', 'superviseur', 'associée'];
 const ROLE_LIB = { preparateur:'préparateur', reviseur:'réviseur', associe:'associé signataire' };
 /** Seuls le réviseur et l'associé peuvent clore une note — et jamais la leur. */
@@ -798,6 +816,20 @@ const S = {
   replis:{},      // replis que l'auditeur a ouverts ou fermés lui-même
   selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
+  /* Équipe et indépendance — voir 30_equipe.js. Les déclarations sont un
+     historique par membre : une révision n'écrase pas, elle empile. */
+  declarations:{}, seqMembre:0,
+  independance:{ sauvegardes:{}, confirmation:null,
+                 seuilCadeau:15000,        // 150 € — seuil déclaré, modifiable
+                 seuilFamiliarite:7,       // exercices consécutifs [UNVERIFIED]
+                 rotationSignataire:6 },   // exercices du signataire [UNVERIFIED]
+  sacc:[], seqSacc:0, honorairesMission:8500000, plafondSacc:70,
+  memErreur:'', indErreur:'', saccErreur:'', travErreur:'',
+  /* Quatre dates posées, et non cent : les échéances des travaux s'en
+     déduisent (voir REGLE_ECHEANCE). L'assemblage n'est pas ici — il se
+     déduit de la date du rapport. */
+  jalons:{ interim:'2026-01-19', final:'2026-03-23', rapport:'2026-04-15' },
+  travauxManuels:[], seqTravManuel:0,
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
   impactDe:null, impactVers:null, balTout:false,
   achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{},
@@ -5643,7 +5675,10 @@ function blocPlan(p){
             : '<span class="smallcaps">sans sélection</span>',
       pop:e ? `<span class="mono">${e.pop.items.length}</span><div class="smallcaps">${eur0(e.pop.masse)}</div>` : '—',
       wp:pr.ech ? `<span class="mono">${esc(procRef(p, pr))}</span>` : '<span class="smallcaps">—</span>',
-      st:`<span class="pill ${st.cls}">${st.lib}</span>`
+      st:(sansObjet('SEC-' + p.code + '-' + pr.code)
+          ? `<span class="pill">sans objet</span>
+             <div class="smallcaps">${esc(sansObjet('SEC-' + p.code + '-' + pr.code).motif)}</div>`
+          : `<span class="pill ${st.cls}">${st.lib}</span>`)
          + (pr.unidirectionnel ? ' <span class="pill warn">unidirectionnel</span>' : ''),
       act:`<button class="btn mini ${ouvert ? '' : 'sec'}" data-proc="${p.code}/${pr.code}">${ouvert ? 'ouverte' : 'ouvrir'}</button>
            ${boutonNote(p.code, 'procedure', pr.code, 'Procédure ' + procRef(p, pr))}`,
@@ -6047,6 +6082,9 @@ function obstaclesVisa(p){
   for (const x of obstaclesTravaux(p.code)) o.push(x);
   let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){
+    /* Une procédure marquée « sans objet », avec son motif écrit, ne produit
+       plus d'obstacle : c'est une décision documentée, pas un oubli. */
+    if (sansObjet('SEC-' + p.code + '-' + pr.code)) continue;
     if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
     const wp = wpProc(p, pr) || [];
     manq += wp.filter(r => !ligneRecue(p, pr, r.cle)).length;
@@ -6583,7 +6621,7 @@ function refPapier(t){
    deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
    coûterait un clic sans rien rendre lisible. Le portail client y figure
    malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
-const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'pil.mission',
+const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'plan.equipe', 'pil.mission',
   'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
 let _panSeq = 0;
 function blk(t, why, html, att){
@@ -7435,7 +7473,7 @@ function vueRAPrelim(){
                   : `<button class="btn mini" data-raprelim="${l.compte}">envoyer la requête</button>`}</td></tr>`;
         }).join('')}</tbody></table></div>`
         : '<p class="note">Aucune variation au-dessus des seuils.</p>') +
-    blk('Ratios', 'tous calculés depuis les deux balances',
+    blk('Ratios de planification', 'tous calculés depuis les deux balances',
       table([{k:'l',t:'Ratio',cls:'wrapcell'},{k:'f',t:'Formule',cls:'wrapcell'},
              {k:'a',t:'2024',n:1},{k:'b',t:'2025',n:1},{k:'d',t:'Variation',n:1}],
         rt.map(r => ({ l:esc(r.lib), f:'<span class="smallcaps">' + esc(r.formule) + '</span>',
@@ -7449,7 +7487,10 @@ function vueRAPrelim(){
 }
 
 /* ═══ 29. ESPACE ACHÈVEMENT ════════════════════════════════════════════════ */
-const DATE_RAPPORT = '2026-04-15';
+/* La date du rapport est un JALON DE MISSION, modifiable à l'écran : cette
+   constante n'est plus que sa valeur de départ (voir S.jalons et 21_travaux). */
+const DATE_RAPPORT_DEFAUT = '2026-04-15';
+function DATE_RAPPORT_(){ return S.jalons.rapport || DATE_RAPPORT_DEFAUT; }
 const DELAI_ASSEMBLAGE = 60;      // jours — C. com., art. D. 821-186, III et IV
 const RETENTION_ANS = 6;          // ans  — C. com., art. R. 820-42
 
@@ -7532,7 +7573,7 @@ function vueAchPointage(){
   const sansDoc = PLAQUETTE.filter(e => e.nature === 'calcul' && !((st.calculs[e.ref] || {}).doc || '').trim());
   return entete('Pointage des états financiers', 'plaquette à gauche, montant audité à droite, écart et origine') +
     cite('Une fonction pointage des états financiers et données chiffrées des annexes où après réception de la plaquette du client, un agent IA vient s’assurer que chaque chiffre cadre bien avec les montants que nous avons audité, dans notre TB et documente un réconciliation sur un Template intégré avec à gauche montant plaquette et à droite montant interne et validé avec une cross reference vers l’origine du montant validé.') +
-    blk('Rapprochement', `${PLAQUETTE.length} montants · ${ecarts.length} écart(s) · ${nonRappro.length} non rapproché(s)`,
+    blk('Pointage plaquette ↔ comptes audités', `${PLAQUETTE.length} montants · ${ecarts.length} écart(s) · ${nonRappro.length} non rapproché(s)`,
       table([{k:'ref',t:'Réf.'},{k:'lib',t:'Poste de la plaquette',cls:'wrapcell'},{k:'nat',t:'Nature'},
              {k:'pl',t:'Montant plaquette',n:1},{k:'aud',t:'Montant audité',n:1},
              {k:'or',t:'Origine',cls:'wrapcell'},{k:'ec',t:'Écart',n:1},{k:'doc',t:'Documentation du calcul',cls:'wrapcell'}], rows) +
@@ -7680,7 +7721,7 @@ function vueAchCloture(){
   const nonVisees = postes.filter(p => !sec(p.code).visa);
   const bloq = notesBloquantesOuvertes();
   const facteursOuverts = registre().filter(f => f.statut === 'propose');
-  const echeance = addDays(DATE_RAPPORT, DELAI_ASSEMBLAGE);
+  const echeance = addDays(DATE_RAPPORT_(), DELAI_ASSEMBLAGE);
   const jours = Math.round((Date.parse(echeance) - Date.parse(S.aujourdhui)) / 86400000);
   const obstacles = [];
   if (nonVisees.length) obstacles.push(`${nonVisees.length} section(s) non visée(s) : ${nonVisees.map(p => p.lib).join(', ')}`);
@@ -7696,7 +7737,7 @@ function vueAchCloture(){
   return entete('Assemblage et clôture du dossier', 'le dossier devient définitif et se verrouille') +
     blk('Délai d’assemblage', jours >= 0 ? jours + ' jour(s) restant(s)' : 'délai dépassé',
       `<div class="kv">
-        <span class="k">Date du rapport</span><span class="v">${frDate(DATE_RAPPORT)}</span>
+        <span class="k">Date du rapport</span><span class="v">${frDate(DATE_RAPPORT_())}</span>
         <span class="k">Délai d’assemblage</span><span class="v">${DELAI_ASSEMBLAGE} jours</span>
         <span class="k">Échéance</span><span class="v">${frDate(echeance)}</span>
         <span class="k">Aujourd’hui</span><span class="v">${frDate(S.aujourdhui)}</span>
@@ -7772,9 +7813,25 @@ const PRINCIPES = [
 ];
 function vuePrincipes(){
   return entete('Principes de conception', 'les règles s’appliquent dans l’écran ; leur justification se lit ici') +
-    blk('Règles', PRINCIPES.length,
+    blk('Règles de conception', PRINCIPES.length,
       table([{k:'r',t:'Règle',cls:'wrapcell'},{k:'o',t:'Où elle se voit',cls:'wrapcell'},{k:'j',t:'Pourquoi',cls:'wrapcell'}],
         PRINCIPES.map(x => ({ r:'<b>' + esc(x.r) + '</b>', o:esc(x.o), j:esc(x.j) })))) +
+    /* Ces deux tables vivaient dans le programme de travail. Elles n'y
+       décrivaient pas un travail : elles expliquaient une règle qui agit
+       ailleurs. Elles rejoignent donc les encadrés pédagogiques, et le
+       programme de travail redevient une surface de travail. */
+    blk('Barème de budget — d’où vient l’heure proposée', 'la règle agit dans la colonne « budget » du programme de travail',
+      table([{k:'l',t:'Nature',cls:'wrapcell'},{k:'b',t:'Base',n:1},{k:'p',t:'Par élément',n:1}],
+        BAREME_HEURES.map(b => ({ l:esc(b.lib), b:hFmt(b.base), p:b.parElement ? hFmt(b.parElement) : '—' }))) +
+      `<p class="note">Le budget proposé par le barème est modifiable travail par travail : c’est une décision de
+      chef de mission, pas une constante. Un budget corrigé reste corrigé quand le barème change.</p>`) +
+    blk('Niveau de revue exigé — d’où vient le refus d’affecter', 'la règle agit dans le sélecteur de réviseur',
+      table([{k:'s',t:'Cas',cls:'wrapcell'},{k:'n',t:'Revue exigée'}],
+        REGLE_REVUE.map(r => ({ s:esc(r.si), n:esc(NIVEAU_REVUE_LIB[r.niveau]) }))) +
+      `<p class="note">Le préparateur et le réviseur sont obligatoirement deux personnes différentes.
+      Un travail de niveau 2 ne peut être revu que par un associé. Un travail passe « achevé » par son
+      préparateur seul, « revu » par son réviseur seul. Ces trois règles sont opposées à l’écran au
+      moment de l’affectation : elles ne sont pas rappelées, elles refusent.</p>`) +
     vueIA();
 }
 /* ═══ 31. FILTRES DE REQUÊTES ══════════════════════════════════════════════
@@ -8040,7 +8097,74 @@ const PHASES = [
 const NATURE_TRAVAIL = {
   planification:'planification', controle_interne:'contrôle interne',
   section:'procédure de section', achevement:'achèvement',
+  manuel:'ajouté à la main',
 };
+
+/* ═══ JALONS DE MISSION ════════════════════════════════════════════════════
+   Une échéance par travail, saisie cent fois, n'est pas un planning : c'est
+   une corvée qui finit remplie au hasard. On pose QUATRE dates — l'intérim,
+   l'intervention finale, la date du rapport, et l'échéance d'assemblage qui
+   s'en déduit — et l'échéance de chaque travail s'en déduit à son tour, par
+   une règle écrite. Chaque échéance reste modifiable travail par travail, et
+   en lot sur la sélection : la règle propose, elle n'impose pas.
+
+   L'échéance d'assemblage n'est PAS saisie : c'est un délai légal compté
+   depuis la date du rapport. Une date qu'on peut taper à la main est une date
+   qu'on peut taper fausse.                                                 */
+const JALONS = [
+  { id:'interim',    lib:'Intervention intérimaire', d:'ce qui se fait avant la clôture : contrôle interne, tests d’opérations sur la période écoulée' },
+  { id:'final',      lib:'Intervention finale',      d:'les travaux sur les comptes arrêtés' },
+  { id:'rapport',    lib:'Date du rapport',          d:'la date de signature' },
+  { id:'assemblage', lib:'Échéance d’assemblage',    d:'délai légal compté depuis la date du rapport — déduite, jamais saisie',
+    derive:() => addDays(S.jalons.rapport, DELAI_ASSEMBLAGE) },
+];
+function jalon(id){
+  const j = JALONS.find(x => x.id === id);
+  return j && j.derive ? j.derive() : S.jalons[id];
+}
+function fixerJalon(id, date){
+  const j = JALONS.find(x => x.id === id);
+  if (!j || j.derive) return { ok:false, why:'cette date se déduit, elle ne se saisit pas' };
+  if (!date) return { ok:false, why:'une date vide n’est pas un jalon' };
+  const av = S.jalons[id];
+  S.jalons[id] = date;
+  _travCache.cle = '';
+  logEvent('jalon de mission déplacé', j.lib, frDate(av) + ' → ' + frDate(date));
+  return { ok:true };
+}
+/* Ce dont chaque travail dépend. La règle est lisible et se lit à l'écran. */
+const REGLE_ECHEANCE = [
+  { cas:'Assemblage et clôture du dossier', jalon:'assemblage', dec:0,
+    quoi:t => t.code === 'ACH-08' },
+  { cas:'Travail de planification',   jalon:'interim', dec:0,  quoi:t => t.phase === 'planification' },
+  { cas:'Travail de contrôle interne', jalon:'interim', dec:0, quoi:t => t.phase === 'controle_interne' },
+  { cas:'Procédure de section',       jalon:'final',   dec:0,  quoi:t => t.phase === 'bilan' || t.phase === 'resultat' },
+  { cas:'Travail d’achèvement',       jalon:'rapport', dec:-10, quoi:() => true },
+];
+function regleEcheance(t){ return REGLE_ECHEANCE.find(r => r.quoi(t)) || REGLE_ECHEANCE[REGLE_ECHEANCE.length - 1]; }
+function echeanceDeduite(t){
+  const r = regleEcheance(t);
+  return addDays(jalon(r.jalon), r.dec);
+}
+/** L'échéance retenue : celle qu'on a écrite, sinon celle que la règle déduit. */
+function echeanceDe(t){
+  const st = trav(t.code);
+  return st.echeance || echeanceDeduite(t);
+}
+function fixerEcheance(code, date){
+  const st = trav(code), t = travailDe(code);
+  if (!t) return { ok:false, why:'travail inconnu' };
+  const av = echeanceDe(t);
+  st.echeance = date || null;
+  logEvent('échéance modifiée', t.code + ' — ' + t.intitule,
+           frDate(av) + ' → ' + frDate(echeanceDe(t)) + (date ? '' : ' (retour à la règle)'));
+  return { ok:true };
+}
+function fixerEcheanceEnLot(codes, date){
+  let n = 0;
+  for (const c of codes){ if (fixerEcheance(c, date).ok) n++; }
+  return { n };
+}
 
 /* ── barème de budget : une décision affichée, pas une constante cachée ──── */
 const BAREME_HEURES = [
@@ -8049,6 +8173,7 @@ const BAREME_HEURES = [
   { nature:'section', ech:false, lib:'Procédure de section sans sélection', base:2, parElement:0 },
   { nature:'section', ech:true, lib:'Procédure de section avec sélection', base:1.5, parElement:0.05 },
   { nature:'achevement', lib:'Travail d’achèvement', base:3, parElement:0 },
+  { nature:'manuel', lib:'Travail ajouté à la main', base:3, parElement:0 },
 ];
 function baremeDe(t){
   return BAREME_HEURES.find(b => b.nature === t.nature && (b.ech === undefined || b.ech === !!t.ech))
@@ -8107,8 +8232,65 @@ function trav(code){
   if (!S.travaux[code]) S.travaux[code] = {
     preparateur:null, reviseur:null, heuresBudget:null, heuresReel:0,
     statut:'a_faire', acheve:null, revu:null,
+    echeance:null,      // null = celle que la règle des jalons déduit
+    sansObjet:null,     // { motif, par, t } — jamais une suppression
   };
   return S.travaux[code];
+}
+/* ── « sans objet » plutôt qu'une suppression ────────────────────────────
+   Un travail qui ne s'applique pas à ce dossier ne s'efface pas : il se
+   MARQUE, avec un motif écrit. Un programme dont on a retiré des lignes ne
+   dit pas pourquoi elles ne sont plus là ; un programme qui les garde
+   barrées le dit. Le motif est obligatoire — sans lui, la marque est
+   indistinguable d'une erreur de manipulation. */
+function sansObjet(code){ return trav(code).sansObjet; }
+function marquerSansObjet(code, motif){
+  const t = travailDe(code); if (!t) return { ok:false, why:'travail inconnu' };
+  const st = trav(code);
+  if (!(motif || '').trim()) return { ok:false, why:'un travail marqué « sans objet » sans motif écrit reste au programme' };
+  if (st.statut === 'acheve' || st.statut === 'revu')
+    return { ok:false, why:'un travail déjà ' + STATUT_TRAVAIL[st.statut] + ' n’est pas sans objet : c’est une diligence exécutée' };
+  st.sansObjet = { motif:motif.trim(), par:S.moi, t:tick() };
+  logEvent('travail marqué sans objet', t.code + ' — ' + t.intitule, motif.trim().slice(0, 90));
+  return { ok:true };
+}
+function annulerSansObjet(code){
+  const t = travailDe(code), st = trav(code);
+  if (!st.sansObjet) return { ok:false, why:'ce travail n’est pas marqué' };
+  st.sansObjet = null;
+  logEvent('marque « sans objet » retirée', t.code + ' — ' + t.intitule, USERS[S.moi].nom);
+  return { ok:true };
+}
+
+/* ── travaux ajoutés à la main ────────────────────────────────────────────
+   Aucun catalogue ne couvre tous les dossiers. Un travail ajouté à la main
+   porte les mêmes règles que les autres : affectation, budget, échéance
+   déduite d'un jalon, revue, statuts. Il n'a pas de chemin à lui. */
+function ajouterTravail(intitule, phase, poste, natureVoulue){
+  if (!(intitule || '').trim()) return { ok:false, why:'un travail sans intitulé n’est pas un travail' };
+  if (!PHASES.some(x => x.id === phase)) return { ok:false, why:'phase inconnue' };
+  const code = 'MAN-' + String(++S.seqTravManuel).padStart(2, '0');
+  S.travauxManuels.push({ code, nature:natureVoulue || 'manuel', phase,
+    intitule:intitule.trim(), poste:poste || null,
+    posteLib:poste ? (POSTES.find(p => p.code === poste) || {}).lib : null,
+    vue:poste ? 'fsli:' + poste : 'plan.programme', ajoutePar:S.moi, t:tick() });
+  _travCache.cle = '';
+  logEvent('travail ajouté au programme', code + ' — ' + intitule.trim(),
+           PHASES.find(x => x.id === phase).lib + (poste ? ' · ' + poste : ''));
+  return { ok:true, code };
+}
+function retirerTravailManuel(code){
+  const i = S.travauxManuels.findIndex(x => x.code === code);
+  if (i < 0) return { ok:false, why:'ce travail n’a pas été ajouté à la main : marquez-le « sans objet »' };
+  const st = trav(code);
+  if (st.preparateur || st.reviseur || st.statut !== 'a_faire')
+    return { ok:false, why:'ce travail est engagé : marquez-le « sans objet » plutôt que de l’effacer' };
+  const x = S.travauxManuels[i];
+  S.travauxManuels.splice(i, 1);
+  delete S.travaux[code];
+  _travCache.cle = '';
+  logEvent('travail retiré du programme', code + ' — ' + x.intitule, 'ajouté à la main, jamais engagé');
+  return { ok:true };
 }
 const STATUT_TRAVAIL = { a_faire:'à faire', en_cours:'en cours', acheve:'achevé', revu:'revu' };
 
@@ -8116,12 +8298,12 @@ const STATUT_TRAVAIL = { a_faire:'à faire', en_cours:'en cours', acheve:'achev�
 const _travCache = { cle:'', v:null };
 function travaux(){
   const s = seuils();
-  const cle = JSON.stringify([s.PM, s.CTT, Object.keys(S.scopingOverride), S.decisionsFacteurs, S.sections && Object.keys(S.sections).length]);
-  if (_travCache.cle === cle && _travCache.v) return _travCache.v.map(t => ({ ...t, ...trav(t.code), code:t.code }));
+  const cle = JSON.stringify([s.PM, s.CTT, Object.keys(S.scopingOverride), S.decisionsFacteurs,
+    S.sections && Object.keys(S.sections).length, S.jalons, S.travauxManuels.length]);
+  if (_travCache.cle === cle && _travCache.v) return _travCache.v.map(habiller);
   const out = [];
-  for (const f of TRAVAUX_FIXES){
-    out.push({ ...f, echeance:f.phase === 'planification' ? '2026-02-20' : addDays(DATE_RAPPORT, -10) });
-  }
+  for (const f of TRAVAUX_FIXES) out.push({ ...f });
+  for (const m of S.travauxManuels) out.push({ ...m });
   for (const p of postesEnPerimetre()){
     const phase = masseDe(p);
     for (const pr of proceduresRequises(p)){
@@ -8130,14 +8312,24 @@ function travaux(){
         code:'SEC-' + p.code + '-' + pr.code, nature:'section', phase,
         intitule:pr.lib, poste:p.code, posteLib:p.lib, proc:pr.code,
         assertion:pr.a, ech:pr.ech, elements:e ? e.retenus.length : 0,
-        wpRef:procRef(p, pr), vue:'fsli:' + p.code, echeance:'2026-03-25',
+        wpRef:procRef(p, pr), vue:'fsli:' + p.code,
       });
     }
   }
   const base = out.map(t => ({ ...t, niveauRevue:niveauRevueExige(t) }));
   base.forEach(t => { t.budgetBareme = budgetBareme(t); });
   _travCache.cle = cle; _travCache.v = base;
-  return base.map(t => ({ ...t, ...trav(t.code), code:t.code, niveauRevue:t.niveauRevue, budgetBareme:t.budgetBareme }));
+  return base.map(habiller);
+}
+/** Le casier d'organisation vient se poser sur la définition du travail, et
+ *  l'échéance se déduit des jalons quand personne ne l'a écrite. Un seul
+ *  chemin : le cache ne doit pas rendre un objet plus pauvre que le calcul. */
+function habiller(t){
+  const x = { ...t, ...trav(t.code), code:t.code,
+              niveauRevue:t.niveauRevue, budgetBareme:t.budgetBareme };
+  x.echeanceDeduite = echeanceDeduite(x);
+  x.echeance = trav(t.code).echeance || x.echeanceDeduite;
+  return x;
 }
 function budget(t){ return t.heuresBudget === null || t.heuresBudget === undefined ? t.budgetBareme : t.heuresBudget; }
 function travauxDe(code){ return travaux().filter(t => t.poste === code); }
@@ -8152,6 +8344,13 @@ function affecter(code, role, uid){
   const st = trav(code);
   const autre = role === 'preparateur' ? st.reviseur : st.preparateur;
   if (uid && uid === autre) return { ok:false, why:'le préparateur et le réviseur doivent être deux personnes différentes' };
+  /* AUCUN travail à qui n'a pas signé sa déclaration d'indépendance. Le
+     système refuse — il ne rappelle pas. Voir 30_equipe.js. */
+  if (uid && !peutRecevoirTravail(uid))
+    return { ok:false, why:'déclaration d’indépendance de ' + USERS[uid].nom + ' : '
+      + etatDeclaration(uid).lib + ' — aucun travail ne peut lui être attribué' };
+  if (uid && USERS[uid].sortie && USERS[uid].sortie < S.aujourdhui)
+    return { ok:false, why:USERS[uid].nom + ' est sorti de la mission le ' + frDate(USERS[uid].sortie) };
   if (role === 'reviseur' && uid && !peutReviser(uid, t))
     return { ok:false, why:'ce travail exige une ' + NIVEAU_REVUE_LIB[t.niveauRevue] };
   st[role] = uid || null;
@@ -8175,7 +8374,7 @@ function changerStatut(code, statut){
 }
 function obstaclesTravaux(code){
   const o = [];
-  const l = travauxDe(code);
+  const l = travauxDe(code).filter(t => !t.sansObjet);
   const rec = l.filter(t => aReconfirmer(t));
   if (rec.length) o.push(`${rec.length} travail/travaux à reconfirmer sur la version courante du fichier`);
   const sansPrep = l.filter(t => !t.preparateur), sansRev = l.filter(t => !t.reviseur);
@@ -8183,6 +8382,10 @@ function obstaclesTravaux(code){
   if (sansRev.length) o.push(`${sansRev.length} travail/travaux sans réviseur affecté`);
   const nonRevus = l.filter(t => t.preparateur && t.reviseur && t.statut !== 'revu');
   if (nonRevus.length) o.push(`${nonRevus.length} travail/travaux non revus`);
+  /* Un travail attribué à quelqu'un dont la déclaration est devenue caduque
+     est un obstacle au visa : la diligence a été faite, mais pas par une
+     personne dont l'indépendance est établie à ce jour. */
+  for (const x of obstaclesIndependanceSection(code)) o.push(x);
   return o;
 }
 
@@ -8234,17 +8437,30 @@ function vueProgramme(){
       as:t.assertion ? esc(libAssertion(t.assertion)) : '<span class="smallcaps">—</span>',
       p:a.prep, v:a.rev,
       nr:`<span class="pill ${t.niveauRevue === 2 ? 'warn' : ''}">niveau ${t.niveauRevue}</span>`,
-      e:`<span class="mono">${frDate(t.echeance)}</span>`,
+      e:`<input class="cell txt" type="date" data-tech="${t.code}" value="${esc(t.echeance)}" style="width:132px">
+         <div class="smallcaps">${t.echeance === t.echeanceDeduite
+            ? esc(regleEcheance(t).jalon) : 'écrite — règle : ' + frDate(t.echeanceDeduite)}</div>`,
       hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
       hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
-      s:boutonsStatut(t),
+      s:t.sansObjet
+        ? `<span class="pill">sans objet</span>
+           <div class="smallcaps">${esc(t.sansObjet.motif)}</div>
+           <div class="smallcaps">${esc(USERS[t.sansObjet.par].nom)} · ${horo(t.sansObjet.t)}</div>
+           <button class="btn mini sec" data-tso0="${t.code}">remettre au programme</button>`
+        : boutonsStatut(t) + ` <button class="btn mini sec" data-tso="${t.code}">sans objet</button>`
+          + (S.travauxManuels.some(x => x.code === t.code)
+             ? ` <button class="btn mini sec" data-tdel="${t.code}">retirer</button>` : ''),
       ec:ec ? '<span class="pill warn">corrigé</span>' : '<span class="smallcaps">—</span>',
       w:t.wpRef ? `<span class="mono">${esc(t.wpRef)}</span>` : '<span class="smallcaps">—</span>',
       g:t.vue ? `<button class="btn mini sec" data-gotrav="${esc(t.vue)}">ouvrir</button>` : '',
     };
   });
-  const tb = vus.reduce((a, t) => a + budget(t), 0), tr = vus.reduce((a, t) => a + t.heuresReel, 0);
+  /* Un travail sans objet ne consomme pas de budget : le compter fausserait
+     le seul chiffre que le chef de mission regarde. */
+  const tb = vus.filter(t => !t.sansObjet).reduce((a, t) => a + budget(t), 0);
+  const tr = vus.reduce((a, t) => a + t.heuresReel, 0);
   return entete('Programme de travail', 'tout travail de la mission est le même objet — livrable du dossier') +
+    blocJalons(l) +
     blk('Filtres', vus.length + ' / ' + l.length,
       `<div class="row">
         <div class="ctrl"><label>Phase</label><select id="ft-phase"><option value="">toutes</option>
@@ -8259,20 +8475,30 @@ function vueProgramme(){
           <input type="text" id="ft-q" value="${esc(f.q)}" placeholder="code, intitulé, poste"></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="ft-imprime">imprimer</button></div>
       </div>`) +
-    blk('Règles de revue', 'elles découlent du risque',
-      table([{k:'s',t:'Cas',cls:'wrapcell'},{k:'n',t:'Revue exigée'}],
-        REGLE_REVUE.map(r => ({ s:esc(r.si), n:esc(NIVEAU_REVUE_LIB[r.niveau]) }))) +
-      `<p class="note">Le préparateur et le réviseur sont obligatoirement deux personnes différentes.
-      Un travail de niveau 2 ne peut être revu que par un associé. Un travail passe « achevé » par son
-      préparateur seul, « revu » par son réviseur seul.</p>`) +
+    /* Le barème de budget et les règles de revue ONT QUITTÉ cet écran : ce
+       sont des explications de règles, pas des surfaces de travail. La règle
+       doit agir — elle agit, dans la colonne « budget » et dans le refus
+       d'affecter un réviseur de niveau insuffisant. Sa justification se lit
+       dans « Principes de conception », avec les autres encadrés. */
     blocRepartition(vus) +
-    blk('Barème de budget', 'base + heures par élément sélectionné',
-      table([{k:'l',t:'Nature',cls:'wrapcell'},{k:'b',t:'Base',n:1},{k:'p',t:'Par élément',n:1}],
-        BAREME_HEURES.map(b => ({ l:esc(b.lib), b:hFmt(b.base), p:b.parElement ? hFmt(b.parElement) : '—' }))) +
-      `<p class="note">Le budget proposé par le barème est modifiable travail par travail : c’est une décision de
-      chef de mission, pas une constante.</p>`) +
-    blk('Travaux', vus.length + ' · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
+    blk('Travaux', vus.length + ' · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr)
+        + (l.filter(x => x.sansObjet).length ? ' · ' + l.filter(x => x.sansObjet).length + ' sans objet' : ''),
       barreSelection(vus) +
+      `<div class="row" style="margin:-2px 0 8px">
+        <div class="ctrl"><label>Échéance en lot — ${S.selTrav.length} sélectionné(s)</label>
+          <input class="cell txt" type="date" id="tv-lotech" ${S.selTrav.length ? '' : 'disabled'}></div>
+        <div class="ctrl"><label>&nbsp;</label>
+          <button class="btn sec" id="tv-lotech-rgl" ${S.selTrav.length ? '' : 'disabled'}>rendre à la règle des jalons</button></div>
+        <div class="ctrl" style="flex:1 1 220px"><label>Ajouter un travail — intitulé</label>
+          <input type="text" id="tv-add-lib" placeholder="aucun catalogue ne couvre tous les dossiers"></div>
+        <div class="ctrl"><label>Phase</label><select id="tv-add-phase">
+          ${PHASES.map(x => `<option value="${x.id}">${esc(x.lib)}</option>`).join('')}</select></div>
+        <div class="ctrl"><label>Section</label><select id="tv-add-poste">
+          <option value="">— aucune —</option>
+          ${postesEnPerimetre().map(x => `<option value="${x.code}">${esc(x.lib)}</option>`).join('')}</select></div>
+        <div class="ctrl"><label>&nbsp;</label><button class="btn" id="tv-add">ajouter au programme</button></div>
+      </div>
+      ${S.travErreur ? `<div class="callout bad">${esc(S.travErreur)}</div>` : ''}` +
       table([{k:'sel',t:''},{k:'c',t:'Code'},{k:'n',t:'Nature'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'r',t:'Phase'},
              {k:'as',t:'Assertion'},{k:'pp',t:'Proposé',cls:'wrapcell'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},
              {k:'ec',t:''},{k:'nr',t:'Revue'},
@@ -8281,6 +8507,33 @@ function vueProgramme(){
         { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } }) +
       `<p class="note">La colonne « proposé » porte le préparateur puis le réviseur que la règle désigne.
       Corriger une ligne ne change pas la proposition : l’écart reste visible, c’est votre décision.</p>`);
+}
+
+function blocJalons(l){
+  const jours = d => Math.round((Date.parse(d) - Date.parse(S.aujourdhui)) / 86400000);
+  const dec = n => n === 0 ? 'le jour même' : n > 0 ? '+' + n + ' j' : n + ' j';
+  return blk('Jalons de la mission', 'quatre dates — les échéances des travaux s’en déduisent',
+    `<div class="row">
+      ${JALONS.map(j => `<div class="ctrl"><label>${esc(j.lib)}</label>
+        <input class="cell txt" type="date" data-jalon="${j.id}" value="${esc(jalon(j.id))}"
+          ${j.derive ? 'disabled' : ''} style="width:150px">
+        <span class="smallcaps">${j.derive ? 'déduite — ' + DELAI_ASSEMBLAGE + ' jours après le rapport'
+          : jours(jalon(j.id)) >= 0 ? 'dans ' + jours(jalon(j.id)) + ' j' : 'il y a ' + (-jours(jalon(j.id))) + ' j'}</span>
+      </div>`).join('')}
+    </div>
+    ${table([{k:'c',t:'Cas',cls:'wrapcell'},{k:'j',t:'Jalon'},{k:'d',t:'Décalage'},{k:'e',t:'Échéance déduite'},{k:'n',t:'Travaux',n:1}],
+      REGLE_ECHEANCE.map(r => {
+        const n = l.filter(t => regleEcheance(t).cas === r.cas).length;
+        return { c:esc(r.cas), j:esc((JALONS.find(x => x.id === r.jalon) || {}).lib || r.jalon),
+                 d:dec(r.dec), e:`<span class="mono">${frDate(addDays(jalon(r.jalon), r.dec))}</span>`,
+                 n:String(n) };
+      }), { foot:{ c:'Total', n:String(l.length) } })}
+    <p class="note">On pose <b>quatre dates</b>, pas cent. L’échéance de chaque travail s’en déduit par la
+    règle ci-dessus ; elle reste modifiable ligne par ligne et en lot sur la sélection, et une échéance
+    écrite le reste quand le jalon bouge — c’est une décision, elle ne se perd pas.
+    L’échéance d’assemblage ne se saisit pas : c’est un délai légal compté depuis la date du rapport
+    (${DELAI_ASSEMBLAGE} jours, C. com., art. D. 821-186, III et IV).
+    ${l.filter(t => trav(t.code).echeance).length} échéance(s) écrite(s) à la main sur ${l.length}.</p>`);
 }
 
 /* ═══ 35. VUE GLOBALE DE LA MISSION ════════════════════════════════════════
@@ -8317,14 +8570,16 @@ function vueMission(){
   /* 6 — obstacles au visa agrégés */
   const obst = postes.map(p => ({ p, o:obstaclesVisa(p) })).filter(x => x.o.length);
   /* 7 — jalons */
-  const ech = addDays(DATE_RAPPORT, DELAI_ASSEMBLAGE);
+  const ech = jalon('assemblage');
   const jours = d => Math.round((Date.parse(d) - Date.parse(S.aujourdhui)) / 86400000);
-  const jalons = [
-    { j:'Intérim', d:'2026-01-19' }, { j:'Clôture de l’exercice', d:CLOTURE },
-    { j:'Réception de la balance définitive', d:'2026-02-16' }, { j:'Date du rapport', d:DATE_RAPPORT },
-    { j:'Échéance d’assemblage du dossier', d:ech },
-  ];
-  const tb = l.reduce((a, t) => a + budget(t), 0), tr = l.reduce((a, t) => a + t.heuresReel, 0);
+  /* Les jalons ne sont plus une liste d'affichage : ce sont LES dates de la
+     mission, posées dans le programme de travail, et dont les échéances des
+     travaux se déduisent. Ici on les relit, on ne les redéfinit pas. */
+  const jalons = [{ j:'Clôture de l’exercice', d:CLOTURE }]
+    .concat(JALONS.map(x => ({ j:x.lib, d:jalon(x.id) })))
+    .sort((a, b) => a.d < b.d ? -1 : 1);
+  const tb = l.filter(t => !t.sansObjet).reduce((a, t) => a + budget(t), 0);
+  const tr = l.reduce((a, t) => a + t.heuresReel, 0);
   return entete('Vue globale de la mission', 'Altiverre SAS — exercice clos le ' + frDate(CLOTURE)) +
     blk('Avancement par phase', l.length + ' travaux · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
       table([{k:'p',t:'Phase'},{k:'n',t:'Travaux',n:1},{k:'a',t:'Achevés',n:1},{k:'r',t:'Revus',n:1},
@@ -8391,7 +8646,7 @@ function vueMission(){
           r:jours(x.d) >= 0 ? 'dans ' + jours(x.d) + ' j' : 'il y a ' + (-jours(x.d)) + ' j' }))) +
       `<p class="note">Échéance d’assemblage : ${DELAI_ASSEMBLAGE} jours après la date du rapport
       (C. com., art. D. 821-186, III et IV). Conservation ${RETENTION_ANS} ans (C. com., art. R. 820-42).</p>`) +
-    blk('Export', 'trois périmètres de destinataire',
+    blk('Exporter cette vue', 'classeur de pilotage, ou impression',
       `<div class="row">
         ${Object.entries(PERIMETRES).map(([k, v]) => `<button class="btn sec" data-xlsm="${k}">classeur ${esc(v.lib)}</button>`).join('')}
         <button class="btn sec" id="mi-imprime">imprimer</button>
@@ -8423,6 +8678,633 @@ function vueCI(){
       constante ne sera écrite tant qu’il ne l’est pas.</p>`);
 }
 
+/* ═══ 46. ÉQUIPE, ANCIENNETÉ ET INDÉPENDANCE ═══════════════════════════════
+   Trois choses qu'un dossier doit porter et qu'aucun outil ne suit :
+
+   1. QUI est sur la mission, à quel grade, avec quel rôle, entré quand et
+      sorti quand. Une liste figée dans le code n'est pas une équipe.
+   2. DEPUIS COMBIEN D'EXERCICES chacun est sur ce client. La familiarité est
+      une menace à documenter, et la rotation du signataire est encadrée.
+      C'est déterministe : ça se compte, ça ne se juge pas.
+   3. SA DÉCLARATION D'INDÉPENDANCE, une par membre et par exercice, datée et
+      signée.
+
+   LA RÈGLE QUI REND TOUT CELA RÉEL, et c'est le seul point qui compte :
+   AUCUN TRAVAIL NE PEUT ÊTRE ATTRIBUÉ à un membre dont la déclaration n'est
+   pas signée, et un travail attribué à quelqu'un dont la déclaration est
+   devenue caduque est un OBSTACLE AU VISA de sa section. Même famille de
+   règle que « on ne clôt pas sa propre note » : le système refuse, il ne
+   rappelle pas.
+
+   Une déclaration se SIGNE SOI-MÊME — personne ne signe pour un autre. Elle
+   se RÉVISE en cours de mission si les circonstances changent : la révision
+   n'écrase rien, elle empile une version, et l'ancienne reste lisible avec sa
+   signature. Tant que la révision n'est pas signée, la déclaration du membre
+   est caduque et ses travaux bloquent le visa.
+
+   RÉSERVE. Les seuils portés ici — durée de rotation du signataire, seuil de
+   familiarité, plafond du ratio d'honoraires, liste des services interdits —
+   sont des PARAMÈTRES DÉCLARÉS et modifiables, marqués [UNVERIFIED] : aucun
+   texte primaire n'a pu être atteint depuis cet environnement. Ils doivent
+   être confrontés au texte avant tout usage réel. C'est la même règle que
+   pour le catalogue méthodologique.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const EXERCICE = '2025';
+
+/* ── les rubriques de la déclaration ──────────────────────────────────────
+   Le minimum demandé, dans l'ordre où on le remplit. Chacune se répond par
+   oui ou par non ; un « oui » exige une précision écrite, sans quoi la
+   déclaration n'est pas signable. Un formulaire qu'on peut signer vide est
+   un formulaire qui ne dit rien. */
+const RUBRIQUES_INDEP = [
+  { code:'interets', lib:'Intérêts financiers, directs ou indirects',
+    d:'titres du client ou d’une entité liée, détenus par vous, votre conjoint ou une personne à charge, '
+     + 'y compris par l’intermédiaire d’un placement dont vous choisissez la composition' },
+  { code:'familiaux', lib:'Liens familiaux avec les dirigeants ou le personnel comptable',
+    d:'lien de parenté ou d’alliance avec un dirigeant, un administrateur, ou toute personne du client '
+     + 'occupant une fonction comptable ou financière' },
+  { code:'emploi', lib:'Emploi antérieur chez le client',
+    d:'poste occupé chez le client ou une entité liée, à quelque date que ce soit, et fonction occupée' },
+  { code:'sacc', lib:'Services autres que la certification rendus par vous au client',
+    d:'toute prestation autre que l’audit à laquelle vous avez personnellement pris part, y compris une '
+     + 'mission antérieure ou une intervention ponctuelle' },
+  { code:'affaires', lib:'Relations d’affaires',
+    d:'relation commerciale avec le client ou ses dirigeants, hors relation courante aux conditions du marché' },
+  { code:'prets', lib:'Prêts et garanties',
+    d:'prêt consenti au client ou reçu de lui, caution ou garantie donnée ou reçue, dans un sens ou dans l’autre' },
+  { code:'cadeaux', lib:'Cadeaux et invitations au-delà du seuil déclaré',
+    d:'cadeau, avantage ou invitation reçu du client dont la valeur dépasse le seuil paramétré ci-dessus' },
+];
+
+/* ── accès ─────────────────────────────────────────────────────────────── */
+function membres(){
+  return Object.entries(USERS).map(([id, u]) => ({ id, ...u }));
+}
+function membresActifs(){ return membres().filter(m => !m.sortie); }
+function declarations(uid){
+  if (!S.declarations[uid]) S.declarations[uid] = [];
+  return S.declarations[uid];
+}
+function declarationCourante(uid){
+  const l = declarations(uid);
+  return l.length ? l[l.length - 1] : null;
+}
+function declarationVide(motif){
+  return { exercice:EXERCICE, reponses:{}, precisions:{}, signee:null, motif:motif || '', t:tick() };
+}
+/** Ce qui manque pour qu'une déclaration soit signable — la liste EST la règle. */
+function manquesDeclaration(d){
+  const m = [];
+  if (!d) return ['déclaration non ouverte'];
+  for (const r of RUBRIQUES_INDEP){
+    const v = d.reponses[r.code];
+    if (v === undefined) m.push('« ' + r.lib +' » sans réponse');
+    else if (v === 'oui' && !(d.precisions[r.code] || '').trim())
+      m.push('« ' + r.lib + ' » déclaré, sans précision écrite');
+  }
+  return m;
+}
+/** Une déclaration vaut si elle est signée et n'a pas été remplacée. */
+function declarationValide(uid){
+  const d = declarationCourante(uid);
+  return !!(d && d.signee);
+}
+function etatDeclaration(uid){
+  const l = declarations(uid), d = declarationCourante(uid);
+  if (!d) return { cle:'absente', lib:'aucune déclaration', cls:'bad' };
+  if (d.signee) return { cle:'signee', lib:'signée le ' + horo(d.signee.t), cls:'' };
+  if (l.length > 1) return { cle:'caduque', lib:'révision ouverte, non signée', cls:'bad' };
+  return { cle:'ouverte', lib:'ouverte, non signée', cls:'warn' };
+}
+/** LA règle : un membre sans déclaration signée ne reçoit aucun travail. */
+function peutRecevoirTravail(uid){ return !uid || declarationValide(uid); }
+
+/* ── écriture ─────────────────────────────────────────────────────────── */
+function ouvrirDeclaration(uid){
+  const l = declarations(uid);
+  if (l.length && !l[l.length - 1].signee) return { ok:false, why:'une déclaration est déjà ouverte' };
+  l.push(declarationVide(''));
+  logEvent('déclaration d’indépendance ouverte', USERS[uid].nom, 'exercice ' + EXERCICE);
+  return { ok:true };
+}
+/** Révision en cours de mission : elle N'ÉCRASE RIEN. La version signée reste
+ *  lisible, la nouvelle part de ses réponses, et le membre est caduque tant
+ *  qu'il ne l'a pas signée. */
+function reviserDeclaration(uid, motif){
+  const d = declarationCourante(uid);
+  if (!d || !d.signee) return { ok:false, why:'aucune déclaration signée à réviser' };
+  if (!(motif || '').trim()) return { ok:false, why:'une révision sans motif écrit n’est pas une révision' };
+  d.remplacee = true;
+  const n = declarationVide(motif);
+  n.reponses = { ...d.reponses }; n.precisions = { ...d.precisions };
+  declarations(uid).push(n);
+  logEvent('déclaration d’indépendance révisée', USERS[uid].nom, motif.slice(0, 90));
+  return { ok:true };
+}
+/** On signe SA déclaration, jamais celle d'un autre. */
+function signerDeclaration(uid){
+  if (uid !== S.moi) return { ok:false, why:'une déclaration d’indépendance se signe soi-même' };
+  const d = declarationCourante(uid);
+  const m = manquesDeclaration(d);
+  if (m.length) return { ok:false, why:'déclaration incomplète : ' + m.join(' ; ') };
+  d.signee = { par:uid, t:tick() };
+  S.independance.confirmation = null;   // la confirmation d'ensemble retombe
+  logEvent('déclaration d’indépendance signée', USERS[uid].nom,
+           RUBRIQUES_INDEP.filter(r => d.reponses[r.code] === 'oui').length + ' rubrique(s) déclarée(s)');
+  return { ok:true };
+}
+/** Confirmation de l'associé signataire POUR L'ENSEMBLE de l'équipe.
+ *  Elle ne peut pas précéder les déclarations individuelles : une confirmation
+ *  qui porterait sur des déclarations manquantes ne confirmerait rien. */
+function confirmerEquipe(){
+  const u = USERS[S.moi];
+  if (!u || u.role !== 'associe') return { ok:false, why:'seul l’associé signataire confirme pour l’équipe' };
+  const sans = membresActifs().filter(m => !declarationValide(m.id));
+  if (sans.length) return { ok:false,
+    why:sans.length + ' membre(s) sans déclaration signée : ' + sans.map(m => m.nom).join(', ') };
+  const men = menacesNonTraitees();
+  if (men.length) return { ok:false, why:men.length + ' menace(s) sans sauvegarde décrite' };
+  S.independance.confirmation = { par:S.moi, t:tick() };
+  logEvent('indépendance confirmée pour l’équipe', CABINET,
+           membresActifs().length + ' membre(s) · exercice ' + EXERCICE);
+  return { ok:true };
+}
+
+/* ── mouvements d'équipe ──────────────────────────────────────────────────
+   On n'efface pas quelqu'un qui a signé quelque chose. Un membre qui porte
+   une trace au dossier — un travail, une note, un visa, un événement — ne se
+   retire pas : il reçoit une DATE DE SORTIE, et le dossier garde son nom. */
+function tracesDe(uid){
+  const t = travaux().filter(x => x.preparateur === uid || x.reviseur === uid).length;
+  const n = S.notes.filter(x => x.auteur === uid || (x.clos && x.clos.par === uid)).length;
+  const v = postesEnPerimetre().filter(p => (sec(p.code).visa || {}).par === uid).length;
+  const e = S.events.filter(x => x.qui === (USERS[uid] || {}).nom).length;
+  const d = declarations(uid).filter(x => x.signee).length;
+  return { travaux:t, notes:n, visas:v, events:e, declarations:d,
+           total:t + n + v + e + d };
+}
+function ajouterMembre(nom, grade, role, mail){
+  if (!(nom || '').trim()) return { ok:false, why:'un membre sans nom n’est pas un membre' };
+  if (!ORDRE_GRADE.includes(grade)) return { ok:false, why:'grade inconnu' };
+  if (!ROLE_LIB[role]) return { ok:false, why:'rôle inconnu' };
+  const id = 'm' + (++S.seqMembre);
+  USERS[id] = { nom:nom.trim(), grade, role, cote:'audit',
+                mail:(mail || '').trim(), entree:S.aujourdhui, sortie:'', exercices:1 };
+  _repCache.cle = '';
+  logEvent('membre ajouté à l’équipe', nom.trim(), grade + ' · ' + ROLE_LIB[role]);
+  return { ok:true, id };
+}
+function retirerMembre(uid){
+  const u = USERS[uid]; if (!u) return { ok:false, why:'membre inconnu' };
+  if (uid === S.moi) return { ok:false, why:'on ne se retire pas soi-même de la mission' };
+  const tr = tracesDe(uid);
+  if (tr.total) return { ok:false, why:'ce membre porte ' + tr.total + ' trace(s) au dossier ('
+    + [tr.travaux && tr.travaux + ' travail/travaux', tr.notes && tr.notes + ' note(s)',
+       tr.visas && tr.visas + ' visa(s)', tr.declarations && tr.declarations + ' déclaration(s) signée(s)',
+       tr.events && tr.events + ' événement(s)'].filter(Boolean).join(', ')
+    + ') : datez sa sortie, ne l’effacez pas' };
+  delete USERS[uid];
+  _repCache.cle = '';
+  logEvent('membre retiré de l’équipe', u.nom, 'aucune trace au dossier');
+  return { ok:true };
+}
+function majMembre(uid, champ, valeur){
+  const u = USERS[uid]; if (!u) return { ok:false, why:'membre inconnu' };
+  const av = u[champ];
+  if (champ === 'exercices') u.exercices = Math.max(0, parseInt(valeur, 10) || 0);
+  else u[champ] = valeur;
+  if (champ === 'grade' || champ === 'role') _repCache.cle = '';
+  logEvent('fiche de membre modifiée', u.nom, champ + ' : ' + (av || '—') + ' → ' + (u[champ] || '—'));
+  return { ok:true };
+}
+
+/* ── menaces déduites de l'ancienneté ─────────────────────────────────────
+   Deux menaces, deux seuils déclarés. Elles ne bloquent pas : elles exigent
+   une SAUVEGARDE ÉCRITE. Une menace sans sauvegarde reste non traitée, et
+   c'est ce qui empêche la confirmation d'ensemble. */
+function menacesIndependance(){
+  const s = S.independance, out = [];
+  for (const m of membresActifs()){
+    if (m.role === 'associe' && m.exercices > s.rotationSignataire)
+      out.push({ id:'ROT:' + m.id, membre:m, type:'rotation',
+        lib:`${m.nom} signe ce mandat depuis ${m.exercices} exercices consécutifs, au-delà de la durée de `
+          + `rotation paramétrée (${s.rotationSignataire}).`,
+        exige:'Rotation du signataire, ou sauvegarde décrite et acceptée par le cabinet.' });
+    else if (m.exercices > s.seuilFamiliarite)
+      out.push({ id:'FAM:' + m.id, membre:m, type:'familiarite',
+        lib:`${m.nom} est sur ce client depuis ${m.exercices} exercices consécutifs, au-delà du seuil de `
+          + `familiarité paramétré (${s.seuilFamiliarite}).`,
+        exige:'Sauvegarde décrite : revue supplémentaire, rotation partielle, ou changement d’affectation.' });
+  }
+  return out.map(x => ({ ...x, sauvegarde:(S.independance.sauvegardes[x.id] || '') }));
+}
+function menacesNonTraitees(){ return menacesIndependance().filter(x => !x.sauvegarde.trim()); }
+
+/* ── services autres que la certification ────────────────────────────────
+   Obligation française à part entière : le registre des SACC rendus au client,
+   leur nature, leur montant, et le ratio d'honoraires rapporté à la mission de
+   certification. La colonne « admissibilité » est un PARAMÈTRE DÉCLARÉ, pas un
+   avis juridique : la liste des services interdits n'a pas pu être confrontée
+   au texte primaire depuis cet environnement. [UNVERIFIED] */
+const NATURES_SACC = {
+  tenue:        { lib:'Tenue ou établissement de la comptabilité', adm:'interdit' },
+  evaluation:   { lib:'Évaluation entrant dans les comptes',        adm:'interdit' },
+  audit_interne:{ lib:'Externalisation de l’audit interne',         adm:'interdit' },
+  recrutement:  { lib:'Recrutement de dirigeants ou de cadres financiers', adm:'interdit' },
+  juridique_rep:{ lib:'Représentation du client dans un contentieux', adm:'interdit' },
+  si:           { lib:'Conception ou mise en œuvre de systèmes d’information financière', adm:'interdit' },
+  fiscal_consult:{ lib:'Consultation fiscale sans effet sur les comptes', adm:'a_examiner' },
+  due_diligence:{ lib:'Diligences d’acquisition',                    adm:'a_examiner' },
+  attestation:  { lib:'Attestation ou rapport lié à la mission légale', adm:'admis' },
+  formation:    { lib:'Formation technique',                          adm:'admis' },
+  autre:        { lib:'Autre prestation',                             adm:'a_examiner' },
+};
+const ADM_LIB = { interdit:{ lib:'interdit', cls:'bad' }, a_examiner:{ lib:'à examiner', cls:'warn' },
+                  admis:{ lib:'admis', cls:'' } };
+function ajouterSacc(nature, lib, montant, date, prestataire){
+  if (!NATURES_SACC[nature]) return { ok:false, why:'nature inconnue' };
+  if (!(lib || '').trim()) return { ok:false, why:'un service sans intitulé ne s’inscrit pas au registre' };
+  const m = Math.round((parseFloat(String(montant).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
+  if (m <= 0) return { ok:false, why:'un montant nul ne se déclare pas' };
+  S.sacc.push({ id:'SACC-' + String(++S.seqSacc).padStart(3, '0'), nature, lib:lib.trim(),
+                montant:m, date:date || S.aujourdhui, prestataire:(prestataire || CABINET).trim() });
+  logEvent('service autre que la certification inscrit', lib.trim(),
+           NATURES_SACC[nature].lib + ' · ' + eur(m));
+  return { ok:true };
+}
+function retirerSacc(id){
+  const i = S.sacc.findIndex(x => x.id === id); if (i < 0) return;
+  const x = S.sacc[i];
+  S.sacc.splice(i, 1);
+  logEvent('service retiré du registre', x.lib, eur(x.montant));
+}
+function totalSacc(){ return S.sacc.reduce((t, x) => t + x.montant, 0); }
+function ratioSacc(){ return S.honorairesMission ? totalSacc() / S.honorairesMission : 0; }
+function saccInterdits(){ return S.sacc.filter(x => NATURES_SACC[x.nature].adm === 'interdit'); }
+function saccAExaminer(){ return S.sacc.filter(x => NATURES_SACC[x.nature].adm === 'a_examiner'); }
+
+/* ── obstacles ────────────────────────────────────────────────────────────
+   Deux portées. Au dossier : ce qui empêche de confirmer l'indépendance de
+   l'équipe. À la section : les travaux attribués à quelqu'un dont la
+   déclaration ne vaut plus. */
+function obstaclesIndependance(){
+  const o = [];
+  const sans = membresActifs().filter(m => !declarationValide(m.id));
+  if (sans.length) o.push(`${sans.length} membre(s) sans déclaration d’indépendance signée : `
+    + sans.map(m => m.nom).join(', '));
+  const men = menacesNonTraitees();
+  if (men.length) o.push(`${men.length} menace(s) d’indépendance sans sauvegarde décrite`);
+  const int = saccInterdits();
+  if (int.length) o.push(`${int.length} service(s) inscrit(s) au registre et paramétré(s) « interdit »`);
+  if (ratioSacc() * 100 > S.plafondSacc)
+    o.push(`ratio d’honoraires SACC ${pct(ratioSacc(), 0)} au-delà du plafond paramétré (${S.plafondSacc}${NBSP}%)`);
+  if (!S.independance.confirmation) o.push('indépendance de l’équipe non confirmée par l’associé signataire');
+  return o;
+}
+/** Travaux d'une section attribués à un membre dont la déclaration ne vaut plus. */
+function travauxIndependanceSection(code){
+  const out = [];
+  for (const t of travauxDe(code)){
+    for (const role of ['preparateur', 'reviseur']){
+      const uid = t[role];
+      if (uid && !declarationValide(uid)) out.push({ t, role, uid, etat:etatDeclaration(uid) });
+    }
+  }
+  return out;
+}
+function obstaclesIndependanceSection(code){
+  const l = travauxIndependanceSection(code);
+  if (!l.length) return [];
+  const gens = [...new Set(l.map(x => USERS[x.uid].nom))];
+  return [`${l.length} travail/travaux attribué(s) à ${gens.join(', ')} — déclaration d’indépendance non valide`];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA VUE
+   ═══════════════════════════════════════════════════════════════════════ */
+function vueEquipe(){
+  return entete('Équipe et indépendance',
+                'qui est sur la mission, depuis combien d’exercices, et ce qu’il a déclaré') +
+    blocEquipe() + blocAnciennete() + blocDeclarations() + blocSacc() + blocParamIndep();
+}
+
+function blocEquipe(){
+  const sel = (uid, champ, options) => `<select class="cell txt" data-mem="${uid}|${champ}">
+    ${options.map(([v, l]) => `<option value="${v}" ${USERS[uid][champ] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+  </select>`;
+  const rows = membres().map(m => {
+    const e = etatDeclaration(m.id), tr = tracesDe(m.id);
+    return {
+      n:`<b>${esc(m.nom)}</b>${m.id === S.moi ? ' <span class="pill">vous</span>' : ''}
+         <div class="smallcaps mono">${esc(m.id)}</div>`,
+      g:sel(m.id, 'grade', ORDRE_GRADE.map(g => [g, g])),
+      r:sel(m.id, 'role', Object.entries(ROLE_LIB)),
+      c:`<input class="cell txt" data-mem="${m.id}|mail" value="${esc(m.mail || '')}" placeholder="courriel">`,
+      en:`<input class="cell txt" type="date" data-mem="${m.id}|entree" value="${esc(m.entree || '')}">`,
+      so:`<input class="cell txt" type="date" data-mem="${m.id}|sortie" value="${esc(m.sortie || '')}">`,
+      x:`<input class="cell" data-mem="${m.id}|exercices" value="${m.exercices}" style="width:52px">`,
+      d:`<span class="pill ${e.cls}">${esc(e.lib)}</span>`,
+      t:tr.total ? `<span class="smallcaps">${tr.total} trace(s)</span>` : '<span class="smallcaps">aucune</span>',
+      a:tr.total || m.id === S.moi
+        ? `<span class="smallcaps">non retirable</span>`
+        : `<button class="btn mini sec" data-memdel="${m.id}">retirer</button>`,
+    };
+  });
+  return blk('Équipe de la mission', membres().length + ' membre(s) · ' + membresActifs().length + ' en fonction',
+    table([{k:'n',t:'Membre',cls:'wrapcell'},{k:'g',t:'Grade'},{k:'r',t:'Rôle'},{k:'c',t:'Courriel',cls:'wrapcell'},
+           {k:'en',t:'Entrée'},{k:'so',t:'Sortie'},{k:'x',t:'Exercices',n:1},
+           {k:'d',t:'Déclaration',cls:'wrapcell'},{k:'t',t:'Traces'},{k:'a',t:''}], rows) +
+    `<div class="row" style="margin-top:8px">
+      <div class="ctrl" style="flex:1 1 180px"><label>Nom du nouveau membre</label>
+        <input type="text" id="mem-nom" placeholder="Prénom Nom"></div>
+      <div class="ctrl"><label>Grade</label><select id="mem-grade">
+        ${ORDRE_GRADE.map(g => `<option value="${g}">${esc(g)}</option>`).join('')}</select></div>
+      <div class="ctrl"><label>Rôle</label><select id="mem-role">
+        ${Object.entries(ROLE_LIB).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></div>
+      <div class="ctrl" style="flex:1 1 180px"><label>Courriel</label>
+        <input type="text" id="mem-mail" placeholder="p.nom@revisia-audit.example"></div>
+      <div class="ctrl"><label>&nbsp;</label><button class="btn" id="mem-add">ajouter à la mission</button></div>
+    </div>
+    ${S.memErreur ? `<div class="callout bad">${esc(S.memErreur)}</div>` : ''}
+    <p class="note">On ne retire pas quelqu’un qui a signé quelque chose : un membre portant une trace au
+    dossier — un travail, une note, un visa, une déclaration — reçoit une <b>date de sortie</b>, et le
+    dossier garde son nom. C’est la même règle que le journal d’événements, qui ne se réécrit pas.</p>`);
+}
+
+function blocAnciennete(){
+  const men = menacesIndependance(), s = S.independance;
+  const rows = membresActifs().sort((a, b) => b.exercices - a.exercices).map(m => {
+    const mm = men.find(x => x.membre.id === m.id);
+    return {
+      n:`<b>${esc(m.nom)}</b><div class="smallcaps">${esc(m.grade)} · ${esc(ROLE_LIB[m.role])}</div>`,
+      x:`<span class="mono">${m.exercices}</span>`,
+      s:m.role === 'associe' ? `<span class="mono">${s.rotationSignataire}</span>
+          <div class="smallcaps">rotation du signataire</div>`
+        : `<span class="mono">${s.seuilFamiliarite}</span><div class="smallcaps">familiarité</div>`,
+      e:mm ? `<span class="pill bad">${mm.type === 'rotation' ? 'rotation dépassée' : 'familiarité'}</span>`
+           : '<span class="pill">sous le seuil</span>',
+      g:mm ? `<textarea data-sauve="${esc(mm.id)}" rows="2"
+                placeholder="sauvegarde décrite : ce qui est mis en place, et par qui">${esc(mm.sauvegarde)}</textarea>`
+           : '<span class="smallcaps">—</span>',
+    };
+  });
+  return blk('Ancienneté sur le client et menaces qui en découlent',
+    men.length + ' menace(s) · ' + menacesNonTraitees().length + ' sans sauvegarde',
+    table([{k:'n',t:'Membre',cls:'wrapcell'},{k:'x',t:'Exercices consécutifs',n:1},
+           {k:'s',t:'Seuil applicable',n:1},{k:'e',t:'État'},{k:'g',t:'Sauvegarde décrite',cls:'wrapcell'}], rows) +
+    (menacesNonTraitees().length ? `<div class="callout bad">
+      <b>${menacesNonTraitees().length} menace(s) sans sauvegarde décrite.</b>
+      ${menacesNonTraitees().map(x => esc(x.lib) + ' <span class="smallcaps">' + esc(x.exige) + '</span>').join('<br>')}
+      <br>Tant qu’une sauvegarde n’est pas écrite, l’associé signataire ne peut pas confirmer
+      l’indépendance de l’équipe.</div>` : '') +
+    `<p class="note">Le nombre d’exercices consécutifs se compte, il ne se juge pas — et c’est précisément
+    pour cela qu’aucun outil ne le suit. Les deux seuils sont des <b>paramètres déclarés</b>, modifiables
+    plus bas et marqués <b>[UNVERIFIED]</b> : ils n’ont pas pu être confrontés au texte primaire depuis cet
+    environnement.</p>`,
+    menacesNonTraitees().length ? menacesNonTraitees().length + ' sans sauvegarde' : '');
+}
+
+function blocDeclarations(){
+  const conf = S.independance.confirmation;
+  const moi = S.moi, d = declarationCourante(moi), hist = declarations(moi);
+  const manques = manquesDeclaration(d);
+  const rows = membresActifs().map(m => {
+    const e = etatDeclaration(m.id), dm = declarationCourante(m.id);
+    const decl = dm ? RUBRIQUES_INDEP.filter(r => dm.reponses[r.code] === 'oui') : [];
+    return {
+      n:`<b>${esc(m.nom)}</b><div class="smallcaps">${esc(ROLE_LIB[m.role])}</div>`,
+      e:`<span class="pill ${e.cls}">${esc(e.lib)}</span>`,
+      v:`<span class="mono">${declarations(m.id).length || '—'}</span>`,
+      r:decl.length ? decl.map(r => `<span class="tag">${esc(r.lib)}</span>`).join(' ')
+                    : '<span class="smallcaps">rien à déclarer</span>',
+      p:dm && dm.signee ? `<span class="smallcaps">${esc(USERS[dm.signee.par].nom)}<br>${horo(dm.signee.t)}</span>`
+                        : '<span class="smallcaps">—</span>',
+      a:m.id === moi ? '<span class="pill">à vous</span>'
+        : declarationValide(m.id)
+          ? `<button class="btn mini sec" data-revis="${m.id}">ouvrir une révision</button>`
+          : '<span class="smallcaps">en attente de sa signature</span>',
+    };
+  });
+  const histo = hist.length > 1 ? `<h3>Historique de vos déclarations</h3>` +
+    table([{k:'v',t:'Version'},{k:'t',t:'Ouverte le'},{k:'m',t:'Motif de la révision',cls:'wrapcell'},
+           {k:'s',t:'Signature',cls:'wrapcell'},{k:'e',t:'État'}],
+      hist.map((x, i) => ({ v:`<span class="mono">v${i + 1}</span>`, t:horo(x.t),
+        m:esc(x.motif || 'déclaration initiale de l’exercice'),
+        s:x.signee ? horo(x.signee.t) : '<span class="smallcaps">—</span>',
+        e:x.remplacee ? '<span class="smallcaps">remplacée, conservée</span>'
+          : x.signee ? '<span class="pill">en vigueur</span>' : '<span class="pill bad">à signer</span>' }))) : '';
+
+  return blk('Déclarations d’indépendance — exercice ' + EXERCICE,
+    membresActifs().filter(m => declarationValide(m.id)).length + ' / ' + membresActifs().length + ' signée(s)',
+    table([{k:'n',t:'Membre',cls:'wrapcell'},{k:'e',t:'État',cls:'wrapcell'},{k:'v',t:'Versions',n:1},
+           {k:'r',t:'Rubriques déclarées',cls:'wrapcell'},{k:'p',t:'Signée par',cls:'wrapcell'},{k:'a',t:''}], rows) +
+    `<div class="callout ${conf ? '' : 'warn'}">
+      <b>Confirmation de l’associé signataire pour l’ensemble de l’équipe.</b>
+      ${conf ? ` Confirmée par ${esc(USERS[conf.par].nom)} le ${horo(conf.t)}.`
+             : ' Non confirmée. Elle exige que chaque membre en fonction ait signé, et que chaque menace '
+               + 'porte une sauvegarde écrite : une confirmation d’ensemble posée sur des déclarations '
+               + 'manquantes ne confirmerait rien.'}
+      ${USERS[S.moi].role === 'associe' && !conf
+        ? '<br><button class="btn" id="ind-conf">confirmer — engage ' + esc(USERS[S.moi].nom) + '</button>' : ''}
+      ${S.indErreur ? '<br><span style="color:var(--anomalie)">' + esc(S.indErreur) + '</span>' : ''}
+    </div>
+
+    <h3>Votre déclaration — ${esc(USERS[moi].nom)}</h3>
+    ${d ? `<div class="nl ${d.signee ? '' : 'warn'}">
+      <div class="m">
+        <span class="pill ${d.signee ? '' : 'warn'}">${d.signee ? 'signée le ' + horo(d.signee.t) : 'à signer'}</span>
+        ${d.motif ? `<span class="smallcaps">révision : ${esc(d.motif)}</span>` : ''}
+      </div>
+      ${RUBRIQUES_INDEP.map(r => `<div class="ctrl" style="margin-top:6px">
+        <label>${esc(r.lib)}${r.code === 'cadeaux' ? ' — seuil ' + eur(S.independance.seuilCadeau) : ''}</label>
+        <div class="row">
+          <select data-decl="${esc(r.code)}" ${d.signee ? 'disabled' : ''} style="width:210px">
+            <option value="" ${d.reponses[r.code] === undefined ? 'selected' : ''}>— à répondre —</option>
+            <option value="non" ${d.reponses[r.code] === 'non' ? 'selected' : ''}>non — rien à déclarer</option>
+            <option value="oui" ${d.reponses[r.code] === 'oui' ? 'selected' : ''}>oui — à déclarer</option>
+          </select>
+          <input class="cell txt" style="flex:1 1 240px" data-declp="${esc(r.code)}"
+            ${d.signee ? 'disabled' : ''} value="${esc(d.precisions[r.code] || '')}"
+            placeholder="${d.reponses[r.code] === 'oui' ? 'précision obligatoire' : 'précision, si nécessaire'}">
+        </div>
+        <span class="smallcaps">${esc(r.d)}</span>
+      </div>`).join('')}
+      ${d.signee ? `<div class="callout"><b>Signée</b> par ${esc(USERS[d.signee.par].nom)} le ${horo(d.signee.t)}.
+        Pour la modifier, ouvrez une révision : elle n’écrase pas celle-ci.
+        <button class="btn mini sec" data-revis="${moi}">ouvrir une révision</button></div>`
+        : `<div class="callout ${manques.length ? 'warn' : ''}">
+            ${manques.length ? '<b>Il manque :</b> ' + esc(manques.join(' ; ')) + '.'
+                             : 'Toutes les rubriques sont renseignées.'}</div>
+           <button class="btn" id="decl-sign" ${manques.length ? 'disabled' : ''}>signer — engage ${esc(USERS[moi].nom)}</button>`}
+    </div>` : `<div class="callout warn">Aucune déclaration ouverte pour l’exercice ${EXERCICE}.
+      <button class="btn mini" data-declopen="${moi}">ouvrir ma déclaration</button></div>`}
+    ${histo}
+    <p class="note">Une déclaration se signe <b>soi-même</b> : personne ne signe pour un autre, et le bouton
+    n’est pas rendu ailleurs. Une révision n’écrase rien — la version signée reste lisible, et tant que la
+    nouvelle n’est pas signée, les travaux du membre bloquent le visa de leur section.</p>`,
+    membresActifs().filter(m => !declarationValide(m.id)).length
+      ? membresActifs().filter(m => !declarationValide(m.id)).length + ' non signée(s)' : '');
+}
+
+function blocSacc(){
+  const t = totalSacc(), r = ratioSacc(), int = saccInterdits(), ex = saccAExaminer();
+  const rows = S.sacc.map(x => {
+    const n = NATURES_SACC[x.nature], a = ADM_LIB[n.adm];
+    return {
+      i:`<span class="mono">${esc(x.id)}</span>`,
+      l:`<b>${esc(x.lib)}</b><div class="smallcaps">${esc(x.prestataire)}</div>`,
+      n:esc(n.lib),
+      a:`<span class="pill ${a.cls}">${esc(a.lib)}</span>`,
+      d:`<span class="mono">${frDate(x.date)}</span>`,
+      m:eur(x.montant),
+      p:pct(S.honorairesMission ? x.montant / S.honorairesMission : 0, 1),
+      g:`<button class="btn mini sec" data-saccdel="${esc(x.id)}">retirer</button>`,
+    };
+  });
+  return blk('Registre des services autres que la certification',
+    S.sacc.length + ' service(s) · ratio ' + pct(r, 1),
+    (S.sacc.length ? table([{k:'i',t:'Réf.'},{k:'l',t:'Service rendu',cls:'wrapcell'},{k:'n',t:'Nature',cls:'wrapcell'},
+           {k:'a',t:'Admissibilité'},{k:'d',t:'Date'},{k:'m',t:'Honoraires',n:1},
+           {k:'p',t:'/ mission',n:1},{k:'g',t:''}], rows,
+        { foot:{ l:'Total', m:eur(t), p:pct(r, 1) } })
+      : '<p class="note">Aucun service inscrit au registre.</p>') +
+    `<div class="grid3" style="margin-top:8px">
+      <div class="kv"><span class="k">Honoraires de certification</span>
+        <span class="v"><input class="cell" id="hon-mission" value="${(S.honorairesMission / 100).toFixed(2).replace('.', ',')}"></span>
+        <span class="k">Total des services autres</span><span class="v">${eur(t)}</span></div>
+      <div class="kv"><span class="k">Ratio d’honoraires</span>
+        <span class="v"${r * 100 > S.plafondSacc ? ' style="color:var(--anomalie)"' : ''}>${pct(r, 1)}</span>
+        <span class="k">Plafond paramétré</span>
+        <span class="v"><input class="cell" id="sacc-plaf" value="${S.plafondSacc}" style="width:60px"> %</span></div>
+      <div class="kv"><span class="k">Paramétrés « interdit »</span>
+        <span class="v"${int.length ? ' style="color:var(--anomalie)"' : ''}>${int.length}</span>
+        <span class="k">« à examiner »</span><span class="v">${ex.length}</span></div>
+    </div>
+    ${int.length ? `<div class="callout bad"><b>${int.length} service(s) paramétré(s) « interdit ».</b>
+      ${int.map(x => esc(x.lib) + ' — ' + esc(NATURES_SACC[x.nature].lib) + ', ' + eur(x.montant)).join('<br>')}
+      <br>La liste des services interdits est un <b>paramètre déclaré [UNVERIFIED]</b>, pas un avis juridique :
+      elle n’a pas pu être confrontée au texte primaire. Ce qui est certain, c’est qu’un service de cette
+      nature au registre appelle une décision écrite avant la signature du rapport.</div>` : ''}
+    ${r * 100 > S.plafondSacc ? `<div class="callout bad">Le ratio ${pct(r, 1)} dépasse le plafond
+      paramétré de ${S.plafondSacc}${NBSP}%. [UNVERIFIED]</div>` : ''}
+    <div class="row" style="margin-top:8px">
+      <div class="ctrl"><label>Nature</label><select id="sacc-nat">
+        ${Object.entries(NATURES_SACC).map(([k, v]) => `<option value="${k}">${esc(v.lib)}</option>`).join('')}</select></div>
+      <div class="ctrl" style="flex:1 1 200px"><label>Service rendu</label>
+        <input type="text" id="sacc-lib" placeholder="intitulé de la prestation"></div>
+      <div class="ctrl"><label>Honoraires</label><input class="cell" id="sacc-mont" placeholder="0,00"></div>
+      <div class="ctrl"><label>Date</label><input class="cell txt" type="date" id="sacc-date" value="${S.aujourdhui}"></div>
+      <div class="ctrl"><label>&nbsp;</label><button class="btn" id="sacc-add">inscrire au registre</button></div>
+    </div>
+    ${S.saccErreur ? `<div class="callout bad">${esc(S.saccErreur)}</div>` : ''}`,
+    int.length ? int.length + ' interdit(s)' : '');
+}
+
+function blocParamIndep(){
+  const s = S.independance;
+  return blk('Paramètres déclarés', 'quatre nombres, quatre décisions — tous [UNVERIFIED]',
+    `<div class="row">
+      <div class="ctrl"><label>Rotation du signataire — exercices</label>
+        <input class="cell" id="ind-rot" value="${s.rotationSignataire}" style="width:70px"></div>
+      <div class="ctrl"><label>Seuil de familiarité — exercices</label>
+        <input class="cell" id="ind-fam" value="${s.seuilFamiliarite}" style="width:70px"></div>
+      <div class="ctrl"><label>Seuil de déclaration des cadeaux</label>
+        <input class="cell" id="ind-cad" value="${(s.seuilCadeau / 100).toFixed(2).replace('.', ',')}" style="width:90px"></div>
+      <div class="ctrl"><label>Plafond du ratio SACC — %</label>
+        <input class="cell" id="ind-plaf" value="${S.plafondSacc}" style="width:70px"></div>
+    </div>
+    <div class="callout warn"><b>[UNVERIFIED] — à lire avant d’utiliser ces nombres.</b>
+    La durée de rotation du signataire, le seuil de familiarité, le seuil de déclaration des cadeaux, le
+    plafond du ratio d’honoraires et la liste des services interdits sont des <b>paramètres déclarés</b>.
+    Aucun texte normatif primaire n’a pu être atteint depuis l’environnement de développement : ces valeurs
+    ne sont pas des références, elles sont des réglages par défaut à confronter au texte. C’est la même
+    réserve que celle portée par le catalogue méthodologique, et elle vaut ici avec la même force —
+    l’indépendance est le sujet où une valeur fausse coûte le plus cher.</div>
+    <div class="kv">
+      <span class="k">Obstacles d’indépendance au dossier</span>
+      <span class="v"${obstaclesIndependance().length ? ' style="color:var(--anomalie)"' : ''}>${obstaclesIndependance().length}</span>
+    </div>
+    ${obstaclesIndependance().length ? `<ul style="margin:6px 0 0 18px;padding:0">
+      ${obstaclesIndependance().map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`);
+}
+
+/* ── amorce ───────────────────────────────────────────────────────────────
+   Les déclarations de l'exercice ont été signées avant le début des travaux,
+   en novembre et décembre 2025 : elles portent donc des dates ANTÉRIEURES à
+   l'horloge de mission, et n'entrent pas au journal d'événements de la
+   session — le journal enregistre ce qui se passe pendant la mission, il ne
+   se réécrit pas en arrière.
+
+   Deux membres sont volontairement dans un autre état, parce que la règle ne
+   se démontre pas sur un dossier parfait :
+     — Hugo Vasseur, arrivé en janvier, n'a pas encore signé : AUCUN travail
+       ne peut lui être attribué, et l'écran refuse ;
+     — Inès Rodrigues a signé puis ouvert une RÉVISION (son conjoint a rejoint
+       une filiale du client) : sa déclaration est caduque tant qu'elle n'a pas
+       signé la nouvelle, et ses travaux bloquent le visa de leurs sections. */
+const AMORCE_DECL = {
+  claire:{ t:'2025-11-04T10:20', oui:{} },
+  lea   :{ t:'2025-11-05T09:05', oui:{} },
+  karim :{ t:'2025-11-06T14:40', oui:{ cadeaux:'Invitation à un déjeuner professionnel le 12/09/2025, 62 € — au-dessus du seuil déclaré, sans influence sur la conduite des travaux.' } },
+  ines  :{ t:'2025-11-06T16:15', oui:{ emploi:'Stage de six mois chez Altiverre SAS en 2018, au service logistique — sans fonction comptable ni financière.' } },
+  sonia :{ t:'2026-02-03T11:30', oui:{} },
+};
+function seedEquipe(){
+  for (const [uid, a] of Object.entries(AMORCE_DECL)){
+    if (!USERS[uid]) continue;
+    const d = { exercice:EXERCICE, reponses:{}, precisions:{}, motif:'', t:a.t, signee:{ par:uid, t:a.t } };
+    for (const r of RUBRIQUES_INDEP){
+      d.reponses[r.code] = a.oui[r.code] ? 'oui' : 'non';
+      if (a.oui[r.code]) d.precisions[r.code] = a.oui[r.code];
+    }
+    S.declarations[uid] = [d];
+  }
+  /* Inès : révision ouverte, non signée — la déclaration est caduque. */
+  const di = S.declarations.ines;
+  if (di && di.length === 1){
+    di[0].remplacee = true;
+    di.push({ exercice:EXERCICE, t:'2026-03-09T08:45',
+      motif:'Le conjoint a rejoint en février 2026 la direction financière d’Altiverre Industrie, filiale du client.',
+      reponses:{ ...di[0].reponses }, precisions:{ ...di[0].precisions }, signee:null });
+  }
+  /* Registre des services autres que la certification. */
+  S.sacc = [
+    { id:'SACC-001', nature:'due_diligence', lib:'Diligences d’acquisition sur la cible Verrerie du Forez',
+      montant:1200000, date:'2025-06-18', prestataire:CABINET },
+    { id:'SACC-002', nature:'si', lib:'Paramétrage du reporting de consolidation',
+      montant:950000, date:'2025-09-30', prestataire:'Revisia Conseil (entité liée au cabinet)' },
+    { id:'SACC-003', nature:'fiscal_consult', lib:'Consultation sur le crédit d’impôt recherche',
+      montant:450000, date:'2025-04-02', prestataire:CABINET },
+    { id:'SACC-004', nature:'formation', lib:'Formation à la nouvelle norme de présentation',
+      montant:180000, date:'2025-11-14', prestataire:CABINET },
+  ];
+  S.seqSacc = 4;
+  for (const a of AFFECTATIONS_AMORCE) a.poser();
+}
+
+/* ── affectations posées à l'amorce, et pourquoi ──────────────────────────
+   Le dossier ne part pas d'une feuille blanche : certaines affectations ont
+   été faites AVANT le moment où l'on ouvre l'outil. Elles sont écrites ici,
+   nommées et motivées, pour qu'on puisse vérifier qu'il n'y en a pas
+   d'autres — la proposition de répartition, elle, n'écrit toujours rien.
+
+   Elles sont posées SANS passer par affecter(), qui refuserait aujourd'hui
+   l'affectation d'Inès : c'est le fait même que la règle ne s'appliquait pas
+   au moment où elles ont été faites qui rend l'obstacle au visa nécessaire. */
+const AFFECTATIONS_AMORCE = [
+  { section:'CLIENTS', prep:'ines', rev:t => t.niveauRevue === 2 ? 'claire' : 'lea',
+    pourquoi:'attribuées à Inès en novembre 2025, quand sa déclaration d’indépendance valait ; '
+           + 'la révision de mars 2026 les rend caduques et bloque le visa de la section',
+    poser(){ for (const t of travauxDe(this.section)){
+      const st = trav(t.code); st.preparateur = this.prep; st.reviseur = this.rev(t); } },
+  },
+];
+/** Codes des travaux affectés à l'amorce — pour vérifier qu'il n'y en a pas d'autres. */
+function codesAffectesAmorce(){
+  return AFFECTATIONS_AMORCE.flatMap(a => travauxDe(a.section).map(t => t.code));
+}
+
 /* ═══ 43. LA SECTION COMME LIEU, ET NON COMME PAGE ═════════════════════════
    Une section rendait ses sept blocs d'un seul tenant : sur le chiffre
    d'affaires, sept mille pixels d'un seul défilement. Un bouton « replier »
@@ -8441,7 +9323,11 @@ function vueCI(){
 const DESTINATIONS = [
   { id:'comptes',  lib:'Comptes',           ref:'CPT-01' },
   { id:'risque',   lib:'Risque',            ref:'RSQ-01' },
-  { id:'plan',     lib:'Plan de travail',   ref:'PGM-01' },
+  /* « Procédures d'audit », et non « Plan de travail » : ce dernier entrait en
+     collision avec « Programme de travail », qui désigne autre chose — le
+     livrable d'organisation de la mission entière. Deux noms quasi identiques
+     pour deux objets différents est un défaut d'usage, pas un détail. */
+  { id:'plan',     lib:'Procédures d’audit', ref:'PRO-01' },
   { id:'requetes', lib:'Requêtes',          ref:'REQ-01' },
   { id:'notes',    lib:'Notes de revue',    ref:'NDR-01' },
   { id:'concl',    lib:'Conclusion et visa',ref:'CCL-01' },
@@ -8629,7 +9515,7 @@ function destinationSection(p, id){
 /** Fil d'Ariane : une procédure ouverte remplace le plan de travail. */
 function filAriane(p, pr){
   return `<div class="ariane">
-    <button class="btn mini sec" data-dest="${p.code}|plan">← Plan de travail</button>
+    <button class="btn mini sec" data-dest="${p.code}|plan">← Procédures d’audit</button>
     <span class="sep">/</span>
     <b>${esc(pr.lib)}</b>
     <span class="smallcaps">${esc(procRef(p, pr))} · ${esc(libAssertion(pr.a))}</span>
@@ -8696,13 +9582,21 @@ const REGLE_REPARTITION = [
     prep:'senior', rev:'superviseur', quoi:() => true },
 ];
 function regleDe(t){ return REGLE_REPARTITION.find(r => r.quoi(t)) || REGLE_REPARTITION[REGLE_REPARTITION.length - 1]; }
-function gensDuGrade(g){ return Object.entries(USERS).filter(([, u]) => u.grade === g).map(([k]) => k); }
+/* La proposition ne propose que des gens à qui l'on peut RÉELLEMENT attribuer
+   un travail : proposer quelqu'un que l'affectation refusera ensuite serait
+   une proposition fausse. Le filtre est le même que la règle. */
+function gensDuGrade(g){
+  return Object.entries(USERS)
+    .filter(([k, u]) => u.grade === g && !u.sortie && peutRecevoirTravail(k))
+    .map(([k]) => k);
+}
 
 /** La proposition complète, dérivée. Jamais écrite tant qu'on ne l'accepte pas. */
 const _repCache = { cle:'', v:null };
 function repartitionProposee(){
   const l = travaux();
-  const cle = l.length + '|' + JSON.stringify(l.map(t => t.code + t.niveauRevue));
+  const cle = l.length + '|' + JSON.stringify(l.map(t => t.code + t.niveauRevue))
+    + '|' + membres().map(m => m.id + m.grade + (declarationValide(m.id) ? '1' : '0') + (m.sortie ? 'x' : '')).join(',');
   if (_repCache.cle === cle && _repCache.v) return _repCache.v;
   const chargePrep = {}, chargeRev = {};
   for (const k of Object.keys(USERS)){ chargePrep[k] = 0; chargeRev[k] = 0; }
@@ -8783,6 +9677,10 @@ function chargeParPersonne(source){
       ? l.filter(t => (prop.get(t.code) || {}).rev === k)
       : l.filter(t => t.reviseur === k);
     return { k, u, nPrep:p.length, nRev:r.length,
+             /* Quelqu'un qui ne peut pas recevoir de travail apparaît à zéro
+                AVEC SA RAISON : le faire disparaître de la charge donnerait
+                une équipe plus petite qu'elle n'est. */
+             indispo:!peutRecevoirTravail(k) ? etatDeclaration(k).lib : u.sortie ? 'sorti le ' + frDate(u.sortie) : '',
              h:p.reduce((a, t) => a + budget(t), 0) + r.reduce((a, t) => a + budget(t) * 0.2, 0) };
   });
 }
@@ -8802,12 +9700,20 @@ function blocRepartition(vus){
     `<p class="note">À grade égal, le travail va à la personne dont la charge est la plus faible, les travaux
     étant parcourus dans un ordre fixe : la proposition est rejouable à l’identique. La revue est comptée pour
     un cinquième de la préparation. Rien n’est écrit tant que vous n’acceptez pas.</p>
+    ${prop.some(x => x.indispo) ? `<div class="callout warn">
+      <b>${prop.filter(x => x.indispo).length} membre(s) ne reçoivent aucune proposition</b> —
+      ${prop.filter(x => x.indispo).map(x => esc(x.u.nom) + ' (' + esc(x.indispo) + ')').join(', ')}.
+      La proposition ne propose que ce que l’affectation accepterait : proposer quelqu’un qu’elle
+      refuserait ensuite serait une proposition fausse.
+      <button class="btn mini sec" data-vue="plan.equipe">Équipe et indépendance ↗</button></div>` : ''}
     ${diagnosticRepartition()}
     <h3>Charge — proposée et réelle</h3>
     ${table([{k:'n',t:'Personne',cls:'wrapcell'},{k:'g',t:'Grade'},
              {k:'pp',t:'Prépare (proposé)',n:1},{k:'pr',t:'Revoit (proposé)',n:1},{k:'ph',t:'Heures (proposé)',n:1},
              {k:'rp',t:'Prépare (réel)',n:1},{k:'rr',t:'Revoit (réel)',n:1},{k:'rh',t:'Heures (réel)',n:1}],
-      prop.map((x, i) => ({ n:`<b>${esc(x.u.nom)}</b>`, g:esc(x.u.grade),
+      prop.map((x, i) => ({ n:`<b>${esc(x.u.nom)}</b>`
+          + (x.indispo ? `<div class="smallcaps" style="color:var(--anomalie)">${esc(x.indispo)} — aucun travail attribuable</div>` : ''),
+        g:esc(x.u.grade),
         pp:String(x.nPrep), pr:String(x.nRev), ph:hFmt(x.h),
         rp:String(reel[i].nPrep), rr:String(reel[i].nRev), rh:hFmt(reel[i].h) })),
       { foot:{ n:'Total', ph:hFmt(tot), rh:hFmt(reel.reduce((a, x) => a + x.h, 0)) } })}
@@ -10208,6 +11114,7 @@ const DOSSIER = [
   { id:'plan.principes', lib:'Principes de conception' },
 ];
 const TRANSVERSES = [
+  { id:'plan.equipe',  lib:'Équipe et indépendance' },
   { id:'plan.versions',lib:'Versions du fichier' },
   { id:'plan.ajust',   lib:'Ajustements et retraitements' },
   { id:'plan.rappro',  lib:'Import et rapprochement' },
@@ -10451,6 +11358,7 @@ function contenuVue(v){
     case 'plan.scope':  return vueScoping();
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.equipe': return vueEquipe();
     case 'plan.versions': return vueVersions();
     case 'plan.ajust':  return vueAjustements();
     case 'plan.donnees': return vueJeuDonnees();
@@ -10622,6 +11530,22 @@ document.addEventListener('input', e => {
     if (l){ l.champs[d.ctr] = t.value; marquerExecution(p, pr); }
     return renderMainDiff();
   }
+  /* Équipe et indépendance */
+  if (d.sauve !== undefined){ S.independance.sauvegardes[d.sauve] = t.value; return renderMainDiff(); }
+  if (d.declp !== undefined){
+    const dc = declarationCourante(S.moi); if (dc && !dc.signee) dc.precisions[d.declp] = t.value;
+    return renderMainDiff();
+  }
+  if (d.mem !== undefined){
+    const [uid, champ] = d.mem.split('|');
+    if (champ === 'mail' || champ === 'exercices'){ majMembre(uid, champ, t.value); return renderMainDiff(); }
+    return;
+  }
+  if (t.id === 'hon-mission'){ S.honorairesMission = eurCents(t.value); return renderMainDiff(); }
+  if (t.id === 'sacc-plaf' || t.id === 'ind-plaf'){ S.plafondSacc = Math.max(0, parseFloat(t.value.replace(',', '.')) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-rot'){ S.independance.rotationSignataire = Math.max(0, parseInt(t.value, 10) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-fam'){ S.independance.seuilFamiliarite = Math.max(0, parseInt(t.value, 10) || 0); return renderMainDiff(); }
+  if (t.id === 'ind-cad'){ S.independance.seuilCadeau = eurCents(t.value); return renderMainDiff(); }
   if (d.rexpl !== undefined){ const x = resolDeCle(d.rexpl); if (x) x.r.expl = t.value; return renderMainDiff(); }
   if (d.rconcl !== undefined){ const x = resolDeCle(d.rconcl); if (x) x.r.concl = t.value; return renderMainDiff(); }
   if (d.recr !== undefined){ const x = resolDeCle(d.recr); if (x) x.r.corrobEcriture = t.value; return renderMainDiff(); }
@@ -10656,6 +11580,13 @@ document.addEventListener('input', e => {
   if (t.id === 'ft-q'){ S.filtreTrav.q = t.value; return renderMainDiff(); }
   const hrs = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 4) / 4);
   if (d.hb !== undefined){ trav(d.hb).heuresBudget = t.value.trim() === '' ? null : hrs(t.value); return renderMainDiff(); }
+  if (d.tech !== undefined){ fixerEcheance(d.tech, t.value); return renderMainDiff(); }
+  if (t.id === 'tv-lotech' && t.value){
+    const r = fixerEcheanceEnLot(S.selTrav, t.value);
+    S.travErreur = r.n ? '' : 'aucun travail sélectionné';
+    return renderMain();
+  }
+  if (d.jalon !== undefined){ const r = fixerJalon(d.jalon, t.value); S.travErreur = r.ok ? '' : r.why; return renderMain(); }
   if (d.hr !== undefined){ trav(d.hr).heuresReel = hrs(t.value); return renderMainDiff(); }
   const cts = v => Math.round((parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
   if (d.plaq !== undefined){ S.achevement.plaquette[d.plaq] = t.value.trim() === '' ? undefined : cts(t.value); return renderMainDiff(); }
@@ -10684,6 +11615,17 @@ document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
   if (t.id === 'whoaud'){ S.moi = t.value; return render(); }
+  if (d.decl !== undefined){
+    const dc = declarationCourante(S.moi);
+    if (dc && !dc.signee){ if (t.value) dc.reponses[d.decl] = t.value; else delete dc.reponses[d.decl]; }
+    return renderMain();
+  }
+  if (d.mem !== undefined){
+    const [uid, champ] = d.mem.split('|');
+    const r = majMembre(uid, champ, t.value);
+    S.memErreur = r.ok ? '' : r.why;
+    return render();
+  }
   if (t.id === 'whoclient'){ S.moiClient = t.value; return render(); }
   if (d.scope !== undefined){
     if (t.value) S.scopingOverride[d.scope] = t.value; else { delete S.scopingOverride[d.scope]; delete S.scopingMotif[d.scope]; }
@@ -10780,6 +11722,50 @@ document.addEventListener('click', e => {
     document.documentElement.dataset.theme = cur === 'dark' ? 'light' : 'dark';
     return;
   }
+  if (t.id === 'tv-lotech-rgl'){ fixerEcheanceEnLot(S.selTrav, ''); return renderMain(); }
+  if (t.id === 'tv-add'){
+    const r = ajouterTravail(document.getElementById('tv-add-lib').value,
+                             document.getElementById('tv-add-phase').value,
+                             document.getElementById('tv-add-poste').value);
+    S.travErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (d.tdel !== undefined){ const r = retirerTravailManuel(d.tdel); S.travErreur = r.ok ? '' : r.why; return render(); }
+  if (d.tso !== undefined){
+    const motif = prompt('Motif — pourquoi ce travail est-il sans objet sur ce dossier ?', '');
+    if (motif === null) return;
+    const r = marquerSansObjet(d.tso, motif);
+    S.travErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (d.tso0 !== undefined){ annulerSansObjet(d.tso0); return render(); }
+  if (t.id === 'mem-add'){
+    const g = document.getElementById('mem-grade'), r = document.getElementById('mem-role');
+    const res = ajouterMembre(document.getElementById('mem-nom').value, g.value, r.value,
+                              document.getElementById('mem-mail').value);
+    S.memErreur = res.ok ? '' : res.why;
+    return render();
+  }
+  if (d.memdel !== undefined){ const r = retirerMembre(d.memdel); S.memErreur = r.ok ? '' : r.why; return render(); }
+  if (d.declopen !== undefined){ ouvrirDeclaration(d.declopen); return renderMain(); }
+  if (t.id === 'decl-sign'){ const r = signerDeclaration(S.moi); S.indErreur = r.ok ? '' : r.why; return render(); }
+  if (d.revis !== undefined){
+    const motif = prompt('Motif de la révision — ce qui a changé dans les circonstances :', '');
+    if (motif === null) return;
+    const r = reviserDeclaration(d.revis, motif);
+    S.indErreur = r.ok ? '' : r.why;
+    return render();
+  }
+  if (t.id === 'ind-conf'){ const r = confirmerEquipe(); S.indErreur = r.ok ? '' : r.why; return render(); }
+  if (t.id === 'sacc-add'){
+    const res = ajouterSacc(document.getElementById('sacc-nat').value,
+                            document.getElementById('sacc-lib').value,
+                            document.getElementById('sacc-mont').value,
+                            document.getElementById('sacc-date').value);
+    S.saccErreur = res.ok ? '' : res.why;
+    return renderMain();
+  }
+  if (d.saccdel !== undefined){ retirerSacc(d.saccdel); return renderMain(); }
   if (d.espace){ const x = ESPACES.find(y => y.id === d.espace); return aller(x.defaut, x.id); }
   if (d.open) return ouvrirSection(d.open);
   if (d.goreq){ const r = S.requetes.find(x => x.id === d.goreq);
@@ -11118,6 +12104,7 @@ document.addEventListener('click', e => {
 
 /* ═══ 24. DÉMARRAGE ════════════════════════════════════════════════════════ */
 initPortail();
+seedEquipe();
 /* Quelques requêtes préexistantes, pour que le dossier ne parte pas d'un écran
    vide : elles sont créées par le même chemin que celles de l'enchaînement. */
 (function amorce(){

@@ -21,6 +21,12 @@ function eur(cents){
   const ent = String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
   return (neg ? '-' : '') + ent + ',' + String(v % 100).padStart(2, '0') + NBSP + '€';
 }
+/** Lit un montant saisi en français et rend des centimes entiers.
+ *  Le noyau est en centimes de bout en bout : c'est ici, et seulement ici,
+ *  qu'une chaîne devient un montant. */
+function eurCents(txt){
+  return Math.round((parseFloat(String(txt).replace(/[\s\u202f\u00a0]/g, '').replace(',', '.')) || 0) * 100);
+}
 function eur0(cents){
   const neg = cents < 0, v = Math.abs(Math.round(cents / 100));
   return (neg ? '-' : '') + String(v).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP) + NBSP + '€';

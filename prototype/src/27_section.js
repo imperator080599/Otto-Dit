@@ -17,7 +17,11 @@
 const DESTINATIONS = [
   { id:'comptes',  lib:'Comptes',           ref:'CPT-01' },
   { id:'risque',   lib:'Risque',            ref:'RSQ-01' },
-  { id:'plan',     lib:'Plan de travail',   ref:'PGM-01' },
+  /* « Procédures d'audit », et non « Plan de travail » : ce dernier entrait en
+     collision avec « Programme de travail », qui désigne autre chose — le
+     livrable d'organisation de la mission entière. Deux noms quasi identiques
+     pour deux objets différents est un défaut d'usage, pas un détail. */
+  { id:'plan',     lib:'Procédures d’audit', ref:'PRO-01' },
   { id:'requetes', lib:'Requêtes',          ref:'REQ-01' },
   { id:'notes',    lib:'Notes de revue',    ref:'NDR-01' },
   { id:'concl',    lib:'Conclusion et visa',ref:'CCL-01' },
@@ -205,7 +209,7 @@ function destinationSection(p, id){
 /** Fil d'Ariane : une procédure ouverte remplace le plan de travail. */
 function filAriane(p, pr){
   return `<div class="ariane">
-    <button class="btn mini sec" data-dest="${p.code}|plan">← Plan de travail</button>
+    <button class="btn mini sec" data-dest="${p.code}|plan">← Procédures d’audit</button>
     <span class="sep">/</span>
     <b>${esc(pr.lib)}</b>
     <span class="smallcaps">${esc(procRef(p, pr))} · ${esc(libAssertion(pr.a))}</span>
