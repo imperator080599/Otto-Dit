@@ -147,7 +147,11 @@ button,select,input,textarea{font:inherit;color:inherit}
 .rail a .b.bad{color:var(--anomalie)}
 .rail a .b.warn{color:var(--attention)}
 .railm{display:none;padding:var(--s2) var(--s3) 0}
-main{padding:var(--s4);min-width:0}
+main{padding:var(--s4);min-width:0;scroll-margin-top:var(--topH,180px)}
+/* La barre est collante : sans cette marge de défilement, `scrollIntoView`
+   amenait le haut du contenu SOUS la barre — au téléphone, les 294 premiers
+   pixels de chaque vue étaient invisibles à l'arrivée. */
+.blk,.destnav{scroll-margin-top:calc(var(--topH,180px) + var(--s2))}
 
 /* ══ blocs ════════════════════════════════════════════════════════════════ */
 .hd{display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;margin-bottom:var(--s1)}
@@ -269,6 +273,47 @@ select.cell:focus{border-color:var(--accent);outline:none}
 .prm{display:flex;flex-direction:column;gap:2px;font-size:var(--t1);color:var(--ink-3)}
 .prm input{width:120px}
 .prm input.txt{width:auto;min-width:180px}
+
+/* ── navigation interne d'une section : six destinations, une seule ouverte ─ */
+.destnav{display:flex;flex-wrap:wrap;gap:var(--s1);margin-bottom:var(--s3);
+  border-bottom:1px solid var(--line);padding-bottom:var(--s2)}
+.destnav .dest{background:transparent;border:1px solid transparent;border-radius:var(--r);
+  padding:var(--s1) var(--s3);font-size:var(--t2);color:var(--ink-2);cursor:pointer;
+  display:inline-flex;align-items:center;gap:var(--s1);min-height:32px}
+.destnav .dest:hover{border-color:var(--line)}
+.destnav .dest.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600}
+.destnav .dest .cnt{font-family:var(--mono);font-size:var(--t1);color:var(--anomalie)}
+/* fil d'Ariane : une procédure ouverte remplace le plan de travail */
+.ariane{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:baseline;margin-bottom:var(--s3);
+  padding-bottom:var(--s2);border-bottom:1px solid var(--line);font-size:var(--t2)}
+.ariane .sep{color:var(--ink-3)}
+/* replis : l'état d'ouverture par défaut suit ce qui demande attention */
+.repli{border:1px solid var(--line);border-radius:var(--r);margin-bottom:var(--s2);background:var(--panel)}
+.repli>summary{list-style:none;cursor:pointer;padding:var(--s2) var(--s3);display:flex;
+  gap:var(--s2);align-items:baseline;flex-wrap:wrap;min-height:34px}
+.repli>summary::-webkit-details-marker{display:none}
+.repli>summary::before{content:'›';font-family:var(--mono);color:var(--ink-3);
+  display:inline-block;transition:transform .12s;margin-right:var(--s1)}
+.repli[open]>summary::before{transform:rotate(90deg)}
+.repli>summary .t{font-weight:600;font-size:var(--t3)}
+.repli>summary .s{font-size:var(--t1);color:var(--ink-3)}
+.repli>summary:hover{background:var(--panel-2)}
+.repli>.c{padding:0 var(--s3) var(--s3)}
+.replis-cmd{margin-bottom:var(--s2)}
+.dest-blk>.body{padding-top:var(--s2)}
+/* un panneau de vue est un bloc repliable : même en-tête, même signature */
+details.blk.pan{padding:0}
+details.blk.pan>summary{list-style:none;cursor:pointer;display:flex;gap:var(--s2);align-items:baseline;
+  flex-wrap:wrap;padding:var(--s3) var(--s4);border-bottom:1px solid transparent;min-height:38px}
+details.blk.pan[open]>summary{border-bottom-color:var(--line)}
+details.blk.pan>summary::-webkit-details-marker{display:none}
+details.blk.pan>summary::before{content:'›';font-family:var(--mono);color:var(--ink-3);
+  display:inline-block;transition:transform .12s}
+details.blk.pan[open]>summary::before{transform:rotate(90deg)}
+details.blk.pan>summary h2{margin:0}
+details.blk.pan>summary .sub{font-size:var(--t1);color:var(--ink-3)}
+details.blk.pan>summary .why{margin-left:auto;font-family:var(--mono);font-size:var(--t1);color:var(--ink-3)}
+details.blk.pan>summary:hover{background:var(--panel-2)}
 .nl .m{font-size:var(--t1);color:var(--ink-3);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
 .nl .txt{margin:var(--s1) 0;font-size:var(--t2);color:var(--ink)}
 .nl .rep{margin:var(--s1) 0 0 var(--s3);padding-left:var(--s2);border-left:1px solid var(--line);font-size:var(--t2)}
@@ -729,6 +774,8 @@ const S = {
   // jamais un arbitrage.
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
+  dest:{},        // destination courante par section
+  replis:{},      // replis que l'auditeur a ouverts ou fermés lui-même
   selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
@@ -2381,7 +2428,7 @@ const PAPIERS_N1 = {
    Deux indicateurs distincts : position du compte / seuil de remontée
    (triage interne) et poids / seuil de planification (périmètre).
    ───────────────────────────────────────────────────────────────────────── */
-function blocComptes(p){
+function partComptes(p){
   const s = seuils(), st = sec(p.code);
   const rows = p.comptes.map(c => {
     const n = bal().get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
@@ -2413,8 +2460,7 @@ function blocComptes(p){
              {k:'ctt',t:'/ remontée',n:1},{k:'pm',t:'/ planification',n:1},
              {k:'st',t:'Statut'},{k:'nt',t:''}], body,
             { foot:{ c:'Total', n1:eur(totN1), n:eur(tot), d:eur(tot - totN1) } })}
-    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif</b> : ${sansMotif.map(r => r.c).join(', ')}.</div>` : ''}
-    ${blocRevueAnalytique(p)}`;
+    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif</b> : ${sansMotif.map(r => r.c).join(', ')}.</div>` : ''}`;
 }
 
 /** Revue analytique SUBSTANTIVE du poste — l'un des trois moments (voir
@@ -2452,7 +2498,7 @@ function blocRevueAnalytique(p){
 /* ─────────────────────────────────────────────────────────────────────────
    2. ÉVALUATION DU RISQUE → PROCÉDURES → TAILLE D'ÉCHANTILLON
    ───────────────────────────────────────────────────────────────────────── */
-function blocRisque(p){
+function partAssertions(p){
   const st = sec(p.code), fa = facteursActifs(p), procs = proceduresRequises(p);
   const parA = a => fa.filter(f => f.a === a);
   const lignes = ASSERTIONS.map(a => {
@@ -2484,15 +2530,17 @@ function blocRisque(p){
   }).join('');
   const forcedSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
   return `
-    <h3>Constatations venues d’autres procédures</h3>
-    ${blocFacteursSection(p)}
-    <h3>Évaluation par assertion</h3>
     <div class="tw"><table>
       <thead><tr><th>Assertion</th><th>Facteurs de risque</th><th>Calculé</th><th>Jugement de l’auditeur</th><th>Retenu</th><th></th></tr></thead>
       <tbody>${lignes}</tbody>
     </table></div>
-    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}
-    <h3>Étendue des travaux, par assertion</h3>
+    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}`;
+}
+
+/** L'étendue que le risque commande : taille de tirage et coupure d'exhaustivité. */
+function partEtendue(p){
+  const procs = proceduresRequises(p);
+  return `
     ${table([{k:'a',t:'Assertion'},{k:'r',t:'Risque retenu'},{k:'n',t:'Tirage aléatoire',n:1},
              {k:'s',t:'Seuil de la strate exhaustive',n:1},{k:'p',t:'Procédures servies',cls:'wrapcell'}],
       ASSERTIONS.map(a => {
@@ -2814,12 +2862,10 @@ function obstaclesVisa(p){
   if (n1.length) o.push(`${n1.length} papier(s) N-1 non reconfirmé(s)`);
   return o;
 }
-function blocConclusion(p){
-  const st = sec(p.code), o = obstaclesVisa(p), n1 = PAPIERS_N1[p.code] || [];
+function partN1(p){
+  const st = sec(p.code), n1 = PAPIERS_N1[p.code] || [];
   const notesN1 = NOTES_N1.filter(n => n.section === p.code);
-  return `
-    <h3>Reprise de l’exercice précédent</h3>
-    ${n1.length || notesN1.length ? `
+  return n1.length || notesN1.length ? `
       ${n1.map(x => `<div class="nl n1">
         <div class="m"><span class="mono">${x.id}</span> · exercice 2024
           ${st.reprisN1Vues[x.id] ? '<span class="pill">reconfirmé</span>' : '<span class="pill warn">à reconfirmer</span>'}</div>
@@ -2830,61 +2876,24 @@ function blocConclusion(p){
       ${notesN1.map(n => `<div class="nl ${TYPES_NOTE[n.type].cls}" style="opacity:.8">
         <div class="m"><span class="tag">note N-1</span> ${TYPES_NOTE[n.type].lib}</div>
         <div class="txt">${esc(n.texte)}</div></div>`).join('')}
-    ` : '<p class="note">Aucun travail N-1 enregistré sur cette section.</p>'}
-
-    <h3>Conclusion de section</h3>
+    ` : '<p class="note">Aucun travail N-1 enregistré sur cette section.</p>';
+}
+function partConclusion(p){
+  const st = sec(p.code);
+  return `
     <textarea id="sec-concl" rows="3" placeholder="conclusion de l’auditeur sur le poste, au regard des procédures exécutées et des écarts relevés">${esc(st.conclusion)}</textarea>
-    ${boutonNote(p.code, 'conclusion', 'concl', 'Conclusion de la section ' + p.lib)}
-
-    <h3>Visa</h3>
-    ${st.visa ? `<div class="callout"><b>Section visée</b> par ${esc(USERS[st.visa.par].nom)}
-        (${ROLE_LIB[USERS[st.visa.par].role]}) le ${horo(st.visa.t)}.
+    ${boutonNote(p.code, 'conclusion', 'concl', 'Conclusion de la section ' + p.lib)}`;
+}
+function partVisa(p){
+  const st = sec(p.code), o = obstaclesVisa(p);
+  return st.visa ? `<div class="callout"><b>Section visée</b> par ${esc(USERS[st.visa.par].nom)}
+        (${ROLE_LIB[USERS[st.visa.par].role]}) le ${horo(st.visa.t)}
+        <span class="smallcaps">sur la version ${st.visa.version === undefined ? '—' : 'v' + st.visa.version} du fichier</span>.
         <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>`
-      : o.length ? `<div class="callout bad"><b>${o.length} obstacle(s) :</b>
+    : o.length ? `<div class="callout bad"><b>${o.length} obstacle(s) :</b>
           <ul style="margin:5px 0 0 16px;padding:0">${o.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
           <button class="btn" disabled>viser la section</button>`
-      : `<button class="btn" id="sec-visa">viser la section — engage ${esc(USERS[S.moi].nom)}</button>`}`;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   ASSEMBLAGE
-   ───────────────────────────────────────────────────────────────────────── */
-function vueFsli(code){
-  const p = postesCalcules().find(x => x.code === code);
-  if (!p) return '<p class="note">Poste inconnu.</p>';
-  const s = seuils(), procs = proceduresRequises(p), st = sec(p.code), o = obstaclesVisa(p);
-  const ouvertKey = S.procOuverte && S.procOuverte.startsWith(p.code + '/') ? S.procOuverte.slice(p.code.length + 1) : null;
-  const prOuverte = procs.find(x => x.code === ouvertKey) || null;
-  // signature : la référence du papier, en chasse fixe, coin supérieur droit
-  const bloc = (n, titre, ref, html) => `<section class="blk" id="b${n}">
-      <header><span class="num">${n}</span><h2>${esc(titre)}</h2><span class="why">${esc(ref)}</span></header>
-      <div class="body">${html}</div></section>`;
-  const nSel = procs.filter(x => x.ech).length;
-  return `
-    <div class="hd">
-      <h1>${esc(p.lib)}</h1>
-      <span class="pill">${esc(MASSE_LIB[masseDe(p)])}</span>
-      <span class="pill ${NIVEAUX[niveauMax(p)] === 'eleve' ? 'bad' : NIVEAUX[niveauMax(p)] === 'moyen' ? 'warn' : ''}">risque ${NIV_LIB[NIVEAUX[niveauMax(p)]]}</span>
-      ${st.visa ? '<span class="pill">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length ? o.length + ' obstacle(s)' : 'prête à viser'}</span>`}
-      <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
-    </div>
-    ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
-    ${(() => { const vp = visaPerime(p.code); return vp ? `<div class="callout bad">
-      <b>Visa posé sur la version ${vp.de} du fichier ; le dossier est à la version ${vp.a}.</b>
-      Le visa n’est pas effacé — il est remis en cause : il engage ${esc(USERS[sec(p.code).visa.par].nom)}
-      sur des travaux qui ne portent plus sur le même fichier. Reconfirmez les travaux touchés, puis le visa.
-      <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>` : ''; })()}
-    ${bloc(1, 'Comptes de la section', p.code + '-CPT-01', blocComptes(p))}
-    ${bloc(2, 'Évaluation du risque par assertion', p.code + '-RSQ-01', blocRisque(p))}
-    ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocSuiviSection(p))}
-    ${prOuverte ? bloc(4, 'Procédure : ' + prOuverte.lib, procRef(p, prOuverte), blocProcedure(p, prOuverte))
-      : (procs.filter(x => x.ech).length
-        ? `<section class="blk" id="b4"><header><span class="num">4</span><h2>Procédure</h2></header>
-           <div class="body"><p class="note">Ouvrez une procédure dans le plan de travail ci-dessus pour voir sa population,
-           sa sélection et son papier.</p></div></section>` : '')}
-    ${bloc(5, 'Requêtes de la section', p.code + '-REQ-01', blocRequetes(p))}
-    ${bloc(6, 'Notes de revue de la section', p.code + '-NDR-01', blocNotesSection(p.code))}
-    ${bloc(7, 'Conclusion, visa et reprise N-1', p.code + '-CCL-01', blocConclusion(p))}`;
+    : `<button class="btn" id="sec-visa">viser la section — engage ${esc(USERS[S.moi].nom)}</button>`;
 }
 
 /* ── avancement des justificatifs de la section ───────────────────────────
@@ -3329,9 +3338,31 @@ function refPapier(t){
   _refSeq[k] = (_refSeq[k] || 0) + 1;
   return k + '-' + String(_refSeq[k]).padStart(2, '0');
 }
-function blk(t, why, html){
-  return `<section class="blk"><header><h2>${esc(t)}</h2>
-    <span class="why">${esc(refPapier(t))}</span></header><div class="body">${html}</div></section>`;
+/* ── panneaux repliables ───────────────────────────────────────────────────
+   Le même traitement que les sections, appliqué aux écrans qui ont grossi.
+   La liste n'est pas une préférence : elle retient les vues qui réunissent
+   DEUX conditions mesurées à 390 px — au moins trois panneaux, et au moins
+   deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
+   coûterait un clic sans rien rendre lisible. Le portail client y figure
+   malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
+const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'pil.mission',
+  'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
+let _panSeq = 0;
+function blk(t, why, html, att){
+  const ref = refPapier(t);
+  if (!VUES_PANNEAUX.has(S.vue))
+    return `<section class="blk"><header><h2>${esc(t)}</h2>
+      <span class="why">${esc(ref)}</span></header><div class="body">${html}</div></section>`;
+  /* Ouvert si le panneau porte quelque chose à traiter ; à défaut, le premier
+     l'est, pour qu'une vue repliée ne soit jamais une page vide. */
+  const i = _panSeq++;
+  const cle = S.vue + '/' + ref;
+  const o = ouvertParDefaut(cle, att ? true : i === 0);
+  return `<details class="blk pan" data-repli="${esc(cle)}" ${o ? 'open' : ''}>
+    <summary><h2>${esc(t)}</h2><span class="sub">${esc(why === undefined ? '' : String(why))}</span>
+      ${att ? `<span class="pill bad">${esc(String(att))}</span>` : ''}
+      <span class="why">${esc(ref)}</span></summary>
+    <div class="body">${html}</div></details>`;
 }
 function cite(q){ return `<blockquote class="idea">« ${esc(q)} »<span class="src">extrait, mot pour mot, de votre document d’idées</span></blockquote>`; }
 
@@ -4008,9 +4039,10 @@ function vueFacteurs(){
   return `
     <div class="hd"><h1>Registre des facteurs de risque</h1>
       <span class="sub">une constatation levée quelque part se pose seule là où elle compte — et n’est appliquée nulle part sans décision humaine</span></div>
+    ${barreReplis('plan.facteurs')}
 
-    <section class="blk"><header><h2>Volume</h2>
-      <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/volume" ${ouvertParDefaut("plan.facteurs/volume", `${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}`) ? "open" : ""}><summary><h2>Volume</h2><span class="pill bad">${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}</span>
+      <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></summary><div class="body">
       <div class="grid3">
         <div class="kv"><span class="k">Facteurs au registre</span><span class="v">${l.length}</span>
           <span class="k">À statuer</span><span class="v">${props.length}</span></div>
@@ -4034,10 +4066,10 @@ function vueFacteurs(){
       règlent ici, l’effet est immédiat dans la colonne de droite, et le seuil retenu figure sur chaque facteur levé.</p>
       ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).length ? `<p class="note">
         Règle(s) sans levée sur ce jeu de données : ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).map(r => esc(r.lib)).join(' · ')}.</p>` : ''}
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>À statuer</h2>
-      <span class="why">${props.length} facteur(s) — les plus anciens d’abord</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/statuer" ${ouvertParDefaut("plan.facteurs/statuer", `${props.length ? props.length : ""}`) ? "open" : ""}><summary><h2>À statuer</h2><span class="pill bad">${props.length ? props.length : ""}</span>
+      <span class="why">${props.length} facteur(s) — les plus anciens d’abord</span></summary><div class="body">
       ${props.length ? `
         <div class="grid2" style="margin-bottom:10px">
           <div><h3>Par section</h3>${Object.keys(parSection).length
@@ -4050,10 +4082,10 @@ function vueFacteurs(){
         </div>
         ${tri.map(f => carteFacteur(f, false)).join('')}`
         : '<p class="note">Aucun facteur en attente de décision.</p>'}
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>Lever un facteur à la main</h2>
-      <span class="why">n’importe quelle procédure peut en lever un — y compris l’auditeur lui-même</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/manuel" ${ouvertParDefaut("plan.facteurs/manuel", "manuel" === "volume") ? "open" : ""}><summary><h2>Lever un facteur à la main</h2>
+      <span class="why">n’importe quelle procédure peut en lever un — y compris l’auditeur lui-même</span></summary><div class="body">
       <div class="row">
         <div class="ctrl" style="flex:1 1 320px"><label>Constatation</label>
           <input type="text" id="mf-desc" placeholder="ex. : changement d’ERP en cours d’exercice, signalé par le responsable du cycle vente"></div>
@@ -4073,13 +4105,13 @@ function vueFacteurs(){
       </div>
       <p class="note">C’est la porte qu’emprunteront l’entretien de cycle, l’analyse des balances auxiliaires et
       l’analyse sectorielle.</p>
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>Déjà statués</h2>
-      <span class="why">${l.length - props.length} facteur(s)</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/statues" ${ouvertParDefaut("plan.facteurs/statues", "statues" === "volume") ? "open" : ""}><summary><h2>Déjà statués</h2>
+      <span class="why">${l.length - props.length} facteur(s)</span></summary><div class="body">
       ${l.length - props.length ? l.filter(f => f.statut !== 'propose').map(f => carteFacteur(f, false)).join('')
         : '<p class="note">Aucun facteur statué pour l’instant.</p>'}
-    </div></section>`;
+    </div></details>`;
 }
 /* ═══ 28. REVUE ANALYTIQUE — TROIS MOMENTS ═════════════════════════════════
    Ce ne sont pas trois affichages d'un même module : ce sont trois diligences
@@ -5129,6 +5161,237 @@ function vueCI(){
       constante ne sera écrite tant qu’il ne l’est pas.</p>`);
 }
 
+/* ═══ 43. LA SECTION COMME LIEU, ET NON COMME PAGE ═════════════════════════
+   Une section rendait ses sept blocs d'un seul tenant : sur le chiffre
+   d'affaires, sept mille pixels d'un seul défilement. Un bouton « replier »
+   aurait masqué le défaut sans le corriger — on aurait encore eu une page,
+   simplement pliée.
+
+   La correction est structurelle : la section devient un LIEU où l'on se
+   déplace. Six destinations, une seule affichée à la fois. Le plan de travail
+   est l'atterrissage, parce que c'est ce qu'un réviseur ouvre en premier.
+   Une procédure ouverte REMPLACE le plan au lieu de s'y ajouter. Et ce qui
+   dit où l'on en est — risque, obstacles, visa, avancement des justificatifs —
+   quitte le corps de la page pour le bandeau collant : on ne fait jamais
+   défiler pour savoir où l'on en est.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const DESTINATIONS = [
+  { id:'comptes',  lib:'Comptes',           ref:'CPT-01' },
+  { id:'risque',   lib:'Risque',            ref:'RSQ-01' },
+  { id:'plan',     lib:'Plan de travail',   ref:'PGM-01' },
+  { id:'requetes', lib:'Requêtes',          ref:'REQ-01' },
+  { id:'notes',    lib:'Notes de revue',    ref:'NDR-01' },
+  { id:'concl',    lib:'Conclusion et visa',ref:'CCL-01' },
+];
+const DEST_DEFAUT = 'plan';
+function destCourante(code){ return S.dest[code] || DEST_DEFAUT; }
+
+/** Ce qui demande attention dans chaque destination. C'est ce nombre qui
+ *  commande à la fois le compteur de la navigation et l'ouverture par défaut
+ *  des replis : la place occupée à l'écran suit les problèmes, comme la
+ *  couleur (ADR-038). */
+function attentionDest(p, id){
+  const st = sec(p.code);
+  switch (id){
+    case 'comptes': {
+      const sansMotif = p.comptes.filter(c => st.ns[c] && !(st.nsMotif[c] || '').trim()).length;
+      const ra = revueAnalytique().filter(l => p.re.test(l.compte) && l.flag).length;
+      return sansMotif + ra;
+    }
+    case 'risque': {
+      const fp = facteursProposes(p.code).length;
+      const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim()).length;
+      const niv = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim()).length;
+      return fp + fsm + niv;
+    }
+    case 'plan': {
+      let n = 0;
+      for (const pr of proceduresRequises(p)){
+        if (obstaclesProcedure(p, pr).length) n++;
+        if (peremption(p, pr)) n++;
+      }
+      return n;
+    }
+    case 'requetes': return requetesDe(p.code).filter(retard).length;
+    case 'notes':    return notesBloquantesOuvertes(p.code).length;
+    case 'concl': {
+      let n = 0;
+      if (!st.conclusion.trim()) n++;
+      n += (PAPIERS_N1[p.code] || []).filter(x => !st.reprisN1Vues[x.id]).length;
+      if (!st.visa && obstaclesVisa(p).length) n++;
+      if (visaPerime(p.code)) n++;
+      return n;
+    }
+  }
+  return 0;
+}
+
+/* ── replis : l'état par défaut est dérivé, celui que l'on change est retenu ─
+   `attention` : nombre de choses à traiter dans ce repli. Non nul, il s'ouvre.
+   Le repli que l'auditeur ouvre ou ferme lui-même est mémorisé pour la
+   session, par section — sa décision l'emporte sur la règle jusqu'à ce qu'il
+   change d'avis. */
+/* Quelques replis s'ouvrent par défaut sans porter d'obstacle : ce sont ceux
+   où l'on TRAVAILLE — on ne cache pas l'outil qu'on est venu régler. */
+const REPLIS_OUVERTS = new Set(['plan.je/crit/actifs']);
+function ouvertParDefaut(cle, attention){
+  const v = S.replis[cle];
+  if (v !== undefined) return v;
+  return !!attention || REPLIS_OUVERTS.has(cle);
+}
+function repli(cle, titre, sousTitre, contenu, attention){
+  const o = ouvertParDefaut(cle, attention);
+  return `<details class="repli" data-repli="${esc(cle)}" ${o ? 'open' : ''}>
+    <summary>
+      <span class="t">${esc(titre)}</span>
+      ${sousTitre ? `<span class="s">${sousTitre}</span>` : ''}
+      ${attention ? `<span class="pill bad">${attention}</span>` : ''}
+    </summary>
+    <div class="c">${contenu}</div>
+  </details>`;
+}
+function barreReplis(prefixe){
+  return `<div class="row replis-cmd">
+    <button class="btn mini sec" data-replis="${esc(prefixe)}|1">tout déplier</button>
+    <button class="btn mini sec" data-replis="${esc(prefixe)}|0">tout replier</button>
+    <span class="smallcaps">ce qui demande attention est déjà ouvert</span>
+  </div>`;
+}
+
+/* ── le bandeau collant de la section ─────────────────────────────────────
+   Il remplace les compteurs de mission tant qu'on est dans une section : ce
+   qu'il faut savoir ici, c'est l'état de CETTE section. La hauteur collante
+   ne change donc pas. */
+/** Un rapport au seuil se lit en multiples, pas en pourcentage : « 235 × »
+ *  se comprend d'un coup d'œil, « 23 466 % » ne dit rien. */
+function multiple(x){
+  if (!isFinite(x)) return '—';
+  return (x >= 10 ? Math.round(x) : (Math.round(x * 10) / 10).toString().replace('.', ',')) + NBSP + '×';
+}
+function cellulesSection(p){
+  const s = seuils(), st = sec(p.code), o = obstaclesVisa(p), t = avancementSection(p);
+  const niv = NIVEAUX[niveauMax(p)];
+  return {
+    'poste':                    [esc(p.lib), esc(p.code)],
+    'risque retenu':            [NIV_LIB[niv], 'risque'],
+    'solde / planification':    [multiple(Math.abs(p.solde) / s.PM), '/ planif.'],
+    'obstacles au visa':        [String(o.length), 'obstacles'],
+    'visa':                     [st.visa ? 'visée' : (o.length ? 'bloqué' : 'prête'), 'visa'],
+    'justificatifs attendus':   [String(t.elements), 'attendus'],
+    'reçus':                    [String(t.recus), 'reçus'],
+    'contrôles traités':        [String(t.traitee + t.explique), 'traités'],
+    'écarts à expliquer':       [String(t.ecart), 'écarts'],
+  };
+}
+
+/* ── navigation interne ───────────────────────────────────────────────── */
+function navSection(p){
+  const d = destCourante(p.code);
+  return `<nav class="destnav">${DESTINATIONS.map(x => {
+    const n = attentionDest(p, x.id);
+    return `<button class="dest ${x.id === d ? 'on' : ''}" data-dest="${p.code}|${x.id}">
+      ${esc(x.lib)}${n ? `<span class="cnt">${n}</span>` : ''}</button>`;
+  }).join('')}</nav>`;
+}
+
+/* ── les six destinations ─────────────────────────────────────────────── */
+function destinationSection(p, id){
+  const k = s => p.code + '/' + id + '/' + s;
+  switch (id){
+    case 'comptes':
+      return barreReplis(p.code + '/comptes') +
+        repli(k('table'), 'Comptes de la section', p.comptes.length + ' compte(s)',
+          partComptes(p), p.comptes.filter(c => sec(p.code).ns[c] && !(sec(p.code).nsMotif[c] || '').trim()).length) +
+        repli(k('ra'), 'Revue analytique substantive du poste',
+          revueAnalytique().filter(l => p.re.test(l.compte) && l.flag).length + ' compte(s) au-dessus d’un seuil',
+          blocRevueAnalytique(p), revueAnalytique().filter(l => p.re.test(l.compte) && l.flag).length);
+
+    case 'risque': {
+      const st = sec(p.code);
+      const nivSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim()).length;
+      const fp = facteursProposes(p.code).length
+        + facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim()).length;
+      return barreReplis(p.code + '/risque') +
+        repli(k('facteurs'), 'Constatations venues d’autres procédures',
+          facteursDe(p.code).length + ' facteur(s) au registre', blocFacteursSection(p), fp) +
+        repli(k('assertions'), 'Évaluation par assertion', 'jugement de l’auditeur',
+          partAssertions(p), nivSansMotif) +
+        repli(k('etendue'), 'Étendue des travaux, par assertion', 'ce que le risque commande',
+          partEtendue(p), 0);
+    }
+
+    case 'plan': {
+      const ouvertKey = S.procOuverte && S.procOuverte.startsWith(p.code + '/')
+        ? S.procOuverte.slice(p.code.length + 1) : null;
+      const pr = proceduresRequises(p).find(x => x.code === ouvertKey);
+      if (pr) return filAriane(p, pr) + blocProcedure(p, pr);
+      const t = avancementSection(p);
+      return barreReplis(p.code + '/plan') +
+        repli(k('procedures'), 'Procédures et sélections',
+          proceduresRequises(p).length + ' procédure(s)', blocPlan(p),
+          proceduresRequises(p).filter(x => obstaclesProcedure(p, x).length).length) +
+        repli(k('suivi'), 'Avancement des justificatifs',
+          t.recus + ' / ' + t.elements + ' éléments avec pièce', blocSuiviSection(p), t.ecart + t.attente);
+    }
+
+    case 'requetes':
+      return barreReplis(p.code + '/requetes') +
+        repli(k('liste'), 'Requêtes de la section', requetesDe(p.code).length + ' requête(s)',
+          blocRequetes(p), requetesDe(p.code).filter(retard).length);
+
+    case 'notes':
+      return barreReplis(p.code + '/notes') +
+        repli(k('liste'), 'Notes de revue de la section',
+          notesDe(p.code).length + ' note(s)', blocNotesSection(p.code),
+          notesBloquantesOuvertes(p.code).length);
+
+    case 'concl': {
+      const st = sec(p.code), n1 = (PAPIERS_N1[p.code] || []).filter(x => !st.reprisN1Vues[x.id]).length;
+      return barreReplis(p.code + '/concl') +
+        repli(k('n1'), 'Reprise de l’exercice précédent',
+          (PAPIERS_N1[p.code] || []).length + ' papier(s) N-1', partN1(p), n1) +
+        repli(k('concl'), 'Conclusion de section',
+          st.conclusion.trim() ? 'rédigée' : 'non rédigée', partConclusion(p),
+          st.conclusion.trim() ? 0 : 1) +
+        repli(k('visa'), 'Visa',
+          st.visa ? 'visée par ' + USERS[st.visa.par].nom : obstaclesVisa(p).length + ' obstacle(s)',
+          partVisa(p), st.visa ? (visaPerime(p.code) ? 1 : 0) : obstaclesVisa(p).length);
+    }
+  }
+  return '';
+}
+
+/** Fil d'Ariane : une procédure ouverte remplace le plan de travail. */
+function filAriane(p, pr){
+  return `<div class="ariane">
+    <button class="btn mini sec" data-dest="${p.code}|plan">← Plan de travail</button>
+    <span class="sep">/</span>
+    <b>${esc(pr.lib)}</b>
+    <span class="smallcaps">${esc(procRef(p, pr))} · ${esc(libAssertion(pr.a))}</span>
+  </div>`;
+}
+
+/* ── assemblage ───────────────────────────────────────────────────────── */
+function vueFsli(code){
+  const p = postesCalcules().find(x => x.code === code);
+  if (!p) return '<p class="note">Poste inconnu.</p>';
+  const d = destCourante(code), dd = DESTINATIONS.find(x => x.id === d) || DESTINATIONS[2];
+  const vp = visaPerime(code);
+  return `
+    ${navSection(p)}
+    ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
+    ${vp ? `<div class="callout bad">
+      <b>Visa posé sur la version ${vp.de} du fichier ; le dossier est à la version ${vp.a}.</b>
+      Le visa n’est pas effacé — il est remis en cause : il engage ${esc(USERS[sec(code).visa.par].nom)}
+      sur des travaux qui ne portent plus sur le même fichier. Reconfirmez les travaux touchés, puis le visa.
+      <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>` : ''}
+    <section class="blk dest-blk">
+      <header><h2>${esc(dd.lib)}</h2><span class="why">${esc(p.code + '-' + dd.ref)}</span></header>
+      <div class="body">${destinationSection(p, d)}</div>
+    </section>`;
+}
+
 /* ═══ 41. RÉPARTITION PROPOSÉE ═════════════════════════════════════════════
    « La meilleure attribution en lot est celle qu'on n'a pas à faire. »
    Le système propose, l'auditeur corrige. Deux règles se composent :
@@ -6137,7 +6400,7 @@ function champParam(code, pr){
 }
 
 function blocCriteres(ent){
-  const rows = tousCriteresJE().map(c => {
+  const carte = c => {
     const actif = critereActif(c.code), n = c.indispo ? null : ent.etapes.find(e => e.code === c.code);
     return `<div class="crit ${c.indispo ? 'off' : ''}">
       <div class="m">
@@ -6152,7 +6415,15 @@ function blocCriteres(ent){
       ${c.note ? `<div class="callout warn">${esc(c.note)}</div>` : ''}
       ${c.indispo ? `<div class="callout"><b>Indisponible sur ce jeu de données.</b> ${esc(c.indispo)}</div>` : ''}
     </div>`;
-  }).join('');
+  };
+  /* Trois groupes : ce qui est en service, ce qui est disponible, ce qui ne
+     peut pas tourner ici. Seize fiches d'un bloc, c'est la moitié de l'écran
+     pour un réglage qu'on ne touche qu'une fois. */
+  const tous = tousCriteresJE();
+  const actifs = tous.filter(c => critereActif(c.code));
+  const dispo = tous.filter(c => !critereActif(c.code) && !c.indispo);
+  const indispo = tous.filter(c => c.indispo);
+  const grille = l => `<div class="crits">${l.map(carte).join('')}</div>`;
   const formes = Object.entries(FORMES_JE).map(([k, f]) => `<option value="${k}">${esc(f.lib)}</option>`).join('');
   return blk('Critères', criteresActifs().length + ' actif(s) sur ' + tousCriteresJE().length,
     `<div class="row">
@@ -6166,7 +6437,12 @@ function blocCriteres(ent){
       <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="je-msave">enregistrer</button></div>
     </div>
     ${S.jeErreur ? `<div class="callout bad">${esc(S.jeErreur)}</div>` : ''}
-    <div class="crits">${rows}</div>
+    ${repli('plan.je/crit/actifs', 'Critères en service', actifs.length + ' critère(s)',
+      grille(actifs), 0)}
+    ${repli('plan.je/crit/dispo', 'Critères disponibles, non retenus', dispo.length + ' critère(s)',
+      grille(dispo), 0)}
+    ${indispo.length ? repli('plan.je/crit/indispo', 'Critères que ce jeu de données ne permet pas',
+      indispo.length + ' critère(s)', grille(indispo), 0) : ''}
     <div class="row" style="margin-top:10px">
       <div class="ctrl"><label>Créer un critère — forme</label>
         <select id="je-forme">${formes}</select></div>
@@ -6440,6 +6716,13 @@ function renderSeuils(){
 let lastImpact = {};
 function renderImpact(){
   if (!document.getElementById('impact')) return;   // idem : absent du portail client
+  /* Dans une section, le bandeau collant porte l'état de CETTE section — le
+     reste de la mission n'y apprend rien. La hauteur collante est la même :
+     ce sont les mêmes cellules, pas une bande de plus. */
+  if (S.vue.startsWith('fsli:')){
+    const p = postesCalcules().find(x => x.code === S.vue.slice(5));
+    if (p) return peindreImpact(cellulesSection(p));
+  }
   const s = seuils(), postes = postesEnPerimetre();
   let procs = 0, sel = 0, couvert = 0, total = 0;
   for (const p of postes){
@@ -6463,6 +6746,9 @@ function renderImpact(){
     'cumul non corrigé':                         [eur0(nc),                                      'cumul'],
     'conclusion':                                [Math.abs(nc) > s.M ? 'au-dessus du seuil' : 'sous le seuil', 'conclusion'],
   };
+  peindreImpact(cells);
+}
+function peindreImpact(cells){
   document.getElementById('impact').innerHTML = Object.entries(cells).map(([k, [v, court]]) =>
     `<div class="c ${lastImpact[k] !== undefined && lastImpact[k] !== v ? 'flash' : ''}"><div class="k"><span class="lg">${k}</span><span class="sm">${court}</span></div><div class="v">${v}</div></div>`).join('');
   lastImpact = Object.fromEntries(Object.entries(cells).map(([k, [v]]) => [k, v]));
@@ -6470,8 +6756,12 @@ function renderImpact(){
 
 /* ═══ 20. RENDU PRINCIPAL ══════════════════════════════════════════════════ */
 function contenu(){
-  _refSeq = {};                     // les références de papier repartent à 01 à chaque vue
+  _refSeq = {}; _panSeq = 0;        // références de papier et panneaux repartent à chaque vue
   const v = S.vue;
+  if (VUES_PANNEAUX.has(v)) return barreReplis(v) + contenuVue(v);
+  return contenuVue(v);
+}
+function contenuVue(v){
   if (v.startsWith('fsli:')) return vueFsli(v.slice(5));
   if (LOT2[v]) return vueLot2(v);
   switch (v){
@@ -6693,6 +6983,14 @@ document.addEventListener('input', e => {
   if (d.nivm !== undefined && p){ sec(p.code).overrideMotif[d.nivm] = t.value; return renderMainDiff(); }
 });
 
+/* `toggle` ne se propage pas : on l'écoute en capture. Ouvrir ou fermer un
+   repli ne redessine rien — le navigateur s'en charge — on retient seulement
+   la décision, qui l'emportera sur la règle au prochain rendu. */
+document.addEventListener('toggle', e => {
+  const el = e.target;
+  if (el && el.dataset && el.dataset.repli !== undefined) S.replis[el.dataset.repli] = el.open;
+}, true);
+
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
@@ -6794,8 +7092,13 @@ document.addEventListener('click', e => {
     return aller('cli.vue', 'client'); }
 
   /* ── sélection et enchaînement ── */
-  if (d.proc){ S.procOuverte = S.procOuverte === d.proc ? null : d.proc; renderMain();
-    const b = document.getElementById('b4'); if (b) b.scrollIntoView({ block:'start' }); return; }
+  if (d.proc){
+    S.procOuverte = S.procOuverte === d.proc ? null : d.proc;
+    S.dest[d.proc.split('/')[0]] = 'plan';
+    renderMain();
+    window.scrollTo({ top:0 });
+    return;
+  }
   if (d.ctrtout){ S.ctrTout[d.ctrtout] = !S.ctrTout[d.ctrtout]; return renderMain(); }
   if (d.pnouveau && p){
     const st = proc(p.code, d.pnouveau);
@@ -7012,6 +7315,21 @@ document.addEventListener('click', e => {
   if (t.id === 'je-msave'){
     const r = enregistrerModele(document.getElementById('je-mnom').value);
     S.jeErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (d.dest){
+    const [code, id] = d.dest.split('|');
+    S.dest[code] = id;
+    if (id === 'plan') S.procOuverte = null;
+    renderImpact();
+    renderMain();
+    window.scrollTo({ top:0 });
+    return;
+  }
+  if (d.replis){
+    const [prefixe, ouvrir] = d.replis.split('|');
+    for (const el of document.querySelectorAll('[data-repli^="' + prefixe + '/"]'))
+      S.replis[el.dataset.repli] = ouvrir === '1';
     return renderMain();
   }
   if (d.vers){

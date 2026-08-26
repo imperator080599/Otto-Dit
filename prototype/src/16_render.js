@@ -170,6 +170,13 @@ function renderSeuils(){
 let lastImpact = {};
 function renderImpact(){
   if (!document.getElementById('impact')) return;   // idem : absent du portail client
+  /* Dans une section, le bandeau collant porte l'état de CETTE section — le
+     reste de la mission n'y apprend rien. La hauteur collante est la même :
+     ce sont les mêmes cellules, pas une bande de plus. */
+  if (S.vue.startsWith('fsli:')){
+    const p = postesCalcules().find(x => x.code === S.vue.slice(5));
+    if (p) return peindreImpact(cellulesSection(p));
+  }
   const s = seuils(), postes = postesEnPerimetre();
   let procs = 0, sel = 0, couvert = 0, total = 0;
   for (const p of postes){
@@ -193,6 +200,9 @@ function renderImpact(){
     'cumul non corrigé':                         [eur0(nc),                                      'cumul'],
     'conclusion':                                [Math.abs(nc) > s.M ? 'au-dessus du seuil' : 'sous le seuil', 'conclusion'],
   };
+  peindreImpact(cells);
+}
+function peindreImpact(cells){
   document.getElementById('impact').innerHTML = Object.entries(cells).map(([k, [v, court]]) =>
     `<div class="c ${lastImpact[k] !== undefined && lastImpact[k] !== v ? 'flash' : ''}"><div class="k"><span class="lg">${k}</span><span class="sm">${court}</span></div><div class="v">${v}</div></div>`).join('');
   lastImpact = Object.fromEntries(Object.entries(cells).map(([k, [v]]) => [k, v]));
@@ -200,8 +210,12 @@ function renderImpact(){
 
 /* ═══ 20. RENDU PRINCIPAL ══════════════════════════════════════════════════ */
 function contenu(){
-  _refSeq = {};                     // les références de papier repartent à 01 à chaque vue
+  _refSeq = {}; _panSeq = 0;        // références de papier et panneaux repartent à chaque vue
   const v = S.vue;
+  if (VUES_PANNEAUX.has(v)) return barreReplis(v) + contenuVue(v);
+  return contenuVue(v);
+}
+function contenuVue(v){
   if (v.startsWith('fsli:')) return vueFsli(v.slice(5));
   if (LOT2[v]) return vueLot2(v);
   switch (v){
@@ -423,6 +437,14 @@ document.addEventListener('input', e => {
   if (d.nivm !== undefined && p){ sec(p.code).overrideMotif[d.nivm] = t.value; return renderMainDiff(); }
 });
 
+/* `toggle` ne se propage pas : on l'écoute en capture. Ouvrir ou fermer un
+   repli ne redessine rien — le navigateur s'en charge — on retient seulement
+   la décision, qui l'emportera sur la règle au prochain rendu. */
+document.addEventListener('toggle', e => {
+  const el = e.target;
+  if (el && el.dataset && el.dataset.repli !== undefined) S.replis[el.dataset.repli] = el.open;
+}, true);
+
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
   if (t.id === 'railm') return aller(t.value);
@@ -524,8 +546,13 @@ document.addEventListener('click', e => {
     return aller('cli.vue', 'client'); }
 
   /* ── sélection et enchaînement ── */
-  if (d.proc){ S.procOuverte = S.procOuverte === d.proc ? null : d.proc; renderMain();
-    const b = document.getElementById('b4'); if (b) b.scrollIntoView({ block:'start' }); return; }
+  if (d.proc){
+    S.procOuverte = S.procOuverte === d.proc ? null : d.proc;
+    S.dest[d.proc.split('/')[0]] = 'plan';
+    renderMain();
+    window.scrollTo({ top:0 });
+    return;
+  }
   if (d.ctrtout){ S.ctrTout[d.ctrtout] = !S.ctrTout[d.ctrtout]; return renderMain(); }
   if (d.pnouveau && p){
     const st = proc(p.code, d.pnouveau);
@@ -742,6 +769,21 @@ document.addEventListener('click', e => {
   if (t.id === 'je-msave'){
     const r = enregistrerModele(document.getElementById('je-mnom').value);
     S.jeErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (d.dest){
+    const [code, id] = d.dest.split('|');
+    S.dest[code] = id;
+    if (id === 'plan') S.procOuverte = null;
+    renderImpact();
+    renderMain();
+    window.scrollTo({ top:0 });
+    return;
+  }
+  if (d.replis){
+    const [prefixe, ouvrir] = d.replis.split('|');
+    for (const el of document.querySelectorAll('[data-repli^="' + prefixe + '/"]'))
+      S.replis[el.dataset.repli] = ouvrir === '1';
     return renderMain();
   }
   if (d.vers){

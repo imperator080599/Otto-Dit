@@ -405,7 +405,7 @@ function champParam(code, pr){
 }
 
 function blocCriteres(ent){
-  const rows = tousCriteresJE().map(c => {
+  const carte = c => {
     const actif = critereActif(c.code), n = c.indispo ? null : ent.etapes.find(e => e.code === c.code);
     return `<div class="crit ${c.indispo ? 'off' : ''}">
       <div class="m">
@@ -420,7 +420,15 @@ function blocCriteres(ent){
       ${c.note ? `<div class="callout warn">${esc(c.note)}</div>` : ''}
       ${c.indispo ? `<div class="callout"><b>Indisponible sur ce jeu de données.</b> ${esc(c.indispo)}</div>` : ''}
     </div>`;
-  }).join('');
+  };
+  /* Trois groupes : ce qui est en service, ce qui est disponible, ce qui ne
+     peut pas tourner ici. Seize fiches d'un bloc, c'est la moitié de l'écran
+     pour un réglage qu'on ne touche qu'une fois. */
+  const tous = tousCriteresJE();
+  const actifs = tous.filter(c => critereActif(c.code));
+  const dispo = tous.filter(c => !critereActif(c.code) && !c.indispo);
+  const indispo = tous.filter(c => c.indispo);
+  const grille = l => `<div class="crits">${l.map(carte).join('')}</div>`;
   const formes = Object.entries(FORMES_JE).map(([k, f]) => `<option value="${k}">${esc(f.lib)}</option>`).join('');
   return blk('Critères', criteresActifs().length + ' actif(s) sur ' + tousCriteresJE().length,
     `<div class="row">
@@ -434,7 +442,12 @@ function blocCriteres(ent){
       <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="je-msave">enregistrer</button></div>
     </div>
     ${S.jeErreur ? `<div class="callout bad">${esc(S.jeErreur)}</div>` : ''}
-    <div class="crits">${rows}</div>
+    ${repli('plan.je/crit/actifs', 'Critères en service', actifs.length + ' critère(s)',
+      grille(actifs), 0)}
+    ${repli('plan.je/crit/dispo', 'Critères disponibles, non retenus', dispo.length + ' critère(s)',
+      grille(dispo), 0)}
+    ${indispo.length ? repli('plan.je/crit/indispo', 'Critères que ce jeu de données ne permet pas',
+      indispo.length + ' critère(s)', grille(indispo), 0) : ''}
     <div class="row" style="margin-top:10px">
       <div class="ctrl"><label>Créer un critère — forme</label>
         <select id="je-forme">${formes}</select></div>

@@ -364,9 +364,10 @@ function vueFacteurs(){
   return `
     <div class="hd"><h1>Registre des facteurs de risque</h1>
       <span class="sub">une constatation levée quelque part se pose seule là où elle compte — et n’est appliquée nulle part sans décision humaine</span></div>
+    ${barreReplis('plan.facteurs')}
 
-    <section class="blk"><header><h2>Volume</h2>
-      <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/volume" ${ouvertParDefaut("plan.facteurs/volume", `${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}`) ? "open" : ""}><summary><h2>Volume</h2><span class="pill bad">${l.length > CIBLE_VOLUME ? l.length + " facteurs pour une cible de " + CIBLE_VOLUME : ""}</span>
+      <span class="why">garde-fou : le registre doit rester de l’ordre de la dizaine</span></summary><div class="body">
       <div class="grid3">
         <div class="kv"><span class="k">Facteurs au registre</span><span class="v">${l.length}</span>
           <span class="k">À statuer</span><span class="v">${props.length}</span></div>
@@ -390,10 +391,10 @@ function vueFacteurs(){
       règlent ici, l’effet est immédiat dans la colonne de droite, et le seuil retenu figure sur chaque facteur levé.</p>
       ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).length ? `<p class="note">
         Règle(s) sans levée sur ce jeu de données : ${REGLES_FACTEUR.filter(r => candidatsRegle(r).length === 0).map(r => esc(r.lib)).join(' · ')}.</p>` : ''}
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>À statuer</h2>
-      <span class="why">${props.length} facteur(s) — les plus anciens d’abord</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/statuer" ${ouvertParDefaut("plan.facteurs/statuer", `${props.length ? props.length : ""}`) ? "open" : ""}><summary><h2>À statuer</h2><span class="pill bad">${props.length ? props.length : ""}</span>
+      <span class="why">${props.length} facteur(s) — les plus anciens d’abord</span></summary><div class="body">
       ${props.length ? `
         <div class="grid2" style="margin-bottom:10px">
           <div><h3>Par section</h3>${Object.keys(parSection).length
@@ -406,10 +407,10 @@ function vueFacteurs(){
         </div>
         ${tri.map(f => carteFacteur(f, false)).join('')}`
         : '<p class="note">Aucun facteur en attente de décision.</p>'}
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>Lever un facteur à la main</h2>
-      <span class="why">n’importe quelle procédure peut en lever un — y compris l’auditeur lui-même</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/manuel" ${ouvertParDefaut("plan.facteurs/manuel", "manuel" === "volume") ? "open" : ""}><summary><h2>Lever un facteur à la main</h2>
+      <span class="why">n’importe quelle procédure peut en lever un — y compris l’auditeur lui-même</span></summary><div class="body">
       <div class="row">
         <div class="ctrl" style="flex:1 1 320px"><label>Constatation</label>
           <input type="text" id="mf-desc" placeholder="ex. : changement d’ERP en cours d’exercice, signalé par le responsable du cycle vente"></div>
@@ -429,11 +430,11 @@ function vueFacteurs(){
       </div>
       <p class="note">C’est la porte qu’emprunteront l’entretien de cycle, l’analyse des balances auxiliaires et
       l’analyse sectorielle.</p>
-    </div></section>
+    </div></details>
 
-    <section class="blk"><header><h2>Déjà statués</h2>
-      <span class="why">${l.length - props.length} facteur(s)</span></header><div class="body">
+    <details class="blk pan" data-repli="plan.facteurs/statues" ${ouvertParDefaut("plan.facteurs/statues", "statues" === "volume") ? "open" : ""}><summary><h2>Déjà statués</h2>
+      <span class="why">${l.length - props.length} facteur(s)</span></summary><div class="body">
       ${l.length - props.length ? l.filter(f => f.statut !== 'propose').map(f => carteFacteur(f, false)).join('')
         : '<p class="note">Aucun facteur statué pour l’instant.</p>'}
-    </div></section>`;
+    </div></details>`;
 }

@@ -194,6 +194,20 @@ Instrument Sans en substitution déclarée de Public Sans, indisponible hors lig
 base64. Compteurs : 2 rayons, 0 couleur hors jetons, 5 tailles de police, 0 espacement hors
 échelle.
 
+## Lisibilité : la section devient un lieu (2026-08-26)
+
+`prototype/otto-prototype.html` — ADR-046. Six destinations, une seule affichée ; le plan de
+travail est l'atterrissage ; une procédure ouverte remplace le plan avec un fil d'Ariane ; le
+bandeau collant porte l'état de la section (et remplace celui de la mission, à hauteur
+constante) ; les replis s'ouvrent selon ce qui demande attention et l'état que l'on change est
+mémorisé par section. Le même traitement sur les vues qui réunissent trois panneaux et deux
+écrans de contenu — les plus courtes restent d'un tenant.
+
+**Mesuré à 390 px** : section chiffre d'affaires **6 129 → 1 674 px** (6,9 → 1,6 écran) · test
+des écritures 6 874 → 1 900 · versions 4 233 → 1 100 · mission 3 256 → 1 200. Défaut préexistant
+corrigé au passage : `scrollIntoView` amenait le haut de chaque vue **sous** la barre collante —
+294 px invisibles à l'arrivée, sur toutes les vues.
+
 **Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
 qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).
 
@@ -233,6 +247,20 @@ en écrivant qu'elle subsistait. **148 tests verts**, dont quatre assertions au 
 leur pièce quelle que soit leur cause. Chaque écart déclare désormais sa nature et chaque nature
 sa bande (arrondi ≤ 1 %, régularisation 2–12 %, omission 10–40 %), vérifiée à l'écran. Les
 écarts dépassant le seuil de remontée passent de 1 à 6 — **constaté, pas visé**.
+
+## Lisibilité : la section devient un lieu (2026-08-26)
+
+`prototype/otto-prototype.html` — ADR-046. Six destinations, une seule affichée ; le plan de
+travail est l'atterrissage ; une procédure ouverte remplace le plan avec un fil d'Ariane ; le
+bandeau collant porte l'état de la section (et remplace celui de la mission, à hauteur
+constante) ; les replis s'ouvrent selon ce qui demande attention et l'état que l'on change est
+mémorisé par section. Le même traitement sur les vues qui réunissent trois panneaux et deux
+écrans de contenu — les plus courtes restent d'un tenant.
+
+**Mesuré à 390 px** : section chiffre d'affaires **6 129 → 1 674 px** (6,9 → 1,6 écran) · test
+des écritures 6 874 → 1 900 · versions 4 233 → 1 100 · mission 3 256 → 1 200. Défaut préexistant
+corrigé au passage : `scrollIntoView` amenait le haut de chaque vue **sous** la barre collante —
+294 px invisibles à l'arrivée, sur toutes les vues.
 
 **Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
 qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).

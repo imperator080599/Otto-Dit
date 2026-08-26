@@ -113,9 +113,31 @@ function refPapier(t){
   _refSeq[k] = (_refSeq[k] || 0) + 1;
   return k + '-' + String(_refSeq[k]).padStart(2, '0');
 }
-function blk(t, why, html){
-  return `<section class="blk"><header><h2>${esc(t)}</h2>
-    <span class="why">${esc(refPapier(t))}</span></header><div class="body">${html}</div></section>`;
+/* ── panneaux repliables ───────────────────────────────────────────────────
+   Le même traitement que les sections, appliqué aux écrans qui ont grossi.
+   La liste n'est pas une préférence : elle retient les vues qui réunissent
+   DEUX conditions mesurées à 390 px — au moins trois panneaux, et au moins
+   deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
+   coûterait un clic sans rien rendre lisible. Le portail client y figure
+   malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
+const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'pil.mission',
+  'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
+let _panSeq = 0;
+function blk(t, why, html, att){
+  const ref = refPapier(t);
+  if (!VUES_PANNEAUX.has(S.vue))
+    return `<section class="blk"><header><h2>${esc(t)}</h2>
+      <span class="why">${esc(ref)}</span></header><div class="body">${html}</div></section>`;
+  /* Ouvert si le panneau porte quelque chose à traiter ; à défaut, le premier
+     l'est, pour qu'une vue repliée ne soit jamais une page vide. */
+  const i = _panSeq++;
+  const cle = S.vue + '/' + ref;
+  const o = ouvertParDefaut(cle, att ? true : i === 0);
+  return `<details class="blk pan" data-repli="${esc(cle)}" ${o ? 'open' : ''}>
+    <summary><h2>${esc(t)}</h2><span class="sub">${esc(why === undefined ? '' : String(why))}</span>
+      ${att ? `<span class="pill bad">${esc(String(att))}</span>` : ''}
+      <span class="why">${esc(ref)}</span></summary>
+    <div class="body">${html}</div></details>`;
 }
 function cite(q){ return `<blockquote class="idea">« ${esc(q)} »<span class="src">extrait, mot pour mot, de votre document d’idées</span></blockquote>`; }
 

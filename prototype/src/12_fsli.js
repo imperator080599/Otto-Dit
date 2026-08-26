@@ -38,7 +38,7 @@ const PAPIERS_N1 = {
    Deux indicateurs distincts : position du compte / seuil de remontée
    (triage interne) et poids / seuil de planification (périmètre).
    ───────────────────────────────────────────────────────────────────────── */
-function blocComptes(p){
+function partComptes(p){
   const s = seuils(), st = sec(p.code);
   const rows = p.comptes.map(c => {
     const n = bal().get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
@@ -70,8 +70,7 @@ function blocComptes(p){
              {k:'ctt',t:'/ remontée',n:1},{k:'pm',t:'/ planification',n:1},
              {k:'st',t:'Statut'},{k:'nt',t:''}], body,
             { foot:{ c:'Total', n1:eur(totN1), n:eur(tot), d:eur(tot - totN1) } })}
-    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif</b> : ${sansMotif.map(r => r.c).join(', ')}.</div>` : ''}
-    ${blocRevueAnalytique(p)}`;
+    ${sansMotif.length ? `<div class="callout bad"><b>Surcharge sans motif</b> : ${sansMotif.map(r => r.c).join(', ')}.</div>` : ''}`;
 }
 
 /** Revue analytique SUBSTANTIVE du poste — l'un des trois moments (voir
@@ -109,7 +108,7 @@ function blocRevueAnalytique(p){
 /* ─────────────────────────────────────────────────────────────────────────
    2. ÉVALUATION DU RISQUE → PROCÉDURES → TAILLE D'ÉCHANTILLON
    ───────────────────────────────────────────────────────────────────────── */
-function blocRisque(p){
+function partAssertions(p){
   const st = sec(p.code), fa = facteursActifs(p), procs = proceduresRequises(p);
   const parA = a => fa.filter(f => f.a === a);
   const lignes = ASSERTIONS.map(a => {
@@ -141,15 +140,17 @@ function blocRisque(p){
   }).join('');
   const forcedSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
   return `
-    <h3>Constatations venues d’autres procédures</h3>
-    ${blocFacteursSection(p)}
-    <h3>Évaluation par assertion</h3>
     <div class="tw"><table>
       <thead><tr><th>Assertion</th><th>Facteurs de risque</th><th>Calculé</th><th>Jugement de l’auditeur</th><th>Retenu</th><th></th></tr></thead>
       <tbody>${lignes}</tbody>
     </table></div>
-    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}
-    <h3>Étendue des travaux, par assertion</h3>
+    ${forcedSansMotif.length ? `<div class="callout bad"><b>Niveau forcé sans motif</b> : ${forcedSansMotif.map(a => esc(a.lib)).join(', ')}.</div>` : ''}`;
+}
+
+/** L'étendue que le risque commande : taille de tirage et coupure d'exhaustivité. */
+function partEtendue(p){
+  const procs = proceduresRequises(p);
+  return `
     ${table([{k:'a',t:'Assertion'},{k:'r',t:'Risque retenu'},{k:'n',t:'Tirage aléatoire',n:1},
              {k:'s',t:'Seuil de la strate exhaustive',n:1},{k:'p',t:'Procédures servies',cls:'wrapcell'}],
       ASSERTIONS.map(a => {
@@ -471,12 +472,10 @@ function obstaclesVisa(p){
   if (n1.length) o.push(`${n1.length} papier(s) N-1 non reconfirmé(s)`);
   return o;
 }
-function blocConclusion(p){
-  const st = sec(p.code), o = obstaclesVisa(p), n1 = PAPIERS_N1[p.code] || [];
+function partN1(p){
+  const st = sec(p.code), n1 = PAPIERS_N1[p.code] || [];
   const notesN1 = NOTES_N1.filter(n => n.section === p.code);
-  return `
-    <h3>Reprise de l’exercice précédent</h3>
-    ${n1.length || notesN1.length ? `
+  return n1.length || notesN1.length ? `
       ${n1.map(x => `<div class="nl n1">
         <div class="m"><span class="mono">${x.id}</span> · exercice 2024
           ${st.reprisN1Vues[x.id] ? '<span class="pill">reconfirmé</span>' : '<span class="pill warn">à reconfirmer</span>'}</div>
@@ -487,61 +486,24 @@ function blocConclusion(p){
       ${notesN1.map(n => `<div class="nl ${TYPES_NOTE[n.type].cls}" style="opacity:.8">
         <div class="m"><span class="tag">note N-1</span> ${TYPES_NOTE[n.type].lib}</div>
         <div class="txt">${esc(n.texte)}</div></div>`).join('')}
-    ` : '<p class="note">Aucun travail N-1 enregistré sur cette section.</p>'}
-
-    <h3>Conclusion de section</h3>
+    ` : '<p class="note">Aucun travail N-1 enregistré sur cette section.</p>';
+}
+function partConclusion(p){
+  const st = sec(p.code);
+  return `
     <textarea id="sec-concl" rows="3" placeholder="conclusion de l’auditeur sur le poste, au regard des procédures exécutées et des écarts relevés">${esc(st.conclusion)}</textarea>
-    ${boutonNote(p.code, 'conclusion', 'concl', 'Conclusion de la section ' + p.lib)}
-
-    <h3>Visa</h3>
-    ${st.visa ? `<div class="callout"><b>Section visée</b> par ${esc(USERS[st.visa.par].nom)}
-        (${ROLE_LIB[USERS[st.visa.par].role]}) le ${horo(st.visa.t)}.
+    ${boutonNote(p.code, 'conclusion', 'concl', 'Conclusion de la section ' + p.lib)}`;
+}
+function partVisa(p){
+  const st = sec(p.code), o = obstaclesVisa(p);
+  return st.visa ? `<div class="callout"><b>Section visée</b> par ${esc(USERS[st.visa.par].nom)}
+        (${ROLE_LIB[USERS[st.visa.par].role]}) le ${horo(st.visa.t)}
+        <span class="smallcaps">sur la version ${st.visa.version === undefined ? '—' : 'v' + st.visa.version} du fichier</span>.
         <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>`
-      : o.length ? `<div class="callout bad"><b>${o.length} obstacle(s) :</b>
+    : o.length ? `<div class="callout bad"><b>${o.length} obstacle(s) :</b>
           <ul style="margin:5px 0 0 16px;padding:0">${o.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
           <button class="btn" disabled>viser la section</button>`
-      : `<button class="btn" id="sec-visa">viser la section — engage ${esc(USERS[S.moi].nom)}</button>`}`;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   ASSEMBLAGE
-   ───────────────────────────────────────────────────────────────────────── */
-function vueFsli(code){
-  const p = postesCalcules().find(x => x.code === code);
-  if (!p) return '<p class="note">Poste inconnu.</p>';
-  const s = seuils(), procs = proceduresRequises(p), st = sec(p.code), o = obstaclesVisa(p);
-  const ouvertKey = S.procOuverte && S.procOuverte.startsWith(p.code + '/') ? S.procOuverte.slice(p.code.length + 1) : null;
-  const prOuverte = procs.find(x => x.code === ouvertKey) || null;
-  // signature : la référence du papier, en chasse fixe, coin supérieur droit
-  const bloc = (n, titre, ref, html) => `<section class="blk" id="b${n}">
-      <header><span class="num">${n}</span><h2>${esc(titre)}</h2><span class="why">${esc(ref)}</span></header>
-      <div class="body">${html}</div></section>`;
-  const nSel = procs.filter(x => x.ech).length;
-  return `
-    <div class="hd">
-      <h1>${esc(p.lib)}</h1>
-      <span class="pill">${esc(MASSE_LIB[masseDe(p)])}</span>
-      <span class="pill ${NIVEAUX[niveauMax(p)] === 'eleve' ? 'bad' : NIVEAUX[niveauMax(p)] === 'moyen' ? 'warn' : ''}">risque ${NIV_LIB[NIVEAUX[niveauMax(p)]]}</span>
-      ${st.visa ? '<span class="pill">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length ? o.length + ' obstacle(s)' : 'prête à viser'}</span>`}
-      <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
-    </div>
-    ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
-    ${(() => { const vp = visaPerime(p.code); return vp ? `<div class="callout bad">
-      <b>Visa posé sur la version ${vp.de} du fichier ; le dossier est à la version ${vp.a}.</b>
-      Le visa n’est pas effacé — il est remis en cause : il engage ${esc(USERS[sec(p.code).visa.par].nom)}
-      sur des travaux qui ne portent plus sur le même fichier. Reconfirmez les travaux touchés, puis le visa.
-      <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>` : ''; })()}
-    ${bloc(1, 'Comptes de la section', p.code + '-CPT-01', blocComptes(p))}
-    ${bloc(2, 'Évaluation du risque par assertion', p.code + '-RSQ-01', blocRisque(p))}
-    ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocSuiviSection(p))}
-    ${prOuverte ? bloc(4, 'Procédure : ' + prOuverte.lib, procRef(p, prOuverte), blocProcedure(p, prOuverte))
-      : (procs.filter(x => x.ech).length
-        ? `<section class="blk" id="b4"><header><span class="num">4</span><h2>Procédure</h2></header>
-           <div class="body"><p class="note">Ouvrez une procédure dans le plan de travail ci-dessus pour voir sa population,
-           sa sélection et son papier.</p></div></section>` : '')}
-    ${bloc(5, 'Requêtes de la section', p.code + '-REQ-01', blocRequetes(p))}
-    ${bloc(6, 'Notes de revue de la section', p.code + '-NDR-01', blocNotesSection(p.code))}
-    ${bloc(7, 'Conclusion, visa et reprise N-1', p.code + '-CCL-01', blocConclusion(p))}`;
+    : `<button class="btn" id="sec-visa">viser la section — engage ${esc(USERS[S.moi].nom)}</button>`;
 }
 
 /* ── avancement des justificatifs de la section ───────────────────────────

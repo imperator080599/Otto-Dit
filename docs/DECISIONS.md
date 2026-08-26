@@ -1426,3 +1426,60 @@ répondent à une assertion évaluée « élevé », soit 55 % du budget, et une
 au niveau senior et se revoit par l'associée. Le levier est l'évaluation du risque, pas le grade
 inscrit dans la règle — et l'écran le dit au lieu d'aplatir les heures pour faire joli. Deux cas de
 la règle ne s'appliquent à aucun travail de cette mission ; ils sont signalés comme tels.
+
+---
+
+## ADR-046 — Une section est un lieu, pas une page
+
+**Contexte** : une section rendait ses sept blocs d'un seul tenant. Mesuré à 390 px de large :
+**6 129 px pour le chiffre d'affaires**, soit près de sept écrans de téléphone d'un seul
+défilement. Un bouton « replier » aurait masqué le défaut sans le corriger — on aurait encore eu
+une page, simplement pliée.
+
+**Décision** :
+
+1. **Six destinations, une seule affichée** — comptes · risque · plan de travail · requêtes ·
+   notes · conclusion. On s'y déplace, on ne les traverse pas.
+2. **Le plan de travail est l'atterrissage.** C'est ce qu'un réviseur ouvre en premier ; il
+   n'avait aucune raison d'être le troisième bloc d'un défilement.
+3. **Une procédure ouverte REMPLACE le plan de travail**, avec un fil d'Ariane pour revenir.
+   Elle s'y ajoutait, ce qui allongeait la page au moment précis où l'on voulait se concentrer.
+4. **Le bandeau collant porte l'état de la section** dès qu'on y entre : poste, risque retenu,
+   rapport au seuil de planification, obstacles au visa, état du visa, et les quatre compteurs
+   dérivés (attendus, reçus, traités, écarts à expliquer). Il **remplace** les compteurs de
+   mission plutôt que de s'y ajouter : à l'intérieur d'une section, l'état de la mission
+   n'apprend rien, et la hauteur collante ne bouge pas (294 px au téléphone, inchangée).
+5. **Les replis s'ouvrent selon ce qui demande attention** — note bloquante, écart non résolu,
+   facteur non statué, pièce manquante. C'est la règle de la couleur (ADR-038) appliquée à la
+   place occupée : l'écran donne de l'espace aux problèmes. L'état que l'auditeur change
+   lui-même est mémorisé pour la session, **par section** : sa décision l'emporte sur la règle.
+   La navigation affiche le même compte, de sorte qu'on voit d'où vient le travail sans ouvrir.
+6. **« Tout déplier » et « tout replier » existent**, mais ce sont des secours.
+
+**Le même traitement ailleurs, sur critère mesuré.** Un panneau `blk()` devient repliable pour
+les vues qui réunissent **deux conditions mesurées à 390 px** : au moins trois panneaux, et au
+moins deux écrans de téléphone de contenu. Replier une vue d'un écran et demi coûterait un clic
+sans rien rendre lisible — `pil.avance` (1,3 écran), `ach.cloture` (1,6) et `cli.contacts` (1,5)
+restent donc d'un tenant. Le portail client y figure malgré sa taille de départ : il grandit avec
+le nombre de requêtes. Par défaut, un panneau s'ouvre s'il porte quelque chose à traiter ; à
+défaut, le premier l'est, pour qu'une vue repliée ne soit jamais une page vide.
+
+**Hauteurs mesurées à 390 px, avant → après** :
+
+| Vue | Avant | Après |
+|---|---|---|
+| Section chiffre d'affaires | **6 129 px** (6,9 écrans) | **1 674 px** (1,6 écran) |
+| Section clients | 5 322 px (6,0) | 1 674 px (1,6) |
+| Test des écritures | 6 874 px (7,8) | 1 900 px (2,2) |
+| Versions du fichier | 4 233 px (4,7) | 1 100 px (1,3) |
+| Vue globale de la mission | 3 256 px (3,8) | 1 200 px (1,4) |
+| Registre des facteurs | 5 570 px (6,3) | 4 220 px (5,0) |
+
+Le registre des facteurs reste long **parce que huit facteurs attendent une décision** : c'est la
+règle qui fonctionne, pas un reste à corriger. Statuer les facteurs le raccourcit.
+
+**Un défaut préexistant trouvé en chemin** : `aller()` appelait `scrollIntoView` sur le contenu,
+qui amenait son haut **sous** la barre collante — au téléphone, les 294 premiers pixels de chaque
+vue étaient invisibles à l'arrivée, sur toutes les vues, depuis toujours. Corrigé par
+`scroll-margin-top` ; un test l'asserte désormais sur cinq vues. Corrigé aussi : le bandeau
+affichait « / planification 23 466 % » là où « 235 × » se lit d'un coup d'œil.

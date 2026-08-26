@@ -147,7 +147,11 @@ button,select,input,textarea{font:inherit;color:inherit}
 .rail a .b.bad{color:var(--anomalie)}
 .rail a .b.warn{color:var(--attention)}
 .railm{display:none;padding:var(--s2) var(--s3) 0}
-main{padding:var(--s4);min-width:0}
+main{padding:var(--s4);min-width:0;scroll-margin-top:var(--topH,180px)}
+/* La barre est collante : sans cette marge de défilement, `scrollIntoView`
+   amenait le haut du contenu SOUS la barre — au téléphone, les 294 premiers
+   pixels de chaque vue étaient invisibles à l'arrivée. */
+.blk,.destnav{scroll-margin-top:calc(var(--topH,180px) + var(--s2))}
 
 /* ══ blocs ════════════════════════════════════════════════════════════════ */
 .hd{display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;margin-bottom:var(--s1)}
@@ -269,6 +273,47 @@ select.cell:focus{border-color:var(--accent);outline:none}
 .prm{display:flex;flex-direction:column;gap:2px;font-size:var(--t1);color:var(--ink-3)}
 .prm input{width:120px}
 .prm input.txt{width:auto;min-width:180px}
+
+/* ── navigation interne d'une section : six destinations, une seule ouverte ─ */
+.destnav{display:flex;flex-wrap:wrap;gap:var(--s1);margin-bottom:var(--s3);
+  border-bottom:1px solid var(--line);padding-bottom:var(--s2)}
+.destnav .dest{background:transparent;border:1px solid transparent;border-radius:var(--r);
+  padding:var(--s1) var(--s3);font-size:var(--t2);color:var(--ink-2);cursor:pointer;
+  display:inline-flex;align-items:center;gap:var(--s1);min-height:32px}
+.destnav .dest:hover{border-color:var(--line)}
+.destnav .dest.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600}
+.destnav .dest .cnt{font-family:var(--mono);font-size:var(--t1);color:var(--anomalie)}
+/* fil d'Ariane : une procédure ouverte remplace le plan de travail */
+.ariane{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:baseline;margin-bottom:var(--s3);
+  padding-bottom:var(--s2);border-bottom:1px solid var(--line);font-size:var(--t2)}
+.ariane .sep{color:var(--ink-3)}
+/* replis : l'état d'ouverture par défaut suit ce qui demande attention */
+.repli{border:1px solid var(--line);border-radius:var(--r);margin-bottom:var(--s2);background:var(--panel)}
+.repli>summary{list-style:none;cursor:pointer;padding:var(--s2) var(--s3);display:flex;
+  gap:var(--s2);align-items:baseline;flex-wrap:wrap;min-height:34px}
+.repli>summary::-webkit-details-marker{display:none}
+.repli>summary::before{content:'›';font-family:var(--mono);color:var(--ink-3);
+  display:inline-block;transition:transform .12s;margin-right:var(--s1)}
+.repli[open]>summary::before{transform:rotate(90deg)}
+.repli>summary .t{font-weight:600;font-size:var(--t3)}
+.repli>summary .s{font-size:var(--t1);color:var(--ink-3)}
+.repli>summary:hover{background:var(--panel-2)}
+.repli>.c{padding:0 var(--s3) var(--s3)}
+.replis-cmd{margin-bottom:var(--s2)}
+.dest-blk>.body{padding-top:var(--s2)}
+/* un panneau de vue est un bloc repliable : même en-tête, même signature */
+details.blk.pan{padding:0}
+details.blk.pan>summary{list-style:none;cursor:pointer;display:flex;gap:var(--s2);align-items:baseline;
+  flex-wrap:wrap;padding:var(--s3) var(--s4);border-bottom:1px solid transparent;min-height:38px}
+details.blk.pan[open]>summary{border-bottom-color:var(--line)}
+details.blk.pan>summary::-webkit-details-marker{display:none}
+details.blk.pan>summary::before{content:'›';font-family:var(--mono);color:var(--ink-3);
+  display:inline-block;transition:transform .12s}
+details.blk.pan[open]>summary::before{transform:rotate(90deg)}
+details.blk.pan>summary h2{margin:0}
+details.blk.pan>summary .sub{font-size:var(--t1);color:var(--ink-3)}
+details.blk.pan>summary .why{margin-left:auto;font-family:var(--mono);font-size:var(--t1);color:var(--ink-3)}
+details.blk.pan>summary:hover{background:var(--panel-2)}
 .nl .m{font-size:var(--t1);color:var(--ink-3);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
 .nl .txt{margin:var(--s1) 0;font-size:var(--t2);color:var(--ink)}
 .nl .rep{margin:var(--s1) 0 0 var(--s3);padding-left:var(--s2);border-left:1px solid var(--line);font-size:var(--t2)}

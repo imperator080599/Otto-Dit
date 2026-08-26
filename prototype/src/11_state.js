@@ -57,6 +57,8 @@ const S = {
   // jamais un arbitrage.
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
+  dest:{},        // destination courante par section
+  replis:{},      // replis que l'auditeur a ouverts ou fermés lui-même
   selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
