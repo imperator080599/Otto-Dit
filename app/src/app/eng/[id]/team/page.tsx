@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { requireMember } from '@/lib/core/auth';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { q } from '@/lib/db/client';
@@ -13,9 +14,45 @@ import {
 // service, et il montre surtout ce qu'elles refusent. « Ce qui manque pour
 // signer » et « ce qui bloque le visa » sont des listes calculées, pas des
 // avertissements rédigés à la main.
+//
+// `executer` EST AU NIVEAU DU MODULE, ET CE N'EST PAS UN RANGEMENT. Il était
+// défini DANS le composant, et chaque action « use server » le CAPTURAIT. En
+// production, Next doit encoder la fermeture d'une action inline : une fonction
+// capturée n'est pas encodable, et le serveur levait « Functions cannot be
+// passed directly to Client Components » à CHAQUE affichage — pendant que la
+// page rendait 200. Les six formulaires de cet écran étaient donc INERTES en
+// production, et rien ne le disait. Trouvé par le balayage des écrans, qui lit
+// le journal du serveur en plus des codes HTTP (ADR-078).
 
-export default async function TeamPage({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * Exécute une action et RAMÈNE SON REFUS À L'ÉCRAN.
+ *
+ * Le second défaut, du même endroit : le résultat était calculé puis jeté. Une
+ * règle qui refuse en silence ne se distingue pas d'un bouton cassé — c'est ce
+ * que disait le commentaire, et c'est ce que faisait le code. Le motif repart
+ * maintenant dans l'URL, et l'écran l'affiche.
+ */
+async function executer(id: string, fn: () => Promise<unknown>): Promise<never> {
+  let erreur = '';
+  try {
+    await fn();
+  } catch (e) {
+    if (!(e instanceof TeamRuleError)) throw e;
+    erreur = e.message;
+  }
+  revalidatePath(`/eng/${id}/team`);
+  // redirect() lève : il doit rester HORS du try, ou il serait rattrapé.
+  redirect(`/eng/${id}/team${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ''}`);
+}
+
+export default async function TeamPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   const { user } = await requireMember(id);
   const cat = await catalogueDeLaMission(id);
   const roster = await members(id);
@@ -42,29 +79,16 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
     [id],
   );
 
-  /** Toute action rend son refus À L'ÉCRAN : une règle qui échoue en silence
-   *  ne se distingue pas d'un bouton cassé. */
-  async function run(fn: () => Promise<unknown>): Promise<{ error?: string }> {
-    try {
-      await fn();
-      revalidatePath(`/eng/${id}/team`);
-      return {};
-    } catch (e) {
-      if (e instanceof TeamRuleError) return { error: e.message };
-      throw e;
-    }
-  }
-
   async function openAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() => openDeclaration(id, u.id, String(formData.get('reason') ?? '')));
+    await executer(id, () => openDeclaration(id, u.id, String(formData.get('reason') ?? '')));
   }
 
   async function answerAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() =>
+    await executer(id, () =>
       answerRubric(
         String(formData.get('declaration_id')),
         u.id,
@@ -78,13 +102,13 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   async function signAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() => signDeclaration(String(formData.get('declaration_id')), u.id));
+    await executer(id, () => signDeclaration(String(formData.get('declaration_id')), u.id));
   }
 
   async function assignAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() =>
+    await executer(id, () =>
       assignMember({
         engagementId: id,
         userId: String(formData.get('user_id')),
@@ -99,13 +123,13 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   async function exitAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() => exitMember(id, String(formData.get('user_id')), String(formData.get('on')), u.id));
+    await executer(id, () => exitMember(id, String(formData.get('user_id')), String(formData.get('on')), u.id));
   }
 
   async function nasAction(formData: FormData) {
     'use server';
     const { user: u } = await requireMember(id);
-    await run(() =>
+    await executer(id, () =>
       recordNonAuditService({
         engagementId: id,
         nature: String(formData.get('nature')),
@@ -120,6 +144,20 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="stack">
+      {/* LE REFUS SE VOIT. Il était calculé et jeté : une règle qui refuse en
+          silence ne se distingue pas d'un bouton cassé — et la règle phare de
+          cet écran, « aucun travail ne s'attribue sans déclaration signée »,
+          était refusée sans que rien ne s'affiche. */}
+      {erreur && (
+        <div className="panel warn">
+          <p><span className="badge amber">refusé</span> {erreur}</p>
+          <p className="faint">
+            Rien n’a été enregistré. Le refus vient du service, pas de l’écran : la même règle
+            s’applique par l’interface, par l’API et par un test.
+          </p>
+        </div>
+      )}
+
       {obstacles.length > 0 && (
         <div className="panel warn">
           <h2>Obstacles au visa — indépendance</h2>

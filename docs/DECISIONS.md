@@ -2634,3 +2634,54 @@ le moteur refuse ; un cabinet qui voit ça une fois ne croit plus ni l'un ni l'a
    contenu d'un fichier collé sans son nom — recevait le message sur les schémas qui appartiennent au
    produit. Deux causes, deux messages désormais. Même principe qu'ADR-069 sur l'ordre des refus
    d'affectation : *un refus qui égare est pire qu'un refus sec.*
+
+---
+
+## ADR-078 — Le balayage des écrans : la classe entière, fermée par un harnais
+
+**Contexte.** ADR-076 avait trouvé que trois écrans rendaient 500 depuis plusieurs tranches, avec la
+suite au vert. Le corriger un par un aurait laissé la classe ouverte : le défaut suivant serait
+ressorti pareillement, découvert par hasard.
+
+**Décision.** Un balayage qui ouvre **toutes** les routes dans un vrai navigateur et échoue sur ce
+qui ne rend pas. Il tourne dans la suite (`tests/screens.test.ts`, serveur de développement) **et**
+sur un build de production (`npm run screens`). Les deux, parce que les deux exécutions ne sont pas
+la même : c'est précisément ce que disait ADR-076.
+
+**Quatre propriétés, chacune payée par un défaut trouvé pendant sa construction.**
+
+1. **La liste des routes se DÉCOUVRE**, lue dans `src/app`. Une liste écrite à la main oublie un jour
+   une route, et l'oubli est silencieux : le balayage passe au vert en ne regardant pas l'écran
+   cassé. Une route dont un paramètre ne se résout pas est un **échec**, pas une route à sauter.
+2. **Le journal du serveur est lu**, et toute exception y est un échec — même si toutes les routes
+   ont rendu 200. C'est ce contrôle qui a trouvé le défaut ci-dessous, invisible autrement.
+3. **Le port occupé est un refus.** Un serveur oublié d'un lancement précédent tenait le port ; le
+   nôtre est mort sur `EADDRINUSE`, l'attente a vu répondre l'**ancien**, et le balayage a validé un
+   build qu'il n'avait pas produit. *Vérifier ce qu'on n'a pas démarré soi-même, c'est ne rien
+   vérifier.*
+4. **Un serveur mort n'est pas quarante écrans cassés.** Quand le serveur est tombé en cours de
+   route, le rapport a déclaré 28 écrans en panne. Le balayage vérifie maintenant la liveness avant
+   d'accuser, et s'arrête en disant après combien de routes il est tombé — un compteur qui ne compte
+   pas ses plantages ment deux fois.
+
+**LE DÉFAUT QUE ÇA A TROUVÉ, et il était pire qu'un 500.** Les six actions de `/eng/[id]/team`
+étaient définies dans le composant et **capturaient un helper local**, `run`. En production, Next doit
+encoder la fermeture d'une action inline ; une fonction capturée n'est pas encodable, et le serveur
+levait à **chaque affichage** — pendant que la page rendait **200**. Les six formulaires de l'écran
+équipe étaient donc **inertes en production**, et l'écran avait l'air normal. Un 500 se voit ; un
+formulaire inerte sous une page qui rend, non.
+
+Le helper est monté au niveau du module. Même correction préventive sur `/methodology`, dont les
+actions vivent maintenant dans `actions.ts` — et qui y gagne une correction de fond : une action
+définie dans le rendu **capture l'état du rendu**, donc lisait une version de méthode périmée si le
+cabinet publiait entre l'affichage et l'envoi. Elle relit elle-même.
+
+**UN SECOND DÉFAUT, AU MÊME ENDROIT, DE LA MÊME FAMILLE.** `run` calculait le motif de refus et le
+**jetait**. Le commentaire au-dessus disait : *« une règle qui échoue en silence ne se distingue pas
+d'un bouton cassé »* — et le code faisait exactement cela. La règle phare de la tranche équipe —
+*aucun travail ne s'attribue sans déclaration signée* — refusait sans que rien ne s'affiche. Le motif
+repart maintenant dans l'URL et l'écran le rend.
+
+**Ce que le balayage ne couvre pas, dit ici pour ne pas être cru par omission** : il ouvre les
+écrans, il ne clique sur rien. Un écran qui rend n'est pas un écran qui marche — c'est le parcours
+rejouable de `DEMO_APP.md` qui vérifie que les actions agissent.

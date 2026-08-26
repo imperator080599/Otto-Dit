@@ -1,13 +1,12 @@
 import Link from 'next/link';
-import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
 import {
-  methodologies, methodologieCourante, publierMethodologie, designerMethodologie,
-  verifierPaquet, contenuDeLaMethodologie, contenuDuDepot, fichiersAttendus,
-  MethodologyError,
+  methodologies, methodologieCourante, contenuDeLaMethodologie, contenuDuDepot,
+  fichiersAttendus,
 } from '@/lib/methodology/depot';
-import { ImportForm, type Retour } from './import-form';
+import { ImportForm } from './import-form';
+import { soumettreMethode, designerAction } from './actions';
 
 // LA MÉTHODE DU CABINET — l'écran qui rend la phrase démontrable.
 //
@@ -69,80 +68,6 @@ export default async function MethodologyPage({
     : fichier
       ? JSON.stringify({ [fichier]: base[fichier] ?? {} }, null, 2)
       : '';
-
-  async function soumettre(_etat: Retour, formData: FormData): Promise<Retour> {
-    'use server';
-    const u = await requireUser();
-    const texte = String(formData.get('paquet') ?? '');
-    const label = String(formData.get('label') ?? '').trim();
-    const publier = String(formData.get('intention') ?? '') === 'publier';
-    const cible = String(formData.get('fichier') ?? '*');
-
-    let valeur: unknown;
-    try {
-      valeur = JSON.parse(texte);
-    } catch (e) {
-      /* Une erreur de syntaxe est une erreur comme une autre : elle se rend
-         dans la même liste, pas dans une bannière séparée qu'on lit ailleurs. */
-      return { erreurs: [`JSON illisible : ${(e as Error).message}`], message: '', fichiers: attendus };
-    }
-
-    const patch = valeur as Record<string, unknown>;
-    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
-      return {
-        erreurs: ['le texte doit être un objet dont les clés sont des noms de fichiers, '
-          + `par exemple { "risque.json": … }`],
-        message: '', fichiers: attendus,
-      };
-    }
-    /* Le correctif se pose SUR la version en vigueur ; le paquet entier
-       remplace tout et doit se suffire. Dans les deux cas la vérification est
-       la même : c'est le résultat fusionné qui est validé, jamais le morceau. */
-    const socle = cible === '*'
-      ? {}
-      : courante ? await contenuDeLaMethodologie(courante.id) : await contenuDuDepot();
-    const contenu = { ...socle, ...patch };
-
-    const erreurs = await verifierPaquet(contenu);
-    if (erreurs.length) return { erreurs, message: '', fichiers: attendus };
-    if (!publier) {
-      return {
-        erreurs: [],
-        message: 'paquet valide — rien n’a été écrit. Le bouton « Publier » créera une version.',
-        fichiers: attendus,
-      };
-    }
-    if (!label) {
-      return { erreurs: ['la version doit porter un nom : un dossier doit pouvoir dire sous quelle méthode il a été exécuté'], message: '', fichiers: attendus };
-    }
-
-    try {
-      const row = await publierMethodologie({
-        tenantId: u.tenant_id, label, contenu, actorUserId: u.id,
-      });
-      revalidatePath('/methodology');
-      return {
-        erreurs: [],
-        message: `publiée : « ${row.label} », empreinte ${row.content_hash.slice(0, 12)}…. `
-          + `Les missions gardent la leur tant qu’on ne les redésigne pas.`,
-        fichiers: attendus,
-      };
-    } catch (e) {
-      const m = e instanceof MethodologyError ? e.message : String(e);
-      return { erreurs: m.split('\n').map((x) => x.trim()).filter(Boolean), message: '', fichiers: attendus };
-    }
-  }
-
-  async function designer(formData: FormData) {
-    'use server';
-    const u = await requireUser();
-    await designerMethodologie({
-      engagementId: String(formData.get('engagement_id') ?? ''),
-      methodologyId: String(formData.get('methodology_id') ?? ''),
-      actorUserId: u.id,
-    });
-    revalidatePath('/methodology');
-  }
 
   return (
     <div className="shell">
@@ -208,7 +133,7 @@ export default async function MethodologyPage({
                   {e.label ?? <span className="badge amber">aucune — la mission ne peut pas être planifiée</span>}
                 </td>
                 <td>
-                  <form action={designer} className="row" style={{ gap: 6 }}>
+                  <form action={designerAction} className="row" style={{ gap: 6 }}>
                     <input type="hidden" name="engagement_id" value={e.id} />
                     <select name="methodology_id" defaultValue={e.methodology_id ?? ''}>
                       {liste.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
@@ -250,7 +175,7 @@ export default async function MethodologyPage({
           </Link>
         </p>
         {fichier ? (
-          <ImportForm action={soumettre} attendus={attendus} gabarit={gabarit} fichier={fichier} />
+          <ImportForm action={soumettreMethode} attendus={attendus} gabarit={gabarit} fichier={fichier} />
         ) : (
           <p className="faint">Choisissez un fichier, ou le paquet entier.</p>
         )}

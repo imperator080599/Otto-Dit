@@ -14,7 +14,10 @@
     "demo:seed": "tsx scripts/demo-seed.ts",
     "demo:email": "tsx scripts/demo-email.ts",
     "eval:extraction": "tsx scripts/eval/run.ts",
-    "cost:measure": "tsx scripts/cost/measure.ts"
+    "cost:measure": "tsx scripts/cost/measure.ts",
+    "screens": "tsx scripts/screens/run.ts",
+    "screens:dev": "tsx scripts/screens/run.ts -- --dev",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +42,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.0",
+    "playwright": "^1.62.1",
     "tsx": "^4.23.12",
     "typescript": "5.9",
     "vitest": "^4.1.11"
