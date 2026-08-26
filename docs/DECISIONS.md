@@ -2804,3 +2804,46 @@ calcul. Rien n'aurait planté ; le paramètre inconnu aurait simplement été pa
 désormais, pour chaque procédure, sa **population** (prédicat et paramètres) et son mode de
 **sélection**, à côté de la taille et de sa provenance. Une procédure sans population explicite est
 une intention, pas une procédure.
+
+---
+
+## ADR-081 — La boucle comme objet (point 7)
+
+**Contexte.** Chaque maillon existait et était testé : la demande, le portail, le dépôt,
+l'extraction, le vouching, l'écart, la demande de clarification, la résolution probante, le cumul.
+**La boucle, elle, n'existait pas.** Personne ne pouvait la voir tourner, dire où elle était bloquée,
+ni combien de tours elle avait faits. Un produit dont la thèse est « la constatation circule » et qui
+ne montre pas la circulation demande qu'on le croie sur parole.
+
+**Décision.** Un service `loop.ts` et un écran `/eng/[id]/loop`. Neuf étapes ordonnées — sélection,
+demande, dépôt, lecture, rapprochement, écart, clarification, résolution, cumul — chacune avec ce
+qu'elle a **franchi**, ce qui est **arrêté** là, et **ce qu'on attend**, nommément.
+
+**Le chiffre qui compte est le nombre de TOURS.** Une file d'étapes se parcourt une fois ; une boucle
+repart. Un écart qui génère une demande de clarification, c'est la boucle qui refait un tour — et le
+compteur est exactement le nombre de demandes **nées d'un écart** (`request_item.exception_id`). Sans
+lui, on montre une file en prétendant montrer un cycle.
+
+**Rien n'est stocké.** Tout est dérivé de l'état réel, et un test vérifie qu'aucune table ne porte cet
+état. *Un compteur tenu à part diverge un jour de ce qu'il compte, et c'est toujours le compteur
+qu'on croit.*
+
+**Trois refus de complaisance.**
+
+1. **Pas de pourcentage d'avancement.** Le chiffre utile est « combien sont arrêtés ici », pas
+   « 73 % ». Un pourcentage se regarde ; un blocage se traite.
+2. **Jamais « en cours ».** Chaque attente est nommée — « demandes émises sans pièce déposée »,
+   « écarts ouverts sans demande de clarification ». Un écran qui dit « en cours » ne dit rien de ce
+   qu'il faut faire ensuite.
+3. **Sans échantillon, la boucle le dit** au lieu de rendre neuf zéros, qui se lisent comme un
+   travail commencé et vide.
+
+**La clarification compte les ÉCARTS, pas les demandes.** Une demande peut porter plusieurs écarts :
+compter les demandes surestimerait la couverture. Vérifié par un test qui compare au compte distinct.
+
+**Une correction de test, pas de code.** La première version supposait que le compteur de tours partait
+de zéro. Il valait déjà 1 : le déroulé de démonstration fait tourner la boucle. Le test vérifie
+désormais l'**invariant** — le compteur égale le nombre de demandes nées d'un écart — et, séparément,
+qu'un nouveau tour le fait monter de un, ou que le service **refuse** quand il n'y a rien à clarifier
+et que le compteur ne bouge pas. Supposer un état de départ est une manière de tester ce qu'on croit
+plutôt que ce qui est.

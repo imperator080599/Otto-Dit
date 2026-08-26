@@ -29,6 +29,8 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
       { href: `${base}/population`, label: 'Population' },
       { href: `${base}/sampling`, label: 'Sampling' },
       { href: `${base}/testing`, label: 'Testing' },
+      // LA BOUCLE, entre les travaux et les demandes : c'est là qu'elle tourne.
+      { href: `${base}/loop`, label: 'La boucle' },
     );
   }
   if (packs.includes('pcaob-sox')) {

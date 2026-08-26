@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 306 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 313 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -826,6 +826,31 @@ la taille et de sa provenance. Une procédure sans population explicite est une 
 procédure.
 
 **Vérification** : 306 tests (299 → 306) · `tsc --noEmit` propre · 48/48 écrans en production.
+
+## Application — tranche livrée : la boucle comme objet (point 7)
+
+Chaque maillon existait et était testé. **La boucle, elle, n'existait pas** : personne ne pouvait la
+voir tourner, dire où elle bloquait, ni combien de tours elle avait faits (ADR-081). Un produit dont
+la thèse est « la constatation circule » et qui ne montre pas la circulation demande qu'on le croie
+sur parole.
+
+- **Neuf étapes ordonnées** — sélection, demande, dépôt, lecture, rapprochement, écart,
+  clarification, résolution, cumul — avec ce qui a **franchi**, ce qui est **arrêté là**, et **ce
+  qu'on attend**, nommément. Jamais « en cours » : un écran qui dit « en cours » ne dit rien de ce
+  qu'il faut faire ensuite.
+- **Le chiffre qui compte est le nombre de TOURS** : les demandes **nées d'un écart**. Une file se
+  parcourt une fois ; une boucle repart. Sans ce compteur, on montre une file en prétendant montrer
+  un cycle.
+- **Rien n'est stocké** — tout est dérivé, et un test vérifie qu'aucune table ne porte cet état. Un
+  compteur tenu à part diverge un jour de ce qu'il compte.
+- **Pas de pourcentage d'avancement** : le chiffre utile est « combien sont arrêtés ici ». Un
+  pourcentage se regarde ; un blocage se traite.
+- **Une correction de test, pas de code** : la première version supposait un compteur de tours à
+  zéro. Il valait déjà 1 — le déroulé de démonstration fait tourner la boucle. Le test vérifie
+  maintenant l'invariant, et qu'un nouveau tour le fait monter de un.
+
+**Vérification** : 313 tests (306 → 313) · `tsc --noEmit` propre · **50/50** écrans en production
+(le nouvel écran a été découvert seul par le balayage).
 
 ## Convergence prototype → application
 
