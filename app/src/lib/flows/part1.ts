@@ -3,7 +3,7 @@ import path from 'node:path';
 import { repoRoot, q, q1, q01 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from '@/lib/services/imports';
-import { computeTbGl, latestTbGl, documentDifference } from '@/lib/services/reconciliation';
+import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/services/reconciliation';
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
@@ -30,8 +30,15 @@ export async function bootstrapNep(): Promise<void> {
   await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2024.csv', content: tbPrior, mapping: detectTbMapping(tbPrior.split('\n')[0]), periodKind: 'prior' });
   await importFec({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: '999888777FEC20251231.txt', bytes: fs.readFileSync(ds('999888777FEC20251231.txt')) });
   await computeTbGl(IDS.engNep, IDS.users.karim);
+  // L'écart tient à une écriture ABSENTE du grand livre : il n'y a ni écriture à citer ni
+  // pièce à joindre. Le fermer en « différence documentée » exigerait une corroboration qui
+  // n'existe pas (migration 0010) ; c'est une limitation de périmètre, et le fichier reste
+  // provisoire jusqu'au FEC définitif — ce qui bloque la conclusion, pas le testing.
   for (const item of (await latestTbGl(IDS.engNep))!.items) {
-    await documentDifference(item.id, IDS.users.karim, 'Écriture de situation (Dr 411000 / Cr 706000, 25 000 €) non reprise dans le FEC — expliquée par le client, correction attendue au FEC définitif.');
+    await noteReconciliationLimitation(item.id, IDS.users.karim, {
+      explanation: 'Écriture de situation (Dr 411000 / Cr 706000, 25 000 €) passée après l’extraction du fichier des écritures ; elle sera reprise au FEC définitif.',
+      alternativeProcedures: 'Rapprochement re-exécuté sur la balance et sur le détail des comptes 411000 et 706000 ; l’écart est isolé, de sens opposé et de même montant. Le fichier est marqué provisoire et le rapprochement sera rejoué sur le FEC définitif avant toute conclusion.',
+    });
   }
   await rebuildFslis(IDS.engNep, IDS.users.karim);
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);

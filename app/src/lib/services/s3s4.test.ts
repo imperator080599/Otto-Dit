@@ -5,7 +5,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS, PORTAL_TOKENS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from './imports';
-import { computeTbGl, latestTbGl, documentDifference } from './reconciliation';
+import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconciliation';
 import { rebuildFslis } from './fsli';
 import { propose, validate } from './materiality';
 import { revenuePopulation } from './population';
@@ -26,7 +26,10 @@ async function bootstrapNepEngagement(): Promise<void> {
   await computeTbGl(IDS.engNep, IDS.users.karim);
   const latest = await latestTbGl(IDS.engNep);
   for (const item of latest!.items) {
-    await documentDifference(item.id, IDS.users.karim, 'Écriture de situation non reprise au FEC — documentée.');
+    await noteReconciliationLimitation(item.id, IDS.users.karim, {
+      explanation: 'Écriture de situation (Dr 411000 / Cr 706000, 25 000 €) passée après l’extraction du fichier des écritures.',
+      alternativeProcedures: 'Rapprochement re-exécuté sur la balance et sur le détail des comptes 411000 et 706000 ; écart isolé, de sens opposé et de même montant. Fichier marqué provisoire, rapprochement à rejouer sur le FEC définitif.',
+    });
   }
   await rebuildFslis(IDS.engNep, IDS.users.karim);
   const mid = await propose(IDS.engNep, IDS.users.lea);

@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 146 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 148 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -196,6 +196,47 @@ base64. Compteurs : 2 rayons, 0 couleur hors jetons, 5 tailles de police, 0 espa
 
 **Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
 qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).
+
+## Statuts dérivés et résolution d'écart (2026-08-26, points 4 et 5)
+
+`prototype/otto-prototype.html` — ADR-039 à ADR-042. Sources décomposées dans
+`prototype/src/` (`./build.sh` réassemble le fichier unique).
+
+**Point 4 — un état ne se saisit pas.** La ligne de papier de travail ne porte plus de drapeau
+`recu` : la réception se **dérive** du dépôt du client sur la requête qui demandait la pièce.
+Cinq états dérivés par contrôle — en attente → reçue → traitée sans écart → écart à expliquer →
+écart expliqué — affichés par les marques de pointage (`n a p x e`) et agrégés au bloc
+« Avancement des justificatifs » de la section et au tableau de bord de pilotage. Le bloc
+« Responsabilités et heures », dupliqué dans chaque section, est retiré : la section porte
+désormais l'**action** — un bouton « le testing est terminé » qui porte le travail à « achevé »
+et le soumet nommément à son réviseur, refusé tant qu'un justificatif manque, qu'un contrôle
+n'est pas saisi, qu'un écart n'est pas résolu ou que la conclusion n'est pas écrite.
+
+**Point 5 — une explication du client n'est pas un élément probant.** Le papier de travail porte
+écart constaté, part expliquée, écart **résiduel calculé**, explication reçue mot pour mot,
+conclusion de l'auditeur, qualification, lien vers la pièce ou l'écriture qui corrobore, auteur
+et date. Sans les six éléments, l'écart reste **entier** au cumul. Un seul casier pour tous les
+écarts, y compris ceux nés du rapprochement et du test des écritures, dont les phrases
+pré-écrites deviennent des explications *reçues* et non des résolutions. La case à cocher
+« corrigée par le client » de l'achèvement est supprimée. Le double comptage inter-sections
+(une facture relevée en « Clients » et en « Chiffre d'affaires ») est signalé, jamais déduit.
+
+**Audit demandé sur les autres tables de résolution — deux trouvées, corrigées.**
+Migration **0010** : `reconciliation_item` (dont `documented_difference` libère le verrou de
+population Gate 2) et `deviation` (dont `explained` retire une défaillance du décompte)
+pouvaient encore clore un constat sur une phrase. Même contrainte, plus le chemin
+`scope_limitation` pour ce qui n'est pas corroborable par construction. Les deux flux de
+démonstration sont corrigés, pas contournés : `part2` laissait une déviation « expliquée » tout
+en écrivant qu'elle subsistait. **148 tests verts**, dont quatre assertions au niveau base.
+
+**Jeu de données — ADR-042.** Les seize écarts de montant étaient posés entre 3 % et 10 % de
+leur pièce quelle que soit leur cause. Chaque écart déclare désormais sa nature et chaque nature
+sa bande (arrondi ≤ 1 %, régularisation 2–12 %, omission 10–40 %), vérifiée à l'écran. Les
+écarts dépassant le seuil de remontée passent de 1 à 6 — **constaté, pas visé**.
+
+**Reste devant** : point 2 (versionnement balance/grand livre et rapport d'impact), point 3
+(critères du test des écritures paramétrables et entonnoir), point 1 (répartition proposée puis
+attribution en lot), puis E, B, D et le lot 2 initial.
 
 ## Next actions (post-repo, founder-gated)
 

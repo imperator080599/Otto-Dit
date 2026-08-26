@@ -6,7 +6,7 @@ import { q, q1 } from '@/lib/db/client';
 import { repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec, parseTbCsv } from './imports';
-import { computeTbGl, latestTbGl, documentDifference, fsliRecoGate } from './reconciliation';
+import { computeTbGl, latestTbGl, documentDifference, noteReconciliationLimitation, fsliRecoGate } from './reconciliation';
 import { rebuildFslis, listFslis, proposeScoping, confirmScoping, fsliAccounts } from './fsli';
 import { propose, validate, currentMateriality, validatedThresholds } from './materiality';
 
@@ -101,15 +101,56 @@ describe('S1/S2 — imports, reconciliation, FSLI mapping, materiality, scoping'
     expect(exc.every((e) => e.taxonomy_code === 'reconciliation_diff')).toBe(true);
   });
 
-  it('per-FSLI gate blocks on the open difference, passes once documented (Gate 2)', async () => {
+  it('a difference cannot be documented on an explanation alone (migration 0010)', async () => {
+    const latest = await latestTbGl(IDS.engNep);
+    await expect(
+      documentDifference(latest!.items[0].id, IDS.users.karim, {
+        explanation: 'Écriture de situation passée après l’extraction du fichier.',
+        conclusion: 'Explication reçue et jugée plausible.',
+        disposition: 'no_misstatement',
+        corroboration: {},
+      }),
+    ).rejects.toThrow(/link the corroborating evidence or accounting entry/);
+
+    // et la même vacuité ne peut pas être écrite directement dans la ligne : la contrainte
+    // CHECK est le filet derrière le service (migration 0010)
+    await expect(
+      q(`update reconciliation_item set status = 'documented_difference', note = 'ok',
+                resolved_by = $2, resolved_at = now() where id = $1`,
+        [latest!.items[0].id, IDS.users.lea]),
+    ).rejects.toThrow(/reconciliation_closure_is_probative/);
+
+    // ni la limitation de périmètre sans procédures alternatives
+    await expect(
+      q(`update reconciliation_item set status = 'scope_limitation', client_explanation = 'le client dit que…',
+                resolved_by = $2, resolved_at = now() where id = $1`,
+        [latest!.items[0].id, IDS.users.lea]),
+    ).rejects.toThrow(/reconciliation_limitation_is_documented/);
+  });
+
+  it('per-FSLI gate blocks on the open difference, passes on the limitation path (Gate 2)', async () => {
     const before = await fsliRecoGate(IDS.engNep, ['706000', '701000']);
     expect(before.ok).toBe(false);
     const latest = await latestTbGl(IDS.engNep);
+    // L'écriture est ABSENTE du grand livre : il n'existe ni pièce ni écriture à lier.
+    // C'est une limitation de périmètre, pas une différence documentée.
     for (const item of latest!.items) {
-      await documentDifference(item.id, IDS.users.karim, 'Écriture de situation (Dr 411000 / Cr 706000) non reprise dans le FEC — expliquée par le client, à corriger au FEC définitif.');
+      await noteReconciliationLimitation(item.id, IDS.users.karim, {
+        explanation: 'Écriture de situation (Dr 411000 / Cr 706000) passée après l’extraction du fichier des écritures.',
+        alternativeProcedures: 'Rapprochement re-exécuté sur la balance et le détail des comptes ; écart isolé, de sens opposé et de même montant. Fichier marqué provisoire.',
+      });
     }
     const after = await fsliRecoGate(IDS.engNep, ['706000', '701000']);
     expect(after.ok).toBe(true);
+    const items = await q<{ status: string; alternative_procedures: string | null; corroboration_evidence_id: string | null }>(
+      `select ri.status, ri.alternative_procedures, ri.corroboration_evidence_id from reconciliation_item ri
+       join reconciliation r on r.id = ri.reconciliation_id where r.engagement_id = $1`,
+      [IDS.engNep],
+    );
+    expect(items.every((i) => i.status === 'scope_limitation')).toBe(true);
+    expect(items.every((i) => (i.alternative_procedures ?? '').length > 0)).toBe(true);
+    // et rien ne prétend être corroboré
+    expect(items.every((i) => i.corroboration_evidence_id === null)).toBe(true);
     const exc = await q<{ status: string }>(
       `select status from exception where engagement_id = $1 and kind = 'reconciliation'`,
       [IDS.engNep],

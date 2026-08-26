@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { computeTbGl, latestTbGl, documentDifference } from '@/lib/services/reconciliation';
+import { computeTbGl, latestTbGl, documentDifference, noteReconciliationLimitation } from '@/lib/services/reconciliation';
+import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 
@@ -8,6 +9,18 @@ export default async function ReconciliationPage({ params }: { params: Promise<{
   const { id } = await params;
   await requireMember(id);
   const latest = await latestTbGl(id);
+  // Ce qui peut être LIÉ en corroboration : la même liste que sur les exceptions.
+  const corroborations = [
+    ...(await q<{ id: string; filename: string; doc_type: string | null }>(
+      `select id, filename, doc_type from evidence where engagement_id = $1 and quarantined = false order by filename`,
+      [id],
+    )).map((e) => ({ value: `ev:${e.id}`, label: `pièce · ${e.filename}${e.doc_type ? ` [${e.doc_type}]` : ''}` })),
+    ...(await q<{ id: string; entry_no: string; piece_ref: string | null; entry_date: string }>(
+      `select id, entry_no, piece_ref, entry_date::text from gl_entry
+       where engagement_id = $1 and journal_code = 'OD' order by entry_date desc limit 25`,
+      [id],
+    )).map((g) => ({ value: `gl:${g.id}`, label: `écriture · ${g.entry_no} ${g.piece_ref ?? ''} (${g.entry_date})` })),
+  ];
 
   async function computeAction() {
     'use server';
@@ -19,7 +32,23 @@ export default async function ReconciliationPage({ params }: { params: Promise<{
   async function documentAction(formData: FormData) {
     'use server';
     const { user } = await requireMember(id);
-    await documentDifference(String(formData.get('item_id')), user.id, String(formData.get('note') ?? ''));
+    const [kind, refId] = String(formData.get('corroboration') ?? '').split(':');
+    await documentDifference(String(formData.get('item_id')), user.id, {
+      explanation: String(formData.get('explanation') ?? ''),
+      conclusion: String(formData.get('conclusion') ?? ''),
+      disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
+      corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+    });
+    revalidatePath(`/eng/${id}/reconciliation`);
+  }
+
+  async function limitationAction(formData: FormData) {
+    'use server';
+    const { user } = await requireMember(id);
+    await noteReconciliationLimitation(String(formData.get('item_id')), user.id, {
+      explanation: String(formData.get('explanation') ?? ''),
+      alternativeProcedures: String(formData.get('alternative') ?? ''),
+    });
     revalidatePath(`/eng/${id}/reconciliation`);
   }
 
@@ -48,8 +77,16 @@ export default async function ReconciliationPage({ params }: { params: Promise<{
             <p className="faint">
               Per-account differences are never netted; each one raises a typed exception.
               The population gate (Gate 2) is per tested FSLI: an open difference on the
-              FSLI's accounts blocks its population build; a documented difference passes
+              FSLI&apos;s accounts blocks its population build; a documented difference passes
               with the note rendered in the workpaper.
+            </p>
+            <p className="faint">
+              Documenting a difference carries the same six elements as resolving an exception
+              (migration 0010): the explanation received verbatim, the auditor&apos;s conclusion, a
+              disposition, a LINK to the evidence or entry that corroborates it, and who concluded
+              when. A difference nobody can corroborate — an entry absent from the ledger has none —
+              takes the scope-limitation path instead: it records what was done instead, it never
+              claims to be corroborated, and the ledger stays provisional until the definitive file.
             </p>
             {latest.items.length > 0 && (
               <table className="data">
@@ -70,11 +107,39 @@ export default async function ReconciliationPage({ params }: { params: Promise<{
                       </td>
                       <td>
                         {it.status === 'open' ? (
-                          <form action={documentAction} className="row">
-                            <input type="hidden" name="item_id" value={it.id} />
-                            <input type="text" name="note" placeholder="explanation (required)" style={{ width: 260 }} required />
-                            <button className="btn small secondary">Document difference</button>
-                          </form>
+                          <details>
+                            <summary className="muted">act…</summary>
+                            <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
+                              <input type="hidden" name="item_id" value={it.id} />
+                              <textarea name="explanation" rows={2} required
+                                placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                              <textarea name="conclusion" rows={2} required
+                                placeholder="Votre conclusion sur cette explication" />
+                              <div className="row" style={{ gap: 4 }}>
+                                <select name="disposition" defaultValue="no_misstatement">
+                                  <option value="no_misstatement">aucune anomalie</option>
+                                  <option value="corrected">corrigé (écriture liée)</option>
+                                  <option value="compensated">couvert par un autre élément</option>
+                                  <option value="already_accumulated">même événement, déjà accumulé</option>
+                                </select>
+                                <select name="corroboration" required style={{ flex: 1 }}>
+                                  <option value="">— pièce ou écriture qui corrobore (obligatoire) —</option>
+                                  {corroborations.map((c) => (
+                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                  ))}
+                                </select>
+                                <button className="btn small secondary">Document difference</button>
+                              </div>
+                            </form>
+                            <form action={limitationAction} style={{ display: 'grid', gap: 4, maxWidth: 520 }}>
+                              <input type="hidden" name="item_id" value={it.id} />
+                              <textarea name="explanation" rows={2} required
+                                placeholder="Pourquoi l'écart ne peut pas être corroboré, dans les mots du client" />
+                              <textarea name="alternative" rows={2} required
+                                placeholder="Ce qui a été fait à la place (procédures alternatives)" />
+                              <button className="btn small danger">→ Limitation de périmètre</button>
+                            </form>
+                          </details>
                         ) : (
                           <span className="muted">{it.note}</span>
                         )}

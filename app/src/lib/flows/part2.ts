@@ -5,7 +5,7 @@ import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb } from '@/lib/services/imports';
 import { rebuildFslis } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
-import { importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls, proposeDeficiency, decideDeficiency, resolveDeviation, listDeviations, extendToFullPopulation } from '@/lib/services/sox';
+import { importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls, proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -127,9 +127,10 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
   }
 
   if (res.deviations > 0) {
-    for (const d of (await listDeviations(IDS.engSox)).filter((x) => x.control_code === controlCode && x.status === 'open')) {
-      await resolveDeviation(d.id, IDS.users.karim, 'Client explanation obtained and evaluated; deviation stands as a control failure for the instance tested.');
-    }
+    // Les déviations RESTENT ouvertes : l'explication reçue ne montrait pas que le contrôle
+    // avait fonctionné, et aucun contrôle compensatoire n'est établi. Les porter
+    // « expliquées » les aurait sorties du décompte alors qu'elles tiennent (migration 0010) :
+    // une déviation qui subsiste alimente le taux et la déficience ci-dessous.
     // The magnitude exposure is derived from the accounts the control covers, not chosen:
     // for a bank reconciliation it is the cash the control is there to protect; for credit
     // approval it is the receivables exposed to unapproved credit. Both come from the

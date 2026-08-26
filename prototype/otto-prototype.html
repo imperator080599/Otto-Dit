@@ -702,7 +702,8 @@ const S = {
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
   travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
-  achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{}, corrigees:{},
+  resolutionsHors:{},
+  achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{},
                opinion:'', opinionMotif:'', raFinale:'', clos:null },
   envoi:{ cadence:'hebdo', jour:1, destinataires:[], perimetre:'client' },
   premierRendu:'2026-03-15T09:12',
@@ -1232,25 +1233,44 @@ const TAUX_ANOMALIE = [
     motif:'taux non couverts par le barème 2025, à faire justifier' },
 ];
 
-/** Pièces touchées, nommément. Le delta est écrit, pas calculé. */
+/* ── ampleur d'un écart : elle découle de sa CAUSE ────────────────────────
+   Les seize écarts de montant étaient tous posés entre 3 % et 10 % de la
+   pièce qui les porte, quelle que soit la cause écrite à côté : un avoir
+   entier non comptabilisé y valait la même chose qu'un arrondi de saisie.
+   Une part choisie pour faire un joli nombre n'est pas un écart d'audit.
+   Chaque écart déclare donc sa NATURE, et chaque nature sa bande — exprimée
+   en part de la pièce, parce qu'une erreur est proportionnelle à ce sur quoi
+   elle porte. La bande est vérifiée dans la vue « Jeu de données » : si un
+   écart en sort, c'est la table qui est fausse, pas la bande. */
+const NATURES_ECART = {
+  arrondi:        { lib:'arrondi ou frais non ventilé', min:0,    max:0.01,
+                    d:'une saisie arrondie, une commission non éclatée : quelques euros à quelques dizaines' },
+  regularisation: { lib:'régularisation partielle',     min:0.02, max:0.12,
+                    d:'une remise non déduite, un taux ajusté, un reliquat mal facturé : une part de la pièce' },
+  omission:       { lib:'document ou ligne omis',       min:0.10, max:0.40,
+                    d:'un avoir jamais comptabilisé, un retour non crédité, un rappel non intégré : l’essentiel de ce qu’il aurait fallu passer' },
+};
+
+/** Pièces touchées, nommément. Le delta est écrit, pas calculé — mais il doit
+ *  tenir dans la bande de sa nature, et cela se vérifie. */
 const ANOMALIES_PIECES = {
   /* montant — 16 pièces réparties sur les cinq journaux */
-  'FA2025-1516':{ t:'montant', delta:-152000, why:'avoir de fin d’exercice accordé au client, non comptabilisé' },
-  'FA2025-3685':{ t:'montant', delta:-45000,  why:'remise commerciale accordée et non déduite' },
-  'FA2025-6342':{ t:'montant', delta:-87000,  why:'avoir partiel émis après facturation' },
-  'FA2025-8914':{ t:'montant', delta:-119000, why:'reprise de marchandise non facturée en retour' },
-  'FF2025-1419':{ t:'montant', delta:-65000,  why:'remise de fin d’année du fournisseur non déduite' },
-  'FF2025-3593':{ t:'montant', delta:-124000, why:'avoir fournisseur reçu et non comptabilisé' },
-  'FF2025-5392':{ t:'montant', delta:-21000,  why:'écart de facturation sur reliquat de commande' },
-  'FF2025-7319':{ t:'montant', delta:-5000,   why:'prime d’assurance ajustée après régularisation' },
-  'FF2025-9284':{ t:'montant', delta:-7500,   why:'frais de transport refacturés partiellement' },
-  'BQ2025-2260':{ t:'montant', delta:-8000,   why:'frais bancaires imputés séparément, non rapprochés' },
-  'BQ2025-5665':{ t:'montant', delta:-95000,  why:'virement partiellement rejeté et réémis' },
-  'BQ2025-8784':{ t:'montant', delta:-11000,  why:'commission de mouvement non ventilée' },
-  'PA2025-2462':{ t:'montant', delta:-186000, why:'régularisation de prime non intégrée au journal de paie' },
-  'PA2025-6967':{ t:'montant', delta:-74000,  why:'rappel de cotisation postérieur au bulletin' },
-  'OD2025-2539':{ t:'montant', delta:-42000,  why:'écriture de régularisation arrondie lors de la saisie' },
-  'OD2025-6435':{ t:'montant', delta:-108000, why:'reclassement partiel non repris dans la contrepartie' },
+  'FA2025-1516':{ t:'montant', n:'omission',       delta:-624000, why:'avoir de fin d’exercice accordé au client, non comptabilisé' },
+  'FA2025-3685':{ t:'montant', n:'regularisation', delta:-62000,  why:'remise commerciale accordée et non déduite' },
+  'FA2025-6342':{ t:'montant', n:'regularisation', delta:-134000, why:'avoir partiel émis après facturation' },
+  'FA2025-8914':{ t:'montant', n:'omission',       delta:-485000, why:'reprise de marchandise non facturée en retour' },
+  'FF2025-1419':{ t:'montant', n:'regularisation', delta:-94000,  why:'remise de fin d’année du fournisseur non déduite' },
+  'FF2025-3593':{ t:'montant', n:'omission',       delta:-397000, why:'avoir fournisseur reçu et non comptabilisé' },
+  'FF2025-5392':{ t:'montant', n:'regularisation', delta:-31000,  why:'écart de facturation sur reliquat de commande' },
+  'FF2025-7319':{ t:'montant', n:'regularisation', delta:-4500,   why:'prime d’assurance ajustée après régularisation' },
+  'FF2025-9284':{ t:'montant', n:'arrondi',        delta:-420,    why:'frais de transport refacturés partiellement' },
+  'BQ2025-2260':{ t:'montant', n:'arrondi',        delta:-370,    why:'frais bancaires imputés séparément, non rapprochés' },
+  'BQ2025-5665':{ t:'montant', n:'omission',       delta:-672000, why:'virement partiellement rejeté et réémis' },
+  'BQ2025-8784':{ t:'montant', n:'arrondi',        delta:-815,    why:'commission de mouvement non ventilée' },
+  'PA2025-2462':{ t:'montant', n:'omission',       delta:-531000, why:'régularisation de prime non intégrée au journal de paie' },
+  'PA2025-6967':{ t:'montant', n:'omission',       delta:-248000, why:'rappel de cotisation postérieur au bulletin' },
+  'OD2025-2539':{ t:'montant', n:'arrondi',        delta:-6240,   why:'écriture de régularisation arrondie lors de la saisie' },
+  'OD2025-6435':{ t:'montant', n:'regularisation', delta:-178000, why:'reclassement partiel non repris dans la contrepartie' },
   /* quantité — 4 factures de vente */
   'FA2025-1959':{ t:'quantite', delta:-3,  why:'livraison partielle, solde sur l’exercice suivant' },
   'FA2025-4906':{ t:'quantite', delta:-12, why:'casse constatée à la livraison, avoir non émis' },
@@ -1677,9 +1697,13 @@ function wpProc(p, pr){
   if (!e) return null;
   const st = proc(p.code, pr.code);
   const anc = new Map((st.wp || []).map(r => [r.cle, r]));
+  /* Une ligne ne porte AUCUN drapeau de réception : « reçue » se dérive du
+     dépôt du client sur la requête (voir ligneRecue). Elle ne porte que ce
+     qu'un auditeur a réellement saisi : les valeurs relevées et les
+     résolutions d'écart. */
   st.wp = e.retenus.map(x => {
     const g = anc.get(x.cle);
-    return g || { cle:x.cle, x, recu:false, docs:{}, champs:{}, expl:'' };
+    return g || { cle:x.cle, x, champs:{}, res:{} };
   });
   for (const r of st.wp){ const x = e.retenus.find(v => v.cle === r.cle); if (x) r.x = x; }
   return st.wp;
@@ -1694,17 +1718,21 @@ function controles(p, pr){
       for (const ch of d.champs){
         const cle = r.cle + '|' + d.doc + '|' + ch.code;
         const c = compare(ch, r.champs[cle], r.x);
-        out.push({ ligne:r, doc:d.doc, ch, cle, recu:!!r.docs[d.doc], ...c });
+        out.push({ ligne:r, doc:d.doc, ch, cle, recu:docRecu(p, pr, r.cle, d.doc), ...c });
       }
     }
   }
   return out;
 }
 function ecartsProc(p, pr){ return controles(p, pr).filter(c => c.saisi && !c.conforme); }
-/** Écarts chiffrés d'une procédure, pour la synthèse des anomalies. */
+/** Écarts chiffrés d'une procédure, pour la synthèse des anomalies.
+ *  Seul le RÉSIDUEL entre au cumul — mais un écart intégralement expliqué
+ *  reste LISTÉ, avec son constaté, sa part expliquée et son résiduel nul.
+ *  Le faire disparaître de la liste est précisément ce qui avait permis à un
+ *  montant de quitter le cumul sans que rien ne l'explique. */
 function ecartsChiffresProc(p, pr){
-  return ecartsProc(p, pr).filter(c => c.ch.type === 'montant' && c.ecart !== 0)
-    .map(c => ({ ...c, montant:-c.ecart }));
+  return ecartsProc(p, pr).filter(c => constateDe(c) !== 0)
+    .map(c => ({ ...c, ...residuel(c), montant:residuel(c).residuel }));
 }
 
 /* ═══ 27b. DOCUMENTATION DU JEU DE DONNÉES ═════════════════════════════════
@@ -1712,6 +1740,19 @@ function ecartsChiffresProc(p, pr){
    et le taux CONSTATÉ doit être comparé au taux VISÉ. Si les deux divergent,
    c'est que la table des pièces et les cibles ne sont plus d'accord.
    ═══════════════════════════════════════════════════════════════════════ */
+/** Contrôle de bande : la part de la pièce que représente chaque écart posé,
+ *  comparée à la bande de sa nature. C'est la vérification que le montant
+ *  découle de la cause et non d'un réglage. */
+function bandesEcarts(){
+  return Object.entries(ANOMALIES_PIECES).filter(([, a]) => a.t === 'montant').map(([ref, a]) => {
+    const e = LEDGER.entries.find(x => x.pieceRef === ref);
+    const piece = e ? Math.max(...e.lines.map(l => Math.max(l.debit, l.credit))) : 0;
+    const part = piece ? -a.delta / piece : null;
+    const b = NATURES_ECART[a.n];
+    return { ref, ...a, piece, part, bande:b,
+             ok:part !== null && part > b.min && part <= b.max };
+  });
+}
 function tauxConstates(){
   const parType = {};
   for (const [ref, a] of Object.entries(ANOMALIES_PIECES)){
@@ -1749,6 +1790,24 @@ function vueJeuDonnees(){
       `<p class="note">Les pièces touchées sont <b>nommées</b> dans la table ci-dessous : elles ont été retenues à la
       construction du jeu de données pour couvrir plusieurs journaux, plusieurs tiers et plusieurs ordres de grandeur.
       Aucun écart ne provient d’une fonction du numéro de pièce.</p>`) +
+    blk('Ampleur des écarts de montant, rapportée à leur cause', bandesEcarts().filter(x => !x.ok).length + ' hors bande',
+      table([{k:'p',t:'Pièce'},{k:'n',t:'Nature de l’écart',cls:'wrapcell'},{k:'b',t:'Bande admise',n:1},
+             {k:'m',t:'Montant de la pièce',n:1},{k:'d',t:'Écart posé',n:1},{k:'q',t:'Part de la pièce',n:1},{k:'r',t:''}],
+        bandesEcarts().map(x => ({ p:`<span class="mono">${esc(x.ref)}</span>`,
+          n:esc(x.bande.lib), b:pct(x.bande.min, 0) + ' – ' + pct(x.bande.max, 0),
+          m:eur(x.piece), d:eur(x.delta), q:pct(x.part, 2),
+          r:x.ok ? marque('p', 'dans la bande de sa nature') : marque('x', 'hors bande') })),
+        { foot:{ p:'Total', d:eur(bandesEcarts().reduce((a, x) => a + x.delta, 0)) } }) +
+      (bandesEcarts().some(x => !x.ok)
+        ? `<div class="callout bad">${bandesEcarts().filter(x => !x.ok).length} écart(s) hors de la bande de leur nature :
+           la table des pièces et les natures ne sont plus d’accord.</div>` : '') +
+      `<div class="grid3" style="margin-top:8px">${Object.entries(NATURES_ECART).map(([, b]) =>
+        `<div class="kv"><span class="k">${esc(b.lib)}</span><span class="v">${pct(b.min, 0)} – ${pct(b.max, 0)}</span>
+          <span class="k" style="grid-column:1/-1;font-family:var(--sans)">${esc(b.d)}</span></div>`).join('')}</div>
+      <p class="note">Ces seize écarts étaient auparavant posés entre 3 % et 10 % de leur pièce quelle que soit leur
+      cause : un avoir entier non comptabilisé y valait autant qu’un arrondi de saisie. La bande est désormais la
+      décision, et le montant en découle. ${bandesEcarts().filter(x => Math.abs(x.delta) >= seuils().CTT).length}
+      écart(s) dépassent le seuil de remontée de ${eur0(seuils().CTT)} — ce nombre est constaté, pas visé.</p>`) +
     blk('Pièces porteuses d’une anomalie', Object.keys(ANOMALIES_PIECES).length,
       table([{k:'p',t:'Pièce'},{k:'j',t:'Journal'},{k:'t',t:'Nature'},{k:'d',t:'Écart posé',n:1},
              {k:'w',t:'Motif',cls:'wrapcell'}],
@@ -1771,22 +1830,298 @@ function vueJeuDonnees(){
       `<p class="note">Écart de rapprochement volontaire : écriture de situation de 25 000 € présente dans la balance
       transmise et absente du fichier des écritures (411000 / 706000).</p>`);
 }
+
+/* ═══ 35. ÉTATS DÉRIVÉS ET RÉSOLUTION D'ÉCART ══════════════════════════════
+   Deux règles, une seule idée : un état ne se saisit pas, il se DÉDUIT de ce
+   qui existe. « Pièce reçue » se déduit du dépôt du client sur la requête qui
+   la demandait ; l'état d'une ligne de papier se déduit de sa pièce, de sa
+   saisie et de sa résolution. Une case à cocher aurait permis de déclarer
+   reçue une pièce que personne n'a déposée.
+
+   La résolution d'écart REPREND la contrainte probante déjà écrite pour les
+   exceptions (migration 0009, NEP 500) : explication du client mot pour mot,
+   conclusion de l'auditeur, qualification, LIEN vers ce qui corrobore, auteur
+   et horodatage. Aucun second chemin : sans ces six éléments, l'écart reste
+   entier au cumul des anomalies.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. réception : dérivée du portail, jamais cochée ─────────────────────── */
+const _depIdx = { cle:'', m:null };
+function indexDepots(){
+  const n = S.requetes.reduce((a, r) => a + r.items.reduce((b, i) => b + i.depots.length, 0), 0);
+  const cle = S.requetes.length + '/' + n;
+  if (_depIdx.cle === cle && _depIdx.m) return _depIdx.m;
+  const m = new Map();
+  for (const r of S.requetes){
+    if (!r.proc) continue;
+    for (const it of r.items){
+      if (it.ref === null || it.ref === undefined) continue;
+      const k = r.section + '|' + r.proc + '|' + it.ref;
+      const l = m.get(k) || [];
+      for (const d of it.depots) l.push({ ...d, req:r.id, item:it.id });
+      if (l.length) m.set(k, l);
+    }
+  }
+  _depIdx.cle = cle; _depIdx.m = m;
+  return m;
+}
+/** Les dépôts du client rattachés à un élément d'échantillon. */
+function depotsElement(p, pr, cle){
+  return indexDepots().get(p.code + '|' + pr.code + '|' + cle) || [];
+}
+function ligneRecue(p, pr, cle){ return depotsElement(p, pr, cle).length > 0; }
+function docRecu(p, pr, cle, doc){ return depotsElement(p, pr, cle).some(d => d.doc === doc); }
+
+/* ── 2. les cinq états d'une ligne de papier de travail ───────────────────── */
+const ETATS_LIGNE = [
+  { id:'attente',  lib:'en attente',         mk:'n',
+    d:'la requête est émise, le client n’a rien déposé pour cet élément' },
+  { id:'recue',    lib:'reçue',              mk:'a',
+    d:'la pièce est déposée, le contrôle n’est pas encore saisi' },
+  { id:'traitee',  lib:'traitée sans écart', mk:'p',
+    d:'valeur relevée conforme à la référence, dans la tolérance déclarée' },
+  { id:'ecart',    lib:'écart à expliquer',  mk:'x',
+    d:'valeur relevée hors tolérance, aucune résolution probante acquise' },
+  { id:'explique', lib:'écart expliqué',     mk:'e',
+    d:'écart résolu : explication, corroboration liée, qualification et auteur' },
+];
+const ETAT = Object.fromEntries(ETATS_LIGNE.map(e => [e.id, e]));
+/* Une ligne porte plusieurs contrôles, qui peuvent être dans des états
+   différents. L'état retenu pour la ligne est le premier de cette liste
+   qu'un de ses contrôles atteint : on montre d'abord ce qui appelle une
+   action de l'auditeur (un écart), puis ce qui appelle une action du client
+   (une pièce), puis ce qui reste à faire, et seulement ensuite ce qui est
+   terminé. Ce n'est pas le plus fréquent qui gagne : c'est le plus exigeant. */
+const PRIORITE_ETAT = ['ecart', 'attente', 'recue', 'explique', 'traitee'];
+
+function etatControle(c){
+  if (!c.recu)     return 'attente';
+  if (!c.saisi)    return 'recue';
+  if (c.conforme)  return 'traitee';
+  return resolutionAcquise(c) ? 'explique' : 'ecart';
+}
+function etatLigne(ctrLigne){
+  const s = new Set(ctrLigne.map(etatControle));
+  return PRIORITE_ETAT.find(e => s.has(e)) || 'attente';
+}
+/** Compte des cinq états sur un ensemble de contrôles. */
+function comptesEtats(ctr){
+  const c = { attente:0, recue:0, traitee:0, ecart:0, explique:0 };
+  for (const x of ctr) c[etatControle(x)]++;
+  return c;
+}
+function marqueEtat(id, titre){ return marque(ETAT[id].mk, titre || ETAT[id].d); }
+
+/* ── 3. résolution d'écart : UN SEUL chemin, où que l'écart soit né ───────
+   Écart de papier de travail, écart de rapprochement, écriture relevée au
+   test des écritures : la même contrainte, le même objet, la même carte.
+   Un second chemin, plus commode, serait un chemin sans preuve. */
+/* Les quatre qualifications sont celles de la contrainte existante : elles
+   disent ce qu'il est advenu de l'argent. Tout le reste doit être escaladé. */
+const DISPOSITIONS = {
+  corrigee:     { lib:'corrigée', d:'une écriture de correction existe — elle est citée en corroboration' },
+  pas_anomalie: { lib:'pas d’anomalie', d:'la pièce corroborante démontre qu’il n’y avait pas d’anomalie' },
+  compensee:    { lib:'compensée', d:'un autre élément probant couvre l’assertion sur le même montant' },
+  deja_cumulee: { lib:'déjà cumulée', d:'le même fait est déjà porté au cumul par un autre écart' },
+};
+function resolVide(){
+  return { explique:0, expl:'', concl:'', disposition:'',
+           corrobPiece:'', corrobEcriture:'', par:null, t:null };
+}
+/** Casier de résolution d'un contrôle de papier de travail. */
+function resol(c){
+  const l = c.ligne;
+  if (!l.res) l.res = {};
+  if (!l.res[c.cle]) l.res[c.cle] = resolVide();
+  return l.res[c.cle];
+}
+function resolLue(c){ return (c.ligne.res || {})[c.cle] || null; }
+/** Casier de résolution d'un écart né hors papier de travail.
+ *  `explInitiale` : l'explication déjà REÇUE du client, si elle l'a été. Elle
+ *  est enregistrée comme explication, jamais comme résolution : à elle seule
+ *  elle ne retire pas un centime du cumul. */
+function resolHors(ref, explInitiale){
+  if (!S.resolutionsHors[ref]){
+    S.resolutionsHors[ref] = resolVide();
+    if (explInitiale) S.resolutionsHors[ref].expl = explInitiale;
+  }
+  return S.resolutionsHors[ref];
+}
+/** Ce qui manque pour que la résolution soit probante — la liste est la règle. */
+function manquesResolution(r){
+  const m = [];
+  if (!r || !(r.expl || '').trim())  m.push('explication reçue du client, mot pour mot');
+  if (!r || !(r.concl || '').trim()) m.push('conclusion de l’auditeur sur cette explication');
+  if (!r || !r.disposition)          m.push('qualification de l’écart');
+  if (!r || !((r.corrobPiece || '').trim() || (r.corrobEcriture || '').trim()))
+    m.push('lien vers la pièce ou l’écriture qui corrobore');
+  if (!r || !r.par)                  m.push('auteur et date de la conclusion');
+  return m;
+}
+/** Un écart CHIFFRÉ n'est résolu que si une part est réellement retirée du
+ *  cumul : c'est la règle « une exception quantifiée doit dire ce qu'il est
+ *  advenu de l'argent ». Un écart NON CHIFFRÉ — une date de pièce, un tiers,
+ *  une référence — n'a rien à retirer d'un cumul : il exige les mêmes
+ *  éléments probants, et rien de plus. Les deux passent par le même casier. */
+function resolutionAcquiseR(r, constate){
+  if (!r || manquesResolution(r).length) return false;
+  if (!constate) return true;
+  return partRetenue(constate, r) !== 0;
+}
+function partRetenue(constate, r){
+  const brut = r ? r.explique : 0;
+  return constate >= 0 ? Math.max(0, Math.min(brut, constate))
+                       : Math.min(0, Math.max(brut, constate));
+}
+/** L'écart d'un contrôle, en euros quand il en porte un, zéro sinon. */
+function constateDe(c){ return c.ch.type === 'montant' ? -c.ecart : 0; }
+function resolutionAcquise(c){ return resolutionAcquiseR(resolLue(c), constateDe(c)); }
+/** Une corroboration est un LIEN : l'écriture citée doit exister au grand livre. */
+function ecritureExiste(ref){
+  const v = String(ref || '').trim().toUpperCase();
+  if (!v) return null;
+  return LEDGER.entries.find(e => e.num.toUpperCase() === v || String(e.pieceRef).toUpperCase() === v) || null;
+}
+
+/* ── 4. écart constaté, expliqué, résiduel ────────────────────────────────
+   Le résiduel n'est jamais saisi : c'est une soustraction. Et la part
+   expliquée ne peut ni dépasser l'écart, ni en inverser le sens — une
+   résolution qui rendrait l'écart plus grand n'est pas une résolution. */
+function residuelR(constate, r){
+  const brut = r ? r.explique : 0;
+  const borne = partRetenue(constate, r);
+  const acquis = resolutionAcquiseR(r, constate);
+  const explique = acquis ? borne : 0;
+  return { constate, explique, residuel:constate - explique, acquis, retenu:borne, chiffre:constate !== 0,
+           saisi:brut, borne:brut !== borne, res:r, manques:manquesResolution(r) };
+}
+function residuel(c){ return residuelR(constateDe(c), resolLue(c)); }
+/** Enregistre la conclusion : c'est elle, et rien d'autre, qui porte l'auteur. */
+function conclureResolution(r, constate, libelle){
+  const m = manquesResolution({ ...r, par:'x' });
+  if (m.length) return { ok:false, why:'résolution incomplète : ' + m.join(' ; ') };
+  if ((r.corrobEcriture || '').trim() && !ecritureExiste(r.corrobEcriture))
+    return { ok:false, why:'l’écriture « ' + r.corrobEcriture.trim() + ' » n’existe pas au grand livre' };
+  if (constate && partRetenue(constate, r) === 0)
+    return { ok:false, why:'une part expliquée nulle ne résout rien : escaladez l’écart ou laissez-le au cumul' };
+  r.par = S.moi; r.t = tick();
+  logEvent('écart résolu', libelle, DISPOSITIONS[r.disposition].lib
+           + (constate ? ' · ' + eur(partRetenue(constate, r)) + ' expliqué(s)' : ' · écart non chiffré'));
+  return { ok:true };
+}
+function annulerResolutionR(r, libelle){
+  r.par = null; r.t = null;
+  logEvent('résolution retirée', libelle, USERS[S.moi].nom);
+}
+
+/* ── 4b. la carte de résolution, une seule pour tous les écarts ──────────── */
+function carteResolution(cle, entete, constate, r, depots){
+  const d = residuelR(constate, r);
+  const ecr = ecritureExiste(r.corrobEcriture);
+  const manquesHorsAuteur = d.manques.filter(x => !x.startsWith('auteur'));
+  return `<div class="nl ${d.acquis ? '' : 'warn'}" style="margin-top:8px">
+    <div class="m">${entete} ${d.acquis ? marqueEtat('explique') : marqueEtat('ecart')}</div>
+    ${d.chiffre ? `<div class="kv">
+      <span class="k">Écart constaté</span><span class="v">${eur(d.constate)}</span>
+      <span class="k">Part expliquée</span><span class="v"><input class="cell" data-rmont="${esc(cle)}"
+        value="${d.saisi ? (d.saisi / 100).toFixed(2).replace('.', ',') : ''}" placeholder="0,00"></span>
+      <span class="k">Écart résiduel</span><span class="v"${d.residuel ? ' style="color:var(--anomalie)"' : ''}>${eur(d.residuel)}</span>
+    </div>
+    ${d.borne ? `<div class="callout warn">La part expliquée est bornée à l’écart constaté et à son sens :
+      ${eur(d.saisi)} saisi, ${eur(d.retenu)} retenu.</div>` : ''}`
+    : `<p class="note">Écart non chiffré : il ne porte aucun montant et n’entre pas au cumul des anomalies.
+       Les éléments probants exigés sont les mêmes.</p>`}
+    <div class="ctrl"><label>Explication reçue du client — mot pour mot, pas un résumé</label>
+      <textarea data-rexpl="${esc(cle)}" rows="2" placeholder="ce que le client a écrit ou dit, tel quel">${esc(r.expl)}</textarea></div>
+    <div class="ctrl"><label>Conclusion de l’auditeur sur cette explication</label>
+      <textarea data-rconcl="${esc(cle)}" rows="2" placeholder="pourquoi cette explication tient, au vu de la corroboration">${esc(r.concl)}</textarea></div>
+    <div class="row">
+      <div class="ctrl"><label>Qualification</label>
+        <select data-rdisp="${esc(cle)}">
+          <option value="">— à qualifier —</option>
+          ${Object.entries(DISPOSITIONS).map(([id, x]) => `<option value="${id}" ${r.disposition === id ? 'selected' : ''}>${esc(x.lib)}</option>`).join('')}
+        </select></div>
+      ${depots && depots.length ? `<div class="ctrl"><label>Pièce corroborante déposée</label>
+        <select data-rpiece="${esc(cle)}">
+          <option value="">— aucune —</option>
+          ${depots.map(x => `<option value="${esc(x.nom)}" ${r.corrobPiece === x.nom ? 'selected' : ''}>${esc(x.doc)} — ${esc(x.nom)}</option>`).join('')}
+        </select></div>` : ''}
+      <div class="ctrl"><label>${depots && depots.length ? 'ou é' : 'É'}criture du grand livre</label>
+        <input class="cell txt" data-recr="${esc(cle)}" value="${esc(r.corrobEcriture)}" placeholder="n° d’écriture ou de pièce"></div>
+    </div>
+    ${r.disposition ? `<p class="note">${esc(DISPOSITIONS[r.disposition].d)}</p>` : ''}
+    ${(r.corrobEcriture || '').trim() ? (ecr
+      ? `<p class="note">Écriture <span class="mono">${esc(ecr.num)}</span> du ${frDate(ecr.date)} — ${esc(ecr.libelle)}.</p>`
+      : `<div class="callout bad">Aucune écriture « ${esc(r.corrobEcriture)} » au grand livre :
+          une corroboration est un lien, pas une mention.</div>`) : ''}
+    ${r.par
+      ? `<div class="callout"><b>Conclu</b> par ${esc(USERS[r.par].nom)} (${esc(ROLE_LIB[USERS[r.par].role])})
+          le ${horo(r.t)} — ${esc(DISPOSITIONS[r.disposition].lib)}, ${eur(d.explique)} retiré(s) du cumul.
+          <button class="btn mini sec" data-rannul="${esc(cle)}">retirer la conclusion</button></div>`
+      : `<div class="callout ${manquesHorsAuteur.length ? 'warn' : ''}">
+          ${manquesHorsAuteur.length
+            ? `<b>Il manque :</b> ${esc(manquesHorsAuteur.join(' ; '))}.
+               ${d.chiffre ? 'Tant que ces éléments manquent, l’écart reste au cumul pour ' + eur(d.constate) + '.'
+                           : 'Tant que ces éléments manquent, l’écart reste ouvert.'}`
+            : 'Les éléments probants sont réunis.'}</div>
+        <button class="btn" data-rconclure="${esc(cle)}" ${manquesHorsAuteur.length ? 'disabled' : ''}>conclure — engage ${esc(USERS[S.moi].nom)}</button>`}
+  </div>`;
+}
+
+/* ── 5. obstacles d'une procédure : ce qui empêche de la dire terminée ───── */
+function obstaclesProcedure(p, pr){
+  const o = [], st = proc(p.code, pr.code);
+  if (!pr.ech){
+    if (!st.conclusion.trim()) o.push('conclusion de la procédure non rédigée');
+    return o;
+  }
+  const n = comptesEtats(controles(p, pr));
+  if (n.attente) o.push(`${n.attente} justificatif(s) attendu(s) du client`);
+  if (n.recue)   o.push(`${n.recue} contrôle(s) non saisi(s) alors que la pièce est reçue`);
+  if (n.ecart)   o.push(`${n.ecart} écart(s) sans résolution probante`);
+  if (!st.conclusion.trim()) o.push('conclusion de la procédure non rédigée');
+  return o;
+}
+
+/* ── 6. avancement des justificatifs, par section ─────────────────────────
+   Les cinq états s'agrègent : c'est le tableau de bord de suivi, dérivé des
+   mêmes contrôles que le papier de travail — rien n'est compté deux fois. */
+function avancementSection(p){
+  const t = { attente:0, recue:0, traitee:0, ecart:0, explique:0, total:0, elements:0, recus:0 };
+  for (const pr of proceduresRequises(p)){
+    if (!pr.ech) continue;
+    const ctr = controles(p, pr), n = comptesEtats(ctr);
+    for (const k of Object.keys(n)) t[k] += n[k];
+    t.total += ctr.length;
+    const wp = wpProc(p, pr) || [];
+    t.elements += wp.length;
+    t.recus += wp.filter(r => ligneRecue(p, pr, r.cle)).length;
+  }
+  return t;
+}
+function bandeauAvancement(t){
+  const c = (k, n) => `<span class="pill ${k === 'ecart' && n ? 'bad' : k === 'attente' && n ? 'warn' : ''}">`
+    + `${n} ${esc(ETAT[k].lib)}</span>`;
+  return `<div class="row">${ETATS_LIGNE.map(e => c(e.id, t[e.id])).join('')}
+    <span class="smallcaps">${t.total} contrôle(s) sur ${t.elements} élément(s)</span></div>`;
+}
 /* ── marques de pointage : la convention du papier de travail ─────────────
    Une marque en chasse fixe, soulignée de pointillés, avec sa légende sous le
-   tableau. Elle remplace la pastille d'état — et seules les marques « écart »
-   et « non reçu » portent une couleur. */
-const MARQUES = {
-  p:{ lib:'pointé', d:'valeur relevée conforme à la référence' },
-  a:{ lib:'à exécuter', d:'pièce reçue, contrôle non saisi' },
-  x:{ lib:'écart', d:'valeur relevée hors tolérance', cls:'x' },
-  n:{ lib:'non reçu', d:'pièce absente, aucun contrôle exécutable', cls:'n' },
-};
+   tableau. Elle n'est pas une pastille d'état saisie à côté : c'est
+   l'AFFICHAGE des cinq états dérivés (voir ETATS_LIGNE), dans l'ordre du
+   cycle de vie d'un justificatif. Seuls « écart » et « en attente » portent
+   une couleur : elles appellent une action. */
+const CLS_MARQUE = { x:'x', n:'n' };
+const MARQUES = Object.fromEntries(ETATS_LIGNE.map(e =>
+  [e.mk, { lib:e.lib, d:e.d, cls:CLS_MARQUE[e.mk] || '' }]));
 function marque(k, titre){
   const m = MARQUES[k];
   return `<span class="mk ${m.cls || ''}" title="${esc(titre || m.d)}">${k}</span>`;
 }
 const LEGENDE_MARQUES = '<div class="legende">' + Object.entries(MARQUES)
-  .map(([k, m]) => `<span><b>${k}</b> ${esc(m.lib)} — ${esc(m.d)}</span>`).join('') + '</div>';
+  .map(([k, m]) => `<span><b>${k}</b> ${esc(m.lib)} — ${esc(m.d)}</span>`).join('')
+  + '<span>Aucun de ces états ne se saisit : chacun se déduit du dépôt du client, '
+  + 'de la valeur relevée et de la résolution documentée.</span></div>';
 
 /* ═══ 11. SECTION DE TRAVAIL PAR FSLI ══════════════════════════════════════
    Un poste, et dans ce poste tout ce qu'il faut pour le boucler. Les
@@ -1943,13 +2278,15 @@ function blocRisque(p){
    Sélection → procédure → papier de travail → statut.
    ───────────────────────────────────────────────────────────────────────── */
 function etatProc(p, pr){
-  if (!pr.ech) return { lib:'sans sélection', cls:'', ok:true };
-  const wp = wpProc(p, pr) || [], recus = wp.filter(r => r.recu).length;
-  const ctr = controles(p, pr), saisis = ctr.filter(c => c.saisi).length;
-  const ec = ctr.filter(c => c.saisi && !c.conforme).length;
-  if (!recus) return { lib:'pièces non reçues', cls:'bad', ok:false, wp, ctr, recus, saisis, ec };
-  if (saisis < ctr.length) return { lib:saisis + '/' + ctr.length + ' contrôles', cls:'warn', ok:false, wp, ctr, recus, saisis, ec };
-  return { lib:ec ? ec + ' écart(s)' : 'exécutée', cls:ec ? 'warn' : '', ok:true, wp, ctr, recus, saisis, ec };
+  if (!pr.ech) return { lib:'sans sélection', cls:'', ok:true, n:null };
+  const wp = wpProc(p, pr) || [], recus = wp.filter(r => ligneRecue(p, pr, r.cle)).length;
+  const ctr = controles(p, pr), n = comptesEtats(ctr);
+  const saisis = n.traitee + n.ecart + n.explique;
+  const b = { wp, ctr, n, recus, saisis, ec:n.ecart };
+  if (!recus)                return { ...b, lib:'pièces non reçues', cls:'bad', ok:false };
+  if (n.attente || n.recue)  return { ...b, lib:saisis + '/' + ctr.length + ' contrôles', cls:'warn', ok:false };
+  if (n.ecart)               return { ...b, lib:n.ecart + ' écart(s) à expliquer', cls:'bad', ok:false };
+  return { ...b, lib:n.explique ? n.explique + ' écart(s) expliqué(s)' : 'exécutée', cls:'', ok:true };
 }
 function blocPlan(p){
   const procs = proceduresRequises(p);
@@ -2044,7 +2381,8 @@ function blocProcedure(p, pr){
   const ctr = controles(p, pr);
   const tout = S.ctrTout && S.ctrTout[p.code + '/' + pr.code];
   const vus = tout ? ctr : ctr.slice(0, CTR_PAR_PAGE);
-  const wp = wpProc(p, pr), recus = wp.filter(r => r.recu).length;
+  const wp = wpProc(p, pr), recus = wp.filter(r => ligneRecue(p, pr, r.cle)).length;
+  const nEtat = comptesEtats(ctr);
   const ecarts = ctr.filter(c => c.saisi && !c.conforme);
   const rows = vus.map((c, i) => ({
     el:`<span class="mono">${esc(String(c.ligne.cle))}</span>` +
@@ -2055,10 +2393,7 @@ function blocProcedure(p, pr){
     v:c.recu ? champInput(p, pr, c) : '<span class="smallcaps">—</span>',
     contre:esc(c.ch.contre),
     ref:c.saisi ? esc(c.refLib) : (c.recu ? esc(String(refLisible(c))) : '<span class="smallcaps">—</span>'),
-    ec:c.saisi ? (c.conforme ? marque('p', 'pointé — valeur relevée conforme à la référence')
-                             : marque('x', 'écart : ' + c.ecartLib))
-               : (c.recu ? marque('a', 'à exécuter — pièce reçue, contrôle non saisi')
-                         : marque('n', 'pièce non reçue — aucun contrôle exécutable')),
+    ec:marqueEtat(etatControle(c), c.saisi && !c.conforme ? 'écart : ' + c.ecartLib : null),
     tol:esc(c.ch.tolLib),
     nt:i % Math.max(1, cat ? cat.reduce((a, d) => a + d.champs.length, 0) : 1) === 0
        ? boutonNote(p.code, 'papier', c.ligne.cle, 'Papier ' + procRef(p, pr) + ' — ' + c.ligne.cle) : '',
@@ -2067,22 +2402,78 @@ function blocProcedure(p, pr){
     <h3>Papier de travail <span class="mono">${esc(procRef(p, pr))}</span></h3>
     <div class="row">
       <span class="pill ${recus === wp.length ? '' : 'bad'}">${recus}/${wp.length} éléments avec pièce</span>
-      <span class="pill ${ctr.filter(c => c.saisi).length === ctr.length ? '' : 'warn'}">${ctr.filter(c => c.saisi).length}/${ctr.length} contrôles saisis</span>
-      <span class="pill ${ecarts.length ? 'bad' : ''}">${ecarts.length} écart(s)</span>
+      ${ETATS_LIGNE.map(e => `<span class="pill ${e.id === 'ecart' && nEtat[e.id] ? 'bad'
+          : e.id === 'attente' && nEtat[e.id] ? 'warn' : ''}">${nEtat[e.id]} ${esc(e.lib)}</span>`).join('')}
       ${recus ? `<button class="btn sec mini" data-plire="${pr.code}">remplir comme si vous lisiez les pièces</button>` : ''}
     </div>
     ${table([{k:'el',t:'Élément'},{k:'doc',t:'Document'},{k:'ch',t:'Champ relevé'},{k:'v',t:'Valeur relevée',n:1},
              {k:'contre',t:'Contrôlé contre',cls:'wrapcell'},{k:'ref',t:'Référence',n:1},
-             {k:'ec',t:'Marque'},{k:'tol',t:'Tolérance'},{k:'nt',t:''}], rows)}
+             {k:'ec',t:'État'},{k:'tol',t:'Tolérance'},{k:'nt',t:''}], rows)}
     ${LEGENDE_MARQUES}
     ${ctr.length > vus.length ? `<button class="btn mini sec" data-ctrtout="${p.code}/${pr.code}" style="margin-top:6px">afficher les ${ctr.length} contrôles</button>`
       : tout && ctr.length > CTR_PAR_PAGE ? `<button class="btn mini sec" data-ctrtout="${p.code}/${pr.code}" style="margin-top:6px">replier</button>` : ''}
+    ${blocResolutions(p, pr, ecarts)}
     <div class="ctrl" style="margin-top:8px"><label>Conclusion de la procédure</label>
-      <textarea data-pconcl="${pr.code}" rows="2" placeholder="résultat de la procédure au regard des contrôles exécutés">${esc(stp.conclusion)}</textarea></div>`;
+      <textarea data-pconcl="${pr.code}" rows="2" placeholder="résultat de la procédure au regard des contrôles exécutés">${esc(stp.conclusion)}</textarea></div>
+    ${blocFinTesting(p, pr)}`;
 
   return `<div class="row"><span class="pill">${esc(libAssertion(pr.a))}</span>
       <span class="smallcaps">${esc(pr.lib)}</span></div>
     ${defPop}${params}${catBloc}${papier}`;
+}
+
+/* ── résolution documentée des écarts ─────────────────────────────────────
+   Un écart n'est pas résolu parce qu'on l'a commenté. Il l'est quand six
+   éléments existent : l'explication du client mot pour mot, la conclusion de
+   l'auditeur, la qualification, le LIEN vers ce qui corrobore, l'auteur et la
+   date. C'est la contrainte déjà écrite pour les exceptions ; ce bloc la
+   réutilise et n'ouvre aucun second chemin. */
+function blocResolutions(p, pr, ecarts){
+  if (!ecarts.length) return '';
+  const chiffres = ecarts.filter(c => constateDe(c) !== 0);
+  const ouverts = ecarts.filter(c => !resolutionAcquise(c));
+  const cumul = chiffres.reduce((a, c) => a + residuel(c).residuel, 0);
+  const expl = chiffres.reduce((a, c) => a + residuel(c).explique, 0);
+  return `<h3>Écarts relevés et leur résolution</h3>
+    <div class="row">
+      <span class="pill ${ouverts.length ? 'bad' : ''}">${ouverts.length} écart(s) sans résolution</span>
+      <span class="pill">${chiffres.length} chiffré(s) · ${ecarts.length - chiffres.length} non chiffré(s)</span>
+      <span class="pill">expliqué ${eur(expl)}</span>
+      <span class="pill ${cumul ? 'bad' : ''}">résiduel porté au cumul ${eur(cumul)}</span>
+    </div>
+    <p class="note">Un écart non chiffré — une date de pièce, un tiers, une référence — n’entre pas au cumul
+    des anomalies, mais il exige les mêmes éléments probants : c’est le même casier, pas un second chemin.</p>
+    ${ecarts.map(c => carteResolution(
+      p.code + '#' + pr.code + '#' + c.cle,
+      `<span class="mono">${esc(String(c.ligne.cle))}</span> · ${esc(c.doc)} · ${esc(c.ch.lib)}
+       <span class="smallcaps">relevé ${esc(c.valLib)} · référence ${esc(c.refLib)} · ${esc(c.ecartLib)}</span>`,
+      constateDe(c), resol(c), depotsElement(p, pr, c.ligne.cle))).join('')}`;
+}
+/* ── l'action de la section : déclarer le testing terminé ─────────────────
+   L'affectation appartient au programme de travail, une seule fois. Ce que la
+   section porte, c'est l'action : elle fait passer le travail à « achevé » et
+   le soumet à la revue de son réviseur. Elle est refusée tant que le papier
+   n'est pas en état de l'être — le bouton ne ment pas sur ce qu'il fait. */
+function blocFinTesting(p, pr){
+  const code = 'SEC-' + p.code + '-' + pr.code, st = trav(code), o = obstaclesProcedure(p, pr);
+  const prep = st.preparateur ? USERS[st.preparateur] : null;
+  const rev = st.reviseur ? USERS[st.reviseur] : null;
+  const lien = `<button class="btn mini sec" data-gotrav="trav.programme">ouvrir le programme de travail</button>`;
+  if (st.statut === 'revu') return `<div class="callout"><b>Travail revu</b> par ${esc(USERS[st.revu.par].nom)} le ${horo(st.revu.t)}.</div>`;
+  if (st.statut === 'acheve') return `<div class="callout">
+      <b>Testing déclaré terminé</b> par ${esc(USERS[st.acheve.par].nom)} le ${horo(st.acheve.t)} —
+      ${rev ? 'en attente de la revue de ' + esc(rev.nom) : 'aucun réviseur affecté'}.
+      ${st.reviseur === S.moi ? `<button class="btn mini" data-tstat="${code}|revu">porter « revu »</button>` : ''}
+      <button class="btn mini sec" data-tstat="${code}|en_cours">rouvrir le testing</button></div>`;
+  if (!prep) return `<div class="callout warn"><b>Aucun préparateur affecté</b> à ce travail —
+      l’affectation se fait au programme de travail, pas ici. ${lien}</div>`;
+  if (st.preparateur !== S.moi) return `<div class="callout warn">
+      Le testing de ce travail est confié à <b>${esc(prep.nom)}</b> ; seul son préparateur peut le déclarer terminé. ${lien}</div>`;
+  if (o.length) return `<div class="callout warn"><b>Le testing ne peut pas être déclaré terminé :</b>
+      <ul style="margin:5px 0 0 16px;padding:0">${o.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+      <button class="btn" disabled>le testing est terminé</button>`;
+  return `<button class="btn" data-tstat="${code}|acheve">le testing est terminé —
+    ${rev ? 'soumettre à la revue de ' + esc(rev.nom) : 'aucun réviseur affecté, à corriger au programme'}</button>`;
 }
 function refLisible(c){
   const r = c.ch.ref(c.ligne.x);
@@ -2141,17 +2532,22 @@ function obstaclesVisa(p){
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
   for (const x of obstaclesTravaux(p.code)) o.push(x);
-  let manq = 0, nonSaisis = 0, sansConcl = 0;
+  let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0;
   for (const pr of proceduresRequises(p)){
     if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
     const wp = wpProc(p, pr) || [];
-    manq += wp.filter(r => !r.recu).length;
-    nonSaisis += controles(p, pr).filter(c => c.recu && !c.saisi).length;
+    manq += wp.filter(r => !ligneRecue(p, pr, r.cle)).length;
+    const n = comptesEtats(controles(p, pr));
+    nonSaisis += n.recue; ecarts += n.ecart;
     if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++;
+    const t = trav('SEC-' + p.code + '-' + pr.code);
+    if (t.statut !== 'acheve' && t.statut !== 'revu') nonAcheves++;
   }
   if (manq) o.push(`${manq} élément(s) sans pièce justificative`);
   if (nonSaisis) o.push(`${nonSaisis} contrôle(s) non exécuté(s) alors que la pièce est reçue`);
+  if (ecarts) o.push(`${ecarts} écart(s) sans résolution probante`);
   if (sansConcl) o.push(`${sansConcl} procédure(s) sans conclusion`);
+  if (nonAcheves) o.push(`${nonAcheves} procédure(s) dont le testing n’est pas déclaré terminé`);
   const sansMotif = p.comptes.filter(c => st.ns[c] && !(st.nsMotif[c] || '').trim());
   if (sansMotif.length) o.push(`statut forcé sans motif sur ${sansMotif.join(', ')}`);
   const nivSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
@@ -2215,9 +2611,10 @@ function vueFsli(code){
       ${st.visa ? '<span class="pill">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length ? o.length + ' obstacle(s)' : 'prête à viser'}</span>`}
       <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
     </div>
+    ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
     ${bloc(1, 'Comptes de la section', p.code + '-CPT-01', blocComptes(p))}
     ${bloc(2, 'Évaluation du risque par assertion', p.code + '-RSQ-01', blocRisque(p))}
-    ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocTravaux(p))}
+    ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocSuiviSection(p))}
     ${prOuverte ? bloc(4, 'Procédure : ' + prOuverte.lib, procRef(p, prOuverte), blocProcedure(p, prOuverte))
       : (procs.filter(x => x.ech).length
         ? `<section class="blk" id="b4"><header><span class="num">4</span><h2>Procédure</h2></header>
@@ -2228,27 +2625,34 @@ function vueFsli(code){
     ${bloc(7, 'Conclusion, visa et reprise N-1', p.code + '-CCL-01', blocConclusion(p))}`;
 }
 
-/* ── responsabilités et heures des travaux de la section ─────────────────── */
-function blocTravaux(p){
-  const l = travauxDe(p.code);
-  if (!l.length) return '';
-  const rows = l.map(t => {
-    const a = ligneAffectation(t);
-    return {
-      c:`<span class="mono">${t.code.replace('SEC-' + p.code + '-', '')}</span>`,
-      i:esc(t.intitule), p:a.prep, v:a.rev,
-      nr:`<span class="pill ${t.niveauRevue === 2 ? 'warn' : ''}">niveau ${t.niveauRevue}</span>`,
-      hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
-      hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
-      s:boutonsStatut(t),
-    };
-  });
-  const tb = l.reduce((a, t) => a + budget(t), 0), tr = l.reduce((a, t) => a + t.heuresReel, 0);
-  return `<h3>Responsabilités et heures</h3>
-    ${table([{k:'c',t:'Travail'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},
-             {k:'nr',t:'Revue exigée'},{k:'hb',t:'Budget',n:1},{k:'hr',t:'Réalisé',n:1},{k:'s',t:'Statut',cls:'wrapcell'}], rows,
-      { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } })}
-    ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}`;
+/* ── avancement des justificatifs de la section ───────────────────────────
+   Les cinq états dérivés du papier de travail, agrégés. L'affectation et les
+   heures ne sont PAS ici : elles vivent au programme de travail, une seule
+   fois. Ce que la section montre, c'est où en sont les pièces. */
+function blocSuiviSection(p){
+  const t = avancementSection(p);
+  if (!t.total) return '';
+  const procs = proceduresRequises(p).filter(x => x.ech);
+  return `<h3>Avancement des justificatifs</h3>
+    ${bandeauAvancement(t)}
+    ${table([{k:'pr',t:'Procédure',cls:'wrapcell'},{k:'e',t:'Éléments',n:1},{k:'r',t:'Avec pièce',n:1},
+             ...ETATS_LIGNE.map(x => ({ k:x.id, t:x.lib, n:1 })), {k:'st',t:'Travail'}],
+      procs.map(pr => {
+        const ctr = controles(p, pr), n = comptesEtats(ctr), wp = wpProc(p, pr) || [];
+        const st = trav('SEC-' + p.code + '-' + pr.code);
+        const row = { pr:esc(pr.lib) + '<div class="smallcaps">' + esc(procRef(p, pr)) + '</div>',
+                      e:String(wp.length), r:String(wp.filter(x => ligneRecue(p, pr, x.cle)).length),
+                      st:`<span class="pill ${st.statut === 'a_faire' ? 'warn' : ''}">${esc(STATUT_TRAVAIL[st.statut])}</span>` };
+        for (const x of ETATS_LIGNE) row[x.id] = x.id === 'ecart' && n[x.id]
+          ? `<span style="color:var(--anomalie)">${n[x.id]}</span>` : String(n[x.id]);
+        return row;
+      }),
+      { foot:{ pr:'Total', e:String(t.elements), r:String(t.recus),
+               ...Object.fromEntries(ETATS_LIGNE.map(x => [x.id, String(t[x.id])])) } })}
+    <p class="note">Aucun de ces nombres n’est saisi : « avec pièce » se lit sur les dépôts du portail,
+    les cinq états se déduisent de la pièce, de la valeur relevée et de la résolution documentée.
+    L’affectation et les heures de ces travaux se tiennent au
+    <a data-vue="trav.programme" style="cursor:pointer">programme de travail</a>, une seule fois.</p>`;
 }
 /* ═══ 12. NOTES DE REVUE — INTERFACE ═══════════════════════════════════════
    Il n'existe aucun chemin pour créer une note flottante : le bouton porte
@@ -2555,38 +2959,99 @@ function postesEnPerimetre(){
     (S.scopingOverride[p.code] || (Math.abs(p.solde) >= s.PM ? 'in' : 'out')) === 'in');
 }
 
+/** Écarts nés hors papier de travail : rapprochement et test des écritures.
+ *  Ils passent par le MÊME casier de résolution que les écarts de papier.
+ *  Les phrases ci-dessous sont des explications REÇUES du client : elles sont
+ *  enregistrées comme telles, et à elles seules elles ne résolvent rien. */
+function ecartsHorsPapier(){
+  const out = [];
+  for (const r of rapprochement()) if (r.ecart !== 0 && r.sTB - r.sGL > 0)
+    out.push({ ref:'rappro|' + r.compte, cle:r.compte, src:'Rapprochement', objet:'rappro', vue:'plan.rappro',
+      lib:'Écriture de situation non reprise au fichier des écritures — compte ' + r.compte,
+      constate:r.ecart, section:null,
+      explRecue:'Écriture de situation passée après la transmission du fichier des écritures.' });
+  const parTag = t => LEDGER.entries.filter(e => e.tag === t);
+  const dupe = parTag('A1');
+  if (dupe.length === 2) out.push({ ref:'je|' + dupe[1].num, cle:dupe[1].num, src:'Test des écritures',
+    objet:'je', vue:'plan.je', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
+    constate:dupe[1].lines[0].debit, section:null,
+    explRecue:'Doublon d’intégration reconnu par le client ; extourne non comptabilisée à date.' });
+  for (const e of parTag('A5')) out.push({ ref:'je|' + e.num, cle:e.num, src:'Test des écritures',
+    objet:'je', vue:'plan.je', lib:'Produit de 2026 rattaché à 2025 (' + e.pieceRef + ')',
+    constate:e.lines[0].debit, section:null,
+    explRecue:'Facture datée du ' + frDate(e.pieceDate) + ', comptabilisée le ' + frDate(e.date) + '.' });
+  for (const e of parTag('A6')) out.push({ ref:'je|' + e.num, cle:e.num, src:'Test des écritures',
+    objet:'je', vue:'plan.je', lib:'Écriture manuelle de direction (' + e.pieceRef + ')',
+    constate:e.lines[0].debit, section:null,
+    explRecue:'Prestation démarrant en janvier 2026 selon l’explication reçue.' });
+  return out;
+}
+
 /** Anomalies : elles ne sont pas saisies, elles AGRÈGENT ce que les sections
  *  ont produit — écarts de papiers de travail, écart de rapprochement,
- *  écritures relevées au test des écritures. */
+ *  écritures relevées au test des écritures. Chacune porte son écart
+ *  CONSTATÉ, la part EXPLIQUÉE par une résolution probante et le RÉSIDUEL.
+ *  Seul le résiduel entre au cumul ; le triage sous/au-dessus du seuil de
+ *  remontée se fait, lui, sur le constaté : une résolution change ce qui est
+ *  cumulé, pas la taille de ce qui a été relevé. */
 function anomalies(){
   const s = seuils(), out = [];
+  const pousser = (o, d) => out.push({ ...o, constate:d.constate, explique:d.explique,
+    montant:d.residuel, acquis:d.acquis, res:d.res, manques:d.manques,
+    souSeuil:Math.abs(d.constate) < s.CTT });
   for (const p of postesEnPerimetre()){
     for (const pr of proceduresRequises(p)){
       for (const c of ecartsChiffresProc(p, pr)){
-        out.push({ src:p.lib + ' · ' + procRef(p, pr),
-                   lib:c.ch.lib + ' — ' + (c.ligne.x.e ? 'pièce ' + c.ligne.x.e.pieceRef : c.ligne.cle)
-                      + ' (' + c.doc.toLowerCase() + ')',
-                   montant:c.montant, expl:c.ligne.expl,
-                   section:p.code, objet:'papier', ref:c.ligne.cle });
+        pousser({ src:p.lib + ' · ' + procRef(p, pr),
+                  lib:c.ch.lib + ' — ' + (c.ligne.x.e ? 'pièce ' + c.ligne.x.e.pieceRef : c.ligne.cle)
+                     + ' (' + c.doc.toLowerCase() + ')',
+                  section:p.code, objet:'papier', ref:c.ligne.cle, vue:'fsli:' + p.code,
+                  piece:c.ligne.x.e ? c.ligne.x.e.pieceRef : null,
+                  cleRes:p.code + '#' + pr.code + '#' + c.cle }, residuel(c));
       }
     }
   }
-  for (const r of rapprochement()) if (r.ecart !== 0 && r.sTB - r.sGL > 0)
-    out.push({ src:'Rapprochement', lib:'Écriture de situation non reprise au FEC — compte ' + r.compte,
-               montant:r.ecart, expl:'Écart documenté ; rapprochement à re-exécuter sur le FEC définitif.',
-               section:null, objet:'rappro', ref:r.compte });
-  const parTag = t => LEDGER.entries.filter(e => e.tag === t);
-  const dupe = parTag('A1');
-  if (dupe.length === 2) out.push({ src:'Test des écritures', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
-    montant:dupe[1].lines[0].debit, expl:'Doublon d’intégration reconnu par le client ; extourne non comptabilisée à date.',
-    section:null, objet:'je', ref:dupe[1].num });
-  for (const e of parTag('A5')) out.push({ src:'Test des écritures', lib:'Produit de 2026 rattaché à 2025 (' + e.pieceRef + ')',
-    montant:e.lines[0].debit, expl:'Facture datée du ' + frDate(e.pieceDate) + ', comptabilisée le ' + frDate(e.date) + '.',
-    section:null, objet:'je', ref:e.num });
-  for (const e of parTag('A6')) out.push({ src:'Test des écritures', lib:'Écriture manuelle de direction (' + e.pieceRef + ')',
-    montant:e.lines[0].debit, expl:'Prestation démarrant en janvier 2026 selon l’explication reçue.',
-    section:null, objet:'je', ref:e.num });
-  return out.map(a => ({ ...a, souSeuil:Math.abs(a.montant) < s.CTT }));
+  for (const x of ecartsHorsPapier())
+    pousser({ ...x, cleRes:'hors#' + x.ref }, residuelR(x.constate, resolHors(x.ref, x.explRecue)));
+  return out;
+}
+
+/** Une même pièce touche deux comptes : une facture de vente est relevée dans
+ *  la section « Clients » ET dans la section « Chiffre d'affaires ». Le même
+ *  fait entre alors DEUX fois au cumul alors qu'il ne fausse les comptes
+ *  qu'une fois. Rien n'est déduit d'office : la qualification « déjà cumulée »
+ *  existe pour cela, et c'est l'auditeur qui choisit le côté qui reste. */
+function doublesCumul(){
+  const parPiece = {};
+  for (const a of anomalies()){
+    if (!a.piece || a.souSeuil) continue;
+    (parPiece[a.piece] = parPiece[a.piece] || []).push(a);
+  }
+  return Object.entries(parPiece)
+    .map(([piece, l]) => ({ piece, l, comptees:l.filter(x => x.montant !== 0).length,
+                            montant:l.reduce((t, x) => t + x.montant, 0) }))
+    .filter(x => x.comptees > 1);
+}
+
+/** Le bloc de résolution rendu là où l'écart naît — jamais dans la synthèse,
+ *  qui n'est qu'un agrégat et ne doit rien porter de saisi. */
+function blocEcartsHors(objet){
+  const l = ecartsHorsPapier().filter(x => x.objet === objet);
+  if (!l.length) return '';
+  const d = l.map(x => residuelR(x.constate, resolHors(x.ref, x.explRecue)));
+  const cumul = d.reduce((a, x) => a + x.residuel, 0);
+  return blk('Écarts relevés et leur résolution', l.length + ' écart(s)',
+    `<div class="row">
+      <span class="pill">constaté ${eur(l.reduce((a, x) => a + x.constate, 0))}</span>
+      <span class="pill">expliqué ${eur(d.reduce((a, x) => a + x.explique, 0))}</span>
+      <span class="pill ${cumul ? 'bad' : ''}">résiduel porté au cumul ${eur(cumul)}</span>
+    </div>
+    <p class="note">Même contrainte que sur un papier de travail : une explication du client n’est pas un élément
+    probant. Sans conclusion écrite, qualification, lien vers une pièce ou une écriture, auteur et date,
+    l’écart reste entier au cumul des anomalies.</p>
+    ${l.map(x => carteResolution('hors#' + x.ref,
+        `<span class="mono">${esc(x.cle)}</span> · ${esc(x.lib)}`,
+        x.constate, resolHors(x.ref, x.explRecue), null)).join('')}`);
 }
 
 /* ═══ 15. VUES TRANSVERSES DE PLANIFICATION ════════════════════════════════ */
@@ -2641,7 +3106,8 @@ function vueRappro(){
           ${ecarts.map(r => r.compte + ' : ' + eur(r.ecart)).join(' · ')}. Les écarts sont de sens opposé et de même
           montant : une écriture équilibrée figure dans la balance transmise et pas dans le fichier des écritures.
           Requête d’explication à émettre ; le rapprochement sera re-exécuté sur le FEC définitif.</div>` : ''))}
-    </div>`;
+    </div>
+    ${blocEcartsHors('rappro')}`;
 }
 
 function vueMaterialite(){
@@ -2722,7 +3188,8 @@ function vueJE(){
         journal, date de validation, auteur de la saisie.</div>` +
       table([{k:'num',t:'Écriture'},{k:'d',t:'Date'},{k:'j',t:'Jrn'},{k:'l',t:'Libellé',cls:'wrapcell'},
              {k:'m',t:'Montant',n:1},{k:'s',t:'Saisie par'},{k:'mo',t:'Motif de sélection',cls:'wrapcell'},{k:'nt',t:''}], rows) +
-      (sel.length > 200 ? `<p class="note">200 premières lignes affichées sur ${sel.length} retenues — le compte et le cumul ci-dessus portent bien sur la totalité.</p>` : ''));
+      (sel.length > 200 ? `<p class="note">200 premières lignes affichées sur ${sel.length} retenues — le compte et le cumul ci-dessus portent bien sur la totalité.</p>` : '')) +
+    blocEcartsHors('je');
 }
 
 function vueCirc(){
@@ -2750,24 +3217,45 @@ function vueSynthese(){
   const s = seuils(), a = anomalies();
   const retenues = a.filter(x => !x.souSeuil), triviales = a.filter(x => x.souSeuil);
   const cumul = retenues.reduce((t, x) => t + x.montant, 0);
+  const explique = retenues.reduce((t, x) => t + x.explique, 0);
+  const nonResolues = retenues.filter(x => x.montant !== 0);
   const depasse = Math.abs(cumul) > s.M;
   const rows = a.map(x => ({
-    src:esc(x.src), lib:esc(x.lib), m:eur(x.montant),
-    st:x.souSeuil ? '<span class="pill">sous le seuil de remontée</span>' : '<span class="pill bad">non corrigée</span>',
-    e:esc(x.expl || '—'),
-    v:x.section ? `<button class="btn mini sec" data-open="${x.section}">voir la section</button>` : '<span class="smallcaps">—</span>',
+    src:esc(x.src), lib:esc(x.lib),
+    c:eur(x.constate), e:x.explique ? eur(x.explique) : '<span class="smallcaps">—</span>',
+    m:x.montant ? eur(x.montant) : '<span class="smallcaps">—</span>',
+    st:x.souSeuil ? '<span class="pill">sous le seuil de remontée</span>'
+       : x.acquis ? marqueEtat('explique', 'écart expliqué : ' + DISPOSITIONS[x.res.disposition].lib)
+                    + ` <span class="smallcaps">${esc(DISPOSITIONS[x.res.disposition].lib)}, ${esc(USERS[x.res.par].nom)}</span>`
+                  : marqueEtat('ecart') + ' <span class="smallcaps">' + esc(x.manques.length + ' élément(s) probant(s) manquant(s)') + '</span>',
+    v:`<button class="btn mini sec" data-goecart="${esc(x.vue)}">${x.objet === 'papier' ? 'voir la section' : 'voir le papier'}</button>`,
   }));
   return entete('Synthèse des anomalies', 'agrège ce que les sections ont produit — rien n’est saisi ici') +
     cite('Un moyen simple d’accéder à la synthèse des déficiences de contrôle interne et des "misstatements" écarts observés lors du testing') +
     blk('Anomalies relevées', a.length + ' au total',
-      table([{k:'src',t:'Origine'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'m',t:'Montant',n:1},
-             {k:'st',t:'Traitement'},{k:'e',t:'Explication',cls:'wrapcell'},{k:'v',t:''}], rows,
-            { foot:{ src:'Cumul non corrigé', m:eur(cumul) } }) +
-      `<div class="grid2" style="margin-top:10px">
+      table([{k:'src',t:'Origine'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'c',t:'Écart constaté',n:1},
+             {k:'e',t:'Part expliquée',n:1},{k:'m',t:'Écart résiduel',n:1},
+             {k:'st',t:'Résolution',cls:'wrapcell'},{k:'v',t:''}], rows,
+            { foot:{ src:'Cumul non corrigé', c:eur(retenues.reduce((t, x) => t + x.constate, 0)),
+                     e:eur(explique), m:eur(cumul) } }) +
+      (doublesCumul().length ? `<div class="callout bad" style="margin-top:10px">
+        <b>${doublesCumul().length} pièce(s) comptée(s) plusieurs fois au cumul.</b>
+        Une même facture est relevée dans deux sections — au compte de tiers et au compte de résultat —
+        et son écart entre donc deux fois, alors qu’il ne fausse les comptes qu’une fois.
+        ${doublesCumul().map(x => `<div class="smallcaps"><span class="mono">${esc(x.piece)}</span> —
+          ${x.comptees} fois, ${eur(x.montant)} au total : ${esc(x.l.map(y => y.src).join(' · '))}</div>`).join('')}
+        Rien n’est déduit d’office : qualifiez l’un des côtés « déjà cumulée » dans son papier de travail,
+        avec la pièce ou l’écriture qui corrobore. C’est une décision d’auditeur, pas une soustraction automatique.</div>` : '') +
+      `<p class="note">La résolution d’un écart se documente là où il est né — dans le papier de travail, le
+      rapprochement ou le test des écritures — et jamais ici. Une explication du client n’y suffit pas :
+      il faut une conclusion écrite, une qualification, un lien vers la pièce ou l’écriture qui corrobore,
+      un auteur et une date. Seul le résiduel entre dans le cumul ci-dessous.</p>
+      <div class="grid2" style="margin-top:10px">
         <div class="kv">
           <span class="k">Anomalies relevées</span><span class="v">${a.length}</span>
           <span class="k">Sous le seuil de remontée (${eur0(s.CTT)})</span><span class="v">${triviales.length}</span>
-          <span class="k">Non corrigées</span><span class="v">${retenues.length} — ${eur(cumul)}</span>
+          <span class="k">Expliquées et corroborées</span><span class="v">${retenues.filter(x => x.acquis).length} — ${eur(explique)}</span>
+          <span class="k">Résiduelles</span><span class="v">${nonResolues.length} — ${eur(cumul)}</span>
           <span class="k">Seuil de signification</span><span class="v">${eur(s.M)}</span>
           <span class="k">Rapport au seuil</span><span class="v">${pct(Math.abs(cumul) / s.M, 0)}</span>
         </div>
@@ -2875,20 +3363,17 @@ function vuePilotage(){
   const postes = postesEnPerimetre();
   const rows = postes.map(p => {
     const st = sec(p.code), prs = proceduresRequises(p);
-    let recus = 0, tot = 0, ctrOk = 0, ctrTot = 0;
-    for (const pr of prs){
-      if (!pr.ech) continue;
-      const wp = wpProc(p, pr) || []; tot += wp.length; recus += wp.filter(r => r.recu).length;
-      const c = controles(p, pr); ctrTot += c.length; ctrOk += c.filter(x => x.saisi).length;
-    }
+    const t = avancementSection(p);
     const rs = requetesDe(p.code), av = rs.length ? rs.reduce((a, r) => a + avancement(r.items), 0) / rs.length : 0;
     const o = obstaclesVisa(p), bl = notesBloquantesOuvertes(p.code).length;
     return {
       s:`<b>${esc(p.lib)}</b><div class="smallcaps">${esc(MASSE_LIB[masseDe(p)])}</div>`,
       r:`<span class="pill ${NIVEAUX[niveauMax(p)] === 'eleve' ? 'bad' : NIVEAUX[niveauMax(p)] === 'moyen' ? 'warn' : ''}">${NIV_LIB[NIVEAUX[niveauMax(p)]]}</span>`,
       p:String(proceduresRequises(p).length),
-      e:`${recus} / ${tot}`,
-      ct:ctrTot ? `${ctrOk} / ${ctrTot}` : '<span class="smallcaps">—</span>',
+      e:t.elements ? `${t.recus} / ${t.elements}` : '<span class="smallcaps">—</span>',
+      tr:t.total ? String(t.traitee) : '<span class="smallcaps">—</span>',
+      ec:t.ecart ? `<span style="color:var(--anomalie)">${t.ecart}</span>` : '<span class="smallcaps">—</span>',
+      ex:t.explique ? String(t.explique) : '<span class="smallcaps">—</span>',
       q:rs.length ? `<div class="bar" style="width:80px"><i style="width:${(av * 100).toFixed(0)}%"></i></div><span class="smallcaps">${pct(av, 0)}</span>` : '<span class="smallcaps">aucune</span>',
       n:bl ? `<span class="pill bad">${bl} bloquante(s)</span>` : '<span class="smallcaps">—</span>',
       v:st.visa ? '<span class="pill">visée</span>' : `<span class="pill ${o.length ? 'bad' : 'warn'}">${o.length || 'prête'}</span>`,
@@ -2905,8 +3390,16 @@ function vuePilotage(){
   return entete('Avancement de la mission', 'état réel des sections et des demandes — rien de saisi à côté') +
     blk('Sections', postes.length + ' dans le périmètre',
       table([{k:'s',t:'Section',cls:'wrapcell'},{k:'r',t:'Risque'},{k:'p',t:'Procédures',n:1},
-             {k:'e',t:'Pièces reçues',n:1},{k:'ct',t:'Contrôles saisis',n:1},{k:'q',t:'Requêtes'},
-             {k:'n',t:'Notes bloquantes'},{k:'v',t:'Visa'},{k:'a',t:''}], rows)) +
+             {k:'e',t:'Justificatifs reçus',n:1},{k:'tr',t:'Traités sans écart',n:1},
+             {k:'ec',t:'Écarts à expliquer',n:1},{k:'ex',t:'Écarts expliqués',n:1},{k:'q',t:'Requêtes'},
+             {k:'n',t:'Notes bloquantes'},{k:'v',t:'Visa'},{k:'a',t:''}], rows,
+        { foot:{ s:'Total',
+                 e:`${postes.reduce((a, x) => a + avancementSection(x).recus, 0)} / ${postes.reduce((a, x) => a + avancementSection(x).elements, 0)}`,
+                 tr:String(postes.reduce((a, x) => a + avancementSection(x).traitee, 0)),
+                 ec:String(postes.reduce((a, x) => a + avancementSection(x).ecart, 0)),
+                 ex:String(postes.reduce((a, x) => a + avancementSection(x).explique, 0)) } }) +
+      `<p class="note">Ces colonnes ne sont saisies nulle part : elles agrègent les cinq états dérivés du papier
+      de travail — en attente, reçue, traitée sans écart, écart à expliquer, écart expliqué.</p>`) +
     blk('Qui doit quoi, côté client', enRetard.length + ' demande(s) en retard',
       Object.keys(parPersonne).length
         ? table([{k:'p',t:'Personne',cls:'wrapcell'},{k:'n',t:'Demandes',n:1},{k:'i',t:'Éléments',n:1},{k:'a',t:'Ancienneté',n:1}],
@@ -3612,9 +4105,9 @@ function vueAchSimple(k){
 function vueAchAnomalies(){
   const s = seuils(), a = anomalies(), st = S.achevement;
   const retenues = a.filter(x => !x.souSeuil);
-  const corrigees = retenues.filter(x => st.corrigees[x.ref + '|' + x.lib]);
-  const nonCorr = retenues.filter(x => !st.corrigees[x.ref + '|' + x.lib]);
-  const cumul = nonCorr.reduce((t, x) => t + x.montant, 0);
+  const resolues = retenues.filter(x => x.acquis);
+  const nonCorr = retenues.filter(x => x.montant !== 0);
+  const cumul = retenues.reduce((t, x) => t + x.montant, 0);
   const depasse = Math.abs(cumul) > s.M;
   const opinions = [
     { v:'certification', lib:'Certification sans réserve' },
@@ -3624,20 +4117,29 @@ function vueAchAnomalies(){
   ];
   const propose = depasse ? 'reserve' : 'certification';
   return entete('Anomalies non corrigées et incidence sur l’opinion', 'évaluation finale') +
-    blk('Anomalies au-dessus du seuil de remontée', retenues.length + ' — dont ' + nonCorr.length + ' non corrigées',
-      table([{k:'src',t:'Origine',cls:'wrapcell'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'m',t:'Montant',n:1},
-             {k:'c',t:'Corrigée par le client'},{k:'v',t:''}],
+    blk('Anomalies au-dessus du seuil de remontée', retenues.length + ' — dont ' + nonCorr.length + ' résiduelles',
+      table([{k:'src',t:'Origine',cls:'wrapcell'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'c',t:'Constaté',n:1},
+             {k:'e',t:'Expliqué',n:1},{k:'m',t:'Résiduel',n:1},{k:'q',t:'Qualification',cls:'wrapcell'},{k:'v',t:''}],
         retenues.map(x => ({
-          src:esc(x.src), lib:esc(x.lib), m:eur(x.montant),
-          c:`<label class="chk"><input type="checkbox" data-corr="${esc(x.ref + '|' + x.lib)}" ${st.corrigees[x.ref + '|' + x.lib] ? 'checked' : ''}><span>corrigée</span></label>`,
-          v:x.section ? `<button class="btn mini sec" data-open="${x.section}">section</button>` : '',
-        })), { foot:{ src:'Cumul non corrigé', m:eur(cumul) } })) +
+          src:esc(x.src), lib:esc(x.lib), c:eur(x.constate),
+          e:x.explique ? eur(x.explique) : '<span class="smallcaps">—</span>',
+          m:x.montant ? eur(x.montant) : '<span class="smallcaps">—</span>',
+          q:x.acquis ? `${esc(DISPOSITIONS[x.res.disposition].lib)}
+              <div class="smallcaps">${esc(USERS[x.res.par].nom)}, ${horo(x.res.t)}</div>`
+            : `<span class="pill bad">non résolue</span>`,
+          v:`<button class="btn mini sec" data-goecart="${esc(x.vue)}">voir</button>`,
+        })), { foot:{ src:'Cumul non corrigé', c:eur(retenues.reduce((t, x) => t + x.constate, 0)),
+                      e:eur(retenues.reduce((t, x) => t + x.explique, 0)), m:eur(cumul) } }) +
+      `<p class="note">Il n’y a pas de case « corrigée » à cocher ici : une anomalie quitte le cumul par une
+      résolution documentée — explication reçue, conclusion de l’auditeur, qualification, lien vers la pièce ou
+      l’écriture qui corrobore, auteur et date — enregistrée là où l’écart est né. Une case à cocher aurait fait
+      disparaître un montant du cumul sans que rien ne l’explique.</p>`) +
     blk('Incidence sur l’opinion', depasse ? 'le cumul dépasse le seuil de signification' : 'le cumul reste sous le seuil',
       `<div class="kv">
         <span class="k">Cumul non corrigé</span><span class="v">${eur(cumul)}</span>
         <span class="k">Seuil de signification</span><span class="v">${eur(s.M)}</span>
         <span class="k">Rapport au seuil</span><span class="v">${pct(Math.abs(cumul) / s.M, 0)}</span>
-        <span class="k">Corrigées par le client</span><span class="v">${corrigees.length} — ${eur(corrigees.reduce((t, x) => t + x.montant, 0))}</span>
+        <span class="k">Résolues et corroborées</span><span class="v">${resolues.length} — ${eur(retenues.reduce((t, x) => t + x.explique, 0))}</span>
       </div>
       <div class="row" style="margin-top:10px">
         <div class="ctrl"><label>Opinion retenue — proposition : ${esc(opinions.find(o => o.v === propose).lib)}</label>
@@ -4705,14 +5207,32 @@ function deposer(reqId, itemId){
   it.depots.push({ nom, doc, t:tick(), par:contactCourant().nom });
   it.statut = it.depots.length >= docs.length ? 'depose' : 'partiel';
   logEvent('pièce déposée', r.id + ' · ' + nom, contactCourant().nom);
-  if (p && pr){
-    const w = (wpProc(p, pr) || []).find(x => String(x.cle) === String(it.ref));
-    if (w){ w.recu = true; w.docs[doc] = true; }
-  }
+  /* Aucun drapeau n'est posé sur le papier de travail : la ligne devient
+     testable parce que le dépôt existe, et le papier le lit. Une case
+     « pièce reçue » aurait pu être cochée sans qu'aucune pièce n'arrive. */
 }
 
 /* ═══ 23. INTERACTIONS ═════════════════════════════════════════════════════ */
 function posteCourant(){ return S.vue.startsWith('fsli:') ? postesCalcules().find(p => p.code === S.vue.slice(5)) : null; }
+/** Retrouve une résolution d'écart depuis la clé portée par l'écran.
+ *  Deux formes, un seul casier : « POSTE#PROC#élément|document|champ » pour un
+ *  écart de papier de travail, « hors#référence » pour un écart né ailleurs
+ *  (rapprochement, test des écritures). L'écran n'a pas à savoir laquelle. */
+function resolDeCle(k){
+  const s = String(k);
+  if (s.startsWith('hors#')){
+    const ref = s.slice(5), a = anomalies().find(x => x.cleRes === s);
+    return a ? { r:resolHors(ref), constate:a.constate, lib:a.lib } : null;
+  }
+  const parts = s.split('#');
+  if (parts.length < 3) return null;
+  const p = postesCalcules().find(x => x.code === parts[0]);
+  const pr = PROCEDURES.find(x => x.code === parts[1]);
+  if (!p || !pr) return null;
+  const cle = parts.slice(2).join('#');
+  const c = controles(p, pr).find(x => x.cle === cle);
+  return c ? { r:resol(c), constate:-c.ecart, lib:c.doc + ' — ' + c.ligne.cle } : null;
+}
 
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
@@ -4728,6 +5248,14 @@ document.addEventListener('input', e => {
     const cle = String(d.ctr).split('|')[0];
     const l = wp.find(x => String(x.cle) === cle);
     if (l){ l.champs[d.ctr] = t.value; }
+    return renderMainDiff();
+  }
+  if (d.rexpl !== undefined){ const x = resolDeCle(d.rexpl); if (x) x.r.expl = t.value; return renderMainDiff(); }
+  if (d.rconcl !== undefined){ const x = resolDeCle(d.rconcl); if (x) x.r.concl = t.value; return renderMainDiff(); }
+  if (d.recr !== undefined){ const x = resolDeCle(d.recr); if (x) x.r.corrobEcriture = t.value; return renderMainDiff(); }
+  if (d.rmont !== undefined){
+    const x = resolDeCle(d.rmont);
+    if (x) x.r.explique = Math.round((parseFloat(String(t.value).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
     return renderMainDiff();
   }
   if (t.id === 'ar-montant'){ S.arMontant = Math.round((parseFloat(t.value) || 0) * 100); return renderMainDiff(); }
@@ -4791,9 +5319,10 @@ document.addEventListener('change', e => {
     (S.achevement.points[k] = S.achevement.points[k] || {})[i] = t.checked;
     logEvent('point de diligence ' + (t.checked ? 'exécuté' : 'décoché'), ACH[k].t, ACH[k].pts[+i].slice(0, 60));
     return renderMain(); }
-  if (d.corr !== undefined){ S.achevement.corrigees[d.corr] = t.checked; return renderMain(); }
   if (t.id === 'ach-op'){ S.achevement.opinion = t.value;
     logEvent('opinion arrêtée', 'Altiverre SAS FY2025', t.value); return renderMain(); }
+  if (d.rdisp !== undefined){ const x = resolDeCle(d.rdisp); if (x) x.r.disposition = t.value; return renderMain(); }
+  if (d.rpiece !== undefined){ const x = resolDeCle(d.rpiece); if (x) x.r.corrobPiece = t.value; return renderMain(); }
   if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; return renderMain(); }
   if (t.id === 'je-an'){ S.jeSansAN = t.checked; return renderMain(); }
   if (d.aff !== undefined){
@@ -4857,7 +5386,7 @@ document.addEventListener('click', e => {
     const pr = PROCEDURES.find(x => x.code === d.plire);
     let n = 0;
     for (const c of controles(p, pr)){
-      if (!c.recu || c.saisi) continue;
+      if (etatControle(c) !== 'recue') continue;
       const v = c.ch.val(c.ligne.x);
       c.ligne.champs[c.cle] = c.ch.type === 'montant' ? (v / 100).toFixed(2).replace('.', ',')
                             : c.ch.type === 'bool' ? (v ? 'oui' : 'non') : String(v);
@@ -5026,11 +5555,25 @@ document.addEventListener('click', e => {
     }
     renderImpact(); return renderMain();
   }
+  if (d.rconclure){
+    const x = resolDeCle(d.rconclure);
+    if (x){ const r = conclureResolution(x.r, x.constate, x.lib); S.affErreur = r.ok ? '' : r.why; }
+    renderImpact(); return renderMain();
+  }
+  if (d.rannul){
+    const x = resolDeCle(d.rannul);
+    if (x) annulerResolutionR(x.r, x.lib);
+    renderImpact(); return renderMain();
+  }
   if (d.tstat){
     const [code, st] = d.tstat.split('|');
     const r = changerStatut(code, st);
     S.affErreur = r.ok ? '' : r.why;
     return renderMain();
+  }
+  if (d.goecart){
+    if (d.goecart.startsWith('fsli:')) return ouvrirSection(d.goecart.slice(5));
+    return aller(d.goecart, 'auditeur');
   }
   if (d.gotrav) return aller(d.gotrav, 'auditeur');
   if (t.id === 'tv-auto'){

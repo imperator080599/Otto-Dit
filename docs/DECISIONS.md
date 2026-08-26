@@ -1125,3 +1125,151 @@ d'état. Le facteur décisif n'était pas la teinte mais l'incohérence.
 (cible 2) · couleurs littérales hors jetons **0** (cible 0) · tailles de police **5** (cible ≤ 5)
 · espacements hors échelle **0** (cible 0). Teintes d'encre effectivement rendues à l'écran : 6,
 toutes issues du jeu.
+
+---
+
+## ADR-039 — Un état ne se saisit pas, il se déduit
+
+**Contexte** : la ligne d'un papier de travail portait un drapeau `recu` posé par le code du
+portail au moment du dépôt, et l'écran affichait quatre pastilles d'état calculées à côté.
+Un drapeau stocké se désynchronise : régénérer un échantillon, supprimer une requête, changer
+un germe laissait le drapeau à `true` sur une pièce que personne n'avait plus déposée. Et une
+case « pièce reçue » cochable à la main aurait permis de déclarer reçue une pièce inexistante.
+
+**Décision** :
+
+1. **La réception est dérivée, jamais stockée.** `ligneRecue()` et `docRecu()` lisent les
+   dépôts du client sur la requête qui demandait la pièce. Le papier de travail ne conserve
+   que ce qu'un auditeur a réellement saisi : les valeurs relevées et les résolutions
+   d'écart. `deposer()` ne pose plus aucun drapeau.
+2. **Cinq états dérivés, un par ligne de contrôle** : *en attente* → *reçue* → *traitée sans
+   écart* → *écart à expliquer* → *écart expliqué*. Ils remplacent les marques de pointage de
+   l'ADR-038 plutôt que de s'y ajouter : la marque EST l'affichage de l'état (`n a p x e`).
+3. **La priorité entre états d'une même ligne est une décision écrite** (`PRIORITE_ETAT`) :
+   `écart` avant `en attente` avant `reçue` avant `expliqué` avant `traitée`. On montre
+   d'abord ce qui appelle une action de l'auditeur, puis ce qui appelle une action du client.
+   Ce n'est pas le plus fréquent qui gagne, c'est le plus exigeant.
+4. **Ces cinq états s'agrègent** au bloc « Avancement des justificatifs » de chaque section et
+   au tableau de bord de pilotage. Aucun de ces nombres n'est saisi.
+
+**Duplication supprimée** : le bloc « Responsabilités et heures », répété dans chaque section,
+disparaît — l'affectation et les heures appartiennent au programme de travail, une seule fois.
+Ce que la section porte désormais, c'est l'**action** : un bouton « le testing est terminé »
+dans le papier de travail, qui porte le travail à « achevé » et le soumet à son réviseur. Il
+est refusé tant qu'un justificatif manque, qu'un contrôle n'est pas saisi, qu'un écart n'est
+pas résolu ou que la conclusion n'est pas écrite, et il nomme le réviseur qu'il saisit.
+
+---
+
+## ADR-040 — Un seul casier de résolution d'écart, et seul le résiduel entre au cumul
+
+**Contexte** : la synthèse des anomalies affichait, pour les écarts nés du rapprochement et du
+test des écritures, des phrases pré-écrites du type « doublon reconnu par le client ; extourne
+non comptabilisée à date ». Ces phrases avaient l'apparence d'une résolution sans en porter
+aucun élément probant. La vue d'achèvement offrait pire : une case à cocher « corrigée par le
+client » qui retirait un montant du cumul sans explication, sans lien, sans auteur.
+
+**Décision** :
+
+1. **Le papier de travail porte la résolution** : écart constaté (calculé), part expliquée
+   (saisie), écart résiduel (soustraction, jamais saisi), explication reçue du client mot pour
+   mot, conclusion de l'auditeur, qualification, lien vers la pièce ou l'écriture qui
+   corrobore, auteur et horodatage.
+2. **C'est la contrainte probante de la migration 0009, réutilisée telle quelle** : sans les
+   six éléments, la résolution n'est pas acquise et l'écart reste **entier** au cumul. La
+   corroboration est un LIEN : une écriture citée qui n'existe pas au grand livre est refusée.
+3. **Un seul casier pour tous les écarts.** Écart de papier, écart de rapprochement, écriture
+   relevée au test des écritures passent par le même objet et la même carte, rendue là où
+   l'écart naît. Les phrases pré-écrites sont conservées, mais enregistrées pour ce qu'elles
+   sont : des explications *reçues*, qui ne résolvent rien à elles seules.
+4. **La case « corrigée » de l'achèvement est supprimée.** Une anomalie quitte le cumul par
+   une résolution documentée, pas par une case.
+5. **La part expliquée est bornée** à l'écart constaté et à son sens : une résolution qui
+   agrandirait l'écart, ou l'inverserait, n'en est pas une.
+6. **Un écart intégralement expliqué reste listé**, avec son constaté, sa part expliquée et son
+   résiduel nul. Le faire disparaître de la liste est exactement ce qui avait permis, dans
+   l'application, à un montant de quitter le cumul sans que rien ne l'explique.
+7. **Un écart non chiffré** — une date de pièce, un tiers, une référence — n'entre pas au cumul
+   mais exige les mêmes éléments probants. Même casier, pas un second chemin.
+
+**Double comptage signalé, jamais déduit** : une facture de vente est relevée dans la section
+« Clients » ET dans la section « Chiffre d'affaires » ; son écart entrait deux fois au cumul
+alors qu'il ne fausse les comptes qu'une fois. La synthèse le signale, nomme les pièces
+concernées et renvoie à la qualification « déjà cumulée ». Rien n'est soustrait d'office : le
+côté qui reste est une décision d'auditeur.
+
+---
+
+## ADR-041 — La contrainte probante s'applique à toutes les tables de résolution (migration 0010)
+
+**Contexte** : la migration 0009 avait rendu `exception.status = 'resolved'` inatteignable sans
+substance. Deux autres tables pouvaient encore clore un constat sur une phrase :
+
+- `reconciliation_item` — `'documented_difference'` **libère le verrou de population Gate 2**
+  et ne demandait qu'une note libre ;
+- `deviation` — `'explained'` retire une défaillance de contrôle du décompte ouvert et ne
+  demandait qu'un texte libre. Le flux de démonstration y écrivait littéralement
+  « deviation stands as a control failure » tout en la portant « expliquée ».
+
+Une règle qui tient sur une table et pas sur ses voisines est une convention, pas une contrainte.
+
+**Décision** :
+
+1. **`reconciliation_item`** reçoit les quatre colonnes de 0009 et la même contrainte CHECK
+   pour `documented_difference` et `resolved`. Le service prend désormais le type
+   `ResolutionInput` de l'exception — le même type, pas un type parallèle.
+2. **`deviation`** reçoit la même forme (explication mot pour mot, lien probant, conclusion,
+   auteur), mais **pas les mêmes qualifications** : un test de contrôle ne porte aucun montant,
+   les mots de l'argent n'y ont pas leur place. Deux dispositions seulement sortent une
+   déviation du décompte, et toutes deux sont des affirmations sur la preuve :
+   `control_operated` et `compensating_control`. Il n'existe délibérément pas de disposition
+   « expliquée par la direction » : une déviation qui subsiste reste ouverte et alimente le taux.
+3. **Le troisième chemin, encore une fois.** L'écart TB/GL du dossier de démonstration tient à
+   une écriture **absente** du grand livre : il n'y a, par construction, ni écriture à citer ni
+   pièce à joindre. Plutôt que d'affaiblir `documented_difference`, `reconciliation_item`
+   reçoit `scope_limitation`, calqué sur celui de 0009 : il enregistre ce qui n'a pas pu être
+   obtenu et ce qui a été fait à la place, il ne prétend jamais être corroboré, et il n'est
+   tolérable qu'avec `engagement.ledger_is_provisional`, qui bloque la conclusion finale.
+4. **Les flux de démonstration sont corrigés, pas contournés** : `part1` emprunte la limitation
+   de périmètre, `part2` laisse les déviations ouvertes.
+
+**Vérifié** : quatre assertions de niveau base de données prouvent que le service n'est pas la
+seule barrière — `reconciliation_closure_is_probative`,
+`reconciliation_limitation_is_documented` et `deviation_closure_is_probative` refusent
+l'écriture directe. 148 tests passent.
+
+---
+
+## ADR-042 — L'ampleur d'un écart du jeu d'essai découle de sa cause
+
+**Contexte** : les seize écarts de montant du jeu de données étaient tous posés entre 3 % et
+10 % de la pièce qui les porte — plusieurs à 5,00 % et 10,00 % exactement — quelle que soit la
+cause écrite à côté. « Avoir de fin d'exercice non comptabilisé » y valait la même chose qu'un
+arrondi de saisie. Conséquence mesurée : **un seul** écart dépassait le seuil de remontée, si
+bien que la chaîne « écart relevé → résolution → cumul → opinion » ne pouvait jamais être
+observée sur un papier de travail. Une part choisie pour faire un joli nombre n'est pas un
+écart d'audit — et la correction ne consiste pas à grossir trois montants pour obtenir un
+compte agréable, mais à laisser la cause fixer l'ampleur.
+
+**Décision** : chaque écart déclare sa **nature**, et chaque nature sa **bande**, exprimée en
+part de la pièce parce qu'une erreur est proportionnelle à ce sur quoi elle porte :
+
+| Nature | Bande | Ce que c'est |
+|---|---|---|
+| arrondi ou frais non ventilé | ≤ 1 % | une saisie arrondie, une commission non éclatée |
+| régularisation partielle | 2 % – 12 % | une remise non déduite, un taux ajusté, un reliquat |
+| document ou ligne omis | 10 % – 40 % | un avoir jamais comptabilisé, un retour non crédité |
+
+La bande est **vérifiée à l'écran** (vue « Jeu de données ») : si un écart en sort, c'est la
+table qui est fausse. Le nombre d'écarts dépassant le seuil de remontée passe de 1 à **6** —
+ce nombre est **constaté, pas visé**, et il est affiché comme tel.
+
+**Conséquence observée** : les six écarts au-dessus du seuil de remontée tombent tous dans un
+échantillon, et les petits en sortent — ce qu'une sélection stratifiée par les montants doit
+précisément produire.
+
+**Point ouvert relevé, non traité** : avec un seuil de planification de 27 000 € et une facture
+médiane de 15 420 €, la strate exhaustive à la moitié du seuil retient plus de la moitié de la
+population — 163 éléments sur 323. La règle de l'ADR-034 rencontre ici une population dont les
+éléments approchent le seuil ; ce n'est pas un défaut de la règle mais un cas qu'elle traite
+mal, et la stratification est la réponse habituelle. À arbitrer.

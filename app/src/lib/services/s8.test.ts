@@ -5,7 +5,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { bootstrapSox, runControlCycle, runPart2 } from '@/lib/flows/part2';
-import { listControls, listDeviations, listDeficiencies, attributeGrid, drawAttributeSample, setDiStatus } from './sox';
+import { listControls, listDeviations, listDeficiencies, attributeGrid, drawAttributeSample, setDiStatus, resolveDeviation } from './sox';
 import { getWorkpaper } from './workpapers/lifecycle';
 import { renderWorkpaperPdf } from './workpapers/render';
 import type { WpSection } from './workpapers/draft';
@@ -104,6 +104,28 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     expect(grid.length).toBeGreaterThan(8);
     expect(grid.some((g) => g.result === 'fail' && g.basis === 'extraction_field')).toBe(true);
     expect(grid.some((g) => g.result === 'na' && g.basis === 'human')).toBe(true); // missing-evidence month
+  });
+
+  it('a deviation cannot be explained away on a sentence (migration 0010)', async () => {
+    const d = (await listDeviations(IDS.engSox)).find((x) => x.status === 'open');
+    expect(d, 'au moins une déviation ouverte').toBeTruthy();
+    await expect(
+      resolveDeviation(d!.id, IDS.users.karim, {
+        explanation: 'Le client indique que le rapprochement a bien été fait.',
+        conclusion: 'Explication reçue et jugée plausible.',
+        disposition: 'control_operated',
+        evidenceId: '',
+      }),
+    ).rejects.toThrow(/link the evidence that shows the control operated/);
+
+    // la contrainte CHECK est le filet derrière le service
+    await expect(
+      q(`update deviation set status = 'explained', resolution = 'ok', resolved_by = $2, resolved_at = now() where id = $1`,
+        [d!.id, IDS.users.lea]),
+    ).rejects.toThrow(/deviation_closure_is_probative/);
+
+    // et une déviation qui subsiste reste ouverte : elle alimente le taux
+    expect((await listDeviations(IDS.engSox)).find((x) => x.id === d!.id)!.status).toBe('open');
   });
 
   it('deficiency ladder proposes severity from rules (L3) and records the human decision', async () => {

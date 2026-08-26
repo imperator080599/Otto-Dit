@@ -29,6 +29,11 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
   const attrCodes = [...new Set(grid.map((g) => g.attribute_code))].sort();
   const gridLabels = [...new Set(grid.map((g) => g.label))].sort();
   const deviations = (await listDeviations(id)).filter((d) => d.control_code === control.code);
+  // Ce qui peut être LIÉ pour montrer que le contrôle a fonctionné : les pièces du dossier.
+  const corroborations = await q<{ id: string; filename: string }>(
+    `select id, filename from evidence where engagement_id = $1 and quarantined = false order by filename`,
+    [id],
+  );
   const deficiency = (await listDeficiencies(id)).find((d) => d.control_code === control.code);
   const workpaper = await q<{ id: string; code: string; status: string; version: number }>(
     `select id, code, status, version from workpaper where engagement_id = $1 and code = $2 order by version desc limit 1`,
@@ -62,7 +67,12 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
   async function resolveDevAction(formData: FormData) {
     'use server';
     const { user } = await requireMember(id);
-    await resolveDeviation(String(formData.get('deviation_id')), user.id, String(formData.get('resolution') ?? ''));
+    await resolveDeviation(String(formData.get('deviation_id')), user.id, {
+      explanation: String(formData.get('explanation') ?? ''),
+      conclusion: String(formData.get('conclusion') ?? ''),
+      disposition: String(formData.get('disposition') ?? 'control_operated') as 'control_operated' | 'compensating_control',
+      evidenceId: String(formData.get('evidence_id') ?? ''),
+    });
     revalidatePath(`/eng/${id}/rcm/${cid}`);
   }
   async function deficiencyAction(formData: FormData) {
@@ -199,11 +209,32 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
                   <td className="muted" style={{ maxWidth: 300 }}>{d.description}</td>
                   <td>
                     {d.status === 'open' ? (
-                      <form action={resolveDevAction} className="row">
-                        <input type="hidden" name="deviation_id" value={d.id} />
-                        <input type="text" name="resolution" placeholder="client explanation / evaluation" style={{ width: 200 }} required />
-                        <button className="btn small secondary">Record</button>
-                      </form>
+                      <details>
+                        <summary className="muted">act…</summary>
+                        <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 460 }}>
+                          <input type="hidden" name="deviation_id" value={d.id} />
+                          <textarea name="explanation" rows={2} required
+                            placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                          <textarea name="conclusion" rows={2} required
+                            placeholder="Votre conclusion sur cette explication" />
+                          <select name="disposition" defaultValue="control_operated">
+                            <option value="control_operated">le contrôle a bien fonctionné (pièce liée)</option>
+                            <option value="compensating_control">contrôle compensatoire lié</option>
+                          </select>
+                          <select name="evidence_id" required>
+                            <option value="">— pièce qui le démontre (obligatoire) —</option>
+                            {corroborations.map((c) => (
+                              <option key={c.id} value={c.id}>{c.filename}</option>
+                            ))}
+                          </select>
+                          <button className="btn small secondary">Record</button>
+                        </form>
+                        <p className="faint" style={{ maxWidth: 460 }}>
+                          Une déviation qui subsiste n&apos;a aucune de ces deux dispositions : elle reste
+                          ouverte et alimente le taux de déviation. Il n&apos;y a délibérément pas de
+                          disposition « expliquée par la direction » (migration 0010).
+                        </p>
+                      </details>
                     ) : <span className="muted">{d.resolution}</span>}
                   </td>
                 </tr>

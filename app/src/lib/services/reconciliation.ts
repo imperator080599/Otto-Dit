@@ -1,4 +1,5 @@
 import { q, q01, q1 } from '@/lib/db/client';
+import type { ResolutionInput } from './matching';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { numToCents, centsToNum } from '@/lib/util/num';
@@ -89,19 +90,43 @@ export async function latestTbGl(engagementId: string) {
   return { ...rec, items };
 }
 
-export async function documentDifference(itemId: string, userId: string, note: string): Promise<void> {
-  if (!note.trim()) throw new Error('a documented difference requires a note');
+/** Closing a reconciliation difference reuses {@link ResolutionInput} verbatim — the same
+ *  type as an exception resolution, not a parallel one. 'documented_difference' is what
+ *  releases the Gate-2 population gate, so it may not be reachable on a sentence
+ *  (migration 0010). */
+export async function documentDifference(itemId: string, userId: string, closure: ResolutionInput): Promise<void> {
+  if (!closure.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
+  if (!closure.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
+  const evidenceId = closure.corroboration?.evidenceId ?? null;
+  const glEntryId = closure.corroboration?.glEntryId ?? null;
+  if (!evidenceId && !glEntryId) {
+    throw new Error(
+      'a reconciliation difference cannot be documented on an explanation alone: link the corroborating evidence or accounting entry (NEP 500)',
+    );
+  }
   const item = await q1<{ id: string; reconciliation_id: string; account_no: string }>(
     `select id, reconciliation_id, account_no from reconciliation_item where id = $1`,
     [itemId],
   );
   const rec = await q1<{ engagement_id: string }>(`select engagement_id from reconciliation where id = $1`, [item.reconciliation_id]);
   const ctx = await engagementCtx(rec.engagement_id);
-  await q(`update reconciliation_item set status = 'documented_difference', note = $2, resolved_by = $3, resolved_at = now() where id = $1`, [itemId, note, userId]);
+  if (evidenceId) {
+    const ev = await q1<{ quarantined: boolean }>(`select quarantined from evidence where id = $1`, [evidenceId]);
+    if (ev.quarantined) throw new Error('quarantined evidence cannot corroborate a documented difference');
+  }
+  const note = closure.conclusion;
   await q(
-    `update exception set status = 'explained', resolution = $2, resolved_by = $3, resolved_at = now()
+    `update reconciliation_item set status = 'documented_difference', note = $2, client_explanation = $3,
+            disposition = $4, corroboration_evidence_id = $5, corroboration_gl_entry_id = $6,
+            resolved_by = $7, resolved_at = now()
+     where id = $1`,
+    [itemId, note, closure.explanation, closure.disposition, evidenceId, glEntryId, userId],
+  );
+  await q(
+    `update exception set status = 'explained', resolution = $2, client_explanation = $3,
+            resolved_by = $4, resolved_at = now()
      where reconciliation_item_id = $1 and status = 'open'`,
-    [itemId, note, userId],
+    [itemId, note, closure.explanation, userId],
   );
   await logEvent({
     tenantId: ctx.tenant_id,
@@ -111,7 +136,61 @@ export async function documentDifference(itemId: string, userId: string, note: s
     verb: 'reconciliation_difference_documented',
     objectType: 'reconciliation_item',
     objectId: itemId,
-    payload: { account: item.account_no, note },
+    payload: {
+      account: item.account_no,
+      note,
+      disposition: closure.disposition,
+      corroboration_evidence_id: evidenceId,
+      corroboration_gl_entry_id: glEntryId,
+      explanation: closure.explanation.slice(0, 500),
+    },
+  });
+}
+
+/** The third path (migration 0010). Not a closure: nothing corroborates it. A TB/GL
+ *  difference caused by an entry that is ABSENT from the ledger has no entry to link and
+ *  no document to attach; forcing it into 'documented_difference' is what produced the
+ *  one-sentence closures. It records what could not be obtained and what was done instead,
+ *  and it is only tolerable while the engagement carries ledger_is_provisional — which
+ *  blocks the final conclusion. */
+export async function noteReconciliationLimitation(
+  itemId: string,
+  userId: string,
+  input: { explanation: string; alternativeProcedures: string },
+): Promise<void> {
+  if (!input.explanation?.trim()) throw new Error('record why the difference could not be corroborated, in the client’s words');
+  if (!input.alternativeProcedures?.trim()) throw new Error('record what was done instead — a limitation without alternative procedures is an omission');
+  const item = await q1<{ id: string; reconciliation_id: string; account_no: string }>(
+    `select id, reconciliation_id, account_no from reconciliation_item where id = $1`,
+    [itemId],
+  );
+  const rec = await q1<{ engagement_id: string }>(`select engagement_id from reconciliation where id = $1`, [item.reconciliation_id]);
+  const ctx = await engagementCtx(rec.engagement_id);
+  await q(
+    `update reconciliation_item set status = 'scope_limitation', client_explanation = $2,
+            alternative_procedures = $3, note = $3, resolved_by = $4, resolved_at = now()
+     where id = $1`,
+    [itemId, input.explanation, input.alternativeProcedures, userId],
+  );
+  await q(
+    `update exception set status = 'explained', resolution = $2, client_explanation = $3,
+            resolved_by = $4, resolved_at = now()
+     where reconciliation_item_id = $1 and status = 'open'`,
+    [itemId, input.alternativeProcedures, input.explanation, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id,
+    engagementId: rec.engagement_id,
+    actorKind: 'user',
+    actorId: userId,
+    verb: 'reconciliation_scope_limitation',
+    objectType: 'reconciliation_item',
+    objectId: itemId,
+    payload: {
+      account: item.account_no,
+      explanation: input.explanation.slice(0, 500),
+      alternative_procedures: input.alternativeProcedures.slice(0, 500),
+    },
   });
 }
 

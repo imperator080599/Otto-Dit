@@ -423,17 +423,50 @@ export async function listDeviations(engagementId: string) {
   );
 }
 
-export async function resolveDeviation(deviationId: string, userId: string, resolution: string): Promise<void> {
-  if (!resolution.trim()) throw new Error('resolution required');
+/** What explaining a control deviation must carry (migration 0010). Same shape as an
+ *  exception resolution — explanation verbatim, corroborating LINK, conclusion, author —
+ *  but not the same dispositions: a control test carries no amount, so the money words do
+ *  not apply. Only two outcomes take a deviation out of the count, and both are claims
+ *  about evidence. A genuine deviation has neither: it stays open and counts in the rate. */
+export type DeviationClosure = {
+  /** The explanation received, in the client's own words. */
+  explanation: string;
+  /** The auditor's conclusion on that explanation. */
+  conclusion: string;
+  /** control_operated: evidence produced later shows the control did operate.
+   *  compensating_control: a linked control covers the same assertion. */
+  disposition: 'control_operated' | 'compensating_control';
+  /** The evidence that shows it. A deviation cannot be explained without one. */
+  evidenceId: string;
+};
+
+export async function resolveDeviation(deviationId: string, userId: string, closure: DeviationClosure): Promise<void> {
+  if (!closure.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
+  if (!closure.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
+  if (!closure.evidenceId) {
+    throw new Error(
+      'a control deviation cannot be explained away on an explanation alone: link the evidence that shows the control operated, or the compensating control (NEP 500)',
+    );
+  }
   const d = await q1<{ engagement_id: string }>(`select engagement_id from deviation where id = $1`, [deviationId]);
   const ctx = await engagementCtx(d.engagement_id);
+  const ev = await q1<{ quarantined: boolean }>(`select quarantined from evidence where id = $1`, [closure.evidenceId]);
+  if (ev.quarantined) throw new Error('quarantined evidence cannot corroborate a deviation closure');
   await q(
-    `update deviation set status = 'explained', resolution = $2, resolved_by = $3, resolved_at = now() where id = $1`,
-    [deviationId, resolution, userId],
+    `update deviation set status = 'explained', resolution = $2, client_explanation = $3,
+            disposition = $4, corroboration_evidence_id = $5, resolved_by = $6, resolved_at = now()
+     where id = $1`,
+    [deviationId, closure.conclusion, closure.explanation, closure.disposition, closure.evidenceId, userId],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: d.engagement_id, actorKind: 'user', actorId: userId,
-    verb: 'deviation_explained', objectType: 'deviation', objectId: deviationId, payload: { resolution },
+    verb: 'deviation_explained', objectType: 'deviation', objectId: deviationId,
+    payload: {
+      resolution: closure.conclusion,
+      disposition: closure.disposition,
+      corroboration_evidence_id: closure.evidenceId,
+      explanation: closure.explanation.slice(0, 500),
+    },
   });
 }
 
