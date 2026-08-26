@@ -21,6 +21,7 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { assertAccepte } from './acceptance';
 import { proceduresDuCycle, rangNiveau } from '@/lib/methodology/catalogue';
 import type { Catalogue, Procedure } from '@/lib/methodology/types';
 import { engagementContext } from './team';
@@ -241,6 +242,9 @@ export async function assessFsli(
   fsliCode: string,
   actorUserId: string | null,
 ): Promise<AssertionRisk[]> {
+  /* Évaluer le risque, c'est planifier des travaux. Une mission non acceptée
+     n'en planifie aucun : le système refuse, il ne rappelle pas. */
+  await assertAccepte(engagementId);
   const cat = await catalogueDeLaMission(engagementId);
   assertPredicatesImplemented(cat);
   const eng = await engagementContext(engagementId);

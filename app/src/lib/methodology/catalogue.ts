@@ -170,6 +170,11 @@ export function referencePapier(
   });
 }
 
+/** Les critères d'acceptation posés pour une PORTÉE donnée. */
+export function criteres(cat: Catalogue, portee: 'acceptation' | 'maintien') {
+  return cat.acceptation.criteres.filter((c) => c.portees.includes(portee));
+}
+
 /** Le libellé d'une assertion, depuis le jeu du cabinet. */
 export function libAssertion(cat: Catalogue, code: string): string {
   return cat.assertions.liste.find((a) => a.code === code)?.libelle ?? code;
@@ -293,4 +298,5 @@ export type {
   Independance, RubriqueIndependance, ParametreIndependance,
   Risque, FacteurObserve, JeuAssertions, AssertionDef,
   Papier, GabaritPapier, SectionGabarit, ColonneGabarit,
+  Acceptation, CritereAcceptation, JalonMethode, PorteeAcceptation,
 } from './types';

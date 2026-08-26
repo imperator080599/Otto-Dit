@@ -1,0 +1,39 @@
+{
+  "_note": "Schéma des critères d'acceptation et des jalons. Il APPARTIENT AU PRODUIT : il énumère les portées que le moteur sait poser et les dérivations qu'il sait calculer.",
+
+  "_note_portees": "Les deux moments où la question se pose. Première année et renouvellement ne posent pas les mêmes questions.",
+  "portees": ["acceptation", "maintien"],
+
+  "_note_derivations": "Les dérivations de date que le NOYAU sait calculer. Même frontière que partout : la méthode NOMME la dérivation, le code la CALCULE. Une dérivation nommée que le moteur ne connaît pas laisserait un jalon sans date, et un jalon sans date ne s'échoit jamais.",
+  "derivations": {
+    "delai_assemblage": {
+      "libelle": "Délai de clôture de l'assemblage",
+      "calcul": "date de rapport + délai du référentiel (kernel retention.ts, ADR-014 rev. 2)",
+      "depend_de": "date_rapport"
+    }
+  },
+
+  "definitions": {
+    "critere": {
+      "requis": ["code", "libelle", "question", "portees", "reponse_defavorable", "bloquant", "pourquoi"],
+      "champs": {
+        "code": { "type": "string", "nonVide": true },
+        "libelle": { "type": "string", "nonVide": true },
+        "question": { "type": "string", "nonVide": true },
+        "portees": { "type": "array" },
+        "reponse_defavorable": { "type": "string", "valeurs": ["oui", "non"] },
+        "bloquant": { "type": "boolean" },
+        "pourquoi": { "type": "string", "nonVide": true }
+      }
+    },
+    "jalon": {
+      "requis": ["code", "libelle", "ordre"],
+      "champs": {
+        "code": { "type": "string", "nonVide": true },
+        "libelle": { "type": "string", "nonVide": true },
+        "ordre": { "type": "number" },
+        "derive": { "type": "string" }
+      }
+    }
+  }
+}

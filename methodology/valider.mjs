@@ -479,6 +479,68 @@ export function validerPapier(pap, schema){
   return erreurs;
 }
 
+
+/**
+ * Erreurs des critères d'acceptation et des jalons.
+ *
+ * L'ACCEPTATION EST DU CONTENU DE CABINET, pas une constante du produit :
+ * chaque cabinet a ses critères, et surtout chaque critère porte la RAISON
+ * pour laquelle il existe — sans quoi un questionnaire d'acceptation devient
+ * une formalité qu'on remplit sans la lire.
+ *
+ * La frontière tient sur les JALONS DÉRIVÉS : la méthode nomme la dérivation
+ * (« delai_assemblage »), le noyau la calcule. Une dérivation nommée et
+ * inconnue laisserait un jalon SANS DATE, et un jalon sans date ne s'échoit
+ * jamais — le dossier serait en retard sans que rien ne le dise.
+ */
+export function validerAcceptation(a, schema){
+  const erreurs = [];
+  if (!a.version) erreurs.push('acceptation : version manquante');
+
+  const criteres = a.criteres || [];
+  if (!criteres.length) erreurs.push('acceptation : aucun critère — la décision ne reposerait sur rien');
+  const codes = [];
+  for (const c of criteres){
+    validerObjet(c, schema.definitions.critere, `critère ${c.code || '(sans code)'}`, erreurs);
+    for (const p of c.portees || []){
+      if (!schema.portees.includes(p))
+        erreurs.push(`critère ${c.code} : portée « ${p} » inconnue (connues : ${schema.portees.join(' | ')})`);
+    }
+    if (!(c.portees || []).length)
+      erreurs.push(`critère ${c.code} : aucune portée — il ne serait jamais posé`);
+    codes.push(c.code);
+  }
+  const dbl = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if (dbl.length) erreurs.push('acceptation : critères en double : ' + [...new Set(dbl)].join(', '));
+  /* Chaque portée doit avoir au moins un critère : une portée vide ferait une
+     décision prise sur zéro question, et elle passerait sans bruit. */
+  for (const p of schema.portees){
+    if (!criteres.some(c => (c.portees || []).includes(p)))
+      erreurs.push(`acceptation : aucun critère pour la portée « ${p} » — la décision se prendrait sur zéro question`);
+  }
+
+  const jalons = a.jalons || [];
+  if (!jalons.length) erreurs.push('acceptation : aucun jalon');
+  const codesJ = [];
+  for (const j of jalons){
+    validerObjet(j, schema.definitions.jalon, `jalon ${j.code || '(sans code)'}`, erreurs);
+    if (j.derive){
+      const d = schema.derivations[j.derive];
+      if (!d){
+        erreurs.push(`jalon ${j.code} : dérivation « ${j.derive} » inconnue du noyau `
+          + `(connues : ${Object.keys(schema.derivations).join(' | ')}) — le jalon resterait SANS DATE, `
+          + `et un jalon sans date ne s'échoit jamais`);
+      } else if (!jalons.some(x => x.code === d.depend_de)){
+        erreurs.push(`jalon ${j.code} : la dérivation « ${j.derive} » dépend du jalon « ${d.depend_de} », absent`);
+      }
+    }
+    codesJ.push(j.code);
+  }
+  const dblJ = codesJ.filter((c, i) => codesJ.indexOf(c) !== i);
+  if (dblJ.length) erreurs.push('acceptation : jalons en double : ' + [...new Set(dblJ)].join(', '));
+  return erreurs;
+}
+
 /* ── les deux entrées, et une seule validation ─────────────────────────────
 
    Le catalogue peut venir de DEUX endroits : le dépôt (méthode livrée avec le
@@ -498,12 +560,14 @@ export function validerPapier(pap, schema){
 export const FICHIERS_CONTENU = [
   'procedures.json', 'sources.json', 'questionnaire.json',
   'independance.json', 'risque.json', 'assertions.json', 'papier.json',
+  'acceptation.json',
 ];
 
 /** Les cinq schémas, propriété du PRODUIT. Jamais fournis par un cabinet. */
 export const FICHIERS_SCHEMA = [
   'schema.json', 'schema-questionnaire.json', 'schema-independance.json',
   'schema-risque.json', 'schema-assertions.json', 'schema-papier.json',
+  'schema-acceptation.json',
 ];
 
 function lireDossier(dir, noms){
@@ -531,10 +595,11 @@ export function erreursDuPaquet(contenu, schemas){
   const cat = contenu['procedures.json'], src = contenu['sources.json'];
   const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
   const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
-  const pap = contenu['papier.json'];
+  const pap = contenu['papier.json'], acc = contenu['acceptation.json'];
   const schema = schemas['schema.json'], schemaQ = schemas['schema-questionnaire.json'];
   const schemaI = schemas['schema-independance.json'], schemaR = schemas['schema-risque.json'];
   const schemaA = schemas['schema-assertions.json'], schemaP = schemas['schema-papier.json'];
+  const schemaAcc = schemas['schema-acceptation.json'];
   /* L'échelle est lue AVANT le catalogue : c'est elle qui dit quels niveaux
      une procédure a le droit d'exiger. */
   const echelle = ((risq || {}).echelle || {}).niveaux || [];
@@ -546,7 +611,8 @@ export function erreursDuPaquet(contenu, schemas){
     .concat(validerQuestionnaire(quest, src, schemaQ, codesAssertions))
     .concat(validerIndependance(ind, src, schemaI))
     .concat(validerRisque(risq, src, schemaR, codesAssertions))
-    .concat(validerPapier(pap, schemaP));
+    .concat(validerPapier(pap, schemaP))
+    .concat(validerAcceptation(acc, schemaAcc));
 }
 
 function assembler(contenu, schemas){
@@ -557,7 +623,7 @@ function assembler(contenu, schemas){
   const cat = contenu['procedures.json'], src = contenu['sources.json'];
   const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
   const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
-  const pap = contenu['papier.json'];
+  const pap = contenu['papier.json'], acc = contenu['acceptation.json'];
   /* Seuls ces deux schémas servent à l'ASSEMBLAGE : le premier voyage avec le
      catalogue, le second porte l'énumération des prédicats implémentés. Les
      trois autres n'existent que pour valider, et la validation est faite. */
@@ -576,7 +642,10 @@ function assembler(contenu, schemas){
            assertions:{ version:asrt.version, liste:asrt.assertions },
            papier:{ version:pap.version, papiers:sansNotes(pap.papiers),
                     annexes:pap.annexes, mentions:pap.mentions, entete:pap.entete,
-                    miseEnPage:pap.mise_en_page, referencement:pap.referencement } };
+                    miseEnPage:pap.mise_en_page, referencement:pap.referencement },
+           acceptation:{ version:acc.version, criteres:sansNotes(acc.criteres),
+                         jalons:sansNotes(acc.jalons),
+                         derivations:schemas['schema-acceptation.json'].derivations } };
 }
 
 /**

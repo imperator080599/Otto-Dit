@@ -1,5 +1,9 @@
 import { q, q01 } from '@/lib/db/client';
 import { publierMethodologie, contenuDuDepot, catalogueParId } from '@/lib/methodology/depot';
+import { criteres } from '@/lib/methodology/catalogue';
+import {
+  ouvrirAcceptation, repondreCritere, decider, assurerJalons, poserJalon,
+} from '@/lib/services/acceptance';
 import { demoId } from '@/lib/core/ids';
 import { logEvent } from '@/lib/core/events';
 
@@ -114,6 +118,34 @@ export async function seedBase(): Promise<void> {
        '{"assurance_packs":["pcaob-sox"],"accounting_map":"pcg","language":"en"}', 'fieldwork', '2026-02-20', $6)`,
     [IDS.engSox, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.componentAltiverre, IDS.methodology],
   );
+
+  /* LA MISSION EST ACCEPTÉE AVANT QUE QUOI QUE CE SOIT NE SE PLANIFIE.
+     Ce n'est pas une commodité de peuplement : c'est la règle du service, et
+     le monde de démonstration doit être un dossier tel qu'il DOIT être, pas
+     tel qu'il serait si la règle n'existait pas. Les réponses sont celles d'un
+     dossier sans difficulté — le refus se démontre ailleurs, sur une mission
+     faite pour ça (DEMO_APP.md). */
+  for (const engId of [IDS.engNep, IDS.engSox]) {
+    const acc = await ouvrirAcceptation(engId, IDS.users.claire);
+    for (const c of criteres(await catalogueParId(IDS.methodology), acc.kind)) {
+      await repondreCritere(
+        engId, IDS.users.claire, c.code,
+        c.reponse_defavorable === 'oui' ? 'non' : 'oui',
+        '',
+      );
+    }
+    await decider(
+      engId, IDS.users.claire, 'accepted',
+      'Aucun critère défavorable ; compétences et disponibilité vérifiées ; indépendance acquise.',
+    );
+    await assurerJalons(engId);
+    await poserJalon(engId, IDS.users.claire, 'lettre_mission', '2025-10-20');
+    await poserJalon(engId, IDS.users.claire, 'intervention_interimaire', '2025-11-24');
+    await poserJalon(engId, IDS.users.claire, 'inventaire', '2025-12-31');
+    await poserJalon(engId, IDS.users.claire, 'intervention_finale', '2026-02-09');
+    await poserJalon(engId, IDS.users.claire,
+      'date_rapport', engId === IDS.engNep ? '2026-03-31' : '2026-02-20');
+  }
 
   // L'équipe, et sa déclaration d'indépendance SIGNÉE — sans quoi la mission
   // démarrerait en état d'obstacle au visa (0011). Une affectation sans

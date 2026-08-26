@@ -2847,3 +2847,58 @@ désormais l'**invariant** — le compteur égale le nombre de demandes nées d'
 qu'un nouveau tour le fait monter de un, ou que le service **refuse** quand il n'y a rien à clarifier
 et que le compteur ne bouge pas. Supposer un état de départ est une manière de tester ce qu'on croit
 plutôt que ce qui est.
+
+---
+
+## ADR-082 — L'acceptation commande le dossier (point 1)
+
+**Contexte.** Toute démonstration commençait **au milieu** d'un dossier : l'entité, l'exercice et le
+référentiel étaient semés, et rien ne disait comment on en arrive là. Or un dossier ne commence pas
+par un import — il commence par une **décision** d'accepter ou de maintenir la mission, et cette
+décision n'existait nulle part.
+
+**Décision.** `engagement_acceptance` (une par mission), `engagement_milestone`, les critères et les
+jalons dans `methodology/acceptation.json` — **septième et huitième fichiers de contenu**, validés
+comme les autres.
+
+**La règle qui refuse, et c'est elle qui fait de cette tranche autre chose qu'un formulaire.** Aucun
+travail ne se planifie avant la décision : ni affectation d'un membre, ni évaluation du risque. Le
+système refuse ; il ne rappelle pas. Même famille qu'ADR-068.
+
+**La nature se DÉDUIT.** Première année = acceptation, renouvellement = maintien, et ce ne sont pas
+les mêmes questions : le contact avec le confrère précédent ne vaut qu'en première année, les
+difficultés de l'exercice précédent qu'en renouvellement. La nature vient de l'existence d'un
+exercice antérieur — *une question dont la réponse est dans le dossier ne se pose pas.*
+
+**« Bloquant » ne veut pas dire « interdit d'accepter ».** Une réponse défavorable sur un critère
+bloquant exige un **motif écrit** ; elle n'interdit rien. *Un cabinet peut accepter une mission
+difficile ; il ne peut pas l'accepter sans le dire.* Et le motif de la décision est exigé **dans les
+deux sens** — accepter sans motif ne se relit pas plus que refuser sans motif. C'est la pièce qu'un
+inspecteur demande en premier quand un dossier tourne mal ; la contrainte est aussi en base.
+
+**Chaque critère porte SA RAISON D'ÊTRE**, affichée à l'écran. Sans elle, un questionnaire
+d'acceptation devient une formalité qu'on remplit sans la lire — le même défaut que le questionnaire
+résiduel évitait (ADR-062).
+
+**Le jalon d'assemblage se DÉRIVE.** Quatre dates se posent ; la cinquième se calcule depuis la date
+de rapport par la règle du référentiel (noyau `retention.ts`, ADR-014 rev. 2) et **ne se saisit pas**.
+Une date dérivée qu'on pourrait saisir deviendrait fausse le jour où quelqu'un la corrige à la main.
+La méthode NOMME la dérivation, le noyau la CALCULE ; une dérivation nommée et inconnue laisserait le
+jalon **sans date**, et *un jalon sans date ne s'échoit jamais* — le dossier serait en retard sans que
+rien ne le dise.
+
+**Ce que la garde SQL peut et ne peut pas, dit plutôt que sous-entendu.** La base ne sait pas qui
+l'appelle : elle ne distingue une saisie d'une dérivation que par un drapeau que le code pose. C'est
+donc un **garde-fou**, pas la règle — la règle est dans `poserJalon`. (Et le drapeau est de session,
+pas de transaction : posé en local, il disparaissait avant que l'UPDATE ne déclenche la garde, et le
+peuplement refusait sa propre dérivation.)
+
+**UN ORDRE DE REFUS CORRIGÉ PAR LA SUITE DE TESTS.** Le garde d'acceptation avait été placé **avant**
+le garde d'isolation. Résultat : quelqu'un visant le dossier d'un **autre cabinet** s'entendait
+répondre « faites accepter la mission » — on l'envoyait faire précisément ce qu'il ne doit jamais
+faire, et on lui apprenait au passage que la mission existe. L'isolation passe désormais en premier.
+Troisième fois que cette règle sert : *un refus qui égare est pire qu'un refus sec* (ADR-069).
+
+**Un cycle d'imports évité.** `acceptance.ts` lisait le cabinet via `team.ts`, qui importe
+`assertAccepte` : le cycle tenait peut-être aujourd'hui, il serait tombé le jour où l'ordre
+d'évaluation change. La requête est faite sur place.

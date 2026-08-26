@@ -11,6 +11,9 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
   const base = `/eng/${engId}`;
   const items: { href: string; label: string }[] = [
     { href: base, label: 'Overview' },
+    // L'ACCEPTATION VIENT EN PREMIER : un dossier ne commence pas par un
+    // import, il commence par une décision. Aucun travail ne se planifie avant.
+    { href: `${base}/acceptance`, label: 'Acceptation' },
     // L'équipe vient AVANT les données : aucun travail ne s'attribue sans
     // déclaration d'indépendance signée, donc c'est par là qu'un dossier
     // commence — pas par un import.

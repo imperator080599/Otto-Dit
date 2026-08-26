@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 313 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 334 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -851,6 +851,30 @@ sur parole.
 
 **Vérification** : 313 tests (306 → 313) · `tsc --noEmit` propre · **50/50** écrans en production
 (le nouvel écran a été découvert seul par le balayage).
+
+## Application — tranche livrée : l'acceptation commande le dossier (point 1)
+
+Toute démonstration commençait **au milieu** d'un dossier. Un dossier ne commence pas par un import :
+il commence par une **décision** d'accepter ou de maintenir la mission (ADR-082, migration `0017`,
+`methodology/acceptation.json`).
+
+- **La règle qui refuse** : aucun travail ne se planifie avant la décision — ni affectation, ni
+  évaluation du risque. Le système refuse, il ne rappelle pas.
+- **La nature se déduit** : acceptation en première année, maintien en renouvellement, et ce ne sont
+  pas les mêmes questions. Une question dont la réponse est dans le dossier ne se pose pas.
+- **« Bloquant » ≠ « interdit »** : une réponse défavorable exige un motif écrit, elle n'interdit
+  rien. Un cabinet peut accepter une mission difficile ; il ne peut pas l'accepter sans le dire. Le
+  motif de la décision est exigé **dans les deux sens**, en service et en base.
+- **Chaque critère porte sa raison d'être**, affichée : sans elle, un questionnaire d'acceptation
+  devient une formalité qu'on remplit sans la lire.
+- **Le jalon d'assemblage se dérive** de la date de rapport par la règle du référentiel et ne se
+  saisit pas — une date dérivée qu'on pourrait saisir deviendrait fausse le jour où quelqu'un la
+  corrige. Un jalon sans date ne s'échoit jamais.
+- **Un ordre de refus corrigé par la suite** : le garde d'acceptation passait avant celui
+  d'isolation, donc quelqu'un visant le dossier d'un autre cabinet s'entendait répondre « faites
+  accepter la mission ». Troisième fois que cette règle sert.
+
+**Vérification** : 334 tests (313 → 334) · `tsc --noEmit` propre · 52/52 écrans en production.
 
 ## Convergence prototype → application
 

@@ -1,0 +1,78 @@
+{
+  "_note": "LES CRITÈRES D'ACCEPTATION ET DE MAINTIEN DU CABINET. Ce ne sont pas les mêmes questions : on n'évalue pas un client qu'on ne connaît pas comme un client dont on a le dossier de l'an dernier. Chaque critère porte la RAISON pour laquelle il existe — sans quoi un questionnaire d'acceptation devient une formalité qu'on remplit sans le lire.",
+  "version": "1.0.0",
+
+  "_note_bloquant": "« bloquant » ne veut pas dire « interdit d'accepter » : il veut dire qu'une réponse défavorable EXIGE un motif écrit avant que la décision puisse être prise. Un cabinet peut accepter une mission difficile ; il ne peut pas l'accepter sans le dire.",
+  "criteres": [
+    {
+      "code": "integrite_direction",
+      "libelle": "Intégrité de la direction",
+      "question": "Avons-nous connaissance d'éléments mettant en cause l'intégrité des dirigeants ou des principaux actionnaires ?",
+      "portees": ["acceptation", "maintien"],
+      "reponse_defavorable": "oui",
+      "bloquant": true,
+      "pourquoi": "C'est le critère dont la défaillance explique le plus souvent, après coup, qu'un dossier ait mal tourné. Il se pose en premier et il se repose chaque année."
+    },
+    {
+      "code": "competence_equipe",
+      "libelle": "Compétence et disponibilité de l'équipe",
+      "question": "Disposons-nous des compétences sectorielles et du temps nécessaires à la mission dans les délais ?",
+      "portees": ["acceptation", "maintien"],
+      "reponse_defavorable": "non",
+      "bloquant": true,
+      "pourquoi": "Accepter une mission qu'on n'a pas les moyens d'exécuter produit un dossier insuffisant, pas une mission ratée franchement."
+    },
+    {
+      "code": "independance",
+      "libelle": "Indépendance du cabinet et de l'équipe",
+      "question": "L'indépendance est-elle acquise, y compris au regard des services autres que la certification et des liens familiaux ?",
+      "portees": ["acceptation", "maintien"],
+      "reponse_defavorable": "non",
+      "bloquant": true,
+      "pourquoi": "Le détail se vérifie ailleurs — déclarations signées, plafond d'honoraires, rotation. Ici c'est la conclusion du cabinet, prise en connaissance de ces travaux."
+    },
+    {
+      "code": "predecesseur",
+      "libelle": "Contacts avec le confrère précédent",
+      "question": "Le confrère précédent a-t-il été contacté, et sa réponse est-elle sans réserve ?",
+      "portees": ["acceptation"],
+      "reponse_defavorable": "non",
+      "bloquant": true,
+      "pourquoi": "Ne vaut qu'en première année. Une non-réponse n'est pas une réponse favorable : elle se note et elle se motive."
+    },
+    {
+      "code": "difficultes_exercice_precedent",
+      "libelle": "Difficultés rencontrées l'exercice précédent",
+      "question": "Des difficultés significatives ont-elles été rencontrées l'exercice précédent (accès à l'information, désaccords, délais) ?",
+      "portees": ["maintien"],
+      "reponse_defavorable": "oui",
+      "bloquant": true,
+      "pourquoi": "Ne vaut qu'en renouvellement, et c'est la question que le dossier N-1 permet de poser sérieusement. Elle est le lien entre le maintien et la reprise."
+    },
+    {
+      "code": "honoraires_soutenables",
+      "libelle": "Honoraires en rapport avec les diligences",
+      "question": "Les honoraires permettent-ils d'exécuter les diligences requises ?",
+      "portees": ["acceptation", "maintien"],
+      "reponse_defavorable": "non",
+      "bloquant": false,
+      "pourquoi": "Non bloquant parce qu'un cabinet peut accepter une mission peu rentable en connaissance de cause. Mais la question se pose, et la réponse se garde."
+    }
+  ],
+
+  "_note_jalons": "Les jalons du cabinet. Les quatre premiers se posent ; le cinquième se DÉRIVE de la date de rapport par la règle du référentiel, et ne se saisit pas.",
+  "jalons": [
+    { "code": "lettre_mission", "libelle": "Lettre de mission signée", "ordre": 1 },
+    { "code": "intervention_interimaire", "libelle": "Intervention intérimaire", "ordre": 2 },
+    { "code": "inventaire", "libelle": "Assistance à l'inventaire physique", "ordre": 3 },
+    { "code": "intervention_finale", "libelle": "Intervention finale", "ordre": 4 },
+    { "code": "date_rapport", "libelle": "Date du rapport", "ordre": 5 },
+    {
+      "code": "assemblage",
+      "libelle": "Clôture de l'assemblage du dossier",
+      "ordre": 6,
+      "derive": "delai_assemblage",
+      "_pourquoi": "Dérivé de la date de rapport par la règle du référentiel. Le saisir à la main le rendrait faux le jour où quelqu'un le corrige."
+    }
+  ]
+}

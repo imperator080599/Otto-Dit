@@ -222,6 +222,36 @@ export interface Risque {
   formules: Record<string, FormuleTaille>;
 }
 
+/* ── acceptation, maintien, jalons ────────────────────────────────────── */
+
+export type PorteeAcceptation = 'acceptation' | 'maintien';
+
+export interface CritereAcceptation {
+  code: string;
+  libelle: string;
+  question: string;
+  portees: PorteeAcceptation[];
+  /** La réponse qui appelle un motif écrit. */
+  reponse_defavorable: 'oui' | 'non';
+  bloquant: boolean;
+  pourquoi: string;
+}
+
+export interface JalonMethode {
+  code: string;
+  libelle: string;
+  ordre: number;
+  /** Nom de la dérivation, quand la date se calcule au lieu de se saisir. */
+  derive?: string;
+}
+
+export interface Acceptation {
+  version: string;
+  criteres: CritereAcceptation[];
+  jalons: JalonMethode[];
+  derivations: Record<string, { libelle: string; calcul: string; depend_de: string }>;
+}
+
 export interface Catalogue {
   version: string;
   sensDeTest: Record<SensDeTest, { libelle: string; d: string }>;
@@ -232,6 +262,7 @@ export interface Catalogue {
   risque: Risque;
   assertions: JeuAssertions;
   papier: Papier;
+  acceptation: Acceptation;
 }
 
 /* ── le gabarit du papier de travail ──────────────────────────────────────

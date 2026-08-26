@@ -18,6 +18,7 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { assertAccepte } from './acceptance';
 import type { Catalogue } from '@/lib/methodology/types';
 
 export class TeamRuleError extends Error {
@@ -260,7 +261,16 @@ export interface AssignInput {
  * le travail commencer, et c'est le travail commencé qu'on ne défait pas.
  */
 export async function assignMember(input: AssignInput): Promise<{ id: string }> {
+  /* L'ORDRE DES REFUS, ET IL A ÉTÉ CORRIGÉ PAR LA SUITE DE TESTS.
+     1. L'ISOLATION d'abord. Répondre « faites accepter la mission » à quelqu'un
+        qui vise le dossier d'un AUTRE cabinet l'envoie faire précisément ce
+        qu'il ne doit jamais faire — et lui apprend au passage que la mission
+        existe. Un refus qui égare est pire qu'un refus sec (ADR-069).
+     2. L'ACCEPTATION ensuite : un dossier ne commence pas par une affectation,
+        il commence par une décision.
+     3. Puis la sortie, puis la déclaration — l'ordre établi en ADR-069. */
   const eng = await assertSameFirm(input.engagementId, input.userId);
+  await assertAccepte(input.engagementId);
   await assertSameFirm(input.engagementId, input.actorUserId);
 
   const user = await q1<{ name: string }>(`select name from app_user where id = $1`, [input.userId]);
