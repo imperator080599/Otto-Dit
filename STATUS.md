@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 340 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 352 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -881,6 +881,28 @@ comptes), et **la méthode en vigueur désignée à la création** — sans elle
 personne ne saurait pourquoi. Un cabinet sans méthode publiée est refusé **en le disant**.
 
 **Vérification** : 340 tests (313 → 340) · `tsc --noEmit` propre · 52/52 écrans en production.
+
+## Application — tranche livrée : la reprise N-1 (point 2)
+
+**On ne reprend pas des chiffres, on reprend des conclusions** (ADR-083, migration `0018`).
+
+- **2a — un dossier N-1 RÉEL**, construit par les mêmes services que les clics : mission créée,
+  acceptée, équipe avec déclarations signées, balance 2024 importée, périmètre décidé avec ses
+  motifs, risque évalué, questionnaire rempli. Le fabriquer par insertions aurait produit un dossier
+  qu'aucune règle du produit n'aurait accepté — et la reprise aurait repris **de la fiction**.
+- **2b — rien n'est repris automatiquement.** Tout arrive **proposé**, avec sa source nommée, et une
+  proposition non statuée est un **obstacle au visa**. C'est toute la différence entre une reprise et
+  une recopie : la recopie ne bloque rien, parce qu'elle ne demande rien à personne.
+- **Reconfirmer sans motif est permis ; écarter sans motif ne l'est pas** — reconfirmer, c'est dire
+  « j'ai regardé et c'est toujours vrai » ; écarter sans motif est indistinguable d'un oubli.
+- **La mission précédente se trouve par le chaînage des exercices**, pas par une date : un exercice
+  de dix-huit mois casserait toute heuristique.
+- **Un défaut de harnais révélé par les nouvelles données** : le résolveur de routes prenait
+  `limit 1` sans ordre et choisissait parfois le dossier N-1 — vide de demandes et de papiers. Le
+  choix va maintenant au dossier **le plus riche**. Un `limit` sans `order by` est une décision qu'on
+  n'a pas prise.
+
+**Vérification** : 352 tests (340 → 352) · `tsc --noEmit` propre · **54/54** écrans en production.
 
 ## Convergence prototype → application
 

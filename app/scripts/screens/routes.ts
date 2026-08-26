@@ -53,23 +53,35 @@ export async function parametres(): Promise<Record<string, string>> {
   const un = async (sql: string, def = '') =>
     (await q01<{ v: string }>(sql))?.v ?? def;
 
-  const engId = await un(`select id::text v from engagement where kind = 'statutory_audit' limit 1`);
-  const soxId = await un(`select id::text v from engagement where kind = 'sox_component' limit 1`);
+  /* LE CHOIX DE LA MISSION EST DÉTERMINISTE, ET IL A ÉTÉ CORRIGÉ.
+     Un `limit 1` sans ordre suffisait tant qu'il n'y avait qu'un audit légal.
+     Le jour où le dossier N-1 est arrivé, il a parfois été choisi — un dossier
+     de planification, sans demande ni papier — et six routes sont devenues
+     « non résolues ». On prend donc la mission la plus RICHE : celle qui porte
+     des papiers, puis la plus récente. Balayer un dossier vide ne prouve rien. */
+  const engId = await un(
+    `select e.id::text v from engagement e
+     join period p on p.id = e.period_id
+     where e.kind = 'statutory_audit'
+     order by (select count(*) from workpaper w where w.engagement_id = e.id) desc,
+              p.end_date desc, e.id
+     limit 1`);
+  const soxId = await un(`select id::text v from engagement where kind = 'sox_component' order by id limit 1`);
   return {
     // /eng/[id]/… — le dossier NEP, celui qui porte le cycle complet
     id: engId,
     // /eng/[id]/rcm/[cid] — un contrôle du dossier SOX
-    cid: await un(`select id::text v from control limit 1`),
+    cid: await un(`select id::text v from control order by code limit 1`),
     // /eng/[id]/requests/[rid]
-    rid: await un(`select id::text v from request where engagement_id = '${engId}' limit 1`),
+    rid: await un(`select id::text v from request where engagement_id = '${engId}' order by seq_no limit 1`),
     // /eng/[id]/workpapers/[wid]
-    wid: await un(`select id::text v from workpaper where engagement_id = '${engId}' limit 1`),
+    wid: await un(`select id::text v from workpaper where engagement_id = '${engId}' order by code limit 1`),
     // /portal/[token]
     token: await un(`select portal_token v from client_contact where active limit 1`),
     // /api/blob/[evidenceId]
-    evidenceId: await un(`select id::text v from evidence where engagement_id = '${engId}' limit 1`),
+    evidenceId: await un(`select id::text v from evidence where engagement_id = '${engId}' order by id limit 1`),
     // /api/export-file/[exportId]
-    exportId: await un(`select id::text v from export_record limit 1`),
+    exportId: await un(`select id::text v from export_record order by id limit 1`),
     // /api/tracker/[engId]
     engId,
     // le dossier SOX, pour les routes qui ne valent que là

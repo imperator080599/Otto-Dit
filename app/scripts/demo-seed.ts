@@ -6,6 +6,7 @@ import { draftRevenueWorkpaper } from '../src/lib/services/workpapers/draft';
 import { addReviewNote, transitionNote, signWorkpaper } from '../src/lib/services/workpapers/lifecycle';
 import { exportWorkpaper } from '../src/lib/services/workpapers/render';
 import { runPart2 } from '../src/lib/flows/part2';
+import { construireDossierN1 } from '../src/lib/flows/prior-year';
 import { ensureReminders } from '../src/lib/services/requests';
 import { warp, resetClock, DAY_MS } from '../src/lib/core/clock';
 import { signWorkpaper as signOe } from '../src/lib/services/workpapers/lifecycle';
@@ -19,6 +20,13 @@ async function main() {
   await migrate();
   await seedBase();
   await resetClock();
+
+  /* LE DOSSIER N-1, construit par les mêmes services que les clics. Il existe
+     pour que la REPRISE ait quelque chose de réel à reprendre : on ne reprend
+     pas des chiffres, on reprend des conclusions — un périmètre décidé, des
+     facteurs statués, un questionnaire rempli (ADR-083). */
+  await construireDossierN1();
+  console.log('  dossier N-1 FY2024 construit (périmètre, risque, questionnaire)');
 
   if (stage === 'all' || stage === 'part1') {
     console.log('Part 1 — NEP revenue cycle…');

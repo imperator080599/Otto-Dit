@@ -2902,3 +2902,49 @@ Troisième fois que cette règle sert : *un refus qui égare est pire qu'un refu
 **Un cycle d'imports évité.** `acceptance.ts` lisait le cabinet via `team.ts`, qui importe
 `assertAccepte` : le cycle tenait peut-être aujourd'hui, il serait tombé le jour où l'ordre
 d'évaluation change. La requête est faite sur place.
+
+---
+
+## ADR-083 — La reprise N-1 : proposée, jamais reprise en silence (point 2)
+
+**Contexte.** Un dossier de deuxième année ne repart pas de zéro : le périmètre, les facteurs de
+risque, les réponses au questionnaire et les décisions de non-significativité de l'an dernier sont le
+point de départ du raisonnement de cette année. Les ressaisir coûte une journée ; les reprendre
+**automatiquement** coûte beaucoup plus cher — c'est signer cette année une conclusion qu'on n'a pas
+reprise.
+
+**Décision, deux moitiés.**
+
+**2a — un dossier N-1 RÉEL, construit par les mêmes services que les clics.** `flows/prior-year.ts`
+crée la mission FY2024, l'accepte (« acceptation », première année sur cette entité), constitue
+l'équipe avec ses déclarations **signées**, importe la balance 2024, décide le périmètre avec ses
+motifs, évalue le risque et remplit le questionnaire. *Le fabriquer par insertions aurait produit un
+dossier que les règles du produit n'auraient jamais accepté — pas d'acceptation, pas de déclaration
+signée, pas de motif de non-significativité — et la reprise aurait alors repris de la fiction.*
+
+**2b — le mécanisme.** `carry_forward` porte ce que N-1 propose à N : décisions de périmètre,
+facteurs confirmés, réponses au questionnaire, papiers signés. Chaque proposition **nomme sa source**
+et se lit sans ouvrir le dossier précédent — un identifiant ne se relit pas.
+
+**Rien n'est repris automatiquement.** Tout arrive **proposé**, et une proposition non statuée est un
+**obstacle au visa**. C'est toute la différence entre une reprise et une recopie : *la recopie ne
+bloque rien, parce qu'elle ne demande rien à personne.*
+
+**Reconfirmer sans motif est permis ; écarter sans motif ne l'est pas.** Reconfirmer, c'est dire
+« j'ai regardé et c'est toujours vrai ». Écarter sans motif est **indistinguable d'un oubli** — la
+contrainte est aussi en base.
+
+**La mission précédente se trouve par le CHAÎNAGE des exercices** (`period.prior_period_id`), pas par
+une date : un exercice de dix-huit mois, ou décalé, casserait toute heuristique de date.
+
+**Idempotent, et dans le bon sens.** Relancer la proposition ne duplique rien **et n'écrase aucune
+décision déjà prise** — une reprise qui se re-propose après avoir été écartée serait le pire des deux
+mondes.
+
+**UN DÉFAUT DE HARNAIS RÉVÉLÉ PAR LES NOUVELLES DONNÉES.** Le résolveur de paramètres du balayage
+prenait `select … from engagement where kind = 'statutory_audit' limit 1`, sans ordre. Tant qu'il n'y
+avait qu'un audit légal, c'était juste. Le jour où le dossier N-1 est arrivé, il a parfois été choisi
+— un dossier de planification, sans demande ni papier — et six routes sont devenues « non
+résolues », donc le balayage a échoué… en accusant les écrans. Le choix est désormais déterministe et
+va au dossier **le plus riche** : *balayer un dossier vide ne prouve rien.* Un `limit` sans `order by`
+est une décision qu'on n'a pas prise.

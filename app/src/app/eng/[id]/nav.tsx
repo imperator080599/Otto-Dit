@@ -18,6 +18,9 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     // déclaration d'indépendance signée, donc c'est par là qu'un dossier
     // commence — pas par un import.
     { href: `${base}/team`, label: 'Team & independence' },
+    // La reprise N-1 vient AVANT les données : le dossier de l'an dernier
+    // dit ce qu'on cherche cette année.
+    { href: `${base}/carry-forward`, label: 'Reprise N-1' },
     { href: `${base}/imports`, label: 'Data & imports' },
     { href: `${base}/reconciliation`, label: 'Reconciliation' },
     { href: `${base}/materiality`, label: 'Materiality' },
