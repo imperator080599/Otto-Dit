@@ -1548,6 +1548,11 @@ réglage. Sur ce dossier, la moitié des populations ont plus d'un quart d'élé
 significatifs — le seuil de planification est bas au regard de la taille des pièces, et l'écran le
 dit à chaque fois.
 
+> *Mise à jour du 2026-08-26, après l'ADR-048.* Le catalogue étant passé à 56 procédures, la mesure
+> est désormais de **27 procédures sur 56** — même proportion, population de procédures différente.
+> L'ADR-050 y ajoute une exception : le garde-fou ne s'applique pas à une **sélection imposée
+> exhaustive**, parce qu'il signale qu'on teste presque tout *sans l'avoir décidé*.
+
 ---
 
 ## ADR-048 — La méthodologie est de la donnée versionnée, pas du code
