@@ -14,9 +14,13 @@ compte dans une impasse.
 |---|---|
 | `procedures.json` | le catalogue : une entrée par procédure, par cycle |
 | `questionnaire.json` | le questionnaire **résiduel** de risque : ce qu'aucune autre source du dossier ne peut lever |
+| `risque.json` | les **règles de facteur observé**, l'échelle qui les convertit en niveau, et la table des tailles d'échantillon |
+| `independance.json` | les **rubriques** de la déclaration d'indépendance et les **seuils** associés |
 | `sources.json` | le registre des sources, avec leur état de vérification |
 | `schema.json` | le schéma JSON qui valide `procedures.json` — les deux consommateurs le vérifient |
 | `schema-questionnaire.json` | le schéma JSON qui valide `questionnaire.json` |
+| `schema-risque.json` | le schéma de `risque.json`, **et l'énumération des prédicats** que le moteur implémente |
+| `schema-independance.json` | le schéma JSON qui valide `independance.json` |
 | `valider.mjs` | **le** validateur et le chargeur, sans dépendance. Appelé par l'application et par le générateur du prototype : une seule implémentation, versionnée avec les données qu'elle valide |
 
 ## Ce que porte une procédure
@@ -110,6 +114,44 @@ une portée entière serait vide, parce que cela rendrait un écran vide sans ri
 de contrôle qui n'est pas un facteur inhérent — reprend le vocabulaire des référentiels d'audit.
 Il cite `ISA-315` et `ISA-240`, tous deux `verifie: false` : voir la section sur la vérification
 des sources plus bas. Aucune de ces natures n'a été confrontée à un texte primaire.
+
+## Le risque par assertion — et le fait qu'il COMMANDE
+
+`risque.json` porte trois choses, toutes propres au cabinet :
+
+1. **Les règles de facteur observé.** Cinq aujourd'hui : variation N/N-1 au-dessus du seuil de
+   planification, volume d'écritures, part d'écritures d'OD, écritures validées après la clôture,
+   concentration sur le dernier mois. Chacune **nomme un prédicat** que le code implémente, porte ses
+   **paramètres** (200 écritures, 5 %, 15 %) et dit **ce qu'elle craint** — un facteur qui ne dit pas
+   ce qu'il craint n'est pas un facteur, c'est une statistique.
+2. **L'échelle** : combien de facteurs actifs font quel niveau. Délibérément grossière — 0 → faible,
+   1 → moyen, 2 et plus → élevé — parce qu'un modèle plus fin donnerait une fausse précision sur des
+   facteurs binaires. Elle se relit, elle se conteste, et l'auditeur la surcharge **avec un motif
+   écrit**.
+3. **La table des tailles d'échantillon**, par niveau.
+
+**La taille suit l'assertion TESTÉE**, jamais le risque le plus élevé du poste : une procédure répond
+à UNE assertion. Appliquer le maximum du poste reviendrait à traiter la séparation des exercices
+comme l'exhaustivité sous prétexte qu'elles partagent un compte. Une section porte donc des
+échantillons de tailles différentes — conséquence normale, pas incohérence.
+
+### Les prédicats de facteur sont une ÉNUMÉRATION, et le validateur la fait respecter
+
+`schema-risque.json` porte `predicats_facteur`. Un prédicat hors de cette liste **arrête
+l'assemblage**, et le code vérifie en plus la réciproque au chargement : tout prédicat implémenté
+doit être déclaré, tout prédicat déclaré doit être implémenté.
+
+La raison est plus lourde que pour les règles de date. Un facteur nommé mais non implémenté serait
+silencieusement **toujours inactif** : le risque serait sous-évalué, donc l'étendue des travaux
+réduite, **et aucun écran ne le dirait**. C'est le défaut silencieux de l'ADR-057 à un endroit où il
+coûterait plus cher encore.
+
+### Ce que le facteur range, c'est sa MESURE
+
+Un facteur actif enregistre « 1 254 écritures (seuil 200) », jamais « vrai ». Sans la mesure, on ne
+peut pas relire un niveau six mois plus tard sans rejouer le calcul — et une preuve qu'il faut
+recalculer n'est pas une preuve. Un facteur **non évaluable** (balance N-1 absente, seuil non arrêté)
+est **inactif et le dit** ; il n'est jamais supposé actif.
 
 ## Prédicats et résolveurs : où passe la frontière
 

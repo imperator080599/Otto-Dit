@@ -19,6 +19,10 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     { href: `${base}/reconciliation`, label: 'Reconciliation' },
     { href: `${base}/materiality`, label: 'Materiality' },
     { href: `${base}/scoping`, label: 'Scoping' },
+    // Le risque vient APRÈS le scoping et AVANT les travaux, parce que c'est sa
+    // place réelle : il est le chaînon qui fait que le scoping commande quelque
+    // chose. Le mettre ailleurs le rendrait décoratif.
+    { href: `${base}/risk`, label: 'Risk by assertion' },
   ];
   if (packs.includes('nep-fr')) {
     items.push(

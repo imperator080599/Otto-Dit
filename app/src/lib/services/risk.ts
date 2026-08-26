@@ -1,0 +1,470 @@
+// Le risque par assertion — et le fait qu'il COMMANDE.
+//
+// C'est le chaînon manquant entre le scoping et les travaux. Un risque qui
+// s'écrit puis qu'on oublie décore ; ici il décide de DEUX choses, et les deux
+// se vérifient à l'écran :
+//
+//     risque(assertion)  →  liste des procédures requises
+//     risque(assertion)  →  taille du sondage de CETTE procédure
+//
+// LA TAILLE SUIT L'ASSERTION TESTÉE, jamais le risque le plus élevé du poste :
+// une procédure répond à UNE assertion. Appliquer le maximum du poste revient à
+// traiter la séparation des exercices comme l'exhaustivité sous prétexte
+// qu'elles partagent un compte. Une section porte donc des échantillons de
+// tailles différentes — c'est la conséquence normale.
+//
+// FRONTIÈRE (ADR-050, étendue ici) : la méthode NOMME un prédicat, le code SAIT
+// le calculer. Un prédicat nommé que personne n'implémente arrête l'assemblage
+// — sans quoi le facteur serait silencieusement toujours inactif, le risque
+// sous-évalué, l'étendue réduite, et rien ne le dirait.
+
+import { q, q1, q01 } from '@/lib/db/client';
+import { logEvent } from '@/lib/core/events';
+import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { proceduresDuCycle } from '@/lib/methodology/catalogue';
+import type { Catalogue, Procedure } from '@/lib/methodology/types';
+import { engagementContext } from './team';
+import { numToCents } from '@/lib/util/num';
+import { engagementRules } from './fsli';
+import { mapAccount } from '@/lib/kernel/fsli-map';
+
+export class RiskRuleError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RiskRuleError';
+  }
+}
+
+export type Level = string; // les niveaux viennent de la méthode, pas du code
+
+/* ── ce que les prédicats ont besoin de savoir ──────────────────────────── */
+
+interface Facts {
+  balanceCents: number;
+  priorBalanceCents: number | null;
+  performanceMaterialityCents: number | null;
+  entries: number;
+  odEntries: number;
+  lateEntries: number;
+  lastMonthEntries: number;
+  periodEnd: string;
+}
+
+/** Un prédicat rend s'il est actif ET la mesure qui le dit, en toutes lettres. */
+type Predicate = (f: Facts, p: Record<string, unknown>) => { active: boolean; evidence: string };
+
+const pct = (n: number, d: number) => (d === 0 ? 0 : (n / d) * 100);
+const eur = (cents: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+    .format(cents / 100);
+
+/**
+ * Les prédicats. Chacun DIT ce qu'il a mesuré : « 1 254 écritures », jamais
+ * « vrai ». Sans la mesure, on ne peut pas relire un niveau six mois plus tard
+ * sans rejouer le calcul — et une preuve qu'il faut recalculer n'est pas une
+ * preuve.
+ */
+export const PREDICATES: Record<string, Predicate> = {
+  variation_n_n1_au_dessus_du_seuil(f) {
+    if (f.priorBalanceCents === null || f.performanceMaterialityCents === null) {
+      return {
+        active: false,
+        evidence: f.priorBalanceCents === null
+          ? 'balance N-1 absente — facteur non évaluable, jamais supposé actif'
+          : 'seuil de planification non arrêté — facteur non évaluable',
+      };
+    }
+    const delta = Math.abs(f.balanceCents - f.priorBalanceCents);
+    return {
+      active: delta >= f.performanceMaterialityCents,
+      evidence: `variation ${eur(delta)} · seuil de planification ${eur(f.performanceMaterialityCents)}`,
+    };
+  },
+  nombre_ecritures_au_dessus_de(f, p) {
+    const seuil = Number(p.seuil ?? 0);
+    return { active: f.entries > seuil, evidence: `${f.entries} écritures (seuil ${seuil})` };
+  },
+  part_journal_od_au_dessus_de(f, p) {
+    const part = Number(p.part ?? 0);
+    return {
+      active: f.entries > 0 && f.odEntries / f.entries > part,
+      evidence: `${f.odEntries} écritures d’OD sur ${f.entries} — ${pct(f.odEntries, f.entries).toFixed(1)} % (seuil ${(part * 100).toFixed(0)} %)`,
+    };
+  },
+  ecritures_validees_apres_cloture(f) {
+    return {
+      active: f.lateEntries > 0,
+      evidence: `${f.lateEntries} écriture(s) validée(s) après le ${f.periodEnd}`,
+    };
+  },
+  part_dernier_mois_au_dessus_de(f, p) {
+    const part = Number(p.part ?? 0);
+    return {
+      active: f.entries > 0 && f.lastMonthEntries / f.entries > part,
+      evidence: `${f.lastMonthEntries} écritures sur le dernier mois, sur ${f.entries} — ${pct(f.lastMonthEntries, f.entries).toFixed(1)} % (seuil ${(part * 100).toFixed(0)} %)`,
+    };
+  },
+};
+
+/**
+ * Le garde-fou de la frontière : tout prédicat nommé par la méthode doit être
+ * implémenté ici, et réciproquement. On le vérifie au chargement plutôt qu'à
+ * l'exécution — un facteur silencieusement inactif ne se voit sur aucun écran.
+ */
+export function assertPredicatesImplemented(cat: Catalogue): void {
+  const missing = cat.risque.predicats.filter((p) => !PREDICATES[p]);
+  if (missing.length) {
+    throw new RiskRuleError(
+      `prédicat(s) de facteur nommé(s) par la méthode et non implémenté(s) : ${missing.join(', ')}`,
+    );
+  }
+  const orphans = Object.keys(PREDICATES).filter((p) => !cat.risque.predicats.includes(p));
+  if (orphans.length) {
+    throw new RiskRuleError(
+      `prédicat(s) implémenté(s) mais absent(s) de l’énumération du schéma : ${orphans.join(', ')}`,
+    );
+  }
+}
+
+/* ── les faits, lus une fois par poste ──────────────────────────────────── */
+
+async function factsFor(engagementId: string, fsliCode: string): Promise<Facts> {
+  const fsli = await q1<{ balance: string }>(
+    `select balance::text from fsli where engagement_id = $1 and code = $2`,
+    [engagementId, fsliCode],
+  );
+  const period = await q1<{ end_date: string }>(
+    `select p.end_date::text as end_date from engagement e
+     join period p on p.id = e.period_id where e.id = $1`,
+    [engagementId],
+  );
+
+  // Le solde N-1 se recompose par le MÊME mappage de comptes que le solde N :
+  // deux mappages divergents feraient une variation fantôme.
+  const rules = await engagementRules(engagementId);
+  const prior = await q<{ number: string; balance: string }>(
+    `select a.number, a.balance::text from account a
+     join tb_snapshot s on s.id = a.tb_snapshot_id
+     where s.engagement_id = $1 and s.period_kind = 'prior' and s.status = 'active'`,
+    [engagementId],
+  );
+  const priorBalanceCents = prior.length
+    ? prior.filter((a) => mapAccount(a.number, rules) === fsliCode)
+        .reduce((t, a) => t + numToCents(a.balance), 0)
+    : null;
+
+  const mat = await q01<{ perf_amount: string }>(
+    `select perf_amount::text from materiality
+     where engagement_id = $1 and status = 'validated' order by version desc limit 1`,
+    [engagementId],
+  );
+
+  const accounts = (await q<{ number: string }>(
+    `select a.number from account a join tb_snapshot s on s.id = a.tb_snapshot_id
+     where s.engagement_id = $1 and s.period_kind = 'current' and s.status = 'active'`,
+    [engagementId],
+  ))
+    .filter((a) => mapAccount(a.number, rules) === fsliCode)
+    .map((a) => a.number);
+
+  const stats = accounts.length
+    ? await q1<{ n: string; od: string; late: string; last_month: string }>(
+        `select count(*)::text as n,
+                count(*) filter (where journal_code = 'OD')::text as od,
+                count(*) filter (where valid_date is not null and valid_date > $3::date)::text as late,
+                count(*) filter (where entry_date >= date_trunc('month', $3::date))::text as last_month
+         from gl_entry
+         where engagement_id = $1 and account_no = any($2)
+           and not exists (select 1 from gl_entry_supersession x where x.old_gl_entry_id = gl_entry.id)`,
+        [engagementId, accounts, period.end_date],
+      )
+    : { n: '0', od: '0', late: '0', last_month: '0' };
+
+  return {
+    balanceCents: numToCents(fsli.balance),
+    priorBalanceCents,
+    performanceMaterialityCents: mat ? numToCents(mat.perf_amount) : null,
+    entries: Number(stats.n),
+    odEntries: Number(stats.od),
+    lateEntries: Number(stats.late),
+    lastMonthEntries: Number(stats.last_month),
+    periodEnd: period.end_date,
+  };
+}
+
+/* ── l'échelle : combien de facteurs font quel niveau ────────────────────── */
+
+export function levelForCount(cat: Catalogue, n: number): Level {
+  const applicable = cat.risque.paliers
+    .filter((p) => n >= p.facteurs_min)
+    .sort((a, b) => b.facteurs_min - a.facteurs_min)[0];
+  if (!applicable) throw new RiskRuleError(`aucun palier de l’échelle ne couvre ${n} facteur(s)`);
+  return applicable.niveau;
+}
+
+export function rank(cat: Catalogue, level: Level): number {
+  const i = cat.risque.niveaux.indexOf(level);
+  if (i < 0) throw new RiskRuleError(`niveau « ${level} » absent de l’échelle du cabinet`);
+  return i;
+}
+
+/* ── évaluer un poste ────────────────────────────────────────────────────── */
+
+export interface AssertionRisk {
+  fsli_code: string;
+  assertion: string;
+  computed_level: Level;
+  factor_count: number;
+  retained_level: Level | null;
+  override_reason: string | null;
+  decided_by: string | null;
+  /** Le niveau qui COMMANDE : la décision si elle existe, sinon le calcul. */
+  level: Level;
+  factors: { factor_code: string; label: string; evidence: string }[];
+}
+
+/**
+ * Re-dérive les facteurs observés et les niveaux calculés d'un poste.
+ *
+ * Les décisions humaines (`retained_level`) sont CONSERVÉES : bouger la
+ * matérialité ou ré-importer un fichier ne doit jamais effacer un arbitrage.
+ * C'est la même règle que le scoping confirmé qui survit à un ré-import.
+ */
+export async function assessFsli(
+  engagementId: string,
+  fsliCode: string,
+  actorUserId: string | null,
+): Promise<AssertionRisk[]> {
+  const cat = await chargerCatalogue();
+  assertPredicatesImplemented(cat);
+  const eng = await engagementContext(engagementId);
+  const facts = await factsFor(engagementId, fsliCode);
+
+  const active = new Map<string, { factor_code: string; label: string; evidence: string; predicate: string }[]>();
+  await q(`delete from risk_factor_observed where engagement_id = $1 and fsli_code = $2`, [engagementId, fsliCode]);
+  for (const f of cat.risque.facteurs) {
+    const fn = PREDICATES[f.predicat];
+    const { active: on, evidence } = fn(facts, f.parametres);
+    if (!on) continue;
+    const list = active.get(f.assertion) ?? [];
+    list.push({ factor_code: f.code, label: f.libelle, evidence, predicate: f.predicat });
+    active.set(f.assertion, list);
+    await q(
+      `insert into risk_factor_observed
+         (engagement_id, fsli_code, assertion, factor_code, label, evidence, predicate)
+       values ($1,$2,$3,$4,$5,$6,$7)`,
+      [engagementId, fsliCode, f.assertion, f.code, f.libelle, evidence, f.predicat],
+    );
+  }
+
+  const assertions = new Set<string>([
+    ...cat.risque.facteurs.map((f) => f.assertion),
+    ...cat.procedures.map((p) => p.assertion),
+  ]);
+  const out: AssertionRisk[] = [];
+  for (const a of [...assertions].sort()) {
+    const factors = active.get(a) ?? [];
+    const computed = levelForCount(cat, factors.length);
+    const existing = await q01<{ retained_level: string | null; override_reason: string | null; decided_by: string | null }>(
+      `select retained_level, override_reason, decided_by from fsli_assertion_risk
+       where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+      [engagementId, fsliCode, a],
+    );
+    /* La décision survit au recalcul — mais si elle a rejoint le calcul, on la
+       range : un « retenu » égal au calculé n'est plus une surcharge, et
+       l'afficher comme telle ferait croire à un arbitrage qui n'existe plus. */
+    const retained = existing?.retained_level === computed ? null : existing?.retained_level ?? null;
+    await q(
+      `insert into fsli_assertion_risk
+         (engagement_id, fsli_code, assertion, computed_level, factor_count,
+          retained_level, override_reason, decided_by, decided_at, methodology_version, computed_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,
+               case when $6::text is null then null else now() end, $9, now())
+       on conflict (engagement_id, fsli_code, assertion) do update set
+         computed_level = excluded.computed_level,
+         factor_count = excluded.factor_count,
+         retained_level = excluded.retained_level,
+         override_reason = case when excluded.retained_level is null then null else fsli_assertion_risk.override_reason end,
+         methodology_version = excluded.methodology_version,
+         computed_at = now()`,
+      [engagementId, fsliCode, a, computed, factors.length,
+       retained, retained === null ? null : existing?.override_reason ?? null,
+       retained === null ? null : existing?.decided_by ?? null, cat.risque.version],
+    );
+    out.push({
+      fsli_code: fsliCode, assertion: a, computed_level: computed, factor_count: factors.length,
+      retained_level: retained, override_reason: retained === null ? null : existing?.override_reason ?? null,
+      decided_by: retained === null ? null : existing?.decided_by ?? null,
+      level: retained ?? computed,
+      factors: factors.map(({ factor_code, label, evidence }) => ({ factor_code, label, evidence })),
+    });
+  }
+  await logEvent({
+    tenantId: eng.tenant_id,
+    engagementId,
+    actorKind: actorUserId ? 'user' : 'system',
+    actorId: actorUserId,
+    verb: 'risk.assessed',
+    objectType: 'fsli',
+    objectId: fsliCode,
+    payload: {
+      methodology_version: cat.risque.version,
+      levels: Object.fromEntries(out.map((r) => [r.assertion, r.level])),
+    },
+  });
+  return out;
+}
+
+/** Le niveau qui commande, pour une assertion. */
+export async function levelFor(engagementId: string, fsliCode: string, assertion: string): Promise<Level | null> {
+  const r = await q01<{ computed_level: string; retained_level: string | null }>(
+    `select computed_level, retained_level from fsli_assertion_risk
+     where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+    [engagementId, fsliCode, assertion],
+  );
+  return r ? (r.retained_level ?? r.computed_level) : null;
+}
+
+export async function risksFor(engagementId: string, fsliCode: string): Promise<AssertionRisk[]> {
+  const rows = await q<Omit<AssertionRisk, 'level' | 'factors'>>(
+    `select fsli_code, assertion, computed_level, factor_count, retained_level,
+            override_reason, decided_by
+     from fsli_assertion_risk where engagement_id = $1 and fsli_code = $2 order by assertion`,
+    [engagementId, fsliCode],
+  );
+  const factors = await q<{ assertion: string; factor_code: string; label: string; evidence: string }>(
+    `select assertion, factor_code, label, evidence from risk_factor_observed
+     where engagement_id = $1 and fsli_code = $2 order by assertion, factor_code`,
+    [engagementId, fsliCode],
+  );
+  return rows.map((r) => ({
+    ...r,
+    level: r.retained_level ?? r.computed_level,
+    factors: factors.filter((f) => f.assertion === r.assertion)
+      .map(({ factor_code, label, evidence }) => ({ factor_code, label, evidence })),
+  }));
+}
+
+/**
+ * Surcharger un niveau. SANS MOTIF ÉCRIT, C'EST REFUSÉ — descendre un risque
+ * sans dire pourquoi est précisément le geste qu'un dossier doit rendre
+ * impossible. La contrainte de base le refuse aussi.
+ */
+export async function overrideLevel(
+  engagementId: string,
+  fsliCode: string,
+  assertion: string,
+  level: Level | null,
+  reason: string,
+  actorUserId: string,
+): Promise<void> {
+  const cat = await chargerCatalogue();
+  const eng = await engagementContext(engagementId);
+  const row = await q01<{ computed_level: string }>(
+    `select computed_level from fsli_assertion_risk
+     where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+    [engagementId, fsliCode, assertion],
+  );
+  if (!row) throw new RiskRuleError('cette assertion n’a pas encore été évaluée sur ce poste');
+  if (level !== null) {
+    rank(cat, level); // lève si le niveau n'est pas de l'échelle du cabinet
+    if (level !== row.computed_level && !reason.trim()) {
+      throw new RiskRuleError('une surcharge de niveau sans motif écrit n’est pas une surcharge');
+    }
+  }
+  await q(
+    `update fsli_assertion_risk
+       set retained_level = $4, override_reason = $5, decided_by = $6,
+           decided_at = case when $4::text is null then null else now() end
+     where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+    [engagementId, fsliCode, assertion, level, level === null ? null : reason.trim(),
+     level === null ? null : actorUserId],
+  );
+  await logEvent({
+    tenantId: eng.tenant_id,
+    engagementId,
+    actorKind: 'user',
+    actorId: actorUserId,
+    verb: level === null ? 'risk.override.cleared' : 'risk.override.set',
+    objectType: 'fsli_assertion_risk',
+    objectId: `${fsliCode}/${assertion}`,
+    payload: { computed: row.computed_level, retained: level, reason: reason.trim() },
+  });
+}
+
+/* ═══ CE QUE LE RISQUE COMMANDE ═══════════════════════════════════════════ */
+
+export interface RequiredProcedure {
+  procedure: Procedure;
+  assertion: string;
+  /** Le niveau de l'assertion que CETTE procédure sert. */
+  level: Level;
+  /** Le minimum que la procédure exige pour être requise. */
+  requires: string;
+  sampleSize: number | null;
+  /** Pourquoi elle est là, en une phrase relisible. */
+  because: string;
+}
+
+/**
+ * Les procédures requises sur un poste : celles de son cycle (et les
+ * transverses) dont le `risque_minimum` est atteint par le niveau de
+ * L'ASSERTION QU'ELLES SERVENT.
+ *
+ * C'est ici que le risque cesse de décorer. Baisser « séparation » de moyen à
+ * faible retire les procédures de cut-off de la liste ; le monter les remet.
+ */
+export async function requiredProcedures(
+  engagementId: string,
+  fsliCode: string,
+): Promise<RequiredProcedure[]> {
+  const cat = await chargerCatalogue();
+  const risks = await risksFor(engagementId, fsliCode);
+  const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
+  const out: RequiredProcedure[] = [];
+  for (const p of proceduresDuCycle(cat, fsliCode)) {
+    const r = byAssertion.get(p.assertion);
+    if (!r) continue;
+    if (rank(cat, r.level) < rank(cat, p.risque_minimum)) continue;
+    out.push({
+      procedure: p,
+      assertion: p.assertion,
+      level: r.level,
+      requires: p.risque_minimum,
+      sampleSize: p.echantillonnee ? sampleSize(cat, r.level) : null,
+      because: `risque « ${r.level} » sur « ${p.assertion} »`
+        + (r.retained_level ? ' (niveau retenu par l’auditeur)' : ` (${r.factor_count} facteur(s) observé(s))`)
+        + ` ≥ minimum « ${p.risque_minimum} » de la procédure`,
+    });
+  }
+  return out.sort((a, b) => a.procedure.code.localeCompare(b.procedure.code));
+}
+
+/** La taille suit l'assertion testée. Elle vient de la méthode, pas du code. */
+export function sampleSize(cat: Catalogue, level: Level): number {
+  const n = cat.risque.tailles[level];
+  if (typeof n !== 'number') throw new RiskRuleError(`aucune taille d’échantillon pour le niveau « ${level} »`);
+  return n;
+}
+
+/** Les procédures ÉCARTÉES, et pourquoi — une liste qui ne dit que ce qu'elle
+ *  retient ne se conteste pas. */
+export async function excludedProcedures(
+  engagementId: string,
+  fsliCode: string,
+): Promise<{ code: string; libelle: string; assertion: string; level: Level | null; requires: string }[]> {
+  const cat = await chargerCatalogue();
+  const risks = await risksFor(engagementId, fsliCode);
+  const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
+  return proceduresDuCycle(cat, fsliCode)
+    .filter((p) => {
+      const r = byAssertion.get(p.assertion);
+      return !r || rank(cat, r.level) < rank(cat, p.risque_minimum);
+    })
+    .map((p) => ({
+      code: p.code, libelle: p.libelle, assertion: p.assertion,
+      level: byAssertion.get(p.assertion)?.level ?? null,
+      requires: p.risque_minimum,
+    }))
+    .sort((a, b) => a.code.localeCompare(b.code));
+}

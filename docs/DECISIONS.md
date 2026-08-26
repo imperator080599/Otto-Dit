@@ -2299,3 +2299,53 @@ natures de services non-audit vivent dans `methodology/independance.json`, valid
 
 **Le ratio d'honoraires n'est PAS calculé** tant que les honoraires d'audit ne sont pas saisis. Un
 ratio sur un dénominateur supposé serait pire que pas de ratio.
+
+---
+
+## ADR-070 — Le risque par assertion COMMANDE : le chaînon qui manquait
+
+Le scoping disait quels postes travailler ; les travaux existaient. Entre les deux, rien. Le risque
+s'écrivait et s'oubliait — il **décorait**. Il décide désormais de deux choses, et les deux se
+vérifient à l'écran :
+
+```
+risque(assertion)  →  liste des procédures requises
+risque(assertion)  →  taille du sondage de CETTE procédure
+```
+
+**La taille suit l'assertion TESTÉE**, jamais le risque le plus élevé du poste. Une procédure répond
+à UNE assertion ; appliquer le maximum du poste reviendrait à traiter la séparation des exercices
+comme l'exhaustivité sous prétexte qu'elles partagent un compte. Une section porte donc des
+échantillons de tailles différentes — conséquence normale, pas incohérence.
+
+**Le calcul et la décision sont DEUX COLONNES.** `computed_level` est re-dérivé à chaque évaluation
+(il suit la matérialité, les données, les facteurs) ; `retained_level` est la décision humaine, et
+elle **survit au recalcul**. Les confondre ferait disparaître l'arbitrage au premier ré-import — même
+règle que le scoping confirmé qui survit à un ré-import de balance.
+
+**Une surcharge sans motif écrit n'est pas une surcharge** : contrainte de base, pas convention.
+Descendre un risque sans dire pourquoi est exactement le geste qu'un dossier doit rendre impossible.
+
+**Une surcharge qui REJOINT le calcul cesse d'en être une** — elle est rangée à la ré-évaluation
+suivante. L'afficher comme un arbitrage ferait croire à une décision qui n'existe plus. C'est le test
+qui a imposé cette règle : ma première version de test « surchargeait » vers le niveau déjà calculé
+et s'étonnait que rien ne soit retenu. Le test était faux, pas le code — mais le comportement méritait
+d'être nommé.
+
+**Les règles de facteur sont de la MÉTHODE** (`methodology/risque.json`) : cinq facteurs observés,
+chacun nommant un **prédicat** que le code implémente, ses paramètres (200 écritures, 5 % d'OD, 15 %
+sur le dernier mois) et **ce qu'il craint**. Plus l'échelle (0 → faible, 1 → moyen, 2+ → élevé) et la
+table des tailles. Un cabinet remplace les siens sans qu'une ligne de code bouge.
+
+**L'énumération des prédicats arrête l'assemblage, dans les DEUX SENS** : tout prédicat déclaré doit
+être implémenté, tout prédicat implémenté doit être déclaré. La raison est plus lourde que pour les
+règles de date (ADR-057) : un facteur nommé mais non implémenté serait silencieusement **toujours
+inactif** — risque sous-évalué, étendue réduite, et **aucun écran ne le dirait**.
+
+**Un facteur range sa MESURE, pas un booléen** : « 1 254 écritures (seuil 200) », jamais « vrai ».
+Sans elle, relire un niveau six mois plus tard exigerait de rejouer le calcul — et une preuve qu'il
+faut recalculer n'est pas une preuve. Un facteur **non évaluable** (balance N-1 absente, seuil non
+arrêté) est **inactif et le dit** ; jamais supposé actif.
+
+**L'écran montre aussi les procédures ÉCARTÉES**, avec le niveau atteint et le minimum exigé. Une
+liste qui ne dit que ce qu'elle retient ne se conteste pas.

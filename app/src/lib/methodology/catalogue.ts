@@ -21,6 +21,7 @@ type Valideur = {
   validerCatalogue: (cat: unknown, src: unknown, schema: unknown) => string[];
   validerQuestionnaire: (q: unknown, src: unknown, schema: unknown) => string[];
   validerIndependance: (i: unknown, src: unknown, schema: unknown) => string[];
+  validerRisque: (r: unknown, src: unknown, schema: unknown) => string[];
   racineDepot: () => string;
 };
 
@@ -154,4 +155,5 @@ export function parametreNonVerifie(cat: Catalogue, code: string): boolean {
 export type {
   Catalogue, Procedure, Source, QuestionResiduelle, NatureRi,
   Independance, RubriqueIndependance, ParametreIndependance,
+  Risque, FacteurObserve,
 } from './types';

@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 212 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 229 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -608,10 +608,35 @@ type disait `string`.
 
 **Vérification** : 212 tests applicatifs (186 → 212) · `tsc --noEmit` propre.
 
+## Application — tranche livrée : le risque par assertion COMMANDE (point 5a)
+
+Le chaînon qui manquait entre le scoping et les travaux (ADR-070). Migration `0012`, service
+`risk.ts`, écran `/eng/[id]/risk`, méthodologie `methodology/risque.json`, et 17 tests qui vérifient
+non pas qu'un niveau s'affiche, mais qu'en le changeant **la liste des procédures et la taille des
+sondages changent**.
+
+- `risque(assertion)` → **liste des procédures requises** ; `risque(assertion)` → **taille du
+  sondage de cette procédure**. La taille suit l'assertion **testée**, jamais le maximum du poste.
+- **Calculé et retenu sont deux colonnes** : le calcul se re-dérive, la décision survit au recalcul.
+  Une surcharge sans motif écrit est refusée par la base. Une surcharge qui rejoint le calcul cesse
+  d'en être une.
+- **Les règles de facteur sont de la méthode** : cinq facteurs, chacun nommant un prédicat, ses
+  paramètres et ce qu'il craint. L'énumération des prédicats arrête l'assemblage **dans les deux
+  sens** — un facteur non implémenté serait silencieusement toujours inactif, donc le risque
+  sous-évalué sans que rien ne le dise.
+- Chaque facteur range **sa mesure** (« 1 254 écritures (seuil 200) »), jamais un booléen. Un facteur
+  non évaluable est inactif **et le dit**.
+- L'écran montre les procédures **écartées** avec la raison : une liste qui ne dit que ce qu'elle
+  retient ne se conteste pas.
+
+**Vérification** : 229 tests applicatifs (212 → 229) · `tsc --noEmit` propre.
+
 ## Convergence prototype → application
 
 `docs/11_CONVERGENCE.md` : les onze points de la mission simplifiée, chacun marqué
-**existe / portage / neuf**, avec l'ordre recommandé. En résumé : trois points sont finis, deux à
+**existe / portage / neuf**, avec **l'ordre retenu** — 5 + méthodologie-comme-donnée → 6 → 7 → 1 →
+2 → 9 → 10 → 8 → 11 — et le total honnête : **26 à 30 séances**, au-dessus des 20–24 estimés
+d'abord (le dossier N-1 à reprendre n'était pas chiffré, et l'ancienneté/rotation s'ajoute). En résumé : trois points sont finis, deux à
 moitié ; le seul chaînon vraiment manquant est le **risque par assertion qui commande** les
 procédures et l'étendue ; et la **boucle requête ↔ documentation** n'est pas du code neuf mais de
 l'assemblage à rendre visible.

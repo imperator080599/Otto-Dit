@@ -151,6 +151,29 @@ export interface Independance {
   naturesSacc: Record<string, string>;
 }
 
+/** Une règle de facteur observé. La méthode NOMME le prédicat ; le code le calcule. */
+export interface FacteurObserve {
+  code: string;
+  assertion: Assertion;
+  libelle: string;
+  /** Ce que le facteur craint. Sans cela ce n'est pas un facteur, c'est une statistique. */
+  pourquoi: string;
+  predicat: string;
+  parametres: Record<string, unknown>;
+  sources: string[];
+}
+
+export interface Risque {
+  version: string;
+  facteurs: FacteurObserve[];
+  /** Les niveaux du cabinet, du plus faible au plus élevé. */
+  niveaux: string[];
+  paliers: { facteurs_min: number; niveau: string }[];
+  tailles: Record<string, number>;
+  /** Prédicats que le schéma autorise — le code doit les implémenter tous. */
+  predicats: string[];
+}
+
 export interface Catalogue {
   version: string;
   sensDeTest: Record<SensDeTest, { libelle: string; d: string }>;
@@ -158,4 +181,5 @@ export interface Catalogue {
   sources: Record<string, Source>;
   questionnaire: Questionnaire;
   independance: Independance;
+  risque: Risque;
 }

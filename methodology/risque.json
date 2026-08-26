@@ -1,0 +1,96 @@
+{
+  "_note": "Évaluation du risque par assertion. C'est du CONTENU DE CABINET : les règles de facteur, l'échelle qui les convertit en niveau et la table des tailles d'échantillon sont propres à chaque cabinet, et chacun remplace les siennes. Le catalogue NOMME un prédicat ; le code SAIT le calculer (même frontière que les populations de procédures, ADR-050). Un prédicat nommé que personne n'implémente ARRÊTE l'assemblage.",
+  "version": "1.0.0",
+  "facteurs_observes": [
+    {
+      "code": "variation",
+      "assertion": "realite",
+      "libelle": "Variation N/N-1 supérieure au seuil de planification",
+      "pourquoi": "Une variation qui dépasse à elle seule le seuil de planification ne peut pas être expliquée par le bruit : elle appelle une explication, et à défaut un travail.",
+      "predicat": "variation_n_n1_au_dessus_du_seuil",
+      "parametres": {},
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "volume",
+      "assertion": "exhaustivite",
+      "libelle": "Plus de 200 écritures sur l’exercice",
+      "pourquoi": "Au-delà d'un certain volume, l'exhaustivité ne se vérifie plus à l'œil : le nombre d'écritures est le facteur le plus simple et le moins discutable d'un risque d'exhaustivité.",
+      "predicat": "nombre_ecritures_au_dessus_de",
+      "parametres": {
+        "seuil": 200
+      },
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "manuel",
+      "assertion": "realite",
+      "libelle": "Plus de 5 % d’écritures en journal d’opérations diverses",
+      "pourquoi": "Une écriture d'OD n'est pas produite par un flux automatisé : elle est saisie par quelqu'un, et c'est par là que passe ce qui contourne le processus.",
+      "predicat": "part_journal_od_au_dessus_de",
+      "parametres": {
+        "part": 0.05
+      },
+      "sources": [
+        "ISA-240",
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "tardive",
+      "assertion": "separation",
+      "libelle": "Écritures validées après la date de clôture",
+      "pourquoi": "Une écriture validée après la clôture porte, par construction, un risque de rattachement au mauvais exercice.",
+      "predicat": "ecritures_validees_apres_cloture",
+      "parametres": {},
+      "sources": [
+        "ISA-315"
+      ]
+    },
+    {
+      "code": "concentration",
+      "assertion": "separation",
+      "libelle": "Plus de 15 % des écritures concentrées sur le dernier mois",
+      "pourquoi": "Une concentration sur le dernier mois est le motif que produit une régularisation de fin d'exercice — et c'est aussi celui que produit une séparation des exercices défaillante.",
+      "predicat": "part_dernier_mois_au_dessus_de",
+      "parametres": {
+        "part": 0.15
+      },
+      "sources": [
+        "ISA-315"
+      ]
+    }
+  ],
+  "echelle": {
+    "_note": "Combien de facteurs actifs font quel niveau. La règle est délibérément grossière : elle se relit, elle se conteste, et l'auditeur la surcharge avec un motif écrit. Un modèle plus fin donnerait une fausse précision sur des facteurs binaires.",
+    "niveaux": [
+      "faible",
+      "moyen",
+      "eleve"
+    ],
+    "paliers": [
+      {
+        "facteurs_min": 0,
+        "niveau": "faible"
+      },
+      {
+        "facteurs_min": 1,
+        "niveau": "moyen"
+      },
+      {
+        "facteurs_min": 2,
+        "niveau": "eleve"
+      }
+    ]
+  },
+  "tailles_echantillon": {
+    "_note": "La taille suit l'assertion TESTÉE, jamais le risque le plus élevé du poste : une procédure répond à UNE assertion. Appliquer le maximum du poste revient à traiter la séparation des exercices comme l'exhaustivité sous prétexte qu'elles partagent un compte. Une section porte donc des échantillons de tailles différentes — c'est la conséquence normale, pas une incohérence.",
+    "faible": 6,
+    "moyen": 15,
+    "eleve": 30
+  }
+}

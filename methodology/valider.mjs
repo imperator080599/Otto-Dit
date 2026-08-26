@@ -20,6 +20,13 @@ export function racineDepot(){
   return path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 }
 
+/** Les clés « _note » documentent le fichier pour qui le relit ; elles ne sont
+ *  pas de la donnée. Les laisser passer ferait apparaître « _note » comme un
+ *  niveau de risque dans la table des tailles. */
+function sansNotes(o){
+  return Object.fromEntries(Object.entries(o || {}).filter(([k]) => !k.startsWith('_')));
+}
+
 function validerObjet(obj, def, chemin, erreurs){
   for (const k of def.required || []){
     if (obj[k] === undefined) erreurs.push(`${chemin} : champ « ${k} » manquant`);
@@ -201,6 +208,56 @@ export function validerIndependance(ind, src, schema){
   return erreurs;
 }
 
+/**
+ * Erreurs de l'évaluation du risque, liste vide si elle est valide.
+ *
+ * La règle qui compte : un `predicat` hors de l'énumération du schéma ARRÊTE
+ * l'assemblage. Sans elle, un facteur nommé mais non implémenté serait
+ * silencieusement TOUJOURS INACTIF — le risque serait sous-évalué, donc
+ * l'étendue des travaux aussi, et rien à l'écran ne le dirait. C'est la leçon
+ * de l'ADR-057 appliquée à un endroit où elle coûterait plus cher encore.
+ *
+ * @param {object} r       contenu de risque.json
+ * @param {object} src     contenu de sources.json
+ * @param {object} schema  contenu de schema-risque.json
+ * @returns {string[]}
+ */
+export function validerRisque(r, src, schema){
+  const erreurs = [];
+  const defF = schema.definitions.facteur;
+  if (!r.version) erreurs.push('risque : version manquante');
+
+  const connus = schema.predicats_facteur || [];
+  for (const f of r.facteurs_observes || []){
+    const ou = `facteur ${f.code || '(sans code)'}`;
+    validerObjet(f, defF, ou, erreurs);
+    if (f.predicat && !connus.includes(f.predicat))
+      erreurs.push(`${ou} : prédicat « ${f.predicat} » inconnu du moteur (connus : ${connus.join(' | ')})`);
+    for (const s of f.sources || [])
+      if (!src.sources[s]) erreurs.push(`${ou} : source « ${s} » absente du registre`);
+  }
+  const codes = (r.facteurs_observes || []).map(f => f.code);
+  const dbl = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if (dbl.length) erreurs.push('facteurs en double : ' + [...new Set(dbl)].join(', '));
+
+  /* L'échelle doit couvrir zéro facteur, sinon un poste sans facteur n'aurait
+     aucun niveau — et « aucun niveau » se lirait comme « pas de risque ». */
+  const niveaux = (r.echelle || {}).niveaux || [];
+  const paliers = (r.echelle || {}).paliers || [];
+  if (!niveaux.length) erreurs.push('risque : échelle sans niveaux');
+  if (!paliers.some(p => p.facteurs_min === 0))
+    erreurs.push('risque : aucun palier pour zéro facteur actif — un poste sans facteur n’aurait pas de niveau');
+  for (const p of paliers)
+    if (!niveaux.includes(p.niveau))
+      erreurs.push(`risque : palier vers un niveau « ${p.niveau} » absent de l’échelle`);
+  /* Chaque niveau doit avoir une taille : un niveau sans taille rendrait un
+     échantillon vide là où le risque est le plus élevé. */
+  for (const n of niveaux)
+    if (typeof (r.tailles_echantillon || {})[n] !== 'number')
+      erreurs.push(`risque : niveau « ${n} » sans taille d’échantillon`);
+  return erreurs;
+}
+
 /** Lit, valide et rend le catalogue. Lève si les données sont invalides. */
 export function chargerCatalogue(racine){
   const dir = path.join(racine || racineDepot(), 'methodology');
@@ -208,9 +265,11 @@ export function chargerCatalogue(racine){
   const cat = lire('procedures.json'), src = lire('sources.json'), schema = lire('schema.json');
   const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
   const ind = lire('independance.json'), schemaI = lire('schema-independance.json');
+  const risq = lire('risque.json'), schemaR = lire('schema-risque.json');
   const erreurs = validerCatalogue(cat, src, schema)
     .concat(validerQuestionnaire(quest, src, schemaQ))
-    .concat(validerIndependance(ind, src, schemaI));
+    .concat(validerIndependance(ind, src, schemaI))
+    .concat(validerRisque(risq, src, schemaR));
   if (erreurs.length){
     throw new Error('CATALOGUE INVALIDE :\n  ' + erreurs.join('\n  '));
   }
@@ -219,5 +278,9 @@ export function chargerCatalogue(racine){
            questionnaire:{ version:quest.version, naturesRi:quest.natures_ri,
                            questions:quest.questions },
            independance:{ version:ind.version, rubriques:ind.rubriques,
-                          parametres:ind.parametres, naturesSacc:ind.natures_sacc } };
+                          parametres:ind.parametres, naturesSacc:ind.natures_sacc },
+           risque:{ version:risq.version, facteurs:risq.facteurs_observes,
+                    niveaux:risq.echelle.niveaux, paliers:risq.echelle.paliers,
+                    tailles:sansNotes(risq.tailles_echantillon),
+                    predicats:schemaR.predicats_facteur } };
 }
