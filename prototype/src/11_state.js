@@ -198,14 +198,25 @@ function niveauMax(p){
    donc au niveau de risque de l'assertion TESTÉE, et une section porte des
    échantillons de tailles différentes — c'est la conséquence normale.       */
 const TAILLE = { faible:6, moyen:15, eleve:30 };
-/** Seuil de la strate exhaustive, en fraction du seuil de planification :
- *  plus le risque de l'assertion est élevé, plus le seuil descend, donc plus
- *  d'éléments sont couverts un par un. */
-const STRATE = { faible:1, moyen:1 / 2, eleve:1 / 3 };
-const STRATE_LIB = { faible:'seuil de planification', moyen:'moitié du seuil de planification',
-                     eleve:'tiers du seuil de planification' };
+/* ── ce sur quoi le risque agit, et ce sur quoi il n'agit pas ──────────────
+   ARBITRAGE DE L'AUDITEUR (2026-08-26), qui corrige l'ADR-034.
+
+   La strate exhaustive n'est PAS un levier de risque. C'est la strate des
+   éléments INDIVIDUELLEMENT SIGNIFICATIFS — ceux dont une anomalie, à eux
+   seuls, serait significative. Cette coupure vaut le seuil de planification,
+   sans modulation : un élément de 20 000 € n'est pas plus ou moins
+   individuellement significatif selon que l'assertion qu'il sert est jugée
+   moyenne ou élevée.
+
+   Le risque agit sur la TAILLE de l'échantillon, et — par voie de
+   conséquence, l'intervalle valant masse ÷ taille — sur l'INTERVALLE DE
+   SONDAGE. Deux leviers, pas trois.                                        */
 function tailleEchantillon(p, pr){ return TAILLE[niveau(p, pr.a)]; }
-function seuilStrate(p, pr){ return Math.round(seuils().PM * STRATE[niveau(p, pr.a)]); }
+function seuilStrate(){ return seuils().PM; }
+/** Part de la population au-delà de laquelle une strate exhaustive cesse
+ *  d'être une strate : à ce niveau, on ne sonde plus, on teste tout.
+ *  Le système le dit et propose autre chose ; il ne bascule pas seul. */
+const GARDE_EXHAUSTIVE = 0.25;
 
 /* ═══ 8. NOTES DE REVUE ════════════════════════════════════════════════════
    Une note se pose SUR un objet. Il n'existe aucune note flottante : l'ancre

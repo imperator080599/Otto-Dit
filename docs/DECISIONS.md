@@ -979,6 +979,10 @@ ET variation d'au moins 25 % du solde N-1 — elle lève un seul facteur, sur le
 qui bouge de 39 %. Registre total : **9 facteurs** pour une cible de 15.
 
 ## ADR-034 — L'étendue des travaux suit l'assertion, pas le poste
+> **Révisé le 2026-08-26 par l'ADR-047** : la coupure d'exhaustivité ne suit plus le risque.
+> Elle vaut le seuil de planification, sans modulation. Ce qui suit reste valable pour la
+> TAILLE de l'échantillon.
+
 
 **Statut** : accepté (2026-08-25, revue fondateur — troisième signalement)
 
@@ -1483,3 +1487,63 @@ qui amenait son haut **sous** la barre collante — au téléphone, les 294 prem
 vue étaient invisibles à l'arrivée, sur toutes les vues, depuis toujours. Corrigé par
 `scroll-margin-top` ; un test l'asserte désormais sur cinq vues. Corrigé aussi : le bandeau
 affichait « / planification 23 466 % » là où « 235 × » se lit d'un coup d'œil.
+
+---
+
+## ADR-047 — La strate exhaustive n'est pas un levier de risque (révise l'ADR-034)
+
+**Arbitrage de l'auditeur, 2026-08-26.** L'ADR-034 faisait descendre le seuil de la strate
+exhaustive avec le risque de l'assertion — seuil de planification, sa moitié, son tiers. Signalé
+comme point ouvert à la livraison précédente : sur une population dont la facture médiane
+(15 420 €) approche le seuil de planification (24 000 €), la strate à la moitié du seuil retenait
+163 éléments sur 323. Un « échantillon » de la moitié d'une population n'est pas un échantillon.
+
+**Décision du fondateur, adoptée telle quelle** :
+
+1. **La strate exhaustive est celle des éléments INDIVIDUELLEMENT SIGNIFICATIFS** — ceux dont une
+   anomalie, à eux seuls, serait significative. Cette coupure vaut **le seuil de planification,
+   sans modulation**. Un élément de 20 000 € n'est pas plus ou moins individuellement significatif
+   selon que l'assertion qu'il sert est jugée moyenne ou élevée.
+2. **Le risque agit sur la taille de l'échantillon** et, par voie de conséquence, sur
+   **l'intervalle de sondage** (intervalle = masse ÷ taille). Deux leviers, pas trois.
+3. **Sondage en unités monétaires** implémenté comme méthode disponible : intervalle = masse ÷
+   taille, éléments supérieurs à l'intervalle retenus d'office, les autres avec une probabilité
+   proportionnelle à leur valeur, départ aléatoire tiré du germe. Déterministe et rejouable —
+   vérifié : même germe, même sélection ; germe changé, sélection changée.
+4. **Garde-fou** : quand les éléments individuellement significatifs dépassent **25 %** de la
+   population, l'écran le dit, en nommant le nombre et la part, et propose le sondage en unités
+   monétaires ou une stratification en bandes — cette dernière **non implémentée et signalée comme
+   telle**. Le système ne bascule jamais seul.
+5. **La méthode retenue figure sur le papier de travail** avec sa justification, et se change par
+   procédure. La taille se force aussi par procédure ; effacer la surcharge rend la règle de risque.
+
+**Ce que la mesure a montré, et qui a conduit à un garde-fou de plus.** À la taille dictée par le
+risque (15 éléments), le sondage en unités monétaires sur le chiffre d'affaires donne un intervalle
+de **376 578 €, soit 15,7 × le seuil de planification**. Un intervalle plus large que le seuil
+laisse passer, sans jamais les voir, des anomalies individuellement significatives : la méthode
+tourne, le papier a l'air rempli, et l'échantillon ne prouve rien. C'est le défaut de la strate à
+moitié de population, pris par l'autre bout. **Un second garde-fou le dit** et donne la taille qui
+ramène l'intervalle au seuil — une division, masse ÷ seuil, pas un choix.
+
+**Résultat mesuré sur la mission entière**, sur les sept anomalies de montant dépassant le seuil de
+remontée :
+
+| Méthode | Anomalies détectées | Éléments à tester |
+|---|---|---|
+| Strate au seuil + tirage à la taille de risque | **5 / 7** | 1 856 |
+| Unités monétaires, intervalle ramené au seuil | **7 / 7** | 2 157 |
+
+Les deux manquées — un avoir de 4 850 € sur une facture de 23 794 €, un virement de 6 720 € sur une
+écriture de 21 871 € — sont précisément des éléments **juste sous** la coupure d'exhaustivité, que
+le tirage aléatoire de quinze éléments sur deux cent cinquante ne rencontre pas. Le sondage en
+unités monétaires les atteint parce que leur probabilité est proportionnelle à leur valeur.
+
+**Conclusion, contre l'intuition de départ** : le sondage en unités monétaires n'est pas ici la
+méthode qui teste *moins*. À intervalle adéquat, il teste **16 % d'éléments en plus** — et c'est ce
+qui lui permet de ne rien manquer. L'économie apparente du premier essai (15 éléments au lieu de
+115) venait d'un intervalle inadéquat, c'est-à-dire d'un échantillon qui ne prouvait rien.
+
+**Garde-fou déclenché sur 24 procédures de 48** dans l'état par défaut : c'est la mesure, pas un
+réglage. Sur ce dossier, la moitié des populations ont plus d'un quart d'éléments individuellement
+significatifs — le seuil de planification est bas au regard de la taille des pièces, et l'écran le
+dit à chaque fois.

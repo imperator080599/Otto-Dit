@@ -208,6 +208,28 @@ des écritures 6 874 → 1 900 · versions 4 233 → 1 100 · mission 3 256 → 
 corrigé au passage : `scrollIntoView` amenait le haut de chaque vue **sous** la barre collante —
 294 px invisibles à l'arrivée, sur toutes les vues.
 
+## Sondage : coupure au seuil, et unités monétaires (2026-08-26)
+
+`prototype/otto-prototype.html` — **ADR-047, qui révise l'ADR-034**. Arbitrage pris par le
+fondateur : la strate exhaustive est celle des éléments individuellement significatifs, coupure au
+**seuil de planification sans modulation** ; le risque agit sur la taille de l'échantillon et sur
+l'intervalle de sondage, jamais sur la coupure.
+
+**Sondage en unités monétaires** implémenté : intervalle = masse ÷ taille, éléments > intervalle
+retenus d'office, les autres avec une probabilité proportionnelle à leur valeur, départ aléatoire
+tiré du germe — déterministe et rejouable. Méthode et taille modifiables par procédure, affichées
+sur le papier avec leur justification.
+
+**Deux garde-fous.** Éléments individuellement significatifs > 25 % de la population : l'écran le
+dit et propose le sondage en unités monétaires ou une stratification en bandes (non implémentée,
+signalée comme telle) — déclenché sur **24 procédures sur 48**. Et, symétriquement, intervalle de
+sondage > seuil de planification : l'écran le dit et donne la taille qui le ramène au seuil.
+
+**Mesuré sur les sept anomalies dépassant le seuil de remontée** : strate + tirage de risque
+**5/7** pour 1 856 éléments ; unités monétaires à intervalle adéquat **7/7** pour 2 157. Les deux
+manquées sont juste sous la coupure d'exhaustivité. Contre l'intuition, le sondage en unités
+monétaires teste ici **16 % d'éléments de plus** — c'est ce qui lui permet de ne rien manquer.
+
 **Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
 qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).
 
@@ -261,6 +283,28 @@ mémorisé par section. Le même traitement sur les vues qui réunissent trois p
 des écritures 6 874 → 1 900 · versions 4 233 → 1 100 · mission 3 256 → 1 200. Défaut préexistant
 corrigé au passage : `scrollIntoView` amenait le haut de chaque vue **sous** la barre collante —
 294 px invisibles à l'arrivée, sur toutes les vues.
+
+## Sondage : coupure au seuil, et unités monétaires (2026-08-26)
+
+`prototype/otto-prototype.html` — **ADR-047, qui révise l'ADR-034**. Arbitrage pris par le
+fondateur : la strate exhaustive est celle des éléments individuellement significatifs, coupure au
+**seuil de planification sans modulation** ; le risque agit sur la taille de l'échantillon et sur
+l'intervalle de sondage, jamais sur la coupure.
+
+**Sondage en unités monétaires** implémenté : intervalle = masse ÷ taille, éléments > intervalle
+retenus d'office, les autres avec une probabilité proportionnelle à leur valeur, départ aléatoire
+tiré du germe — déterministe et rejouable. Méthode et taille modifiables par procédure, affichées
+sur le papier avec leur justification.
+
+**Deux garde-fous.** Éléments individuellement significatifs > 25 % de la population : l'écran le
+dit et propose le sondage en unités monétaires ou une stratification en bandes (non implémentée,
+signalée comme telle) — déclenché sur **24 procédures sur 48**. Et, symétriquement, intervalle de
+sondage > seuil de planification : l'écran le dit et donne la taille qui le ramène au seuil.
+
+**Mesuré sur les sept anomalies dépassant le seuil de remontée** : strate + tirage de risque
+**5/7** pour 1 856 éléments ; unités monétaires à intervalle adéquat **7/7** pour 2 157. Les deux
+manquées sont juste sous la coupure d'exhaustivité. Contre l'intuition, le sondage en unités
+monétaires teste ici **16 % d'éléments de plus** — c'est ce qui lui permet de ne rien manquer.
 
 **Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
 qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).

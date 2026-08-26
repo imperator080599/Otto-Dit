@@ -158,13 +158,16 @@ function partEtendue(p){
         return { a:esc(a.lib),
                  r:`<span class="pill ${niv === 'eleve' ? 'bad' : niv === 'moyen' ? 'warn' : ''}">${NIV_LIB[niv]}</span>`,
                  n:String(TAILLE[niv]),
-                 s:eur0(Math.round(seuils().PM * STRATE[niv])) + ' <span class="smallcaps">' + esc(STRATE_LIB[niv]) + '</span>',
+                 s:eur0(seuils().PM) + ' <span class="smallcaps">seuil de planification</span>',
                  p:pr.length ? pr.map(x => `<span class="tag">${esc(procRef(p, x))}</span>`).join(' ') : '<span class="smallcaps">aucune</span>' };
       }))}
-    <p class="note">Tirage : faible ${TAILLE.faible} · moyen ${TAILLE.moyen} · élevé ${TAILLE.eleve} éléments.
-    Strate exhaustive : ${STRATE_LIB.faible} · ${STRATE_LIB.moyen} · ${STRATE_LIB.eleve}, soit
-    ${eur0(seuils().PM)} · ${eur0(Math.round(seuils().PM / 2))} · ${eur0(Math.round(seuils().PM / 3))}.
-    Une section porte donc des échantillons de tailles différentes.</p>`;
+    <p class="note">Le risque agit sur la <b>taille du tirage</b> — faible ${TAILLE.faible} ·
+    moyen ${TAILLE.moyen} · élevé ${TAILLE.eleve} éléments — et, par voie de conséquence, sur
+    l’<b>intervalle de sondage</b> lorsque la méthode retenue est le sondage en unités monétaires
+    (intervalle = masse ÷ taille). Il n’agit <b>pas</b> sur la coupure d’exhaustivité : celle-ci
+    vaut le seuil de planification, ${eur0(seuils().PM)}, sans modulation. Un élément de
+    ${eur0(Math.round(seuils().PM * 0.9))} n’est pas plus ou moins individuellement significatif
+    selon l’assertion qu’il sert.</p>`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -240,26 +243,68 @@ function blocProcedure(p, pr){
     ${pr.unidirectionnel ? `<div class="callout warn"><b>Test unidirectionnel.</b> ${esc(pr.unidirectionnel)}</div>` : ''}`;
 
   /* ── paramètres de tirage ── */
+  const m = METHODES[e.methode];
   const params = `
     <h3>Sélection</h3>
     <div class="row">
       <div class="ctrl"><label>Méthode</label>
-        <select disabled><option>strate exhaustive au-dessus du seuil + tirage aléatoire</option></select></div>
-      <div class="ctrl"><label>Strate exhaustive — ${esc(STRATE_LIB[e.niv])}</label>
+        <select data-pmeth="${pr.code}">
+          ${Object.entries(METHODES).map(([k, v]) => `<option value="${k}" ${e.methode === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}
+        </select></div>
+      <div class="ctrl"><label>Coupure d’exhaustivité — seuil de planification</label>
         <input class="cell" value="${eur0(e.strate)}" disabled style="text-align:left"></div>
+      ${e.methode === 'sum' ? `<div class="ctrl"><label>Intervalle de sondage — masse ÷ taille</label>
+        <input class="cell" value="${eur0(e.intervalle)}" disabled style="text-align:left"></div>` : ''}
+      <div class="ctrl"><label>Taille du tirage${stp.taille ? ' — imposée' : ' — règle de risque'}</label>
+        <input class="cell" data-ptaille="${pr.code}" value="${e.n}" style="text-align:left"></div>
       <div class="ctrl"><label>Germe</label>
         <input type="text" data-pseed="${pr.code}" value="${esc(stp.seed)}"></div>
       <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>
       <div class="ctrl"><label>&nbsp;</label>
         <button class="btn" data-preq="${pr.code}" ${deja ? 'disabled' : ''}>${deja ? 'requête émise' : 'générer la requête depuis le catalogue'}</button></div>
     </div>
+    <div class="callout"><b>Méthode retenue : ${esc(m.lib)}.</b> ${esc(m.d)} ${esc(m.quand)}
+      ${e.methode === 'sum'
+        ? `<br>Intervalle ${eur0(e.intervalle)} (masse ${eur0(e.pop.masse)} ÷ ${e.n}), départ aléatoire
+           ${eur(e.depart)} tiré du germe <span class="mono">${esc(stp.seed)}</span> :
+           ${e.unites.length} unité(s) monétaire(s) retenue(s) désignant ${e.retenus.length} élément(s).`
+        : `<br>Coupure d’exhaustivité ${eur0(e.strate)} — le seuil de planification, sans modulation par le risque.
+           Le risque commande la taille du tirage : ${e.n} éléments au niveau « ${NIV_LIB[e.niv]} ».`}
+    </div>
+    ${e.intervalleLarge ? `<div class="callout bad">
+      <b>L’intervalle de sondage (${eur0(e.intervalle)}) dépasse le seuil de planification (${eur0(e.strate)}).</b>
+      Un intervalle plus large que le seuil laisse passer, sans jamais les voir, des anomalies
+      individuellement significatives : la méthode tourne, le papier a l’air rempli, et l’échantillon
+      ne prouve rien. C’est le défaut de la strate exhaustive à moitié de population, pris par l’autre bout.
+      Pour ramener l’intervalle au seuil, il faudrait <b>${e.nAdequate} éléments</b> au lieu de ${e.n} —
+      soit ${pct(e.nAdequate / Math.max(1, e.pop.items.length), 0)} de la population.
+      <button class="btn mini" data-ptaillen="${pr.code}|${e.nAdequate}">porter la taille à ${e.nAdequate}</button>
+      ${e.nAdequate > e.pop.items.length * GARDE_EXHAUSTIVE ? `<br><span class="smallcaps">À ce niveau,
+        aucune des deux méthodes ne donne à la fois un échantillon adéquat et une taille tenable :
+        c’est l’arithmétique de la mission — masse ÷ seuil = ${e.nAdequate} — et non un défaut de méthode.
+        La réponse est alors une autre approche d’audit (contrôles, analytique, sous-population ciblée),
+        pas un autre tirage.</span>` : ''}
+      </div>` : ''}
+    ${e.gardeFou ? `<div class="callout bad">
+      <b>${e.indivSig.length} éléments sur ${e.pop.items.length} (${pct(e.partSig, 0)}) sont individuellement
+      significatifs.</b> Au-delà de ${pct(GARDE_EXHAUSTIVE, 0)}, une strate exhaustive n’est plus une strate :
+      on ne sonde plus, on teste presque tout. Ce n’est pas une réponse d’audit, c’est l’absence de réponse.
+      ${e.methode === 'sum'
+        ? 'Le sondage en unités monétaires est déjà retenu : la couverture en valeur est obtenue sans tester tous ces éléments.'
+        : `Deux réponses : le <b>sondage en unités monétaires</b>, ou une <b>stratification en bandes</b>
+           — non implémentée dans ce prototype et signalée comme telle.
+           <button class="btn mini" data-psum="${pr.code}">passer au sondage en unités monétaires</button>`}
+      </div>` : ''}
     <div class="grid3">
-      <div class="kv"><span class="k">Strate exhaustive (≥ ${eur0(e.strate)})</span><span class="v">${e.exhaustif.length}</span>
-        <span class="k">Tirage aléatoire</span><span class="v">${e.alea.length} / ${e.n} — risque ${NIV_LIB[e.niv]}</span></div>
-      <div class="kv"><span class="k">Retenus</span><span class="v">${e.retenus.length}</span>
+      <div class="kv"><span class="k">${e.methode === 'sum' ? 'Retenus d’office (≥ intervalle)' : 'Strate exhaustive (≥ ' + eur0(e.strate) + ')'}</span><span class="v">${e.exhaustif.length}</span>
+        <span class="k">${e.methode === 'sum' ? 'Désignés par une unité monétaire' : 'Tirage aléatoire'}</span><span class="v">${e.alea.length}${e.methode === 'sum' ? '' : ' / ' + e.n} — risque ${NIV_LIB[e.niv]}</span></div>
+      <div class="kv"><span class="k">Retenus</span><span class="v">${e.retenus.length} sur ${e.pop.items.length}</span>
         <span class="k">Montant couvert</span><span class="v">${eur(e.couvert)}</span></div>
       <div class="kv"><span class="k">Couverture</span><span class="v">${pct(e.taux, 1)}</span>
-        <span class="k">Papier</span><span class="v">${esc(procRef(p, pr))}</span></div>
+        <span class="k">Individuellement significatifs</span><span class="v">${e.indivSig.length} — ${pct(e.partSig, 0)}</span></div>
+      ${e.methode === 'sum' ? `<div class="kv"><span class="k">Intervalle / seuil de planification</span>
+        <span class="v"${e.intervalleLarge ? ' style="color:var(--anomalie)"' : ''}>${multiple(e.intervalle / e.strate)}</span>
+        <span class="k">Taille ramenant l’intervalle au seuil</span><span class="v">${e.nAdequate}</span></div>` : ''}
     </div>`;
 
   /* ── catalogue de preuve appliqué ── */

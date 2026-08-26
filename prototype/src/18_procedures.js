@@ -266,25 +266,106 @@ function population(p, pr){
   return r;
 }
 
-/** Tirage d'une procédure : strate exhaustive au-dessus du seuil de
- *  planification, puis tirage aléatoire à germe dans le reliquat. */
+/* ── méthodes de sélection ────────────────────────────────────────────────
+   Deux méthodes, deux justifications écrites. Elles ne s'équivalent pas :
+   la première convient quand les éléments sont petits devant le seuil, la
+   seconde quand ils l'approchent — c'est précisément le cas où la première
+   se met à retenir la moitié de la population.                             */
+const METHODES = {
+  strate:{
+    lib:'strate exhaustive + tirage aléatoire',
+    court:'strate + aléatoire',
+    d:'Tout élément individuellement significatif est testé ; le reliquat est tiré au sort, '
+     + 'chaque élément ayant la même probabilité d’être retenu.',
+    quand:'Convient quand les éléments sont petits devant le seuil de planification.' },
+  sum:{
+    lib:'sondage en unités monétaires',
+    court:'unités monétaires',
+    d:'La population est parcourue en euros, pas en éléments : un euro sur « intervalle » est '
+     + 'retenu, et l’élément qui le porte entre dans l’échantillon. Un élément a donc une '
+     + 'probabilité proportionnelle à sa valeur, et tout élément supérieur à l’intervalle est '
+     + 'retenu d’office.',
+    quand:'Convient quand les éléments approchent le seuil : la couverture en valeur est obtenue '
+        + 'sans tester la moitié des éléments.' },
+};
+function methodeDe(p, pr){
+  const st = proc(p.code, pr.code);
+  return METHODES[st.methode] ? st.methode : 'strate';
+}
+
+/** Sondage en unités monétaires. Déterministe : le départ aléatoire est tiré
+ *  du germe, et les éléments sont parcourus dans un ordre stable. */
+/* Un intervalle de sondage supérieur au seuil de planification laisse passer,
+   sans jamais les voir, des anomalies individuellement significatives : la
+   méthode tourne, le papier a l'air rempli, et l'échantillon ne prouve rien.
+   C'est le même défaut que la strate exhaustive à 50 % de la population, par
+   l'autre bout — on le dit de la même façon, sans basculer seul.
+   La taille qui ramène l'intervalle au seuil est une division, pas un choix. */
+function tailleAdequate(masse, pm){ return Math.max(1, Math.ceil(masse / Math.max(1, pm))); }
+
+function tirageSUM(items, masse, n, seed){
+  const intervalle = Math.max(1, Math.floor(masse / Math.max(1, n)));
+  const rnd = mulberry32(seedOf(seed + '|sum'));
+  const depart = Math.floor(rnd() * intervalle);
+  const ordre = [...items].sort((a, b) => String(a.cle) < String(b.cle) ? -1 : 1);
+  const sel = [], unites = [];
+  let cum = 0, cible = depart;
+  for (const it of ordre){
+    const haut = cum + it.montant;
+    let pris = false;
+    while (cible < haut){
+      unites.push({ cle:it.cle, unite:cible });
+      if (!pris){ sel.push(it); pris = true; }
+      cible += intervalle;
+    }
+    cum = haut;
+  }
+  return { sel, intervalle, depart, unites };
+}
+
+/** Tirage d'une procédure. La coupure d'exhaustivité vaut le seuil de
+ *  planification, sans modulation par le risque (voir 11_state.js). */
 const _echProcCache = new Map();
 function echantillonProc(p, pr){
   const pop = population(p, pr);
   if (!pop) return null;
   const s = seuils(), st = proc(p.code, pr.code);
-  const n = tailleEchantillon(p, pr), strate = seuilStrate(p, pr);
-  const cle = p.code + '|' + pr.code + '|' + st.seed + '|' + strate + '|' + s.CTT + '|' + n;
+  const nRegle = tailleEchantillon(p, pr);
+  const n = st.taille ? Math.max(1, st.taille) : nRegle;
+  const strate = seuilStrate();
+  const meth = methodeDe(p, pr);
+  const cle = [p.code, pr.code, st.seed, strate, s.CTT, n, meth].join('|');
   if (_echProcCache.has(cle)) return _echProcCache.get(cle);
-  const exhaustif = pop.items.filter(x => x.montant >= strate);
-  const reste = pop.items.filter(x => x.montant < strate);
-  const rnd = mulberry32(seedOf(st.seed));
-  const idx = reste.map((_, i) => i);
-  for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-  const alea = idx.slice(0, Math.min(n, idx.length)).sort((a, b) => a - b).map(i => reste[i]);
-  const couvert = exhaustif.reduce((a, x) => a + x.montant, 0) + alea.reduce((a, x) => a + x.montant, 0);
-  const r = { pop, exhaustif, alea, retenus:[...exhaustif, ...alea], n, couvert,
-              taux: pop.masse ? couvert / pop.masse : 0, strate, niv:niveau(p, pr.a) };
+
+  /* La strate des éléments individuellement significatifs se calcule dans les
+     deux méthodes : c'est elle qui déclenche le garde-fou, indépendamment de
+     la méthode retenue. */
+  const indivSig = pop.items.filter(x => x.montant >= strate);
+  const partSig = pop.items.length ? indivSig.length / pop.items.length : 0;
+  const gardeFou = partSig > GARDE_EXHAUSTIVE;
+
+  let exhaustif, alea, intervalle = null, depart = null, unites = [];
+  if (meth === 'sum'){
+    const t = tirageSUM(pop.items, pop.masse, n, st.seed);
+    intervalle = t.intervalle; depart = t.depart; unites = t.unites;
+    exhaustif = t.sel.filter(x => x.montant >= intervalle);
+    alea = t.sel.filter(x => x.montant < intervalle);
+  } else {
+    exhaustif = indivSig;
+    const reste = pop.items.filter(x => x.montant < strate);
+    const rnd = mulberry32(seedOf(st.seed));
+    const idx = reste.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    alea = idx.slice(0, Math.min(n, idx.length)).sort((a, b) => a - b).map(i => reste[i]);
+  }
+  const retenus = [...exhaustif, ...alea];
+  const couvert = retenus.reduce((a, x) => a + x.montant, 0);
+  const nAdequate = tailleAdequate(pop.masse, strate);
+  const r = { pop, exhaustif, alea, retenus, n, nRegle, couvert,
+              taux: pop.masse ? couvert / pop.masse : 0, strate, niv:niveau(p, pr.a),
+              methode:meth, intervalle, depart, unites,
+              indivSig, partSig, gardeFou,
+              nAdequate, intervalleLarge: meth === 'sum' && intervalle > strate };
   if (_echProcCache.size > 300) _echProcCache.clear();
   _echProcCache.set(cle, r);
   return r;

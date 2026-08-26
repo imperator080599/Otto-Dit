@@ -47,6 +47,28 @@ function ancienneteNote(n){
   return k;
 }
 
+/** À qui une note s'adresse par défaut : celui qui doit AGIR sur le travail
+ *  visé — son préparateur, à défaut son réviseur, à défaut quelqu'un de la
+ *  section. Une liste ordonnée par grade prenait le premier venu : depuis que
+ *  l'équipe compte un assistant, les notes bloquantes lui étaient adressées
+ *  par défaut, ce qui n'est pas la personne qui doit répondre. */
+function destinataireProbable(anc){
+  const cands = [];
+  if (anc.objet === 'procedure'){
+    const t = trav('SEC-' + anc.section + '-' + anc.ref);
+    cands.push(t.preparateur, t.reviseur);
+  }
+  for (const x of travauxDe(anc.section)) cands.push(x.preparateur, x.reviseur);
+  const k = cands.find(x => x && x !== S.moi);
+  if (k) return k;
+  /* Rien n'est encore affecté : la note remonte plutôt qu'elle ne descend.
+     À défaut de savoir qui prépare, on s'adresse au grade le plus élevé —
+     jamais à l'assistant par le seul hasard de l'ordre de la liste. */
+  return Object.entries(USERS).filter(([x]) => x !== S.moi)
+    .sort((a, b) => ORDRE_GRADE.indexOf(b[1].grade) - ORDRE_GRADE.indexOf(a[1].grade))
+    .map(([x]) => x)[0];
+}
+
 function blocNotesSection(code){
   const list = S.notes.filter(n => n.ancre.section === code);
   const ouvertes = list.filter(n => !n.clos);
@@ -54,11 +76,14 @@ function blocNotesSection(code){
   return `
     ${c ? `<div class="callout" style="margin-top:8px">
       <b>Nouvelle note sur :</b> ${esc(c.lib)}
+      <div class="smallcaps">destinataire proposé : celui qui doit agir sur ce travail</div>
       <div class="row" style="margin:7px 0 0">
         <div class="ctrl"><label>Type</label><select id="nt-type">
           ${Object.entries(TYPES_NOTE).map(([k, v]) => `<option value="${k}">${esc(v.lib)}</option>`).join('')}</select></div>
         <div class="ctrl"><label>À l’attention de</label><select id="nt-pour">
-          ${Object.entries(USERS).filter(([k]) => k !== S.moi).map(([k, u]) => `<option value="${k}">${esc(u.nom)} — ${esc(ROLE_LIB[u.role])}</option>`).join('')}</select></div>
+          ${Object.entries(USERS).filter(([k]) => k !== S.moi)
+            .sort((a, b) => ORDRE_GRADE.indexOf(a[1].grade) - ORDRE_GRADE.indexOf(b[1].grade))
+            .map(([k, u]) => `<option value="${k}" ${k === destinataireProbable(c) ? 'selected' : ''}>${esc(u.nom)} — ${esc(ROLE_LIB[u.role])}</option>`).join('')}</select></div>
         <div class="ctrl" style="flex:1 1 300px"><label>Note</label>
           <input type="text" id="nt-txt" placeholder="ce qui doit être corrigé, documenté ou expliqué"></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn" id="nt-add">poser la note</button></div>

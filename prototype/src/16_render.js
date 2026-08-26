@@ -402,6 +402,13 @@ document.addEventListener('input', e => {
     if (x) x.r.explique = Math.round((parseFloat(String(t.value).replace(/\s/g, '').replace(',', '.')) || 0) * 100);
     return renderMainDiff();
   }
+  if (d.ptaille !== undefined && p){
+    const v = parseInt(t.value, 10);
+    const pr = PROCEDURES.find(x => x.code === d.ptaille);
+    proc(p.code, d.ptaille).taille = v > 0 && v !== tailleEchantillon(p, pr) ? v : null;
+    _echProcCache.clear();
+    return renderMainDiff();
+  }
   if (t.id === 'ar-montant'){ S.arMontant = Math.round((parseFloat(t.value) || 0) * 100); return renderMainDiff(); }
   if (t.id === 'ar-pct'){ S.arPct = parseFloat(t.value) || 0; return renderMainDiff(); }
   if (t.id === 'sec-concl' && p){ sec(p.code).conclusion = t.value; return renderMainDiff(); }
@@ -510,6 +517,12 @@ document.addEventListener('change', e => {
   }
   if (t.id === 'imp-de'){ S.impactDe = +t.value; return renderMain(); }
   if (t.id === 'imp-vers'){ S.impactVers = +t.value; return renderMain(); }
+  if (d.pmeth !== undefined && p){
+    proc(p.code, d.pmeth).methode = t.value;
+    _echProcCache.clear();
+    logEvent('méthode de sélection modifiée', p.lib + ' · ' + d.pmeth, METHODES[t.value].lib);
+    renderImpact(); return renderMain();
+  }
   if (t.id === 'ft-phase'){ S.filtreTrav.phase = t.value; return renderMain(); }
   if (t.id === 'ft-nature'){ S.filtreTrav.nature = t.value; return renderMain(); }
   if (t.id === 'ft-personne'){ S.filtreTrav.personne = t.value; return renderMain(); }
@@ -554,6 +567,20 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.ctrtout){ S.ctrTout[d.ctrtout] = !S.ctrTout[d.ctrtout]; return renderMain(); }
+  if (d.ptaillen && p){
+    const [code, n] = d.ptaillen.split('|');
+    proc(p.code, code).taille = parseInt(n, 10);
+    _echProcCache.clear();
+    logEvent('taille de tirage imposée', p.lib + ' · ' + code, n + ' éléments — intervalle ramené au seuil');
+    renderImpact(); return renderMain();
+  }
+  if (d.psum && p){
+    proc(p.code, d.psum).methode = 'sum';
+    _echProcCache.clear();
+    logEvent('méthode de sélection modifiée', p.lib + ' · ' + d.psum,
+             'sondage en unités monétaires — garde-fou de strate exhaustive');
+    renderImpact(); return renderMain();
+  }
   if (d.pnouveau && p){
     const st = proc(p.code, d.pnouveau);
     st.seed = 'otto-' + p.code.toLowerCase() + '-' + d.pnouveau.toLowerCase() + '-' + String(seedOf(st.seed) % 9000 + 1000);
@@ -597,9 +624,13 @@ document.addEventListener('click', e => {
   if (d.noteCible){
     const [section, objet, ref, lib] = d.noteCible.split('|');
     S.noteCible = { section, objet, ref, lib };
+    /* Le formulaire vit dans la destination « notes » : poser une ancre depuis
+       une autre destination doit y emmener, sinon le clic n'a aucun effet
+       visible et l'auditeur reste sur place sans savoir que l'ancre est prise. */
+    if (S.vue === 'fsli:' + section) S.dest[section] = 'notes';
+    renderImpact();
     renderMain();
-    const b = document.querySelector('#b6') || document.querySelector('#main');
-    if (b) b.scrollIntoView({ block:'start' });
+    window.scrollTo({ top:0 });
     const i = document.getElementById('nt-txt'); if (i) i.focus();
     return;
   }
