@@ -123,10 +123,39 @@ export interface Questionnaire {
   questions: QuestionResiduelle[];
 }
 
+/** Une rubrique de la déclaration d'indépendance. Contenu de cabinet. */
+export interface RubriqueIndependance {
+  code: string;
+  libelle: string;
+  /** Ce que la rubrique couvre, en toutes lettres : sans quoi on répond « non » par défaut. */
+  definition: string;
+}
+
+/**
+ * Un seuil d'indépendance. C'est une règle juridique devenue constante : elle
+ * NOMME sa source et ce qu'elle commande, et son état de vérification se lit
+ * dans le registre des sources.
+ */
+export interface ParametreIndependance {
+  valeur: number;
+  libelle: string;
+  unite: string;
+  pourquoi: string;
+  sources: string[];
+}
+
+export interface Independance {
+  version: string;
+  rubriques: RubriqueIndependance[];
+  parametres: Record<string, ParametreIndependance>;
+  naturesSacc: Record<string, string>;
+}
+
 export interface Catalogue {
   version: string;
   sensDeTest: Record<SensDeTest, { libelle: string; d: string }>;
   procedures: Procedure[];
   sources: Record<string, Source>;
   questionnaire: Questionnaire;
+  independance: Independance;
 }

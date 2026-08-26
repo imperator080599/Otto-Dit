@@ -13,12 +13,14 @@ import path from 'node:path';
 import url from 'node:url';
 import type {
   Catalogue, Procedure, Source, SensDeTest, QuestionResiduelle, NatureRi,
+  ParametreIndependance,
 } from './types';
 
 type Valideur = {
   chargerCatalogue: (racine?: string) => Catalogue;
   validerCatalogue: (cat: unknown, src: unknown, schema: unknown) => string[];
   validerQuestionnaire: (q: unknown, src: unknown, schema: unknown) => string[];
+  validerIndependance: (i: unknown, src: unknown, schema: unknown) => string[];
   racineDepot: () => string;
 };
 
@@ -135,4 +137,21 @@ export function referencesNonVerifieesQuestion(cat: Catalogue, q: QuestionResidu
   return q.sources.filter((code) => cat.sources[code] && !cat.sources[code].verifie);
 }
 
-export type { Catalogue, Procedure, Source, QuestionResiduelle, NatureRi } from './types';
+/* ── indépendance : rubriques et seuils, contenu de cabinet ───────────────
+   Un seuil affiché à l'écran doit savoir dire d'où il vient. Ces deux
+   accesseurs sont là pour que l'écran n'ait pas à le deviner.              */
+
+export function parametreIndependance(cat: Catalogue, code: string): ParametreIndependance | undefined {
+  return cat.independance.parametres[code];
+}
+
+/** Vrai tant que le texte primaire du seuil n'a pas été atteint. */
+export function parametreNonVerifie(cat: Catalogue, code: string): boolean {
+  const p = cat.independance.parametres[code];
+  return !!p && p.sources.some((s) => !cat.sources[s]?.verifie);
+}
+
+export type {
+  Catalogue, Procedure, Source, QuestionResiduelle, NatureRi,
+  Independance, RubriqueIndependance, ParametreIndependance,
+} from './types';

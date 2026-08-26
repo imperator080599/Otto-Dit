@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 186 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 212 tests green (`cd app && npm test`), zero network calls. Prod build clean.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -581,6 +581,43 @@ rejoue et échoue si un chiffre cité bouge.
 
 **Vérification** : 34 harnais du prototype sans échec ni plantage (dont `dates`, `persist` et
 `parcours`, neufs) · 186 tests applicatifs · `tsc --noEmit` propre.
+
+## Application — tranche livrée : équipe et indépendance
+
+**Correction d'état, d'abord** : l'isolation par cabinet **existait déjà** (`tenant_id` partout, RLS
+en 0004, garde applicative ADR-007). Il n'y avait pas de `firm_id` à poser — il y avait une fondation
+à **utiliser** et à **prouver**.
+
+Livré (ADR-069) : migration `0011`, service `team.ts`, écran `/eng/[id]/team`, et 26 tests.
+
+- **La règle** : aucun travail attribué à qui n'a pas signé. Le système refuse, il ne rappelle pas.
+- **La base garantit** : on signe pour soi (contrainte), une déclaration signée ne se réécrit ni ne
+  se supprime (trigger), une révision exige un motif (contrainte). Les tests les contournent **par
+  SQL direct** pour vérifier qu'elles tiennent sans le service.
+- **La révision empile** ; tant qu'elle n'est pas signée, un membre déjà affecté produit un
+  **obstacle au visa** — sans quoi il suffirait d'affecter avant de réviser.
+- **L'isolation s'éprouve** : un second cabinet entier, la fuite tentée dans les deux sens, l'acteur
+  contrôlé autant que la cible, et un compte final des lignes croisées à zéro.
+- **La déclaration est du contenu de cabinet** : `methodology/independance.json`, 7 rubriques,
+  4 seuils qui nomment chacun leur source et ce qu'ils commandent — tous `verifie: false`, avec
+  `UNVERIFIED` à l'écran.
+
+Deux défauts trouvés par les tests : l'ordre des refus (la sortie de mission doit passer avant la
+déclaration, sinon on envoie corriger la mauvaise chose) et des horodatages rendus en `Date` là où le
+type disait `string`.
+
+**Vérification** : 212 tests applicatifs (186 → 212) · `tsc --noEmit` propre.
+
+## Convergence prototype → application
+
+`docs/11_CONVERGENCE.md` : les onze points de la mission simplifiée, chacun marqué
+**existe / portage / neuf**, avec l'ordre recommandé. En résumé : trois points sont finis, deux à
+moitié ; le seul chaînon vraiment manquant est le **risque par assertion qui commande** les
+procédures et l'étendue ; et la **boucle requête ↔ documentation** n'est pas du code neuf mais de
+l'assemblage à rendre visible.
+
+Règle de cadrage retenue : **les procédures sont du contenu, la mécanique est le produit** — aucun
+cycle au-delà du chiffre d'affaires.
 
 ## Prochaine tranche — dans l'application, plus dans le prototype
 

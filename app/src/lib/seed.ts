@@ -1,4 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
+import { chargerCatalogue } from '@/lib/methodology/catalogue';
 import { demoId } from '@/lib/core/ids';
 import { logEvent } from '@/lib/core/events';
 
@@ -11,6 +12,10 @@ export const IDS = {
     claire: demoId('user:claire'),
     karim: demoId('user:karim'),
     lea: demoId('user:lea'),
+    // Hugo existe pour être REFUSÉ : membre du cabinet, aucune déclaration
+    // signée, donc aucun travail ne peut lui être attribué. C'est la règle
+    // d'indépendance rendue démontrable en un clic (0011, DEMO.md étape 6).
+    hugo: demoId('user:hugo'),
   },
   entity: demoId('entity:altiverre'),
   group: demoId('group:meridian'),
@@ -44,8 +49,9 @@ export async function seedBase(): Promise<void> {
     `insert into app_user (id, tenant_id, name, email, firm_role) values
      ($1, $4, 'Claire Fontaine', 'claire.fontaine@vermeil-audit.example', 'partner'),
      ($2, $4, 'Karim Benali', 'karim.benali@vermeil-audit.example', 'senior'),
-     ($3, $4, 'Léa Moreau', 'lea.moreau@vermeil-audit.example', 'manager')`,
-    [IDS.users.claire, IDS.users.karim, IDS.users.lea, IDS.tenant],
+     ($3, $4, 'Léa Moreau', 'lea.moreau@vermeil-audit.example', 'manager'),
+     ($5, $4, 'Hugo Vasseur', 'hugo.vasseur@vermeil-audit.example', 'staff')`,
+    [IDS.users.claire, IDS.users.karim, IDS.users.lea, IDS.tenant, IDS.users.hugo],
   );
 
   await q(
@@ -92,12 +98,34 @@ export async function seedBase(): Promise<void> {
     [IDS.engSox, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.componentAltiverre],
   );
 
+  // L'équipe, et sa déclaration d'indépendance SIGNÉE — sans quoi la mission
+  // démarrerait en état d'obstacle au visa (0011). Une affectation sans
+  // déclaration signée n'est pas un état de départ : c'est un défaut, et la
+  // règle du service la refuserait aujourd'hui. On sème donc le dossier tel
+  // qu'il doit être, pas tel qu'il serait si la règle n'existait pas.
+  const equipe: [string, string][] = [
+    [IDS.users.claire, 'partner'],
+    [IDS.users.karim, 'senior'],
+    [IDS.users.lea, 'manager'],
+  ];
+  const rubriques = (await chargerCatalogue()).independance.rubriques;
+  const reponses = JSON.stringify(
+    Object.fromEntries(rubriques.map((r) => [r.code, { answer: 'non', detail: '' }])),
+  );
   for (const engId of [IDS.engNep, IDS.engSox]) {
-    await q(
-      `insert into engagement_member (engagement_id, user_id, eng_role, can_sign) values
-       ($1, $2, 'partner', true), ($1, $3, 'senior', false), ($1, $4, 'manager', true)`,
-      [engId, IDS.users.claire, IDS.users.karim, IDS.users.lea],
-    );
+    for (const [uid, role] of equipe) {
+      await q(
+        `insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on)
+         values ($1, $2, $3, $4, date '2025-11-03')`,
+        [engId, uid, role, role !== 'senior'],
+      );
+      await q(
+        `insert into independence_declaration
+           (tenant_id, engagement_id, user_id, version, answers, signed_at, signed_by)
+         values ($1, $2, $3, 1, $4::jsonb, timestamptz '2025-11-03 09:00Z', $3)`,
+        [IDS.tenant, engId, uid, reponses],
+      );
+    }
   }
 
   await q(

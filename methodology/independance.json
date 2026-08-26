@@ -1,0 +1,89 @@
+{
+  "_note": "Déclaration d'indépendance et paramètres associés. C'est du CONTENU DE CABINET, pas du code : chaque cabinet a ses rubriques et ses seuils, et les remplace par les siens. Les seuils ci-dessous sont des PARAMÈTRES DÉCLARÉS, tous NON VÉRIFIÉS contre un texte primaire — voir sources.json et la règle de vérification du README.",
+  "version": "1.0.0",
+  "rubriques": [
+    {
+      "code": "interets",
+      "libelle": "Intérêts financiers, directs ou indirects",
+      "definition": "titres du client ou d’une entité liée, détenus par vous, votre conjoint ou une personne à charge, y compris par l’intermédiaire d’un placement dont vous choisissez la composition"
+    },
+    {
+      "code": "familiaux",
+      "libelle": "Liens familiaux avec les dirigeants ou le personnel comptable",
+      "definition": "lien de parenté ou d’alliance avec un dirigeant, un administrateur, ou toute personne du client occupant une fonction comptable ou financière"
+    },
+    {
+      "code": "emploi",
+      "libelle": "Emploi antérieur chez le client",
+      "definition": "poste occupé chez le client ou une entité liée, à quelque date que ce soit, et fonction occupée"
+    },
+    {
+      "code": "sacc",
+      "libelle": "Services autres que la certification rendus par vous au client",
+      "definition": "toute prestation autre que l’audit à laquelle vous avez personnellement pris part, y compris une mission antérieure ou une intervention ponctuelle"
+    },
+    {
+      "code": "affaires",
+      "libelle": "Relations d’affaires",
+      "definition": "relation commerciale avec le client ou ses dirigeants, hors relation courante aux conditions du marché"
+    },
+    {
+      "code": "prets",
+      "libelle": "Prêts et garanties",
+      "definition": "prêt consenti au client ou reçu de lui, caution ou garantie donnée ou reçue, dans un sens ou dans l’autre"
+    },
+    {
+      "code": "cadeaux",
+      "libelle": "Cadeaux et invitations au-delà du seuil déclaré",
+      "definition": "cadeau, avantage ou invitation reçu du client dont la valeur dépasse le seuil paramétré ci-dessus"
+    }
+  ],
+  "parametres": {
+    "seuil_cadeau_cents": {
+      "valeur": 15000,
+      "libelle": "Seuil de déclaration des cadeaux et invitations",
+      "unite": "cents",
+      "pourquoi": "En dessous, l'avantage reçu n'est pas déclaré ; au-dessus, il l'est. Un seuil non écrit revient à laisser chacun décider seul de ce qui est déclarable.",
+      "sources": [
+        "NEP-FR"
+      ]
+    },
+    "familiarite_exercices": {
+      "valeur": 7,
+      "libelle": "Ancienneté à partir de laquelle la familiarité est une menace à documenter",
+      "unite": "exercices consécutifs",
+      "pourquoi": "La familiarité se COMPTE, elle ne se juge pas : le nombre d'exercices consécutifs sur le même client est déterministe, et c'est ce qui déclenche la documentation d'une sauvegarde.",
+      "sources": [
+        "NEP-FR"
+      ]
+    },
+    "rotation_signataire_exercices": {
+      "valeur": 6,
+      "libelle": "Durée maximale du mandat du signataire avant rotation",
+      "unite": "exercices",
+      "pourquoi": "La rotation du signataire est encadrée ; le dépasser sans l'avoir vu est une faute de dossier, pas un oubli d'agenda.",
+      "sources": [
+        "NEP-FR"
+      ]
+    },
+    "plafond_sacc_pct": {
+      "valeur": 70,
+      "libelle": "Plafond des honoraires de services autres que la certification, en % des honoraires d'audit",
+      "unite": "pour cent",
+      "pourquoi": "Au-delà, la dépendance économique aux services non-audit devient elle-même une menace. Le ratio se calcule ; il n'est pas une appréciation.",
+      "sources": [
+        "NEP-FR"
+      ]
+    }
+  },
+  "natures_sacc": {
+    "si": "Conception ou paramétrage de systèmes d'information",
+    "fiscal_consult": "Consultation fiscale",
+    "evaluation": "Évaluation et actuariat",
+    "juridique": "Prestation juridique",
+    "recrutement": "Recrutement de dirigeants ou de cadres financiers",
+    "comptable": "Tenue de comptabilité ou préparation des états financiers",
+    "formation": "Formation",
+    "autre": "Autre prestation, à qualifier"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OTTO — déclaration d'indépendance et paramètres",
+  "type": "object",
+  "required": ["version", "rubriques", "parametres", "natures_sacc"],
+  "properties": {
+    "_note": { "type": "string" },
+    "version": { "type": "string" },
+    "rubriques": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/rubrique" } },
+    "parametres": { "type": "object" },
+    "natures_sacc": { "type": "object" }
+  },
+  "definitions": {
+    "rubrique": {
+      "type": "object",
+      "required": ["code", "libelle", "definition"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z_]+$" },
+        "libelle": { "type": "string", "minLength": 10 },
+        "definition": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Ce que la rubrique couvre, en toutes lettres. Une rubrique qui ne dit pas ce qu'elle couvre se répond « non » par défaut, et la déclaration ne vaut rien."
+        }
+      }
+    },
+    "parametre": {
+      "type": "object",
+      "required": ["valeur", "libelle", "unite", "pourquoi", "sources"],
+      "additionalProperties": false,
+      "properties": {
+        "valeur": { "type": "number" },
+        "libelle": { "type": "string", "minLength": 10 },
+        "unite": { "type": "string", "minLength": 3 },
+        "pourquoi": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Ce que le seuil décide. Un seuil affiché à l'écran doit savoir dire d'où il vient et ce qu'il commande."
+        },
+        "sources": { "type": "array", "minItems": 1 }
+      }
+    }
+  }
+}

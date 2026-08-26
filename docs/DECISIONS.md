@@ -2245,3 +2245,57 @@ la réponse sans valeur. On s'arrête à la première demande qui reçoit un non
 Le tableau de dépouillement est recopié de `docs/10_FALSIFICATION.md`, qui reste la source, avec
 trois règles qui valent autant que les seuils : une case vide ne compte pas et n'est pas neutre ; on
 dépouille à douze entretiens, pas à quatre ; **le verbatim l'emporte sur la case cochée**.
+
+---
+
+## ADR-069 — Équipe et indépendance dans l'application, et l'isolation qu'on ÉPROUVE
+
+**Une correction d'abord, sur l'état réel du dépôt.** L'isolation par cabinet **existait déjà** :
+`tenant_id` sur toutes les tables racines, politiques RLS (migration 0004), garde applicative
+(ADR-007). Il n'y avait pas de `firm_id` à poser. Ce qui manquait n'était pas la fondation, c'était
+la **preuve** qu'elle tient — et un objet de plus pour l'éprouver.
+
+**La règle, et rien qu'elle.** Aucun travail n'est attribué à qui n'a pas signé sa déclaration. Le
+système refuse ; il ne rappelle pas. Même famille que « on ne clôt pas sa propre note » (0009) et que
+l'ordre des visas (0009).
+
+**Ce que la base garantit, plutôt que le code.** Une déclaration se signe **soi-même**
+(`check (signed_by = user_id)`), une déclaration signée **ne se réécrit pas et ne se supprime pas**
+(trigger), une révision **exige un motif écrit** (`check`). Les tests vérifient chacune en essayant
+de la contourner **par SQL direct**, service court-circuité : une règle qui ne tient que dans la
+couche applicative ne tient pas.
+
+**La révision EMPILE.** `version` monotone, `superseded_by` sur la précédente, qui reste lisible avec
+sa signature et son contenu. Tant que la révision n'est pas signée, l'indépendance ne tient plus — et
+un membre **déjà affecté** dans cet état produit un **obstacle au visa**. Sans ce prolongement, il
+suffirait d'affecter avant de réviser pour passer au travers.
+
+**Deux défauts trouvés par les tests, tous deux réels.**
+
+1. **L'ordre des refus était faux.** `assignMember` vérifiait la déclaration avant la sortie de
+   mission. Une personne sortie qui avait aussi une révision en cours s'entendait dire « signez votre
+   déclaration » : elle aurait signé, et aurait été refusée quand même. *Un motif de refus qui envoie
+   corriger la mauvaise chose est pire qu'un refus sec.* La sortie se vérifie d'abord.
+2. **Les horodatages revenaient en `Date` là où le type disait `string`.** `select *` mentait sur la
+   forme des données et cassait à l'affichage. Les colonnes sont désormais castées en texte au bord
+   de la requête, comme partout ailleurs dans le dépôt, et `select *` a disparu de ce service.
+
+**L'amorce a changé, et c'est une décision.** Le jeu de démonstration affectait trois membres **sans
+aucune déclaration** — un état que la règle refuserait aujourd'hui. Il sème désormais des
+déclarations signées : on sème le dossier tel qu'il doit être, pas tel qu'il serait si la règle
+n'existait pas. Et **Hugo Vasseur** rejoint le cabinet sans rien signer : il existe pour être refusé,
+exactement comme dans le prototype — la règle se démontre en un clic.
+
+**L'isolation s'éprouve, elle ne se suppose pas.** Le test crée un **second cabinet entier** et tente
+la fuite dans les deux sens : affecter un étranger chez nous, affecter un des nôtres chez lui, ouvrir
+une déclaration en travers, enregistrer un service non-audit sur la mission d'autrui — et vérifie que
+**l'acteur** de l'opération est contrôlé lui aussi, pas seulement sa cible. Une requête finale compte
+les lignes où `user.tenant_id <> engagement.tenant_id` : zéro.
+
+**La déclaration est du contenu de cabinet.** Les sept rubriques, les quatre seuils et les huit
+natures de services non-audit vivent dans `methodology/independance.json`, validés par le même
+`valider.mjs`. Chaque seuil **nomme sa source et ce qu'il commande** ; les quatre sont
+`verifie: false`, et l'écran affiche `UNVERIFIED` à côté du plafond de 70 %.
+
+**Le ratio d'honoraires n'est PAS calculé** tant que les honoraires d'audit ne sont pas saisis. Un
+ratio sur un dénominateur supposé serait pire que pas de ratio.

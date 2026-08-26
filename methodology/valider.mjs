@@ -166,19 +166,58 @@ export function validerQuestionnaire(q, src, schema){
   return erreurs;
 }
 
+/**
+ * Erreurs de la déclaration d'indépendance, liste vide si elle est valide.
+ *
+ * Les rubriques et les seuils sont du CONTENU DE CABINET : chaque cabinet a les
+ * siens et les remplace. Ils sont donc validés comme le reste de la méthode —
+ * et les seuils, qui sont des règles juridiques, doivent NOMMER LEUR SOURCE et
+ * ce qu'ils commandent. Un seuil sans source ni justification écrite est un
+ * chiffre qu'on affichera un jour à l'écran sans savoir d'où il vient.
+ *
+ * @param {object} ind     contenu de independance.json
+ * @param {object} src     contenu de sources.json
+ * @param {object} schema  contenu de schema-independance.json
+ * @returns {string[]}
+ */
+export function validerIndependance(ind, src, schema){
+  const erreurs = [];
+  const defR = schema.definitions.rubrique, defP = schema.definitions.parametre;
+  if (!ind.version) erreurs.push('indépendance : version manquante');
+
+  for (const r of ind.rubriques || []) validerObjet(r, defR, `rubrique ${r.code || '(sans code)'}`, erreurs);
+  const codes = (ind.rubriques || []).map(r => r.code);
+  const dbl = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if (dbl.length) erreurs.push('rubriques en double : ' + [...new Set(dbl)].join(', '));
+  if (!codes.length) erreurs.push('indépendance : aucune rubrique — une déclaration vide ne déclare rien');
+
+  for (const [code, p] of Object.entries(ind.parametres || {})){
+    validerObjet(p, defP, `paramètre ${code}`, erreurs);
+    for (const s of p.sources || [])
+      if (!src.sources[s]) erreurs.push(`paramètre ${code} : source « ${s} » absente du registre`);
+  }
+  if (!Object.keys(ind.natures_sacc || {}).length)
+    erreurs.push('indépendance : aucune nature de service autre que la certification');
+  return erreurs;
+}
+
 /** Lit, valide et rend le catalogue. Lève si les données sont invalides. */
 export function chargerCatalogue(racine){
   const dir = path.join(racine || racineDepot(), 'methodology');
   const lire = f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const cat = lire('procedures.json'), src = lire('sources.json'), schema = lire('schema.json');
   const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
+  const ind = lire('independance.json'), schemaI = lire('schema-independance.json');
   const erreurs = validerCatalogue(cat, src, schema)
-    .concat(validerQuestionnaire(quest, src, schemaQ));
+    .concat(validerQuestionnaire(quest, src, schemaQ))
+    .concat(validerIndependance(ind, src, schemaI));
   if (erreurs.length){
     throw new Error('CATALOGUE INVALIDE :\n  ' + erreurs.join('\n  '));
   }
   return { version:cat.version, sensDeTest:cat.sens_de_test,
            procedures:cat.procedures, sources:src.sources, schema,
            questionnaire:{ version:quest.version, naturesRi:quest.natures_ri,
-                           questions:quest.questions } };
+                           questions:quest.questions },
+           independance:{ version:ind.version, rubriques:ind.rubriques,
+                          parametres:ind.parametres, naturesSacc:ind.natures_sacc } };
 }

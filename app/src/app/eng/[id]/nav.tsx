@@ -11,6 +11,10 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
   const base = `/eng/${engId}`;
   const items: { href: string; label: string }[] = [
     { href: base, label: 'Overview' },
+    // L'équipe vient AVANT les données : aucun travail ne s'attribue sans
+    // déclaration d'indépendance signée, donc c'est par là qu'un dossier
+    // commence — pas par un import.
+    { href: `${base}/team`, label: 'Team & independence' },
     { href: `${base}/imports`, label: 'Data & imports' },
     { href: `${base}/reconciliation`, label: 'Reconciliation' },
     { href: `${base}/materiality`, label: 'Materiality' },
