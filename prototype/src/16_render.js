@@ -20,6 +20,7 @@ const DOSSIER = [
 ];
 const TRANSVERSES = [
   { id:'plan.versions',lib:'Versions du fichier' },
+  { id:'plan.ajust',   lib:'Ajustements et retraitements' },
   { id:'plan.rappro',  lib:'Import et rapprochement' },
   { id:'plan.mat',     lib:'Matérialité' },
   { id:'plan.scope',   lib:'Scoping des postes' },
@@ -262,6 +263,7 @@ function contenuVue(v){
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
     case 'plan.versions': return vueVersions();
+    case 'plan.ajust':  return vueAjustements();
     case 'plan.donnees': return vueJeuDonnees();
     case 'plan.programme': return vueProgramme();
     case 'plan.principes': return vuePrincipes();

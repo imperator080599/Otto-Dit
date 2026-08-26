@@ -20,15 +20,15 @@ function ecartsHorsPapier(){
   const dupe = parTag('A1');
   if (dupe.length === 2) out.push({ ref:'je|' + dupe[1].num, cle:dupe[1].num, src:'Test des écritures',
     objet:'je', vue:'plan.je', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
-    constate:dupe[1].lines[0].debit, section:null,
+    constate:dupe[1].lines[0].debit, section:null, piece:dupe[1].pieceRef,
     explRecue:'Doublon d’intégration reconnu par le client ; extourne non comptabilisée à date.' });
   for (const e of parTag('A5')) out.push({ ref:'je|' + e.num, cle:e.num, src:'Test des écritures',
     objet:'je', vue:'plan.je', lib:'Produit de 2026 rattaché à 2025 (' + e.pieceRef + ')',
-    constate:e.lines[0].debit, section:null,
+    constate:e.lines[0].debit, section:null, piece:e.pieceRef,
     explRecue:'Facture datée du ' + frDate(e.pieceDate) + ', comptabilisée le ' + frDate(e.date) + '.' });
   for (const e of parTag('A6')) out.push({ ref:'je|' + e.num, cle:e.num, src:'Test des écritures',
     objet:'je', vue:'plan.je', lib:'Écriture manuelle de direction (' + e.pieceRef + ')',
-    constate:e.lines[0].debit, section:null,
+    constate:e.lines[0].debit, section:null, piece:e.pieceRef,
     explRecue:'Prestation démarrant en janvier 2026 selon l’explication reçue.' });
   return out;
 }
@@ -59,7 +59,10 @@ function anomalies(){
   }
   for (const x of ecartsHorsPapier())
     pousser({ ...x, cleRes:'hors#' + x.ref }, residuelR(x.constate, resolHors(x.ref, x.explRecue)));
-  return out;
+  /* Une anomalie quitte aussi le cumul quand une ÉCRITURE DE CORRECTION la
+     porte, dans une version prise en compte. La bascule est automatique — pas
+     de case à cocher — et bornée à l'anomalie : voir 29_ajustements.js. */
+  return appliquerCorrections(out);
 }
 
 /** Une même pièce touche deux comptes : une facture de vente est relevée dans
@@ -120,7 +123,7 @@ function refPapier(t){
    deux écrans de téléphone de contenu. Replier une vue d'un écran et demi
    coûterait un clic sans rien rendre lisible. Le portail client y figure
    malgré sa taille de départ : il grandit avec le nombre de requêtes.        */
-const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'pil.mission',
+const VUES_PANNEAUX = new Set(['plan.je', 'plan.facteurs', 'plan.versions', 'plan.ajust', 'pil.mission',
   'plan.programme', 'plan.donnees', 'plan.principes', 'plan.ra', 'pil.export', 'cli.vue']);
 let _panSeq = 0;
 function blk(t, why, html, att){
@@ -256,11 +259,17 @@ function vueSynthese(){
   const explique = retenues.reduce((t, x) => t + x.explique, 0);
   const nonResolues = retenues.filter(x => x.montant !== 0);
   const depasse = Math.abs(cumul) > s.M;
+  const corrige = retenues.reduce((t, x) => t + (x.corrige || 0), 0);
   const rows = a.map(x => ({
     src:esc(x.src), lib:esc(x.lib),
     c:eur(x.constate), e:x.explique ? eur(x.explique) : '<span class="smallcaps">—</span>',
+    x:x.corrige ? `${eur(x.corrige)}<div class="smallcaps">${esc((x.corrigePar || []).map(y => y.ref).join(', '))}</div>`
+                : '<span class="smallcaps">—</span>',
     m:x.montant ? eur(x.montant) : '<span class="smallcaps">—</span>',
     st:x.souSeuil ? '<span class="pill">sous le seuil de remontée</span>'
+       : (x.corrigePar || []).length && !x.montant
+         ? marqueEtat('explique', 'corrigée par écriture de version')
+           + ` <span class="smallcaps">corrigée par ${esc(x.corrigePar.map(y => 'v' + y.v + ' ' + y.ref).join(', '))}</span>`
        : x.acquis ? marqueEtat('explique', 'écart expliqué : ' + DISPOSITIONS[x.res.disposition].lib)
                     + ` <span class="smallcaps">${esc(DISPOSITIONS[x.res.disposition].lib)}, ${esc(USERS[x.res.par].nom)}</span>`
                   : marqueEtat('ecart') + ' <span class="smallcaps">' + esc(x.manques.length + ' élément(s) probant(s) manquant(s)') + '</span>',
@@ -270,10 +279,11 @@ function vueSynthese(){
     cite('Un moyen simple d’accéder à la synthèse des déficiences de contrôle interne et des "misstatements" écarts observés lors du testing') +
     blk('Anomalies relevées', a.length + ' au total',
       table([{k:'src',t:'Origine'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'c',t:'Écart constaté',n:1},
-             {k:'e',t:'Part expliquée',n:1},{k:'m',t:'Écart résiduel',n:1},
+             {k:'e',t:'Part expliquée',n:1},{k:'x',t:'Corrigé par écriture',n:1,cls:'wrapcell'},
+             {k:'m',t:'Écart résiduel',n:1},
              {k:'st',t:'Résolution',cls:'wrapcell'},{k:'v',t:''}], rows,
             { foot:{ src:'Cumul non corrigé', c:eur(retenues.reduce((t, x) => t + x.constate, 0)),
-                     e:eur(explique), m:eur(cumul) } }) +
+                     e:eur(explique), x:eur(corrige), m:eur(cumul) } }) +
       (doublesCumul().length ? `<div class="callout bad" style="margin-top:10px">
         <b>${doublesCumul().length} pièce(s) comptée(s) plusieurs fois au cumul.</b>
         Une même facture est relevée dans deux sections — au compte de tiers et au compte de résultat —
@@ -286,6 +296,10 @@ function vueSynthese(){
       rapprochement ou le test des écritures — et jamais ici. Une explication du client n’y suffit pas :
       il faut une conclusion écrite, une qualification, un lien vers la pièce ou l’écriture qui corrobore,
       un auteur et une date. Seul le résiduel entre dans le cumul ci-dessous.</p>
+      <p class="note">La colonne « corrigé par écriture » n’est pas saisie non plus : elle vient des
+      <b>écritures de correction</b> passées par le client dans une version <b>prise en compte</b>, qui
+      nomment la pièce qu’elles corrigent. Une correction partielle laisse le reste au cumul. Le détail,
+      écriture par écriture, est dans <b>Ajustements et retraitements</b>.</p>
       <div class="grid2" style="margin-top:10px">
         <div class="kv">
           <span class="k">Anomalies relevées</span><span class="v">${a.length}</span>

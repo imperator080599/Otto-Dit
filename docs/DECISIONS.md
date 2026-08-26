@@ -1646,3 +1646,64 @@ deux harnais — et aurait planté l'écran. Ils sont désormais **déclarés ab
 affichée à côté de la procédure ; une procédure dont le prédicat est absent cesse de se dire
 échantillonnée. Un prédicat nommé que personne n'implémente ni ne déclare absent est un défaut de
 construction, et le harnais du catalogue le relève.
+
+---
+
+## ADR-051 — Une anomalie ne quitte le cumul que par une résolution ou par une écriture
+
+**Demande du fondateur, 2026-08-26** : une section « Ajustements et retraitements », branchée sur le
+versionnement. Le rapport d'impact dit CE QUI a changé ; cette section doit dire POURQUOI, écriture
+par écriture — avec la NATURE de chaque ajustement, et pour les corrections passées en réponse à un
+constat d'audit, une **réconciliation automatique** avec l'état des anomalies.
+
+**Décision.**
+
+1. **La section ne tient aucun registre.** Un ajustement **est** une écriture de version. Elle lit
+   celui qui existe plutôt que d'en ouvrir un second, qui aurait divergé.
+2. **Trois natures**, portées par la donnée : `inventaire` (le client termine son exercice),
+   `retraitement` (reclassement, changement d'estimation, erreur trouvée par le client ou son
+   expert-comptable), `correction_audit` (le client corrige parce que NOUS avons relevé quelque
+   chose). Seule la troisième se réconcilie.
+3. **Chaque écriture porte son justificatif et son auteur côté client**, et son impact est ventilé
+   **par poste** et **par masse**. Δ résultat = Σ (crédit − débit) sur les comptes 6 et 7 ;
+   Δ situation nette = Σ (débit − crédit) sur les comptes 1 à 5. Les deux sont **égaux par
+   construction** — c'est la partie double, et l'écran le **vérifie** au lieu de l'affirmer.
+   Δ capitaux propres = Δ résultat + les mouvements portés directement aux comptes de capitaux.
+4. **La réconciliation est automatique.** Une correction d'audit nomme la **pièce** qu'elle corrige ;
+   l'anomalie portée sur cette pièce quitte le cumul non corrigé pour exactement ce que l'écriture
+   porte. Le montant imputé est **borné à l'anomalie et à son sens** — c'est la borne déjà écrite
+   pour la part expliquée d'une résolution (ADR-013). Une correction **partielle** laisse le reste au
+   cumul. Les anomalies sont servies **du plus gros résiduel au plus petit**, sans quoi l'ordre de la
+   liste déciderait de ce qui reste au cumul.
+5. **Il n'y a pas de case « corrigée ».** Une anomalie ne quitte le cumul que de deux façons : une
+   **résolution probante** enregistrée là où l'écart est né, ou une **écriture de correction**
+   présente dans une version prise en compte. Pas de troisième chemin.
+6. **Deux signaux, distincts.**
+   - *Anomalie qualifiée « corrigée » sans écriture identifiée* : le dossier affirme qu'une
+     correction existe, aucune écriture de version ne la porte. Le cumul est faux.
+   - *Écriture de correction sans anomalie correspondante* : le client dit répondre à un constat que
+     notre dossier ne porte pas. Soit nous avons omis de le consigner, soit il corrige autre chose.
+   La plateforme **pose la question, elle ne tranche pas**.
+7. **La règle du versionnement tient ici aussi** (ADR-030) : une correction **annoncée** dans une
+   version reçue et **non prise en compte** n'a rien corrigé. La table de bascule dit de combien le
+   cumul bougerait, et **chaque ligne est un calcul réel** — la version y est prise en compte, le
+   dossier réévalué, puis l'état rétabli.
+
+**Le jeu de données** reçoit une **version 4**, « Après les constats de l'audit », avec quatre
+écritures : trois répondent à une anomalie relevée au test des écritures, la quatrième dit répondre
+à un constat absent du dossier (c'est le signal 2, présent par construction).
+
+**Mesure**, à la prise en compte de la version 4 : **3 anomalies sur 4 passent de « non corrigée » à
+« corrigée » sans aucune saisie**, pour 103 130 € ; le cumul non corrigé tombe de 123 130 € à
+26 200 €. Les 20 000 € qui restent sont le solde de la correction partielle `OD-V4-003` — 30 000 €
+passés sur un constat de 50 000 €.
+
+**Défaut corrigé au passage.** La synthèse des anomalies et la vue d'achèvement affichaient
+constaté, expliqué et résiduel sans colonne « corrigé » : le pied de table ne s'additionnait plus
+dès qu'une écriture corrigeait quelque chose (129 330 − 0 ≠ 26 200). La colonne existe maintenant
+dans les deux vues, et le harnais vérifie que le pied s'additionne.
+
+**Le noyau existe aussi côté application** (`app/src/lib/kernel/adjustments.ts`, 17 tests) : c'est
+une règle du produit, pas un effet de démonstration. Les tests couvrent la borne, le signe, la
+correction partielle, l'ordre de service, les deux signaux, et la correction annoncée qui ne corrige
+rien.

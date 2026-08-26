@@ -385,6 +385,79 @@ les champs booléens des papiers de travail étaient concernés. Le harnais de c
 que `#main` et l'avait manqué ; il balaie désormais tout le document, contrôles de formulaire
 compris. Suite applicative : 148 tests verts.
 
+## Catalogue méthodologique par cycle, en données versionnées (2026-08-26)
+
+**La méthode a quitté le code.** `methodology/` porte, à la racine du dépôt, **56 procédures sur
+15 cycles**, en JSON validé contre son schéma. Le prototype **ne le contient pas** : il l'intègre à
+la construction (`_catalogue.gen.js`, engendré, non versionné). L'application le charge typé. Les
+deux passent par **le même** chargeur — `methodology/valider.mjs` — et un catalogue invalide arrête
+l'assemblage (`exit 1`) autant qu'il fait échouer la suite. (ADR-048)
+
+**Le sens du test existe enfin.** Sept valeurs, dont les deux symétriques : `gl_vers_piece`
+(réalité) et `piece_vers_gl` (exhaustivité). Dix procédures portent le sens inverse, qui n'existait
+nulle part : recherche de passifs non enregistrés, revue des charges d'entretien, cut-off des
+réceptions, avoirs postérieurs, exhaustivité du chiffre d'affaires et des achats.
+
+**Deux défauts réels sur la procédure centrale du cycle fournisseurs**, tous deux relevés par le
+harnais et corrigés :
+
+- `FF2026-0117` **n'existait pas**. Les trois passifs omis portaient des références nommées, mais
+  la boucle du jeu de données n'engendrait que des multiples de sept ; deux sur trois étaient posés.
+  Une donnée d'essai nommée doit être posée, pas espérée.
+- **Le contrôle était une date, et il était inversé** : la règle relevait comme anomalie toute
+  facture normale du cycle (72 écarts) et jugeait conforme le passif omis (0 relevé). Le contrôle
+  n'est pas une date, c'est une **recherche** — la dette attendue au bilan de clôture y figure-t-elle ?
+  D'où la distinction, désormais portée par le catalogue, entre **ce qui se relève** (`releve_seul`,
+  jamais d'écart) et **ce qui se contrôle**. (ADR-049)
+
+Le jeu de données a été refait en conséquence : **29** décaissements postérieurs règlent une dette
+régulièrement comptabilisée, **28** sont des charges de l'exercice suivant, **3** sont des passifs
+non enregistrés. **Mesure : la procédure relève 3 écarts, exactement ces trois-là, et rien d'autre.**
+
+**Sélection exhaustive imposée** (ADR-050) : sonder une population qu'on cherche précisément à
+compléter ne prouve rien sur ce qui en est absent. Aucun tirage, l'étendue se règle par le seuil de
+remontée — celui de **signification manifeste**, pas celui de planification, parce que des dettes
+omises individuellement non significatives s'additionnent. Le garde-fou d'exhaustivité ne s'y
+applique pas : il signale qu'on teste presque tout **sans l'avoir décidé**.
+
+**Sources : 18 entrées, 18 non vérifiées.** Aucun texte normatif primaire n'est atteignable depuis
+cet environnement (legifrance, cncc, pcaobus, ifac, iaasb — tous bloqués). Aucun numéro de
+paragraphe, aucun numéro de NEP n'est cité nulle part, et chaque source porte la raison écrite de
+sa non-vérification. La méthode s'affiche là où la procédure s'exécute, sources comprises.
+
+## Ajustements et retraitements (2026-08-26)
+
+**Le rapport d'impact dit ce qui a changé ; cette section dit pourquoi, écriture par écriture.**
+Elle ne tient aucun registre : un ajustement **est** une écriture de version. Chacune déclare sa
+**nature** — écriture d'inventaire, retraitement, correction sur constat d'audit —, son
+**justificatif**, son **auteur côté client**, son impact **par poste** et **par masse**.
+
+**La réconciliation est automatique.** Une correction d'audit nomme la **pièce** qu'elle corrige ;
+l'anomalie portée sur cette pièce quitte le cumul non corrigé pour exactement ce que l'écriture
+porte — bornée à l'anomalie et à son sens. Personne ne coche « corrigée ». Une **version 4** a été
+ajoutée au jeu de données : à la prendre en compte, **trois anomalies passent de « non corrigée » à
+« corrigée » sans aucune saisie**, pour 103 130 €, et le cumul tombe de 123 130 € à 26 200 €. La
+correction **partielle** `OD-V4-003` (30 000 € sur un constat de 50 000 €) laisse ses 20 000 € au
+cumul.
+
+**Deux signaux, et ils ne disent pas la même chose.** *Anomalie qualifiée « corrigée » sans écriture
+identifiée* : le dossier affirme qu'une correction existe, aucune écriture ne la porte — le cumul
+est faux. *Écriture de correction sans anomalie correspondante* : `OD-V4-004` se présente comme
+répondant à un constat que le dossier ne porte pas — soit nous avons omis de le consigner, soit le
+client corrige autre chose. La plateforme pose la question, elle ne tranche pas.
+
+**Et la règle du versionnement tient ici aussi** : une correction **annoncée** dans une version
+reçue et non prise en compte n'a rien corrigé. La table de bascule dit de combien le cumul bougerait
+— chaque ligne est un calcul réel, la version y est prise en compte, le dossier réévalué, puis
+l'état rétabli.
+
+Le noyau de cette réconciliation existe aussi côté application (`app/src/lib/kernel/adjustments.ts`,
+17 tests) : c'est la règle du produit, pas un effet de démonstration. (ADR-051)
+
+**Vérification** : 23 harnais du prototype sans échec ni plantage (dont `cat2` 27 contrôles,
+`ajust` 24, `bandeau` 9), 177 tests applicatifs, `tsc --noEmit` propre, et la construction depuis
+le dépôt reproduit le livrable à l'octet près.
+
 ## Next actions (post-repo, founder-gated)
 
 1. **Founder review item #1 — buyer intersection** (Gate 1): does an independent

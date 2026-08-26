@@ -15,6 +15,13 @@
    Chaque écriture de version déclare sa CIBLE : elle touche la balance, le
    grand livre, ou les deux. Une écriture qui ne touche que l'un des deux crée
    — ou résorbe — un écart de rapprochement, et c'est voulu.
+
+   Chaque écriture déclare aussi sa NATURE, son JUSTIFICATIF et son AUTEUR
+   CÔTÉ CLIENT. Le rapport d'impact dit CE QUI a changé ; la section
+   « Ajustements et retraitements » dit POURQUOI, écriture par écriture. Une
+   écriture de nature « correction_audit » nomme en outre la PIÈCE qu'elle
+   corrige : c'est ce qui permet à une anomalie de passer de « non corrigée »
+   à « corrigée » sans qu'on la coche à la main.
    ═══════════════════════════════════════════════════════════════════════ */
 
 const CIBLE_LIB = {
@@ -36,19 +43,27 @@ const VERSIONS = [
     note:'Quatre écritures de clôture. L’écriture de situation est enfin reprise au fichier : '
        + 'l’écart de rapprochement de la version 1 disparaît de lui-même.',
     ecritures:[
-      { ref:'OD-V2-001', date:'2025-12-31', cible:'gl',
+      { ref:'OD-V2-001', date:'2025-12-31', cible:'gl', nature:'inventaire',
+        justif:'Journal des à-nouveaux et de situation — export du 3 mars 2026',
+        par:'Paul Nguyen (comptable général)',
         lib:'Écriture de situation — reprise au fichier des écritures',
         motif:'l’écriture figurait à la balance depuis le premier envoi ; elle est désormais au grand livre',
         lignes:[['411000', 2500000, 0], ['706000', 0, 2500000]] },
-      { ref:'OD-V2-002', date:'2025-12-31', cible:'deux',
+      { ref:'OD-V2-002', date:'2025-12-31', cible:'deux', nature:'inventaire',
+        justif:'Feuille de dépouillement de l’inventaire physique du 31/12/2025, signée',
+        par:'Paul Nguyen (comptable général)',
         lib:'Valorisation définitive des stocks de produits finis',
         motif:'inventaire physique du 31/12 dépouillé : écart de 4 % sur le stock comptable de produits finis',
         lignes:[['355000', 1520000, 0], ['713500', 0, 1520000]] },
-      { ref:'OD-V2-003', date:'2025-12-31', cible:'deux',
+      { ref:'OD-V2-003', date:'2025-12-31', cible:'deux', nature:'retraitement',
+        justif:'Note du directeur technique du 12/02/2026 sur la durée d’usage des fours',
+        par:'Delphine Martin (directrice administrative et financière)',
         lib:'Dotation complémentaire — durée d’usage des fours révisée',
         motif:'durée d’usage des fours ramenée de 12 à 10 ans : une annuité de rattrapage sur les installations techniques',
         lignes:[['681100', 4000000, 0], ['281350', 0, 4000000]] },
-      { ref:'OD-V2-004', date:'2025-12-31', cible:'deux',
+      { ref:'OD-V2-004', date:'2025-12-31', cible:'deux', nature:'inventaire',
+        justif:'Requête prud’homale notifiée le 06/02/2026 et lettre de l’avocat du 20/02/2026',
+        par:'Delphine Martin (directrice administrative et financière)',
         lib:'Provision pour litige prud’homal',
         motif:'requête notifiée en février 2026 pour un licenciement de novembre 2025 ; provision à hauteur d’une année de rémunération et des frais',
         lignes:[['681500', 5500000, 0], ['151000', 0, 5500000]] },
@@ -60,18 +75,62 @@ const VERSIONS = [
     note:'Trois corrections issues de la revue du cabinet. L’avoir n’est passé qu’à la balance : '
        + 'le fichier des écritures transmis reste celui de la version 2, ce qui rouvre un écart.',
     ecritures:[
-      { ref:'OD-V3-001', date:'2025-12-31', cible:'deux',
+      { ref:'OD-V3-001', date:'2025-12-31', cible:'deux', nature:'retraitement',
+        justif:'Contrat de licence pluriannuel du 04/04/2025 et facture FF2025-2211',
+        par:'Julien Lefèvre (expert-comptable)',
         lib:'Immobilisation d’une licence logicielle comptabilisée en honoraires',
         motif:'licence pluriannuelle portée en honoraires de conseil ; elle répond à la définition d’une immobilisation incorporelle',
         lignes:[['205000', 1800000, 0], ['622600', 0, 1800000]] },
-      { ref:'OD-V3-002', date:'2025-12-31', cible:'tb',
+      { ref:'OD-V3-002', date:'2025-12-31', cible:'tb', nature:'retraitement',
+        justif:'Avoir AV2025-0118 du 19/12/2025, retrouvé au parapheur du service commercial',
+        par:'Julien Lefèvre (expert-comptable)',
         lib:'Avoir client de fin d’exercice non comptabilisé',
         motif:'avoir accordé en décembre et retrouvé lors de la revue ; passé à la balance, le fichier des écritures transmis lui est antérieur',
         lignes:[['709000', 620000, 0], ['411000', 0, 620000]] },
-      { ref:'OD-V3-003', date:'2025-12-31', cible:'deux',
+      { ref:'OD-V3-003', date:'2025-12-31', cible:'deux', nature:'retraitement',
+        justif:'Rapprochement du compte 401 du fournisseur, édition du 10/03/2026',
+        par:'Julien Lefèvre (expert-comptable)',
         lib:'Extourne d’une facture fournisseur comptabilisée deux fois',
         motif:'double intégration relevée par le cabinet sur les consommables',
         lignes:[['401000', 1250000, 0], ['602100', 0, 1250000]] },
+    ] },
+
+  { n:4, date:'2026-03-14', lib:'Après les constats de l’audit',
+    fichiers:'balance_2025_v4.csv · 999888777FEC20251231_v3.txt',
+    par:'Delphine Martin',
+    note:'Quatre écritures passées par le client APRÈS communication de nos constats. Trois '
+       + 'répondent à une anomalie relevée au test des écritures ; la quatrième dit répondre à '
+       + 'un constat que notre dossier ne porte pas. La réconciliation le signale sans trancher.',
+    ecritures:[
+      { ref:'OD-V4-001', date:'2025-12-31', cible:'deux', nature:'correction_audit',
+        repond:'FA2025-0702',
+        justif:'Extrait du grand livre 411/701 montrant la double intégration, et notre constat transmis le 13/03/2026',
+        par:'Paul Nguyen (comptable général)',
+        lib:'Extourne de la facture FA2025-0702 comptabilisée deux fois',
+        motif:'anomalie relevée au test des écritures : la même facture est intégrée deux fois, en juin et en juillet',
+        lignes:[['701000', 3680000, 0], ['411000', 0, 3680000]] },
+      { ref:'OD-V4-002', date:'2025-12-31', cible:'deux', nature:'correction_audit',
+        repond:'FA2025-0706',
+        justif:'Facture FA2025-0706 et bon de livraison du 08/01/2026',
+        par:'Paul Nguyen (comptable général)',
+        lib:'Contre-passation d’un produit de 2026 rattaché à 2025',
+        motif:'anomalie relevée au test des écritures : facture comptabilisée au 31/12 pour une livraison de janvier',
+        lignes:[['701000', 3633000, 0], ['411000', 0, 3633000]] },
+      { ref:'OD-V4-003', date:'2025-12-31', cible:'deux', nature:'correction_audit',
+        repond:'OD-2025-089',
+        justif:'Contrat de prestation du 02/11/2025 et planning d’intervention',
+        par:'Delphine Martin (directrice administrative et financière)',
+        lib:'Produit constaté d’avance sur la prestation OD-2025-089 — correction PARTIELLE',
+        motif:'le client ne diffère que la part de la prestation exécutée en 2026 : 30 000 € sur les 50 000 € '
+            + 'comptabilisés en produit, la part de 2025 étant selon lui acquise. Notre constat portait sur la totalité.',
+        lignes:[['706000', 3000000, 0], ['487000', 0, 3000000]] },
+      { ref:'OD-V4-004', date:'2025-12-31', cible:'deux', nature:'correction_audit',
+        repond:'FF2025-0355',
+        justif:'Courriel du fournisseur du 11/03/2026 annulant la facture',
+        par:'Paul Nguyen (comptable général)',
+        lib:'Annulation d’une facture d’honoraires de conseil non due',
+        motif:'présentée comme une réponse à un constat d’audit — notre dossier ne porte aucune anomalie sur cette pièce',
+        lignes:[['401000', 210000, 0], ['622600', 0, 210000]] },
     ] },
 ];
 
@@ -79,6 +138,7 @@ const VERSIONS = [
 const COMPTES_NOUVEAUX = {
   '713500':'Variation des stocks de produits finis',
   '681500':'Dotations aux provisions pour risques',
+  '487000':'Produits constatés d’avance',
 };
 
 function versionsPrises(){ return VERSIONS.filter(v => v.n <= S.version); }

@@ -255,6 +255,8 @@ function vueAchAnomalies(){
   const resolues = retenues.filter(x => x.acquis);
   const nonCorr = retenues.filter(x => x.montant !== 0);
   const cumul = retenues.reduce((t, x) => t + x.montant, 0);
+  const corrige = retenues.reduce((t, x) => t + (x.corrige || 0), 0);
+  const parEcriture = retenues.filter(x => (x.corrigePar || []).length);
   const depasse = Math.abs(cumul) > s.M;
   const opinions = [
     { v:'certification', lib:'Certification sans réserve' },
@@ -266,24 +268,35 @@ function vueAchAnomalies(){
   return entete('Anomalies non corrigées et incidence sur l’opinion', 'évaluation finale') +
     blk('Anomalies au-dessus du seuil de remontée', retenues.length + ' — dont ' + nonCorr.length + ' résiduelles',
       table([{k:'src',t:'Origine',cls:'wrapcell'},{k:'lib',t:'Anomalie',cls:'wrapcell'},{k:'c',t:'Constaté',n:1},
-             {k:'e',t:'Expliqué',n:1},{k:'m',t:'Résiduel',n:1},{k:'q',t:'Qualification',cls:'wrapcell'},{k:'v',t:''}],
+             {k:'e',t:'Expliqué',n:1},{k:'x',t:'Corrigé',n:1},{k:'m',t:'Résiduel',n:1},
+             {k:'q',t:'Qualification',cls:'wrapcell'},{k:'v',t:''}],
         retenues.map(x => ({
           src:esc(x.src), lib:esc(x.lib), c:eur(x.constate),
           e:x.explique ? eur(x.explique) : '<span class="smallcaps">—</span>',
+          x:x.corrige ? eur(x.corrige) : '<span class="smallcaps">—</span>',
           m:x.montant ? eur(x.montant) : '<span class="smallcaps">—</span>',
-          q:x.acquis ? `${esc(DISPOSITIONS[x.res.disposition].lib)}
+          q:(x.corrigePar || []).length
+            ? `corrigée par écriture<div class="smallcaps">${esc(x.corrigePar.map(y => 'v' + y.v + ' ' + y.ref).join(', '))}${x.montant ? ' — partiellement' : ''}</div>`
+            : x.acquis ? `${esc(DISPOSITIONS[x.res.disposition].lib)}
               <div class="smallcaps">${esc(USERS[x.res.par].nom)}, ${horo(x.res.t)}</div>`
             : `<span class="pill bad">non résolue</span>`,
           v:`<button class="btn mini sec" data-goecart="${esc(x.vue)}">voir</button>`,
         })), { foot:{ src:'Cumul non corrigé', c:eur(retenues.reduce((t, x) => t + x.constate, 0)),
-                      e:eur(retenues.reduce((t, x) => t + x.explique, 0)), m:eur(cumul) } }) +
+                      e:eur(retenues.reduce((t, x) => t + x.explique, 0)),
+                      x:eur(corrige), m:eur(cumul) } }) +
       `<p class="note">Il n’y a pas de case « corrigée » à cocher ici : une anomalie quitte le cumul par une
       résolution documentée — explication reçue, conclusion de l’auditeur, qualification, lien vers la pièce ou
-      l’écriture qui corrobore, auteur et date — enregistrée là où l’écart est né. Une case à cocher aurait fait
-      disparaître un montant du cumul sans que rien ne l’explique.</p>`) +
+      l’écriture qui corrobore, auteur et date — enregistrée là où l’écart est né, ou par une <b>écriture de
+      correction</b> passée dans une version prise en compte et nommant la pièce qu’elle corrige. Une case à
+      cocher aurait fait disparaître un montant du cumul sans que rien ne le porte.</p>
+      ${parEcriture.length ? `<div class="callout"><b>${parEcriture.length} anomalie(s) corrigée(s) par une
+        écriture de version, pour ${eur(corrige)}.</b> La bascule est automatique et bornée à l’anomalie :
+        le détail, écriture par écriture, avec les deux signaux de réconciliation, est dans
+        <b>Ajustements et retraitements</b>.</div>` : ''}`) +
     blk('Incidence sur l’opinion', depasse ? 'le cumul dépasse le seuil de signification' : 'le cumul reste sous le seuil',
       `<div class="kv">
         <span class="k">Cumul non corrigé</span><span class="v">${eur(cumul)}</span>
+        <span class="k">Corrigé par écriture de version</span><span class="v">${eur(corrige)}</span>
         <span class="k">Seuil de signification</span><span class="v">${eur(s.M)}</span>
         <span class="k">Rapport au seuil</span><span class="v">${pct(Math.abs(cumul) / s.M, 0)}</span>
         <span class="k">Résolues et corroborées</span><span class="v">${resolues.length} — ${eur(retenues.reduce((t, x) => t + x.explique, 0))}</span>
