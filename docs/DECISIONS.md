@@ -1329,3 +1329,58 @@ Les trois versions restent équilibrées, balance et grand livre, zéro écritur
 **Coût** : rapport d'impact 88 ms au premier rendu, 40 ms sans cache, 17 ms avec ; bascule de
 version 49 ms. Le cache est clé sur la version **et** sur l'état saisi qu'il lit, plutôt que sur
 un vidage posé au bon endroit et oublié au prochain.
+
+---
+
+## ADR-044 — Le test des écritures : des critères réglables, et surtout un entonnoir
+
+**Contexte** : six critères en dur, sans un seul paramètre, et un compteur unique — « 590
+écritures retenues ». Le fondateur : *« 457 écritures en journal d'OD ne veut rien dire
+isolément. »* Un nombre isolé ne dit ni ce que le critère ajoute aux autres, ni combien
+d'écritures plusieurs signaux désignent ensemble.
+
+**Décision** :
+
+1. **Un critère est un objet** : identité, ce qu'il cherche en une phrase, ses paramètres
+   déclarés, son prédicat. Seize au catalogue, dont dix paramétrés. On les active, on les règle,
+   on les désactive, on en crée.
+2. **Créer un critère, ce n'est pas écrire du code** : cinq *formes* instanciables — montant entre
+   deux bornes, préfixe de compte, journal, libellé contenant, auteur de la saisie. C'est ce qu'un
+   auditeur ajoute réellement en cours de mission.
+3. **Trois modes de combinaison** : au moins un · au moins N · expression explicite (ET, OU, NON,
+   parenthèses sur les codes de critères). L'évaluateur **refuse** toute expression qu'il ne
+   comprend pas — code inconnu, opérateur en fin d'expression, parenthèse non fermée, deux
+   opérateurs qui se suivent. Une expression mal formée qui s'évaluerait à « faux » donnerait une
+   sélection vide et d'apparence normale : c'est le pire des deux résultats possibles.
+4. **L'entonnoir** : population de départ, puis pour chaque critère ce qu'il retient **seul** et ce
+   qu'il **ajoute** que les précédents n'avaient pas désigné, le cumul, la masse. Puis la
+   distribution : combien d'écritures remplissent 1, 2, 3… critères, et combien en remplissent au
+   moins autant. Deux diagnostics distincts sont signalés : les critères qui ne retiennent
+   **rien**, et ceux qui retiennent mais **n'ajoutent rien**.
+5. **Modèles réutilisables** : trois livrés (paramétrage courant, écritures de clôture, ciblé
+   manipulation du résultat), plus ceux que l'auditeur enregistre. Un modèle sans nom ou dont le
+   nom existe déjà est refusé.
+
+**Le défaut exige deux critères — et c'est une décision de méthode, pas un réglage de confort.**
+« Montant supérieur au seuil de planification » retient à lui seul **441 écritures sur 1 602** :
+sur une entreprise dont la facture médiane approche le seuil de planification, ce critère décrit
+un tiers du grand livre et ne désigne rien. Avec « au moins un », la sélection est de 590
+écritures — 37 % de la population, illisible. Avec « au moins deux » : **97 écritures, 6,1 % de
+la population et 14,2 % de la masse**. Le nombre est une conséquence de la règle, pas une cible,
+et l'entonnoir montre ce que donnerait chaque valeur de N.
+
+**Deux critères sont catalogués sans être exécutables, et le disent** :
+
+- **Saisie hors heures ouvrées** — le fichier des écritures comptables ne porte que la *date* de
+  validation (champ `ValidDate`), jamais l'heure. Ce critère exige le journal applicatif de l'ERP.
+  Il est catalogué et désactivé plutôt que fabriqué : une heure inventée ferait un critère qui
+  trouve toujours quelque chose.
+- **Jour férié — [UNVERIFIED]** — la liste des fêtes légales relève du code du travail,
+  art. L. 3133-1. Le texte primaire n'a **pas** pu être atteint : l'accès à legifrance.gouv.fr est
+  bloqué par le proxy réseau de cet environnement. Le critère fonctionne, sa liste est marquée
+  UNVERIFIED dans le code **et à l'écran**, et les dates mobiles de 2025 sont calculées, pas
+  recopiées.
+
+**Constaté sur le jeu de données** : « Référence de pièce absente » ne retient aucune écriture —
+le générateur remplit toujours le champ. Le signalement le dit, plutôt que de laisser croire à un
+critère efficace.

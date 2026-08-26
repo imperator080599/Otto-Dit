@@ -251,6 +251,17 @@ input.cell.txt{text-align:left;font-family:var(--sans)}
 .nl.q{border-left:2px solid var(--line)}
 .nl.n1{border-left:2px solid var(--line)}
 .nl.clos{opacity:.55}
+/* fiche de critère du test des écritures : la case, ce qu'il cherche, ses réglages */
+.crits{display:grid;gap:var(--s2);grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.crit{border:1px solid var(--line);border-radius:var(--r);padding:var(--s2) var(--s3);background:var(--panel-2)}
+.crit.off{opacity:.6}
+.crit .m{font-size:var(--t2);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
+.crit .m .cnt{margin-left:auto;font-family:var(--mono);font-size:var(--t1);color:var(--ink-3)}
+.crit .txt{margin:var(--s1) 0 var(--s2);font-size:var(--t1);color:var(--ink-2);line-height:1.45}
+.crit .row{gap:var(--s2)}
+.prm{display:flex;flex-direction:column;gap:2px;font-size:var(--t1);color:var(--ink-3)}
+.prm input{width:120px}
+.prm input.txt{width:auto;min-width:180px}
 .nl .m{font-size:var(--t1);color:var(--ink-3);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
 .nl .txt{margin:var(--s1) 0;font-size:var(--t2);color:var(--ink)}
 .nl .rep{margin:var(--s1) 0 0 var(--s3);padding-left:var(--s2);border-left:1px solid var(--line);font-size:var(--t2)}

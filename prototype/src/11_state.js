@@ -37,8 +37,9 @@ const S = {
   scopingOverride:{},                       // code poste -> 'in' | 'out'
   scopingMotif:{},
   arMontant:null, arPct:10,                 // null = suit le seuil de planification
-  jeCrit:{ weekend:true, rond:true, od:false, valid:true, direction:true, gros:true },
-  jeSansAN:true,
+  jeCrit:{ rond:true, weekend:true, apres_cloture:true, direction:true, gros:true, sans_piece:true },
+  jeParams:{}, jeCrees:[], jeModeles:[], jeCombi:{ mode:'auN', n:2, expr:'' },
+  jeTout:false, jeErreur:'', jeSansAN:true,
   sections:{},                              // code poste -> casier de section (voir sec())
   requetes:[], seqReq:0,
   notes:[], seqNote:0,

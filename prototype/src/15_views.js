@@ -206,38 +206,6 @@ function vueScoping(){
         des sections apparaissent et disparaissent.</div>`);
 }
 
-function vueJE(){
-  const s = seuils(), C = critereJE(s.PM);
-  const actifs = Object.keys(C).filter(k => S.jeCrit[k]);
-  const pop = lg().entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
-  const sel = pop.filter(e => actifs.some(k => C[k].f(e)));
-  const rows = sel.slice(0, 200).map(e => ({
-    num:`<span class="mono">${e.num}</span>`, d:`<span class="mono">${frDate(e.date)}</span>`, j:e.journal,
-    l:esc(e.libelle), m:eur(e.lines[0].debit || e.lines[0].credit), s:esc(e.saisiePar),
-    mo:actifs.filter(k => C[k].f(e)).map(k => `<span class="tag">${esc(C[k].lib)}</span>`).join(' '),
-    nt:boutonNote('JE', 'je', e.num, 'Écriture ' + e.num),
-  }));
-  return entete('Test des écritures', 'transverse : il porte sur tout le grand livre, pas sur un poste') +
-    cite('Un journal entry testing sem-automatisé, un agent IA pré-rempli des tests qui vont faire ressortir des écritures dont il faudra demander les justificatifs au client, un être humain auditeur doit venir valider les paramètres puis l’agent IA sélectionne automatiquement sur le GL les écritures.') +
-    blk('Critères', actifs.length + ' actif(s)',
-      `<div class="row">${Object.entries(C).map(([k, v]) => `
-        <label class="chk"><input type="checkbox" data-je="${k}" ${S.jeCrit[k] ? 'checked' : ''}>
-          <span>${esc(v.lib)}</span><span class="cnt">${pop.filter(v.f).length}</span></label>`).join('')}
-        <label class="chk"><input type="checkbox" id="je-an" ${S.jeSansAN ? 'checked' : ''}>
-          <span>exclure les à-nouveaux</span><span class="cnt">${lg().entries.filter(e => e.journal === 'AN').length}</span></label>
-      </div>
-      <div class="callout"><b>${sel.length} écriture(s) retenue(s)</b> sur ${pop.length}
-        (${pct(sel.length / pop.length, 1)} de la population) — cumul débit
-        ${eur(sel.reduce((a, e) => a + (e.lines[0].debit || e.lines[0].credit), 0))}.
-        Le critère « montant supérieur au seuil de planification » suit le curseur de matérialité.
-        <span class="tag det">déterministe</span> Ce sont des prédicats, pas un agent : week-end, montant rond,
-        journal, date de validation, auteur de la saisie.</div>` +
-      table([{k:'num',t:'Écriture'},{k:'d',t:'Date'},{k:'j',t:'Jrn'},{k:'l',t:'Libellé',cls:'wrapcell'},
-             {k:'m',t:'Montant',n:1},{k:'s',t:'Saisie par'},{k:'mo',t:'Motif de sélection',cls:'wrapcell'},{k:'nt',t:''}], rows) +
-      (sel.length > 200 ? `<p class="note">200 premières lignes affichées sur ${sel.length} retenues — le compte et le cumul ci-dessus portent bien sur la totalité.</p>` : '')) +
-    blocEcartsHors('je');
-}
-
 function vueCirc(){
   const banques = exhaustiviteBanques(), avocats = exhaustiviteAvocats();
   const bManq = banques.filter(x => !x.declare), aManq = avocats.filter(x => !x.declare);

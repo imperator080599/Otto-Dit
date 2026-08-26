@@ -392,6 +392,17 @@ document.addEventListener('input', e => {
   if (t.id === 'ar-pct'){ S.arPct = parseFloat(t.value) || 0; return renderMainDiff(); }
   if (t.id === 'sec-concl' && p){ sec(p.code).conclusion = t.value; return renderMainDiff(); }
   if (t.id === 'pp-adr'){ S.portail.adresse = t.value; return; }
+  if (d.jep !== undefined){
+    const [code, pcode, type] = d.jep.split('|');
+    S.jeParams[code] = S.jeParams[code] || {};
+    S.jeParams[code][pcode] = type === 'euros'
+      ? Math.round((parseFloat(String(t.value).replace(/\s/g, '').replace(',', '.')) || 0) * 100)
+      : type === 'entier' || type === 'heure' ? (parseInt(t.value, 10) || 0) : t.value;
+    _entCache.clear();
+    return renderMainDiff();
+  }
+  if (t.id === 'je-n'){ S.jeCombi = { ...combiJE(), n:Math.max(1, parseInt(t.value, 10) || 1) }; _entCache.clear(); return renderMainDiff(); }
+  if (t.id === 'je-expr'){ S.jeCombi = { ...combiJE(), expr:t.value }; _entCache.clear(); return renderMainDiff(); }
   if (t.id === 'f-q'){ S.filtres.q = t.value; return renderMainDiff(); }
   if (t.id === 'ft-q'){ S.filtreTrav.q = t.value; return renderMainDiff(); }
   const hrs = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 4) / 4);
@@ -453,8 +464,11 @@ document.addEventListener('change', e => {
     logEvent('opinion arrêtée', 'Altiverre SAS FY2025', t.value); return renderMain(); }
   if (d.rdisp !== undefined){ const x = resolDeCle(d.rdisp); if (x) x.r.disposition = t.value; return renderMain(); }
   if (d.rpiece !== undefined){ const x = resolDeCle(d.rpiece); if (x) x.r.corrobPiece = t.value; return renderMain(); }
-  if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; return renderMain(); }
-  if (t.id === 'je-an'){ S.jeSansAN = t.checked; return renderMain(); }
+  if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; _entCache.clear(); return renderMain(); }
+  if (t.id === 'je-mode'){ S.jeCombi = { ...combiJE(), mode:t.value }; _entCache.clear(); return renderMain(); }
+  if (t.id === 'je-modele' && t.value){ appliquerModele(t.value); return renderMain(); }
+  if (t.id === 'je-forme') return;
+  if (t.id === 'je-an'){ S.jeSansAN = t.checked; _entCache.clear(); _jeStat.clear(); return renderMain(); }
   if (d.aff !== undefined){
     const [code, role] = d.aff.split('|');
     const r = affecter(code, role, t.value);
@@ -703,6 +717,20 @@ document.addEventListener('click', e => {
     const [code, st] = d.tstat.split('|');
     const r = changerStatut(code, st);
     S.affErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (t.id === 'je-tout'){ S.jeTout = !S.jeTout; return renderMain(); }
+  if (t.id === 'je-creer'){
+    const forme = document.getElementById('je-forme').value;
+    const nom = document.getElementById('je-cnom').value;
+    const r = creerCritereJE(forme, nom);
+    S.jeErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (d.jesup){ supprimerCritereJE(d.jesup); return renderMain(); }
+  if (t.id === 'je-msave'){
+    const r = enregistrerModele(document.getElementById('je-mnom').value);
+    S.jeErreur = r.ok ? '' : r.why;
     return renderMain();
   }
   if (d.vers){

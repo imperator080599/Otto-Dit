@@ -234,8 +234,8 @@ leur pièce quelle que soit leur cause. Chaque écart déclare désormais sa nat
 sa bande (arrondi ≤ 1 %, régularisation 2–12 %, omission 10–40 %), vérifiée à l'écran. Les
 écarts dépassant le seuil de remontée passent de 1 à 6 — **constaté, pas visé**.
 
-**Reste devant** : point 3 (critères du test des écritures paramétrables et entonnoir), point 1
-(répartition proposée puis attribution en lot), puis E, B, D et le lot 2 initial.
+**Reste devant** : point 1 (répartition proposée puis attribution en lot), puis E, B, D et le
+lot 2 initial.
 
 ## Versionnement de la balance et du grand livre (2026-08-26, point 2)
 
@@ -263,6 +263,27 @@ v2→v3 ils remontent à 34 000/25 000/1 700, **Immobilisations incorporelles en
 à « à reconfirmer » avec son motif, sans que le statut stocké soit modifié — revenir à la version
 d'exécution le rend à son état. Un visa posé sur une version antérieure est signalé et remis en
 cause. Chaque papier cite sa version et son empreinte ; l'export les porte en tête.
+
+## Critères du test des écritures et entonnoir (2026-08-26, point 3)
+
+`prototype/otto-prototype.html` — ADR-044.
+
+Seize critères au catalogue, dix paramétrés, activables et désactivables ; cinq formes permettent
+d'en **créer** sans écrire de code ; trois modes de combinaison (au moins un · au moins N ·
+expression ET/OU/NON avec parenthèses, toute expression mal formée étant refusée et non évaluée
+à « faux ») ; modèles réutilisables, trois livrés.
+
+**L'entonnoir** montre, pour chaque critère, ce qu'il retient seul et ce qu'il **ajoute** que les
+précédents n'avaient pas vu, puis la distribution des écritures par nombre de critères remplis.
+Le paramétrage livré exige **deux critères** : « montant supérieur au seuil de planification »
+retient à lui seul 441 écritures sur 1 602 et ne désigne donc rien. Résultat : **97 écritures,
+6,1 % de la population, 14,2 % de la masse** — conséquence de la règle, pas cible.
+
+**Deux critères catalogués et non exécutables, qui le disent** : « saisie hors heures ouvrées »
+(le FEC ne porte que la date de validation, jamais l'heure — il faut le journal de l'ERP) et
+« jour férié », dont la liste est marquée **UNVERIFIED** dans le code et à l'écran : le texte
+primaire (C. trav., art. L. 3133-1) n'a pas pu être atteint, legifrance.gouv.fr étant bloqué par
+le proxy réseau de cet environnement.
 
 ## Next actions (post-repo, founder-gated)
 
