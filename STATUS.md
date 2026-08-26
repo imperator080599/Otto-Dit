@@ -234,8 +234,8 @@ leur pièce quelle que soit leur cause. Chaque écart déclare désormais sa nat
 sa bande (arrondi ≤ 1 %, régularisation 2–12 %, omission 10–40 %), vérifiée à l'écran. Les
 écarts dépassant le seuil de remontée passent de 1 à 6 — **constaté, pas visé**.
 
-**Reste devant** : point 1 (répartition proposée puis attribution en lot), puis E, B, D et le
-lot 2 initial.
+**Reste devant** : E (balances auxiliaires), B (contrôle interne et processus), D (résiduel
+qualitatif), puis le lot 2 initial (sectoriel, parties liées, LCB-FT).
 
 ## Versionnement de la balance et du grand livre (2026-08-26, point 2)
 
@@ -284,6 +284,26 @@ retient à lui seul 441 écritures sur 1 602 et ne désigne donc rien. Résultat
 « jour férié », dont la liste est marquée **UNVERIFIED** dans le code et à l'écran : le texte
 primaire (C. trav., art. L. 3133-1) n'a pas pu être atteint, legifrance.gouv.fr étant bloqué par
 le proxy réseau de cet environnement.
+
+## Répartition proposée et attribution en lot (2026-08-26, point 1)
+
+`prototype/otto-prototype.html` — ADR-045.
+
+Le système **propose**, l'auditeur **corrige**. Huit cas de dotation par grade, affichés avec le
+nombre de travaux que chacun attrape ; à grade égal, le travail va à la personne la moins chargée,
+les travaux étant parcourus dans un ordre fixe — la proposition est rejouable à l'identique.
+**Rien n'est écrit tant que personne n'accepte** : la proposition s'affiche à côté de l'affectation
+réelle, jamais à sa place, et une ligne corrigée est marquée « corrigé ». L'équipe passe de trois
+à six personnes (deux seniors, deux superviseurs) : sans cela l'équilibrage est décoratif.
+
+**Attribution en lot** : case par ligne, « tout sélectionner » sur le résultat filtré, préparateur
+ou réviseur appliqué en une action — chaque affectation passant par la même fonction que
+l'affectation unitaire, un lot qui violerait la règle est refusé travail par travail.
+
+**Ce que la proposition révèle, et qu'on n'a pas corrigé** : senior 83 % du budget de préparation,
+l'associée revoit 74 travaux sur 112. Ce n'est pas la règle de dotation qui est fausse — 65
+procédures répondent à une assertion évaluée « élevé ». Le levier est l'évaluation du risque, et
+l'écran le dit au lieu d'aplatir les heures.
 
 ## Next actions (post-repo, founder-gated)
 

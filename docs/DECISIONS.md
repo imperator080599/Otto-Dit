@@ -1384,3 +1384,45 @@ et l'entonnoir montre ce que donnerait chaque valeur de N.
 **Constaté sur le jeu de données** : « Référence de pièce absente » ne retient aucune écriture —
 le générateur remplit toujours le champ. Le signalement le dit, plutôt que de laisser croire à un
 critère efficace.
+
+---
+
+## ADR-045 — La meilleure attribution en lot est celle qu'on n'a pas à faire
+
+**Contexte** : le programme de travail exigeait de choisir un préparateur et un réviseur dans deux
+listes déroulantes, cent douze fois. Un bouton « affecter selon la règle » existait, mais la règle
+tenait en trois lignes de code — tout au préparateur unique, la revue à la superviseure ou à
+l'associée selon le niveau — et n'était affichée nulle part.
+
+**Décision** : le système **propose**, l'auditeur **corrige**. Deux règles se composent.
+
+1. **QUI, par grade** — huit cas, affichés en tableau avec le nombre de travaux que chacun attrape.
+   Ce que le travail demande, pas qui est disponible : un travail de niveau 2 se prépare au niveau
+   superviseur et se revoit par l'associée ; une procédure répondant à une assertion « élevé » se
+   prépare au niveau senior ; une procédure sans sélection est un travail d'assistant.
+2. **LEQUEL, à grade égal** — celui dont la charge est la plus faible, les travaux étant parcourus
+   dans un ordre fixe (phase puis code). La proposition est donc **rejouable à l'identique**, et
+   l'équilibre des heures en découle au lieu d'être visé. La revue est comptée pour un cinquième
+   de la préparation.
+
+**Rien n'est écrit tant que personne n'accepte.** La proposition s'affiche dans une colonne, à côté
+de l'affectation réelle, jamais à sa place — la règle de l'ADR-039 appliquée à l'affectation. Une
+ligne corrigée à la main est marquée « corrigé » : la proposition ne change pas, l'écart reste
+visible, c'est la décision de l'auditeur.
+
+**L'équipe passe de trois à six personnes** — deux seniors, deux superviseurs — parce qu'avec un
+seul senior et un seul superviseur la question de l'équilibrage ne se pose pas et la règle est
+décorative.
+
+**Attribution en lot** : case à cocher par ligne, « tout sélectionner » sur le **résultat filtré**,
+puis un préparateur ou un réviseur appliqué en une action. Chaque affectation passe par la même
+fonction que l'affectation unitaire : un lot qui violerait la règle est refusé travail par travail
+et le nombre de refus est affiché, plutôt que forcé en masse.
+
+**Ce que la proposition révèle de la mission, et qu'on n'a pas corrigé.** Le bloc affiche la part
+du budget par grade : **senior 83 %, assistant 9 %, superviseur 8 %**, et l'associée revoit
+**74 travaux sur 112**. Ce n'est pas un défaut de la règle de dotation : 65 procédures de section
+répondent à une assertion évaluée « élevé », soit 55 % du budget, et une telle assertion se prépare
+au niveau senior et se revoit par l'associée. Le levier est l'évaluation du risque, pas le grade
+inscrit dans la règle — et l'écran le dit au lieu d'aplatir les heures pour faire joli. Deux cas de
+la règle ne s'appliquent à aucun travail de cette mission ; ils sont signalés comme tels.

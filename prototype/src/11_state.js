@@ -4,11 +4,19 @@
    rejoue exactement la même chronologie — c'est la condition pour qu'un
    horodatage soit vérifiable dans un prototype sans base de données.
    ═══════════════════════════════════════════════════════════════════════ */
+/* L'équipe. Le GRADE dit ce qu'on sait faire, le RÔLE ce qu'on a le droit de
+   faire. La répartition proposée s'appuie sur le premier, les règles de visa
+   sur le second. Deux seniors et deux superviseurs : sans cela, la question
+   de l'équilibrage de charge ne se pose pas et la règle est décorative. */
 const USERS = {
+  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit' },
   karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit' },
+  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit' },
   lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit' },
+  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit' },
   claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit' },
 };
+const ORDRE_GRADE = ['assistant', 'senior', 'superviseur', 'associée'];
 const ROLE_LIB = { preparateur:'préparateur', reviseur:'réviseur', associe:'associé signataire' };
 /** Seuls le réviseur et l'associé peuvent clore une note — et jamais la leur. */
 function peutClore(uid, note){
@@ -49,7 +57,7 @@ const S = {
   // jamais un arbitrage.
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
-  travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
+  selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
   impactDe:null, impactVers:null, balTout:false,

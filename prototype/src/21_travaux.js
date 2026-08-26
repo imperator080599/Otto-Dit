@@ -199,8 +199,13 @@ function vueProgramme(){
     && (!f.q || (t.code + ' ' + t.intitule + ' ' + (t.posteLib || '')).toLowerCase().includes(f.q.toLowerCase())));
   const rows = vus.map(t => {
     const a = ligneAffectation(t);
+    const pr = propositionDe(t.code), ec = ecartProposition(t);
     return {
+      sel:`<label class="chk"><input type="checkbox" data-selt="${t.code}" ${S.selTrav.includes(t.code) ? 'checked' : ''}><span></span></label>`,
       c:`<span class="mono">${t.code}</span>`,
+      pp:pr ? `<span class="smallcaps">${esc(pr.prep ? USERS[pr.prep].nom : '—')}</span>
+              <div class="smallcaps">${esc(pr.rev ? USERS[pr.rev].nom : '—')}</div>`
+            : '<span class="smallcaps">—</span>',
       n:`<span class="tag">${esc(NATURE_TRAVAIL[t.nature])}</span>`,
       i:`<b>${esc(t.intitule)}</b>${t.posteLib ? '<div class="smallcaps">' + esc(t.posteLib) + '</div>' : ''}`,
       r:esc(PHASES.find(x => x.id === t.phase).lib),
@@ -211,6 +216,7 @@ function vueProgramme(){
       hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
       hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
       s:boutonsStatut(t),
+      ec:ec ? '<span class="pill warn">corrigé</span>' : '<span class="smallcaps">—</span>',
       w:t.wpRef ? `<span class="mono">${esc(t.wpRef)}</span>` : '<span class="smallcaps">—</span>',
       g:t.vue ? `<button class="btn mini sec" data-gotrav="${esc(t.vue)}">ouvrir</button>` : '',
     };
@@ -231,25 +237,28 @@ function vueProgramme(){
           <input type="text" id="ft-q" value="${esc(f.q)}" placeholder="code, intitulé, poste"></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="ft-imprime">imprimer</button></div>
       </div>`) +
-    blk('Règles d’affectation', 'elles découlent du risque',
+    blk('Règles de revue', 'elles découlent du risque',
       table([{k:'s',t:'Cas',cls:'wrapcell'},{k:'n',t:'Revue exigée'}],
         REGLE_REVUE.map(r => ({ s:esc(r.si), n:esc(NIVEAU_REVUE_LIB[r.niveau]) }))) +
       `<p class="note">Le préparateur et le réviseur sont obligatoirement deux personnes différentes.
       Un travail de niveau 2 ne peut être revu que par un associé. Un travail passe « achevé » par son
-      préparateur seul, « revu » par son réviseur seul.</p>
-      <div class="row"><button class="btn sec" id="tv-auto">affecter les travaux non affectés selon la règle</button>
-        ${S.affErreur ? `<span class="pill bad">${esc(S.affErreur)}</span>` : ''}</div>`) +
+      préparateur seul, « revu » par son réviseur seul.</p>`) +
+    blocRepartition(vus) +
     blk('Barème de budget', 'base + heures par élément sélectionné',
       table([{k:'l',t:'Nature',cls:'wrapcell'},{k:'b',t:'Base',n:1},{k:'p',t:'Par élément',n:1}],
         BAREME_HEURES.map(b => ({ l:esc(b.lib), b:hFmt(b.base), p:b.parElement ? hFmt(b.parElement) : '—' }))) +
       `<p class="note">Le budget proposé par le barème est modifiable travail par travail : c’est une décision de
       chef de mission, pas une constante.</p>`) +
     blk('Travaux', vus.length + ' · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
-      table([{k:'c',t:'Code'},{k:'n',t:'Nature'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'r',t:'Phase'},
-             {k:'as',t:'Assertion'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},{k:'nr',t:'Revue'},
+      barreSelection(vus) +
+      table([{k:'sel',t:''},{k:'c',t:'Code'},{k:'n',t:'Nature'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'r',t:'Phase'},
+             {k:'as',t:'Assertion'},{k:'pp',t:'Proposé',cls:'wrapcell'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},
+             {k:'ec',t:''},{k:'nr',t:'Revue'},
              {k:'e',t:'Échéance'},{k:'hb',t:'Budget',n:1},{k:'hr',t:'Réalisé',n:1},
              {k:'s',t:'Statut',cls:'wrapcell'},{k:'w',t:'Papier'},{k:'g',t:''}], rows,
-        { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } }));
+        { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } }) +
+      `<p class="note">La colonne « proposé » porte le préparateur puis le réviseur que la règle désigne.
+      Corriger une ligne ne change pas la proposition : l’écart reste visible, c’est votre décision.</p>`);
 }
 
 /* ═══ 35. VUE GLOBALE DE LA MISSION ════════════════════════════════════════

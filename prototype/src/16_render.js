@@ -464,6 +464,17 @@ document.addEventListener('change', e => {
     logEvent('opinion arrêtée', 'Altiverre SAS FY2025', t.value); return renderMain(); }
   if (d.rdisp !== undefined){ const x = resolDeCle(d.rdisp); if (x) x.r.disposition = t.value; return renderMain(); }
   if (d.rpiece !== undefined){ const x = resolDeCle(d.rpiece); if (x) x.r.corrobPiece = t.value; return renderMain(); }
+  if (d.selt !== undefined){
+    S.selTrav = t.checked ? [...new Set([...S.selTrav, d.selt])] : S.selTrav.filter(x => x !== d.selt);
+    return renderMain();
+  }
+  if (d.lot !== undefined){
+    if (!t.value) return;
+    const r = affecterEnLot(S.selTrav, d.lot, t.value);
+    S.lotErreur = r.refus.length ? r.refus.length + ' refus : ' + r.refus.slice(0, 3).join(' · ')
+      + (r.refus.length > 3 ? ' …' : '') : '';
+    return renderMain();
+  }
   if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; _entCache.clear(); return renderMain(); }
   if (t.id === 'je-mode'){ S.jeCombi = { ...combiJE(), mode:t.value }; _entCache.clear(); return renderMain(); }
   if (t.id === 'je-modele' && t.value){ appliquerModele(t.value); return renderMain(); }
@@ -750,19 +761,23 @@ document.addEventListener('click', e => {
   }
   if (d.gotrav) return aller(d.gotrav, 'auditeur');
   if (t.id === 'tv-auto'){
-    // la règle s'applique : préparateur = préparateur, réviseur selon le niveau exigé
-    let n = 0;
-    for (const x of travaux()){
-      const st = trav(x.code);
-      if (!st.preparateur){ st.preparateur = 'karim'; n++; }
-      if (!st.reviseur){
-        st.reviseur = x.niveauRevue === 2 ? 'claire' : 'lea';
-        if (st.reviseur === st.preparateur) st.reviseur = 'claire';
-        n++;
-      }
-    }
-    logEvent('affectation en masse', 'programme de travail', n + ' affectation(s) selon la règle');
-    S.affErreur = '';
+    const r = appliquerRepartition('vides');
+    S.affErreur = r.refus ? r.refus + ' affectation(s) refusée(s) par la règle' : '';
+    return renderMain();
+  }
+  if (t.id === 'tv-prop-sel'){
+    const r = appliquerRepartition('selection', S.selTrav);
+    S.affErreur = r.refus ? r.refus + ' affectation(s) refusée(s) par la règle' : '';
+    return renderMain();
+  }
+  if (t.id === 'tv-tout'){
+    const f = S.filtreTrav;
+    const vus = travaux().filter(x => (!f.phase || x.phase === f.phase) && (!f.nature || x.nature === f.nature)
+      && (!f.personne || x.preparateur === f.personne || x.reviseur === f.personne)
+      && (!f.statut || x.statut === f.statut)
+      && (!f.q || (x.code + ' ' + x.intitule + ' ' + (x.posteLib || '')).toLowerCase().includes(f.q.toLowerCase())));
+    const tous = vus.length && vus.every(x => S.selTrav.includes(x.code));
+    S.selTrav = tous ? [] : vus.map(x => x.code);
     return renderMain();
   }
   if (t.id === 'ft-imprime' || t.id === 'mi-imprime'){ window.print(); return; }

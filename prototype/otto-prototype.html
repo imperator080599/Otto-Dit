@@ -669,11 +669,19 @@ function balanceFromLedger(rows){
    rejoue exactement la même chronologie — c'est la condition pour qu'un
    horodatage soit vérifiable dans un prototype sans base de données.
    ═══════════════════════════════════════════════════════════════════════ */
+/* L'équipe. Le GRADE dit ce qu'on sait faire, le RÔLE ce qu'on a le droit de
+   faire. La répartition proposée s'appuie sur le premier, les règles de visa
+   sur le second. Deux seniors et deux superviseurs : sans cela, la question
+   de l'équilibrage de charge ne se pose pas et la règle est décorative. */
 const USERS = {
+  hugo  : { nom:'Hugo Vasseur',    grade:'assistant',    role:'preparateur', cote:'audit' },
   karim : { nom:'Karim Benali',    grade:'senior',       role:'preparateur', cote:'audit' },
+  ines  : { nom:'Inès Rodrigues',  grade:'senior',       role:'preparateur', cote:'audit' },
   lea   : { nom:'Léa Moreau',      grade:'superviseur',  role:'reviseur',    cote:'audit' },
+  sonia : { nom:'Sonia Da Costa',  grade:'superviseur',  role:'reviseur',    cote:'audit' },
   claire: { nom:'Claire Fontaine', grade:'associée',     role:'associe',     cote:'audit' },
 };
+const ORDRE_GRADE = ['assistant', 'senior', 'superviseur', 'associée'];
 const ROLE_LIB = { preparateur:'préparateur', reviseur:'réviseur', associe:'associé signataire' };
 /** Seuls le réviseur et l'associé peuvent clore une note — et jamais la leur. */
 function peutClore(uid, note){
@@ -714,7 +722,7 @@ const S = {
   // jamais un arbitrage.
   seuilsFacteurs:{}, decisionsFacteurs:{}, facteursManuels:[], seqFacteurManuel:0,
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
-  travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
+  selTrav:[], lotErreur:'', travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
   version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
   impactDe:null, impactVers:null, balTout:false,
@@ -4912,8 +4920,13 @@ function vueProgramme(){
     && (!f.q || (t.code + ' ' + t.intitule + ' ' + (t.posteLib || '')).toLowerCase().includes(f.q.toLowerCase())));
   const rows = vus.map(t => {
     const a = ligneAffectation(t);
+    const pr = propositionDe(t.code), ec = ecartProposition(t);
     return {
+      sel:`<label class="chk"><input type="checkbox" data-selt="${t.code}" ${S.selTrav.includes(t.code) ? 'checked' : ''}><span></span></label>`,
       c:`<span class="mono">${t.code}</span>`,
+      pp:pr ? `<span class="smallcaps">${esc(pr.prep ? USERS[pr.prep].nom : '—')}</span>
+              <div class="smallcaps">${esc(pr.rev ? USERS[pr.rev].nom : '—')}</div>`
+            : '<span class="smallcaps">—</span>',
       n:`<span class="tag">${esc(NATURE_TRAVAIL[t.nature])}</span>`,
       i:`<b>${esc(t.intitule)}</b>${t.posteLib ? '<div class="smallcaps">' + esc(t.posteLib) + '</div>' : ''}`,
       r:esc(PHASES.find(x => x.id === t.phase).lib),
@@ -4924,6 +4937,7 @@ function vueProgramme(){
       hb:`<input class="cell" data-hb="${t.code}" value="${budget(t).toFixed(2).replace('.', ',')}">`,
       hr:`<input class="cell" data-hr="${t.code}" value="${t.heuresReel.toFixed(2).replace('.', ',')}">`,
       s:boutonsStatut(t),
+      ec:ec ? '<span class="pill warn">corrigé</span>' : '<span class="smallcaps">—</span>',
       w:t.wpRef ? `<span class="mono">${esc(t.wpRef)}</span>` : '<span class="smallcaps">—</span>',
       g:t.vue ? `<button class="btn mini sec" data-gotrav="${esc(t.vue)}">ouvrir</button>` : '',
     };
@@ -4944,25 +4958,28 @@ function vueProgramme(){
           <input type="text" id="ft-q" value="${esc(f.q)}" placeholder="code, intitulé, poste"></div>
         <div class="ctrl"><label>&nbsp;</label><button class="btn sec" id="ft-imprime">imprimer</button></div>
       </div>`) +
-    blk('Règles d’affectation', 'elles découlent du risque',
+    blk('Règles de revue', 'elles découlent du risque',
       table([{k:'s',t:'Cas',cls:'wrapcell'},{k:'n',t:'Revue exigée'}],
         REGLE_REVUE.map(r => ({ s:esc(r.si), n:esc(NIVEAU_REVUE_LIB[r.niveau]) }))) +
       `<p class="note">Le préparateur et le réviseur sont obligatoirement deux personnes différentes.
       Un travail de niveau 2 ne peut être revu que par un associé. Un travail passe « achevé » par son
-      préparateur seul, « revu » par son réviseur seul.</p>
-      <div class="row"><button class="btn sec" id="tv-auto">affecter les travaux non affectés selon la règle</button>
-        ${S.affErreur ? `<span class="pill bad">${esc(S.affErreur)}</span>` : ''}</div>`) +
+      préparateur seul, « revu » par son réviseur seul.</p>`) +
+    blocRepartition(vus) +
     blk('Barème de budget', 'base + heures par élément sélectionné',
       table([{k:'l',t:'Nature',cls:'wrapcell'},{k:'b',t:'Base',n:1},{k:'p',t:'Par élément',n:1}],
         BAREME_HEURES.map(b => ({ l:esc(b.lib), b:hFmt(b.base), p:b.parElement ? hFmt(b.parElement) : '—' }))) +
       `<p class="note">Le budget proposé par le barème est modifiable travail par travail : c’est une décision de
       chef de mission, pas une constante.</p>`) +
     blk('Travaux', vus.length + ' · budget ' + hFmt(tb) + ' · réalisé ' + hFmt(tr),
-      table([{k:'c',t:'Code'},{k:'n',t:'Nature'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'r',t:'Phase'},
-             {k:'as',t:'Assertion'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},{k:'nr',t:'Revue'},
+      barreSelection(vus) +
+      table([{k:'sel',t:''},{k:'c',t:'Code'},{k:'n',t:'Nature'},{k:'i',t:'Intitulé',cls:'wrapcell'},{k:'r',t:'Phase'},
+             {k:'as',t:'Assertion'},{k:'pp',t:'Proposé',cls:'wrapcell'},{k:'p',t:'Préparateur'},{k:'v',t:'Réviseur'},
+             {k:'ec',t:''},{k:'nr',t:'Revue'},
              {k:'e',t:'Échéance'},{k:'hb',t:'Budget',n:1},{k:'hr',t:'Réalisé',n:1},
              {k:'s',t:'Statut',cls:'wrapcell'},{k:'w',t:'Papier'},{k:'g',t:''}], rows,
-        { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } }));
+        { foot:{ c:'Total', hb:hFmt(tb), hr:hFmt(tr) } }) +
+      `<p class="note">La colonne « proposé » porte le préparateur puis le réviseur que la règle désigne.
+      Corriger une ligne ne change pas la proposition : l’écart reste visible, c’est votre décision.</p>`);
 }
 
 /* ═══ 35. VUE GLOBALE DE LA MISSION ════════════════════════════════════════
@@ -5103,6 +5120,216 @@ function vueCI(){
       fonctionnement du module sans enregistrement. L’état du droit applicable n’a pas pu être vérifié sur le texte
       primaire depuis cet environnement : le point est porté <span class="tag abs">UNVERIFIED</span> et aucune
       constante ne sera écrite tant qu’il ne l’est pas.</p>`);
+}
+
+/* ═══ 41. RÉPARTITION PROPOSÉE ═════════════════════════════════════════════
+   « La meilleure attribution en lot est celle qu'on n'a pas à faire. »
+   Le système propose, l'auditeur corrige. Deux règles se composent :
+
+   1. QUI, par GRADE — ce que le travail demande, pas qui est disponible.
+   2. LEQUEL, à grade égal — celui dont la charge est la plus faible, les
+      travaux étant parcourus dans un ordre fixe. La répartition est donc
+      rejouable à l'identique, et l'équilibre des heures en découle.
+
+   Rien n'est écrit tant que personne n'a accepté : la proposition est
+   affichée à côté de l'affectation réelle, jamais à sa place.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const REGLE_REPARTITION = [
+  { cas:'Travail de niveau 2 — matérialité, arrêté de l’opinion, clôture du dossier',
+    prep:'superviseur', rev:'associée',
+    quoi:t => t.niveauRevue === 2 && t.nature !== 'section' },
+  { cas:'Procédure de section répondant à une assertion évaluée « élevé »',
+    prep:'senior', rev:'associée',
+    quoi:t => t.nature === 'section' && t.niveauRevue === 2 },
+  { cas:'Procédure de section avec sélection, risque moyen',
+    prep:'senior', rev:'superviseur',
+    quoi:t => t.nature === 'section' && t.ech && t.assertion && t.poste
+           && niveau(postesCalcules().find(p => p.code === t.poste) || {}, t.assertion) === 'moyen' },
+  { cas:'Procédure de section avec sélection, risque faible',
+    prep:'assistant', rev:'superviseur',
+    quoi:t => t.nature === 'section' && t.ech },
+  { cas:'Procédure de section sans sélection',
+    prep:'assistant', rev:'superviseur',
+    quoi:t => t.nature === 'section' },
+  { cas:'Travail de planification',
+    prep:'senior', rev:'superviseur',
+    quoi:t => t.nature === 'planification' },
+  { cas:'Travail d’achèvement',
+    prep:'superviseur', rev:'associée',
+    quoi:t => t.nature === 'achevement' },
+  { cas:'Tout autre travail',
+    prep:'senior', rev:'superviseur', quoi:() => true },
+];
+function regleDe(t){ return REGLE_REPARTITION.find(r => r.quoi(t)) || REGLE_REPARTITION[REGLE_REPARTITION.length - 1]; }
+function gensDuGrade(g){ return Object.entries(USERS).filter(([, u]) => u.grade === g).map(([k]) => k); }
+
+/** La proposition complète, dérivée. Jamais écrite tant qu'on ne l'accepte pas. */
+const _repCache = { cle:'', v:null };
+function repartitionProposee(){
+  const l = travaux();
+  const cle = l.length + '|' + JSON.stringify(l.map(t => t.code + t.niveauRevue));
+  if (_repCache.cle === cle && _repCache.v) return _repCache.v;
+  const chargePrep = {}, chargeRev = {};
+  for (const k of Object.keys(USERS)){ chargePrep[k] = 0; chargeRev[k] = 0; }
+  const out = new Map();
+  /* Ordre fixe : par phase puis par code. La proposition est rejouable. */
+  const ordre = [...l].sort((a, b) => {
+    const pa = PHASES.findIndex(x => x.id === a.phase), pb = PHASES.findIndex(x => x.id === b.phase);
+    return pa !== pb ? pa - pb : (a.code < b.code ? -1 : 1);
+  });
+  for (const t of ordre){
+    const r = regleDe(t), h = budget(t);
+    const cand = g => { const g2 = gensDuGrade(g); return g2.length ? g2 : gensDuGrade('senior'); };
+    const moins = (liste, charge, exclu) => liste.filter(k => k !== exclu)
+      .sort((a, b) => charge[a] - charge[b] || (a < b ? -1 : 1))[0];
+    const prep = moins(cand(r.prep), chargePrep, null);
+    /* Le réviseur ne peut être le préparateur, et un niveau 2 exige un associé. */
+    const gradeRev = t.niveauRevue === 2 ? 'associée' : r.rev;
+    const rev = moins(cand(gradeRev).filter(k => peutReviser(k, t)), chargeRev, prep);
+    if (prep) chargePrep[prep] += h;
+    if (rev) chargeRev[rev] += h * 0.2;      // la revue coûte le cinquième de la préparation
+    out.set(t.code, { prep, rev, regle:r.cas, heures:h });
+  }
+  _repCache.cle = cle; _repCache.v = out;
+  return out;
+}
+function propositionDe(code){ return repartitionProposee().get(code) || null; }
+/** Un travail s'écarte-t-il de la proposition ? C'est la correction humaine. */
+function ecartProposition(t){
+  const p = propositionDe(t.code); if (!p) return null;
+  const dp = t.preparateur && t.preparateur !== p.prep;
+  const dr = t.reviseur && t.reviseur !== p.rev;
+  return dp || dr ? { prep:dp, rev:dr, p } : null;
+}
+
+/** Applique la proposition. `quoi` : 'vides' ou 'selection'. */
+function appliquerRepartition(quoi, codes){
+  const l = travaux();
+  const cibles = quoi === 'selection'
+    ? l.filter(t => codes.includes(t.code))
+    : l.filter(t => !t.preparateur || !t.reviseur);
+  let n = 0, refus = 0;
+  for (const t of cibles){
+    const p = propositionDe(t.code); if (!p) continue;
+    if (quoi === 'vides'){
+      if (!t.preparateur && p.prep){ if (affecter(t.code, 'preparateur', p.prep).ok) n++; else refus++; }
+      if (!trav(t.code).reviseur && p.rev){ if (affecter(t.code, 'reviseur', p.rev).ok) n++; else refus++; }
+    } else {
+      if (p.prep){ if (affecter(t.code, 'preparateur', p.prep).ok) n++; else refus++; }
+      if (p.rev){ if (affecter(t.code, 'reviseur', p.rev).ok) n++; else refus++; }
+    }
+  }
+  logEvent('répartition proposée appliquée',
+           quoi === 'selection' ? cibles.length + ' travail/travaux sélectionné(s)' : 'travaux non affectés',
+           n + ' affectation(s)' + (refus ? ', ' + refus + ' refusée(s) par la règle' : ''));
+  return { n, refus, cibles:cibles.length };
+}
+/** Attribution en lot d'une personne choisie à la main, sur la sélection. */
+function affecterEnLot(codes, role, uid){
+  let n = 0; const refus = [];
+  for (const c of codes){
+    const r = affecter(c, role, uid);
+    if (r.ok) n++; else refus.push(c + ' : ' + r.why);
+  }
+  logEvent('attribution en lot', codes.length + ' travail/travaux',
+           (role === 'preparateur' ? 'préparateur : ' : 'réviseur : ') + (uid ? USERS[uid].nom : 'retiré')
+           + ' · ' + n + ' appliquée(s)' + (refus.length ? ', ' + refus.length + ' refusée(s)' : ''));
+  return { n, refus };
+}
+
+/* ── charge par personne, proposée et réelle ──────────────────────────── */
+function chargeParPersonne(source){
+  const l = travaux(), prop = repartitionProposee();
+  return Object.entries(USERS).map(([k, u]) => {
+    const p = source === 'proposee'
+      ? l.filter(t => (prop.get(t.code) || {}).prep === k)
+      : l.filter(t => t.preparateur === k);
+    const r = source === 'proposee'
+      ? l.filter(t => (prop.get(t.code) || {}).rev === k)
+      : l.filter(t => t.reviseur === k);
+    return { k, u, nPrep:p.length, nRev:r.length,
+             h:p.reduce((a, t) => a + budget(t), 0) + r.reduce((a, t) => a + budget(t) * 0.2, 0) };
+  });
+}
+
+/* ═══ 42. BLOCS D'ÉCRAN ════════════════════════════════════════════════════ */
+function blocRepartition(vus){
+  const prop = chargeParPersonne('proposee'), reel = chargeParPersonne('reelle');
+  const l = travaux();
+  const nonAffectes = l.filter(t => !t.preparateur || !t.reviseur).length;
+  const corriges = l.map(t => ecartProposition(t)).filter(Boolean).length;
+  const tot = prop.reduce((a, x) => a + x.h, 0);
+  return blk('Répartition proposée', nonAffectes + ' travail/travaux non affecté(s) sur ' + l.length,
+    table([{k:'c',t:'Cas',cls:'wrapcell'},{k:'p',t:'Préparateur proposé'},{k:'r',t:'Réviseur proposé'},{k:'n',t:'Travaux',n:1}],
+      REGLE_REPARTITION.map(r => ({ c:esc(r.cas), p:esc(r.prep), r:esc(r.rev),
+        n:String(l.filter(t => regleDe(t).cas === r.cas).length) })),
+      { foot:{ c:'Total', n:String(l.length) } }) +
+    `<p class="note">À grade égal, le travail va à la personne dont la charge est la plus faible, les travaux
+    étant parcourus dans un ordre fixe : la proposition est rejouable à l’identique. La revue est comptée pour
+    un cinquième de la préparation. Rien n’est écrit tant que vous n’acceptez pas.</p>
+    ${diagnosticRepartition()}
+    <h3>Charge — proposée et réelle</h3>
+    ${table([{k:'n',t:'Personne',cls:'wrapcell'},{k:'g',t:'Grade'},
+             {k:'pp',t:'Prépare (proposé)',n:1},{k:'pr',t:'Revoit (proposé)',n:1},{k:'ph',t:'Heures (proposé)',n:1},
+             {k:'rp',t:'Prépare (réel)',n:1},{k:'rr',t:'Revoit (réel)',n:1},{k:'rh',t:'Heures (réel)',n:1}],
+      prop.map((x, i) => ({ n:`<b>${esc(x.u.nom)}</b>`, g:esc(x.u.grade),
+        pp:String(x.nPrep), pr:String(x.nRev), ph:hFmt(x.h),
+        rp:String(reel[i].nPrep), rr:String(reel[i].nRev), rh:hFmt(reel[i].h) })),
+      { foot:{ n:'Total', ph:hFmt(tot), rh:hFmt(reel.reduce((a, x) => a + x.h, 0)) } })}
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="tv-auto">appliquer la proposition aux ${nonAffectes} travaux non affectés</button>
+      <button class="btn sec" id="tv-prop-sel" ${S.selTrav.length ? '' : 'disabled'}>appliquer aux ${S.selTrav.length} sélectionné(s)</button>
+      ${corriges ? `<span class="pill warn">${corriges} affectation(s) s’écartent de la proposition</span>` : ''}
+      ${S.affErreur ? `<span class="pill bad">${esc(S.affErreur)}</span>` : ''}
+    </div>`);
+}
+
+/* Ce que la répartition proposée révèle de la MISSION, et non d'elle-même :
+   la part du budget qui va à chaque grade est une conséquence de l'évaluation
+   du risque, pas un choix de dotation. Si elle déplaît, le levier est le
+   niveau de risque des assertions, pas le grade inscrit dans la règle. */
+function diagnosticRepartition(){
+  const l = travaux(), tot = l.reduce((a, t) => a + budget(t), 0);
+  const parGrade = {};
+  for (const t of l){
+    const g = regleDe(t).prep;
+    parGrade[g] = (parGrade[g] || 0) + budget(t);
+  }
+  const eleve = l.filter(t => t.nature === 'section' && t.niveauRevue === 2);
+  const hEleve = eleve.reduce((a, t) => a + budget(t), 0);
+  const mortes = REGLE_REPARTITION.filter(r => !l.some(t => regleDe(t).cas === r.cas));
+  return `<div class="callout">
+    <b>Ce que la proposition dit de la mission.</b> ${Object.entries(parGrade)
+      .sort((a, b) => b[1] - a[1])
+      .map(([g, h]) => `${esc(g)} ${pct(h / tot, 0)}`).join(' · ')} du budget de préparation.
+    ${hEleve ? `La part senior tient à l’évaluation du risque : <b>${eleve.length} procédures de section
+      répondent à une assertion évaluée « élevé »</b>, soit ${pct(hEleve / tot, 0)} du budget, et une telle
+      assertion se prépare au niveau senior et se revoit par l’associée. Conséquence directe :
+      <b>l’associée revoit ${l.filter(t => t.niveauRevue === 2).length} travaux sur ${l.length}</b>.
+      Si cette dotation ne convient pas, le levier est le niveau de risque des assertions —
+      pas le grade inscrit dans la règle.` : ''}
+    ${mortes.length ? `<br><span class="smallcaps">${mortes.length} cas de la règle ne s’appliquent à aucun
+      travail de cette mission : ${mortes.map(r => esc(r.cas)).join(' · ')}.</span>` : ''}
+  </div>`;
+}
+
+function barreSelection(vus){
+  const n = S.selTrav.length;
+  const tous = vus.length && vus.every(t => S.selTrav.includes(t.code));
+  const opt = (role) => `<select data-lot="${role}">
+      <option value="">— ${role === 'preparateur' ? 'préparateur' : 'réviseur'} —</option>
+      ${Object.entries(USERS).filter(([, u]) => role === 'preparateur' || u.role !== 'preparateur')
+        .map(([k, u]) => `<option value="${k}">${esc(u.nom)} — ${esc(u.grade)}</option>`).join('')}
+    </select>`;
+  return `<div class="row" style="margin-bottom:8px">
+    <button class="btn mini sec" id="tv-tout">${tous ? 'tout désélectionner' : 'tout sélectionner (' + vus.length + ' du résultat filtré)'}</button>
+    <span class="pill ${n ? '' : ''}">${n} sélectionné(s)</span>
+    <div class="ctrl"><label>Affecter en lot — préparateur</label>${opt('preparateur')}</div>
+    <div class="ctrl"><label>Réviseur</label>${opt('reviseur')}</div>
+    ${n ? '' : '<span class="smallcaps">cochez des travaux, ou sélectionnez tout le résultat filtré</span>'}
+    ${S.lotErreur ? `<div class="callout bad" style="flex:1 1 100%">${esc(S.lotErreur)}</div>` : ''}
+  </div>`;
 }
 
 /* ═══ 37. RAPPORT D'IMPACT D'UNE VERSION ═══════════════════════════════════
@@ -6500,6 +6727,17 @@ document.addEventListener('change', e => {
     logEvent('opinion arrêtée', 'Altiverre SAS FY2025', t.value); return renderMain(); }
   if (d.rdisp !== undefined){ const x = resolDeCle(d.rdisp); if (x) x.r.disposition = t.value; return renderMain(); }
   if (d.rpiece !== undefined){ const x = resolDeCle(d.rpiece); if (x) x.r.corrobPiece = t.value; return renderMain(); }
+  if (d.selt !== undefined){
+    S.selTrav = t.checked ? [...new Set([...S.selTrav, d.selt])] : S.selTrav.filter(x => x !== d.selt);
+    return renderMain();
+  }
+  if (d.lot !== undefined){
+    if (!t.value) return;
+    const r = affecterEnLot(S.selTrav, d.lot, t.value);
+    S.lotErreur = r.refus.length ? r.refus.length + ' refus : ' + r.refus.slice(0, 3).join(' · ')
+      + (r.refus.length > 3 ? ' …' : '') : '';
+    return renderMain();
+  }
   if (d.je !== undefined){ S.jeCrit[d.je] = t.checked; _entCache.clear(); return renderMain(); }
   if (t.id === 'je-mode'){ S.jeCombi = { ...combiJE(), mode:t.value }; _entCache.clear(); return renderMain(); }
   if (t.id === 'je-modele' && t.value){ appliquerModele(t.value); return renderMain(); }
@@ -6786,19 +7024,23 @@ document.addEventListener('click', e => {
   }
   if (d.gotrav) return aller(d.gotrav, 'auditeur');
   if (t.id === 'tv-auto'){
-    // la règle s'applique : préparateur = préparateur, réviseur selon le niveau exigé
-    let n = 0;
-    for (const x of travaux()){
-      const st = trav(x.code);
-      if (!st.preparateur){ st.preparateur = 'karim'; n++; }
-      if (!st.reviseur){
-        st.reviseur = x.niveauRevue === 2 ? 'claire' : 'lea';
-        if (st.reviseur === st.preparateur) st.reviseur = 'claire';
-        n++;
-      }
-    }
-    logEvent('affectation en masse', 'programme de travail', n + ' affectation(s) selon la règle');
-    S.affErreur = '';
+    const r = appliquerRepartition('vides');
+    S.affErreur = r.refus ? r.refus + ' affectation(s) refusée(s) par la règle' : '';
+    return renderMain();
+  }
+  if (t.id === 'tv-prop-sel'){
+    const r = appliquerRepartition('selection', S.selTrav);
+    S.affErreur = r.refus ? r.refus + ' affectation(s) refusée(s) par la règle' : '';
+    return renderMain();
+  }
+  if (t.id === 'tv-tout'){
+    const f = S.filtreTrav;
+    const vus = travaux().filter(x => (!f.phase || x.phase === f.phase) && (!f.nature || x.nature === f.nature)
+      && (!f.personne || x.preparateur === f.personne || x.reviseur === f.personne)
+      && (!f.statut || x.statut === f.statut)
+      && (!f.q || (x.code + ' ' + x.intitule + ' ' + (x.posteLib || '')).toLowerCase().includes(f.q.toLowerCase())));
+    const tous = vus.length && vus.every(x => S.selTrav.includes(x.code));
+    S.selTrav = tous ? [] : vus.map(x => x.code);
     return renderMain();
   }
   if (t.id === 'ft-imprime' || t.id === 'mi-imprime'){ window.print(); return; }
