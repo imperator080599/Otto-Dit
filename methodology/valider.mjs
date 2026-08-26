@@ -63,7 +63,7 @@ function validerObjet(obj, def, chemin, erreurs){
  * @param {object} schema  contenu de schema.json
  * @returns {string[]}
  */
-export function validerCatalogue(cat, src, schema, echelle){
+export function validerCatalogue(cat, src, schema, echelle, assertions){
   const erreurs = [];
   const defProc = schema.definitions.procedure;
   const defJust = defProc.properties.justificatifs.items;
@@ -117,6 +117,9 @@ export function validerCatalogue(cat, src, schema, echelle){
        liste figée dans le schéma. C'est ce qui autorise quatre niveaux, deux,
        ou « limité / normal / accru » — et c'est plus strict qu'une énumération,
        parce que cela attrape en plus une divergence entre les deux fichiers. */
+    if (assertions && p.assertion && !assertions.includes(p.assertion))
+      erreurs.push(`${ou} : assertion « ${p.assertion} » absente du jeu du cabinet `
+        + `(${assertions.join(' | ')})`);
     if (echelle && p.risque_minimum && !echelle.includes(p.risque_minimum))
       erreurs.push(`${ou} : risque_minimum « ${p.risque_minimum} » absent de l’échelle du cabinet `
         + `(${echelle.join(' | ')})`);
@@ -150,7 +153,7 @@ export function validerCatalogue(cat, src, schema, echelle){
  * @param {object} schema  contenu de schema-questionnaire.json
  * @returns {string[]}
  */
-export function validerQuestionnaire(q, src, schema){
+export function validerQuestionnaire(q, src, schema, assertions){
   const erreurs = [];
   const defQ = schema.definitions.question, defN = schema.definitions.nature_ri;
   if (!q.version) erreurs.push('questionnaire : version manquante');
@@ -164,6 +167,8 @@ export function validerQuestionnaire(q, src, schema){
   for (const x of q.questions || []){
     const ou = `question ${x.code || '(sans code)'}`;
     validerObjet(x, defQ, ou, erreurs);
+    if (assertions && x.assertion && !assertions.includes(x.assertion))
+      erreurs.push(`${ou} : assertion « ${x.assertion} » absente du jeu du cabinet`);
     if (x.nature && !(q.natures_ri || {})[x.nature])
       erreurs.push(`${ou} : nature « ${x.nature} » absente de natures_ri`);
     for (const s of x.sources || [])
@@ -229,7 +234,7 @@ export function validerIndependance(ind, src, schema){
  * @param {object} schema  contenu de schema-risque.json
  * @returns {string[]}
  */
-export function validerRisque(r, src, schema){
+export function validerRisque(r, src, schema, assertions){
   const erreurs = [];
   const defF = schema.definitions.facteur;
   if (!r.version) erreurs.push('risque : version manquante');
@@ -238,6 +243,8 @@ export function validerRisque(r, src, schema){
   for (const f of r.facteurs_observes || []){
     const ou = `facteur ${f.code || '(sans code)'}`;
     validerObjet(f, defF, ou, erreurs);
+    if (assertions && f.assertion && !assertions.includes(f.assertion))
+      erreurs.push(`${ou} : assertion « ${f.assertion} » absente du jeu du cabinet`);
     if (f.predicat && !connus.includes(f.predicat))
       erreurs.push(`${ou} : prédicat « ${f.predicat} » inconnu du moteur (connus : ${connus.join(' | ')})`);
     for (const s of f.sources || [])
@@ -265,6 +272,38 @@ export function validerRisque(r, src, schema){
   return erreurs;
 }
 
+/**
+ * Erreurs du jeu d'assertions, liste vide s'il est valide.
+ *
+ * Les assertions sont un DÉCOUPAGE DE MÉTHODE, pas une constante du produit :
+ * certains cabinets séparent « présentation » et « informations à fournir »,
+ * d'autres suivent le découpage PCAOB. Les figer dans un schéma reviendrait à
+ * dire « votre méthode reste la vôtre, à condition qu'elle ressemble à la
+ * nôtre » — le même défaut que l'échelle de risque, découvert par un auditeur
+ * en trente secondes.
+ *
+ * Ce qui remplace l'énumération est PLUS strict : procédures, questions et
+ * facteurs sont tous comparés à CE jeu, donc une divergence entre deux
+ * fichiers arrête l'assemblage.
+ */
+export function validerAssertions(a, cat, schema){
+  const erreurs = [];
+  const def = schema.definitions.assertion;
+  if (!a.version) erreurs.push('assertions : version manquante');
+  for (const x of a.assertions || []){
+    validerObjet(x, def, `assertion ${x.code || '(sans code)'}`, erreurs);
+    /* Le sens naturel est indicatif, mais il doit exister : nommer un sens que
+       le catalogue ne connaît pas ferait un libellé vide à l'écran. */
+    if (x.sens_naturel && cat.sens_de_test && !cat.sens_de_test[x.sens_naturel])
+      erreurs.push(`assertion ${x.code} : sens naturel « ${x.sens_naturel} » absent de sens_de_test`);
+  }
+  const codes = (a.assertions || []).map(x => x.code);
+  const dbl = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if (dbl.length) erreurs.push('assertions en double : ' + [...new Set(dbl)].join(', '));
+  if (!codes.length) erreurs.push('assertions : le jeu est vide — aucune procédure ne pourrait viser quoi que ce soit');
+  return erreurs;
+}
+
 /** Lit, valide et rend le catalogue. Lève si les données sont invalides. */
 export function chargerCatalogue(racine){
   const dir = path.join(racine || racineDepot(), 'methodology');
@@ -273,13 +312,18 @@ export function chargerCatalogue(racine){
   const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
   const ind = lire('independance.json'), schemaI = lire('schema-independance.json');
   const risq = lire('risque.json'), schemaR = lire('schema-risque.json');
+  const asrt = lire('assertions.json'), schemaA = lire('schema-assertions.json');
   /* L'échelle est lue AVANT le catalogue : c'est elle qui dit quels niveaux
      une procédure a le droit d'exiger. */
   const echelle = ((risq || {}).echelle || {}).niveaux || [];
-  const erreurs = validerCatalogue(cat, src, schema, echelle)
-    .concat(validerQuestionnaire(quest, src, schemaQ))
+  /* Le jeu d'assertions est lu AVANT tout le reste : c'est lui qui dit ce
+     qu'une procédure, une question ou un facteur a le droit de viser. */
+  const codesAssertions = (asrt.assertions || []).map(x => x.code);
+  const erreurs = validerAssertions(asrt, cat, schemaA)
+    .concat(validerCatalogue(cat, src, schema, echelle, codesAssertions))
+    .concat(validerQuestionnaire(quest, src, schemaQ, codesAssertions))
     .concat(validerIndependance(ind, src, schemaI))
-    .concat(validerRisque(risq, src, schemaR));
+    .concat(validerRisque(risq, src, schemaR, codesAssertions));
   if (erreurs.length){
     throw new Error('CATALOGUE INVALIDE :\n  ' + erreurs.join('\n  '));
   }
@@ -292,5 +336,6 @@ export function chargerCatalogue(racine){
            risque:{ version:risq.version, facteurs:risq.facteurs_observes,
                     niveaux:risq.echelle.niveaux, paliers:risq.echelle.paliers,
                     tailles:sansNotes(risq.tailles_echantillon),
-                    predicats:schemaR.predicats_facteur } };
+                    predicats:schemaR.predicats_facteur },
+           assertions:{ version:asrt.version, liste:asrt.assertions } };
 }

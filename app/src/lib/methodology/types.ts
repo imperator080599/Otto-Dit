@@ -9,9 +9,30 @@
 // référence de contrôle (`reference`) ; le code SAIT les calculer. Un catalogue
 // ne contient jamais d'expression exécutable.
 
-export type Assertion =
-  | 'realite' | 'exhaustivite' | 'mesure' | 'evaluation'
-  | 'separation' | 'droits' | 'presentation';
+/**
+ * Une assertion est une CHAÎNE, pas une union figée.
+ *
+ * Le jeu d'assertions est un découpage de MÉTHODE : certains cabinets séparent
+ * « présentation » et « informations à fournir », d'autres suivent le découpage
+ * PCAOB. Il vit dans `methodology/assertions.json`, et procédures, questions et
+ * facteurs y sont tous comparés au chargement — plus strict qu'une union, parce
+ * que cela attrape en plus une divergence entre fichiers.
+ */
+export type Assertion = string;
+
+/** Une assertion du jeu du cabinet. */
+export interface AssertionDef {
+  code: string;
+  libelle: string;
+  /** Ce qu'elle affirme, en toutes lettres : sans quoi elle ne se conteste pas en revue. */
+  definition: string;
+  sens_naturel?: string;
+}
+
+export interface JeuAssertions {
+  version: string;
+  liste: AssertionDef[];
+}
 
 /** Le SENS du test — la donnée qui manquait le plus au programme de travail. */
 export type SensDeTest =
@@ -195,4 +216,5 @@ export interface Catalogue {
   questionnaire: Questionnaire;
   independance: Independance;
   risque: Risque;
+  assertions: JeuAssertions;
 }

@@ -20,7 +20,7 @@ import { propose, validate } from './materiality';
 import { assessFsli, risksFor, requiredProcedures, levelFor } from './risk';
 import {
   questionsOfScope, answerQuestion, answers, register, raiseFactor, decideFactor,
-  declaredFactorsFor, questionnaireObstacles, quantitativeShare, QuestionnaireError,
+  declaredFactorsFor, questionnaireObstacles, ruleShare, raisedShare,
 } from './questionnaire';
 
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
@@ -262,13 +262,30 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
 
   /* ═══ 5. LE RATIO — mesuré, pas promis ════════════════════════════════ */
 
-  it('l’évaluation n’est plus à 100 % quantitative', async () => {
+  it('le ratio des RÈGLES : ce que la méthode peut voir', async () => {
     const cat = await chargerCatalogue();
-    const r = await quantitativeShare(cat);
-    expect(r.quantitative).toBe(5);
-    expect(r.qualitative).toBe(10);
+    const r = ruleShare(cat);
+    expect(r.quantitative).toBe(5);      // cinq règles calculées
+    expect(r.qualitative).toBe(10);      // dix sources déclarées
     expect(r.pctQuantitative).toBeCloseTo(33.3, 1);
-    expect(r.pctQuantitative).toBeLessThan(50);
+  });
+
+  it('le ratio des facteurs LEVÉS : ce que l’auditeur a devant les yeux', async () => {
+    const r = await raisedShare(IDS.engNep);
+    expect(r.quantitative + r.qualitative).toBeGreaterThan(0);
+    expect(r.qualitative).toBeGreaterThan(0);   // le dossier porte du qualitatif RÉEL
+    expect(r.pctQuantitative).toBeLessThan(100);
+    console.log(`      levés : ${r.quantitative} observés · ${r.qualitative} déclarés `
+      + `— ${r.pctQuantitative.toFixed(1)} % de quantitatif`);
+  });
+
+  it('les deux ratios ne mesurent pas la même chose — et le second peut être mauvais', async () => {
+    // Une méthode équilibrée dont personne ne remplit le questionnaire redonne
+    // une évaluation à 100 % quantitative : c'est pourquoi les deux se donnent.
+    const vierge = await raisedShare(IDS.engSox);   // dossier sans questionnaire rempli
+    expect(vierge.qualitative).toBe(0);
+    const cat = await chargerCatalogue();
+    expect(ruleShare(cat).pctQuantitative).toBeLessThan(50);   // la méthode, elle, est équilibrée
   });
 
   /* ═══ 6. la piste ═════════════════════════════════════════════════════ */

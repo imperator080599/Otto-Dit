@@ -51,6 +51,11 @@ export function oublierCatalogue(): void { _cache = null; }
    « cette procédure est-elle requise ici » appartient au moteur de risque,
    pas au catalogue.                                                        */
 
+/** Le libellé d'une assertion, depuis le jeu du cabinet. */
+export function libAssertion(cat: Catalogue, code: string): string {
+  return cat.assertions.liste.find((a) => a.code === code)?.libelle ?? code;
+}
+
 /**
  * Le rang d'un niveau dans l'échelle DU CABINET.
  *
@@ -167,5 +172,5 @@ export function parametreNonVerifie(cat: Catalogue, code: string): boolean {
 export type {
   Catalogue, Procedure, Source, QuestionResiduelle, NatureRi,
   Independance, RubriqueIndependance, ParametreIndependance,
-  Risque, FacteurObserve,
+  Risque, FacteurObserve, JeuAssertions, AssertionDef,
 } from './types';

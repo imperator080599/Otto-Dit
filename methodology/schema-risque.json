@@ -2,13 +2,32 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OTTO — évaluation du risque par assertion",
   "type": "object",
-  "required": ["version", "facteurs_observes", "echelle", "tailles_echantillon"],
+  "required": [
+    "version",
+    "facteurs_observes",
+    "echelle",
+    "tailles_echantillon"
+  ],
   "properties": {
-    "_note": { "type": "string" },
-    "version": { "type": "string" },
-    "facteurs_observes": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/facteur" } },
-    "echelle": { "type": "object" },
-    "tailles_echantillon": { "type": "object" }
+    "_note": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "facteurs_observes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/facteur"
+      }
+    },
+    "echelle": {
+      "type": "object"
+    },
+    "tailles_echantillon": {
+      "type": "object"
+    }
   },
   "predicats_facteur": [
     "variation_n_n1_au_dessus_du_seuil",
@@ -20,14 +39,29 @@
   "definitions": {
     "facteur": {
       "type": "object",
-      "required": ["code", "assertion", "libelle", "pourquoi", "predicat", "parametres", "sources"],
+      "required": [
+        "code",
+        "assertion",
+        "libelle",
+        "pourquoi",
+        "predicat",
+        "parametres",
+        "sources"
+      ],
       "additionalProperties": false,
       "properties": {
-        "code": { "type": "string", "pattern": "^[a-z_]+$" },
-        "assertion": {
-          "enum": ["realite", "exhaustivite", "mesure", "evaluation", "separation", "droits", "presentation"]
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z_]+$"
         },
-        "libelle": { "type": "string", "minLength": 10 },
+        "assertion": {
+          "type": "string",
+          "description": "Code d'assertion. Validé contre le jeu d'assertions du cabinet (assertions.json), PAS contre une liste figée : certains cabinets séparent « présentation » et « informations à fournir », d'autres suivent le découpage PCAOB."
+        },
+        "libelle": {
+          "type": "string",
+          "minLength": 10
+        },
         "pourquoi": {
           "type": "string",
           "minLength": 40,
@@ -37,8 +71,13 @@
           "type": "string",
           "description": "Nom du prédicat implémenté côté code. Un prédicat hors de la liste `predicats_facteur` ARRÊTE l'assemblage : sans cela, un facteur nommé mais non implémenté serait silencieusement toujours inactif, et le risque serait sous-évalué sans que rien ne le dise."
         },
-        "parametres": { "type": "object" },
-        "sources": { "type": "array", "minItems": 1 }
+        "parametres": {
+          "type": "object"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1
+        }
       }
     }
   }

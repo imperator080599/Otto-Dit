@@ -1,0 +1,48 @@
+{
+  "_note": "Le jeu d'assertions du cabinet. C'est un DÉCOUPAGE DE MÉTHODE, pas une constante du produit : certains cabinets séparent « présentation » et « informations à fournir », d'autres suivent le découpage PCAOB. Procédures, questions, facteurs et niveaux de risque se valident tous contre CETTE liste — une divergence entre deux fichiers arrête l'assemblage.",
+  "version": "1.0.0",
+  "assertions": [
+    {
+      "code": "realite",
+      "libelle": "Réalité / survenance",
+      "definition": "Les actifs, passifs et opérations comptabilisés existent et se sont produits ; l'entité en est titulaire.",
+      "sens_naturel": "gl_vers_piece"
+    },
+    {
+      "code": "exhaustivite",
+      "libelle": "Exhaustivité",
+      "definition": "Tous les actifs, passifs et opérations qui devaient être comptabilisés le sont ; rien ne manque.",
+      "sens_naturel": "piece_vers_gl"
+    },
+    {
+      "code": "mesure",
+      "libelle": "Mesure / exactitude",
+      "definition": "Les montants comptabilisés le sont pour la bonne valeur, et les données sont correctement reportées.",
+      "sens_naturel": "recalcul"
+    },
+    {
+      "code": "evaluation",
+      "libelle": "Évaluation",
+      "definition": "Les actifs et passifs sont comptabilisés à une valeur appropriée, dépréciations et estimations comprises.",
+      "sens_naturel": "inspection"
+    },
+    {
+      "code": "separation",
+      "libelle": "Séparation des exercices",
+      "definition": "Les opérations sont rattachées à l'exercice auquel elles se rapportent.",
+      "sens_naturel": "gl_vers_piece"
+    },
+    {
+      "code": "droits",
+      "libelle": "Droits et obligations",
+      "definition": "L'entité détient les droits sur les actifs comptabilisés et supporte les obligations correspondantes.",
+      "sens_naturel": "confirmation"
+    },
+    {
+      "code": "presentation",
+      "libelle": "Présentation et informations à fournir",
+      "definition": "Les éléments sont classés, présentés et décrits conformément au référentiel applicable.",
+      "sens_naturel": "inspection"
+    }
+  ]
+}

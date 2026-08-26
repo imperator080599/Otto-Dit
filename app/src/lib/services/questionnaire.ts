@@ -331,18 +331,24 @@ export async function questionnaireObstacles(
   return out;
 }
 
-/**
- * Le ratio quantitatif / qualitatif de l'évaluation.
- *
- * Il se mesure plutôt qu'il ne se promet : une évaluation qui ne voit que ce
- * qui se compte ne voit pas ce qui compte, et c'est exactement ce que ce
- * chiffre surveille.
- */
-export async function quantitativeShare(cat: Catalogue): Promise<{
+export interface Share {
   quantitative: number;
   qualitative: number;
   pctQuantitative: number;
-}> {
+}
+
+/**
+ * DEUX ratios, et ils ne disent pas la même chose.
+ *
+ * Le ratio de RÈGLES mesure ce que la méthode peut voir : c'est une propriété
+ * du référentiel du cabinet, la même sur tous les dossiers.
+ *
+ * Le ratio des facteurs LEVÉS mesure ce que l'auditeur a devant les yeux sur CE
+ * dossier. C'est celui qui compte pour juger d'une évaluation, et il peut être
+ * mauvais alors que le premier est bon — une méthode équilibrée dont personne
+ * ne remplit le questionnaire redonne une évaluation à 100 % quantitative.
+ */
+export function ruleShare(cat: Catalogue): Share {
   const quantitative = cat.risque.facteurs.length;               // règles calculées
   const qualitative = cat.questionnaire.questions.length;        // sources déclarées
   return {
@@ -351,3 +357,27 @@ export async function quantitativeShare(cat: Catalogue): Promise<{
     pctQuantitative: (quantitative / (quantitative + qualitative)) * 100,
   };
 }
+
+/** Ce que le dossier porte RÉELLEMENT : facteurs observés contre facteurs déclarés retenus. */
+export async function raisedShare(engagementId: string): Promise<Share> {
+  const obs = await q1<{ n: string }>(
+    `select count(*)::text as n from risk_factor_observed where engagement_id = $1`,
+    [engagementId],
+  );
+  const dec = await q1<{ n: string }>(
+    `select count(*)::text as n from risk_factor_declared
+     where engagement_id = $1 and status = 'confirmed'`,
+    [engagementId],
+  );
+  const quantitative = Number(obs.n);
+  const qualitative = Number(dec.n);
+  const total = quantitative + qualitative;
+  return {
+    quantitative,
+    qualitative,
+    pctQuantitative: total === 0 ? 0 : (quantitative / total) * 100,
+  };
+}
+
+/** @deprecated conservé le temps que les appelants passent à `ruleShare`. */
+export const quantitativeShare = async (cat: Catalogue): Promise<Share> => ruleShare(cat);

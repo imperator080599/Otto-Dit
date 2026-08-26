@@ -7,7 +7,7 @@ import {
 } from '@/lib/services/risk';
 import {
   questionsOfScope, answers, answerQuestion, register, decideFactor,
-  questionnaireObstacles, quantitativeShare,
+  questionnaireObstacles, ruleShare, raisedShare,
 } from '@/lib/services/questionnaire';
 
 // Le risque par assertion, et CE QU'IL COMMANDE.
@@ -54,7 +54,12 @@ export default async function RiskPage({
   const obstaclesSection = await questionnaireObstacles(id, code);
   const obstaclesEntity = await questionnaireObstacles(id, null);
   const reg = await register(id);
-  const share = await quantitativeShare(cat);
+  /* DEUX ratios : ce que la méthode peut voir, et ce que CE dossier porte
+     réellement. Le second peut être mauvais alors que le premier est bon — une
+     méthode équilibrée dont personne ne remplit le questionnaire redonne une
+     évaluation à 100 % quantitative, et c'est cela qu'il faut voir. */
+  const share = ruleShare(cat);
+  const raised = await raisedShare(id);
   const byCode = new Map([...sectionAnswers, ...entityAnswers].map((a) => [a.question_code, a]));
 
   async function assessAction(formData: FormData) {
@@ -205,9 +210,19 @@ export default async function RiskPage({
         <p className="faint">
           Uniquement ce qu’<strong>aucune autre source du dossier</strong> ne peut lever. Une réponse
           « oui » ne coche rien : elle <strong>crée un facteur au registre</strong>, avec son texte.
-          Évaluation actuelle : <strong>{share.quantitative} règles calculées</strong> et{' '}
-          <strong>{share.qualitative} sources déclarées</strong> — {share.pctQuantitative.toFixed(1)} %
-          de quantitatif.
+        </p>
+        <p className="faint">
+          <strong>Méthode</strong> — {share.quantitative} règles calculées, {share.qualitative}{' '}
+          sources déclarées : <strong>{share.pctQuantitative.toFixed(1)} %</strong> de quantitatif.
+          {' · '}
+          <strong>Ce dossier</strong> — {raised.quantitative} facteur(s) observé(s),{' '}
+          {raised.qualitative} déclaré(s) retenu(s) :{' '}
+          <strong>{raised.pctQuantitative.toFixed(1)} %</strong> de quantitatif.
+          {raised.qualitative === 0 && (
+            <> {' '}<span className="badge amber">aucun qualitatif sur ce dossier</span> — une méthode
+            équilibrée dont personne ne remplit le questionnaire redonne une évaluation qui ne voit
+            que ce qui se compte.</>
+          )}
         </p>
 
         {(obstaclesEntity.length > 0 || obstaclesSection.length > 0) && (

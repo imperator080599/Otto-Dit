@@ -633,9 +633,14 @@ sondages changent**.
 
 ## Application — tranche livrée : le qualitatif, et l'échelle du cabinet (point 5b)
 
-**Ratio quantitatif / qualitatif : 5 règles calculées, 10 sources déclarées — 33,3 % de quantitatif**
-(le prototype est à 45,5 %). Mesuré par un test, pas affirmé. Avant cette passe l'application était à
-**100 %** — l'état du prototype qui avait été rejeté, en plus prononcé.
+**Deux ratios, et ils ne disent pas la même chose.** Le ratio de **RÈGLES** — ce que la méthode
+prévoit — est de 5 règles calculées pour 10 sources déclarées, soit **33,3 % de quantitatif** (le
+prototype est à 45,5 %). Le ratio de facteurs **RÉELLEMENT LEVÉS** sur la mission témoin est de
+2 observés pour 2 déclarés, soit **50,0 %**. Les deux sont mesurés par un test. Le second peut être
+mauvais alors que le premier est bon : une méthode équilibrée dont personne ne remplit le
+questionnaire redonne une évaluation à 100 % quantitative, et c'est le second ratio qui le dit.
+Avant cette passe l'application était à **100 %** sur les deux — l'état du prototype qui avait été
+rejeté, en plus prononcé.
 
 Livré (ADR-071, ADR-072) : migration `0013`, service `questionnaire.ts`, questionnaire et registre
 sur l'écran `/eng/[id]/risk`, `docs/12_CONFIGURABLE.md`, et 23 tests de plus.
@@ -654,6 +659,39 @@ sur l'écran `/eng/[id]/risk`, `docs/12_CONFIGURABLE.md`, et 23 tests de plus.
   formule, chiffrée à une séance et rattachée au point 6.
 
 **Vérification** : 252 tests applicatifs (229 → 252) · `tsc --noEmit` propre.
+
+## Application — tranche livrée : les assertions sont de la méthode, et le papier a un format
+
+Trois corrections à `docs/12_CONFIGURABLE.md`, plus la tranche technique qu'elles imposaient
+(ADR-073, ADR-074).
+
+**1. Les assertions étaient énumérées dans les schémas — c'est réglé, pas repoussé.** C'était le même
+défaut que l'échelle de risque : un cabinet qui sépare « présentation » et « informations à fournir »,
+ou qui suit le découpage PCAOB, voyait son fichier refusé. Le jeu vit maintenant dans
+`methodology/assertions.json` ; les trois autres schémas ne l'énumèrent plus ; la migration `0014`
+retire le CHECK énuméré en base. **Ce qui remplace l'énumération est plus strict qu'elle** : le
+validateur arrête l'assemblage dans six cas — une procédure, une question ou un facteur visant une
+assertion absente du jeu ; un `sens_naturel` inconnu ; deux codes en double ; un jeu vide. L'ancienne
+énumération protégeait contre une faute de frappe dans un fichier, le contrôle croisé protège contre
+une divergence entre quatre.
+
+**2. Le format du papier de travail manquait au document, et c'est la signature d'un cabinet.**
+Réponse établie par inspection : **partiellement configurable, et pas la partie qui compte**. Les
+intitulés de sections et d'annexes se changent — mais dans un pack TypeScript, donc avec un
+déploiement. La liste et l'ordre des huit sections, les colonnes des deux tableaux, la mise en page,
+l'en-tête et le logo (qui n'existent pas) sont en dur. **~3½ séances** pour que le papier sorte à la
+signature du cabinet, décomposées ligne à ligne. Une limite est assumée par écrit plutôt que subie :
+le bloc de visas, la version et l'empreinte de population ne deviendront pas optionnels — ce sont eux
+qui rendent un export relisible sans OTTO.
+
+**3. L'ouverture du document promettait ce que son §3 démentait douze lignes plus loin.** Elle date
+maintenant l'état réel — les éléments sont des données, le chargement par cabinet est chiffré à
+2½ séances et **n'est pas fait** — sans retirer la promesse. Deux marqueurs visibles courent dans le
+tableau du §1 : **⚠ commun** (c'est une donnée, mais le catalogue est unique pour toutes les
+missions) et **⚠⚠ code** (c'est configuré, mais dans un pack : il faut un déploiement). **Aucune
+ligne du §1 n'est aujourd'hui sans marqueur**, et le document le dit avant le tableau.
+
+**Vérification** : 261 tests applicatifs (252 → 261) · `tsc --noEmit` propre.
 
 ## Convergence prototype → application
 

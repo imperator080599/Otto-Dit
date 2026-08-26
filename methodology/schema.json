@@ -59,15 +59,8 @@
           "minLength": 20
         },
         "assertion": {
-          "enum": [
-            "realite",
-            "exhaustivite",
-            "mesure",
-            "evaluation",
-            "separation",
-            "droits",
-            "presentation"
-          ]
+          "type": "string",
+          "description": "Code d'assertion. Validé contre le jeu d'assertions du cabinet (assertions.json), PAS contre une liste figée : certains cabinets séparent « présentation » et « informations à fournir », d'autres suivent le découpage PCAOB."
         },
         "sens": {
           "enum": [

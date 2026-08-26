@@ -2420,3 +2420,86 @@ sanction.
 3. **Une contrainte testée sur la mauvaise ligne** : « écarter sans motif » était vérifié sur un
    facteur qui portait déjà un motif de confirmation, donc la contrainte était satisfaite. Elle se
    vérifie maintenant sur un facteur non encore statué.
+
+---
+
+## ADR-073 — Les assertions sont de la méthode, pas une constante du produit
+
+**Contexte.** Le jeu de sept assertions était **énuméré dans les schémas** de `methodology/` :
+`procedures.json`, `questionnaire.json` et `risque.json` validaient tous les trois leur champ
+`assertion` contre la même liste fermée écrite dans le schéma. Le §4 de `docs/12_CONFIGURABLE.md`
+portait la question comme « à discuter, ~½ séance ».
+
+**Le défaut, et c'est exactement celui de l'échelle de risque (ADR-071).** Un cabinet qui sépare
+« présentation » et « informations à fournir », ou qui suit le découpage PCAOB, voit son fichier
+refusé. La promesse « votre méthode reste la vôtre » devient alors « à condition qu'elle ressemble
+à la nôtre » — et un auditeur le teste en trente secondes. Laisser la question **ouverte dans un
+document commercial** est le vrai risque : on ne découvre pas une limite pendant une démonstration.
+
+**Décision.** Le jeu d'assertions est un fichier de méthode, `methodology/assertions.json`
+(`code`, `libelle`, `definition`, `sens_naturel`), validé par `schema-assertions.json`. Les trois
+autres schémas ne l'énumèrent plus : leur champ `assertion` est une chaîne, avec une description qui
+renvoie au jeu du cabinet. Côté base, `0014_assertions_are_method.sql` retire le CHECK énuméré de
+`fsli_assertion_risk.assertion` et le remplace par `btrim(assertion) <> ''`. Côté TypeScript,
+`Assertion` est un alias de `string` et `libAssertion(cat, code)` résout le libellé depuis le
+catalogue.
+
+**Ce qui remplace l'énumération est PLUS strict qu'elle**, et c'est le point qui rend la décision
+tenable. Une liste ouverte sans contrôle croisé serait pire qu'une liste fermée : une faute de frappe
+passerait. `validerAssertions` + les contrôles croisés arrêtent l'assemblage dans six cas —
+une procédure, une question ou un facteur observé visant une assertion **absente du jeu** (le message
+donne le jeu réel) ; un `sens_naturel` inconnu du catalogue de sens de test, qui aurait produit un
+libellé vide à l'écran ; deux assertions de même `code` ; un jeu **vide**, où plus aucune procédure
+ne viserait quoi que ce soit et où **rien ne le dirait**.
+
+L'énumération protégeait contre une faute de frappe dans **un** fichier ; le contrôle croisé protège
+contre une **divergence entre quatre**.
+
+**Vérification.** `echelle.test.ts` charge réellement un jeu à découpage `presentation` /
+`informations` distinct, et vérifie que **chacun des six modes de défaillance** arrête l'assemblage —
+un test par mode, pas un test qui les résume.
+
+**Ce que ça n'ouvre pas.** Une assertion reste un **nom** : la méthode la nomme, le code sait ce que
+la procédure qui la sert va lire. Un cabinet peut découper autrement ; il ne peut pas décréter qu'une
+assertion se teste par un calcul que le moteur ne connaît pas. Même frontière qu'ADR-050.
+
+---
+
+## ADR-074 — Le format du papier de travail : dire où passe la frontière avant qu'on la découvre
+
+**Contexte.** `docs/12_CONFIGURABLE.md` traitait des procédures, des seuils, de l'échelle, du
+questionnaire et de l'indépendance — et pas du **format du papier de travail**. Or c'est la signature
+d'un cabinet : ses colonnes, ses en-têtes, sa mise en page, ce qui entre dans son dossier et ce qu'un
+inspecteur lit. Un « ah non, ça c'est en dur » après une page entière sur la configurabilité annule
+la page.
+
+**L'état réel, établi par inspection et non par mémoire.**
+
+- **Configurable, mais dans un pack TypeScript** (`WorkpaperStrings`, `packs/types.ts`, implémenté
+  dans `nep-fr.ts` et `pcaob-sox.ts`) : intitulés des huit sections, intitulés des cinq annexes,
+  mentions d'attribution et de validation, langue. C'est de la **configuration**, mais elle exige un
+  développeur et un déploiement.
+- **Pas configurable du tout** : la liste et l'ordre des huit sections (`draft.ts`, clés `objective →
+  scope → method → sampleTable → exceptions → evaluation → verification → conclusion`) ; les colonnes
+  des deux tableaux (`draft.ts`, tableaux littéraux fr/en) ; la mise en page (tailles, couleurs,
+  marges, filets, littéraux dans `render.ts`) ; l'en-tête de cabinet et le logo, qui **n'existent
+  pas** ; le schéma de référencement des papiers, qui n'existe pas non plus.
+
+**Décision.** Introduire un second marqueur dans le §1 du document — **⚠⚠ code** — pour ce qui est
+configuré mais au mauvais endroit, distinct de **⚠ commun** qui marque une donnée non encore chargée
+par cabinet. Les intitulés entrent au §1 avec **⚠⚠ code** ; l'ordre, les colonnes, la mise en page et
+l'en-tête entrent au §2, chiffrés : **~3½ séances** (½ pour déplacer `WorkpaperStrings` dans
+`methodology/papier.json`, 1 pour l'ordre des sections en données, 1 pour les colonnes, 1 pour
+l'en-tête).
+
+**Une limite assumée et écrite, plutôt que subie.** Le bloc de visas, la mention de version et
+l'empreinte de population **ne deviendront pas optionnels**. Ce sont eux qui rendent un export
+auto-portant, relisible sans OTTO des années plus tard (ADR-013, P7). Leur place et leur libellé sont
+dans les 3½ séances ; leur **présence**, non. Une configurabilité qui permettrait d'exporter un
+papier incapable de dire qui l'a signé et sur quelle population n'est pas une liberté, c'est une
+régression.
+
+**Corollaire sur l'ouverture du document.** L'ouverture promettait ce que le §3 démentait douze
+lignes plus loin. Elle date maintenant l'état réel dans une subordonnée — les éléments sont des
+données, le chargement par cabinet est chiffré à 2½ séances et **n'est pas fait** — sans retirer la
+promesse. Une promesse datée se tient ; une promesse démentie au §3 se retourne.
