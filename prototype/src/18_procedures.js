@@ -128,92 +128,49 @@ function pieceSynth(e, montantCompta){
    `ech` : la procédure comporte-t-elle une sélection ?
    `pop` : définition EXPLICITE de la population — c'est ce qui rend la
            sélection revoyable, et c'est affiché tel quel à l'écran.        */
-const PROCEDURES = [
-  { code:'RAPPRO', a:'exhaustivite', min:'faible', ech:false, nature:'det',
-    lib:'Rapprochement du détail du compte au solde de la balance' },
-
-  { code:'RA', a:'presentation', min:'faible', ech:false, nature:'det',
-    lib:'Revue analytique substantive du poste et explication des variations' },
-
-  { code:'DETAIL', a:'realite', min:'faible', ech:true, unite:'écriture comptable', nature:'det',
-    lib:'Test de détail sur les éléments sélectionnés, pièce à l’appui',
-    pop:p => ({ lib:'Écritures mouvementant un compte du poste',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'aucun filtre — population entière du poste',
-                f:() => true }) },
-
-  { /* Un test de séparation des exercices est bidirectionnel par nature : il
-       cherche les opérations de N rattachées à N+1 ET celles de N+1 rattachées
-       à N. Le grand livre s'arrête au 31/12/2025 : le second sens est
-       inexécutable ici. La période annoncée allait jusqu'au 10/01/2026 alors
-       que rien après le 31/12 n'était testable — la population déclarée était
-       plus large que la population testée. Elle est bornée à ce qui existe, et
-       la limitation est écrite sur le papier. */
-    code:'CUTOFF', a:'separation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
-    lib:'Test de séparation des exercices — dix jours avant la clôture',
-    unidirectionnel:'Sens couvert : opérations comptabilisées en 2025 dont le fait générateur relève de 2026. '
-      + 'Le sens inverse — opérations comptabilisées en 2026 relevant de 2025 — exige le grand livre de '
-      + 'l’exercice suivant, indisponible à la date de ces travaux. Le test est donc unidirectionnel et ne '
-      + 'fonde aucune conclusion sur l’exhaustivité du rattachement.',
-    pop:p => ({ lib:'Écritures du poste comptabilisées dans les dix jours précédant la clôture',
-                periode:frDate(CUTOFF_DEB) + ' au ' + frDate(CLOTURE),
-                filtre:'date de comptabilisation comprise entre le ' + frDate(CUTOFF_DEB) + ' et le ' + frDate(CLOTURE)
-                     + ' — borne haute imposée par la fin du grand livre',
-                f:e => e.date >= CUTOFF_DEB && e.date <= CLOTURE }) },
-
-  { code:'MANUEL', a:'realite', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
-    lib:'Examen des écritures manuelles du poste et de leur justification',
-    pop:p => ({ lib:'Écritures manuelles du poste',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'journal d’opérations diverses OU saisie par la direction',
-                f:e => e.journal === 'OD' || /direction/.test(e.saisiePar) }) },
-
-  { code:'SEQ', a:'exhaustivite', min:'moyen', ech:false, nature:'det',
-    lib:'Contrôle de séquence des pièces et recherche de ruptures de numérotation' },
-
-  { code:'RECALC', a:'evaluation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
-    lib:'Recalcul des montants et vérification des bases de calcul retenues',
-    pop:p => ({ lib:'Écritures du poste supérieures au seuil de remontée',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'montant du mouvement supérieur au seuil de remontée',
-                f:() => true, min:() => seuils().CTT }) },
-
-  { code:'CONFIRM', a:'realite', min:'eleve', ech:true, unite:'tiers à circulariser', nature:'det',
-    postes:['CLIENTS','TRESO','FOURN','PROV'],
-    lib:'Confirmation directe auprès des tiers (circularisation)',
-    tiers:true,
-    pop:p => ({ lib:'Tiers auxiliaires mouvementés sur les comptes du poste',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'un élément par tiers auxiliaire, cumul des mouvements' }) },
-
-  { code:'ENTRETIEN', a:'realite', min:'eleve', ech:false, nature:'det',
-    lib:'Entretien avec le responsable du cycle et documentation du processus' },
-
-  { code:'ESTIM', a:'evaluation', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
-    siFacteur:'estimation',
-    lib:'Test de la base servant à l’estimation et des taux ou formules appliqués',
-    pop:p => ({ lib:'Écritures du poste rattachées à l’estimation',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'journal d’opérations diverses',
-                f:e => e.journal === 'OD' }) },
-
-  { code:'FRAUDE', a:'realite', min:'moyen', ech:true, unite:'écriture comptable', nature:'det',
-    siFacteur:'fraude',
-    lib:'Test spécifique de réponse au risque de fraude sur le poste',
-    pop:p => ({ lib:'Écritures du poste porteuses d’un marqueur de fraude',
-                periode:frDate(OUVERTURE) + ' au ' + frDate(CLOTURE),
-                filtre:'week-end, montant rond au millier, validation après la clôture, ou saisie par la direction',
-                f:e => isWeekend(e.date) || e.validDate > CLOTURE || /direction/.test(e.saisiePar)
-                    || (() => { const m = e.lines[0].debit || e.lines[0].credit; return m >= 100000 && m % 100000 === 0; })() }) },
-
-  { code:'ANNEXE', a:'presentation', min:'eleve', ech:false, nature:'det',
-    lib:'Rapprochement des montants d’annexe se rapportant au poste' },
-];
+/* ── les procédures viennent du CATALOGUE, pas d'ici ───────────────────────
+   La méthodologie vit dans methodology/procedures.json, versionné, validé et
+   consommé aussi par l'application. Ce fichier ne fait que la mettre en forme
+   pour l'écran : il n'en possède aucune ligne. */
+/* Une procédure n'est EXÉCUTABLE ici que si son prédicat de population est
+   réellement implémenté. Trois cas de non-exécution, et un seul écran :
+   le catalogue dit « non_implemente », le prototype déclare le prédicat
+   absent, ou le registre ne le connaît pas du tout. Le troisième cas est un
+   défaut de construction : le harnais du catalogue le relève. */
+function raisonNonExecutable(c){
+  const nom = c.population.predicat || 'non_implemente';
+  if (nom === 'non_implemente')
+    return 'le catalogue ne nomme aucune population calculable : cette procédure s’exécute hors '
+         + 'des données comptables (observation, entretien, inspection physique).';
+  if (PREDICATS_ABSENTS[nom]) return PREDICATS_ABSENTS[nom];
+  if (!PREDICATS[nom]) return 'prédicat « ' + nom + ' » inconnu du registre du prototype.';
+  return null;
+}
+const PROCEDURES = CAT_PROCEDURES.map(c => ({
+  code:c.code, cycle:c.cycle, a:c.assertion, min:c.risque_minimum,
+  ech:c.echantillonnee && !raisonNonExecutable(c),
+  catalogue:c.echantillonnee, unite:c.unite, lib:c.libelle, objectif:c.objectif,
+  sens:c.sens, controle:c.controle, sources:c.sources, note:c.note,
+  exceptions:c.exceptions, postes:c.postes, siFacteur:c.si_facteur,
+  tiers:(c.population.predicat || '').startsWith('tiers_'),
+  nonExecutable:!!raisonNonExecutable(c), pourquoi:raisonNonExecutable(c),
+  predicat:c.population.predicat || 'non_implemente',
+  def:c,
+}));
+/** Une procédure s'applique-t-elle à ce poste ? Transverse, ou de son cycle. */
+function procDuPoste(pr, p){
+  if (pr.cycle !== '*' && pr.cycle !== p.code) return false;
+  if (pr.postes && !pr.postes.includes(p.code)) return false;
+  return true;
+}
+/** Le sens du test, en toutes lettres — la donnée qui manquait au catalogue. */
+function libSens(code){ return (SENS_TEST[code] || {}).libelle || code; }
+function dSens(code){ return (SENS_TEST[code] || {}).d || ''; }
 
 function proceduresRequises(p){
   const fa = facteursActifs(p);
   return PROCEDURES.filter(pr => {
-    if (pr.postes && !pr.postes.includes(p.code)) return false;
+    if (!procDuPoste(pr, p)) return false;
     if (pr.siFacteur && !fa.find(f => f.code === pr.siFacteur && f.actif)) return false;
     return NIVEAUX.indexOf(niveau(p, pr.a)) >= NIVEAUX.indexOf(pr.min);
   });
@@ -236,30 +193,14 @@ const _popCache = new Map();
 function population(p, pr){
   if (!pr.ech) return null;
   const s = seuils();
-  const cle = p.code + '|' + pr.code + '|' + s.CTT;
+  const cle = p.code + '|' + pr.code + '|' + s.CTT + '|' + S.version;
   if (_popCache.has(cle)) return _popCache.get(cle);
-  const d = pr.pop(p);
-  let items;
-  if (pr.tiers){
-    const m = new Map();
-    for (const e of lg().entries){
-      const aux = e.lines.map(l => l.auxLib).find(Boolean);
-      if (!aux || !e.lines.some(l => p.re.test(l.compte))) continue;
-      const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
-      const cur = m.get(aux) || { cle:aux, lib:aux, montant:0, n:0, e:null };
-      cur.montant += mv; cur.n++; cur.e = cur.e || e;
-      m.set(aux, cur);
-    }
-    items = [...m.values()].sort((a, b) => b.montant - a.montant);
-  } else {
-    const min = d.min ? d.min() : 0;
-    items = lg().entries
-      .filter(e => e.lines.some(l => p.re.test(l.compte)))
-      .filter(d.f)
-      .map(e => ({ cle:e.num, e, montant:e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0) }))
-      .filter(x => x.montant > min);
-  }
-  const r = { ...d, comptes:p.comptes, unite:pr.unite, items,
+  const d = pr.def.population;
+  const fn = PREDICATS[d.predicat || 'non_implemente'] || PREDICATS.non_implemente;
+  const items = fn(p, pr, d.parametres || {});
+  if (!items) return null;
+  const r = { lib:d.libelle, source:d.source, periode:d.periode, filtre:d.filtre,
+              predicat:d.predicat, comptes:p.comptes, unite:pr.unite, items,
               masse:items.reduce((a, x) => a + x.montant, 0) };
   if (_popCache.size > 300) _popCache.clear();
   _popCache.set(cle, r);
@@ -278,6 +219,14 @@ const METHODES = {
     d:'Tout élément individuellement significatif est testé ; le reliquat est tiré au sort, '
      + 'chaque élément ayant la même probabilité d’être retenu.',
     quand:'Convient quand les éléments sont petits devant le seuil de planification.' },
+  exhaustive:{
+    lib:'sélection exhaustive au seuil de remontée',
+    court:'exhaustive',
+    imposee:'la méthode l’exige — voir la note de la procédure',
+    d:'Aucun tirage : tous les éléments de la population sont testés. La population est déjà bornée '
+     + 'par le seuil de remontée déclaré ; c’est ce seuil, et lui seul, qui fixe l’étendue.',
+    quand:'Exigée par les tests d’exhaustivité : sonder une population que l’on cherche précisément à '
+        + 'compléter ne prouve rien sur ce qui en est absent.' },
   sum:{
     lib:'sondage en unités monétaires',
     court:'unités monétaires',
@@ -288,9 +237,16 @@ const METHODES = {
     quand:'Convient quand les éléments approchent le seuil : la couverture en valeur est obtenue '
         + 'sans tester la moitié des éléments.' },
 };
+/** La méthode imposée par le catalogue n'est pas offerte au choix. */
+function methodeImposee(pr){
+  const m = pr.def && pr.def.selection === 'exhaustive_au_seuil' ? 'exhaustive' : null;
+  return m;
+}
 function methodeDe(p, pr){
+  const imp = methodeImposee(pr);
+  if (imp) return imp;
   const st = proc(p.code, pr.code);
-  return METHODES[st.methode] ? st.methode : 'strate';
+  return METHODES[st.methode] && !METHODES[st.methode].imposee ? st.methode : 'strate';
 }
 
 /** Sondage en unités monétaires. Déterministe : le départ aléatoire est tiré
@@ -345,7 +301,14 @@ function echantillonProc(p, pr){
   const gardeFou = partSig > GARDE_EXHAUSTIVE;
 
   let exhaustif, alea, intervalle = null, depart = null, unites = [];
-  if (meth === 'sum'){
+  if (meth === 'exhaustive'){
+    /* Pas de strate, pas de tirage, pas de germe : la population entière est
+       le papier de travail. Le garde-fou d'exhaustivité ne s'applique pas —
+       il dit qu'on teste presque tout SANS l'avoir décidé ; ici c'est décidé,
+       écrit au catalogue, et c'est la seule façon de conclure sur ce qui
+       manque. */
+    exhaustif = pop.items; alea = [];
+  } else if (meth === 'sum'){
     const t = tirageSUM(pop.items, pop.masse, n, st.seed);
     intervalle = t.intervalle; depart = t.depart; unites = t.unites;
     exhaustif = t.sel.filter(x => x.montant >= intervalle);
@@ -364,7 +327,8 @@ function echantillonProc(p, pr){
   const r = { pop, exhaustif, alea, retenus, n, nRegle, couvert,
               taux: pop.masse ? couvert / pop.masse : 0, strate, niv:niveau(p, pr.a),
               methode:meth, intervalle, depart, unites,
-              indivSig, partSig, gardeFou,
+              indivSig, partSig, gardeFou: gardeFou && meth !== 'exhaustive',
+              imposee: meth === 'exhaustive',
               nAdequate, intervalleLarge: meth === 'sum' && intervalle > strate };
   if (_echProcCache.size > 300) _echProcCache.clear();
   _echProcCache.set(cle, r);
@@ -384,156 +348,47 @@ function echantillonProc(p, pr){
 const C_MONTANT = { type:'montant', tol:0, tolLib:'exact' };
 const C_DATE    = { type:'date',    tol:0, tolLib:'exact' };
 
-const CATALOGUE = {
-  /* ── chiffre d'affaires : test de détail ─────────────────────────────── */
-  'CA/DETAIL': [
-    { doc:'Facture de vente', champs:[
-      { code:'montant_ht', lib:'Montant HT', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'date_piece', lib:'Date de facture', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
-        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-      { code:'tiers', lib:'Client facturé', type:'texte', tolLib:'identité',
-        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
-        val:x => pieceSynth(x.e, x.montant).tiers },
-      { code:'num_piece', lib:'Numéro de pièce', type:'texte', tolLib:'identité',
-        contre:'référence de pièce du grand livre', ref:x => x.e.pieceRef, val:x => pieceSynth(x.e, x.montant).num_piece },
-    ]},
-    { doc:'Bon de livraison', champs:[
-      { code:'qte_livree', lib:'Quantité livrée', type:'nombre', tol:0, tolLib:'exact',
-        contre:'quantité facturée', ref:x => pieceSynth(x.e, x.montant).qte_facturee, val:x => pieceSynth(x.e, x.montant).qte_livree },
-      { code:'date_livraison', lib:'Date de livraison', type:'date', tolLib:'antérieure ou égale à la clôture',
-        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
-        regle:'antérieure ou égale' },
-      { code:'signature', lib:'Signature du client', type:'bool', tolLib:'présence exigée',
-        contre:'présence de la signature', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
-    ]},
-  ],
-  /* ── achats ───────────────────────────────────────────────────────────── */
-  'ACHATS/DETAIL': [
-    { doc:'Facture fournisseur', champs:[
-      { code:'montant_ht', lib:'Montant HT', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'date_piece', lib:'Date de facture', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
-        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-      { code:'tiers', lib:'Fournisseur', type:'texte', tolLib:'identité',
-        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
-        val:x => pieceSynth(x.e, x.montant).tiers },
-    ]},
-    { doc:'Bon de réception', champs:[
-      { code:'qte_livree', lib:'Quantité reçue', type:'nombre', tol:0, tolLib:'exact',
-        contre:'quantité facturée', ref:x => pieceSynth(x.e, x.montant).qte_facturee, val:x => pieceSynth(x.e, x.montant).qte_livree },
-      { code:'date_livraison', lib:'Date de réception', type:'date', tolLib:'antérieure ou égale à la clôture',
-        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
-        regle:'antérieure ou égale' },
-    ]},
-  ],
-  /* ── charges de personnel ─────────────────────────────────────────────── */
-  'PERSONNEL/DETAIL': [
-    { doc:'Bulletin de paie', champs:[
-      { code:'montant_ht', lib:'Brut du bulletin', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'date_piece', lib:'Période de paie', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
-        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-    ]},
-    { doc:'Contrat de travail ou avenant', champs:[
-      { code:'taux_contrat', lib:'Rémunération contractuelle', type:'texte', tolLib:'conformité au contrat',
-        contre:'barème de rémunération applicable', ref:() => 'barème 2025 applicable',
-        val:x => pieceSynth(x.e, x.montant).taux_contrat },
-    ]},
-  ],
-  /* ── trésorerie ───────────────────────────────────────────────────────── */
-  'TRESO/DETAIL': [
-    { doc:'Relevé bancaire', champs:[
-      { code:'montant_ht', lib:'Montant du mouvement', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'date_piece', lib:'Date de valeur', type:'date', tol:5, tolLib:'± 5 jours',
-        contre:'date de comptabilisation', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-    ]},
-  ],
-  /* ── circularisation ──────────────────────────────────────────────────── */
-  '*/CONFIRM': [
-    { doc:'Réponse de confirmation du tiers', champs:[
-      { code:'montant_ht', lib:'Solde confirmé', ...C_MONTANT,
-        contre:'cumul des mouvements en comptabilité', ref:x => x.montant, val:x => x.montant },
-      { code:'date_piece', lib:'Date d’arrêté confirmée', ...C_DATE,
-        contre:'date de clôture', ref:() => CLOTURE, val:() => CLOTURE },
-    ]},
-  ],
-  /* ── séparation des exercices ─────────────────────────────────────────── */
-  '*/CUTOFF': [
-    { doc:'Pièce justificative de l’opération', champs:[
-      { code:'date_piece', lib:'Date de la pièce', type:'date', regle:'même exercice que la référence',
-        tolLib:'même exercice que la comptabilisation',
-        contre:'date de comptabilisation', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-      { code:'montant_ht', lib:'Montant de la pièce', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-    ]},
-    { doc:'Preuve de la livraison ou du service fait', champs:[
-      { code:'date_livraison', lib:'Date du fait générateur', type:'date', tolLib:'antérieure ou égale à la clôture',
-        contre:'date de clôture', ref:() => CLOTURE, val:x => pieceSynth(x.e, x.montant).date_livraison,
-        regle:'antérieure ou égale' },
-    ]},
-  ],
-  /* ── écritures manuelles et fraude ────────────────────────────────────── */
-  '*/MANUEL': [
-    { doc:'Justification de l’écriture manuelle', champs:[
-      { code:'montant_ht', lib:'Montant justifié', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'signature', lib:'Approbation d’un tiers autre que le préparateur', type:'bool', tolLib:'présence exigée',
-        contre:'présence de l’approbation', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
-    ]},
-  ],
-  '*/FRAUDE': [
-    { doc:'Justification de l’écriture relevée', champs:[
-      { code:'montant_ht', lib:'Montant justifié', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'signature', lib:'Approbation d’un tiers autre que le préparateur', type:'bool', tolLib:'présence exigée',
-        contre:'présence de l’approbation', ref:() => true, val:x => pieceSynth(x.e, x.montant).signature },
-    ]},
-  ],
-  /* ── recalcul et estimation ───────────────────────────────────────────── */
-  '*/RECALC': [
-    { doc:'Base de calcul et pièce d’appui', champs:[
-      { code:'montant_ht', lib:'Montant recalculé', ...C_MONTANT,
-        contre:'montant comptabilisé', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'taux_contrat', lib:'Taux ou formule appliqué', type:'texte', tolLib:'conformité au barème',
-        contre:'barème ou contrat de référence', ref:() => 'barème 2025 applicable',
-        val:x => pieceSynth(x.e, x.montant).taux_contrat },
-    ]},
-  ],
-  '*/ESTIM': [
-    { doc:'Base de données servant à l’estimation', champs:[
-      { code:'montant_ht', lib:'Montant issu de la base', ...C_MONTANT,
-        contre:'montant comptabilisé', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'taux_contrat', lib:'Taux ou formule appliqué', type:'texte', tolLib:'justificatif exigé',
-        contre:'justificatif du taux retenu', ref:() => 'barème 2025 applicable',
-        val:x => pieceSynth(x.e, x.montant).taux_contrat },
-    ]},
-  ],
-  /* ── repli générique ──────────────────────────────────────────────────── */
-  '*/DETAIL': [
-    { doc:'Pièce justificative de l’opération', champs:[
-      { code:'montant_ht', lib:'Montant de la pièce', ...C_MONTANT,
-        contre:'montant de la ligne du grand livre', ref:x => x.montant, val:x => pieceSynth(x.e, x.montant).montant_ht },
-      { code:'date_piece', lib:'Date de la pièce', type:'date', regle:'dans l’exercice', tolLib:'dans l’exercice',
-        contre:'exercice audité', ref:x => x.e.date, val:x => pieceSynth(x.e, x.montant).date_piece },
-      { code:'tiers', lib:'Tiers', type:'texte', tolLib:'identité',
-        contre:'compte auxiliaire de l’écriture', ref:x => x.e.lines.map(l => l.auxLib).find(Boolean) || '—',
-        val:x => pieceSynth(x.e, x.montant).tiers },
-    ]},
-  ],
-};
-/** Le catalogue applicable : spécifique au poste s'il existe, générique sinon. */
-function catalogue(p, pr){
-  return CATALOGUE[p.code + '/' + pr.code] || CATALOGUE['*/' + pr.code] || null;
+/* ── le catalogue de preuve vient lui aussi des données ────────────────────
+   Chaque champ nomme sa RÉFÉRENCE ; RESOLVEURS sait la calculer et sait ce
+   que la pièce synthétique en dit. Un champ dont le résolveur est
+   « non_implemente » ne produit aucun contrôle exécutable. */
+function champCode(c){
+  const r = RESOLVEURS[c.reference] || RESOLVEURS.non_implemente;
+  return { code:c.code, lib:c.libelle, type:c.type, contre:c.controle_contre,
+           regle:c.regle, tolLib:c.tolerance, releveSeul:!!c.releve_seul,
+           tol:c.type === 'montant' || c.type === 'nombre' ? 0
+             : c.type === 'date' && /± (\d+)/.test(c.tolerance) ? parseInt(c.tolerance.match(/± (\d+)/)[1], 10) : 0,
+           ref:r.ref, val:r.val, resolveur:c.reference };
 }
-function catalogueSpecifique(p, pr){ return !!CATALOGUE[p.code + '/' + pr.code]; }
+function docsCatalogue(liste){
+  return (liste || []).map(d => ({ doc:d.document, champs:d.champs.map(champCode) }));
+}
+function catalogue(p, pr){
+  const d = pr.def; if (!d) return null;
+  const parCycle = (d.justificatifs_par_cycle || {})[p.code];
+  const l = parCycle || d.justificatifs;
+  return l && l.length ? docsCatalogue(l) : null;
+}
+function catalogueSpecifique(p, pr){
+  return !!(pr.def && (pr.def.justificatifs_par_cycle || {})[p.code]) || (pr.cycle && pr.cycle !== '*');
+}
 /** Documents attendus pour une procédure, dans l'ordre du catalogue. */
 function docsAttendusProc(p, pr){ const c = catalogue(p, pr); return c ? c.map(d => d.doc) : []; }
 
 /* ── comparaison d'un champ relevé à sa donnée de référence ──────────────── */
 function compare(ch, releve, x){
   if (releve === undefined || releve === null || releve === '') return { saisi:false };
+  /* Un champ RELEVÉ SEUL n'a pas de référence à laquelle se comparer : il
+     alimente le jugement ou un autre contrôle. Le catalogue distingue donc
+     « champs à relever » et « contrôle à opérer » — la date d'un fait
+     générateur se relève, c'est la recherche de la dette qui se contrôle.
+     Le confondre avec un contrôle, c'était relever comme anomalie toute
+     facture normale du cycle. */
+  if (ch.releveSeul) return { saisi:true, ecart:0, conforme:true, releveSeul:true,
+    refLib:'—', ecartLib:'relevé',
+    valLib: ch.type === 'date' ? frDate(releve)
+          : ch.type === 'montant' ? eur(Math.round((parseFloat(String(releve).replace(/\s/g, '').replace(',', '.')) || 0) * 100))
+          : String(releve) };
   const r = ch.ref(x);
   if (ch.type === 'montant'){
     const v = Math.round((parseFloat(String(releve).replace(/\s/g, '').replace(',', '.')) || 0) * 100);

@@ -190,23 +190,60 @@ function renderImpact(){
   }
   const a = anomalies(), nc = a.filter(x => !x.souSeuil).reduce((t, x) => t + x.montant, 0);
   const cells = {
-    'sections de travail':                       [postes.length + '/' + postesCalcules().length, 'sections'],
+    'sections de travail':                       [postes.length + '/' + postesCalcules().length, 'sections', true],
     'procédures requises':                       [String(procs),                                 'procédures'],
     'éléments sélectionnés':                     [String(sel),                                   'éléments'],
     'couverture des sélections':                 [pct(total ? couvert / total : 0, 1),           'couverture'],
     'facteurs de risque à statuer':              [String(registre().filter(f => f.statut === 'propose').length), 'facteurs'],
     'requêtes en retard':                        [String(S.requetes.filter(retard).length),      'retards'],
-    'notes bloquantes ouvertes':                 [String(notesBloquantesOuvertes().length),      'bloquantes'],
+    'notes bloquantes ouvertes':                 [String(notesBloquantesOuvertes().length),      'bloquantes', true],
     'cumul non corrigé':                         [eur0(nc),                                      'cumul'],
-    'conclusion':                                [Math.abs(nc) > s.M ? 'au-dessus du seuil' : 'sous le seuil', 'conclusion'],
+    'conclusion':                                [Math.abs(nc) > s.M ? 'au-dessus du seuil' : 'sous le seuil', 'conclusion', true],
   };
   peindreImpact(cells);
 }
+/** Peint les compteurs. Le troisième élément d'une cellule la marque
+ *  ESSENTIELLE : c'est elle, et elle seule, qui survit au bandeau réduit. */
 function peindreImpact(cells){
-  document.getElementById('impact').innerHTML = Object.entries(cells).map(([k, [v, court]]) =>
-    `<div class="c ${lastImpact[k] !== undefined && lastImpact[k] !== v ? 'flash' : ''}"><div class="k"><span class="lg">${k}</span><span class="sm">${court}</span></div><div class="v">${v}</div></div>`).join('');
+  document.getElementById('impact').innerHTML = Object.entries(cells).map(([k, [v, court, essentiel]]) =>
+    `<div class="c ${lastImpact[k] !== undefined && lastImpact[k] !== v ? 'flash' : ''}"${essentiel ? ` data-cle="1"` : ''}>`
+    + `<div class="k"><span class="lg">${k}</span><span class="sm">${court}</span></div>`
+    + `<div class="v" data-k="${esc(court)}">${v}</div></div>`).join('');
   lastImpact = Object.fromEntries(Object.entries(cells).map(([k, [v]]) => [k, v]));
 }
+
+/* ── réduction du bandeau au défilement ────────────────────────────────────
+   Le bandeau est dans le flux : le réduire raccourcit le document et le
+   contenu remonterait d'autant sous les yeux. On compense le défilement de la
+   différence de hauteur, sinon la page saute à chaque bascule. */
+let _bandeauReduit = false, _dernierY = 0, _bandeauTick = false;
+const BANDEAU_DECLENCHE = 48;   // px de défilement avant réduction
+const BANDEAU_REMONTE = 24;     // px de remontée avant rétablissement
+function majBandeau(){
+  _bandeauTick = false;
+  const top = document.querySelector('.top');
+  if (!top) return;
+  const y = window.scrollY;
+  let cible = _bandeauReduit;
+  if (y <= BANDEAU_DECLENCHE) cible = false;
+  else if (y > _dernierY) cible = true;
+  else if (y < _dernierY - BANDEAU_REMONTE) cible = false;
+  if (cible !== _bandeauReduit){
+    const av = top.getBoundingClientRect().height;
+    document.documentElement.dataset.bandeau = cible ? 'reduit' : '';
+    _bandeauReduit = cible;
+    const ap = top.getBoundingClientRect().height;
+    syncTopHeight();
+    const d = Math.round(av - ap);
+    if (d && y > 0){ window.scrollTo(0, Math.max(0, y - d)); _dernierY = Math.max(0, y - d); return; }
+  }
+  _dernierY = y;
+}
+window.addEventListener('scroll', () => {
+  if (_bandeauTick) return;
+  _bandeauTick = true;
+  requestAnimationFrame(majBandeau);
+}, { passive:true });
 
 /* ═══ 20. RENDU PRINCIPAL ══════════════════════════════════════════════════ */
 function contenu(){

@@ -16,3 +16,7 @@ dataset/eval/public/*
 app/.env
 app/.env.local
 app/.env.*.local
+
+# Le catalogue est ENGENDRÉ depuis methodology/ à chaque assemblage — jamais versionné.
+prototype/src/_catalogue.gen.js
+prototype/src/otto-prototype.html

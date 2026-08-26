@@ -110,12 +110,14 @@ function multiple(x){
 function cellulesSection(p){
   const s = seuils(), st = sec(p.code), o = obstaclesVisa(p), t = avancementSection(p);
   const niv = NIVEAUX[niveauMax(p)];
+  /* Les trois cellules marquées « essentielles » sont celles qui restent quand
+     le bandeau se réduit : ce que je regarde, où j'en suis, ce qui bloque. */
   return {
-    'poste':                    [esc(p.lib), esc(p.code)],
+    'poste':                    [esc(p.lib), esc(p.code), true],
     'risque retenu':            [NIV_LIB[niv], 'risque'],
     'solde / planification':    [multiple(Math.abs(p.solde) / s.PM), '/ planif.'],
-    'obstacles au visa':        [String(o.length), 'obstacles'],
-    'visa':                     [st.visa ? 'visée' : (o.length ? 'bloqué' : 'prête'), 'visa'],
+    'obstacles au visa':        [String(o.length), 'obstacles', true],
+    'visa':                     [st.visa ? 'visée' : (o.length ? 'bloqué' : 'prête'), 'visa', true],
     'justificatifs attendus':   [String(t.elements), 'attendus'],
     'reçus':                    [String(t.recus), 'reçus'],
     'contrôles traités':        [String(t.traitee + t.explique), 'traités'],

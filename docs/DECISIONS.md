@@ -1547,3 +1547,102 @@ qui lui permet de ne rien manquer. L'économie apparente du premier essai (15 é
 réglage. Sur ce dossier, la moitié des populations ont plus d'un quart d'éléments individuellement
 significatifs — le seuil de planification est bas au regard de la taille des pièces, et l'écran le
 dit à chaque fois.
+
+---
+
+## ADR-048 — La méthodologie est de la donnée versionnée, pas du code
+
+**Demande du fondateur, 2026-08-26, littérale** : le catalogue de procédures doit être livré sous
+forme de **données structurées versionnées dans le dépôt**, consommées par **le prototype ET
+l'application**, le prototype l'intégrant **à la construction** et ne le contenant pas en dur.
+« Sinon je paierai deux fois ce travail et la version qui compte sera enfermée dans une
+démonstration. »
+
+**Décision.**
+
+1. Le catalogue vit dans `methodology/` **à la racine du dépôt**, hors de `app/` et hors de
+   `prototype/` : c'est de la méthode, pas du code applicatif.
+2. `methodology/valider.mjs` est **le** validateur et **le** chargeur. Sans dépendance — la suite
+   doit tourner sans réseau (règle 4 du CLAUDE.md). Il est appelé par
+   `app/src/lib/methodology/catalogue.ts` **et** par `prototype/src/gen-catalogue.mjs`.
+3. Un catalogue invalide **arrête** l'assemblage du prototype (`exit 1`) et fait échouer la suite
+   de l'application. Il n'existe pas de chemin qui livre un produit bâti sur des données non
+   vérifiées.
+4. `_catalogue.gen.js` est **engendré** à chaque assemblage et **non versionné**.
+
+**Ce que la validation stricte a immédiatement trouvé.** Le validateur partagé, plus strict que
+celui qu'il remplace (motifs, longueurs minimales, champs inconnus jusque dans les justificatifs),
+a relevé au premier passage que le motif des codes n'admettait qu'un seul tiret alors que
+`FOURN-CUTOFF-REC` en porte deux. Le motif a été élargi à `^[A-Z_]+(-[A-Z_]+)*$` : le nom d'une
+procédure peut être composé.
+
+---
+
+## ADR-049 — Ce qui se relève et ce qui se contrôle sont deux choses
+
+**Constat.** Le catalogue traitait tout champ de justificatif comme un **contrôle** : une valeur
+relevée, une référence, un écart. Appliqué à la recherche de passifs non enregistrés, cela donnait
+une règle « date du fait générateur antérieure ou égale à la clôture », qui relevait comme anomalie
+**toute facture normale du cycle** — et jugeait conforme, par la même règle inversée, le passif
+omis lui-même. Le harnais l'a montré : zéro écart sur les passifs omis, soixante-douze écarts sur
+des décaissements réguliers.
+
+**Décision.**
+
+1. Un champ de justificatif peut être marqué **`releve_seul`** : il se relève et **ne se compare à
+   rien**. Il alimente le jugement ou un autre contrôle, et **ne produit jamais d'écart**.
+2. Le validateur **interdit** qu'un champ porte à la fois `releve_seul` et une `regle` : le
+   catalogue ne dira pas deux choses contraires au même endroit.
+3. Le contrôle de la recherche de passifs non enregistrés n'est **pas une date**, c'est une
+   **recherche** : la dette attendue au bilan de clôture y figure-t-elle ? La date du fait
+   générateur est relevée, c'est elle qui dit si une dette était attendue ; le contrôle porte sur
+   sa présence au passif.
+4. Le jeu de données a été refait en conséquence. Un extrait postérieur où **tous** les faits
+   générateurs normaux tombaient après la clôture rendait le test trivial — un tri de dates
+   suffisait. Les soixante décaissements se répartissent maintenant en trois natures : **29**
+   règlent une dette régulièrement comptabilisée, **28** sont des charges de l'exercice suivant,
+   **3** sont des passifs non enregistrés.
+
+**Mesure.** Sur les soixante décaissements, la procédure relève **3 écarts, exactement les trois
+passifs omis, et rien d'autre**. Aucun faux positif.
+
+**Défaut corrigé au passage.** Les trois passifs omis portaient des références nommées
+(`FF2026-0042`, `FF2026-0117`, `FF2026-0203`) mais la boucle du jeu de données n'engendrait que des
+multiples de sept : `FF2026-0117` n'en est pas un et **n'a jamais existé**. Deux passifs sur trois
+étaient posés. Les références sont désormais **posées à des rangs fixes**, la numérotation les
+réservant. Une donnée d'essai nommée doit être posée, pas espérée.
+
+---
+
+## ADR-050 — Sonder une population qu'on cherche à compléter ne prouve rien
+
+**Décision.** Une procédure du catalogue peut déclarer `"selection": "exhaustive_au_seuil"` :
+**aucun tirage**, tous les éléments de la population sont testés, et l'étendue se règle par le
+**seuil de remontée** qui borne la population — pas par une taille d'échantillon.
+
+**Pourquoi.** La recherche de passifs non enregistrés sert l'**exhaustivité**. Tirer un échantillon
+dans une population que l'on examine précisément pour trouver ce qui manque au grand livre ne dit
+rien sur ce qui n'a pas été tiré. C'est une procédure de **sélection d'éléments spécifiques**, pas
+de sondage, et la donnée doit le dire — sans quoi la détection des trois passifs omis dépendrait du
+germe du tirage, ce qui est le contraire d'une preuve.
+
+**Le seuil est le levier, et il est déclaré.** Le seuil de remontée retenu est le **seuil de
+signification manifeste** (1 600 € sur ce dossier), pas le seuil de planification (24 000 €). Le
+catalogue le dit et dit pourquoi : des dettes omises individuellement non significatives
+**s'additionnent**, et un seuil de remontée au seuil de planification les laisserait passer par
+construction. Sur ce dossier, cela met 60 décaissements au papier de travail, pour 100 % de la
+masse — c'est le coût de la procédure, et il est affiché.
+
+**Conséquence sur le garde-fou d'exhaustivité (ADR-047).** Il ne s'applique pas à une sélection
+imposée. Le garde-fou dit « vous testez presque tout **sans l'avoir décidé** » ; ici c'est décidé,
+écrit au catalogue et motivé. Le déclencher quand même le rendrait insignifiant partout ailleurs.
+La méthode n'est alors pas offerte au choix à l'écran, et une tentative de la ramener à un sondage
+depuis l'interface est sans effet — vérifié par le harnais.
+
+**Défaut de robustesse trouvé en même temps.** Deux prédicats (`tiers_sans_reponse`,
+`avoirs_apres_cloture`) étaient **nommés** par le catalogue et rendaient `null` : la procédure se
+présentait comme « avec sélection » alors que sa sélection valait `null`, ce qui faisait planter
+deux harnais — et aurait planté l'écran. Ils sont désormais **déclarés absents avec leur raison**,
+affichée à côté de la procédure ; une procédure dont le prédicat est absent cesse de se dire
+échantillonnée. Un prédicat nommé que personne n'implémente ni ne déclare absent est un défaut de
+construction, et le harnais du catalogue le relève.

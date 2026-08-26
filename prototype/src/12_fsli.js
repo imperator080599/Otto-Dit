@@ -214,19 +214,62 @@ function blocPlan(p){
    4. UNE PROCÉDURE : sa population, sa sélection, son papier
    ───────────────────────────────────────────────────────────────────────── */
 const CTR_PAR_PAGE = 40;
+
+/* ── la méthode, à l'écran ────────────────────────────────────────────────
+   Un catalogue qui ne nourrit que la machine est un catalogue à moitié
+   livré : l'auditeur qui exécute la procédure doit lire, à l'endroit où il
+   l'exécute, ce qu'elle vise, dans quel SENS elle va, quel contrôle opérer,
+   ce qui compte comme exception, et d'où la méthode vient. C'est aussi la
+   seule place où l'état de vérification des sources est honnête : non
+   vérifié se dit, il ne se tait pas. */
+function blocMethode(p, pr){
+  const src = (pr.sources || []).map(c => ({ code:c, s:CAT_SOURCES[c] })).filter(x => x.s);
+  const nonVerif = src.filter(x => !x.s.verifie);
+  return `
+    <h3>Méthode <span class="tag ${pr.cycle === '*' ? '' : 'det'}">${pr.cycle === '*' ? 'procédure transverse' : 'catalogue du cycle ' + esc(pr.cycle)}</span></h3>
+    <div class="kv">
+      <span class="k">Objectif</span><span class="v" style="font-family:var(--sans)">${esc(pr.objectif)}</span>
+      <span class="k">Sens du test</span><span class="v" style="font-family:var(--sans)"><b>${esc(libSens(pr.sens))}</b> — ${esc(dSens(pr.sens))}</span>
+      <span class="k">Contrôle à opérer</span><span class="v" style="font-family:var(--sans)">${esc(pr.controle)}</span>
+      ${pr.exceptions && pr.exceptions.length ? `<span class="k">Compte comme exception</span>
+        <span class="v" style="font-family:var(--sans)">${pr.exceptions.map(esc).join(' · ')}</span>` : ''}
+      <span class="k">Requise à partir de</span><span class="v">risque « ${NIV_LIB[pr.min]} »</span>
+    </div>
+    ${pr.note ? `<p class="note">${esc(pr.note)}</p>` : ''}
+    ${pr.nonExecutable ? `<div class="callout warn"><b>Cataloguée, non exécutable ici.</b>
+      ${esc(pr.pourquoi)} Elle n’est ni simulée ni approchée et ne produit aucune sélection —
+      elle reste au programme de travail avec sa méthode, à exécuter hors de l’outil.
+      <br><span class="smallcaps">Population attendue : ${esc(pr.def.population.libelle)}
+      · source : ${esc(pr.def.population.source)} · prédicat nommé :
+      <span class="mono">${esc(pr.predicat)}</span></span></div>` : ''}
+    <div class="callout ${nonVerif.length ? 'warn' : ''}">
+      <b>Sources — catalogue v${esc(CATALOGUE_VERSION)}.</b>
+      ${src.map(x => `<br><span class="mono">${esc(x.code)}</span> ${esc(x.s.reference)}
+        ${x.s.verifie ? '' : '<span class="pill warn">UNVERIFIED</span>'}
+        <br><span class="smallcaps">${esc(x.s.objet)}${x.s.verifie ? '' : ' — ' + esc(x.s.raison_non_verifie || '')}</span>`).join('')}
+      ${nonVerif.length ? `<br><span class="smallcaps">Aucun texte primaire n’a été atteint depuis
+        l’environnement de développement : ces références nomment la norme et son objet, jamais un
+        numéro de paragraphe. Elles doivent être vérifiées avant tout usage réel.</span>` : ''}
+    </div>`;
+}
+
 function blocProcedure(p, pr){
   const stp = proc(p.code, pr.code), e = echantillonProc(p, pr), s = seuils();
   const cat = catalogue(p, pr), spec = catalogueSpecifique(p, pr);
   const deja = requetesDe(p.code).some(r => r.proc === pr.code);
   if (!pr.ech) return `
     <div class="row"><span class="pill">${esc(libAssertion(pr.a))}</span>
-      <span class="pill">sans sélection</span><span class="smallcaps">${esc(procRef(p, pr))}</span></div>
+      <span class="pill">${pr.nonExecutable ? 'non exécutable ici' : 'sans sélection'}</span>
+      <span class="pill">${esc(libSens(pr.sens))}</span>
+      <span class="smallcaps">${esc(procRef(p, pr))}</span></div>
+    ${blocMethode(p, pr)}
     <p class="note">${esc(pr.lib)} — procédure exécutée sur la population entière, sans échantillonnage.</p>
     <div class="ctrl"><label>Conclusion de la procédure</label>
       <textarea data-pconcl="${pr.code}" rows="2" placeholder="résultat de la procédure">${esc(stp.conclusion)}</textarea></div>`;
 
   /* ── définition de la population, affichée telle quelle ── */
   const defPop = `
+    ${blocMethode(p, pr)}
     <h3>Population</h3>
     <div class="kv">
       <span class="k">Définition</span><span class="v" style="font-family:var(--sans)">${esc(e.pop.lib)}</span>
@@ -247,24 +290,38 @@ function blocProcedure(p, pr){
   const params = `
     <h3>Sélection</h3>
     <div class="row">
-      <div class="ctrl"><label>Méthode</label>
-        <select data-pmeth="${pr.code}">
-          ${Object.entries(METHODES).map(([k, v]) => `<option value="${k}" ${e.methode === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}
-        </select></div>
-      <div class="ctrl"><label>Coupure d’exhaustivité — seuil de planification</label>
-        <input class="cell" value="${eur0(e.strate)}" disabled style="text-align:left"></div>
-      ${e.methode === 'sum' ? `<div class="ctrl"><label>Intervalle de sondage — masse ÷ taille</label>
-        <input class="cell" value="${eur0(e.intervalle)}" disabled style="text-align:left"></div>` : ''}
-      <div class="ctrl"><label>Taille du tirage${stp.taille ? ' — imposée' : ' — règle de risque'}</label>
-        <input class="cell" data-ptaille="${pr.code}" value="${e.n}" style="text-align:left"></div>
-      <div class="ctrl"><label>Germe</label>
-        <input type="text" data-pseed="${pr.code}" value="${esc(stp.seed)}"></div>
-      <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>
+      ${e.imposee
+        ? `<div class="ctrl"><label>Méthode — imposée par le catalogue</label>
+             <input class="cell" value="${esc(m.lib)}" disabled style="text-align:left"></div>
+           <div class="ctrl"><label>Seuil de remontée — borne de la population</label>
+             <input class="cell" value="${eur0(seuils().CTT)}" disabled style="text-align:left"></div>
+           <div class="ctrl"><label>Éléments testés</label>
+             <input class="cell" value="${e.retenus.length} sur ${e.pop.items.length}" disabled style="text-align:left"></div>`
+        : `<div class="ctrl"><label>Méthode</label>
+             <select data-pmeth="${pr.code}">
+               ${Object.entries(METHODES).filter(([, v]) => !v.imposee)
+                 .map(([k, v]) => `<option value="${k}" ${e.methode === k ? 'selected' : ''}>${esc(v.lib)}</option>`).join('')}
+             </select></div>
+           <div class="ctrl"><label>Coupure d’exhaustivité — seuil de planification</label>
+             <input class="cell" value="${eur0(e.strate)}" disabled style="text-align:left"></div>
+           ${e.methode === 'sum' ? `<div class="ctrl"><label>Intervalle de sondage — masse ÷ taille</label>
+             <input class="cell" value="${eur0(e.intervalle)}" disabled style="text-align:left"></div>` : ''}
+           <div class="ctrl"><label>Taille du tirage${stp.taille ? ' — imposée' : ' — règle de risque'}</label>
+             <input class="cell" data-ptaille="${pr.code}" value="${e.n}" style="text-align:left"></div>
+           <div class="ctrl"><label>Germe</label>
+             <input type="text" data-pseed="${pr.code}" value="${esc(stp.seed)}"></div>
+           <div class="ctrl"><label>&nbsp;</label><button class="btn sec" data-pnouveau="${pr.code}">nouveau germe</button></div>`}
       <div class="ctrl"><label>&nbsp;</label>
         <button class="btn" data-preq="${pr.code}" ${deja ? 'disabled' : ''}>${deja ? 'requête émise' : 'générer la requête depuis le catalogue'}</button></div>
     </div>
-    <div class="callout"><b>Méthode retenue : ${esc(m.lib)}.</b> ${esc(m.d)} ${esc(m.quand)}
-      ${e.methode === 'sum'
+    <div class="callout"><b>Méthode ${e.imposee ? 'imposée' : 'retenue'} : ${esc(m.lib)}.</b> ${esc(m.d)} ${esc(m.quand)}
+      ${e.imposee
+        ? `<br>Population bornée au seuil de remontée ${eur0(seuils().CTT)} :
+           ${e.pop.items.length} élément(s) pour ${eur(e.pop.masse)}, tous testés.
+           L’étendue ne se règle pas par une taille d’échantillon, elle se règle par ce seuil —
+           le porter au seuil de planification (${eur0(e.strate)}) laisserait par construction
+           s’accumuler les dettes omises individuellement non significatives.`
+      : e.methode === 'sum'
         ? `<br>Intervalle ${eur0(e.intervalle)} (masse ${eur0(e.pop.masse)} ÷ ${e.n}), départ aléatoire
            ${eur(e.depart)} tiré du germe <span class="mono">${esc(stp.seed)}</span> :
            ${e.unites.length} unité(s) monétaire(s) retenue(s) désignant ${e.retenus.length} élément(s).`
@@ -291,13 +348,14 @@ function blocProcedure(p, pr){
       on ne sonde plus, on teste presque tout. Ce n’est pas une réponse d’audit, c’est l’absence de réponse.
       ${e.methode === 'sum'
         ? 'Le sondage en unités monétaires est déjà retenu : la couverture en valeur est obtenue sans tester tous ces éléments.'
-        : `Deux réponses : le <b>sondage en unités monétaires</b>, ou une <b>stratification en bandes</b>
-           — non implémentée dans ce prototype et signalée comme telle.
+        : `Deux réponses au niveau du tirage : le <b>sondage en unités monétaires</b>, ou une
+           <b>stratification en bandes</b> — non implémentée dans ce prototype et signalée comme telle.
            <button class="btn mini" data-psum="${pr.code}">passer au sondage en unités monétaires</button>`}
-      </div>` : ''}
+      </div>
+      ${blocApproche(p, pr, e)}` : ''}
     <div class="grid3">
-      <div class="kv"><span class="k">${e.methode === 'sum' ? 'Retenus d’office (≥ intervalle)' : 'Strate exhaustive (≥ ' + eur0(e.strate) + ')'}</span><span class="v">${e.exhaustif.length}</span>
-        <span class="k">${e.methode === 'sum' ? 'Désignés par une unité monétaire' : 'Tirage aléatoire'}</span><span class="v">${e.alea.length}${e.methode === 'sum' ? '' : ' / ' + e.n} — risque ${NIV_LIB[e.niv]}</span></div>
+      <div class="kv"><span class="k">${e.imposee ? 'Population entière (≥ ' + eur0(seuils().CTT) + ')' : e.methode === 'sum' ? 'Retenus d’office (≥ intervalle)' : 'Strate exhaustive (≥ ' + eur0(e.strate) + ')'}</span><span class="v">${e.exhaustif.length}</span>
+        <span class="k">${e.imposee ? 'Tirage' : e.methode === 'sum' ? 'Désignés par une unité monétaire' : 'Tirage aléatoire'}</span><span class="v">${e.imposee ? 'aucun' : e.alea.length + (e.methode === 'sum' ? '' : ' / ' + e.n) + ' — risque ' + NIV_LIB[e.niv]}</span></div>
       <div class="kv"><span class="k">Retenus</span><span class="v">${e.retenus.length} sur ${e.pop.items.length}</span>
         <span class="k">Montant couvert</span><span class="v">${eur(e.couvert)}</span></div>
       <div class="kv"><span class="k">Couverture</span><span class="v">${pct(e.taux, 1)}</span>
@@ -313,8 +371,13 @@ function blocProcedure(p, pr){
     ${table([{k:'d',t:'Document'},{k:'c',t:'Champ à relever'},{k:'r',t:'Contrôlé contre',cls:'wrapcell'},{k:'t',t:'Tolérance'}],
       cat.flatMap(d => d.champs.map((ch, i) => ({
         d:i === 0 ? '<b>' + esc(d.doc) + '</b>' : '', c:esc(ch.lib),
-        r:esc(ch.contre) + (ch.regle ? ' <span class="smallcaps">(' + esc(ch.regle) + ')</span>' : ''),
-        t:esc(ch.tolLib) }))))}` : '';
+        r:ch.releveSeul
+          ? '<span class="smallcaps">relevé seul — aucun contrôle : ce champ alimente le jugement ou un autre contrôle</span>'
+          : esc(ch.contre) + (ch.regle ? ' <span class="smallcaps">(' + esc(ch.regle) + ')</span>' : ''),
+        t:esc(ch.tolLib) }))))}
+    <p class="note">Un champ <b>relevé seul</b> ne produit jamais d’écart : il n’a pas de référence à
+      laquelle se comparer. La distinction entre ce qui se <b>relève</b> et ce qui se <b>contrôle</b>
+      appartient au catalogue, pas à l’écran.</p>` : '';
 
   /* ── papier de travail : un contrôle par ligne ── */
   const ctr = controles(p, pr);
@@ -372,6 +435,53 @@ function blocProcedure(p, pr){
   return `<div class="row"><span class="pill">${esc(libAssertion(pr.a))}</span>
       <span class="smallcaps">${esc(pr.lib)}</span></div>
     ${defPop}${params}${catBloc}${papier}`;
+}
+
+/* ── quand le sondage substantif n'est pas économique, le dire ─────────────
+   Aucun outil ne dit à un auditeur que son approche substantive coûte plus
+   qu'elle ne rapporte sur un poste donné. C'est pourtant une décision de
+   planification banale, et elle se prend sur des nombres que la plateforme
+   possède déjà : masse du poste, seuil, taille des pièces. Les trois
+   alternatives sont nommées, avec ce qu'elles exigent — parce qu'une
+   alternative sans sa contrepartie n'est pas un conseil, c'est un slogan. */
+const ALTERNATIVES_APPROCHE = [
+  { lib:'Appui sur les contrôles',
+    quoi:'Tester l’efficacité des contrôles du cycle et réduire l’étendue du substantif en conséquence.',
+    exige:'Des contrôles identifiés, documentés et testables sur toute la période — et un test d’efficacité '
+        + 'qui a lui-même un coût. Le gain n’existe que si les contrôles tiennent.',
+    ou:'Section « Revues de processus et contrôle interne » (structure seule dans ce prototype).' },
+  { lib:'Procédures analytiques substantives',
+    quoi:'Construire une attente indépendante du solde, avec une précision suffisante, et n’investiguer '
+       + 'que l’écart à cette attente.',
+    exige:'Une relation prévisible entre données, des données indépendantes de la comptabilité, et une '
+        + 'précision de l’attente meilleure que le seuil. Sans cela l’attente est un commentaire.',
+    ou:'Revue analytique substantive du poste, destination « Comptes ».' },
+  { lib:'Sous-population ciblée',
+    quoi:'Découper la population et ne sonder que la part qui porte le risque — un type d’opération, '
+       + 'une période, un tiers, un canal — en couvrant le reste autrement.',
+    exige:'Que la découpe repose sur un critère observable dans les données, et que la part non sondée '
+        + 'reçoive sa propre réponse : elle ne disparaît pas parce qu’on ne la regarde plus.',
+    ou:'Filtre de population de la procédure, et test des écritures pour le ciblage.' },
+];
+function blocApproche(p, pr, e){
+  return `<details class="repli" data-repli="${p.code}/${pr.code}/approche" ${ouvertParDefaut(p.code + '/' + pr.code + '/approche', 0) ? 'open' : ''}>
+    <summary><span class="t">Le sondage substantif n’est pas économique sur ce poste</span>
+      <span class="s">trois alternatives d’approche</span></summary>
+    <div class="c">
+      <p class="note">Ce n’est pas un défaut de méthode : ${e.indivSig.length} des ${e.pop.items.length}
+      éléments de cette population sont individuellement significatifs, parce que le seuil de planification
+      (${eur0(e.strate)}) est bas au regard de la taille des pièces (${eur0(Math.round(e.pop.masse / Math.max(1, e.pop.items.length)))}
+      en moyenne). Sonder pour couvrir ${eur0(e.strate)} sur une masse de ${eur0(e.pop.masse)} demande
+      ${e.nAdequate} éléments — ${pct(e.nAdequate / Math.max(1, e.pop.items.length), 0)} de la population.
+      À ce niveau, la réponse est dans l’<b>approche</b>, pas dans le tirage.</p>
+      ${table([{k:'a',t:'Alternative',cls:'wrapcell'},{k:'q',t:'Ce que c’est',cls:'wrapcell'},
+               {k:'e',t:'Ce qu’elle exige — et qui n’est pas gratuit',cls:'wrapcell'},{k:'o',t:'Où',cls:'wrapcell'}],
+        ALTERNATIVES_APPROCHE.map(x => ({ a:'<b>' + esc(x.lib) + '</b>', q:esc(x.quoi), e:esc(x.exige), o:esc(x.ou) })))}
+      <p class="note">Le choix d’approche n’est pas exécuté par la plateforme : il se documente au plan de
+      mission et se traduit par les procédures requises de la section. Ce bloc dit qu’il y a une décision
+      à prendre, et laquelle — il ne la prend pas.</p>
+    </div>
+  </details>`;
 }
 
 /* ── résolution documentée des écarts ─────────────────────────────────────

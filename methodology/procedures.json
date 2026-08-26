@@ -1,0 +1,2575 @@
+{
+  "_note": "Catalogue méthodologique par cycle. CONTENU, non code : le prototype comme l'application le consomment, aucun des deux ne le contient en dur. Les prédicats de population et les résolveurs de référence sont NOMMÉS ici et IMPLÉMENTÉS dans le code ; « non_implemente » signale une procédure cataloguée que le jeu de données ou l'implémentation actuelle ne permet pas d'exécuter — elle est affichée comme telle, jamais simulée.",
+  "version": "1.3.0",
+  "sens_de_test": {
+    "gl_vers_piece": {
+      "libelle": "du grand livre vers la pièce",
+      "d": "On part de l'écriture comptabilisée et l'on remonte au justificatif. Sert la RÉALITÉ : ce qui est comptabilisé existe.",
+      "assertions_servies": [
+        "realite",
+        "mesure",
+        "separation",
+        "presentation"
+      ]
+    },
+    "piece_vers_gl": {
+      "libelle": "de la pièce vers le grand livre",
+      "d": "On part d'un document externe ou d'un fait, et l'on cherche l'écriture. Sert l'EXHAUSTIVITÉ : ce qui existe est comptabilisé. C'est le sens que l'on oublie.",
+      "assertions_servies": [
+        "exhaustivite",
+        "separation"
+      ]
+    },
+    "recalcul": {
+      "libelle": "recalcul indépendant",
+      "d": "L'auditeur refait le calcul à partir des paramètres et le compare au comptabilisé.",
+      "assertions_servies": [
+        "mesure",
+        "evaluation"
+      ]
+    },
+    "confirmation": {
+      "libelle": "confirmation externe",
+      "d": "Un tiers confirme directement à l'auditeur. Non-réponse : procédures alternatives obligatoires.",
+      "assertions_servies": [
+        "realite",
+        "exhaustivite",
+        "droits"
+      ]
+    },
+    "observation": {
+      "libelle": "observation physique",
+      "d": "L'auditeur constate lui-même. Le double sens s'y applique : du relevé vers le stock (réalité) et du stock vers le relevé (exhaustivité).",
+      "assertions_servies": [
+        "realite",
+        "exhaustivite"
+      ]
+    },
+    "analytique": {
+      "libelle": "procédure analytique substantive",
+      "d": "Attente indépendante, précision déclarée, investigation de l'écart à l'attente.",
+      "assertions_servies": [
+        "mesure",
+        "exhaustivite",
+        "presentation"
+      ]
+    },
+    "inspection": {
+      "libelle": "inspection de document",
+      "d": "Lecture d'un document juridique ou contractuel, sans échantillonnage.",
+      "assertions_servies": [
+        "droits",
+        "presentation",
+        "evaluation"
+      ]
+    }
+  },
+  "procedures": [
+    {
+      "code": "RAPPRO",
+      "cycle": "*",
+      "libelle": "Rapprochement du détail du compte au solde de la balance",
+      "objectif": "S'assurer que le détail testé totalise le solde comptabilisé.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "compte",
+      "population": {
+        "libelle": "Comptes du poste",
+        "source": "balance et grand livre",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Le total du détail égale le solde de la balance, compte par compte.",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "RA",
+      "cycle": "*",
+      "libelle": "Revue analytique substantive du poste et explication des variations",
+      "objectif": "Comparer le solde à une attente indépendante et investiguer l'écart.",
+      "assertion": "mesure",
+      "sens": "analytique",
+      "unite": "compte",
+      "population": {
+        "libelle": "Comptes du poste, soldes N et N-1",
+        "source": "balance",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Variation supérieure au seuil en montant ET en pourcentage : explication obtenue et corroborée.",
+      "sources": [
+        "ISA-520"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "DETAIL",
+      "cycle": "*",
+      "libelle": "Test de détail sur les éléments sélectionnés, pièce à l'appui",
+      "objectif": "Vérifier que les écritures comptabilisées reposent sur une opération réelle et correctement mesurée.",
+      "assertion": "realite",
+      "sens": "gl_vers_piece",
+      "unite": "écriture comptable",
+      "population": {
+        "libelle": "Écritures mouvementant les comptes du poste",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "ecritures_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Pièce justificative de l'opération",
+          "champs": [
+            {
+              "code": "montant_ht",
+              "libelle": "Montant de la pièce",
+              "type": "montant",
+              "controle_contre": "montant de la ligne du grand livre",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "date_piece",
+              "libelle": "Date de la pièce",
+              "type": "date",
+              "controle_contre": "exercice audité",
+              "reference": "date_ecriture",
+              "tolerance": "dans l'exercice",
+              "regle": "dans l'exercice"
+            },
+            {
+              "code": "tiers",
+              "libelle": "Tiers",
+              "type": "texte",
+              "controle_contre": "compte auxiliaire de l'écriture",
+              "reference": "tiers_ecriture",
+              "tolerance": "identité"
+            }
+          ]
+        }
+      ],
+      "controle": "Chaque champ relevé est comparé à sa référence selon la règle déclarée.",
+      "sources": [
+        "ISA-500",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "justificatifs_par_cycle": {
+        "CA": [
+          {
+            "document": "Facture de vente",
+            "champs": [
+              {
+                "code": "montant_ht",
+                "libelle": "Montant HT",
+                "type": "montant",
+                "controle_contre": "montant de la ligne du grand livre",
+                "reference": "montant_ligne",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_piece",
+                "libelle": "Date de facture",
+                "type": "date",
+                "controle_contre": "exercice audité",
+                "reference": "date_ecriture",
+                "tolerance": "dans l'exercice",
+                "regle": "dans l'exercice"
+              },
+              {
+                "code": "tiers",
+                "libelle": "Client facturé",
+                "type": "texte",
+                "controle_contre": "compte auxiliaire de l'écriture",
+                "reference": "tiers_ecriture",
+                "tolerance": "identité"
+              },
+              {
+                "code": "num_piece",
+                "libelle": "Numéro de pièce",
+                "type": "texte",
+                "controle_contre": "référence de pièce du grand livre",
+                "reference": "num_piece",
+                "tolerance": "identité"
+              }
+            ]
+          },
+          {
+            "document": "Bon de livraison",
+            "champs": [
+              {
+                "code": "qte_livree",
+                "libelle": "Quantité livrée",
+                "type": "nombre",
+                "controle_contre": "quantité facturée",
+                "reference": "qte_facturee",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_livraison",
+                "libelle": "Date de livraison",
+                "type": "date",
+                "controle_contre": "date de clôture",
+                "reference": "date_cloture",
+                "tolerance": "antérieure ou égale à la clôture",
+                "regle": "antérieure ou égale"
+              },
+              {
+                "code": "signature",
+                "libelle": "Signature du client",
+                "type": "bool",
+                "controle_contre": "présence de la signature",
+                "reference": "signature_exigee",
+                "tolerance": "présence exigée"
+              }
+            ]
+          }
+        ],
+        "ACHATS": [
+          {
+            "document": "Facture fournisseur",
+            "champs": [
+              {
+                "code": "montant_ht",
+                "libelle": "Montant HT",
+                "type": "montant",
+                "controle_contre": "montant de la ligne du grand livre",
+                "reference": "montant_ligne",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_piece",
+                "libelle": "Date de facture",
+                "type": "date",
+                "controle_contre": "exercice audité",
+                "reference": "date_ecriture",
+                "tolerance": "dans l'exercice",
+                "regle": "dans l'exercice"
+              },
+              {
+                "code": "tiers",
+                "libelle": "Fournisseur",
+                "type": "texte",
+                "controle_contre": "compte auxiliaire de l'écriture",
+                "reference": "tiers_ecriture",
+                "tolerance": "identité"
+              }
+            ]
+          },
+          {
+            "document": "Bon de réception",
+            "champs": [
+              {
+                "code": "qte_livree",
+                "libelle": "Quantité reçue",
+                "type": "nombre",
+                "controle_contre": "quantité facturée",
+                "reference": "qte_facturee",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_livraison",
+                "libelle": "Date de réception",
+                "type": "date",
+                "controle_contre": "date de clôture",
+                "reference": "date_cloture",
+                "tolerance": "antérieure ou égale à la clôture",
+                "regle": "antérieure ou égale"
+              }
+            ]
+          }
+        ],
+        "PERSONNEL": [
+          {
+            "document": "Bulletin de paie",
+            "champs": [
+              {
+                "code": "montant_ht",
+                "libelle": "Brut du bulletin",
+                "type": "montant",
+                "controle_contre": "montant de la ligne du grand livre",
+                "reference": "montant_ligne",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_piece",
+                "libelle": "Période de paie",
+                "type": "date",
+                "controle_contre": "exercice audité",
+                "reference": "date_ecriture",
+                "tolerance": "dans l'exercice",
+                "regle": "dans l'exercice"
+              }
+            ]
+          },
+          {
+            "document": "Contrat de travail ou avenant",
+            "champs": [
+              {
+                "code": "taux_contrat",
+                "libelle": "Rémunération contractuelle",
+                "type": "texte",
+                "controle_contre": "barème de rémunération applicable",
+                "reference": "bareme_remuneration",
+                "tolerance": "conformité au contrat"
+              }
+            ]
+          }
+        ],
+        "TRESO": [
+          {
+            "document": "Relevé bancaire",
+            "champs": [
+              {
+                "code": "montant_ht",
+                "libelle": "Montant du mouvement",
+                "type": "montant",
+                "controle_contre": "montant de la ligne du grand livre",
+                "reference": "montant_ligne",
+                "tolerance": "exact"
+              },
+              {
+                "code": "date_piece",
+                "libelle": "Date de valeur",
+                "type": "date",
+                "controle_contre": "date de comptabilisation",
+                "reference": "date_ecriture",
+                "tolerance": "± 5 jours"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "code": "CUTOFF",
+      "cycle": "*",
+      "libelle": "Test de séparation des exercices — dix jours avant la clôture",
+      "objectif": "Vérifier le rattachement des opérations enregistrées juste avant la clôture.",
+      "assertion": "separation",
+      "sens": "gl_vers_piece",
+      "unite": "écriture comptable",
+      "population": {
+        "libelle": "Écritures du poste sur les dix derniers jours de l'exercice",
+        "source": "grand livre",
+        "periode": "dix jours avant la clôture",
+        "filtre": "borne haute imposée par la fin du grand livre",
+        "predicat": "ecritures_du_poste_periode",
+        "parametres": {
+          "jours_avant": 10
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Pièce justificative de l'opération",
+          "champs": [
+            {
+              "code": "date_piece",
+              "libelle": "Date de la pièce",
+              "type": "date",
+              "controle_contre": "date de comptabilisation",
+              "reference": "date_ecriture",
+              "tolerance": "même exercice que la comptabilisation",
+              "regle": "même exercice que la référence"
+            },
+            {
+              "code": "montant_ht",
+              "libelle": "Montant de la pièce",
+              "type": "montant",
+              "controle_contre": "montant de la ligne du grand livre",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Le fait générateur relève-t-il de l'exercice de comptabilisation ?",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Unidirectionnel : ne couvre que les opérations comptabilisées en N dont le fait générateur relève de N+1. Le sens inverse exige le grand livre de l'exercice suivant."
+    },
+    {
+      "code": "MANUEL",
+      "cycle": "*",
+      "libelle": "Examen des écritures manuelles du poste et de leur justification",
+      "objectif": "Examiner les écritures qui ne proviennent d'aucun flux automatisé.",
+      "assertion": "realite",
+      "sens": "gl_vers_piece",
+      "unite": "écriture comptable",
+      "population": {
+        "libelle": "Écritures du poste passées en journal d'opérations diverses",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "journal d'opérations diverses OU saisie par la direction",
+        "predicat": "ecritures_manuelles"
+      },
+      "justificatifs": [
+        {
+          "document": "Justificatif de l'écriture manuelle",
+          "champs": [
+            {
+              "code": "montant_ht",
+              "libelle": "Montant",
+              "type": "montant",
+              "controle_contre": "montant de la ligne du grand livre",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "motif",
+              "libelle": "Motif de l'écriture",
+              "type": "texte",
+              "controle_contre": "libellé et pièce du grand livre",
+              "reference": "libelle_ecriture",
+              "tolerance": "justificatif exigé"
+            }
+          ]
+        }
+      ],
+      "controle": "Toute écriture manuelle doit porter un justificatif et un motif.",
+      "sources": [
+        "ISA-240"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "SEQ",
+      "cycle": "*",
+      "libelle": "Contrôle de séquence des pièces et recherche de ruptures de numérotation",
+      "objectif": "Détecter les pièces manquantes dans une séquence continue.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "numéro de pièce",
+      "population": {
+        "libelle": "Numéros de pièces du poste, triés",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "sequence_pieces"
+      },
+      "justificatifs": [],
+      "controle": "Toute rupture de séquence est expliquée.",
+      "sources": [
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "RECALC",
+      "cycle": "*",
+      "libelle": "Recalcul des montants et vérification des bases de calcul retenues",
+      "objectif": "Refaire le calcul des montants comptabilisés à partir de leurs bases.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "écriture comptable",
+      "population": {
+        "libelle": "Écritures du poste supérieures au seuil de remontée",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "montant du mouvement supérieur au seuil de remontée",
+        "predicat": "ecritures_du_poste_seuil"
+      },
+      "justificatifs": [
+        {
+          "document": "Justificatif du calcul",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base retenue",
+              "type": "montant",
+              "controle_contre": "montant de la ligne du grand livre",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "taux_contrat",
+              "libelle": "Taux ou formule appliqué",
+              "type": "texte",
+              "controle_contre": "justificatif du taux retenu",
+              "reference": "libelle_ecriture",
+              "tolerance": "justificatif exigé"
+            }
+          ]
+        }
+      ],
+      "controle": "Montant recalculé = base × taux. Écart au comptabilisé expliqué.",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CONFIRM",
+      "cycle": "*",
+      "libelle": "Confirmation directe auprès des tiers (circularisation)",
+      "objectif": "Obtenir du tiers lui-même la confirmation du solde ou de l'opération.",
+      "assertion": "realite",
+      "sens": "confirmation",
+      "unite": "tiers à circulariser",
+      "postes": [
+        "CLIENTS",
+        "TRESO",
+        "FOURN",
+        "PROV"
+      ],
+      "population": {
+        "libelle": "Tiers auxiliaires mouvementés sur les comptes du poste",
+        "source": "comptes auxiliaires",
+        "periode": "exercice audité",
+        "filtre": "un élément par tiers auxiliaire, cumul des mouvements",
+        "predicat": "tiers_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse de confirmation du tiers",
+          "champs": [
+            {
+              "code": "montant_ht",
+              "libelle": "Solde confirmé",
+              "type": "montant",
+              "controle_contre": "cumul des mouvements en comptabilité",
+              "reference": "solde_tiers",
+              "tolerance": "exact"
+            },
+            {
+              "code": "date_piece",
+              "libelle": "Date d'arrêté confirmée",
+              "type": "date",
+              "controle_contre": "date de clôture",
+              "reference": "date_cloture",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Écart entre solde confirmé et solde comptable rapproché. Non-réponse : procédures alternatives.",
+      "sources": [
+        "ISA-505"
+      ],
+      "risque_minimum": "eleve",
+      "echantillonnee": true
+    },
+    {
+      "code": "ENTRETIEN",
+      "cycle": "*",
+      "libelle": "Entretien avec le responsable du cycle et documentation du processus",
+      "objectif": "Comprendre le processus qui alimente le poste et identifier les points de rupture.",
+      "assertion": "realite",
+      "sens": "inspection",
+      "unite": "processus",
+      "population": {
+        "libelle": "Processus alimentant le poste",
+        "source": "entretien",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [],
+      "controle": "Le processus décrit est-il cohérent avec les écritures observées ?",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "eleve",
+      "echantillonnee": false
+    },
+    {
+      "code": "ESTIM",
+      "cycle": "*",
+      "libelle": "Test de la base servant à l'estimation et des taux ou formules appliqués",
+      "objectif": "Vérifier qu'une estimation comptable repose sur une base et une méthode justifiées.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "écriture comptable",
+      "si_facteur": "estimation",
+      "population": {
+        "libelle": "Écritures du poste rattachées à l'estimation",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "journal d'opérations diverses",
+        "predicat": "ecritures_du_poste_journal",
+        "parametres": {
+          "journal": "OD"
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Note de calcul de l'estimation",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base de l'estimation",
+              "type": "montant",
+              "controle_contre": "montant comptabilisé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "methode",
+              "libelle": "Méthode retenue",
+              "type": "texte",
+              "controle_contre": "politique comptable",
+              "reference": "libelle_ecriture",
+              "tolerance": "justificatif exigé"
+            }
+          ]
+        }
+      ],
+      "controle": "L'estimation est-elle reproductible à partir de la base et de la méthode déclarées ?",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "FRAUDE",
+      "cycle": "*",
+      "libelle": "Test spécifique de réponse au risque de fraude sur le poste",
+      "objectif": "Cibler les écritures portant un marqueur de fraude.",
+      "assertion": "realite",
+      "sens": "gl_vers_piece",
+      "unite": "écriture comptable",
+      "si_facteur": "fraude",
+      "population": {
+        "libelle": "Écritures du poste porteuses d'un marqueur de fraude",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "week-end, montant rond au millier, validation après la clôture, ou saisie par la direction",
+        "predicat": "ecritures_marqueurs_fraude"
+      },
+      "justificatifs": [
+        {
+          "document": "Pièce justificative de l'opération",
+          "champs": [
+            {
+              "code": "montant",
+              "libelle": "Montant de la pièce",
+              "type": "montant",
+              "controle_contre": "montant de la ligne du grand livre",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "autorisation",
+              "libelle": "Autorisation de l'opération",
+              "type": "texte",
+              "controle_contre": "délégation de pouvoir",
+              "reference": "libelle_ecriture",
+              "tolerance": "justificatif exigé"
+            }
+          ]
+        }
+      ],
+      "controle": "L'opération est-elle autorisée et justifiée par une pièce externe ?",
+      "sources": [
+        "ISA-240"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "ANNEXE",
+      "cycle": "*",
+      "libelle": "Rapprochement des montants d'annexe se rapportant au poste",
+      "objectif": "Vérifier que l'information en annexe concorde avec les comptes.",
+      "assertion": "presentation",
+      "sens": "recalcul",
+      "unite": "mention d'annexe",
+      "population": {
+        "libelle": "Mentions d'annexe se rapportant au poste",
+        "source": "plaquette",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [],
+      "controle": "Chaque montant d'annexe est rapproché du compte ou du regroupement de comptes correspondant.",
+      "sources": [
+        "ISA-500"
+      ],
+      "risque_minimum": "eleve",
+      "echantillonnee": false
+    },
+    {
+      "code": "FOURN-SUL",
+      "cycle": "FOURN",
+      "libelle": "Recherche de passifs non enregistrés — décaissements postérieurs",
+      "objectif": "Détecter les dettes nées avant la clôture et non comptabilisées : c'est la procédure centrale du cycle, et le sens inverse du test de détail.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "décaissement",
+      "population": {
+        "libelle": "Décaissements enregistrés après la clôture, au-dessus du seuil de remontée",
+        "source": "grand livre de l'exercice suivant, ou relevés bancaires",
+        "periode": "de la clôture à la date du rapport",
+        "filtre": "décaissements supérieurs au seuil de signification manifeste — le plancher de cumul des anomalies, et non le seuil de planification : des dettes omises individuellement non significatives s'additionnent",
+        "predicat": "decaissements_apres_cloture",
+        "parametres": {
+          "jours_apres": 90,
+          "seuil": "signification_manifeste"
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Facture fournisseur",
+          "champs": [
+            {
+              "code": "montant",
+              "libelle": "Montant",
+              "type": "montant",
+              "controle_contre": "montant décaissé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "date_facture",
+              "libelle": "Date de la facture",
+              "type": "date",
+              "controle_contre": "aucun — donnée relevée",
+              "reference": "date_piece_recue",
+              "tolerance": "sans objet",
+              "releve_seul": true
+            },
+            {
+              "code": "dette_comptabilisee",
+              "libelle": "Dette figurant au bilan de clôture",
+              "type": "bool",
+              "controle_contre": "dette attendue à la clôture (fait générateur antérieur ou égal)",
+              "reference": "dette_attendue_cloture",
+              "tolerance": "exact",
+              "regle": "la dette attendue doit figurer au passif de clôture"
+            }
+          ]
+        },
+        {
+          "document": "Bon de réception",
+          "champs": [
+            {
+              "code": "date_reception_bien",
+              "libelle": "Date de réception du bien ou du service — fait générateur",
+              "type": "date",
+              "controle_contre": "aucun — donnée relevée",
+              "reference": "date_fait_generateur",
+              "tolerance": "sans objet",
+              "releve_seul": true
+            }
+          ]
+        }
+      ],
+      "controle": "Relever le fait générateur, puis RECHERCHER au bilan de clôture la dette correspondante. Un fait générateur antérieur ou égal à la clôture sans dette au passif est un passif non enregistré. La date seule ne conclut rien : la plupart des décaissements postérieurs règlent des dettes régulièrement comptabilisées, et un test qui trierait sur la date les relèverait toutes.",
+      "sources": [
+        "PRAT-SUL",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "exceptions": [
+        "fait générateur antérieur ou égal à la clôture sans dette comptabilisée au passif",
+        "dette comptabilisée pour un montant inférieur au décaissement"
+      ],
+      "selection": "exhaustive_au_seuil",
+      "note": "Aucun tirage : la population est déjà bornée par le seuil de remontée, et tous ses éléments sont testés. Sonder une population que l'on cherche précisément à compléter ne prouve rien sur ce qui en est absent — l'étendue se règle par le seuil, pas par la taille d'un échantillon."
+    },
+    {
+      "code": "FOURN-FNP",
+      "cycle": "FOURN",
+      "libelle": "Factures non parvenues — justification et dénouement",
+      "objectif": "Vérifier que les charges à payer correspondent à des biens ou services reçus avant la clôture, et qu'elles se dénouent.",
+      "assertion": "exhaustivite",
+      "sens": "gl_vers_piece",
+      "unite": "ligne de FNP",
+      "population": {
+        "libelle": "Lignes du compte de factures non parvenues",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "ecritures_comptes",
+        "parametres": {
+          "comptes": [
+            "408"
+          ]
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Bon de réception ou justificatif de la charge",
+          "champs": [
+            {
+              "code": "date_reception_bien",
+              "libelle": "Date de réception",
+              "type": "date",
+              "controle_contre": "clôture",
+              "reference": "date_cloture",
+              "tolerance": "exact",
+              "regle": "antérieure ou égale"
+            },
+            {
+              "code": "montant",
+              "libelle": "Montant estimé",
+              "type": "montant",
+              "controle_contre": "montant comptabilisé en FNP",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        },
+        {
+          "document": "Facture reçue après la clôture",
+          "champs": [
+            {
+              "code": "montant_reel",
+              "libelle": "Montant facturé",
+              "type": "montant",
+              "controle_contre": "montant estimé",
+              "reference": "montant_ligne",
+              "tolerance": "écart d'estimation à expliquer"
+            }
+          ]
+        }
+      ],
+      "controle": "L'estimation est-elle justifiée par une réception, et l'écart au facturé réel est-il expliqué ?",
+      "sources": [
+        "PRAT-SUL"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "FOURN-CUTOFF-REC",
+      "cycle": "FOURN",
+      "libelle": "Cut-off des réceptions — des bons de réception vers la comptabilité",
+      "objectif": "Vérifier que les réceptions de fin d'exercice sont comptabilisées dans le bon exercice, en partant des bons de réception.",
+      "assertion": "separation",
+      "sens": "piece_vers_gl",
+      "unite": "bon de réception",
+      "population": {
+        "libelle": "Bons de réception des dix derniers jours de l'exercice et des dix premiers du suivant",
+        "source": "journal des réceptions du client",
+        "periode": "dix jours avant et après la clôture",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Bon de réception",
+          "champs": [
+            {
+              "code": "date_reception_bien",
+              "libelle": "Date de réception",
+              "type": "date",
+              "controle_contre": "exercice de comptabilisation",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "même exercice que la référence"
+            }
+          ]
+        }
+      ],
+      "controle": "Chaque réception doit trouver sa charge et sa dette dans l'exercice de la réception.",
+      "sources": [
+        "PRAT-SUL",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Exige le journal des réceptions du client, qui n'est pas dans le fichier des écritures comptables."
+    },
+    {
+      "code": "FOURN-CIRC",
+      "cycle": "FOURN",
+      "libelle": "Circularisation des fournisseurs et rapprochement des relevés",
+      "objectif": "Confirmer les soldes auprès des fournisseurs, ou rapprocher leurs relevés.",
+      "assertion": "exhaustivite",
+      "sens": "confirmation",
+      "unite": "tiers fournisseur",
+      "population": {
+        "libelle": "Tiers fournisseurs mouvementés dans l'exercice",
+        "source": "comptes auxiliaires",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "tiers_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse du fournisseur ou relevé de compte",
+          "champs": [
+            {
+              "code": "solde",
+              "libelle": "Solde confirmé",
+              "type": "montant",
+              "controle_contre": "solde du compte auxiliaire",
+              "reference": "solde_tiers",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Écart entre solde confirmé et solde comptable : rapproché ligne à ligne. Non-réponse : procédures alternatives.",
+      "sources": [
+        "ISA-505"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_COR-TAB",
+      "cycle": "IMMO_COR",
+      "libelle": "Tableau de variation des immobilisations",
+      "objectif": "Rapprocher ouverture, acquisitions, cessions et clôture au grand livre.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "compte",
+      "population": {
+        "libelle": "Comptes d'immobilisations corporelles et d'amortissement",
+        "source": "balance N et N-1",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Ouverture + acquisitions − cessions = clôture, pour la valeur brute et pour les amortissements.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "IMMO_COR-ACQ",
+      "cycle": "IMMO_COR",
+      "libelle": "Test des acquisitions de l'exercice",
+      "objectif": "Vérifier que les acquisitions sont réelles, correctement évaluées et immobilisables.",
+      "assertion": "realite",
+      "sens": "gl_vers_piece",
+      "unite": "acquisition",
+      "population": {
+        "libelle": "Mouvements débiteurs des comptes d'immobilisations",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "mouvements débiteurs hors à-nouveaux",
+        "predicat": "mouvements_debiteurs_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Facture d'acquisition",
+          "champs": [
+            {
+              "code": "montant_ht",
+              "libelle": "Montant hors taxes",
+              "type": "montant",
+              "controle_contre": "montant immobilisé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "date_facture",
+              "libelle": "Date de la facture",
+              "type": "date",
+              "controle_contre": "exercice audité",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "dans l'exercice"
+            },
+            {
+              "code": "fournisseur",
+              "libelle": "Fournisseur",
+              "type": "texte",
+              "controle_contre": "compte auxiliaire",
+              "reference": "tiers_ecriture",
+              "tolerance": "exact"
+            }
+          ]
+        },
+        {
+          "document": "Mise en service",
+          "champs": [
+            {
+              "code": "date_service",
+              "libelle": "Date de mise en service",
+              "type": "date",
+              "controle_contre": "début de l'amortissement",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "antérieure ou égale"
+            }
+          ]
+        }
+      ],
+      "controle": "Le bien répond-il à la définition d'une immobilisation, et le coût d'entrée est-il complet ?",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_COR-CESS",
+      "cycle": "IMMO_COR",
+      "libelle": "Test des cessions et recalcul du résultat de cession",
+      "objectif": "Vérifier la sortie de l'actif et le résultat de cession.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "cession",
+      "population": {
+        "libelle": "Mouvements créditeurs des comptes d'immobilisations",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "mouvements créditeurs hors à-nouveaux",
+        "predicat": "mouvements_crediteurs_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Facture de vente ou acte de cession",
+          "champs": [
+            {
+              "code": "prix_cession",
+              "libelle": "Prix de cession",
+              "type": "montant",
+              "controle_contre": "produit de cession comptabilisé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Résultat de cession = prix de cession − (valeur brute − amortissements cumulés). Recalculé et comparé.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_COR-DOT",
+      "cycle": "IMMO_COR",
+      "libelle": "Recalcul des dotations aux amortissements",
+      "objectif": "Refaire le calcul des dotations à partir de la base, de la durée et de la méthode.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "immobilisation",
+      "population": {
+        "libelle": "Immobilisations amortissables à la clôture",
+        "source": "tableau des immobilisations",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Fiche d'immobilisation",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base amortissable",
+              "type": "montant",
+              "controle_contre": "valeur brute",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "duree",
+              "libelle": "Durée d'usage retenue",
+              "type": "nombre",
+              "controle_contre": "politique d'amortissement",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "methode",
+              "libelle": "Méthode",
+              "type": "texte",
+              "controle_contre": "politique d'amortissement",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Dotation recalculée = base × taux × prorata temporis. Écart au comptabilisé expliqué.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "note": "Exige le tableau des immobilisations détaillé du client, absent du fichier des écritures."
+    },
+    {
+      "code": "IMMO_COR-ENTRETIEN",
+      "cycle": "IMMO_COR",
+      "libelle": "Revue des charges d'entretien — recherche de capitalisations omises",
+      "objectif": "Chercher, dans les charges, ce qui aurait dû être immobilisé. C'est le SENS INVERSE du test des acquisitions.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "écriture de charge",
+      "population": {
+        "libelle": "Écritures des comptes d'entretien et de maintenance au-dessus du seuil de remontée",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "montant supérieur au seuil de remontée",
+        "predicat": "ecritures_comptes_seuil",
+        "parametres": {
+          "comptes": [
+            "615",
+            "616",
+            "606"
+          ]
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Facture d'entretien",
+          "champs": [
+            {
+              "code": "nature",
+              "libelle": "Nature des travaux",
+              "type": "texte",
+              "controle_contre": "définition d'une immobilisation",
+              "reference": "libelle_ecriture",
+              "tolerance": "exact"
+            },
+            {
+              "code": "montant",
+              "libelle": "Montant",
+              "type": "montant",
+              "controle_contre": "seuil d'immobilisation",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Les travaux prolongent-ils la durée d'usage ou augmentent-ils la valeur du bien ? Si oui, l'écriture en charge est une anomalie d'exhaustivité de l'actif.",
+      "sources": [
+        "PRAT-IMMO",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_COR-INDICES",
+      "cycle": "IMMO_COR",
+      "libelle": "Revue des indices de perte de valeur",
+      "objectif": "Identifier les indices qui déclencheraient un test de dépréciation.",
+      "assertion": "evaluation",
+      "sens": "inspection",
+      "unite": "poste",
+      "population": {
+        "libelle": "Immobilisations à la clôture",
+        "source": "balance",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Obsolescence, arrêt d'exploitation, sous-performance, valeur de marché : indice relevé, test de dépréciation déclenché ou absence justifiée.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": false
+    },
+    {
+      "code": "IMMO_INC-TAB",
+      "cycle": "IMMO_INC",
+      "libelle": "Tableau de variation des immobilisations",
+      "objectif": "Rapprocher ouverture, acquisitions, cessions et clôture au grand livre.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "compte",
+      "population": {
+        "libelle": "Comptes d'immobilisations incorporelles et d'amortissement",
+        "source": "balance N et N-1",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Ouverture + acquisitions − cessions = clôture, pour la valeur brute et pour les amortissements.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "IMMO_INC-ACQ",
+      "cycle": "IMMO_INC",
+      "libelle": "Test des acquisitions de l'exercice",
+      "objectif": "Vérifier que les acquisitions sont réelles, correctement évaluées et immobilisables.",
+      "assertion": "realite",
+      "sens": "gl_vers_piece",
+      "unite": "acquisition",
+      "population": {
+        "libelle": "Mouvements débiteurs des comptes d'immobilisations",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "mouvements débiteurs hors à-nouveaux",
+        "predicat": "mouvements_debiteurs_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Facture d'acquisition",
+          "champs": [
+            {
+              "code": "montant_ht",
+              "libelle": "Montant hors taxes",
+              "type": "montant",
+              "controle_contre": "montant immobilisé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "date_facture",
+              "libelle": "Date de la facture",
+              "type": "date",
+              "controle_contre": "exercice audité",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "dans l'exercice"
+            },
+            {
+              "code": "fournisseur",
+              "libelle": "Fournisseur",
+              "type": "texte",
+              "controle_contre": "compte auxiliaire",
+              "reference": "tiers_ecriture",
+              "tolerance": "exact"
+            }
+          ]
+        },
+        {
+          "document": "Mise en service",
+          "champs": [
+            {
+              "code": "date_service",
+              "libelle": "Date de mise en service",
+              "type": "date",
+              "controle_contre": "début de l'amortissement",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "antérieure ou égale"
+            }
+          ]
+        }
+      ],
+      "controle": "Le bien répond-il à la définition d'une immobilisation, et le coût d'entrée est-il complet ?",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_INC-CESS",
+      "cycle": "IMMO_INC",
+      "libelle": "Test des cessions et recalcul du résultat de cession",
+      "objectif": "Vérifier la sortie de l'actif et le résultat de cession.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "cession",
+      "population": {
+        "libelle": "Mouvements créditeurs des comptes d'immobilisations",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "mouvements créditeurs hors à-nouveaux",
+        "predicat": "mouvements_crediteurs_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Facture de vente ou acte de cession",
+          "champs": [
+            {
+              "code": "prix_cession",
+              "libelle": "Prix de cession",
+              "type": "montant",
+              "controle_contre": "produit de cession comptabilisé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Résultat de cession = prix de cession − (valeur brute − amortissements cumulés). Recalculé et comparé.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_INC-DOT",
+      "cycle": "IMMO_INC",
+      "libelle": "Recalcul des dotations aux amortissements",
+      "objectif": "Refaire le calcul des dotations à partir de la base, de la durée et de la méthode.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "immobilisation",
+      "population": {
+        "libelle": "Immobilisations amortissables à la clôture",
+        "source": "tableau des immobilisations",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Fiche d'immobilisation",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base amortissable",
+              "type": "montant",
+              "controle_contre": "valeur brute",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "duree",
+              "libelle": "Durée d'usage retenue",
+              "type": "nombre",
+              "controle_contre": "politique d'amortissement",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "methode",
+              "libelle": "Méthode",
+              "type": "texte",
+              "controle_contre": "politique d'amortissement",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Dotation recalculée = base × taux × prorata temporis. Écart au comptabilisé expliqué.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "note": "Exige le tableau des immobilisations détaillé du client, absent du fichier des écritures."
+    },
+    {
+      "code": "IMMO_INC-ENTRETIEN",
+      "cycle": "IMMO_INC",
+      "libelle": "Revue des charges d'entretien — recherche de capitalisations omises",
+      "objectif": "Chercher, dans les charges, ce qui aurait dû être immobilisé. C'est le SENS INVERSE du test des acquisitions.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "écriture de charge",
+      "population": {
+        "libelle": "Écritures des comptes d'entretien et de maintenance au-dessus du seuil de remontée",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "montant supérieur au seuil de remontée",
+        "predicat": "ecritures_comptes_seuil",
+        "parametres": {
+          "comptes": [
+            "615",
+            "616",
+            "606"
+          ]
+        }
+      },
+      "justificatifs": [
+        {
+          "document": "Facture d'entretien",
+          "champs": [
+            {
+              "code": "nature",
+              "libelle": "Nature des travaux",
+              "type": "texte",
+              "controle_contre": "définition d'une immobilisation",
+              "reference": "libelle_ecriture",
+              "tolerance": "exact"
+            },
+            {
+              "code": "montant",
+              "libelle": "Montant",
+              "type": "montant",
+              "controle_contre": "seuil d'immobilisation",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Les travaux prolongent-ils la durée d'usage ou augmentent-ils la valeur du bien ? Si oui, l'écriture en charge est une anomalie d'exhaustivité de l'actif.",
+      "sources": [
+        "PRAT-IMMO",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "IMMO_INC-INDICES",
+      "cycle": "IMMO_INC",
+      "libelle": "Revue des indices de perte de valeur",
+      "objectif": "Identifier les indices qui déclencheraient un test de dépréciation.",
+      "assertion": "evaluation",
+      "sens": "inspection",
+      "unite": "poste",
+      "population": {
+        "libelle": "Immobilisations à la clôture",
+        "source": "balance",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Obsolescence, arrêt d'exploitation, sous-performance, valeur de marché : indice relevé, test de dépréciation déclenché ou absence justifiée.",
+      "sources": [
+        "PRAT-IMMO"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": false
+    },
+    {
+      "code": "STOCKS-INV",
+      "cycle": "STOCKS",
+      "libelle": "Assistance à l'inventaire physique",
+      "objectif": "Constater par soi-même l'existence et l'état des stocks, et tester le comptage dans les deux sens.",
+      "assertion": "realite",
+      "sens": "observation",
+      "unite": "référence d'article",
+      "population": {
+        "libelle": "Articles de l'inventaire physique",
+        "source": "feuilles de comptage du client",
+        "periode": "date de l'inventaire",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Feuille de comptage",
+          "champs": [
+            {
+              "code": "quantite",
+              "libelle": "Quantité comptée",
+              "type": "nombre",
+              "controle_contre": "quantité au relevé du client",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Deux sens obligatoires : du relevé vers le stock (réalité) et du stock vers le relevé (exhaustivité). Si l'assistance est impraticable, procédures alternatives.",
+      "sources": [
+        "ISA-501",
+        "PCAOB-AS2510",
+        "PRAT-STOCKS"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "note": "Exige la présence physique et les feuilles de comptage : hors du périmètre d'un fichier d'écritures."
+    },
+    {
+      "code": "STOCKS-VALO",
+      "cycle": "STOCKS",
+      "libelle": "Test de valorisation selon la méthode retenue",
+      "objectif": "Vérifier que le coût unitaire retenu est celui que la méthode déclarée produit.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "référence d'article",
+      "population": {
+        "libelle": "Articles valorisés à la clôture",
+        "source": "état de stock valorisé",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Facture d'achat récente",
+          "champs": [
+            {
+              "code": "prix_unitaire",
+              "libelle": "Prix unitaire",
+              "type": "montant",
+              "controle_contre": "coût unitaire retenu au stock",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Coût recalculé selon la méthode déclarée (premier entré premier sorti, coût moyen pondéré) et comparé au coût retenu.",
+      "sources": [
+        "PRAT-STOCKS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Exige l'état de stock valorisé du client."
+    },
+    {
+      "code": "STOCKS-COUT",
+      "cycle": "STOCKS",
+      "libelle": "Test du coût de revient des produits fabriqués",
+      "objectif": "Vérifier la composition du coût de revient : matières, main-d'œuvre, frais indirects.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "référence d'article",
+      "population": {
+        "libelle": "Produits finis et en-cours",
+        "source": "état de stock valorisé",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Fiche de coût de revient",
+          "champs": [
+            {
+              "code": "matieres",
+              "libelle": "Coût matières",
+              "type": "montant",
+              "controle_contre": "consommations comptabilisées",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "mo",
+              "libelle": "Main-d'œuvre",
+              "type": "montant",
+              "controle_contre": "charges de personnel de production",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Les composants du coût sont-ils rattachables à la comptabilité, et les frais indirects imputés sur une base d'activité normale ?",
+      "sources": [
+        "PRAT-STOCKS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Exige la comptabilité analytique du client."
+    },
+    {
+      "code": "STOCKS-NRV",
+      "cycle": "STOCKS",
+      "libelle": "Dépréciation : valeur nette de réalisation et rotation lente",
+      "objectif": "Vérifier que le stock n'est pas porté au-dessus de ce qu'il rapportera.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "référence d'article",
+      "population": {
+        "libelle": "Articles à rotation lente ou vendus sous le coût",
+        "source": "état de stock et ventes postérieures",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Ventes postérieures à la clôture",
+          "champs": [
+            {
+              "code": "prix_vente",
+              "libelle": "Prix de vente",
+              "type": "montant",
+              "controle_contre": "coût unitaire au stock",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Coût > prix de vente net des frais de vente : dépréciation exigée. Rotation lente : dépréciation ou justification.",
+      "sources": [
+        "PRAT-STOCKS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "STOCKS-CUTOFF",
+      "cycle": "STOCKS",
+      "libelle": "Cut-off des réceptions et des expéditions",
+      "objectif": "Vérifier que les mouvements de fin d'exercice sont dans le bon exercice, dans les deux sens.",
+      "assertion": "separation",
+      "sens": "piece_vers_gl",
+      "unite": "mouvement de stock",
+      "population": {
+        "libelle": "Derniers bons de réception et d'expédition avant la clôture, premiers après",
+        "source": "journaux de réception et d'expédition",
+        "periode": "dix jours avant et après la clôture",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Bon de réception ou d'expédition",
+          "champs": [
+            {
+              "code": "date_mouvement",
+              "libelle": "Date du mouvement",
+              "type": "date",
+              "controle_contre": "exercice de comptabilisation",
+              "reference": "date_ecriture",
+              "tolerance": "exact",
+              "regle": "même exercice que la référence"
+            }
+          ]
+        }
+      ],
+      "controle": "Le mouvement physique et l'écriture doivent tomber dans le même exercice.",
+      "sources": [
+        "PRAT-STOCKS",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "STOCKS-TIERS",
+      "cycle": "STOCKS",
+      "libelle": "Stocks détenus chez des tiers",
+      "objectif": "Obtenir une preuve pour les stocks qui ne sont pas dans les murs.",
+      "assertion": "realite",
+      "sens": "confirmation",
+      "unite": "dépositaire",
+      "population": {
+        "libelle": "Dépositaires déclarés par le client",
+        "source": "listing des dépôts",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Confirmation du dépositaire",
+          "champs": [
+            {
+              "code": "quantite",
+              "libelle": "Quantité détenue",
+              "type": "nombre",
+              "controle_contre": "quantité au stock du client",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Confirmation directe du dépositaire, ou observation sur place. À défaut, procédures alternatives.",
+      "sources": [
+        "ISA-501",
+        "ISA-505",
+        "PRAT-STOCKS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CLIENTS-AGE",
+      "cycle": "CLIENTS",
+      "libelle": "Balance âgée et cohérence au grand livre",
+      "objectif": "Rapprocher la balance âgée au solde comptable et analyser l'antériorité.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "tiers client",
+      "population": {
+        "libelle": "Tiers clients à la clôture",
+        "source": "comptes auxiliaires",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "tiers_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Total de la balance âgée = solde du compte collectif. Antériorité analysée par tranche.",
+      "sources": [
+        "PRAT-CLIENTS"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "CLIENTS-DEPREC",
+      "cycle": "CLIENTS",
+      "libelle": "Dépréciation des créances douteuses",
+      "objectif": "Vérifier que les créances non recouvrables sont dépréciées.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "tiers client",
+      "population": {
+        "libelle": "Tiers dont la créance dépasse le seuil de remontée et présente une antériorité",
+        "source": "balance âgée",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "tiers_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Encaissements postérieurs à la clôture",
+          "champs": [
+            {
+              "code": "encaisse",
+              "libelle": "Montant encaissé après la clôture",
+              "type": "montant",
+              "controle_contre": "solde à la clôture",
+              "reference": "solde_tiers",
+              "tolerance": "solde non encaissé à justifier"
+            }
+          ]
+        }
+      ],
+      "controle": "Créance ancienne non encaissée après la clôture : dépréciation exigée, ou justification écrite du recouvrement attendu.",
+      "sources": [
+        "PRAT-CLIENTS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CLIENTS-CIRC",
+      "cycle": "CLIENTS",
+      "libelle": "Circularisation des clients",
+      "objectif": "Confirmer le solde directement auprès du tiers.",
+      "assertion": "realite",
+      "sens": "confirmation",
+      "unite": "tiers client",
+      "population": {
+        "libelle": "Tiers clients à la clôture",
+        "source": "comptes auxiliaires",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "tiers_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse du client",
+          "champs": [
+            {
+              "code": "solde",
+              "libelle": "Solde confirmé",
+              "type": "montant",
+              "controle_contre": "solde du compte auxiliaire",
+              "reference": "solde_tiers",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Écart entre solde confirmé et solde comptable : rapproché facture par facture.",
+      "sources": [
+        "ISA-505",
+        "PRAT-CLIENTS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CLIENTS-ALT",
+      "cycle": "CLIENTS",
+      "libelle": "Procédures alternatives sur les non-réponses à la circularisation",
+      "objectif": "Obtenir une preuve équivalente quand le tiers ne répond pas. Une non-réponse n'est pas une preuve.",
+      "assertion": "realite",
+      "sens": "piece_vers_gl",
+      "unite": "tiers client",
+      "population": {
+        "libelle": "Tiers circularisés n'ayant pas répondu",
+        "source": "suivi des circularisations",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "tiers_sans_reponse"
+      },
+      "justificatifs": [
+        {
+          "document": "Encaissement postérieur",
+          "champs": [
+            {
+              "code": "encaisse",
+              "libelle": "Montant encaissé après la clôture",
+              "type": "montant",
+              "controle_contre": "solde à la clôture",
+              "reference": "solde_tiers",
+              "tolerance": "exact"
+            }
+          ]
+        },
+        {
+          "document": "Facture et bon de livraison",
+          "champs": [
+            {
+              "code": "montant",
+              "libelle": "Montant facturé",
+              "type": "montant",
+              "controle_contre": "solde à la clôture",
+              "reference": "solde_tiers",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Encaissement postérieur rapproché, ou facture et livraison examinées. Le solde non couvert reste une limitation.",
+      "sources": [
+        "ISA-505",
+        "PRAT-CLIENTS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CLIENTS-AVOIRS",
+      "cycle": "CLIENTS",
+      "libelle": "Avoirs postérieurs à la clôture",
+      "objectif": "Chercher, dans les avoirs émis après la clôture, ceux qui se rattachent à l'exercice.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "avoir",
+      "population": {
+        "libelle": "Avoirs émis après la clôture, au-dessus du seuil de remontée",
+        "source": "grand livre de l'exercice suivant",
+        "periode": "de la clôture à la date du rapport",
+        "filtre": "aucun",
+        "predicat": "avoirs_apres_cloture"
+      },
+      "justificatifs": [
+        {
+          "document": "Avoir",
+          "champs": [
+            {
+              "code": "date_fait",
+              "libelle": "Date du fait générateur de l'avoir",
+              "type": "date",
+              "controle_contre": "aucun — donnée relevée",
+              "reference": "date_fait_generateur",
+              "tolerance": "sans objet",
+              "releve_seul": true
+            },
+            {
+              "code": "montant",
+              "libelle": "Montant de l'avoir",
+              "type": "montant",
+              "controle_contre": "produit comptabilisé en N",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "produit_annule_cloture",
+              "libelle": "Produit annulé rattaché à l'exercice clos",
+              "type": "bool",
+              "controle_contre": "annulation attendue à la clôture (fait générateur antérieur ou égal)",
+              "reference": "non_implemente",
+              "tolerance": "exact",
+              "regle": "le produit dont l'avoir annule le fait générateur antérieur à la clôture devait être annulé à la clôture"
+            }
+          ]
+        }
+      ],
+      "controle": "Relever le fait générateur de l'avoir, puis vérifier que le produit correspondant a bien été annulé ou déprécié à la clôture. C'est le sens inverse du test de détail sur les ventes, et le symétrique de la recherche de passifs non enregistrés.",
+      "sources": [
+        "PRAT-CLIENTS",
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "CA-EXHAUST",
+      "cycle": "CA",
+      "libelle": "Exhaustivité du chiffre d'affaires — des expéditions vers les ventes",
+      "objectif": "Partir des livraisons et chercher la facture : le sens que le test de détail ne couvre pas.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "bon de livraison",
+      "population": {
+        "libelle": "Bons de livraison de l'exercice",
+        "source": "journal des expéditions du client",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Bon de livraison",
+          "champs": [
+            {
+              "code": "num_livraison",
+              "libelle": "Numéro de livraison",
+              "type": "texte",
+              "controle_contre": "référence de la facture de vente",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Toute livraison doit avoir sa facture dans le même exercice. Une livraison sans facture est un produit non comptabilisé.",
+      "sources": [
+        "PRAT-SENS"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Exige le journal des expéditions du client, absent du fichier des écritures."
+    },
+    {
+      "code": "PERSONNEL-DSN",
+      "cycle": "PERSONNEL",
+      "libelle": "Rapprochement de la paie aux déclarations sociales",
+      "objectif": "Rapprocher les charges de personnel comptabilisées aux déclarations sociales déposées.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "période de paie",
+      "population": {
+        "libelle": "Périodes de paie de l'exercice",
+        "source": "journal de paie et déclarations sociales",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Déclaration sociale de la période",
+          "champs": [
+            {
+              "code": "brut_declare",
+              "libelle": "Masse salariale brute déclarée",
+              "type": "montant",
+              "controle_contre": "comptes de rémunération",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "cotisations",
+              "libelle": "Cotisations déclarées",
+              "type": "montant",
+              "controle_contre": "comptes de charges sociales",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Brut déclaré et cotisations déclarées rapprochés aux comptes, période par période. Tout écart est expliqué.",
+      "sources": [
+        "PRAT-PAIE-FR"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true,
+      "note": "[UNVERIFIED] Les obligations déclaratives françaises (DSN, URSSAF) n'ont pas pu être vérifiées sur le texte."
+    },
+    {
+      "code": "PERSONNEL-CP",
+      "cycle": "PERSONNEL",
+      "libelle": "Provision pour congés payés",
+      "objectif": "Recalculer la provision à partir des droits acquis non pris.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "salarié",
+      "population": {
+        "libelle": "Salariés présents à la clôture",
+        "source": "état des compteurs de congés",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "État des compteurs de congés",
+          "champs": [
+            {
+              "code": "jours",
+              "libelle": "Jours acquis non pris",
+              "type": "nombre",
+              "controle_contre": "compteur du salarié",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "taux",
+              "libelle": "Base journalière",
+              "type": "montant",
+              "controle_contre": "rémunération du salarié",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Provision recalculée = jours acquis × base journalière, charges sociales comprises.",
+      "sources": [
+        "PRAT-PAIE-FR"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "SOCIAL-COTIS",
+      "cycle": "SOCIAL",
+      "libelle": "Contrôle des charges sociales et des taxes assises sur les salaires",
+      "objectif": "Recalculer les cotisations par application des taux à leur assiette.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "période de paie",
+      "population": {
+        "libelle": "Périodes de paie de l'exercice",
+        "source": "journal de paie",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Bordereau de cotisations",
+          "champs": [
+            {
+              "code": "assiette",
+              "libelle": "Assiette",
+              "type": "montant",
+              "controle_contre": "masse salariale de la période",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "taux",
+              "libelle": "Taux appliqué",
+              "type": "texte",
+              "controle_contre": "barème en vigueur",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Cotisation recalculée = assiette × taux. Taux hors barème : justification exigée.",
+      "sources": [
+        "PRAT-PAIE-FR"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "[UNVERIFIED] Les barèmes de cotisations n'ont pas pu être vérifiés sur le texte."
+    },
+    {
+      "code": "CAPITAUX-VAR",
+      "cycle": "CAPITAUX",
+      "libelle": "Tableau de variation des capitaux propres",
+      "objectif": "Rapprocher l'ouverture, le résultat, l'affectation et la clôture.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "compte",
+      "population": {
+        "libelle": "Comptes de capitaux propres",
+        "source": "balance N et N-1",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [],
+      "controle": "Capitaux N-1 + résultat N ± mouvements = capitaux N. Toute différence est expliquée par un mouvement identifié.",
+      "sources": [
+        "PRAT-CAPITAUX"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": false
+    },
+    {
+      "code": "CAPITAUX-PV",
+      "cycle": "CAPITAUX",
+      "libelle": "Procès-verbaux d'assemblée et affectation du résultat",
+      "objectif": "Vérifier que l'affectation comptabilisée est celle qui a été décidée.",
+      "assertion": "droits",
+      "sens": "inspection",
+      "unite": "procès-verbal",
+      "population": {
+        "libelle": "Procès-verbaux de l'exercice",
+        "source": "registre des assemblées",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Procès-verbal d'assemblée générale",
+          "champs": [
+            {
+              "code": "affectation",
+              "libelle": "Affectation décidée",
+              "type": "texte",
+              "controle_contre": "écriture d'affectation",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "dividende",
+              "libelle": "Dividende voté",
+              "type": "montant",
+              "controle_contre": "compte de dividendes à payer",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "L'écriture d'affectation reproduit-elle la décision ? Les distributions sont-elles autorisées ?",
+      "sources": [
+        "PRAT-CAPITAUX"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "CAPITAUX-CONV",
+      "cycle": "CAPITAUX",
+      "libelle": "Conventions réglementées",
+      "objectif": "Identifier les conventions entre la société et ses dirigeants ou associés.",
+      "assertion": "presentation",
+      "sens": "inspection",
+      "unite": "convention",
+      "population": {
+        "libelle": "Conventions déclarées par la direction",
+        "source": "déclaration de la direction",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [],
+      "controle": "Chaque convention est-elle autorisée, approuvée et présentée dans le rapport spécial ?",
+      "sources": [
+        "PRAT-CAPITAUX"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": false,
+      "note": "[UNVERIFIED] Le régime des conventions réglementées relève du code de commerce, inaccessible depuis cet environnement. Aucun article n'est cité."
+    },
+    {
+      "code": "DETTES_FI-TAB",
+      "cycle": "DETTES_FI",
+      "libelle": "Tableau d'amortissement des emprunts",
+      "objectif": "Rapprocher le capital restant dû comptabilisé au tableau d'amortissement contractuel.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "emprunt",
+      "population": {
+        "libelle": "Emprunts en cours à la clôture",
+        "source": "contrats et tableaux d'amortissement",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Tableau d'amortissement",
+          "champs": [
+            {
+              "code": "crd",
+              "libelle": "Capital restant dû à la clôture",
+              "type": "montant",
+              "controle_contre": "solde du compte d'emprunt",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "echeance",
+              "libelle": "Prochaine échéance",
+              "type": "date",
+              "controle_contre": "ventilation courant / non courant",
+              "reference": "date_cloture",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Capital restant dû recalculé et rapproché. Ventilation à moins et à plus d'un an vérifiée.",
+      "sources": [
+        "PRAT-DETTES"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "DETTES_FI-INT",
+      "cycle": "DETTES_FI",
+      "libelle": "Intérêts courus et charge d'intérêts",
+      "objectif": "Recalculer les intérêts de la période et les intérêts courus à la clôture.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "emprunt",
+      "population": {
+        "libelle": "Emprunts en cours à la clôture",
+        "source": "contrats",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Contrat d'emprunt",
+          "champs": [
+            {
+              "code": "taux",
+              "libelle": "Taux contractuel",
+              "type": "texte",
+              "controle_contre": "charge d'intérêts comptabilisée",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Intérêts recalculés = capital moyen × taux × durée. Intérêts courus au prorata depuis la dernière échéance.",
+      "sources": [
+        "PRAT-DETTES"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "DETTES_FI-COV",
+      "cycle": "DETTES_FI",
+      "libelle": "Covenants bancaires",
+      "objectif": "Recalculer les ratios contractuels et conclure sur le respect.",
+      "assertion": "presentation",
+      "sens": "recalcul",
+      "unite": "covenant",
+      "population": {
+        "libelle": "Covenants des contrats en cours",
+        "source": "contrats d'emprunt",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Contrat d'emprunt",
+          "champs": [
+            {
+              "code": "ratio",
+              "libelle": "Ratio exigé",
+              "type": "texte",
+              "controle_contre": "ratio recalculé sur les comptes",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Ratio recalculé sur les comptes de l'exercice. Rupture de covenant : reclassement en dette à moins d'un an et information à donner.",
+      "sources": [
+        "PRAT-DETTES"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "DETTES_FI-CIRC",
+      "cycle": "DETTES_FI",
+      "libelle": "Confirmation bancaire des emprunts et engagements",
+      "objectif": "Confirmer directement auprès de l'établissement prêteur.",
+      "assertion": "exhaustivite",
+      "sens": "confirmation",
+      "unite": "établissement",
+      "population": {
+        "libelle": "Établissements prêteurs",
+        "source": "comptes d'emprunt et listing bancaire",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse bancaire",
+          "champs": [
+            {
+              "code": "crd",
+              "libelle": "Capital restant dû confirmé",
+              "type": "montant",
+              "controle_contre": "solde comptable",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "garanties",
+              "libelle": "Garanties et engagements",
+              "type": "texte",
+              "controle_contre": "engagements hors bilan présentés",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "La confirmation couvre aussi les engagements hors bilan : leur absence des comptes est une anomalie de présentation.",
+      "sources": [
+        "ISA-505",
+        "PRAT-DETTES"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "PROV-LITIGES",
+      "cycle": "PROV",
+      "libelle": "Revue des litiges et confirmation des conseils juridiques",
+      "objectif": "Identifier les litiges et obtenir l'appréciation des conseils.",
+      "assertion": "exhaustivite",
+      "sens": "confirmation",
+      "unite": "conseil",
+      "population": {
+        "libelle": "Conseils juridiques ayant perçu des honoraires dans l'exercice",
+        "source": "grand livre",
+        "periode": "exercice audité",
+        "filtre": "comptes d'honoraires juridiques",
+        "predicat": "tiers_honoraires_juridiques"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse du conseil juridique",
+          "champs": [
+            {
+              "code": "litiges",
+              "libelle": "Litiges en cours et issue attendue",
+              "type": "texte",
+              "controle_contre": "provisions comptabilisées",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "estimation",
+              "libelle": "Estimation financière",
+              "type": "montant",
+              "controle_contre": "montant provisionné",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Tout conseil rémunéré est circularisé ; un conseil absent du listing du client est une exhaustivité en défaut.",
+      "sources": [
+        "ISA-501",
+        "ISA-505",
+        "PCAOB-AS2505"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "PROV-RECALC",
+      "cycle": "PROV",
+      "libelle": "Recalcul des provisions et revue de leur dénouement",
+      "objectif": "Vérifier le mode de calcul et l'issue des provisions de l'exercice précédent.",
+      "assertion": "evaluation",
+      "sens": "recalcul",
+      "unite": "provision",
+      "population": {
+        "libelle": "Provisions à la clôture et à l'ouverture",
+        "source": "balance N et N-1",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Note de calcul de la provision",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base de calcul",
+              "type": "montant",
+              "controle_contre": "provision comptabilisée",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Provision recalculée. Reprises de l'exercice : le dénouement confirme-t-il l'estimation initiale ? Les écarts systématiques révèlent un biais.",
+      "sources": [
+        "PRAT-CAPITAUX"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "TRESO-CIRC",
+      "cycle": "TRESO",
+      "libelle": "Confirmation bancaire des soldes",
+      "objectif": "Confirmer les soldes et les pouvoirs auprès des établissements.",
+      "assertion": "realite",
+      "sens": "confirmation",
+      "unite": "compte bancaire",
+      "population": {
+        "libelle": "Comptes bancaires en comptabilité",
+        "source": "balance",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "comptes_du_poste"
+      },
+      "justificatifs": [
+        {
+          "document": "Réponse bancaire",
+          "champs": [
+            {
+              "code": "solde",
+              "libelle": "Solde confirmé",
+              "type": "montant",
+              "controle_contre": "solde comptable",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Tout compte en comptabilité doit être confirmé ; tout compte confirmé doit être en comptabilité — le contrôle joue dans les deux sens.",
+      "sources": [
+        "ISA-505"
+      ],
+      "risque_minimum": "faible",
+      "echantillonnee": true
+    },
+    {
+      "code": "TRESO-RAPPRO",
+      "cycle": "TRESO",
+      "libelle": "Rapprochements bancaires et examen des suspens",
+      "objectif": "Vérifier le rapprochement et l'apurement des éléments en suspens.",
+      "assertion": "mesure",
+      "sens": "recalcul",
+      "unite": "compte bancaire",
+      "population": {
+        "libelle": "Comptes bancaires à la clôture",
+        "source": "rapprochements bancaires du client",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Rapprochement bancaire",
+          "champs": [
+            {
+              "code": "solde_banque",
+              "libelle": "Solde relevé",
+              "type": "montant",
+              "controle_contre": "solde confirmé",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            },
+            {
+              "code": "suspens",
+              "libelle": "Éléments en suspens",
+              "type": "montant",
+              "controle_contre": "écart entre comptabilité et banque",
+              "reference": "montant_ligne",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Suspens anciens non apurés : chèques non encaissés de plus de six mois, virements en attente. Chacun est justifié.",
+      "sources": [
+        "PRAT-DETTES"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true
+    },
+    {
+      "code": "FISCAL-TVA",
+      "cycle": "FISCAL",
+      "libelle": "Rapprochement de la TVA déclarée au chiffre d'affaires comptabilisé",
+      "objectif": "Rapprocher les bases déclarées aux produits comptabilisés.",
+      "assertion": "exhaustivite",
+      "sens": "recalcul",
+      "unite": "période de déclaration",
+      "population": {
+        "libelle": "Périodes de déclaration de l'exercice",
+        "source": "déclarations de TVA et grand livre",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Déclaration de TVA",
+          "champs": [
+            {
+              "code": "base",
+              "libelle": "Base déclarée",
+              "type": "montant",
+              "controle_contre": "chiffre d'affaires taxable comptabilisé",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            },
+            {
+              "code": "tva",
+              "libelle": "TVA collectée déclarée",
+              "type": "montant",
+              "controle_contre": "compte de TVA collectée",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Base déclarée × taux = TVA collectée. Écart au comptabilisé expliqué, période par période.",
+      "sources": [
+        "PRAT-PAIE-FR"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "[UNVERIFIED] Les règles de TVA n'ont pas pu être vérifiées sur le texte."
+    },
+    {
+      "code": "ACHATS-EXHAUST",
+      "cycle": "ACHATS",
+      "libelle": "Exhaustivité des achats — des bons de réception vers les charges",
+      "objectif": "Partir des réceptions et chercher la charge.",
+      "assertion": "exhaustivite",
+      "sens": "piece_vers_gl",
+      "unite": "bon de réception",
+      "population": {
+        "libelle": "Bons de réception de l'exercice",
+        "source": "journal des réceptions",
+        "periode": "exercice audité",
+        "filtre": "aucun",
+        "predicat": "non_implemente"
+      },
+      "justificatifs": [
+        {
+          "document": "Bon de réception",
+          "champs": [
+            {
+              "code": "num_reception",
+              "libelle": "Numéro de réception",
+              "type": "texte",
+              "controle_contre": "référence de la facture comptabilisée",
+              "reference": "non_implemente",
+              "tolerance": "exact"
+            }
+          ]
+        }
+      ],
+      "controle": "Toute réception doit avoir sa charge et sa dette dans l'exercice de la réception.",
+      "sources": [
+        "PRAT-SENS",
+        "PRAT-SUL"
+      ],
+      "risque_minimum": "moyen",
+      "echantillonnee": true,
+      "note": "Exige le journal des réceptions du client."
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Catalogue méthodologique OTTO — procédures par cycle",
+  "type": "object",
+  "required": [
+    "version",
+    "sens_de_test",
+    "procedures"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "sens_de_test": {
+      "type": "object"
+    },
+    "procedures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/procedure"
+      }
+    }
+  },
+  "definitions": {
+    "procedure": {
+      "type": "object",
+      "required": [
+        "code",
+        "cycle",
+        "libelle",
+        "objectif",
+        "assertion",
+        "sens",
+        "unite",
+        "population",
+        "justificatifs",
+        "controle",
+        "sources",
+        "risque_minimum",
+        "echantillonnee"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z_]+(-[A-Z_]+)*$",
+          "description": "CYCLE-NOM, en majuscules. Le nom peut être composé (FOURN-CUTOFF-REC)."
+        },
+        "cycle": {
+          "type": "string",
+          "description": "code du poste, ou « * » pour une procédure transverse"
+        },
+        "libelle": {
+          "type": "string",
+          "minLength": 10
+        },
+        "objectif": {
+          "type": "string",
+          "minLength": 20
+        },
+        "assertion": {
+          "enum": [
+            "realite",
+            "exhaustivite",
+            "mesure",
+            "evaluation",
+            "separation",
+            "droits",
+            "presentation"
+          ]
+        },
+        "sens": {
+          "enum": [
+            "gl_vers_piece",
+            "piece_vers_gl",
+            "recalcul",
+            "confirmation",
+            "observation",
+            "analytique",
+            "inspection"
+          ]
+        },
+        "unite": {
+          "type": "string"
+        },
+        "population": {
+          "type": "object",
+          "required": [
+            "libelle",
+            "source",
+            "periode",
+            "filtre"
+          ],
+          "properties": {
+            "libelle": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "periode": {
+              "type": "string"
+            },
+            "filtre": {
+              "type": "string"
+            },
+            "predicat": {
+              "type": "string"
+            },
+            "parametres": {
+              "type": "object"
+            }
+          }
+        },
+        "justificatifs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "document",
+              "champs"
+            ],
+            "properties": {
+              "document": {
+                "type": "string"
+              },
+              "champs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "libelle",
+                    "type",
+                    "controle_contre",
+                    "reference",
+                    "tolerance"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "libelle": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "montant",
+                        "date",
+                        "texte",
+                        "nombre",
+                        "bool"
+                      ]
+                    },
+                    "controle_contre": {
+                      "type": "string"
+                    },
+                    "reference": {
+                      "type": "string"
+                    },
+                    "regle": {
+                      "type": "string"
+                    },
+                    "tolerance": {
+                      "type": "string"
+                    },
+                    "releve_seul": {
+                      "type": "boolean",
+                      "description": "le champ se RELÈVE et ne se contrôle pas : il n'a pas de référence à laquelle se comparer, il alimente le jugement ou un autre contrôle. Ne produit jamais d'écart."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "controle": {
+          "type": "string",
+          "minLength": 15
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "risque_minimum": {
+          "enum": [
+            "faible",
+            "moyen",
+            "eleve"
+          ]
+        },
+        "echantillonnee": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        },
+        "si_facteur": {
+          "type": "string",
+          "description": "procédure requise seulement si ce facteur de risque est actif"
+        },
+        "postes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "restreint la procédure transverse à ces postes"
+        },
+        "justificatifs_par_cycle": {
+          "type": "object",
+          "description": "justificatifs propres à un cycle, qui remplacent la liste générique pour ce poste"
+        },
+        "selection": {
+          "enum": [
+            "sondage",
+            "exhaustive_au_seuil"
+          ],
+          "description": "mode de sélection imposé par la méthode. « exhaustive_au_seuil » : aucun tirage, tous les éléments de la population sont testés — l'étendue se règle par le seuil de remontée. Absent = « sondage »."
+        }
+      }
+    }
+  }
+}

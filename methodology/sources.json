@@ -1,0 +1,205 @@
+{
+  "_note": "Registre des sources du catalogue méthodologique. RÈGLE : aucune référence n'est présentée comme vérifiée si le texte primaire n'a pas été atteint. Depuis l'environnement de développement utilisé (proxy réseau restrictif), AUCUN texte normatif primaire n'a pu être ouvert : ni legifrance.gouv.fr (NEP), ni pcaobus.org, ni ifac.org/iaasb.org (ISA). Toutes les entrées normatives portent donc verifie=false, avec la raison. Elles nomment la norme et son objet — corroborés par recherche documentaire — jamais un numéro de paragraphe.",
+  "sources": {
+    "ISA-240": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 240 — The Auditor's Responsibilities Relating to Fraud in an Audit of Financial Statements",
+      "objet": "Test des écritures comptables et réponse au risque de fraude.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau de l'environnement.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
+    "ISA-500": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 500 — Audit Evidence",
+      "objet": "Caractère suffisant et approprié des éléments probants ; une déclaration n'est pas une preuve.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
+    "ISA-501": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 501 — Audit Evidence — Specific Considerations for Selected Items",
+      "objet": "Assistance à l'inventaire physique ; litiges et réclamations ; information sectorielle.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org, iaasb.org, icjce.es et pasai.squarespace.com bloqués par le proxy réseau.",
+      "corrobore_par": [
+        "https://www.icjce.es/images/pdfs/tecnica2/normativainternacional/isa501.pdf (référencé, non ouvert)",
+        "recherche documentaire 2026-08-26 : assistance à l'inventaire, procédures alternatives si impraticable, communication avec les conseils juridiques"
+      ]
+    },
+    "ISA-505": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 505 — External Confirmations",
+      "objet": "Confirmations externes ; procédures alternatives en cas de non-réponse.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
+    "ISA-520": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 520 — Analytical Procedures",
+      "objet": "Procédures analytiques substantives : attente indépendante, précision, seuil d'investigation.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
+    "ISA-530": {
+      "type": "normatif",
+      "referentiel": "ISA (IAASB)",
+      "reference": "ISA 530 — Audit Sampling",
+      "objet": "Sondages en audit : taille, méthode, éléments individuellement significatifs, extrapolation.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : ifac.org et iaasb.org bloqués par le proxy réseau.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    },
+    "PCAOB-AS2505": {
+      "type": "normatif",
+      "referentiel": "PCAOB",
+      "reference": "AS 2505 — Inquiry of a Client's Lawyer Concerning Litigation, Claims, and Assessments",
+      "objet": "Lettre aux avocats.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : pcaobus.org bloqué par le proxy réseau.",
+      "corrobore_par": [
+        "https://pcaobus.org/oversight/standards/auditing-standards/details/AS2505 (référencé, non ouvert)"
+      ]
+    },
+    "PCAOB-AS2510": {
+      "type": "normatif",
+      "referentiel": "PCAOB",
+      "reference": "AS 2510 — Auditing Inventories",
+      "objet": "Observation de l'inventaire physique.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : pcaobus.org bloqué par le proxy réseau.",
+      "corrobore_par": [
+        "https://pcaobus.org/oversight/standards/auditing-standards/details/AS2510 (référencé, non ouvert)"
+      ]
+    },
+    "NEP-FR": {
+      "type": "normatif",
+      "referentiel": "NEP (France)",
+      "reference": "Normes d'exercice professionnel homologuées, code de commerce",
+      "objet": "Référentiel français du commissaire aux comptes.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : legifrance.gouv.fr et cncc.fr bloqués par le proxy réseau. AUCUN numéro de NEP n'est cité dans ce catalogue faute de pouvoir le vérifier.",
+      "corrobore_par": []
+    },
+    "PCG": {
+      "type": "comptable",
+      "referentiel": "Plan comptable général (France)",
+      "reference": "Plan comptable général — nomenclature des comptes",
+      "objet": "Numérotation des comptes utilisée pour définir les populations.",
+      "verifie": false,
+      "raison_non_verifie": "Texte primaire inaccessible : legifrance.gouv.fr bloqué. La nomenclature employée ici (classes 1 à 7, comptes à quatre ou six chiffres) est d'usage courant et non contestée, mais elle n'a pas été confrontée au texte.",
+      "corrobore_par": []
+    },
+    "PRAT-SUL": {
+      "type": "secondaire",
+      "referentiel": "pratique professionnelle documentée",
+      "reference": "Search for unrecorded liabilities — décaissements et factures postérieurs à la clôture",
+      "objet": "Recherche de passifs non enregistrés.",
+      "verifie": false,
+      "raison_non_verifie": "Source secondaire : article de revue professionnelle, non ouvert (domaine bloqué).",
+      "corrobore_par": [
+        "https://www.cpajournal.com/2017/11/21/proper-risk-based-approach-search-unrecorded-liabilities/ (référencé, non ouvert)",
+        "recherche documentaire 2026-08-26 : revue des décaissements postérieurs remontés à la facture et au bon de réception ; taille liée au risque évalué"
+      ]
+    },
+    "PRAT-SENS": {
+      "type": "secondaire",
+      "referentiel": "pratique professionnelle documentée",
+      "reference": "Vouching / tracing — sens du test et assertion servie",
+      "objet": "Le sens du test détermine l'assertion : du grand livre vers la pièce pour la réalité, de la pièce vers le grand livre pour l'exhaustivité.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires (supports pédagogiques et blogs professionnels), non ouvertes.",
+      "corrobore_par": [
+        "https://trullion.com/blog/guide-to-audit-tracing-and-vouching/ (référencé, non ouvert)",
+        "https://www.universalcpareview.com/ask-joey/what-is-the-difference-between-tracing-and-vouching-in-audit/ (référencé, non ouvert)",
+        "recherche documentaire 2026-08-26 : « vouching … from the recorded item to the supporting document » / « tracing … from the supporting document to the recorded item »"
+      ]
+    },
+    "PRAT-IMMO": {
+      "type": "secondaire",
+      "referentiel": "programmes de travail publiquement documentés",
+      "reference": "Programme immobilisations — acquisitions, cessions, dotations, revue des charges d'entretien",
+      "objet": "Procédures du cycle immobilisations.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires (guides d'audit publiés en PDF), non ouvertes : domaines bloqués.",
+      "corrobore_par": [
+        "https://efpradvisory.com/wp-content/uploads/2024/10/8-Series-Fixed-Assets-Audit-Guide-Final-2024.pdf (référencé, non ouvert)",
+        "recherche documentaire 2026-08-26 : recalcul des dotations, résultat de cession, revue des réparations pour capitalisations omises, recherche d'immobilisations non enregistrées"
+      ]
+    },
+    "PRAT-STOCKS": {
+      "type": "secondaire",
+      "referentiel": "programmes de travail publiquement documentés",
+      "reference": "Programme stocks — comptage, valorisation, valeur nette de réalisation, rotation, cut-off, stocks chez des tiers",
+      "objet": "Procédures du cycle stocks.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires, non ouvertes : domaines bloqués.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26 : existence, exhaustivité, cut-off, droits, coût et valorisation ; stocks détenus chez des tiers par confirmation ou observation"
+      ]
+    },
+    "PRAT-CLIENTS": {
+      "type": "secondaire",
+      "referentiel": "programmes de travail publiquement documentés",
+      "reference": "Programme clients — balance âgée, dépréciation, circularisation et procédures alternatives, avoirs postérieurs",
+      "objet": "Procédures du cycle clients.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires, non ouvertes : domaines bloqués.",
+      "corrobore_par": [
+        "https://efpradvisory.com/wp-content/uploads/2024/10/3-series-Accounts-Receivable-Audit-Guide-Final-2024.pdf (référencé, non ouvert)",
+        "recherche documentaire 2026-08-26 : procédures alternatives par les encaissements postérieurs en cas de non-réponse ; avoirs postérieurs rattachés à l'exercice"
+      ]
+    },
+    "PRAT-PAIE-FR": {
+      "type": "secondaire",
+      "referentiel": "pratique française documentée",
+      "reference": "Rapprochement paie / DSN / URSSAF, provision pour congés payés",
+      "objet": "Procédures du cycle personnel en France.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires, non ouvertes : domaines bloqués. Les obligations déclaratives (DSN, URSSAF) ne sont PAS vérifiées sur le texte.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26 : rapprochement de la paie à la DSN et aux comptes ; provision congés payés en arrêté ; rapprochement des cotisations aux relevés URSSAF"
+      ]
+    },
+    "PRAT-DETTES": {
+      "type": "secondaire",
+      "referentiel": "programmes de travail publiquement documentés",
+      "reference": "Programme emprunts — tableau d'amortissement, intérêts courus, échéancier, covenants",
+      "objet": "Procédures du cycle emprunts.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires, non ouvertes : domaines bloqués.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26 : lecture des contrats, recalcul, confirmation bancaire, calcul des ratios de covenant, ventilation courant / non courant"
+      ]
+    },
+    "PRAT-CAPITAUX": {
+      "type": "secondaire",
+      "referentiel": "pratique professionnelle documentée",
+      "reference": "Programme capitaux propres — variation, procès-verbaux, affectation du résultat, conventions réglementées",
+      "objet": "Procédures du cycle capitaux propres.",
+      "verifie": false,
+      "raison_non_verifie": "Sources secondaires, non ouvertes. Le régime des conventions réglementées relève du code de commerce, NON VÉRIFIÉ faute d'accès à legifrance.",
+      "corrobore_par": [
+        "recherche documentaire 2026-08-26"
+      ]
+    }
+  }
+}
