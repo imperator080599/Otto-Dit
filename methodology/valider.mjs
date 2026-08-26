@@ -342,11 +342,17 @@ export function schemasDuProduit(racine){
   return lireDossier(path.join(racine || racineDepot(), 'methodology'), FICHIERS_SCHEMA);
 }
 
-function assembler(contenu, schemas){
+/**
+ * TOUTES les erreurs d'un paquet, liste vide s'il est valide.
+ *
+ * C'est la SEULE fonction qui produit des erreurs de paquet. L'assemblage
+ * l'appelle, l'écran d'import l'appelle : le cabinet qui colle un fichier voit
+ * exactement la liste que le moteur refuserait, pas une liste re-dérivée
+ * ailleurs qui pourrait diverger d'une version à l'autre.
+ */
+export function erreursDuPaquet(contenu, schemas){
   const manquants = FICHIERS_CONTENU.filter(f => !contenu[f]);
-  if (manquants.length){
-    throw new Error('CATALOGUE INVALIDE :\n  fichiers manquants : ' + manquants.join(', '));
-  }
+  if (manquants.length) return ['fichiers manquants : ' + manquants.join(', ')];
   const cat = contenu['procedures.json'], src = contenu['sources.json'];
   const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
   const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
@@ -359,14 +365,25 @@ function assembler(contenu, schemas){
   /* Le jeu d'assertions est lu AVANT tout le reste : c'est lui qui dit ce
      qu'une procédure, une question ou un facteur a le droit de viser. */
   const codesAssertions = (asrt.assertions || []).map(x => x.code);
-  const erreurs = validerAssertions(asrt, cat, schemaA)
+  return validerAssertions(asrt, cat, schemaA)
     .concat(validerCatalogue(cat, src, schema, echelle, codesAssertions))
     .concat(validerQuestionnaire(quest, src, schemaQ, codesAssertions))
     .concat(validerIndependance(ind, src, schemaI))
     .concat(validerRisque(risq, src, schemaR, codesAssertions));
+}
+
+function assembler(contenu, schemas){
+  const erreurs = erreursDuPaquet(contenu, schemas);
   if (erreurs.length){
     throw new Error('CATALOGUE INVALIDE :\n  ' + erreurs.join('\n  '));
   }
+  const cat = contenu['procedures.json'], src = contenu['sources.json'];
+  const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
+  const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
+  /* Seuls ces deux schémas servent à l'ASSEMBLAGE : le premier voyage avec le
+     catalogue, le second porte l'énumération des prédicats implémentés. Les
+     trois autres n'existent que pour valider, et la validation est faite. */
+  const schema = schemas['schema.json'], schemaR = schemas['schema-risque.json'];
   return { version:cat.version, sensDeTest:cat.sens_de_test,
            procedures:cat.procedures, sources:src.sources, schema,
            questionnaire:{ version:quest.version, naturesRi:quest.natures_ri,

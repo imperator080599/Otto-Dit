@@ -2563,3 +2563,74 @@ vérifier que c'est bien **ce** catalogue qui sort.
 
 **Ce qui reste, et qui est dit dans le document** : il n'y a pas encore d'**écran** d'import. Le
 mécanisme est éprouvé, la publication passe encore par nous — ~1 séance.
+
+---
+
+## ADR-076 — Les écrans de méthode rendaient 500 pendant que 278 tests étaient verts
+
+**Ce qui s'est passé.** En conduisant le nouvel écran d'import dans un navigateur — pas en le
+relisant — `/methodology` a rendu 500 : `Cannot find module 'file:///…/methodology/valider.mjs'`.
+En vérifiant l'étendue, `/eng/[id]/risk` et `/eng/[id]/team` rendaient **500 aussi**. Introduit par
+`cf94181`, plusieurs tranches plus tôt : depuis que le validateur est un `.mjs` partagé, **aucun
+écran chargeant une méthode n'a jamais rendu dans l'application qui tourne.**
+
+**Pourquoi les tests ne l'ont pas vu, et c'est le vrai sujet.** `await import(chemin)` avec un chemin
+calculé est réécrit par le bundler de Next et échoue à l'exécution ; Vitest, qui tourne en ESM Node
+transformé par Vite, le résout sans difficulté. Les deux exécutions ne sont pas la même, et la suite
+ne couvrait que l'une. **Un test vert sur un chemin que la production n'emprunte pas ne prouve rien
+de la production** — c'est le silence lu comme un succès, à un étage où il n'avait pas encore été
+cherché.
+
+**Décision, deux parties.**
+
+1. **`importerValideur()` tente les deux chemins.** `new Function('u','return import(u)')` rend
+   l'import opaque à l'analyse statique du bundler — c'est un import ESM réel, à l'exécution ;
+   Vitest, dont le contexte vm n'a pas de « dynamic import callback », y lève une `TypeError`, et on
+   retombe alors sur l'import transformé par Vite. Seule une `TypeError` est rattrapée : un vrai
+   fichier manquant ressort du second appel, non avalé.
+2. **`racineDepot()` cherche le dossier au lieu de le déduire.** Elle remontait quatre niveaux depuis
+   `import.meta.url`, ce qui tombait juste en développement et pas dans un bundle de production. Elle
+   essaie maintenant plusieurs candidats et **échoue en les nommant** si `methodology/valider.mjs`
+   n'est trouvé nulle part — plutôt que de rendre un chemin plausible dont le seul symptôme serait un
+   `MODULE_NOT_FOUND` illisible.
+
+**Ce que ça change dans la méthode de travail, et c'est la partie à retenir.** Un écran qui compile
+n'est pas un écran qui rend. `tsc --noEmit`, la suite verte et `next build` réussi ne disent **rien**
+d'un module chargé à l'exécution hors du bundle. Tout écran neuf est désormais **conduit dans un
+navigateur** avant d'être annoncé — c'est ce qui a trouvé celui-ci, et deux autres défauts dans la
+même passe (ADR-077).
+
+---
+
+## ADR-077 — L'écran d'import : trois défauts trouvés en conduisant, pas en relisant
+
+**Contexte.** Le mécanisme de méthodologie-par-cabinet (ADR-075) était éprouvé par 17 tests mais
+n'avait pas d'écran : publier passait par nous. L'écart commercial est net — « je pourrais l'adapter »
+contre « regardez, je l'adapte » pendant le rendez-vous.
+
+**Décision.** Un écran `/methodology`, hors mission parce que la méthode est au-dessus d'elles
+toutes : les versions publiées, quelle mission travaille sous laquelle, et le chargement.
+**Vérifier sans publier** n'écrit rien, ni en succès ni en échec.
+
+**Une propriété tenue par un test, pas par la vigilance** : ce que l'écran déclare valide, la
+publication l'accepte ; ce qu'il déclare invalide, elle le refuse. `publierMethodologie` appelle
+`verifierPaquet`, qui appelle `erreursDuPaquet` — **la seule** fonction qui produise des erreurs de
+paquet. Deux listes écrites à deux endroits divergeraient un jour, et l'écran dirait « valide » là où
+le moteur refuse ; un cabinet qui voit ça une fois ne croit plus ni l'un ni l'autre.
+
+**Les trois défauts, tous trouvés dans le navigateur.**
+
+1. **Le collage était perdu à chaque refus.** `useActionState` avait été choisi précisément pour
+   l'éviter, et ne suffisait pas : React réinitialise le formulaire après une action, et un
+   `defaultValue` n'est lu qu'au montage. Mesuré : 56 erreurs affichées, et le texte du cabinet
+   effacé sous elles. Le champ est maintenant **contrôlé**. Le raisonnement était juste, la
+   conséquence fausse — seule l'exécution le disait.
+2. **Le mode « un seul fichier » était un piège.** Passer une échelle de trois à quatre niveaux exige
+   `risque.json` **et** `procedures.json` dans la même publication : chacun seul est refusé par le
+   contrôle croisé, à juste titre. Un mode qui rend impossible la modification la plus probable n'est
+   pas une commodité. Le texte est désormais **toujours** un objet indexé par noms de fichiers —
+   correctif d'un ou plusieurs fichiers posé sur la version en vigueur, ou paquet entier.
+3. **Un refus qui envoyait corriger la mauvaise chose.** Une clé inconnue — presque toujours le
+   contenu d'un fichier collé sans son nom — recevait le message sur les schémas qui appartiennent au
+   produit. Deux causes, deux messages désormais. Même principe qu'ADR-069 sur l'ordre des refus
+   d'affectation : *un refus qui égare est pire qu'un refus sec.*

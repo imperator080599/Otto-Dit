@@ -7,7 +7,8 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 252 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 286 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+  Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
 
@@ -25,6 +26,7 @@ comme « mesuré » s'il ne figure pas ici.
 | **Le rendu n'altère jamais son propre texte** | **Prouvé par exécution** | couverture lue dans la police ; un caractère non couvert fait échouer l'export |
 | **Un export supprimé se régénère à l'octet près** | **Prouvé par exécution** | `export.test.ts` compare les octets du PDF stocké et du PDF re-rendu |
 | **Le dossier scellé est autoportant et déterministe** | **Prouvé par exécution** | archive rejouable octet pour octet ; empreintes du manifeste re-vérifiées ; README sans script ni lien externe |
+| **Les écrans de méthode RENDENT dans l'application qui tourne** | **Prouvé par exécution** | six écrans conduits dans Chromium sur base fraîche (200), dont le parcours publier → refuser → corriger → publier. Avant ADR-076 : trois d'entre eux rendaient **500** avec 278 tests verts |
 | **Les visas suivent la hiérarchie de revue** | **Prouvé par exécution** | trigger + service : un visa associé avant celui du reviewer est refusé |
 | Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
 | **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |
@@ -723,6 +725,43 @@ Ce qui reste et qui est écrit dans le document : **pas encore d'écran d'import
 passe par nous — ~1 séance.
 
 **Vérification** : 278 tests applicatifs (261 → 278) · `tsc --noEmit` propre.
+
+## Application — tranche livrée : l'écran d'import, et un défaut d'exécution que 278 tests verts cachaient
+
+**Le défaut d'abord, parce qu'il change ce que « prouvé par test » veut dire** (ADR-076). En
+conduisant le nouvel écran dans un navigateur, `/methodology` a rendu **500**. En vérifiant
+l'étendue : `/eng/[id]/risk` et `/eng/[id]/team` rendaient **500 aussi**, et depuis plusieurs
+tranches — depuis que le validateur est un `.mjs` partagé (`cf94181`). `await import(chemin)` est
+réécrit par le bundler de Next et échoue à l'exécution ; Vitest le résout sans difficulté. **Un test
+vert sur un chemin que la production n'emprunte pas ne prouve rien de la production.** Corrigé :
+l'import est rendu opaque à l'analyse statique, avec repli sur le chemin Vite, et `racineDepot()`
+**cherche** le dossier au lieu de le déduire, en échouant en le nommant.
+
+**Règle de travail qui en sort** : tout écran neuf est conduit dans un navigateur avant d'être
+annoncé. C'est ce qui a trouvé celui-ci et les trois défauts ci-dessous.
+
+**L'écran** `/methodology` (ADR-077) : les versions publiées, quelle mission travaille sous laquelle,
+et le chargement. **Vérifier sans publier n'écrit rien**, ni en succès ni en échec. Un refus n'est
+pas « fichier invalide » : c'est la liste des lignes fautives, chacune nommant l'objet et la valeur
+attendue — et pour un prédicat inconnu, **la liste des prédicats connus**, donc le refus se corrige
+sans nous appeler.
+
+**La propriété tenue par un test** : ce que l'écran déclare valide, la publication l'accepte ; ce
+qu'il déclare invalide, elle le refuse. Une seule fonction produit les erreurs de paquet.
+
+**Trois défauts trouvés dans le navigateur, pas en relecture.**
+
+1. **Le collage était perdu à chaque refus** — `useActionState` avait été choisi pour l'éviter et ne
+   suffisait pas : React réinitialise le formulaire après une action. Mesuré : 56 erreurs affichées,
+   texte effacé sous elles. Le champ est contrôlé.
+2. **Le mode « un seul fichier » était un piège** : passer de trois à quatre niveaux exige
+   `risque.json` **et** `procedures.json` dans la même publication. Le texte est désormais toujours
+   un objet indexé par noms de fichiers, correctif d'un ou plusieurs fichiers.
+3. **Un refus envoyait corriger la mauvaise chose** : une clé inconnue recevait le message sur les
+   schémas. Deux causes, deux messages.
+
+**Vérification** : 286 tests applicatifs (278 → 286) · `tsc --noEmit` propre · **six écrans conduits
+dans Chromium sur base fraîche**, dont le parcours complet publier → refuser → corriger → publier.
 
 ## Convergence prototype → application
 

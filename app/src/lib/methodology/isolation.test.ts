@@ -212,7 +212,7 @@ describe('la méthode d’un cabinet est à lui', () => {
       label: 'Méthode avec schéma maison',
       contenu: { ...contenu, 'schema-risque.json': { predicats_facteur: [] } },
       actorUserId: LAMBERT.user,
-    })).rejects.toThrow(/hors du paquet de contenu/);
+    })).rejects.toThrow(/schéma\(s\) dans le paquet/);
   });
 
   it('un paquet INVALIDE n’entre pas en base — il est refusé au moment de publier', async () => {

@@ -27,12 +27,10 @@
 // impossible, pas seulement déconseillé. La garde applicative ci-dessous existe
 // pour le MESSAGE, pas pour la garantie.
 
-import path from 'node:path';
-import url from 'node:url';
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
-import { racineDepot } from './catalogue';
+import { racineDepot, importerValideur } from './catalogue';
 import type { Catalogue } from './types';
 
 export class MethodologyError extends Error {
@@ -44,6 +42,8 @@ export class MethodologyError extends Error {
 
 type Valideur = {
   assemblerCatalogue: (contenu: Record<string, unknown>, racineSchemas?: string) => Catalogue;
+  erreursDuPaquet: (contenu: Record<string, unknown>, schemas: Record<string, unknown>) => string[];
+  schemasDuProduit: (racine?: string) => Record<string, unknown>;
   contenuDuDepot: (racine?: string) => Record<string, unknown>;
   FICHIERS_CONTENU: string[];
 };
@@ -52,9 +52,53 @@ let _valideur: Valideur | null = null;
 
 async function valideur(): Promise<Valideur> {
   if (_valideur) return _valideur;
-  const chemin = url.pathToFileURL(path.join(racineDepot(), 'methodology', 'valider.mjs')).href;
-  _valideur = (await import(/* @vite-ignore */ chemin)) as Valideur;
+  _valideur = await importerValideur<Valideur>();
   return _valideur;
+}
+
+/** Les six noms de fichiers qu'un paquet doit porter. */
+export async function fichiersAttendus(): Promise<string[]> {
+  return (await valideur()).FICHIERS_CONTENU;
+}
+
+/**
+ * Vérifie un paquet SANS RIEN ÉCRIRE, et rend la liste des erreurs.
+ *
+ * C'est ce que l'écran d'import appelle avant de proposer de publier : un
+ * cabinet doit pouvoir corriger son fichier sans qu'une tentative laisse une
+ * trace. La liste vient du MÊME endroit que celle qui ferait échouer la
+ * publication — une seconde liste re-dérivée divergerait un jour, et l'écran
+ * dirait « valide » là où le moteur refuse.
+ */
+export async function verifierPaquet(contenu: Record<string, unknown>): Promise<string[]> {
+  const v = await valideur();
+  const intrus = Object.keys(contenu).filter((f) => !v.FICHIERS_CONTENU.includes(f));
+  if (intrus.length) {
+    /* DEUX CAUSES DIFFÉRENTES, DEUX MESSAGES. Un schéma glissé dans le paquet
+       est une tentative — délibérée ou non — de fournir ses propres contrôles.
+       Une clé quelconque est presque toujours le CONTENU d'un fichier collé
+       sans son nom. Servir la phrase sur les schémas dans le second cas
+       enverrait corriger la mauvaise chose, et un refus qui égare est pire
+       qu'un refus sec. */
+    const schemas = intrus.filter((f) => /^schema[-.]/.test(f));
+    const autres = intrus.filter((f) => !/^schema[-.]/.test(f));
+    const erreurs: string[] = [];
+    if (schemas.length) {
+      erreurs.push(
+        `schéma(s) dans le paquet : ${schemas.join(', ')} — les schémas appartiennent au produit : `
+        + `ils énumèrent ce que le moteur sait calculer, et les fournir désactiverait les contrôles`,
+      );
+    }
+    if (autres.length) {
+      erreurs.push(
+        `clé(s) non reconnue(s) : ${autres.join(', ')} — le texte doit être un objet dont les clés `
+        + `sont des noms de fichiers (${v.FICHIERS_CONTENU.join(', ')}), pas le contenu d'un fichier `
+        + `collé sans son nom`,
+      );
+    }
+    return erreurs;
+  }
+  return v.erreursDuPaquet(contenu, v.schemasDuProduit(racineDepot()));
 }
 
 /** Le contenu du dépôt, tel qu'un cabinet le fournirait. Sert au peuplement et aux tests. */
@@ -94,17 +138,14 @@ export async function publierMethodologie(input: {
 }): Promise<MethodologyRow> {
   const v = await valideur();
 
-  const intrus = Object.keys(input.contenu).filter((f) => !v.FICHIERS_CONTENU.includes(f));
-  if (intrus.length) {
-    /* Presque toujours un schéma glissé dans le paquet. Refuser explicitement
-       vaut mieux qu'ignorer en silence : celui qui l'a mis croit qu'il agit. */
-    throw new MethodologyError(
-      `méthode refusée : fichier(s) hors du paquet de contenu — ${intrus.join(', ')}. `
-      + `Les schémas appartiennent au produit : ils énumèrent ce que le moteur sait calculer.`,
-    );
+  /* La MÊME vérification que celle de l'écran, appelée au même endroit dans le
+     même ordre. Si l'écran disait « valide » là où la publication refuse, un
+     cabinet aurait raison de ne plus croire ni l'un ni l'autre. */
+  const erreurs = await verifierPaquet(input.contenu);
+  if (erreurs.length) {
+    throw new MethodologyError('méthode refusée :\n  ' + erreurs.join('\n  '));
   }
 
-  // Le MÊME validateur que celui du dépôt. Lève si le paquet est invalide.
   const cat = v.assemblerCatalogue(input.contenu);
 
   const hash = hashObject(input.contenu);
@@ -243,6 +284,15 @@ export async function catalogueDeLaMission(engagementId: string): Promise<Catalo
     );
   }
   return catalogueParId(row.methodology_id);
+}
+
+/** Le CONTENU brut d'une méthodologie publiée — les six fichiers, tels que stockés. */
+export async function contenuDeLaMethodologie(methodologyId: string): Promise<Record<string, unknown>> {
+  const row = await q01<{ content: Record<string, unknown> }>(
+    `select content from firm_methodology where id = $1`, [methodologyId],
+  );
+  if (!row) throw new MethodologyError('méthodologie inconnue');
+  return row.content;
 }
 
 /** Le catalogue d'une ligne de méthodologie, assemblé et validé. */

@@ -75,9 +75,14 @@ export default async function Home() {
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h1>Engagements</h1>
-        <form action={logoutAction}>
-          <button className="btn secondary small">Switch user</button>
-        </form>
+        <span className="row" style={{ gap: 8 }}>
+          {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
+              au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
+          <Link href="/methodology" className="btn secondary small">La méthode du cabinet</Link>
+          <form action={logoutAction}>
+            <button className="btn secondary small">Switch user</button>
+          </form>
+        </span>
       </div>
       <div className="panel">
         <table className="data">

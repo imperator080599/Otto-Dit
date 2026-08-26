@@ -9,6 +9,7 @@
 // Module SERVEUR : il lit le disque. Les composants client passent par une
 // route ou un composant serveur.
 
+import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import type {
@@ -25,10 +26,63 @@ type Valideur = {
   racineDepot: () => string;
 };
 
-/** Racine du dépôt, déduite de l'emplacement de ce fichier. */
+/**
+ * Racine du dépôt — celle qui contient `methodology/valider.mjs`.
+ *
+ * Elle était déduite de `import.meta.url` seul. En développement, Next conserve
+ * les chemins source et cela tombait juste ; dans un bundle de production, non.
+ * On cherche donc le dossier, et on ÉCHOUE EN LE DISANT si on ne le trouve pas
+ * — plutôt que de rendre un chemin plausible dont le seul symptôme serait un
+ * MODULE_NOT_FOUND illisible à l'exécution.
+ */
 export function racineDepot(): string {
-  const ici = path.dirname(url.fileURLToPath(import.meta.url));
-  return path.resolve(ici, '..', '..', '..', '..');
+  const candidats = [
+    path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..', '..', '..', '..'),
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(process.cwd(), '..', '..'),
+  ];
+  for (const c of candidats) {
+    if (fs.existsSync(path.join(c, 'methodology', 'valider.mjs'))) return c;
+  }
+  throw new Error(
+    'methodology/valider.mjs introuvable — cherché depuis : ' + candidats.join(' | ')
+    + '. La méthode est du contenu du dépôt : le processus doit tourner avec le dépôt sur disque.',
+  );
+}
+
+/**
+ * Charge le validateur, qui vit HORS du bundle de l'application.
+ *
+ * `await import(chemin)` était réécrit par le bundler de Next et échouait à
+ * l'exécution avec « Cannot find module 'file:///…/valider.mjs' » — alors que
+ * la suite de tests, qui tourne en ESM Node nu, passait. Les écrans qui
+ * chargent une méthode rendaient donc 500 pendant que les tests étaient verts.
+ *
+ * `new Function` rend l'import opaque à l'analyse statique : c'est un import
+ * ESM réel, à l'exécution, du fichier qui est sur le disque. C'est la seule
+ * façon de garder UN validateur pour le dépôt et pour l'application.
+ */
+export async function importerValideur<T>(racine = racineDepot()): Promise<T> {
+  const chemin = url.pathToFileURL(path.join(racine, 'methodology', 'valider.mjs')).href;
+  /* DEUX CHEMINS, PARCE QU'IL Y A DEUX EXÉCUTIONS, et qu'aucun des deux ne
+     marche dans l'autre.
+       · Next (webpack) réécrit `import(variable)` et échoue à l'exécution.
+         `new Function` le rend opaque à l'analyse statique.
+       · Vitest exécute dans un contexte vm sans « dynamic import callback » :
+         `new Function` y lève une TypeError, et c'est l'import transformé par
+         Vite qui fonctionne.
+     On tente donc le premier et on retombe sur le second. `racineDepot()` a
+     déjà vérifié que le fichier existe : ce qu'on rattrape ici est
+     l'indisponibilité du MÉCANISME, pas un fichier manquant — un vrai
+     MODULE_NOT_FOUND ressortirait du second appel, non avalé. */
+  try {
+    const opaque = new Function('u', 'return import(u)') as (u: string) => Promise<T>;
+    return await opaque(chemin);
+  } catch (e) {
+    if (!(e instanceof TypeError)) throw e;
+    return (await import(/* @vite-ignore */ chemin)) as T;
+  }
 }
 
 let _cache: Catalogue | null = null;
@@ -49,8 +103,7 @@ let _cache: Catalogue | null = null;
  */
 export async function chargerCatalogue(racine = racineDepot()): Promise<Catalogue> {
   if (_cache) return _cache;
-  const chemin = url.pathToFileURL(path.join(racine, 'methodology', 'valider.mjs')).href;
-  const m = (await import(/* @vite-ignore */ chemin)) as Valideur;
+  const m = await importerValideur<Valideur>(racine);
   _cache = m.chargerCatalogue(racine);
   return _cache;
 }

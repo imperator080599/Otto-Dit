@@ -4,10 +4,11 @@
 > votre échelle de risque, votre jeu d'assertions, votre questionnaire et votre déclaration
 > d'indépendance sont des **données validées** — pas du code —, chargées depuis la base de **votre**
 > cabinet, et séparées de celles des autres par une contrainte que **la base fait respecter**, pas
-> seulement l'application (§3). Ce qui manque encore, et c'est daté : **l'écran** qui vous laisse
-> coller, valider et publier un catalogue vous-même — aujourd'hui le chargement passe par nous
-> (~1 séance, §4). Et ce que vous ne pourrez pas faire seul même après cela, c'est inventer un
-> **type de calcul** que le moteur ne sait pas encore faire (§2).
+> seulement l'application (§3). Vous les chargez **vous-même**, depuis un écran : vous collez, vous
+> vérifiez sans rien écrire, vous publiez (§3.1). Ce que vous ne pourrez pas faire seul, c'est
+> inventer un **type de calcul** que le moteur ne sait pas encore faire (§2) — et le **gabarit du
+> papier de travail** n'est pas encore une donnée, ce qui est une incohérence avec ce principe et
+> pas une limite de principe (§1.2).
 
 Ce document existe pour que cette phrase soit **vérifiable** plutôt que rassurante. Il est autant
 commercial que technique : il dit ce qu'on promet, ce qu'on ne promet pas, ce qui est daté, et
@@ -17,11 +18,11 @@ pourquoi la frontière est là.
 
 | Marqueur | Ce qu'il signifie |
 |---|---|
-| **✓ donnée** | Un fichier JSON validé, publié pour **votre** cabinet et lu depuis la base. Le modifier ne demande ni compilation, ni développeur, ni déploiement. Réserve unique et commune à toutes ces lignes : **la publication passe encore par nous, faute d'écran d'import** (§4) |
+| **✓ donnée** | Un fichier JSON validé, publié pour **votre** cabinet et lu depuis la base. Le modifier ne demande ni compilation, ni développeur, ni déploiement — vous le faites vous-même depuis l'écran « la méthode du cabinet » (§3.1) |
 | **⚠⚠ code** | C'est configuré, mais **dans un pack TypeScript**, pas dans `methodology/`. Le changer suppose donc **un développeur et un déploiement**, même si aucune logique ne bouge. Levée chiffrée au §1.2 |
 
-État daté du **26 août 2026**. Une ligne du §1 porte encore **⚠⚠ code**, et le document dit laquelle
-avant le tableau plutôt que de la laisser découvrir au §2.
+État daté du **26 août 2026**. Une ligne du §1 porte encore **⚠⚠ code** — le gabarit du papier de
+travail — et le document dit laquelle avant le tableau plutôt que de la laisser découvrir au §2.
 
 ---
 
@@ -79,13 +80,12 @@ croisé protège contre une **divergence entre quatre**. Vérifié par un test q
 jeu à découpage `presentation` / `informations` distinct, plus **un test par mode de défaillance** —
 les six ci-dessus, pas un résumé des six.
 
-### 1.2 Le format du papier de travail — la réponse franche
+### 1.2 Le gabarit du papier de travail — l'incohérence, dite avant d'être trouvée
 
 **La question.** Un cabinet a ses colonnes, ses en-têtes, sa mise en page. C'est sa signature, c'est
-ce qui entre dans son dossier et ce qu'un inspecteur lit.
+ce qui entre dans son dossier, ce que son réviseur relit et ce qu'un inspecteur lit.
 
-**La réponse en un mot : partiellement — et pas encore la partie qui fait la signature.** Le détail,
-sans arrondi :
+**La réponse en un mot : partiellement — et pas la partie qui fait la signature.**
 
 | Élément du papier | Aujourd'hui | Où c'est écrit |
 |---|---|---|
@@ -97,22 +97,51 @@ sans arrondi :
 | **En-tête de cabinet / logo** | **N'existe pas.** Le PDF ne porte ni papier à en-tête ni marque | — |
 | **Schéma de référencement des papiers** (A-3.2, R-100…) | **N'existe pas.** Un `code` libre, aucune numérotation imposable | — |
 
-**Ce que ça coûte d'en faire votre signature — ~3½ séances**, décomposées pour être discutables :
+#### Pourquoi c'est une incohérence, et pas une limite de principe
+
+Ce document pose une frontière : **la méthode NOMME, le code CALCULE.** Elle se tient pour un
+prédicat de risque ou une population — quelqu'un doit écrire comment on mesure. Elle **ne dit rien**
+du format d'un papier : une colonne, un ordre de sections, un logo ne sont ni un nom ni un calcul,
+ce sont de la **présentation**. Qu'ils vivent dans un pack exigeant un déploiement n'est justifié par
+aucun principe de ce produit : c'est un reste d'architecture, pas une décision.
+
+Et c'est le reste le plus visible. Un catalogue de procédures se lit dans OTTO ; **un papier de
+travail sort d'OTTO** et va vivre dans le dossier du cabinet, sous les yeux d'un réviseur puis d'un
+inspecteur. C'est la pièce sur laquelle « votre méthode reste la vôtre » se vérifie sans qu'on ait
+rien à expliquer.
+
+#### Ce qu'on fait : le gabarit devient un septième fichier de méthode
+
+`methodology/papier.json`, validé, publié et chargé **exactement comme les six autres** — donc
+par cabinet, isolé, immuable une fois publié, et refusé s'il est invalide.
 
 | Pièce | Coût | Ce que ça change |
 |---|---|---|
-| Déplacer `WorkpaperStrings` dans `methodology/papier.json` | ~½ séance | Fait passer la dernière ligne du tableau de **⚠⚠ code** à **✓ donnée** : plus de déploiement pour changer un intitulé |
-| Liste et ordre des sections en données, avec énumération des blocs nommés | ~1 séance | Vous retirez « Vérification », vous déplacez « Évaluation » avant « Exceptions ». Même frontière qu'au §2 : la méthode **nomme** un bloc, le code sait le **remplir** ; un bloc nommé et non implémenté arrête l'assemblage |
-| Colonnes de tableaux en données | ~1 séance | Vos colonnes, vos intitulés, votre ordre — les champs disponibles restant ceux que la procédure relève |
+| `papier.json` + son schéma + sa validation croisée | ~1 séance | Le gabarit entre dans le paquet : la plomberie (publication, isolation, désignation, immuabilité) est déjà là et ne se repaie pas |
+| Liste et ordre des sections en données, avec énumération des blocs nommés | ~1 séance | Vous retirez « Vérification », vous déplacez « Évaluation » avant « Exceptions ». Même frontière : la méthode **nomme** un bloc, le code sait le **remplir** ; un bloc nommé et non implémenté **arrête l'assemblage** au lieu de sortir une section vide |
+| Colonnes de tableaux en données, sur une énumération des champs relevés | ~1 séance | Vos colonnes, vos intitulés, votre ordre — les champs disponibles restant ceux que la procédure relève, et une colonne qui nomme un champ inexistant arrête l'assemblage |
 | En-tête, logo, pied de page | ~1 séance | Le PDF sort sur votre papier |
+| **Schéma de référencement** (A-3.2, R-100…) | ~½ séance | Vos papiers portent **vos** références, dans **votre** plan de classement — c'est ce dont un réviseur se sert pour savoir où les travaux ont été faits |
 
-**Ce que je ne recommande pas de rendre configurable, et pourquoi.** Le bloc de visas, la mention de
-version et l'empreinte de population en pied de page : ce sont les éléments qui rendent un export
-**auto-portant** — relisible sans OTTO, des années plus tard. Les rendre optionnels reviendrait à
-permettre d'exporter un papier qui ne sait plus dire qui l'a signé ni sur quelle population. Leur
-**place** et leur **libellé** entrent dans les ~3½ séances ci-dessus ; leur **présence**, non.
+**Total ~4½ séances, contre les 3½ chiffrées pour la version incohérente** — et l'écart d'une séance
+n'est pas le coût de la cohérence : c'est le **schéma de référencement**, qui n'était pas dans les
+3½ parce qu'il n'existe pas du tout et que j'avais chiffré « rendre configurable ce qui existe »
+plutôt que « rendre le papier celui du cabinet ». La plomberie économisée par le mécanisme déjà en
+place compense le travail de frontière en plus. **Les deux chiffres sont donc proches, et la version
+cohérente est celle qu'on prend.**
 
----
+#### Ce qui ne deviendra pas optionnel, et pourquoi c'est un argument
+
+Le **bloc de visas**, la **mention de version** et l'**empreinte de population** restent sur chaque
+papier. Ce n'est pas une contrainte qu'on vous impose : c'est ce qui fait que **si OTTO disparaît
+demain, votre papier dit encore à un inspecteur qui l'a signé, sur quelle version, et sur quelle
+population** — sans nous, sans licence, sans accès. C'est la propriété qui rend le dossier
+**auto-portant** (ADR-013).
+
+Leur **place** et leur **libellé** sont dans les ~4½ séances ci-dessus : vous les mettez où vous
+voulez, vous les appelez comme vous voulez. Leur **présence**, non. Un cabinet qui demanderait à les
+retirer demanderait à rendre son propre dossier illisible sans nous — ce serait notre intérêt
+commercial, et ce serait contre le sien.
 
 ## 2. Ce qui exige un développement
 
@@ -124,7 +153,7 @@ Il y a **une seule** frontière, et elle est toujours la même : **la méthode N
 | Une **population** de procédure d'une forme nouvelle — « les avoirs émis après la clôture rattachés à une facture de l'exercice » | Idem : le catalogue nomme `predicat` et ses paramètres, le code sait lire les écritures |
 | Une **taille d'échantillon calculée par formule** plutôt que lue dans une table | Non supporté aujourd'hui. Voir §4 |
 | Une **règle de contrôle de champ** d'un type nouveau — au-delà de « dans l'exercice », « antérieure ou égale », « postérieure », « même exercice que la référence » | Le schéma énumère les règles de date que le moteur applique. Une règle hors liste arrête l'assemblage plutôt que d'être ignorée |
-| Une **section de papier de travail** d'une forme nouvelle, ou vos **colonnes** | Aujourd'hui en dur. ~2 séances pour rendre les deux configurables — voir §1.2 |
+| Un **bloc de papier de travail** d'une forme nouvelle — une section que le moteur ne sait pas remplir | Un bloc est **nommé** par le gabarit et **rempli** par le code, comme un prédicat. Ce qui existe se réordonne et se renomme ; ce qui n'existe pas s'écrit. Voir §1.2 |
 | Un **référentiel comptable** autre que le PCG, ou un nouveau pack normatif | C'est un pack, pas un paramètre |
 
 ### 2.1 Pourquoi la frontière est là, et pas ailleurs
@@ -183,7 +212,34 @@ n'est pas stocké : il est refusé avec la liste des erreurs, et la base reste c
 catalogue est **revalidé au chargement**, pas seulement à l'écriture : le produit évolue, et un
 prédicat retiré du moteur rendrait invalide une méthode publiée hier.
 
-*Vérifié par 17 tests qui tentent chacune de ces fuites.*
+*Vérifié par 25 tests qui tentent chacune de ces fuites.*
+
+### 3.1 Vous chargez vous-même, et vous voyez le refus
+
+L'écran **« la méthode du cabinet »** fait les trois gestes.
+
+1. **Vérifier sans publier.** On colle, on vérifie, **rien n'est écrit** — ni en cas de succès ni en
+   cas d'échec. Un cabinet corrige son fichier sans qu'une tentative laisse une trace.
+2. **Voir la liste exacte.** Un refus n'est pas « fichier invalide » : c'est la liste des lignes
+   fautives, chacune nommant l'objet et la valeur attendue. *« procédure RAPPRO : risque_minimum
+   « faible » absent de l'échelle du cabinet (leger | lourd) »*. *« facteur variation : prédicat
+   « flair_de_l_associe » inconnu du moteur (connus : … ) »* — le message **donne la liste des
+   prédicats connus**, donc le refus se corrige sans nous appeler.
+3. **Publier**, ce qui crée une version. Les missions **gardent la leur** jusqu'à ce qu'on les
+   redésigne, depuis le même écran.
+
+**Correctif ou paquet entier.** Le texte est toujours un objet dont les clés sont des noms de
+fichiers. En correctif, les fichiers présents remplacent les leurs et les autres sont repris de la
+version en vigueur — le paquet entier fait 126 000 caractères, l'imposer pour changer deux lignes
+serait une fausse configurabilité. **Plusieurs fichiers à la fois, et certaines modifications
+l'exigent** : passer votre échelle de trois à quatre niveaux demande `risque.json` **et**
+`procedures.json` dans la même publication, sinon le contrôle croisé refuse — à juste titre, parce
+qu'entre les deux la méthode serait incohérente.
+
+*Ce qui est vérifié par un test et n'aurait pas dû l'être seulement par relecture : ce que l'écran
+déclare valide, la publication l'accepte ; ce qu'il déclare invalide, elle le refuse. Deux listes
+d'erreurs produites à deux endroits divergeraient un jour, et l'écran dirait « valide » là où le
+moteur refuse.*
 
 ## 4. Ce qui est demandé et pas encore possible
 
@@ -192,8 +248,7 @@ prédicat retiré du moteur rendrait invalide une méthode publiée hier.
 | Demande | État | Coût estimé |
 |---|---|---|
 | **Taille d'échantillon par formule** (par exemple un intervalle de sondage en unités monétaires ramené au seuil de planification) plutôt qu'une table par niveau | **Non supporté.** `tailles_echantillon` est une table `niveau → nombre` | ~1 séance, à faire **avec le point 6** : une formule a besoin de la valeur de la population, et la population est le point 6. Même frontière que les prédicats — la méthode nommerait `formule: "mus_intervalle_au_seuil"`, le code la calculerait |
-| **Import d'un catalogue par l'écran** (coller un JSON, le valider, lire les erreurs, publier, désigner) | **Non fait.** Le mécanisme existe et est éprouvé (§3) ; il n'a pas encore d'écran, donc la publication passe par nous | ~1 séance |
-| **Format du papier de travail** — ordre des sections, colonnes, en-tête | Partiellement configurable — voir §1.2 | ~3½ séances, décomposées au §1.2 |
+| **Gabarit du papier de travail comme donnée** — ordre des sections, colonnes, libellés, en-tête, logo, schéma de référencement | **Non fait**, et c'est l'incohérence assumée du produit : la présentation n'est ni un nom ni un calcul, elle n'a rien à faire dans un pack | voir §1.2 |
 
 *(Les assertions figuraient ici. Elles n'y figurent plus : la question est tranchée au §1.1.)*
 
@@ -221,10 +276,19 @@ Un auditeur qui veut éprouver la promesse posera l'une de ces questions. Voici 
 > point 6, parce qu'elle a besoin de la population. Je préfère vous le dire que vous laisser le
 > découvrir.
 
-> **« Et mon papier de travail, avec mes colonnes et mon en-tête ? »**
-> **Partiellement, et pas encore la partie qui compte.** Les intitulés se changent, mais dans un pack
-> — donc avec un déploiement. L'ordre des sections, les colonnes, la mise en page et l'en-tête sont
-> en dur. ~3½ séances pour que le papier sorte à votre signature, décomposées au §1.2.
+> **« Et mon papier de travail, avec mes colonnes, mon en-tête et mes références ? »**
+> **Partiellement, et pas encore la partie qui fait la signature** — les intitulés se changent, mais
+> dans un pack, donc avec un déploiement ; l'ordre des sections, les colonnes, la mise en page et
+> l'en-tête sont en dur ; le schéma de référencement n'existe pas.
+>
+> Et je vous le donne comme une **incohérence de notre côté**, pas comme une limite : la présentation
+> n'est ni un nom ni un calcul, elle n'a rien à faire dans un pack. Le gabarit devient un septième
+> fichier de méthode, chargé comme les six autres. **~4½ séances**, décomposées au §1.2 — dont une
+> pour le schéma de référencement, qui n'existe pas du tout.
+
+> **« Je peux la charger moi-même, ou il faut vous appeler ? »**
+> Vous-même, depuis un écran. Vous collez, vous **vérifiez sans rien écrire**, vous lisez la liste
+> des lignes fautives — chacune nommant l'objet et la valeur attendue — et vous publiez. Voir §3.1.
 
 > **« Est-ce que mon catalogue est à moi, ou est-ce que vous le voyez ? »**
 > Il est à vous. Votre méthode est une ligne rattachée à votre cabinet ; la mission désigne la
@@ -232,6 +296,3 @@ Un auditeur qui veut éprouver la promesse posera l'une de ces questions. Voici 
 > clé étrangère composite — pas seulement refusé par l'application. Une mission sans méthode est
 > refusée plutôt que repliée sur la nôtre. Vérifié par des tests qui **tentent** chacune de ces
 > fuites, y compris en contournant le service pour écrire directement en base. Voir §3.
->
-> La réserve, dite d'avance : **il n'y a pas encore d'écran d'import**, donc la publication passe par
-> nous. ~1 séance, §4.
