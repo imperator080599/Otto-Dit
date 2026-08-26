@@ -8,6 +8,7 @@ import {
   members, declarations, currentDeclaration, openDeclaration, answerRubric,
   signDeclaration, missingForSignature, assignMember, exitMember,
   independenceObstacles, recordNonAuditService, feeRatio, TeamRuleError,
+  anciennetes, rotationSignataire,
 } from '@/lib/services/team';
 
 // Équipe et indépendance. L'écran ne porte AUCUNE règle : il montre celles du
@@ -61,6 +62,11 @@ export default async function TeamPage({
   const missing = missingForSignature(cat, mine);
   const obstacles = await independenceObstacles(id);
   const ratio = await feeRatio(id);
+  /* L'ancienneté et la rotation se COMPTENT : les deux seuils étaient déclarés
+     dans la méthode et rien ne les calculait. Un paramètre déclaré que
+     personne n'évalue est du silence lu comme un succès. */
+  const anc = await anciennetes(id);
+  const rot = await rotationSignataire(id);
   const cap = cat.independance.parametres.plafond_sacc_pct;
 
   const firmPeople = await q<{ id: string; name: string; firm_role: string }>(
@@ -165,6 +171,52 @@ export default async function TeamPage({
           <p className="faint">
             Ces travaux ne disparaissent pas : ils deviennent invisables tant que la révision
             n’est pas signée. Sans cette règle, il suffirait d’affecter avant de réviser.
+          </p>
+        </div>
+      )}
+
+      {/* ── ancienneté et rotation : ce qui se compte ─────────────────── */}
+      {anc.length > 0 && (
+        <div className="panel">
+          <h2>Ancienneté et rotation</h2>
+          <p className="faint">
+            L’ancienneté se <strong>compte</strong>, elle ne se juge pas : exercices{' '}
+            <strong>consécutifs</strong> sur cette entité, une rupture d’un an casse le compte.
+            Revenir après une interruption ne recrée pas l’ancienneté d’avant.
+          </p>
+          <table className="data">
+            <thead>
+              <tr><th>Membre</th><th className="num">Exercices consécutifs</th><th>Familiarité</th><th>Rotation</th></tr>
+            </thead>
+            <tbody>
+              {anc.map((a) => {
+                const r = rot.find((x) => x.userId === a.userId);
+                return (
+                  <tr key={a.userId} className={a.menace || r?.depasse ? 'warn' : undefined}>
+                    <td>{a.name}</td>
+                    <td className="num"><strong>{a.exercices}</strong></td>
+                    <td>
+                      {a.menace
+                        ? <span className="badge amber">menace — seuil {a.seuil}, sauvegarde à documenter</span>
+                        : <span className="faint">sous le seuil de {a.seuil}</span>}
+                    </td>
+                    <td>
+                      {!r
+                        ? <span className="faint">non habilité à signer</span>
+                        : r.depasse
+                          ? <span className="badge amber">dépassée — plafond {r.plafond}</span>
+                          : <span className="faint">plafond {r.plafond}</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="faint">
+            La <strong>familiarité</strong> n’interdit rien : elle exige une sauvegarde documentée —
+            la traiter comme un empêchement rendrait tout dossier ancien impossible. Le{' '}
+            <strong>dépassement de rotation</strong>, lui, est une faute de dossier, pas un oubli
+            d’agenda : il bloque le visa.
           </p>
         </div>
       )}

@@ -60,6 +60,26 @@ async function compte(sql: string, params: unknown[]): Promise<number> {
 }
 
 /**
+ * SORTI DE LA FILE AUTREMENT QUE PAR UN DOCUMENT.
+ *
+ * Deux manières, et elles valent pour TOUTES les étapes qui suivent le dépôt :
+ *   · une demande d'EXPLICATION à laquelle le client a répondu — il n'y a
+ *     aucun document à lire ni à rapprocher, et en attendre un la laisserait
+ *     éternellement ouverte ;
+ *   · une LIMITATION DE PÉRIMÈTRE consignée avec ses procédures alternatives —
+ *     la pièce n'a pas pu être obtenue, c'est documenté, l'élément est CONCLU.
+ *
+ * Ne pas l'appliquer aux étapes suivantes déplaçait simplement le blocage d'un
+ * cran : le dépôt se débouchait, la lecture se bouchait. Un élément qui a
+ * quitté la file l'a quittée pour de bon.
+ */
+const SORTI_AUTREMENT = `(
+  (ri.kind = 'explanation' and btrim(coalesce(ri.client_note, '')) <> '')
+  or exists (select 1 from exception x
+             where x.sample_item_id = si.id and x.status = 'scope_limitation')
+)`;
+
+/**
  * L'état de la boucle sur un poste.
  *
  * Chaque compte est une requête sur l'état réel. Les étapes sont ordonnées, et
@@ -68,10 +88,17 @@ async function compte(sql: string, params: unknown[]): Promise<number> {
  * d'avancement.
  */
 export async function boucle(engagementId: string, fsliCode: string): Promise<Boucle> {
+  /* L'ÉCHANTILLON DU POSTE, et le lien passe par la PROCÉDURE.
+     La première version joignait `fsli` sur son code sans que rien ne
+     contraigne l'échantillon : la jointure était décorative, et chaque poste du
+     périmètre recevait l'échantillon du chiffre d'affaires. Seize postes
+     affichaient donc la boucle d'un seul, et bloquaient la clôture pour des
+     travaux qui n'existaient pas chez eux. Une jointure qui ne joint rien est
+     pire qu'une jointure absente : elle a l'air d'être là. */
   const ech = await q01<{ id: string }>(
     `select s.id from sample s
-     join fsli f on f.engagement_id = s.engagement_id and f.code = $2
-     where s.engagement_id = $1 and s.status = 'drawn'
+     join procedure_instance pi on pi.id = s.procedure_id
+     where s.engagement_id = $1 and s.status = 'drawn' and pi.fsli_code = $2
      order by s.created_at desc limit 1`,
     [engagementId, fsliCode],
   );
@@ -89,20 +116,43 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
     `select count(distinct si.id) n from sample_item si
      join request_item ri on ri.sample_item_id = si.id
      where si.sample_id = $1`, [sid]);
+  /* « LE CLIENT A RÉPONDU » — et répondre ne veut pas dire déposer un fichier.
+     Trois manières de sortir de cette file, et les trois comptent :
+       · une PIÈCE déposée ;
+       · une EXPLICATION donnée, quand la demande en appelait une (une demande
+         d'explication n'attend aucun document, et l'attendre quand même la
+         laisserait éternellement ouverte) ;
+       · une LIMITATION DE PÉRIMÈTRE consignée, avec ses procédures
+         alternatives — la pièce n'a pas pu être obtenue, c'est documenté, et
+         l'élément est CONCLU, pas en attente.
+     Ne compter que les pièces ferait dire à la boucle qu'un travail reste à
+     faire alors qu'il est fait et documenté — et le dossier ne pourrait jamais
+     se clore. */
   const deposes = await compte(
     `select count(distinct si.id) n from sample_item si
      join request_item ri on ri.sample_item_id = si.id
-     join evidence e on e.request_item_id = ri.id and e.quarantined = false
-     where si.sample_id = $1`, [sid]);
+     where si.sample_id = $1
+       and (
+         exists (select 1 from evidence e
+                 where e.request_item_id = ri.id and e.quarantined = false)
+         or ${SORTI_AUTREMENT}
+       )`, [sid]);
   const lus = await compte(
     `select count(distinct si.id) n from sample_item si
      join request_item ri on ri.sample_item_id = si.id
-     join evidence e on e.request_item_id = ri.id and e.quarantined = false
-     join extraction x on x.evidence_id = e.id
-     where si.sample_id = $1`, [sid]);
+     where si.sample_id = $1
+       and (
+         exists (select 1 from evidence e
+                 join extraction ex on ex.evidence_id = e.id
+                 where e.request_item_id = ri.id and e.quarantined = false)
+         or ${SORTI_AUTREMENT}
+       )`, [sid]);
   const rapproches = await compte(
-    `select count(*) n from match m join sample_item si on si.id = m.sample_item_id
-     where si.sample_id = $1 and m.status in ('matched', 'exception')`, [sid]);
+    `select count(distinct si.id) n from sample_item si
+     left join match m on m.sample_item_id = si.id
+     left join request_item ri on ri.sample_item_id = si.id
+     where si.sample_id = $1
+       and (m.status in ('matched', 'exception') or ${SORTI_AUTREMENT})`, [sid]);
   const conformes = await compte(
     `select count(*) n from match m join sample_item si on si.id = m.sample_item_id
      where si.sample_id = $1 and m.status = 'matched'`, [sid]);
@@ -147,10 +197,10 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
       attendQuoi: 'éléments sélectionnés sans demande émise',
     },
     {
-      code: 'depot', libelle: 'Dépôt par le client', versEtape: 'lecture',
-      quoi: 'Le client dépose la pièce par le portail ; elle arrive avec son empreinte.',
+      code: 'depot', libelle: 'Réponse du client', versEtape: 'lecture',
+      quoi: 'Le client dépose la pièce par le portail, ou répond à une demande d’explication. Une pièce qui n’a pas pu être obtenue sort d’ici par une limitation consignée, pas par l’oubli.',
       franchi: deposes, enAttente: demandes - deposes,
-      attendQuoi: 'demandes émises sans pièce déposée',
+      attendQuoi: 'demandes émises restées sans réponse',
     },
     {
       code: 'lecture', libelle: 'Lecture de la pièce', versEtape: 'rapprochement',

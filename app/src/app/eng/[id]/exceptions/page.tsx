@@ -38,6 +38,19 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
       conclusion: String(formData.get('conclusion') ?? ''),
       disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
       corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+      /* LA CONSTATATION QUI DÉPASSE L'ÉLÉMENT TESTÉ. Renseignée, elle lève un
+         facteur PROPOSÉ au registre, visant d'autres sections. C'est le chemin
+         par lequel une constatation CIRCULE — il manquait, et `raiseFactor`
+         existait sans que rien ne l'appelle. */
+      factRaised: String(formData.get('fait') ?? '').trim()
+        ? {
+            nature: String(formData.get('fait_nature') ?? 'controle'),
+            description: String(formData.get('fait')),
+            targets: String(formData.get('fait_postes') ?? '')
+              .split(',').map((p) => p.trim()).filter(Boolean)
+              .map((fsli) => ({ fsli, assertions: ['realite'] })),
+          }
+        : undefined,
     });
     revalidatePath(`/eng/${id}/exceptions`);
   }
@@ -103,6 +116,17 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
                           <input type="hidden" name="exception_id" value={x.id} />
                           <textarea name="explanation" rows={2} required
                             placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                          <input name="fait" placeholder="constatation qui dépasse cet élément (facultatif) — elle lèvera un facteur au registre" />
+                          <div className="row" style={{ gap: 4 }}>
+                            <select name="fait_nature" defaultValue="controle">
+                              <option value="controle">contrôle</option>
+                              <option value="changement">changement</option>
+                              <option value="complexite">complexité</option>
+                              <option value="incertitude">incertitude</option>
+                              <option value="biais">biais</option>
+                            </select>
+                            <input name="fait_postes" placeholder="postes visés, séparés par des virgules" style={{ flex: 1 }} />
+                          </div>
                           <textarea name="conclusion" rows={2} required
                             placeholder="Votre conclusion sur cette explication" />
                           <div className="row" style={{ gap: 4 }}>

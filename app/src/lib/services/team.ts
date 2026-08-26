@@ -28,6 +28,109 @@ export class TeamRuleError extends Error {
   }
 }
 
+/* ── ancienneté et rotation : ce qui se COMPTE ────────────────────────────
+   Les deux seuils étaient déclarés dans `methodology/independance.json` et rien
+   ne les calculait. Un paramètre déclaré que personne n'évalue est du silence
+   lu comme un succès : le dossier a l'air de contrôler la familiarité, et il ne
+   contrôle rien.
+
+   ILS SE COMPTENT, ILS NE SE JUGENT PAS. Le nombre d'exercices consécutifs sur
+   la même entité est déterministe : c'est une suite de missions chaînées par
+   `period.prior_period_id`. Une rupture d'un an la casse — et c'est voulu :
+   revenir après une interruption ne recrée pas l'ancienneté d'avant.          */
+
+export interface Anciennete {
+  userId: string;
+  name: string;
+  /** Exercices CONSÉCUTIFS sur cette entité, celui-ci compris. */
+  exercices: number;
+  /** Le seuil du cabinet, et ce qu'il déclenche. */
+  seuil: number;
+  menace: boolean;
+}
+
+/**
+ * L'ancienneté de chaque membre sur l'entité de la mission.
+ *
+ * On remonte la chaîne des exercices tant que la personne était affectée. Une
+ * année sans elle arrête le compte : l'ancienneté est CONSÉCUTIVE, sinon la
+ * menace de familiarité voudrait dire autre chose que ce qu'elle dit.
+ */
+export async function anciennetes(engagementId: string): Promise<Anciennete[]> {
+  const cat = await catalogueDeLaMission(engagementId);
+  const seuil = cat.independance.parametres.familiarite_exercices?.valeur ?? 0;
+  const equipe = await q<{ user_id: string; name: string }>(
+    `select m.user_id, u.name from engagement_member m
+     join app_user u on u.id = m.user_id
+     where m.engagement_id = $1 and m.exited_on is null order by u.name`,
+    [engagementId],
+  );
+
+  /* La chaîne des missions de la même entité et de même nature, de la plus
+     récente à la plus ancienne. */
+  const chaine = await q<{ id: string; membres: string[] }>(
+    `with recursive fil as (
+       select e.id, e.period_id, p.prior_period_id, 0 as rang
+       from engagement e join period p on p.id = e.period_id
+       where e.id = $1
+       union all
+       select prev.id, prev.period_id, pp.prior_period_id, fil.rang + 1
+       from fil
+       join engagement cur on cur.id = fil.id
+       join engagement prev on prev.entity_id = cur.entity_id
+         and prev.period_id = fil.prior_period_id
+         and prev.kind = cur.kind and prev.tenant_id = cur.tenant_id
+       join period pp on pp.id = prev.period_id
+     )
+     select fil.id,
+            coalesce(array_agg(m.user_id::text) filter (where m.user_id is not null), '{}') as membres
+     from fil left join engagement_member m on m.engagement_id = fil.id
+     group by fil.id, fil.rang order by fil.rang`,
+    [engagementId],
+  );
+
+  return equipe.map((u) => {
+    let n = 0;
+    for (const mission of chaine) {
+      if (!mission.membres.includes(u.user_id)) break;   // rupture : le compte s'arrête
+      n += 1;
+    }
+    return { userId: u.user_id, name: u.name, exercices: n, seuil, menace: seuil > 0 && n >= seuil };
+  });
+}
+
+export interface RotationSignataire {
+  userId: string;
+  name: string;
+  exercices: number;
+  plafond: number;
+  /** Le mandat est-il dépassé ? Un dépassement est une faute de dossier. */
+  depasse: boolean;
+}
+
+/**
+ * La rotation du signataire : depuis combien d'exercices consécutifs signe-t-il.
+ *
+ * On compte les membres habilités à signer, pas toute l'équipe : la règle porte
+ * sur le signataire, et l'appliquer à un stagiaire la viderait de son sens.
+ */
+export async function rotationSignataire(engagementId: string): Promise<RotationSignataire[]> {
+  const cat = await catalogueDeLaMission(engagementId);
+  const plafond = cat.independance.parametres.rotation_signataire_exercices?.valeur ?? 0;
+  const anc = await anciennetes(engagementId);
+  const signataires = await q<{ user_id: string }>(
+    `select user_id from engagement_member where engagement_id = $1 and can_sign = true`,
+    [engagementId],
+  );
+  const habilites = new Set(signataires.map((s) => s.user_id));
+  return anc
+    .filter((a) => habilites.has(a.userId))
+    .map((a) => ({
+      userId: a.userId, name: a.name, exercices: a.exercices, plafond,
+      depasse: plafond > 0 && a.exercices > plafond,
+    }));
+}
+
 /* ── contexte : le cabinet d'une mission, et la garde d'isolation ───────── */
 
 export interface EngagementContext {
@@ -383,6 +486,40 @@ export async function independenceObstacles(engagementId: string): Promise<strin
     if (m.exited_on) continue;
     if (!m.declaration.holds) {
       out.push(`${m.name} : ${m.declaration.label} — ses travaux bloquent le visa de leur section`);
+    }
+  }
+
+  /* LA ROTATION DU SIGNATAIRE — un dépassement est une faute de dossier, pas
+     un oubli d'agenda. Le seuil était déclaré dans la méthode et rien ne le
+     calculait : le dossier avait l'air de contrôler la rotation. */
+  for (const r of await rotationSignataire(engagementId)) {
+    if (r.depasse) {
+      out.push(
+        `${r.name} signe depuis ${r.exercices} exercices consécutifs, au-delà du plafond de `
+        + `${r.plafond} fixé par le cabinet — la rotation est due`,
+      );
+    }
+  }
+
+  /* LA FAMILIARITÉ — elle ne BLOQUE pas : elle exige une SAUVEGARDE
+     documentée. La traiter comme un empêchement rendrait tout dossier ancien
+     impossible ; ne pas la lever du tout la rendrait invisible. Elle apparaît
+     donc dans les obstacles tant qu'aucune rubrique de la déclaration ne la
+     couvre — c'est-à-dire tant que personne n'a écrit ce qu'on fait. */
+  const anc = await anciennetes(engagementId);
+  for (const a of anc) {
+    if (!a.menace) continue;
+    const couvert = await q01<{ id: string }>(
+      `select d.id from independence_declaration d
+       where d.engagement_id = $1 and d.user_id = $2 and d.signed_at is not null
+         and btrim(coalesce(d.answers->'familiarite'->>'detail', '')) <> ''`,
+      [engagementId, a.userId],
+    );
+    if (!couvert) {
+      out.push(
+        `${a.name} intervient depuis ${a.exercices} exercices consécutifs (seuil ${a.seuil}) : `
+        + `la menace de familiarité doit être documentée avec sa sauvegarde`,
+      );
     }
   }
   return out;

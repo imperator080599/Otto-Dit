@@ -4,6 +4,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { q, q1 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
+import { deroulerFin } from '@/lib/flows/parcours';
 import { draftRevenueWorkpaper } from './workpapers/draft';
 import { signWorkpaper } from './workpapers/lifecycle';
 import { closeFile } from './retention';
@@ -16,6 +17,12 @@ describe('closing the file (ADR-022)', () => {
   beforeAll(async () => {
     await initTestDb();
     await runPart1UpToWorkpaper();
+    /* LA CLÔTURE DEMANDE MAINTENANT LA LISTE COMPLÈTE DES OBSTACLES (point 11,
+       ADR-086) : reprise statuée, questionnaire rempli, états financiers
+       pointés, achèvement conclu. Ce test porte sur les propriétés de
+       l'ARCHIVE, pas sur l'arc — il déroule donc la fin du parcours par les
+       mêmes services que les écrans, plutôt que de contourner le verrou. */
+    await deroulerFin(IDS.engNep);
     const wpId = await draftRevenueWorkpaper(IDS.engNep, IDS.users.karim);
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');

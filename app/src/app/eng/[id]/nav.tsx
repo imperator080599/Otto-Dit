@@ -50,6 +50,8 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     // Le pointage des états financiers : l'autre bout de l'arc.
     { href: `${base}/fs-tieout`, label: 'États financiers' },
     { href: `${base}/ask`, label: 'Ask the file' },
+    // L'achèvement, puis les obstacles : la fin du dossier dans l'ordre.
+    { href: `${base}/completion`, label: 'Achèvement' },
     // Les obstacles au visa : une seule liste, calculée, transverse.
     { href: `${base}/obstacles`, label: 'Obstacles au visa' },
     { href: `${base}/dashboard`, label: 'Dashboard' },

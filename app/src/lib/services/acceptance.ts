@@ -346,6 +346,35 @@ export async function recalculerDerives(engagementId: string): Promise<void> {
   }
 }
 
+/**
+ * Marque un jalon FAIT.
+ *
+ * Il manquait, et son absence se voyait à la clôture : tous les jalons passés
+ * restaient « échus et non faits » puisque rien ne pouvait les cocher, et le
+ * dossier ne pouvait plus se clore. Un jalon dont la date est passée n'est pas
+ * en retard s'il a eu lieu — encore faut-il pouvoir le dire.
+ */
+export async function marquerJalonFait(
+  engagementId: string, actorUserId: string, code: string,
+): Promise<void> {
+  const j = await q01<{ code: string }>(
+    `select code from engagement_milestone where engagement_id = $1 and code = $2`,
+    [engagementId, code],
+  );
+  if (!j) throw new AcceptanceRuleError(`jalon « ${code} » inconnu de la méthode du cabinet`);
+  const eng = await cabinetDe(engagementId);
+  await q(
+    `update engagement_milestone set done_at = now(), done_by = $3
+     where engagement_id = $1 and code = $2`,
+    [engagementId, code, actorUserId],
+  );
+  await logEvent({
+    tenantId: eng.tenant_id, engagementId, actorKind: 'user', actorId: actorUserId,
+    verb: 'milestone.done', objectType: 'engagement_milestone', objectId: null,
+    payload: { code },
+  });
+}
+
 /** Les jalons échus et non faits. Une liste calculée, pas un rappel rédigé. */
 export async function jalonsEnRetard(engagementId: string, aujourdhui: string): Promise<Jalon[]> {
   const tous = await jalons(engagementId);

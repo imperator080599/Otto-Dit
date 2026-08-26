@@ -386,6 +386,24 @@ export async function draftClarificationRequest(engagementId: string, userId: st
 /** What a resolution must carry to be probative (migration 0009, NEP 500).
  *  An interview is not audit evidence: the client's words are recorded verbatim, and the
  *  thing that corroborates them is LINKED, not described. */
+/**
+ * CE QUI FAIT CIRCULER UNE CONSTATATION.
+ *
+ * Une résolution d'écart peut porter un FAIT qui dépasse l'élément testé :
+ * « la facture était juste, mais le contrôle d'autorisation a été contourné ».
+ * Sans ce chemin, la constatation restait dans une case d'exception et
+ * n'atteignait jamais l'évaluation du risque des autres sections — et c'est la
+ * thèse du produit qui tombait. `raiseFactor` existait ; RIEN NE L'APPELAIT.
+ *
+ * Le facteur arrive PROPOSÉ, comme tous les autres : un moteur qui lève n'a pas
+ * décidé.
+ */
+export interface FactSurvenu {
+  nature: string;
+  description: string;
+  targets: { fsli: string; assertions: string[] }[];
+}
+
 export interface ResolutionInput {
   /** The explanation received, in the client's own words. */
   explanation: string;
@@ -395,6 +413,15 @@ export interface ResolutionInput {
   disposition: 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated';
   /** At least one of the two: the document, or the accounting entry, that corroborates. */
   corroboration: { evidenceId?: string; glEntryId?: string };
+  /**
+   * Le FAIT qui dépasse l'élément testé, s'il y en a un.
+   *
+   * « La facture était juste, mais le contrôle d'autorisation a été
+   * contourné » : cette constatation vaut pour d'AUTRES sections, et sans ce
+   * chemin elle restait enfermée dans une case d'exception. Le facteur part
+   * PROPOSÉ au registre — un moteur qui lève n'a pas décidé.
+   */
+  factRaised?: FactSurvenu;
 }
 
 export async function resolveException(exceptionId: string, userId: string, input: ResolutionInput): Promise<void> {
@@ -440,6 +467,26 @@ export async function resolveException(exceptionId: string, userId: string, inpu
       conclusion: input.conclusion.slice(0, 500),
     },
   });
+
+  /* LA CONSTATATION CIRCULE. C'est ici que `raiseFactor` est appelé — il
+     existait depuis la tranche 5b et RIEN NE L'APPELAIT, ce qui laissait le
+     registre alimenté par le seul questionnaire. Une constatation faite dans
+     une procédure ne se posait donc nulle part ailleurs, et « la constatation
+     circule » restait une phrase.
+     Le facteur part PROPOSÉ, avec l'écart pour source : un moteur qui lève n'a
+     pas décidé. */
+  if (input.factRaised) {
+    const { raiseFactor } = await import('./questionnaire');
+    await raiseFactor({
+      engagementId: x.engagement_id,
+      source: 'procedure',
+      sourceRef: exceptionId,
+      nature: input.factRaised.nature,
+      description: input.factRaised.description,
+      targets: input.factRaised.targets,
+      actorUserId: userId,
+    });
+  }
 }
 
 /** The third terminal state (migration 0009). Not a resolution: nothing corroborates it,

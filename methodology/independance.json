@@ -36,6 +36,11 @@
       "code": "cadeaux",
       "libelle": "Cadeaux et invitations au-delà du seuil déclaré",
       "definition": "cadeau, avantage ou invitation reçu du client dont la valeur dépasse le seuil paramétré ci-dessus"
+    },
+    {
+      "code": "familiarite",
+      "libelle": "Familiarité — ancienneté sur le client",
+      "definition": "Intervenez-vous sur ce client depuis un nombre d'exercices consécutifs égal ou supérieur au seuil du cabinet ? Si oui, décrivez la sauvegarde mise en place (revue indépendante du dossier, rotation d'un membre de l'équipe, supervision renforcée). L'ancienneté se COMPTE — le moteur la calcule et vous la rappelle ; ce qui ne se compte pas, c'est ce que vous faites de la menace."
     }
   ],
   "parametres": {

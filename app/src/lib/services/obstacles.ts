@@ -6,6 +6,7 @@ import { obstaclesPointage } from './tieout';
 import { currentAcceptation, jalonsEnRetard } from './acceptance';
 import { boucle } from './loop';
 import { conclusionGate, blockerText } from './evaluation';
+import { obstaclesAchevement } from './completion';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -26,7 +27,7 @@ import { conclusionGate, blockerText } from './evaluation';
 
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire'
-  | 'boucle' | 'pointage' | 'evaluation' | 'jalons';
+  | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons';
 
 export interface Obstacle {
   famille: Famille;
@@ -43,6 +44,7 @@ const OU: Record<Famille, string> = {
   boucle: 'loop',
   pointage: 'fs-tieout',
   evaluation: 'exceptions',
+  achevement: 'completion',
   jalons: 'acceptance',
 };
 
@@ -109,7 +111,10 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
   const gate = await conclusionGate(engagementId);
   if (!gate.ok) ajoute('evaluation', gate.blockers.map((b) => blockerText(b, 'fr')));
 
-  // 8. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
+  // 8. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
+  ajoute('achevement', await obstaclesAchevement(engagementId));
+
+  // 9. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const retard = await jalonsEnRetard(engagementId, aujourdhui);

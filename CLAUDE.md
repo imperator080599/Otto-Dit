@@ -54,7 +54,8 @@ current state.**
 - `supabase/migrations/` — Postgres SQL migrations (applied locally to PGlite, in production
   to Supabase).
 - `tests/` — cross-cutting/acceptance tests (unit tests may live next to code in app/).
-- `STATUS.md` — current slice, done list, next actions, open threads. `DEMO.md` — how to run
+- `STATUS.md` — current slice, done list, next actions, open threads. `DEMO_APP.md` — la mission
+  entière dans l'application, rejouée par `tests/parcours.test.ts`. `DEMO.md` — how to run
   the two-part demo. `DEPLOY.md` — Vercel+Supabase runbook. `COST.md` — actual LLM/OCR spend.
 
 ## Dev commands

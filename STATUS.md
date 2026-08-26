@@ -7,7 +7,7 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 372 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: 403 tests green (`cd app && npm test`), zero network calls. Prod build clean.
   Le balayage des 48 écrans est DANS la suite, et `npm run screens` le refait en production.
   Les écrans de méthode sont **conduits dans un navigateur**, pas seulement testés : ADR-076 dit pourquoi.
 
@@ -926,6 +926,39 @@ Et ce que la page **n'affirme pas**, dit à l'écran : « aucun obstacle » ne v
 dossier est bon — il veut dire qu'aucune règle ne le refuse. Le jugement reste au signataire.
 
 **Vérification** : 372 tests (352 → 372) · `tsc --noEmit` propre · **58/58** écrans en production.
+
+## Application — tranches livrées : achèvement (10), clôture branchée (11), les trois retardataires
+
+**L'achèvement** (ADR-086, migration `0020`) — les travaux qu'un inspecteur regarde en premier après
+une défaillance. **Ce ne sont pas des cases à cocher : chaque règle est une DATE.** Des événements
+postérieurs arrêtés avant le rapport → le refus **nomme la période non couverte**. Une lettre
+d'affirmation datée avant le rapport → refusée. Une lettre **sans la lettre** → refusée, *c'est une
+lettre, pas une conversation*. Et elle ne se déclare pas « sans objet » : *une mission sans lettre
+d'affirmation n'est pas allégée, elle est incomplète.*
+
+**Le branchement sur la clôture** (point 11). `sealFile` ne vérifiait que la conclusion sur les
+anomalies — le dernier verrou d'une porte à huit serrures. Sceller un dossier sans lettre
+d'affirmation produisait **une archive complète d'un dossier incomplet**, et l'archive est
+définitive. La clôture demande maintenant **LA** liste d'obstacles, celle que l'écran affiche.
+
+**Trois défauts de mon propre code, trouvés par le parcours complet** : une **jointure décorative**
+qui donnait la boucle du chiffre d'affaires à seize postes (*une jointure qui ne joint rien est pire
+qu'une jointure absente : elle a l'air d'être là*) ; un **jalon qu'on ne pouvait pas cocher**, donc un
+retard fabriqué par l'outil ; et une **file qui se débouchait d'un cran** — un élément sorti par une
+explication ou une limitation consignée l'a quittée pour de bon, à toutes les étapes.
+
+**Les trois retardataires** (ADR-087) — déclarés dans la méthode, jamais calculés :
+**l'ancienneté** se compte en exercices consécutifs (une rupture casse le compte) ; **la
+familiarité** exige une sauvegarde et n'interdit pas ; **la rotation** ne porte que sur les habilités
+à signer et son dépassement bloque ; et **`raiseFactor` est enfin appelé** — la résolution d'un écart
+peut lever un facteur qui vise d'autres sections, ce qui fait de « la constatation circule » autre
+chose qu'une phrase.
+
+**DEMO_APP.md** : la mission entière en quinze étapes, avec `tests/parcours.test.ts` qui la rejoue —
+de l'acceptation à l'**archive scellée**, par les mêmes services que les écrans.
+
+**Vérification** : 403 tests (372 → 403) · `tsc --noEmit` propre · **60/60** écrans en production ·
+`npx vitest run ../tests/parcours.test.ts` va jusqu'au dossier clos.
 
 ## Convergence prototype → application
 

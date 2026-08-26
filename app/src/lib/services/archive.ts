@@ -5,6 +5,7 @@ import { sha256 } from '@/lib/core/hash';
 import { saveBlob, readBlob } from '@/lib/core/storage';
 import { engagementCtx } from './imports';
 import { conclusionGate, blockerText } from './evaluation';
+import { obstaclesAuVisa } from './obstacles';
 import { fileDeadlines } from './retention';
 import { renderWorkpaperPdf } from './workpapers/render';
 
@@ -108,9 +109,31 @@ export async function buildArchive(engagementId: string, reportDate: string): Pr
 
 export async function sealFile(engagementId: string, userId: string, reportDate: string): Promise<SealResult> {
   const ctx = await engagementCtx(engagementId);
+
+  /* L'ORDRE DES DEUX VERROUS. Le plus SPÉCIFIQUE d'abord : « le grand livre est
+     provisoire » dit quoi faire ; « 40 obstacles » fait chercher. Un refus qui
+     compte n'est pas un refus qui explique (ADR-069). */
   const gate = await conclusionGate(engagementId);
   if (!gate.ok) {
     throw new Error(`the file cannot be closed while it is not concluded — ${gate.blockers.map((b) => blockerText(b, 'en')).join(' ; ')}`);
+  }
+
+  /* LE BRANCHEMENT DE L'ACHÈVEMENT SUR LA CLÔTURE (point 11).
+     La clôture ne vérifiait que la conclusion sur les anomalies. C'était le
+     dernier verrou d'une porte à huit serrures : acceptation, indépendance,
+     reprise, questionnaire, boucle, pointage, évaluation, achèvement. Sceller
+     un dossier dont la lettre d'affirmation manque, ou dont les états
+     financiers ne sont pas pointés, produisait une archive complète… d'un
+     dossier INCOMPLET — et l'archive, elle, est définitive.
+     On demande LA liste (ADR-085), celle-là même que l'écran affiche : deux
+     vérités sur ce qui bloque en divergeraient un jour. */
+  const obstacles = await obstaclesAuVisa(engagementId);
+  if (obstacles.length > 0) {
+    throw new Error(
+      `le dossier ne se clôt pas tant qu'un obstacle au visa subsiste — ${obstacles.length} obstacle(s) : `
+      + obstacles.slice(0, 6).map((o) => o.libelle).join(' ; ')
+      + (obstacles.length > 6 ? ` … et ${obstacles.length - 6} autre(s)` : ''),
+    );
   }
   const deadlines = await fileDeadlines(engagementId, reportDate);
   const { bytes, manifest, fileCount } = await buildArchive(engagementId, reportDate);

@@ -3010,3 +3010,90 @@ appliqué à une liste plutôt qu'à un message.
 **Ce que la page n'affirme pas**, écrit à l'écran : « aucun obstacle » ne veut pas dire que le
 dossier est **bon**. Il veut dire qu'aucune règle ne le **refuse**. Le jugement reste au signataire —
 un produit qui laisserait croire l'inverse serait dangereux.
+
+---
+
+## ADR-086 — L'achèvement, le branchement sur la clôture, et le parcours complet (points 10 et 11)
+
+**L'achèvement** (`completion_item`, migration `0020`). Le dossier savait tester, évaluer, documenter
+et viser — mais pas **achever**. Or les travaux d'achèvement sont ceux qu'un inspecteur regarde en
+premier quand une défaillance survient trois mois après le rapport.
+
+**Ce ne sont pas des cases à cocher : chaque nature porte une règle qui refuse, et ces règles sont des
+DATES.**
+
+- **Événements postérieurs** : des travaux qui s'arrêtent avant la date du rapport laissent une
+  période non couverte, et *le refus nomme la période* — « du 28/02 au 31/03 n'est couverte par aucun
+  travail ». C'est exactement ce qu'on cherche après coup, et personne ne le voit à la lecture.
+- **Lettre d'affirmation** : datée du jour du rapport ou après, **jamais avant** — une lettre
+  antérieure ne couvre pas la période auditée. Et elle se clôt **avec la lettre** : *c'est une lettre,
+  pas une conversation.* Elle est aussi la seule nature qu'on refuse de déclarer « sans objet » :
+  *une mission sans lettre d'affirmation n'est pas allégée, elle est incomplète.*
+- **Anomalies non corrigées** : conclure sur un cumul qu'on n'a pas calculé, c'est conclure sur une
+  impression — l'évaluation doit avoir été menée.
+- **« Sans objet » se motive**, et **rouvrir est prévu et tracé** : un fait nouveau se traite, il ne
+  se cache pas.
+
+**Le branchement sur la clôture (point 11).** `sealFile` ne vérifiait que la conclusion sur les
+anomalies : c'était le dernier verrou d'une porte à huit serrures. Sceller un dossier dont la lettre
+d'affirmation manque produisait **une archive complète d'un dossier incomplet** — et l'archive est
+définitive. La clôture demande désormais **LA liste** (ADR-085), celle-là même que l'écran affiche :
+deux vérités sur ce qui bloque en divergeraient un jour.
+
+**L'ordre des deux verrous.** Le plus **spécifique** d'abord : « le grand livre est provisoire » dit
+quoi faire, « 40 obstacles » fait chercher. *Un refus qui compte n'est pas un refus qui explique.*
+
+**TROIS DÉFAUTS DE MON PROPRE CODE, TROUVÉS PAR LE PARCOURS COMPLET.**
+
+1. **Une jointure décorative.** `boucle()` joignait `fsli` sur son code sans que rien ne contraigne
+   l'échantillon : **seize postes recevaient la boucle du chiffre d'affaires**, et bloquaient la
+   clôture pour des travaux qui n'existaient pas chez eux. Le lien réel passe par
+   `procedure_instance.fsli_code`. *Une jointure qui ne joint rien est pire qu'une jointure absente :
+   elle a l'air d'être là.*
+2. **Un jalon qu'on ne pouvait pas cocher.** Tous les jalons passés restaient « échus et non faits »
+   puisque rien ne les marquait faits, et le dossier ne pouvait plus se clore — *un retard fabriqué
+   par l'outil, pas par le dossier.*
+3. **Une file qui se débouchait d'un cran.** La boucle ne comptait « déposé » que sur un document.
+   Or un élément sort de la file de trois manières : une pièce, une **explication** répondue (une
+   demande d'explication n'attend aucun document), ou une **limitation de périmètre consignée** avec
+   ses procédures alternatives — celle-là est **conclue**, pas en attente. Ne l'appliquer qu'au dépôt
+   déplaçait le blocage à la lecture : *un élément qui a quitté la file l'a quittée pour de bon.*
+
+**Le parcours complet** (`flows/parcours.ts`, `tests/parcours.test.ts`) déroule la fin de la mission
+par les **mêmes services que les écrans** et s'achève sur une **archive scellée**. Il ne peut pas
+passer tant qu'une règle reste insatisfaite. C'est la définition de « fini ».
+
+---
+
+## ADR-087 — Les trois retardataires : ce qui était déclaré et jamais calculé
+
+**Trois paramètres écrits dans la méthode que personne n'évaluait.** Chacun était du **silence lu
+comme un succès** : le dossier avait l'air de contrôler la familiarité, d'appliquer la rotation du
+signataire et de faire circuler les constatations, et ne faisait rien de tout cela.
+
+**L'ancienneté par client.** Elle se **compte**, elle ne se juge pas : les exercices **consécutifs**
+sur la même entité, remontés par le chaînage des périodes. **Une rupture d'un an casse le compte**, et
+c'est voulu — *revenir après une interruption ne recrée pas l'ancienneté d'avant.*
+
+**La familiarité EXIGE une sauvegarde, elle n'interdit pas.** La traiter comme un empêchement rendrait
+tout dossier ancien impossible ; ne pas la lever du tout la rendrait invisible. Elle apparaît donc
+dans les obstacles **tant que personne n'a écrit ce qu'on fait** — ce qui a exigé d'ajouter la
+rubrique `familiarite` à la déclaration du cabinet : la première version pointait une rubrique
+**inexistante**, donc un obstacle qui n'aurait jamais pu se lever. Le défaut même que ce fichier
+corrige, reproduit dans sa correction.
+
+**La rotation du signataire** ne porte que sur les **habilités à signer** — l'appliquer à un
+stagiaire viderait la règle de son sens — et un dépassement **bloque le visa** : *c'est une faute de
+dossier, pas un oubli d'agenda.*
+
+**`raiseFactor` est enfin appelé.** Il existait depuis la tranche 5b et **rien ne l'appelait** : le
+registre n'était alimenté que par le questionnaire, donc une constatation faite dans une procédure ne
+se posait nulle part ailleurs — et « la constatation circule » restait une phrase. La résolution d'un
+écart accepte désormais un **fait qui dépasse l'élément testé** (« la facture était juste, mais le
+contrôle d'autorisation a été contourné »), qui lève un facteur **proposé**, visant d'autres sections,
+avec l'écart pour source.
+
+**Un test qui allait passer à vide, attrapé par sa propre garde.** Le premier essai cherchait un écart
+`open` après un flux qui les résout tous : la liste était vide, la boucle ne s'exécutait pas, et le
+test aurait été vert. La garde `expect(…, 'le test vérifierait le vide').toBeTruthy()` l'a arrêté.
+*Écrire la garde coûte une ligne ; ne pas l'écrire coûte une confiance.*
