@@ -1273,3 +1273,59 @@ médiane de 15 420 €, la strate exhaustive à la moitié du seuil retient plus
 population — 163 éléments sur 323. La règle de l'ADR-034 rencontre ici une population dont les
 éléments approchent le seuil ; ce n'est pas un défaut de la règle mais un cas qu'elle traite
 mal, et la stratification est la réponse habituelle. À arbitrer.
+
+---
+
+## ADR-043 — Une version du fichier est un ajout, jamais un écrasement ; et sa prise en compte est une décision
+
+**Contexte** : le prototype ne connaissait qu'un seul état de la balance et du grand livre. Un
+mandat réel en reçoit trois à cinq — provisoire, après écritures d'inventaire, après revue de
+l'expert-comptable, parfois après une révision de dernière minute. L'écrasement était donc
+impensé, et avec lui toutes ses conséquences : un échantillon tiré sur une population qui n'existe
+plus, un travail achevé sur des chiffres périmés, un visa engageant un associé sur un fichier
+qu'il n'a pas vu.
+
+**Décision** :
+
+1. **Une version n'est jamais une régénération.** C'est le grand livre précédent **plus** les
+   écritures passées depuis. Régénérer redistribuerait les montants du générateur et déplacerait
+   les anomalies : deux versions ne seraient plus comparables. Vérifié par test : le grand livre
+   de la v1 est un préfixe exact de celui de la v2, puis de la v3 (1 605 → 1 609 → 1 611
+   écritures, aucune écriture antérieure modifiée).
+2. **Chaque écriture de version déclare sa cible** : balance, grand livre, ou les deux. Une
+   écriture à sens unique crée — ou résorbe — un écart de rapprochement, et c'est voulu :
+   l'écriture de situation absente du premier fichier est reprise en v2 et l'écart disparaît de
+   lui-même ; un avoir passé à la balance seule en v3 en rouvre un.
+3. **Une version reçue n'est pas une version prise en compte.** On lit d'abord le rapport
+   d'impact, puis on décide, et la décision est journalisée. Basculer le grand livre sous une
+   mission en cours sans le dire est ce que fait un tableur.
+4. **Le rapport d'impact est le cœur, pas les colonnes.** Six réponses, toutes obtenues en
+   évaluant réellement le dossier sur les deux versions : comptes qui ont bougé · comptes qui
+   franchissent le seuil de remontée · postes qui entrent ou sortent du périmètre · sélections
+   périmées, avec les éléments entrés et sortis · travaux achevés ou revus sur une version
+   antérieure · anomalies résorbées par la nouvelle version, et anomalies qu'elle fait apparaître.
+5. **Les seuils bougent avec la version** : la référence de matérialité est calculée sur la
+   balance. Un compte peut donc changer de côté sans avoir bougé d'un centime. Le rapport vérifie
+   ce cas à chaque transition et **dit explicitement quand il ne s'en présente aucun** — la
+   formulation initiale l'affirmait ; la mesure a montré qu'il ne se produisait pas sur ce jeu de
+   données, et le texte a été rendu conditionnel plutôt que supprimé.
+6. **« À reconfirmer » est un état DÉRIVÉ, pas une écriture.** Un travail achevé sur une version
+   antérieure n'est pas « encore achevé » : il est à reconfirmer, avec son motif. Le statut stocké
+   n'est pas modifié — revenir à la version d'exécution le rend à son état antérieur sans qu'aucune
+   écriture n'ait eu lieu. C'est la règle de l'ADR-039 appliquée au versionnement.
+7. **Un visa posé sur une version antérieure est signalé et remis en cause**, jamais effacé.
+8. **Chaque papier de travail cite sa version** et son empreinte, et l'export porte les deux en
+   tête : deux classeurs d'apparence identique peuvent parler de fichiers différents.
+9. **Le rapprochement est rejoué à chaque version, et chaque version garde le sien** : un écart
+   résorbé reste lisible sur la version où il avait été relevé.
+
+**Effets mesurés sur le jeu de données** — v1 → v2 : résultat courant 750 863 € → 671 063 €
+(quatre écritures de clôture), seuils 37 000/27 000/1 800 → 33 000/24 000/1 600, écart de
+rapprochement de 25 000 € résorbé, 32 sélections modifiées. v2 → v3 : 671 063 € → 695 363 €,
+seuils → 34 000/25 000/1 700, le poste **Immobilisations incorporelles entre au périmètre**
+(licence immobilisée), 24 sélections modifiées, nouvel écart de rapprochement de 6 200 €.
+Les trois versions restent équilibrées, balance et grand livre, zéro écriture déséquilibrée.
+
+**Coût** : rapport d'impact 88 ms au premier rendu, 40 ms sans cache, 17 ms avec ; bascule de
+version 49 ms. Le cache est clé sur la version **et** sur l'état saisi qu'il lit, plutôt que sur
+un vidage posé au bon endroit et oublié au prochain.

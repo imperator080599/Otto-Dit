@@ -19,6 +19,7 @@ const DOSSIER = [
   { id:'plan.principes', lib:'Principes de conception' },
 ];
 const TRANSVERSES = [
+  { id:'plan.versions',lib:'Versions du fichier' },
   { id:'plan.rappro',  lib:'Import et rapprochement' },
   { id:'plan.mat',     lib:'Matérialité' },
   { id:'plan.scope',   lib:'Scoping des postes' },
@@ -142,7 +143,7 @@ function renderTopExtra(){
 function buildSeuils(){
   document.getElementById('seuils').innerHTML = `
     <div class="ctrl"><label>Référence de matérialité</label>
-      <select id="bm">${Object.values(BM25).map(b => `<option value="${b.code}" ${b.code === S.benchmark ? 'selected' : ''}>${esc(b.lib)} — ${eur0(b.val)}</option>`).join('')}</select></div>
+      <select id="bm">${Object.values(bm()).map(b => `<option value="${b.code}" ${b.code === S.benchmark ? 'selected' : ''}>${esc(b.lib)} — ${eur0(b.val)}</option>`).join('')}</select></div>
     <div class="ctrl"><label>Taux : <b id="lab-pm"></b></label>
       <input type="range" id="pm" min="0.5" max="10" step="0.1" value="${S.pctM}"></div>
     <div class="ctrl"><label>Seuil de planification : <b id="lab-ppm"></b> du seuil</label>
@@ -209,6 +210,7 @@ function contenu(){
     case 'plan.scope':  return vueScoping();
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.versions': return vueVersions();
     case 'plan.donnees': return vueJeuDonnees();
     case 'plan.programme': return vueProgramme();
     case 'plan.principes': return vuePrincipes();
@@ -363,18 +365,19 @@ function resolDeCle(k){
 
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
-  if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = BM25[t.value].defaut; return render(); }
+  if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = bm()[t.value].defaut; return render(); }
   if (t.id === 'pm'){ S.pctM = parseFloat(t.value); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'ppm'){ S.pctPM = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'pctt'){ S.pctCTT = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (d.pseed !== undefined && p){ proc(p.code, d.pseed).seed = t.value; proc(p.code, d.pseed).wp = null; return; }
-  if (d.pconcl !== undefined && p){ proc(p.code, d.pconcl).conclusion = t.value; return renderMainDiff(); }
+  if (d.pconcl !== undefined && p){ proc(p.code, d.pconcl).conclusion = t.value;
+    marquerExecution(p, PROCEDURES.find(x => x.code === d.pconcl)); return renderMainDiff(); }
   if (d.ctr !== undefined && p){
     const pr = PROCEDURES.find(x => x.code === d.pcode);
     const wp = wpProc(p, pr) || [];
     const cle = String(d.ctr).split('|')[0];
     const l = wp.find(x => String(x.cle) === cle);
-    if (l){ l.champs[d.ctr] = t.value; }
+    if (l){ l.champs[d.ctr] = t.value; marquerExecution(p, pr); }
     return renderMainDiff();
   }
   if (d.rexpl !== undefined){ const x = resolDeCle(d.rexpl); if (x) x.r.expl = t.value; return renderMainDiff(); }
@@ -458,6 +461,8 @@ document.addEventListener('change', e => {
     S.affErreur = r.ok ? '' : r.why;
     return renderMain();
   }
+  if (t.id === 'imp-de'){ S.impactDe = +t.value; return renderMain(); }
+  if (t.id === 'imp-vers'){ S.impactVers = +t.value; return renderMain(); }
   if (t.id === 'ft-phase'){ S.filtreTrav.phase = t.value; return renderMain(); }
   if (t.id === 'ft-nature'){ S.filtreTrav.nature = t.value; return renderMain(); }
   if (t.id === 'ft-personne'){ S.filtreTrav.personne = t.value; return renderMain(); }
@@ -519,7 +524,9 @@ document.addEventListener('click', e => {
                             : c.ch.type === 'bool' ? (v ? 'oui' : 'non') : String(v);
       n++;
     }
-    logEvent('valeurs relevées saisies', p.lib + ' · ' + procRef(p, pr), n + ' champ(s)');
+    marquerExecution(p, pr);
+    logEvent('valeurs relevées saisies', p.lib + ' · ' + procRef(p, pr),
+             n + ' champ(s) · version ' + S.version);
     renderImpact(); return renderMain();
   }
   if (d.ravar && p){
@@ -584,7 +591,7 @@ document.addEventListener('click', e => {
     logEvent('travail N-1 reconfirmé', p.lib + ' · ' + d.n1, USERS[S.moi].nom); return renderMain(); }
   if (t.id === 'sec-visa' && p){
     if (obstaclesVisa(p).length) return;
-    sec(p.code).visa = { par:S.moi, t:tick() };
+    sec(p.code).visa = { par:S.moi, t:tick(), version:S.version };
     logEvent('section visée', p.lib, USERS[S.moi].nom + ' (' + ROLE_LIB[USERS[S.moi].role] + ')');
     return renderMain();
   }
@@ -695,6 +702,17 @@ document.addEventListener('click', e => {
   if (d.tstat){
     const [code, st] = d.tstat.split('|');
     const r = changerStatut(code, st);
+    S.affErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (d.vers){
+    prendreEnCompte(+d.vers);
+    _impCache.clear();
+    return render();
+  }
+  if (t.id === 'bal-tout'){ S.balTout = !S.balTout; return renderMain(); }
+  if (d.recon){
+    const r = reconfirmer(d.recon);
     S.affErreur = r.ok ? '' : r.why;
     return renderMain();
   }

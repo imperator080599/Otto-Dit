@@ -219,19 +219,20 @@ function buildLedger(){
   return { entries, rows };
 }
 
-const LEDGER = buildLedger();
-const FEC = LEDGER.rows;
+/** Le grand livre d'origine — la version 1. Les versions suivantes s'y
+ *  AJOUTENT (voir ledgerVersion) : il n'est jamais régénéré. */
+let _ledgerBase = null;
+function ledgerBase(){ return _ledgerBase || (_ledgerBase = buildLedger()); }
 
 /** Balance recalculée à partir des écritures — jamais saisie à côté. */
-function balanceFromLedger(){
+function balanceFromLedger(rows){
   const m = new Map();
-  for (const r of FEC){
+  for (const r of rows){
     const a = m.get(r.CompteNum) || { compte:r.CompteNum, lib:r.CompteLib, debit:0, credit:0 };
     a.debit += r.Debit; a.credit += r.Credit; m.set(r.CompteNum, a);
   }
   return [...m.values()].sort((a, b) => a.compte < b.compte ? -1 : 1);
 }
-const GL_BAL = balanceFromLedger();
 
 /* ═══ 4. ÉTAT ══════════════════════════════════════════════════════════════
    Un seul objet d'état. Tout module lit les seuils ici : c'est la source

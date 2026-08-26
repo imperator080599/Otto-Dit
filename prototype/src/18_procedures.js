@@ -242,7 +242,7 @@ function population(p, pr){
   let items;
   if (pr.tiers){
     const m = new Map();
-    for (const e of LEDGER.entries){
+    for (const e of lg().entries){
       const aux = e.lines.map(l => l.auxLib).find(Boolean);
       if (!aux || !e.lines.some(l => p.re.test(l.compte))) continue;
       const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
@@ -253,7 +253,7 @@ function population(p, pr){
     items = [...m.values()].sort((a, b) => b.montant - a.montant);
   } else {
     const min = d.min ? d.min() : 0;
-    items = LEDGER.entries
+    items = lg().entries
       .filter(e => e.lines.some(l => p.re.test(l.compte)))
       .filter(d.f)
       .map(e => ({ cle:e.num, e, montant:e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0) }))
@@ -551,7 +551,7 @@ function ecartsChiffresProc(p, pr){
  *  découle de la cause et non d'un réglage. */
 function bandesEcarts(){
   return Object.entries(ANOMALIES_PIECES).filter(([, a]) => a.t === 'montant').map(([ref, a]) => {
-    const e = LEDGER.entries.find(x => x.pieceRef === ref);
+    const e = lg().entries.find(x => x.pieceRef === ref);
     const piece = e ? Math.max(...e.lines.map(l => Math.max(l.debit, l.credit))) : 0;
     const part = piece ? -a.delta / piece : null;
     const b = NATURES_ECART[a.n];
@@ -572,7 +572,7 @@ function tauxConstates(){
 }
 function vueJeuDonnees(){
   const tx = tauxConstates(), faux = tx.filter(t => !t.ok);
-  const ent = LEDGER.entries;
+  const ent = lg().entries;
   return entete('Jeu de données', 'synthétique et déterministe — ce qu’il contient, et pourquoi') +
     blk('Grand livre', ent.length + ' écritures',
       `<div class="grid3">

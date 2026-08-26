@@ -148,7 +148,7 @@ function resolutionAcquise(c){ return resolutionAcquiseR(resolLue(c), constateDe
 function ecritureExiste(ref){
   const v = String(ref || '').trim().toUpperCase();
   if (!v) return null;
-  return LEDGER.entries.find(e => e.num.toUpperCase() === v || String(e.pieceRef).toUpperCase() === v) || null;
+  return lg().entries.find(e => e.num.toUpperCase() === v || String(e.pieceRef).toUpperCase() === v) || null;
 }
 
 /* ── 4. écart constaté, expliqué, résiduel ────────────────────────────────

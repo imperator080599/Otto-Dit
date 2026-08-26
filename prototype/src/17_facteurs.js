@@ -86,7 +86,7 @@ const REGLES_FACTEUR = [
       for (const p of postesCalcules()){
         const masse = statsPoste(p).masse;
         if (!masse) continue;
-        const ecr = LEDGER.entries.filter(e => e.lines.some(l => p.re.test(l.compte))
+        const ecr = lg().entries.filter(e => e.lines.some(l => p.re.test(l.compte))
           && /direction/.test(e.saisiePar) && marqueurs.some(m => m.f(e)));
         if (!ecr.length) continue;
         const m = ecr.reduce((a, e) => a + (e.lines[0].debit || e.lines[0].credit), 0);
@@ -121,7 +121,7 @@ const REGLES_FACTEUR = [
     nature:'quantitatif',
     calc(seuil){
       const out = [];
-      for (const e of LEDGER.entries){
+      for (const e of lg().entries){
         if (!e.pieceDate) continue;
         const jours = e.pieceDate > '2025-12-31'
           ? Math.round((Date.parse(e.pieceDate) - Date.parse('2025-12-31')) / 86400000)
@@ -153,7 +153,7 @@ const REGLES_FACTEUR = [
                     A5:['séparation des exercices', 'separation', 'Produit de 2026 rattaché à 2025'],
                     A6:['réalité', 'realite', 'Écriture manuelle de direction en fin d’exercice'] };
       const out = [], vus = new Set();
-      for (const e of LEDGER.entries){
+      for (const e of lg().entries){
         if (!e.tag || !LIB[e.tag]) continue;
         const cle = e.tag + '/' + e.pieceRef;
         if (vus.has(cle)) continue;          // une constatation, un facteur

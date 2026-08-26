@@ -234,9 +234,35 @@ leur pièce quelle que soit leur cause. Chaque écart déclare désormais sa nat
 sa bande (arrondi ≤ 1 %, régularisation 2–12 %, omission 10–40 %), vérifiée à l'écran. Les
 écarts dépassant le seuil de remontée passent de 1 à 6 — **constaté, pas visé**.
 
-**Reste devant** : point 2 (versionnement balance/grand livre et rapport d'impact), point 3
-(critères du test des écritures paramétrables et entonnoir), point 1 (répartition proposée puis
-attribution en lot), puis E, B, D et le lot 2 initial.
+**Reste devant** : point 3 (critères du test des écritures paramétrables et entonnoir), point 1
+(répartition proposée puis attribution en lot), puis E, B, D et le lot 2 initial.
+
+## Versionnement de la balance et du grand livre (2026-08-26, point 2)
+
+`prototype/otto-prototype.html` — ADR-043. Nouvelle vue **Versions du fichier**.
+
+Trois versions coexistent : provisoire (10/02), après écritures d'inventaire (04/03), après revue
+de l'expert-comptable (12/03). Le dossier est à la v2 ; la v3 est **reçue et en attente** — on lit
+le rapport d'impact avant de basculer, et la bascule est journalisée.
+
+**Une version est un ajout, jamais une régénération** : grand livre v1 → v2 → v3 =
+1 605 → 1 609 → 1 611 écritures, aucune écriture antérieure modifiée. Chaque écriture de version
+déclare si elle touche la balance, le grand livre ou les deux — l'écriture de situation absente du
+premier fichier est reprise en v2 et l'écart de rapprochement de 25 000 € disparaît de lui-même ;
+un avoir passé à la balance seule en v3 en rouvre un de 6 200 €.
+
+**Le rapport d'impact** répond aux six questions en évaluant réellement le dossier sur les deux
+versions : comptes qui ont bougé · comptes qui franchissent le seuil de remontée · postes qui
+entrent ou sortent du périmètre · sélections périmées avec les éléments entrés et sortis · travaux
+achevés ou revus sur une version antérieure · anomalies résorbées et anomalies apparues. Mesuré :
+v1→v2 les seuils passent de 37 000/27 000/1 800 à 33 000/24 000/1 600 et 32 sélections changent ;
+v2→v3 ils remontent à 34 000/25 000/1 700, **Immobilisations incorporelles entre au périmètre** et
+24 sélections changent.
+
+**« À reconfirmer » est dérivé, pas écrit** : un travail achevé sur une version antérieure repasse
+à « à reconfirmer » avec son motif, sans que le statut stocké soit modifié — revenir à la version
+d'exécution le rend à son état. Un visa posé sur une version antérieure est signalé et remis en
+cause. Chaque papier cite sa version et son empreinte ; l'export les porte en tête.
 
 ## Next actions (post-repo, founder-gated)
 

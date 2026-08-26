@@ -50,6 +50,8 @@ const S = {
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
   travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
+  version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
+  impactDe:null, impactVers:null, balTout:false,
   achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{},
                opinion:'', opinionMotif:'', raFinale:'', clos:null },
   envoi:{ cadence:'hebdo', jour:1, destinataires:[], perimetre:'client' },
@@ -103,7 +105,7 @@ const _statCache = new Map();
 function statsPoste(p){
   if (_statCache.has(p.code)) return _statCache.get(p.code);
   const re = p.re;
-  const ecr = LEDGER.entries.filter(e => e.lines.some(l => re.test(l.compte)));
+  const ecr = lg().entries.filter(e => e.lines.some(l => re.test(l.compte)));
   const mvt = e => e.lines.reduce((a, l) => a + (re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
   const st = {
     n:ecr.length,

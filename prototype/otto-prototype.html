@@ -634,19 +634,20 @@ function buildLedger(){
   return { entries, rows };
 }
 
-const LEDGER = buildLedger();
-const FEC = LEDGER.rows;
+/** Le grand livre d'origine — la version 1. Les versions suivantes s'y
+ *  AJOUTENT (voir ledgerVersion) : il n'est jamais régénéré. */
+let _ledgerBase = null;
+function ledgerBase(){ return _ledgerBase || (_ledgerBase = buildLedger()); }
 
 /** Balance recalculée à partir des écritures — jamais saisie à côté. */
-function balanceFromLedger(){
+function balanceFromLedger(rows){
   const m = new Map();
-  for (const r of FEC){
+  for (const r of rows){
     const a = m.get(r.CompteNum) || { compte:r.CompteNum, lib:r.CompteLib, debit:0, credit:0 };
     a.debit += r.Debit; a.credit += r.Credit; m.set(r.CompteNum, a);
   }
   return [...m.values()].sort((a, b) => a.compte < b.compte ? -1 : 1);
 }
-const GL_BAL = balanceFromLedger();
 
 /* ═══ 4. ÉTAT ══════════════════════════════════════════════════════════════
    Un seul objet d'état. Tout module lit les seuils ici : c'est la source
@@ -703,6 +704,8 @@ const S = {
   procOuverte:null, ctrTout:{}, filtres:{ statut:'', section:'', contact:'', echeance:'', q:'' },
   travaux:{}, filtreTrav:{ phase:'', nature:'', personne:'', statut:'', q:'' }, affErreur:'',
   resolutionsHors:{},
+  version:2,   // version du fichier prise en compte ; la 3 est reçue et en attente
+  impactDe:null, impactVers:null, balTout:false,
   achevement:{ calculs:{}, plaquette:{}, points:{}, concl:{},
                opinion:'', opinionMotif:'', raFinale:'', clos:null },
   envoi:{ cadence:'hebdo', jour:1, destinataires:[], perimetre:'client' },
@@ -756,7 +759,7 @@ const _statCache = new Map();
 function statsPoste(p){
   if (_statCache.has(p.code)) return _statCache.get(p.code);
   const re = p.re;
-  const ecr = LEDGER.entries.filter(e => e.lines.some(l => re.test(l.compte)));
+  const ecr = lg().entries.filter(e => e.lines.some(l => re.test(l.compte)));
   const mvt = e => e.lines.reduce((a, l) => a + (re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
   const st = {
     n:ecr.length,
@@ -953,8 +956,217 @@ function ancienneteRetard(r){
   while (d < S.aujourdhui){ d = addDays(d, 1); if (!isWeekend(d) || S.portail.samediOuvre) n++; }
   return n;
 }
+
+/* ═══ 36. VERSIONS DE LA BALANCE ET DU GRAND LIVRE ═════════════════════════
+   Un mandat reçoit trois à cinq versions du fichier. Le prototype n'en
+   connaissait qu'une, et l'écrasement était donc impensé. Deux règles :
+
+   1. Une version n'est JAMAIS une régénération. C'est le grand livre
+      précédent PLUS les écritures passées depuis. Régénérer redistribuerait
+      les montants et déplacerait les anomalies : deux versions ne seraient
+      plus comparables.
+   2. Une version reçue n'est pas une version prise en compte. On lit d'abord
+      le rapport d'impact, puis on décide. Basculer le grand livre sous une
+      mission en cours sans le dire est ce que fait un tableur, pas un outil
+      d'audit.
+
+   Chaque écriture de version déclare sa CIBLE : elle touche la balance, le
+   grand livre, ou les deux. Une écriture qui ne touche que l'un des deux crée
+   — ou résorbe — un écart de rapprochement, et c'est voulu.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const CIBLE_LIB = {
+  deux:'balance et grand livre',
+  tb:'balance seule — le fichier des écritures est antérieur',
+  gl:'grand livre seul — la balance la portait déjà',
+};
+
+const VERSIONS = [
+  { n:1, date:'2026-02-10', lib:'Balance provisoire',
+    fichiers:'balance_2025_provisoire.csv · 999888777FEC20251231.txt',
+    par:'Delphine Martin', ecritures:[],
+    note:'Premier envoi, avant les écritures d’inventaire. L’écriture de situation figure à la '
+       + 'balance et pas au fichier des écritures : c’est l’écart de rapprochement d’origine.' },
+
+  { n:2, date:'2026-03-04', lib:'Après écritures d’inventaire et de clôture',
+    fichiers:'balance_2025_v2.csv · 999888777FEC20251231_v2.txt',
+    par:'Paul Nguyen',
+    note:'Quatre écritures de clôture. L’écriture de situation est enfin reprise au fichier : '
+       + 'l’écart de rapprochement de la version 1 disparaît de lui-même.',
+    ecritures:[
+      { ref:'OD-V2-001', date:'2025-12-31', cible:'gl',
+        lib:'Écriture de situation — reprise au fichier des écritures',
+        motif:'l’écriture figurait à la balance depuis le premier envoi ; elle est désormais au grand livre',
+        lignes:[['411000', 2500000, 0], ['706000', 0, 2500000]] },
+      { ref:'OD-V2-002', date:'2025-12-31', cible:'deux',
+        lib:'Valorisation définitive des stocks de produits finis',
+        motif:'inventaire physique du 31/12 dépouillé : écart de 4 % sur le stock comptable de produits finis',
+        lignes:[['355000', 1520000, 0], ['713500', 0, 1520000]] },
+      { ref:'OD-V2-003', date:'2025-12-31', cible:'deux',
+        lib:'Dotation complémentaire — durée d’usage des fours révisée',
+        motif:'durée d’usage des fours ramenée de 12 à 10 ans : une annuité de rattrapage sur les installations techniques',
+        lignes:[['681100', 4000000, 0], ['281350', 0, 4000000]] },
+      { ref:'OD-V2-004', date:'2025-12-31', cible:'deux',
+        lib:'Provision pour litige prud’homal',
+        motif:'requête notifiée en février 2026 pour un licenciement de novembre 2025 ; provision à hauteur d’une année de rémunération et des frais',
+        lignes:[['681500', 5500000, 0], ['151000', 0, 5500000]] },
+    ] },
+
+  { n:3, date:'2026-03-12', lib:'Après revue de l’expert-comptable',
+    fichiers:'balance_2025_v3.csv · 999888777FEC20251231_v2.txt',
+    par:'Julien Lefèvre (expert-comptable)',
+    note:'Trois corrections issues de la revue du cabinet. L’avoir n’est passé qu’à la balance : '
+       + 'le fichier des écritures transmis reste celui de la version 2, ce qui rouvre un écart.',
+    ecritures:[
+      { ref:'OD-V3-001', date:'2025-12-31', cible:'deux',
+        lib:'Immobilisation d’une licence logicielle comptabilisée en honoraires',
+        motif:'licence pluriannuelle portée en honoraires de conseil ; elle répond à la définition d’une immobilisation incorporelle',
+        lignes:[['205000', 1800000, 0], ['622600', 0, 1800000]] },
+      { ref:'OD-V3-002', date:'2025-12-31', cible:'tb',
+        lib:'Avoir client de fin d’exercice non comptabilisé',
+        motif:'avoir accordé en décembre et retrouvé lors de la revue ; passé à la balance, le fichier des écritures transmis lui est antérieur',
+        lignes:[['709000', 620000, 0], ['411000', 0, 620000]] },
+      { ref:'OD-V3-003', date:'2025-12-31', cible:'deux',
+        lib:'Extourne d’une facture fournisseur comptabilisée deux fois',
+        motif:'double intégration relevée par le cabinet sur les consommables',
+        lignes:[['401000', 1250000, 0], ['602100', 0, 1250000]] },
+    ] },
+];
+
+/* Libellés des comptes que les versions font apparaître. */
+const COMPTES_NOUVEAUX = {
+  '713500':'Variation des stocks de produits finis',
+  '681500':'Dotations aux provisions pour risques',
+};
+
+function versionsPrises(){ return VERSIONS.filter(v => v.n <= S.version); }
+function versionCourante(){ return VERSIONS.find(v => v.n === S.version) || VERSIONS[0]; }
+function versionsRecues(){ return VERSIONS.filter(v => v.date <= S.aujourdhui); }
+function versionsEnAttente(){ return versionsRecues().filter(v => v.n > S.version); }
+function ecrituresJusqua(n){
+  return VERSIONS.filter(v => v.n > 1 && v.n <= n).flatMap(v => v.ecritures.map(e => ({ ...e, v:v.n })));
+}
+
+/** Empreinte d'un fichier : déterministe, calculée sur ce qu'il contient. */
+function empreinteVersion(n){
+  const src = JSON.stringify([n, tbVersion(n), ledgerVersion(n).entries.length]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < src.length; i++){ h ^= src.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  const g = (x) => x.toString(16).padStart(8, '0');
+  return (g(h) + g(Math.imul(h, 0x85ebca6b) >>> 0) + g(Math.imul(h ^ n, 0xc2b2ae35) >>> 0)).slice(0, 20);
+}
+
+/* ── balance d'une version ────────────────────────────────────────────────
+   La balance de la version n, c'est celle de la version 1 augmentée des
+   écritures des versions suivantes qui la touchent. Rien n'est écrasé.     */
+const _tbCache = new Map();
+function tbVersion(n){
+  if (_tbCache.has(n)) return _tbCache.get(n);
+  const m = new Map(TB_2025.map(r => [r[0], [r[0], r[1], r[2], r[3]]]));
+  for (const e of ecrituresJusqua(n)){
+    if (e.cible === 'gl') continue;
+    for (const [c, d, cr] of e.lignes){
+      const r = m.get(c) || [c, COMPTES_NOUVEAUX[c] || c, 0, 0];
+      r[2] += d; r[3] += cr; m.set(c, r);
+    }
+  }
+  const out = [...m.values()].sort((a, b) => a[0] < b[0] ? -1 : 1);
+  _tbCache.set(n, out);
+  return out;
+}
+/* ── grand livre d'une version ───────────────────────────────────────────── */
+const _lgCache = new Map();
+function ledgerVersion(n){
+  if (_lgCache.has(n)) return _lgCache.get(n);
+  const base = ledgerBase();
+  const sup = ecrituresJusqua(n).filter(e => e.cible !== 'tb').map(e => ({
+    journal:'OD', date:e.date, pieceRef:e.ref, pieceDate:e.date, libelle:e.lib,
+    validDate:VERSIONS.find(v => v.n === e.v).date, saisiePar:VERSIONS.find(v => v.n === e.v).par,
+    num:e.ref, tag:'', version:e.v,
+    lines:e.lignes.map(([c, d, cr]) => ({
+      compte:c, libelleCompte:libelleCompte(c), debit:d, credit:cr, auxNum:'', auxLib:'' })),
+  }));
+  const entries = [...base.entries, ...sup];
+  const rows = [...base.rows];
+  for (const e of sup) e.lines.forEach((l, i) => rows.push({
+    JournalCode:'OD', JournalLib:'Opérations diverses', EcritureNum:e.num, EcritureDate:e.date,
+    CompteNum:l.compte, CompteLib:l.libelleCompte, CompAuxNum:'', CompAuxLib:'',
+    PieceRef:e.pieceRef, PieceDate:e.pieceDate, EcritureLib:e.libelle, Debit:l.debit, Credit:l.credit,
+    EcritureLet:'', DateLet:'', ValidDate:e.validDate, Montantdevise:'', Idevise:'',
+    saisiePar:e.saisiePar, tag:'', ligne:i + 1 }));
+  const r = { entries, rows };
+  _lgCache.set(n, r);
+  return r;
+}
+function libelleCompte(c){
+  const r = TB_2025.find(x => x[0] === c);
+  return r ? r[1] : (COMPTES_NOUVEAUX[c] || c);
+}
+
+/* ── accès à la version active : tout le reste du prototype passe par là ─── */
+function tb(){ return tbVersion(S.version); }
+function lg(){ return ledgerVersion(S.version); }
+function fec(){ return lg().rows; }
+const _balCache = new Map(), _bmCache = new Map(), _glBalCache = new Map();
+function bal(){
+  if (!_balCache.has(S.version)) _balCache.set(S.version, soldes(tb()));
+  return _balCache.get(S.version);
+}
+function bm(){
+  if (!_bmCache.has(S.version)) _bmCache.set(S.version, benchmarks(bal()));
+  return _bmCache.get(S.version);
+}
+function glBal(){
+  if (!_glBalCache.has(S.version)) _glBalCache.set(S.version, balanceFromLedger(fec()));
+  return _glBalCache.get(S.version);
+}
+/** Bascule de version : elle vide les caches dérivés, jamais l'état saisi. */
+function prendreEnCompte(n){
+  const av = S.version;
+  S.version = n;
+  viderCachesDerives();
+  logEvent('version prise en compte', 'version ' + n + ' — ' + VERSIONS.find(v => v.n === n).lib,
+           'version précédente : ' + av + ' · empreinte ' + empreinteVersion(n));
+}
+
+/** Tout ce qui se DÉRIVE du fichier est recalculé ; rien de ce qui a été SAISI
+ *  n'est touché. C'est la frontière que la bascule de version ne franchit pas. */
+function viderCachesDerives(){
+  _postesCache = null;
+  _echProcCache.clear(); _popCache.clear(); _regleCache.clear(); _statCache.clear();
+  _regCache = null; _regCle = '';
+  _travCache.cle = ''; _travCache.v = null;
+  _depIdx.cle = ''; _depIdx.m = null;
+  _refSeq = {};
+}
+
+/* ── ce que chaque papier cite : la version sur laquelle il a été exécuté ── */
+/** Signature de la sélection d'une procédure : si elle change, l'échantillon
+ *  n'est plus le même et le papier ne porte plus sur la même population. */
+function empreinteSelection(p, pr){
+  const e = echantillonProc(p, pr);
+  if (!e) return '';
+  return e.retenus.length + ':' + e.retenus.map(x => x.cle).join('|');
+}
+/** Stampe la version d'exécution au premier travail réellement saisi. */
+function marquerExecution(p, pr){
+  const st = proc(p.code, pr.code);
+  if (st.execVersion === undefined || st.execVersion === null){
+    st.execVersion = S.version;
+    st.execEmpreinte = empreinteSelection(p, pr);
+  }
+}
+/** Un papier est périmé si la version a changé ET que sa population a bougé,
+ *  ou s'il a été exécuté sur une version antérieure à celle du dossier. */
+function peremption(p, pr){
+  const st = proc(p.code, pr.code);
+  if (st.execVersion === undefined || st.execVersion === null) return null;
+  if (st.execVersion === S.version) return null;
+  const emp = empreinteSelection(p, pr);
+  return { de:st.execVersion, a:S.version, populationChangee:emp !== st.execEmpreinte };
+}
 function soldes(tb){ const m = new Map(); for (const [c, l, d, cr] of tb) m.set(c, { lib:l, solde:d - cr, debit:d, credit:cr }); return m; }
-const B25 = soldes(TB_2025), B24 = soldes(TB_2024);
+const B24 = soldes(TB_2024);
 function sumWhere(bal, re){ let s = 0; for (const [c, v] of bal) if (re.test(c)) s += v.solde; return s; }
 
 /** Références possibles pour la matérialité, toutes calculées depuis la balance.
@@ -979,14 +1191,14 @@ function benchmarks(bal){
     charges:{ code:'charges', lib:'Total des charges', val:charges, defaut:1 },
   };
 }
-const BM25 = benchmarks(B25), BM24 = benchmarks(B24);
+const BM24 = benchmarks(B24);
 
 /** Arrondi prudent vers le bas au pas indiqué (pratique de place). */
 function arrondiBas(cents, pas){ return Math.floor(cents / pas) * pas; }
 
 /** Les trois seuils. Recalculés à chaque mouvement de curseur. */
 function seuils(){
-  const b = BM25[S.benchmark];
+  const b = bm()[S.benchmark];
   const brut = Math.round(b.val * S.pctM / 100);
   const M  = arrondiBas(brut, 100000);            // au millier d'euros inférieur
   const PM = arrondiBas(Math.round(M * S.pctPM / 100), 100000);
@@ -1013,14 +1225,15 @@ const POSTES = [
   { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/, masse:'resultat' },
   { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/, masse:'resultat' },
   { code:'FINANCIER',lib:'Charges financières',           re:/^66/, masse:'resultat' },
-  { code:'AMORT',    lib:'Dotations aux amortissements',  re:/^68/, masse:'resultat', aussi:'bilan' },
+  { code:'AMORT',    lib:'Dotations aux amortissements et provisions', re:/^68/, masse:'resultat', aussi:'bilan' },
 ];
 let _postesCache = null;
 function postesCalcules(){
   if (_postesCache) return _postesCache;
+  const b = bal();
   _postesCache = POSTES.map(p => {
-    const comptes = TB_2025.filter(r => p.re.test(r[0])).map(r => r[0]);
-    const n = comptes.reduce((s, c) => s + B25.get(c).solde, 0);
+    const comptes = tb().filter(r => p.re.test(r[0])).map(r => r[0]);
+    const n = comptes.reduce((s, c) => s + b.get(c).solde, 0);
     const n1 = comptes.reduce((s, c) => s + (B24.get(c) ? B24.get(c).solde : 0), 0);
     return { ...p, comptes, solde:n, soldeN1:n1 };
   }).filter(p => p.comptes.length);
@@ -1059,7 +1272,8 @@ function controlesFec(){
   const tot = { d:0, c:0 };
   let deuxColonnes = 0, horsExercice = 0, compteInvalide = 0, validAvant = 0, auxIncomplet = 0, pieceHors = 0;
   const parEcriture = new Map();
-  for (const r of FEC){
+  const rows = fec();
+  for (const r of rows){
     tot.d += r.Debit; tot.c += r.Credit;
     if ((r.Debit > 0 && r.Credit > 0) || (r.Debit === 0 && r.Credit === 0)) deuxColonnes++;
     if (r.EcritureDate < '2025-01-01' || r.EcritureDate > '2025-12-31') horsExercice++;
@@ -1072,17 +1286,20 @@ function controlesFec(){
   }
   let ecrituresDesequilibrees = 0;
   for (const [, v] of parEcriture) if (v.d !== v.c) ecrituresDesequilibrees++;
-  const champsManquants = CHAMPS_FEC.filter(f => FEC.some(r => r[f] === undefined));
+  const champsManquants = CHAMPS_FEC.filter(f => rows.some(r => r[f] === undefined));
   return { tot, deuxColonnes, horsExercice, compteInvalide, validAvant, auxIncomplet, pieceHors,
            ecrituresDesequilibrees, nbEcritures:parEcriture.size, champsManquants };
 }
 
 /** Rapprochement balance client ↔ grand livre, compte par compte. */
-function rapprochement(){
-  const gl = new Map(GL_BAL.map(r => [r.compte, r]));
-  const comptes = [...new Set([...TB_2025.map(r => r[0]), ...GL_BAL.map(r => r.compte)])].sort();
+function rapprochement(n){
+  const v = n === undefined ? S.version : n;
+  const tbv = tbVersion(v), balv = v === S.version ? bal() : soldes(tbv);
+  const glb = v === S.version ? glBal() : balanceFromLedger(ledgerVersion(v).rows);
+  const gl = new Map(glb.map(r => [r.compte, r]));
+  const comptes = [...new Set([...tbv.map(r => r[0]), ...glb.map(r => r.compte)])].sort();
   return comptes.map(c => {
-    const t = B25.get(c), g = gl.get(c);
+    const t = balv.get(c), g = gl.get(c);
     const sTB = t ? t.solde : 0, sGL = g ? g.debit - g.credit : 0;
     return { compte:c, lib:(t ? t.lib : g.lib), sTB, sGL, ecart:sTB - sGL,
              presentTB:!!t, presentGL:!!g };
@@ -1091,11 +1308,12 @@ function rapprochement(){
 function arSeuilMontant(){ return S.arMontant === null ? seuils().PM : S.arMontant; }
 
 function revueAnalytique(){
-  const comptes = [...new Set([...TB_2025.map(r => r[0]), ...TB_2024.map(r => r[0])])].sort();
+  const b = bal();
+  const comptes = [...new Set([...tb().map(r => r[0]), ...TB_2024.map(r => r[0])])].sort();
   return comptes.map(c => {
-    const n = B25.get(c) ? B25.get(c).solde : 0;
+    const n = b.get(c) ? b.get(c).solde : 0;
     const n1 = B24.get(c) ? B24.get(c).solde : 0;
-    const lib = (B25.get(c) || B24.get(c)).lib;
+    const lib = (b.get(c) || B24.get(c)).lib;
     const d = n - n1;
     const p = n1 === 0 ? (n === 0 ? 0 : null) : d / Math.abs(n1);   // null = pas de base N-1
     const parMontant = Math.abs(d) >= arSeuilMontant();
@@ -1137,14 +1355,14 @@ function critereJE(seuilGros){
 const LISTING_AVOCATS = [{ cabinet:'Cabinet Vasseur & Associés', contact:'contentieux@vasseur-avocats.example' }];
 
 function exhaustiviteBanques(){
-  const enCompta = GL_BAL.filter(r => /^(512|53)/.test(r.compte))
+  const enCompta = glBal().filter(r => /^(512|53)/.test(r.compte))
     .map(r => ({ compte:r.compte, lib:r.lib, solde:r.debit - r.credit }));
   const declares = new Set(LISTING_BANQUES.map(b => b.compte));
   return enCompta.map(c => ({ ...c, declare:declares.has(c.compte) }));
 }
 function exhaustiviteAvocats(){
   const parTiers = new Map();
-  for (const r of FEC) if (/^622/.test(r.CompteNum) && r.Debit > 0){
+  for (const r of fec()) if (/^622/.test(r.CompteNum) && r.Debit > 0){
     parTiers.set(r.CompAuxLib || '(sans tiers)', (parTiers.get(r.CompAuxLib || '(sans tiers)') || 0) + r.Debit);
   }
   const declares = new Set(LISTING_AVOCATS.map(a => a.cabinet));
@@ -1436,7 +1654,7 @@ function population(p, pr){
   let items;
   if (pr.tiers){
     const m = new Map();
-    for (const e of LEDGER.entries){
+    for (const e of lg().entries){
       const aux = e.lines.map(l => l.auxLib).find(Boolean);
       if (!aux || !e.lines.some(l => p.re.test(l.compte))) continue;
       const mv = e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0);
@@ -1447,7 +1665,7 @@ function population(p, pr){
     items = [...m.values()].sort((a, b) => b.montant - a.montant);
   } else {
     const min = d.min ? d.min() : 0;
-    items = LEDGER.entries
+    items = lg().entries
       .filter(e => e.lines.some(l => p.re.test(l.compte)))
       .filter(d.f)
       .map(e => ({ cle:e.num, e, montant:e.lines.reduce((a, l) => a + (p.re.test(l.compte) ? Math.abs(l.debit - l.credit) : 0), 0) }))
@@ -1745,7 +1963,7 @@ function ecartsChiffresProc(p, pr){
  *  découle de la cause et non d'un réglage. */
 function bandesEcarts(){
   return Object.entries(ANOMALIES_PIECES).filter(([, a]) => a.t === 'montant').map(([ref, a]) => {
-    const e = LEDGER.entries.find(x => x.pieceRef === ref);
+    const e = lg().entries.find(x => x.pieceRef === ref);
     const piece = e ? Math.max(...e.lines.map(l => Math.max(l.debit, l.credit))) : 0;
     const part = piece ? -a.delta / piece : null;
     const b = NATURES_ECART[a.n];
@@ -1766,7 +1984,7 @@ function tauxConstates(){
 }
 function vueJeuDonnees(){
   const tx = tauxConstates(), faux = tx.filter(t => !t.ok);
-  const ent = LEDGER.entries;
+  const ent = lg().entries;
   return entete('Jeu de données', 'synthétique et déterministe — ce qu’il contient, et pourquoi') +
     blk('Grand livre', ent.length + ' écritures',
       `<div class="grid3">
@@ -1980,7 +2198,7 @@ function resolutionAcquise(c){ return resolutionAcquiseR(resolLue(c), constateDe
 function ecritureExiste(ref){
   const v = String(ref || '').trim().toUpperCase();
   if (!v) return null;
-  return LEDGER.entries.find(e => e.num.toUpperCase() === v || String(e.pieceRef).toUpperCase() === v) || null;
+  return lg().entries.find(e => e.num.toUpperCase() === v || String(e.pieceRef).toUpperCase() === v) || null;
 }
 
 /* ── 4. écart constaté, expliqué, résiduel ────────────────────────────────
@@ -2148,10 +2366,10 @@ const PAPIERS_N1 = {
 function blocComptes(p){
   const s = seuils(), st = sec(p.code);
   const rows = p.comptes.map(c => {
-    const n = B25.get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
+    const n = bal().get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
     const pr = n1 === 0 ? null : d / Math.abs(n1);
     const propose = Math.abs(n) < s.CTT ? 'ns' : 'sig';
-    return { c, lib:B25.get(c).lib, n, n1, d, pr, propose, retenu:st.ns[c] || propose,
+    return { c, lib:bal().get(c).lib, n, n1, d, pr, propose, retenu:st.ns[c] || propose,
              rCTT:Math.abs(n) / s.CTT, rPM:Math.abs(n) / s.PM };
   });
   const tot = rows.reduce((a, r) => a + r.n, 0), totN1 = rows.reduce((a, r) => a + r.n1, 0);
@@ -2398,8 +2616,21 @@ function blocProcedure(p, pr){
     nt:i % Math.max(1, cat ? cat.reduce((a, d) => a + d.champs.length, 0) : 1) === 0
        ? boutonNote(p.code, 'papier', c.ligne.cle, 'Papier ' + procRef(p, pr) + ' — ' + c.ligne.cle) : '',
   }));
+  const st = proc(p.code, pr.code), per = peremption(p, pr);
   const papier = `
     <h3>Papier de travail <span class="mono">${esc(procRef(p, pr))}</span></h3>
+    <div class="kv">
+      <span class="k">Version du fichier</span><span class="v">v${S.version} — ${esc(versionCourante().lib)}</span>
+      <span class="k">Empreinte</span><span class="v">${esc(empreinteVersion(S.version))}</span>
+      <span class="k">Papier exécuté sur</span><span class="v">${st.execVersion === undefined || st.execVersion === null
+        ? '<span class="smallcaps" style="font-family:var(--sans)">rien de saisi pour l’instant</span>'
+        : 'v' + st.execVersion}</span>
+    </div>
+    ${per ? `<div class="callout bad"><b>Ce papier a été exécuté sur la version ${per.de}, le dossier est à la version ${per.a}.</b>
+      ${per.populationChangee
+        ? 'La population de la sélection a changé : les éléments testés ne sont plus ceux que la procédure retiendrait aujourd’hui.'
+        : 'La sélection est identique ; seule la version du fichier diffère.'}
+      Voir le <a data-vue="plan.versions" style="cursor:pointer">rapport d’impact</a>.</div>` : ''}
     <div class="row">
       <span class="pill ${recus === wp.length ? '' : 'bad'}">${recus}/${wp.length} éléments avec pièce</span>
       ${ETATS_LIGNE.map(e => `<span class="pill ${e.id === 'ecart' && nEtat[e.id] ? 'bad'
@@ -2459,7 +2690,13 @@ function blocFinTesting(p, pr){
   const prep = st.preparateur ? USERS[st.preparateur] : null;
   const rev = st.reviseur ? USERS[st.reviseur] : null;
   const lien = `<button class="btn mini sec" data-gotrav="trav.programme">ouvrir le programme de travail</button>`;
-  if (st.statut === 'revu') return `<div class="callout"><b>Travail revu</b> par ${esc(USERS[st.revu.par].nom)} le ${horo(st.revu.t)}.</div>`;
+  const t0 = travailDe(code), rc = t0 ? aReconfirmer({ ...t0, ...st }) : null;
+  if (rc) return `<div class="callout bad"><b>À reconfirmer.</b> Ce travail est ${esc(STATUT_TRAVAIL[st.statut])},
+      mais il a été exécuté sur la version ${rc.de} du fichier et le dossier est à la version ${rc.a} —
+      ${esc(rc.motif)}. Il n’est pas conservé en silence.
+      <button class="btn" data-recon="${code}">reconfirmer sur la version ${rc.a} — engage ${esc(USERS[S.moi].nom)}</button></div>`;
+  if (st.statut === 'revu') return `<div class="callout"><b>Travail revu</b> par ${esc(USERS[st.revu.par].nom)} le ${horo(st.revu.t)}
+      <span class="smallcaps">sur la version ${proc(p.code, pr.code).execVersion || S.version}</span>.</div>`;
   if (st.statut === 'acheve') return `<div class="callout">
       <b>Testing déclaré terminé</b> par ${esc(USERS[st.acheve.par].nom)} le ${horo(st.acheve.t)} —
       ${rev ? 'en attente de la revue de ' + esc(rev.nom) : 'aucun réviseur affecté'}.
@@ -2532,7 +2769,7 @@ function obstaclesVisa(p){
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
   for (const x of obstaclesTravaux(p.code)) o.push(x);
-  let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0;
+  let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){
     if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
     const wp = wpProc(p, pr) || [];
@@ -2542,12 +2779,14 @@ function obstaclesVisa(p){
     if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++;
     const t = trav('SEC-' + p.code + '-' + pr.code);
     if (t.statut !== 'acheve' && t.statut !== 'revu') nonAcheves++;
+    if (peremption(p, pr)) perimes++;
   }
   if (manq) o.push(`${manq} élément(s) sans pièce justificative`);
   if (nonSaisis) o.push(`${nonSaisis} contrôle(s) non exécuté(s) alors que la pièce est reçue`);
   if (ecarts) o.push(`${ecarts} écart(s) sans résolution probante`);
   if (sansConcl) o.push(`${sansConcl} procédure(s) sans conclusion`);
   if (nonAcheves) o.push(`${nonAcheves} procédure(s) dont le testing n’est pas déclaré terminé`);
+  if (perimes) o.push(`${perimes} papier(s) exécuté(s) sur une version antérieure du fichier — à reconfirmer`);
   const sansMotif = p.comptes.filter(c => st.ns[c] && !(st.nsMotif[c] || '').trim());
   if (sansMotif.length) o.push(`statut forcé sans motif sur ${sansMotif.join(', ')}`);
   const nivSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
@@ -2612,6 +2851,11 @@ function vueFsli(code){
       <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
     </div>
     ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
+    ${(() => { const vp = visaPerime(p.code); return vp ? `<div class="callout bad">
+      <b>Visa posé sur la version ${vp.de} du fichier ; le dossier est à la version ${vp.a}.</b>
+      Le visa n’est pas effacé — il est remis en cause : il engage ${esc(USERS[sec(p.code).visa.par].nom)}
+      sur des travaux qui ne portent plus sur le même fichier. Reconfirmez les travaux touchés, puis le visa.
+      <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>` : ''; })()}
     ${bloc(1, 'Comptes de la section', p.code + '-CPT-01', blocComptes(p))}
     ${bloc(2, 'Évaluation du risque par assertion', p.code + '-RSQ-01', blocRisque(p))}
     ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocSuiviSection(p))}
@@ -2970,7 +3214,7 @@ function ecartsHorsPapier(){
       lib:'Écriture de situation non reprise au fichier des écritures — compte ' + r.compte,
       constate:r.ecart, section:null,
       explRecue:'Écriture de situation passée après la transmission du fichier des écritures.' });
-  const parTag = t => LEDGER.entries.filter(e => e.tag === t);
+  const parTag = t => lg().entries.filter(e => e.tag === t);
   const dupe = parTag('A1');
   if (dupe.length === 2) out.push({ ref:'je|' + dupe[1].num, cle:dupe[1].num, src:'Test des écritures',
     objet:'je', vue:'plan.je', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
@@ -3091,7 +3335,7 @@ function vueRappro(){
   return entete('Import et rapprochement balance ↔ grand livre', 'point d’entrée du dossier — toutes les sections en dépendent') +
     cite('Upload de la TB à l’année auditée · Upload du Grand livre (transactions de l’année auditée) · Fonction réconciliation grand livre /TB') +
     `<div class="grid2">
-      ${blk('Contrôle de forme du fichier des écritures', LEDGER.entries.length + ' écritures',
+      ${blk('Contrôle de forme du fichier des écritures', lg().entries.length + ' écritures',
         table([{k:'t',t:'Contrôle',cls:'wrapcell'},{k:'s',t:'Résultat'},{k:'d',t:'Détail',cls:'wrapcell'}],
               ctrls.map(x => ({ t:esc(x.t), s:x.s, d:esc(x.d) }))))}
       ${blk('Rapprochement compte par compte', ecarts.length + ' écart(s)',
@@ -3112,7 +3356,7 @@ function vueRappro(){
 
 function vueMaterialite(){
   const s = seuils();
-  const rows = Object.values(BM25).map(b => ({
+  const rows = Object.values(bm()).map(b => ({
     r:esc(b.lib) + (b.code === S.benchmark ? ' <span class="pill">retenue</span>' : ''),
     m:eur(b.val), u:b.defaut + NBSP + '%', a:b.code === S.benchmark ? pct(S.pctM / 100, 1) : '—',
     s:b.code === S.benchmark ? eur(s.M) : '—', p:b.code === S.benchmark ? eur(s.PM) : '—',
@@ -3163,7 +3407,7 @@ function vueScoping(){
 function vueJE(){
   const s = seuils(), C = critereJE(s.PM);
   const actifs = Object.keys(C).filter(k => S.jeCrit[k]);
-  const pop = LEDGER.entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
+  const pop = lg().entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
   const sel = pop.filter(e => actifs.some(k => C[k].f(e)));
   const rows = sel.slice(0, 200).map(e => ({
     num:`<span class="mono">${e.num}</span>`, d:`<span class="mono">${frDate(e.date)}</span>`, j:e.journal,
@@ -3178,7 +3422,7 @@ function vueJE(){
         <label class="chk"><input type="checkbox" data-je="${k}" ${S.jeCrit[k] ? 'checked' : ''}>
           <span>${esc(v.lib)}</span><span class="cnt">${pop.filter(v.f).length}</span></label>`).join('')}
         <label class="chk"><input type="checkbox" id="je-an" ${S.jeSansAN ? 'checked' : ''}>
-          <span>exclure les à-nouveaux</span><span class="cnt">${LEDGER.entries.filter(e => e.journal === 'AN').length}</span></label>
+          <span>exclure les à-nouveaux</span><span class="cnt">${lg().entries.filter(e => e.journal === 'AN').length}</span></label>
       </div>
       <div class="callout"><b>${sel.length} écriture(s) retenue(s)</b> sur ${pop.length}
         (${pct(sel.length / pop.length, 1)} de la population) — cumul débit
@@ -3500,7 +3744,7 @@ const REGLES_FACTEUR = [
       for (const p of postesCalcules()){
         const masse = statsPoste(p).masse;
         if (!masse) continue;
-        const ecr = LEDGER.entries.filter(e => e.lines.some(l => p.re.test(l.compte))
+        const ecr = lg().entries.filter(e => e.lines.some(l => p.re.test(l.compte))
           && /direction/.test(e.saisiePar) && marqueurs.some(m => m.f(e)));
         if (!ecr.length) continue;
         const m = ecr.reduce((a, e) => a + (e.lines[0].debit || e.lines[0].credit), 0);
@@ -3535,7 +3779,7 @@ const REGLES_FACTEUR = [
     nature:'quantitatif',
     calc(seuil){
       const out = [];
-      for (const e of LEDGER.entries){
+      for (const e of lg().entries){
         if (!e.pieceDate) continue;
         const jours = e.pieceDate > '2025-12-31'
           ? Math.round((Date.parse(e.pieceDate) - Date.parse('2025-12-31')) / 86400000)
@@ -3567,7 +3811,7 @@ const REGLES_FACTEUR = [
                     A5:['séparation des exercices', 'separation', 'Produit de 2026 rattaché à 2025'],
                     A6:['réalité', 'realite', 'Écriture manuelle de direction en fin d’exercice'] };
       const out = [], vus = new Set();
-      for (const e of LEDGER.entries){
+      for (const e of lg().entries){
         if (!e.tag || !LIB[e.tag]) continue;
         const cle = e.tag + '/' + e.pieceRef;
         if (vus.has(cle)) continue;          // une constatation, un facteur
@@ -3869,7 +4113,7 @@ function ratios(){
           produits = -q(b, /^7/), charges = q(b, /^6/), fin = q(b, /^66/);
     return { ca, achats, perso, stocks, clients, fourn, resultat:produits - charges, fin };
   };
-  const a = f(B25), b = f(B24);
+  const a = f(bal()), b = f(B24);
   const L = [
     { lib:'Marge sur achats consommés', u:'%', formule:'(chiffre d’affaires − achats consommés) ÷ chiffre d’affaires',
       n:a.ca ? (a.ca - a.achats) / a.ca : 0, n1:b.ca ? (b.ca - b.achats) / b.ca : 0, type:'pct' },
@@ -3943,7 +4187,7 @@ const DELAI_ASSEMBLAGE = 60;      // jours — C. com., art. D. 821-186, III et 
 const RETENTION_ANS = 6;          // ans  — C. com., art. R. 820-42
 
 /* ── pointage des états financiers : trois natures de rapprochement ──────── */
-function soldeDe(comptes){ return comptes.reduce((a, c) => a + (B25.get(c) ? B25.get(c).solde : 0), 0); }
+function soldeDe(comptes){ const b = bal(); return comptes.reduce((a, c) => a + (b.get(c) ? b.get(c).solde : 0), 0); }
 const PLAQUETTE = [
   { ref:'B-01', lib:'Capital social', nature:'solde', comptes:['101000'], ecart:0 },
   { ref:'B-02', lib:'Réserve légale', nature:'solde', comptes:['106100'], ecart:0 },
@@ -4362,7 +4606,19 @@ function lignesExport(kind, requetes){
 }
 /** Feuille de synthèse : avancement par section, et qui doit quoi. */
 function feuilleSynthese(kind){
-  const l = [['Section', 'Requêtes', 'Éléments', 'En attente', 'Avancement', 'Retard max (j ouvrés)']];
+  /* Un export sorti du dossier doit dire de QUEL fichier il parle : sans la
+     version et son empreinte, deux classeurs identiques d'apparence peuvent
+     porter des chiffres différents. */
+  const v = versionCourante();
+  const l = [
+    ['Version du fichier', 'v' + v.n + ' — ' + v.lib],
+    ['Reçue le', frDate(v.date) + ' de ' + v.par],
+    ['Fichiers', v.fichiers],
+    ['Empreinte', empreinteVersion(v.n)],
+    ['Seuils au moment de l’export', 'signification ' + eur0(seuils().M)
+      + ' · planification ' + eur0(seuils().PM) + ' · remontée ' + eur0(seuils().CTT)],
+    [],
+    ['Section', 'Requêtes', 'Éléments', 'En attente', 'Avancement', 'Retard max (j ouvrés)']];
   const sections = [...new Set(S.requetes.map(r => r.section))];
   for (const c of sections){
     const rs = requetesDe(c);
@@ -4640,6 +4896,8 @@ function changerStatut(code, statut){
 function obstaclesTravaux(code){
   const o = [];
   const l = travauxDe(code);
+  const rec = l.filter(t => aReconfirmer(t));
+  if (rec.length) o.push(`${rec.length} travail/travaux à reconfirmer sur la version courante du fichier`);
   const sansPrep = l.filter(t => !t.preparateur), sansRev = l.filter(t => !t.reviseur);
   if (sansPrep.length) o.push(`${sansPrep.length} travail/travaux sans préparateur affecté`);
   if (sansRev.length) o.push(`${sansRev.length} travail/travaux sans réviseur affecté`);
@@ -4659,6 +4917,10 @@ function ligneAffectation(t){
 }
 function boutonsStatut(t){
   const st = trav(t.code);
+  const rc = aReconfirmer({ ...t, ...st });
+  if (rc) return `<span class="pill bad">à reconfirmer</span>
+    <div class="smallcaps">${esc(rc.motif)}</div>
+    <button class="btn mini" data-recon="${t.code}">reconfirmer</button>`;
   if (st.statut === 'revu') return `<span class="pill">revu par ${esc(USERS[st.revu.par].nom)}</span>`;
   const b = [];
   if (st.statut !== 'acheve' && st.preparateur === S.moi) b.push(`<button class="btn mini" data-tstat="${t.code}|acheve">achever</button>`);
@@ -4871,6 +5133,398 @@ function vueCI(){
       primaire depuis cet environnement : le point est porté <span class="tag abs">UNVERIFIED</span> et aucune
       constante ne sera écrite tant qu’il ne l’est pas.</p>`);
 }
+
+/* ═══ 37. RAPPORT D'IMPACT D'UNE VERSION ═══════════════════════════════════
+   Afficher trois colonnes de balance ne coûte rien et ne dit rien. La
+   question d'un chef de mission qui reçoit un nouveau fichier est : QU'EST-CE
+   QUE ÇA CASSE ? Six réponses, toutes calculées en évaluant réellement le
+   dossier sur les deux versions, jamais annoncées.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Évalue une fonction comme si la version n était prise en compte, puis
+ *  rétablit l'état. Les caches dérivés sont vidés de part et d'autre : sans
+ *  cela le rapport comparerait une version aux nombres de l'autre. */
+function auVersion(n, fn){
+  const av = S.version;
+  if (av === n) return fn();
+  S.version = n; viderCachesDerives();
+  let r;
+  try { r = fn(); } finally { S.version = av; viderCachesDerives(); }
+  return r;
+}
+
+/** Photographie de ce qui dépend du fichier, à une version donnée. */
+function photo(n){
+  return auVersion(n, () => {
+    const s = seuils();
+    const comptes = new Map(tb().map(r => [r[0], { lib:r[1], solde:r[2] - r[3] }]));
+    const postes = postesCalcules().map(p => ({ code:p.code, lib:p.lib, solde:p.solde }));
+    const perim = postesEnPerimetre().map(p => p.code);
+    const ech = {};
+    for (const p of postesEnPerimetre()) for (const pr of proceduresRequises(p)){
+      if (!pr.ech) continue;
+      const e = echantillonProc(p, pr);
+      if (e) ech[p.code + '/' + pr.code] = { n:e.retenus.length, masse:e.pop.masse,
+        pop:e.pop.items.length, cles:e.retenus.map(x => x.cle).join('|') };
+    }
+    const rap = rapprochement(n).filter(r => r.ecart !== 0)
+      .map(r => ({ compte:r.compte, lib:r.lib, ecart:r.ecart }));
+    return { n, s, comptes, postes, perim, ech, rap,
+             ecritures:ledgerVersion(n).entries.length, empreinte:empreinteVersion(n) };
+  });
+}
+
+/* Le rapport dépend de la version ET de l'état saisi (travaux achevés, version
+   d'exécution des papiers, réglage des seuils). La clé du cache le dit, plutôt
+   que de compter sur un vidage posé au bon endroit. */
+const _impCache = new Map();
+function cleImpact(a, b){
+  const t = travaux().filter(x => x.statut === 'acheve' || x.statut === 'revu')
+    .map(x => x.code + ':' + (x.poste && x.proc ? proc(x.poste, x.proc).execVersion : '')).join(',');
+  return [a, b, S.benchmark, S.pctM, S.pctPM, S.pctCTT,
+          Object.keys(S.scopingOverride).join('|'), t].join('§');
+}
+function impact(a, b){
+  const cle = cleImpact(a, b);
+  if (_impCache.has(cle)) return _impCache.get(cle);
+  if (_impCache.size > 40) _impCache.clear();
+  const A = photo(a), B = photo(b);
+
+  /* 1. quels comptes ont bougé, et de combien */
+  const tous = [...new Set([...A.comptes.keys(), ...B.comptes.keys()])].sort();
+  const mouvements = tous.map(c => {
+    const x = A.comptes.get(c), y = B.comptes.get(c);
+    return { compte:c, lib:(y || x).lib, av:x ? x.solde : null, ap:y ? y.solde : null,
+             delta:(y ? y.solde : 0) - (x ? x.solde : 0),
+             nouveau:!x && !!y, disparu:!!x && !y };
+  }).filter(m => m.delta !== 0 || m.nouveau || m.disparu);
+
+  /* 2. lesquels franchissent un seuil — dans un sens ou dans l'autre.
+        Le seuil BOUGE aussi : un compte peut franchir sans avoir bougé, et
+        c'est précisément le cas qu'on ne voit pas à l'œil nu. */
+  const franchit = [];
+  for (const c of tous){
+    const x = A.comptes.get(c), y = B.comptes.get(c);
+    const sa = x ? Math.abs(x.solde) : 0, sb = y ? Math.abs(y.solde) : 0;
+    const da = sa >= A.s.CTT, db = sb >= B.s.CTT;
+    if (da !== db) franchit.push({ compte:c, lib:(y || x).lib, seuil:'remontée',
+      seuilAv:A.s.CTT, seuilAp:B.s.CTT, av:x ? x.solde : 0, ap:y ? y.solde : 0,
+      sens:db ? 'entre' : 'sort', bouge:(x ? x.solde : 0) !== (y ? y.solde : 0) });
+  }
+
+  /* 3. quels postes entrent ou sortent du périmètre */
+  const perimetre = [];
+  for (const p of B.postes){
+    const dedans = B.perim.includes(p.code), avant = A.perim.includes(p.code);
+    if (dedans !== avant){
+      const q = A.postes.find(x => x.code === p.code);
+      perimetre.push({ code:p.code, lib:p.lib, sens:dedans ? 'entre' : 'sort',
+        av:q ? q.solde : 0, ap:p.solde, pmAv:A.s.PM, pmAp:B.s.PM,
+        bouge:!q || q.solde !== p.solde });
+    }
+  }
+
+  /* 4. quels échantillons deviennent périmés parce que leur population a changé */
+  const echantillons = [];
+  for (const k of new Set([...Object.keys(A.ech), ...Object.keys(B.ech)])){
+    const x = A.ech[k], y = B.ech[k];
+    if (!x && y){ echantillons.push({ k, cause:'procédure nouvelle', y }); continue; }
+    if (x && !y){ echantillons.push({ k, cause:'procédure disparue', x }); continue; }
+    if (x.cles !== y.cles){
+      const ax = new Set(x.cles.split('|')), ay = new Set(y.cles.split('|'));
+      echantillons.push({ k, x, y,
+        cause:'sélection modifiée',
+        entres:[...ay].filter(v => !ax.has(v)).length,
+        sortis:[...ax].filter(v => !ay.has(v)).length });
+    } else if (x.pop !== y.pop || x.masse !== y.masse){
+      echantillons.push({ k, x, y, cause:'population modifiée, sélection inchangée', entres:0, sortis:0 });
+    }
+  }
+
+  /* 5. quels travaux achevés ou revus reposent sur une version périmée */
+  const travauxTouches = [];
+  for (const t of travaux()){
+    if (t.statut !== 'acheve' && t.statut !== 'revu') continue;
+    const st = t.proc && t.poste ? proc(t.poste, t.proc) : null;
+    const ver = st && st.execVersion !== undefined && st.execVersion !== null ? st.execVersion : a;
+    if (ver >= b) continue;
+    const k = t.poste + '/' + t.proc;
+    const e = echantillons.find(x => x.k === k);
+    travauxTouches.push({ code:t.code, intitule:t.intitule, posteLib:t.posteLib, statut:t.statut,
+      version:ver, cause:e ? e.cause : 'version du fichier plus récente' });
+  }
+
+  /* 6. quelles anomalies levées sur une version antérieure sont déjà corrigées */
+  const corrigees = A.rap.filter(x => !B.rap.some(y => y.compte === x.compte))
+    .map(x => ({ ...x, quoi:'écart de rapprochement' }));
+  const nouvelles = B.rap.filter(x => !A.rap.some(y => y.compte === x.compte))
+    .map(x => ({ ...x, quoi:'écart de rapprochement' }));
+
+  const r = { a, b, A, B, mouvements, franchit, perimetre, echantillons, travauxTouches,
+              corrigees, nouvelles,
+              seuilsBougent:A.s.M !== B.s.M || A.s.PM !== B.s.PM || A.s.CTT !== B.s.CTT };
+  _impCache.set(cle, r);
+  return r;
+}
+
+/* ── travaux à reconfirmer : DÉRIVÉ, jamais écrit dans le statut ──────────
+   Un travail achevé sur une version antérieure n'est pas « encore achevé » :
+   il est à reconfirmer, et le motif est celui du rapport d'impact. Le statut
+   stocké n'est pas modifié — si l'on revient à la version d'exécution, le
+   travail redevient achevé de lui-même, sans qu'aucune écriture d'état n'ait
+   eu lieu. */
+function aReconfirmer(t){
+  if (t.statut !== 'acheve' && t.statut !== 'revu') return null;
+  if (!t.poste || !t.proc) return null;
+  const st = proc(t.poste, t.proc);
+  if (st.execVersion === undefined || st.execVersion === null) return null;
+  if (st.execVersion >= S.version) return null;
+  if (st.reconfirme === S.version) return null;
+  const p = postesCalcules().find(x => x.code === t.poste);
+  const pr = PROCEDURES.find(x => x.code === t.proc);
+  const per = p && pr ? peremption(p, pr) : null;
+  return { de:st.execVersion, a:S.version,
+    motif:per && per.populationChangee
+      ? 'la population de la sélection a changé avec la version ' + S.version
+      : 'exécuté sur la version ' + st.execVersion + ', le dossier est à la version ' + S.version };
+}
+function reconfirmer(code){
+  const t = travailDe(code);
+  if (!t || !t.poste || !t.proc) return { ok:false, why:'travail sans papier de travail' };
+  const st = proc(t.poste, t.proc), r = aReconfirmer(t);
+  if (!r) return { ok:false, why:'ce travail n’est pas à reconfirmer' };
+  const tr = trav(code);
+  if (tr.statut === 'revu' && tr.reviseur !== S.moi) return { ok:false, why:'seul le réviseur affecté peut reconfirmer un travail revu' };
+  if (tr.statut === 'acheve' && tr.preparateur !== S.moi) return { ok:false, why:'seul le préparateur affecté peut reconfirmer ce travail' };
+  st.reconfirme = S.version;
+  st.execVersion = S.version;
+  const p = postesCalcules().find(x => x.code === t.poste);
+  const pr = PROCEDURES.find(x => x.code === t.proc);
+  st.execEmpreinte = empreinteSelection(p, pr);
+  logEvent('travail reconfirmé', t.code + ' — ' + t.intitule,
+           'version ' + r.de + ' → ' + r.a + ' · ' + USERS[S.moi].nom);
+  return { ok:true };
+}
+/** Un visa posé sur une version antérieure est signalé, pas effacé. */
+function visaPerime(code){
+  const st = sec(code);
+  if (!st.visa || st.visa.version === undefined) return null;
+  return st.visa.version < S.version ? { de:st.visa.version, a:S.version } : null;
+}
+
+/* ═══ 38. VUE « VERSIONS DU FICHIER » ══════════════════════════════════════ */
+function vueVersions(){
+  const attente = versionsEnAttente();
+  const courante = versionCourante();
+  const cible = S.impactVers || (attente.length ? attente[0].n : Math.max(1, S.version));
+  const source = S.impactDe || Math.max(1, cible - 1);
+  return entete('Versions de la balance et du grand livre',
+                'un mandat en reçoit trois à cinq — rien n’est écrasé, et une version reçue n’est pas une version prise en compte') +
+    blocVersions(attente, courante) +
+    (cible > 1 ? blocImpact(source, cible) : '') +
+    blocBalanceVersions() +
+    blocRapproVersions();
+}
+
+function blocVersions(attente, courante){
+  const rows = VERSIONS.map(v => {
+    const recue = v.date <= S.aujourdhui;
+    const etat = v.n === S.version ? '<span class="pill">prise en compte</span>'
+      : v.n < S.version ? '<span class="smallcaps">antérieure</span>'
+      : recue ? '<span class="pill warn">reçue, en attente</span>'
+      : '<span class="smallcaps">non reçue</span>';
+    return {
+      n:`<span class="mono">v${v.n}</span>`,
+      l:`<b>${esc(v.lib)}</b><div class="smallcaps">${esc(v.note)}</div>`,
+      d:`<span class="mono">${frDate(v.date)}</span><div class="smallcaps">${esc(v.par)}</div>`,
+      f:`<span class="smallcaps">${esc(v.fichiers)}</span>`,
+      e:`<span class="mono">${esc(empreinteVersion(v.n))}</span>`,
+      w:String(v.ecritures.length),
+      s:etat,
+      a:recue && v.n !== S.version
+        ? `<button class="btn mini ${v.n > S.version ? '' : 'sec'}" data-vers="${v.n}">${v.n > S.version ? 'prendre en compte' : 'revenir à cette version'}</button>`
+        : '',
+    };
+  });
+  return blk('Versions reçues', VERSIONS.length,
+    table([{k:'n',t:'Version'},{k:'l',t:'Objet',cls:'wrapcell'},{k:'d',t:'Reçue le'},
+           {k:'f',t:'Fichiers',cls:'wrapcell'},{k:'e',t:'Empreinte'},{k:'w',t:'Écritures',n:1},
+           {k:'s',t:'État'},{k:'a',t:''}], rows) +
+    (attente.length ? `<div class="callout warn"><b>Version ${attente[0].n} reçue le ${frDate(attente[0].date)}, pas encore prise en compte.</b>
+      Lisez le rapport d’impact ci-dessous avant de basculer : prendre en compte une version change les seuils,
+      le périmètre et les sélections, et remet en cause les travaux déjà achevés.</div>` : '') +
+    `<p class="note">Une version n’est jamais une régénération : c’est le grand livre précédent
+    <b>plus</b> les écritures passées depuis. L’empreinte est calculée sur le contenu du fichier ;
+    deux versions identiques auraient la même. Le dossier est à la version ${S.version}
+    — ${esc(courante.lib)}.</p>`);
+}
+
+function blocImpact(a, b){
+  const i = impact(a, b);
+  const va = VERSIONS.find(v => v.n === a), vb = VERSIONS.find(v => v.n === b);
+  const compte = (l, s) => `<span class="pill ${l ? s : ''}">${l} ${l > 1 ? '' : ''}</span>`;
+  const sel = `<div class="row">
+    <div class="ctrl"><label>De la version</label>
+      <select id="imp-de">${VERSIONS.filter(v => v.n < Math.max(...VERSIONS.map(x => x.n))).map(v =>
+        `<option value="${v.n}" ${v.n === a ? 'selected' : ''}>v${v.n} — ${esc(v.lib)}</option>`).join('')}</select></div>
+    <div class="ctrl"><label>à la version</label>
+      <select id="imp-vers">${VERSIONS.filter(v => v.n > 1).map(v =>
+        `<option value="${v.n}" ${v.n === b ? 'selected' : ''}>v${v.n} — ${esc(v.lib)}</option>`).join('')}</select></div>
+  </div>`;
+
+  const seuilsRow = `
+    <h3>Ce que la version fait aux seuils</h3>
+    ${table([{k:'q',t:'Seuil'},{k:'a',t:'v' + a,n:1},{k:'b',t:'v' + b,n:1},{k:'d',t:'Écart',n:1},{k:'p',t:'Effet',cls:'wrapcell'}], [
+      { q:'Référence — ' + esc(i.B.s.bench.lib), a:eur0(i.A.s.bench.val), b:eur0(i.B.s.bench.val),
+        d:eur0(i.B.s.bench.val - i.A.s.bench.val),
+        p:'les écritures de la version modifient la référence, donc les trois seuils' },
+      { q:'Seuil de signification', a:eur0(i.A.s.M), b:eur0(i.B.s.M), d:eur0(i.B.s.M - i.A.s.M),
+        p:'ce qui rend les comptes trompeurs' },
+      { q:'Seuil de planification', a:eur0(i.A.s.PM), b:eur0(i.B.s.PM), d:eur0(i.B.s.PM - i.A.s.PM),
+        p:'ce qui entre au périmètre et la strate exhaustive des sélections' },
+      { q:'Seuil de remontée', a:eur0(i.A.s.CTT), b:eur0(i.B.s.CTT), d:eur0(i.B.s.CTT - i.A.s.CTT),
+        p:'ce qui est cumulé plutôt que jugé trivial' },
+    ])}
+    ${i.seuilsBougent ? `<div class="callout warn"><b>Les seuils bougent avec la version</b> — la référence
+      de matérialité est calculée sur la balance, et la balance a changé. Un compte peut donc changer de côté
+      sans avoir bougé d’un centime, et un poste entrer au périmètre sans qu’aucune écriture ne l’ait touché.
+      ${i.franchit.filter(x => !x.bouge).length || i.perimetre.filter(x => !x.bouge).length
+        ? `<b>C’est le cas ici</b> pour ${i.franchit.filter(x => !x.bouge).length} compte(s) et
+           ${i.perimetre.filter(x => !x.bouge).length} poste(s), signalés dans les tableaux 2 et 3.`
+        : `Vérifié sur cette transition : <b>aucun compte ni poste n’est dans ce cas</b> — tous ceux qui
+           changent de côté ont eux-mêmes bougé. Le contrôle est fait à chaque version, pas supposé.`}</div>` : ''}`;
+
+  const q1 = `
+    <h3>1. Comptes qui ont bougé <span class="tag">${i.mouvements.length}</span></h3>
+    ${i.mouvements.length ? table([{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'},
+      {k:'a',t:'v' + a,n:1},{k:'b',t:'v' + b,n:1},{k:'d',t:'Écart',n:1},{k:'q',t:''}],
+      i.mouvements.map(m => ({ c:`<span class="mono">${m.compte}</span>`, l:esc(m.lib),
+        a:m.av === null ? '<span class="smallcaps">absent</span>' : eur(m.av),
+        b:m.ap === null ? '<span class="smallcaps">absent</span>' : eur(m.ap),
+        d:'<b>' + eur(m.delta) + '</b>',
+        q:m.nouveau ? '<span class="pill warn">compte apparu</span>' : m.disparu ? '<span class="pill warn">compte disparu</span>' : '' })),
+      { foot:{ c:'Total', d:eur(i.mouvements.reduce((t, m) => t + m.delta, 0)) } })
+      : '<p class="note">Aucun compte n’a bougé.</p>'}`;
+
+  const q2 = `
+    <h3>2. Comptes qui franchissent le seuil de remontée <span class="tag">${i.franchit.length}</span></h3>
+    ${i.franchit.length ? table([{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'},
+      {k:'a',t:'Solde v' + a,n:1},{k:'b',t:'Solde v' + b,n:1},{k:'s',t:'Seuil v' + a + ' → v' + b,n:1},{k:'q',t:'Sens',cls:'wrapcell'}],
+      i.franchit.map(x => ({ c:`<span class="mono">${x.compte}</span>`, l:esc(x.lib),
+        a:eur(x.av), b:eur(x.ap), s:eur0(x.seuilAv) + ' → ' + eur0(x.seuilAp),
+        q:(x.sens === 'entre' ? '<span class="pill bad">entre au-dessus du seuil</span>' : '<span class="pill">passe en dessous</span>')
+          + (x.bouge ? '' : ' <span class="smallcaps">le compte n’a pas bougé : c’est le seuil qui a bougé</span>') })))
+      : '<p class="note">Aucun compte ne change de côté par rapport au seuil de remontée.</p>'}`;
+
+  const q3 = `
+    <h3>3. Postes qui entrent ou sortent du périmètre <span class="tag">${i.perimetre.length}</span></h3>
+    ${i.perimetre.length ? table([{k:'p',t:'Poste',cls:'wrapcell'},{k:'a',t:'Solde v' + a,n:1},
+      {k:'b',t:'Solde v' + b,n:1},{k:'s',t:'Seuil de planification',n:1},{k:'q',t:'Sens',cls:'wrapcell'},{k:'v',t:''}],
+      i.perimetre.map(x => ({ p:esc(x.lib), a:eur(x.av), b:eur(x.ap),
+        s:eur0(x.pmAv) + ' → ' + eur0(x.pmAp),
+        q:x.sens === 'entre' ? '<span class="pill bad">entre au périmètre — une section entière à ouvrir</span>'
+                             : '<span class="pill warn">sort du périmètre — travaux à archiver, pas à supprimer</span>',
+        v:`<button class="btn mini sec" data-open="${x.code}">voir</button>` })))
+      : '<p class="note">Le périmètre est inchangé.</p>'}`;
+
+  const q4 = `
+    <h3>4. Sélections périmées <span class="tag">${i.echantillons.length}</span></h3>
+    ${i.echantillons.length ? table([{k:'k',t:'Procédure'},{k:'c',t:'Cause',cls:'wrapcell'},
+      {k:'p',t:'Population v' + a + ' → v' + b,n:1},{k:'n',t:'Retenus',n:1},{k:'m',t:'Mouvement',cls:'wrapcell'}],
+      i.echantillons.map(x => ({ k:`<span class="mono">${esc(x.k)}</span>`, c:esc(x.cause),
+        p:x.x && x.y ? x.x.pop + ' → ' + x.y.pop : (x.y ? '— → ' + x.y.pop : x.x.pop + ' → —'),
+        n:x.x && x.y ? x.x.n + ' → ' + x.y.n : (x.y ? '— → ' + x.y.n : x.x.n + ' → —'),
+        m:x.entres === undefined ? '<span class="smallcaps">—</span>'
+          : `${x.entres} élément(s) entré(s), ${x.sortis} sorti(s)` })))
+      : '<p class="note">Aucune sélection n’est modifiée : les populations et les tirages sont identiques.</p>'}
+    <p class="note">Le germe ne change pas : si la sélection bouge, c’est que la population a bougé.
+    Un papier de travail exécuté sur une sélection qui n’existe plus ne prouve plus ce qu’il disait.</p>`;
+
+  const q5 = `
+    <h3>5. Travaux achevés ou revus sur une version antérieure <span class="tag">${i.travauxTouches.length}</span></h3>
+    ${i.travauxTouches.length ? table([{k:'c',t:'Travail'},{k:'i',t:'Intitulé',cls:'wrapcell'},
+      {k:'s',t:'Statut'},{k:'v',t:'Exécuté sur'},{k:'m',t:'Motif',cls:'wrapcell'}],
+      i.travauxTouches.map(t => ({ c:`<span class="mono">${esc(t.code)}</span>`,
+        i:`<b>${esc(t.intitule)}</b>${t.posteLib ? '<div class="smallcaps">' + esc(t.posteLib) + '</div>' : ''}`,
+        s:`<span class="pill">${esc(STATUT_TRAVAIL[t.statut])}</span>`,
+        v:`<span class="mono">v${t.version}</span>`, m:esc(t.cause) })))
+      : `<p class="note">Aucun travail achevé ou revu ne repose sur une version antérieure — parce
+         qu’aucun ne l’est encore, ou parce qu’ils ont été reconfirmés.</p>`}
+    <p class="note">Ces travaux ne sont pas conservés en silence : ils passent à <b>« à reconfirmer »</b>
+    dès la prise en compte, avec le motif ci-dessus. Le statut stocké n’est pas modifié — revenir à la
+    version d’exécution les rend à leur état antérieur sans qu’aucune écriture n’ait eu lieu.</p>`;
+
+  const q6 = `
+    <h3>6. Anomalies déjà corrigées par la nouvelle version <span class="tag">${i.corrigees.length}</span></h3>
+    ${i.corrigees.length ? table([{k:'q',t:'Nature'},{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'},{k:'m',t:'Écart v' + a,n:1}],
+      i.corrigees.map(x => ({ q:esc(x.quoi), c:`<span class="mono">${x.compte}</span>`, l:esc(x.lib), m:eur(x.ecart) })))
+      : '<p class="note">Aucune anomalie de la version ' + a + ' n’est résorbée par la version ' + b + '.</p>'}
+    ${i.nouvelles.length ? `<h3>… et anomalies que la nouvelle version fait apparaître <span class="tag">${i.nouvelles.length}</span></h3>` +
+      table([{k:'q',t:'Nature'},{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'},{k:'m',t:'Écart v' + b,n:1}],
+        i.nouvelles.map(x => ({ q:esc(x.quoi), c:`<span class="mono">${x.compte}</span>`, l:esc(x.lib), m:eur(x.ecart) })))
+      : ''}
+    <p class="note">Une anomalie résorbée n’est pas effacée du dossier : le rapprochement de chaque version
+    reste consultable plus bas, et la piste d’audit conserve la version sur laquelle elle avait été relevée.</p>`;
+
+  return blk('Rapport d’impact — v' + a + ' → v' + b,
+    `${i.mouvements.length} comptes · ${i.perimetre.length} postes · ${i.echantillons.length} sélections`,
+    sel + `<p class="note"><b>${esc(vb.lib)}</b>, reçue le ${frDate(vb.date)} de ${esc(vb.par)}, comparée à
+      <b>${esc(va.lib)}</b> du ${frDate(va.date)}. Tout ce qui suit est calculé en évaluant réellement le
+      dossier sur les deux versions.</p>`
+    + seuilsRow + q1 + q2 + q3 + q4 + q5 + q6);
+}
+
+/** Balance multi-colonnes : une colonne par version, l'écart entre deux versions successives. */
+function blocBalanceVersions(){
+  const ns = VERSIONS.map(v => v.n);
+  const tbs = Object.fromEntries(ns.map(n => [n, new Map(tbVersion(n).map(r => [r[0], r]))]));
+  const comptes = [...new Set(ns.flatMap(n => tbVersion(n).map(r => r[0])))].sort();
+  const bouge = c => ns.some(n => n > 1 && solde(tbs[n].get(c)) !== solde(tbs[n - 1].get(c)));
+  const seulsMouv = S.balTout !== true;
+  const vus = seulsMouv ? comptes.filter(bouge) : comptes;
+  const cols = [{k:'c',t:'Compte'},{k:'l',t:'Intitulé',cls:'wrapcell'}];
+  for (const n of ns) cols.push({ k:'v' + n, t:'v' + n, n:1 });
+  for (const n of ns) if (n > 1) cols.push({ k:'d' + n, t:'v' + (n - 1) + ' → v' + n, n:1 });
+  const rows = vus.map(c => {
+    const r = { c:`<span class="mono">${c}</span>`,
+                l:esc((tbs[ns[ns.length - 1]].get(c) || tbs[1].get(c))[1]) };
+    for (const n of ns){ const x = tbs[n].get(c); r['v' + n] = x ? eur(solde(x)) : '<span class="smallcaps">absent</span>'; }
+    for (const n of ns) if (n > 1){
+      const d = solde(tbs[n].get(c)) - solde(tbs[n - 1].get(c));
+      r['d' + n] = d ? '<b>' + eur(d) + '</b>' : '<span class="smallcaps">—</span>';
+    }
+    return r;
+  });
+  const foot = { c:'Total', l:'' };
+  for (const n of ns) foot['v' + n] = eur(vus.reduce((a, c) => a + solde(tbs[n].get(c)), 0));
+  for (const n of ns) if (n > 1) foot['d' + n] = eur(vus.reduce((a, c) => a + solde(tbs[n].get(c)) - solde(tbs[n - 1].get(c)), 0));
+  return blk('Balance, une colonne par version', vus.length + ' compte(s) affiché(s) sur ' + comptes.length,
+    `<div class="row">
+      <button class="btn mini sec" id="bal-tout">${seulsMouv ? 'afficher les ' + comptes.length + ' comptes' : 'n’afficher que les comptes qui bougent'}</button>
+      <span class="smallcaps">rien n’est écrasé : chaque version reste lisible dans sa colonne</span>
+    </div>` + table(cols, rows, { foot }));
+}
+function solde(r){ return r ? r[2] - r[3] : 0; }
+
+/** Le rapprochement est rejoué à chaque version ; les écarts antérieurs restent lisibles. */
+function blocRapproVersions(){
+  const rows = VERSIONS.map(v => {
+    const ec = rapprochement(v.n).filter(r => r.ecart !== 0);
+    return { n:`<span class="mono">v${v.n}</span>`, l:esc(v.lib),
+      e:ec.length ? `<span class="pill bad">${ec.length}</span>` : '<span class="pill">aucun</span>',
+      d:ec.length ? ec.map(r => `<span class="mono">${r.compte}</span> ${eur(r.ecart)}`).join(' · ')
+                  : '<span class="smallcaps">balance et grand livre concordent</span>',
+      m:esc(v.n === 1 ? 'écriture de situation à la balance, absente du fichier des écritures'
+          : (v.ecritures.some(x => x.cible === 'gl') && !ec.length) ? 'l’écriture manquante a été reprise : l’écart de la version précédente est résorbé'
+          : ec.length ? 'écriture passée à la balance seule : le fichier des écritures transmis lui est antérieur'
+          : 'aucune écriture à sens unique') };
+  });
+  return blk('Rapprochement rejoué à chaque version', VERSIONS.length + ' rapprochements',
+    table([{k:'n',t:'Version'},{k:'l',t:'Objet',cls:'wrapcell'},{k:'e',t:'Écarts',n:1},
+           {k:'d',t:'Détail',cls:'wrapcell'},{k:'m',t:'Cause',cls:'wrapcell'}], rows) +
+    `<p class="note">Le rapprochement n’est pas refait « à la place » de l’ancien : chaque version garde le sien.
+    Un écart résorbé se lit encore sur la version où il avait été relevé.</p>`);
+}
 /* ═══ 18. NAVIGATION ═══════════════════════════════════════════════════════
    Trois espaces. Dans l'espace auditeur, deux groupes : la planification
    transverse, puis UNE SECTION PAR POSTE RETENU AU SCOPING. Le rail suit le
@@ -4892,6 +5546,7 @@ const DOSSIER = [
   { id:'plan.principes', lib:'Principes de conception' },
 ];
 const TRANSVERSES = [
+  { id:'plan.versions',lib:'Versions du fichier' },
   { id:'plan.rappro',  lib:'Import et rapprochement' },
   { id:'plan.mat',     lib:'Matérialité' },
   { id:'plan.scope',   lib:'Scoping des postes' },
@@ -5015,7 +5670,7 @@ function renderTopExtra(){
 function buildSeuils(){
   document.getElementById('seuils').innerHTML = `
     <div class="ctrl"><label>Référence de matérialité</label>
-      <select id="bm">${Object.values(BM25).map(b => `<option value="${b.code}" ${b.code === S.benchmark ? 'selected' : ''}>${esc(b.lib)} — ${eur0(b.val)}</option>`).join('')}</select></div>
+      <select id="bm">${Object.values(bm()).map(b => `<option value="${b.code}" ${b.code === S.benchmark ? 'selected' : ''}>${esc(b.lib)} — ${eur0(b.val)}</option>`).join('')}</select></div>
     <div class="ctrl"><label>Taux : <b id="lab-pm"></b></label>
       <input type="range" id="pm" min="0.5" max="10" step="0.1" value="${S.pctM}"></div>
     <div class="ctrl"><label>Seuil de planification : <b id="lab-ppm"></b> du seuil</label>
@@ -5082,6 +5737,7 @@ function contenu(){
     case 'plan.scope':  return vueScoping();
     case 'plan.ra':     return vueRAPrelim();
     case 'plan.facteurs': return vueFacteurs();
+    case 'plan.versions': return vueVersions();
     case 'plan.donnees': return vueJeuDonnees();
     case 'plan.programme': return vueProgramme();
     case 'plan.principes': return vuePrincipes();
@@ -5236,18 +5892,19 @@ function resolDeCle(k){
 
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset, p = posteCourant();
-  if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = BM25[t.value].defaut; return render(); }
+  if (t.id === 'bm'){ S.benchmark = t.value; S.pctM = bm()[t.value].defaut; return render(); }
   if (t.id === 'pm'){ S.pctM = parseFloat(t.value); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'ppm'){ S.pctPM = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (t.id === 'pctt'){ S.pctCTT = parseInt(t.value, 10); renderSeuils(); renderImpact(); return renderMainRaf(); }
   if (d.pseed !== undefined && p){ proc(p.code, d.pseed).seed = t.value; proc(p.code, d.pseed).wp = null; return; }
-  if (d.pconcl !== undefined && p){ proc(p.code, d.pconcl).conclusion = t.value; return renderMainDiff(); }
+  if (d.pconcl !== undefined && p){ proc(p.code, d.pconcl).conclusion = t.value;
+    marquerExecution(p, PROCEDURES.find(x => x.code === d.pconcl)); return renderMainDiff(); }
   if (d.ctr !== undefined && p){
     const pr = PROCEDURES.find(x => x.code === d.pcode);
     const wp = wpProc(p, pr) || [];
     const cle = String(d.ctr).split('|')[0];
     const l = wp.find(x => String(x.cle) === cle);
-    if (l){ l.champs[d.ctr] = t.value; }
+    if (l){ l.champs[d.ctr] = t.value; marquerExecution(p, pr); }
     return renderMainDiff();
   }
   if (d.rexpl !== undefined){ const x = resolDeCle(d.rexpl); if (x) x.r.expl = t.value; return renderMainDiff(); }
@@ -5331,6 +5988,8 @@ document.addEventListener('change', e => {
     S.affErreur = r.ok ? '' : r.why;
     return renderMain();
   }
+  if (t.id === 'imp-de'){ S.impactDe = +t.value; return renderMain(); }
+  if (t.id === 'imp-vers'){ S.impactVers = +t.value; return renderMain(); }
   if (t.id === 'ft-phase'){ S.filtreTrav.phase = t.value; return renderMain(); }
   if (t.id === 'ft-nature'){ S.filtreTrav.nature = t.value; return renderMain(); }
   if (t.id === 'ft-personne'){ S.filtreTrav.personne = t.value; return renderMain(); }
@@ -5392,7 +6051,9 @@ document.addEventListener('click', e => {
                             : c.ch.type === 'bool' ? (v ? 'oui' : 'non') : String(v);
       n++;
     }
-    logEvent('valeurs relevées saisies', p.lib + ' · ' + procRef(p, pr), n + ' champ(s)');
+    marquerExecution(p, pr);
+    logEvent('valeurs relevées saisies', p.lib + ' · ' + procRef(p, pr),
+             n + ' champ(s) · version ' + S.version);
     renderImpact(); return renderMain();
   }
   if (d.ravar && p){
@@ -5457,7 +6118,7 @@ document.addEventListener('click', e => {
     logEvent('travail N-1 reconfirmé', p.lib + ' · ' + d.n1, USERS[S.moi].nom); return renderMain(); }
   if (t.id === 'sec-visa' && p){
     if (obstaclesVisa(p).length) return;
-    sec(p.code).visa = { par:S.moi, t:tick() };
+    sec(p.code).visa = { par:S.moi, t:tick(), version:S.version };
     logEvent('section visée', p.lib, USERS[S.moi].nom + ' (' + ROLE_LIB[USERS[S.moi].role] + ')');
     return renderMain();
   }
@@ -5568,6 +6229,17 @@ document.addEventListener('click', e => {
   if (d.tstat){
     const [code, st] = d.tstat.split('|');
     const r = changerStatut(code, st);
+    S.affErreur = r.ok ? '' : r.why;
+    return renderMain();
+  }
+  if (d.vers){
+    prendreEnCompte(+d.vers);
+    _impCache.clear();
+    return render();
+  }
+  if (t.id === 'bal-tout'){ S.balTout = !S.balTout; return renderMain(); }
+  if (d.recon){
+    const r = reconfirmer(d.recon);
     S.affErreur = r.ok ? '' : r.why;
     return renderMain();
   }

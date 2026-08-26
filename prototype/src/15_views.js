@@ -16,7 +16,7 @@ function ecartsHorsPapier(){
       lib:'Écriture de situation non reprise au fichier des écritures — compte ' + r.compte,
       constate:r.ecart, section:null,
       explRecue:'Écriture de situation passée après la transmission du fichier des écritures.' });
-  const parTag = t => LEDGER.entries.filter(e => e.tag === t);
+  const parTag = t => lg().entries.filter(e => e.tag === t);
   const dupe = parTag('A1');
   if (dupe.length === 2) out.push({ ref:'je|' + dupe[1].num, cle:dupe[1].num, src:'Test des écritures',
     objet:'je', vue:'plan.je', lib:'Même facture comptabilisée deux fois (' + dupe[0].pieceRef + ')',
@@ -137,7 +137,7 @@ function vueRappro(){
   return entete('Import et rapprochement balance ↔ grand livre', 'point d’entrée du dossier — toutes les sections en dépendent') +
     cite('Upload de la TB à l’année auditée · Upload du Grand livre (transactions de l’année auditée) · Fonction réconciliation grand livre /TB') +
     `<div class="grid2">
-      ${blk('Contrôle de forme du fichier des écritures', LEDGER.entries.length + ' écritures',
+      ${blk('Contrôle de forme du fichier des écritures', lg().entries.length + ' écritures',
         table([{k:'t',t:'Contrôle',cls:'wrapcell'},{k:'s',t:'Résultat'},{k:'d',t:'Détail',cls:'wrapcell'}],
               ctrls.map(x => ({ t:esc(x.t), s:x.s, d:esc(x.d) }))))}
       ${blk('Rapprochement compte par compte', ecarts.length + ' écart(s)',
@@ -158,7 +158,7 @@ function vueRappro(){
 
 function vueMaterialite(){
   const s = seuils();
-  const rows = Object.values(BM25).map(b => ({
+  const rows = Object.values(bm()).map(b => ({
     r:esc(b.lib) + (b.code === S.benchmark ? ' <span class="pill">retenue</span>' : ''),
     m:eur(b.val), u:b.defaut + NBSP + '%', a:b.code === S.benchmark ? pct(S.pctM / 100, 1) : '—',
     s:b.code === S.benchmark ? eur(s.M) : '—', p:b.code === S.benchmark ? eur(s.PM) : '—',
@@ -209,7 +209,7 @@ function vueScoping(){
 function vueJE(){
   const s = seuils(), C = critereJE(s.PM);
   const actifs = Object.keys(C).filter(k => S.jeCrit[k]);
-  const pop = LEDGER.entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
+  const pop = lg().entries.filter(e => !(S.jeSansAN && e.journal === 'AN'));
   const sel = pop.filter(e => actifs.some(k => C[k].f(e)));
   const rows = sel.slice(0, 200).map(e => ({
     num:`<span class="mono">${e.num}</span>`, d:`<span class="mono">${frDate(e.date)}</span>`, j:e.journal,
@@ -224,7 +224,7 @@ function vueJE(){
         <label class="chk"><input type="checkbox" data-je="${k}" ${S.jeCrit[k] ? 'checked' : ''}>
           <span>${esc(v.lib)}</span><span class="cnt">${pop.filter(v.f).length}</span></label>`).join('')}
         <label class="chk"><input type="checkbox" id="je-an" ${S.jeSansAN ? 'checked' : ''}>
-          <span>exclure les à-nouveaux</span><span class="cnt">${LEDGER.entries.filter(e => e.journal === 'AN').length}</span></label>
+          <span>exclure les à-nouveaux</span><span class="cnt">${lg().entries.filter(e => e.journal === 'AN').length}</span></label>
       </div>
       <div class="callout"><b>${sel.length} écriture(s) retenue(s)</b> sur ${pop.length}
         (${pct(sel.length / pop.length, 1)} de la population) — cumul débit

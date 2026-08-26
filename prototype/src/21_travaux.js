@@ -154,6 +154,8 @@ function changerStatut(code, statut){
 function obstaclesTravaux(code){
   const o = [];
   const l = travauxDe(code);
+  const rec = l.filter(t => aReconfirmer(t));
+  if (rec.length) o.push(`${rec.length} travail/travaux à reconfirmer sur la version courante du fichier`);
   const sansPrep = l.filter(t => !t.preparateur), sansRev = l.filter(t => !t.reviseur);
   if (sansPrep.length) o.push(`${sansPrep.length} travail/travaux sans préparateur affecté`);
   if (sansRev.length) o.push(`${sansRev.length} travail/travaux sans réviseur affecté`);
@@ -173,6 +175,10 @@ function ligneAffectation(t){
 }
 function boutonsStatut(t){
   const st = trav(t.code);
+  const rc = aReconfirmer({ ...t, ...st });
+  if (rc) return `<span class="pill bad">à reconfirmer</span>
+    <div class="smallcaps">${esc(rc.motif)}</div>
+    <button class="btn mini" data-recon="${t.code}">reconfirmer</button>`;
   if (st.statut === 'revu') return `<span class="pill">revu par ${esc(USERS[st.revu.par].nom)}</span>`;
   const b = [];
   if (st.statut !== 'acheve' && st.preparateur === S.moi) b.push(`<button class="btn mini" data-tstat="${t.code}|acheve">achever</button>`);

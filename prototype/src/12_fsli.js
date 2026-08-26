@@ -41,10 +41,10 @@ const PAPIERS_N1 = {
 function blocComptes(p){
   const s = seuils(), st = sec(p.code);
   const rows = p.comptes.map(c => {
-    const n = B25.get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
+    const n = bal().get(c).solde, n1 = B24.get(c) ? B24.get(c).solde : 0, d = n - n1;
     const pr = n1 === 0 ? null : d / Math.abs(n1);
     const propose = Math.abs(n) < s.CTT ? 'ns' : 'sig';
-    return { c, lib:B25.get(c).lib, n, n1, d, pr, propose, retenu:st.ns[c] || propose,
+    return { c, lib:bal().get(c).lib, n, n1, d, pr, propose, retenu:st.ns[c] || propose,
              rCTT:Math.abs(n) / s.CTT, rPM:Math.abs(n) / s.PM };
   });
   const tot = rows.reduce((a, r) => a + r.n, 0), totN1 = rows.reduce((a, r) => a + r.n1, 0);
@@ -291,8 +291,21 @@ function blocProcedure(p, pr){
     nt:i % Math.max(1, cat ? cat.reduce((a, d) => a + d.champs.length, 0) : 1) === 0
        ? boutonNote(p.code, 'papier', c.ligne.cle, 'Papier ' + procRef(p, pr) + ' — ' + c.ligne.cle) : '',
   }));
+  const st = proc(p.code, pr.code), per = peremption(p, pr);
   const papier = `
     <h3>Papier de travail <span class="mono">${esc(procRef(p, pr))}</span></h3>
+    <div class="kv">
+      <span class="k">Version du fichier</span><span class="v">v${S.version} — ${esc(versionCourante().lib)}</span>
+      <span class="k">Empreinte</span><span class="v">${esc(empreinteVersion(S.version))}</span>
+      <span class="k">Papier exécuté sur</span><span class="v">${st.execVersion === undefined || st.execVersion === null
+        ? '<span class="smallcaps" style="font-family:var(--sans)">rien de saisi pour l’instant</span>'
+        : 'v' + st.execVersion}</span>
+    </div>
+    ${per ? `<div class="callout bad"><b>Ce papier a été exécuté sur la version ${per.de}, le dossier est à la version ${per.a}.</b>
+      ${per.populationChangee
+        ? 'La population de la sélection a changé : les éléments testés ne sont plus ceux que la procédure retiendrait aujourd’hui.'
+        : 'La sélection est identique ; seule la version du fichier diffère.'}
+      Voir le <a data-vue="plan.versions" style="cursor:pointer">rapport d’impact</a>.</div>` : ''}
     <div class="row">
       <span class="pill ${recus === wp.length ? '' : 'bad'}">${recus}/${wp.length} éléments avec pièce</span>
       ${ETATS_LIGNE.map(e => `<span class="pill ${e.id === 'ecart' && nEtat[e.id] ? 'bad'
@@ -352,7 +365,13 @@ function blocFinTesting(p, pr){
   const prep = st.preparateur ? USERS[st.preparateur] : null;
   const rev = st.reviseur ? USERS[st.reviseur] : null;
   const lien = `<button class="btn mini sec" data-gotrav="trav.programme">ouvrir le programme de travail</button>`;
-  if (st.statut === 'revu') return `<div class="callout"><b>Travail revu</b> par ${esc(USERS[st.revu.par].nom)} le ${horo(st.revu.t)}.</div>`;
+  const t0 = travailDe(code), rc = t0 ? aReconfirmer({ ...t0, ...st }) : null;
+  if (rc) return `<div class="callout bad"><b>À reconfirmer.</b> Ce travail est ${esc(STATUT_TRAVAIL[st.statut])},
+      mais il a été exécuté sur la version ${rc.de} du fichier et le dossier est à la version ${rc.a} —
+      ${esc(rc.motif)}. Il n’est pas conservé en silence.
+      <button class="btn" data-recon="${code}">reconfirmer sur la version ${rc.a} — engage ${esc(USERS[S.moi].nom)}</button></div>`;
+  if (st.statut === 'revu') return `<div class="callout"><b>Travail revu</b> par ${esc(USERS[st.revu.par].nom)} le ${horo(st.revu.t)}
+      <span class="smallcaps">sur la version ${proc(p.code, pr.code).execVersion || S.version}</span>.</div>`;
   if (st.statut === 'acheve') return `<div class="callout">
       <b>Testing déclaré terminé</b> par ${esc(USERS[st.acheve.par].nom)} le ${horo(st.acheve.t)} —
       ${rev ? 'en attente de la revue de ' + esc(rev.nom) : 'aucun réviseur affecté'}.
@@ -425,7 +444,7 @@ function obstaclesVisa(p){
   const fsm = facteursDe(p.code).filter(f => f.statut === 'ecarte' && !f.motif.trim());
   if (fsm.length) o.push(`${fsm.length} facteur(s) écarté(s) sans motif écrit`);
   for (const x of obstaclesTravaux(p.code)) o.push(x);
-  let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0;
+  let manq = 0, nonSaisis = 0, sansConcl = 0, ecarts = 0, nonAcheves = 0, perimes = 0;
   for (const pr of proceduresRequises(p)){
     if (!pr.ech){ if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++; continue; }
     const wp = wpProc(p, pr) || [];
@@ -435,12 +454,14 @@ function obstaclesVisa(p){
     if (!proc(p.code, pr.code).conclusion.trim()) sansConcl++;
     const t = trav('SEC-' + p.code + '-' + pr.code);
     if (t.statut !== 'acheve' && t.statut !== 'revu') nonAcheves++;
+    if (peremption(p, pr)) perimes++;
   }
   if (manq) o.push(`${manq} élément(s) sans pièce justificative`);
   if (nonSaisis) o.push(`${nonSaisis} contrôle(s) non exécuté(s) alors que la pièce est reçue`);
   if (ecarts) o.push(`${ecarts} écart(s) sans résolution probante`);
   if (sansConcl) o.push(`${sansConcl} procédure(s) sans conclusion`);
   if (nonAcheves) o.push(`${nonAcheves} procédure(s) dont le testing n’est pas déclaré terminé`);
+  if (perimes) o.push(`${perimes} papier(s) exécuté(s) sur une version antérieure du fichier — à reconfirmer`);
   const sansMotif = p.comptes.filter(c => st.ns[c] && !(st.nsMotif[c] || '').trim());
   if (sansMotif.length) o.push(`statut forcé sans motif sur ${sansMotif.join(', ')}`);
   const nivSansMotif = ASSERTIONS.filter(a => st.override[a.code] && !(st.overrideMotif[a.code] || '').trim());
@@ -505,6 +526,11 @@ function vueFsli(code){
       <span class="sub">solde ${eur(p.solde)} · ${p.comptes.length} compte(s) · ${procs.length} procédure(s) · ${nSel} sélection(s)</span>
     </div>
     ${S.affErreur ? `<div class="callout bad">${esc(S.affErreur)}</div>` : ''}
+    ${(() => { const vp = visaPerime(p.code); return vp ? `<div class="callout bad">
+      <b>Visa posé sur la version ${vp.de} du fichier ; le dossier est à la version ${vp.a}.</b>
+      Le visa n’est pas effacé — il est remis en cause : il engage ${esc(USERS[sec(p.code).visa.par].nom)}
+      sur des travaux qui ne portent plus sur le même fichier. Reconfirmez les travaux touchés, puis le visa.
+      <button class="btn mini sec" id="sec-devisa">retirer le visa</button></div>` : ''; })()}
     ${bloc(1, 'Comptes de la section', p.code + '-CPT-01', blocComptes(p))}
     ${bloc(2, 'Évaluation du risque par assertion', p.code + '-RSQ-01', blocRisque(p))}
     ${bloc(3, 'Plan de travail', p.code + '-PGM-01', blocPlan(p) + blocSuiviSection(p))}

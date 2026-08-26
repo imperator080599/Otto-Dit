@@ -1,11 +1,12 @@
 function arSeuilMontant(){ return S.arMontant === null ? seuils().PM : S.arMontant; }
 
 function revueAnalytique(){
-  const comptes = [...new Set([...TB_2025.map(r => r[0]), ...TB_2024.map(r => r[0])])].sort();
+  const b = bal();
+  const comptes = [...new Set([...tb().map(r => r[0]), ...TB_2024.map(r => r[0])])].sort();
   return comptes.map(c => {
-    const n = B25.get(c) ? B25.get(c).solde : 0;
+    const n = b.get(c) ? b.get(c).solde : 0;
     const n1 = B24.get(c) ? B24.get(c).solde : 0;
-    const lib = (B25.get(c) || B24.get(c)).lib;
+    const lib = (b.get(c) || B24.get(c)).lib;
     const d = n - n1;
     const p = n1 === 0 ? (n === 0 ? 0 : null) : d / Math.abs(n1);   // null = pas de base N-1
     const parMontant = Math.abs(d) >= arSeuilMontant();

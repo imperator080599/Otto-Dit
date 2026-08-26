@@ -16,7 +16,7 @@ function ratios(){
           produits = -q(b, /^7/), charges = q(b, /^6/), fin = q(b, /^66/);
     return { ca, achats, perso, stocks, clients, fourn, resultat:produits - charges, fin };
   };
-  const a = f(B25), b = f(B24);
+  const a = f(bal()), b = f(B24);
   const L = [
     { lib:'Marge sur achats consommés', u:'%', formule:'(chiffre d’affaires − achats consommés) ÷ chiffre d’affaires',
       n:a.ca ? (a.ca - a.achats) / a.ca : 0, n1:b.ca ? (b.ca - b.achats) / b.ca : 0, type:'pct' },
@@ -90,7 +90,7 @@ const DELAI_ASSEMBLAGE = 60;      // jours — C. com., art. D. 821-186, III et 
 const RETENTION_ANS = 6;          // ans  — C. com., art. R. 820-42
 
 /* ── pointage des états financiers : trois natures de rapprochement ──────── */
-function soldeDe(comptes){ return comptes.reduce((a, c) => a + (B25.get(c) ? B25.get(c).solde : 0), 0); }
+function soldeDe(comptes){ const b = bal(); return comptes.reduce((a, c) => a + (b.get(c) ? b.get(c).solde : 0), 0); }
 const PLAQUETTE = [
   { ref:'B-01', lib:'Capital social', nature:'solde', comptes:['101000'], ecart:0 },
   { ref:'B-02', lib:'Réserve légale', nature:'solde', comptes:['106100'], ecart:0 },

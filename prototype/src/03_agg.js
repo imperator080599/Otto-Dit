@@ -1,5 +1,5 @@
 function soldes(tb){ const m = new Map(); for (const [c, l, d, cr] of tb) m.set(c, { lib:l, solde:d - cr, debit:d, credit:cr }); return m; }
-const B25 = soldes(TB_2025), B24 = soldes(TB_2024);
+const B24 = soldes(TB_2024);
 function sumWhere(bal, re){ let s = 0; for (const [c, v] of bal) if (re.test(c)) s += v.solde; return s; }
 
 /** Références possibles pour la matérialité, toutes calculées depuis la balance.
@@ -24,14 +24,14 @@ function benchmarks(bal){
     charges:{ code:'charges', lib:'Total des charges', val:charges, defaut:1 },
   };
 }
-const BM25 = benchmarks(B25), BM24 = benchmarks(B24);
+const BM24 = benchmarks(B24);
 
 /** Arrondi prudent vers le bas au pas indiqué (pratique de place). */
 function arrondiBas(cents, pas){ return Math.floor(cents / pas) * pas; }
 
 /** Les trois seuils. Recalculés à chaque mouvement de curseur. */
 function seuils(){
-  const b = BM25[S.benchmark];
+  const b = bm()[S.benchmark];
   const brut = Math.round(b.val * S.pctM / 100);
   const M  = arrondiBas(brut, 100000);            // au millier d'euros inférieur
   const PM = arrondiBas(Math.round(M * S.pctPM / 100), 100000);
@@ -58,14 +58,15 @@ const POSTES = [
   { code:'CHARGES_EXT',lib:'Charges externes',            re:/^(61|62)/, masse:'resultat' },
   { code:'PERSONNEL',lib:'Charges de personnel',          re:/^64/, masse:'resultat' },
   { code:'FINANCIER',lib:'Charges financières',           re:/^66/, masse:'resultat' },
-  { code:'AMORT',    lib:'Dotations aux amortissements',  re:/^68/, masse:'resultat', aussi:'bilan' },
+  { code:'AMORT',    lib:'Dotations aux amortissements et provisions', re:/^68/, masse:'resultat', aussi:'bilan' },
 ];
 let _postesCache = null;
 function postesCalcules(){
   if (_postesCache) return _postesCache;
+  const b = bal();
   _postesCache = POSTES.map(p => {
-    const comptes = TB_2025.filter(r => p.re.test(r[0])).map(r => r[0]);
-    const n = comptes.reduce((s, c) => s + B25.get(c).solde, 0);
+    const comptes = tb().filter(r => p.re.test(r[0])).map(r => r[0]);
+    const n = comptes.reduce((s, c) => s + b.get(c).solde, 0);
     const n1 = comptes.reduce((s, c) => s + (B24.get(c) ? B24.get(c).solde : 0), 0);
     return { ...p, comptes, solde:n, soldeN1:n1 };
   }).filter(p => p.comptes.length);

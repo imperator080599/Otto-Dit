@@ -107,7 +107,19 @@ function lignesExport(kind, requetes){
 }
 /** Feuille de synthèse : avancement par section, et qui doit quoi. */
 function feuilleSynthese(kind){
-  const l = [['Section', 'Requêtes', 'Éléments', 'En attente', 'Avancement', 'Retard max (j ouvrés)']];
+  /* Un export sorti du dossier doit dire de QUEL fichier il parle : sans la
+     version et son empreinte, deux classeurs identiques d'apparence peuvent
+     porter des chiffres différents. */
+  const v = versionCourante();
+  const l = [
+    ['Version du fichier', 'v' + v.n + ' — ' + v.lib],
+    ['Reçue le', frDate(v.date) + ' de ' + v.par],
+    ['Fichiers', v.fichiers],
+    ['Empreinte', empreinteVersion(v.n)],
+    ['Seuils au moment de l’export', 'signification ' + eur0(seuils().M)
+      + ' · planification ' + eur0(seuils().PM) + ' · remontée ' + eur0(seuils().CTT)],
+    [],
+    ['Section', 'Requêtes', 'Éléments', 'En attente', 'Avancement', 'Retard max (j ouvrés)']];
   const sections = [...new Set(S.requetes.map(r => r.section))];
   for (const c of sections){
     const rs = requetesDe(c);
