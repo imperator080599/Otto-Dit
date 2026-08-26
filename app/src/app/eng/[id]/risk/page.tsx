@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { listFslis } from '@/lib/services/fsli';
 import {
   assessFsli, risksFor, overrideLevel, requiredProcedures, excludedProcedures,
@@ -27,7 +27,7 @@ export default async function RiskPage({
   const { id } = await params;
   const { fsli } = await searchParams;
   await requireMember(id);
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(id);
 
   const fslis = (await listFslis(id)).filter(
     (f) => f.scoping === 'in_scope' || f.scoping === 'in_scope_qualitative',

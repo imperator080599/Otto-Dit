@@ -304,15 +304,55 @@ export function validerAssertions(a, cat, schema){
   return erreurs;
 }
 
-/** Lit, valide et rend le catalogue. Lève si les données sont invalides. */
-export function chargerCatalogue(racine){
-  const dir = path.join(racine || racineDepot(), 'methodology');
-  const lire = f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-  const cat = lire('procedures.json'), src = lire('sources.json'), schema = lire('schema.json');
-  const quest = lire('questionnaire.json'), schemaQ = lire('schema-questionnaire.json');
-  const ind = lire('independance.json'), schemaI = lire('schema-independance.json');
-  const risq = lire('risque.json'), schemaR = lire('schema-risque.json');
-  const asrt = lire('assertions.json'), schemaA = lire('schema-assertions.json');
+/* ── les deux entrées, et une seule validation ─────────────────────────────
+
+   Le catalogue peut venir de DEUX endroits : le dépôt (méthode livrée avec le
+   produit, lue par le prototype et par les tests) ou une LIGNE DE BASE (méthode
+   d'un cabinet, chargée par lui). Ces deux chemins passent par la même
+   orchestration : un second chemin de validation serait un chemin non testé,
+   et c'est celui-là qui laisserait passer une méthode invalide.
+
+   LES SCHÉMAS NE SONT JAMAIS FOURNIS PAR LE CABINET. Ils énumèrent ce que le
+   MOTEUR sait faire — les prédicats implémentés, les règles de date, les sens
+   de test. Un cabinet qui livrerait son propre schéma pourrait désactiver tous
+   les contrôles en une ligne, et le fichier invalide passerait sans bruit.
+   `assemblerCatalogue` n'a donc AUCUN paramètre par lequel un schéma pourrait
+   arriver : il les lit lui-même dans le produit.                             */
+
+/** Les six fichiers de CONTENU qu'un cabinet fournit. */
+export const FICHIERS_CONTENU = [
+  'procedures.json', 'sources.json', 'questionnaire.json',
+  'independance.json', 'risque.json', 'assertions.json',
+];
+
+/** Les cinq schémas, propriété du PRODUIT. Jamais fournis par un cabinet. */
+export const FICHIERS_SCHEMA = [
+  'schema.json', 'schema-questionnaire.json', 'schema-independance.json',
+  'schema-risque.json', 'schema-assertions.json',
+];
+
+function lireDossier(dir, noms){
+  const out = {};
+  for (const f of noms) out[f] = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+  return out;
+}
+
+/** Les schémas du produit, lus depuis le dépôt. */
+export function schemasDuProduit(racine){
+  return lireDossier(path.join(racine || racineDepot(), 'methodology'), FICHIERS_SCHEMA);
+}
+
+function assembler(contenu, schemas){
+  const manquants = FICHIERS_CONTENU.filter(f => !contenu[f]);
+  if (manquants.length){
+    throw new Error('CATALOGUE INVALIDE :\n  fichiers manquants : ' + manquants.join(', '));
+  }
+  const cat = contenu['procedures.json'], src = contenu['sources.json'];
+  const quest = contenu['questionnaire.json'], ind = contenu['independance.json'];
+  const risq = contenu['risque.json'], asrt = contenu['assertions.json'];
+  const schema = schemas['schema.json'], schemaQ = schemas['schema-questionnaire.json'];
+  const schemaI = schemas['schema-independance.json'], schemaR = schemas['schema-risque.json'];
+  const schemaA = schemas['schema-assertions.json'];
   /* L'échelle est lue AVANT le catalogue : c'est elle qui dit quels niveaux
      une procédure a le droit d'exiger. */
   const echelle = ((risq || {}).echelle || {}).niveaux || [];
@@ -338,4 +378,24 @@ export function chargerCatalogue(racine){
                     tailles:sansNotes(risq.tailles_echantillon),
                     predicats:schemaR.predicats_facteur },
            assertions:{ version:asrt.version, liste:asrt.assertions } };
+}
+
+/**
+ * Valide et assemble un catalogue à partir de son CONTENU seul — le paquet de
+ * six fichiers qu'un cabinet fournit. Les schémas viennent du produit.
+ * Lève si les données sont invalides.
+ */
+export function assemblerCatalogue(contenu, racineSchemas){
+  return assembler(contenu, schemasDuProduit(racineSchemas));
+}
+
+/** Lit, valide et rend le catalogue du DÉPÔT. Lève si les données sont invalides. */
+export function chargerCatalogue(racine){
+  const dir = path.join(racine || racineDepot(), 'methodology');
+  return assembler(lireDossier(dir, FICHIERS_CONTENU), lireDossier(dir, FICHIERS_SCHEMA));
+}
+
+/** Le contenu du dépôt, tel qu'un cabinet le fournirait. Sert au peuplement. */
+export function contenuDuDepot(racine){
+  return lireDossier(path.join(racine || racineDepot(), 'methodology'), FICHIERS_CONTENU);
 }

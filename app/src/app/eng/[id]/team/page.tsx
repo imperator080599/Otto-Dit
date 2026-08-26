@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import {
@@ -17,7 +17,7 @@ import {
 export default async function TeamPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { user } = await requireMember(id);
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(id);
   const roster = await members(id);
   const mine = await currentDeclaration(id, user.id);
   const myStack = await declarations(id, user.id);

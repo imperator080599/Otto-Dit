@@ -33,7 +33,20 @@ export function racineDepot(): string {
 
 let _cache: Catalogue | null = null;
 
-/** Charge (une fois) le catalogue validé. Lève si les données sont invalides. */
+/**
+ * Charge le catalogue DU DÉPÔT — la méthode livrée avec le produit.
+ *
+ * ⚠ AUCUN SERVICE NE DOIT L'APPELER. Un service qui lit cette méthode-ci fait
+ * tourner le dossier d'un cabinet sur la méthode de l'ÉDITEUR, et rien à
+ * l'écran ne le dit. La méthode d'une mission se charge par
+ * `depot.catalogueDeLaMission(engagementId)`, qui refuse plutôt que de replier.
+ *
+ * Ce qui reste légitime ici : les tests qui exercent des fonctions pures sur un
+ * catalogue quelconque, et le peuplement — qui PUBLIE ce contenu pour le
+ * cabinet de démonstration au lieu de le lire à chaque requête.
+ *
+ * Lève si les données sont invalides.
+ */
 export async function chargerCatalogue(racine = racineDepot()): Promise<Catalogue> {
   if (_cache) return _cache;
   const chemin = url.pathToFileURL(path.join(racine, 'methodology', 'valider.mjs')).href;

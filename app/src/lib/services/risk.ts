@@ -20,7 +20,7 @@
 
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { proceduresDuCycle, rangNiveau } from '@/lib/methodology/catalogue';
 import type { Catalogue, Procedure } from '@/lib/methodology/types';
 import { engagementContext } from './team';
@@ -241,7 +241,7 @@ export async function assessFsli(
   fsliCode: string,
   actorUserId: string | null,
 ): Promise<AssertionRisk[]> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   assertPredicatesImplemented(cat);
   const eng = await engagementContext(engagementId);
   const facts = await factsFor(engagementId, fsliCode);
@@ -359,7 +359,7 @@ export async function levelFor(engagementId: string, fsliCode: string, assertion
  * montait, la liste ne suivait pas.
  */
 export async function risksFor(engagementId: string, fsliCode: string): Promise<AssertionRisk[]> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const rows = await q<Omit<AssertionRisk, 'level' | 'factors'>>(
     `select fsli_code, assertion, computed_level, factor_count, retained_level,
             override_reason, decided_by
@@ -400,7 +400,7 @@ export async function overrideLevel(
   reason: string,
   actorUserId: string,
 ): Promise<void> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const eng = await engagementContext(engagementId);
   const row = await q01<{ computed_level: string }>(
     `select computed_level from fsli_assertion_risk
@@ -460,7 +460,7 @@ export async function requiredProcedures(
   engagementId: string,
   fsliCode: string,
 ): Promise<RequiredProcedure[]> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const risks = await risksFor(engagementId, fsliCode);
   const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
   const out: RequiredProcedure[] = [];
@@ -495,7 +495,7 @@ export async function excludedProcedures(
   engagementId: string,
   fsliCode: string,
 ): Promise<{ code: string; libelle: string; assertion: string; level: Level | null; requires: string }[]> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const risks = await risksFor(engagementId, fsliCode);
   const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
   return proceduresDuCycle(cat, fsliCode)

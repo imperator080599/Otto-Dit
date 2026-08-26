@@ -1,5 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { publierMethodologie, contenuDuDepot, catalogueParId } from '@/lib/methodology/depot';
 import { demoId } from '@/lib/core/ids';
 import { logEvent } from '@/lib/core/events';
 
@@ -23,6 +23,10 @@ export const IDS = {
   componentAltiverre: demoId('component:altiverre'),
   periodFY2025: demoId('period:fy2025'),
   periodFY2024: demoId('period:fy2024'),
+  // La méthode DU CABINET, chargée par lui. Le monde de démonstration part de
+  // la méthode livrée avec le produit, mais il la charge comme un cabinet le
+  // ferait — sans quoi rien ne prouverait que le chemin existe.
+  methodology: demoId('methodology:vermeil-2026'),
   engNep: demoId('engagement:nep-fy2025'),
   engSox: demoId('engagement:sox-fy2025'),
   contacts: {
@@ -85,17 +89,30 @@ export async function seedBase(): Promise<void> {
     [IDS.periodFY2025, IDS.entity, IDS.periodFY2024],
   );
 
+  // Le cabinet CHARGE sa méthode, il ne la reçoit pas. Le paquet passe par le
+  // validateur : un fichier invalide n'arriverait pas en base. Les deux
+  // missions la DÉSIGNENT dès leur création — une mission sans méthodologie
+  // désignée est refusée au chargement, jamais repliée en silence sur celle de
+  // l'éditeur.
+  await publierMethodologie({
+    tenantId: IDS.tenant,
+    label: 'Méthode Vermeil Audit — millésime 2026',
+    contenu: await contenuDuDepot(),
+    actorUserId: IDS.users.claire,
+    id: IDS.methodology,
+  });
+
   await q(
-    `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date)
+    `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date, methodology_id)
      values ($1, $2, $3, $4, null, 'statutory_audit', 'Altiverre FY2025 — Audit légal (NEP)',
-       '{"assurance_packs":["nep-fr"],"accounting_map":"pcg","language":"fr"}', 'fieldwork', '2026-03-31')`,
-    [IDS.engNep, IDS.tenant, IDS.entity, IDS.periodFY2025],
+       '{"assurance_packs":["nep-fr"],"accounting_map":"pcg","language":"fr"}', 'fieldwork', '2026-03-31', $5)`,
+    [IDS.engNep, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.methodology],
   );
   await q(
-    `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date)
+    `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date, methodology_id)
      values ($1, $2, $3, $4, $5, 'sox_component', 'Altiverre FY2025 — SOX 404 component (PCAOB/COSO)',
-       '{"assurance_packs":["pcaob-sox"],"accounting_map":"pcg","language":"en"}', 'fieldwork', '2026-02-20')`,
-    [IDS.engSox, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.componentAltiverre],
+       '{"assurance_packs":["pcaob-sox"],"accounting_map":"pcg","language":"en"}', 'fieldwork', '2026-02-20', $6)`,
+    [IDS.engSox, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.componentAltiverre, IDS.methodology],
   );
 
   // L'équipe, et sa déclaration d'indépendance SIGNÉE — sans quoi la mission
@@ -108,7 +125,7 @@ export async function seedBase(): Promise<void> {
     [IDS.users.karim, 'senior'],
     [IDS.users.lea, 'manager'],
   ];
-  const rubriques = (await chargerCatalogue()).independance.rubriques;
+  const rubriques = (await catalogueParId(IDS.methodology)).independance.rubriques;
   const reponses = JSON.stringify(
     Object.fromEntries(rubriques.map((r) => [r.code, { answer: 'non', detail: '' }])),
   );

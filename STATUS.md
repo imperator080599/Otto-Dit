@@ -693,6 +693,37 @@ ligne du §1 n'est aujourd'hui sans marqueur**, et le document le dit avant le t
 
 **Vérification** : 261 tests applicatifs (252 → 261) · `tsc --noEmit` propre.
 
+## Application — tranche livrée : la méthode d'un cabinet est à lui (méthodologie-comme-donnée)
+
+Les trois pièces annoncées au §3 de `docs/12_CONFIGURABLE.md` sont faites (ADR-075, migration
+`0015`). Le catalogue n'est plus lu depuis le dépôt : il est lu depuis la base **du cabinet**.
+
+- **`firm_methodology`** porte le paquet JSON validé, son empreinte et ses versions. **Immuable** :
+  republier crée une ligne. Un dossier doit pouvoir dire des années plus tard sous quelle méthode il
+  a été exécuté.
+- **La mission DÉSIGNE son catalogue** (`engagement.methodology_id`) au lieu de prendre le dernier
+  en date. Une méthode publiée en mars ne change pas rétroactivement les travaux requis d'un dossier
+  planifié en janvier.
+- **L'isolation est dans la BASE** : la clé étrangère est composite `(methodology_id, tenant_id)`.
+  Désigner la méthode d'un autre cabinet est **impossible**, pas seulement refusé — et contrairement
+  aux politiques RLS, une clé étrangère n'est pas inerte en local. Le test **contourne le service**
+  pour écrire directement et attend le rejet **par le nom de la contrainte**.
+- **Une mission sans méthodologie est REFUSÉE, pas repliée** sur celle de l'éditeur. Le repli aurait
+  fait tourner un dossier sur notre méthode sans qu'aucun écran ne le dise — le silence lu comme un
+  succès, une fois de plus.
+- **Le paquet d'un cabinet ne peut contenir ni ses propres schémas** (ils énumèrent ce que le moteur
+  sait calculer : les livrer désactiverait tous les contrôles en une ligne) **ni un fichier en
+  moins** (refusé, jamais complété en silence).
+- **Un seul chemin de validation** : `valider.mjs` est scindé en une orchestration et deux entrées —
+  disque et ligne de base. Un second chemin serait un chemin non testé.
+- **Le chemin normal est exercé explicitement** : quatre tests de refus ne prouvent rien si le
+  service refuse tout.
+
+Ce qui reste et qui est écrit dans le document : **pas encore d'écran d'import**, la publication
+passe par nous — ~1 séance.
+
+**Vérification** : 278 tests applicatifs (261 → 278) · `tsc --noEmit` propre.
+
 ## Convergence prototype → application
 
 `docs/11_CONVERGENCE.md` : les onze points de la mission simplifiée, chacun marqué

@@ -20,7 +20,7 @@
 
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import type { Catalogue, QuestionResiduelle } from '@/lib/methodology/types';
 import { engagementContext } from './team';
 
@@ -73,7 +73,7 @@ export async function answerQuestion(input: {
   detail?: string;
   actorUserId: string;
 }): Promise<void> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(input.engagementId);
   const eng = await engagementContext(input.engagementId);
   const question = cat.questionnaire.questions.find((x) => x.code === input.questionCode);
   if (!question) throw new QuestionnaireError(`question « ${input.questionCode} » inconnue du référentiel du cabinet`);
@@ -203,7 +203,7 @@ export async function raiseFactor(input: {
   targets: { fsli: string; assertions: string[] }[];
   actorUserId: string;
 }): Promise<{ id: string }> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(input.engagementId);
   const eng = await engagementContext(input.engagementId);
   if (!cat.questionnaire.naturesRi[input.nature]) {
     throw new QuestionnaireError(`nature « ${input.nature} » inconnue du référentiel du cabinet`);
@@ -301,7 +301,7 @@ export async function questionnaireObstacles(
   engagementId: string,
   fsliCode: string | null,
 ): Promise<string[]> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const scope = fsliCode === null ? 'entite' : 'section';
   const asked = questionsOfScope(cat, scope);
   const given = await answers(engagementId, fsliCode);

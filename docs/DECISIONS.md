@@ -2503,3 +2503,63 @@ régression.
 lignes plus loin. Elle date maintenant l'état réel dans une subordonnée — les éléments sont des
 données, le chargement par cabinet est chiffré à 2½ séances et **n'est pas fait** — sans retirer la
 promesse. Une promesse datée se tient ; une promesse démentie au §3 se retourne.
+
+---
+
+## ADR-075 — La méthode d'un cabinet est une ligne de sa base, pas un fichier du dépôt
+
+**Contexte.** Le catalogue — procédures, seuils, échelle de risque, jeu d'assertions, questionnaire,
+rubriques d'indépendance — était lu depuis `methodology/`, sur le disque. Il était donc **commun** :
+une seule méthode pour toutes les missions et tous les cabinets. La phrase de vente « votre méthode
+reste la vôtre, vous la chargez, je ne la vois jamais » tenait sur sa première moitié et pas sur la
+seconde, et `docs/12_CONFIGURABLE.md` portait un marqueur **⚠ commun** sur chacune de ses lignes.
+
+**Décision.** Trois pièces, migration `0015`.
+
+1. **`firm_methodology`** — le paquet JSON validé, par cabinet, avec son empreinte et les versions
+   déclarées par chaque fichier. **Immuable** : republier crée une ligne. Un dossier doit pouvoir
+   dire, des années plus tard, sous quelle méthode il a été exécuté ; une ligne réécrite le rendrait
+   incapable de le dire.
+2. **`engagement.methodology_id`** — la mission **désigne** son catalogue au lieu de prendre le
+   dernier en date à chaque lecture. Une méthode publiée en mars ne doit pas changer
+   rétroactivement les travaux requis d'un dossier planifié en janvier.
+3. **`catalogueDeLaMission(engagementId)`** remplace `chargerCatalogue()` aux quatorze points
+   d'appel des services et des écrans. La fonction du dépôt reste, avec un avertissement écrit
+   au-dessus : aucun service ne doit l'appeler.
+
+**L'isolation est dans la BASE, pas seulement dans l'application.** La clé étrangère est
+**composite** — `(methodology_id, tenant_id)` vers `firm_methodology (id, tenant_id)`. Désigner le
+catalogue d'un autre cabinet est **impossible**, pas seulement refusé. C'est le point qui distingue
+cette table d'un champ de configuration : contrairement aux politiques RLS, une clé étrangère n'est
+pas inerte en local (ADR-007). Le test le vérifie en **contournant le service** pour écrire
+directement, et attend le rejet **par le nom de la contrainte** — pas n'importe quelle erreur.
+
+**Le refus plutôt que le repli, et c'est le cœur.** Une mission sans méthodologie désignée est
+**refusée** au chargement. Le repli — `?? chargerCatalogue()` — aurait été la faute : le dossier
+tournerait sur la méthode de l'éditeur, les travaux requis seraient les nôtres, et **aucun écran ne
+le dirait**. Même famille que le prédicat déclaré-non-implémenté d'ADR-050 : le silence lu comme un
+succès.
+
+**Deux choses que le paquet d'un cabinet ne peut pas contenir.**
+
+- **Ses propres schémas.** Ils énumèrent ce que le *moteur* sait calculer. Un cabinet qui livrerait
+  le sien désactiverait tous les contrôles en une ligne, et son fichier invalide passerait sans
+  bruit. `assemblerCatalogue` n'a **aucun paramètre** par lequel un schéma pourrait arriver : il les
+  lit lui-même dans le produit, et un paquet qui en contient un est refusé en nommant le fichier de
+  trop plutôt qu'en l'ignorant — celui qui l'a mis croit qu'il agit.
+- **Un fichier manquant.** Un paquet amputé est refusé, jamais complété en silence avec le nôtre.
+
+**Un seul chemin de validation.** `valider.mjs` est scindé : `assembler(contenu, schemas)` fait
+l'orchestration, `chargerCatalogue(racine)` la nourrit depuis le disque, `assemblerCatalogue(contenu)`
+depuis une ligne de base. Deux entrées, **une** validation — un second chemin serait un chemin non
+testé, et c'est celui-là qui laisserait passer une méthode invalide. Le catalogue est **revalidé au
+chargement**, pas seulement à l'écriture : le produit évolue, et un prédicat retiré du moteur
+rendrait invalide une méthode publiée hier.
+
+**Un défaut évité par construction, écrit ici parce qu'il se serait vu tard.** Les quatre tests
+d'isolation ne prouvent rien si le service refuse *tout* : un `designerMethodologie` cassé les
+ferait tous passer. Le chemin normal est donc exercé explicitement — publier, désigner, charger, et
+vérifier que c'est bien **ce** catalogue qui sort.
+
+**Ce qui reste, et qui est dit dans le document** : il n'y a pas encore d'**écran** d'import. Le
+mécanisme est éprouvé, la publication passe encore par nous — ~1 séance.

@@ -17,7 +17,7 @@
 
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
-import { chargerCatalogue } from '@/lib/methodology/catalogue';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import type { Catalogue } from '@/lib/methodology/types';
 
 export class TeamRuleError extends Error {
@@ -160,7 +160,7 @@ export async function answerRubric(
   const d = await q1<Declaration>(`select ${COLONNES_DECL} from independence_declaration where id = $1`, [declarationId]);
   if (d.signed_at) throw new TeamRuleError('déclaration déjà signée : elle se révise, elle ne se réécrit pas');
   if (actorUserId !== d.user_id) throw new TeamRuleError('on remplit sa propre déclaration, pas celle d’un autre');
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(d.engagement_id);
   if (!cat.independance.rubriques.some((r) => r.code === code)) {
     throw new TeamRuleError(`rubrique « ${code} » inconnue de la déclaration du cabinet`);
   }
@@ -196,7 +196,7 @@ export async function signDeclaration(declarationId: string, actorUserId: string
   if (actorUserId !== d.user_id) {
     throw new TeamRuleError('une déclaration d’indépendance se signe soi-même — personne ne signe pour un autre');
   }
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(d.engagement_id);
   const missing = missingForSignature(cat, d);
   if (missing.length) throw new TeamRuleError('déclaration incomplète : ' + missing.join(' · '));
   const row = await q1<Declaration>(
@@ -392,7 +392,7 @@ export interface NonAuditInput {
 
 export async function recordNonAuditService(input: NonAuditInput): Promise<{ id: string }> {
   const eng = await assertSameFirm(input.engagementId, input.actorUserId);
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(input.engagementId);
   if (!cat.independance.naturesSacc[input.nature]) {
     throw new TeamRuleError(`nature « ${input.nature} » inconnue du référentiel du cabinet`);
   }
@@ -433,7 +433,7 @@ export interface FeeRatio {
  * dénominateur supposé serait pire que pas de ratio.
  */
 export async function feeRatio(engagementId: string): Promise<FeeRatio> {
-  const cat = await chargerCatalogue();
+  const cat = await catalogueDeLaMission(engagementId);
   const cap = cat.independance.parametres.plafond_sacc_pct;
   const eng = await q1<{ audit_fee_cents: string | null }>(
     `select audit_fee_cents from engagement where id = $1`,

@@ -2,10 +2,12 @@
 
 > **La phrase honnête, en une ligne.** Votre méthode reste la vôtre : vos procédures, vos seuils,
 > votre échelle de risque, votre jeu d'assertions, votre questionnaire et votre déclaration
-> d'indépendance sont des **données validées** — pas du code —, et **le chargement par cabinet,
-> depuis la base plutôt que depuis le dépôt, est chiffré à 2½ séances et n'est pas encore fait**
-> (§3). Ce que vous ne pourrez pas faire seul même après cela, c'est inventer un **type de calcul**
-> que le moteur ne sait pas encore faire (§2).
+> d'indépendance sont des **données validées** — pas du code —, chargées depuis la base de **votre**
+> cabinet, et séparées de celles des autres par une contrainte que **la base fait respecter**, pas
+> seulement l'application (§3). Ce qui manque encore, et c'est daté : **l'écran** qui vous laisse
+> coller, valider et publier un catalogue vous-même — aujourd'hui le chargement passe par nous
+> (~1 séance, §4). Et ce que vous ne pourrez pas faire seul même après cela, c'est inventer un
+> **type de calcul** que le moteur ne sait pas encore faire (§2).
 
 Ce document existe pour que cette phrase soit **vérifiable** plutôt que rassurante. Il est autant
 commercial que technique : il dit ce qu'on promet, ce qu'on ne promet pas, ce qui est daté, et
@@ -15,34 +17,34 @@ pourquoi la frontière est là.
 
 | Marqueur | Ce qu'il signifie |
 |---|---|
-| **⚠ commun** | C'est bien une **donnée** — un fichier JSON validé, pas du code — mais le catalogue est aujourd'hui lu depuis le dépôt : il est **unique pour toutes les missions**, pas encore par cabinet. Levée chiffrée au §3, ~2½ séances |
-| **⚠⚠ code** | C'est configuré, mais **dans un pack TypeScript**, pas dans `methodology/`. Le changer suppose donc **un développeur et un déploiement**, même si aucune logique ne bouge. Levée chiffrée au §2.1 |
+| **✓ donnée** | Un fichier JSON validé, publié pour **votre** cabinet et lu depuis la base. Le modifier ne demande ni compilation, ni développeur, ni déploiement. Réserve unique et commune à toutes ces lignes : **la publication passe encore par nous, faute d'écran d'import** (§4) |
+| **⚠⚠ code** | C'est configuré, mais **dans un pack TypeScript**, pas dans `methodology/`. Le changer suppose donc **un développeur et un déploiement**, même si aucune logique ne bouge. Levée chiffrée au §1.2 |
 
-Aucune ligne du §1 n'est aujourd'hui sans marqueur. C'est l'état réel, et il est daté :
-**26 août 2026**.
+État daté du **26 août 2026**. Une ligne du §1 porte encore **⚠⚠ code**, et le document dit laquelle
+avant le tableau plutôt que de la laisser découvrir au §2.
 
 ---
 
 ## 1. Ce qui se configure sans code
 
-Tout ce qui porte **⚠ commun** vit dans `methodology/`, en JSON versionné. On modifie le fichier,
-on recharge, c'est en vigueur : aucune compilation, aucun développeur. Ce qui porte **⚠⚠ code** est
-configuré aussi, mais au mauvais endroit — dit ici plutôt que découvert.
+Tout ce qui porte **✓ donnée** est du JSON versionné, validé, publié pour votre cabinet. On modifie
+le fichier, on republie, c'est en vigueur : aucune compilation, aucun développeur. Ce qui porte
+**⚠⚠ code** est configuré aussi, mais au mauvais endroit — dit ici plutôt que découvert.
 
 | Ce que vous changez | Où | Effet immédiat | État |
 |---|---|---|---|
-| **Vos procédures** — libellé, objectif, assertion servie, sens du test, justificatifs attendus, champs à relever, exceptions | `procedures.json` | La procédure apparaît dans le plan de travail des postes concernés | ⚠ commun |
-| **Le niveau de risque à partir duquel une procédure est requise** | `procedures.json` → `risque_minimum` | Elle entre ou sort de la liste des travaux requis | ⚠ commun |
-| **Votre jeu d'assertions** — lesquelles, comment elles s'appellent, ce que chacune couvre | `assertions.json` | Sept, cinq, ou neuf ; « présentation » séparée de « informations à fournir », ou le découpage PCAOB. Voir §1.1 | ⚠ commun |
-| **Votre échelle de risque** — combien de niveaux, comment ils s'appellent | `risque.json` → `echelle.niveaux` | Deux, trois, quatre niveaux ; « limité / normal / accru » plutôt que « faible / moyen / élevé » | ⚠ commun |
-| **La règle qui convertit les facteurs en niveau** | `risque.json` → `echelle.paliers` | « 3 facteurs et plus → accru » au lieu de 2 | ⚠ commun |
-| **Vos tailles d'échantillon**, par niveau | `risque.json` → `tailles_echantillon` | La taille proposée sur chaque procédure échantillonnée | ⚠ commun |
-| **Les seuils de vos facteurs de risque** — 200 écritures, 5 % d'OD, 15 % sur le dernier mois | `risque.json` → `facteurs_observes[].parametres` | Le facteur s'active plus tôt ou plus tard | ⚠ commun |
-| **Le libellé et la justification de chaque facteur** | `risque.json` | Ce que l'écran affiche et ce que le dossier garde | ⚠ commun |
-| **Vos questions de risque résiduel** — lesquelles, leur portée, leur nature, ce qu'un « oui » change | `questionnaire.json` | Le questionnaire posé dans chaque section et au niveau de l'entité | ⚠ commun |
-| **Vos rubriques de déclaration d'indépendance** | `independance.json` | Ce que chaque membre doit déclarer avant qu'on puisse lui attribuer un travail | ⚠ commun |
-| **Vos seuils d'indépendance** — cadeaux, familiarité, rotation, plafond d'honoraires non-audit | `independance.json` → `parametres` | Les calculs et les alertes correspondants | ⚠ commun |
-| **Vos natures de services autres que la certification** | `independance.json` → `natures_sacc` | La liste proposée à la saisie | ⚠ commun |
+| **Vos procédures** — libellé, objectif, assertion servie, sens du test, justificatifs attendus, champs à relever, exceptions | `procedures.json` | La procédure apparaît dans le plan de travail des postes concernés | ✓ donnée |
+| **Le niveau de risque à partir duquel une procédure est requise** | `procedures.json` → `risque_minimum` | Elle entre ou sort de la liste des travaux requis | ✓ donnée |
+| **Votre jeu d'assertions** — lesquelles, comment elles s'appellent, ce que chacune couvre | `assertions.json` | Sept, cinq, ou neuf ; « présentation » séparée de « informations à fournir », ou le découpage PCAOB. Voir §1.1 | ✓ donnée |
+| **Votre échelle de risque** — combien de niveaux, comment ils s'appellent | `risque.json` → `echelle.niveaux` | Deux, trois, quatre niveaux ; « limité / normal / accru » plutôt que « faible / moyen / élevé » | ✓ donnée |
+| **La règle qui convertit les facteurs en niveau** | `risque.json` → `echelle.paliers` | « 3 facteurs et plus → accru » au lieu de 2 | ✓ donnée |
+| **Vos tailles d'échantillon**, par niveau | `risque.json` → `tailles_echantillon` | La taille proposée sur chaque procédure échantillonnée | ✓ donnée |
+| **Les seuils de vos facteurs de risque** — 200 écritures, 5 % d'OD, 15 % sur le dernier mois | `risque.json` → `facteurs_observes[].parametres` | Le facteur s'active plus tôt ou plus tard | ✓ donnée |
+| **Le libellé et la justification de chaque facteur** | `risque.json` | Ce que l'écran affiche et ce que le dossier garde | ✓ donnée |
+| **Vos questions de risque résiduel** — lesquelles, leur portée, leur nature, ce qu'un « oui » change | `questionnaire.json` | Le questionnaire posé dans chaque section et au niveau de l'entité | ✓ donnée |
+| **Vos rubriques de déclaration d'indépendance** | `independance.json` | Ce que chaque membre doit déclarer avant qu'on puisse lui attribuer un travail | ✓ donnée |
+| **Vos seuils d'indépendance** — cadeaux, familiarité, rotation, plafond d'honoraires non-audit | `independance.json` → `parametres` | Les calculs et les alertes correspondants | ✓ donnée |
+| **Vos natures de services autres que la certification** | `independance.json` → `natures_sacc` | La liste proposée à la saisie | ✓ donnée |
 | **Les intitulés de vos papiers de travail** — titres de sections, titres d'annexes, mentions « établi par » / « validé par », langue | `src/lib/packs/nep-fr.ts`, `pcaob-sox.ts` → `WorkpaperStrings` | Le PDF et le classeur exportés portent vos intitulés | **⚠⚠ code** — voir §1.2 |
 
 **Ce que le validateur garantit en échange.** Un fichier invalide **n'est pas chargé** : il arrête
@@ -99,7 +101,7 @@ sans arrondi :
 
 | Pièce | Coût | Ce que ça change |
 |---|---|---|
-| Déplacer `WorkpaperStrings` dans `methodology/papier.json` | ~½ séance | Fait passer la première ligne du tableau de **⚠⚠ code** à **⚠ commun** : plus de déploiement pour changer un intitulé |
+| Déplacer `WorkpaperStrings` dans `methodology/papier.json` | ~½ séance | Fait passer la dernière ligne du tableau de **⚠⚠ code** à **✓ donnée** : plus de déploiement pour changer un intitulé |
 | Liste et ordre des sections en données, avec énumération des blocs nommés | ~1 séance | Vous retirez « Vérification », vous déplacez « Évaluation » avant « Exceptions ». Même frontière qu'au §2 : la méthode **nomme** un bloc, le code sait le **remplir** ; un bloc nommé et non implémenté arrête l'assemblage |
 | Colonnes de tableaux en données | ~1 séance | Vos colonnes, vos intitulés, votre ordre — les champs disponibles restant ceux que la procédure relève |
 | En-tête, logo, pied de page | ~1 séance | Le PDF sort sur votre papier |
@@ -150,22 +152,38 @@ et c'est exactement ce qu'il faut annoncer plutôt que de laisser découvrir.
 
 ## 3. L'isolation : votre méthode est à vous, comme vos données
 
-Le catalogue d'un cabinet lui appartient au même titre que ses dossiers. Le socle est en place —
-`tenant_id` sur toutes les tables racines, politiques RLS, et une garde applicative qui vérifie à
-**chaque écriture** que la personne et la mission appartiennent au même cabinet, vérifiée par un test
-qui **tente** la fuite dans les deux sens.
+Le catalogue d'un cabinet lui appartient au même titre que ses dossiers. **C'est fait, et c'est
+vérifié en tentant la fuite plutôt qu'en la supposant absente.**
 
-**Ce qui n'est pas encore fait, et qu'il ne faut pas promettre** : le catalogue est aujourd'hui lu
-depuis le dépôt, pas depuis la base — il est donc **commun**, pas encore par cabinet. C'est ce que
-signale le marqueur **⚠ commun** sur chaque ligne du §1. Le rendre par-cabinet est chiffré dans
-`docs/11_CONVERGENCE.md` (§ méthodologie-comme-donnée, ~2½ séances) et comporte trois pièces : une
-table `firm_methodology` portant le JSON validé, une colonne sur la mission qui désigne le catalogue
-à charger, et le test d'isolation calqué sur celui de l'équipe.
+**Comment.** Une méthode publiée est une ligne `firm_methodology` portant le paquet JSON validé, son
+empreinte et ses versions, rattachée à un cabinet. Une mission **désigne** la sienne
+(`engagement.methodology_id`). Les services ne lisent plus le dépôt : ils lisent la méthode de la
+mission.
 
-**Tant que ce n'est pas fait, la phrase honnête est** : « c'est de la donnée, validée, et le
-chargement par cabinet est la prochaine tranche » — jamais « chargez votre méthode ».
+**Trois propriétés, et chacune répond à une question qu'un auditeur pose.**
 
----
+| La question | La réponse, et ce qui la garantit |
+|---|---|
+| « Est-ce que je peux voir la méthode d'un autre cabinet ? » | Non, et pas seulement parce que l'application refuse : la clé étrangère est **composite** — `(methodology_id, tenant_id)`. Désigner le catalogue d'un autre cabinet est **impossible au niveau de la base**. Contrairement aux politiques RLS, une clé étrangère n'est pas inerte en local. Le test tente l'écriture directe, en contournant le service, et la base la rejette par son nom de contrainte |
+| « Si vous publiez une nouvelle version en mars, mes dossiers de janvier changent-ils ? » | Non. Une méthode publiée est **immuable** : republier crée une ligne, la mission garde la sienne. Un dossier doit pouvoir dire des années plus tard sous quelle méthode il a été exécuté |
+| « Et si une mission n'a pas de méthode ? » | Elle est **refusée**, pas repliée sur celle de l'éditeur. Le repli silencieux serait la vraie fuite : le dossier tournerait sur notre méthode, les travaux requis seraient les nôtres, et **aucun écran ne le dirait** |
+
+**Deux choses que le paquet d'un cabinet ne peut pas contenir**, et c'est délibéré :
+
+1. **Ses propres schémas.** Ils énumèrent ce que le *moteur* sait calculer — les prédicats
+   implémentés, les règles de date, les sens de test. Un cabinet qui livrerait le sien désactiverait
+   tous les contrôles en une ligne, et son fichier invalide passerait sans bruit. La fonction de
+   publication n'a **aucun paramètre** par lequel un schéma pourrait arriver, et un paquet qui en
+   contient un est refusé en nommant le fichier de trop.
+2. **Un fichier manquant.** Un paquet amputé est refusé, jamais complété en silence avec le nôtre.
+
+**Et rien n'entre sans être validé** : la publication passe par le **même** validateur que le
+catalogue du dépôt — pas par un second chemin, qui serait un chemin non testé. Un paquet invalide
+n'est pas stocké : il est refusé avec la liste des erreurs, et la base reste comme avant. Le
+catalogue est **revalidé au chargement**, pas seulement à l'écriture : le produit évolue, et un
+prédicat retiré du moteur rendrait invalide une méthode publiée hier.
+
+*Vérifié par 17 tests qui tentent chacune de ces fuites.*
 
 ## 4. Ce qui est demandé et pas encore possible
 
@@ -174,8 +192,7 @@ chargement par cabinet est la prochaine tranche » — jamais « chargez votre m
 | Demande | État | Coût estimé |
 |---|---|---|
 | **Taille d'échantillon par formule** (par exemple un intervalle de sondage en unités monétaires ramené au seuil de planification) plutôt qu'une table par niveau | **Non supporté.** `tailles_echantillon` est une table `niveau → nombre` | ~1 séance, à faire **avec le point 6** : une formule a besoin de la valeur de la population, et la population est le point 6. Même frontière que les prédicats — la méthode nommerait `formule: "mus_intervalle_au_seuil"`, le code la calculerait |
-| **Catalogue par cabinet**, chargé depuis la base | Non fait — voir §3 | ~2½ séances |
-| **Import d'un catalogue par l'écran** (coller un JSON, le valider, voir les erreurs) | Non fait | compris dans les 2½ ci-dessus |
+| **Import d'un catalogue par l'écran** (coller un JSON, le valider, lire les erreurs, publier, désigner) | **Non fait.** Le mécanisme existe et est éprouvé (§3) ; il n'a pas encore d'écran, donc la publication passe par nous | ~1 séance |
 | **Format du papier de travail** — ordre des sections, colonnes, en-tête | Partiellement configurable — voir §1.2 | ~3½ séances, décomposées au §1.2 |
 
 *(Les assertions figuraient ici. Elles n'y figurent plus : la question est tranchée au §1.1.)*
@@ -210,6 +227,11 @@ Un auditeur qui veut éprouver la promesse posera l'une de ces questions. Voici 
 > en dur. ~3½ séances pour que le papier sorte à votre signature, décomposées au §1.2.
 
 > **« Est-ce que mon catalogue est à moi, ou est-ce que vous le voyez ? »**
-> Le socle d'isolation existe et est éprouvé par un test qui tente la fuite. Mais le catalogue est
-> aujourd'hui **commun**, lu depuis le dépôt : la réponse honnête est « pas encore, c'est la
-> prochaine tranche, elle est chiffrée à 2½ séances ». Voir §3.
+> Il est à vous. Votre méthode est une ligne rattachée à votre cabinet ; la mission désigne la
+> sienne ; et désigner celle d'un **autre** cabinet est impossible **au niveau de la base**, par une
+> clé étrangère composite — pas seulement refusé par l'application. Une mission sans méthode est
+> refusée plutôt que repliée sur la nôtre. Vérifié par des tests qui **tentent** chacune de ces
+> fuites, y compris en contournant le service pour écrire directement en base. Voir §3.
+>
+> La réserve, dite d'avance : **il n'y a pas encore d'écran d'import**, donc la publication passe par
+> nous. ~1 séance, §4.
