@@ -19,7 +19,8 @@
     "screens:dev": "tsx scripts/screens/run.ts -- --dev",
     "clics": "tsx scripts/clics/run.ts",
     "clics:dev": "tsx scripts/clics/run.ts -- --dev",
-    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run clics"
+    "visuel": "tsx scripts/visuel/run.ts",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run clics && npm run visuel"
   },
   "keywords": [],
   "author": "",

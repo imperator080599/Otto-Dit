@@ -3330,3 +3330,63 @@ Et *re-naviguer aussitôt après une action qui redirige déjà* fait courir deu
 contre l'autre : React signalait une hydratation incohérente qu'il réparait seul, sur une page que
 le balayage rend proprement. Ce n'était pas le produit — mais **un harnais qui produit ses propres
 erreurs apprend à les ignorer**, et c'est ainsi qu'un vrai défaut passe.
+
+---
+
+## ADR-094 — La revue visuelle entre dans ce qu'on lance (`npm run visuel`)
+
+Reportée depuis plusieurs passes, elle a trouvé ce qu'aucun autre harnais ne cherchait : le
+balayage vérifie qu'une route **rend**, le parcours qu'elle **agit** — ni l'un ni l'autre ne
+regarde ce qu'elle **donne à voir**.
+
+**Le thème sombre n'existait pas.** L'application était en clair uniquement ; les captures sombres
+que je montrais venaient du **prototype**. Il tient en une redéfinition de jetons parce que la
+feuille de style ne cite plus une seule couleur en dur — c'est ce qui rend un thème possible, et son
+absence qui les rend coûteux.
+
+**Le texte « faint » était à 2,61:1.** C'est la voix du produit : chaque « pourquoi elle existe
+encore », chaque règle expliquée. Sous le seuil où un texte se lit pour tout le monde. *Un discret
+qui ne se lit pas n'est pas discret, il est absent.*
+
+**Cent quatre vues débordaient à 390 px.** Un tableau d'audit a huit colonnes ; il ne rentre pas, et
+le réduire le rendrait illisible. Ce qui n'est pas acceptable, c'est que la **page** parte de
+travers — on lit une colonne en poussant le document, et le bandeau et le rail glissent avec. Chaque
+panneau devient son propre défileur. Et le bandeau, à hauteur fixe, faisait sortir l'identité de
+l'utilisateur par la droite : la seule chose qu'il ait à dire.
+
+**Trois défauts vus à l'œil, pas mesurés** — c'est pourquoi la revue produit aussi les captures :
+- l'écran **« Risque par assertion » était VIDE** dans la démonstration : `assessFsli` n'était appelé
+  que par le dossier N-1. Il rendait 200, le balayage passait, les tests passaient — et l'écran qui
+  porte le raisonnement le plus distinctif du produit ne montrait rien ;
+- l'écran de clôture affichait les **codes** des familles d'obstacles (« achevement — 1 ») ; les
+  titres existaient déjà ailleurs, ils vivent maintenant en un seul endroit ;
+- le bandeau disait **« not signed in »**, en anglais, sur le portail client francophone — le seul
+  écran où personne n'est connecté.
+
+**Ce que la revue mesure, et ce qu'elle ne prétend pas mesurer.** Deux choses seulement, parce que ce
+sont les deux qu'une machine juge honnêtement : le **débordement horizontal** (avec le coupable
+nommé — « la page déborde » sans lui oblige à tout rouvrir) et le **contraste** du texte contre son
+fond, refusé sous 3:1. Elle ne juge pas une mise en page : elle produit les captures, et un humain
+les regarde. Elle entre dans `npm run verify`.
+
+**Et le portail se regarde SANS le cookie auditeur.** La première version montrait le nom de
+l'associé en haut d'un écran destiné au client : on relisait le mauvais écran.
+
+**Post-scriptum d'ADR-094 — le onzième écran, et pourquoi il manquait.**
+Dix écrans avaient été corrigés (ADR-091) ; `risque` avait été écarté parce qu'il *semblait*
+gérer ses refus — le mot « refusée » y figure. Il figurait dans une PHRASE D'EXPLICATION, pas dans
+un chemin de code : `overrideAction` levait, et la surcharge d'un niveau d'assertion **sans motif
+écrit était acceptée** alors que l'écran, le service et STATUS.md affirmaient tous trois qu'elle
+était refusée. Personne ne pouvait le voir : l'écran était VIDE dans la démonstration, donc le
+contrôle ne s'exécutait jamais. Remplir l'écran a rendu la règle atteignable, et elle est tombée au
+premier clic. *Chercher un mot n'est pas vérifier un chemin — et un contrôle qui ne s'exécute pas
+n'a pas d'opinion.*
+
+**Post-scriptum d'ADR-094 — attendre `load` après une action serveur n'attend rien.**
+Une hydratation incohérente revenait au hasard, tantôt sur le portail, tantôt sur le papier de
+travail : React la répare seule, mais un harnais ne doit pas apprendre à ignorer ses propres
+erreurs. Le premier correctif attendait l'événement `load` après chaque envoi — et **une action
+serveur n'en déclenche pas** : c'est une mise à jour côté client. L'attente rendait la main
+immédiatement, le clic suivant partait dans un rendu en cours, et le défaut restait. C'est le
+**silence réseau** qui marque la fin d'un aller-retour d'action. Deux exécutions consécutives à
+zéro défaut depuis. *Attendre la mauvaise chose ressemble beaucoup à attendre.*

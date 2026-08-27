@@ -2,6 +2,87 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Reprendre ce dossier sans moi — l'essentiel en une page
+
+**Ce qu'est OTTO.** Une plateforme d'audit AI-native : noyau agnostique du référentiel, packs de
+référentiel (NEP/France et PCAOB-SOX en v1), et une **méthode de cabinet qui est de la DONNÉE**
+(`methodology/*.json`, validée par `valider.mjs`, chargée par cabinet). Interface en français,
+local-first : elle tourne sans aucun compte externe.
+
+**Ce que l'application fait aujourd'hui, de bout en bout, au clic.** Créer un dossier · l'accepter
+(critères, motifs, jalons dont un dérivé) · équipe et indépendance (déclarations, ancienneté,
+rotation) · reprendre l'exercice précédent (proposé, jamais repris en silence) · importer balance et
+grand livre (FEC strict) · rapprocher · seuils · périmètre · risque par assertion · questionnaire
+résiduel · sondage (couverture + unités monétaires, germe déterministe) · demande PBC · **portail
+client** · échelle d'extraction · vouching L0 · écarts et clarifications · re-exécution en aveugle ·
+évaluation contre l'anomalie tolérable · papier de travail, notes de revue, trois visas dans
+l'ordre, export PDF/Excel · pointage des états financiers · achèvement (5 natures) · **obstacles au
+visa** (une liste, dix familles, calculée) · clôture et **archive scellée téléchargeable**.
+Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
+journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
+
+**Branche** : `claude/otto-audit-platform-whs17z`. **Aucun déploiement** — il se fera quand le
+fondateur le demandera. Vercel n'est pas connecté.
+
+### Les quatre commandes qui prouvent
+
+| Ce que ça prouve | Commande | État |
+|---|---|---|
+| Toutes les règles, tous les refus | `cd app && npm test` | 404 tests, zéro réseau |
+| Tous les écrans **rendent** en production | `cd app && npm run screens` | 63 routes |
+| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 54 étapes, ~30 refus |
+| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 236 vues, 0 défaut |
+| Tout, base recréée | `cd app && npm run verify` | enchaîne les quatre |
+
+`npm run verify` est la seule chose à lancer avant de dire qu'une tranche est finie.
+
+### Les cinq règles qui ont coûté le plus cher à apprendre
+
+1. **Un écran qui rend n'est pas un écran qui marche.** Six formulaires inertes en production
+   (ADR-078), un dossier créé inatteignable (ADR-088), dix écrans qui rendaient chaque refus en
+   page 500 (ADR-091) — tout cela avec la suite au vert et les écrans à 200.
+2. **N'affirme jamais plus que ce que tu vérifies** — ni dans un écran, ni dans ce fichier.
+3. **Le silence lu comme un succès** est le défaut à traquer : un objet créé qu'aucun chemin de
+   lecture n'atteint, un geste du métier sans écran, une branche de repli que rien n'exécute, un
+   formulaire que le navigateur refuse d'envoyer et qu'on lit comme une règle vérifiée.
+4. **Un refus s'affiche, il ne tombe pas en 500** — `src/app/refus.ts` porte la règle pour tous les
+   onze écrans qui en avaient besoin. Le onzième s'était caché derrière le mot « refusée » écrit
+   dans une phrase d'explication : chercher un mot n'est pas vérifier un chemin.
+5. **La méthode NOMME, le code CALCULE** (ADR-050) : un prédicat ou une formule inconnue arrête
+   l'assemblage, elle ne s'ignore pas.
+
+### Ce qui est GELÉ — ne pas rouvrir sans le fondateur
+
+- **Aucun cycle au-delà du chiffre d'affaires.** Les procédures sont du contenu, la mécanique est le
+  produit.
+- **Aucun contenu de procédure nouveau.** Le pack **SOX est gelé** : il tourne, il ne s'étend pas.
+- **Données synthétiques uniquement, pour toujours.** Aucune méthodologie de cabinet réelle.
+- **Aucun appel LLM payant depuis un harnais** : `npm run clics` force `OTTO_OCR_ADAPTER=mock`.
+  La clé vit dans `app/.env.local`, lue seulement par l'application au runtime — **ne jamais
+  l'exporter dans un shell**.
+
+### Ce qui reste OUVERT — la file, telle qu'elle est
+
+| # | Ouvert | Qui décide |
+|---|---|---|
+| 1 | **Les 19 sources méthodologiques sont `verifie: false`** — aucune relue sur texte primaire. Le fondateur s'en charge sur les procédures de démonstration. | fondateur |
+| 2 | **PCAOB AS 1215** porté `[UNVERIFIED]` : pcaobus.org est bloqué depuis cet environnement. Le côté français est vérifié (R. 820-42 ; D. 821-186 III-IV). | fondateur |
+| 3 | **Déploiement Vercel + Supabase** — runbook dans DEPLOY.md, à lancer sur demande. | fondateur |
+| 4 | **Transport e-mail entrant réel** (Q12) — première tâche de déploiement. | fondateur |
+| 5 | **Secret professionnel / RGPD + DPA** avant toute donnée réelle (A13). | fondateur |
+| 6 | Le contrôle `input[type=file]` affiche « Choose File » (libellé natif du navigateur) sur le portail francophone : non corrigeable sans contrôle sur mesure. | à trancher |
+| 7 | `npm run clics` attend le **silence réseau** après chaque envoi : une action serveur ne déclenche pas d'événement `load`. Si un écran devenait très lent, l'attente (15 s) pourrait expirer et le parcours redeviendrait instable. | à surveiller |
+| 8 | Le dossier N-1 n'est ni conclu ni clos : `/api/archive/[engagementId]` déclare donc un **404 attendu** tant qu'aucun dossier n'est scellé dans le monde de démonstration. | à trancher |
+| 9 | Premiers fast-follows si le coin tient : revue analytique + questions de variation, pointage de plaquette, circularisations (D8). | fondateur |
+
+### Où regarder en premier
+
+`DEMO_APP.md` (le parcours pas à pas) · `docs/DECISIONS.md` (ADR-001 → ADR-093, le pourquoi de
+chaque règle) · `CLAUDE.md` (les quatorze règles permanentes) · `docs/12_CONFIGURABLE.md` (ce qui
+est de la méthode et ce qui est du code).
+
+---
+
 ## Current state
 
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
@@ -11,8 +92,9 @@
   Le balayage des 63 écrans est DANS la suite, et `npm run screens` le refait en production.
   `npm run clics` **conduit TOUT le chemin de démonstration** dans Chromium sur le build de
   production — de l'import du grand livre définitif au téléchargement du dossier scellé, en
-  54 étapes dont une trentaine vérifient un refus (ADR-090, ADR-091). Les deux entrent dans
-  `npm run verify`.
+  54 étapes dont une trentaine vérifient un refus (ADR-090, ADR-091). `npm run visuel` REGARDE
+  les 59 écrans en clair et en sombre, en large et à 390 px — débordement et contraste mesurés,
+  captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
@@ -33,6 +115,7 @@ comme « mesuré » s'il ne figure pas ici.
 | **Le dossier scellé est autoportant et déterministe** | **Prouvé par exécution** | archive rejouable octet pour octet ; empreintes du manifeste re-vérifiées ; README sans script ni lien externe |
 | **Les écrans de méthode RENDENT dans l'application qui tourne** | **Prouvé par exécution** | six écrans conduits dans Chromium sur base fraîche (200), dont le parcours publier → refuser → corriger → publier. Avant ADR-076 : trois d'entre eux rendaient **500** avec 278 tests verts |
 | **La mission entière se CLIQUE dans l'application, jusqu'au dossier scellé téléchargé** | **Prouvé par exécution** | `npm run clics` : 54 étapes conduites dans Chromium sur un build de production, 0 échec, en étant tour à tour préparateur, reviewer, associé et client. C'est ce contrôle qui a trouvé le dossier créé inatteignable (ADR-088), les dix écrans qui rendaient un refus en page 500, la clôture sans écran et l'archive sans chemin de lecture (ADR-091) — tout cela invisible aux 404 tests et aux 63 écrans à 200 |
+| **Les écrans se LISENT — clair et sombre, large et 390 px** | **Prouvé par exécution** | `npm run visuel` : 236 vues mesurées, 0 débordement horizontal, 0 texte sous 3:1. Avant : le thème sombre n'existait pas dans l'application (seulement dans le prototype), le texte « faint » — la voix explicative du produit — était à 2,61:1, et 104 vues débordaient à 390 px |
 | **Les visas suivent la hiérarchie de revue** | **Prouvé par exécution** | trigger + service : un visa associé avant celui du reviewer est refusé |
 | Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
 | **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |

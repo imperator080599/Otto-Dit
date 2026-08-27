@@ -7,7 +7,12 @@
   --border-strong: #c9d0da;
   --text: #16202e;
   --muted: #62708a;
-  --faint: #8b95a7;
+  /* LE TEXTE « FAINT » PORTE LA VOIX DU PRODUIT — chaque « pourquoi », chaque
+     règle expliquée — et il était à 2,82:1 sur le fond, 2,61:1 dans un encadré :
+     sous le seuil où un texte est lisible pour tout le monde. Un discret qui ne
+     se lit pas n'est pas discret, il est absent. À 4,89:1 minimum il reste
+     nettement plus léger que le corps de texte, et il se lit. */
+  --faint: #626d7e;
   --accent: #1f4e8c;
   --accent-soft: #e8effa;
   --green: #0e7a5f;
@@ -18,9 +23,62 @@
   --red-soft: #fbe9e7;
   --violet: #5b3fa8;
   --violet-soft: #efeafc;
+  --topbar: #14263e;
+  --topbar-text: #e8edf5;
+  --topbar-link: #c6d4e8;
+  --topbar-badge: #2b425f;
+  --topbar-badge-text: #ffd580;
+  --gray-soft: #eef1f5;
+  --row-hover: #fafbfd;
+  --field: #ffffff;
+  --on-accent: #ffffff;
+  --accent-hover: #17406f;
+  --track: #e8ecf2;
   --radius: 8px;
   --font: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+/* LE THÈME SOMBRE — le même dessin, une autre encre.
+   Il n'existait PAS : l'application était en clair uniquement, et les captures
+   sombres que je montrais venaient du PROTOTYPE. Il tient en une redéfinition
+   des jetons parce que le reste de la feuille ne cite plus une seule couleur en
+   dur : c'est ce qui rend un thème possible, et son absence qui les rend
+   coûteux. Rien ici n'ajoute de règle de mise en page — seulement de l'encre. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e141c;
+    --panel: #151d27;
+    --border: #26313f;
+    --border-strong: #3a4759;
+    --text: #e6ecf4;
+    --muted: #9aa8bd;
+    --faint: #8b98ab;
+    --accent: #7aa9e8;
+    --accent-soft: #17273c;
+    --green: #5fd0aa;
+    --green-soft: #122a24;
+    --amber: #e0b25a;
+    --amber-soft: #2c2415;
+    --red: #f08a80;
+    --red-soft: #2e1a19;
+    --violet: #b9a3f0;
+    --violet-soft: #211c33;
+    --topbar: #0a1119;
+    --topbar-text: #dbe4f0;
+    --topbar-link: #a8bcd6;
+    --topbar-badge: #1e2c3f;
+    --topbar-badge-text: #ffd580;
+    --gray-soft: #222c39;
+    --row-hover: #1a2331;
+    --field: #101822;
+    --on-accent: #0b131c;
+    --accent-hover: #9cc0f0;
+    --track: #212b38;
+  }
+  /* Un aplat blanc sur fond sombre éblouit : les PDF et images embarquées
+     gardent leur fond, on baisse seulement leur éclat. */
+  iframe, img { filter: brightness(.92); }
 }
 
 * { box-sizing: border-box; }
@@ -40,17 +98,17 @@ h3 { font-size: 13.5px; margin: 16px 0 6px; font-weight: 600; }
 code, .mono { font-family: var(--mono); font-size: 12.5px; }
 
 .topbar {
-  background: #14263e;
-  color: #e8edf5;
+  background: var(--topbar);
+  color: var(--topbar-text);
   display: flex; align-items: center; gap: 16px;
   padding: 0 20px; height: 48px;
 }
-.topbar .brand { font-weight: 700; letter-spacing: 1.5px; color: #fff; font-size: 15px; }
+.topbar .brand { font-weight: 700; letter-spacing: 1.5px; color: var(--topbar-text); font-size: 15px; }
 .topbar .brand small { font-weight: 400; opacity: .55; letter-spacing: 0; margin-left: 8px; }
-.topbar a { color: #c6d4e8; }
+.topbar a { color: var(--topbar-link); }
 .topbar .spacer { flex: 1; }
 .topbar .demo-badge {
-  background: #2b425f; color: #ffd580; font-size: 11px; padding: 2px 8px;
+  background: var(--topbar-badge); color: var(--topbar-badge-text); font-size: 11px; padding: 2px 8px;
   border-radius: 999px; letter-spacing: .5px;
 }
 
@@ -81,6 +139,30 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 900px) { .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: 1fr; } }
 
+/* SUR UN TÉLÉPHONE, C'EST LE PANNEAU QUI DÉFILE, PAS LA PAGE.
+   Cent quatre écrans débordaient horizontalement à 390 px : un tableau
+   d'audit a huit colonnes, il ne rentre pas, et il ne DOIT pas rentrer — le
+   réduire le rendrait illisible. Ce qui n'est pas acceptable, c'est que la
+   PAGE parte de travers : on lit une colonne en poussant le corps du document,
+   et le bandeau, le rail et les autres panneaux glissent avec.
+   Chaque panneau devient donc son propre défileur. La page ne bouge plus. */
+@media (max-width: 760px) {
+  .panel { overflow-x: auto; }
+  /* LE BANDEAU SE REPLIE AU LIEU DE SE COUPER. À 390 px, sa hauteur fixe de
+     48 px faisait déborder le nom du cabinet par-dessus le badge, et
+     l'identité de l'utilisateur sortait de l'écran par la droite : on ne
+     savait plus qui on est — ce qui est la seule chose que ce bandeau ait à
+     dire. Il s'enroule sur deux lignes, et la mention secondaire du produit
+     s'efface : elle décore, elle n'informe pas. */
+  .topbar { height: auto; flex-wrap: wrap; padding: 8px 12px; gap: 8px; row-gap: 4px; }
+  .topbar .brand small { display: none; }
+  .topbar .demo-badge { font-size: 10px; padding: 2px 6px; }
+  .topbar .spacer { flex-basis: 100%; height: 0; }
+  .shell { padding: 12px; }
+  .engnav { gap: 0; }
+  .engnav a { padding: 6px 9px; font-size: 12.5px; }
+}
+
 table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.data th {
   text-align: left; font-weight: 600; color: var(--muted); font-size: 12px;
@@ -88,7 +170,7 @@ table.data th {
   padding: 7px 10px; border-bottom: 2px solid var(--border-strong); white-space: nowrap;
 }
 table.data td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-table.data tr:hover td { background: #fafbfd; }
+table.data tr:hover td { background: var(--row-hover); }
 table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .table-scroll { overflow-x: auto; }
 
@@ -96,7 +178,7 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
   display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px;
   border-radius: 999px; white-space: nowrap;
 }
-.badge.gray { background: #eef1f5; color: var(--muted); }
+.badge.gray { background: var(--gray-soft); color: var(--muted); }
 .badge.blue { background: var(--accent-soft); color: var(--accent); }
 .badge.green { background: var(--green-soft); color: var(--green); }
 .badge.amber { background: var(--amber-soft); color: var(--amber); }
@@ -104,12 +186,12 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .badge.violet { background: var(--violet-soft); color: var(--violet); }
 
 .btn {
-  display: inline-block; background: var(--accent); color: #fff; border: none;
+  display: inline-block; background: var(--accent); color: var(--on-accent); border: none;
   padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
   cursor: pointer; font-family: var(--font);
 }
-.btn:hover { background: #17406f; text-decoration: none; color: #fff; }
-.btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--border-strong); }
+.btn:hover { background: var(--accent-hover); text-decoration: none; color: var(--on-accent); }
+.btn.secondary { background: var(--field); color: var(--accent); border: 1px solid var(--border-strong); }
 .btn.secondary:hover { background: var(--accent-soft); }
 .btn.danger { background: var(--red); }
 .btn.small { padding: 4px 10px; font-size: 12px; }
@@ -117,7 +199,7 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 
 input[type='text'], input[type='number'], input[type='date'], select, textarea {
   font-family: var(--font); font-size: 13px; padding: 6px 9px;
-  border: 1px solid var(--border-strong); border-radius: 6px; background: #fff;
+  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--field);
   color: var(--text);
 }
 textarea { width: 100%; min-height: 70px; }
@@ -141,7 +223,7 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
 .callout.danger { border-color: var(--red); background: var(--red-soft); }
 .callout.green { border-color: var(--green); background: var(--green-soft); }
 
-.progressbar { background: #e8ecf2; border-radius: 999px; height: 8px; overflow: hidden; }
+.progressbar { background: var(--track); border-radius: 999px; height: 8px; overflow: hidden; }
 .progressbar > div { background: var(--accent); height: 100%; }
 
 .ai-flag {

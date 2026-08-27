@@ -105,15 +105,15 @@ export default async function LoopPage({
                 <td>
                   {/* Une barre à l'encre : la proportion se lit, elle ne se
                       calcule pas de tête. */}
-                  <div style={{ background: '#e8eef5', height: 8, borderRadius: 4 }}>
+                  <div style={{ background: 'var(--track)', height: 8, borderRadius: 4 }}>
                     <div style={{
                       width: `${largeur(e.franchi)}%`, height: 8, borderRadius: 4,
-                      background: e.code === b.bloqueA ? '#c9922e' : '#2f5d8f',
+                      background: e.code === b.bloqueA ? 'var(--amber)' : 'var(--accent)',
                     }} />
                   </div>
                 </td>
                 <td className="num">
-                  {e.enAttente > 0 ? <strong style={{ color: '#8a6412' }}>{e.enAttente}</strong> : <span className="faint">—</span>}
+                  {e.enAttente > 0 ? <strong style={{ color: 'var(--amber)' }}>{e.enAttente}</strong> : <span className="faint">—</span>}
                 </td>
                 <td className="faint">{e.enAttente > 0 ? e.attendQuoi : ''}</td>
               </tr>

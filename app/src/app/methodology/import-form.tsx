@@ -78,7 +78,7 @@ export function ImportForm({
       </p>
 
       {etat.erreurs.length > 0 && (
-        <div className="panel" style={{ borderColor: '#c96' }}>
+        <div className="panel" style={{ borderColor: 'var(--amber)' }}>
           <p>
             <span className="badge amber">refusé</span>{' '}
             <strong>{etat.erreurs.length} erreur(s)</strong> — rien n’a été écrit.

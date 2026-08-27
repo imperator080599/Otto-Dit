@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from 'playwright';
+import type { BrowserContext, Locator, Page } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
@@ -62,7 +62,23 @@ export async function conduire(
   const aller = async (url: string) => { await p.goto(url, { waitUntil: 'load' }); };
   const cliquer = async (sel: string, attente = 2000) => {
     await p.locator(sel).first().click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(attente);
+  };
+  /* SOUMETTRE, PUIS ATTENDRE QUE L'ACTION AIT VRAIMENT FINI.
+     Attention au piège : une action serveur ne déclenche PAS d'événement
+     `load` — c'est une mise à jour côté client. Attendre `load` rend la main
+     immédiatement et n'attend rien du tout ; c'est le SILENCE RÉSEAU qui
+     marque la fin de l'aller-retour.
+     Les actions redirigent (ADR-078) ; enchaîner un clic et un délai fixe fait
+     courir le clic suivant contre le chargement en cours, et React signale une
+     hydratation incohérente qu'il répare seul — sur des pages que le balayage
+     rend proprement. Ce n'est pas le produit, c'est le harnais, et un harnais
+     qui produit ses propres erreurs apprend à les ignorer. */
+  const soumettre = async (bouton: Locator, apres = 600) => {
+    await bouton.click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(apres);
   };
 
   /* UNE STATION QUI TOMBE NE DOIT PAS EMPORTER LES SUIVANTES. La première
@@ -171,6 +187,7 @@ export async function conduire(
         const f = p.locator(`form:has(input[name=code][value="${code}"]):has(select[name=answer])`);
         await f.locator('select[name=answer]').selectOption(DEFAVORABLE[code] === 'oui' ? 'non' : 'oui');
         await f.locator('button:has-text("Noter")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(900);
       }
       const sansReponse = await p.locator('form:has(select[name=answer]) select[name=answer]')
@@ -208,6 +225,7 @@ export async function conduire(
       const f1 = p.locator('form:has(input[name=confirm_invalidation])');
       await f1.locator('input[type=file]').setInputFiles(fecDef);
       await f1.locator('button:has-text("Import FEC")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
       dire('import : ré-importer le grand livre SANS confirmer l’invalidation est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
@@ -222,6 +240,7 @@ export async function conduire(
     const cb = f2.locator('input[name=confirm_invalidation]');
     if (await cb.count()) await cb.check();
     await f2.locator('button:has-text("Import FEC")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(12000);
     dire('import : le FEC DÉFINITIF entre, invalidation confirmée',
       !refus(p), refus(p) ?? 'importé');
@@ -269,11 +288,13 @@ export async function conduire(
     }
     const bloc = p.locator('details:has(form:has(select[name=decision]))').nth(cible.i);
     await bloc.locator('summary').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(300);
     await bloc.locator('select[name=decision]').selectOption('in_scope');
     await bloc.locator('input[name=basis]').fill(
       'Remis au périmètre : la revue analytique fait apparaître une variation non expliquée.');
     await bloc.locator('button:has-text("Revoir")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(3000);
     dire('périmètre : une décision de périmètre se REVOIT, avec un motif',
       !refus(p), refus(p) ?? 'décision revue');
@@ -290,11 +311,13 @@ export async function conduire(
     if (cible2) {
       const b2 = p.locator('details:has(form:has(select[name=decision]))').nth(cible2.i);
       await b2.locator('summary').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(300);
       await b2.locator('select[name=decision]').selectOption('ns_confirmed');
       await b2.locator('input[name=basis]').fill(
         'Ressorti du périmètre : hors périmètre du jeu de démonstration, seul le chiffre d’affaires y est déroulé.');
       await b2.locator('button:has-text("Revoir")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(3000);
     }
     await aller(`${eng}/obstacles`);
@@ -306,17 +329,66 @@ export async function conduire(
   await station('risque par assertion', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/risk`);
-    const arb = p.locator('form:has(select[name=level]):has(input[name=reason])').first();
-    if (await arb.count()) {
-      const options = await arb.locator('select[name=level] option')
-        .evaluateAll((els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
-      if (options.length) {
-        await arb.locator('select[name=level]').selectOption(options[options.length - 1]);
-        await arb.locator('button:has-text("arbitrer")').click();
+    /* ARBITRER VERS UN NIVEAU DIFFÉRENT DU CALCULÉ — sinon ce n'est pas une
+       surcharge. La règle est précise : retenir le niveau calculé ne demande
+       aucun motif, seul un ÉCART s'explique. Le premier essai prenait « la
+       dernière option » et tombait parfois sur le niveau déjà calculé : le
+       service acceptait, à raison, et le contrôle annonçait un défaut du
+       produit. Et il était conditionnel : quand la table du risque était vide —
+       ce qu'elle a été tout du long — il ne produisait AUCUNE étape, et son
+       absence se lisait comme une réussite. */
+    /* LIRE LE NIVEAU CALCULÉ DANS SA CASE, pas dans le texte de la ligne : la
+       ligne contient AUSSI les libellés de toutes les options du menu, si bien
+       que « chercher le mot » les trouve tous. Le calculé est le badge de la
+       deuxième colonne, et lui seul. */
+    const lignes = await p.locator('tr:has(form:has(select[name=level]))').evaluateAll(
+      (els) => els.map((e, i) => ({
+        i,
+        calcule: (e.querySelectorAll('td')[1]?.querySelector('.badge')?.textContent ?? '').trim(),
+      })));
+    if (!lignes.length) {
+      dire('risque : aucune assertion à arbitrer — la table du risque est VIDE', false,
+        'l’écran rend ses en-têtes et rien d’autre');
+    } else {
+      const niveaux = await p.locator('form:has(select[name=level]) select[name=level] option')
+        .evaluateAll((els) => Array.from(new Set(els.map((e) => (e as HTMLOptionElement).value).filter(Boolean))));
+      const ligne = lignes.find((l) => niveaux.includes(l.calcule)) ?? lignes[0];
+      const calcule = ligne.calcule;
+      const autre = niveaux.find((n) => n !== calcule);
+      if (!autre) {
+        dire('risque : une seule valeur dans l’échelle — rien à arbitrer', false, niveaux.join(', '));
+      } else {
+        const f = p.locator('tr:has(form:has(select[name=level]))').nth(ligne.i).locator('form');
+        await f.locator('select[name=level]').selectOption(autre);
+        await f.locator('button:has-text("arbitrer")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2500);
-        dire('risque : arbitrer le niveau SANS motif écrit est refusé',
+        dire(`risque : surcharger le niveau (${calcule ?? '?'} → ${autre}) SANS motif écrit est refusé`,
           Boolean(refus(p)), refus(p) ?? 'passé — défaut');
+
+        await aller(`${eng}/risk`);
+        const g = p.locator('tr:has(form:has(select[name=level]))').nth(ligne.i).locator('form');
+        await g.locator('select[name=level]').selectOption(autre);
+        await g.locator('input[name=reason]').fill(
+          'Surcharge motivée : le confrère précédent signale une pression commerciale de fin d’exercice non visible dans les données.');
+        await g.locator('button:has-text("arbitrer")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(2500);
+        dire('risque : la même surcharge AVEC motif est acceptée, et le motif est conservé',
+          !refus(p), refus(p) ?? 'surcharge enregistrée');
       }
+    }
+
+    /* LE QUESTIONNAIRE : compter d'abord, boucler ensuite. Une liste vide veut
+       dire deux choses — « tout est répondu » et « la page n'est pas encore
+       revenue » — et la première version les confondait : après l'arbitrage,
+       elle lisait zéro formulaire au milieu d'un re-rendu, sortait de la boucle
+       et annonçait « 0 sans réponse » sur un questionnaire entièrement vierge. */
+    await aller(`${eng}/risk`);
+    const total = await compte('form:has(select[name=answer])');
+    if (total === 0) {
+      dire('risque : aucun formulaire de questionnaire à l’écran', false,
+        'la liste est vide — répondu, ou pas encore rendu ?');
     }
 
     /* ATTENDRE QUE LA RÉPONSE SOIT LÀ, pas qu'un délai soit écoulé. La
@@ -330,7 +402,7 @@ export async function conduire(
         .filter((x) => !x.v).map((x) => x.i));
 
     let repondus = 0;
-    for (let tour = 0; tour < 60; tour++) {
+    for (let tour = 0; tour < 60 && total > 0; tour++) {
       const vides = await videsMaintenant();
       if (!vides.length) break;
       const f = p.locator('form:has(select[name=answer])').nth(vides[0]);
@@ -358,7 +430,7 @@ export async function conduire(
     const reste = await p.locator('form:has(select[name=answer])').evaluateAll(
       (els) => els.filter((e) => !(e.querySelector('select[name=answer]') as HTMLSelectElement)?.value).length);
     dire('risque : le questionnaire résiduel est répondu, question par question',
-      reste === 0, `${repondus} réponse(s), ${reste} sans réponse`);
+      total > 0 && reste === 0, `${total} question(s), ${repondus} répondue(s), ${reste} sans réponse`);
   });
 
   // ── 8. SONDAGE : proposer → valider → TIRER → demander les pièces
@@ -462,16 +534,7 @@ export async function conduire(
         const f = p.locator(`form:has(input[name=item_id][value="${suivante.id}"])`);
         if (!(await f.count())) continue;
         await f.locator('input[type=file]').setInputFiles(ds(...piece.filename.split('/')));
-        await f.locator('button').first().click();
-        /* ATTENDRE QUE LA NAVIGATION DE L'ACTION SOIT FINIE, et ne pas en
-           lancer une par-dessus. L'action redirige vers la même page ; y
-           re-naviguer aussitôt fait courir deux chargements l'un contre
-           l'autre, et React signale une hydratation incohérente qu'il répare
-           tout seul. Ce n'était pas un défaut du produit — le balayage rend
-           cette page proprement — mais un défaut du harnais, et un harnais qui
-           produit ses propres erreurs apprend à les ignorer. */
-        await p.waitForLoadState('load', { timeout: 20000 }).catch(() => undefined);
-        await p.waitForTimeout(600);
+        await soumettre(f.locator('button').first());
         deposes++;
       }
 
@@ -483,8 +546,7 @@ export async function conduire(
         await f.locator('input[name=text]').fill(
           'Écriture d’ajustement passée à la demande du contrôle de gestion ; le détail et '
           + 'l’autorisation figurent dans le dossier de clôture mensuel.');
-        await f.locator('button').first().click();
-        await p.waitForTimeout(1500);
+        await soumettre(f.locator('button').first());
         explique++;
       }
     }
@@ -506,6 +568,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Confirm fields"))').first();
       if (!(await f.count())) break;
       await f.locator('button:has-text("Confirm fields")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
       atteste++;
     }
@@ -554,15 +617,13 @@ export async function conduire(
         await f.locator('input[name=text]').fill(
           'La facture a été émise sur la base du bon de commande signé ; le rattachement de '
           + 'période a été corrigé dans la clôture du mois suivant, pièce jointe au dossier.');
-        await f.locator('button').first().click();
-        await p.waitForTimeout(1400);
+        await soumettre(f.locator('button').first());
         repondu++;
       }
       // Ce qui reste sans pièce est DIT, pas laissé en suspens.
       if (await compte('button:has-text("Tous les justificatifs ont été transmis")')) {
-        await p.locator('button:has-text("Tous les justificatifs ont été transmis")')
-          .first().click().catch(() => undefined);
-        await p.waitForTimeout(2500);
+        await soumettre(p.locator('button:has-text("Tous les justificatifs ont été transmis")').first(), 1200)
+          .catch(() => undefined);
       }
     }
     dire('portail : le client répond aux clarifications, et clôt sa demande',
@@ -588,6 +649,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Confirm fields"))').first();
       if (!(await f.count())) break;
       await f.locator('button:has-text("Confirm fields")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
       atteste++;
     }
@@ -640,6 +702,7 @@ export async function conduire(
       if (vals.length) await corr0.selectOption(vals[0]);
     }
     await f.locator('button:has-text("Resolve")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(2500);
     /* ET LE REFUS DOIT ÊTRE LU PAR UN HUMAIN, pas seulement présent dans
        l'URL. Vérifier `?erreur=` prouve que le service a refusé ; il ne prouve
@@ -666,6 +729,7 @@ export async function conduire(
       const sel0 = g0.locator('select[name=corroboration]');
       if (await sel0.count()) await sel0.selectOption('');
       await g0.locator('button:has-text("Resolve")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('écarts : résoudre SANS lien vers ce qui corrobore est refusé par le SERVICE, pas par le champ',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
@@ -691,6 +755,7 @@ export async function conduire(
         const h = p.locator('form:has(button:has-text("Misstatement"))').first();
         await h.locator('input[name=amount]').fill('1800');
         await h.locator('button:has-text("Misstatement")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
         if (!refus(p)) { anomalies++; continue; }
       }
@@ -708,6 +773,7 @@ export async function conduire(
         await sel.selectOption(vals[0]);
       }
       await g.locator('button:has-text("Resolve")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1600);
       if (refus(p)) break;                       // ne pas boucler sur un refus permanent
       resolus++;
@@ -745,6 +811,7 @@ export async function conduire(
       await f.locator('input[name=net]').fill((Number(net) / 100).toFixed(2));
       await f.locator('input[name=date]').fill(date);
       await f.locator('button:has-text("Submit blind")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1600);
       soumis++;
     }
@@ -755,6 +822,7 @@ export async function conduire(
     await aller(`${eng}/testing`);
     if (await compte('form:has(button:has-text("Recompute")) button')) {
       await p.locator('form:has(button:has-text("Recompute"))').last().locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
     }
     /* LA RÉPONSE AU DÉPASSEMENT — l'écran qui n'existait pas. Sans elle, la
@@ -768,6 +836,7 @@ export async function conduire(
         + 'une base raisonnable de conclusion. Extension des travaux au quatrième trimestre et '
         + 'demande de correction adressée à la direction.');
       await fRep.locator('button:has-text("Enregistrer la réponse")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(3000);
       dire('évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran',
         !refus(p), refus(p) ?? 'réponse enregistrée');
@@ -779,6 +848,7 @@ export async function conduire(
         + 'surévalué de façon significative si les corrections annoncées ne sont pas comptabilisées. '
         + 'Conclusion prise sur le grand livre définitif, rapprochement re-exécuté et propre.');
       await fConc.locator('button:has-text("Record conclusion")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(4000);
       dire('évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)',
         !refus(p), refus(p) ?? 'conclusion enregistrée');
@@ -812,6 +882,7 @@ export async function conduire(
     const fPartner = p.locator('form:has(input[name=role][value="partner"])');
     if (await fPartner.count()) {
       await fPartner.locator('button').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('papier : l’associé ne vise pas avant le préparateur et le reviewer',
         Boolean(refus(p)), refus(p) ?? 'PASSÉ — défaut');
@@ -825,6 +896,7 @@ export async function conduire(
       await fNote.locator('textarea[name=text]').fill(
         'Préciser dans la conclusion le renvoi à l’état des anomalies (note posée au clic).');
       await fNote.locator('button:has-text("Add note")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('papier : une note de revue s’ajoute et s’affiche', !refus(p), refus(p) ?? 'note ajoutée');
     }
@@ -835,6 +907,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Mark addressed"))').first();
       if (!(await f.count())) break;
       await f.locator('button').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     await devenir(c.reviewer.id);
@@ -843,6 +916,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Close (author)"))').first();
       if (!(await f.count())) break;
       await f.locator('button').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     dire('papier : les notes de revue sont traitées puis fermées par leur auteur',
@@ -857,6 +931,7 @@ export async function conduire(
       const f = p.locator(`form:has(input[name=role][value="${role}"])`);
       if (!(await f.count())) continue;
       await f.locator('button').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
     }
     await aller(base + lien);
@@ -867,6 +942,7 @@ export async function conduire(
     // L'export : le papier sort du produit, en PDF.
     if (await compte('form:has(input[name=format][value="pdf"]) button')) {
       await p.locator('form:has(input[name=format][value="pdf"]) button').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(6000);
       dire('papier : il s’exporte en PDF depuis l’écran', !refus(p), refus(p) ?? 'export demandé');
     }
@@ -896,6 +972,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Reconfirmer"))').first();
       if (!(await f.count())) break;
       await f.locator('button:has-text("Reconfirmer")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
     }
     dire('reprise N-1 : plus aucune proposition non statuée',
@@ -918,6 +995,7 @@ export async function conduire(
     if (await doc.count()) {
       await doc.locator('input[name=explanation]').fill('Calculé hors système, feuille annexe.');
       await doc.locator('button:has-text("Documenter")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('pointage : documenter un chiffre SANS pièce liée est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
@@ -934,6 +1012,7 @@ export async function conduire(
       if (!vals.length) break;
       await sel.selectOption(vals[0]);
       await f.locator('button:has-text("Documenter")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     for (let tour = 0; tour < 25; tour++) {
@@ -942,6 +1021,7 @@ export async function conduire(
       await f.locator('input[name=explanation]').fill(
         'Écart de présentation : reclassement opéré dans la plaquette, sans incidence sur le résultat.');
       await f.locator('button:has-text("Expliquer")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     dire('pointage : plus aucune ligne ouverte ni écart inexpliqué',
@@ -961,6 +1041,7 @@ export async function conduire(
     if (await f0.count()) {
       await f0.locator('input[name=findings]').fill('Revue faite.');
       await f0.locator('button:has-text("Conclure")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('achèvement : conclure SANS conclusion écrite est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
@@ -991,6 +1072,7 @@ export async function conduire(
         if (vals.length) await ev.selectOption(vals[0]);
       }
       await f.locator('button:has-text("Conclure")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1800);
     }
     dire('achèvement : les cinq natures sont conclues',
@@ -1005,6 +1087,7 @@ export async function conduire(
       const f = p.locator('form:has(button:has-text("Marquer fait"))').first();
       if (!(await f.count())) break;
       await f.locator('button:has-text("Marquer fait")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1300);
     }
     dire('jalons : chaque jalon se marque FAIT depuis l’écran',

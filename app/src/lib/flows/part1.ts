@@ -6,6 +6,7 @@ import { detectTbMapping, importTb, importFec } from '@/lib/services/imports';
 import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/services/reconciliation';
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
+import { assessFsli } from '@/lib/services/risk';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
 import { generatePbcFromSample, approveSend, requestDetail } from '@/lib/services/requests';
 import { ingestEvidence, answerExplanation, markAllSubmitted, attachEvidenceToItem } from '@/lib/services/evidence';
@@ -73,6 +74,14 @@ export async function bootstrapNep(): Promise<void> {
         ? undefined                                  // le moteur l'a proposé : son motif suffit
         : MOTIF_DEMO);
   }
+
+  /* LE RISQUE PAR ASSERTION, ÉVALUÉ — l'écran était VIDE dans la démonstration.
+     `assessFsli` n'était appelé que par le dossier N-1 : sur le dossier
+     courant, « Risque par assertion » affichait ses en-têtes de colonnes et
+     zéro ligne. Il rendait 200, le balayage passait, les tests passaient — et
+     l'écran qui porte le raisonnement le plus distinctif du produit ne montrait
+     rien. Trouvé en REGARDANT les captures, pas en les comptant. */
+  await assessFsli(IDS.engNep, 'REVENUE', IDS.users.lea);
 }
 
 export async function samplingAndRequest(): Promise<string> {

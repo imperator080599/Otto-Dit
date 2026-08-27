@@ -10,6 +10,8 @@ import {
   questionsOfScope, answers, answerQuestion, register, decideFactor,
   questionnaireObstacles, ruleShare, raisedShare,
 } from '@/lib/services/questionnaire';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // Le risque par assertion, et CE QU'IL COMMANDE.
 //
@@ -23,10 +25,10 @@ export default async function RiskPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ fsli?: string }>;
+  searchParams: Promise<{ fsli?: string; erreur?: string }>;
 }) {
   const { id } = await params;
-  const { fsli } = await searchParams;
+  const { fsli, erreur } = await searchParams;
   await requireMember(id);
   const cat = await catalogueDeLaMission(id);
 
@@ -65,52 +67,60 @@ export default async function RiskPage({
 
   async function assessAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await assessFsli(id, String(formData.get('fsli')), user.id);
-    revalidatePath(`/eng/${id}/risk`);
+    return executer(`/eng/${id}/risk`, async () => {
+      const { user } = await requireMember(id);
+      await assessFsli(id, String(formData.get('fsli')), user.id);
+      revalidatePath(`/eng/${id}/risk`);
+    });
   }
 
   async function answerAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const scope = String(formData.get('scope'));
-    await answerQuestion({
-      engagementId: id,
-      fsliCode: scope === 'entite' ? null : String(formData.get('fsli')),
-      questionCode: String(formData.get('question')),
-      answer: String(formData.get('answer')) as 'oui' | 'non',
-      detail: String(formData.get('detail') ?? ''),
-      actorUserId: user.id,
+    return executer(`/eng/${id}/risk`, async () => {
+      const { user } = await requireMember(id);
+      const scope = String(formData.get('scope'));
+      await answerQuestion({
+        engagementId: id,
+        fsliCode: scope === 'entite' ? null : String(formData.get('fsli')),
+        questionCode: String(formData.get('question')),
+        answer: String(formData.get('answer')) as 'oui' | 'non',
+        detail: String(formData.get('detail') ?? ''),
+        actorUserId: user.id,
+      });
+      revalidatePath(`/eng/${id}/risk`);
     });
-    revalidatePath(`/eng/${id}/risk`);
   }
 
   async function decideAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await decideFactor(
-      id,
-      String(formData.get('factor')),
-      String(formData.get('status')) as 'confirmed' | 'dismissed',
-      String(formData.get('reason') ?? ''),
-      user.id,
-    );
-    revalidatePath(`/eng/${id}/risk`);
+    return executer(`/eng/${id}/risk`, async () => {
+      const { user } = await requireMember(id);
+      await decideFactor(
+        id,
+        String(formData.get('factor')),
+        String(formData.get('status')) as 'confirmed' | 'dismissed',
+        String(formData.get('reason') ?? ''),
+        user.id,
+      );
+      revalidatePath(`/eng/${id}/risk`);
+    });
   }
 
   async function overrideAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const level = String(formData.get('level') ?? '');
-    await overrideLevel(
-      id,
-      String(formData.get('fsli')),
-      String(formData.get('assertion')),
-      level === '' ? null : level,
-      String(formData.get('reason') ?? ''),
-      user.id,
-    );
-    revalidatePath(`/eng/${id}/risk`);
+    return executer(`/eng/${id}/risk`, async () => {
+      const { user } = await requireMember(id);
+      const level = String(formData.get('level') ?? '');
+      await overrideLevel(
+        id,
+        String(formData.get('fsli')),
+        String(formData.get('assertion')),
+        level === '' ? null : level,
+        String(formData.get('reason') ?? ''),
+        user.id,
+      );
+      revalidatePath(`/eng/${id}/risk`);
+    });
   }
 
   const badge = (l: string) =>
@@ -119,6 +129,7 @@ export default async function RiskPage({
 
   return (
     <div className="stack">
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>Risque par assertion — {code}</h2>
@@ -184,7 +195,7 @@ export default async function RiskPage({
                         <option key={n} value={n}>{n}</option>
                       ))}
                     </select>
-                    <input type="text" name="reason" placeholder="motif — obligatoire" style={{ width: 200 }} />
+                    <input type="text" name="reason" placeholder="motif — obligatoire si le niveau diffère du calcul" style={{ width: 230 }} />
                     <button className="btn small secondary">arbitrer</button>
                   </form>
                 </td>

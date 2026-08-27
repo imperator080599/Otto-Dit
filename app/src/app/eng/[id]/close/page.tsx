@@ -6,6 +6,7 @@ import { latestArchive } from '@/lib/services/archive';
 import { dateRapport } from '@/lib/services/completion';
 import { fileDeadlines } from '@/lib/services/retention';
 import { cloreAction } from './actions';
+import { FAMILLES } from '../familles';
 
 // LA CLÔTURE ET L'ARCHIVE SCELLÉE — la fin de l'arc, enfin dans l'application.
 //
@@ -95,7 +96,9 @@ export default async function ClosePage({
             </p>
             <ul>
               {[...parFamille.entries()].map(([f, n]) => (
-                <li key={f}>{f} — {n}</li>
+                /* Le NOM de la famille, pas son code : « achevement — 1 » n'est
+                   pas une phrase qu'on donne à lire à un signataire. */
+                <li key={f}>{FAMILLES[f]?.titre ?? f} — {n}</li>
               ))}
             </ul>
             <p>

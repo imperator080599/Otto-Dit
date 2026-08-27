@@ -24,7 +24,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {user.name} <span style={{ opacity: 0.6 }}>({user.firm_role})</span>
             </span>
           ) : (
-            <span style={{ opacity: 0.7 }}>not signed in</span>
+            /* RIEN, plutôt qu'un « not signed in » anglais. Le seul écran où
+               personne n'est connecté est le PORTAIL CLIENT, en français, et
+               ce bandeau n'a rien à y dire : le client n'a pas de compte, c'est
+               le produit. Une mention d'état vide est du bruit ; une mention
+               dans la mauvaise langue est une erreur. */
+            null
           )}
         </div>
         {children}

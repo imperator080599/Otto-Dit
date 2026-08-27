@@ -105,7 +105,7 @@ export default async function TieOutPage({
                       ? <span className="faint">—</span>
                       : Number(x.difference) === 0
                         ? <span className="badge green">0</span>
-                        : <strong style={{ color: '#8a6412' }}>{eur(x.difference)}</strong>}
+                        : <strong style={{ color: 'var(--amber)' }}>{eur(x.difference)}</strong>}
                   </td>
                   <td>
                     {x.status === 'tied' && <span className="badge green">pointé</span>}

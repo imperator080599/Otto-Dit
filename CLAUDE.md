@@ -72,6 +72,8 @@ current state.**
 - Parcours **cliqué** en production : `cd app && npm run clics` (ADR-090, ADR-091). Le balayage
   OUVRE les écrans, le parcours AGIT dessus, de l'import du grand livre définitif au dossier
   scellé téléchargé ; les deux sont nécessaires.
+- Revue **visuelle** : `cd app && npm run visuel` (ADR-094) — clair et sombre, large et 390 px ;
+  débordement et contraste mesurés, captures produites pour l'œil humain.
 - Tout : `cd app && npm run verify` (base fraîche, dossier de démonstration déroulé, types,
-  tests, balayage de production, parcours cliqué).
+  tests, balayage de production, parcours cliqué, revue visuelle).
 - Dataset regeneration: `cd app && npm run dataset:generate` (deterministic, seeded).
