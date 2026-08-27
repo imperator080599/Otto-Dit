@@ -40,8 +40,12 @@ current state.**
     dans une livraison doit avoir une commande qui la reproduit.
 13. **Le silence lu comme un succès est le défaut à traquer** : un harnais muet, un prédicat
     déclaré et non implémenté, une règle inconnue ignorée, un compteur qui ne compte pas les
-    plantages, un refus calculé puis jeté, un objet créé qu'aucun chemin de lecture n'atteint,
-    une branche de repli que rien n'exécute jamais (ADR-088, ADR-089).
+    plantages, un refus calculé puis jeté, un refus rendu en page 500, un objet créé qu'aucun
+    chemin de lecture n'atteint, un geste du métier sans écran, une décision qu'on ne peut plus
+    revoir, une branche de repli que rien n'exécute jamais, un formulaire que le navigateur
+    refuse d'envoyer et qu'on lit comme une règle vérifiée (ADR-088, ADR-089, ADR-091).
+    Corollaire : **n'affirme jamais plus que ce que tu vérifies** — ni dans un écran, ni dans
+    STATUS.md.
 14. **Périmètre gelé** : aucun cycle au-delà du chiffre d'affaires, aucun contenu de procédure
     nouveau, pack SOX gelé. La mécanique est le produit ; les procédures sont du contenu.
 
@@ -65,8 +69,9 @@ current state.**
 - Tests: `cd app && npm test` (Vitest; zero network). Inclut le balayage des écrans, qui
   lance un serveur local — comptez ~3 minutes de plus.
 - Écrans en production : `cd app && npm run screens` (build + `next start` + navigateur).
-- Parcours **cliqué** en production : `cd app && npm run clics` (ADR-090). Le balayage OUVRE les
-  écrans, le parcours AGIT dessus ; les deux sont nécessaires.
+- Parcours **cliqué** en production : `cd app && npm run clics` (ADR-090, ADR-091). Le balayage
+  OUVRE les écrans, le parcours AGIT dessus, de l'import du grand livre définitif au dossier
+  scellé téléchargé ; les deux sont nécessaires.
 - Tout : `cd app && npm run verify` (base fraîche, dossier de démonstration déroulé, types,
   tests, balayage de production, parcours cliqué).
 - Dataset regeneration: `cd app && npm run dataset:generate` (deterministic, seeded).

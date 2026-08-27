@@ -1077,6 +1077,355 @@
     ]
   },
   {
+    "filename": "evidence/FA2025-0329.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0329",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-06-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Habitat Confluence SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "71600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "14320",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "85920",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Triple vitrage argon 4/12/4/12/4 (m²)\",\"qty\":5,\"unitPriceCents\":14320,\"netCents\":71600}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0222",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0222.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0222",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-06-03",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0329",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "5",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Habitat Confluence SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0253.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0253",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-05-21",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Négoce Vitrages Réunis SARL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "155000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "31000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "186000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":25,\"unitPriceCents\":6200,\"netCents\":155000}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0232.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0232",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-05-21",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Promoteurs du Forez SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "512740",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "102548",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "615288",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage acoustique 44.2/16/10 (m²)\",\"qty\":31,\"unitPriceCents\":16540,\"netCents\":512740}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0157",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0157.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0157",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-05-19",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0232",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "31",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Promoteurs du Forez SA",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0102.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0102",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-03-24",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Verrería del Sur SL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1661120",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "332224",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1993344",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Triple vitrage argon 4/12/4/12/4 (m²)\",\"qty\":116,\"unitPriceCents\":14320,\"netCents\":1661120}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0066",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0066.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0066",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-03-22",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0102",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "116",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Verrería del Sur SL",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
     "filename": "sox/evidence/bankrec_2025-01.pdf",
     "docType": "reconciliation_sheet",
     "rungExpected": "text_layer",

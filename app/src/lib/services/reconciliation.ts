@@ -71,6 +71,36 @@ export async function computeTbGl(engagementId: string, userId: string | null): 
     objectId: rec.id,
     payload: { kind: 'tb_gl', diffs: diffs.length },
   });
+
+  /* LE DRAPEAU « GRAND LIVRE PROVISOIRE » SE LÈVE ICI, ET NULLE PART AILLEURS.
+     Il se posait quand un écart de rapprochement ne pouvait être corroboré —
+     une écriture ABSENTE du fichier — et il bloque la conclusion définitive.
+     Rien ne le levait : le seul moyen d'aller jusqu'à la clôture était de le
+     mettre à jour en SQL, ce que le test faisait EN LE DISANT. Un dossier qui
+     ne peut se clore que par une écriture directe en base n'est pas un dossier
+     qui se clôt : le dernier geste du métier passait à côté du produit.
+     La règle est celle qu'un auditeur applique : le fichier définitif arrive,
+     on RE-EXÉCUTE le rapprochement, et c'est son résultat — pas une case à
+     cocher — qui décide. Propre ⇒ le fichier n'est plus provisoire. Encore
+     différent ⇒ il le reste, et le dossier reste bloqué. */
+  if (diffs.length === 0) {
+    const eng = await q01<{ ledger_is_provisional: boolean }>(
+      `select ledger_is_provisional from engagement where id = $1`, [engagementId],
+    );
+    if (eng?.ledger_is_provisional) {
+      await q(
+        `update engagement set ledger_is_provisional = false, ledger_provisional_reason = null
+         where id = $1`,
+        [engagementId],
+      );
+      await logEvent({
+        tenantId: ctx.tenant_id, engagementId,
+        actorKind: userId ? 'user' : 'system', actorId: userId,
+        verb: 'ledger_no_longer_provisional', objectType: 'reconciliation', objectId: rec.id,
+        payload: { accounts: accounts.size, diffs: 0 },
+      });
+    }
+  }
   return { reconciliationId: rec.id, diffCount: diffs.length };
 }
 

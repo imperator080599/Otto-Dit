@@ -8,11 +8,19 @@ import { listControls, importInstances, drawAttributeSample, runAttributeTesting
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { approveSend } from '@/lib/services/requests';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const RESULT_STYLE: Record<string, string> = { pass: 'green', fail: 'red', na: 'gray' };
 
-export default async function ControlDetail({ params }: { params: Promise<{ id: string; cid: string }> }) {
+export default async function ControlDetail({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string; cid: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id, cid } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const control = (await listControls(id)).find((c) => c.id === cid);
   if (!control) return <div className="panel">Control not found.</div>;
@@ -42,68 +50,83 @@ export default async function ControlDetail({ params }: { params: Promise<{ id: 
 
   async function importInstancesAction() {
     'use server';
-    const { user } = await requireMember(id);
-    const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', `instances_${control!.code}.csv`), 'utf8');
-    await importInstances(cid, csv, user.id);
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', `instances_${control!.code}.csv`), 'utf8');
+      await importInstances(cid, csv, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
   }
   async function drawAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const sizeRaw = String(formData.get('size') ?? '');
-    const justification = String(formData.get('justification') ?? '');
-    const res = await drawAttributeSample(cid, user.id, sizeRaw ? Number(sizeRaw) : undefined, justification || undefined);
-    await approveSend(res.requestId, user.id);
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      const sizeRaw = String(formData.get('size') ?? '');
+      const justification = String(formData.get('justification') ?? '');
+      const res = await drawAttributeSample(cid, user.id, sizeRaw ? Number(sizeRaw) : undefined, justification || undefined);
+      await approveSend(res.requestId, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
   }
   async function testAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await extractAll(id, user.id);
-    for (const p of await pendingVerifications(id)) await verifyExtraction(p.id, user.id);
-    await runAttributeTesting(cid, user.id);
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await extractAll(id, user.id);
+      for (const p of await pendingVerifications(id)) await verifyExtraction(p.id, user.id);
+      await runAttributeTesting(cid, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
   }
   async function resolveDevAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await resolveDeviation(String(formData.get('deviation_id')), user.id, {
-      explanation: String(formData.get('explanation') ?? ''),
-      conclusion: String(formData.get('conclusion') ?? ''),
-      disposition: String(formData.get('disposition') ?? 'control_operated') as 'control_operated' | 'compensating_control',
-      evidenceId: String(formData.get('evidence_id') ?? ''),
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await resolveDeviation(String(formData.get('deviation_id')), user.id, {
+        explanation: String(formData.get('explanation') ?? ''),
+        conclusion: String(formData.get('conclusion') ?? ''),
+        disposition: String(formData.get('disposition') ?? 'control_operated') as 'control_operated' | 'compensating_control',
+        evidenceId: String(formData.get('evidence_id') ?? ''),
+      });
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
   }
   async function deficiencyAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await proposeDeficiency(cid, user.id, {
-      magnitudeExposureCents: Math.round(Number(formData.get('magnitude')) * 100),
-      compensatingControl: formData.get('compensating') === 'on',
-      magnitudeBasis: String(formData.get('magnitude_basis') ?? ''),
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await proposeDeficiency(cid, user.id, {
+        magnitudeExposureCents: Math.round(Number(formData.get('magnitude')) * 100),
+        compensatingControl: formData.get('compensating') === 'on',
+        magnitudeBasis: String(formData.get('magnitude_basis') ?? ''),
+      });
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
   }
   async function decideAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await decideDeficiency(
-      String(formData.get('deficiency_id')), user.id,
-      String(formData.get('severity')) as 'deficiency' | 'significant_deficiency' | 'material_weakness',
-      String(formData.get('decision_rationale') ?? ''),
-    );
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await decideDeficiency(
+        String(formData.get('deficiency_id')), user.id,
+        String(formData.get('severity')) as 'deficiency' | 'significant_deficiency' | 'material_weakness',
+        String(formData.get('decision_rationale') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
   }
   async function draftWpAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await draftOeWorkpaper(id, cid, user.id);
-    revalidatePath(`/eng/${id}/rcm/${cid}`);
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await draftOeWorkpaper(id, cid, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <h2>{control.code} — {control.name}</h2>
         <p className="muted">{control.description}</p>

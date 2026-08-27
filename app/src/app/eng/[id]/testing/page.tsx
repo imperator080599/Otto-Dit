@@ -4,76 +4,120 @@ import { requireMember } from '@/lib/core/auth';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { runMatching, matchesForSample } from '@/lib/services/matching';
 import { startVerificationRun, currentVerificationRun, submitBlindCheck } from '@/lib/services/verification';
-import { computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate } from '@/lib/services/evaluation';
+import {
+  computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate,
+  recordEvaluationResponse, evaluationResponses, type ResponseKind,
+} from '@/lib/services/evaluation';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const MATCH_BADGE: Record<string, string> = { matched: 'green', exception: 'red', pending_evidence: 'gray', pending_verify: 'amber' };
 
-export default async function TestingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TestingPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const pending = await pendingVerifications(id);
   const matches = await matchesForSample(id).catch(() => []);
   const verifRun = await currentVerificationRun(id);
   const evaluation = await currentEvaluation(id);
   const gate = await conclusionGate(id);
+  /* LA RÉPONSE AU DÉPASSEMENT — elle n'avait AUCUN écran. Le service la
+     réclame avant toute conclusion quand les anomalies dépassent l'anomalie
+     tolérable, et rien dans l'application ne permettait de l'enregistrer : la
+     seule façon de conclure était d'appeler le service depuis du code. Un
+     verrou qu'on ne peut lever que hors du produit ferme le produit. */
+  const reponses = evaluation ? await evaluationResponses(evaluation.id) : [];
 
   async function extractAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await extractAll(id, user.id);
-    revalidatePath(`/eng/${id}/testing`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await extractAll(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
   }
   async function matchAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await runMatching(id, user.id);
-    revalidatePath(`/eng/${id}/testing`);
-    revalidatePath(`/eng/${id}/exceptions`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await runMatching(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+      revalidatePath(`/eng/${id}/exceptions`);
+    });
   }
   async function verifyAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await verifyExtraction(String(formData.get('extraction_id')), user.id);
-    revalidatePath(`/eng/${id}/testing`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await verifyExtraction(String(formData.get('extraction_id')), user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
   }
   async function startVerifRun() {
     'use server';
-    const { user } = await requireMember(id);
-    await startVerificationRun(id, user.id);
-    revalidatePath(`/eng/${id}/testing`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await startVerificationRun(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
   }
   async function blindAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await submitBlindCheck({
-      verificationRunId: String(formData.get('run_id')),
-      sampleItemId: String(formData.get('sample_item_id')),
-      verifierId: user.id,
-      blind: {
-        totalNetCents: Math.round(Number(formData.get('net')) * 100),
-        invoiceDate: String(formData.get('date')),
-      },
-      escalationOnDisagree: 'expand_subsample',
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await submitBlindCheck({
+        verificationRunId: String(formData.get('run_id')),
+        sampleItemId: String(formData.get('sample_item_id')),
+        verifierId: user.id,
+        blind: {
+          totalNetCents: Math.round(Number(formData.get('net')) * 100),
+          invoiceDate: String(formData.get('date')),
+        },
+        escalationOnDisagree: 'expand_subsample',
+      });
+      revalidatePath(`/eng/${id}/testing`);
     });
-    revalidatePath(`/eng/${id}/testing`);
   }
   async function evalAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await computeSampleEvaluation(id, user.id);
-    revalidatePath(`/eng/${id}/testing`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await computeSampleEvaluation(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
+  }
+  async function repondreAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await recordEvaluationResponse(
+        String(formData.get('evaluation_id')), user.id,
+        String(formData.get('kind')) as ResponseKind,
+        String(formData.get('rationale') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/testing`);
+    });
   }
   async function concludeAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await concludeEvaluation(String(formData.get('evaluation_id')), user.id, String(formData.get('basis') ?? ''));
-    revalidatePath(`/eng/${id}/testing`);
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await concludeEvaluation(String(formData.get('evaluation_id')), user.id, String(formData.get('basis') ?? ''));
+      revalidatePath(`/eng/${id}/testing`);
+    });
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>Testing workbench — extraction → vouching → verification → evaluation</h2>
@@ -222,6 +266,32 @@ export default async function TestingPage({ params }: { params: Promise<{ id: st
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">Untested remainder</span></div>
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">Tolerable misstatement</span></div>
               </div>
+              {reponses.length > 0 ? (
+                <div className="callout mt">
+                  <strong>Réponse au dépassement de l’anomalie tolérable :</strong>{' '}
+                  {reponses.map((r) => r.kind).join(', ')}
+                  {reponses[0]?.rationale && <p className="faint">{reponses[0].rationale}</p>}
+                </div>
+              ) : (
+                <form action={repondreAction} className="mt stack">
+                  <input type="hidden" name="evaluation_id" value={evaluation.id} />
+                  <p className="faint">
+                    Quand les anomalies relevées dépassent l’anomalie tolérable, l’échantillon ne
+                    fournit plus une base raisonnable de conclusion sur la population. Le produit
+                    refuse la conclusion tant que la <strong>réponse</strong> n’est pas écrite —
+                    étendre les travaux, réviser la stratégie, ou conclure en le justifiant.
+                  </p>
+                  <p className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                    <select name="kind" defaultValue="revise_strategy">
+                      <option value="extend_testing">étendre les travaux</option>
+                      <option value="revise_strategy">réviser la stratégie</option>
+                      <option value="conclude_with_justification">conclure en le justifiant</option>
+                    </select>
+                    <input name="rationale" placeholder="motif — obligatoire" style={{ flex: 1, minWidth: 260 }} />
+                    <button className="btn secondary small">Enregistrer la réponse</button>
+                  </p>
+                </form>
+              )}
               {evaluation.status === 'draft' ? (
                 <form action={concludeAction} className="mt">
                   <input type="hidden" name="evaluation_id" value={evaluation.id} />

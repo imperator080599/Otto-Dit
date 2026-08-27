@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { portalSession } from '@/lib/core/auth';
 import { portalItems, portalRequestGuard, portalRequests } from '@/lib/services/portal';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from '@/lib/services/evidence';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const STR = {
   fr: {
@@ -19,8 +21,14 @@ const STR = {
   },
 };
 
-export default async function PortalRequestPage({ params }: { params: Promise<{ token: string; rid: string }> }) {
+export default async function PortalRequestPage({
+  params, searchParams,
+}: {
+  params: Promise<{ token: string; rid: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { token, rid } = await params;
+  const { erreur } = await searchParams;
   const session = await portalSession(token);
   if (!session) return <div className="shell"><div className="panel">Lien invalide. / Invalid link.</div></div>;
   if (!(await portalRequestGuard(rid, session.contact.entity_id))) {
@@ -35,40 +43,47 @@ export default async function PortalRequestPage({ params }: { params: Promise<{ 
 
   async function uploadAction(formData: FormData) {
     'use server';
-    const s = await portalSession(token);
-    if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
-    const file = formData.get('file') as File;
-    const itemId = String(formData.get('item_id'));
-    await ingestEvidence({
-      engagementId: request!.engagement_id,
-      requestItemId: itemId,
-      filename: file.name,
-      mime: file.type || 'application/octet-stream',
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      source: 'portal',
-      uploadedBy: { kind: 'client_contact', id: s.contact.id },
+    return executer(`/portal/${token}/${rid}`, async () => {
+      const s = await portalSession(token);
+      if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
+      const file = formData.get('file') as File;
+      const itemId = String(formData.get('item_id'));
+      await ingestEvidence({
+        engagementId: request!.engagement_id,
+        requestItemId: itemId,
+        filename: file.name,
+        mime: file.type || 'application/octet-stream',
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        source: 'portal',
+        uploadedBy: { kind: 'client_contact', id: s.contact.id },
+      });
+      revalidatePath(`/portal/${token}/${rid}`);
     });
-    revalidatePath(`/portal/${token}/${rid}`);
   }
 
   async function answerAction(formData: FormData) {
     'use server';
-    const s = await portalSession(token);
-    if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
-    await answerExplanation(String(formData.get('item_id')), s.contact.id, String(formData.get('text') ?? ''));
-    revalidatePath(`/portal/${token}/${rid}`);
+    return executer(`/portal/${token}/${rid}`, async () => {
+      const s = await portalSession(token);
+      if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
+      await answerExplanation(String(formData.get('item_id')), s.contact.id, String(formData.get('text') ?? ''));
+      revalidatePath(`/portal/${token}/${rid}`);
+    });
   }
 
   async function allDoneAction() {
     'use server';
-    const s = await portalSession(token);
-    if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
-    await markAllSubmitted(rid, s.contact.id);
-    revalidatePath(`/portal/${token}/${rid}`);
+    return executer(`/portal/${token}/${rid}`, async () => {
+      const s = await portalSession(token);
+      if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
+      await markAllSubmitted(rid, s.contact.id);
+      revalidatePath(`/portal/${token}/${rid}`);
+    });
   }
 
   return (
     <div className="shell" style={{ maxWidth: 860 }}>
+      <BandeauRefus erreur={erreur} />
       <p><Link href={`/portal/${token}`}>{t.back}</Link></p>
       <h1>R-{String(request.seq_no).padStart(3, '0')} — {request.title}</h1>
       <div className="panel">

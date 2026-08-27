@@ -54,6 +54,10 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     { href: `${base}/completion`, label: 'Achèvement' },
     // Les obstacles au visa : une seule liste, calculée, transverse.
     { href: `${base}/obstacles`, label: 'Obstacles au visa' },
+    /* La clôture : le dernier geste du métier, et il n'avait AUCUN écran —
+       `closeFile` n'était appelé que par des tests, et l'archive scellée
+       n'avait pas de chemin de lecture (ADR-091). */
+    { href: `${base}/close`, label: 'Clôture et archive' },
     { href: `${base}/dashboard`, label: 'Dashboard' },
     { href: `${base}/provenance`, label: 'Provenance' },
     { href: `${base}/events`, label: 'Event log' },

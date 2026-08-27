@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import {
-  ouvrirAcceptation, repondreCritere, decider, assurerJalons, poserJalon,
+  ouvrirAcceptation, repondreCritere, decider, assurerJalons, poserJalon, marquerJalonFait,
   AcceptanceRuleError,
 } from '@/lib/services/acceptance';
 
@@ -59,4 +59,14 @@ export async function jalonAction(formData: FormData): Promise<never> {
   return executer(id, () => poserJalon(
     id, user.id, String(formData.get('code')), String(formData.get('date')),
   ));
+}
+
+/* MARQUER UN JALON FAIT — le service existait, AUCUN écran ne l'appelait.
+   Un jalon échu et non fait est un obstacle au visa : sans ce geste, le seul
+   moyen de le lever était d'écrire en base. Un état qu'aucun chemin d'écriture
+   n'atteint depuis l'application n'est pas un état du produit (ADR-091). */
+export async function jalonFaitAction(formData: FormData): Promise<never> {
+  const id = String(formData.get('engagement_id') ?? '');
+  const { user } = await requireMember(id);
+  return executer(id, () => marquerJalonFait(id, user.id, String(formData.get('code'))));
 }

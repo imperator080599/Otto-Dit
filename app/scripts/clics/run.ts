@@ -1,7 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { chromium } from 'playwright';
-import { q01, getDb } from '../../src/lib/db/client';
-import { auditeur, baseSemee } from '../screens/routes';
+import { getDb } from '../../src/lib/db/client';
+import { baseSemee } from '../screens/routes';
+import { contexte } from './contexte';
 import { conduire, type Etape } from './scenario';
 
 // npm run clics [-- --dev] : CONDUIT le parcours dans un navigateur, sur un
@@ -18,7 +19,21 @@ const NAVIGATEUR = process.env.PLAYWRIGHT_CHROMIUM ?? '/opt/pw-browsers/chromium
 
 function lancer(cmd: string, args: string[]): ChildProcess {
   // `detached` crée un GROUPE : sans lui `kill` laisse `next-server` tenir le port.
-  return spawn(cmd, args, { env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+  return spawn(cmd, args, {
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      /* AUCUN APPEL PAYANT DEPUIS UN HARNAIS. L'échelle d'extraction sait
+         monter jusqu'à un modèle ; un harnais lancé à chaque `npm run verify`
+         qui dépenserait sur un budget prépayé serait un défaut, pas une
+         fonctionnalité. Le barreau de rejeu est le défaut du produit — on le
+         RÉAFFIRME ici pour que l'environnement ne puisse pas en décider. */
+      OTTO_OCR_ADAPTER: 'mock',
+      OTTO_QUERY_PLANNER: 'mock',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
+  });
 }
 function tuer(p: ChildProcess | null): void {
   if (!p?.pid) return;
@@ -55,19 +70,13 @@ async function main() {
       + `Le parcours REFUSE de conduire un serveur qu'il n'a pas lancé. Libérez-le, ou CLICS_PORT=<autre>.`);
   }
 
-  /* Le dossier RICHE — celui qui porte un exercice précédent, des demandes et
-     des papiers. Choisir « le premier » a déjà fait tomber le harnais sur le
-     dossier N-1, qui n'a rien à montrer (ADR-076). */
-  const riche = await q01<{ id: string }>(
-    `select e.id::text id from engagement e join period p on p.id = e.period_id
-     where e.kind = 'statutory_audit'
-     order by (select count(*) from workpaper w where w.engagement_id = e.id) desc, p.end_date desc, e.id
-     limit 1`);
-  if (!riche) throw new Error('aucune mission d’audit légal en base');
-  const cookie = await auditeur();
+  /* Tout ce dont le parcours a besoin est lu AVANT que le serveur ne prenne la
+     base : PGlite n'admet qu'un écrivain. */
+  const c = await contexte();
   await (await getDb()).close();
 
-  console.log(`\nParcours cliqué — mode ${dev ? 'développement' : 'PRODUCTION'}, dossier ${riche.id}\n`);
+  console.log(`\nParcours cliqué — mode ${dev ? 'développement' : 'PRODUCTION'}, dossier ${c.eng}`);
+  console.log(`  identités : ${c.preparateur.nom} (préparateur) · ${c.reviewer.nom} (reviewer) · ${c.associe.nom} (associé)\n`);
 
   if (!dev) {
     console.log('  build…');
@@ -90,17 +99,23 @@ async function main() {
     await attendre(`http://localhost:${PORT}/`, serveur);
     const nav = await chromium.launch({ executablePath: NAVIGATEUR });
     const ctx = await nav.newContext();
-    await ctx.addCookies([{ name: 'otto_user', value: cookie, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
     const page = await ctx.newPage();
     /* Une exception côté navigateur ne fait pas échouer une étape : elle passe
        inaperçue si personne ne l'écoute. C'est un échec à part entière. */
-    page.on('pageerror', (e) => durs.push('EXCEPTION : ' + e.message));
+    /* DIRE OÙ. « EXCEPTION : Minified React error #418 » sans l'écran qui l'a
+       levée oblige à tout refaire à la main pour l'attribuer — le harnais
+       reproduit alors le défaut qu'il cherche : une panne qu'on ne sait pas
+       lire est une panne qu'on impute au mauvais changement. */
+    const ou = () => page.url().replace(`http://localhost:${PORT}`, '') || '(page inconnue)';
+    page.on('pageerror', (e) => durs.push(`EXCEPTION sur ${ou()} : ${e.message}`));
     page.on('console', (m) => {
-      if (m.type() === 'error' && !/Failed to load resource|DevTools/.test(m.text())) durs.push('CONSOLE : ' + m.text());
+      if (m.type() === 'error' && !/Failed to load resource|DevTools/.test(m.text())) {
+        durs.push(`CONSOLE sur ${ou()} : ${m.text()}`);
+      }
     });
     page.on('response', (r) => { if (r.status() >= 500) durs.push(`HTTP ${r.status()} ${r.url()}`); });
     try {
-      etapes = await conduire(page, `http://localhost:${PORT}`, riche.id);
+      etapes = await conduire(page, ctx, `http://localhost:${PORT}`, c);
     } finally {
       await nav.close();
     }
@@ -112,7 +127,7 @@ async function main() {
 
   /* LE HARNAIS NE DOIT PAS POUVOIR SE TAIRE. Zéro étape conduite est une panne
      du harnais, pas un parcours réussi. */
-  if (etapes.length < 10) {
+  if (etapes.length < 30) {
     console.log(`\nseulement ${etapes.length} étape(s) conduites — le parcours s'est interrompu\n`);
     process.exit(1);
   }

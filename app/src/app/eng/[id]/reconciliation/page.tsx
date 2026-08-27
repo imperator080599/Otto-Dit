@@ -4,9 +4,17 @@ import { computeTbGl, latestTbGl, documentDifference, noteReconciliationLimitati
 import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
-export default async function ReconciliationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ReconciliationPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const latest = await latestTbGl(id);
   // Ce qui peut être LIÉ en corroboration : la même liste que sur les exceptions.
@@ -24,36 +32,43 @@ export default async function ReconciliationPage({ params }: { params: Promise<{
 
   async function computeAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await computeTbGl(id, user.id);
-    revalidatePath(`/eng/${id}/reconciliation`);
+    return executer(`/eng/${id}/reconciliation`, async () => {
+      const { user } = await requireMember(id);
+      await computeTbGl(id, user.id);
+      revalidatePath(`/eng/${id}/reconciliation`);
+    });
   }
 
   async function documentAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const [kind, refId] = String(formData.get('corroboration') ?? '').split(':');
-    await documentDifference(String(formData.get('item_id')), user.id, {
-      explanation: String(formData.get('explanation') ?? ''),
-      conclusion: String(formData.get('conclusion') ?? ''),
-      disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
-      corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+    return executer(`/eng/${id}/reconciliation`, async () => {
+      const { user } = await requireMember(id);
+      const [kind, refId] = String(formData.get('corroboration') ?? '').split(':');
+      await documentDifference(String(formData.get('item_id')), user.id, {
+        explanation: String(formData.get('explanation') ?? ''),
+        conclusion: String(formData.get('conclusion') ?? ''),
+        disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
+        corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+      });
+      revalidatePath(`/eng/${id}/reconciliation`);
     });
-    revalidatePath(`/eng/${id}/reconciliation`);
   }
 
   async function limitationAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await noteReconciliationLimitation(String(formData.get('item_id')), user.id, {
-      explanation: String(formData.get('explanation') ?? ''),
-      alternativeProcedures: String(formData.get('alternative') ?? ''),
+    return executer(`/eng/${id}/reconciliation`, async () => {
+      const { user } = await requireMember(id);
+      await noteReconciliationLimitation(String(formData.get('item_id')), user.id, {
+        explanation: String(formData.get('explanation') ?? ''),
+        alternativeProcedures: String(formData.get('alternative') ?? ''),
+      });
+      revalidatePath(`/eng/${id}/reconciliation`);
     });
-    revalidatePath(`/eng/${id}/reconciliation`);
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>TB ↔ GL reconciliation (deterministic, L0)</h2>

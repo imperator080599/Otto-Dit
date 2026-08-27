@@ -200,6 +200,69 @@
     ]
   },
   {
+    "filename": "evidence/FA2025-0329.pdf",
+    "sha256": "965c4a4184191be3b3c3539cdf7d54d9831800c7ce9005aea3039263ac79afd9",
+    "docType": "invoice",
+    "invoiceNumber": "FA2025-0329",
+    "forUnits": [
+      "VE|VE-2025-0329|2"
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0222.pdf",
+    "sha256": "47cf87c4600b27a9f673c4779636d8080fae1be04ed0a3e34f324b21b830e411",
+    "docType": "delivery_note",
+    "invoiceNumber": "FA2025-0329",
+    "forUnits": [
+      "VE|VE-2025-0329|2"
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0253.pdf",
+    "sha256": "990fa9e16a3ea154c0d879e2e8c0ac71c5bb77f154475ab377bf66810c884b12",
+    "docType": "invoice",
+    "invoiceNumber": "FA2025-0253",
+    "forUnits": [
+      "VE|VE-2025-0253|2"
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0232.pdf",
+    "sha256": "9ebd614c7008eb2d5da8e96088ad33c0d4ecc6ffbb810f6d2708dc308dfebb5c",
+    "docType": "invoice",
+    "invoiceNumber": "FA2025-0232",
+    "forUnits": [
+      "VE|VE-2025-0232|2"
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0157.pdf",
+    "sha256": "fab1f646d101f043ede3b96cb9d499643b195fde0b649431bac9d96cefe1c0b1",
+    "docType": "delivery_note",
+    "invoiceNumber": "FA2025-0232",
+    "forUnits": [
+      "VE|VE-2025-0232|2"
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0102.pdf",
+    "sha256": "382e78ad8145ddce23ceaffda5afc110d7d200c8972b0ff7b3eb69120068470c",
+    "docType": "invoice",
+    "invoiceNumber": "FA2025-0102",
+    "forUnits": [
+      "VE|VE-2025-0102|2"
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0066.pdf",
+    "sha256": "30c3b381c139443f20753c2528b8149a426da361ee6cecec7e03ee6d0236ff7f",
+    "docType": "delivery_note",
+    "invoiceNumber": "FA2025-0102",
+    "forUnits": [
+      "VE|VE-2025-0102|2"
+    ]
+  },
+  {
     "filename": "evidence/releve_512100_2025-11.pdf",
     "sha256": "ba254a6fbb24a166a48457602528d02af05721ce01d01db64cde8e4def34e834",
     "docType": "bank_statement",

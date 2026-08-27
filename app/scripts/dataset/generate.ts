@@ -9,7 +9,7 @@ import { proposeMateriality } from '../../src/lib/kernel/materiality';
 import { parseFec } from '../../src/lib/kernel/fec';
 import type { GlRow, SampleUnit } from '../../src/lib/kernel/types';
 import { nepFr } from '../../src/lib/packs/nep-fr';
-import { buildWorld, type SalesInvoice } from './ledger';
+import { buildWorld, type SalesInvoice, type Entry } from './ledger';
 import { entriesToGlRows, serializeFec } from './fecout';
 import { aggregateTb, applyTbMismatch, priorYearTb, serializeTbCsv, TB_MISMATCH } from './tb';
 import { renderInvoicePdf, renderDeliveryNotePdf, renderBankStatementPdf, renderBankRecPdf, renderApprovalPdf } from './pdf';
@@ -85,6 +85,45 @@ async function main() {
   }
   if (parsed.rows.length !== glRows.length) throw new Error('FEC roundtrip row-count mismatch');
 
+  /* LE FEC DÉFINITIF — et pourquoi il fallait un SECOND fichier.
+     Le FEC de la démonstration est PROVISOIRE : il ne porte pas l'écriture de
+     situation (Dr 411000 / Cr 706000, 25 000 €) que la balance contient déjà.
+     C'est ce qui produit l'écart de rapprochement A7, la limitation de
+     périmètre, et le drapeau qui BLOQUE la conclusion définitive.
+     Tant qu'aucun second fichier n'existait, le seul moyen de lever ce drapeau
+     était de le mettre à jour en SQL — ce que le test faisait en le disant.
+     Un dossier qui ne peut se clore que par une écriture directe en base n'est
+     pas un dossier qui se clôt : le dernier geste du parcours passait à côté du
+     produit. Le fichier définitif est le même grand livre PLUS l'écriture
+     manquante ; il se réimporte par l'écran, il rend le rapprochement propre,
+     et c'est CE rapprochement qui lève le drapeau. */
+  const ecritureDeSituation: Entry = {
+    journal: 'OD', journalLib: 'Opérations diverses', entryNo: 'OD2025-9001',
+    date: ENTITY.periodEnd, pieceRef: 'SIT-2025-12', pieceDate: ENTITY.periodEnd,
+    label: 'Écriture de situation — facturation de fin d’exercice',
+    lines: [
+      { account: TB_MISMATCH.debitAccount, accountLabel: 'Clients — collectif', debitCents: TB_MISMATCH.deltaCents, creditCents: 0 },
+      { account: TB_MISMATCH.creditAccount, accountLabel: 'Ventes de marchandises', debitCents: 0, creditCents: TB_MISMATCH.deltaCents },
+    ],
+  };
+  /* IL PORTE LE MÊME NOM, et ce n'est pas un détail : le format du nom de
+     fichier est imposé (SirenFECAAAAMMJJ) et notre propre validateur le refuse
+     autrement. Un second envoi du client s'appelle donc comme le premier —
+     c'est précisément pourquoi le ré-import exige une confirmation explicite
+     d'invalidation de l'aval (ADR-016). Il vit dans un sous-dossier. */
+  const fecDefinitifName = fecName;
+  fs.mkdirSync(path.join(outDir, 'definitif'), { recursive: true });
+  const fecDefinitif = serializeFec([...world.entries, ecritureDeSituation]);
+  fs.writeFileSync(path.join(outDir, 'definitif', fecDefinitifName), fecDefinitif, 'latin1');
+  const parsedDef = parseFec(fecDefinitif, {
+    filename: fecDefinitifName, expectedSiren: ENTITY.siren,
+    periodStart: ENTITY.periodStart, periodEnd: ENTITY.periodEnd,
+  });
+  if (!parsedDef.ok) {
+    throw new Error('FEC définitif refusé par notre propre validateur : '
+      + JSON.stringify(parsedDef.violations.filter((v) => v.severity === 'error').slice(0, 5)));
+  }
+
   const tbFromFec = aggregateTb(glRows);
   const tb2025 = applyTbMismatch(tbFromFec);
   const tb2024 = priorYearTb(tb2025);
@@ -117,6 +156,37 @@ async function main() {
   const draw = monetaryDraw(units, { coverageCapCents, randomSize: DEMO_SAMPLING.revenue.randomSize, seed: DEMO_SAMPLING.revenue.seed }, popHash);
   const selectedIds = new Set(draw.selections.map((s) => s.id));
 
+  /* LE TIRAGE SUR LE GRAND LIVRE DÉFINITIF — et pourquoi il faut ses pièces.
+     Le fichier définitif ajoute une écriture de situation au chiffre
+     d'affaires : la POPULATION change, donc l'empreinte change, donc le tirage
+     change. C'est la règle ADR-016 qui l'exige — une sélection tirée sur un
+     grand livre remplacé est périmée — et le dossier REFAIT le sondage.
+     Si le jeu de données ne portait que les pièces du premier tirage, la
+     seconde sélection désignerait des factures qui n'existent nulle part : le
+     client ne pourrait pas répondre, et le dossier ne pourrait jamais se
+     clore. Ce ne serait pas une limitation d'audit, ce serait un trou du jeu
+     de données déguisé en constatation. On rend donc les pièces des DEUX
+     tirages. */
+  const glRowsDef = entriesToGlRows([...world.entries, ecritureDeSituation]);
+  const revRowsDef = glRowsDef.filter((r) => r.accountNo.startsWith('70'));
+  const unitsDef: SampleUnit[] = computeFlags(revRowsDef, flagCfg).map((r) => ({
+    id: r.naturalKey,
+    amountCents: Math.abs(r.creditCents - r.debitCents),
+    flags: r.flags.filter((f) => SELECTION_FLAGS.has(f)),
+  }));
+  const drawDef = monetaryDraw(
+    unitsDef,
+    { coverageCapCents, randomSize: DEMO_SAMPLING.revenue.randomSize, seed: DEMO_SAMPLING.revenue.seed },
+    populationHash(revRowsDef),
+  );
+  /* Les deux tirages réunis, sans doublon : le manifeste reste celui du tirage
+     ÉPINGLÉ (c'est lui que la suite d'acceptation rejoue), seules les pièces
+     sont produites pour les deux. */
+  const selectionsAProduire = [...draw.selections];
+  for (const sd of drawDef.selections) {
+    if (!selectionsAProduire.some((x) => x.id === sd.id)) selectionsAProduire.push(sd);
+  }
+
   // map invoices → their revenue GL line
   const revLineByEntry = new Map<string, GlRow>();
   for (const r of revRows) revLineByEntry.set(r.entryNo, r);
@@ -147,7 +217,7 @@ async function main() {
   for (const inv of world.invoices) invoiceByUnit.set(unitOfInvoice(inv), inv);
 
   const selectedInvoices: SalesInvoice[] = [];
-  for (const sel of draw.selections) {
+  for (const sel of selectionsAProduire) {
     const inv = invoiceByUnit.get(sel.id);
     if (inv && !selectedInvoices.includes(inv)) selectedInvoices.push(inv);
   }
@@ -162,7 +232,7 @@ async function main() {
       writtenInvoices.add(fname);
       // one random-stratum goods invoice gets the unlabeled "scan" so Part 1 shows the
       // OCR-mock + verify-UI path (rung 2 fails ⇒ rung 3 fixture below threshold)
-      const sel = draw.selections.find((s) => s.id === unit)!;
+      const sel = selectionsAProduire.find((s) => s.id === unit)!;
       const plain = !isFacturx && !inv.anomaly && !inv.isCreditNote && sel.reason === 'random' && !plainLayoutAssigned && inv.kind === 'goods';
       let bytes: Uint8Array;
       if (isFacturx) bytes = await renderFacturxPdf(inv);

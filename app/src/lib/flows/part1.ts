@@ -43,15 +43,35 @@ export async function bootstrapNep(): Promise<void> {
   await rebuildFslis(IDS.engNep, IDS.users.karim);
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
+
+  /* UN SEUL POSTE AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
+     Le jeu de démonstration déroule le cycle chiffre d'affaires et lui seul.
+     Tant qu'aucune règle ne le remarquait, quinze autres postes pouvaient
+     rester « retenus » sans qu'aucune procédure ne soit planifiée dessus, et le
+     dossier se clôturait quand même. Depuis la famille d'obstacles
+     « périmètre sans programme », ce serait quinze obstacles au visa — à
+     raison : un poste retenu et jamais travaillé est un trou dans le dossier.
+     Les deux se réconcilient d'une seule façon honnête : le périmètre du
+     dossier de DÉMONSTRATION est le poste qu'on déroule vraiment.
+     CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
+     ces postes DANS le périmètre — la paie pèse 2,6 M€ contre un seuil de
+     planification de 27 000 €. Les sortir n'est donc pas un jugement de
+     significativité, et le motif le dit à l'écran, dans le journal et dans
+     l'archive : c'est une convention du jeu synthétique. Écrire l'inverse
+     ferait du dossier de démonstration un dossier qu'un inspecteur rejetterait
+     — et le produit refuse partout ailleurs les motifs qui n'en sont pas. */
+  const MOTIF_DEMO =
+    'Hors périmètre du jeu de démonstration : seul le cycle chiffre d’affaires y est déroulé. '
+    + 'Ce n’est PAS un jugement de significativité — sur cette entité le poste dépasse le seuil '
+    + 'de planification et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (f.scoping === 'ns_proposed' && !f.confirmed_by) {
-      if (f.code === 'INTANGIBLES') {
-        await confirmScoping(f.id, IDS.users.lea, 'in_scope_qualitative', 'Immobilisations incorporelles conservées dans le périmètre (nouvelles licences en cours d’exercice).');
-      } else {
-        await confirmScoping(f.id, IDS.users.lea, 'ns_confirmed');
-      }
-    }
+    if (f.code === 'REVENUE') continue;             // le seul poste déroulé
+    if (f.confirmed_by) continue;                   // une décision humaine ne se réécrit pas (D9)
+    await confirmScoping(f.id, IDS.users.lea, 'ns_confirmed',
+      f.scoping === 'ns_proposed'
+        ? undefined                                  // le moteur l'a proposé : son motif suffit
+        : MOTIF_DEMO);
   }
 }
 

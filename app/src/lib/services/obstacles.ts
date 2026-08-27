@@ -26,7 +26,7 @@ import { obstaclesAchevement } from './completion';
 // défaut, pas une subtilité.
 
 export type Famille =
-  | 'acceptation' | 'independance' | 'reprise' | 'questionnaire'
+  | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons';
 
 export interface Obstacle {
@@ -41,6 +41,7 @@ const OU: Record<Famille, string> = {
   independance: 'team',
   reprise: 'carry-forward',
   questionnaire: 'risk',
+  programme: 'testing',
   boucle: 'loop',
   pointage: 'fs-tieout',
   evaluation: 'exceptions',
@@ -97,24 +98,49 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
     ajoute('questionnaire', await questionnaireObstacles(engagementId, p));
   }
 
-  // 5. La boucle, poste par poste : ce qui n'a pas fini de tourner.
+  /* 5. LE PÉRIMÈTRE SANS PROGRAMME — le trou que rien ne signalait.
+     Un poste retenu au périmètre sur lequel AUCUNE procédure n'est planifiée
+     est un trou dans le dossier : soit on le travaille, soit on le sort du
+     périmètre avec un motif. Le laisser passer contredirait tout le reste du
+     produit — on refuse une conclusion sans explication, une résolution sans
+     pièce, un « sans objet » sans motif, et on acceptait un poste entier
+     retenu puis jamais touché.
+     Pourquoi il n'était pas visible : la boucle ne parle QUE des postes qui
+     portent un échantillon (`if (b.etapes.length === 0) continue`), donc un
+     poste sans rien du tout ne produisait aucun obstacle. Le silence exact
+     que la règle 13 nomme : l'absence lue comme un acquis. */
+  const sansProgramme = await q<{ code: string; name: string }>(
+    `select f.code, f.name from fsli f
+     where f.engagement_id = $1
+       and f.scoping in ('in_scope', 'in_scope_qualitative')
+       and not exists (
+         select 1 from procedure_instance pi
+         where pi.engagement_id = f.engagement_id and pi.fsli_code = f.code)
+     order by f.code`,
+    [engagementId],
+  );
+  ajoute('programme', sansProgramme.map(
+    (f) => `${f.code} — ${f.name} : retenu au périmètre, aucune procédure planifiée`,
+  ));
+
+  // 6. La boucle, poste par poste : ce qui n'a pas fini de tourner.
   for (const p of postes) {
     const b = await boucle(engagementId, p);
     if (b.etapes.length === 0) continue;   // aucun échantillon : rien à reprocher ici
     ajoute('boucle', b.obstacles.map((o) => `${p} — ${o}`));
   }
 
-  // 6. Le pointage des états financiers.
+  // 7. Le pointage des états financiers.
   ajoute('pointage', await obstaclesPointage(engagementId));
 
-  // 7. L'évaluation des anomalies et la conclusion.
+  // 8. L'évaluation des anomalies et la conclusion.
   const gate = await conclusionGate(engagementId);
   if (!gate.ok) ajoute('evaluation', gate.blockers.map((b) => blockerText(b, 'fr')));
 
-  // 8. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
+  // 9. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
   ajoute('achevement', await obstaclesAchevement(engagementId));
 
-  // 9. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
+  // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const retard = await jalonsEnRetard(engagementId, aujourdhui);

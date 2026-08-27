@@ -2,11 +2,19 @@ import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { requestDetail, approveSend, pauseReminders, ensureReminders } from '@/lib/services/requests';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const ITEM_BADGE: Record<string, string> = { pending: 'gray', uploaded: 'blue', complete: 'green', na: 'gray' };
 
-export default async function RequestDetailPage({ params }: { params: Promise<{ id: string; rid: string }> }) {
+export default async function RequestDetailPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string; rid: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id, rid } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   await ensureReminders(id);
   const detail = await requestDetail(rid);
@@ -17,19 +25,24 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   async function sendAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await approveSend(rid, user.id);
-    revalidatePath(`/eng/${id}/requests/${rid}`);
+    return executer(`/eng/${id}/requests/${rid}`, async () => {
+      const { user } = await requireMember(id);
+      await approveSend(rid, user.id);
+      revalidatePath(`/eng/${id}/requests/${rid}`);
+    });
   }
   async function pauseAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await pauseReminders(rid, user.id);
-    revalidatePath(`/eng/${id}/requests/${rid}`);
+    return executer(`/eng/${id}/requests/${rid}`, async () => {
+      const { user } = await requireMember(id);
+      await pauseReminders(rid, user.id);
+      revalidatePath(`/eng/${id}/requests/${rid}`);
+    });
   }
 
   return (
     <div className="grid cols-2">
+      <BandeauRefus erreur={erreur} />
       <div className="panel" style={{ gridColumn: '1 / -1' }}>
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>

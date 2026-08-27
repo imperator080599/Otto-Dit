@@ -95,8 +95,14 @@ export async function balayer(
           erreurs.push(`requête : ${(e as Error).message}`);
         }
         await ctx.close();
-        const okApi = status > 0 && status < 400 && erreurs.length === 0;
+        const okApi = route.attendu !== undefined
+          ? status === route.attendu && erreurs.length === 0
+          : status > 0 && status < 400 && erreurs.length === 0;
         verdicts.push({ route, status, erreurs, texte: 0, ok: okApi });
+        if (process.env.SCREENS_SILENCIEUX !== '1') {
+          const note = route.attendu !== undefined ? `  (${route.attendu} attendu — ${route.pourquoi})` : '';
+          process.stdout.write(`${okApi ? '  ok  ' : '  ÉCHEC'} ${route.pattern.padEnd(42)} ${status}${note}\n`);
+        }
         continue;
       }
 
@@ -138,12 +144,18 @@ export async function balayer(
          l'accueil) ; un 4xx/5xx ne l'est pas. Une page qui rend moins de
          40 caractères visibles est vide : c'est le symptôme d'un composant
          qui a explosé après l'envoi du HTML. */
-      const ok = status > 0 && status < 400 && erreurs.length === 0 && texte >= 40;
+      /* Une route peut DÉCLARER son statut attendu (le dossier scellé répond
+         404 tant qu'il n'y en a pas). L'attente est explicite et affichée : un
+         200 inattendu échoue autant qu'un 404 inattendu. */
+      const ok = route.attendu !== undefined
+        ? status === route.attendu && erreurs.length === 0
+        : status > 0 && status < 400 && erreurs.length === 0 && texte >= 40;
       verdicts.push({ route, status, erreurs, texte, ok });
       /* Rendu au fil de l'eau : un harnais qui n'affiche rien pendant dix
          minutes est indistinguable d'un harnais bloqué. */
       if (process.env.SCREENS_SILENCIEUX !== '1') {
-        process.stdout.write(`${ok ? '  ok  ' : '  ÉCHEC'} ${route.pattern.padEnd(42)} ${status}\n`);
+        const note = route.attendu !== undefined ? `  (${route.attendu} attendu — ${route.pourquoi})` : '';
+        process.stdout.write(`${ok ? '  ok  ' : '  ÉCHEC'} ${route.pattern.padEnd(42)} ${status}${note}\n`);
       }
     }
   } finally {

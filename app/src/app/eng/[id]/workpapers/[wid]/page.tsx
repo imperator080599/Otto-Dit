@@ -5,11 +5,19 @@ import { q } from '@/lib/db/client';
 import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs } from '@/lib/services/workpapers/lifecycle';
 import { exportWorkpaper, listExports } from '@/lib/services/workpapers/render';
 import type { WpSection } from '@/lib/services/workpapers/draft';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const WP_BADGE: Record<string, string> = { draft: 'gray', in_review: 'blue', reviewed: 'amber', signed: 'green', outdated: 'red' };
 
-export default async function WorkpaperDetail({ params }: { params: Promise<{ id: string; wid: string }> }) {
+export default async function WorkpaperDetail({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string; wid: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id, wid } = await params;
+  const { erreur } = await searchParams;
   const { user } = await requireMember(id);
   const wp = await getWorkpaper(wid);
   if (!wp || wp.engagement_id !== id) return <div className="panel">Not found.</div>;
@@ -25,37 +33,48 @@ export default async function WorkpaperDetail({ params }: { params: Promise<{ id
 
   async function editAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await editSection(wid, user.id, String(formData.get('section')), String(formData.get('body') ?? ''), String(formData.get('justification') ?? ''));
-    revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      await editSection(wid, user.id, String(formData.get('section')), String(formData.get('body') ?? ''), String(formData.get('justification') ?? ''));
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
   }
   async function noteAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await addReviewNote(id, wid, user.id, String(formData.get('assignee') ?? '') || null, String(formData.get('text') ?? ''));
-    revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      await addReviewNote(id, wid, user.id, String(formData.get('assignee') ?? '') || null, String(formData.get('text') ?? ''));
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
   }
   async function noteTransition(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await transitionNote(String(formData.get('note_id')), user.id, String(formData.get('to')) as 'addressed' | 'closed');
-    revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      await transitionNote(String(formData.get('note_id')), user.id, String(formData.get('to')) as 'addressed' | 'closed');
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
   }
   async function signAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await signWorkpaper(wid, user.id, String(formData.get('role')) as 'preparer_validator' | 'reviewer' | 'partner');
-    revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      await signWorkpaper(wid, user.id, String(formData.get('role')) as 'preparer_validator' | 'reviewer' | 'partner');
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
   }
   async function exportAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await exportWorkpaper(wid, user.id, String(formData.get('format')) as 'pdf' | 'xlsx');
-    revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      await exportWorkpaper(wid, user.id, String(formData.get('format')) as 'pdf' | 'xlsx');
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>

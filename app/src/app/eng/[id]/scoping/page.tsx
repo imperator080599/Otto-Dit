@@ -3,6 +3,8 @@ import { requireMember } from '@/lib/core/auth';
 import { listFslis, confirmScoping, fsliAccounts, rebuildFslis } from '@/lib/services/fsli';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const SCOPING_BADGE: Record<string, string> = {
   unscoped: 'gray',
@@ -12,8 +14,14 @@ const SCOPING_BADGE: Record<string, string> = {
   in_scope_qualitative: 'violet',
 };
 
-export default async function ScopingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ScopingPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const fslis = await listFslis(id);
   const withAccounts = await Promise.all(
@@ -22,25 +30,30 @@ export default async function ScopingPage({ params }: { params: Promise<{ id: st
 
   async function confirmAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await confirmScoping(
-      String(formData.get('fsli_id')),
-      user.id,
-      String(formData.get('decision')) as 'ns_confirmed' | 'in_scope' | 'in_scope_qualitative',
-      String(formData.get('basis') ?? '') || undefined,
-    );
-    revalidatePath(`/eng/${id}/scoping`);
+    return executer(`/eng/${id}/scoping`, async () => {
+      const { user } = await requireMember(id);
+      await confirmScoping(
+        String(formData.get('fsli_id')),
+        user.id,
+        String(formData.get('decision')) as 'ns_confirmed' | 'in_scope' | 'in_scope_qualitative',
+        String(formData.get('basis') ?? '') || undefined,
+      );
+      revalidatePath(`/eng/${id}/scoping`);
+    });
   }
 
   async function rebuildAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await rebuildFslis(id, user.id);
-    revalidatePath(`/eng/${id}/scoping`);
+    return executer(`/eng/${id}/scoping`, async () => {
+      const { user } = await requireMember(id);
+      await rebuildFslis(id, user.id);
+      revalidatePath(`/eng/${id}/scoping`);
+    });
   }
 
   return (
     <div className="panel">
+      <BandeauRefus erreur={erreur} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h2>FSLI scoping — propose &amp; confirm (D9: never silently NS)</h2>
         <form action={rebuildAction}><button className="btn secondary small">Rebuild from TB</button></form>
@@ -74,7 +87,31 @@ export default async function ScopingPage({ params }: { params: Promise<{ id: st
               <td className="muted" style={{ maxWidth: 260 }}>{f.scoping_basis}</td>
               <td>
                 {f.confirmed_by ? (
-                  <span className="faint">confirmed</span>
+                  /* UNE DÉCISION DE PÉRIMÈTRE SE REVOIT — sinon elle se subit.
+                     L'écran n'affichait plus que « confirmed » : une fois la
+                     décision prise, elle n'était plus modifiable DEPUIS
+                     L'APPLICATION, alors que le service, lui, l'accepte. Deux
+                     conséquences, toutes deux graves : un poste sorti à tort ne
+                     rentrait plus, et l'obstacle « périmètre sans programme »
+                     n'avait qu'une seule sortie sur deux — on pouvait le lever
+                     en travaillant le poste, jamais en le sortant. Un jugement
+                     d'audit qui ne se révise pas n'est pas un jugement.
+                     Le motif est OBLIGATOIRE : revenir sur une décision prise
+                     se justifie, sinon la trace ne dit pas pourquoi. */
+                  <details>
+                    <summary className="faint">confirmé — revoir</summary>
+                    <form action={confirmAction} className="row" style={{ gap: 4, marginTop: 4 }}>
+                      <input type="hidden" name="fsli_id" value={f.id} />
+                      <select name="decision" defaultValue="in_scope">
+                        <option value="in_scope">remettre au périmètre</option>
+                        <option value="in_scope_qualitative">retenir pour un motif qualitatif</option>
+                        <option value="ns_confirmed">sortir du périmètre</option>
+                      </select>
+                      <input type="text" name="basis" placeholder="motif de la révision (obligatoire)"
+                        style={{ width: 200 }} required />
+                      <button className="btn small secondary">Revoir</button>
+                    </form>
+                  </details>
                 ) : f.scoping === 'ns_proposed' ? (
                   <div>
                     <form action={confirmAction} className="row" style={{ marginBottom: 4 }}>

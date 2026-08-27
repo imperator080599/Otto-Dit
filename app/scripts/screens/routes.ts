@@ -19,6 +19,19 @@ export interface Route {
   kind: 'page' | 'api';
   /** Ce qu'il faut être pour y accéder. */
   as: 'auditor' | 'anonymous';
+  /**
+   * Le statut ATTENDU, quand ce n'est pas 200 — et pourquoi c'est un champ
+   * plutôt qu'une exception cachée dans le balayage.
+   *
+   * Le téléchargement du dossier scellé répond 404 tant qu'aucun dossier n'est
+   * scellé, et c'est le bon comportement. Deux mauvaises façons de traiter ça :
+   * sauter la route (un écran non vérifié), ou ignorer les 404 (on perdrait
+   * tous les vrais). On DÉCLARE donc l'attente, elle s'affiche dans le rapport,
+   * et un 200 inattendu échouerait tout autant qu'un 404 inattendu.
+   */
+  attendu?: number;
+  /** Pourquoi ce statut est attendu. Une attente sans raison est une excuse. */
+  pourquoi?: string;
 }
 
 /** Tous les motifs de route, lus depuis src/app. */
@@ -84,6 +97,8 @@ export async function parametres(): Promise<Record<string, string>> {
     exportId: await un(`select id::text v from export_record order by id limit 1`),
     // /api/tracker/[engId]
     engId,
+    // /api/archive/[engagementId] — le dossier scellé se télécharge
+    engagementId: engId,
     // le dossier SOX, pour les routes qui ne valent que là
     sox: soxId,
   };
@@ -116,11 +131,18 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
       return v ?? `__${nom}__`;
     });
     if (manquants.length) { nonResolues.push(`${pattern} (paramètre non résolu : ${manquants.join(', ')})`); continue; }
+    /* LE DOSSIER SCELLÉ RÉPOND 404 TANT QU'IL N'Y EN A PAS — et c'est juste.
+       On DÉCLARE l'attente au lieu de sauter la route ou d'ignorer les 404 :
+       le rapport la montre, et un 200 inattendu échouerait tout autant. */
+    const archiveVide = pattern === '/api/archive/[engagementId]' && !(await aUnDossierScelle(vals.id));
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie
       // auditeur ne prouverait pas qu'un client peut s'en servir.
       as: pattern.startsWith('/portal') ? 'anonymous' : 'auditor',
+      ...(archiveVide
+        ? { attendu: 404, pourquoi: 'aucun dossier scellé dans le monde de démonstration' }
+        : {}),
     });
   }
   // Le second dossier vaut d'être ouvert aussi : le pack SOX allume des écrans
@@ -134,6 +156,13 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
     }
   }
   return { pretes, nonResolues };
+}
+
+/** Ce dossier porte-t-il une archive scellée ? */
+async function aUnDossierScelle(engagementId: string): Promise<boolean> {
+  const r = await q01<{ n: string }>(
+    `select count(*) n from file_archive where engagement_id = $1`, [engagementId]);
+  return Number(r?.n ?? 0) > 0;
 }
 
 /** Utilitaire : la liste des tables citées ci-dessus existe-t-elle ? */

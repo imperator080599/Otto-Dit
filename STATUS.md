@@ -7,10 +7,12 @@
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 403 tests green (`cd app && npm test`), zero network calls. Prod build clean.
-  Le balayage des 60 écrans est DANS la suite, et `npm run screens` le refait en production.
-  `npm run clics` **conduit** le parcours dans Chromium sur le build de production — 15 étapes,
-  dont douze vérifient un refus (ADR-090). Les deux entrent dans `npm run verify`.
+- **Suite**: 404 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+  Le balayage des 63 écrans est DANS la suite, et `npm run screens` le refait en production.
+  `npm run clics` **conduit TOUT le chemin de démonstration** dans Chromium sur le build de
+  production — de l'import du grand livre définitif au téléchargement du dossier scellé, en
+  54 étapes dont une trentaine vérifient un refus (ADR-090, ADR-091). Les deux entrent dans
+  `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
 ## Prouvé par exécution vs prouvé par test avec mocks
@@ -21,7 +23,7 @@ comme « mesuré » s'il ne figure pas ici.
 
 | Affirmation | Statut | Établi comment |
 |---|---|---|
-| **Substance probante** : « resolved » exige explication verbatim + preuve liée + disposition | **Prouvé par exécution** | contraintes SQL (migration 0009) + tests : une résolution générique est rejetée par le service ET par la base |
+| **Substance probante** : « resolved » exige explication verbatim + preuve liée + disposition + qui/quand | **Prouvé par exécution** | contraintes SQL (migration 0009) + service : une résolution SANS lien vers ce qui corrobore, ou dont l'explication est vide, est refusée par le service ET par la base — vérifié au clic en court-circuitant la garde `required` du navigateur. **Ce qui n'est PAS vérifié, et ne peut pas l'être : la qualité de la prose.** Une phrase creuse mais non vide, accompagnée d'un lien, passe. La formulation précédente (« une résolution générique est rejetée ») affirmait davantage que ce que le produit fait ; juger si une explication est substantielle est le travail des notes de revue et des visas, pas d'une contrainte |
 | **Une anomalie chiffrée ne sort pas de l'accumulation sans disposition** | **Prouvé par exécution** | la double comptabilisation de 36 800 € reste dans le total ; anomalies connues 127 545,80 € |
 | **Le dépassement de l'anomalie tolérable bloque la conclusion** | **Prouvé par exécution** | `concludeEvaluation` refuse sans `evaluation_response` enregistrée |
 | **Le grand livre provisoire bloque la conclusion définitive et la clôture** | **Prouvé par exécution** | test archive : `closeFile` refuse tant que le FEC est provisoire |
@@ -30,7 +32,7 @@ comme « mesuré » s'il ne figure pas ici.
 | **Un export supprimé se régénère à l'octet près** | **Prouvé par exécution** | `export.test.ts` compare les octets du PDF stocké et du PDF re-rendu |
 | **Le dossier scellé est autoportant et déterministe** | **Prouvé par exécution** | archive rejouable octet pour octet ; empreintes du manifeste re-vérifiées ; README sans script ni lien externe |
 | **Les écrans de méthode RENDENT dans l'application qui tourne** | **Prouvé par exécution** | six écrans conduits dans Chromium sur base fraîche (200), dont le parcours publier → refuser → corriger → publier. Avant ADR-076 : trois d'entre eux rendaient **500** avec 278 tests verts |
-| **Le parcours se CLIQUE dans l'application en production** | **Prouvé par exécution** | `npm run clics` : 15 étapes conduites dans Chromium sur un build de production, 0 échec, dont douze refus attendus effectivement affichés. C'est ce contrôle qui a trouvé le dossier créé inatteignable (ADR-088), invisible aux 403 tests et aux 60 écrans à 200 |
+| **La mission entière se CLIQUE dans l'application, jusqu'au dossier scellé téléchargé** | **Prouvé par exécution** | `npm run clics` : 54 étapes conduites dans Chromium sur un build de production, 0 échec, en étant tour à tour préparateur, reviewer, associé et client. C'est ce contrôle qui a trouvé le dossier créé inatteignable (ADR-088), les dix écrans qui rendaient un refus en page 500, la clôture sans écran et l'archive sans chemin de lecture (ADR-091) — tout cela invisible aux 404 tests et aux 63 écrans à 200 |
 | **Les visas suivent la hiérarchie de revue** | **Prouvé par exécution** | trigger + service : un visa associé avant celui du reviewer est refusé |
 | Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
 | **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |

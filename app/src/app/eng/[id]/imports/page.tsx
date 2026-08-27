@@ -1,41 +1,35 @@
-import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { listImports, importTb, importFec, detectTbMapping, activeTb, drawnSamples } from '@/lib/services/imports';
-import { rebuildFslis } from '@/lib/services/fsli';
+import { listImports, activeTb, drawnSamples } from '@/lib/services/imports';
 import type { Violation } from '@/lib/kernel/types';
+import { uploadTbAction, uploadFecAction } from './actions';
 
-export default async function ImportsPage({ params }: { params: Promise<{ id: string }> }) {
+export const dynamic = 'force-dynamic';
+
+export default async function ImportsPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
   await requireMember(id);
+  const { erreur } = await searchParams;
   const imports = await listImports(id);
   const tbCur = await activeTb(id, 'current');
   const tbPrior = await activeTb(id, 'prior');
   const affected = await drawnSamples(id);
 
-  async function uploadTb(formData: FormData) {
-    'use server';
-    const { user } = await requireMember(id);
-    const file = formData.get('file') as File;
-    const periodKind = String(formData.get('period_kind')) as 'current' | 'prior';
-    const content = Buffer.from(await file.arrayBuffer()).toString('utf8');
-    const mapping = detectTbMapping(content.split(/\r?\n/)[0] ?? '');
-    await importTb({ engagementId: id, userId: user.id, filename: file.name, content, mapping, periodKind });
-    await rebuildFslis(id, user.id).catch(() => undefined);
-    revalidatePath(`/eng/${id}/imports`);
-  }
-
-  async function uploadFec(formData: FormData) {
-    'use server';
-    const { user } = await requireMember(id);
-    const file = formData.get('file') as File;
-    const confirm = formData.get('confirm_invalidation') === 'on';
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    await importFec({ engagementId: id, userId: user.id, filename: file.name, bytes, confirmInvalidation: confirm });
-    revalidatePath(`/eng/${id}/imports`);
-  }
-
   return (
     <div>
+      {erreur && (
+        <div className="panel warn">
+          <p><span className="badge amber">refusé</span> {erreur}</p>
+          <p className="faint">
+            Rien n’a été importé. Le refus vient du service, pas de l’écran — et il
+            s’affiche ici plutôt que de faire tomber la page.
+          </p>
+        </div>
+      )}
       <div className="grid cols-2">
         <div className="panel">
           <h2>Trial balance (generic importer)</h2>
@@ -47,7 +41,8 @@ export default async function ImportsPage({ params }: { params: Promise<{ id: st
             Current: {tbCur ? <span className="badge green">{tbCur.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
             {'  '}Prior: {tbPrior ? <span className="badge green">{tbPrior.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
           </p>
-          <form action={uploadTb} className="row">
+          <form action={uploadTbAction} className="row">
+            <input type="hidden" name="engagement_id" value={id} />
             <input type="file" name="file" accept=".csv,.txt" required />
             <select name="period_kind" defaultValue="current">
               <option value="current">Current period (N)</option>
@@ -70,7 +65,8 @@ export default async function ImportsPage({ params }: { params: Promise<{ id: st
               workpapers flagged outdated, all logged).
             </div>
           )}
-          <form action={uploadFec} className="row">
+          <form action={uploadFecAction} className="row">
+            <input type="hidden" name="engagement_id" value={id} />
             <input type="file" name="file" accept=".txt,.csv" required />
             {affected.length > 0 && (
               <label className="row" style={{ gap: 4 }}>

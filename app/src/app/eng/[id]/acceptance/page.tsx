@@ -4,7 +4,7 @@ import { criteres } from '@/lib/methodology/catalogue';
 import {
   currentAcceptation, manquePourDecider, jalons, jalonsEnRetard,
 } from '@/lib/services/acceptance';
-import { ouvrirAction, repondreAction, deciderAction, jalonAction } from './actions';
+import { ouvrirAction, repondreAction, deciderAction, jalonAction, jalonFaitAction } from './actions';
 
 // ACCEPTATION, MAINTIEN ET JALONS — le premier bout de l'arc (point 1).
 //
@@ -163,7 +163,7 @@ export default async function AcceptancePage({
             <p><span className="badge amber">{retard.length} jalon(s) échu(s) et non faits</span></p>
           )}
           <table className="data">
-            <thead><tr><th>Jalon</th><th>Échéance</th><th>Poser</th></tr></thead>
+            <thead><tr><th>Jalon</th><th>Échéance</th><th>Poser</th><th>Fait</th></tr></thead>
             <tbody>
               {liste.map((j) => (
                 <tr key={j.code} className={retard.some((r) => r.code === j.code) ? 'warn' : undefined}>
@@ -185,6 +185,22 @@ export default async function AcceptancePage({
                         <input name="date" placeholder="AAAA-MM-JJ" defaultValue={j.due_date ?? ''} style={{ width: 120 }} />
                         <button className="btn secondary small">Poser</button>
                       </form>
+                    )}
+                  </td>
+                  <td>
+                    {/* LE GESTE QUI MANQUAIT. « Fait » existait dans le service et
+                        n'était appelé par aucun écran : un jalon échu bloque le visa,
+                        et le seul moyen de le lever était d'écrire en base. */}
+                    {j.done_at ? (
+                      <span className="badge green">fait le {fr(j.done_at)}</span>
+                    ) : j.due_date ? (
+                      <form action={jalonFaitAction}>
+                        <input type="hidden" name="engagement_id" value={id} />
+                        <input type="hidden" name="code" value={j.code} />
+                        <button className="btn secondary small">Marquer fait</button>
+                      </form>
+                    ) : (
+                      <span className="faint" style={{ fontSize: 11 }}>pose d’abord l’échéance</span>
                     )}
                   </td>
                 </tr>

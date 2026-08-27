@@ -6,13 +6,21 @@ import { frameworkSet } from '@/lib/services/fsli';
 import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const STATUS_BADGE: Record<string, string> = {
   open: 'red', clarification_requested: 'amber', explained: 'blue', resolved: 'green', escalated: 'violet',
 };
 
-export default async function ExceptionsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ExceptionsPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const fs = await frameworkSet(id);
   const isSox = fs.assurance_packs.includes('pcaob-sox');
@@ -24,47 +32,53 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
 
   async function draftAction() {
     'use server';
-    const { user } = await requireMember(id);
-    const rid = await draftClarificationRequest(id, user.id);
-    redirect(`/eng/${id}/requests/${rid}`);
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      const rid = await draftClarificationRequest(id, user.id);
+      redirect(`/eng/${id}/requests/${rid}`);
+    });
   }
   async function resolveAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const link = String(formData.get('corroboration') ?? '');
-    const [kind, refId] = link.split(':');
-    await resolveException(String(formData.get('exception_id')), user.id, {
-      explanation: String(formData.get('explanation') ?? ''),
-      conclusion: String(formData.get('conclusion') ?? ''),
-      disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
-      corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
-      /* LA CONSTATATION QUI DÉPASSE L'ÉLÉMENT TESTÉ. Renseignée, elle lève un
-         facteur PROPOSÉ au registre, visant d'autres sections. C'est le chemin
-         par lequel une constatation CIRCULE — il manquait, et `raiseFactor`
-         existait sans que rien ne l'appelle. */
-      factRaised: String(formData.get('fait') ?? '').trim()
-        ? {
-            nature: String(formData.get('fait_nature') ?? 'controle'),
-            description: String(formData.get('fait')),
-            targets: String(formData.get('fait_postes') ?? '')
-              .split(',').map((p) => p.trim()).filter(Boolean)
-              .map((fsli) => ({ fsli, assertions: ['realite'] })),
-          }
-        : undefined,
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      const link = String(formData.get('corroboration') ?? '');
+      const [kind, refId] = link.split(':');
+      await resolveException(String(formData.get('exception_id')), user.id, {
+        explanation: String(formData.get('explanation') ?? ''),
+        conclusion: String(formData.get('conclusion') ?? ''),
+        disposition: String(formData.get('disposition') ?? 'no_misstatement') as 'corrected' | 'no_misstatement' | 'compensated' | 'already_accumulated',
+        corroboration: kind === 'gl' ? { glEntryId: refId } : { evidenceId: refId },
+        /* LA CONSTATATION QUI DÉPASSE L'ÉLÉMENT TESTÉ. Renseignée, elle lève un
+           facteur PROPOSÉ au registre, visant d'autres sections. C'est le chemin
+           par lequel une constatation CIRCULE — il manquait, et `raiseFactor`
+           existait sans que rien ne l'appelle. */
+        factRaised: String(formData.get('fait') ?? '').trim()
+          ? {
+              nature: String(formData.get('fait_nature') ?? 'controle'),
+              description: String(formData.get('fait')),
+              targets: String(formData.get('fait_postes') ?? '')
+                .split(',').map((p) => p.trim()).filter(Boolean)
+                .map((fsli) => ({ fsli, assertions: ['realite'] })),
+            }
+          : undefined,
+      });
+      revalidatePath(`/eng/${id}/exceptions`);
     });
-    revalidatePath(`/eng/${id}/exceptions`);
   }
   async function escalateAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await escalateToMisstatement(String(formData.get('exception_id')), user.id, {
-      kind: String(formData.get('kind')) as 'factual' | 'judgmental' | 'projected',
-      amountCents: Math.round(Number(formData.get('amount')) * 100),
-      corrected: formData.get('corrected') === 'on',
-      notes: String(formData.get('notes') ?? '') || undefined,
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      await escalateToMisstatement(String(formData.get('exception_id')), user.id, {
+        kind: String(formData.get('kind')) as 'factual' | 'judgmental' | 'projected',
+        amountCents: Math.round(Number(formData.get('amount')) * 100),
+        corrected: formData.get('corrected') === 'on',
+        notes: String(formData.get('notes') ?? '') || undefined,
+      });
+      revalidatePath(`/eng/${id}/exceptions`);
+      revalidatePath(`/eng/${id}/testing`);
     });
-    revalidatePath(`/eng/${id}/exceptions`);
-    revalidatePath(`/eng/${id}/testing`);
   }
 
   const open = exceptions.filter((x) => x.status === 'open');
@@ -84,6 +98,7 @@ export default async function ExceptionsPage({ params }: { params: Promise<{ id:
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{isSox ? 'Deviations & exceptions' : 'Exceptions'} <span className="badge gray">{exceptions.length}</span></h2>

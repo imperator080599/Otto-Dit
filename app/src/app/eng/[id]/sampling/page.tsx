@@ -5,48 +5,65 @@ import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentR
 import { generatePbcFromSample } from '@/lib/services/requests';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const REASON_BADGE: Record<string, string> = { high_value: 'blue', risk_flag: 'amber', random: 'gray' };
 
-export default async function SamplingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SamplingPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const sample = await currentRevenueSample(id);
 
   async function proposeAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await proposeRevenueSample(id, user.id);
-    revalidatePath(`/eng/${id}/sampling`);
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await proposeRevenueSample(id, user.id);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
   }
   async function validateAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const edits: { coverageCapCents?: number; randomSize?: number; seed?: string } = {};
-    const cap = String(formData.get('coverage_cap') ?? '');
-    const size = String(formData.get('random_size') ?? '');
-    const seed = String(formData.get('seed') ?? '');
-    if (cap) edits.coverageCapCents = Math.round(Number(cap) * 100);
-    if (size) edits.randomSize = Number(size);
-    if (seed) edits.seed = seed;
-    await validateSampleParams(String(formData.get('sample_id')), user.id, edits);
-    revalidatePath(`/eng/${id}/sampling`);
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      const edits: { coverageCapCents?: number; randomSize?: number; seed?: string } = {};
+      const cap = String(formData.get('coverage_cap') ?? '');
+      const size = String(formData.get('random_size') ?? '');
+      const seed = String(formData.get('seed') ?? '');
+      if (cap) edits.coverageCapCents = Math.round(Number(cap) * 100);
+      if (size) edits.randomSize = Number(size);
+      if (seed) edits.seed = seed;
+      await validateSampleParams(String(formData.get('sample_id')), user.id, edits);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
   }
   async function drawAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await drawRevenueSample(String(formData.get('sample_id')), user.id);
-    revalidatePath(`/eng/${id}/sampling`);
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await drawRevenueSample(String(formData.get('sample_id')), user.id);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
   }
   async function pbcAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await generatePbcFromSample(id, String(formData.get('sample_id')), user.id);
-    redirect(`/eng/${id}/requests`);
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await generatePbcFromSample(id, String(formData.get('sample_id')), user.id);
+      redirect(`/eng/${id}/requests`);
+    });
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>Revenue sampling — propose (L3) → validate → draw (L0, deterministic)</h2>

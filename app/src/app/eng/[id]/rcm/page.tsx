@@ -5,37 +5,50 @@ import { listControls, setDiStatus, importRcm, listDeficiencies } from '@/lib/se
 import { repoRoot } from '@/lib/db/client';
 import fs from 'node:fs';
 import path from 'node:path';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 const DI_BADGE: Record<string, string> = { not_assessed: 'gray', effective: 'green', deficient: 'red' };
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
 
-export default async function RcmPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RcmPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const controls = await listControls(id);
   const deficiencies = await listDeficiencies(id);
 
   async function importDatasetRcm() {
     'use server';
-    const { user } = await requireMember(id);
-    const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', 'rcm.csv'), 'utf8');
-    await importRcm(id, csv, user.id);
-    revalidatePath(`/eng/${id}/rcm`);
+    return executer(`/eng/${id}/rcm`, async () => {
+      const { user } = await requireMember(id);
+      const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', 'rcm.csv'), 'utf8');
+      await importRcm(id, csv, user.id);
+      revalidatePath(`/eng/${id}/rcm`);
+    });
   }
   async function diAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    await setDiStatus(
-      String(formData.get('control_id')),
-      user.id,
-      String(formData.get('status')) as 'effective' | 'deficient',
-      String(formData.get('conclusion') ?? ''),
-    );
-    revalidatePath(`/eng/${id}/rcm`);
+    return executer(`/eng/${id}/rcm`, async () => {
+      const { user } = await requireMember(id);
+      await setDiStatus(
+        String(formData.get('control_id')),
+        user.id,
+        String(formData.get('status')) as 'effective' | 'deficient',
+        String(formData.get('conclusion') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/rcm`);
+    });
   }
 
   return (
     <div>
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>Risk–Control Matrix (RCM)</h2>

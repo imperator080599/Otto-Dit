@@ -29,6 +29,10 @@ const FAMILLES: Record<string, { titre: string; pourquoi: string }> = {
     titre: 'Questionnaire résiduel de risque',
     pourquoi: 'Ce qu’aucune autre source du dossier ne peut lever : si personne ne répond, le risque ne voit que ce qui se compte.',
   },
+  programme: {
+    titre: 'Périmètre sans programme',
+    pourquoi: 'Un poste retenu sur lequel aucune procédure n’est planifiée est un trou : soit on le travaille, soit on le sort du périmètre avec un motif.',
+  },
   boucle: {
     titre: 'La boucle',
     pourquoi: 'Un élément sélectionné qui n’est ni conclu ni expliqué laisse la boucle ouverte.',

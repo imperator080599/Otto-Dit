@@ -106,6 +106,17 @@ Déjà déroulés par `npm run demo:seed`. Le rapprochement porte une **limitati
 tient à une écriture absente du grand livre, il n'y a ni pièce à joindre ni écriture à citer, et le
 fichier reste **provisoire** — ce qui bloquera la conclusion, pas les travaux.
 
+**Le périmètre : UN poste.** Le chiffre d'affaires est le seul poste retenu ; les quinze autres sont
+sortis avec un motif qui dit ce qu'il est — *« hors périmètre du jeu de démonstration »*, et non un
+jugement de significativité. **Dites-le à voix haute en démonstration** : sur cette entité, la paie
+pèse 2,6 M€ contre un seuil de planification de 27 000 €, le moteur les propose DANS le périmètre,
+et un dossier réel les travaillerait. Le motif est visible à l'écran, au journal et dans l'archive.
+
+**À montrer** : sur `Scoping`, dépliez « confirmé — revoir » et **remettez un poste au périmètre**.
+Allez sur `Obstacles au visa` : la famille **« périmètre sans programme »** apparaît. Un poste retenu
+sur lequel aucune procédure n'est planifiée est un trou dans le dossier — soit on le travaille, soit
+on le sort avec un motif. Ressortez-le : l'obstacle tombe.
+
 ---
 
 ### 7. Le risque par assertion — et ce qu'il commande
@@ -198,7 +209,8 @@ Cinq travaux, et leurs règles sont des **dates**.
 **Écran** : `Obstacles au visa`.
 
 **Une seule liste**, calculée, transverse : acceptation, indépendance, reprise, questionnaire,
-boucle, pointage, évaluation, achèvement, jalons. Chaque obstacle dit **où aller le lever**.
+**périmètre sans programme**, boucle, pointage, évaluation, achèvement, jalons. Chaque obstacle dit
+**où aller le lever**.
 
 > Ce que la page **n'affirme pas**, et c'est écrit dessus : « aucun obstacle » ne veut pas dire que
 > le dossier est **bon**. Il veut dire qu'**aucune règle ne le refuse**. Le jugement reste au
@@ -206,16 +218,26 @@ boucle, pointage, évaluation, achèvement, jalons. Chaque obstacle dit **où al
 
 ---
 
-### 14. La clôture
+### 14. La clôture et l'archive scellée
 
-**Écran** : `Provenance` / clôture du dossier.
+**Écran** : `Clôture et archive`.
 
-**Ce qu'il faut montrer** : tentez de clore **avant** d'avoir tout levé → refusé, avec le **compte**
-et les premiers obstacles. Le grand livre **provisoire** bloque aussi — et c'est la règle, pas un
-accident : *un dossier qui se clôt sur un FEC provisoire serait le vrai défaut.*
+**Ce qu'il faut montrer** : tant qu'un obstacle subsiste, **le bouton de clôture n'est pas offert** —
+l'écran dit combien il en reste et par famille. Clore n'est pas offert non plus à qui n'a **pas le
+droit de signature** : *ouvrir un dossier n'est pas y travailler, et y travailler n'est pas le
+signer.*
+
+Le grand livre **provisoire** bloque aussi, et c'est la règle : *un dossier qui se clôt sur un FEC
+provisoire serait le vrai défaut.* Il se lève par le seul chemin honnête — **importer le fichier
+définitif** (`dataset/definitif/`, même nom, invalidation à confirmer) et **re-exécuter le
+rapprochement** : c'est son résultat, propre, qui lève le drapeau. Le ré-import périme la sélection
+tirée sur l'ancien grand livre : les travaux se refont sur le fichier définitif, ce que la limitation
+consignée promettait.
 
 Une fois tout levé : l'archive est scellée, **rejouable à l'octet près**, avec ses empreintes
-re-vérifiées et un README sans lien externe. Le délai d'assemblage est **30/05/2026**.
+re-vérifiées et un README sans lien externe. L'écran affiche son **empreinte SHA-256** et un lien qui
+la **télécharge** — une archive qu'on ne peut pas sortir ne prouve rien à un inspecteur. Le délai
+d'assemblage est **30/05/2026**.
 
 ---
 
@@ -255,11 +277,16 @@ Dit ici pour ne pas être cru par omission.
 | Le parcours se **clique** vraiment, en production | `cd app && npm run clics` |
 | Base fraîche + dossier déroulé + types + tests + écrans + clics | `cd app && npm run verify` |
 
-`npm run screens` **ouvre** les 60 routes ; `npm run clics` **agit** dessus. Les deux sont
+`npm run screens` **ouvre** les 63 routes ; `npm run clics` **agit** dessus. Les deux sont
 nécessaires et ne se remplacent pas : six formulaires ont été inertes en production pendant une
-tranche entière avec tous les écrans à 200 (ADR-078), et un dossier créé a été inatteignable en
-étant parfaitement rendu (ADR-088). *Un écran qui rend n'est pas un écran qui marche.*
+tranche entière avec tous les écrans à 200 (ADR-078), un dossier créé a été inatteignable en étant
+parfaitement rendu (ADR-088), et dix écrans transformaient chaque refus en page 500 (ADR-091).
+*Un écran qui rend n'est pas un écran qui marche.*
 
-Sur les quinze étapes de `npm run clics`, **douze vérifient un refus** — décider sans motif, écarter
-une reprise sans motif, documenter un chiffre sans pièce, conclure sans conclusion — parce qu'une
-action qui aboutit prouve peu, et qu'un refus qui ne s'affiche pas n'existe pas pour l'utilisateur.
+`npm run clics` conduit **tout le chemin de démonstration** — import du grand livre définitif,
+rapprochement, matérialité, périmètre, risque, sondage, demande, portail, extraction, vouching,
+écarts, re-exécution en aveugle, évaluation, papier, notes, visas, pointage, achèvement, jalons,
+obstacles, clôture, téléchargement du dossier scellé — en **54 étapes**, en étant tour à tour le
+préparateur, le reviewer, l'associé et le client. Une trentaine d'entre elles vérifient un
+**refus** : une action qui aboutit prouve peu, et un refus qui ne s'affiche pas n'existe pas pour
+l'utilisateur.

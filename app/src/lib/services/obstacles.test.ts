@@ -77,6 +77,46 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
     expect(l.filter((o) => o.famille === 'reprise')).toHaveLength(attendus.length);
   });
 
+  it('un poste RETENU sans aucune procédure planifiée est un obstacle', async () => {
+    /* LE TROU QUE RIEN NE SIGNALAIT. La boucle ne parle que des postes qui
+       portent un échantillon : un poste retenu puis jamais touché ne produisait
+       donc AUCUN obstacle, et le dossier se clôturait dessus. Soit on le
+       travaille, soit on le sort du périmètre avec un motif. */
+    const code = 'POSTE_SANS_PROGRAMME';
+    await q(
+      `insert into fsli (engagement_id, code, name, statement, balance, scoping, scoping_basis)
+       values ($1, $2, 'Poste retenu et jamais travaillé (fictif)', 'BS', 100000, 'in_scope', 'test')
+       on conflict (engagement_id, code) do update set scoping = 'in_scope'`,
+      [IDS.engNep, code],
+    );
+    const avec = await obstaclesAuVisa(IDS.engNep);
+    const mien = avec.filter((o) => o.famille === 'programme' && o.libelle.includes(code));
+    expect(mien, 'un poste retenu sans procédure doit bloquer le visa').toHaveLength(1);
+    expect(mien[0].ou).toBe('testing');
+
+    /* …et il se lève des DEUX façons prévues. D'abord en le sortant du
+       périmètre — c'est la sortie légitime, pas un contournement. */
+    await q(`update fsli set scoping = 'ns_confirmed' where engagement_id = $1 and code = $2`,
+      [IDS.engNep, code]);
+    const sorti = await obstaclesAuVisa(IDS.engNep);
+    expect(sorti.filter((o) => o.libelle.includes(code))).toHaveLength(0);
+
+    // Ensuite en le travaillant : une procédure planifiée suffit à lever l'obstacle.
+    await q(`update fsli set scoping = 'in_scope' where engagement_id = $1 and code = $2`,
+      [IDS.engNep, code]);
+    await q(
+      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title)
+       values ($1, 'nep-fr', 'TEST-PROG', 'substantive', $2, 'Procédure de test')`,
+      [IDS.engNep, code],
+    );
+    const travaille = await obstaclesAuVisa(IDS.engNep);
+    expect(travaille.filter((o) => o.famille === 'programme' && o.libelle.includes(code))).toHaveLength(0);
+
+    // Remettre le monde comme on l'a trouvé : les tests suivants lisent la même liste.
+    await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = $2`, [IDS.engNep, code]);
+    await q(`delete from fsli where engagement_id = $1 and code = $2`, [IDS.engNep, code]);
+  });
+
   it('les comptes par famille correspondent à la liste — pas de compteur à part', async () => {
     /* Un compteur tenu à part diverge un jour de ce qu'il compte. */
     const l = await obstaclesAuVisa(IDS.engNep);

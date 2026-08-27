@@ -8,9 +8,13 @@
 //
 // C'est le harnais qui rejoue DEMO_APP.md.
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '../app/src/lib/test/setup';
-import { q, q1 } from '../app/src/lib/db/client';
+import { q, q1, repoRoot } from '../app/src/lib/db/client';
+import { importFec } from '../app/src/lib/services/imports';
+import { computeTbGl } from '../app/src/lib/services/reconciliation';
 import { IDS } from '../app/src/lib/seed';
 import { runPart1UpToWorkpaper } from '../app/src/lib/flows/part1';
 import { deroulerFin } from '../app/src/lib/flows/parcours';
@@ -92,14 +96,26 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
   }, 300000);
 
   it('le FEC définitif levé, le dossier se CLÔT et l’archive est scellée', async () => {
-    /* Le FEC définitif arrive : c'est l'import du fichier final qui lève le
-       drapeau. On le pose ici parce que le jeu de démonstration ne porte pas de
-       second FEC — et on le dit plutôt que de contourner la règle. */
-    await q(
-      `update engagement set ledger_is_provisional = false, ledger_provisional_reason = null
-       where id = $1`,
-      [IDS.engNep],
-    );
+    /* LE FEC DÉFINITIF ARRIVE — et il s'IMPORTE, il ne se décrète plus.
+       Ce test posait le drapeau à false en SQL, en le disant honnêtement faute
+       de second fichier. C'était quand même une clôture obtenue hors du
+       produit : le dernier geste du métier n'était emprunté par personne. Le
+       jeu de données porte désormais le fichier définitif — le même grand livre
+       PLUS l'écriture de situation de 25 000 € que la balance contenait déjà —
+       et c'est le RAPPROCHEMENT re-exécuté, propre cette fois, qui lève le
+       drapeau (ADR-092). Le ré-import invalide l'aval en aval : il faut le
+       confirmer, et c'est la règle ADR-016. */
+    const definitif = fs.readFileSync(
+      path.join(repoRoot(), 'dataset', 'definitif', '999888777FEC20251231.txt'));
+    await importFec({
+      engagementId: IDS.engNep, userId: IDS.users.karim,
+      filename: '999888777FEC20251231.txt', bytes: definitif,
+      confirmInvalidation: true,
+    });
+    await computeTbGl(IDS.engNep, IDS.users.karim);
+    const apres = await q1<{ p: boolean }>(
+      `select ledger_is_provisional p from engagement where id = $1`, [IDS.engNep]);
+    expect(apres.p, 'le rapprochement propre doit lever le drapeau « provisoire »').toBe(false);
 
     const restants = await obstaclesAuVisa(IDS.engNep);
     if (restants.length > 0) {

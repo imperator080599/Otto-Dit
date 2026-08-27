@@ -3207,3 +3207,126 @@ d'écran plutôt qu'à une règle. Et la reprise N-1 affirmait « aucune mission
 pour cette entité » alors qu'elle cherche aussi la **même nature** de mission : sur un dossier
 intégré dont le N-1 était un audit légal, elle affirmait faux. *Un écran qui affirme plus que ce
 qu'il a vérifié se fait croire une fois, puis plus jamais.*
+
+---
+
+## ADR-091 — Le parcours cliqué jusqu'au scellé, et les six trous qu'il a trouvés
+
+Le parcours cliqué s'arrêtait à mi-chemin : création, acceptation, jalons, reprise, pointage,
+achèvement, obstacles. **Import, rapprochement, matérialité, périmètre, risque, sondage, requêtes,
+portail, extraction, vouching, écarts, papier, notes, visas et scellement n'avaient jamais été
+conduits dans un navigateur** — c'est-à-dire exactement la moitié qu'on montre à un auditeur. Il
+couvre maintenant tout le chemin, en **54 étapes**, dont une trentaine vérifient un **refus**.
+
+**Ce qu'il a trouvé, et rien de tout cela n'était visible autrement.**
+
+1. **Dix écrans transformaient chaque refus en page 500.** Leurs actions n'avaient aucune gestion
+   d'erreur : « une sélection tirée dépend du grand livre », « résoudre sans lien est refusé »,
+   « la conclusion exige une réponse au dépassement » — tout remontait au rendu. Sur un build de
+   production le message est même masqué. Les tests appelaient le service (refus correct), le
+   balayage ouvrait la page (200), et personne ne cliquait le bouton. `src/app/refus.ts` porte
+   désormais la règle, une fois, pour tous.
+2. **La clôture n'avait aucun écran.** `closeFile` et `sealFile` existaient, l'archive était
+   produite et empreintée — et `file_archive` **n'avait aucun chemin de lecture**. Le dernier geste
+   du métier vivait dans du code appelé par des tests. `/eng/[id]/close` le rend, et
+   `/api/archive/[engagementId]` sort le zip.
+3. **« Marquer un jalon fait » n'avait pas de bouton.** Un jalon échu bloque le visa ; le seul moyen
+   de le lever était d'écrire en base.
+4. **La réponse au dépassement de l'anomalie tolérable n'avait pas d'écran.** Le service la réclame
+   avant toute conclusion : le dossier ne pouvait donc pas se conclure depuis l'application.
+5. **Une décision de périmètre ne se révisait pas.** L'écran n'affichait plus que « confirmed ». Un
+   poste sorti à tort ne rentrait plus — et l'obstacle « périmètre sans programme » n'avait qu'une
+   sortie sur deux. *Un jugement d'audit qui ne se révise pas n'est pas un jugement.*
+6. **Le dossier ne pouvait se clore que par une écriture SQL.** Le drapeau « grand livre provisoire »
+   n'était levé par rien ; le test le mettait à `false` à la main, en le disant. Voir ADR-092.
+
+**Trois pièges du harnais lui-même**, notés parce qu'ils sont la version « outil » du défaut qu'ils
+cherchent, et que chacun a d'abord accusé le produit :
+- **Un formulaire que le navigateur refuse d'envoyer** (`required`) n'est pas une règle vérifiée. Le
+  harnais lisait ce silence comme un succès. Le contrôle court-circuite maintenant la garde HTML
+  pour prouver que le **serveur** refuse — ce que verrait un client d'API.
+- **Attendre un délai au lieu d'attendre un effet** : 900 ms ne suffisent pas à un aller-retour en
+  production, la boucle re-répondait deux cents fois à la même question et concluait « dix sans
+  réponse ». On attend désormais que le compte DIMINUE.
+- **Reprendre « la première ligne qui correspond »** : le champ de dépôt reste après un envoi, donc
+  le client a déposé cent dix-sept fois sur trois lignes et l'obstacle « quatorze demandes sans
+  réponse » a accusé le produit. Les lignes se parcourent par index.
+
+**Et une affirmation corrigée.** STATUS.md disait « une résolution générique est rejetée par le
+service ET par la base ». C'est faux : la contrainte exige une **structure** — explication non vide,
+disposition, lien vers ce qui corrobore, qui a conclu et quand — pas un jugement sur la qualité
+d'une phrase. « RAS » avec un lien passe. Une machine ne sait pas distinguer une platitude d'une
+explication substantielle ; ce sont les notes de revue et les visas qui le font. *Affirmer plus que
+ce qu'on vérifie est le même défaut qu'un écran qui affirme plus que ce qu'il a cherché.*
+
+---
+
+## ADR-092 — Le grand livre définitif s'IMPORTE, il ne se décrète plus
+
+Le dossier de démonstration porte un grand livre **provisoire** : il ne contient pas l'écriture de
+situation de 25 000 € que la balance contient déjà. C'est ce qui produit l'écart de rapprochement,
+la limitation de périmètre, et le drapeau qui **bloque la conclusion définitive**. Le jeu de données
+ne portait pas de second fichier : le seul moyen de lever ce drapeau était `update engagement set
+ledger_is_provisional = false` — ce que le test faisait, honnêtement, en le disant. *Un dossier qui
+ne peut se clore que par une écriture directe en base n'est pas un dossier qui se clôt.*
+
+Le générateur produit désormais `dataset/definitif/` : le même grand livre **plus** l'écriture
+manquante. Il porte le **même nom de fichier** — le format `SirenFECAAAAMMJJ` est imposé, notre
+propre validateur refuse le reste, et un second envoi du client s'appelle comme le premier. C'est
+précisément pourquoi le ré-import exige une confirmation explicite d'invalidation (ADR-016).
+
+**La règle qui lève le drapeau est celle qu'un auditeur applique** : le fichier définitif arrive, on
+**re-exécute le rapprochement**, et c'est SON résultat — pas une case à cocher — qui décide. Propre
+⇒ le grand livre n'est plus provisoire. Encore différent ⇒ il le reste, et le dossier reste bloqué.
+
+**La conséquence, assumée : les travaux se refont.** Le ré-import invalide la sélection tirée sur le
+fichier provisoire, parce que la population a changé. Ce n'est pas un effet de bord : c'est ce que
+la limitation de périmètre du dossier promet elle-même — *« le rapprochement sera re-exécuté sur le
+FEC définitif avant conclusion définitive »*. Le parcours cliqué refait donc le sondage, la demande,
+les dépôts, l'extraction, le vouching, la re-exécution en aveugle, l'évaluation et le papier **sur
+le grand livre définitif**. Le dossier se conclut sur le fichier sur lequel il conclut.
+
+**Et le jeu de données porte les pièces des DEUX tirages.** La seconde sélection désignait quatre
+factures qui n'existaient nulle part : le client n'aurait pas pu répondre, le dossier n'aurait
+jamais pu se clore, et ce trou du jeu de données se serait déguisé en constatation d'audit. Le
+manifeste et la suite d'acceptation restent ceux du tirage **épinglé** ; seules les pièces sont
+produites pour les deux.
+
+---
+
+## ADR-093 — Un poste retenu sans procédure planifiée est un obstacle au visa
+
+**Le trou.** Un poste retenu au périmètre sur lequel AUCUNE procédure n'est planifiée ne produisait
+aucun obstacle, et le dossier se clôturait dessus. Ce n'était pas une tolérance : c'était une
+absence de règle. Le produit refuse partout ailleurs une conclusion sans explication, une résolution
+sans pièce, un « sans objet » sans motif — et il acceptait un poste entier retenu puis jamais touché.
+
+**Pourquoi il était invisible.** La boucle ne parle QUE des postes qui portent un échantillon
+(`if (b.etapes.length === 0) continue`) : un poste sans rien du tout ne déclenchait rien. Le silence
+exact que la règle 13 nomme — **l'absence lue comme un acquis**.
+
+**La règle.** `programme` est la dixième famille d'obstacles : un FSLI `in_scope` ou
+`in_scope_qualitative` sans `procedure_instance` bloque le visa. Elle se lève des **deux** façons
+prévues, et le test vérifie les deux : on travaille le poste (une procédure planifiée suffit), ou on
+le sort du périmètre avec un motif. La seconde sortie a exigé de rendre une décision de périmètre
+**révisable depuis l'écran** — elle ne l'était pas (ADR-091, point 5).
+
+**Le conflit qu'elle a révélé, et sa résolution.** Le dossier de démonstration retenait seize postes
+et n'en travaillait qu'un : la nouvelle règle l'aurait rendu inclôturable, à raison. Le jeu de
+données scope désormais **le seul poste qu'il déroule**, et le motif dit la vérité sur ce qu'il est :
+« hors périmètre du jeu de démonstration ». **Ce n'est pas un jugement de significativité** — sur
+cette entité, la paie pèse 2,6 M€ contre un seuil de planification de 27 000 €, et le moteur propose
+ces postes DANS le périmètre. Écrire l'inverse aurait fait du dossier de démonstration un dossier
+qu'un inspecteur rejetterait ; le motif est donc visible à l'écran, au journal et dans l'archive.
+
+**Post-scriptum d'ADR-091 — deux défauts du harnais, notés parce qu'ils mentent bien.**
+*Cibler « la première ligne qui correspond », puis « la ligne numéro n », puis « la référence de
+pièce »* : chacune a échoué, et chacune a produit un obstacle qui accusait le produit. La dernière
+est instructive — la facture de la **double comptabilisation** figure DEUX fois dans la sélection,
+c'est l'anomalie même du jeu de données, et la seconde ligne était sautée comme un doublon. La
+ligne porte son identifiant : c'est lui la clé. *Un harnais qui vise à côté ne dit rien, mais il le
+dit d'un ton rassurant.*
+Et *re-naviguer aussitôt après une action qui redirige déjà* fait courir deux chargements l'un
+contre l'autre : React signalait une hydratation incohérente qu'il réparait seul, sur une page que
+le balayage rend proprement. Ce n'était pas le produit — mais **un harnais qui produit ses propres
+erreurs apprend à les ignorer**, et c'est ainsi qu'un vrai défaut passe.

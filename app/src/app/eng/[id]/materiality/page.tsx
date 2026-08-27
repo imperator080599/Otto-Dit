@@ -6,9 +6,17 @@ import { primaryPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { executer } from '@/app/refus';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
-export default async function MaterialityPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MaterialityPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
   const current = await currentMateriality(id);
   const versions = await materialityVersions(id);
@@ -17,28 +25,33 @@ export default async function MaterialityPage({ params }: { params: Promise<{ id
 
   async function proposeAction() {
     'use server';
-    const { user } = await requireMember(id);
-    await propose(id, user.id);
-    revalidatePath(`/eng/${id}/materiality`);
+    return executer(`/eng/${id}/materiality`, async () => {
+      const { user } = await requireMember(id);
+      await propose(id, user.id);
+      revalidatePath(`/eng/${id}/materiality`);
+    });
   }
 
   async function validateAction(formData: FormData) {
     'use server';
-    const { user } = await requireMember(id);
-    const mid = String(formData.get('materiality_id'));
-    const benchmarkCode = String(formData.get('benchmark_code') ?? '');
-    const pctRaw = String(formData.get('pct') ?? '');
-    const adjust = formData.get('adjust') === 'on' && benchmarkCode && pctRaw
-      ? { benchmarkCode, pct: Number(pctRaw) / 100 }
-      : undefined;
-    await validate(mid, user.id, adjust);
-    await proposeScoping(id, user.id);
-    revalidatePath(`/eng/${id}/materiality`);
-    revalidatePath(`/eng/${id}/scoping`);
+    return executer(`/eng/${id}/materiality`, async () => {
+      const { user } = await requireMember(id);
+      const mid = String(formData.get('materiality_id'));
+      const benchmarkCode = String(formData.get('benchmark_code') ?? '');
+      const pctRaw = String(formData.get('pct') ?? '');
+      const adjust = formData.get('adjust') === 'on' && benchmarkCode && pctRaw
+        ? { benchmarkCode, pct: Number(pctRaw) / 100 }
+        : undefined;
+      await validate(mid, user.id, adjust);
+      await proposeScoping(id, user.id);
+      revalidatePath(`/eng/${id}/materiality`);
+      revalidatePath(`/eng/${id}/scoping`);
+    });
   }
 
   return (
     <div className="grid cols-2">
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>Materiality — {pack.name}</h2>
