@@ -48,6 +48,17 @@ current state.**
     STATUS.md.
 14. **Périmètre gelé** : aucun cycle au-delà du chiffre d'affaires, aucun contenu de procédure
     nouveau, pack SOX gelé. La mécanique est le produit ; les procédures sont du contenu.
+15. **Chercher un mot n'est pas vérifier un chemin.** Un écran a été écarté d'un audit parce que
+    le mot « refusée » y figurait — dans une PHRASE D'EXPLICATION, pas dans un chemin de code — et
+    il acceptait en réalité ce qu'il prétendait refuser (surcharger un niveau d'assertion sans
+    motif écrit, ADR-094). Un `grep` répond à la question « ce texte existe-t-il ? », jamais à la
+    question « cette règle s'applique-t-elle ? ». La seconde ne se répond qu'en empruntant le
+    chemin : un test qui l'exerce, ou un clic.
+16. **Ne jamais présenter comme preuve un artefact produit par un autre objet que celui dont on
+    parle.** Le thème sombre de l'application n'existait pas ; les captures sombres montrées
+    venaient du PROTOTYPE (ADR-094). Une capture, une mesure, un journal ne valent que pour
+    l'objet qui les a produits — et il faut le nommer. Corollaire du 13 : une preuve empruntée
+    est la forme la plus convaincante du silence lu comme un succès.
 
 ## Repo layout
 
@@ -65,7 +76,11 @@ current state.**
 
 ## Dev commands
 
-- App: `cd app && npm install && npm run db:setup && npm run dev` (see DEMO.md).
+- **Montrer le produit** : `cd app && npm run demo` — une commande, base vide → migrations →
+  monde de démonstration → serveur, et un panneau qui donne l'adresse, les trois rôles, le
+  portail client et la commande de remise à zéro. Chaque étape qui peut échouer sur une
+  machine neuve dit quoi faire, jamais une trace (ADR-095).
+- Développer : `cd app && npm install && npm run db:setup && npm run dev` (see DEMO.md).
 - Tests: `cd app && npm test` (Vitest; zero network). Inclut le balayage des écrans, qui
   lance un serveur local — comptez ~3 minutes de plus.
 - Écrans en production : `cd app && npm run screens` (build + `next start` + navigateur).

@@ -441,9 +441,12 @@ indépendant.
 ```bash
 cd app
 npm install
-npm run db:setup      # migrations + base world (2 engagements on 1 entity)
-npm run dev           # http://localhost:3000
+npm run demo          # migrations + base world + demo file + server, then a panel telling you
+                      # the URL, who to sign in as for each role, and the client portal (ADR-095)
 ```
+
+To start from an *empty* engagement and click everything yourself, use `npm run db:setup &&
+npm run dev` instead — `npm run demo` hands you the file already driven.
 
 Two ways to run the demo:
 

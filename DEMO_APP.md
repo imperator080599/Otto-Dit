@@ -16,10 +16,12 @@ une affirmation.
 ```bash
 cd app
 npm install
-npm run db:reset        # base fraîche, monde de démonstration, méthode publiée
-npm run demo:seed       # déroule le dossier jusqu'au papier de travail signé
-npm run dev             # http://localhost:3000
+npm run demo            # base vide → migrations → monde semé → serveur, puis le panneau
 ```
+
+`npm run demo` fait à lui seul ce que faisaient `db:reset`, `demo:seed` et `dev`, et **affiche à la
+fin** l'adresse, les trois rôles, le portail client et la commande de remise à zéro (ADR-095). Les
+trois commandes séparées restent valables pour développer.
 
 Connectez-vous en **Claire Fontaine** (associée). Le dossier à suivre est
 **Altiverre FY2025 — Audit légal (NEP)**.

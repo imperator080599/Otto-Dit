@@ -3390,3 +3390,46 @@ serveur n'en déclenche pas** : c'est une mise à jour côté client. L'attente 
 immédiatement, le clic suivant partait dans un rendu en cours, et le défaut restait. C'est le
 **silence réseau** qui marque la fin d'un aller-retour d'action. Deux exécutions consécutives à
 zéro défaut depuis. *Attendre la mauvaise chose ressemble beaucoup à attendre.*
+
+## ADR-095 — `npm run demo` : une commande, et un message d'accueil qui ne peut pas mentir
+
+**Contexte.** Le propriétaire du produit va le montrer à des auditeurs et ne l'a **jamais lancé
+lui-même**. Tout ce qui existait supposait un lecteur déjà installé : `db:setup` puis `dev` puis
+un `demo-seed` séparé, trois commandes dont l'ordre compte, aucune ne disant qui est le
+préparateur ni où est le portail. Un produit qu'on ne peut pas ouvrir devant quelqu'un n'existe
+pas encore tout à fait.
+
+**Décision.** `cd app && npm run demo` : base effacée, 20 migrations, monde de démonstration
+déroulé, application construite, serveur lancé, puis un **panneau en clair** — l'adresse, les
+trois rôles nommés et comment se connecter (cliquer le nom : il n'y a pas de mot de passe),
+l'adresse du portail client, le dossier ouvert, et la commande de remise à zéro.
+
+**Le panneau se LIT DANS LA BASE, il n'est pas écrit dans le script.** `scripts/demo/infos.ts`
+interroge le dossier semé et réutilise `contexte()` du parcours cliqué : « qui est le
+préparateur » a une seule source. Un panneau codé en dur aurait affiché « Karim Benali » même le
+jour où la distribution des rôles change — c'est-à-dire aurait menti sans que rien ne casse
+(règle 13).
+
+**Le lanceur est en `.mjs`, pas en TypeScript.** C'est le premier fichier qu'exécute une machine
+neuve : il doit pouvoir dire « lancez `npm install` ». Un script en TypeScript aurait eu besoin
+de `tsx` pour démarrer — donc de ce qu'il est chargé de vérifier. *Un message d'accueil qui a
+besoin de ce qu'il vérifie ne vérifie rien.*
+
+**Chaque échec dit quoi faire, jamais une trace.** Un arrêt donne toujours trois choses : ce
+qu'on tentait, ce que la machine a répondu (les 12 dernières lignes, pas 400), et **la commande
+qui répare**. Contrôles avant tout effacement : Node ≥ 18.18, `node_modules` présent, `next` et
+`tsx` présents, le fichier FEC du jeu de données présent, le port libre. Trois de ces chemins ont
+été empruntés pour de vrai — port occupé, jeu de données absent, `node_modules` absent.
+
+**Le verrou, trouvé en vérifiant mon propre conseil.** Le script disait, port occupé :
+« choisissez un autre port : `PORT=3100 npm run demo` ». Suivi à la lettre, ce conseil **efface
+la base sous la démonstration en cours** : PGlite n'admet qu'un écrivain, et changer de port n'y
+change rien. Un fichier `.data/demo.lock` (pid, port, adresse) est donc posé avant l'effacement
+et levé à la sortie ; un verrou dont le processus est mort est ignoré en silence. Vérifié à deux
+instances : la seconde refuse, `.data/pg` reste à 1 331 fichiers, la première sert toujours 200 ;
+Ctrl-C lève le verrou. *Un conseil qu'on n'a pas suivi soi-même est une hypothèse.*
+
+**Aucune durée n'est inventée.** Une première rédaction annonçait « trois à quatre minutes » pour
+une étape de 14 secondes. Le panneau ne cite plus que le **temps mesuré du lancement en cours**
+(« Ce lancement-ci a pris 01:02 »). `OTTO_OCR_ADAPTER=mock` et `OTTO_QUERY_PLANNER=mock` sont
+imposés : une démonstration ne dépense pas d'argent.

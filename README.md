@@ -17,11 +17,14 @@ workpapers). Both run on the *same engines* — that is the point (docs/02).
 ```bash
 cd app
 npm install
-npm run db:setup      # applies supabase/migrations to a local PGlite store + seeds the world
-npm run demo:seed     # drives BOTH demo parts end-to-end through the real services
-npm run dev           # http://localhost:3000
-npm test              # 146 tests, zero network calls
+npm run demo          # ONE command: empty DB → migrations → demo world → server → a plain-text
+                      # panel with the URL, the three roles, the client portal and the reset
+npm test              # zero network calls
 ```
+
+`npm run demo` is the command to show the product (ADR-095). To develop instead, the three steps
+it wraps are still there: `npm run db:setup` (migrations + base world), `npm run demo:seed`
+(drives BOTH demo parts end-to-end through the real services), `npm run dev`.
 
 Two measurement commands, optional and incapable of spending anything by default:
 

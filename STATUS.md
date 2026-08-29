@@ -21,8 +21,18 @@ visa** (une liste, dix familles, calculée) · clôture et **archive scellée t�
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
-**Branche** : `claude/otto-audit-platform-whs17z`. **Aucun déploiement** — il se fera quand le
-fondateur le demandera. Vercel n'est pas connecté.
+**Branche** : `main` (branche par défaut). `claude/otto-audit-platform-whs17z` reste comme
+historique. **Aucun déploiement** — il se fera quand le fondateur le demandera. Vercel n'est
+pas connecté.
+
+### La commande qui MONTRE
+
+`cd app && npm run demo` — une seule commande : base vide, migrations, monde de démonstration,
+serveur, puis un panneau en clair donnant l'adresse, les trois rôles (on se connecte en
+cliquant un nom, il n'y a pas de mot de passe), le portail client et la remise à zéro. Chaque
+étape qui peut échouer sur une machine neuve dit quoi faire, pas une trace ; une seconde
+démonstration est refusée plutôt que d'effacer la base de la première (ADR-095). Mesuré sur
+une base vide : **01:02** de la commande au panneau.
 
 ### Les quatre commandes qui prouvent
 

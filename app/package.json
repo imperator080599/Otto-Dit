@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "demo": "node scripts/demo/lancer.mjs",
     "test": "vitest run",
     "dev": "next dev",
     "build": "next build",
