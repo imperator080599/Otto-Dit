@@ -95,6 +95,8 @@ export async function parametres(): Promise<Record<string, string>> {
     evidenceId: await un(`select id::text v from evidence where engagement_id = '${engId}' order by id limit 1`),
     // /api/export-file/[exportId]
     exportId: await un(`select id::text v from export_record order by id limit 1`),
+    // /api/reunion-ics/[iid] — l'invitation semée sur le dossier SOX (ADR-101)
+    iid: await un(`select id::text v from meeting_invitation order by created_at limit 1`),
     // /api/tracker/[engId]
     engId,
     // /api/archive/[engagementId] — le dossier scellé se télécharge

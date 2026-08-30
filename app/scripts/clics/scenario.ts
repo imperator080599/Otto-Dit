@@ -1138,6 +1138,103 @@ export async function conduire(
   });
 
   // ── 17. LA BOUCLE, RELUE
+  // ── 16 bis. LA BASCULE ENTRE MISSIONS DU GROUPE (ADR-100)
+  await station('bascule entre missions du groupe', async () => {
+    await devenir(c.associe.id);
+    await aller(`${eng}`);
+    const t0 = await texte();
+    /* Le sélecteur groupe par CLIENT : le groupe Meridian est le client,
+       Altiverre l'entité, et les deux mandats pendent dessous. */
+    await p.locator('.bascule > summary').click();
+    await p.waitForTimeout(400);
+    const liste = await p.locator('.bascule-liste').innerText().catch(() => '');
+    dire('bascule : les missions sont groupées par CLIENT (le groupe), pas en liste plate',
+      /Meridian/i.test(liste) && /Altiverre/i.test(liste), liste.slice(0, 80));
+    const bouton = p.locator('.bascule-liste button.lien-bascule').first();
+    if (await bouton.count()) {
+      const versNom = (await bouton.innerText()).trim();
+      await bouton.click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(1500);
+      const t1 = await texte();
+      dire('bascule : le clic CHANGE de dossier',
+        !refus(p) && t1 !== t0 && t1.includes(versNom.split(' · ')[0].slice(0, 20)),
+        refus(p) ?? `ouvert : ${versNom}`);
+      /* Et le changement est JOURNALISÉ — on le lit dans l'écran du journal. */
+      const url = p.url();
+      const engId = (url.match(/\/eng\/([0-9a-f-]{36})/) || [])[1];
+      if (engId) {
+        await aller(`${base}/eng/${engId}/events`);
+        dire('bascule : chaque changement s’inscrit au journal (engagement.switched)',
+          /engagement\.switched/.test(await texte()), 'événement au journal');
+      }
+      // retour au dossier NEP pour la suite du parcours
+      await aller(`${eng}`);
+    } else {
+      dire('bascule : une autre mission est proposée au clic', false, 'aucun bouton de bascule');
+    }
+  });
+
+  // ── 16 ter. LES RÉUNIONS — le déterministe, l'envoi simulé et DIT tel (ADR-101)
+  await station('réunions : créneaux, ordre des copies, envoi simulé', async () => {
+    await devenir(c.associe.id);
+    await aller(`${eng}/reunions`);
+    dire('réunions : l’écran DIT que la lecture d’agendas et l’envoi sont simulés',
+      /SIMULÉS/.test(await texte()), 'mention affichée');
+
+    // Chercher des créneaux AVANT tout contact clé : la proposition marche…
+    await p.locator('input[name=de]').fill('2026-03-02');
+    await p.locator('input[name=a]').fill('2026-03-06');
+    await p.locator('button:has-text("Chercher les créneaux")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1500);
+    dire('réunions : des créneaux communs sortent des disponibilités (libre/occupé seulement)',
+      /créneau\(x\) commun/.test(await texte()) && (await compte('button:has-text("Choisir ce créneau")')) > 0,
+      `${await compte('button:has-text("Choisir ce créneau")')} créneau(x)`);
+
+    // …mais CHOISIR sans contact clé est refusé en nommant le geste manquant.
+    const premier = p.locator('form:has(button:has-text("Choisir ce créneau"))').first();
+    await premier.locator('input[name=objet]').fill('Point d’étape sur les demandes');
+    await premier.locator('select[name=destinataire]').selectOption({ label: 'Sophie Marchand' });
+    await premier.locator('button:has-text("Choisir ce créneau")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1800);
+    dire('réunions : choisir un créneau SANS contact clé est refusé, en nommant le geste',
+      Boolean(refus(p)) && /contact client clé/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉ — défaut');
+
+    // Le contact clé se déclare, puis le choix passe — humain à chaque pas.
+    const fCle = p.locator('form:has(button:has-text("Déclarer contact clé"))');
+    await fCle.locator('select[name=contact]').selectOption({ label: 'Sophie Marchand' });
+    await fCle.locator('button:has-text("Déclarer contact clé")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1500);
+    dire('réunions : le contact clé est déclaré', /contact clé/.test(await texte()) && !refus(p), refus(p) ?? 'Sophie Marchand, clé');
+
+    await p.locator('input[name=de]').fill('2026-03-02');
+    await p.locator('input[name=a]').fill('2026-03-06');
+    await p.locator('button:has-text("Chercher les créneaux")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1500);
+    const f2 = p.locator('form:has(button:has-text("Choisir ce créneau"))').first();
+    await f2.locator('input[name=objet]').fill('Point d’étape sur les demandes');
+    await f2.locator('select[name=destinataire]').selectOption({ label: 'Sophie Marchand' });
+    await f2.locator('button:has-text("Choisir ce créneau")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(2000);
+    const t = await texte();
+    dire('réunions : l’invitation porte les copies dans l’ORDRE CALCULÉ — clé, puis la hiérarchie',
+      /Sophie Marchand \(contact client clé\)[\s\S]*Claire Fontaine[\s\S]*Léa Moreau[\s\S]*Karim Benali/.test(t),
+      'ordre des copies affiché');
+    dire('réunions : le .ics standard se télécharge depuis l’écran',
+      (await compte('a[href^="/api/reunion-ics/"]')) > 0, 'lien .ics présent');
+
+    await p.locator('button:has-text("Envoyer (transport simulé)")').first().click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1800);
+    dire('réunions : l’envoi est SIMULÉ et l’écran l’affirme — rien n’est parti',
+      /envoyée \(SIMULÉE/.test(await texte()) && !refus(p), refus(p) ?? 'envoi simulé, dit tel');
+  });
+
   await station('la boucle', async () => {
     await aller(`${eng}/loop`);
     const t = await texte();

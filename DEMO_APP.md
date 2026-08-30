@@ -212,6 +212,21 @@ clarification au client (brouillon L2). Puis tapez « BL signé ? » : OTTO avou
 interpréter, et confirmer sans corriger est **refusé** — il ne remplit jamais sur une devinette
 (ADR-099).
 
+### 10 quater. La bascule et les réunions
+
+**La bascule (ADR-100)** : en tête de chaque écran de mission, « Changer de dossier » groupe les
+missions par CLIENT — le groupe Meridian, son entité Altiverre, ses deux mandats. Basculer est une
+action journalisée (`engagement.switched`, visible dans le Journal) ; la mission d'un autre cabinet
+est refusée avant tout — le test tente la fuite dans les deux sens.
+
+**Les réunions (ADR-101)** : écran `Réunions`. L'écran DIT que la lecture d'agendas et l'envoi sont
+SIMULÉS. Déclarez Sophie contact clé, cherchez les créneaux communs (libre/occupé seulement — le
+type même de l'adaptateur ne peut pas porter un titre d'événement), choisissez un créneau — le
+choix est humain, toujours, et sans contact clé il est refusé en nommant le geste manquant.
+L'invitation porte les copies dans l'ORDRE CALCULÉ : Sophie (clé), puis Claire, Anne… Léa, Karim —
+du plus senior au moins senior, alphabet à grade égal. Le .ics se télécharge ; « Envoyer » est
+simulé et l'écran l'affirme.
+
 ### 11. Le pointage des états financiers
 
 **Écran** : `États financiers`.

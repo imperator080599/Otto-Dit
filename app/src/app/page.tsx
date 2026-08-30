@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { q } from '@/lib/db/client';
 import { getSessionUser } from '@/lib/core/auth';
 import { PORTAL_TOKENS } from '@/lib/seed';
+import { missionsParClient } from '@/lib/services/bascule';
 import { NouvelleMission } from './nouvelle-mission';
 
 // Home: dev sign-in switcher (ADR-006) + engagement list for the signed-in auditor.
@@ -64,18 +65,9 @@ export default async function Home({
     );
   }
 
-  const engagements = await q<{
-    id: string; name: string; kind: string; status: string; framework_set: { assurance_packs: string[]; accounting_map: string; language: string };
-    entity_name: string; period_label: string;
-  }>(
-    `select e.id, e.name, e.kind, e.status, e.framework_set, en.name entity_name, p.label period_label
-     from engagement e
-     join engagement_member m on m.engagement_id = e.id and m.user_id = $1
-     join entity en on en.id = e.entity_id
-     join period p on p.id = e.period_id
-     order by e.name`,
-    [user.id],
-  );
+  /* Les missions GROUPÉES PAR CLIENT (ADR-100) : un groupe est un client,
+     plusieurs entités, parfois plusieurs mandats — jamais une liste plate. */
+  const clients = await missionsParClient(user.id);
 
   return (
     <div className="shell">
@@ -92,38 +84,37 @@ export default async function Home({
       </div>
       <NouvelleMission tenantId={user.tenant_id} erreur={erreur} />
 
-      <div className="panel">
-        <table className="data">
-          <thead>
-            <tr>
-              <th>Engagement</th>
-              <th>Entity</th>
-              <th>Period</th>
-              <th>Frameworks</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {engagements.map((e) => (
-              <tr key={e.id}>
-                <td>
-                  <Link href={`/eng/${e.id}`}>{e.name}</Link>
-                </td>
-                <td>{e.entity_name}</td>
-                <td>{e.period_label}</td>
-                <td>
-                  {e.framework_set.assurance_packs.map((p) => (
-                    <span key={p} className="badge blue" style={{ marginRight: 4 }}>{p}</span>
+      {/* GROUPÉES PAR CLIENT (ADR-100) : le groupe est le client, ses
+          entités dessous, leurs mandats dessous — jamais une liste plate. */}
+      {clients.map((c) => (
+        <div className="panel" key={c.client}>
+          <h2>{c.client}</h2>
+          {c.entites.map((en) => (
+            <div key={en.entity_id}>
+              {en.entity_name !== c.client && <p style={{ margin: '4px 0' }}>{en.entity_name}</p>}
+              <table className="data">
+                <tbody>
+                  {en.missions.map((m) => (
+                    <tr key={m.id}>
+                      <td><Link href={`/eng/${m.id}`}>{m.name}</Link></td>
+                      <td>{m.period_label}</td>
+                      <td>
+                        {m.packs.map((pk) => (
+                          <span key={pk} className="badge blue" style={{ marginRight: 4 }}>{pk}</span>
+                        ))}
+                      </td>
+                      <td><span className={`badge ${m.status === 'locked' ? 'amber' : 'green'}`}>{m.status}</span></td>
+                    </tr>
                   ))}
-                  <span className="badge gray">{e.framework_set.accounting_map}</span>{' '}
-                  <span className="badge gray">{e.framework_set.language}</span>
-                </td>
-                <td><span className={`badge ${e.status === 'locked' ? 'amber' : 'green'}`}>{e.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      ))}
+      {clients.length === 0 && (
+        <div className="panel"><p className="muted">Aucune mission ne vous est affectée.</p></div>
+      )}
       <p className="faint">
         Fictional demo world: Vermeil Audit — Altiverre SAS (French subsidiary of Meridian
         Industrial Group, Inc., US-listed, fictional). All data synthetic.

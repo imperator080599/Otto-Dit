@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { q1 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
+import { missionsParClient } from '@/lib/services/bascule';
+import { basculerAction } from './bascule-actions';
 import { EngNav } from './nav';
 
 export default async function EngagementLayout({
@@ -11,7 +13,11 @@ export default async function EngagementLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireMember(id);
+  const { user } = await requireMember(id);
+  /* LA BASCULE (ADR-100) : les missions du connecté, groupées client →
+     entité → mission. Un groupe est UN client à plusieurs entités et parfois
+     plusieurs mandats — jamais une liste plate. */
+  const clients = await missionsParClient(user.id);
   const eng = await q1<{
     id: string; name: string; status: string;
     framework_set: { assurance_packs: string[]; accounting_map: string; language: string };
@@ -33,6 +39,30 @@ export default async function EngagementLayout({
           <h1>{eng.name}</h1>
         </div>
         <div className="row">
+          <details className="bascule">
+            <summary className="btn secondary small">Changer de dossier</summary>
+            <div className="bascule-liste">
+              {clients.map((c) => (
+                <div key={c.client}>
+                  <div className="faint" style={{ marginTop: 6 }}>{c.client}</div>
+                  {c.entites.map((en) => (
+                    <div key={en.entity_id} style={{ paddingLeft: 8 }}>
+                      {c.entites.length > 1 || en.entity_name !== c.client ? <div>{en.entity_name}</div> : null}
+                      {en.missions.map((m) => m.id === id ? (
+                        <div key={m.id} className="faint" style={{ paddingLeft: 8 }}>▸ {m.name} · {m.period_label} (dossier ouvert)</div>
+                      ) : (
+                        <form key={m.id} action={basculerAction} style={{ paddingLeft: 8 }}>
+                          <input type="hidden" name="vers" value={m.id} />
+                          <input type="hidden" name="depuis" value={id} />
+                          <button className="lien-bascule" type="submit">{m.name} · {m.period_label}</button>
+                        </form>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </details>
           {eng.framework_set.assurance_packs.map((p) => (
             <span key={p} className="badge blue">{p}</span>
           ))}

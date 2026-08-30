@@ -3591,3 +3591,65 @@ titres illisibles, il passera par un adaptateur avec garde de budget et coût af
 ne fera toujours que PROPOSER : la confirmation restera humaine, le remplissage ne lira que
 les champs du catalogue. La colonne porte déjà cout_usd et ai_run_id pour ce jour-là.
 
+## ADR-100 — La bascule porte sur les missions, groupées par client — et chaque bascule se journalise
+
+**Contexte.** Un client peut être un groupe : UN client, PLUSIEURS entités, parfois plusieurs
+mandats par entité. L'accueil listait les missions à plat, et passer d'un dossier à l'autre
+était une navigation muette.
+
+**Décision.** Le « client » d'une mission est le GROUPE quand son entité en fait partie
+(corp_group via component), sinon l'entité elle-même — et cette hiérarchie est LA structure
+des deux surfaces : l'accueil (panneaux client → entité → mandats) et le sélecteur « Changer
+de dossier » en tête de chaque écran de mission. Jamais une liste plate de clients.
+
+**La bascule est une ACTION, pas un lien.** Ouvrir un dossier d'audit est un acte de
+consultation : chaque changement écrit `engagement.switched` au journal, avec sa provenance
+(`payload.depuis`). Les gardes, dans l'ordre des refus les plus informatifs : l'ISOLATION
+d'abord (« cette mission appartient à un autre cabinet — bascule refusée »), l'AFFECTATION
+ensuite (membre actif de la mission cible, sinon « demandez l'affectation à l'associé »).
+Le tenant vient de la session, jamais d'un champ. Le refus renvoie sur le dossier de
+DÉPART — pas sur la cible, où l'utilisateur n'a précisément pas accès.
+
+**Le test TENTE la fuite, dans les deux sens** (modèle team.test.ts) : un second cabinet est
+semé, Claire essaie de basculer vers sa mission (refus, et RIEN au journal), son associé
+essaie vers Vermeil (refus) ; Hugo, du même cabinet mais non affecté, est refusé pour
+l'affectation, pas pour l'isolation. Le parcours cliqué ouvre le sélecteur, lit le
+groupement (Meridian → Altiverre → deux mandats), bascule, et LIT l'événement au journal.
+
+## ADR-101 — Les invitations de réunion : tout le déterministe, derrière deux adaptateurs simulés
+
+**Lucidité d'abord.** Lire les agendas Outlook de l'équipe suppose une inscription
+d'application Microsoft, un consentement administrateur sur le locataire du cabinet et des
+permissions déléguées — un chantier, indémontrable sans locataire réel. Donc TOUT le
+déterministe se construit maintenant, testé et hors ligne, exactement comme l'échelle
+d'extraction : la lecture d'agendas et l'envoi vivent derrière `AgendaAdapter` et
+`TransportInvitationAdapter` (défaut simulé, nom inconnu qui lève), et l'écran DIT que
+c'est simulé — le transport simulé rend `remis: false` : il n'affirme pas plus que ce
+qu'il fait.
+
+**La contrainte de fond, dans le TYPE.** On lit les DISPONIBILITÉS (libre/occupé), jamais
+le contenu des agendas — donnée personnelle des collègues, minimum nécessaire.
+`CreneauOccupe` n'a que `debut` et `fin` : il n'existe pas de champ pour un titre, un lieu
+ou des participants, et le test l'affirme.
+
+**Le déterminisme partout.** L'adaptateur simulé place ses blocs occupés par hachage
+FNV-1a (adresse + jour) : mêmes entrées, mêmes occupations, sur toute machine — une
+démonstration qui change à chaque ouverture ne se rejoue pas (règle 12).
+`creneauxCommuns()` est pure : intersection des libertés, heures ouvrées, jamais le
+week-end, testée sans adaptateur. Le `.ics` (RFC 5545 : échappement, repli des lignes à
+75 octets, METHOD:REQUEST) sort d'un générateur pur du noyau.
+
+**Les humains aux deux portes.** Le CHOIX du créneau est humain, obligatoire — le service
+refuse un destinataire vide en le disant (« le choix est humain, toujours ») ; l'ENVOI est
+un second geste explicite, refusé la seconde fois. Les COPIES suivent l'ordre exact et
+calculé, figé dans l'invitation : le contact client clé de la mission, puis l'équipe du
+plus senior au moins senior, à grade égal par ordre alphabétique. Le rang de séniorité est
+NOMMÉ (`RANG_SENIORITE`) — avant lui, le seul tri sur eng_role du dépôt était alphabétique
+(manager < partner < senior < staff) et mentait en silence. Le contact clé et les contacts
+par domaine sont des données DE LA MISSION (`engagement_contact`, une seule clé par
+contrainte), pas de l'entité.
+
+**Le chiffrage du branchement Microsoft réel** est dans STATUS.md (file d'attente) : ce
+qu'il faut (app registration, consentement admin, `Schedule.Read.All` ou équivalent
+libre/occupé, `Calendars.ReadWrite` pour émettre), et ce qu'on refusera (tout scope qui
+lit le contenu des agendas).

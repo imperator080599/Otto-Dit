@@ -66,6 +66,21 @@ async function main() {
     console.log(`  C-BR-01: ${res.bankRec.deviations} deviation(s); C-REV-01: ${res.approvals.deviations} deviation(s) — OE workpapers signed and exported`);
   }
 
+  /* UNE INVITATION DE RÉUNION SUR LE DOSSIER SOX (ADR-101) : le monde de
+     démonstration montre l'objet fini — contact clé, copies dans l'ordre,
+     .ics — et la route /api/reunion-ics/[iid] a un objet à servir. Le dossier
+     NEP reste SANS contact clé : le parcours cliqué y éprouve le refus. */
+  {
+    const { declarerContactCle, choisirCreneau } = await import('../src/lib/services/reunions');
+    await declarerContactCle(IDS.engSox, IDS.contacts.sophie, IDS.users.claire);
+    await choisirCreneau({
+      engagementId: IDS.engSox, userId: IDS.users.claire,
+      debut: '2026-03-03T09:00:00Z', fin: '2026-03-03T10:00:00Z',
+      objet: 'Kick-off des tests d\'efficacité — accès et documents',
+      destinataireContactId: IDS.contacts.sophie,
+    });
+  }
+
   const counts = await q1<{ exceptions: string; deviations: string; workpapers: string; events: string }>(
     `select (select count(*) from exception) exceptions,
             (select count(*) from deviation) deviations,

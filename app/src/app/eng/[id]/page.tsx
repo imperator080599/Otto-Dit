@@ -2,9 +2,16 @@ import { q, q01 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { primaryPack } from '@/lib/packs';
 import { fileDeadlines } from '@/lib/services/retention';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
-export default async function EngagementOverview({ params }: { params: Promise<{ id: string }> }) {
+export default async function EngagementOverview({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
+}) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   await requireMember(id);
 
   const eng = await q01<{ framework_set: { assurance_packs: string[]; accounting_map: string; language: string }; kind: string }>(
@@ -29,6 +36,7 @@ export default async function EngagementOverview({ params }: { params: Promise<{
 
   return (
     <div className="grid cols-2">
+      <BandeauRefus erreur={erreur} />
       <div className="panel">
         <h2>Framework pack</h2>
         <p>

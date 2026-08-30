@@ -44,6 +44,8 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
   }
   items.push(
     { href: `${base}/requests`, label: 'Requests' },
+    // Les réunions : la partie déterministe, l'envoi simulé et dit tel (ADR-101).
+    { href: `${base}/reunions`, label: 'Réunions' },
     { href: `${base}/evidence`, label: 'Evidence' },
     { href: `${base}/exceptions`, label: packs.includes('pcaob-sox') ? 'Deviations' : 'Exceptions' },
     { href: `${base}/workpapers`, label: 'Workpapers' },
