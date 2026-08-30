@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { binaireDe, groupeDetache, tuerArbre, cheminChromium, conseilChromium } from '../lib/portable.mjs';
 import { chromium } from 'playwright';
 import { getDb } from '../../src/lib/db/client';
 import { baseSemee } from '../screens/routes';
@@ -15,11 +16,15 @@ import { conduire, type Etape } from './scenario';
 // manquant n'était pas difficile : il était absent de ce qu'on lance.
 
 const PORT = Number(process.env.CLICS_PORT ?? 3211);
-const NAVIGATEUR = process.env.PLAYWRIGHT_CHROMIUM ?? '/opt/pw-browsers/chromium';
+const NAVIGATEUR = cheminChromium();
 
-function lancer(cmd: string, args: string[]): ChildProcess {
-  // `detached` crée un GROUPE : sans lui `kill` laisse `next-server` tenir le port.
-  return spawn(cmd, args, {
+const BIN_NEXT = binaireDe('next', process.cwd());
+function lancer(args: string[]): ChildProcess {
+  /* `next` exécuté par le Node courant, jamais via `npx` (introuvable sous
+     Windows sans shell — scripts/lib/portable.mjs). Sur POSIX `detached` crée
+     un GROUPE : sans lui `kill` laisse `next-server` tenir le port. */
+  if (!BIN_NEXT) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
+  return spawn(process.execPath, [BIN_NEXT, ...args], {
     env: {
       ...process.env,
       PORT: String(PORT),
@@ -32,12 +37,11 @@ function lancer(cmd: string, args: string[]): ChildProcess {
       OTTO_QUERY_PLANNER: 'mock',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
+    detached: groupeDetache(),
   });
 }
 function tuer(p: ChildProcess | null): void {
-  if (!p?.pid) return;
-  try { process.kill(-p.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+  if (p?.pid) tuerArbre(p.pid);
 }
 async function portLibre(port: number): Promise<boolean> {
   try { await fetch(`http://localhost:${port}/`, { signal: AbortSignal.timeout(1500) }); return false; }
@@ -80,7 +84,7 @@ async function main() {
 
   if (!dev) {
     console.log('  build…');
-    const build = lancer('npx', ['next', 'build']);
+    const build = lancer(['build']);
     const sortie: string[] = [];
     build.stdout?.on('data', (d) => sortie.push(String(d)));
     build.stderr?.on('data', (d) => sortie.push(String(d)));
@@ -88,7 +92,7 @@ async function main() {
     if (code !== 0) { console.log(sortie.join('')); throw new Error('le build de production a échoué'); }
   }
 
-  const serveur = lancer('npx', dev ? ['next', 'dev', '-p', String(PORT)] : ['next', 'start', '-p', String(PORT)]);
+  const serveur = lancer(dev ? ['dev', '-p', String(PORT)] : ['start', '-p', String(PORT)]);
   const journal: string[] = [];
   serveur.stdout?.on('data', (d) => journal.push(String(d)));
   serveur.stderr?.on('data', (d) => journal.push(String(d)));
@@ -97,7 +101,8 @@ async function main() {
   const durs: string[] = [];
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
-    const nav = await chromium.launch({ executablePath: NAVIGATEUR });
+    const nav = await chromium.launch({ executablePath: NAVIGATEUR })
+      .catch((e) => { throw new Error(`${conseilChromium()}\n${e.message}`); });
     const ctx = await nav.newContext();
     const page = await ctx.newPage();
     /* Une exception côté navigateur ne fait pas échouer une étape : elle passe

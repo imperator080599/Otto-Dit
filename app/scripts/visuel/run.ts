@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { binaireDe, groupeDetache, tuerArbre, cheminChromium, conseilChromium } from '../lib/portable.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
@@ -17,7 +18,7 @@ import { routes, auditeur, baseSemee } from '../screens/routes';
 // captures, et c'est un humain qui les regarde.
 
 const PORT = Number(process.env.VISUEL_PORT ?? 3214);
-const NAVIGATEUR = process.env.PLAYWRIGHT_CHROMIUM ?? '/opt/pw-browsers/chromium';
+const NAVIGATEUR = cheminChromium();
 const SORTIE = process.env.VISUEL_SORTIE ?? path.join(process.cwd(), '.visuel');
 
 interface Defaut { route: string; vue: string; quoi: string; detail: string }
@@ -112,15 +113,18 @@ async function contrastes(page: Page): Promise<string[]> {
   return page.evaluate(CODE_CONTRASTES) as Promise<string[]>;
 }
 
-function lancer(cmd: string, args: string[]): ChildProcess {
-  return spawn(cmd, args, {
+/* `next` exécuté par le Node courant, jamais via `npx` (introuvable sous
+   Windows sans shell — scripts/lib/portable.mjs). */
+const BIN_NEXT = binaireDe('next', process.cwd());
+function lancer(args: string[]): ChildProcess {
+  if (!BIN_NEXT) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
+  return spawn(process.execPath, [BIN_NEXT, ...args], {
     env: { ...process.env, PORT: String(PORT), OTTO_OCR_ADAPTER: 'mock' },
-    stdio: ['ignore', 'pipe', 'pipe'], detached: true,
+    stdio: ['ignore', 'pipe', 'pipe'], detached: groupeDetache(),
   });
 }
 function tuer(p: ChildProcess | null): void {
-  if (!p?.pid) return;
-  try { process.kill(-p.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+  if (p?.pid) tuerArbre(p.pid);
 }
 async function portLibre(port: number): Promise<boolean> {
   try { await fetch(`http://localhost:${port}/`, { signal: AbortSignal.timeout(1500) }); return false; }
@@ -160,7 +164,7 @@ async function main() {
 
   if (!dev) {
     console.log('  build…');
-    const build = lancer('npx', ['next', 'build']);
+    const build = lancer(['build']);
     const sortie: string[] = [];
     build.stdout?.on('data', (d) => sortie.push(String(d)));
     build.stderr?.on('data', (d) => sortie.push(String(d)));
@@ -171,12 +175,13 @@ async function main() {
   fs.rmSync(SORTIE, { recursive: true, force: true });
   fs.mkdirSync(SORTIE, { recursive: true });
 
-  const serveur = lancer('npx', dev ? ['next', 'dev', '-p', String(PORT)] : ['next', 'start', '-p', String(PORT)]);
+  const serveur = lancer(dev ? ['dev', '-p', String(PORT)] : ['start', '-p', String(PORT)]);
   const defauts: Defaut[] = [];
   let vues = 0;
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
-    const nav = await chromium.launch({ executablePath: NAVIGATEUR });
+    const nav = await chromium.launch({ executablePath: NAVIGATEUR })
+      .catch((e) => { throw new Error(`${conseilChromium()}\n${e.message}`); });
     try {
       for (const vue of VUES) {
         /* DEUX CONTEXTES, PAS UN. Le portail client est une surface ANONYME :

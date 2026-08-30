@@ -3433,3 +3433,50 @@ Ctrl-C lève le verrou. *Un conseil qu'on n'a pas suivi soi-même est une hypoth
 une étape de 14 secondes. Le panneau ne cite plus que le **temps mesuré du lancement en cours**
 (« Ce lancement-ci a pris 01:02 »). `OTTO_OCR_ADAPTER=mock` et `OTTO_QUERY_PLANNER=mock` sont
 imposés : une démonstration ne dépense pas d'argent.
+
+## ADR-096 — Portabilité Windows : plus jamais `npx` dans un spawn, et un message par cause
+
+**Le défaut, payé par le premier utilisateur réel.** Windows 11, PowerShell, dépôt fraîchement
+cloné : `npm run demo` meurt à l'étape 1/5 sur `spawn npx ENOENT`. Sur Windows, `npx` est un
+script `npx.cmd`, qu'un `spawn` sans shell ne résout pas (et que le correctif de sécurité de
+Node CVE-2024-27980 refuse de toute façon hors shell). L'auteur avait écrit noir sur blanc
+« je n'ai pas testé Windows » — c'était ça.
+
+**Le second défaut, pire que le premier.** Le message d'erreur disait « vérifiez que rien
+n'utilise `app/.data` » : il a envoyé un débutant chercher un conflit de base alors que le
+programme n'avait pas démarré. Un message qui envoie corriger la mauvaise chose est pire qu'un
+message sec — c'est le défaut que ce dépôt traque partout ailleurs, et il était dans son
+propre lanceur.
+
+**Décision 1 — ne plus jamais lancer `npx`, nulle part.** Chaque outil (next, tsx) est un
+fichier JavaScript dans node_modules ; le Node courant l'exécute directement :
+`spawn(process.execPath, [binaireDe('next', racine), 'build'])`. Le chemin est lu dans le
+champ `bin` du package.json du paquet, jamais deviné. Pas de `shell: true` — le shell ouvre
+les problèmes de guillemets. `scripts/lib/portable.mjs` porte cette logique, en JavaScript nu
+(le lanceur l'importe avant de savoir si `npm install` a été lancé) ; le lanceur, les trois
+harnais (screens, clics, visuel) et le balayage de la suite l'utilisent tous.
+
+**Décision 2 — la plateforme est un PARAMÈTRE.** Tuer un arbre de processus (`taskkill /T`
+contre `-pid` de groupe), `detached` (POSIX seulement), la syntaxe des conseils (`&&` et
+`PORT=x cmd` n'existent pas dans le PowerShell 5.1 livré avec Windows ; `;` et
+`$env:PORT=x;` y marchent), le chemin de Chromium (`/opt/pw-browsers` était codé en dur —
+un chemin POSIX-seulement) : chaque fonction prend la plateforme en paramètre, et
+tests/portable.test.ts EXÉCUTE la branche Windows depuis Linux. Sans cela, cette moitié du
+fichier serait du code que personne n'exécute avant un utilisateur.
+
+**Décision 3 — un échec de lancement n'est jamais raconté comme un échec de migration.**
+`lancer()` distingue l'erreur de démarrage (l'exécutable n'a pas pu être lancé : le travail
+n'a PAS commencé) du code de sortie non nul ; et `causeEchecBase()` classe la sortie d'un
+db-setup échoué — disque plein, base tenue (l'`Aborted()` de PGlite, l'`EBUSY` de Windows),
+installation cassée — en réservant explicitement « inconnue » : une cause non reconnue est
+rapportée comme telle, jamais déguisée en cause probable. Les deux sont testées.
+
+**Ce qui est vérifié, et d'où.** Depuis Linux : le lancement complet (01:15), le verrou à
+deux instances, Ctrl-C, l'outil manquant, les deux branches de plateforme de chaque fonction,
+la classification des causes, `tsc`, la suite. Depuis Windows : RIEN — ce dépôt n'a pas de
+machine Windows, et une relecture n'est pas une exécution. La commande de confirmation est
+`cd app; npm run demo`, et STATUS.md le dit.
+
+**Sur Windows, `rmSync` d'un fichier ouvert échoue** (EBUSY/EPERM) là où Linux l'accepte :
+l'effacement de `.data` est gardé et parle (« un processus tient encore ces fichiers »)
+au lieu de dérouler une trace.

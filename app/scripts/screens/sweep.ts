@@ -1,5 +1,6 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import type { Route } from './routes';
+import { cheminChromium, conseilChromium } from '../lib/portable.mjs';
 
 // LE BALAYAGE : ouvrir chaque écran pour de vrai, et ÉCHOUER SUR CE QUI NE REND PAS.
 //
@@ -67,8 +68,10 @@ export async function balayer(
   cookieAuditeur: string,
 ): Promise<Verdict[]> {
   const b: Browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM ?? '/opt/pw-browsers/chromium',
-  });
+    /* undefined ⇒ Playwright résout SON navigateur installé — le chemin du
+       conteneur n'existe que sur la machine de développement (portable.mjs). */
+    executablePath: cheminChromium(),
+  }).catch((e) => { throw new Error(`${conseilChromium()}\n${e.message}`); });
   const verdicts: Verdict[] = [];
   try {
     for (const route of liste) {

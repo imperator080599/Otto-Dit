@@ -4,6 +4,10 @@ import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  estWindows, binaireDe, groupeDetache, tuerArbre,
+  enchaine, avecPort, commandeReinstalle, conseilNode, causeEchecBase,
+} from '../lib/portable.mjs';
 
 // npm run demo — UNE commande, d'une base vide jusqu'à l'écran ouvert.
 //
@@ -17,6 +21,15 @@ import { fileURLToPath } from 'node:url';
 // en DISANT quoi faire, jamais en déroulant une trace : ce qui a été tenté, ce
 // que la machine a répondu, et la commande qui répare. Une trace est une preuve
 // qu'on a planté ; une consigne est une preuve qu'on avait prévu.
+//
+// ET IL NE LANCE JAMAIS `npx` : sur Windows c'est `npx.cmd`, qu'un spawn sans
+// shell ne trouve pas (`spawn npx ENOENT` — trouvé par le premier utilisateur
+// Windows, sur la première machine que l'auteur n'avait pas testée). Chaque
+// outil est exécuté par le Node courant, fichier JavaScript en main
+// (scripts/lib/portable.mjs). Corollaire du message d'erreur : un échec de
+// LANCEMENT (exécutable introuvable) n'est jamais raconté comme un échec de
+// MIGRATION — le premier message envoyait chercher un conflit de base alors
+// que le programme n'avait pas démarré.
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.resolve(ICI, '..', '..');          // …/app
@@ -61,10 +74,17 @@ function arret({ quoi, pourquoi, faire, sortie }) {
   process.exit(1);
 }
 
-/** Un enfant, sa sortie capturée, et une promesse qui ne rejette jamais. */
-function lancer(cmd, args, opts = {}) {
+/**
+ * Un enfant, sa sortie capturée, et une promesse qui ne rejette jamais.
+ * `lancement` est l'erreur de DÉMARRAGE (exécutable introuvable, permission),
+ * distincte d'un code de sortie non nul : le programme n'a alors jamais
+ * commencé, et le message doit le dire — pas accuser la base ni les
+ * migrations. C'est le défaut que ce dépôt traque partout : un message qui
+ * envoie corriger la mauvaise chose est pire qu'un message sec.
+ */
+function lancer(fichierJs, args, opts = {}) {
   return new Promise((resolve) => {
-    const p = spawn(cmd, args, {
+    const p = spawn(process.execPath, [fichierJs, ...args], {
       cwd: APP,
       env: { ...process.env, PORT: String(PORT), OTTO_OCR_ADAPTER: 'mock', OTTO_QUERY_PLANNER: 'mock' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -73,8 +93,21 @@ function lancer(cmd, args, opts = {}) {
     let sortie = '';
     p.stdout?.on('data', (d) => { sortie += d; });
     p.stderr?.on('data', (d) => { sortie += d; });
-    p.on('error', (e) => resolve({ code: -1, sortie: sortie + '\n' + e.message }));
+    p.on('error', (e) => resolve({ code: null, sortie, lancement: e }));
     p.on('close', (code) => resolve({ code: code ?? 1, sortie }));
+  });
+}
+
+/** L'échec de lancement a UN message, quel que soit l'endroit où il survient. */
+function gardeLancement(res, quoi) {
+  if (!res.lancement) return;
+  arret({
+    quoi: `${quoi} — l'exécutable n'a pas pu être lancé.`,
+    pourquoi: `Node (${process.execPath}) n'a pas pu démarrer le programme : `
+      + `${res.lancement.code ?? res.lancement.message}. Le travail n'a pas commencé — `
+      + 'ce n\'est ni la base, ni les migrations, ni votre dossier.',
+    faire: `vérifiez l'installation de Node puis relancez \`npm run demo\`. `
+      + `Si cela persiste : \`${enchaine(['cd app', commandeReinstalle()])}\`.`,
   });
 }
 
@@ -106,7 +139,7 @@ if (maj < 18 || (maj === 18 && min < 18)) {
   arret({
     quoi: `Node ${process.versions.node} est trop ancien.`,
     pourquoi: 'Next 15 demande Node 18.18 ou plus récent.',
-    faire: 'installez une version récente de Node (par exemple `nvm install 20 && nvm use 20`), puis relancez `npm run demo`.',
+    faire: `${conseilNode()}, puis relancez \`npm run demo\`.`,
   });
 }
 
@@ -114,17 +147,25 @@ if (!fs.existsSync(path.join(APP, 'node_modules'))) {
   arret({
     quoi: 'Les dépendances ne sont pas installées.',
     pourquoi: `Le dossier node_modules est absent de ${APP}.`,
-    faire: 'lancez `cd app && npm install`, puis `npm run demo`.',
+    faire: `lancez \`${enchaine(['cd app', 'npm install'])}\`, puis \`npm run demo\`.`,
   });
 }
-for (const [outil, chemin] of [['next', 'next/package.json'], ['tsx', 'tsx/package.json']]) {
-  if (!fs.existsSync(path.join(APP, 'node_modules', chemin))) {
+
+/* Les outils sont résolus vers leur VRAI fichier JavaScript, jamais lancés
+   via `npx` (introuvable sous Windows sans shell). Résoudre ici, avant de
+   toucher à quoi que ce soit : un outil absent est un défaut d'installation,
+   et il doit être dit comme tel. */
+const OUTILS = {};
+for (const paquet of ['tsx', 'next']) {
+  const bin = binaireDe(paquet, APP);
+  if (!bin) {
     arret({
-      quoi: `L'outil « ${outil} » est absent des dépendances installées.`,
+      quoi: `L'outil « ${paquet} » est absent des dépendances installées.`,
       pourquoi: 'L\'installation est probablement partielle ou interrompue.',
-      faire: 'lancez `cd app && rm -rf node_modules && npm install`, puis `npm run demo`.',
+      faire: `lancez \`${enchaine(['cd app', commandeReinstalle()])}\`, puis \`npm run demo\`.`,
     });
   }
+  OUTILS[paquet] = bin;
 }
 
 const RACINE = path.resolve(APP, '..');
@@ -133,7 +174,7 @@ if (!fs.existsSync(FEC)) {
   arret({
     quoi: 'Le jeu de données synthétique est absent.',
     pourquoi: `Le fichier ${path.relative(RACINE, FEC)} n'existe pas. Toutes les données de démonstration en dépendent.`,
-    faire: 'lancez `cd app && npm run dataset:generate` (déterministe : mêmes octets à chaque fois), puis `npm run demo`.',
+    faire: `lancez \`${enchaine(['cd app', 'npm run dataset:generate'])}\` (déterministe : mêmes octets à chaque fois), puis \`npm run demo\`.`,
   });
 }
 
@@ -167,7 +208,7 @@ if (!(await portLibre(PORT))) {
   arret({
     quoi: `Le port ${PORT} est déjà occupé.`,
     pourquoi: 'Une autre application — peut-être une démonstration précédente restée ouverte — écoute déjà sur ce port.',
-    faire: `arrêtez-la (Ctrl-C dans son terminal), ou choisissez un autre port : \`PORT=3100 npm run demo\`.`,
+    faire: `arrêtez-la (Ctrl-C dans son terminal), ou choisissez un autre port : \`${avecPort(3100, 'npm run demo')}\`.`,
   });
 }
 
@@ -181,22 +222,43 @@ fs.mkdirSync(path.join(APP, '.data'), { recursive: true });
 fs.writeFileSync(VERROU, JSON.stringify({ pid: process.pid, port: PORT, url: BASE }));
 const leverVerrou = () => { try { fs.rmSync(VERROU, { force: true }); } catch { /* déjà parti */ } };
 process.on('exit', leverVerrou);
-for (const dossier of ['pg', 'blobs']) {
-  fs.rmSync(path.join(APP, '.data', dossier), { recursive: true, force: true });
+/* Sur Windows, supprimer un fichier qu'un processus tient ouvert échoue
+   (EBUSY/EPERM) là où Linux l'accepte : sans cette garde, un serveur oublié
+   ferait dérouler une trace — exactement ce que ce script promet de ne
+   jamais faire. */
+try {
+  for (const dossier of ['pg', 'blobs']) {
+    fs.rmSync(path.join(APP, '.data', dossier), { recursive: true, force: true });
+  }
+} catch (e) {
+  arret({
+    quoi: 'Impossible d\'effacer la base locale pour repartir de zéro.',
+    pourquoi: `Un processus tient encore des fichiers sous app/.data (${e.code ?? e.message}). `
+      + (estWindows() ? 'Sous Windows, un fichier ouvert par un programme ne peut pas être supprimé.'
+        : 'Un serveur d\'un lancement précédent est probablement resté ouvert.'),
+    faire: 'fermez la démonstration ou le serveur resté ouvert (Ctrl-C dans son terminal, ou fermez ce terminal), puis relancez `npm run demo`.',
+  });
 }
 {
-  const { code, sortie } = await lancer('npx', ['tsx', 'scripts/db-setup.ts']);
-  if (code !== 0) {
-    const espace = /ENOSPC|no space left/i.test(sortie);
+  const res = await lancer(OUTILS.tsx, ['scripts/db-setup.ts']);
+  gardeLancement(res, 'La création de la base locale');
+  if (res.code !== 0) {
+    /* CHAQUE CAUSE A SON MESSAGE (causeEchecBase, testée dans
+       tests/portable.test.ts). Le premier utilisateur Windows a reçu
+       « vérifiez que rien n'utilise app/.data » pour un exécutable
+       introuvable : il a cherché un conflit de base qui n'existait pas. */
+    const cause = causeEchecBase(res.sortie);
     arret({
       quoi: 'La création de la base locale a échoué.',
-      pourquoi: espace
-        ? 'Le disque est plein : PGlite ne peut pas écrire son répertoire de données.'
-        : 'Les migrations n\'ont pas pu s\'appliquer sur une base neuve.',
-      faire: espace
-        ? 'libérez de l\'espace disque, puis relancez `npm run demo`.'
-        : 'vérifiez que rien d\'autre n\'utilise `app/.data` (un serveur resté ouvert, par exemple) et relancez `npm run demo`.',
-      sortie,
+      pourquoi: cause === 'espace' ? 'Le disque est plein : PGlite ne peut pas écrire son répertoire de données.'
+        : cause === 'tenue' ? 'Un autre processus tient la base locale (un serveur ou une démonstration restés ouverts).'
+        : cause === 'casse' ? 'Des modules installés manquent : l\'installation est probablement partielle ou interrompue.'
+        : 'Les migrations n\'ont pas pu s\'appliquer sur une base neuve. La cause exacte est dans les lignes ci-dessous.',
+      faire: cause === 'espace' ? 'libérez de l\'espace disque, puis relancez `npm run demo`.'
+        : cause === 'tenue' ? 'fermez les autres terminaux qui font tourner OTTO, puis relancez `npm run demo`.'
+        : cause === 'casse' ? `lancez \`${enchaine(['cd app', commandeReinstalle()])}\`, puis \`npm run demo\`.`
+        : 'relancez `npm run demo` ; si cela se reproduit, c\'est un défaut du dépôt, pas de votre machine — envoyez les lignes ci-dessus telles quelles.',
+      sortie: res.sortie,
     });
   }
   detail('20 migrations, cabinet et clientes fictives créés');
@@ -213,16 +275,17 @@ for (const dossier of ['pg', 'blobs']) {
 annonce("déroulé du dossier de démonstration… (l'étape la plus longue)");
 detail('acceptation, équipe, import du grand livre, sondage, vouching, papier de travail, pack SOX');
 {
-  const { code, sortie } = await lancer('npx', ['tsx', 'scripts/demo-seed.ts']);
-  if (code !== 0) {
+  const res = await lancer(OUTILS.tsx, ['scripts/demo-seed.ts']);
+  gardeLancement(res, 'Le déroulé du dossier de démonstration');
+  if (res.code !== 0) {
     arret({
       quoi: 'Le déroulé du dossier de démonstration a échoué.',
       pourquoi: 'Chaque étape passe par les services réels du produit : si l\'une refuse, le déroulé s\'arrête — c\'est voulu.',
-      faire: 'ce n\'est pas un défaut de votre machine mais du dépôt. `cd app && npm run demo:seed` reproduit l\'erreur seule ; envoyez-la telle quelle.',
-      sortie,
+      faire: `ce n'est pas un défaut de votre machine mais du dépôt. \`${enchaine(['cd app', 'npm run demo:seed'])}\` reproduit l'erreur seule ; envoyez-la telle quelle.`,
+      sortie: res.sortie,
     });
   }
-  const resume = (sortie.match(/demo state ready[^\n]*/) || [''])[0];
+  const resume = (res.sortie.match(/demo state ready[^\n]*/) || [''])[0];
   if (resume) detail(resume.replace('demo state ready — ', '').replace(' Run "npm run dev" and sign in as any user.', ''));
 }
 
@@ -231,14 +294,15 @@ detail('acceptation, équipe, import du grand livre, sondage, vouching, papier d
 annonce('lecture des identités du dossier…');
 let infos;
 {
-  const { code, sortie } = await lancer('npx', ['tsx', 'scripts/demo/infos.ts']);
-  const ligne = sortie.split('\n').find((l) => l.trim().startsWith('{'));
-  if (code !== 0 || !ligne) {
+  const res = await lancer(OUTILS.tsx, ['scripts/demo/infos.ts']);
+  gardeLancement(res, 'La lecture des identités du dossier');
+  const ligne = res.sortie.split('\n').find((l) => l.trim().startsWith('{'));
+  if (res.code !== 0 || !ligne) {
     arret({
       quoi: 'Impossible de lire les identités du dossier de démonstration.',
       pourquoi: 'La base a été créée et peuplée, mais elle ne contient pas les trois rôles attendus (préparateur, réviseur, associé).',
       faire: 'relancez `npm run demo` ; si cela se reproduit, c\'est un défaut du peuplement, pas de votre machine.',
-      sortie,
+      sortie: res.sortie,
     });
   }
   infos = JSON.parse(ligne);
@@ -249,13 +313,14 @@ let infos;
 
 if (!DEV) {
   annonce("construction de l'application…");
-  const { code, sortie } = await lancer('npx', ['next', 'build']);
-  if (code !== 0) {
+  const res = await lancer(OUTILS.next, ['build']);
+  gardeLancement(res, 'La construction de l\'application');
+  if (res.code !== 0) {
     arret({
       quoi: 'La construction de l\'application a échoué.',
       pourquoi: 'Le code ne compile pas ou une page refuse de se pré-rendre.',
-      faire: 'ce n\'est pas un défaut de votre machine. `cd app && npm run build` reproduit l\'erreur ; pour montrer quand même l\'application, `npm run demo -- --dev` démarre sans construire.',
-      sortie,
+      faire: `ce n'est pas un défaut de votre machine. \`${enchaine(['cd app', 'npm run build'])}\` reproduit l'erreur ; pour montrer quand même l'application, \`npm run demo -- --dev\` démarre sans construire.`,
+      sortie: res.sortie,
     });
   }
 }
@@ -263,11 +328,13 @@ if (!DEV) {
 // ── 5. LE SERVEUR ────────────────────────────────────────────────────────────
 
 annonce(`démarrage du serveur sur ${BASE}…`);
-const serveur = spawn('npx', DEV ? ['next', 'dev', '-p', String(PORT)] : ['next', 'start', '-p', String(PORT)], {
+const serveur = spawn(process.execPath, [OUTILS.next, DEV ? 'dev' : 'start', '-p', String(PORT)], {
   cwd: APP,
   env: { ...process.env, PORT: String(PORT), OTTO_OCR_ADAPTER: 'mock', OTTO_QUERY_PLANNER: 'mock' },
   stdio: ['ignore', 'pipe', 'pipe'],
-  detached: true,
+  /* POSIX : un groupe de processus, tué en bloc par son -pid. Windows :
+     pas de groupe — l'arbre se tue par `taskkill /T` (portable.mjs). */
+  detached: groupeDetache(),
 });
 let journal = '';
 let ouvert = false;
@@ -282,9 +349,16 @@ const surLigne = (d) => {
 };
 serveur.stdout?.on('data', surLigne);
 serveur.stderr?.on('data', surLigne);
+serveur.on('error', (e) => {
+  arret({
+    quoi: 'Le serveur n\'a pas pu être lancé.',
+    pourquoi: `Node n'a pas pu démarrer le processus : ${e.code ?? e.message}.`,
+    faire: `lancez \`${enchaine(['cd app', commandeReinstalle()])}\`, puis \`npm run demo\`.`,
+  });
+});
 
 const arreter = () => {
-  try { process.kill(-serveur.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+  tuerArbre(serveur.pid);
   leverVerrou();
 };
 process.on('SIGINT', () => { process.stdout.write('\n  arrêt du serveur…\n'); arreter(); process.exit(0); });
@@ -299,7 +373,7 @@ if (!(await repond(BASE + '/', 150000))) {
       ? `Le port ${PORT} a été pris entre la vérification et le démarrage.`
       : 'Il n\'a pas fini de démarrer dans les deux minutes trente.',
     faire: occupe
-      ? `relancez avec un autre port : \`PORT=3100 npm run demo\`.`
+      ? `relancez avec un autre port : \`${avecPort(3100, 'npm run demo')}\`.`
       : 'relancez `npm run demo` ; si cela se reproduit, envoyez les lignes ci-dessus.',
     sortie: journal,
   });
@@ -333,9 +407,11 @@ process.stdout.write(`      ${infos.dossier}\n`);
 process.stdout.write(`${C.faible}      ${infos.entite} · ${infos.exercice} · pack ${infos.pack} · le parcours pas à pas est dans DEMO_APP.md${C.fin}\n`);
 
 process.stdout.write(`\n  ${C.gras}Si vous cassez quelque chose en cliquant${C.fin}\n`);
-/* La commande de relance REPÈTE le port choisi : quelqu'un qui a dû prendre
-   3100 la première fois se ferait refuser en retapant la commande nue. */
-const RELANCE = process.env.PORT ? `PORT=${PORT} npm run demo` : 'npm run demo';
+/* La commande de relance REPÈTE le port choisi — dans la syntaxe du terminal
+   qui la lira : quelqu'un qui a dû prendre 3100 la première fois se ferait
+   refuser en retapant la commande nue, et un utilisateur de PowerShell ne
+   peut pas coller `PORT=3100 npm run demo`. */
+const RELANCE = process.env.PORT ? avecPort(PORT, 'npm run demo') : 'npm run demo';
 process.stdout.write(`      ${C.jaune}Ctrl-C${C.fin} puis ${C.jaune}${RELANCE}${C.fin}${C.faible} — tout repart d'une base vide. Ce lancement-ci a pris ${chrono()}.${C.fin}\n`);
 
 trait('─');

@@ -84,6 +84,7 @@ une base vide : **01:02** de la commande au panneau.
 | 7 | `npm run clics` attend le **silence réseau** après chaque envoi : une action serveur ne déclenche pas d'événement `load`. Si un écran devenait très lent, l'attente (15 s) pourrait expirer et le parcours redeviendrait instable. | à surveiller |
 | 8 | Le dossier N-1 n'est ni conclu ni clos : `/api/archive/[engagementId]` déclare donc un **404 attendu** tant qu'aucun dossier n'est scellé dans le monde de démonstration. | à trancher |
 | 9 | Premiers fast-follows si le coin tient : revue analytique + questions de variation, pointage de plaquette, circularisations (D8). | fondateur |
+| 10 | **Windows : corrigé sans machine Windows.** `spawn npx ENOENT` (ADR-096) est corrigé — plus aucun spawn de `npx`, branches Windows exécutées en test depuis Linux — mais AUCUNE exécution sur Windows réel n'a eu lieu. Confirmation attendue du fondateur : `cd app; npm run demo` sur sa machine. | fondateur |
 
 ### Où regarder en premier
 

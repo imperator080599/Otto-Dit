@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { binaireDe, groupeDetache, tuerArbre } from '../lib/portable.mjs';
 import { getDb } from '../../src/lib/db/client';
 import { routes, auditeur, baseSemee } from './routes';
 import { balayer, rapporter, erreursServeur, ServeurTombe } from './sweep';
@@ -13,20 +14,24 @@ import { balayer, rapporter, erreursServeur, ServeurTombe } from './sweep';
 
 const PORT = Number(process.env.SCREENS_PORT ?? 3210);
 
-/* `detached` crée un GROUPE de processus : sans lui, `kill` ne tue que le
-   lanceur npx et `next-server` survit en gardant le port — le lancement
-   suivant meurt alors sur EADDRINUSE, à cause d'un fantôme du précédent. */
-function lancer(cmd: string, args: string[]): ChildProcess {
-  return spawn(cmd, args, {
+/* `next` est exécuté par le Node courant, fichier JavaScript en main — jamais
+   via `npx`, introuvable sous Windows sans shell (scripts/lib/portable.mjs).
+   Sur POSIX, `detached` crée un GROUPE de processus : sans lui, `kill` laisse
+   `next-server` survivre en gardant le port — le lancement suivant meurt alors
+   sur EADDRINUSE, à cause d'un fantôme du précédent. Sur Windows l'arbre se
+   tue par `taskkill /T`. */
+const BIN_NEXT = binaireDe('next', process.cwd());
+function lancer(args: string[]): ChildProcess {
+  if (!BIN_NEXT) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
+  return spawn(process.execPath, [BIN_NEXT, ...args], {
     env: { ...process.env, PORT: String(PORT) },
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
+    detached: groupeDetache(),
   });
 }
 
 function tuer(p: ChildProcess | null): void {
-  if (!p?.pid) return;
-  try { process.kill(-p.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+  if (p?.pid) tuerArbre(p.pid);
 }
 
 /**
@@ -88,7 +93,7 @@ async function main() {
 
   if (!dev) {
     console.log('  build…');
-    const build = lancer('npx', ['next', 'build']);
+    const build = lancer(['build']);
     const sortie: string[] = [];
     build.stdout?.on('data', (d) => sortie.push(String(d)));
     build.stderr?.on('data', (d) => sortie.push(String(d)));
@@ -96,7 +101,7 @@ async function main() {
     if (code !== 0) { console.log(sortie.join('')); throw new Error('le build de production a échoué'); }
   }
 
-  const serveur = lancer('npx', dev ? ['next', 'dev', '-p', String(PORT)] : ['next', 'start', '-p', String(PORT)]);
+  const serveur = lancer(dev ? ['dev', '-p', String(PORT)] : ['start', '-p', String(PORT)]);
   const journal: string[] = [];
   serveur.stdout?.on('data', (d) => journal.push(String(d)));
   serveur.stderr?.on('data', (d) => journal.push(String(d)));

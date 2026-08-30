@@ -19,6 +19,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { binaireDe, groupeDetache, tuerArbre } from '../app/scripts/lib/portable.mjs';
 import path from 'node:path';
 import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
 import { closeDb } from '../app/src/lib/db/client';
@@ -64,7 +65,11 @@ async function assurerMondeDemo(): Promise<void> {
   const journalSeed: string[] = [];
   await closeDb();
   await new Promise<void>((res, rej) => {
-    const p = spawn('npx', ['tsx', 'scripts/demo-seed.ts'], {
+    /* Jamais `npx` : sur Windows c'est `npx.cmd`, qu'un spawn sans shell ne
+       trouve pas (portable.mjs). Le Node courant exécute le fichier de tsx. */
+    const tsx = binaireDe('tsx', RACINE);
+    if (!tsx) throw new Error('tsx est absent de node_modules — lancez `npm install` dans app/');
+    const p = spawn(process.execPath, [tsx, 'scripts/demo-seed.ts'], {
       cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'],
     });
     p.stdout?.on('data', (d) => journalSeed.push(String(d)));
@@ -94,12 +99,15 @@ describe('tous les écrans rendent', () => {
     if (!(await libre())) {
       throw new Error(`le port ${PORT} est occupé : le balayage refuse de vérifier un serveur qu'il n'a pas lancé`);
     }
-    /* `detached` crée un GROUPE de processus. Sans lui, `kill` ne tue que le
-       lanceur npx : `next-server` survit, garde le port, et le lancement
-       SUIVANT meurt sur EADDRINUSE — un serveur fantôme d'une exécution
-       précédente qui fait échouer la suivante. */
-    serveur = spawn('npx', ['next', 'dev', '-p', String(PORT)], {
-      cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
+    /* Sur POSIX, `detached` crée un GROUPE de processus. Sans lui, `kill` ne
+       tue que le lanceur : `next-server` survit, garde le port, et le
+       lancement SUIVANT meurt sur EADDRINUSE — un serveur fantôme d'une
+       exécution précédente qui fait échouer la suivante. Sur Windows l'arbre
+       se tue par `taskkill /T` (portable.mjs). */
+    const next = binaireDe('next', RACINE);
+    if (!next) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
+    serveur = spawn(process.execPath, [next, 'dev', '-p', String(PORT)], {
+      cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'], detached: groupeDetache(),
     });
     serveur.stdout?.on('data', (d) => journal.push(String(d)));
     serveur.stderr?.on('data', (d) => journal.push(String(d)));
@@ -122,10 +130,10 @@ describe('tous les écrans rendent', () => {
 
   afterAll(async () => {
     if (!serveur?.pid) return;
-    try { process.kill(-serveur.pid, 'SIGTERM'); } catch { /* déjà mort */ }
+    tuerArbre(serveur.pid, 'SIGTERM');
     // Laisser le port se libérer : le lancement suivant le vérifie.
     await new Promise((r) => setTimeout(r, 800));
-    try { process.kill(-serveur.pid, 'SIGKILL'); } catch { /* déjà mort */ }
+    tuerArbre(serveur.pid, 'SIGKILL');
   });
 
   it('chaque route s’ouvre, rend du contenu, et ne lève rien côté serveur', async () => {
