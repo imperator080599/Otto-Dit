@@ -10,7 +10,8 @@ import { hashObject, sha256 } from '@/lib/core/hash';
 import { saveBlob } from '@/lib/core/storage';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { engagementCtx } from '../imports';
-import { getWorkpaper, listEdits, listNotes, listSignoffs } from './lifecycle';
+import { getWorkpaper, listEdits, listNotes, listSignoffs, listReplies } from './lifecycle';
+import { colonnesDuPapier, cellulesDuPapier } from './colonne';
 import type { WpSection } from './draft';
 
 // ADR-013 — exports are terminal, versioned, hash-stamped and SELF-CONTAINED: embedded
@@ -198,6 +199,13 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   if (!wp) throw new Error('workpaper not found');
   const edits = await listEdits(workpaperId);
   const notes = await listNotes(workpaperId);
+  /* Les colonnes AJOUTÉES au modèle (ADR-099) sortent dans l'export : un
+     export qui tairait une colonne visible à l'écran serait un document
+     différent de celui que le réviseur a relu. */
+  const colonnesX = (await colonnesDuPapier(wp.engagement_id, wp.code)).filter((c) => c.statut === 'remplie');
+  const cellulesX = new Map(
+    (await cellulesDuPapier(wp.engagement_id, wp.code)).map((c) => [`${c.column_id}|${c.sample_item_id}`, c]),
+  );
   const signoffs = await listSignoffs(workpaperId);
   const eng = await q1<{ name: string; entity: string; period: string }>(
     `select e.name, en.name entity, p.label period from engagement e
@@ -266,6 +274,17 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
           if (!cell) continue;
           w.text(`${s.table.headers[enTete + i] ?? ''}: ${cell}`, { size: allure.tableau, indent: 14, gap: 0 });
         }
+        if (s.key === 'tableau_echantillon' && row.refs?.sampleItemId) {
+          for (const cx of colonnesX) {
+            const cel = cellulesX.get(`${cx.id}|${row.refs.sampleItemId}`);
+            if (!cel) continue;
+            const val = cel.outcome === 'trouvee'
+              ? `${cel.valeur}${cel.verifie ? '' : (fr ? ' [A VERIFIER]' : ' [TO VERIFY]')}`
+              : (fr ? 'absente des pieces recues' : 'not in received evidence')
+                + (cel.clarification_request_item_id ? (fr ? ' (clarification proposee)' : ' (clarification proposed)') : '');
+            w.text(`${cx.titre} (${fr ? 'colonne ajoutee' : 'added column'}): ${val}`, { size: allure.tableau, indent: 14, gap: 0 });
+          }
+        }
         if (row.refs?.evidenceIds?.length) {
           w.text(`refs evidence: ${row.refs.evidenceIds.map((x) => x.slice(0, 8)).join(', ')}`, { size: 6.5, indent: 14, color: [0.5, 0.55, 0.62], gap: 1 });
         }
@@ -319,7 +338,14 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   }
 
   w.heading(ap.modifications);
-  if (edits.length === 0) w.text(fr ? 'Aucune.' : 'None.', { size: 8 });
+  for (const cx of colonnesX) {
+    w.text(
+      (fr ? 'Colonne ajoutee au modele standard : ' : 'Column added to the standard template: ')
+      + `"${cx.titre}" - ${fr ? 'justification' : 'justification'} : ${cx.justification}`,
+      { size: 7.5, gap: 1 },
+    );
+  }
+  if (edits.length === 0 && colonnesX.length === 0) w.text(fr ? 'Aucune.' : 'None.', { size: 8 });
   for (const e of edits) {
     w.text(`${e.edited_at.slice(0, 16)} - ${e.user_name} - section ${e.section} - ${fr ? 'justification' : 'justification'} : ${e.justification}`, { size: 7.5, gap: 1 });
   }
@@ -330,6 +356,11 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
     const dest = n.assignee_kind === 'otto' ? 'OTTO' : n.assignee_name;
     const ancre = n.anchor_label ? ` [${n.anchor_label}]` : '';
     w.text(`[${n.status}] ${n.author_name}${dest ? ' -> ' + dest : ''}${ancre} : ${n.text}`, { size: 7.5, gap: 1 });
+    /* Les RÉPONSES entrent au dossier — celle d'OTTO surtout : chaque
+       instruction donnée à la machine reste documentée dans l'export. */
+    for (const r of await listReplies(n.id)) {
+      w.text(`    ↳ ${r.author_kind === 'otto' ? 'OTTO' : r.author_name} : ${r.text}`, { size: 7, gap: 1 });
+    }
   }
 
   w.heading(ap.signoffs);

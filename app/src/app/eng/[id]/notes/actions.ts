@@ -2,6 +2,7 @@
 
 import { requireMember } from '@/lib/core/auth';
 import { addReviewNote, repondreNote, transitionNote } from '@/lib/services/workpapers/lifecycle';
+import { executerNoteOtto } from '@/lib/services/notes/otto';
 import type { Ancre, AncreKind } from '@/lib/services/notes/ancres';
 import { executer } from '@/app/refus';
 
@@ -21,14 +22,28 @@ export async function poserNoteAncreeAction(fd: FormData): Promise<never> {
       field: String(fd.get('field') ?? '') || null,
       label: String(fd.get('label') ?? ''),
     };
-    await addReviewNote(
+    const assignee = String(fd.get('assignee') ?? '');
+    const noteId = await addReviewNote(
       engagementId,
       String(fd.get('workpaper_id') ?? '') || null,
       user.id,
-      String(fd.get('assignee') ?? '') || null,
+      assignee === 'otto' ? null : assignee || null,
       String(fd.get('texte') ?? ''),
-      { ancre },
+      { ancre, assigneeKind: assignee === 'otto' ? 'otto' : 'user' },
     );
+    /* Une note pour OTTO s'exécute À LA POSE, sous les yeux de qui la pose :
+       une file silencieuse serait un objet qu'aucun chemin de lecture
+       n'atteint (règle 13). Refus compris — il s'affiche en réponse. */
+    if (assignee === 'otto') await executerNoteOtto(noteId);
+  });
+}
+
+export async function executerNoteOttoAction(fd: FormData): Promise<never> {
+  const engagementId = String(fd.get('engagement_id') ?? '');
+  const chemin = `/eng/${engagementId}/notes`;
+  return executer(chemin, async () => {
+    await requireMember(engagementId);
+    await executerNoteOtto(String(fd.get('note_id')));
   });
 }
 

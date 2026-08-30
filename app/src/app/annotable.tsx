@@ -93,6 +93,7 @@ export function Annotable({
                 <select name="assignee" defaultValue="">
                   <option value="">— non attribuée —</option>
                   {membres.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
+                  <option value="otto">OTTO — exécute l&apos;instruction (et refuse ce qui n&apos;est pas de son ressort)</option>
                 </select>
                 <span className="row">
                   <button type="button" className="btn secondary small" onClick={() => setOuvert(false)}>Annuler</button>

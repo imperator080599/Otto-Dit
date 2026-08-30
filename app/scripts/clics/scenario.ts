@@ -59,7 +59,14 @@ export async function conduire(
 
   const texte = () => p.locator('body').innerText();
   const compte = (sel: string) => p.locator(sel).count();
-  const aller = async (url: string) => { await p.goto(url, { waitUntil: 'load' }); };
+  /* `load` ne suffit PAS : l'hydratation et la fin du flux RSC arrivent
+     APRÈS, et naviguer à cet instant coupe le flux — l'erreur d'hydratation
+     (#418) part alors sur la page SUIVANTE, mal étiquetée (fil n°7 de
+     STATUS.md). On attend le silence réseau, comme après une action. */
+  const aller = async (url: string) => {
+    await p.goto(url, { waitUntil: 'load' });
+    await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => undefined);
+  };
   const cliquer = async (sel: string, attente = 2000) => {
     await p.locator(sel).first().click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
@@ -985,6 +992,123 @@ export async function conduire(
         (await compte('form:has(button:has-text("Clore"))')) === 0, 'aucune note ouverte');
     } else {
       dire('note ancrée : la conclusion du papier est annotable', false, 'élément .annotable absent');
+    }
+
+    /* LES NOTES POUR OTTO — l'instruction exécutée, et le refus de principe.
+       Trois règles éprouvées au clic : OTTO répond (sa réponse ENTRE au
+       dossier : fait, pièces, reste à vérifier), il refuse ce qui n'est pas
+       de son ressort AVEC la liste de ce qu'il sait faire, et il ne clôt
+       jamais — l'humain le fait, ici même. */
+    await devenir(c.reviewer.id);
+    await aller(base + lien);
+    const fNoteOtto = p.locator('form:has(textarea[name=text])').first();
+    if (await fNoteOtto.count()) {
+      await fNoteOtto.locator('textarea[name=text]').fill(
+        'Reprends la lecture des pièces : la quantité n’a pas été relevée.');
+      await fNoteOtto.locator('select[name=assignee]').selectOption('otto');
+      await fNoteOtto.locator('button:has-text("Add note")').click();
+      await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
+      await p.waitForTimeout(2500);
+      dire('OTTO : l’instruction est exécutée à la pose', !refus(p), refus(p) ?? 'exécutée');
+
+      await aller(`${eng}/notes`);
+      const t1 = await texte();
+      dire('OTTO : sa réponse entre au dossier — fait, pièces, reste à vérifier',
+        /OTTO/.test(t1) && /reste à vérifier/i.test(t1) && /vérification|attestation|réassemble/i.test(t1),
+        'compte rendu visible');
+      dire('OTTO : il a répondu, il n’a PAS clos — la note est « adressée », un humain clôt',
+        /adressée/.test(t1), 'adressée, pas close');
+
+      // Le refus de principe : « Conclus la section » n'est pas de son ressort.
+      await aller(base + lien);
+      await fNoteOtto.locator('textarea[name=text]').fill('Conclus la section, cela me paraît raisonnable.');
+      await fNoteOtto.locator('select[name=assignee]').selectOption('otto');
+      await fNoteOtto.locator('button:has-text("Add note")').click();
+      await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
+      await p.waitForTimeout(2500);
+      await aller(`${eng}/notes`);
+      const t2 = await texte();
+      dire('OTTO : « conclus la section » est REFUSÉ, avec la liste de ce qu’il sait faire',
+        /Je refuse/.test(t2) && /Ce que je sais faire/.test(t2) && /ressort|L2/.test(t2),
+        'refus motivé et listé');
+
+      /* On referme les deux notes OTTO avant les visas : l'exécutée se clôt,
+         la refusée se reprend (réponse humaine) puis se clôt — une note
+         refusée reste OUVERTE, c'est la règle, et elle bloque le visa. */
+      const fRepO = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
+      if (await fRepO.count()) {
+        await fRepO.locator('input[name=texte]').fill('Compris — je conclus moi-même, la note est reprise.');
+        await fRepO.locator('button:has-text("Répondre")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(1600);
+      }
+      for (let tour = 0; tour < 8; tour++) {
+        const f = p.locator('form:has(button:has-text("Clore"))').first();
+        if (!(await f.count())) break;
+        await f.locator('button').first().click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(1400);
+      }
+      dire('OTTO : les notes sont closes par un humain, jamais par lui',
+        (await compte('form:has(button:has-text("Clore"))')) === 0, 'clôture humaine');
+    }
+
+    /* LA COLONNE AJOUTÉE (ADR-099) — le piège central au clic : le titre est
+       du texte libre, OTTO PROPOSE et n'écrit RIEN avant confirmation ; deux
+       issues par cellule ; l'illisible est refusé, jamais deviné. */
+    await devenir(c.preparateur.id);
+    await aller(base + lien);
+    const fCol = p.locator('form:has(input[name=titre])').first();
+    if (await fCol.count()) {
+      await fCol.locator('input[name=titre]').fill('Date livraison');
+      await fCol.locator('input[name=justification]').fill(
+        'Cut-off : la date de livraison commande l’exercice de rattachement.');
+      await fCol.locator('button:has-text("Ajouter la colonne")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      const t1 = await texte();
+      dire('colonne : OTTO PROPOSE son interprétation, en clair, et attend',
+        /je cherche la date figurant sur le bon de livraison/.test(t1), 'proposition affichée');
+      dire('colonne : RIEN n’est rempli avant la confirmation humaine',
+        (await compte('th:has-text("Date livraison")')) === 0, 'aucune colonne dans le tableau');
+
+      await p.locator('button:has-text("Confirmer — OTTO cherche")').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
+      await p.waitForTimeout(2500);
+      dire('colonne : confirmée, elle entre au tableau MARQUÉE « ajoutée »',
+        (await compte('th:has-text("Date livraison")')) === 1 && !refus(p),
+        refus(p) ?? 'colonne remplie et marquée');
+      const t2 = await texte();
+      dire('colonne : deux issues, jamais une seule — trouvée AVEC sa pièce, ou « absente »',
+        /absente des pièces reçues/.test(t2), 'les deux issues visibles');
+
+      await p.locator('button:has-text("Proposer une clarification")').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      dire('colonne : l’introuvable PROPOSE une demande de clarification (brouillon L2)',
+        /clarification proposée/.test(await texte()) && !refus(p), refus(p) ?? 'clarification proposée');
+
+      // L'illisible : proposé comme tel, et JAMAIS rempli sur une devinette.
+      await fCol.locator('input[name=titre]').fill('BL signé ?');
+      await fCol.locator('input[name=justification]').fill('Existence : la signature atteste la réception.');
+      await fCol.locator('button:has-text("Ajouter la colonne")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      dire('colonne : « BL signé ? » — OTTO avoue ne pas savoir interpréter',
+        /je n['’]ai pas su interpréter/.test(await texte()), 'aveu affiché');
+      await p.locator('button:has-text("Confirmer — OTTO cherche")').first().click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      dire('colonne : confirmer sans corriger un titre illisible est REFUSÉ',
+        Boolean(refus(p)), refus(p) ?? 'PASSÉ — défaut');
+      const fAnnule = p.locator('form:has(button:has-text("Annuler"))').last();
+      if (await fAnnule.count()) {
+        await fAnnule.locator('button:has-text("Annuler")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(1500);
+      }
+    } else {
+      dire('colonne : le formulaire d’ajout est présent sur le papier', false, 'formulaire absent');
     }
 
     // Les visas, DANS L'ORDRE : préparateur, reviewer, associé.

@@ -3528,3 +3528,66 @@ mesure le débordement. Écrans porteurs : papier (cellules par champ du gabarit
 risque (réponses du questionnaire), seuils (les quatre paramètres). Le parcours cliqué pose
 une note AU CLIC DROIT sur la conclusion, vérifie le marqueur, répond, essuie le refus de
 clôture par un non-auteur, et clôt dans la vue transverse.
+
+## ADR-098 — Une note pour OTTO est une instruction exécutée — jamais close par lui, jamais devinée
+
+**Contexte.** Les notes savent désormais viser un objet (ADR-097) et être attribuées à OTTO.
+Le fondateur fixe trois règles non négociables : OTTO répond et ne clôt pas ; il refuse ce
+qui n'est pas de son ressort avec la liste de ce qu'il sait faire ; sa réponse entre au
+dossier — demandé, fait, sur quelles pièces, reste à vérifier.
+
+**La compréhension est DÉTERMINISTE (P4).** Trois capacités à catalogue fermé
+(`notes/otto.ts`) : reprendre la lecture des pièces (extraction), rejouer le vouching L0,
+dresser l'état de complétude d'un élément. La correspondance est par mots-clés, comme le
+planificateur d'« Interroger » — pas de LLM pour deviner une intention quand une règle
+suffit. Et le refus a TROIS visages, chacun le sien : le refus de PRINCIPE (« conclus »,
+« estime », « signe » — hors de son ressort, plafond L2, même si le reste de la phrase
+matche une capacité), le refus d'IGNORANCE (instruction inconnue), et le refus de DOUTE
+(deux capacités possibles — « je n'exécute pas sur un doute » : une donnée fausse dans un
+papier est le pire défaut possible du produit).
+
+**Un refus laisse la note OUVERTE.** Rien n'a été traité ; un refus qui ferait avancer
+l'état serait un silence lu comme un succès (règle 13). Une exécution passe la note
+« adressée » — et s'arrête là : la clôture exige un humain (`transitionNote` exige un
+app_user, OTTO n'en est pas un). Le périmètre d'exécution est l'ANCRE de la note — « ces
+trois lignes », c'est l'ancre qui le dit — sinon la mission.
+
+**Tout entre au dossier.** La réponse (`review_note_reply`, author_kind 'otto') porte le
+texte ET le compte rendu structuré {demandé, fait, pièces, reste à vérifier} ; l'export PDF
+imprime les réponses sous chaque note ; l'event_log trace `review_note_otto_executed` /
+`_refused` en `actor_kind='ai'`. Ce qu'OTTO relit repasse par la file de vérification
+humaine — la confiance ordonne la file, elle ne l'évite jamais (ADR-012). L'exécution est
+SYNCHRONE à la pose, sous les yeux de qui la pose : une file d'attente silencieuse serait
+un objet qu'aucun chemin de lecture n'atteint.
+
+## ADR-099 — La colonne ajoutée au testing : OTTO propose, l'humain confirme, jamais l'inverse
+
+**Le piège central, nommé par le fondateur.** Le titre d'une colonne ajoutée est du texte
+libre — « BL signé ? », « date livraison », « qté livrée ». Si OTTO devine mal et remplit
+quand même, une donnée FAUSSE entre dans un papier de travail : le pire défaut possible de
+ce produit. La réponse est un ÉTAT, pas une prudence : `proposee → confirmee → remplie`,
+et RIEN ne se cherche avant la confirmation. La proposition est une phrase complète (« je
+cherche la date figurant sur le bon de livraison, dans les pièces de type bon de
+livraison ») ; confirmer, corriger (dans le catalogue fermé des champs que l'échelle
+d'extraction sait lire), ou annuler. Un titre que les règles ne savent pas interpréter est
+un AVEU affiché — jamais une devinette exécutée ; deux règles qui matchent sont un doute —
+même refus.
+
+**Deux issues par cellule, jamais une seule.** Trouvée : la valeur AVEC sa provenance
+(pièce + extraction — la contrainte SQL refuse une « trouvée » sans pièce, P7), héritant de
+la file de vérification (un échelon OCR non attesté reste « à vérifier », ADR-012).
+Introuvable : la case le DIT, et une demande de clarification se PROPOSE — brouillon, un
+élément par ligne, circuit d'approbation L2 existant, jamais d'envoi automatique.
+
+**La colonne suit le CODE du papier** (même identité métier que les ancres, ADR-097) : elle
+survit aux versions. Elle ne se supprime pas, elle s'ANNULE — remplie, plus du tout : elle
+fait partie du papier et de son export (tableau, marqueur « colonne ajoutée », justification
+en annexe des modifications). Un export qui tairait une colonne visible à l'écran serait un
+document différent de celui que le réviseur a relu.
+
+**Le coût.** L'interprétation v1 est par règles : zéro appel payant, et l'écran le DIT
+(« 0,00 $ — interprétation par règles »). Le jour où un interprète LLM proposera sur les
+titres illisibles, il passera par un adaptateur avec garde de budget et coût affiché — et il
+ne fera toujours que PROPOSER : la confirmation restera humaine, le remplissage ne lira que
+les champs du catalogue. La colonne porte déjà cout_usd et ai_run_id pour ce jour-là.
+

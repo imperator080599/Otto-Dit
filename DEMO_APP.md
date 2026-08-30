@@ -188,8 +188,29 @@ le préparateur répond (la réponse entre au dossier, la note passe « adressé
 tente de clore est **refusé**, l'auteur clôt. Une note dont l'objet est sorti de l'échantillon ne
 disparaît pas : elle reste ici, marquée « objet retiré ».
 
-**La commande qui rejoue tout le geste, clics compris** : `npm run clics` (stations « note ancrée »
-et « notes »).
+**Et la note pour OTTO** (ADR-098) : posez-en une attribuée à « OTTO — exécute l'instruction » avec
+« Reprends la lecture des pièces : la quantité n'a pas été relevée. » — il exécute À LA POSE et sa
+réponse entre au dossier : fait, pièces, **reste à vérifier** (tout repasse par la file de
+vérification humaine). Puis « Conclus la section » : **refusé**, avec la liste de ce qu'il sait
+faire — conclure, estimer, juger, signer appartiennent à l'équipe. Il répond, il ne clôt jamais :
+la note exécutée reste « adressée » jusqu'à la clôture humaine.
+
+**La commande qui rejoue tout le geste, clics compris** : `npm run clics` (stations « note ancrée »,
+« notes » et « OTTO »).
+
+### 10 ter. La colonne ajoutée au tableau — OTTO propose, vous confirmez
+
+**Écran** : le papier de travail ouvert, panneau « Colonnes ajoutées ».
+
+**Ce qu'il faut montrer** : tapez « Date livraison » et une justification (obligatoire — le modèle
+standard est modifié, et cela sort dans l'export). OTTO PROPOSE, en clair : « je cherche la date
+figurant sur le bon de livraison, dans les pièces de type bon de livraison » — et **rien n'est
+rempli** tant que vous n'avez pas confirmé. Confirmez : la colonne entre au tableau marquée
+« ajoutée », chaque cellule a **deux issues** — la donnée cliquable vers sa pièce (héritant de la
+file de vérification), ou « absente des pièces reçues » avec un bouton qui PROPOSE une demande de
+clarification au client (brouillon L2). Puis tapez « BL signé ? » : OTTO avoue ne pas savoir
+interpréter, et confirmer sans corriger est **refusé** — il ne remplit jamais sur une devinette
+(ADR-099).
 
 ### 11. Le pointage des états financiers
 

@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { notesDeLaMission, listReplies, type NoteAncree } from '@/lib/services/workpapers/lifecycle';
 import { BandeauRefus } from '@/app/bandeau-refus';
-import { repondreNoteAction, transitionNoteAction } from './actions';
+import { repondreNoteAction, transitionNoteAction, executerNoteOttoAction } from './actions';
+import type { CompteRenduOtto } from '@/lib/services/notes/otto';
 
 // LA VUE TRANSVERSE DES NOTES DE REVUE (ADR-097). Toutes les notes de la
 // mission, leurs ancres RÉSOLUES contre l'état actuel du dossier : une note
@@ -65,11 +66,28 @@ export default async function NotesPage({
           {' · '}
           <Link href={porteur.href}>{porteur.libelle}</Link>
         </p>
-        {(reponses.get(n.id) ?? []).map((r) => (
-          <div className="callout" key={r.id} style={{ marginTop: 8 }}>
-            <strong>{r.author_kind === 'otto' ? 'OTTO' : r.author_name}</strong> — {r.text}
-          </div>
-        ))}
+        {(reponses.get(n.id) ?? []).map((r) => {
+          /* LA RÉPONSE D'OTTO ENTRE AU DOSSIER en trois volets : demandé,
+             fait (sur quelles pièces), reste à vérifier — pas une prose. */
+          const cr = r.author_kind === 'otto' ? (r.payload as CompteRenduOtto) : null;
+          return (
+            <div className={`callout${cr?.verdict === 'refuse' ? ' warn' : ''}`} key={r.id} style={{ marginTop: 8 }}>
+              <strong>{r.author_kind === 'otto' ? 'OTTO' : r.author_name}</strong>
+              {cr?.verdict === 'refuse' && <span className="badge amber" style={{ marginLeft: 6 }}>refus</span>}
+              {cr?.verdict === 'execute' && <span className="ai-flag" style={{ marginLeft: 6 }}>exécuté — un humain clôt</span>}
+              <p style={{ margin: '4px 0' }}>{r.text}</p>
+              {cr && cr.verdict === 'execute' && (
+                <ul className="faint" style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                  {cr.fait.map((f, i) => <li key={i}>{f}</li>)}
+                  {cr.pieces.length > 0 && (
+                    <li>pièces : {cr.pieces.map((pi) => pi.filename).join(', ')}</li>
+                  )}
+                  <li><strong>reste à vérifier</strong> : {cr.reste_a_verifier}</li>
+                </ul>
+              )}
+            </div>
+          );
+        })}
         {n.status !== 'closed' && (
           <div className="row mt">
             <form action={repondreNoteAction} className="row" style={{ flex: 1 }}>
@@ -78,6 +96,13 @@ export default async function NotesPage({
               <input name="texte" placeholder="Répondre — la réponse entre au dossier." style={{ flex: 1 }} required />
               <button className="btn secondary small">Répondre</button>
             </form>
+            {n.assignee_kind === 'otto' && (
+              <form action={executerNoteOttoAction}>
+                <input type="hidden" name="engagement_id" value={id} />
+                <input type="hidden" name="note_id" value={n.id} />
+                <button className="btn secondary small">Exécuter (OTTO)</button>
+              </form>
+            )}
             <form action={transitionNoteAction}>
               <input type="hidden" name="engagement_id" value={id} />
               <input type="hidden" name="note_id" value={n.id} />

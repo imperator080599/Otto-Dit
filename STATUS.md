@@ -20,7 +20,13 @@ l'ordre, export PDF/Excel · pointage des états financiers · achèvement (5 na
 visa** (une liste, dix familles, calculée) · clôture et **archive scellée téléchargeable** ·
 **notes de revue ancrées sur l'objet métier** (cellule de testing, section de papier, réponse de
 questionnaire, paramètre de seuils — clic droit, appui long ou puce au survol ; vue transverse
-`/notes` où une note dont l'objet est sorti de l'échantillon remonte « objet retiré », ADR-097).
+`/notes` où une note dont l'objet est sorti de l'échantillon remonte « objet retiré », ADR-097) ·
+**notes adressées à OTTO** : il exécute (extraction, vouching, état de complétude — catalogue
+fermé, compréhension par règles), refuse ce qui n'est pas de son ressort avec la liste de ce
+qu'il sait faire, répond au dossier (fait, pièces, reste à vérifier) et ne clôt jamais (ADR-098) ·
+**colonne ajoutée au tableau de testing** : titre libre → OTTO PROPOSE son interprétation et
+n'écrit rien avant confirmation ; deux issues par cellule — trouvée avec sa provenance, ou
+introuvable qui PROPOSE une clarification client (ADR-099).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
@@ -41,10 +47,10 @@ une base vide : **01:02** de la commande au panneau.
 
 | Ce que ça prouve | Commande | État |
 |---|---|---|
-| Toutes les règles, tous les refus | `cd app && npm test` | 422 tests, zéro réseau |
-| Tous les écrans **rendent** en production | `cd app && npm run screens` | 64 routes |
-| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 62 étapes, ~30 refus |
-| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 244 vues, 0 défaut |
+| Toutes les règles, tous les refus | `cd app && npm test` | 448 tests, zéro réseau |
+| Tous les écrans **rendent** en production | `cd app && npm run screens` | 68 routes |
+| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 84 étapes, ~35 refus |
+| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 252 vues, 0 défaut |
 | Tout, base recréée | `cd app && npm run verify` | enchaîne les quatre |
 
 `npm run verify` est la seule chose à lancer avant de dire qu'une tranche est finie.
@@ -84,7 +90,7 @@ une base vide : **01:02** de la commande au panneau.
 | 4 | **Transport e-mail entrant réel** (Q12) — première tâche de déploiement. | fondateur |
 | 5 | **Secret professionnel / RGPD + DPA** avant toute donnée réelle (A13). | fondateur |
 | 6 | Le contrôle `input[type=file]` affiche « Choose File » (libellé natif du navigateur) sur le portail francophone : non corrigeable sans contrôle sur mesure. | à trancher |
-| 7 | **L'hydratation React (#418) refait surface par intermittence** dans `npm run clics` : 2026-08-30, trois exécutions production → 2 exceptions (portail, testing), puis 1 (papier), puis 0 en mode dev ; écrans variables, y compris non modifiés ce jour-là. 45 ouvertures directes de ces mêmes écrans sur build de production : 0 erreur (sonde rejouable : `npx tsx <scratch>/sonde-hydratation.ts`) — le défaut ne se déclenche qu'au fil des enchaînements d'actions du parcours. React répare seul (aucune station fonctionnelle n'échoue), mais le harnais compte l'exception, donc `verify` peut rougir sans défaut nouveau. À investiguer comme défaut à part entière ; en attendant, un échec de clics dont la SEULE ligne est `EXCEPTION … error #418` se relance une fois. | à investiguer |
+| 7 | **L'hydratation React (#418) refait surface par intermittence** dans `npm run clics` : 2026-08-30, trois exécutions production → 2 exceptions (portail, testing), puis 1 (papier), puis 0 en mode dev ; écrans variables, y compris non modifiés ce jour-là. 45 ouvertures directes de ces mêmes écrans sur build de production : 0 erreur (sonde rejouable : `npx tsx <scratch>/sonde-hydratation.ts`) — le défaut ne se déclenche qu'au fil des enchaînements d'actions du parcours. React répare seul (aucune station fonctionnelle n'échoue), mais le harnais compte l'exception, donc `verify` peut rougir sans défaut nouveau. CAUSE PROBABLE TROUVÉE puis corrigée dans le harnais : `aller()` rendait la main à `load`, AVANT la fin du flux RSC et de l'hydratation — naviguer à cet instant coupait le flux et l'exception partait, mal étiquetée, sur la page suivante. `aller()` attend désormais le silence réseau. Première exécution après correctif : 67 stations, 0 exception. Si le défaut reparaît, la sonde `scripts/clics/sonde-hydratation.ts` reste le point de départ. | corrigé, à surveiller |
 | 8 | Le dossier N-1 n'est ni conclu ni clos : `/api/archive/[engagementId]` déclare donc un **404 attendu** tant qu'aucun dossier n'est scellé dans le monde de démonstration. | à trancher |
 | 9 | Premiers fast-follows si le coin tient : revue analytique + questions de variation, pointage de plaquette, circularisations (D8). | fondateur |
 | 10 | **Windows : corrigé sans machine Windows.** `spawn npx ENOENT` (ADR-096) est corrigé — plus aucun spawn de `npx`, branches Windows exécutées en test depuis Linux — mais AUCUNE exécution sur Windows réel n'a eu lieu. Confirmation attendue du fondateur : `cd app; npm run demo` sur sa machine. | fondateur |
