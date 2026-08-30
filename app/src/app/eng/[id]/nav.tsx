@@ -47,6 +47,8 @@ export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
     { href: `${base}/evidence`, label: 'Evidence' },
     { href: `${base}/exceptions`, label: packs.includes('pcaob-sox') ? 'Deviations' : 'Exceptions' },
     { href: `${base}/workpapers`, label: 'Workpapers' },
+    // Les notes de revue, transverses : ancrées sur les objets, résolues ici.
+    { href: `${base}/notes`, label: 'Notes de revue' },
     // Le pointage des états financiers : l'autre bout de l'arc.
     { href: `${base}/fs-tieout`, label: 'États financiers' },
     { href: `${base}/ask`, label: 'Ask the file' },

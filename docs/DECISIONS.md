@@ -3480,3 +3480,51 @@ machine Windows, et une relecture n'est pas une exécution. La commande de confi
 **Sur Windows, `rmSync` d'un fichier ouvert échoue** (EBUSY/EPERM) là où Linux l'accepte :
 l'effacement de `.data` est gardé et parle (« un processus tient encore ces fichiers »)
 au lieu de dérouler une trace.
+
+## ADR-097 — Les notes de revue s'ancrent sur l'objet métier, jamais sur une position d'écran
+
+**Contexte.** ADR-028 avait décidé l'ancrage obligatoire des notes — mais il n'existait que
+dans le prototype (`prototype/src/13_notes.js`). L'application, elle, portait des notes
+rattachées au mieux à un papier entier : « sur QUOI porte la note » restait dans le texte.
+Le fondateur demande l'ancrage dans le produit : cellule du tableau de testing, zone de
+texte, paramètre, réponse de questionnaire, montant, conclusion — avec trois gestes (clic
+droit, appui long, puce au survol) et le jeton d'attention existant.
+
+**La décision structurante — l'identité, pas la position.** Une ancre est `(type, référence
+métier, champ, étiquette)` :
+
+| type | référence | survit à |
+|---|---|---|
+| `sample_item` | `gl_entry.natural_key` | ré-imports (Gate 2) ET re-tirages : le nouvel échantillon qui reprend la même écriture reprend la note à son bord |
+| `workpaper_section` | `code du papier:clé de section` | nouvelles versions du papier (redraft) |
+| `questionnaire_answer` | code de la question | millésimes de la méthode |
+| `materiality_param` | nom du paramètre | recalculs de seuils |
+
+**« Objet retiré » est un statut DÉRIVÉ, pas stocké.** La résolution
+(`services/notes/ancres.ts`) confronte chaque ancre à l'état ACTUEL du dossier ; une note
+dont l'objet est sorti de l'échantillon ne disparaît pas — elle remonte dans la vue
+transverse (`/eng/[id]/notes`) marquée « objet retiré », avec son histoire. Un drapeau
+stocké aurait menti au recalcul suivant. Le test le prouve en l'exerçant : pose, re-tirage
+simulé, retiré ; retour du tirage, la note se ré-attache SEULE.
+
+**On ne pose pas sur un objet qui n'existe pas.** `assertAncrePosable` refuse à la pose une
+référence que la résolution ne trouve pas : l'ancre imaginaire serait la position d'écran
+par un autre chemin. La base double la garde (`review_note_anchor_complete`) : une ancre à
+moitié posée est refusée par contrainte.
+
+**Les réponses entrent au dossier.** `review_note_reply` (0021) : répondre à une note
+ouverte la passe « adressée » ; une note close ne se rouvre pas. La clôture reste à
+l'AUTEUR de la note — dans l'application l'auteur d'une note est le réviseur qui l'a posée,
+et le fondateur a demandé « comme aujourd'hui » ; la règle « jamais l'auteur » du prototype
+(ADR-028 §3) n'est pas reprise, et c'est consigné ici plutôt que d'exister en divergence
+silencieuse. L'attribution admet OTTO (`assignee_kind`, sans id humain — la contrainte
+l'interdit) ; son comportement d'exécution est la tranche suivante.
+
+**Le geste.** `Annotable` (composant client) : clic droit, appui long 550 ms, puce ✎ au
+survol et au clavier — le clic droit seul est inaccessible au doigt. Le marqueur est le
+jeton `--amber` existant : le système de couleurs est fermé, on n'y ajoute rien. Le panneau
+de pose est fixe et centré — un popover absolu débordait à 390 px, et la revue visuelle
+mesure le débordement. Écrans porteurs : papier (cellules par champ du gabarit + sections),
+risque (réponses du questionnaire), seuils (les quatre paramètres). Le parcours cliqué pose
+une note AU CLIC DROIT sur la conclusion, vérifie le marqueur, répond, essuie le refus de
+clôture par un non-auteur, et clôt dans la vue transverse.

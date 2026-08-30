@@ -327,7 +327,9 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   w.heading(ap.reviewNotes);
   if (notes.length === 0) w.text(fr ? 'Aucune.' : 'None.', { size: 8 });
   for (const n of notes) {
-    w.text(`[${n.status}] ${n.author_name}${n.assignee_name ? ' -> ' + n.assignee_name : ''} : ${n.text}`, { size: 7.5, gap: 1 });
+    const dest = n.assignee_kind === 'otto' ? 'OTTO' : n.assignee_name;
+    const ancre = n.anchor_label ? ` [${n.anchor_label}]` : '';
+    w.text(`[${n.status}] ${n.author_name}${dest ? ' -> ' + dest : ''}${ancre} : ${n.text}`, { size: 7.5, gap: 1 });
   }
 
   w.heading(ap.signoffs);

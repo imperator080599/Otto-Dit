@@ -922,6 +922,71 @@ export async function conduire(
     dire('papier : les notes de revue sont traitées puis fermées par leur auteur',
       (await compte('form:has(button:has-text("Close (author)"))')) === 0, 'aucune note ouverte');
 
+    /* LA NOTE ANCRÉE (ADR-097) — le geste entier, au clic droit : l'ancre est
+       l'OBJET (la conclusion du papier), jamais une position d'écran. On la
+       pose, on vérifie le marqueur, on répond, on essuie le refus de clôture
+       par un non-auteur, et l'auteur clôt — dans la vue transverse. */
+    await devenir(c.reviewer.id);
+    await aller(base + lien);
+    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
+    if (await conclusion.count()) {
+      await conclusion.locator('h2').click({ button: 'right' });
+      const panneau = p.locator('.note-panneau');
+      const cible = (await panneau.count()) ? await panneau.locator('.note-cible').innerText() : '';
+      dire('note ancrée : le clic droit ouvre la pose et NOMME l’objet visé',
+        /conclusion/i.test(cible), cible || 'panneau absent');
+      await panneau.locator('textarea[name=texte]').fill(
+        'Étoffer la conclusion — note ANCRÉE posée au clic droit par le parcours.');
+      await panneau.locator('select[name=assignee]').selectOption(c.preparateur.id);
+      await panneau.locator('button:has-text("Poser la note")').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      await aller(base + lien);
+      dire('note ancrée : l’élément annoté porte le jeton d’attention',
+        (await compte('.annotable.a-note')) >= 1, `${await compte('.annotable.a-note')} élément(s) marqué(s)`);
+
+      // La vue transverse la montre, avec son ancre.
+      await aller(`${eng}/notes`);
+      dire('notes : la vue transverse porte l’ancre de la note',
+        /Conclusion/i.test(await texte()), 'ancre visible');
+
+      // Le préparateur répond — la réponse entre au dossier et la note passe « adressée ».
+      await devenir(c.preparateur.id);
+      await aller(`${eng}/notes`);
+      const fRep = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
+      if (await fRep.count()) {
+        await fRep.locator('input[name=texte]').fill('Conclusion étoffée, renvoi ajouté.');
+        await fRep.locator('button:has-text("Répondre")').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(2000);
+        dire('notes : la réponse s’enregistre et la note passe « adressée »',
+          !refus(p) && /adressée/.test(await texte()), refus(p) ?? 'réponse au dossier');
+      }
+      // Il tente de clore : refusé — seul l'AUTEUR clôt sa note.
+      const fClore = p.locator('form:has(button:has-text("Clore"))').first();
+      if (await fClore.count()) {
+        await fClore.locator('button').first().click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(2000);
+        dire('notes : la clôture par un autre que l’auteur est REFUSÉE',
+          Boolean(refus(p)), refus(p) ?? 'PASSÉE — défaut');
+      }
+      // L'auteur clôt, dans la vue transverse.
+      await devenir(c.reviewer.id);
+      await aller(`${eng}/notes`);
+      for (let tour = 0; tour < 8; tour++) {
+        const f = p.locator('form:has(button:has-text("Clore"))').first();
+        if (!(await f.count())) break;
+        await f.locator('button').first().click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(1400);
+      }
+      dire('notes : l’auteur clôt sa note ancrée depuis la vue transverse',
+        (await compte('form:has(button:has-text("Clore"))')) === 0, 'aucune note ouverte');
+    } else {
+      dire('note ancrée : la conclusion du papier est annotable', false, 'élément .annotable absent');
+    }
+
     // Les visas, DANS L'ORDRE : préparateur, reviewer, associé.
     for (const [qui, role] of [
       [c.preparateur.id, 'preparer_validator'], [c.reviewer.id, 'reviewer'], [c.associe.id, 'partner'],

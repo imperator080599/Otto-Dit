@@ -17,7 +17,10 @@ résiduel · sondage (couverture + unités monétaires, germe déterministe) · 
 client** · échelle d'extraction · vouching L0 · écarts et clarifications · re-exécution en aveugle ·
 évaluation contre l'anomalie tolérable · papier de travail, notes de revue, trois visas dans
 l'ordre, export PDF/Excel · pointage des états financiers · achèvement (5 natures) · **obstacles au
-visa** (une liste, dix familles, calculée) · clôture et **archive scellée téléchargeable**.
+visa** (une liste, dix familles, calculée) · clôture et **archive scellée téléchargeable** ·
+**notes de revue ancrées sur l'objet métier** (cellule de testing, section de papier, réponse de
+questionnaire, paramètre de seuils — clic droit, appui long ou puce au survol ; vue transverse
+`/notes` où une note dont l'objet est sorti de l'échantillon remonte « objet retiré », ADR-097).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
@@ -38,10 +41,10 @@ une base vide : **01:02** de la commande au panneau.
 
 | Ce que ça prouve | Commande | État |
 |---|---|---|
-| Toutes les règles, tous les refus | `cd app && npm test` | 404 tests, zéro réseau |
-| Tous les écrans **rendent** en production | `cd app && npm run screens` | 63 routes |
-| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 54 étapes, ~30 refus |
-| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 236 vues, 0 défaut |
+| Toutes les règles, tous les refus | `cd app && npm test` | 422 tests, zéro réseau |
+| Tous les écrans **rendent** en production | `cd app && npm run screens` | 64 routes |
+| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 62 étapes, ~30 refus |
+| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 244 vues, 0 défaut |
 | Tout, base recréée | `cd app && npm run verify` | enchaîne les quatre |
 
 `npm run verify` est la seule chose à lancer avant de dire qu'une tranche est finie.
@@ -81,7 +84,7 @@ une base vide : **01:02** de la commande au panneau.
 | 4 | **Transport e-mail entrant réel** (Q12) — première tâche de déploiement. | fondateur |
 | 5 | **Secret professionnel / RGPD + DPA** avant toute donnée réelle (A13). | fondateur |
 | 6 | Le contrôle `input[type=file]` affiche « Choose File » (libellé natif du navigateur) sur le portail francophone : non corrigeable sans contrôle sur mesure. | à trancher |
-| 7 | `npm run clics` attend le **silence réseau** après chaque envoi : une action serveur ne déclenche pas d'événement `load`. Si un écran devenait très lent, l'attente (15 s) pourrait expirer et le parcours redeviendrait instable. | à surveiller |
+| 7 | **L'hydratation React (#418) refait surface par intermittence** dans `npm run clics` : 2026-08-30, trois exécutions production → 2 exceptions (portail, testing), puis 1 (papier), puis 0 en mode dev ; écrans variables, y compris non modifiés ce jour-là. 45 ouvertures directes de ces mêmes écrans sur build de production : 0 erreur (sonde rejouable : `npx tsx <scratch>/sonde-hydratation.ts`) — le défaut ne se déclenche qu'au fil des enchaînements d'actions du parcours. React répare seul (aucune station fonctionnelle n'échoue), mais le harnais compte l'exception, donc `verify` peut rougir sans défaut nouveau. À investiguer comme défaut à part entière ; en attendant, un échec de clics dont la SEULE ligne est `EXCEPTION … error #418` se relance une fois. | à investiguer |
 | 8 | Le dossier N-1 n'est ni conclu ni clos : `/api/archive/[engagementId]` déclare donc un **404 attendu** tant qu'aucun dossier n'est scellé dans le monde de démonstration. | à trancher |
 | 9 | Premiers fast-follows si le coin tient : revue analytique + questions de variation, pointage de plaquette, circularisations (D8). | fondateur |
 | 10 | **Windows : corrigé sans machine Windows.** `spawn npx ENOENT` (ADR-096) est corrigé — plus aucun spawn de `npx`, branches Windows exécutées en test depuis Linux — mais AUCUNE exécution sur Windows réel n'a eu lieu. Confirmation attendue du fondateur : `cd app; npm run demo` sur sa machine. | fondateur |

@@ -19,6 +19,7 @@
   --green-soft: #e4f3ee;
   --amber: #9a6700;
   --amber-soft: #fbf0d9;
+  --voile: rgba(20, 24, 31, 0.38);
   --red: #b42318;
   --red-soft: #fbe9e7;
   --violet: #5b3fa8;
@@ -60,6 +61,7 @@
     --green-soft: #122a24;
     --amber: #e0b25a;
     --amber-soft: #2c2415;
+    --voile: rgba(0, 0, 0, 0.55);
     --red: #f08a80;
     --red-soft: #2e1a19;
     --violet: #b9a3f0;
@@ -233,4 +235,45 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
 .mod-flag {
   font-size: 11px; color: var(--amber); background: var(--amber-soft);
   padding: 1px 7px; border-radius: 999px; font-weight: 600;
+}
+
+/* ── NOTES DE REVUE ANCRÉES (ADR-097) ────────────────────────────────────────
+   Tout élément renseignable est annotable : clic droit, appui long (tablette),
+   ou la puce visible au survol — le clic droit seul serait inaccessible au
+   doigt. L'élément portant une note est marqué au jeton d'ATTENTION existant
+   (--amber) : le système de couleurs est fermé, on n'y ajoute rien. */
+.annotable { position: relative; }
+.annotable > .puce-note {
+  opacity: 0; position: absolute; top: -6px; right: -6px; z-index: 3;
+  border: 1px solid var(--amber); background: var(--panel); color: var(--amber);
+  border-radius: 999px; width: 18px; height: 18px; line-height: 15px;
+  font-size: 11px; cursor: pointer; padding: 0; text-align: center;
+}
+.annotable:hover > .puce-note, .annotable:focus-within > .puce-note { opacity: 1; }
+.annotable.a-note {
+  box-shadow: inset 0 0 0 1px var(--amber);
+  background: var(--amber-soft); border-radius: 4px;
+}
+.annotable > .compte-notes {
+  font-size: 10px; color: var(--amber); background: var(--amber-soft);
+  border: 1px solid var(--amber); border-radius: 999px; padding: 0 5px;
+  margin-left: 4px; text-decoration: none; font-weight: 600; white-space: nowrap;
+}
+
+/* Le panneau de pose : fixe et centré — un popover absolu déborderait à
+   390 px, et la revue visuelle mesure le débordement. */
+.note-voile {
+  position: fixed; inset: 0; background: var(--voile); z-index: 40;
+  display: grid; place-items: center; padding: 16px;
+}
+.note-panneau {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; width: min(440px, 100%); box-shadow: 0 8px 30px var(--voile);
+}
+.note-panneau textarea {
+  width: 100%; min-height: 72px; box-sizing: border-box; resize: vertical;
+}
+.note-cible {
+  font-size: 12px; color: var(--amber); background: var(--amber-soft);
+  border-radius: 4px; padding: 3px 8px; margin-bottom: 8px; display: inline-block;
 }

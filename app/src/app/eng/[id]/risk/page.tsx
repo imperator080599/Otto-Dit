@@ -1,4 +1,8 @@
 import { revalidatePath } from 'next/cache';
+import { q } from '@/lib/db/client';
+import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
+import { Annotable } from '@/app/annotable';
+import { poserNoteAncreeAction } from '../notes/actions';
 import { requireMember } from '@/lib/core/auth';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { fmtEur } from '@/lib/kernel/canon';
@@ -56,6 +60,14 @@ export default async function RiskPage({
   const entityAnswers = await answers(id, null);
   const obstaclesSection = await questionnaireObstacles(id, code);
   const obstaclesEntity = await questionnaireObstacles(id, null);
+  /* Chaque RÉPONSE du questionnaire est annotable — l'ancre est le code de
+     la question, qui survit aux millésimes de la méthode (ADR-097). */
+  const marquesNotes = await notesPourEcran(id);
+  const membresNotes = await q<{ id: string; nom: string }>(
+    `select u.id::text id, u.name nom from engagement_member m join app_user u on u.id = m.user_id
+     where m.engagement_id = $1 and m.exited_on is null order by u.name`,
+    [id],
+  );
   const reg = await register(id);
   /* DEUX ratios : ce que la méthode peut voir, et ce que CE dossier porte
      réellement. Le second peut être mauvais alors que le premier est bon — une
@@ -258,7 +270,19 @@ export default async function RiskPage({
                   return (
                     <tr key={x.code}>
                       <td>
-                        <strong>{x.question}</strong>
+                        {a ? (
+                          <Annotable
+                            bloc
+                            ancre={{ kind: 'questionnaire_answer', aRef: x.code, label: `Questionnaire · ${x.code}` }}
+                            marques={marquesNotes[`questionnaire_answer|${x.code}`] ?? []}
+                            membres={membresNotes} engagementId={id} chemin={`/eng/${id}/risk`}
+                            notesHref={`/eng/${id}/notes`} action={poserNoteAncreeAction}
+                          >
+                            <strong>{x.question}</strong>
+                          </Annotable>
+                        ) : (
+                          <strong>{x.question}</strong>
+                        )}
                         <div className="faint">Pourquoi elle existe encore : {x.pourquoi}</div>
                         <div className="faint">Effet d’un « oui » : {x.effet}</div>
                         {x.disparait_quand && (

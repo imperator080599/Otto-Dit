@@ -4,7 +4,12 @@ import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
 import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs } from '@/lib/services/workpapers/lifecycle';
 import { exportWorkpaper, listExports } from '@/lib/services/workpapers/render';
+import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { colonnes } from '@/lib/methodology/catalogue';
 import type { WpSection } from '@/lib/services/workpapers/draft';
+import { Annotable } from '@/app/annotable';
+import { poserNoteAncreeAction } from '../../notes/actions';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 
@@ -30,6 +35,29 @@ export default async function WorkpaperDetail({
     [id],
   );
   const signedRoles = new Set(signoffs.map((s) => s.sign_role));
+
+  /* LES ANCRES (ADR-097). Le champ de chaque colonne vient du gabarit du
+     cabinet (même source que le papier lui-même) ; l'identité de chaque ligne
+     est la natural_key de l'écriture — elle survit aux ré-imports et aux
+     re-tirages, contrairement au uuid d'élément d'échantillon. Un papier d'une
+     version antérieure dont l'élément n'existe plus ne propose simplement pas
+     l'annotation : on n'ancre pas sur un objet disparu. */
+  const marques = await notesPourEcran(id);
+  const cat = await catalogueDeLaMission(id).catch(() => null);
+  const champsEchantillon = cat ? colonnes(cat, 'substantif', 'echantillon') : [];
+  const identites = new Map(
+    (await q<{ id: string; natural_key: string; piece: string }>(
+      `select si.id::text id, g.natural_key, coalesce(g.piece_ref, g.entry_no) piece
+       from sample_item si
+       join sample sa on sa.id = si.sample_id
+       join gl_entry g on g.id = si.unit_id
+       where sa.engagement_id = $1 and sa.status = 'drawn' and si.unit_kind = 'gl_entry'`,
+      [id],
+    )).map((r) => [r.id, r]),
+  );
+  const chemin = `/eng/${id}/workpapers/${wid}`;
+  const notesHref = `/eng/${id}/notes`;
+  const membresNotes = members.map((m) => ({ id: m.id, nom: m.name }));
 
   async function editAction(formData: FormData) {
     'use server';
@@ -96,18 +124,31 @@ export default async function WorkpaperDetail({
 
       {(wp.sections as WpSection[]).map((s) => (
         <div className="panel" key={s.key}>
-          <h2>{s.title}</h2>
-          {s.body && <p style={{ whiteSpace: 'pre-wrap' }}>{s.body}</p>}
+          <Annotable
+            bloc
+            ancre={{ kind: 'workpaper_section', aRef: `${wp.code}:${s.key}`, label: `${wp.code} · ${s.title}` }}
+            marques={marques[`workpaper_section|${wp.code}:${s.key}`] ?? []}
+            membres={membresNotes} engagementId={id} chemin={chemin} notesHref={notesHref}
+            workpaperId={wid} action={poserNoteAncreeAction}
+          >
+            <h2>{s.title}</h2>
+            {s.body && <p style={{ whiteSpace: 'pre-wrap' }}>{s.body}</p>}
+          </Annotable>
           {s.table && (
             <div className="table-scroll">
               <table className="data">
                 <thead><tr>{s.table.headers.map((h) => <th key={h}>{h}</th>)}</tr></thead>
                 <tbody>
-                  {s.table.rows.map((r, i) => (
-                    <tr key={i}>
-                      {r.cells.map((c, j) => (
-                        <td key={j} style={{ maxWidth: 220 }}>
-                          {j === 0 && r.refs?.evidenceIds?.length ? (
+                  {s.table.rows.map((r, i) => {
+                    /* La cellule s'ancre par l'identité MÉTIER de sa ligne
+                       (natural_key) et le CHAMP de sa colonne (gabarit du
+                       cabinet) — jamais « ligne i colonne j » (ADR-097). */
+                    const ident = s.key === 'tableau_echantillon' && r.refs?.sampleItemId
+                      ? identites.get(r.refs.sampleItemId) : undefined;
+                    return (
+                      <tr key={i}>
+                        {r.cells.map((c, j) => {
+                          const contenu = j === 0 && r.refs?.evidenceIds?.length ? (
                             <span>
                               {String(c)}{' '}
                               {r.refs.evidenceIds.map((eid, k) => (
@@ -116,11 +157,28 @@ export default async function WorkpaperDetail({
                             </span>
                           ) : (
                             String(c)
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                          );
+                          const champ = champsEchantillon[j];
+                          if (!ident || !champ) return <td key={j} style={{ maxWidth: 220 }}>{contenu}</td>;
+                          return (
+                            <td key={j} style={{ maxWidth: 220 }}>
+                              <Annotable
+                                ancre={{
+                                  kind: 'sample_item', aRef: ident.natural_key, field: champ.champ,
+                                  label: `Élément ${ident.piece} · ${champ.titre}`,
+                                }}
+                                marques={marques[`sample_item|${r.refs!.sampleItemId}|${champ.champ}`] ?? []}
+                                membres={membresNotes} engagementId={id} chemin={chemin} notesHref={notesHref}
+                                workpaperId={wid} action={poserNoteAncreeAction}
+                              >
+                                {contenu}
+                              </Annotable>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

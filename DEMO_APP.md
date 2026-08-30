@@ -175,6 +175,22 @@ le gabarit ne nomme pas disparaîtrait du papier sans que rien ne le dise.*
 
 ---
 
+### 10 bis. La note de revue ancrée — sur l'objet, jamais sur l'écran
+
+**Écran** : le papier de travail ouvert, puis `Notes de revue`.
+
+**Ce qu'il faut montrer** : un **clic droit** sur la conclusion (ou sur une cellule du tableau —
+l'appui long et la puce ✎ au survol font le même geste). Le panneau NOMME l'objet visé
+(« REV-01 · Conclusion », « Élément VE|0042|1 · Date ») : l'ancre est l'identité métier, pas une
+position — elle survit au re-tirage, au recalcul, au ré-import (ADR-097). Posez la note, attribuez-la
+au préparateur : l'élément porte le jeton d'attention. Dans `Notes de revue`, la vue transverse :
+le préparateur répond (la réponse entre au dossier, la note passe « adressée »), un non-auteur qui
+tente de clore est **refusé**, l'auteur clôt. Une note dont l'objet est sorti de l'échantillon ne
+disparaît pas : elle reste ici, marquée « objet retiré ».
+
+**La commande qui rejoue tout le geste, clics compris** : `npm run clics` (stations « note ancrée »
+et « notes »).
+
 ### 11. Le pointage des états financiers
 
 **Écran** : `États financiers`.

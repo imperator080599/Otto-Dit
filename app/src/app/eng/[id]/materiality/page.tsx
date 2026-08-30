@@ -5,6 +5,10 @@ import { proposeScoping } from '@/lib/services/fsli';
 import { primaryPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
 import { fmtEur } from '@/lib/kernel/canon';
+import { q } from '@/lib/db/client';
+import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
+import { Annotable } from '@/app/annotable';
+import { poserNoteAncreeAction } from '../notes/actions';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -49,6 +53,26 @@ export default async function MaterialityPage({
     });
   }
 
+  /* Chaque seuil est un PARAMÈTRE annotable (ADR-097) : l'ancre est le nom
+     du paramètre, pas la position du cadran à l'écran. */
+  const marques = await notesPourEcran(id);
+  const membresNotes = (await q<{ id: string; nom: string }>(
+    `select u.id::text id, u.name nom from engagement_member m join app_user u on u.id = m.user_id
+     where m.engagement_id = $1 and m.exited_on is null order by u.name`,
+    [id],
+  ));
+  const annotable = (param: string, libelle: string, contenu: React.ReactNode) => (
+    <Annotable
+      bloc
+      ancre={{ kind: 'materiality_param', aRef: param, label: `Seuils · ${libelle}` }}
+      marques={marques[`materiality_param|${param}`] ?? []}
+      membres={membresNotes} engagementId={id} chemin={`/eng/${id}/materiality`}
+      notesHref={`/eng/${id}/notes`} action={poserNoteAncreeAction}
+    >
+      {contenu}
+    </Annotable>
+  );
+
   return (
     <div className="grid cols-2">
       <BandeauRefus erreur={erreur} />
@@ -69,10 +93,14 @@ export default async function MaterialityPage({
               <span className="ai-flag">engine proposal — human decides</span>
             </p>
             <div className="grid cols-2">
-              <div className="kpi"><span className="v">{fmtEur(numToCents(current.amount), 'fr')}</span><span className="l">Materiality ({current.benchmark_code} @ {(current.pct * 100).toFixed(1)}%)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(numToCents(current.perf_amount), 'fr')}</span><span className="l">Performance materiality ({(current.perf_pct * 100).toFixed(0)}%)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(numToCents(current.ctt_amount), 'fr')}</span><span className="l">Clearly trivial threshold ({(current.ctt_pct * 100).toFixed(0)}%)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(numToCents(current.te_amount), 'fr')}</span><span className="l">Tolerable misstatement (sampling)</span></div>
+              {annotable('seuil_signification', 'Seuil de signification',
+                <div className="kpi"><span className="v">{fmtEur(numToCents(current.amount), 'fr')}</span><span className="l">Materiality ({current.benchmark_code} @ {(current.pct * 100).toFixed(1)}%)</span></div>)}
+              {annotable('seuil_travail', 'Seuil de travail',
+                <div className="kpi"><span className="v">{fmtEur(numToCents(current.perf_amount), 'fr')}</span><span className="l">Performance materiality ({(current.perf_pct * 100).toFixed(0)}%)</span></div>)}
+              {annotable('seuil_insignifiance', 'Seuil d\u2019insignifiance',
+                <div className="kpi"><span className="v">{fmtEur(numToCents(current.ctt_amount), 'fr')}</span><span className="l">Clearly trivial threshold ({(current.ctt_pct * 100).toFixed(0)}%)</span></div>)}
+              {annotable('anomalie_tolerable', 'Anomalie tolérable',
+                <div className="kpi"><span className="v">{fmtEur(numToCents(current.te_amount), 'fr')}</span><span className="l">Tolerable misstatement (sampling)</span></div>)}
             </div>
             <h3>Rationale (pack language)</h3>
             <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{current.rationale}</p>
