@@ -36,11 +36,28 @@ async function main() {
   console.log(`reconstruction de la démo publique sur ${hote} — schéma rasé, données 100 % fictives`);
 
   const db = await getDb();
-  await db.exec('drop schema if exists public cascade; create schema public; grant all on schema public to public;');
-  /* Le monde entier passe par migrate() + les mêmes flux que npm run demo:seed
-     — c'est aussi la VÉRIFICATION du pilote réseau : chaque service, chaque
-     contrainte, chaque trigger tourne sur le vrai Postgres. */
-  await construireMondeDemo('all');
+  /* SEMER SI VIDE (décision de Tuan, 2026-08-31) : quelqu'un TESTE peut-être
+     l'URL en ce moment — un push pendant sa séance ne doit pas lui retirer
+     ses données sous les doigts. Le monde ne se rase que s'il n'existe pas,
+     ou sur ordre explicite (OTTO_RECONSTRUIRE=1, à poser dans les variables
+     Vercel pour retrouver un monde neuf à chaque déploiement). Les NOUVELLES
+     migrations s'appliquent dans tous les cas. */
+  const dejaSeme = (await db.query<{ n: string }>(
+    `select count(*)::text n from information_schema.tables
+     where table_schema = 'public' and table_name = 'tenant'`)).rows[0].n !== '0'
+    && (await db.query<{ n: string }>(`select count(*)::text n from tenant`)).rows[0].n !== '0';
+  if (dejaSeme && process.env.OTTO_RECONSTRUIRE !== '1') {
+    const { migrate } = await import('../../src/lib/db/migrate');
+    const appliquees = await migrate();
+    console.log(`monde déjà semé — conservé (OTTO_RECONSTRUIRE=1 pour raser) ; `
+      + `migrations nouvelles : ${appliquees.length ? appliquees.join(', ') : 'aucune'}`);
+  } else {
+    await db.exec('drop schema if exists public cascade; create schema public; grant all on schema public to public;');
+    /* Le monde entier passe par migrate() + les mêmes flux que npm run
+       demo:seed — c'est aussi la VÉRIFICATION du pilote réseau : chaque
+       service, chaque contrainte, chaque trigger tourne sur le vrai Postgres. */
+    await construireMondeDemo('all');
+  }
 
   /* LA TENTATIVE DE FUITE, SUR LE VRAI POSTGRES, À CHAQUE DÉPLOIEMENT.
      Localement, RLS est inerte (le propriétaire la contourne) : la seule

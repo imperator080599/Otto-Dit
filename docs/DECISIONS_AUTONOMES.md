@@ -118,3 +118,33 @@ autorisée) dépendait d'une variable de tableau de bord qu'on peut oublier.
 elle-même) — le garde ne dépend plus d'aucun réglage humain. Le jour d'une vraie
 production hébergée, cette ligne se revoit explicitement.
 **Coût de retour.** Une ligne.
+
+## DA-11 — Le Root Directory Vercel RESTE la racine du dépôt (décision de Tuan, gravée)
+
+**Décision (Tuan, 2026-08-31).** Root Directory = racine ; le `package.json` racine
+(détection de Next, jamais installé au-delà) et le `vercel.json` racine
+(install/build/outputDirectory pointant sur app/) sont LE chemin retenu. Le mettre sur
+`app/` ferait lire `app/vercel.json` et perdrait `deploy:reconstruire`.
+**Conséquence.** `app/vercel.json` est SUPPRIMÉ — une seule configuration, aucune
+divergence possible. **Aucune session future ne « corrige » ce réglage** : cette entrée
+existe pour être trouvée avant le zèle.
+
+## DA-12 — Pooler de transaction et verrous : la portée est choisie EN CONNAISSANCE
+
+**Question (soulevée par Tuan).** Le pooler de transaction Supabase (port 6543) ne
+supporte ni les requêtes préparées nommées ni les fonctionnalités de SESSION — dont
+`pg_advisory_lock` (portée session).
+**Analyse.** Le verrou de la chaîne d'événements est `pg_advisory_xact_lock` — portée
+TRANSACTION, pris à l'intérieur de `tx()` (BEGIN…COMMIT épinglés sur une seule connexion
+serveur) : compatible avec le pooling de transaction. `set_config(..., true)` du test de
+fuite est aussi transaction-scoped. node-postgres n'emploie pas de requêtes préparées
+nommées sans qu'on lui en donne (`name`), et le code n'en donne jamais.
+**Décision.** Le pooler de TRANSACTION (6543) sert TOUT le runtime applicatif ; rien dans
+le code ne doit exiger une session — et c'est APPLIQUÉ par test :
+`app/src/lib/db/pooler-compat.test.ts` fait échouer la suite si `pg_advisory_lock(`
+(session), `prepare … as`, `listen `/`notify ` ou un `name:` de requête préparée entrent
+dans src/. La preuve d'exécution : le semis du monde entier au build traverse des
+centaines de logEvent (verrou + insertion) sur le vrai pooler — un build vert est la
+démonstration.
+**Coût de retour.** Si un besoin de session naît un jour (LISTEN/NOTIFY…), il prend une
+CONNEXION DÉDIÉE au pooler de session, nommée et justifiée ici.
