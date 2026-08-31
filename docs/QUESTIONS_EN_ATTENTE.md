@@ -45,3 +45,13 @@ deux répartiteurs distincts, `pool-tcp-eu-west-1-…` et `pool-tcp-euw11-…`).
 exact y figure). En attendant, le code tente l'autre flotte une fois et l'écrit dans le
 journal.
 
+**RÉSOLU (2026-08-31 20:48).** Les trois réglages posés + la bascule automatique de flotte
+(aws-0 → aws-1) ont donné un build vert, et l'URL a été **chargée** : HTTP 200, dossier
+ouvert, atelier lu. Ce qui reste, et qui est une DÉCISION de Tuan, pas un défaut :
+`ssoProtection: enabled (all_except_custom_domains)` — la protection « Vercel
+Authentication » du projet. Tant qu'elle est active, **seul un compte Vercel autorisé** peut
+ouvrir l'URL : le test des 90 minutes fonctionne (Tuan est connecté), mais l'adresse ne se
+partage à personne d'autre. Le lever : Vercel → Settings → Deployment Protection → Vercel
+Authentication → *Disabled*. Je ne l'ai pas touchée — c'est un réglage d'accès vers
+l'extérieur, il appartient au fondateur.
+

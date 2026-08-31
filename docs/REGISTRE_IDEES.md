@@ -82,7 +82,7 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 
 | id | idée | état | preuve / raison |
 |---|---|---|---|
-| M-00a | URL : démo déployée sur Vercel, données fictives reconstruites, bandeau permanent, IA réelle OFF | en cours | motif « bloqué » précédent ERRONÉ (Q-02, DA-09) : le projet Vercel servait du vide (Root Directory, branche) ; en cours de correction — fini seulement quand J'AI chargé l'URL, ouvert un dossier, affiché l'atelier, et rapporté ce que j'ai lu |
+| M-00a | URL : démo déployée sur Vercel, données fictives reconstruites, bandeau permanent, IA réelle OFF | fait | **2026-08-31 20:48 — URL chargée, HTTP 200**, dossier ouvert et atelier lu : https://otto-dit-imperator080599.vercel.app/eng/e7a83891-e553-4ad1-945e-b34041f18c7b/testing?comme=… — « Claire Fontaine (partner) · Altiverre FY2025 — Audit légal (NEP) · Testing workbench » avec les lignes de l'échantillon et leurs motifs de sélection. Données servies par Supabase (pooler de transaction) |
 | M-00b | Windows : `DEMARRAGE_WINDOWS.md` ≤ 10 lignes PowerShell + contraintes de conception | fait | DEMARRAGE_WINDOWS.md (9 lignes, une commande par ligne) ; audit de classe : zéro spawn résolu par le PATH ; diagnostic + messages par cause (L-20, ADR-095/096) |
 | M-01 | Balances auxiliaires | fait | = L-17 |
 | M-02 | Contrôle interne / walkthroughs — finir proprement | fait | chaîne complète verte (code 0) : 494 tests / 74 routes / 126 étapes / 276 vues ; stations cliquées du processus passées |
