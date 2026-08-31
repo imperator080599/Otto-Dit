@@ -74,7 +74,7 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | L-15 | Rail d'état (9) + atelier du testing (10) — le meilleur écran, mesuré | fait | ab9b0d6, 1d16403 ; `npm run mesure:testing` 4 gestes/2 écrans → 1 geste/1 écran |
 | L-16 | IA vivante dans la version livrée (12) : demo:ia, pièces neuves piégées, garde de budget | fait | 55842ab, ADR-105, COST.md §1 bis-ter |
 | L-17 | Balances auxiliaires âgées (1) : concentration, apparus/disparus, vieillissement → registre | fait | 2349c37/f33442b, ADR-107 |
-| L-18 | Contrôle interne / processus (2) : données structurées, diff N/N-1 statuée, entretiens | fait | 27171bc, ADR-108 ; chaîne verify complète verte (compteurs au commit suivant) |
+| L-18 | Contrôle interne / processus (2) : données structurées, diff N/N-1 statuée, entretiens | fait | 27171bc, ADR-108 ; chaîne verify verte sur cet état : 494 tests, 74 routes, 126 étapes, 276 vues, 0 défaut |
 | L-19 | Notes : récurrence vs N-1 + ancienneté en jours ouvrés (ADR-028 §5-6) | planifié | backlog M-05 |
 | L-20 | Windows : spawns portables, messages par cause, `npm run diagnostic` | fait | tâche 57, scripts/lib/portable.mjs, scripts/demo/diagnostic.mjs ; DEMARRAGE_WINDOWS.md = M-00b |
 
@@ -83,9 +83,9 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | id | idée | état | preuve / raison |
 |---|---|---|---|
 | M-00a | URL : démo déployée sur Vercel, données fictives reconstruites, bandeau permanent, IA réelle OFF | en cours | BLOQUÉ session : le connecteur Vercel n'est pas autorisé ici (OAuth impossible en session non interactive) — tout le reste se prépare pour un déploiement en un geste ; Q-02 |
-| M-00b | Windows : `DEMARRAGE_WINDOWS.md` ≤ 10 lignes PowerShell + contraintes de conception | en cours | diagnostic + portable.mjs faits (L-20) ; le fichier et la revue des points §2b restent |
+| M-00b | Windows : `DEMARRAGE_WINDOWS.md` ≤ 10 lignes PowerShell + contraintes de conception | fait | DEMARRAGE_WINDOWS.md (9 lignes, une commande par ligne) ; audit de classe : zéro spawn résolu par le PATH ; diagnostic + messages par cause (L-20, ADR-095/096) |
 | M-01 | Balances auxiliaires | fait | = L-17 |
-| M-02 | Contrôle interne / walkthroughs — finir proprement | en cours | chaîne `npm run verify` en cours d'exécution ; clôture de tranche à son verdict |
+| M-02 | Contrôle interne / walkthroughs — finir proprement | fait | chaîne complète verte (code 0) : 494 tests / 74 routes / 126 étapes / 276 vues ; stations cliquées du processus passées |
 | M-03 | Confirmations banques + avocats bout-en-bout | planifié | après P0 |
 | M-04 | Parties liées, y compris non déclarées | planifié | |
 | M-05 | Notes de revue : récurrence + ancienneté jours ouvrés | planifié | = L-19 |
