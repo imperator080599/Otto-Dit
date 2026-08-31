@@ -102,10 +102,21 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | M-16 | §3.C : docs/AUTOMATISATION.md — champs tapés avant/après, par écran | planifié | |
 | M-17 | §3.D : docs/LEXIQUE.md — un concept = un mot, revue des libellés | planifié | |
 | M-18 | Registre des idées, DECISIONS_AUTONOMES, QUESTIONS_EN_ATTENTE, PROGRAMME_TEST_V1, LIVRAISON_V1 | en cours | ce fichier + docs/DECISIONS_AUTONOMES.md + docs/QUESTIONS_EN_ATTENTE.md créés ; programme de test et livraison = fin de v1 |
-| M-19 | §8.2 (v1.1) : état de l'art — docs/16_ETAT_DE_L_ART.md (DataSnipper, Inflo, MindBridge, CaseWare, AuditBoard, Suralink, Fieldguide : mieux qu'OTTO / moins bien / à prendre) | planifié | recherche web requise — tranche dédiée |
+| M-19 | §8.2 (v1.1) : état de l'art — docs/16_ETAT_DE_L_ART.md (DataSnipper, Inflo, MindBridge, CaseWare, AuditBoard, Suralink, Fieldguide : mieux qu'OTTO / moins bien / à prendre) | fait | docs/16_ETAT_DE_L_ART.md (recherche web sourcée du 2026-08-31 ; limites de méthode dites en tête) ; six idées reprises en section D (A-01..06) |
 | M-20 | §8.3 (v1.1) : les insuffisances récurrentes des rapports H2A / PCAOB, croisées aux familles d'obstacles au visa, manques comblés | planifié | c'est un cahier des charges gratuit de ce que la plateforme doit rendre IMPOSSIBLE |
 | M-21 | §8.4 (v1.1) : vérifier les 19 sources sur TEXTE PRIMAIRE, dater, marquer verifie:true une à une | planifié | tenter depuis cette session (l'accès réseau a pu changer) ; sinon dit et daté — jamais « vérifié » sans texte atteint |
 | M-22 | §8.5/8.7 (v1.1) : un sous-agent HOSTILE par tranche (casser, pas valider) + barre de finition (tout écran qu'on n'oserait pas montrer = défaut au registre) | en cours | s'applique à chaque tranche à partir de maintenant |
+
+## D. Idées ajoutées en autonomie (mandat v1.1 §8.1 : « ce que la liste ne demande pas mais qu'un inspecteur ou le marché exigerait ») 
+
+| id | idée | source | état | preuve / raison |
+|---|---|---|---|---|
+| A-01 | Rapprochement EN LOT de l'échantillon (fuzzy + tolérances), l'humain ne passe que sur les non-appariés | état de l'art (DataSnipper Document Matching), 2026-08-31 | planifié | le manque le plus criant face au marché ; s'appuie sur le moteur de matching existant |
+| A-02 | Analytique de population complète sur le FEC à l'import : routines déterministes en lot dont les sorties stratifient l'échantillon | état de l'art (Inflo Detect, MindBridge, tests FEC d'IDEA), 2026-08-31 | planifié | P4 pur (zéro LLM) ; le score par écriture se décompose en points NOMMÉS (P7) — jamais une conclusion |
+| A-03 | Roll-forward N→N+1 du dossier entier (structure, mapping, décisions à re-valider) | état de l'art (CaseWare), 2026-08-31 | planifié | le carry-forward actuel reprend les conclusions ; le roll-forward reconduit le DOSSIER |
+| A-04 | Boucle de rejet motivé PAR PIÈCE au portail (accepté / rejeté-avec-motif, ré-ouverture, notification) | état de l'art (Suralink), 2026-08-31 | planifié | complète le portail existant ; un rejet motivé est un refus qui s'affiche — l'ADN d'OTTO |
+| A-05 | Contrôle de complétude d'une pièce AU DÉPÔT (bon exercice, bon type, lisible) — suggestion sous plafond L2 | état de l'art (Fieldguide Request Agent), 2026-08-31 | planifié | la classification/extraction existante le permet ; le verdict reste une proposition |
+| A-06 | Rendre le plafond L2 VISIBLE à l'écran : préparé par l'IA → en attente de revue → approuvé, comme états affichés d'un même objet | état de l'art (Fieldguide checkpoints), 2026-08-31 | planifié | la file d'attestation existe ; il manque son affichage comme chaîne d'états nommés |
 
 **Rappel permanent** : les 19 sources du catalogue méthodologique restent `verifie: false`
 (methodology/sources.json) — aucune n'est utilisée comme si elle était vérifiée.
