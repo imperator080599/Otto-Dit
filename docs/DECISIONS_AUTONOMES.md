@@ -178,3 +178,36 @@ de les affirmer.
 **Ce que l'écran ne prétend pas savoir**, et qui est écrit dessus : quel membre doit poser
 quel visa (le produit ne modélise pas ce droit ; le rôle de mission et l'ordre de visa ne
 sont pas reliés). Une attribution inventée serait pire qu'une ligne honnête.
+
+## DA-15 — Le nom d'un concept appartient au PACK, pas au lexique du produit
+
+**Contradiction réelle.** Le fondateur demande « Calcul de la matérialité ». Le lexique
+appliqué par test bannit « matérialité » au profit de « seuil de signification ». Les deux
+ont raison dans leur registre : le Code de commerce et les NEP disent *seuil de
+signification* ; les cabinets, dans leur usage quotidien, disent *matérialité*.
+
+**Décision.** Le libellé devient **une donnée du pack de référentiel** (et, à terme, du
+cabinet) — c'est exactement ce à quoi sert « la méthode nomme, le code calcule ». Par défaut
+sur le pack France : **« matérialité »**, c'est-à-dire ce que le fondateur dit. Le lexique et
+son test sont mis à jour en conséquence : la règle ne devient pas « le mot est libre », elle
+devient « le mot vient du pack, et l'écran ne mélange jamais deux mots pour un concept ».
+
+**Ce que ça ne change pas** : le concept, son calcul, ses seuils dérivés (performance, seuil
+de remontée, anomalie tolérable) et leur documentation. Un renommage n'est pas un changement
+de méthode.
+
+## DA-16 — La chaîne verte ne prouve plus rien seule : le bout de la chaîne est l'URL
+
+**Fait établi le 2026-08-31.** 529 tests, 78 routes balayées et 144 étapes cliquées passaient
+au vert pendant que trois écrans rendaient 500 **en ligne** — pour un dossier oublié dans le
+traçage serverless. La chaîne s'exécute sur PGlite, avec le dépôt entier sur le disque ; le
+déploiement s'exécute dans une fonction qui n'emporte que les fichiers déclarés, sur un
+Postgres réseau. Ce sont **deux exécutions différentes** (règle 11), et c'est la seconde que
+le fondateur ouvre.
+
+**Décision.** À partir d'ici : (1) `npm run fumee` fait partie de `npm run verify` — le
+chemin est donc prouvé ; (2) après chaque déploiement, la même sonde est passée **contre
+l'URL** (par qui peut l'atteindre) ou, à défaut, `/api/sante` est interrogée — les lectures
+de chaque famille d'écrans exécutées DANS la fonction déployée ; (3) aucune tranche n'est
+déclarée finie sur la seule foi de la chaîne locale.
+

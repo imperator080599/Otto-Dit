@@ -160,3 +160,31 @@ qui elle est.
 **Ce que cette revue n'a PAS couvert, et qui reste dû** : le comptage de clics des 10
 tâches du mandat (§3.D) n'est pas publié, et l'accessibilité CLAVIER n'est pas mesurée —
 aucun harnais ne la traverse aujourd'hui. Les deux restent au registre (M-09, en cours).
+
+## F. Revue UTILISATEUR n°1 (2026-08-31) — le premier test par un auditeur réel
+
+Vingt-cinq remarques qui se ramènent à **cinq principes**, deux bugs et trois manques.
+Corriger les symptômes sans les principes ferait revenir le défaut au vingt-sixième écran.
+
+**Diagnostic accepté sans réserve** : *la plateforme s'explique au lieu de se laisser
+utiliser*. Règle générale adoptée, applicable partout sans nouvelle instruction : **si une
+phrase à l'écran explique POURQUOI le produit est fait ainsi, elle sort** — elle va dans un
+ADR, dans la documentation, à la rigueur dans une infobulle ; jamais dans le flux de travail.
+
+| id | ce qu'il faut faire | état | preuve / raison |
+|---|---|---|---|
+| R-01 | **P1 — la configuration appartient à la création du dossier** : client, date de clôture, référentiels, benchmark, balance, grand livre, contacts, « rollforward ? » + dossier N-1. Supprime les sections Reprise N-1, Imports, Contacts (→ fiche client), Balances auxiliaires (→ sous-sections Clients/Fournisseurs) | planifié | tranche à part entière : c'est un écran de création qui remplace quatre sections |
+| R-02 | **P2 — toute donnée client manquante engendre une demande** : un bouton qui crée la demande pré-remplie, destinataire déduit ; upload manuel toujours possible. D'où la section permanente **Balance générale et grand livre** (versions, rapprochement automatique, écarts mis en évidence, signalements dans la vue du préparateur assigné) | planifié | unifie deux moteurs existants (demandes, imports versionnés) |
+| R-03 | **P3 — la navigation suit le dossier** : rail vertical à gauche, organisation **par FSLI** (leadsheet → processus → contrôle interne → risques → échantillons → testing). Papiers de travail cesse d'être une section ; Demandes devient un espace à part ; contrôle interne et processus se séparent ; boucle et provenance disparaissent comme sections ; Interroger devient un **chat en haut à droite** | planifié | la plus grosse : c'est la remise à plat de l'architecture d'écrans |
+| R-04 | **P4 — la vue d'ensemble est un tableau de bord** : avancement en graphiques avec code couleur, notes de revue, **éléments attribués à la personne** ; les signalements de P2 et les points bloquants y remontent | en cours | « Mes travaux » (ADR-110) est la moitié faite : il reste à le promouvoir en accueil de dossier et à le décliner par rôle |
+| R-05 | **P5 — la preuve se lit DANS le tableau** : champs extraits et relevé déterministe à droite de la ligne sélectionnée, cellules **rouges** (anomalie ou donnée absente) / **vertes** (trouvée et concordante) ; traiter les données présentes sur la pièce mais absentes de la sélection ; **zone de texte libre + pièces jointes** sous chaque procédure | planifié | l'atelier existe : c'est sa colonne de droite qui change |
+| R-06 | **Bugs** : « Application error » (digest 1111597534) sur Acceptation, Équipe, Obstacles | **fait** | UNE cause : `methodology/valider.mjs` non tracé dans la fonction serverless. Corrigé + `deploiement-traces.test.ts` (le code qui lit vs la configuration qui trace) ; `/api/sante` en production : « toutes les lectures passent » |
+| R-07 | **Balayage de fumée post-déploiement** contre l'URL réelle, qui fait échouer si un écran ne rend pas | **fait** | `npm run fumee [-- <url>]` : statut attendu, absence de page d'erreur, titre lu ; sans URL il lance un serveur de production local (donc il est DANS `npm run verify`), avec une URL il éprouve le déploiement ; il refuse de conclure si la protection Vercel répond à sa place |
+| R-08 | **Test des écritures comptables (ODs)** — NEP 240 / ISA 240 : écritures inhabituelles, fin de période, contreparties atypiques, comptes rarement mouvementés | planifié | le moteur de critères existe (ADR : entonnoir du test des écritures) mais **aucune section ne l'expose** — manque le plus grave des trois |
+| R-09 | **Opérations intragroupe** : comptes réciproques, élimination, confirmations intragroupe, instructions du groupe au composant | planifié | rien n'existe |
+| R-10 | **Retraitements et ajustements du client** : le noyau `adjustments.ts` existe, aucune section ne l'expose | planifié | |
+| R-11 | **Vocabulaire par pack** : « matérialité » (défaut France, ce que disent les cabinets) vs « seuil de signification » (Code de commerce, NEP) → **libellé configurable par pack et par cabinet** ; « Périmètre (postes retenus) » → **Scoping** | planifié | DA-15 ; le lexique et son test sont mis à jour en conséquence |
+| R-12 | **Ce qu'il ne faut PAS supprimer avec le texte** : la règle de conservation (en données, affichée comme DATE calculée), la traçabilité de provenance (repliée sur l'objet), le motif de sélection (étiquette courte en colonne) | planifié | contrainte permanente : supprimer l'affichage, jamais la règle |
+| R-13 | « Obstacles au visa » : défaut de NOM et de PLACE, pas de concept → **« Ce qui empêche de signer »**, remonté dans le tableau de bord | planifié | le mécanisme reste ; c'est son étiquette qui ne parle pas à un auditeur |
+| R-14 | Le reste, point par point : justificatifs joints au scoping ; colonnes « Périmètre »/« Décision » à clarifier ou supprimer ; « Rebuild from TB » supprimé (un import suffit) ; seuils **modifiables à la main avec justification écrite** ; entretiens avec listes déroulantes (équipe / contacts) et « Consigner » supprimé ; réunions **par section** ; testing : distinguer **absence de pièce** (limitation d'étendue) de **demande de clarification** ; **modèle de papier intégré** par procédure retenue | planifié | |
+
