@@ -97,6 +97,8 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
       s.seuils_valides, 'disponible après la validation des seuils'),
     e('risk', 'Risque par assertion', 'Le niveau de risque par assertion, le questionnaire, et le registre des facteurs.',
       s.perimetre, 'disponible après le périmètre'),
+    e('estimations', 'Estimations comptables', 'Le fichier de calcul du client : rapproché, recalculé, sondé, taux justifiés.',
+      s.perimetre, 'disponible après le périmètre'),
   ];
   if (nep) {
     entrees.push(

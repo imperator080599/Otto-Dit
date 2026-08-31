@@ -206,6 +206,25 @@ L'écran le dit lui-même — le bandeau « Adaptateur OCR/LLM : REJEU (démonst
 tant que l'adaptateur réel n'est pas branché : personne ne peut croire qu'une pièce a été lue par
 un modèle quand la donnée est rejouée (ADR-102).
 
+### 9 quater. L'estimation comptable — le fichier de calcul du client
+
+**Écran** : `Estimations comptables`.
+
+**Ce qu'il faut montrer** (ADR-106) : importez `dataset/estimations/fae-2025.csv` en visant
+l'écriture `OD-2025-089` (l'ajustement manuel de 50 000 € que le vouching a marqué « explication
+requise »). Le montant comptabilisé est **dérivé du grand livre actif** — jamais stocké — et
+l'écart avec le fichier est **nul** : la base explique l'écriture. Chaque ligne est **recalculée
+au centime** (jours × taux journalier). « Tirer la base » sonde avec le **même moteur** que le
+chiffre d'affaires (couverture + aléa germé, rejouable). « Demander les justificatifs » crée un
+**brouillon** : la pièce de base pour chaque ligne tirée, le contrat pour **chaque taux**, la note
+de méthode pour la formule — à approuver avant l'envoi. Essayez de demander **avant** de tirer :
+refusé. Visez une écriture inconnue : refusé, en la nommant.
+
+Sur le papier de travail, le même fichier se **joint en annexe** (bouton « Joindre une annexe ») —
+il entre au dossier avec empreinte et provenance, comme toute pièce.
+
+---
+
 ### 10. Le papier de travail
 
 **Écran** : `Papiers de travail`.

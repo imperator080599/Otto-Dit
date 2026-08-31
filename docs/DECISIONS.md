@@ -3843,3 +3843,45 @@ bout : 0,0452 $ pour les deux lectures, écarts `amount_mismatch` (32 803,20 lu 
 écrit) et `qty_mismatch` (113 livrées < 128 facturées) nés des vraies lectures ; l'arrêt au
 plafond exercé pour de vrai (0,0452 $ ≥ 0,001 $ → refus affiché, zéro appel). Chiffres du
 jour dans COST.md ; la première mesure d'extraction HORS cache de ce dépôt.
+
+## ADR-106 — Les deux idées d'origine oubliées : estimations, accès ERP, annexe de papier
+
+**Contexte.** Point 11 du fondateur : deux idées de son document d'origine jamais reprises —
+le parcours des estimations comptables hors litige, et l'architecture d'accès direct à
+l'ERP — plus une vérification : peut-on joindre un tableur à un papier de travail ?
+
+**a) Les estimations comptables hors litige** — la procédure ESTIM existait au catalogue,
+le parcours n'existait pas. Nouvel écran « Estimations comptables » (rail : après le
+périmètre) : le client fournit son FICHIER DE CALCUL (quatre colonnes : clé ; base ; taux ;
+montant — le fichier entre au moteur de pièces, empreinte et provenance comprises) ; OTTO
+RAPPROCHE le total à l'écriture visée — le montant comptabilisé est DÉRIVÉ du grand livre
+ACTIF à chaque lecture, jamais stocké (un ré-import change l'écart affiché sans qu'une
+copie puisse mentir) ; RECALCULE chaque ligne au centime (base × taux, conformité par
+ligne) ; SONDE la base avec le MÊME moteur de tirage que le chiffre d'affaires (couverture
+au seuil + aléa germé, kernel, déterministe) ; et DEMANDE les justificatifs par le circuit
+habituel, en brouillon (L2) : la pièce de base pour chaque ligne TIRÉE, le contrat pour
+CHAQUE taux — un taux contractuel faux fausse toute sa ligne, sondée ou pas —, la note de
+méthode pour la formule. Refus éprouvés : écriture inconnue (nommée), fichier mal formé
+(ligne et colonne nommées), clé en double, demande avant tirage, re-tirage après demande.
+Jeu de données : `dataset/estimations/fae-2025.csv` — les factures à établir qui fondent
+l'écriture OD-2025-089 (50 000 € au crédit du 706000) : par contrat, jours non facturés ×
+taux journalier, somme exacte. Le périmètre reste gelé : c'est une estimation DU chiffre
+d'affaires, aucune procédure nouvelle au catalogue.
+
+**b) L'accès direct à l'ERP** — une page, pas du code, comme demandé :
+`docs/13_ACCES_ERP.md`. La source d'une pièce EST déjà un attribut (`evidence.source` :
+portal / email / auditor — contrainte d'énumération, badge à l'écran des pièces, journal,
+archive) ; la page décrit l'échelle de repli (API directe → exports normalisés type
+FEC/Factur-X, déjà en place → dépôt manuel), le circuit d'autorisation côté client
+(périmètre par mission, demande par transaction, journal des deux côtés, refus de principe
+de l'écriture et des scopes larges), et ce qui manque, sans détour : aucun connecteur
+n'existe, la valeur `erp_api` s'ajoutera À LA CONTRAINTE avec le premier adaptateur — pas
+avant, une valeur que rien ne produit serait une branche que rien n'exécute (règle 13).
+
+**c) Joindre un tableur à un papier** — la réponse à la question posée : NON, on ne
+pouvait pas, et c'est pire que ça : la table `wp_attachment` existait depuis la PREMIÈRE
+migration (0002) et AUCUN chemin de code ne l'atteignait — ni écriture, ni lecture, ni
+écran. L'objet créé qu'aucun chemin n'atteint, dans sa forme la plus ancienne du dépôt.
+Branchée : le fichier entre par `ingestEvidence` (source 'auditor', audience 'internal',
+empreinte, journal `workpaper_attachment_added`), se lie au papier, s'affiche avec son
+empreinte et s'ouvre depuis l'écran du papier. Refus du fichier vide éprouvé.

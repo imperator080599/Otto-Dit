@@ -808,6 +808,54 @@ export async function conduire(
       reste === '0', `${atteste} attestation(s) de plus · ${reste} pièce(s) en attente`);
   });
 
+  // ── 13ter. L'ESTIMATION COMPTABLE (ADR-106) : le fichier de calcul de la
+  //    cliente — importé, rapproché à l'écriture, recalculé, sondé, et CHAQUE
+  //    taux demandé en justificatif. Les refus d'abord, comme toujours.
+  await station('estimation : le fichier de calcul de la cliente', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/estimations`);
+    const fichier = ds('estimations', 'fae-2025.csv');
+
+    /* Une écriture INCONNUE du grand livre actif est refusée, en la nommant. */
+    await p.locator('input[name=titre]').fill('Essai');
+    await p.locator('input[name=piece_ref]').fill('OD-9999-999');
+    await p.locator('input[type=file]').setInputFiles(fichier);
+    await soumettre(p.locator('button:has-text("Importer le fichier de calcul")').first(), 1200);
+    dire('estimation : viser une écriture inconnue est refusé, et le refus s’affiche',
+      refus(p) !== null && /OD-9999-999/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus affiché');
+
+    /* Le vrai fichier, sur la vraie écriture (OD-2025-089, 50 000 €). */
+    await p.locator('input[name=titre]').fill('Factures à établir 2025');
+    await p.locator('input[name=piece_ref]').fill('OD-2025-089');
+    await p.locator('input[type=file]').setInputFiles(fichier);
+    await soumettre(p.locator('button:has-text("Importer le fichier de calcul")').first(), 1500);
+    const t1 = await texte();
+    dire('estimation : la base est rapprochée à la comptabilité et recalculée au centime — écart nul',
+      refus(p) === null && /Recalculé par OTTO/.test(t1) && !/n’explique pas|n'explique pas/.test(t1),
+      'comptabilisé, fichier et recalcul affichés, aucun avertissement d’écart');
+    dire('estimation : chaque taux et la formule sont des paramètres à justifier',
+      /formule/.test(t1) && /taux_journalier/.test(t1), 'paramètres listés');
+
+    /* Demander AVANT de tirer : refusé — la sélection se décide d'abord. */
+    await soumettre(p.locator('button:has-text("Demander les justificatifs")').first(), 1200);
+    dire('estimation : demander des justificatifs sans tirage est refusé',
+      refus(p) !== null && /tirez d/i.test(refus(p) ?? ''), refus(p) ?? 'aucun refus affiché');
+
+    /* Le tirage — même moteur que le chiffre d'affaires, germé, rejouable. */
+    await soumettre(p.locator('button:has-text("Tirer la base")').first(), 1500);
+    const badges = await compte('.badge:has-text("aléa"), .badge:has-text("couverture"), .badge:has-text("marqueur")');
+    dire('estimation : la base est sondée (couverture + aléa germé), le motif sur chaque ligne',
+      refus(p) === null && badges >= 3, `${badges} ligne(s) retenue(s)`);
+
+    /* La demande naît en brouillon — rien ne part sans approbation. */
+    await soumettre(p.locator('button:has-text("Demander les justificatifs")').first(), 1500);
+    dire('estimation : la demande de justificatifs (base tirée + chaque taux + méthode) naît en brouillon',
+      refus(p) === null && /demandé/.test(await texte()), 'demande liée, paramètres marqués « demandé »');
+    const envoyees = await approuverToutes();
+    dire('estimation : la demande part APRÈS approbation, par le circuit habituel',
+      envoyees >= 1, `${envoyees} demande(s) approuvée(s) et envoyée(s)`);
+  });
+
   // ── 14. ÉCARTS : une résolution GÉNÉRIQUE est rejetée, puis on résout POUR DE BON
   await station('résolution des écarts', async () => {
     await devenir(c.reviewer.id);
@@ -1019,6 +1067,16 @@ export async function conduire(
     const t = await texte();
     dire('papier : le papier rend, avec ses sections et son bloc de visas',
       /visa|sign|préparateur|preparer/i.test(t) && t.length > 400, `${t.length} car.`);
+
+    /* L'ANNEXE (ADR-106) : le tableur de calcul se JOINT au papier — la table
+       existait depuis la migration 0002 sans qu'aucun chemin ne l'atteigne.
+       Avant les visas : une annexe s'ajoute pendant que le papier se
+       travaille, pas après qu'il est signé. */
+    await p.locator('input[name=fichier]').setInputFiles(ds('estimations', 'fae-2025.csv'));
+    await soumettre(p.locator('button:has-text("Joindre une annexe")').first(), 1500);
+    dire('papier : un tableur se JOINT au papier, avec empreinte et provenance',
+      refus(p) === null && (await compte('a[href^="/api/blob/"]:has-text("fae-2025.csv")')) > 0,
+      'fae-2025.csv listée en annexe');
 
     /* LE VISA HORS ORDRE. L'associé ne vise pas avant son reviewer : la règle
        est portée par un trigger, pas par l'écran. On l'essaie AVANT les

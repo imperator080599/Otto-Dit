@@ -11,6 +11,7 @@ import type { WpSection } from '@/lib/services/workpapers/draft';
 import { Annotable } from '@/app/annotable';
 import { poserNoteAncreeAction } from '../../notes/actions';
 import { executerNoteOtto } from '@/lib/services/notes/otto';
+import { joindreAnnexe, annexesDuPapier } from '@/lib/services/workpapers/annexes';
 import {
   ajouterColonne, confirmerEtRemplir, annulerColonne, proposerClarification,
   colonnesDuPapier, cellulesDuPapier, CHAMPS_LISIBLES,
@@ -33,6 +34,7 @@ export default async function WorkpaperDetail({
   const wp = await getWorkpaper(wid);
   if (!wp || wp.engagement_id !== id) return <div className="panel">Not found.</div>;
   const edits = await listEdits(wid);
+  const annexes = await annexesDuPapier(wid);
   const notes = await listNotes(wid);
   const signoffs = await listSignoffs(wid);
   const exports = await listExports(wid);
@@ -156,6 +158,20 @@ export default async function WorkpaperDetail({
       revalidatePath(`/eng/${id}/workpapers/${wid}`);
     });
   }
+  async function annexeAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/workpapers/${wid}`, async () => {
+      const { user } = await requireMember(id);
+      const fichier = formData.get('fichier') as File;
+      if (!fichier || !fichier.size) throw new Error('annexe : choisissez un fichier — rien n\'a été joint');
+      await joindreAnnexe(wid, {
+        filename: fichier.name,
+        mime: fichier.type || 'application/octet-stream',
+        bytes: new Uint8Array(await fichier.arrayBuffer()),
+      }, user.id);
+      revalidatePath(`/eng/${id}/workpapers/${wid}`);
+    });
+  }
 
   return (
     <div>
@@ -177,6 +193,29 @@ export default async function WorkpaperDetail({
           <span className="mono">{wp.based_on_hash?.slice(0, 16)}…</span> — language {wp.language.toUpperCase()}.
           Exports are terminal, hash-stamped and self-contained (ADR-013).
         </p>
+        {/* LES ANNEXES (ADR-106) : un tableur de calcul — ou toute pièce de
+            travail — se JOINT au papier pour les cas qui sortent du cadre
+            standard. Le fichier passe par le moteur de pièces (empreinte,
+            provenance source='auditor', journal), puis se lie ici. */}
+        <div className="mt">
+          {annexes.length > 0 && (
+            <p style={{ margin: '4px 0' }}>
+              <span className="faint">Annexes jointes :</span>{' '}
+              {annexes.map((a) => (
+                <a key={a.id} href={`/api/blob/${a.evidenceId}`} target="_blank" className="mono"
+                  title={`empreinte ${a.sha256.slice(0, 14)}… · ${Math.round(a.sizeBytes / 1024)} ko · jointe le ${a.joinedAt.slice(0, 16)}`}
+                  style={{ marginRight: 10 }}>
+                  {a.filename}
+                </a>
+              ))}
+            </p>
+          )}
+          <form action={annexeAction} className="row">
+            <input type="file" name="fichier" style={{ maxWidth: 240 }} />
+            <button className="btn secondary small">Joindre une annexe (tableur, note de calcul…)</button>
+            <span className="faint">entre au dossier avec empreinte et provenance, comme toute pièce</span>
+          </form>
+        </div>
       </div>
 
       {(wp.sections as WpSection[]).map((s) => (

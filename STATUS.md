@@ -49,7 +49,16 @@ engendrées depuis le monde semé (normales + piégées : montant, date, quantit
 dégradé — VERITE.md dit quoi déposer où), coût affiché par lecture et en cumul, garde de budget
 qui refuse au plafond en nommant les deux chiffres ; rejeu inchangé par défaut, L2 et provenance
 inchangés partout ; mesuré hors cache : précision 100 % (43/43), 0,0223 $/document,
-p50 4,4 s (`npm run eval:pieces-neuves`, ADR-105).
+p50 4,4 s (`npm run eval:pieces-neuves`, ADR-105) ·
+**estimations comptables hors litige** : le fichier de calcul du client importé (pièce à
+part entière), rapproché à l'écriture visée (montant DÉRIVÉ du grand livre actif, jamais
+stocké), recalculé au centime, base sondée par le même moteur de tirage, justificatifs
+demandés en brouillon — base des lignes tirées + CHAQUE taux + la note de méthode
+(ADR-106a, `dataset/estimations/fae-2025.csv`) ·
+**annexes de papier** : un tableur se joint au papier (la table existait depuis la
+migration 0002, aucun chemin ne l'atteignait — branchée : moteur de pièces, empreinte,
+journal, écran) (ADR-106c) · **accès ERP** : l'architecture qui ne se ferme pas, en une
+page — docs/13_ACCES_ERP.md (ADR-106b).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
