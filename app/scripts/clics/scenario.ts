@@ -312,10 +312,18 @@ export async function conduire(
     dire('balances aux. : apparus et disparus sont nommés sur leurs lignes',
       (await compte('.badge:has-text("apparu")')) >= 2 && (await compte('.badge:has-text("disparu")')) >= 2,
       'badges apparu/disparu présents');
+    /* innerText rend le texte TEL QU'AFFICHÉ : les en-têtes de table sont en
+       capitales par CSS (text-transform), donc /Vieillissement/ échouait alors
+       que le tableau était à l'écran. On ne cherche plus le mot : on lit la
+       MESURE (le KPI « x % → y % ») et le MARQUAGE (la tranche > 90 jours au
+       badge rouge quand le déplacement dépasse le seuil). */
     const t90 = await texte();
+    const RE_KPI = /\d+(?:[.,]\d+)? % → \d+(?:[.,]\d+)? %/;
+    const kpiMesure = RE_KPI.test(t90);
+    const trancheMarquee = await compte('table.data .badge.red:has-text("%")');
     dire('balances aux. : la déformation du vieillissement (> 90 jours) est mesurée N contre N-1',
-      /Part au-delà de 90 jours/.test(t90) && /Vieillissement/.test(t90),
-      (t90.match(/Part au-delà de 90 jours/) ? 'tableau et indicateur affichés' : 'panneau absent'));
+      /Part au-delà de 90 jours/.test(t90) && kpiMesure && trancheMarquee >= 1,
+      kpiMesure ? `KPI ${(t90.match(RE_KPI) ?? [''])[0]}, tranche > 90 j marquée` : 'mesure absente');
 
     /* Un constat SE PROPOSE au registre — il ne s'applique pas tout seul. */
     const proposer = p.locator('button:has-text("Proposer au registre")').first();
