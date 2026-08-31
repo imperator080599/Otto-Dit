@@ -65,7 +65,18 @@ export async function conduire(
      STATUS.md). On attend le silence réseau, comme après une action. */
   const aller = async (url: string) => {
     await p.goto(url, { waitUntil: 'load' });
-    await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => undefined);
+    /* LE DÉPASSEMENT SE DIT, IL NE SE MASQUE PAS. L'ancien `.catch(() =>
+       undefined)` avalait le cas « le réseau ne se calme jamais en 8 s » —
+       et on naviguait ensuite sur un flux encore ouvert : c'est le mécanisme
+       le plus probable des #418 erratiques du fil n°7 (l'exception coupée
+       s'étiquette sur la page SUIVANTE). Quand ça arrive, on le journalise
+       et on accorde une grâce fixe avant de continuer. */
+    const calme = await p.waitForLoadState('networkidle', { timeout: 8000 })
+      .then(() => true).catch(() => false);
+    if (!calme) {
+      console.log(`  (réseau jamais calme sur ${url} — grâce de 1500 ms)`);
+      await p.waitForTimeout(1500);
+    }
   };
   const cliquer = async (sel: string, attente = 2000) => {
     await p.locator(sel).first().click();
@@ -872,6 +883,10 @@ export async function conduire(
     dire('atelier : l’écart de la ligne porte un lien vers la synthèse',
       (await versSynthese.count()) > 0, 'lien « → synthèse » sur la ligne ouverte');
     if (!(await versSynthese.count())) return;
+    /* Quitter l'ATELIER — l'écran le plus lourd — pendant qu'il hydrate coupe
+       le flux (fil n°7) : on attend le calme AVANT le clic qui navigue. */
+    await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
     await versSynthese.click();
     await p.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
     await p.waitForTimeout(600);
