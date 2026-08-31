@@ -77,7 +77,10 @@ async function main() {
            par conception — tâche 58) et groupes d'actions d'ITEM déclarés
            dans le balisage : comme les gestes de ligne d'un tableau, ce sont
            des actions d'objet, pas d'écran. */
-        && !e.closest('.annotable') && !e.closest('.note-voile') && !e.closest('[data-actions-item]');
+        && !e.closest('.annotable') && !e.closest('.note-voile') && !e.closest('[data-actions-item]')
+        /* le rail de destinations est du CHROME de navigation, présent sur
+           chaque écran de mission — comme le bandeau, pas comme une action. */
+        && !e.closest('nav');
       const actions = [...document.querySelectorAll('button')]
         .filter((b) => visible(b) && horsCadre(b)).length;
       const champs = [...document.querySelectorAll('input, textarea')]

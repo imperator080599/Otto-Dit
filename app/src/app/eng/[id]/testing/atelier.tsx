@@ -205,7 +205,10 @@ export function Atelier({
               <p className="muted mt">Aucune pièce reçue pour cette ligne — la demander au client (case à cocher, puis clarification en lot).</p>
             ) : (
               <>
-                <div className="row mt" style={{ gap: 4 }}>
+                {/* data-actions-item : les onglets de pièce SÉLECTIONNENT un
+                    objet (une pièce parmi n) — sélection, pas action d'écran
+                    (mesure de densité §3.D). */}
+                <div className="row mt" style={{ gap: 4 }} data-actions-item>
                   {sel.evidences.map((e, i) => (
                     <button key={e.id} type="button" title={e.filename}
                       className={`btn small ${i === pieceOuverte ? '' : 'secondary'}`}

@@ -2,14 +2,11 @@
 # Densité mesurée — 67 écrans (build de production, base semée)
 
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
-Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 4 dépassement(s).
+Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 1 dépassement(s).
 
 | Écran | Actions primaires | Champs à taper |
 |---|---|---|
-| `/eng/[id]/workpapers/[wid]` | **13** ⚠ | 1 |
-| `/eng/[id]/materiality` | **6** ⚠ | 0 |
 | `/eng/[id]/testing` | **6** ⚠ | 0 |
-| `/eng/[id]/materiality (SOX)` | **6** ⚠ | 0 |
 | `/eng/[id]/reunions (SOX)` | 5 | 4 |
 | `/eng/[id]/testing (SOX)` | 5 | 0 |
 | `/eng/[id]/team` | 4 | 6 |
@@ -27,9 +24,9 @@ Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 
 | `/eng/[id]/carry-forward` | 2 | 0 |
 | `/eng/[id]/completion` | 2 | 0 |
 | `/eng/[id]/fs-tieout` | 2 | 0 |
+| `/eng/[id]/materiality` | 2 | 0 |
 | `/eng/[id]/rcm` | 2 | 0 |
 | `/eng/[id]/reconciliation` | 2 | 0 |
-| `/eng/[id]/requests/[rid]` | 2 | 0 |
 | `/eng/[id]/risk` | 2 | 0 |
 | `/eng/[id]/sampling` | 2 | 0 |
 | `/eng/[id]/scoping` | 2 | 0 |
@@ -38,6 +35,7 @@ Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 
 | `/eng/[id]/completion (SOX)` | 2 | 0 |
 | `/eng/[id]/fs-tieout (SOX)` | 2 | 0 |
 | `/eng/[id]/loop (SOX)` | 2 | 0 |
+| `/eng/[id]/materiality (SOX)` | 2 | 0 |
 | `/eng/[id]/reconciliation (SOX)` | 2 | 0 |
 | `/eng/[id]/sampling (SOX)` | 2 | 0 |
 | `/eng/[id]/scoping (SOX)` | 2 | 0 |
@@ -56,6 +54,8 @@ Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 
 | `/eng/[id]/provenance` | 1 | 0 |
 | `/eng/[id]/rcm/[cid]` | 1 | 0 |
 | `/eng/[id]/requests` | 1 | 0 |
+| `/eng/[id]/requests/[rid]` | 1 | 0 |
+| `/eng/[id]/workpapers/[wid]` | 1 | 0 |
 | `/eng/[id] (SOX)` | 1 | 0 |
 | `/eng/[id]/acceptance (SOX)` | 1 | 0 |
 | `/eng/[id]/carry-forward (SOX)` | 1 | 0 |
