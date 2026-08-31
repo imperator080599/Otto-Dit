@@ -1,0 +1,15 @@
+{
+  "name": "otto-dit",
+  "private": true,
+  "//": "Racine du monorepo. L'application vit dans app/. Ce fichier existe pour (1) la détection de framework Vercel quand le Root Directory est la racine — elle lit la version de next ICI sans jamais l'installer (installCommand = cd app && npm install), et (2) rediriger les commandes lancées par erreur depuis la racine au lieu d'un ENOENT muet.",
+  "dependencies": {
+    "next": "^15.5.23"
+  },
+  "scripts": {
+    "demo": "cd app && npm run demo",
+    "demo:ia": "cd app && npm run demo:ia",
+    "diagnostic": "cd app && npm run diagnostic",
+    "test": "cd app && npm test",
+    "verify": "cd app && npm run verify"
+  }
+}
