@@ -161,6 +161,21 @@ La liste du bas dit **de quel écart** chaque demande est née.
 
 ---
 
+### 9 bis. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
+
+**Écran** : `Testing` (l'atelier extraction → vouching → vérification).
+
+**À dire, mot pour mot, à ce moment-là** : « Ce que vous voyez ici est en partie rejoué. Les deux
+premiers échelons — le XML Factur-X et la couche texte du PDF — lisent réellement le fichier de la
+pièce : ils sont déterministes et gratuits. L'échelon OCR, lui, ne lit rien dans cette
+démonstration : il rejoue une lecture enregistrée du jeu de données synthétique — aucun appel à un
+modèle, aucun centime dépensé. En production, un modèle lit à cet endroit précis, et rien ne change
+autour : la même file de vérification humaine, le même refus d'écrire au papier sans attestation. »
+
+L'écran le dit lui-même — le bandeau « Adaptateur OCR/LLM : REJEU (démonstration) » est affiché
+tant que l'adaptateur réel n'est pas branché : personne ne peut croire qu'une pièce a été lue par
+un modèle quand la donnée est rejouée (ADR-102).
+
 ### 10. Le papier de travail
 
 **Écran** : `Workpapers`.
@@ -184,9 +199,13 @@ l'appui long et la puce ✎ au survol font le même geste). Le panneau NOMME l'o
 (« REV-01 · Conclusion », « Élément VE|0042|1 · Date ») : l'ancre est l'identité métier, pas une
 position — elle survit au re-tirage, au recalcul, au ré-import (ADR-097). Posez la note, attribuez-la
 au préparateur : l'élément porte le jeton d'attention. Dans `Notes de revue`, la vue transverse :
-le préparateur répond (la réponse entre au dossier, la note passe « adressée »), un non-auteur qui
-tente de clore est **refusé**, l'auteur clôt. Une note dont l'objet est sorti de l'échantillon ne
-disparaît pas : elle reste ici, marquée « objet retiré ».
+le préparateur répond (la réponse entre au dossier, la note passe « adressée »), puis la clôture :
+le préparateur qui tente de clore est **refusé** (il n'est pas réviseur), l'AUTEUR aussi (un auteur
+ne clôt jamais sa propre note — ADR-028) ; seul un réviseur qui n'a pas écrit la note clôt. La note
+porte son TYPE — à corriger (bloquante), à documenter, question, remarque pour N+1 — et seules les
+bloquantes empêchent le visa. Une note dont l'objet est sorti de l'échantillon ne disparaît pas :
+elle reste ici, marquée « objet retiré ». Les écarts s'annotent aussi, depuis l'écran Exceptions —
+« pourquoi as-tu considéré celui-ci comme résolu ? » se pose désormais SUR l'écart.
 
 **Et la note pour OTTO** (ADR-098) : posez-en une attribuée à « OTTO — exécute l'instruction » avec
 « Reprends la lecture des pièces : la quantité n'a pas été relevée. » — il exécute À LA POSE et sa

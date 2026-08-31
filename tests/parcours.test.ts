@@ -46,7 +46,8 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
       'Préciser dans la conclusion le renvoi à l’état des anomalies.',
     );
     await transitionNote(noteId, IDS.users.karim, 'addressed');
-    await transitionNote(noteId, IDS.users.lea, 'closed');
+    /* ADR-028 : jamais l'auteur — Léa a écrit la note, Claire (réviseur) la clôt. */
+    await transitionNote(noteId, IDS.users.claire, 'closed');
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');
     await signWorkpaper(wpId, IDS.users.claire, 'partner');

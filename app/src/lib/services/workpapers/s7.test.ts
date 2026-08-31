@@ -70,14 +70,44 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     await expect(q(`delete from workpaper_edit`)).rejects.toThrow(/append-only/);
   });
 
-  it('review notes: open → addressed → closed (author closes)', async () => {
+  it('le préparateur répond, SEUL LE RÉVISEUR clôt — et JAMAIS l’auteur (ADR-028)', async () => {
     const noteId = await addReviewNote(IDS.engNep, wpId, IDS.users.lea, IDS.users.karim, 'Préciser dans la conclusion le renvoi vers l’état des anomalies.');
     await expect(transitionNote(noteId, IDS.users.karim, 'closed')).rejects.toThrow(/addressed/);
     await transitionNote(noteId, IDS.users.karim, 'addressed');
-    await expect(transitionNote(noteId, IDS.users.karim, 'closed')).rejects.toThrow(/author/);
-    await transitionNote(noteId, IDS.users.lea, 'closed');
+    /* Karim (senior, non réviseur) TENTE : refusé pour le rôle. */
+    await expect(transitionNote(noteId, IDS.users.karim, 'closed')).rejects.toThrow(/réviseur/);
+    /* Léa, RÉVISEUR mais AUTEUR, tente : refusée — un auteur ne clôt jamais sa note. */
+    await expect(transitionNote(noteId, IDS.users.lea, 'closed')).rejects.toThrow(/auteur/);
+    /* Claire, réviseur non auteur, clôt. */
+    await transitionNote(noteId, IDS.users.claire, 'closed');
     const notes = await listNotes(wpId);
     expect(notes[0].status).toBe('closed');
+  });
+
+  it('la BASE refuse elle-même la clôture par l’auteur — la règle ne dépend pas du service', async () => {
+    const noteId = await addReviewNote(IDS.engNep, wpId, IDS.users.lea, IDS.users.karim, 'Ceinture sous les bretelles.');
+    await transitionNote(noteId, IDS.users.karim, 'addressed');
+    /* Une écriture SQL directe qui contourne le service : le trigger mord. */
+    await expect(q(
+      `update review_note set status = 'closed', closed_by = author_id where id = $1`, [noteId],
+    )).rejects.toThrow(/auteur/);
+    await expect(q(
+      `update review_note set status = 'closed', closed_by = $2 where id = $1`, [noteId, IDS.users.karim],
+    )).rejects.toThrow(/réviseur/);
+    await expect(q(
+      `update review_note set status = 'closed' where id = $1`, [noteId],
+    )).rejects.toThrow(/closed_by|signataire/);
+    await q(`update review_note set status = 'closed', closed_by = $2 where id = $1`, [noteId, IDS.users.claire]);
+  });
+
+  it('seules les BLOQUANTES empêchent le visa : une question ouverte ne bloque pas', async () => {
+    const question = await addReviewNote(
+      IDS.engNep, wpId, IDS.users.lea, IDS.users.karim,
+      'Question sans blocage : la référence du contrat cadre ?', { noteType: 'question' },
+    );
+    void question; // ouverte, type non bloquant — le visa du test suivant passera
+    const notes = await listNotes(wpId);
+    expect(notes.find((n) => n.text.startsWith('Question sans blocage'))!.note_type).toBe('question');
   });
 
   it('sign-offs enforce order, rights and open-note gates; immutable once signed', async () => {
@@ -87,7 +117,7 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     const blocker = await addReviewNote(IDS.engNep, wpId, IDS.users.lea, IDS.users.karim, 'Note bloquante test.');
     await expect(signWorkpaper(wpId, IDS.users.lea, 'reviewer')).rejects.toThrow(/open review notes/);
     await transitionNote(blocker, IDS.users.karim, 'addressed');
-    await transitionNote(blocker, IDS.users.lea, 'closed');
+    await transitionNote(blocker, IDS.users.claire, 'closed');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');
     // staff cannot sign as partner
     await expect(signWorkpaper(wpId, IDS.users.karim, 'partner')).rejects.toThrow(/signing rights/);

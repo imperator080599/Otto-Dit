@@ -27,7 +27,7 @@ export async function listWorkpapers(engagementId: string) {
     `select w.id, w.code, w.title, w.status, w.version, w.created_at::text,
             (select count(*) from workpaper_edit e where e.workpaper_id = w.id) edit_count,
             (select count(*) from signoff s where s.workpaper_id = w.id) signoff_count,
-            (select count(*) from review_note n where n.workpaper_id = w.id and n.status = 'open') note_open
+            (select count(*) from review_note n where n.workpaper_id = w.id and n.status = 'open' and n.note_type = 'a_corriger') note_open
      from workpaper w where w.engagement_id = $1
      order by w.code, w.version desc`,
     [engagementId],
@@ -69,6 +69,18 @@ export async function listEdits(workpaperId: string) {
 
 // ---------- review notes (human-only) ----------
 
+export type NoteType = 'a_corriger' | 'a_documenter' | 'question' | 'remarque_n1';
+
+/** Les quatre types d'ADR-028 — et SEULES LES BLOQUANTES empêchent le visa :
+ *  sans le typage, « seul le réviseur clôt » serait un cérémonial imposé à
+ *  des remarques qui ne le méritent pas. */
+export const NOTE_TYPES: Record<NoteType, { libelle: string; bloquante: boolean }> = {
+  a_corriger: { libelle: 'à corriger (bloquante)', bloquante: true },
+  a_documenter: { libelle: 'à documenter', bloquante: false },
+  question: { libelle: 'question', bloquante: false },
+  remarque_n1: { libelle: 'remarque pour N+1', bloquante: false },
+};
+
 export interface OptionsNote {
   /** L'ancre : l'OBJET MÉTIER que la note vise (ADR-097). Absente = note de
    *  papier « flottante », le comportement historique. */
@@ -76,6 +88,9 @@ export interface OptionsNote {
   /** 'otto' = la note est une instruction pour la machine (tranche suivante) ;
    *  assigneeId doit alors être null — OTTO n'est pas un app_user. */
   assigneeKind?: 'user' | 'otto';
+  /** Défaut 'a_corriger' — le type le plus exigeant : on relâche
+   *  explicitement, jamais par oubli. */
+  noteType?: NoteType;
 }
 
 export async function addReviewNote(
@@ -91,18 +106,20 @@ export async function addReviewNote(
      maintenant — jamais sur une position d'écran ni un objet imaginaire. */
   if (opts.ancre) await assertAncrePosable(engagementId, opts.ancre);
   const ctx = await engagementCtx(engagementId);
+  const noteType: NoteType = opts.noteType ?? 'a_corriger';
+  if (!NOTE_TYPES[noteType]) throw new Error(`note : type « ${noteType} » inconnu`);
   const row = await q1<{ id: string }>(
     `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, text,
-                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id`,
+                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind, note_type)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
     [engagementId, workpaperId, authorId, assigneeId, text,
      opts.ancre?.kind ?? null, opts.ancre?.ref ?? null, opts.ancre?.field ?? null,
-     opts.ancre?.label ?? null, assigneeKind],
+     opts.ancre?.label ?? null, assigneeKind, noteType],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: authorId,
     verb: 'review_note_added', objectType: 'review_note', objectId: row.id,
-    payload: { workpaperId, assigneeId, assigneeKind, ancre: opts.ancre ?? null },
+    payload: { workpaperId, assigneeId, assigneeKind, noteType, ancre: opts.ancre ?? null },
   });
   return row.id;
 }
@@ -146,6 +163,7 @@ export async function listReplies(noteId: string) {
 export interface NoteAncree {
   id: string; status: string; text: string; created_at: string;
   author_name: string; assignee_name: string | null; assignee_kind: string;
+  note_type: string; author_id: string;
   workpaper_id: string | null;
   anchor_kind: string | null; anchor_ref: string | null; anchor_field: string | null; anchor_label: string | null;
   /** DÉRIVÉ à la lecture par résolution de l'ancre — jamais stocké. */
@@ -161,7 +179,7 @@ export interface NoteAncree {
 export async function notesDeLaMission(engagementId: string): Promise<NoteAncree[]> {
   const notes = await q<Omit<NoteAncree, 'etat_ancre' | 'reponses'> & { reponses: string }>(
     `select n.id, n.status, n.text, n.created_at::text, a.name author_name,
-            s.name assignee_name, n.assignee_kind, n.workpaper_id,
+            s.name assignee_name, n.assignee_kind, n.workpaper_id, n.note_type, n.author_id::text author_id,
             n.anchor_kind, n.anchor_ref, n.anchor_field, n.anchor_label,
             (select count(*) from review_note_reply r where r.note_id = n.id)::text reponses
      from review_note n
@@ -216,13 +234,30 @@ export async function transitionNote(noteId: string, userId: string, to: 'addres
   );
   if (to === 'addressed' && note.status !== 'open') throw new Error('only open notes can be addressed');
   if (to === 'closed' && note.status !== 'addressed') throw new Error('only addressed notes can be closed');
-  if (to === 'closed' && note.author_id !== userId) throw new Error('only the author closes their note');
+  /* LE PRÉPARATEUR RÉPOND, SEUL LE RÉVISEUR CLÔT — ET JAMAIS L'AUTEUR
+     (ADR-028, rétabli par ADR-102). Un auteur qui clôt sa propre note vide la
+     revue de sa substance. Le service refuse ici, et la BASE refuse aussi
+     (trigger review_note_close_guard) : une écriture qui contourne le service
+     est refusée par la table elle-même. */
+  if (to === 'closed') {
+    if (note.author_id === userId) {
+      throw new Error('l\'auteur d\'une note ne la clôt jamais — seul un réviseur qui n\'en est pas l\'auteur clôt (ADR-028)');
+    }
+    const reviseur = await q01<{ id: string }>(
+      `select id from engagement_member
+       where engagement_id = $1 and user_id = $2 and eng_role in ('manager','partner') and exited_on is null`,
+      [note.engagement_id, userId],
+    );
+    if (!reviseur) {
+      throw new Error('seul un réviseur de la mission (manager ou associé) clôt une note de revue (ADR-028)');
+    }
+  }
   const ctx = await engagementCtx(note.engagement_id);
   await q(
     to === 'addressed'
       ? `update review_note set status = 'addressed', addressed_at = now() where id = $1`
-      : `update review_note set status = 'closed', closed_at = now() where id = $1`,
-    [noteId],
+      : `update review_note set status = 'closed', closed_at = now(), closed_by = $2 where id = $1`,
+    to === 'addressed' ? [noteId] : [noteId, userId],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: note.engagement_id, actorKind: 'user', actorId: userId,
@@ -231,9 +266,9 @@ export async function transitionNote(noteId: string, userId: string, to: 'addres
 }
 
 export async function listNotes(workpaperId: string) {
-  return q<{ id: string; status: string; text: string; created_at: string; author_name: string; assignee_name: string | null; anchor_label: string | null; assignee_kind: string }>(
+  return q<{ id: string; status: string; text: string; created_at: string; author_name: string; assignee_name: string | null; anchor_label: string | null; assignee_kind: string; note_type: string }>(
     `select n.id, n.status, n.text, n.created_at::text, a.name author_name, s.name assignee_name,
-            n.anchor_label, n.assignee_kind
+            n.anchor_label, n.assignee_kind, n.note_type
      from review_note n
      join app_user a on a.id = n.author_id
      left join app_user s on s.id = n.assignee_id
@@ -271,8 +306,11 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
     throw new Error('partner signs after the reviewer');
   }
   if (role === 'reviewer' || role === 'partner') {
+    /* SEULES LES BLOQUANTES empêchent le visa (ADR-028 §2) : une question ou
+       une remarque pour N+1 ouverte n'arrête pas la revue. */
     const openNotes = await q1<{ n: string }>(
-      `select count(*) n from review_note where workpaper_id = $1 and status = 'open'`,
+      `select count(*) n from review_note
+       where workpaper_id = $1 and status = 'open' and note_type = 'a_corriger'`,
       [workpaperId],
     );
     if (Number(openNotes.n) > 0) throw new Error('open review notes must be addressed before review sign-off');

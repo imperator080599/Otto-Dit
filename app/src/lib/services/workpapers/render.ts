@@ -355,7 +355,7 @@ export async function renderWorkpaperPdf(workpaperId: string): Promise<{ bytes: 
   for (const n of notes) {
     const dest = n.assignee_kind === 'otto' ? 'OTTO' : n.assignee_name;
     const ancre = n.anchor_label ? ` [${n.anchor_label}]` : '';
-    w.text(`[${n.status}] ${n.author_name}${dest ? ' -> ' + dest : ''}${ancre} : ${n.text}`, { size: 7.5, gap: 1 });
+    w.text(`[${n.status} | ${n.note_type}] ${n.author_name}${dest ? ' -> ' + dest : ''}${ancre} : ${n.text}`, { size: 7.5, gap: 1 });
     /* Les RÉPONSES entrent au dossier — celle d'OTTO surtout : chaque
        instruction donnée à la machine reste documentée dans l'export. */
     for (const r of await listReplies(n.id)) {

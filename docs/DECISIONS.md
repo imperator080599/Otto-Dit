@@ -3653,3 +3653,40 @@ contrainte), pas de l'entité.
 qu'il faut (app registration, consentement admin, `Schedule.Read.All` ou équivalent
 libre/occupé, `Calendars.ReadWrite` pour émettre), et ce qu'on refusera (tout scope qui
 lit le contenu des agendas).
+
+## ADR-102 — ADR-028 rétabli : le préparateur répond, seul le réviseur clôt — et jamais l'auteur
+
+**Contexte.** ADR-097 avait gardé « l'auteur clôt » en lisant « comme aujourd'hui » comme
+« comme dans l'application ». Le fondateur tranche : « comme aujourd'hui » signifiait « comme
+dans le prototype » — la règle d'ADR-028 §3 s'applique au produit. Un préparateur qui clôt
+lui-même la note qu'on lui a adressée vide la revue de sa substance, et c'est ce qu'un
+inspecteur cherche en premier dans un dossier.
+
+**La règle, à DEUX étages.** Le service refuse (rôle réviseur — manager ou associé — exigé,
+et `userId !== author_id`) ; et la BASE refuse aussi : `review_note.closed_by` est exigé à
+la clôture, le trigger `review_note_close_guard` rejette l'auteur, le non-réviseur, et la
+réouverture d'une note close. Le test exerce les deux : les refus du service, ET l'écriture
+SQL directe qui contourne le service — la table mord. Le parcours cliqué éprouve les DEUX
+refus distincts (Karim, préparateur : « seul un réviseur » ; Léa, réviseur mais AUTEUR :
+« jamais l'auteur ») avant la clôture par Claire.
+
+**Le typage qui rend la règle vivable (ADR-028 §2).** Quatre types : à corriger
+(bloquante) / à documenter / question / remarque pour N+1 — et SEULES les bloquantes
+empêchent le visa. Sans le typage, « seul le réviseur clôt » serait un cérémonial imposé à
+des remarques qui ne le méritent pas. Défaut `a_corriger` : le type le plus exigeant — on
+relâche explicitement, jamais par oubli — et les notes existantes gardent leur effet.
+Une bloquante ADRESSÉE (répondue) ne bloque plus le visa du réviseur : c'est la réponse du
+préparateur que le réviseur juge en signant ; la clôture reste un acte distinct, et
+l'auteur-réviseur ne peut pas la faire seul.
+
+**Les ancres s'étendent aux écarts.** `exception` : identité métier = taxonomie + écriture
+porteuse (`taxo|natural_key` — survit aux ré-imports et aux re-tirages ; les écarts sans
+écriture s'ancrent par id, préfixé). `deviation` : par id. L'écran Exceptions est annotable
+sur chaque écart — « pourquoi as-tu considéré celui-ci comme résolu ? » se pose SUR l'écart.
+
+**L'honnêteté de la démonstration.** L'écran Testing porte, tant que l'adaptateur réel n'est
+pas branché, le bandeau « Adaptateur OCR/LLM : REJEU (démonstration) » : les échelons XML et
+couche texte lisent réellement le fichier (déterministes) ; l'échelon OCR ne lit RIEN — il
+rejoue des extractions enregistrées du jeu synthétique, sans appel ni dépense. DEMO_APP.md
+donne la phrase à prononcer à ce moment-là, mot pour mot. Ne jamais laisser croire qu'une
+pièce est lue quand la donnée est rejouée.

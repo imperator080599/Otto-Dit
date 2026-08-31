@@ -131,6 +131,22 @@ export default async function TestingPage({
           (recorded — always human-verified, ADR-012) → human. Vouching is deterministic
           with pack tolerances; exceptions land in the exceptions tab.
         </p>
+        {(process.env.OTTO_OCR_ADAPTER ?? 'mock') !== 'anthropic' && (
+          /* L'HONNÊTETÉ DE LA DÉMONSTRATION (ADR-102) : ne jamais laisser
+             croire qu'une pièce est lue par un modèle quand la donnée est
+             rejouée. Les deux premiers échelons lisent RÉELLEMENT le fichier
+             (déterministes, gratuits) ; l'échelon OCR/LLM, lui, REJOUE des
+             extractions enregistrées du jeu synthétique — aucun appel, aucun
+             centime. En production, un modèle lit au même endroit, avec la
+             même file de vérification humaine. */
+          <div className="callout warn">
+            <strong>Adaptateur OCR/LLM : REJEU (démonstration).</strong> Sur cet écran, les échelons
+            XML et couche texte lisent réellement le fichier de la pièce (déterministes) ; l&apos;échelon
+            OCR/LLM ne lit rien — il REJOUE des extractions enregistrées du jeu synthétique, sans
+            appel à un modèle et sans dépense. En production, un modèle lit à cet endroit précis,
+            derrière la même file de vérification humaine (L2).
+          </div>
+        )}
       </div>
 
       {pending.length > 0 && (

@@ -8,6 +8,9 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
+import { Annotable } from '@/app/annotable';
+import { poserNoteAncreeAction } from '../notes/actions';
 
 const STATUS_BADGE: Record<string, string> = {
   open: 'red', clarification_requested: 'amber', explained: 'blue', resolved: 'green', escalated: 'violet',
@@ -25,6 +28,29 @@ export default async function ExceptionsPage({
   const fs = await frameworkSet(id);
   const isSox = fs.assurance_packs.includes('pcaob-sox');
   const exceptions = await listExceptions(id);
+  /* LES ANCRES DES ÉCARTS (ADR-102) : « pourquoi as-tu considéré celui-ci
+     comme résolu ? » est la note de revue la plus fréquente en pratique.
+     L'identité métier d'un écart : sa taxonomie + l'écriture qui le porte
+     (natural_key) quand il en a une, son id sinon. */
+  const marquesNotes = await notesPourEcran(id);
+  const identitesEcarts = new Map(
+    (await q<{ id: string; aref: string; piece: string | null }>(
+      `select x.id::text id,
+              case when g.natural_key is not null then x.taxonomy_code || '|' || g.natural_key
+                   else 'id|' || x.id::text end aref,
+              coalesce(g.piece_ref, g.entry_no) piece
+       from exception x
+       left join sample_item si on si.id = x.sample_item_id
+       left join gl_entry g on g.id = si.unit_id
+       where x.engagement_id = $1`,
+      [id],
+    )).map((r) => [r.id, r]),
+  );
+  const membresNotes = await q<{ id: string; nom: string }>(
+    `select u.id::text id, u.name nom from engagement_member m join app_user u on u.id = m.user_id
+     where m.engagement_id = $1 and m.exited_on is null order by u.name`,
+    [id],
+  );
   const misstatements = await q<{ id: string; kind: string; amount: string; corrected: boolean; status: string; notes: string | null }>(
     `select id, kind, amount::text, corrected, status, notes from misstatement where engagement_id = $1 order by created_at`,
     [id],
@@ -119,7 +145,20 @@ export default async function ExceptionsPage({
             <tbody>
               {exceptions.map((x) => (
                 <tr key={x.id}>
-                  <td><span className={`badge ${x.severity === 'high' ? 'red' : 'amber'}`}>{x.taxonomy_code}</span></td>
+                  <td>
+                    <Annotable
+                      ancre={{
+                        kind: 'exception',
+                        aRef: identitesEcarts.get(x.id)?.aref ?? `id|${x.id}`,
+                        label: `Écart ${x.taxonomy_code}${identitesEcarts.get(x.id)?.piece ? ` · ${identitesEcarts.get(x.id)!.piece}` : ''}`,
+                      }}
+                      marques={marquesNotes[`exception|${x.id}`] ?? []}
+                      membres={membresNotes} engagementId={id} chemin={`/eng/${id}/exceptions`}
+                      notesHref={`/eng/${id}/notes`} action={poserNoteAncreeAction}
+                    >
+                      <span className={`badge ${x.severity === 'high' ? 'red' : 'amber'}`}>{x.taxonomy_code}</span>
+                    </Annotable>
+                  </td>
                   <td style={{ maxWidth: 420 }}>{x.description}{x.resolution && <div className="faint">↳ {x.resolution}</div>}</td>
                   <td className="num">{x.amount_impact ? fmtEur(numToCents(x.amount_impact), 'fr') : '—'}</td>
                   <td><span className={`badge ${STATUS_BADGE[x.status]}`}>{x.status}</span></td>

@@ -117,8 +117,9 @@ describe('notes adressées à OTTO', () => {
     await executerNoteOtto(noteId);
     let note = (await notesDeLaMission(IDS.engNep)).find((n) => n.id === noteId)!;
     expect(note.status).toBe('addressed');
-    await expect(transitionNote(noteId, IDS.users.karim, 'closed')).rejects.toThrow(/author/);
-    await transitionNote(noteId, IDS.users.lea, 'closed');
+    await expect(transitionNote(noteId, IDS.users.karim, 'closed')).rejects.toThrow(/réviseur/);
+    await expect(transitionNote(noteId, IDS.users.lea, 'closed')).rejects.toThrow(/auteur/);
+    await transitionNote(noteId, IDS.users.claire, 'closed');
     note = (await notesDeLaMission(IDS.engNep)).find((n) => n.id === noteId)!;
     expect(note.status).toBe('closed');
     await expect(executerNoteOtto(noteId)).rejects.toThrow(/close/);

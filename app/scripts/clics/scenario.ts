@@ -917,17 +917,19 @@ export async function conduire(
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
-    await devenir(c.reviewer.id);
+    /* ADR-028 (rétabli par ADR-102) : la note de Léa se ferme par CLAIRE —
+       un réviseur qui n'en est pas l'auteur. */
+    await devenir(c.associe.id);
     await aller(base + lien);
     for (let tour = 0; tour < 8; tour++) {
-      const f = p.locator('form:has(button:has-text("Close (author)"))').first();
+      const f = p.locator('form:has(button:has-text("Close (reviewer"))').first();
       if (!(await f.count())) break;
       await f.locator('button').first().click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
-    dire('papier : les notes de revue sont traitées puis fermées par leur auteur',
-      (await compte('form:has(button:has-text("Close (author)"))')) === 0, 'aucune note ouverte');
+    dire('papier : les notes se ferment par un réviseur qui n’en est PAS l’auteur',
+      (await compte('form:has(button:has-text("Close (reviewer"))')) === 0, 'aucune note ouverte');
 
     /* LA NOTE ANCRÉE (ADR-097) — le geste entier, au clic droit : l'ancre est
        l'OBJET (la conclusion du papier), jamais une position d'écran. On la
@@ -969,17 +971,29 @@ export async function conduire(
         dire('notes : la réponse s’enregistre et la note passe « adressée »',
           !refus(p) && /adressée/.test(await texte()), refus(p) ?? 'réponse au dossier');
       }
-      // Il tente de clore : refusé — seul l'AUTEUR clôt sa note.
+      /* DEUX REFUS DISTINCTS (ADR-028) : Karim, préparateur, n'est pas
+         réviseur ; Léa, réviseur, est l'AUTEUR — un auteur ne clôt jamais sa
+         propre note, c'est ce qu'un inspecteur cherche en premier. */
       const fClore = p.locator('form:has(button:has-text("Clore"))').first();
       if (await fClore.count()) {
         await fClore.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
-        dire('notes : la clôture par un autre que l’auteur est REFUSÉE',
-          Boolean(refus(p)), refus(p) ?? 'PASSÉE — défaut');
+        dire('notes : la clôture par le préparateur (non réviseur) est REFUSÉE',
+          Boolean(refus(p)) && /réviseur/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉE — défaut');
       }
-      // L'auteur clôt, dans la vue transverse.
       await devenir(c.reviewer.id);
+      await aller(`${eng}/notes`);
+      const fCloreAuteur = p.locator('form:has(button:has-text("Clore"))').first();
+      if (await fCloreAuteur.count()) {
+        await fCloreAuteur.locator('button').first().click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(2000);
+        dire('notes : la clôture par l’AUTEUR est refusée — même réviseur',
+          Boolean(refus(p)) && /auteur/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉE — défaut');
+      }
+      // Le réviseur qui n'a pas écrit la note — l'associée — clôt.
+      await devenir(c.associe.id);
       await aller(`${eng}/notes`);
       for (let tour = 0; tour < 8; tour++) {
         const f = p.locator('form:has(button:has-text("Clore"))').first();
@@ -988,7 +1002,7 @@ export async function conduire(
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1400);
       }
-      dire('notes : l’auteur clôt sa note ancrée depuis la vue transverse',
+      dire('notes : un réviseur non-auteur clôt, depuis la vue transverse',
         (await compte('form:has(button:has-text("Clore"))')) === 0, 'aucune note ouverte');
     } else {
       dire('note ancrée : la conclusion du papier est annotable', false, 'élément .annotable absent');
@@ -1042,6 +1056,9 @@ export async function conduire(
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
       }
+      /* Léa a ÉCRIT ces notes : c'est Claire, réviseur non-auteur, qui clôt. */
+      await devenir(c.associe.id);
+      await aller(`${eng}/notes`);
       for (let tour = 0; tour < 8; tour++) {
         const f = p.locator('form:has(button:has-text("Clore"))').first();
         if (!(await f.count())) break;
@@ -1049,7 +1066,7 @@ export async function conduire(
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1400);
       }
-      dire('OTTO : les notes sont closes par un humain, jamais par lui',
+      dire('OTTO : les notes sont closes par un réviseur humain non-auteur, jamais par lui',
         (await compte('form:has(button:has-text("Clore"))')) === 0, 'clôture humaine');
     }
 

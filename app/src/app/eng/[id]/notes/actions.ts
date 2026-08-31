@@ -1,7 +1,7 @@
 'use server';
 
 import { requireMember } from '@/lib/core/auth';
-import { addReviewNote, repondreNote, transitionNote } from '@/lib/services/workpapers/lifecycle';
+import { addReviewNote, repondreNote, transitionNote, type NoteType } from '@/lib/services/workpapers/lifecycle';
 import { executerNoteOtto } from '@/lib/services/notes/otto';
 import type { Ancre, AncreKind } from '@/lib/services/notes/ancres';
 import { executer } from '@/app/refus';
@@ -29,7 +29,10 @@ export async function poserNoteAncreeAction(fd: FormData): Promise<never> {
       user.id,
       assignee === 'otto' ? null : assignee || null,
       String(fd.get('texte') ?? ''),
-      { ancre, assigneeKind: assignee === 'otto' ? 'otto' : 'user' },
+      {
+        ancre, assigneeKind: assignee === 'otto' ? 'otto' : 'user',
+        noteType: (String(fd.get('note_type') ?? '') || 'a_corriger') as NoteType,
+      },
     );
     /* Une note pour OTTO s'exécute À LA POSE, sous les yeux de qui la pose :
        une file silencieuse serait un objet qu'aucun chemin de lecture

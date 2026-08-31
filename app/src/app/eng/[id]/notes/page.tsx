@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { notesDeLaMission, listReplies, type NoteAncree } from '@/lib/services/workpapers/lifecycle';
+import { notesDeLaMission, listReplies, NOTE_TYPES, type NoteAncree, type NoteType } from '@/lib/services/workpapers/lifecycle';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { repondreNoteAction, transitionNoteAction, executerNoteOttoAction } from './actions';
 import type { CompteRenduOtto } from '@/lib/services/notes/otto';
@@ -51,6 +51,9 @@ export default async function NotesPage({
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="row">
             <span className={`badge ${st.badge}`}>{st.libelle}</span>
+            <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>
+              {NOTE_TYPES[n.note_type as NoteType]?.libelle ?? n.note_type}
+            </span>
             {n.anchor_label && <span className="note-cible" style={{ marginBottom: 0 }}>{n.anchor_label}</span>}
             {n.etat_ancre === 'retire' && (
               <span className="badge amber" title="l'objet ancré n'existe plus dans l'état actuel du dossier">objet retiré</span>
@@ -107,7 +110,7 @@ export default async function NotesPage({
               <input type="hidden" name="engagement_id" value={id} />
               <input type="hidden" name="note_id" value={n.id} />
               <input type="hidden" name="to" value="closed" />
-              <button className="btn small">Clore (auteur)</button>
+              <button className="btn small">Clore (réviseur — jamais l&apos;auteur)</button>
             </form>
           </div>
         )}
@@ -122,9 +125,10 @@ export default async function NotesPage({
         <h2>Notes de revue — la vue transverse</h2>
         <p className="faint">
           Chaque note est ANCRÉE sur un objet métier — un élément d&apos;échantillon, une section de
-          papier, une réponse de questionnaire, un paramètre de seuils — jamais sur une position
-          d&apos;écran. Une note dont l&apos;objet a disparu (élément sorti de l&apos;échantillon) reste ici,
-          marquée « objet retiré ». Une note ouverte bloque le visa du papier qui la porte.
+          papier, une réponse de questionnaire, un paramètre de seuils, un écart — jamais sur une
+          position d&apos;écran. Une note dont l&apos;objet a disparu reste ici, marquée « objet retiré ».
+          Le préparateur RÉPOND ; seul un réviseur qui n&apos;en est pas l&apos;auteur CLÔT (ADR-028) ;
+          seules les notes « à corriger » bloquent le visa du papier qui les porte.
         </p>
       </div>
       {ouvertes.length === 0 && closes.length === 0 && (

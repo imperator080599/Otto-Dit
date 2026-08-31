@@ -8,7 +8,7 @@ import { q, q01 } from '@/lib/db/client';
 // pas : son état devient « objet retiré » — DÉRIVÉ ici à la lecture, pas
 // stocké, parce qu'un drapeau stocké mentirait au recalcul suivant.
 
-export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer' | 'materiality_param';
+export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer' | 'materiality_param' | 'exception' | 'deviation';
 
 export interface Ancre {
   kind: AncreKind;
@@ -36,6 +36,8 @@ export const KINDS: Record<AncreKind, string> = {
   workpaper_section: 'section de papier de travail',
   questionnaire_answer: 'réponse de questionnaire',
   materiality_param: 'paramètre de seuils',
+  exception: 'écart (exception)',
+  deviation: 'déviation de contrôle',
 };
 
 /**
@@ -82,6 +84,41 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
         [engagementId, a.ref],
       );
       return { etat: row ? 'present' : 'retire', cibles: row ? [a.ref] : [] };
+    }
+    case 'exception': {
+      /* L'identité MÉTIER d'un écart : sa taxonomie + l'écriture qui le porte
+         (natural_key — survit aux ré-imports et aux re-tirages, comme les
+         cellules). « Pourquoi as-tu considéré celui-ci comme résolu ? » doit
+         suivre L'ÉCART, pas le uuid d'une ligne recalculable. Les écarts sans
+         écriture (rapprochement, import) s'ancrent par leur id, préfixé —
+         leur recomposition ne les recrée pas. */
+      if (a.ref.startsWith('id|')) {
+        const row = await q01<{ id: string }>(
+          `select id::text id from exception where engagement_id = $1 and id::text = $2`,
+          [engagementId, a.ref.slice(3)],
+        );
+        return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+      }
+      /* Le séparateur est le PREMIER « | » : la natural_key en contient
+         elle-même (journal|pièce|ligne), on ne coupe qu'une fois. */
+      const coupe = a.ref.indexOf('|');
+      const taxo = coupe < 0 ? a.ref : a.ref.slice(0, coupe);
+      const cle = coupe < 0 ? '' : a.ref.slice(coupe + 1);
+      const rows = await q<{ id: string }>(
+        `select x.id::text id from exception x
+         join sample_item si on si.id = x.sample_item_id
+         join gl_entry g on g.id = si.unit_id
+         where x.engagement_id = $1 and x.taxonomy_code = $2 and g.natural_key = $3`,
+        [engagementId, taxo, cle],
+      );
+      return { etat: rows.length ? 'present' : 'retire', cibles: rows.map((r) => r.id) };
+    }
+    case 'deviation': {
+      const row = await q01<{ id: string }>(
+        `select id::text id from deviation where engagement_id = $1 and id::text = $2`,
+        [engagementId, a.ref.startsWith('id|') ? a.ref.slice(3) : a.ref],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
     }
     case 'materiality_param': {
       /* Un jeu de seuils existe → le paramètre existe. Retiré seulement si la

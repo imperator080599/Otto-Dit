@@ -109,6 +109,29 @@ describe('notes ancrées (ADR-097)', () => {
     expect(seuils).toBeTruthy();
   });
 
+  it('un ÉCART s\'annote par son identité métier — taxonomie + écriture (ADR-102)', async () => {
+    const x = await q1<{ id: string; aref: string }>(
+      `select x.id::text id, x.taxonomy_code || '|' || g.natural_key aref
+       from exception x
+       join sample_item si on si.id = x.sample_item_id
+       join gl_entry g on g.id = si.unit_id
+       where x.engagement_id = $1 limit 1`,
+      [IDS.engNep],
+    );
+    const noteId = await addReviewNote(
+      IDS.engNep, null, IDS.users.lea, IDS.users.karim,
+      'Pourquoi as-tu considéré celui-ci comme résolu ?',
+      { ancre: { kind: 'exception', ref: x.aref, field: null, label: `Écart ${x.aref.split('|')[0]}` } },
+    );
+    const marques = await notesPourEcran(IDS.engNep);
+    expect(marques[`exception|${x.id}`]?.some((m) => m.noteId === noteId)).toBe(true);
+    /* Un écart imaginaire est refusé à la pose, comme tout objet inexistant. */
+    await expect(addReviewNote(
+      IDS.engNep, null, IDS.users.lea, null, 'x',
+      { ancre: { kind: 'exception', ref: 'taxo_fantome|JX|9999|1', field: null, label: 'fantôme' } },
+    )).rejects.toThrow(/objet qui existe/);
+  });
+
   it('une note attribuée à OTTO se stocke sans identifiant humain — et jamais avec', async () => {
     const noteId = await addReviewNote(
       IDS.engNep, wpId, IDS.users.lea, null, 'Relever la quantité sur les trois dernières lignes.',
@@ -126,7 +149,7 @@ describe('notes ancrées (ADR-097)', () => {
     const noteId = await addReviewNote(IDS.engNep, wpId, IDS.users.lea, IDS.users.karim, 'À clore.');
     await repondreNote(noteId, IDS.users.karim, 'Fait.');
     const { transitionNote } = await import('../workpapers/lifecycle');
-    await transitionNote(noteId, IDS.users.lea, 'closed');
+    await transitionNote(noteId, IDS.users.claire, 'closed');
     await expect(repondreNote(noteId, IDS.users.karim, 'Encore ?')).rejects.toThrow(/close/);
   });
 });

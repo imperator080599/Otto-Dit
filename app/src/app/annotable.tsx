@@ -89,6 +89,14 @@ export function Annotable({
               <input type="hidden" name="chemin" value={chemin} />
               {workpaperId && <input type="hidden" name="workpaper_id" value={workpaperId} />}
               <textarea name="texte" required placeholder="La note — ce qui doit être corrigé, documenté ou expliqué." autoFocus />
+              <div className="row mt">
+                <select name="note_type" defaultValue="a_corriger" title="seules les bloquantes empêchent le visa (ADR-028)">
+                  <option value="a_corriger">à corriger (bloquante)</option>
+                  <option value="a_documenter">à documenter</option>
+                  <option value="question">question</option>
+                  <option value="remarque_n1">remarque pour N+1</option>
+                </select>
+              </div>
               <div className="row mt" style={{ justifyContent: 'space-between' }}>
                 <select name="assignee" defaultValue="">
                   <option value="">— non attribuée —</option>

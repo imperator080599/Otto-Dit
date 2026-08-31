@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
-import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs } from '@/lib/services/workpapers/lifecycle';
+import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs, NOTE_TYPES, type NoteType } from '@/lib/services/workpapers/lifecycle';
 import { exportWorkpaper, listExports } from '@/lib/services/workpapers/render';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
@@ -88,7 +88,10 @@ export default async function WorkpaperDetail({
       const noteId = await addReviewNote(
         id, wid, user.id, assignee === 'otto' ? null : assignee || null,
         String(formData.get('text') ?? ''),
-        { assigneeKind: assignee === 'otto' ? 'otto' : 'user' },
+        {
+          assigneeKind: assignee === 'otto' ? 'otto' : 'user',
+          noteType: (String(formData.get('note_type') ?? '') || 'a_corriger') as NoteType,
+        },
       );
       if (assignee === 'otto') await executerNoteOtto(noteId);
       revalidatePath(`/eng/${id}/workpapers/${wid}`);
@@ -352,19 +355,26 @@ export default async function WorkpaperDetail({
           <h2>Review notes (human-only)</h2>
           {notes.map((n) => (
             <div key={n.id} className={`callout ${n.status === 'open' ? 'warn' : n.status === 'addressed' ? '' : 'green'}`}>
-              <strong>{n.author_name}</strong>{n.assignee_name ? ` → ${n.assignee_name}` : ''} <span className="badge gray">{n.status}</span>
+              <strong>{n.author_name}</strong>{n.assignee_name ? ` → ${n.assignee_name}` : ''} <span className="badge gray">{n.status}</span>{' '}
+              <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>{NOTE_TYPES[n.note_type as NoteType]?.libelle ?? n.note_type}</span>
               <p style={{ margin: '4px 0 6px' }}>{n.text}</p>
               {n.status === 'open' && (
                 <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="addressed" /><button className="btn small secondary">Mark addressed</button></form>
               )}
               {n.status === 'addressed' && (
-                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="closed" /><button className="btn small secondary">Close (author)</button></form>
+                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="closed" /><button className="btn small secondary">Close (reviewer — never the author)</button></form>
               )}
             </div>
           ))}
           <form action={noteAction} className="mt">
             <textarea name="text" placeholder="New review note…" required />
             <div className="row mt">
+              <select name="note_type" defaultValue="a_corriger" title="seules les bloquantes empêchent le visa (ADR-028)">
+                <option value="a_corriger">à corriger (bloquante)</option>
+                <option value="a_documenter">à documenter</option>
+                <option value="question">question</option>
+                <option value="remarque_n1">remarque pour N+1</option>
+              </select>
               <select name="assignee" defaultValue="">
                 <option value="">unassigned</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}

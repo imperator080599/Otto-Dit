@@ -37,7 +37,8 @@ async function main() {
       'Préciser dans la conclusion le renvoi à l’état des anomalies (anomalie de cut-off non corrigée).',
     );
     await transitionNote(noteId, IDS.users.karim, 'addressed');
-    await transitionNote(noteId, IDS.users.lea, 'closed');
+    /* ADR-028 (ADR-102) : jamais l'auteur — la note de Léa se clôt par Claire. */
+    await transitionNote(noteId, IDS.users.claire, 'closed');
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');
     await signWorkpaper(wpId, IDS.users.claire, 'partner');
