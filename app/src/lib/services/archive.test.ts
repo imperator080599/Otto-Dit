@@ -57,7 +57,7 @@ describe('closing the file (ADR-022)', () => {
     expect(arch.sha256).toBe(res.archive.sha256);
     expect(arch.retention_until).toBe('2032-04-30');
 
-    const zip = await JSZip.loadAsync(Buffer.from(readBlob(arch.storage_path)));
+    const zip = await JSZip.loadAsync(Buffer.from(await readBlob(arch.storage_path)));
     const names = Object.keys(zip.files).sort();
     expect(names).toContain('MANIFEST.json');
     expect(names).toContain('README.html');

@@ -418,7 +418,7 @@ export async function exportWorkpaper(workpaperId: string, userId: string, forma
   if (!wp) throw new Error('workpaper not found');
   const ctx = await engagementCtx(wp.engagement_id);
   const rendered = format === 'pdf' ? await renderWorkpaperPdf(workpaperId) : await renderWorkpaperXlsx(workpaperId);
-  const blob = saveBlob(rendered.bytes);
+  const blob = await saveBlob(rendered.bytes);
   const prev = await q<{ id: string }>(
     `select id from export_record where workpaper_id = $1 and format = $2 order by exported_at desc limit 1`,
     [workpaperId, format],

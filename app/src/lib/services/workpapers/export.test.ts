@@ -89,7 +89,7 @@ describe('workpaper export invariants (ADR-023)', () => {
     await signWorkpaper(fresh, IDS.users.karim, 'preparer_validator');
     const first = await exportWorkpaper(fresh, IDS.users.claire, 'pdf');
     const row = await q1<{ storage_path: string }>(`select storage_path from export_record where id = $1`, [first.exportId]);
-    const original = readBlob(row.storage_path);
+    const original = await readBlob(row.storage_path);
 
     // nothing about the workpaper lives only in that file: render it again from the rows
     const again = await renderWorkpaperPdf(fresh);

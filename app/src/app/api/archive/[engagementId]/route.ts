@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ engagement
     [engagementId, user.id],
   );
   if (!a) return new NextResponse('not found', { status: 404 });
-  const bytes = readBlob(a.storage_path);
+  const bytes = await readBlob(a.storage_path);
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       'Content-Type': 'application/zip',

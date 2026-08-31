@@ -10,6 +10,7 @@
     "pieces:neuves": "tsx scripts/dataset/pieces-neuves.ts",
     "eval:pieces-neuves": "tsx scripts/eval/pieces-neuves.ts",
     "eval:entretien": "tsx scripts/eval/entretien.ts",
+    "deploy:reconstruire": "tsx scripts/deploy/reconstruire.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",
@@ -44,12 +45,14 @@
     "jszip": "^3.10.1",
     "next": "^15.5.23",
     "pdf-lib": "^1.17.1",
+    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.0",

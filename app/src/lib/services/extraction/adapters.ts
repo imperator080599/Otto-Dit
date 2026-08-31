@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '@/lib/db/client';
 import { sha256 } from '@/lib/core/hash';
+import { demoPublique } from '@/lib/core/demo-public';
 import Anthropic from '@anthropic-ai/sdk';
 import { costUsd } from '@/lib/core/pricing';
 import type { ExtractedField } from './fields';
@@ -169,6 +170,9 @@ export class UnconfiguredLiveAdapter implements OcrAdapter {
 }
 
 export function getOcrAdapter(): OcrAdapter {
+  /* Déploiement public : rejeu, point final — quoi que dise OTTO_OCR_ADAPTER
+     (ADR-109). Un mode payant sur une URL publique serait une clé qui brûle. */
+  if (demoPublique()) return new ReplayOcrAdapter();
   const which = process.env.OTTO_OCR_ADAPTER ?? 'mock';
   if (which === 'mock') return new ReplayOcrAdapter();
   if (which === 'anthropic') return new AnthropicDocAdapter();

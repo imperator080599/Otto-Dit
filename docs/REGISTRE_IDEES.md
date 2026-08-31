@@ -82,7 +82,7 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 
 | id | idée | état | preuve / raison |
 |---|---|---|---|
-| M-00a | URL : démo déployée sur Vercel, données fictives reconstruites, bandeau permanent, IA réelle OFF | en cours | BLOQUÉ session : le connecteur Vercel n'est pas autorisé ici (OAuth impossible en session non interactive) — tout le reste se prépare pour un déploiement en un geste ; Q-02 |
+| M-00a | URL : démo déployée sur Vercel, données fictives reconstruites, bandeau permanent, IA réelle OFF | en cours | motif « bloqué » précédent ERRONÉ (Q-02, DA-09) : le projet Vercel servait du vide (Root Directory, branche) ; en cours de correction — fini seulement quand J'AI chargé l'URL, ouvert un dossier, affiché l'atelier, et rapporté ce que j'ai lu |
 | M-00b | Windows : `DEMARRAGE_WINDOWS.md` ≤ 10 lignes PowerShell + contraintes de conception | fait | DEMARRAGE_WINDOWS.md (9 lignes, une commande par ligne) ; audit de classe : zéro spawn résolu par le PATH ; diagnostic + messages par cause (L-20, ADR-095/096) |
 | M-01 | Balances auxiliaires | fait | = L-17 |
 | M-02 | Contrôle interne / walkthroughs — finir proprement | fait | chaîne complète verte (code 0) : 494 tests / 74 routes / 126 étapes / 276 vues ; stations cliquées du processus passées |

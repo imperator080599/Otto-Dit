@@ -1,4 +1,4 @@
-import { q, q01 } from '@/lib/db/client';
+import { q, tx } from '@/lib/db/client';
 import { sha256, stableStringify } from './hash';
 
 // Immutable, hash-chained event log (docs/04 §8, docs/06 §4). Every state change in the
@@ -17,13 +17,6 @@ export interface EventInput {
 }
 
 export async function logEvent(e: EventInput): Promise<void> {
-  const prev = await q01<{ hash: string }>(
-    `select hash from event_log
-     where tenant_id = $1 and engagement_id is not distinct from $2
-     order by id desc limit 1`,
-    [e.tenantId, e.engagementId ?? null],
-  );
-  const prevHash = prev?.hash ?? '';
   const body = stableStringify({
     verb: e.verb,
     objectType: e.objectType,
@@ -32,24 +25,42 @@ export async function logEvent(e: EventInput): Promise<void> {
     actorKind: e.actorKind,
     actorId: e.actorId ?? null,
   });
-  const hash = sha256(prevHash + body);
-  await q(
-    `insert into event_log (tenant_id, engagement_id, actor_kind, actor_id, verb,
-       object_type, object_id, payload, prev_hash, hash)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [
-      e.tenantId,
-      e.engagementId ?? null,
-      e.actorKind,
-      e.actorId ?? null,
-      e.verb,
-      e.objectType,
-      e.objectId ?? null,
-      JSON.stringify(e.payload ?? {}),
-      prevHash,
-      hash,
-    ],
-  );
+  /* SÉRIALISER LA CHAÎNE (ADR-016.2, DEPLOY.md §1.6). En PGlite, la connexion
+     unique sérialise par construction. Sur un Postgres réseau, deux écrivains
+     concurrents liraient le même `prev_hash` et FOURCHERAIENT la chaîne — un
+     défaut qu'aucun test local ne peut montrer. Le verrou consultatif de
+     transaction, pris sur la clé de chaîne (mission, ou locataire pour les
+     événements hors mission), rend lecture+insertion atomiques. Il ne coûte
+     rien en local et existe dans les deux pilotes. */
+  await tx(async (run) => {
+    await run(`select pg_advisory_xact_lock(hashtextextended($1, 0))`,
+      [`${e.tenantId}:${e.engagementId ?? ''}`]);
+    const prev = (await run(
+      `select hash from event_log
+       where tenant_id = $1 and engagement_id is not distinct from $2
+       order by id desc limit 1`,
+      [e.tenantId, e.engagementId ?? null],
+    )) as { hash: string }[];
+    const prevHash = prev[0]?.hash ?? '';
+    const hash = sha256(prevHash + body);
+    await run(
+      `insert into event_log (tenant_id, engagement_id, actor_kind, actor_id, verb,
+         object_type, object_id, payload, prev_hash, hash)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        e.tenantId,
+        e.engagementId ?? null,
+        e.actorKind,
+        e.actorId ?? null,
+        e.verb,
+        e.objectType,
+        e.objectId ?? null,
+        JSON.stringify(e.payload ?? {}),
+        prevHash,
+        hash,
+      ],
+    );
+  });
 }
 
 /** Verify the hash chain for an engagement (S9 event-log viewer indicator). */

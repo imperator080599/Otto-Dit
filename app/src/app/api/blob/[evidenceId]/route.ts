@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ evidenceId
     [evidenceId, user.id],
   );
   if (!ev) return new NextResponse('not found', { status: 404 });
-  const bytes = readBlob(ev.storage_path);
+  const bytes = await readBlob(ev.storage_path);
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       'Content-Type': ev.mime,

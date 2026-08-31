@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ exportId: 
     [exportId, user.id],
   );
   if (!exp || !exp.storage_path) return new NextResponse('not found', { status: 404 });
-  const bytes = readBlob(exp.storage_path);
+  const bytes = await readBlob(exp.storage_path);
   const mime = exp.format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   return new NextResponse(Buffer.from(bytes), {
     headers: {

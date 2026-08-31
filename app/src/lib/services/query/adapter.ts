@@ -1,4 +1,5 @@
 import { CATALOG } from './catalog';
+import { demoPublique } from '@/lib/core/demo-public';
 import { costUsd } from '@/lib/core/pricing';
 
 // ADR-017 step 2 — the ONLY thing a model is allowed to produce: an id from the closed
@@ -109,6 +110,7 @@ export class AnthropicQueryPlanner implements QueryPlannerAdapter {
 }
 
 export function getQueryPlanner(): QueryPlannerAdapter {
+  if (demoPublique()) return new DisabledQueryPlanner();   // URL publique : jamais d'appel payant (ADR-109)
   return (process.env.OTTO_QUERY_PLANNER ?? 'disabled') === 'anthropic'
     ? new AnthropicQueryPlanner()
     : new DisabledQueryPlanner();

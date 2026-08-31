@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { PGlite } from '@electric-sql/pglite';
-import { getDb, repoRoot } from './client';
+import { getDb, repoRoot, type OttoDb } from './client';
 
 // Applies supabase/migrations/*.sql in lexical order; tracks applied files in _migrations.
-// The same .sql files are applied to Supabase in production (DEPLOY.md).
+// The same .sql files are applied to Supabase in production (DEPLOY.md) — and by the same
+// code : `migrate()` roule sur les DEUX pilotes (PGlite local, DATABASE_URL réseau).
 
-export async function migrate(db?: PGlite): Promise<string[]> {
+export async function migrate(db?: OttoDb): Promise<string[]> {
   const conn = db ?? (await getDb());
   await conn.exec(`create table if not exists _migrations (
     name text primary key, applied_at timestamptz not null default now())`);

@@ -23,7 +23,7 @@ export async function ingestEvidence(opts: {
   audience?: 'client_provided' | 'internal';
 }): Promise<{ evidenceId: string; duplicateOf: string | null }> {
   const ctx = await engagementCtx(opts.engagementId);
-  const blob = saveBlob(opts.bytes);
+  const blob = await saveBlob(opts.bytes);
   const dup = await q01<{ id: string }>(
     `select id from evidence where engagement_id = $1 and sha256 = $2 order by created_at limit 1`,
     [opts.engagementId, blob.sha256],

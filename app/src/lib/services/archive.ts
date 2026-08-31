@@ -68,7 +68,7 @@ export async function buildArchive(engagementId: string, reportDate: string): Pr
     [engagementId],
   );
   for (const e of evidence) {
-    add(`evidence/${e.filename}`, readBlob(e.storage_path));
+    add(`evidence/${e.filename}`, await readBlob(e.storage_path));
   }
 
   // 3. the structured record — what a machine (or a successor platform) reads
@@ -137,7 +137,7 @@ export async function sealFile(engagementId: string, userId: string, reportDate:
   }
   const deadlines = await fileDeadlines(engagementId, reportDate);
   const { bytes, manifest, fileCount } = await buildArchive(engagementId, reportDate);
-  const blob = saveBlob(bytes);
+  const blob = await saveBlob(bytes);
   const row = await q1<{ id: string }>(
     `insert into file_archive (engagement_id, sealed_by, storage_path, sha256, size_bytes, manifest, retention_until, legal_basis)
      values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,

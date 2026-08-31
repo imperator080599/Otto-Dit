@@ -1,4 +1,4 @@
-import { getDb, q1 } from '../src/lib/db/client';
+import { closeDb, q1 } from '../src/lib/db/client';
 import { migrate } from '../src/lib/db/migrate';
 import { seedBase, IDS } from '../src/lib/seed';
 import { runPart1UpToWorkpaper } from '../src/lib/flows/part1';
@@ -15,8 +15,7 @@ import { signWorkpaper as signOe } from '../src/lib/services/workpapers/lifecycl
 // reviewer can open the app and inspect a finished engagement immediately. Every step is
 // the same call the UI makes (no back doors).
 
-async function main() {
-  const stage = process.argv[2] ?? 'all';
+export async function construireMondeDemo(stage: string = 'all') {
   await migrate();
   await seedBase();
   await resetClock();
@@ -93,11 +92,15 @@ async function main() {
     `demo state ready — ${counts.exceptions} exceptions, ${counts.deviations} deviations, ` +
     `${counts.workpapers} workpapers, ${counts.events} events. Run "npm run dev" and sign in as any user.`,
   );
-  const db = await getDb();
-  await db.close();
+  await closeDb();
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+/* Exécuté en script (npm run demo:seed) : construit tout. Importé (script de
+   déploiement, ADR-109) : n'exécute rien tout seul. */
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  construireMondeDemo(process.argv[2] ?? 'all').catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

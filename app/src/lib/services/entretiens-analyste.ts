@@ -3,6 +3,7 @@ import path from 'node:path';
 import { repoRoot } from '@/lib/db/client';
 import { sha256 } from '@/lib/core/hash';
 import { costUsd } from '@/lib/core/pricing';
+import { demoPublique } from '@/lib/core/demo-public';
 
 // L'ANALYSTE DE TRANSCRIPT (point 2, ADR-108) — le SEUL endroit du module
 // processus où un modèle intervient, et il est CADRÉ : il produit des ÉCARTS
@@ -154,6 +155,7 @@ export class AnthropicAnalyste implements AnalysteTranscript {
 }
 
 export function getAnalyste(): AnalysteTranscript {
+  if (demoPublique()) return new RejeuAnalyste();          // URL publique : rejeu, point final (ADR-109)
   const choix = process.env.OTTO_TRANSCRIPT_ADAPTER ?? 'mock';
   if (choix === 'mock') return new RejeuAnalyste();
   if (choix === 'anthropic') return new AnthropicAnalyste();

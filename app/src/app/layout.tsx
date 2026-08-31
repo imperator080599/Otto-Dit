@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { getSessionUser } from '@/lib/core/auth';
+import { demoPublique } from '@/lib/core/demo-public';
 
 export const metadata: Metadata = {
   title: 'OTTO — AI-native assurance platform',
   description: 'Financial-statement audit & SOX/ICFR assurance — demo (synthetic data only)',
+  /* URL publique : jamais indexée — c'est une démonstration, pas un site. */
+  robots: demoPublique() ? { index: false, follow: false } : undefined,
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +20,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/" className="brand">
             OTTO<small>assurance platform</small>
           </Link>
-          <span className="demo-badge">DEMO MODE — synthetic data only</span>
+          <span className="demo-badge">{demoPublique()
+            ? 'DÉMONSTRATION PUBLIQUE — données fictives uniquement, reconstruites à chaque déploiement'
+            : 'DEMO MODE — synthetic data only'}</span>
           <span className="spacer" />
           {user ? (
             <span>

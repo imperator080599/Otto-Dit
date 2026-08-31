@@ -40,6 +40,10 @@ interactive ; aucun jeton Vercel n'est présent dans l'environnement.
 **Raison.** « Aucune question bloquante » — mais publier une URL est un acte externe qui
 exige l'accès ; tout le reste du chemin critique est, lui, faisable maintenant.
 **Coût de retour.** Nul.
+**CORRIGÉ (2026-08-31, DA-09).** Le diagnostic de cette entrée était FAUX : le blocage
+n'était pas le connecteur mais la configuration du projet (Root Directory ≠ app/, branche
+de production obsolète) — et je l'ai affirmé sans avoir chargé l'URL. L'entrée reste, comme
+trace de l'erreur ; la règle de classe est en DA-09.
 
 ## DA-04 — Vidéo d'entretien (F-14)
 
@@ -82,3 +86,35 @@ l'exemple à ne pas reproduire.
 pas rendu son verdict sur l'état exact commité ; si un état intermédiaire doit être commité
 (sauvegarde), la PREMIÈRE ligne du message dit ce qui n'est pas prouvé.
 **Coût de retour.** Sans objet.
+
+## DA-08 — Le magasin de pièces de la démo hébergée vit dans Postgres
+
+**Question.** DEPLOY.md prescrit un bucket Supabase Storage ; sur Vercel le disque est
+éphémère et par instance — PGlite comme le magasin fichiers y sont inutilisables au runtime.
+**Options.** (a) Bucket Storage (nouvel identifiant, nouvel adaptateur HTTP) ; (b) table
+`blob_store` (bytea) dans la MÊME base, même identifiant, RLS applicable.
+**Décision.** (b) pour la démo (OTTO_STORAGE=db) ; le bucket reste la voie « échelle
+production » du runbook. Corollaire dit : PGlite n'écrit pas sur Vercel — sans
+DATABASE_URL, l'application hébergée ne peut pas fonctionner, et le pilote réseau est donc
+le SEUL chemin là-bas.
+**Coût de retour.** Faible — l'interface du magasin est à trois fonctions.
+
+## DA-09 — Règle de classe : la preuve d'un service externe est la réponse obtenue
+
+**Contexte.** J'ai rapporté P0(a) « bloqué : connecteur non autorisé » alors que le projet
+Vercel existait, que 17 déploiements READY servaient du vide, et que l'URL rendait 404 —
+sans l'avoir jamais chargée. READY n'est pas une preuve ; un statut n'est pas un écran.
+**Décision.** Partout où le travail dépend d'un service externe, la vérification est la
+RÉPONSE OBTENUE (code HTTP + contenu lu), jamais le statut annoncé ni la configuration
+supposée. P0(a) n'est fini que quand j'ai chargé l'URL, ouvert un dossier et affiché
+l'atelier de testing — et rapporté ce que j'ai lu.
+**Coût de retour.** Sans objet — c'est un resserrement, pas un choix.
+
+## DA-10 — Sur Vercel, tout déploiement EST la démo publique
+
+**Question.** Le garde « démo publique » (bandeau, IA coupée, reconstruction destructrice
+autorisée) dépendait d'une variable de tableau de bord qu'on peut oublier.
+**Décision.** `demoPublique()` est vraie dès que VERCEL=1 (posée par la plateforme
+elle-même) — le garde ne dépend plus d'aucun réglage humain. Le jour d'une vraie
+production hébergée, cette ligne se revoit explicitement.
+**Coût de retour.** Une ligne.

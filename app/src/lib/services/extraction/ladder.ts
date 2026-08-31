@@ -98,7 +98,7 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
     [evidenceId],
   );
   const ctx = await engagementCtx(ev.engagement_id);
-  const bytes = readBlob(ev.storage_path);
+  const bytes = await readBlob(ev.storage_path);
 
   /* MODE « IA RÉELLE » (ADR-105) : avant qu'une lecture payante puisse partir,
      la garde de budget compare le cumul d'ai_run au plafond et REFUSE au
