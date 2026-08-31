@@ -12,18 +12,26 @@ la place. Je n'attends pas de réponse.
 
 ## Q-05 — DATABASE_URL : posée pour QUELS environnements Vercel ? (2026-08-31)
 
-**Ce qui est OBSERVÉ**, pas supposé (DA-09) : les derniers déploiements du projet
-`otto-dit` échouent tous sur `deploy:reconstruire : DATABASE_URL est absente`, et ils
-portent `target: null` — c'est-à-dire des déploiements d'**aperçu** (Preview), pas de
-production. Une variable d'environnement cochée pour le seul environnement « Production »
-est **absente** des builds d'aperçu : le symptôme serait exactement celui-là.
+**Ce qui est OBSERVÉ**, pas supposé (DA-09) — et depuis le 2026-08-31 16:32, MESURÉ dans
+le journal du build lui-même :
+
+```
+deploy:reconstruire : DATABASE_URL est absente …
+  Environnement du build : VERCEL_ENV=preview · branche main.
+```
+
+Le build de `main` s'exécute donc en **aperçu** (`VERCEL_ENV=preview`), pas en production
+— la branche de production du projet n'est pas (encore) `main`. Et une variable cochée
+pour le seul environnement « Production » est **absente** des builds d'aperçu : les deux
+faits se combinent exactement en ce symptôme.
 
 **Ce que ça demande à Tuan**, en un geste : Vercel → Settings → Environment Variables →
 `DATABASE_URL` cochée pour **Production, Preview et Development** (la base de démonstration
 est synthétique : aucun risque à l'exposer aux trois), et Production Branch = `main` pour
 que les pousses sur `main` deviennent des déploiements de production.
 
-**Défaut retenu en attendant** : le message d'échec du build NOMME désormais cette cause,
-avec `VERCEL_ENV` et la branche du build — un message qui ne dit pas quoi faire fait perdre
-un aller-retour à chaque fois.
+**Défaut retenu en attendant** : le message d'échec du build NOMME cette cause, avec
+`VERCEL_ENV` et la branche — et c'est ce message qui vient de livrer le diagnostic. Un
+message qui ne dit pas quoi faire fait perdre un aller-retour à chaque fois ; celui-ci a
+payé son écriture au premier build.
 

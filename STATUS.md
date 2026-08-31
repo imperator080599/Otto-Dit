@@ -133,7 +133,7 @@ une base vide : **01:02** de la commande au panneau.
 |---|---|---|
 | 1 | **Les 19 sources méthodologiques sont `verifie: false`** — aucune relue sur texte primaire. Le fondateur s'en charge sur les procédures de démonstration. | fondateur |
 | 2 | **PCAOB AS 1215** porté `[UNVERIFIED]` : pcaobus.org est bloqué depuis cet environnement. Le côté français est vérifié (R. 820-42 ; D. 821-186 III-IV). | fondateur |
-| 3 | **Déploiement Vercel + Supabase** — runbook dans DEPLOY.md, à lancer sur demande. | fondateur |
+| 3 | **Déploiement Vercel + Supabase** — tout le code est en place (ADR-109) et le build s'arrête proprement sur `DATABASE_URL est absente`. MESURÉ dans le journal du build du 2026-08-31 16:32 : `VERCEL_ENV=preview · branche main` — les pousses sur `main` produisent des déploiements d'**aperçu**, et une variable cochée pour le seul environnement « Production » y est absente. Deux réglages côté tableau de bord (Q-05) : DATABASE_URL pour TOUS les environnements, et Production Branch = `main`. P0(a) n'est fini que quand J'AURAI chargé l'URL, ouvert un dossier et lu l'atelier (DA-09). | fondateur |
 | 4 | **Transport e-mail entrant réel** (Q12) — première tâche de déploiement. | fondateur |
 | 5 | **Secret professionnel / RGPD + DPA** avant toute donnée réelle (A13). | fondateur |
 | 6 | Le contrôle `input[type=file]` affiche « Choose File » (libellé natif du navigateur) sur le portail francophone : non corrigeable sans contrôle sur mesure. | à trancher |
