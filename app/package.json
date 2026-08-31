@@ -11,6 +11,7 @@
     "eval:pieces-neuves": "tsx scripts/eval/pieces-neuves.ts",
     "eval:entretien": "tsx scripts/eval/entretien.ts",
     "deploy:reconstruire": "tsx scripts/deploy/reconstruire.ts",
+    "densite": "tsx scripts/mesures/densite.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",
