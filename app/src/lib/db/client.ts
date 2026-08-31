@@ -46,9 +46,67 @@ export function dbKind(): 'pglite' | 'pg' {
 
 // ── Pilote réseau (node-postgres) ────────────────────────────────────────────
 
+/** L'hôte, JAMAIS le mot de passe — un message d'erreur ne divulgue rien. */
+export function hote(url: string): string {
+  try { const u = new URL(url); return `${u.hostname}:${u.port || '5432'}`; } catch { return '(URI illisible)'; }
+}
+
+/**
+ * LES DEUX FLOTTES DU POOLER SUPABASE.
+ *
+ * `aws-0-<région>.pooler.supabase.com` (historique) et `aws-1-<région>…`
+ * (projets récents) sont deux répartiteurs DISTINCTS, et un projet n'est
+ * enregistré que sur UN. Viser l'autre donne « tenant or user not found » : le
+ * pooler RÉPOND, et ne connaît pas le locataire — un message qui ressemble à
+ * une erreur d'identifiants alors que c'est un chiffre dans le nom d'hôte.
+ * Vécu le 2026-08-31, un déploiement perdu dessus.
+ *
+ * On tente donc l'autre flotte UNE fois, et on le DIT dans le journal : le
+ * réglage reste à corriger dans DATABASE_URL, mais le déploiement ne meurt pas
+ * sur un chiffre. Un repli muet serait pire que le défaut (règle 13).
+ */
+export function autreFlotte(url: string): string | null {
+  const m = url.match(/@aws-([01])-([a-z0-9-]+)\.pooler\.supabase\.com/);
+  if (!m) return null;
+  return url.replace(`@aws-${m[1]}-`, `@aws-${m[1] === '0' ? '1' : '0'}-`);
+}
+
 /** Import paresseux : le bundle local/démo ne paie jamais le poids de pg, et
  *  PGlite reste le seul chemin quand DATABASE_URL est absente. */
 async function openPg(url: string): Promise<OttoDb> {
+  try {
+    return await brancher(url);
+  } catch (e) {
+    const cause = e instanceof Error ? e.message : String(e);
+    const alt = /tenant|not found/i.test(cause) ? autreFlotte(url) : null;
+    if (!alt) throw new Error(echecReseau(url, cause));
+    console.warn(
+      `base : le pooler ${hote(url)} a RÉPONDU et ne connaît pas ce locataire.\n`
+      + `  Nouvelle tentative sur l'AUTRE flotte : ${hote(alt)}.\n`
+      + `  À corriger dans DATABASE_URL — l'URI exacte est dans Supabase → Connect → Transaction pooler.`);
+    try {
+      return await brancher(alt);
+    } catch (e2) {
+      throw new Error(echecReseau(url, cause)
+        + `\n  seconde tentative sur ${hote(alt)} : ${e2 instanceof Error ? e2.message : String(e2)}`);
+    }
+  }
+}
+
+export function echecReseau(url: string, cause: string): string {
+  const locataire = /tenant|not found/i.test(cause);
+  return `DATABASE_URL est posée mais la base réseau ne répond pas (${hote(url)}).\n`
+    + (locataire
+      ? `  • le pooler a RÉPONDU : il ne connaît pas ce locataire. Ce n'est PAS un mot de passe —\n`
+        + `    c'est l'hôte (flotte aws-0 / aws-1) ou l'utilisateur, qui doit être postgres.<ref-du-projet>.\n`
+        + `    Copiez l'URI depuis Supabase → Connect → Transaction pooler.\n`
+      : `  • hôte injoignable (pare-feu sortant, port 5432/6543) ?\n`
+        + `  • identifiants ou nom de base erronés ? (un caractère spécial NON encodé dans le mot de\n`
+        + `    passe coupe l'URI : DATABASE_URL est un URI, pas une chaîne libre)\n`)
+    + `  cause d'origine : ${cause}`;
+}
+
+async function brancher(url: string): Promise<OttoDb> {
   const { Pool } = await import('pg');
   /* TLS : Supabase signe ses certificats serveur avec sa propre AC. Le mode
      strict exige cette AC : OTTO_DB_CA_CERT (chemin d'un .crt, fourni par le
@@ -93,16 +151,14 @@ async function openPg(url: string): Promise<OttoDb> {
     },
     async close() { await pool.end(); },
   };
-  // Échouer MAINTENANT et lisiblement, pas au premier écran.
+  /* Échouer MAINTENANT, pas au premier écran — et remonter la cause BRUTE :
+     c'est openPg qui la traduit, parce que lui seul sait s'il reste une
+     seconde flotte à tenter. */
   try {
     await db.query('select 1');
   } catch (e) {
-    throw new Error(
-      `DATABASE_URL est posée mais la base réseau ne répond pas.\n`
-      + `  • hôte injoignable (pare-feu sortant, port 5432/6543) ?\n`
-      + `  • identifiants ou nom de base erronés ?\n`
-      + `  cause d'origine : ${e instanceof Error ? e.message : String(e)}`,
-    );
+    await pool.end().catch(() => undefined);
+    throw e;
   }
   return db;
 }

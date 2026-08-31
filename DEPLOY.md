@@ -31,6 +31,15 @@ les implémente** (règle 13). C'est corrigé :
 | Production Branch | **`main`** | sans ça, les pousses sur `main` produisent des déploiements d'**aperçu** (`VERCEL_ENV=preview`) — mesuré dans un journal de build le 2026-08-31 |
 | `DATABASE_URL` | pooler de **transaction** Supabase (port 6543), cochée **Production + Preview + Development** | une variable cochée pour la seule Production est **absente d'un aperçu** : le build s'arrête sur « DATABASE_URL est absente » alors qu'elle est bien posée. Les deux réglages précédents se combinent en ce symptôme unique |
 
+**Le piège suivant, payé le même jour : les DEUX flottes du pooler.**
+`aws-0-<région>.pooler.supabase.com` (historique) et `aws-1-<région>.pooler.supabase.com`
+(projets récents) sont deux répartiteurs **distincts** — un projet n'est enregistré que sur
+UN. Viser l'autre donne `Tenant or user not found` : le pooler **répond**, et ne connaît pas
+le locataire. Le message ressemble à une erreur d'identifiants ; c'en est une d'**hôte**.
+Copiez l'URI depuis **Supabase → Connect → Transaction pooler**, jamais de mémoire. Le code
+tente désormais l'autre flotte une fois, **en le disant dans le journal du build** — le
+réglage reste à corriger, mais un déploiement ne meurt plus sur un chiffre.
+
 **Le mot de passe de la base ne doit porter aucun caractère spécial** — ou alors être
 percent-encodé. `DATABASE_URL` est un URI : un `@`, un `/`, un `#` ou un `?` dans le mot de
 passe coupe l'URI en deux et le pilote se connecte à un hôte inexistant, avec un message qui

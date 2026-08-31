@@ -35,3 +35,13 @@ que les pousses sur `main` deviennent des déploiements de production.
 message qui ne dit pas quoi faire fait perdre un aller-retour à chaque fois ; celui-ci a
 payé son écriture au premier build.
 
+**Suite (2026-08-31, 18:44) — les trois réglages sont posés, et le build a AVANCÉ.**
+`target: production`, `DATABASE_URL` présente : le script atteint le pooler et
+`aws-0-eu-west-1.pooler.supabase.com` **répond** — `tenant/user postgres.fhxghmcehfdmxklkhfzk
+not found`. Le locataire est donc enregistré sur l'AUTRE flotte (`aws-1-…`, DNS vérifié :
+deux répartiteurs distincts, `pool-tcp-eu-west-1-…` et `pool-tcp-euw11-…`). Le projet est
+`ACTIVE_HEALTHY`, la référence est la bonne : ce n'est ni le mot de passe, ni le pare-feu.
+**Ce que ça demande** : copier l'URI depuis Supabase → Connect → Transaction pooler (l'hôte
+exact y figure). En attendant, le code tente l'autre flotte une fois et l'écrit dans le
+journal.
+
