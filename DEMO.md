@@ -608,3 +608,19 @@ and number formats, and bitmap scans with no text layer at all). `cost:measure` 
 start without a live adapter, its key, today's price list and `--yes`; with the default
 `mock` adapter neither command can spend anything. **No client document ever goes in either
 corpus** — a real-document eval happens only at a pilot client, with written authorization.
+
+## Le lien de démonstration (URL publique seulement)
+
+Sur la démonstration publique, `/demo/<prénom>` pose l'identité et ouvre l'écran voulu :
+
+```
+https://<url>/demo/claire?vers=/eng/<id-du-dossier>/testing
+```
+
+Prénoms : `claire` (associée), `lea` (manager), `karim` (senior), `hugo` (staff, sans
+déclaration d'indépendance — il sert à être REFUSÉ). Le portail client a ses propres liens
+(`/portal/demo-sophie-altiverre`).
+
+Ce chemin **n'existe pas** hors démonstration publique : il répond 404, et le balayage des
+écrans le vérifie à chaque exécution. Une identité posée par une URL est une commodité de
+bac à sable — jamais une authentification.

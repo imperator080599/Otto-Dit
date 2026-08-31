@@ -101,6 +101,9 @@ export async function parametres(): Promise<Record<string, string>> {
     engId,
     // /api/archive/[engagementId] — le dossier scellé se télécharge
     engagementId: engId,
+    // /demo/[qui] — le lien de démonstration, par PRÉNOM (il refuse hors démo
+    // publique : l'attente 404 est déclarée plus bas, avec sa raison)
+    qui: 'claire',
     // le dossier SOX, pour les routes qui ne valent que là
     sox: soxId,
   };
@@ -137,6 +140,11 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
        On DÉCLARE l'attente au lieu de sauter la route ou d'ignorer les 404 :
        le rapport la montre, et un 200 inattendu échouerait tout autant. */
     const archiveVide = pattern === '/api/archive/[engagementId]' && !(await aUnDossierScelle(vals.id));
+    /* Le lien de démonstration N'EXISTE QUE sur la démo publique : hors d'elle
+       il répond 404, et c'est la règle elle-même (une identité posée par une
+       URL serait une faille ailleurs). On DÉCLARE l'attente au lieu de sauter
+       la route — un 200 ici serait un défaut de sécurité, et il échouerait. */
+    const lienDemo = pattern === '/demo/[qui]' && process.env.OTTO_DEMO_PUBLIC !== '1' && process.env.VERCEL !== '1';
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie
@@ -144,6 +152,9 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
       as: pattern.startsWith('/portal') ? 'anonymous' : 'auditor',
       ...(archiveVide
         ? { attendu: 404, pourquoi: 'aucun dossier scellé dans le monde de démonstration' }
+        : {}),
+      ...(lienDemo
+        ? { attendu: 404, pourquoi: 'le lien de démonstration n\'existe que sur la démo publique (demoPublique)' }
         : {}),
     });
   }
