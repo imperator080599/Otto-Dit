@@ -2,13 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { getSessionUser } from '@/lib/core/auth';
-import { demoPublique } from '@/lib/core/demo-public';
 
 export const metadata: Metadata = {
   title: 'OTTO — AI-native assurance platform',
   description: 'Financial-statement audit & SOX/ICFR assurance — demo (synthetic data only)',
-  /* URL publique : jamais indexée — c'est une démonstration, pas un site. */
-  robots: demoPublique() ? { index: false, follow: false } : undefined,
+  /* URL publique : jamais indexée — c'est une démonstration, pas un site.
+     (Toujours noindex : la seule instance indexable serait une production
+     réelle, qui n'existe pas — et une constante ne peut pas diverger entre
+     construction et exécution, expérience fil n°7.) */
+  robots: { index: false, follow: false },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,9 +22,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/" className="brand">
             OTTO<small>assurance platform</small>
           </Link>
-          <span className="demo-badge">{demoPublique()
-            ? 'DÉMONSTRATION PUBLIQUE — données fictives uniquement, reconstruites à chaque déploiement'
-            : 'DEMO MODE — synthetic data only'}</span>
+          {/* PERMANENT ET CONSTANT (fil n°7, expérience du 2026-08-31) : le
+              layout racine ne porte AUCUNE conditionnelle d'environnement —
+              quatre chaînes sur quatre émettaient un #418 erratique avec un
+              ternaire ici, zéro sans. Et le fond est plus juste ainsi : les
+              données sont fictives dans TOUS les modes, pas seulement en
+              public. */}
+          <span className="demo-badge">DÉMONSTRATION — données fictives uniquement · synthetic data only</span>
           <span className="spacer" />
           {user ? (
             <span>
