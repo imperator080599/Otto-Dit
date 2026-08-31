@@ -173,6 +173,26 @@ export async function conduire(
       Boolean(motif) && Boolean(engNeuf), motif || 'refus non lisible dans l’URL');
   });
 
+  // ── 1 bis. LE RAIL D'ÉTAT sur le dossier neuf (ADR-103)
+  await station('rail : l\'état du dossier, pas le catalogue', async () => {
+    if (!engNeuf) { dire('rail : pas de dossier neuf', false, 'étape 1 en échec'); return; }
+    await aller(`${base}/eng/${engNeuf}`);
+    const liens = await compte('.engnav a');
+    /* Un dossier neuf (accepté ou pas selon le rejeu) montre PEU : le rail
+       grandit avec le travail, il ne présente pas le catalogue. */
+    dire('rail : un dossier jeune montre un rail COURT (état, pas catalogue)',
+      liens >= 5 && liens <= 12, `${liens} destination(s) atteignable(s)`);
+    dire('rail : « tout afficher » annonce ce qui reste, jamais un masquage muet',
+      (await compte('.engnav .rail-tout')) === 1,
+      await p.locator('.engnav .rail-tout').innerText().catch(() => 'absent'));
+    await p.locator('.engnav .rail-tout').click();
+    await p.waitForTimeout(400);
+    const grises = await compte('.engnav .grise');
+    const t = await p.locator('.engnav').innerText();
+    dire('rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne',
+      grises > 0 && /disponible après|apparaît/.test(t), `${grises} grisée(s), raisons visibles`);
+  });
+
   // ── 2. ACCEPTATION ET JALONS, sur le dossier neuf
   await station('acceptation du dossier neuf', async () => {
     if (!engNeuf) { dire('acceptation : pas de dossier neuf à accepter', false, 'étape 1 en échec'); return; }

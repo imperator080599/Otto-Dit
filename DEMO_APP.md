@@ -56,6 +56,13 @@ désignée — sans elle il ne pourrait rien planifier, et personne ne saurait p
 **Ce qu'il faut montrer** : recréez le même dossier une seconde fois. Refusé : *deux dossiers de même
 nature sur le même exercice feraient deux vérités sur les mêmes comptes.*
 
+**Et regardez le rail à gauche** (ADR-103) : le dossier qui vient de naître montre **cinq
+destinations** — vue d'ensemble, acceptation, équipe, réunions, journal — parce que le rail montre
+**l'état du dossier, pas le catalogue des fonctions**. « Tout afficher » déplie la carte complète :
+ce qui n'est pas encore atteignable y est **grisé avec sa raison** (« disponible après le tirage de
+l'échantillon ») — jamais masqué sans explication. Le rail grandit à mesure que vous travaillez ;
+sur Altiverre, déjà conduit, il est presque entier.
+
 ---
 
 ### 3. Accepter la mission — un dossier commence par une décision
@@ -79,7 +86,7 @@ nature sur le même exercice feraient deux vérités sur les mêmes comptes.*
 
 ### 4. L'équipe et l'indépendance
 
-**Écran** : `Team & independence`.
+**Écran** : `Équipe et indépendance`.
 
 **Ce qu'il faut montrer** : affectez **Hugo Vasseur**. Refusé — sa déclaration n'est pas signée.
 Il existe pour ça. *Le système refuse ; il ne rappelle pas.*
@@ -102,7 +109,7 @@ toujours vrai » ; écarter sans motif est indistinguable d'un oubli.*
 
 ### 6. Les données, le rapprochement, les seuils, le périmètre
 
-**Écrans** : `Data & imports`, `Reconciliation`, `Materiality`, `Scoping`.
+**Écrans** : `Imports (balance et grand livre)`, `Rapprochement comptable`, `Seuils de signification`, `Périmètre (postes retenus)`.
 
 Déjà déroulés par `npm run demo:seed`. Le rapprochement porte une **limitation consignée** : l'écart
 tient à une écriture absente du grand livre, il n'y a ni pièce à joindre ni écriture à citer, et le
@@ -123,7 +130,7 @@ on le sort avec un motif. Ressortez-le : l'obstacle tombe.
 
 ### 7. Le risque par assertion — et ce qu'il commande
 
-**Écran** : `Risk by assertion`.
+**Écran** : `Risque par assertion`.
 
 **Ce qu'il faut montrer** : baissez `séparation` de « moyen » à « faible » avec un motif. Les
 procédures de *cut-off* **sortent** de la liste des travaux requis. Remontez : elles reviennent.
@@ -140,7 +147,7 @@ mauvais alors que le premier est bon.*
 
 ### 8. Le questionnaire résiduel
 
-**Écran** : `Risk by assertion`, panneau du bas.
+**Écran** : `Risque par assertion`, panneau du bas.
 
 **Ce qu'il faut montrer** : répondez **oui** à une question. Elle ne coche rien : elle **crée un
 facteur au registre**, avec sa source et son texte. Confirmez-le : il **monte le niveau** et fait
@@ -150,7 +157,7 @@ entrer des procédures. Laissez-le *proposé* : il ne compte pas — *un moteur 
 
 ### 9. La boucle
 
-**Écran** : `La boucle`.
+**Écran** : `Avancement de la boucle`.
 
 Neuf étapes, ce qui a **franchi**, ce qui est **arrêté là**, et **ce qu'on attend** — nommément,
 jamais « en cours ».
@@ -162,8 +169,6 @@ La liste du bas dit **de quel écart** chaque demande est née.
 ---
 
 ### 9 bis. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
-
-**Écran** : `Testing` (l'atelier extraction → vouching → vérification).
 
 **À dire, mot pour mot, à ce moment-là** : « Ce que vous voyez ici est en partie rejoué. Les deux
 premiers échelons — le XML Factur-X et la couche texte du PDF — lisent réellement le fichier de la
@@ -178,7 +183,7 @@ un modèle quand la donnée est rejouée (ADR-102).
 
 ### 10. Le papier de travail
 
-**Écran** : `Workpapers`.
+**Écran** : `Papiers de travail`.
 
 **Ce qu'il faut montrer** : le papier porte **la référence du plan de classement du cabinet**
 (`A-01`), pas notre numérotation. Ouvrez `papier.json` dans la méthode : déplacez « Évaluation »
@@ -248,7 +253,7 @@ simulé et l'écran l'affirme.
 
 ### 11. Le pointage des états financiers
 
-**Écran** : `États financiers`.
+**Écran** : `Pointage des états financiers`.
 
 **Ce qu'il faut montrer** : « Charger la plaquette », puis « Repointer ». Deux natures se
 **calculent** ; la troisième — l'effectif moyen — **ne vient d'aucun compte**. Essayez de la

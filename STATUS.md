@@ -32,7 +32,11 @@ introuvable qui PROPOSE une clarification client (ADR-099) · **bascule entre mi
 par client** (groupe → entité → mandats), journalisée, isolation éprouvée (ADR-100) ·
 **réunions** : contacts de mission (clé + domaines), créneaux communs depuis les disponibilités
 (libre/occupé seulement), choix humain obligatoire, copies dans l'ordre calculé, .ics RFC 5545 —
-lecture d'agendas et envoi SIMULÉS et dits tels (ADR-101).
+lecture d'agendas et envoi SIMULÉS et dits tels (ADR-101) ·
+**le rail montre l'ÉTAT du dossier, pas le catalogue des fonctions** : un dossier neuf ouvre cinq
+destinations, le rail grandit avec le travail, le reste est GRISÉ avec sa raison en une ligne
+derrière « tout afficher » — jamais masqué sans explication ; libellés réécrits pour la première
+ouverture (ADR-103).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 

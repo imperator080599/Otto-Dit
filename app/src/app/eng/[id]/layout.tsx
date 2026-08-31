@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { q1 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { missionsParClient } from '@/lib/services/bascule';
+import { railDuDossier } from '@/lib/services/rail';
 import { basculerAction } from './bascule-actions';
 import { EngNav } from './nav';
 
@@ -28,6 +29,9 @@ export default async function EngagementLayout({
      where e.id = $1`,
     [id],
   );
+
+  /* LE RAIL D'ÉTAT (ADR-103) : calculé ici, contre l'état réel du dossier. */
+  const rail = await railDuDossier(id, eng.framework_set.assurance_packs);
 
   return (
     <div className="shell shell-wide">
@@ -71,7 +75,7 @@ export default async function EngagementLayout({
           <span className={`badge ${eng.status === 'locked' ? 'amber' : 'green'}`}>{eng.status}</span>
         </div>
       </div>
-      <EngNav engId={eng.id} packs={eng.framework_set.assurance_packs} />
+      <EngNav entrees={rail} />
       {children}
     </div>
   );

@@ -3690,3 +3690,38 @@ couche texte lisent réellement le fichier (déterministes) ; l'échelon OCR ne 
 rejoue des extractions enregistrées du jeu synthétique, sans appel ni dépense. DEMO_APP.md
 donne la phrase à prononcer à ce moment-là, mot pour mot. Ne jamais laisser croire qu'une
 pièce est lue quand la donnée est rejouée.
+
+## ADR-103 — Le rail montre l'état du dossier, pas le catalogue des fonctions
+
+**Contexte.** Quatrième demande de densité, et les trois premières réponses avaient replié
+davantage. Le fondateur nomme le vrai défaut : le rail affichait le CATALOGUE — vingt-huit
+destinations dès le premier jour — au lieu de l'ÉTAT du dossier.
+
+**Décision.** Chaque destination porte une CONDITION D'ATTEIGNABILITÉ dérivée de l'état réel
+(`services/rail.ts`, une seule requête d'existences) : les imports après l'acceptation, le
+rapprochement et les seuils après l'import, le périmètre après les seuils, le testing après
+le tirage, le pointage après le visa, la clôture après l'achèvement… Un dossier qui vient
+d'être créé montre CINQ destinations (vue d'ensemble, acceptation, équipe, réunions,
+journal), et le rail grandit à mesure qu'on travaille. Ce qui n'est pas atteignable est
+disponible derrière « tout afficher (N à venir) », GRISÉ avec sa raison en une ligne
+(« disponible après le tirage de l'échantillon ») — jamais masqué sans explication. Le gris
+n'est pas une couleur de signal : la couleur reste aux problèmes. Les raisons sont DÉRIVÉES,
+jamais stockées — la même requête dit « atteignable » et « pourquoi pas encore ». Le test
+éprouve les deux bouts (dossier neuf : cinq entrées et toutes les raisons ; dossier déroulé :
+tout ouvert sauf la clôture), et le parcours cliqué ouvre « tout afficher » sur le dossier
+créé au clic et LIT les raisons grisées.
+
+**Les libellés, réécrits pour la première ouverture.** Le critère n'est pas « le nom est
+juste » mais « quelqu'un qui ouvre l'outil pour la première fois comprend ce qu'il va
+trouver ». Chaque entrée porte désormais une PHRASE (l'infobulle du rail, et le contrat du
+libellé) ; les libellés anglais et les noms de jargon sont partis : Overview → Vue
+d'ensemble, Team & independence → Équipe et indépendance, Data & imports → Imports (balance
+et grand livre), Reconciliation → Rapprochement comptable, Materiality → Seuils de
+signification, Scoping → Périmètre (postes retenus), Risk by assertion → Risque par
+assertion, Population → Population contrôlable, Sampling → Échantillon (sondage), Testing →
+Contrôle sur pièces (testing), La boucle → Avancement de la boucle, RCM & controls →
+Contrôles internes (SOX), Requests → Demandes au client, Evidence → Pièces reçues,
+Exceptions → Écarts relevés (Déviations (SOX) côté pack), Workpapers → Papiers de travail,
+États financiers → Pointage des états financiers, Ask the file → Interroger le dossier,
+Dashboard → Pilotage, Provenance → Provenance des chiffres, Event log → Journal du dossier.
+

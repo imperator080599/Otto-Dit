@@ -1,81 +1,44 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import type { EntreeRail } from '@/lib/services/rail';
 
-// Engagement navigation. Entries appear as slices land; the SOX group shows only for
-// engagements carrying the pcaob-sox pack (pack-driven UI, D1).
+// LE RAIL D'ÉTAT (ADR-103). Il reçoit ses entrées CALCULÉES côté serveur
+// (services/rail.ts) : atteignable ou pas, et pourquoi. Par défaut il ne
+// montre que ce qui est atteignable — un dossier neuf en montre cinq, et le
+// rail grandit à mesure qu'on travaille. « Tout afficher » déplie la carte
+// complète : ce qui n'est pas encore atteignable y est GRISÉ avec sa raison
+// en une ligne — jamais masqué sans explication.
 
-export function EngNav({ engId, packs }: { engId: string; packs: string[] }) {
+export function EngNav({ entrees }: { entrees: EntreeRail[] }) {
   const pathname = usePathname();
-  const base = `/eng/${engId}`;
-  const items: { href: string; label: string }[] = [
-    { href: base, label: 'Overview' },
-    // L'ACCEPTATION VIENT EN PREMIER : un dossier ne commence pas par un
-    // import, il commence par une décision. Aucun travail ne se planifie avant.
-    { href: `${base}/acceptance`, label: 'Acceptation' },
-    // L'équipe vient AVANT les données : aucun travail ne s'attribue sans
-    // déclaration d'indépendance signée, donc c'est par là qu'un dossier
-    // commence — pas par un import.
-    { href: `${base}/team`, label: 'Team & independence' },
-    // La reprise N-1 vient AVANT les données : le dossier de l'an dernier
-    // dit ce qu'on cherche cette année.
-    { href: `${base}/carry-forward`, label: 'Reprise N-1' },
-    { href: `${base}/imports`, label: 'Data & imports' },
-    { href: `${base}/reconciliation`, label: 'Reconciliation' },
-    { href: `${base}/materiality`, label: 'Materiality' },
-    { href: `${base}/scoping`, label: 'Scoping' },
-    // Le risque vient APRÈS le scoping et AVANT les travaux, parce que c'est sa
-    // place réelle : il est le chaînon qui fait que le scoping commande quelque
-    // chose. Le mettre ailleurs le rendrait décoratif.
-    { href: `${base}/risk`, label: 'Risk by assertion' },
-  ];
-  if (packs.includes('nep-fr')) {
-    items.push(
-      { href: `${base}/population`, label: 'Population' },
-      { href: `${base}/sampling`, label: 'Sampling' },
-      { href: `${base}/testing`, label: 'Testing' },
-      // LA BOUCLE, entre les travaux et les demandes : c'est là qu'elle tourne.
-      { href: `${base}/loop`, label: 'La boucle' },
-    );
-  }
-  if (packs.includes('pcaob-sox')) {
-    items.push({ href: `${base}/rcm`, label: 'RCM & controls' });
-  }
-  items.push(
-    { href: `${base}/requests`, label: 'Requests' },
-    // Les réunions : la partie déterministe, l'envoi simulé et dit tel (ADR-101).
-    { href: `${base}/reunions`, label: 'Réunions' },
-    { href: `${base}/evidence`, label: 'Evidence' },
-    { href: `${base}/exceptions`, label: packs.includes('pcaob-sox') ? 'Deviations' : 'Exceptions' },
-    { href: `${base}/workpapers`, label: 'Workpapers' },
-    // Les notes de revue, transverses : ancrées sur les objets, résolues ici.
-    { href: `${base}/notes`, label: 'Notes de revue' },
-    // Le pointage des états financiers : l'autre bout de l'arc.
-    { href: `${base}/fs-tieout`, label: 'États financiers' },
-    { href: `${base}/ask`, label: 'Ask the file' },
-    // L'achèvement, puis les obstacles : la fin du dossier dans l'ordre.
-    { href: `${base}/completion`, label: 'Achèvement' },
-    // Les obstacles au visa : une seule liste, calculée, transverse.
-    { href: `${base}/obstacles`, label: 'Obstacles au visa' },
-    /* La clôture : le dernier geste du métier, et il n'avait AUCUN écran —
-       `closeFile` n'était appelé que par des tests, et l'archive scellée
-       n'avait pas de chemin de lecture (ADR-091). */
-    { href: `${base}/close`, label: 'Clôture et archive' },
-    { href: `${base}/dashboard`, label: 'Dashboard' },
-    { href: `${base}/provenance`, label: 'Provenance' },
-    { href: `${base}/events`, label: 'Event log' },
-  );
+  const [tout, setTout] = useState(false);
+  const aVenir = entrees.filter((x) => !x.atteignable);
   return (
     <nav className="engnav">
-      {items.map((it) => {
-        const active = it.href === base ? pathname === base : pathname.startsWith(it.href);
+      {entrees.map((it) => {
+        if (it.atteignable) {
+          const active = /\/eng\/[^/]+$/.test(it.href) ? pathname === it.href : pathname.startsWith(it.href);
+          return (
+            <Link key={it.href} href={it.href} className={active ? 'active' : ''} title={it.phrase}>
+              {it.label}
+            </Link>
+          );
+        }
+        if (!tout) return null;
         return (
-          <Link key={it.href} href={it.href} className={active ? 'active' : ''}>
-            {it.label}
-          </Link>
+          <span key={it.href} className="grise" title={it.phrase}>
+            {it.label} <span className="raison">— {it.raison}</span>
+          </span>
         );
       })}
+      {aVenir.length > 0 && (
+        <button type="button" className="rail-tout" onClick={() => setTout(!tout)}>
+          {tout ? 'réduire' : `tout afficher (${aVenir.length} à venir)`}
+        </button>
+      )}
     </nav>
   );
 }

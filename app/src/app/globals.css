@@ -128,6 +128,17 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 }
 .engnav a:hover { color: var(--text); text-decoration: none; }
 .engnav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+/* Rail d'état (ADR-103) : le pas-encore-atteignable est GRIS avec sa raison —
+   le gris n'est pas une couleur de signal, la couleur reste aux problèmes. */
+.engnav .grise {
+  padding: 7px 12px; color: var(--faint); font-size: 13px; cursor: default;
+}
+.engnav .grise .raison { font-size: 11.5px; }
+.engnav .rail-tout {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 12px; padding: 7px 10px; text-decoration: underline dotted;
+}
+.engnav .rail-tout:hover { color: var(--text); }
 
 .panel {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
