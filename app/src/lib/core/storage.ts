@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { dataDir, q, q01 } from '@/lib/db/client';
 import { sha256 } from './hash';
+import { demoPublique } from './demo-public';
 
 // Content-addressed evidence blob store (docs/04 §9.2): blobs never mutate; re-upload of
 // identical content maps to the same blob (dedupe is detected at the evidence layer and
@@ -15,7 +16,10 @@ import { sha256 } from './hash';
 // silence sur le disque.
 
 function mode(): 'fs' | 'db' {
-  const m = process.env.OTTO_STORAGE ?? 'fs';
+  /* Sur la démo publique (Vercel), le disque est éphémère et par instance :
+     'db' est le seul défaut qui ne perd pas de pièces (DA-08/DA-10) — sans
+     dépendre d'une variable de tableau de bord qu'on peut oublier. */
+  const m = process.env.OTTO_STORAGE ?? (demoPublique() ? 'db' : 'fs');
   if (m === 'fs' || m === 'db') return m;
   throw new Error(`OTTO_STORAGE « ${m} » inconnu — 'fs' (disque local) ou 'db' (table blob_store). `
     + `Le bucket Supabase Storage est une étape du runbook, pas encore un mode du code (DEPLOY.md).`);

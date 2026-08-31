@@ -3,6 +3,29 @@
 The prototype is **local-first**: it runs with zero external accounts (PGlite + recorded
 adapters). Deployment turns on the production substrate; no application code changes.
 
+## 0. La démo publique (ADR-109) — le chemin RÉELLEMENT implémenté
+
+Longtemps, ce runbook promettait `DATABASE_URL` et `OTTO_STORAGE` **sans qu'aucun code ne
+les implémente** (règle 13). C'est corrigé :
+
+- `DATABASE_URL` posée → pilote réseau node-postgres (pool, verrou consultatif sur la
+  chaîne d'événements) ; absente → PGlite, inchangé. `migrate()` roule sur les deux.
+- `OTTO_STORAGE=db` → les pièces vivent dans la table `blob_store` (le disque serverless
+  est éphémère, DA-08) ; défaut `fs` en local. Tout autre mode **refuse**.
+- Sur Vercel (`VERCEL=1`), tout déploiement EST la démo publique (DA-10) : bandeau
+  « données fictives » permanent, `noindex`, les trois fabriques d'adaptateurs FORCÉES au
+  rejeu — aucune clé requise, aucune clé lue, quoi que disent les variables.
+- La commande de build (`app/vercel.json`) enchaîne `npm run deploy:reconstruire` puis
+  `next build` : schéma rasé (gardé par déclaration explicite), 29 migrations, monde de
+  démonstration ENTIER par les mêmes services que l'interface, puis **tentative de fuite**
+  sur le vrai Postgres (rôle non propriétaire : locataire étranger = 0 ligne, sinon le
+  build s'arrête). Chaque déploiement repart d'un monde propre.
+- Réglages du projet Vercel : Root Directory `app`, Production Branch `main`, UNE variable
+  — `DATABASE_URL` (pooler Supabase). Rien d'autre : sur la démo publique, le magasin de
+  pièces bascule en base tout seul, et aucune clé n'est requise ni lue.
+- Couverture RLS : 0029 couvre TOUTES les tables (la dérive depuis 0004 est comblée), et
+  `rls-couverture.test.ts` échoue si une table future arrive sans politique.
+
 ## 1. Supabase project
 
 1. Create a project in the region that matches the tenant market — **Paris (eu-west-3)** for
