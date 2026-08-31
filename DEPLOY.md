@@ -15,14 +15,29 @@ les implémente** (règle 13). C'est corrigé :
 - Sur Vercel (`VERCEL=1`), tout déploiement EST la démo publique (DA-10) : bandeau
   « données fictives » permanent, `noindex`, les trois fabriques d'adaptateurs FORCÉES au
   rejeu — aucune clé requise, aucune clé lue, quoi que disent les variables.
-- La commande de build (`app/vercel.json`) enchaîne `npm run deploy:reconstruire` puis
-  `next build` : schéma rasé (gardé par déclaration explicite), 29 migrations, monde de
-  démonstration ENTIER par les mêmes services que l'interface, puis **tentative de fuite**
-  sur le vrai Postgres (rôle non propriétaire : locataire étranger = 0 ligne, sinon le
-  build s'arrête). Chaque déploiement repart d'un monde propre.
-- Réglages du projet Vercel : Root Directory `app`, Production Branch `main`, UNE variable
-  — `DATABASE_URL` (pooler Supabase). Rien d'autre : sur la démo publique, le magasin de
-  pièces bascule en base tout seul, et aucune clé n'est requise ni lue.
+- La commande de build (`vercel.json` **à la racine** — DA-11 : une seule configuration,
+  `app/vercel.json` est supprimé) enchaîne `npm run deploy:reconstruire` puis `next build` :
+  migrations appliquées, monde de démonstration semé **s'il est vide**, puis **tentative de
+  fuite** sur le vrai Postgres (rôle non propriétaire : locataire étranger = 0 ligne, sinon
+  le build s'arrête). `OTTO_RECONSTRUIRE=1` force le monde neuf à chaque déploiement ; sans
+  elle, une base déjà semée n'est PAS rasée — quelqu'un qui teste l'URL garde ses données
+  sous un push.
+
+### Les réglages du projet Vercel, et le piège qui a coûté trois builds
+
+| Réglage | Valeur | Pourquoi, et ce qui casse sans lui |
+|---|---|---|
+| Root Directory | **la racine du dépôt** (pas `app`) | DA-11 : c'est le `vercel.json` racine qui porte `deploy:reconstruire`. Le mettre sur `app` ferait lire une configuration qui n'existe plus, et le semis ne tournerait pas |
+| Production Branch | **`main`** | sans ça, les pousses sur `main` produisent des déploiements d'**aperçu** (`VERCEL_ENV=preview`) — mesuré dans un journal de build le 2026-08-31 |
+| `DATABASE_URL` | pooler de **transaction** Supabase (port 6543), cochée **Production + Preview + Development** | une variable cochée pour la seule Production est **absente d'un aperçu** : le build s'arrête sur « DATABASE_URL est absente » alors qu'elle est bien posée. Les deux réglages précédents se combinent en ce symptôme unique |
+
+**Le mot de passe de la base ne doit porter aucun caractère spécial** — ou alors être
+percent-encodé. `DATABASE_URL` est un URI : un `@`, un `/`, un `#` ou un `?` dans le mot de
+passe coupe l'URI en deux et le pilote se connecte à un hôte inexistant, avec un message qui
+parle d'hôte et jamais de mot de passe.
+
+Rien d'autre à poser : sur la démo publique, le magasin de pièces bascule en base tout seul,
+et aucune clé de modèle n'est requise ni lue.
 - Couverture RLS : 0029 couvre TOUTES les tables (la dérive depuis 0004 est comblée), et
   `rls-couverture.test.ts` échoue si une table future arrive sans politique.
 
