@@ -93,6 +93,17 @@ export async function conduire(
      hydratation incohérente qu'il répare seul — sur des pages que le balayage
      rend proprement. Ce n'est pas le produit, c'est le harnais, et un harnais
      qui produit ses propres erreurs apprend à les ignorer. */
+  /* Ouvrir le <details> fermé qui contient l'élément — les actions
+     secondaires vivent dans des replis pilotés (§3.D, densité) et Playwright
+     ne clique pas un bouton caché. Le geste est celui de l'utilisateur :
+     déplier, puis agir. */
+  const deplier = async (element: Locator) => {
+    const repli = element.locator('xpath=ancestor::details[1]');
+    if ((await repli.count()) && (await repli.first().getAttribute('open')) === null) {
+      await repli.first().locator('summary').first().click();
+      await p.waitForTimeout(250);
+    }
+  };
   const soumettre = async (bouton: Locator, apres = 600) => {
     await bouton.click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
@@ -1191,6 +1202,7 @@ export async function conduire(
     await devenir(c.reviewer.id);
     await aller(`${eng}/testing`);
     if (await compte('button:has-text("Draw subsample")')) {
+      await deplier(p.locator('button:has-text("Draw subsample")').first());
       await cliquer('button:has-text("Draw subsample")', 5000);
       dire('re-exécution : un sous-échantillon est tiré pour re-performer en aveugle',
         !refus(p), refus(p) ?? 'sous-échantillon tiré');
@@ -1225,6 +1237,7 @@ export async function conduire(
 
     await aller(`${eng}/testing`);
     if (await compte('form:has(button:has-text("Recompute")) button')) {
+      await deplier(p.locator('form:has(button:has-text("Recompute"))').last());
       await p.locator('form:has(button:has-text("Recompute"))').last().locator('button').click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
@@ -1282,8 +1295,9 @@ export async function conduire(
        existait depuis la migration 0002 sans qu'aucun chemin ne l'atteigne.
        Avant les visas : une annexe s'ajoute pendant que le papier se
        travaille, pas après qu'il est signé. */
+    await deplier(p.locator('input[name=fichier]').first());
     await p.locator('input[name=fichier]').setInputFiles(ds('estimations', 'fae-2025.csv'));
-    await soumettre(p.locator('button:has-text("Joindre une annexe")').first(), 1500);
+    await soumettre(p.locator('form:has(input[name=fichier]) button').first(), 1500);
     dire('papier : un tableur se JOINT au papier, avec empreinte et provenance',
       refus(p) === null && (await compte('a[href^="/api/blob/"]:has-text("fae-2025.csv")')) > 0,
       'fae-2025.csv listée en annexe');
@@ -1484,6 +1498,7 @@ export async function conduire(
     await aller(base + lien);
     const fCol = p.locator('form:has(input[name=titre])').first();
     if (await fCol.count()) {
+      await deplier(fCol);
       await fCol.locator('input[name=titre]').fill('Date livraison');
       await fCol.locator('input[name=justification]').fill(
         'Cut-off : la date de livraison commande l’exercice de rattachement.');
@@ -1513,6 +1528,7 @@ export async function conduire(
         /clarification proposée/.test(await texte()) && !refus(p), refus(p) ?? 'clarification proposée');
 
       // L'illisible : proposé comme tel, et JAMAIS rempli sur une devinette.
+      await deplier(fCol);
       await fCol.locator('input[name=titre]').fill('BL signé ?');
       await fCol.locator('input[name=justification]').fill('Existence : la signature atteste la réception.');
       await fCol.locator('button:has-text("Ajouter la colonne")').click();

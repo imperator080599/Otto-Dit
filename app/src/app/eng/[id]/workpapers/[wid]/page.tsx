@@ -183,10 +183,13 @@ export default async function WorkpaperDetail({
             <span className={`badge ${WP_BADGE[wp.status]}`}>{wp.status}</span>
             {edits.length > 0 && <span className="mod-flag" style={{ marginLeft: 6 }}>modified — justified</span>}
           </h2>
-          <span className="row">
-            <form action={exportAction}><input type="hidden" name="format" value="pdf" /><button className="btn secondary small">Export PDF</button></form>
-            <form action={exportAction}><input type="hidden" name="format" value="xlsx" /><button className="btn secondary small">Export Excel</button></form>
-          </span>
+          <details>
+            <summary className="muted">Exporter (PDF, Excel)</summary>
+            <span className="row mt">
+              <form action={exportAction}><input type="hidden" name="format" value="pdf" /><button className="btn secondary small">Export PDF</button></form>
+              <form action={exportAction}><input type="hidden" name="format" value="xlsx" /><button className="btn secondary small">Export Excel</button></form>
+            </span>
+          </details>
         </div>
         <p className="faint">
           Performed by OTTO engine run <span className="mono">{wp.engine_run_id?.slice(0, 8)}</span> — facts hash{' '}
@@ -210,11 +213,14 @@ export default async function WorkpaperDetail({
               ))}
             </p>
           )}
-          <form action={annexeAction} className="row">
-            <input type="file" name="fichier" style={{ maxWidth: 240 }} />
-            <button className="btn secondary small">Joindre une annexe (tableur, note de calcul…)</button>
-            <span className="faint">entre au dossier avec empreinte et provenance, comme toute pièce</span>
-          </form>
+          <details>
+            <summary className="muted">Joindre une annexe (tableur, note de calcul…)</summary>
+            <form action={annexeAction} className="row mt">
+              <input type="file" name="fichier" style={{ maxWidth: 240 }} />
+              <button className="btn secondary small">Joindre</button>
+              <span className="faint">entre au dossier avec empreinte et provenance, comme toute pièce</span>
+            </form>
+          </details>
         </div>
       </div>
 
@@ -379,19 +385,26 @@ export default async function WorkpaperDetail({
           </div>
         ))}
         {wp.status !== 'signed' && wp.status !== 'outdated' && (
-          <form action={ajouterColonneAction} className="mt">
-            <div className="row">
-              <input name="titre" placeholder="Titre de la colonne (texte libre — « Date livraison », « Qté livrée »…)" style={{ flex: 1 }} required />
-              <input name="justification" placeholder="Justification (obligatoire — sort dans l'export)" style={{ flex: 1 }} required />
-              <button className="btn small">Ajouter la colonne</button>
-            </div>
-          </form>
+          <details className="mt">
+            <summary className="muted">Ajouter une colonne (marquée, justifiée)</summary>
+            <form action={ajouterColonneAction} className="mt">
+              <div className="row">
+                <input name="titre" placeholder="Titre de la colonne (texte libre — « Date livraison », « Qté livrée »…)" style={{ flex: 1 }} required />
+                <input name="justification" placeholder="Justification (obligatoire — sort dans l'export)" style={{ flex: 1 }} required />
+                <button className="btn small">Ajouter la colonne</button>
+              </div>
+            </form>
+          </details>
         )}
       </div>
 
       <div className="grid cols-2">
         <div className="panel">
           <h2>Review notes (human-only)</h2>
+          {/* data-actions-item : les gestes PAR NOTE sont des actions d'item
+              répétées — la mesure de densité (§3.D) les compte comme les
+              gestes de ligne d'un tableau, pas comme des actions d'écran. */}
+          <div data-actions-item>
           {notes.map((n) => (
             <div key={n.id} className={`callout ${n.status === 'open' ? 'warn' : n.status === 'addressed' ? '' : 'green'}`}>
               <strong>{n.author_name}</strong>{n.assignee_name ? ` → ${n.assignee_name}` : ''} <span className="badge gray">{n.status}</span>{' '}
@@ -405,6 +418,7 @@ export default async function WorkpaperDetail({
               )}
             </div>
           ))}
+          </div>
           <form action={noteAction} className="mt">
             <textarea name="text" placeholder="New review note…" required />
             <div className="row mt">

@@ -200,7 +200,12 @@ export default async function TestingPage({
         <div className="panel">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2 id="reexecution">Re-exécution à l'aveugle (ADR-012.3)</h2>
-            {!verifRun && <form action={startVerifRun}><button className="btn secondary small">Draw subsample</button></form>}
+            {!verifRun && (
+              <details>
+                <summary className="muted">Lancer la re-exécution</summary>
+                <form action={startVerifRun} className="mt"><button className="btn secondary small">Draw subsample</button></form>
+              </details>
+            )}
           </div>
           {!verifRun ? (
             <p className="muted">Seeded, reproducible draw over machine-passed items; the verifier re-performs blind (no machine result shown) and agreement is computed.</p>
@@ -242,7 +247,10 @@ export default async function TestingPage({
         <div className="panel">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>Sample evaluation (vs TE)</h2>
-            <form action={evalAction}><button className="btn secondary small">Recompute</button></form>
+            <details>
+              <summary className="muted">Recalculer</summary>
+              <form action={evalAction} className="mt"><button className="btn secondary small">Recompute</button></form>
+            </details>
           </div>
           {!evaluation ? (
             <p className="muted">Known + projected misstatement vs tolerable misstatement (kernel arithmetic, Gate 2).</p>

@@ -32,6 +32,25 @@ mission 38 · écart 39 · requête 3 · justificatif 5 · matérialité 1 · so
 Les collisions réelles trouvées et corrigées par la tranche 9 sont dans le commit
 qui introduit ce fichier.
 
+## Décisions d'application (2026-08-31, première exécution du test)
+
+- L'écran **Interroger** (`ask/`) est LA réserve du mot « requête » : exclu par fichier.
+- La règle FSLI ne s'applique qu'aux lignes FRANÇAISES (heuristique : un caractère
+  accentué sur la ligne). Les écrans encore en anglais (réconciliation, scoping —
+  héritage des premières tranches) gardent leur terme technique ; leur FRANCISATION est
+  un chantier à part entière du lexique, listé ci-dessous, pas une exception passée
+  sous silence.
+- Première prise : « matérialité » corrigé en « seuil de signification » sur l'écran
+  risque (`risk/page.tsx`).
+
+## Chantier restant (dit, pas caché)
+
+Des écrans des premières tranches parlent encore anglais (réconciliation, scoping,
+matérialité, papier de travail — titres et libellés). La cible v1 : tous les libellés en
+français, l'anglais restant dans les exports au format du pack. À traiter avec M-13
+(bascule de référentiel — le vocabulaire par pack est justement le mécanisme qui rendra
+cette francisation propre).
+
 ## Ce que le test NE couvre pas (dit franchement)
 
 Le test grep les fichiers d'écran pour les mots interdits marqués ✓, en excluant les

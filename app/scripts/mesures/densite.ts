@@ -72,7 +72,12 @@ async function main() {
     const compte = await p.evaluate(`(() => {
       const visible = (e) => e.offsetParent !== null;
       const horsCadre = (e) =>
-        !e.closest('table') && !e.closest('details:not([open])') && !e.closest('.topbar');
+        !e.closest('table') && !e.closest('details:not([open])') && !e.closest('.topbar')
+        /* affordances d'ANCRE de note (une puce par objet annotable, partout
+           par conception — tâche 58) et groupes d'actions d'ITEM déclarés
+           dans le balisage : comme les gestes de ligne d'un tableau, ce sont
+           des actions d'objet, pas d'écran. */
+        && !e.closest('.annotable') && !e.closest('.note-voile') && !e.closest('[data-actions-item]');
       const actions = [...document.querySelectorAll('button')]
         .filter((b) => visible(b) && horsCadre(b)).length;
       const champs = [...document.querySelectorAll('input, textarea')]

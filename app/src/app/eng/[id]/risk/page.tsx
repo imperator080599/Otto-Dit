@@ -216,7 +216,7 @@ export default async function RiskPage({
           </tbody>
         </table>
         <p className="faint mt">
-          Le <strong>calculé</strong> est re-dérivé à chaque évaluation : il suit la matérialité et les
+          Le <strong>calculé</strong> est re-dérivé à chaque évaluation : il suit le seuil de signification et les
           données, et ne se saisit jamais. Le <strong>retenu</strong> est votre décision, et elle
           survit au recalcul. Une surcharge <strong>sans motif écrit est refusée</strong> — par le
           service et par la base. Règle de l’échelle :{' '}
