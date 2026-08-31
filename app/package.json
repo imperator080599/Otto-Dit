@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "demo": "node scripts/demo/lancer.mjs",
+    "diagnostic": "node scripts/demo/diagnostic.mjs",
     "test": "vitest run",
     "dev": "next dev",
     "build": "next build",
