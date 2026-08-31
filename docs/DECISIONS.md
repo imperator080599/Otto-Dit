@@ -3885,3 +3885,44 @@ migration (0002) et AUCUN chemin de code ne l'atteignait — ni écriture, ni le
 Branchée : le fichier entre par `ingestEvidence` (source 'auditor', audience 'internal',
 empreinte, journal `workpaper_attachment_added`), se lie au papier, s'affiche avec son
 empreinte et s'ouvre depuis l'écran du papier. Refus du fichier vide éprouvé.
+
+## ADR-107 — L'analyse des balances auxiliaires : les tiers N/N-1, âgés et rapprochés
+
+**Contexte.** Point 1 du fondateur : la concentration du top 10 clients N/N-1, les tiers
+apparus et disparus, les déplacements de part au-delà d'un seuil, le côté fournisseurs, la
+déformation de la balance âgée — et que ces constats deviennent des candidats facteurs de
+risque et des questions au client.
+
+**Le fait qui décide la forme : le FEC ne porte AUCUN lettrage** (colonnes EcritureLet et
+DateLet vides), et ses à-nouveaux 411/401 sont AGRÉGÉS, sans détail auxiliaire. La balance
+âgée et le détail N-1 par tiers ne peuvent donc venir que de L'EXPORT DU CLIENT — c'est ce
+qu'un auditeur demande en pratique. Quatre fichiers (clients/fournisseurs × N/N-1, sept
+colonnes : compte, intitulé, cinq tranches d'ancienneté), engendrés déterministes et ANCRÉS
+au jeu de données (`npm run dataset:balances-aux` LIT le FEC : les totaux N par tiers sont
+les siens ; les totaux N-1 somment exactement aux à-nouveaux — 940 000,00 € clients,
+610 000,00 € fournisseurs).
+
+**Décision.** Écran « Balances auxiliaires » (rail : après l'import). Chaque fichier entre
+au moteur de pièces (empreinte, provenance) puis se RAPPROCHE au grand livre : le fichier N
+au solde ACTIF du collectif, le fichier N-1 aux à-nouveaux — un écart est un badge rouge
+qui dit le montant, jamais un silence. Le jeu définitif porte d'ailleurs un écart VOULU :
+l'écriture de situation (25 000 €) crédite le collectif SANS attribution auxiliaire — la
+balance des tiers ne la porte pas, et l'écran le dit ; c'est exactement ce que ce
+rapprochement existe pour attraper. L'analyse est DÉRIVÉE à la lecture, jamais stockée :
+concentration du top 10 (part du solde) N contre N-1, apparus (présents en N, absents de la
+balance N-1), disparus (l'inverse), déplacements de part ≥ seuil (paramètre d'écran, 3 pts
+par défaut — le seuil COMMANDE, testé), vieillissement par tranches avec la dérive de la
+part au-delà de 90 jours, porteurs NOMMÉS.
+
+**La circulation, selon la règle du dossier.** Un constat est un CANDIDAT, rien de plus :
+« proposer au registre » crée un facteur au statut PROPOSÉ (source_ref stable — jamais
+proposé deux fois, refus testé), qu'un humain confirme ou écarte au registre ; « rédiger
+les questions au client » crée un BROUILLON de demande (une question par constat, circuit
+habituel, approbation avant envoi — L2). Les natures suggérées restent des suggestions.
+
+**Ce qui n'est PAS fait.** Pas de per-tiers N-1 dérivé du FEC (impossible sans à-nouveaux
+auxiliaires — dit à l'écran par la nécessité du fichier) ; pas de rotation en jours ni de
+DSO (non demandés) ; pas de seconde version de fichier (un ré-import est refusé en nommant
+le geste attendu — le versionnement des balances auxiliaires suivra celui des balances si
+le besoin arrive) ; les couleurs ne marquent que les problèmes (écart, apparu/disparu,
+vieillissement au-delà du seuil).

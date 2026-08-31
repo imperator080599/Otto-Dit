@@ -289,6 +289,78 @@ export async function conduire(
       propre, t.match(/\d+ accounts compared[^\n]{0,40}/i)?.[0] ?? '(verdict non lu)');
   });
 
+  // ── 4 bis. LES BALANCES AUXILIAIRES ÂGÉES (ADR-107) : les exports du
+  //    client, rapprochés au grand livre — et l'écart de 25 000 € que le
+  //    collectif porte SANS attribution auxiliaire (l'écriture de situation
+  //    du fichier définitif) est DIT, pas absorbé.
+  await station('balances auxiliaires : concentration, apparus, vieillissement', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/balances-aux`);
+    for (const [exercice, fichier] of [['n', 'clients_2025.csv'], ['n1', 'clients_2024.csv']] as const) {
+      await p.locator('select[name=exercice]').selectOption(exercice);
+      await p.locator('input[type=file]').setInputFiles(ds('balances_aux', fichier));
+      await soumettre(p.locator('button:has-text("Importer la balance")').first(), 1500);
+    }
+    let t = await texte();
+    dire('balances aux. : la balance N-1 se rapproche AUX À-NOUVEAUX, au centime',
+      /Balance clients N-1[\s\S]{0,220}rapprochée ✓/.test(t), 'N-1 rapprochée ✓');
+    /* L'écart est NÉGATIF : la balance des tiers porte 25 000 € de MOINS que
+       le grand livre — l'écriture de situation crédite le collectif sans
+       attribution auxiliaire, la balance ne peut pas la porter. */
+    dire('balances aux. : l’écart du collectif est DIT — 25 000 € sans attribution auxiliaire (écriture de situation)',
+      /écart -25.?000,00/.test(t), (t.match(/écart[^\n]{0,40}/) ?? ['écart non affiché'])[0]);
+    dire('balances aux. : apparus et disparus sont nommés sur leurs lignes',
+      (await compte('.badge:has-text("apparu")')) >= 2 && (await compte('.badge:has-text("disparu")')) >= 2,
+      'badges apparu/disparu présents');
+    const t90 = await texte();
+    dire('balances aux. : la déformation du vieillissement (> 90 jours) est mesurée N contre N-1',
+      /Part au-delà de 90 jours/.test(t90) && /Vieillissement/.test(t90),
+      (t90.match(/Part au-delà de 90 jours/) ? 'tableau et indicateur affichés' : 'panneau absent'));
+
+    /* Un constat SE PROPOSE au registre — il ne s'applique pas tout seul. */
+    const proposer = p.locator('button:has-text("Proposer au registre")').first();
+    dire('balances aux. : les constats sont des CANDIDATS, à proposer au registre',
+      (await proposer.count()) > 0, `${await compte('button:has-text("Proposer au registre")')} candidat(s)`);
+    await soumettre(proposer, 1200);
+    dire('balances aux. : le candidat proposé attend une confirmation HUMAINE au registre',
+      refus(p) === null && (await compte('.badge:has-text("proposé au registre")')) === 1,
+      'badge « proposé au registre », bouton retiré');
+
+    /* LA CIRCULATION VA JUSQU'AU BOUT : un facteur proposé se STATUE au
+       registre — sinon il bloque le visa, et c'est voulu. La réviseuse le
+       RETIENT, avec motif. */
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/risk`);
+    const rangFacteur = p.locator('tr:has-text("Immovance")')
+      .filter({ has: p.locator('button:has-text("retenir")') }).first();
+    await rangFacteur.locator('input[name=reason]').fill(
+      'Concentration accrue sur un donneur d’ordre — revue du recouvrement étendue.');
+    await soumettre(rangFacteur.locator('button:has-text("retenir")').first(), 1500);
+    dire('balances aux. : le facteur est STATUÉ par une personne au registre — la circulation est complète',
+      refus(p) === null, refus(p) ?? 'facteur retenu, visa débloqué');
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/balances-aux`);
+
+    /* Les questions au client : un BROUILLON de demande. */
+    await soumettre(p.locator('button:has-text("Rédiger les questions au client")').first(), 1500);
+    await aller(`${eng}/requests`);
+    t = await texte();
+    dire('balances aux. : les questions au client naissent en brouillon, dans le circuit habituel',
+      /Balance auxiliaire clients — questions/.test(t), 'demande listée avec les demandes');
+
+    /* Le côté FOURNISSEURS existe et se rapproche pareil. */
+    await aller(`${eng}/balances-aux?cote=fournisseurs`);
+    for (const [exercice, fichier] of [['n', 'fournisseurs_2025.csv'], ['n1', 'fournisseurs_2024.csv']] as const) {
+      await p.locator('select[name=exercice]').selectOption(exercice);
+      await p.locator('input[type=file]').setInputFiles(ds('balances_aux', fichier));
+      await soumettre(p.locator('button:has-text("Importer la balance")').first(), 1500);
+    }
+    t = await texte();
+    dire('balances aux. : le côté fournisseurs se rapproche et s’analyse pareil',
+      /Balance fournisseurs N-1[\s\S]{0,220}rapprochée ✓/.test(t) && /Concentration du top 10/.test(t),
+      'fournisseurs N-1 rapprochée ✓, analyse rendue');
+  });
+
   // ── 5. MATÉRIALITÉ
   await station('matérialité', async () => {
     await aller(`${eng}/materiality`);

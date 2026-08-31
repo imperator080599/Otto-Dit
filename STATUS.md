@@ -58,7 +58,13 @@ demandés en brouillon — base des lignes tirées + CHAQUE taux + la note de m�
 **annexes de papier** : un tableur se joint au papier (la table existait depuis la
 migration 0002, aucun chemin ne l'atteignait — branchée : moteur de pièces, empreinte,
 journal, écran) (ADR-106c) · **accès ERP** : l'architecture qui ne se ferme pas, en une
-page — docs/13_ACCES_ERP.md (ADR-106b).
+page — docs/13_ACCES_ERP.md (ADR-106b) ·
+**balances auxiliaires âgées** : les exports du client (clients/fournisseurs × N/N-1)
+rapprochés au grand livre — N au solde actif, N-1 aux à-nouveaux, l'écart du collectif DIT
+(les 25 000 € de situation sans attribution auxiliaire) ; concentration top 10, apparus,
+disparus, déplacements de part ≥ seuil (le seuil commande), déformation du vieillissement
+(> 90 j) avec porteurs nommés ; chaque constat = CANDIDAT proposé au registre (un humain
+confirme) + questions client en brouillon (ADR-107, `npm run dataset:balances-aux`).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 

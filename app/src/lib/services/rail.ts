@@ -91,6 +91,8 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
       s.acceptee, 'disponible après l\'acceptation de la mission'),
     e('reconciliation', 'Rapprochement comptable', 'La balance rapprochée du grand livre, compte par compte, écarts en tête.',
       s.importe, 'disponible après l\'import de la balance et du grand livre'),
+    e('balances-aux', 'Balances auxiliaires', 'Les tiers N/N-1 : concentration, apparus, disparus, vieillissement — candidats au registre.',
+      s.importe, 'disponible après l\'import de la balance et du grand livre'),
     e('materiality', 'Seuils de signification', 'Le seuil proposé par la règle du cabinet, validé par un humain, et ses déclinaisons.',
       s.importe, 'disponible après l\'import de la balance et du grand livre'),
     e('scoping', 'Périmètre (postes retenus)', 'Quels postes des comptes seront travaillés, et pourquoi.',

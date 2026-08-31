@@ -137,6 +137,26 @@ on le sort avec un motif. Ressortez-le : l'obstacle tombe.
 
 ---
 
+### 6 bis. Les balances auxiliaires — les tiers N/N-1, âgés et rapprochés
+
+**Écran** : `Balances auxiliaires`.
+
+**Ce qu'il faut montrer** (ADR-107) : importez les quatre exports de la cliente
+(`dataset/balances_aux/` — clients et fournisseurs, N et N-1, avec l'ancienneté). Chaque
+fichier se **rapproche au grand livre** : N au solde actif du collectif, N-1 **aux
+à-nouveaux, au centime**. Sur le grand livre définitif, l'écart clients de **25 000 €** est
+DIT en rouge : c'est l'écriture de situation, créditée au collectif **sans attribution
+auxiliaire** — la balance des tiers ne peut pas la porter, et c'est exactement ce que ce
+rapprochement existe pour attraper. Puis l'analyse : concentration du top 10 N/N-1, tiers
+**apparus** et **disparus** nommés sur leurs lignes, **déplacements de part** au-delà du seuil
+(réglable — montez-le, les constats s'éteignent), et la **déformation du vieillissement** :
+la part au-delà de 90 jours passe de ~2 % à ~10 %, portée par Immovance et Peyrelle, nommés.
+Chaque constat est un **candidat** : « Proposer au registre » le met en *proposé* — c'est au
+registre qu'un humain confirme — et « Rédiger les questions au client » crée un **brouillon**
+de demande, une question par constat.
+
+---
+
 ### 7. Le risque par assertion — et ce qu'il commande
 
 **Écran** : `Risque par assertion`.

@@ -94,8 +94,14 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
   // 4. Le questionnaire résiduel — entité, puis chaque poste retenu.
   const postes = await postesRetenus(engagementId);
   ajoute('questionnaire', await questionnaireObstacles(engagementId, null));
+  /* Les facteurs non statués sont GLOBAUX au dossier : ils sont comptés une
+     fois ici, à l'appel d'entité. Les recompter à chaque poste (l'écran de
+     section les montre exprès) listait LE MÊME obstacle deux fois dans la
+     liste unique — trouvé le jour où le parcours a laissé un facteur proposé
+     jusqu'au visa. */
   for (const p of postes) {
-    ajoute('questionnaire', await questionnaireObstacles(engagementId, p));
+    ajoute('questionnaire', (await questionnaireObstacles(engagementId, p))
+      .filter((x) => !/facteur\(s\) de risque non statué/.test(x)));
   }
 
   /* 5. LE PÉRIMÈTRE SANS PROGRAMME — le trou que rien ne signalait.
