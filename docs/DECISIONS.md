@@ -3977,3 +3977,50 @@ confirmée — l'éditeur viendra si le besoin se montre) ; pas de lecture du fl
 sa fabrication est hors produit) ; un seul cycle rattaché (`REVENUE` — périmètre gelé) ;
 le rattachement significatif→facteur cible des assertions déclarées en dur par cycle, pas
 déduites ; la purge est un geste d'écran, pas une tâche planifiée.
+
+## ADR-109 — Le déploiement public : double pilote, magasin en base, RLS exhaustive, et le fil n°7 soldé
+
+**Contexte (P0a du mandat autonome).** Tuan n'a jamais pu OUVRIR la plateforme ; l'URL est
+le premier livrable. Le runbook DEPLOY.md promettait `DATABASE_URL` et `OTTO_STORAGE`
+depuis le début — sans qu'AUCUN code ne les implémente (règle 13, prise sur le fait). Et
+le projet Vercel servait du vide depuis 17 déploiements READY : diagnostic initial de
+session FAUX (« connecteur non autorisé »), corrigé par DA-09 — la preuve d'un service
+externe est la RÉPONSE OBTENUE, jamais le statut annoncé.
+
+**Décisions.**
+1. **Double pilote base** : `DATABASE_URL` posée → node-postgres (pool, `exec`
+   multi-ordres pour les migrations, transactions, message d'échec lisible) ; absente →
+   PGlite inchangé. `migrate()` roule sur les deux. La chaîne d'événements prend un
+   verrou consultatif de transaction (ADR-016.2) : deux écrivains réseau ne peuvent plus
+   fourcher le `prev_hash`.
+2. **Magasin de pièces à deux modes** : `fs` local inchangé ; `db` (table `blob_store`,
+   0028) pour le serverless au disque éphémère — bascule automatique sur la démo publique
+   (DA-08). Mode inconnu : refus. Les 19 sites d'appel sont passés à l'asynchrone.
+3. **Couverture RLS exhaustive** (0029) : 46 tables étaient hors du filet depuis 0004 —
+   chaque enfant reçoit sa politique par sa VRAIE jointure ; `rls-couverture.test.ts`
+   fait échouer la suite si une table future arrive sans politique. La TENTATIVE de
+   fuite s'exécute à CHAQUE déploiement sur le vrai Postgres (rôle non propriétaire,
+   locataire étranger = 0 ligne, sinon le build refuse de passer) — le test qui tente
+   la fuite tourne contre le réseau, pas seulement contre PGlite.
+4. **Sur Vercel, tout déploiement EST la démo publique** (DA-10, `VERCEL=1`) : IA réelle
+   coupée dans les trois fabriques d'adaptateurs (testé), aucune clé requise ni lue,
+   noindex, reconstruction du monde synthétique à chaque build
+   (`deploy:reconstruire` : schéma rasé sous double garde, 29 migrations, monde entier
+   par les mêmes services, fuite tentée).
+5. **Fini = lu à l'écran** (DA-09) : P0a ne se dira fait que quand l'URL aura été
+   CHARGÉE — code HTTP et contenu lus — accueil, dossier, atelier.
+
+**Le fil n°7, instruit et soldé en chemin.** La fréquence du #418 erratique est montée à
+une exception par exécution (4/4) dès que le layout RACINE a reçu un ternaire
+d'environnement et une métadonnée conditionnelle ; réfutations mesurées (dépassement
+réseau : 0 après dé-masquage du catch muet ; à froid : 0/45 ; dev : 0) ; layout remis à
+plat → 126/126, chaîne complète verte. Règle retenue : le layout racine ne lit pas
+l'environnement — le bandeau « données fictives » devient permanent, bilingue et
+constant, ce qui est aussi plus juste (les données sont fictives dans TOUS les modes).
+
+**Ce qui n'est PAS fait.** L'URL elle-même attend UNE variable de tableau de bord
+(`DATABASE_URL`) que seul Tuan peut poser ; le bucket Supabase Storage reste une étape de
+runbook (pas un mode du code) ; la connexion TLS au pooler accepte une chaîne non
+vérifiée SAUF si `OTTO_DB_CA_CERT` est posée (dit dans le code — à poser en production
+réelle) ; le RLS côté application reste la défense active (l'app se connecte en
+propriétaire) — la politique mord pour tout NON-propriétaire, prouvé à chaque build.
