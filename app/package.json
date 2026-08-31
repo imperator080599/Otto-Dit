@@ -12,6 +12,7 @@
     "eval:entretien": "tsx scripts/eval/entretien.ts",
     "deploy:reconstruire": "tsx scripts/deploy/reconstruire.ts",
     "densite": "tsx scripts/mesures/densite.ts",
+    "fumee": "tsx scripts/fumee/run.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",
@@ -29,7 +30,7 @@
     "clics": "tsx scripts/clics/run.ts",
     "clics:dev": "tsx scripts/clics/run.ts -- --dev",
     "visuel": "tsx scripts/visuel/run.ts",
-    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run densite && npm run clics && npm run visuel",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run fumee && npm run densite && npm run clics && npm run visuel",
     "dataset:balances-aux": "tsx scripts/dataset/balances-aux.ts"
   },
   "keywords": [],
