@@ -7,6 +7,8 @@ import { currentAcceptation, jalonsEnRetard } from './acceptance';
 import { boucle } from './loop';
 import { conclusionGate, blockerText } from './evaluation';
 import { obstaclesAchevement } from './completion';
+import { obstaclesProcessus } from './processus';
+import { obstaclesEntretiens } from './entretiens';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -26,7 +28,7 @@ import { obstaclesAchevement } from './completion';
 // défaut, pas une subtilité.
 
 export type Famille =
-  | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'programme'
+  | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons';
 
 export interface Obstacle {
@@ -41,6 +43,7 @@ const OU: Record<Famille, string> = {
   independance: 'team',
   reprise: 'carry-forward',
   questionnaire: 'risk',
+  processus: 'processus',
   programme: 'testing',
   boucle: 'loop',
   pointage: 'fs-tieout',
@@ -103,6 +106,12 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
     ajoute('questionnaire', (await questionnaireObstacles(engagementId, p))
       .filter((x) => !/facteur\(s\) de risque non statué/.test(x)));
   }
+
+  /* 4 bis. LE PROCESSUS ET LES ENTRETIENS (ADR-108) : un changement N/N-1
+     jamais statué, un écart d'entretien resté candidat — une compréhension
+     du contrôle interne commencée puis abandonnée ne se scelle pas. */
+  ajoute('processus', await obstaclesProcessus(engagementId));
+  ajoute('processus', await obstaclesEntretiens(engagementId));
 
   /* 5. LE PÉRIMÈTRE SANS PROGRAMME — le trou que rien ne signalait.
      Un poste retenu au périmètre sur lequel AUCUNE procédure n'est planifiée

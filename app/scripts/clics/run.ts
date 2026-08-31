@@ -35,6 +35,7 @@ function lancer(args: string[]): ChildProcess {
          RÉAFFIRME ici pour que l'environnement ne puisse pas en décider. */
       OTTO_OCR_ADAPTER: 'mock',
       OTTO_QUERY_PLANNER: 'mock',
+      OTTO_TRANSCRIPT_ADAPTER: 'mock',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: groupeDetache(),

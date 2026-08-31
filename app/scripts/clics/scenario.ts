@@ -369,6 +369,121 @@ export async function conduire(
       'fournisseurs N-1 rapprochée ✓, analyse rendue');
   });
 
+  // ── 4 ter. LE CONTRÔLE INTERNE ET LES PROCESSUS (ADR-108) : les données
+  //    structurées, le diagramme GÉNÉRÉ, la différence N/N-1 statuée, et
+  //    l'entretien dont le transcript produit des écarts CANDIDATS.
+  await station('contrôle interne : processus, différence statuée, entretien', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/processus`);
+    for (const [exercice, fichier] of [['n1', 'revenus_2024.json'], ['n', 'revenus_2025.json']] as const) {
+      await p.locator('select[name=exercice]').selectOption(exercice);
+      await p.locator('input[type=file]').setInputFiles(ds('processus', fichier));
+      await soumettre(p.locator('button:has-text("Importer la description")').first(), 1500);
+    }
+    let t = await texte();
+    dire('processus : le diagramme est GÉNÉRÉ depuis les données — le flowchart client n’est qu’une corroboration',
+      (await compte('svg[role=img] rect')) >= 6 && /Diagramme —/.test(t),
+      `${await compte('svg[role=img] rect')} boîtes dessinées`);
+
+    /* Ré-importer sans confirmer est REFUSÉ : rien ne s'écrase en silence. */
+    await p.locator('select[name=exercice]').selectOption('n');
+    await p.locator('input[type=file]').setInputFiles(ds('processus', 'revenus_2025.json'));
+    await soumettre(p.locator('button:has-text("Importer la description")').first(), 1200);
+    dire('processus : remplacer une version décrite SANS confirmer est refusé',
+      /se CONFIRME/.test(refus(p) ?? ''), refus(p) ?? '(aucun refus affiché)');
+
+    await aller(`${eng}/processus`);
+    dire('processus : la différence N/N-1 est EXACTE et chaque changement attend une décision',
+      (await compte('button:has-text("Statuer")')) === 5, `${await compte('button:has-text("Statuer")')} changement(s) à statuer`);
+
+    /* Le passage au module de facturation est SIGNIFICATIF : il propose un
+       facteur au registre. Les quatre autres se motivent sans en lever. */
+    const rangFac = p.locator('tr:has-text("Étape FAC")')
+      .filter({ has: p.locator('button:has-text("Statuer")') }).first();
+    await rangFac.locator('select[name=significance]').selectOption('significatif');
+    await rangFac.locator('input[name=reason]').fill('Facturation générée automatiquement — le risque se déplace vers le paramétrage.');
+    await soumettre(rangFac.locator('button:has-text("Statuer")').first(), 1500);
+    for (let i = 0; i < 4; i++) {
+      const rang = p.locator('tr').filter({ has: p.locator('button:has-text("Statuer")') }).first();
+      if (!(await rang.count())) break;
+      await rang.locator('input[name=reason]').fill('Changement d’exécution sans déplacement du risque.');
+      await soumettre(rang.locator('button:has-text("Statuer")').first(), 1500);
+    }
+    t = await texte();
+    dire('processus : tout est statué — le significatif porte « facteur proposé au registre »',
+      (await compte('button:has-text("Statuer")')) === 0 && /facteur proposé au registre/.test(t),
+      'cinq décisions écrites, un facteur proposé');
+
+    /* L'entretien : enregistrer SANS le consentement de chacun est refusé —
+       et le module fonctionne sans enregistrement. */
+    await p.locator('input[name=date]').fill('2026-01-12');
+    await p.locator('input[name=sujet]').fill('Cycle ventes — compréhension du processus');
+    await p.locator('select[name=support]').selectOption('enregistrement');
+    await p.locator('input[name=retention]').fill('2027-01-12');
+    await p.locator('input[name=nom1]').fill('Théo Girard');
+    await p.locator('input[name=qualite1]').fill('chef comptable');
+    await soumettre(p.locator('button:has-text("Créer l")').first(), 1200);
+    dire('entretien : enregistrer sans le consentement EXPLICITE de chacun est refusé',
+      /consentement EXPLICITE/.test(refus(p) ?? ''), refus(p) ?? '(aucun refus affiché)');
+
+    await aller(`${eng}/processus`);
+    await p.locator('input[name=date]').fill('2026-01-12');
+    await p.locator('input[name=sujet]').fill('Cycle ventes — compréhension du processus');
+    await p.locator('select[name=support]').selectOption('enregistrement');
+    await p.locator('input[name=retention]').fill('2027-01-12');
+    await p.locator('input[name=nom1]').fill('Théo Girard');
+    await p.locator('input[name=qualite1]').fill('chef comptable');
+    await p.locator('input[name=consent1]').check();
+    await p.locator('input[name=nom2]').fill('Karim Bensalem');
+    await p.locator('input[name=qualite2]').fill('auditeur');
+    await p.locator('input[name=consent2]').check();
+    await soumettre(p.locator('button:has-text("Créer l")').first(), 1500);
+    t = await texte();
+    dire('entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite',
+      refus(p) === null && /consentement 20\d\d-\d\d-\d\d/.test(t) && /conservation jusqu.au 2027-01-12/.test(t),
+      'consentements datés à l’écran');
+
+    /* Le transcript, confronté à la documentation : trois écarts CANDIDATS,
+       les OMISSIONS d'abord. */
+    await p.locator('textarea[name=contenu]')
+      .fill(fs.readFileSync(ds('entretiens', 'transcript-revenus-2025.txt'), 'utf8'));
+    await soumettre(p.locator('button:has-text("Déposer le transcript")').first(), 1500);
+    await soumettre(p.locator('button:has-text("Confronter le discours à la documentation")').first(), 2500);
+    t = await texte();
+    const badgesEcarts = p.locator('table.data .badge:has-text("candidat")');
+    dire('entretien : trois écarts CANDIDATS, les omissions D’ABORD, jamais une conclusion',
+      (await badgesEcarts.count()) === 3 && /décrit à l.oral, absent de la documentation[\s\S]*documenté, passé sous silence[\s\S]*le discours contredit/.test(t),
+      `${await badgesEcarts.count()} candidat(s), omissions en tête`);
+
+    const rangRevue = p.locator('tr:has-text("revue analytique")').first();
+    await soumettre(rangRevue.locator('button:has-text("Proposer au registre")').first(), 1500);
+    const rangCp02 = p.locator('tr:has-text("CP-02")').filter({ has: p.locator('button:has-text("Question au client")') }).first();
+    await soumettre(rangCp02.locator('button:has-text("Question au client")').first(), 1500);
+    const rangCp01 = p.locator('tr:has-text("CP-01")').filter({ has: p.locator('button:has-text("Écarter")') }).first();
+    await rangCp01.locator('input[name=reason]').fill('Fréquence documentée à corriger avec le client — portée par la question.');
+    await soumettre(rangCp01.locator('button:has-text("Écarter")').first(), 1500);
+    dire('entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé',
+      refus(p) === null && (await compte('table.data .badge:has-text("candidat")')) === 0,
+      'plus aucun candidat en attente');
+
+    /* Les deux facteurs PROPOSÉS se confirment au registre — la réviseuse. */
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/risk`);
+    for (const motCle of ['module Facturation', 'revue analytique']) {
+      const rang = p.locator(`tr:has-text("${motCle}")`)
+        .filter({ has: p.locator('button:has-text("retenir")') }).first();
+      await rang.locator('input[name=reason]').fill('Retenu — la revue du paramétrage et des contrôles espacés entre au programme.');
+      await soumettre(rang.locator('button:has-text("retenir")').first(), 1500);
+    }
+    dire('processus : les facteurs proposés sont CONFIRMÉS au registre — la circulation est complète',
+      refus(p) === null, refus(p) ?? 'deux facteurs retenus');
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/requests`);
+    t = await texte();
+    dire('entretien : la question au client naît en BROUILLON, dans le circuit habituel',
+      /Entretien du 2026-01-12 — points à préciser/.test(t), 'demande listée avec les demandes');
+  });
+
   // ── 5. MATÉRIALITÉ
   await station('matérialité', async () => {
     await aller(`${eng}/materiality`);

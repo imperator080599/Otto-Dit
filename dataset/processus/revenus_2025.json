@@ -1,0 +1,17 @@
+{
+  "cycle": "REVENUE",
+  "nom": "Cycle ventes — de la commande à l'encaissement",
+  "etapes": [
+    { "code": "CMD", "libelle": "Prise de commande", "acteur": "Administration des ventes — Nadia Bellec", "systeme": "Vela ERP", "entrees": "bon de commande client", "sorties": "commande enregistrée" },
+    { "code": "EDI", "libelle": "Réception EDI grands comptes", "acteur": "Administration des ventes", "systeme": "Portail EDI Alizarine", "entrees": "commandes EDI", "sorties": "commande enregistrée" },
+    { "code": "CRD", "libelle": "Contrôle de l'encours client", "acteur": "Administration des ventes", "systeme": "Vela ERP", "entrees": "commande enregistrée", "sorties": "commande validée ou bloquée" },
+    { "code": "EXP", "libelle": "Expédition", "acteur": "Logistique — Rémi Caradec", "systeme": "WMS Corex", "entrees": "commande validée", "sorties": "bon de livraison signé" },
+    { "code": "FAC", "libelle": "Facturation", "acteur": "Comptabilité clients — Théo Girard", "systeme": "module Facturation de Vela ERP (génération automatique depuis les BL)", "entrees": "bon de livraison signé", "sorties": "facture comptabilisée" },
+    { "code": "ENC", "libelle": "Encaissement et lettrage", "acteur": "Trésorerie — Inès Rouvier", "systeme": "Vela ERP", "entrees": "relevé bancaire", "sorties": "facture lettrée" }
+  ],
+  "controles": [
+    { "code": "CP-01", "etape": "FAC", "libelle": "Rapprochement bons de livraison / factures", "frequence": "hebdomadaire", "proprietaire": "Nadia Bellec" },
+    { "code": "CP-02", "etape": "FAC", "libelle": "Validation des avoirs au-delà de 5 000 €", "frequence": "au fil de l'eau", "proprietaire": "Sophie Marchand" },
+    { "code": "CP-03", "etape": "CRD", "libelle": "Revue des encours dépassés et des déblocages", "frequence": "trimestrielle", "proprietaire": "Nadia Bellec" }
+  ]
+}

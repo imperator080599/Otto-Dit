@@ -3926,3 +3926,54 @@ DSO (non demandés) ; pas de seconde version de fichier (un ré-import est refus
 le geste attendu — le versionnement des balances auxiliaires suivra celui des balances si
 le besoin arrive) ; les couleurs ne marquent que les problèmes (écart, apparu/disparu,
 vieillissement au-delà du seuil).
+
+## ADR-108 — Le contrôle interne : le processus en données structurées, l'entretien cadré
+
+**Contexte (point 2 de la liste).** La boucle annuelle réelle : entretien du responsable de
+processus, obtention du flowchart, vérification des changements contre N-1, confrontation du
+discours au diagramme. La correction de conception demandée est prise au pied de la lettre :
+on NE LIT PAS le flowchart du client — un diagramme se parse mal et comparer deux images est
+un cauchemar. La plateforme héberge le processus en DONNÉES STRUCTURÉES (étapes, acteurs,
+systèmes, entrées/sorties, contrôles rattachés avec fréquence et propriétaire) et GÉNÈRE le
+diagramme ; le flowchart fourni devient une pièce de corroboration, pas la source.
+
+**Décision — le processus.** Une version = un fichier JSON structuré importé (pièce à part
+entière, refus qui nomment le champ et la ligne ; remplacement UNIQUEMENT confirmé). La
+différence N/N-1 est EXACTE et DÉRIVÉE à la lecture : appariée par code stable, champ par
+champ (étape ajoutée/supprimée/modifiée, contrôle ajouté/supprimé/modifié — propriétaire,
+fréquence, rattachement) ; l'ordre des lignes n'est PAS un changement. CHAQUE changement se
+statue (significatif / non significatif, motif écrit, signé) ; « significatif » lève un
+facteur de risque PROPOSÉ sur les postes du cycle (`FSLI_DU_CYCLE`) — proposé, jamais
+appliqué : une personne confirme au registre. Les changements non statués et les écarts
+candidats sont une famille d'obstacles au visa (`processus`) — une compréhension commencée
+puis abandonnée ne se scelle pas. Le diagramme est un SVG généré par une disposition pure et
+testée (`layoutDiagramme`).
+
+**Décision — l'entretien.** Participants, date, support, compréhension documentée. Deux
+supports : « notes » (le module fonctionne EN ENTIER sans enregistrement — c'est le défaut)
+et « enregistrement », qui exige le consentement EXPLICITE de CHAQUE participant, tracé
+(qui, quand — `consent_at`), et une durée de conservation écrite ; à l'échéance, la purge
+supprime le transcript et le DIT à l'écran — la compréhension et les écarts restent, ce sont
+les travaux de l'auditeur. Le droit applicable n'a pas pu être vérifié sur texte primaire
+depuis cet environnement : docs/14_ENTRETIENS_CONSENTEMENT.md porte les précautions et
+marque [UNVERIFIED] ce qui n'est pas atteint.
+
+**Décision — le transcript, seul endroit du lot où un modèle est justifié.** L'analyste
+produit des ÉCARTS CANDIDATS entre ce qui est DIT et ce qui est DOCUMENTÉ, jamais une
+conclusion — et cherche d'abord les OMISSIONS (un contrôle décrit à l'oral absent de la
+documentation ; une étape documentée passée sous silence), puis les contradictions. Même
+architecture que l'échelle d'extraction : interface + rejeu enregistré par défaut
+(`dataset/fixtures/entretiens.json`, clé sha256 du texte normalisé — un transcript inconnu
+est REFUSÉ en le disant, jamais inventé), adaptateur réel Anthropic à appel d'outil forcé
+derrière `OTTO_TRANSCRIPT_ADAPTER=anthropic` (activé par `npm run demo:ia`, garde de budget
+ADR-105 en amont), un `ai_run` par analyse (purpose `transcript_gaps`, valeur AJOUTÉE au
+contrôle de la base — la contrainte s'étend en 0027). Chaque écart se STATUE par une
+personne : question au client (brouillon L2, une demande par entretien), facteur PROPOSÉ au
+registre, ou écarté avec motif — jamais deux fois.
+
+**Ce qui n'est PAS fait.** Pas d'éditeur d'étapes en ligne (la description se réimporte,
+confirmée — l'éditeur viendra si le besoin se montre) ; pas de lecture du flowchart client
+(voulu) ; pas d'enregistreur audio ni de transcription automatique (le transcript se colle,
+sa fabrication est hors produit) ; un seul cycle rattaché (`REVENUE` — périmètre gelé) ;
+le rattachement significatif→facteur cible des assertions déclarées en dur par cycle, pas
+déduites ; la purge est un geste d'écran, pas une tâche planifiée.

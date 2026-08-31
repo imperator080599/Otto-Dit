@@ -1,0 +1,52 @@
+Entretien du 12 janvier 2026 — Altiverre SAS, cycle ventes
+Participants : Théo Girard (chef comptable, Altiverre), Karim Bensalem (Vermeil Audit)
+Support : enregistrement (consentements recueillis en début de séance)
+
+KB — Merci de m'accorder ce temps. Pouvez-vous me décrire le chemin d'une
+commande, de son arrivée jusqu'à l'encaissement ?
+
+TG — Les commandes arrivent de deux façons maintenant. Le circuit classique,
+c'est Nadia et son équipe qui saisissent le bon de commande dans Vela. Et
+depuis cette année, les trois grands comptes verriers passent par le portail
+EDI Alizarine — ça tombe directement en commande enregistrée, sans saisie.
+
+KB — Et ensuite ?
+
+TG — Vela vérifie l'encours du client. Si le plafond est dépassé, la commande
+se bloque et il faut un déblocage. La logistique expédie depuis le WMS, le
+chauffeur fait signer le bon de livraison. Pour la facturation, c'est le grand
+changement de l'année : on a activé le module Facturation de Vela cet été.
+Les factures se génèrent automatiquement depuis les bons de livraison, je ne
+saisis plus rien à la main. L'encaissement, c'est Inès qui lettre depuis le
+relevé.
+
+KB — Vous parliez de déblocages d'encours. Qui les accorde ?
+
+TG — Nadia, au cas par cas. Elle revoit sa liste, mais je crois que c'est
+passé au trimestre depuis qu'on a le module.
+
+KB — Quels contrôles faites-vous autour de la facturation ?
+
+TG — Le rapprochement entre les bons de livraison et les factures, pour
+vérifier que tout ce qui est livré est facturé. Honnêtement, on le fait une
+fois par mois depuis le passage au module — avant c'était toutes les
+semaines, mais le module rapproche déjà tout seul, alors on a espacé. C'est
+Nadia qui l'a repris, d'ailleurs, avec la facturation automatique ça touche
+surtout les commandes, plus la compta.
+
+KB — D'autres vérifications en fin de mois ?
+
+TG — Oui, une que je tiens beaucoup : à chaque clôture, je compare le chiffre
+d'affaires du mois au budget, ligne de produits par ligne de produits, et je
+fais expliquer tout écart au-delà de 5 % par le contrôle de gestion avant
+d'arrêter le mois. Ça m'a déjà fait rattraper des livraisons non facturées.
+
+KB — Et sur les impayés, comment relancez-vous ?
+
+TG — Le module gère les relances maintenant, le vieux tableur est abandonné.
+
+KB — Très clair. Je reviendrai vers vous sur les avoirs.
+
+TG — Quand vous voulez.
+
+— Fin de l'entretien (34 minutes) —

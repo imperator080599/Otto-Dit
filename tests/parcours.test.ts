@@ -22,6 +22,12 @@ import { draftRevenueWorkpaper } from '../app/src/lib/services/workpapers/draft'
 import { signWorkpaper, addReviewNote, transitionNote } from '../app/src/lib/services/workpapers/lifecycle';
 import { exportWorkpaper } from '../app/src/lib/services/workpapers/render';
 import { obstaclesAuVisa, visaPossible } from '../app/src/lib/services/obstacles';
+import { importerProcessus, diffProcessus, statuerChangement } from '../app/src/lib/services/processus';
+import {
+  creerEntretien, deposerTranscript, analyserTranscript, statuerEcart,
+  consignerComprehension, lireEntretiens,
+} from '../app/src/lib/services/entretiens';
+import { decideFactor } from '../app/src/lib/services/questionnaire';
 import { currentAcceptation } from '../app/src/lib/services/acceptance';
 import { closeFile } from '../app/src/lib/services/retention';
 import { sealFile } from '../app/src/lib/services/archive';
@@ -60,6 +66,79 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
     expect(wp.reference).toMatch(/^[A-Z]-\d{2}$/);
     expect(wp.status).toBe('signed');
   }, 600000);
+
+  it('le contrôle interne : processus décrit, différence STATUÉE, entretien, écarts statués (ADR-108)', async () => {
+    const ds = (d: string, f: string) => path.join(repoRoot(), 'dataset', d, f);
+    for (const [exercice, fichier] of [['n1', 'revenus_2024.json'], ['n', 'revenus_2025.json']] as const) {
+      await importerProcessus({
+        engagementId: IDS.engNep, exercice, filename: fichier,
+        contenu: new Uint8Array(fs.readFileSync(ds('processus', fichier))), userId: IDS.users.karim,
+      });
+    }
+    const diff = await diffProcessus(IDS.engNep, 'REVENUE');
+    expect(diff!.aStatuer).toHaveLength(5);            // la différence est EXACTE, et elle bloque
+
+    /* Le passage à la facturation automatique est SIGNIFICATIF : il PROPOSE un
+       facteur au registre. Les quatre autres se motivent sans en lever. */
+    await statuerChangement({
+      engagementId: IDS.engNep, cycle: 'REVENUE', changeCode: 'proc:REVENUE:etape~:FAC:systeme',
+      significance: 'significatif',
+      reason: 'Facturation générée automatiquement depuis les BL : le risque se déplace vers le paramétrage.',
+      userId: IDS.users.lea,
+    });
+    for (const code of ['proc:REVENUE:etape+:EDI', 'proc:REVENUE:etape-:REL',
+      'proc:REVENUE:controle~:CP-01:proprietaire', 'proc:REVENUE:controle~:CP-03:frequence']) {
+      await statuerChangement({
+        engagementId: IDS.engNep, cycle: 'REVENUE', changeCode: code,
+        significance: 'non_significatif',
+        reason: 'Changement d’exécution sans déplacement du risque — couvert par l’entretien et les questions.',
+        userId: IDS.users.lea,
+      });
+    }
+
+    /* L'entretien : consentements TRACÉS, transcript confronté à la
+       documentation — trois écarts CANDIDATS (les omissions d'abord), chacun
+       statué par une personne. */
+    const itv = await creerEntretien({
+      engagementId: IDS.engNep, cycle: 'REVENUE', date: '2026-01-12',
+      sujet: 'Cycle ventes — compréhension du processus', support: 'enregistrement',
+      participants: [
+        { nom: 'Théo Girard', qualite: 'chef comptable', consentement: true },
+        { nom: 'Karim Bensalem', qualite: 'auditeur', consentement: true },
+      ],
+      retentionUntil: '2026-07-12', userId: IDS.users.karim,
+    });
+    await deposerTranscript(itv,
+      fs.readFileSync(ds('entretiens', 'transcript-revenus-2025.txt'), 'utf8'), IDS.users.karim);
+    const analyse = await analyserTranscript(itv, IDS.users.karim);
+    expect(analyse.ajoutes).toBe(3);
+    expect(analyse.adapter).toBe('mock');              // zéro appel payant dans un harnais
+    const ecarts = (await lireEntretiens(IDS.engNep, 'REVENUE')).find((i) => i.id === itv)!.ecarts;
+    expect(ecarts.map((e) => e.kind)).toEqual(['omission_doc', 'omission_orale', 'contradiction']);
+    await statuerEcart({ gapId: ecarts[0].id, decision: 'factor', userId: IDS.users.lea });
+    await statuerEcart({ gapId: ecarts[1].id, decision: 'question', userId: IDS.users.lea });
+    await statuerEcart({
+      gapId: ecarts[2].id, decision: 'dismissed',
+      reason: 'Fréquence documentée à corriger avec le client — portée par la question sur CP-01.',
+      userId: IDS.users.lea,
+    });
+    await consignerComprehension(itv,
+      'Facturation automatisée depuis les BL à l’été ; contrôles espacés depuis — revue analytique orale non documentée.',
+      IDS.users.karim);
+
+    /* Les facteurs PROPOSÉS se CONFIRMENT au registre — la réviseuse décide,
+       la circulation est complète. */
+    for (const sourceRef of ['proc:REVENUE:etape~:FAC:systeme', `entretien:${itv}:1`]) {
+      const f = await q1<{ id: string }>(
+        `select id from risk_factor_declared where engagement_id = $1 and source_ref = $2`,
+        [IDS.engNep, sourceRef]);
+      await decideFactor(IDS.engNep, f.id, 'confirmed',
+        'Retenu : la revue du paramétrage et des contrôles espacés entre au programme.', IDS.users.claire);
+    }
+
+    const obstacles = await obstaclesAuVisa(IDS.engNep);
+    expect(obstacles.filter((o) => o.famille === 'processus')).toEqual([]);
+  }, 300000);
 
   it('à ce stade le dossier NE PEUT PAS être clos — et il dit pourquoi', async () => {
     /* C'est le point du branchement (point 11) : avant, seule la conclusion sur

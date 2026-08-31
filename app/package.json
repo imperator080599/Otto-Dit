@@ -9,6 +9,7 @@
     "diagnostic": "node scripts/demo/diagnostic.mjs",
     "pieces:neuves": "tsx scripts/dataset/pieces-neuves.ts",
     "eval:pieces-neuves": "tsx scripts/eval/pieces-neuves.ts",
+    "eval:entretien": "tsx scripts/eval/entretien.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",

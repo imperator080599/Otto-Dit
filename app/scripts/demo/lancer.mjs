@@ -383,6 +383,7 @@ const serveur = spawn(process.execPath, [OUTILS.next, DEV ? 'dev' : 'start', '-p
   env: {
     ...process.env, PORT: String(PORT),
     OTTO_OCR_ADAPTER: IA ? 'anthropic' : 'mock', OTTO_QUERY_PLANNER: 'mock',
+    OTTO_TRANSCRIPT_ADAPTER: IA ? 'anthropic' : 'mock',
     OTTO_BUDGET_USD: BUDGET_USD,
   },
   stdio: ['ignore', 'pipe', 'pipe'],

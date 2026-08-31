@@ -591,13 +591,17 @@ npm run cost:measure        # runs the ladder with a LIVE adapter under a $ budg
 npm run eval:pieces-neuves  # scores the ladder on the NEVER-SEEN pieces of
                             # dataset/pieces_neuves/ (absent from every replay cache) with the
                             # live adapter — cost, latency, field accuracy (ADR-105)
+npm run eval:entretien      # ONE live transcript analysis against the process documentation —
+                            # planted gaps found, cost, latency (ADR-108); refuses without a key
 ```
 
 **And the live demo itself**: `npm run demo:ia` launches the demo with the OCR rung REAL —
 key stays in `app/.env.local` (presence checked, value never read by the launcher), the demo
 world is seeded in replay (zero spend), never-seen pieces are generated with VERITE.md
 telling which file goes on which portal line and which are trapped; spend is displayed on
-the testing screen and a budget guard refuses cleanly at the ceiling (ADR-105).
+the testing screen and a budget guard refuses cleanly at the ceiling (ADR-105). The same
+mode makes the transcript analyst REAL (OTTO_TRANSCRIPT_ADAPTER, ADR-108): an interview
+never seen by any fixture gets analysed for candidate gaps, behind the same budget guard.
 
 `eval:extraction` runs offline and generates its own corpus (foreign layouts, foreign date
 and number formats, and bitmap scans with no text layer at all). `cost:measure` refuses to

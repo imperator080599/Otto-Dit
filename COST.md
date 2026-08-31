@@ -1,6 +1,6 @@
 # COST.md — LLM/OCR spend for the build and the demo
 
-**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $1.58** — measured, not
+**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $1.61** — measured, not
 estimated, against a $20 prepaid ceiling with auto-recharge disabled (ADR-020).
 
 Read the two sections below in order and do not confuse them: **§1 is what was measured by
@@ -101,6 +101,24 @@ facturées) nés des vraies lectures ; **l'arrêt au plafond exercé pour de vra
 0,001 $ < dépense 0,0452 $ → lecture refusée à l'écran, zéro appel parti). Dépense totale de
 la journée pour la tranche ADR-105 : **≈ $0.31** (deux passes d'eval + la conduite), toujours
 contre le plafond prépayé de 20 $.
+
+## 1 ter. L'analyste de transcript (ADR-108) — 2026-08-31
+
+**Statut : mesuré.** `npm run eval:entretien` — UNE analyse réelle du transcript du jeu de
+données contre la documentation du processus (le chemin `anthropic` de l'analyste ne devait
+pas rester une branche que rien n'exécute), modèle `claude-sonnet-5`, appel d'outil forcé.
+
+| Mesure | Valeur |
+|---|---|
+| Écarts plantés retrouvés | **3/3** (omission_doc, omission_orale, contradiction) |
+| Écarts supplémentaires proposés | 3 (plausibles — des CANDIDATS, une personne statue) |
+| Jetons entrés / sortis | 2 625 / 816 |
+| **Coût de l'analyse** | **$0.0335** |
+| Latence | 8,1 s |
+
+Dans l'application, ce chemin est derrière `npm run demo:ia` (OTTO_TRANSCRIPT_ADAPTER),
+garde de budget ADR-105 en amont, un `ai_run` par analyse ; la démonstration et les
+harnais restent sur le rejeu enregistré — zéro appel payant.
 
 ## 2. Build + demo spend to date
 

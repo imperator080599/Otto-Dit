@@ -64,7 +64,16 @@ rapprochés au grand livre — N au solde actif, N-1 aux à-nouveaux, l'écart d
 (les 25 000 € de situation sans attribution auxiliaire) ; concentration top 10, apparus,
 disparus, déplacements de part ≥ seuil (le seuil commande), déformation du vieillissement
 (> 90 j) avec porteurs nommés ; chaque constat = CANDIDAT proposé au registre (un humain
-confirme) + questions client en brouillon (ADR-107, `npm run dataset:balances-aux`).
+confirme) + questions client en brouillon (ADR-107, `npm run dataset:balances-aux`) ·
+**contrôle interne et processus** : le processus en DONNÉES STRUCTURÉES (étapes, acteurs,
+systèmes, contrôles avec fréquence et propriétaire), diagramme GÉNÉRÉ — le flowchart client
+n'est qu'une corroboration ; différence N/N-1 EXACTE champ par champ, CHAQUE changement
+statué par écrit (« significatif » → facteur PROPOSÉ au registre) ; entretien avec
+consentements TRACÉS ou notes sans enregistrement (le module fonctionne sans), transcript
+confronté à la documentation → écarts CANDIDATS (omissions d'abord, ai_run, rejeu
+enregistré / IA réelle via demo:ia), statués un par un — question, facteur, écarté motivé ;
+changements et écarts non statués = obstacles au visa, famille `processus` ; purge du
+transcript à l'échéance de conservation (ADR-108, docs/14_ENTRETIENS_CONSENTEMENT.md).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 

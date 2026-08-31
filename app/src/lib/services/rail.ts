@@ -97,6 +97,8 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
       s.importe, 'disponible après l\'import de la balance et du grand livre'),
     e('scoping', 'Périmètre (postes retenus)', 'Quels postes des comptes seront travaillés, et pourquoi.',
       s.seuils_valides, 'disponible après la validation des seuils'),
+    e('processus', 'Contrôle interne et processus', 'Le processus en données structurées : diagramme généré, différence N/N-1 statuée, entretiens et écarts candidats.',
+      s.acceptee, 'disponible après l\'acceptation de la mission'),
     e('risk', 'Risque par assertion', 'Le niveau de risque par assertion, le questionnaire, et le registre des facteurs.',
       s.perimetre, 'disponible après le périmètre'),
     e('estimations', 'Estimations comptables', 'Le fichier de calcul du client : rapproché, recalculé, sondé, taux justifiés.',

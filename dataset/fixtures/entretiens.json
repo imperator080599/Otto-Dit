@@ -1,0 +1,23 @@
+[
+  {
+    "_note": "Rejeu enregistré pour dataset/entretiens/transcript-revenus-2025.txt — clé : sha256 du texte normalisé (CRLF→LF, trim). Les OMISSIONS d'abord : c'est le cas le plus fréquent et le plus utile.",
+    "sha256": "83425ae59e425d900dff61fa288de38a0139b79161618930f6a5ba8a291bee7d",
+    "ecarts": [
+      {
+        "kind": "omission_doc",
+        "citation": "à chaque clôture, je compare le chiffre d'affaires du mois au budget […] et je fais expliquer tout écart au-delà de 5 %",
+        "description": "Une revue analytique mensuelle du chiffre d'affaires contre le budget, avec explication des écarts au-delà de 5 %, est décrite à l'oral mais n'apparaît dans aucune étape ni aucun contrôle de la documentation du processus."
+      },
+      {
+        "kind": "omission_orale",
+        "citation": "",
+        "description": "Le contrôle documenté CP-02 (validation des avoirs au-delà de 5 000 € par la direction financière) n'a pas été évoqué pendant l'entretien, alors que la facturation et ses contrôles ont été longuement décrits."
+      },
+      {
+        "kind": "contradiction",
+        "citation": "on le fait une fois par mois depuis le passage au module — avant c'était toutes les semaines",
+        "description": "Le contrôle CP-01 (rapprochement bons de livraison / factures) est documenté à fréquence hebdomadaire ; l'entretien décrit une exécution mensuelle depuis l'été."
+      }
+    ]
+  }
+]

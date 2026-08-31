@@ -157,6 +157,31 @@ de demande, une question par constat.
 
 ---
 
+### 6 ter. Le contrôle interne — le processus en données, l'entretien cadré
+
+**Écran** : `Contrôle interne et processus`.
+
+**Ce qu'il faut montrer** (ADR-108) : importez les deux descriptions structurées
+(`dataset/processus/` — N-1 puis N). Le **diagramme est GÉNÉRÉ** depuis les données ; le
+flowchart du client n'est qu'une pièce de corroboration. La **différence N/N-1 est exacte** :
+cinq changements, un de chaque espèce (étape ajoutée, supprimée, système remplacé,
+propriétaire de contrôle changé, fréquence changée) — chacun **se statue par écrit**, et le
+passage à la facturation automatique, statué *significatif*, **propose un facteur** au
+registre. Ré-importer sans confirmer est refusé : rien ne s'écrase en silence.
+
+Puis l'**entretien** : enregistrer sans le consentement de CHACUN est **refusé en nommant la
+personne** ; avec les consentements (tracés — qui, quand) et une durée de conservation, le
+transcript du jeu de données (`dataset/entretiens/`) se dépose et se **confronte à la
+documentation**. Trois **écarts candidats**, les **omissions d'abord** : la revue analytique
+décrite à l'oral et documentée nulle part, le contrôle CP-02 jamais évoqué, la fréquence de
+CP-01 contredite. Chacun se statue **par une personne** : facteur proposé, question au client
+(brouillon), ou écarté avec motif. Les facteurs proposés se confirment au registre — et tant
+qu'un changement ou un écart reste sans décision, c'est un **obstacle au visa** (famille
+`processus`). Sans consentement, le support « notes » fait tout le reste : le module
+fonctionne sans enregistrement (docs/14_ENTRETIENS_CONSENTEMENT.md).
+
+---
+
 ### 7. Le risque par assertion — et ce qu'il commande
 
 **Écran** : `Risque par assertion`.

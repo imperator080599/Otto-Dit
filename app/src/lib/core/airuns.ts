@@ -8,7 +8,7 @@ import { sha256 } from './hash';
 export interface AiRunInput {
   tenantId: string;
   engagementId?: string | null;
-  purpose: 'extraction' | 'classification' | 'drafting' | 'suggestion' | 'ocr';
+  purpose: 'extraction' | 'classification' | 'drafting' | 'suggestion' | 'ocr' | 'transcript_gaps';
   adapter: string; // 'anthropic' | 'mistral_ocr' | 'mock' | ...
   model: string;
   promptId: string;
