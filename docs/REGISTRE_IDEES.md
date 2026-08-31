@@ -102,6 +102,10 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | M-16 | §3.C : docs/AUTOMATISATION.md — champs tapés avant/après, par écran | planifié | |
 | M-17 | §3.D : docs/LEXIQUE.md — un concept = un mot, revue des libellés | planifié | |
 | M-18 | Registre des idées, DECISIONS_AUTONOMES, QUESTIONS_EN_ATTENTE, PROGRAMME_TEST_V1, LIVRAISON_V1 | en cours | ce fichier + docs/DECISIONS_AUTONOMES.md + docs/QUESTIONS_EN_ATTENTE.md créés ; programme de test et livraison = fin de v1 |
+| M-19 | §8.2 (v1.1) : état de l'art — docs/16_ETAT_DE_L_ART.md (DataSnipper, Inflo, MindBridge, CaseWare, AuditBoard, Suralink, Fieldguide : mieux qu'OTTO / moins bien / à prendre) | planifié | recherche web requise — tranche dédiée |
+| M-20 | §8.3 (v1.1) : les insuffisances récurrentes des rapports H2A / PCAOB, croisées aux familles d'obstacles au visa, manques comblés | planifié | c'est un cahier des charges gratuit de ce que la plateforme doit rendre IMPOSSIBLE |
+| M-21 | §8.4 (v1.1) : vérifier les 19 sources sur TEXTE PRIMAIRE, dater, marquer verifie:true une à une | planifié | tenter depuis cette session (l'accès réseau a pu changer) ; sinon dit et daté — jamais « vérifié » sans texte atteint |
+| M-22 | §8.5/8.7 (v1.1) : un sous-agent HOSTILE par tranche (casser, pas valider) + barre de finition (tout écran qu'on n'oserait pas montrer = défaut au registre) | en cours | s'applique à chaque tranche à partir de maintenant |
 
 **Rappel permanent** : les 19 sources du catalogue méthodologique restent `verifie: false`
 (methodology/sources.json) — aucune n'est utilisée comme si elle était vérifiée.
