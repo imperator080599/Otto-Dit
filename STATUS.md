@@ -85,10 +85,10 @@ une base vide : **01:02** de la commande au panneau.
 
 | Ce que ça prouve | Commande | État |
 |---|---|---|
-| Toutes les règles, tous les refus | `cd app && npm test` | 454 tests, zéro réseau |
-| Tous les écrans **rendent** en production | `cd app && npm run screens` | 68 routes |
-| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 99 étapes, ~35 refus |
-| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 252 vues, 0 défaut |
+| Toutes les règles, tous les refus | `cd app && npm test` | 479 tests, zéro réseau |
+| Tous les écrans **rendent** en production | `cd app && npm run screens` | 72 routes |
+| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 116 étapes, ~35 refus |
+| Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 268 vues, 0 défaut |
 | Tout, base recréée | `cd app && npm run verify` | enchaîne les quatre |
 
 `npm run verify` est la seule chose à lancer avant de dire qu'une tranche est finie.
