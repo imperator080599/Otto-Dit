@@ -1,6 +1,6 @@
 # COST.md — LLM/OCR spend for the build and the demo
 
-**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $1.27** — measured, not
+**Budget (D12): ≤ ~$200 for the entire build + demo. Actual: $1.58** — measured, not
 estimated, against a $20 prepaid ceiling with auto-recharge disabled (ADR-020).
 
 Read the two sections below in order and do not confuse them: **§1 is what was measured by
@@ -75,6 +75,32 @@ actually run:
 
 The budget guard sat at **$5** throughout — a bug detector, not a budget (ADR-020). It never
 tripped.
+
+## 1 bis. Hors cache : les pièces neuves (mode IA réelle, ADR-105) — 2026-08-31
+
+**Statut : mesuré.** `npm run eval:pieces-neuves` sur les **7 pièces jamais vues** de
+`dataset/pieces_neuves/` (aucune dans le cache de rejeu — la première mesure d'extraction de
+ce dépôt dont le modèle ne pouvait rien connaître), même chemin de code que l'application
+(`runLadder`), adaptateur `anthropic`, modèle `claude-opus-5`.
+
+| Mesure | Valeur |
+|---|---|
+| Pièces | 7 (6 lues au modèle, 1 par la couche texte — gratuite) |
+| **Précision** | **100,0 %** (43/43 valeurs rendues correctes) |
+| Rappel | 95,6 % (43/45 — 2 abstentions de `invoiceRef` sur les BL ; jamais une valeur fausse) |
+| Échecs d'appel | 0/6 |
+| **Coût par document lu au modèle** | **$0.0223** |
+| Coût de la mesure | $0.1337 |
+| Latence p50 (modèle) | 4 432 ms |
+| Scan dégradé (photo, rotation, bruit) | lu **7/7** champs |
+
+Et la **conduite de bout en bout** dans Chromium sur build de production (dépôt portail →
+lecture réelle → attestation L2 → vouching) : **$0.0452** pour deux lectures, écarts
+`amount_mismatch` (32 803,20 lu ≠ 32 160,00 écrit) et `qty_mismatch` (113 livrées < 128
+facturées) nés des vraies lectures ; **l'arrêt au plafond exercé pour de vrai** (plafond
+0,001 $ < dépense 0,0452 $ → lecture refusée à l'écran, zéro appel parti). Dépense totale de
+la journée pour la tranche ADR-105 : **≈ $0.31** (deux passes d'eval + la conduite), toujours
+contre le plafond prépayé de 20 $.
 
 ## 2. Build + demo spend to date
 

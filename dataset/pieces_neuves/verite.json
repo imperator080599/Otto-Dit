@@ -1,0 +1,145 @@
+[
+  {
+    "filename": "BL-neuf-FA2025-0702.pdf",
+    "role": "piege-quantite",
+    "ligne": {
+      "piece": "FA2025-0702",
+      "tiers": "Groupe Immovance SA",
+      "montantGl": "36 800,00 EUR",
+      "dateGl": "2025-06-17"
+    },
+    "attendu": "quantité livrée 113 < facturée 128 (tolérance 0) → écart de quantité au vouching",
+    "truth": {
+      "docType": "delivery_note",
+      "deliveryNoteNumber": "BL-neuf-0702",
+      "deliveryDate": "2025-06-17",
+      "invoiceRef": "FA2025-0702",
+      "buyerName": "Groupe Immovance SA",
+      "qtyTotal": "113"
+    }
+  },
+  {
+    "filename": "BL-neuf-FA2025-0706.pdf",
+    "role": "piege-signature",
+    "ligne": {
+      "piece": "FA2025-0706",
+      "tiers": "Promoteurs du Forez SA",
+      "montantGl": "36 330,00 EUR",
+      "dateGl": "2026-01-06"
+    },
+    "attendu": "AUCUNE règle machine ne lit les signatures aujourd'hui (contenu de catalogue, périmètre gelé) : ce piège se voit à l'ŒIL, dans la visionneuse — pas en exception",
+    "truth": {
+      "docType": "delivery_note",
+      "deliveryNoteNumber": "BL-neuf-0706",
+      "deliveryDate": "2026-01-06",
+      "invoiceRef": "FA2025-0706",
+      "buyerName": "Promoteurs du Forez SA",
+      "qtyTotal": "420"
+    }
+  },
+  {
+    "filename": "FA-neuve-FA2025-0704.pdf",
+    "role": "normale-scan",
+    "ligne": {
+      "piece": "FA2025-0704",
+      "tiers": "Bâtiplace SARL",
+      "montantGl": "36 168,00 EUR",
+      "dateGl": "2025-09-12"
+    },
+    "attendu": "lecture par le MODÈLE (scan, aucune couche texte) → attestation → vouching sans écart",
+    "truth": {
+      "docType": "invoice",
+      "invoiceNumber": "FA2025-0704",
+      "invoiceDate": "2025-09-12",
+      "buyerName": "Batiplace SARL",
+      "sellerName": "Altiverre SAS",
+      "totalNetCents": "3616800",
+      "vatCents": "723360",
+      "totalGrossCents": "4340160"
+    }
+  },
+  {
+    "filename": "FA-neuve-FA2025-0703.pdf",
+    "role": "normale-texte",
+    "ligne": {
+      "piece": "FA2025-0703",
+      "tiers": "Constructions Peyrelle SAS",
+      "montantGl": "34 734,00 EUR",
+      "dateGl": "2025-04-10"
+    },
+    "attendu": "lecture par la COUCHE TEXTE (déterministe, gratuite) — l'échelle ne paie que quand il faut",
+    "truth": {
+      "docType": "invoice",
+      "invoiceNumber": "FA2025-0703",
+      "invoiceDate": "2025-04-10",
+      "buyerName": "Constructions Peyrelle SAS",
+      "sellerName": "Altiverre SAS",
+      "totalNetCents": "3473400",
+      "vatCents": "694680",
+      "totalGrossCents": "4168080"
+    }
+  },
+  {
+    "filename": "FA-neuve-FA2025-0708.pdf",
+    "role": "piege-montant",
+    "ligne": {
+      "piece": "FA2025-0708",
+      "tiers": "Tertiaire Bâtir SAS",
+      "montantGl": "32 160,00 EUR",
+      "dateGl": "2025-11-06"
+    },
+    "attendu": "montant imprimé 32 803,20 EUR ≠ écriture 32 160,00 EUR → écart de montant au vouching",
+    "truth": {
+      "docType": "invoice",
+      "invoiceNumber": "FA2025-0708",
+      "invoiceDate": "2025-11-06",
+      "buyerName": "Tertiaire Batir SAS",
+      "sellerName": "Altiverre SAS",
+      "totalNetCents": "3280320",
+      "vatCents": "656064",
+      "totalGrossCents": "3936384"
+    }
+  },
+  {
+    "filename": "FA-neuve-FA2025-0707.pdf",
+    "role": "piege-date",
+    "ligne": {
+      "piece": "FA2025-0707",
+      "tiers": "Menuiseries Chartier SAS",
+      "montantGl": "31 625,00 EUR",
+      "dateGl": "2025-05-20"
+    },
+    "attendu": "facture datée 2026 sur un produit 2025 → écarts de date et de rattachement (cut-off)",
+    "truth": {
+      "docType": "invoice",
+      "invoiceNumber": "FA2025-0707",
+      "invoiceDate": "2026-01-20",
+      "buyerName": "Menuiseries Chartier SAS",
+      "sellerName": "Altiverre SAS",
+      "totalNetCents": "3162500",
+      "vatCents": "632500",
+      "totalGrossCents": "3795000"
+    }
+  },
+  {
+    "filename": "FA-neuve-FA2025-0705.pdf",
+    "role": "degradee",
+    "ligne": {
+      "piece": "FA2025-0705",
+      "tiers": "Habitat Confluence SAS",
+      "montantGl": "30 914,00 EUR",
+      "dateGl": "2025-10-08"
+    },
+    "attendu": "scan dégradé (photo, rotation, bruit) — le modèle lit ce qu'il peut, s'abstient sinon ; un champ non lu vaut mieux qu'un champ faux",
+    "truth": {
+      "docType": "invoice",
+      "invoiceNumber": "FA2025-0705",
+      "invoiceDate": "2025-10-08",
+      "buyerName": "Habitat Confluence SAS",
+      "sellerName": "Altiverre SAS",
+      "totalNetCents": "3091400",
+      "vatCents": "618280",
+      "totalGrossCents": "3709680"
+    }
+  }
+]

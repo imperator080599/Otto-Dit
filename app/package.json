@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "demo": "node scripts/demo/lancer.mjs",
+    "demo:ia": "node scripts/demo/lancer.mjs --ia",
     "diagnostic": "node scripts/demo/diagnostic.mjs",
+    "pieces:neuves": "tsx scripts/dataset/pieces-neuves.ts",
+    "eval:pieces-neuves": "tsx scripts/eval/pieces-neuves.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",

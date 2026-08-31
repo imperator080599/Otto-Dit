@@ -6,6 +6,7 @@ import { engagementCtx } from '../imports';
 import { findEmbeddedFacturx, parseCiiXml } from './facturx-read';
 import { classify, parseByType, pdfText, type DocType } from './textlayer';
 import { getOcrAdapter, type OcrAdapter } from './adapters';
+import { gardeBudget } from './budget';
 import type { ExtractedField } from './fields';
 
 // The extraction ladder (ADR-002/ADR-012): XML → text layer → OCR/LLM → human.
@@ -99,7 +100,13 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
   const ctx = await engagementCtx(ev.engagement_id);
   const bytes = readBlob(ev.storage_path);
 
-  const res = await runLadder(bytes, ev.filename);
+  /* MODE « IA RÉELLE » (ADR-105) : avant qu'une lecture payante puisse partir,
+     la garde de budget compare le cumul d'ai_run au plafond et REFUSE au
+     seuil — l'arrêt est propre, les lectures déjà faites restent au dossier.
+     En rejeu ('mock'), rien ne se dépense et rien n'est gardé. */
+  const adapter = getOcrAdapter();
+  if (adapter.name !== 'mock') await gardeBudget();
+  const res = await runLadder(bytes, ev.filename, adapter);
   await q(`update evidence set doc_type = $2, class_confidence = $3 where id = $1`, [evidenceId, res.docType, res.classConfidence]);
 
   let aiRunId: string | null = null;

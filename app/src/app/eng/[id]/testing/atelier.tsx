@@ -11,6 +11,12 @@ import type { LigneAtelier } from '@/lib/services/workpapers/atelier';
 // se remplit sous les yeux — formaté par le MÊME formateur que le papier.
 // Rien ne se recharge en changeant de ligne : la sélection est cliente, les
 // écritures passent par les actions serveur.
+//
+// L'ATTESTATION APPARTIENT À LA PIÈCE OUVERTE (ADR-105) : chaque pièce porte
+// SA lecture — un bon de livraison en attente s'atteste ici comme une
+// facture. La première version ne montrait que la lecture de la facture, et
+// un BL en attente était invisible (règle 13, trouvé en conduisant le mode
+// IA réelle).
 
 const STATUTS: Record<LigneAtelier['statut'], { libelle: string; badge: string }> = {
   a_traiter: { libelle: 'à traiter', badge: 'gray' },
@@ -27,6 +33,18 @@ const NOMS_CHAMPS: Record<string, string> = {
   deliveryNoteNumber: 'n° de BL', invoiceRef: 'réf. facture (sur BL)',
 };
 
+const NOM_PIECE: Record<string, string> = {
+  invoice: 'facture', credit_note: 'avoir', delivery_note: 'bon de livraison',
+};
+
+/** L'indice de la pièce à ouvrir sur une ligne : la première dont la lecture
+ *  attend une attestation, sinon la première. */
+function pieceAOuvrir(l: LigneAtelier | undefined): number {
+  if (!l) return 0;
+  const i = l.evidences.findIndex((e) => e.extraction?.statut === 'pending_verify');
+  return i >= 0 ? i : 0;
+}
+
 export function Atelier({
   engId, lignes, premierNonFini, itemInitial, colonnes,
   attester, clarifierLot,
@@ -39,13 +57,15 @@ export function Atelier({
   attester: (fd: FormData) => Promise<void>;
   clarifierLot: (fd: FormData) => Promise<void>;
 }) {
-  const [selId, setSelId] = useState<string | null>(itemInitial ?? premierNonFini ?? lignes[0]?.sampleItemId ?? null);
+  const idInitial = itemInitial ?? premierNonFini ?? lignes[0]?.sampleItemId ?? null;
+  const [selId, setSelId] = useState<string | null>(idInitial);
+  const [pieceOuverte, setPieceOuverte] = useState(() => pieceAOuvrir(lignes.find((l) => l.sampleItemId === idInitial)));
   const [lot, setLot] = useState<Set<string>>(new Set());
-  const [pieceOuverte, setPieceOuverte] = useState(0);
   const refListe = useRef<HTMLDivElement>(null);
   const refAttester = useRef<HTMLFormElement>(null);
 
   const sel = lignes.find((l) => l.sampleItemId === selId) ?? null;
+  const pieceSel = sel?.evidences[Math.min(pieceOuverte, Math.max(0, (sel?.evidences.length ?? 1) - 1))] ?? null;
 
   /* REPRENDRE OÙ J'EN ÉTAIS : à l'arrivée, la ligne ouverte est la première
      non finie, et elle est amenée à l'écran. */
@@ -53,26 +73,35 @@ export function Atelier({
     refListe.current?.querySelector('.sel')?.scrollIntoView({ block: 'center' });
   }, [selId]);
 
-  /* Après une attestation, les données serveur reviennent : si la ligne
-     ouverte n'attend PLUS RIEN de moi — champs attestés (avant même le
-     vouching) ou ligne complète, et pas d'écart ouvert — on AVANCE à la
-     prochaine qui attend une attestation. PAS au premier rendu : arriver par
-     `?item=` sur une ligne finie (depuis la synthèse des écarts ou le papier)
-     doit l'ouvrir, pas la fuir. */
+  /* Après une attestation, les données serveur reviennent : si une AUTRE pièce
+     de la même ligne attend encore (le BL après la facture), elle s'ouvre ;
+     si la ligne n'attend plus rien de moi, on AVANCE à la prochaine à
+     vérifier. PAS au premier rendu : arriver par `?item=` sur une ligne finie
+     (depuis la synthèse des écarts ou le papier) doit l'ouvrir, pas la fuir. */
   const premierRendu = useRef(true);
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    if (!sel || sel.statut === 'ecart') return;
-    const finiPourMoi = sel.statut === 'complete'
-      || (sel.extraction != null && sel.extraction.statut !== 'pending_verify');
-    if (!finiPourMoi) return;
-    const suivante = lignes.find((l) => l.statut === 'a_verifier' && l.sampleItemId !== selId)?.sampleItemId
-      ?? (premierNonFini !== selId ? premierNonFini : null);
-    if (suivante) { setSelId(suivante); setPieceOuverte(0); }
+    if (!sel) return;
+    const iPendante = sel.evidences.findIndex((e) => e.extraction?.statut === 'pending_verify');
+    if (iPendante >= 0) {
+      if (iPendante !== pieceOuverte) setPieceOuverte(iPendante);
+      return;
+    }
+    if (sel.statut === 'ecart') return;
+    const suivante = lignes.find((l) => l.sampleItemId !== selId
+        && l.evidences.some((e) => e.extraction?.statut === 'pending_verify'))
+      ?? lignes.find((l) => l.statut === 'a_verifier' && l.sampleItemId !== selId)
+      ?? (premierNonFini !== selId ? lignes.find((l) => l.sampleItemId === premierNonFini) : undefined);
+    if (suivante) { setSelId(suivante.sampleItemId); setPieceOuverte(pieceAOuvrir(suivante)); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lignes]);
 
-  /* LE CLAVIER : ↑/↓ change de ligne, Entrée atteste la ligne ouverte.
+  const ouvrirLigne = (l: LigneAtelier) => {
+    setSelId(l.sampleItemId);
+    setPieceOuverte(pieceAOuvrir(l));
+  };
+
+  /* LE CLAVIER : ↑/↓ change de ligne, Entrée atteste la pièce ouverte.
      Dans un champ de saisie, Entrée atteste aussi (le formulaire l'entoure). */
   useEffect(() => {
     const surTouche = (e: KeyboardEvent) => {
@@ -80,11 +109,11 @@ export function Atelier({
       if (e.key === 'ArrowDown' && !dansSaisie) {
         e.preventDefault();
         const i = lignes.findIndex((l) => l.sampleItemId === selId);
-        if (i < lignes.length - 1) { setSelId(lignes[i + 1].sampleItemId); setPieceOuverte(0); }
+        if (i < lignes.length - 1) ouvrirLigne(lignes[i + 1]);
       } else if (e.key === 'ArrowUp' && !dansSaisie) {
         e.preventDefault();
         const i = lignes.findIndex((l) => l.sampleItemId === selId);
-        if (i > 0) { setSelId(lignes[i - 1].sampleItemId); setPieceOuverte(0); }
+        if (i > 0) ouvrirLigne(lignes[i - 1]);
       } else if (e.key === 'Enter' && !dansSaisie && refAttester.current) {
         e.preventDefault();
         refAttester.current.requestSubmit();
@@ -92,6 +121,7 @@ export function Atelier({
     };
     window.addEventListener('keydown', surTouche);
     return () => window.removeEventListener('keydown', surTouche);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lignes, selId]);
 
   const basculerLot = (id: string) => {
@@ -111,6 +141,8 @@ export function Atelier({
       </span>
     );
   };
+
+  const extraction = pieceSel?.extraction ?? null;
 
   return (
     <div className="atelier">
@@ -132,7 +164,7 @@ export function Atelier({
               <tr
                 key={l.sampleItemId}
                 className={(l.sampleItemId === selId ? 'sel ' : '') + (l.statut === 'complete' ? 'ligne-complete' : '')}
-                onClick={() => { setSelId(l.sampleItemId); setPieceOuverte(0); }}
+                onClick={() => ouvrirLigne(l)}
               >
                 <td onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={lot.has(l.sampleItemId)} onChange={() => basculerLot(l.sampleItemId)} aria-label={`sélectionner ${l.piece}`} />
@@ -143,6 +175,11 @@ export function Atelier({
                 <td><span className="badge gray" title="le motif de sélection, sans remonter aux paramètres">{l.motif}</span></td>
                 <td>
                   <span className={`badge ${STATUTS[l.statut].badge}`}>{STATUTS[l.statut].libelle}</span>
+                  {/* Une lecture en attente reste dite, même sur une ligne en
+                      écart : l'écart n'efface pas l'attestation due. */}
+                  {l.statut !== 'a_verifier' && l.evidences.some((e) => e.extraction?.statut === 'pending_verify') && (
+                    <span className="badge amber" title="une lecture attend son attestation" style={{ marginLeft: 4 }}>à attester</span>
+                  )}
                   <div className="compare-ligne">{resumeComparaison(l)}</div>
                 </td>
               </tr>
@@ -162,41 +199,48 @@ export function Atelier({
               </span>
             </div>
 
-            {/* LA PIÈCE, ICI — pas dans un autre onglet. */}
+            {/* LA PIÈCE, ICI — pas dans un autre onglet. Une pièce dont la
+                lecture attend porte son point d'attention sur l'onglet. */}
             {sel.evidences.length === 0 ? (
               <p className="muted mt">Aucune pièce reçue pour cette ligne — la demander au client (case à cocher, puis clarification en lot).</p>
             ) : (
               <>
                 <div className="row mt" style={{ gap: 4 }}>
                   {sel.evidences.map((e, i) => (
-                    <button key={e.id} type="button"
+                    <button key={e.id} type="button" title={e.filename}
                       className={`btn small ${i === pieceOuverte ? '' : 'secondary'}`}
                       onClick={() => setPieceOuverte(i)}>
-                      {e.docType === 'invoice' ? 'facture' : e.docType === 'delivery_note' ? 'bon de livraison' : e.docType ?? 'pièce'}
+                      {NOM_PIECE[e.docType ?? ''] ?? e.docType ?? 'pièce'}
+                      {sel.evidences.filter((x) => x.docType === e.docType).length > 1
+                        ? ` ${sel.evidences.filter((x, j) => x.docType === e.docType && j <= i).length}` : ''}
+                      {e.extraction?.statut === 'pending_verify' ? ' •' : ''}
                     </button>
                   ))}
                 </div>
-                <iframe
-                  className="piece-vue"
-                  title={`pièce ${sel.evidences[pieceOuverte]?.filename ?? ''}`}
-                  src={`/api/blob/${sel.evidences[Math.min(pieceOuverte, sel.evidences.length - 1)].id}`}
-                />
+                {pieceSel && (
+                  <iframe
+                    className="piece-vue"
+                    title={`pièce ${pieceSel.filename}`}
+                    src={`/api/blob/${pieceSel.id}`}
+                  />
+                )}
               </>
             )}
 
-            {/* LES CHAMPS RELEVÉS, corrigeables au clavier ; Entrée atteste. */}
-            {sel.extraction && (
-              <form action={attester} ref={refAttester} className="mt">
+            {/* LES CHAMPS RELEVÉS SUR LA PIÈCE OUVERTE, corrigeables au
+                clavier ; Entrée atteste. */}
+            {extraction && (
+              <form action={attester} ref={extraction.statut === 'pending_verify' ? refAttester : undefined} className="mt">
                 <input type="hidden" name="engagement_id" value={engId} />
-                <input type="hidden" name="extraction_id" value={sel.extraction.id} />
+                <input type="hidden" name="extraction_id" value={extraction.id} />
                 <input type="hidden" name="sample_item_id" value={sel.sampleItemId} />
                 <table className="data champs-releves">
                   <tbody>
-                    {sel.extraction.fields.filter((f) => !f.name.startsWith('line')).map((f) => (
+                    {extraction.fields.filter((f) => !f.name.startsWith('line')).map((f) => (
                       <tr key={f.name}>
                         <td>{NOMS_CHAMPS[f.name] ?? f.name}</td>
                         <td>
-                          {sel.extraction!.statut === 'pending_verify'
+                          {extraction.statut === 'pending_verify'
                             ? <input name={`champ_${f.name}`} defaultValue={f.value} className="mono" />
                             : <span className="mono">{f.value}</span>}
                         </td>
@@ -205,7 +249,7 @@ export function Atelier({
                     ))}
                   </tbody>
                 </table>
-                {sel.extraction.statut === 'pending_verify' ? (
+                {extraction.statut === 'pending_verify' ? (
                   <div className="row mt">
                     <button className="btn small" type="submit" title="Entrée — ce que vous avez tapé part avec l'attestation">
                       Attester (Entrée)
@@ -214,8 +258,8 @@ export function Atelier({
                   </div>
                 ) : (
                   <p className="faint" style={{ margin: '6px 0 0' }}>
-                    {sel.extraction.statut === 'verified'
-                      ? <>attesté par {sel.extraction.verifiePar}{sel.extraction.verifieLe ? ` le ${sel.extraction.verifieLe.slice(0, 16)}` : ''}</>
+                    {extraction.statut === 'verified'
+                      ? <>attesté par {extraction.verifiePar}{extraction.verifieLe ? ` le ${extraction.verifieLe.slice(0, 16)}` : ''}</>
                       : 'relevé déterministe (échelon sans attestation requise)'}
                   </p>
                 )}
@@ -251,11 +295,12 @@ export function Atelier({
               </p>
             )}
 
-            {/* LA PROVENANCE, À PORTÉE. */}
-            {sel.evidences[0] && (
+            {/* LA PROVENANCE, À PORTÉE — celle de la pièce ouverte. */}
+            {pieceSel && (
               <p className="faint mt" style={{ fontSize: 11.5 }}>
-                empreinte {sel.evidences[Math.min(pieceOuverte, sel.evidences.length - 1)].sha256.slice(0, 14)}…
-                {sel.extraction && <> · échelon <span className="ai-flag">{sel.extraction.rung}</span></>}
+                empreinte {pieceSel.sha256.slice(0, 14)}…
+                {extraction && <> · échelon <span className="ai-flag">{extraction.rung}</span></>}
+                {extraction && extraction.coutUsd > 0 && <> · lecture {extraction.coutUsd.toFixed(4)} $</>}
                 {' '}· <a href="#reexecution">re-exécution à l&apos;aveugle ↓</a>
               </p>
             )}

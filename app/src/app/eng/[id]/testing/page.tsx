@@ -13,6 +13,7 @@ import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { lignesAtelier } from '@/lib/services/workpapers/atelier';
+import { depenseCumuleeUsd, plafondUsd } from '@/lib/services/extraction/budget';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
 import { Atelier } from './atelier';
@@ -34,8 +35,10 @@ export default async function TestingPage({
      attente sur une pièce dont la ligne a QUITTÉ le tirage (re-tirage après
      grand livre définitif) n'est l'obligation de personne — un badge qui
      l'annoncerait promettrait un travail que cet écran ne peut pas montrer.
-     Elle ressurgit ici si sa ligne revient dans un tirage. */
-  const pending = lignes.filter((l) => l.statut === 'a_verifier');
+     Elle ressurgit ici si sa ligne revient dans un tirage. Et il compte les
+     PIÈCES en attente, pas les statuts : une ligne déjà en écart peut porter
+     une lecture à attester — l'écart ne l'efface pas. */
+  const pending = lignes.filter((l) => l.evidences.some((e) => e.extraction?.statut === 'pending_verify'));
   const cat = await catalogueDeLaMission(id).catch(() => null);
   const colonnesEch = cat ? colonnesGabarit(cat, 'substantif', 'echantillon').map((c) => ({ champ: c.champ, titre: c.titre })) : [];
   const verifRun = await currentVerificationRun(id);
@@ -135,6 +138,21 @@ export default async function TestingPage({
           (recorded — always human-verified, ADR-012) → human. Vouching is deterministic
           with pack tolerances; exceptions land in the exceptions tab.
         </p>
+        {(process.env.OTTO_OCR_ADAPTER ?? 'mock') === 'anthropic' && (
+          /* MODE « IA RÉELLE » (ADR-105) : l'échelon OCR lit avec le modèle.
+             L'écran DIT lequel tourne, ce que ça a coûté et où est le plafond
+             — un mode payant qui ne s'annonce pas est un rejeu qui ment dans
+             l'autre sens. Rien d'autre ne change : mêmes échelons gratuits
+             d'abord, même file d'attestation humaine (L2), même provenance. */
+          <div className="callout">
+            <strong>Adaptateur OCR/LLM : IA RÉELLE ({process.env.OTTO_EXTRACT_MODEL ?? 'claude-opus-5'}).</strong>{' '}
+            Les échelons XML et couche texte lisent d&apos;abord, gratuitement ; une pièce qu&apos;ils ne
+            savent pas lire part au modèle — chaque lecture est journalisée (ai_run) et coûte de
+            l&apos;argent réel. Dépense depuis cette base : <strong>{(await depenseCumuleeUsd()).toFixed(4)} $</strong>{' '}
+            sur un plafond de {plafondUsd().toFixed(2)} $ — au plafond, la lecture suivante est refusée
+            proprement. Rien n&apos;entre au dossier sans attestation humaine (L2).
+          </div>
+        )}
         {(process.env.OTTO_OCR_ADAPTER ?? 'mock') !== 'anthropic' && (
           /* L'HONNÊTETÉ DE LA DÉMONSTRATION (ADR-102) : ne jamais laisser
              croire qu'une pièce est lue par un modèle quand la donnée est

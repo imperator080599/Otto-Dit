@@ -18,6 +18,12 @@ export const FIELD_KINDS: Record<string, FieldKind> = {
   totalNetCents: 'amount',
   vatCents: 'amount',
   totalGrossCents: 'amount',
+  // bons de livraison (pièces neuves, ADR-105) : ne sont notés que si la
+  // vérité du document les porte — les factures n'en portent pas
+  deliveryNoteNumber: 'text',
+  deliveryDate: 'date',
+  invoiceRef: 'text',
+  qtyTotal: 'amount',
 };
 
 export type Verdict = 'tp' | 'fp' | 'fn';

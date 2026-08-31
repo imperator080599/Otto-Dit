@@ -31,11 +31,21 @@ import {
 // MIGRATION — le premier message envoyait chercher un conflit de base alors
 // que le programme n'avait pas démarré.
 
+import { etatCleIa } from './cle.mjs';
+
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.resolve(ICI, '..', '..');          // …/app
 const PORT = Number(process.env.PORT || 3000);
 const BASE = `http://localhost:${PORT}`;
 const DEV = process.argv.includes('--dev');
+/* LE MODE « IA RÉELLE » (ADR-105) : le rejeu reste le DÉFAUT — une
+   démonstration sans réseau ne dépense rien et ne surprend personne. `--ia`
+   (ou `npm run demo:ia`) active l'échelon OCR vivant : la clé reste dans
+   app/.env.local (jamais lue par ce script — seulement sa présence), le
+   monde de démonstration est déroulé en REJEU (zéro dépense), puis le
+   SERVEUR seul lit avec le modèle, sous garde de budget. */
+const IA = process.argv.includes('--ia');
+const BUDGET_USD = process.env.OTTO_BUDGET_USD ?? '5';
 
 const t0 = Date.now();
 const chrono = () => {
@@ -48,7 +58,7 @@ const C = process.stdout.isTTY
   : { gras: '', faible: '', vert: '', jaune: '', rouge: '', bleu: '', fin: '' };
 
 let etape = 0;
-const TOTAL = DEV ? 4 : 5;
+const TOTAL = (DEV ? 4 : 5) + (IA ? 1 : 0);
 function annonce(texte) {
   etape += 1;
   process.stdout.write(`${C.faible}[${chrono()}]${C.fin} ${C.gras}${etape}/${TOTAL}${C.fin} ${texte}\n`);
@@ -168,6 +178,22 @@ for (const paquet of ['tsx', 'next']) {
   OUTILS[paquet] = bin;
 }
 
+if (IA) {
+  const etat = etatCleIa(APP);
+  if (etat !== 'presente') {
+    arret({
+      quoi: 'Le mode IA réelle demande une clé, et elle est absente.',
+      pourquoi: etat === 'fichier_absent'
+        ? `Le fichier ${path.join('app', '.env.local')} n'existe pas.`
+        : `Le fichier ${path.join('app', '.env.local')} ne contient pas de ligne ANTHROPIC_API_KEY=… non vide.`,
+      faire: 'créez app/.env.local contenant une ligne `ANTHROPIC_API_KEY=votre-clé` (ce script '
+        + 'ne lit jamais la valeur, seulement sa présence ; seule l\'application la lit, au moment '
+        + 'd\'appeler le modèle). Puis relancez `npm run demo:ia`. Sans clé, `npm run demo` '
+        + 'montre tout en rejeu, gratuitement.',
+    });
+  }
+}
+
 const RACINE = path.resolve(APP, '..');
 const FEC = path.join(RACINE, 'dataset', '999888777FEC20251231.txt');
 if (!fs.existsSync(FEC)) {
@@ -212,8 +238,8 @@ if (!(await portLibre(PORT))) {
   });
 }
 
-process.stdout.write(`\n${C.gras}OTTO — démonstration${C.fin} ${C.faible}(données entièrement synthétiques)${C.fin}\n`);
-process.stdout.write(`${C.faible}Base repartie de zéro, monde de démonstration déroulé, serveur ${DEV ? 'de développement' : 'de production'}.${C.fin}\n\n`);
+process.stdout.write(`\n${C.gras}OTTO — démonstration${IA ? ' · IA RÉELLE' : ''}${C.fin} ${C.faible}(données entièrement synthétiques)${C.fin}\n`);
+process.stdout.write(`${C.faible}Base repartie de zéro, monde de démonstration déroulé${IA ? ' (en rejeu, zéro dépense)' : ''}, serveur ${DEV ? 'de développement' : 'de production'}${IA ? ` avec l'échelon OCR vivant (plafond ${BUDGET_USD} $)` : ''}.${C.fin}\n\n`);
 
 // ── 1. LA BASE, REPARTIE DE ZÉRO ─────────────────────────────────────────────
 
@@ -289,6 +315,28 @@ detail('acceptation, équipe, import du grand livre, sondage, vouching, papier d
   if (resume) detail(resume.replace('demo state ready — ', '').replace(' Run "npm run dev" and sign in as any user.', ''));
 }
 
+// ── 2 bis. LES PIÈCES NEUVES (mode IA réelle seulement) ──────────────────────
+/* Un jeu de justificatifs que le système n'a JAMAIS VUS — absents du cache de
+   rejeu — à déposer soi-même au portail pour regarder le modèle lire pour de
+   vrai. Engendré DEPUIS le monde qui vient d'être semé (déterministe) : chaque
+   pièce nomme la ligne d'échantillon qu'elle vise, et VERITE.md dit lesquelles
+   sont piégées et ce qui doit se lever. */
+if (IA) {
+  annonce('pièces neuves engendrées (jamais vues du système)…');
+  const res = await lancer(OUTILS.tsx, ['scripts/dataset/pieces-neuves.ts']);
+  gardeLancement(res, 'La génération des pièces neuves');
+  if (res.code !== 0) {
+    arret({
+      quoi: 'La génération des pièces neuves a échoué.',
+      pourquoi: 'Le jeu de pièces à déposer se construit depuis le monde de démonstration ; s\'il refuse, le mode IA réelle perd son intérêt.',
+      faire: `ce n'est pas un défaut de votre machine. \`${enchaine(['cd app', 'npm run pieces:neuves'])}\` reproduit l'erreur seule ; envoyez-la telle quelle.`,
+      sortie: res.sortie,
+    });
+  }
+  const resume = (res.sortie.match(/pièces neuves[^\n]*/) || [''])[0];
+  detail(resume || 'dossier dataset/pieces_neuves/ écrit (VERITE.md dit quoi déposer où)');
+}
+
 // ── 3. QUI EST QUI — LU DANS LA BASE, AVANT QUE LE SERVEUR NE LA PRENNE ──────
 
 annonce('lecture des identités du dossier…');
@@ -330,7 +378,13 @@ if (!DEV) {
 annonce(`démarrage du serveur sur ${BASE}…`);
 const serveur = spawn(process.execPath, [OUTILS.next, DEV ? 'dev' : 'start', '-p', String(PORT)], {
   cwd: APP,
-  env: { ...process.env, PORT: String(PORT), OTTO_OCR_ADAPTER: 'mock', OTTO_QUERY_PLANNER: 'mock' },
+  /* SEUL LE SERVEUR passe en adaptateur vivant : le monde a été semé en rejeu.
+     La clé n'apparaît pas ici — Next lit app/.env.local lui-même. */
+  env: {
+    ...process.env, PORT: String(PORT),
+    OTTO_OCR_ADAPTER: IA ? 'anthropic' : 'mock', OTTO_QUERY_PLANNER: 'mock',
+    OTTO_BUDGET_USD: BUDGET_USD,
+  },
   stdio: ['ignore', 'pipe', 'pipe'],
   /* POSIX : un groupe de processus, tué en bloc par son -pid. Windows :
      pas de groupe — l'arbre se tue par `taskkill /T` (portable.mjs). */
@@ -406,12 +460,20 @@ process.stdout.write(`\n  ${C.gras}Le dossier${C.fin}\n`);
 process.stdout.write(`      ${infos.dossier}\n`);
 process.stdout.write(`${C.faible}      ${infos.entite} · ${infos.exercice} · pack ${infos.pack} · le parcours pas à pas est dans DEMO_APP.md${C.fin}\n`);
 
+if (IA) {
+  process.stdout.write(`\n  ${C.gras}IA réelle${C.fin} ${C.faible}— l'échelon OCR lit avec le modèle ; tout le reste est inchangé (L2, provenance).${C.fin}\n`);
+  process.stdout.write(`      Pièces neuves à déposer : ${C.bleu}dataset/pieces_neuves/${C.fin}\n`);
+  process.stdout.write(`${C.faible}      VERITE.md y dit quelle pièce va sur quelle ligne du portail, lesquelles sont piégées,${C.fin}\n`);
+  process.stdout.write(`${C.faible}      et ce qui doit se lever. Coût affiché sur l'écran de testing ; plafond ${BUDGET_USD} $ (OTTO_BUDGET_USD).${C.fin}\n`);
+}
+
 process.stdout.write(`\n  ${C.gras}Si vous cassez quelque chose en cliquant${C.fin}\n`);
 /* La commande de relance REPÈTE le port choisi — dans la syntaxe du terminal
    qui la lira : quelqu'un qui a dû prendre 3100 la première fois se ferait
    refuser en retapant la commande nue, et un utilisateur de PowerShell ne
    peut pas coller `PORT=3100 npm run demo`. */
-const RELANCE = process.env.PORT ? avecPort(PORT, 'npm run demo') : 'npm run demo';
+const COMMANDE_DEMO = IA ? 'npm run demo:ia' : 'npm run demo';
+const RELANCE = process.env.PORT ? avecPort(PORT, COMMANDE_DEMO) : COMMANDE_DEMO;
 process.stdout.write(`      ${C.jaune}Ctrl-C${C.fin} puis ${C.jaune}${RELANCE}${C.fin}${C.faible} — tout repart d'une base vide. Ce lancement-ci a pris ${chrono()}.${C.fin}\n`);
 
 trait('─');

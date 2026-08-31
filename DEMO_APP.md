@@ -23,6 +23,15 @@ npm run demo            # base vide → migrations → monde semé → serveur, 
 fin** l'adresse, les trois rôles, le portail client et la commande de remise à zéro (ADR-095). Les
 trois commandes séparées restent valables pour développer.
 
+**L'IA vivante** : `npm run demo:ia` (ADR-105) lance la même démonstration avec l'échelon OCR
+**réel** — la clé reste dans `app/.env.local` (le lanceur vérifie sa présence, jamais sa valeur),
+le monde est semé en rejeu (zéro dépense), et un jeu de **pièces neuves jamais vues** est engendré
+dans `dataset/pieces_neuves/` : déposez-en une au portail (VERITE.md dit laquelle va où et
+lesquelles sont piégées), lancez l'échelle — le modèle lit pour de vrai, le coût s'affiche
+(bandeau + ligne par ligne), l'attestation humaine reste obligatoire, et le vouching lève l'écart
+né de la vraie lecture. Plafond de dépense : 5 $ (`OTTO_BUDGET_USD`) — au plafond, la lecture
+suivante est refusée à l'écran. La mesure hors cache : `npm run eval:pieces-neuves`.
+
 Connectez-vous en **Claire Fontaine** (associée). Le dossier à suivre est
 **Altiverre FY2025 — Audit légal (NEP)**.
 

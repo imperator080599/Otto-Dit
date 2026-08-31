@@ -42,7 +42,14 @@ jamais un autre onglet), motif de sélection et comparaison lisibles SUR la lign
 atteste en emportant les corrections tapées, la suivante s'ouvre seule, clarification en lot
 (refusée sans motif), écart ↔ synthèse en un clic dans les deux sens, papier vivant par le MÊME
 formateur que le papier ; banc `npm run mesure:testing` : 4 gestes / 2 écrans → 1 geste / 1 écran
-par ligne (ADR-104).
+par ligne (ADR-104) ·
+**l'IA vivante dans la version livrée** : `npm run demo:ia` — l'échelon OCR lit avec le MODÈLE
+(clé dans app/.env.local, présence vérifiée sans lire la valeur), pièces neuves JAMAIS VUES
+engendrées depuis le monde semé (normales + piégées : montant, date, quantité, signature, scan
+dégradé — VERITE.md dit quoi déposer où), coût affiché par lecture et en cumul, garde de budget
+qui refuse au plafond en nommant les deux chiffres ; rejeu inchangé par défaut, L2 et provenance
+inchangés partout ; mesuré hors cache : précision 100 % (43/43), 0,0223 $/document,
+p50 4,4 s (`npm run eval:pieces-neuves`, ADR-105).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
@@ -156,6 +163,7 @@ comme « mesuré » s'il ne figure pas ici.
 | **Les visas suivent la hiérarchie de revue** | **Prouvé par exécution** | trigger + service : un visa associé avant celui du reviewer est refusé |
 | Le noyau déterministe (canonicalisation, sondage, seuils, projection, échelle de déficience, FEC) donne les bons résultats | **Prouvé par exécution** | 135 tests, dont la suite d'acceptation qui rejoue les anomalies semées par le générateur via le chemin applicatif réel |
 | **Précision de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196 champs) sur le corpus d'eval — **0 montant faux sur 84 rendus, 0 date fausse sur 28 rendues** |
+| **Extraction HORS CACHE, pièces jamais vues** | **Prouvé par exécution** | `npm run eval:pieces-neuves` (2026-08-31) : précision **100,0 %** (43/43 valeurs rendues), rappel 95,6 % (2 abstentions, jamais une valeur fausse), 0 échec, 0,0223 $/document, p50 4,4 s ; conduite de bout en bout au clic (dépôt → lecture réelle → attestation → écart) pour 0,0452 $, arrêt au plafond exercé pour de vrai (ADR-105) |
 | **Rappel de l'extraction, tous barreaux** | **Prouvé par exécution** | 100,0 % (n=196). Avant ADR-021 : 14,3 % (n=196) sans le barreau modèle |
 | **Barreau 3–4 (modèle) : précision, latence, taux d'échec** | **Prouvé par exécution** | 51 appels réels : précision 100 % (n=194 valeurs rendues), latence p50 ≈ 5,1 s, **échecs 0/51** |
 | **Coût réel par document et par mandat** | **Prouvé par exécution** | 0,0240 $ par document au barreau modèle (n=1 sur le dataset, n=8 sur le corpus) ; **0,10 $ par mandat** (mix dataset, 100 doc.) à **0,68 $** (mix corpus, 29 % au modèle). COST.md §1 |

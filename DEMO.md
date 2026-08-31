@@ -581,14 +581,23 @@ the L2 verification-time economics, or any market/adoption hypothesis. Those are
 gates (ASSUMPTIONS A11/A12) and require permissioned real evidence, which this repo
 deliberately does not contain.
 
-## 4. Two measurement commands (not part of the walkthrough)
+## 4. Measurement commands (not part of the walkthrough)
 
 ```bash
 npm run eval:extraction     # scores the extraction ladder per field on a public/synthetic
                             # corpus → docs/EVAL_EXTRACTION.md (ADR-018)
 npm run cost:measure        # runs the ladder with a LIVE adapter under a $ budget guard and
                             # rewrites the measured block of COST.md (ADR-019)
+npm run eval:pieces-neuves  # scores the ladder on the NEVER-SEEN pieces of
+                            # dataset/pieces_neuves/ (absent from every replay cache) with the
+                            # live adapter — cost, latency, field accuracy (ADR-105)
 ```
+
+**And the live demo itself**: `npm run demo:ia` launches the demo with the OCR rung REAL —
+key stays in `app/.env.local` (presence checked, value never read by the launcher), the demo
+world is seeded in replay (zero spend), never-seen pieces are generated with VERITE.md
+telling which file goes on which portal line and which are trapped; spend is displayed on
+the testing screen and a budget guard refuses cleanly at the ceiling (ADR-105).
 
 `eval:extraction` runs offline and generates its own corpus (foreign layouts, foreign date
 and number formats, and bitmap scans with no text layer at all). `cost:measure` refuses to

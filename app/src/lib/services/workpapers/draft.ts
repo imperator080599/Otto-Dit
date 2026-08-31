@@ -130,18 +130,29 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
   // sample table with per-item evidence refs + extracted fields (idea #15 / P7)
   const sampleRows: WpTableRow[] = [];
   for (const it of sample.items) {
+    /* LES PIÈCES LES PLUS RÉCENTES D'ABORD, et jamais une lecture en attente :
+       c'est la règle du vouching (loadItemContext) — le papier doit décrire la
+       MÊME pièce que celle contre laquelle les contrôles ont tourné. Sans
+       l'ordre, une seconde facture déposée (pièce complémentaire du client)
+       laissait le papier citer l'ancienne pendant que le vouching lisait la
+       nouvelle. */
     const evidences = await q<{ id: string; sha256: string; doc_type: string | null; filename: string }>(
       `select e.id, e.sha256, e.doc_type, e.filename from evidence e
        join request_item ri on ri.id = e.request_item_id
-       where ri.sample_item_id = $1 and e.quarantined = false`,
+       where ri.sample_item_id = $1 and e.quarantined = false
+       order by e.doc_type, e.created_at desc`,
       [it.id],
     );
     const match = await q01<{ status: string; checks: { check: string; pass: boolean }[] }>(
       `select status, checks from match where sample_item_id = $1`,
       [it.id],
     );
-    const inv = evidences.find((e) => e.doc_type === 'invoice' || e.doc_type === 'credit_note');
-    const x = inv ? await latestExtraction(inv.id) : null;
+    let x: Awaited<ReturnType<typeof latestExtraction>> = null;
+    for (const e of evidences) {
+      if (e.doc_type !== 'invoice' && e.doc_type !== 'credit_note') continue;
+      const cand = await latestExtraction(e.id);
+      if (cand && cand.status !== 'pending_verify') { x = cand; break; }
+    }
     const itemExceptions = exceptions.filter((xx) => xx.sample_item_id === it.id);
     /* Les champs sont NOMMÉS (formateur partagé avec l'aperçu vivant de
        l'atelier), et les colonnes du cabinet en choisissent l'ordre et le

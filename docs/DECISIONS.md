@@ -3782,3 +3782,64 @@ ressurgit dans l'atelier si sa ligne revient. Le parcours vérifie désormais la
 les deux mondes : quand rien n'attend, aucun badge ne prétend le contraire ; le geste
 d'attestation lui-même est conduit sur build de production par `npm run mesure:testing`, dont
 le monde porte une pièce à attester (échelon OCR rejoué).
+
+## ADR-105 — L'IA vivante dans la version livrée : mode réel, pièces neuves, garde de budget
+
+**Contexte.** Point 12 du fondateur, nommé le plus important : « il n'y a AUCUNE IA vivante
+dans ce que je peux lancer ». `npm run demo` force le rejeu ; le produit dont l'argument
+central est le traitement automatique des pièces se montrait avec ce traitement éteint. Le
+fondateur veut déposer au portail un justificatif JAMAIS VU et regarder l'extraction le lire
+réellement, le rapprochement trouver l'écart, l'exception se lever — sans truquage.
+
+**Décision — trois pièces, rien d'autre ne change.**
+1. **`npm run demo:ia`** : le rejeu reste le DÉFAUT (`npm run demo`, zéro réseau) ; le mode
+   réel s'active explicitement. La clé vit dans `app/.env.local` — le lanceur vérifie sa
+   PRÉSENCE sans jamais lire sa valeur (`scripts/demo/cle.mjs`, testé), Next la lit seul.
+   Le monde de démonstration est semé EN REJEU (zéro dépense) ; seul le serveur passe
+   l'échelon OCR sur l'adaptateur vivant. L'écran de testing DIT le mode dans les deux
+   sens : bandeau REJEU en rejeu, bandeau « IA RÉELLE (modèle) » avec dépense cumulée et
+   plafond en mode réel — un mode payant qui ne s'annonce pas est un rejeu qui ment dans
+   l'autre sens.
+2. **Les pièces neuves** (`npm run pieces:neuves`, engendrées par le lanceur en mode IA) :
+   un jeu de justificatifs ABSENTS du cache de rejeu, construits DEPUIS le monde semé
+   (déterministes à l'octet), chacun visant une ligne précise de l'échantillon. Des
+   normales, et des piégées : montant ≠ écriture (+2 %), date hors exercice, quantité
+   livrée < facturée, BL sans signature, scan dégradé. Presque toutes en SCAN (aucune
+   couche texte) pour forcer l'échelon OCR ; une en couche texte pour montrer que l'échelle
+   ne paie que quand il faut. `VERITE.md` dit quelle pièce va où et ce qui doit se lever ;
+   `verite.json` porte la vérité champ par champ. Le piège est dans le DOCUMENT face au
+   grand livre : l'extraction doit lire fidèlement ce qui est imprimé, c'est le VOUCHING
+   qui lève l'écart. La signature absente n'a AUCUNE règle machine (contenu de catalogue,
+   périmètre gelé) : elle se voit à l'œil, et c'est écrit.
+3. **La garde de budget** (`services/extraction/budget.ts`) : avant toute lecture payante,
+   le cumul d'`ai_run` est comparé au plafond (`OTTO_BUDGET_USD`, 5 $ par défaut) ; au
+   plafond, la lecture est REFUSÉE en nommant les deux chiffres, à l'écran — les lectures
+   faites restent au dossier. Le coût s'affiche par extraction (ligne de provenance de
+   l'atelier) et en cumul (bandeau). Le vrai garde-fou d'un débordement reste le
+   plafonnement prépayé de la clé côté fournisseur.
+
+**Rien ne change autour** : mêmes échelons gratuits d'abord, même file d'attestation
+humaine (L2 — rien n'entre au dossier sans elle), même provenance, mêmes harnais en rejeu
+(`npm test`, `screens`, `clics`, `visuel` : zéro appel, zéro centime).
+
+**Ce que la conduite réelle a trouvé (et corrigé).** Conduit dans Chromium sur build de
+production, argent réel : dépôt portail → lecture modèle (coût affiché) → attestation →
+vouching → écarts. Trois défauts réels sont sortis de cette conduite, invisibles au rejeu :
+(a) l'atelier choisissait la PREMIÈRE pièce d'un type quand le vouching prend la PLUS
+RÉCENTE attestée — une seconde facture déposée laissait l'écran et le papier citer
+l'ancienne pendant que le vouching lisait la nouvelle (draft.ts alignés sur la règle du
+vouching : jamais une lecture en attente) ; (b) une lecture en attente sur un BON DE
+LIVRAISON était INVISIBLE — l'atelier ne montrait que l'extraction de la facture : l'objet
+existait, aucun chemin de lecture ne l'atteignait (règle 13) — chaque pièce porte désormais
+SA lecture, l'onglet de la pièce en attente porte un point et s'ouvre d'office ;
+(c) une ligne déjà en écart ÉTEIGNAIT son badge « à attester » — l'écart n'efface pas
+l'attestation due : le compteur compte les pièces en attente, pas les statuts.
+
+**Les mesures (rejouables).** `npm run eval:pieces-neuves` sur les 7 pièces jamais vues :
+précision 100,0 % (43/43 valeurs rendues), rappel 95,6 % (43/45 — 2 abstentions de
+`invoiceRef` sur les BL, jamais une valeur fausse), 0 échec d'appel, 0,0223 $ par document
+lu au modèle, latence p50 4,4 s — le scan « photo » dégradé lu 7/7. Conduite de bout en
+bout : 0,0452 $ pour les deux lectures, écarts `amount_mismatch` (32 803,20 lu ≠ 32 160,00
+écrit) et `qty_mismatch` (113 livrées < 128 facturées) nés des vraies lectures ; l'arrêt au
+plafond exercé pour de vrai (0,0452 $ ≥ 0,001 $ → refus affiché, zéro appel). Chiffres du
+jour dans COST.md ; la première mesure d'extraction HORS cache de ce dépôt.
