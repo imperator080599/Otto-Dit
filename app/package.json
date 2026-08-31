@@ -6,6 +6,7 @@
   "scripts": {
     "demo": "node scripts/demo/lancer.mjs",
     "diagnostic": "node scripts/demo/diagnostic.mjs",
+    "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",
     "build": "next build",

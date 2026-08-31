@@ -3725,3 +3725,60 @@ Exceptions → Écarts relevés (Déviations (SOX) côté pack), Workpapers → 
 États financiers → Pointage des états financiers, Ask the file → Interroger le dossier,
 Dashboard → Pilotage, Provenance → Provenance des chiffres, Event log → Journal du dossier.
 
+## ADR-104 — L'atelier du contrôle sur pièces : le critère d'acceptation est une mesure
+
+**Contexte.** Le testing du chiffre d'affaires est l'écran où l'auditeur passera le plus
+clair de son temps, et le fondateur en a fait LE critère qui décide : le temps pour traiter
+UNE ligne d'échantillon, de son ouverture à son état complet, cas normal sans écart. À 90 s
+la ligne, 167 lignes font 4 heures et le produit ne fait rien gagner ; à 15 s, 40 minutes.
+L'écran d'avant échouait à ce critère par construction : la file d'attestation, le tableau
+de vouching et la pièce vivaient en TROIS endroits — la pièce s'ouvrait dans un autre onglet.
+
+**Décision — réarranger, ne rien ajouter.** Toutes les capacités existaient ; l'atelier les
+met sur la même ligne. Un seul service d'assemblée (`services/workpapers/atelier.ts`) donne,
+par ligne d'échantillon : la pièce, le motif de sélection en toutes lettres, la comparaison
+LISIBLE (valeur pièce, valeur GL, tolérance, règle — libellés dérivés des règles du
+catalogue), l'extraction avec ses champs, les écarts, la provenance (empreinte, échelon), et
+la ligne de papier qu'elle produira. L'écran (`testing/atelier.tsx`) : liste à gauche, détail
+à droite, la pièce dans une visionneuse intégrée — jamais un autre onglet ; ↑/↓ change de
+ligne, Entrée atteste ; corriger un champ et attester sont LE MÊME geste (les corrections
+tapées partent avec l'attestation — l'acte humain explicite du plafond L2 emporte ce que la
+personne a vérifié de ses yeux) ; après l'attestation la prochaine ligne à vérifier s'ouvre
+seule — jamais au premier rendu, pour qu'arriver par `?item=` ouvre la ligne demandée ;
+cases à cocher et clarification en lot (refusée sans motif, brouillon sinon — rien ne part
+au client sans approbation) ; on reprend là où on en était (première ligne non finie).
+
+**Trois règles du dépôt s'y appliquent à la lettre.** (1) Règle 16 : l'aperçu « la ligne,
+telle qu'elle sortira au papier » est formaté par LE MÊME formateur que le papier
+(`champsLigneEchantillon`, extrait de `draft.ts` — pas une seconde implémentation qui
+divergerait en silence). (2) L'aller-retour écart ↔ synthèse est UN clic dans chaque sens :
+l'écart de la ligne pointe l'ancre `#x-<id>` de la synthèse, et chaque écart de la synthèse
+porte « la ligne testée, dans l'atelier » (`/testing?item=`). (3) Aucune fonctionnalité
+nouvelle : ni règle de contrôle, ni contenu de procédure, ni cycle — le périmètre reste gelé.
+
+**La mesure, et ce qu'elle est.** Le banc (`npm run mesure:testing`) conduit le geste dans
+Chromium sur un build de production et NOMME l'interface qu'il mesure (règle 16 : une mesure
+qui ne nomme pas son objet est une preuve empruntée). Il mesure des gestes SCRIPTÉS — une
+machine clique en millisecondes — et compte ce qui appartient à l'interface : gestes et
+écrans traversés. Avant : 4 gestes, 2 écrans (la pièce dans un autre onglet). Après :
+1 geste, 1 écran. Pour traduire en temps humain, le banc applique le modèle des frappes au
+clavier (Keystroke-Level Model, Card, Moran & Newell), constantes NOMMÉES dans le fichier —
+et l'annonce comme un MODÈLE, jamais comme une mesure : le temps de lecture de la pièce,
+identique quelle que soit l'interface, n'y figure pas. Les chiffres vivent dans la sortie du
+banc, rejouable — pas recopiés ici où ils périmeraient.
+
+**Ce qui a été retiré.** La file de vérification et le panneau de vouching de l'écran
+testing (remplacés par l'atelier) ; l'action `verifyAction` et le badge de rapprochement
+qu'ils portaient. La re-exécution en aveugle, l'évaluation et la porte de conclusion restent
+tels quels — l'atelier y mène par l'ancre `#reexecution`.
+
+**Ce que le premier parcours cliqué de l'atelier a trouvé.** Le compteur « à attester » de
+l'écran comptait les extractions en attente du DOSSIER ENTIER, alors que l'atelier ne montre
+que l'échantillon COURANT : une pièce déposée sur une ligne d'un tirage remplacé (re-tirage
+après grand livre définitif) créait un badge annonçant un travail que l'écran ne pouvait pas
+montrer — un badge qui ment. Décision : la file d'attestation SUIT L'ÉCHANTILLON ; une
+extraction en attente dont la ligne a quitté le tirage n'est l'obligation de personne, et
+ressurgit dans l'atelier si sa ligne revient. Le parcours vérifie désormais la cohérence dans
+les deux mondes : quand rien n'attend, aucun badge ne prétend le contraire ; le geste
+d'attestation lui-même est conduit sur build de production par `npm run mesure:testing`, dont
+le monde porte une pièce à attester (échelon OCR rejoué).

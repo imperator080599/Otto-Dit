@@ -168,7 +168,23 @@ La liste du bas dit **de quel écart** chaque demande est née.
 
 ---
 
-### 9 bis. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
+### 9 bis. L'atelier — la pièce et la ligne côte à côte
+
+**Écran** : `Contrôle sur pièces (testing)`.
+
+**Ce qu'il faut montrer** (ADR-104) : la ligne d'échantillon à gauche, **la pièce à droite, dans
+l'écran** — jamais dans un autre onglet. Sur chaque ligne : le **motif de sélection** en toutes
+lettres (« couverture exhaustive », « tirage en unités monétaires ») et la **comparaison lisible**
+— valeur pièce, valeur GL, tolérance, règle. ↑/↓ change de ligne, **Entrée atteste**, et ce que
+vous avez corrigé au clavier **part avec l'attestation** ; la prochaine ligne à vérifier s'ouvre
+seule. En bas du détail, **la ligne telle qu'elle sortira au papier** — formatée par le même
+formateur que le papier (règle 16). Cochez deux lignes : la barre de lot apparaît ; une
+clarification **sans motif est refusée**, avec motif elle naît en **brouillon**. Un écart sur la
+ligne mène à la synthèse en un clic, et la synthèse ramène à la ligne. La mesure de ce que
+l'interface coûte par ligne : `npm run mesure:testing` (gestes scriptés mesurés + modèle KLM nommé
+comme tel).
+
+### 9 ter. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
 
 **À dire, mot pour mot, à ce moment-là** : « Ce que vous voyez ici est en partie rejoué. Les deux
 premiers échelons — le XML Factur-X et la couche texte du PDF — lisent réellement le fichier de la

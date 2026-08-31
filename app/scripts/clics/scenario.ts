@@ -581,8 +581,9 @@ export async function conduire(
       deposes > 0, `${deposes} pièce(s), ${explique} explication(s), ${sansPiece} ligne(s) sans pièce disponible`);
   });
 
-  // ── 11. TESTING : extraction → attestation → vouching → re-exécution → évaluation
-  await station('testing', async () => {
+  // ── 11. TESTING : L'ATELIER (point 10, ADR-104) — extraction, puis la ligne
+  //    et sa pièce CÔTE À CÔTE, l'attestation qui avance seule, le vouching.
+  await station('testing : l’atelier', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/testing`);
     if (await compte('button:has-text("Run extraction ladder")')) {
@@ -590,25 +591,136 @@ export async function conduire(
       dire('testing : l’échelle d’extraction tourne, hors ligne, sur les pièces déposées',
         !refus(p), refus(p) ?? 'extraction faite');
     }
+    /* LA PIÈCE DANS L'ÉCRAN — c'est la promesse centrale de l'atelier. Sans
+       elle, chaque ligne coûte un onglet, un chargement et un retour. La ligne
+       ouverte à l'arrivée peut être une ligne SANS pièce (elle se traite en
+       lot) : on descend de ligne en ligne, comme ↓, jusqu'à en tenir une qui
+       en a. */
+    for (let i = 0; i < 6 && !(await compte('.atelier iframe.piece-vue')); i++) {
+      const rang = p.locator('.atelier-liste tbody tr').nth(i);
+      if (!(await rang.count())) break;
+      await rang.click();
+      await p.waitForTimeout(250);
+    }
+    dire('atelier : la pièce est dans l’écran, à côté de la ligne — pas dans un autre onglet',
+      (await compte('.atelier iframe.piece-vue')) > 0, 'visionneuse de pièce présente');
+    dire('atelier : le motif de sélection est lisible sur chaque ligne',
+      /couverture exhaustive|tirage en unités|marqueur de risque|reporté de N-1/.test(await texte()),
+      'motifs de sélection affichés');
+    dire('atelier : la provenance est à portée — empreinte, échelon, re-exécution',
+      /empreinte/.test(await texte()) && (await compte('a[href="#reexecution"]')) > 0,
+      'empreinte et lien de re-exécution affichés');
+
+    /* ATTESTER TOUT, SANS QUITTER L'ÉCRAN : le bouton atteste la ligne
+       ouverte, la suivante à vérifier s'ouvre seule. La boucle ne navigue
+       jamais — si elle devait recharger la page pour continuer, la reprise
+       automatique serait un mensonge. Si la ligne ouverte n'attend rien
+       (pièce manquante), on clique la prochaine « à vérifier », comme ↓.
+       QUAND RIEN N'ATTEND : dans ce monde, les pièces de l'échantillon portent
+       XML ou couche texte (échelons déterministes, jamais d'attestation) — la
+       vérification devient alors la COHÉRENCE : aucun badge ne doit annoncer
+       une attestation que l'écran ne peut pas montrer. Le geste d'attestation
+       lui-même est conduit sur build de production par `npm run
+       mesure:testing`, dont le monde porte une pièce à attester. */
     let atteste = 0;
     for (let tour = 0; tour < 60; tour++) {
-      const f = p.locator('form:has(button:has-text("Confirm fields"))').first();
-      if (!(await f.count())) break;
-      await f.locator('button:has-text("Confirm fields")').click();
+      let b = p.locator('.atelier button:has-text("Attester")').first();
+      if (!(await b.count())) {
+        const enAttente = p.locator('.atelier-liste tbody tr:has(.badge.amber)').first();
+        if (!(await enAttente.count())) break;
+        await enAttente.click();
+        await p.waitForTimeout(300);
+        b = p.locator('.atelier button:has-text("Attester")').first();
+        if (!(await b.count())) break;
+      }
+      await b.click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
       atteste++;
     }
-    dire('testing : aucun champ extrait n’entre au dossier sans qu’une personne l’atteste',
-      true, `${atteste} extraction(s) attestée(s)`);
+    if (atteste > 0) {
+      dire('atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule',
+        true, `${atteste} attestation(s), sans recharger l’écran`);
+    } else {
+      const badgesAmber = await compte('.atelier-liste .badge.amber') + await compte('h2 .badge.amber');
+      dire('atelier : rien à attester ici (échelons déterministes), et AUCUN badge ne prétend le contraire',
+        badgesAmber === 0, `${badgesAmber} badge(s) « à vérifier/attester » affiché(s)`);
+    }
 
     if (await compte('button:has-text("Run vouching")')) {
       await cliquer('button:has-text("Run vouching")', 20000);
       dire('testing : le vouching est déterministe (L0), et il est fait',
         !refus(p), refus(p) ?? 'vouching effectué');
     }
-    dire('testing : le résultat du vouching est rendu, écart par écart',
-      /matched|exception|pending/i.test(await texte()), 'états de rapprochement affichés');
+    /* LA COMPARAISON SUR LA LIGNE : valeur pièce, valeur GL, tolérance, règle
+       — sans ouvrir quoi que ce soit. Et le papier qui se remplit sous les
+       yeux, formaté par le MÊME formateur que le papier (règle 16). */
+    await aller(`${eng}/testing`);
+    dire('atelier : la comparaison est lisible sur la ligne — pièce, GL, tolérance, règle',
+      (await compte('.atelier .compare-ligne')) > 0 && /tol\./.test(await texte()),
+      'comparaisons rendues sur les lignes');
+    dire('atelier : la ligne de papier se remplit sous les yeux, même formateur que le papier',
+      (await compte('.papier-vivant')) > 0, 'aperçu du papier présent');
+  });
+
+  // ── 11bis. L'ÉCART VA À LA SYNTHÈSE EN UN CLIC, ET LA SYNTHÈSE RAMÈNE À LA LIGNE.
+  await station('atelier : l’aller-retour écart ↔ synthèse', async () => {
+    await aller(`${eng}/testing`);
+    const ligneEcart = p.locator('.atelier-liste tbody tr:has(.badge.red)').first();
+    if (!(await ligneEcart.count())) {
+      dire('atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer', true, 'rien à suivre');
+      return;
+    }
+    await ligneEcart.click();
+    await p.waitForTimeout(400);
+    const versSynthese = p.locator('.atelier-detail a[href*="#x-"]').first();
+    dire('atelier : l’écart de la ligne porte un lien vers la synthèse',
+      (await versSynthese.count()) > 0, 'lien « → synthèse » sur la ligne ouverte');
+    if (!(await versSynthese.count())) return;
+    await versSynthese.click();
+    await p.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
+    dire('synthèse : chaque écart a son ancre, le lien atterrit sur la ligne visée',
+      p.url().includes('/exceptions#x-') && (await compte('tr[id^="x-"]')) > 0,
+      `${await compte('tr[id^="x-"]')} ancre(s) d’écart`);
+    const retour = p.locator('a[href*="/testing?item="]').first();
+    dire('synthèse : la ligne testée est à un clic en retour',
+      (await retour.count()) > 0, 'lien « la ligne testée, dans l’atelier » présent');
+    if (await retour.count()) {
+      await retour.click();
+      await p.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
+      await p.waitForTimeout(700);
+      dire('atelier : le retour ouvre la ligne même d’où venait l’écart',
+        (await compte('.atelier-liste tr.sel:has(.badge.red)')) > 0, 'ligne à écart rouverte et sélectionnée');
+    }
+  });
+
+  // ── 11ter. LES ACTIONS EN LOT : cocher des lignes, demander une clarification
+  //    — refusée sans motif (et le refus S'AFFICHE), en brouillon avec.
+  await station('atelier : la clarification en lot', async () => {
+    await aller(`${eng}/testing`);
+    const cases = p.locator('.atelier-liste tbody input[type=checkbox]');
+    if (!(await cases.count())) {
+      dire('atelier : aucune ligne à grouper', true, 'tirage vide');
+      return;
+    }
+    await cases.first().check();
+    if ((await cases.count()) > 1) await cases.nth(1).check();
+    dire('atelier : cocher des lignes fait apparaître la barre d’actions en lot',
+      (await compte('.lot-barre')) > 0, 'barre de lot affichée');
+    /* SANS MOTIF : refusé. Le champ n'est pas `required` — la soumission part
+       vraiment, et c'est le SERVICE qui refuse (règle 13 : un formulaire que
+       le navigateur retient n'a rien vérifié). */
+    await soumettre(p.locator('.lot-barre button').first(), 1200);
+    dire('atelier : une clarification en lot sans motif est refusée, et le refus s’affiche',
+      refus(p) !== null && /motif/i.test(refus(p) ?? ''), refus(p) ?? 'aucun refus affiché');
+    if (!(await compte('.lot-barre'))) await cases.first().check();
+    await p.locator('.lot-barre input[name=motif]').fill(
+      'Le rapprochement de ces lignes réclame le détail de la facturation : merci de préciser '
+      + 'la prestation livrée et de joindre le justificatif correspondant.');
+    await soumettre(p.locator('.lot-barre button').first(), 1200);
+    dire('atelier : la clarification en lot naît en brouillon — rien ne part au client sans approbation',
+      refus(p) === null, refus(p) ?? 'brouillon de demande créé');
   });
 
   // ── 12. LA BOUCLE : émettre les clarifications dues aux écarts ouverts
@@ -673,9 +785,16 @@ export async function conduire(
     }
     let atteste = 0;
     for (let tour = 0; tour < 80; tour++) {
-      const f = p.locator('form:has(button:has-text("Confirm fields"))').first();
-      if (!(await f.count())) break;
-      await f.locator('button:has-text("Confirm fields")').click();
+      let b = p.locator('.atelier button:has-text("Attester")').first();
+      if (!(await b.count())) {
+        const enAttente = p.locator('.atelier-liste tbody tr:has(.badge.amber)').first();
+        if (!(await enAttente.count())) break;
+        await enAttente.click();
+        await p.waitForTimeout(300);
+        b = p.locator('.atelier button:has-text("Attester")').first();
+        if (!(await b.count())) break;
+      }
+      await b.click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
       atteste++;

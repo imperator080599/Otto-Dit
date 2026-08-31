@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement } from '@/lib/services/matching';
 import { frameworkSet } from '@/lib/services/fsli';
@@ -34,11 +35,12 @@ export default async function ExceptionsPage({
      (natural_key) quand il en a une, son id sinon. */
   const marquesNotes = await notesPourEcran(id);
   const identitesEcarts = new Map(
-    (await q<{ id: string; aref: string; piece: string | null }>(
+    (await q<{ id: string; aref: string; piece: string | null; item: string | null }>(
       `select x.id::text id,
               case when g.natural_key is not null then x.taxonomy_code || '|' || g.natural_key
                    else 'id|' || x.id::text end aref,
-              coalesce(g.piece_ref, g.entry_no) piece
+              coalesce(g.piece_ref, g.entry_no) piece,
+              si.id::text item
        from exception x
        left join sample_item si on si.id = x.sample_item_id
        left join gl_entry g on g.id = si.unit_id
@@ -144,7 +146,9 @@ export default async function ExceptionsPage({
             <thead><tr><th>Type</th><th>Description</th><th className="num">Impact</th><th>Status</th><th>Disposition</th></tr></thead>
             <tbody>
               {exceptions.map((x) => (
-                <tr key={x.id}>
+                /* L'ANCRE DE L'ÉCART (point 10) : l'atelier pointe ici en un
+                   clic (#x-<id>), et la ligne testée est à un clic en retour. */
+                <tr key={x.id} id={`x-${x.id}`}>
                   <td>
                     <Annotable
                       ancre={{
@@ -159,7 +163,16 @@ export default async function ExceptionsPage({
                       <span className={`badge ${x.severity === 'high' ? 'red' : 'amber'}`}>{x.taxonomy_code}</span>
                     </Annotable>
                   </td>
-                  <td style={{ maxWidth: 420 }}>{x.description}{x.resolution && <div className="faint">↳ {x.resolution}</div>}</td>
+                  <td style={{ maxWidth: 420 }}>
+                    {x.description}{x.resolution && <div className="faint">↳ {x.resolution}</div>}
+                    {identitesEcarts.get(x.id)?.item && (
+                      <div>
+                        <Link className="faint" href={`/eng/${id}/testing?item=${identitesEcarts.get(x.id)!.item}`}>
+                          ↩ la ligne testée, dans l&apos;atelier
+                        </Link>
+                      </div>
+                    )}
+                  </td>
                   <td className="num">{x.amount_impact ? fmtEur(numToCents(x.amount_impact), 'fr') : '—'}</td>
                   <td><span className={`badge ${STATUS_BADGE[x.status]}`}>{x.status}</span></td>
                   <td>

@@ -1,8 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
-import { runMatching, matchesForSample } from '@/lib/services/matching';
+import { extractAll } from '@/lib/services/extraction/ladder';
+import { runMatching } from '@/lib/services/matching';
 import { startVerificationRun, currentVerificationRun, submitBlindCheck } from '@/lib/services/verification';
 import {
   computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate,
@@ -12,20 +12,32 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
-
-const MATCH_BADGE: Record<string, string> = { matched: 'green', exception: 'red', pending_evidence: 'gray', pending_verify: 'amber' };
+import { lignesAtelier } from '@/lib/services/workpapers/atelier';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
+import { Atelier } from './atelier';
+import { attesterAction, clarifierLotAction } from './actions-atelier';
 
 export default async function TestingPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; item?: string }>;
 }) {
   const { id } = await params;
-  const { erreur } = await searchParams;
+  const { erreur, item } = await searchParams;
   await requireMember(id);
-  const pending = await pendingVerifications(id);
-  const matches = await matchesForSample(id).catch(() => []);
+  /* L'ATELIER (ADR-104) : chaque ligne avec sa pièce, sa comparaison, son
+     motif, sa provenance, et la ligne de papier qu'elle produira. */
+  const { lignes, premierNonFini } = await lignesAtelier(id);
+  /* LE COMPTEUR SUIT L'ÉCHANTILLON, pas le dossier entier : une extraction en
+     attente sur une pièce dont la ligne a QUITTÉ le tirage (re-tirage après
+     grand livre définitif) n'est l'obligation de personne — un badge qui
+     l'annoncerait promettrait un travail que cet écran ne peut pas montrer.
+     Elle ressurgit ici si sa ligne revient dans un tirage. */
+  const pending = lignes.filter((l) => l.statut === 'a_verifier');
+  const cat = await catalogueDeLaMission(id).catch(() => null);
+  const colonnesEch = cat ? colonnesGabarit(cat, 'substantif', 'echantillon').map((c) => ({ champ: c.champ, titre: c.titre })) : [];
   const verifRun = await currentVerificationRun(id);
   const evaluation = await currentEvaluation(id);
   const gate = await conclusionGate(id);
@@ -51,14 +63,6 @@ export default async function TestingPage({
       await runMatching(id, user.id);
       revalidatePath(`/eng/${id}/testing`);
       revalidatePath(`/eng/${id}/exceptions`);
-    });
-  }
-  async function verifyAction(formData: FormData) {
-    'use server';
-    return executer(`/eng/${id}/testing`, async () => {
-      const { user } = await requireMember(id);
-      await verifyExtraction(String(formData.get('extraction_id')), user.id);
-      revalidatePath(`/eng/${id}/testing`);
     });
   }
   async function startVerifRun() {
@@ -149,85 +153,35 @@ export default async function TestingPage({
         )}
       </div>
 
-      {pending.length > 0 && (
-        <div className="panel">
-          <h2>Extraction verification queue (L2 — side-by-side) <span className="badge amber">{pending.length}</span></h2>
-          <table className="data">
-            <thead><tr><th>Document</th><th>Rung</th><th>Confidence</th><th>Fields (machine)</th><th>Act</th></tr></thead>
-            <tbody>
-              {pending.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <a href={`/api/blob/${p.evidence_id}`} target="_blank" className="mono">{p.filename}</a>
-                    <div className="faint">{p.item_description}</div>
-                  </td>
-                  <td><span className="ai-flag">{p.rung}</span></td>
-                  <td className="num">{p.overall_confidence?.toFixed(2) ?? '—'}</td>
-                  <td>
-                    <details>
-                      <summary>{p.fields.length} field(s)</summary>
-                      <ul style={{ margin: '4px 0', paddingLeft: 16, fontSize: 12 }}>
-                        {p.fields.map((f) => (
-                          <li key={f.name} className={f.confidence < 0.9 ? 'mono' : 'mono muted'}>
-                            {f.name} = {f.value.slice(0, 60)} <span className={f.confidence < 0.9 ? 'badge amber' : 'faint'}>{f.confidence}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </td>
-                  <td>
-                    <form action={verifyAction}>
-                      <input type="hidden" name="extraction_id" value={p.id} />
-                      <button className="btn small">Confirm fields (attest)</button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      {/* L'ATELIER — la pièce et la ligne côte à côte (point 10, ADR-104).
+          La file d'attestation et le tableau de vouching vivaient en deux
+          panneaux séparés de la ligne : ils sont désormais la MÊME chose,
+          ligne par ligne, l'attestation emportant les corrections tapées. */}
       <div className="panel">
-        <h2>Vouching results (per sampled item)</h2>
-        {matches.length === 0 ? <p className="muted">Not run yet.</p> : (
-          <div className="table-scroll">
-            <table className="data">
-              <thead><tr><th>Piece</th><th>Counterparty</th><th className="num">Amount</th><th>Reason</th><th>Status</th><th>Checks</th></tr></thead>
-              <tbody>
-                {matches.map((m) => (
-                  <tr key={m.sample_item_id}>
-                    <td className="mono">{m.piece_ref}</td>
-                    <td>{m.aux_label}</td>
-                    <td className="num">{fmtEur(numToCents(m.amount), 'fr')}</td>
-                    <td><span className="badge gray">{m.selection_reason}</span></td>
-                    <td><span className={`badge ${MATCH_BADGE[m.status]}`}>{m.status}</span></td>
-                    <td>
-                      {m.checks.length > 0 && (
-                        <details>
-                          <summary>{m.checks.filter((c) => c.pass).length}/{m.checks.length} pass</summary>
-                          <ul style={{ margin: '4px 0', paddingLeft: 16, fontSize: 12 }}>
-                            {m.checks.map((c, i) => (
-                              <li key={i} className="mono" style={{ color: c.pass ? 'var(--green)' : 'var(--red)' }}>
-                                {c.check}: {c.expected} vs {c.found} ({c.tolerance})
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <h2>
+          L'échantillon, ligne par ligne{' '}
+          {pending.length > 0 && <span className="badge amber">{pending.length} à attester</span>}
+        </h2>
+        <p className="faint">
+          ↑/↓ change de ligne · Entrée atteste · la pièce est à droite, la comparaison sur la
+          ligne, le motif de sélection sur chaque élément · cases à cocher pour les actions en
+          lot · vous reprenez là où vous en étiez.
+        </p>
+        <Atelier
+          engId={id}
+          lignes={lignes}
+          premierNonFini={premierNonFini}
+          itemInitial={item ?? null}
+          colonnes={colonnesEch}
+          attester={attesterAction}
+          clarifierLot={clarifierLotAction}
+        />
       </div>
 
       <div className="grid cols-2">
         <div className="panel">
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <h2>Verification spot-check (ADR-012.3 — blind)</h2>
+            <h2 id="reexecution">Re-exécution à l'aveugle (ADR-012.3)</h2>
             {!verifRun && <form action={startVerifRun}><button className="btn secondary small">Draw subsample</button></form>}
           </div>
           {!verifRun ? (

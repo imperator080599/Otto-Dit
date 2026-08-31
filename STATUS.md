@@ -36,7 +36,13 @@ lecture d'agendas et envoi SIMULÉS et dits tels (ADR-101) ·
 **le rail montre l'ÉTAT du dossier, pas le catalogue des fonctions** : un dossier neuf ouvre cinq
 destinations, le rail grandit avec le travail, le reste est GRISÉ avec sa raison en une ligne
 derrière « tout afficher » — jamais masqué sans explication ; libellés réécrits pour la première
-ouverture (ADR-103).
+ouverture (ADR-103) ·
+**l'atelier du contrôle sur pièces** : la pièce et la ligne CÔTE À CÔTE (visionneuse intégrée,
+jamais un autre onglet), motif de sélection et comparaison lisibles SUR la ligne, ↑/↓ et Entrée
+atteste en emportant les corrections tapées, la suivante s'ouvre seule, clarification en lot
+(refusée sans motif), écart ↔ synthèse en un clic dans les deux sens, papier vivant par le MÊME
+formateur que le papier ; banc `npm run mesure:testing` : 4 gestes / 2 écrans → 1 geste / 1 écran
+par ligne (ADR-104).
 Plus : test des écritures, pack SOX (RCM, tests d'efficacité, déficiences), pilotage, provenance,
 journal, « Interroger » (langage naturel → requête déterministe, jamais de prose).
 
@@ -57,9 +63,9 @@ une base vide : **01:02** de la commande au panneau.
 
 | Ce que ça prouve | Commande | État |
 |---|---|---|
-| Toutes les règles, tous les refus | `cd app && npm test` | 448 tests, zéro réseau |
+| Toutes les règles, tous les refus | `cd app && npm test` | 454 tests, zéro réseau |
 | Tous les écrans **rendent** en production | `cd app && npm run screens` | 68 routes |
-| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 84 étapes, ~35 refus |
+| Le parcours se **clique** vraiment, import → dossier scellé | `cd app && npm run clics` | 99 étapes, ~35 refus |
 | Les écrans se **lisent** (clair/sombre, large/390 px) | `cd app && npm run visuel` | 252 vues, 0 défaut |
 | Tout, base recréée | `cd app && npm run verify` | enchaîne les quatre |
 

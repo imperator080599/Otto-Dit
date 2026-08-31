@@ -306,3 +306,35 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
   color: var(--accent); font-size: 13px; text-align: left;
 }
 .lien-bascule:hover { text-decoration: underline; }
+
+/* ── L'ATELIER DU CONTRÔLE SUR PIÈCES (point 10, ADR-104) ───────────────────
+   La pièce et la ligne côte à côte ; le tableau défile, le détail reste. */
+.atelier {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  gap: 14px; align-items: start;
+}
+.atelier-liste { max-height: 72vh; overflow: auto; }
+.atelier-table tbody tr { cursor: pointer; }
+.atelier-table tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+.atelier-table tbody tr.ligne-complete td { opacity: 0.75; }
+.compare-ligne { font-size: 11.5px; margin-top: 2px; }
+.compare-ko { color: var(--red); font-size: 11.5px; }
+.lot-barre {
+  position: sticky; top: 0; z-index: 5; background: var(--panel);
+  padding: 6px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px;
+}
+.atelier-detail {
+  position: sticky; top: 8px; max-height: 88vh; overflow: auto;
+  border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  background: var(--panel);
+}
+.piece-vue {
+  width: 100%; height: 340px; border: 1px solid var(--border);
+  border-radius: 6px; margin-top: 6px; background: var(--bg);
+}
+.champs-releves input { width: 100%; box-sizing: border-box; }
+.papier-vivant { border-top: 1px dashed var(--border); padding-top: 8px; }
+@media (max-width: 900px) {
+  .atelier { grid-template-columns: 1fr; }
+  .atelier-detail { position: static; max-height: none; }
+}

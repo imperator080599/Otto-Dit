@@ -55,6 +55,56 @@ function projectionRationale(method: string, lang: 'fr' | 'en'): string {
     : `Projection method: ${method} (extrapolation of random-stratum misstatements over the untested population).`;
 }
 
+
+export interface LigneEchantillonBrute {
+  id: string; piece_ref: string | null; entry_no: string; aux_label: string | null;
+  entry_date: string; amount: string | number; selection_reason: string;
+}
+export interface PieceDeLigne { id: string; sha256: string; doc_type: string | null; filename: string }
+export interface ExtraitDeLigne { rung: string; verified_by: string | null; fields: { name: string; value: string }[] }
+
+/**
+ * LES CHAMPS D'UNE LIGNE DU TABLEAU D'ÉCHANTILLON — un seul formateur, pour
+ * le papier ET pour l'aperçu vivant de l'atelier (point 10) : un aperçu qui
+ * dériverait autrement que le papier serait une preuve empruntée (règle 16).
+ */
+export function champsLigneEchantillon(o: {
+  fr: boolean; eur: (c: number) => string;
+  it: LigneEchantillonBrute;
+  evidences: PieceDeLigne[];
+  extraction: ExtraitDeLigne | null;
+  match: { status: string; checks: { check: string; pass: boolean }[] } | null;
+  exceptions: { taxonomy_code: string; status: string }[];
+}): Record<string, string> {
+  const { fr, eur, it, evidences, extraction, match, exceptions } = o;
+  let extractedSummary = '—';
+  const inv = evidences.find((e) => e.doc_type === 'invoice' || e.doc_type === 'credit_note');
+  if (inv && extraction) {
+    const net = extraction.fields.find((f) => f.name === 'totalNetCents')?.value;
+    const date = extraction.fields.find((f) => f.name === 'invoiceDate')?.value;
+    extractedSummary = `${inv.filename} [${extraction.rung}${extraction.verified_by ? ', vérifié' : ''}] — ${net ? eur(Number(net)) : '?'} / ${date ?? '?'}`;
+  }
+  const bl = evidences.find((e) => e.doc_type === 'delivery_note');
+  if (bl) extractedSummary += fr ? ` ; BL ${bl.filename}` : ` ; DN ${bl.filename}`;
+  const checksSummary = match
+    ? match.checks.length
+      ? `${match.checks.filter((c) => c.pass).length}/${match.checks.length} ${fr ? 'contrôles conformes' : 'checks pass'}`
+      : match.status
+    : fr ? 'non testé' : 'not tested';
+  return {
+    piece: it.piece_ref ?? it.entry_no,
+    tiers: it.aux_label ?? '',
+    date: it.entry_date,
+    montant: eur(numToCents(it.amount)),
+    selection: it.selection_reason,
+    justificatifs: extractedSummary,
+    controles: checksSummary,
+    anomalies: exceptions.length
+      ? exceptions.map((x) => `${x.taxonomy_code} (${x.status})`).join('; ')
+      : fr ? 'RAS' : 'none',
+  };
+}
+
 export async function draftRevenueWorkpaper(engagementId: string, userId: string): Promise<string> {
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
@@ -90,40 +140,17 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       `select status, checks from match where sample_item_id = $1`,
       [it.id],
     );
-    let extractedSummary = '—';
     const inv = evidences.find((e) => e.doc_type === 'invoice' || e.doc_type === 'credit_note');
-    if (inv) {
-      const x = await latestExtraction(inv.id);
-      if (x) {
-        const net = x.fields.find((f) => f.name === 'totalNetCents')?.value;
-        const date = x.fields.find((f) => f.name === 'invoiceDate')?.value;
-        extractedSummary = `${inv.filename} [${x.rung}${x.verified_by ? ', vérifié' : ''}] — ${net ? eur(Number(net)) : '?'} / ${date ?? '?'}`;
-      }
-    }
-    const bl = evidences.find((e) => e.doc_type === 'delivery_note');
-    if (bl) extractedSummary += fr ? ` ; BL ${bl.filename}` : ` ; DN ${bl.filename}`;
-    const checksSummary = match
-      ? match.checks.length
-        ? `${match.checks.filter((c) => c.pass).length}/${match.checks.length} ${fr ? 'contrôles conformes' : 'checks pass'}`
-        : match.status
-      : fr ? 'non testé' : 'not tested';
-    const itemExceptions = exceptions.filter((x) => x.sample_item_id === it.id);
-    /* Les champs sont NOMMÉS, et les colonnes du cabinet en choisissent
-       l'ordre et le sous-ensemble. Une liste de cellules positionnelle rendait
-       l'ordre des colonnes impossible à changer sans toucher au code — et une
-       colonne retirée aurait décalé toutes les suivantes en silence. */
-    const champs: Record<string, string> = {
-      piece: it.piece_ref ?? it.entry_no,
-      tiers: it.aux_label ?? '',
-      date: it.entry_date,
-      montant: eur(numToCents(it.amount)),
-      selection: it.selection_reason,
-      justificatifs: extractedSummary,
-      controles: checksSummary,
-      anomalies: itemExceptions.length
-        ? itemExceptions.map((x) => `${x.taxonomy_code} (${x.status})`).join('; ')
-        : fr ? 'RAS' : 'none',
-    };
+    const x = inv ? await latestExtraction(inv.id) : null;
+    const itemExceptions = exceptions.filter((xx) => xx.sample_item_id === it.id);
+    /* Les champs sont NOMMÉS (formateur partagé avec l'aperçu vivant de
+       l'atelier), et les colonnes du cabinet en choisissent l'ordre et le
+       sous-ensemble. */
+    const champs = champsLigneEchantillon({
+      fr, eur, it, evidences,
+      extraction: x ? { rung: x.rung, verified_by: x.verified_by, fields: x.fields } : null,
+      match, exceptions: itemExceptions,
+    });
     sampleRows.push({
       cells: colonnes(cat, 'substantif', 'echantillon').map((c) => champs[c.champ] ?? ''),
       refs: {

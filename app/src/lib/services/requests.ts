@@ -136,6 +136,45 @@ export async function pauseReminders(requestId: string, userId: string): Promise
   });
 }
 
+/**
+ * ACTION EN LOT DE L'ATELIER (point 10) : une demande de clarification pour
+ * PLUSIEURS lignes d'un coup — brouillon, un élément par ligne, circuit
+ * d'approbation L2 existant. Traiter 167 éléments un par un est inutilisable.
+ */
+export async function demandeClarificationLignes(
+  engagementId: string, sampleItemIds: string[], motif: string, userId: string,
+): Promise<{ requestId: string; items: number }> {
+  if (!sampleItemIds.length) throw new Error('clarification : aucune ligne sélectionnée');
+  if (!motif.trim()) throw new Error('clarification : le motif est vide — le client doit savoir quoi expliquer');
+  const ctx = await engagementCtx(engagementId);
+  const lignes = await q<{ id: string; piece: string }>(
+    `select si.id::text id, coalesce(g.piece_ref, g.entry_no) piece
+     from sample_item si join gl_entry g on g.id = si.unit_id
+     where si.id = any($1::uuid[])`,
+    [sampleItemIds],
+  );
+  if (!lignes.length) throw new Error('clarification : lignes inconnues');
+  const seqRow = await q1<{ n: string }>(`select coalesce(max(seq_no),0) n from request where engagement_id = $1`, [engagementId]);
+  const request = await q1<{ id: string }>(
+    `insert into request (engagement_id, seq_no, title, language, status)
+     values ($1,$2,$3,'fr','draft') returning id`,
+    [engagementId, Number(seqRow.n) + 1, `Clarifications — ${lignes.length} élément(s) de l'échantillon`],
+  );
+  for (const l of lignes) {
+    await q(
+      `insert into request_item (request_id, kind, description, sample_item_id)
+       values ($1, 'explanation', $2, $3)`,
+      [request.id, `Pièce ${l.piece} : ${motif.trim()}`, l.id],
+    );
+  }
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'clarification_batch_drafted', objectType: 'request', objectId: request.id,
+    payload: { items: lignes.length, motif: motif.trim() },
+  });
+  return { requestId: request.id, items: lignes.length };
+}
+
 export async function listRequests(engagementId: string) {
   return q<{ id: string; seq_no: number; title: string; status: string; due_date: string | null; sent_at: string | null; item_count: string; done_count: string; reminder_count: string }>(
     `select r.id, r.seq_no, r.title, r.status, r.due_date::text, r.sent_at::text,
