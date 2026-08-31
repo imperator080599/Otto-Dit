@@ -123,7 +123,7 @@ export default async function ReconciliationPage({
                       <td>
                         {it.status === 'open' ? (
                           <details>
-                            <summary className="muted">act…</summary>
+                            <summary className="repli-action">act…</summary>
                             <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required

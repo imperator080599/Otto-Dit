@@ -7,9 +7,20 @@ encore TAPER, écran par écran, avant/après.
 ## 1. La mesure
 
 `cd app && npm run densite` mesure, sur build de production et base semée, les **champs à
-taper** de chacun des 67 écrans (définition dans le code qui mesure :
-`app/scripts/mesures/densite.ts`). Le tableau complet vit dans **docs/DENSITE.md**,
-régénéré à chaque exécution.
+taper** de chacun des 70 écrans — portail client compris (définition dans le code qui
+mesure : `app/scripts/mesures/densite.ts`). Le tableau complet vit dans
+**docs/DENSITE.md**, régénéré à chaque exécution, et la mesure fait partie de
+`npm run verify`.
+
+**Total mesuré le 2026-08-31 : 71 champs à taper sur 70 écrans.** C'est ce nombre qui doit
+baisser. Il compte les champs MÊME REPLIÉS — replier un formulaire ne supprime pas la
+frappe — et exclut le chrome (bandeau, rail) et les champs d'objet (ligne de tableau).
+
+La mesure REFUSE de publier plutôt que de publier un chiffre douteux (ADR-110) : statut
+HTTP inattendu, page sans titre lu, commande que personne ne peut atteindre, marqueur
+d'exclusion non déclaré, serveur qu'elle n'a pas lancé, build qui change sous elle — dans
+chacun de ces cas elle s'arrête et n'écrit rien. La version précédente, sans ces gardes,
+avait publié des `0 | 0` sur des écrans qui portent des boutons inconditionnels.
 
 **Ligne de base établie le 2026-08-31** (première mesure outillée). Les « avant » d'écrans
 antérieurs à cette date n'existent que là où ils ont été mesurés à l'époque — ils sont

@@ -18,7 +18,15 @@ async function main() {
   if (dbKind() !== 'pg') {
     console.error(
       'deploy:reconstruire : DATABASE_URL est absente — ce script reconstruit une base RÉSEAU '
-      + 'de démonstration, jamais la base locale. Posez DATABASE_URL (Vercel : variables du projet).');
+      + 'de démonstration, jamais la base locale.\n'
+      + `  Environnement du build : VERCEL_ENV=${process.env.VERCEL_ENV ?? '(absent)'} · `
+      + `branche ${process.env.VERCEL_GIT_COMMIT_REF ?? '(inconnue)'}.\n`
+      + '  LA CAUSE LA PLUS FRÉQUENTE, et elle ne se voit pas depuis le tableau de bord : une '
+      + 'variable posée pour le seul environnement « Production » est ABSENTE des déploiements '
+      + 'd\'aperçu (Preview). Si ce build est un aperçu, cochez DATABASE_URL pour TOUS les '
+      + 'environnements — ou réglez la branche de production sur celle-ci.\n'
+      + '  Vercel : Settings → Environment Variables → DATABASE_URL (Production + Preview + '
+      + 'Development), puis Redeploy.');
     process.exit(1);
   }
   /* VERCEL=1 vaut déclaration : sur Vercel, tout déploiement EST la démo

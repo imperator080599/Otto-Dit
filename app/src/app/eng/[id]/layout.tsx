@@ -38,7 +38,7 @@ export default async function EngagementLayout({
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div>
           <div className="faint">
-            <Link href="/">Engagements</Link> / {eng.entity_name} · {eng.period_label}
+            <Link href="/">Missions</Link> / {eng.entity_name} · {eng.period_label}
           </div>
           <h1>{eng.name}</h1>
         </div>

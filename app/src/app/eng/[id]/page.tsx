@@ -100,11 +100,11 @@ export default async function EngagementOverview({
           </>
         ) : (
           <>
-            <h2>Engagement</h2>
+            <h2>Mission d’audit légal</h2>
             <p className="muted">
-              Statutory audit engagement. Work the cycle left to right: imports →
-              reconciliation → materiality → scoping → population → sampling → requests →
-              evidence → exceptions → workpapers.
+              Le cycle se travaille de gauche à droite : imports → rapprochement → seuils de
+              signification → périmètre → population → échantillon → demandes au client →
+              pièces reçues → écarts → papiers de travail.
             </p>
           </>
         )}

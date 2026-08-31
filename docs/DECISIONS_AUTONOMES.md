@@ -148,3 +148,33 @@ centaines de logEvent (verrou + insertion) sur le vrai pooler — un build vert 
 démonstration.
 **Coût de retour.** Si un besoin de session naît un jour (LISTEN/NOTIFY…), il prend une
 CONNEXION DÉDIÉE au pooler de session, nommée et justifiée ici.
+
+## DA-13 — Un document ENGENDRÉ ne se commit qu'avec l'exécution qui l'a produit
+
+**Défaut constaté (revue hostile, tranche 9).** `docs/DENSITE.md` a été publié avec des
+lignes `0 | 0` sur des écrans qui portent des boutons inconditionnels : la mesure et le
+document ne venaient pas du même état, et rien dans le fichier ne permettait de s'en
+apercevoir. Un document engendré est une AFFIRMATION dès qu'il quitte l'exécution qui l'a
+produit.
+**Décision.** Tout document engendré porte, EN TÊTE, le commit et l'identifiant de build
+sur lesquels il a été mesuré ; il n'est commis que dans le même geste que l'exécution qui
+l'écrit, et la mesure qui l'écrit fait partie de `npm run verify`. Une mesure qui refuse
+de conclure n'écrit RIEN (elle ne publie pas un tableau partiel).
+**Portée.** `docs/DENSITE.md` aujourd'hui ; tout futur tableau mesuré (coûts, temps,
+couverture) demain.
+
+## DA-14 — « Mes travaux » : on construit le point d'origine, on ne rabote pas le critère
+
+**Question.** Le mandat mesure la navigation « en trois clics depuis Mes travaux ».
+L'écran n'existait NULLE PART dans l'application (vérifié : zéro occurrence dans
+`app/src`) — le critère portait sur un point de départ absent, et la tranche précédente
+ne l'avait pas vu parce qu'elle avait cherché des dépassements d'actions, pas l'origine.
+**Options.** (a) déclarer le critère inapplicable ; (b) le compter depuis l'accueil ;
+(c) construire l'écran.
+**Décision : (c).** L'écran est construit — DÉRIVÉ, sans une table de plus : notes
+adressées ouvertes, papiers dont le prochain visa manque, demandes échues. Le lien vit
+dans le bandeau (chrome, présent partout), et le parcours cliqué COMPTE les clics au lieu
+de les affirmer.
+**Ce que l'écran ne prétend pas savoir**, et qui est écrit dessus : quel membre doit poser
+quel visa (le produit ne modélise pas ce droit ; le rôle de mission et l'ordre de visa ne
+sont pas reliés). Une attribution inventée serait pire qu'une ligne honnête.

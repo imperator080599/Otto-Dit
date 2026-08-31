@@ -184,7 +184,7 @@ export default async function WorkpaperDetail({
             {edits.length > 0 && <span className="mod-flag" style={{ marginLeft: 6 }}>modified — justified</span>}
           </h2>
           <details>
-            <summary className="muted">Exporter (PDF, Excel)</summary>
+            <summary className="repli-action">Exporter (PDF, Excel)</summary>
             <span className="row mt">
               <form action={exportAction}><input type="hidden" name="format" value="pdf" /><button className="btn secondary small">Export PDF</button></form>
               <form action={exportAction}><input type="hidden" name="format" value="xlsx" /><button className="btn secondary small">Export Excel</button></form>
@@ -214,7 +214,7 @@ export default async function WorkpaperDetail({
             </p>
           )}
           <details>
-            <summary className="muted">Joindre une annexe (tableur, note de calcul…)</summary>
+            <summary className="repli-action">Joindre une annexe (tableur, note de calcul…)</summary>
             <form action={annexeAction} className="row mt">
               <input type="file" name="fichier" style={{ maxWidth: 240 }} />
               <button className="btn secondary small">Joindre</button>
@@ -321,7 +321,7 @@ export default async function WorkpaperDetail({
           )}
           {wp.status !== 'signed' && wp.status !== 'outdated' && s.body !== undefined && (
             <details className="mt">
-              <summary className="muted">Edit this section (visible flag + justification)</summary>
+              <summary className="repli-action">Edit this section (visible flag + justification)</summary>
               <form action={editAction}>
                 <input type="hidden" name="section" value={s.key} />
                 <textarea name="body" defaultValue={s.body} style={{ minHeight: 100 }} />
@@ -386,7 +386,7 @@ export default async function WorkpaperDetail({
         ))}
         {wp.status !== 'signed' && wp.status !== 'outdated' && (
           <details className="mt">
-            <summary className="muted">Ajouter une colonne (marquée, justifiée)</summary>
+            <summary className="repli-action">Ajouter une colonne (marquée, justifiée)</summary>
             <form action={ajouterColonneAction} className="mt">
               <div className="row">
                 <input name="titre" placeholder="Titre de la colonne (texte libre — « Date livraison », « Qté livrée »…)" style={{ flex: 1 }} required />

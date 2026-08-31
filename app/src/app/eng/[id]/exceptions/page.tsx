@@ -178,7 +178,7 @@ export default async function ExceptionsPage({
                   <td>
                     {(x.status === 'explained' || x.status === 'open') && (
                       <details>
-                        <summary className="muted">act…</summary>
+                        <summary className="repli-action">act…</summary>
                         <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                           <input type="hidden" name="exception_id" value={x.id} />
                           <textarea name="explanation" rows={2} required

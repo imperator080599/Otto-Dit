@@ -338,3 +338,22 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
   .atelier { grid-template-columns: 1fr; }
   .atelier-detail { position: static; max-height: none; }
 }
+
+/* UN REPLI QUI CACHE UNE ACTION LE DIT (ADR-072 + revue hostile de la tranche 9).
+   Un <summary> peint en gris d'explication fait lire un GESTE comme un
+   commentaire : le repli piloté allège l'écran, il ne doit pas déguiser la
+   commande. Un chevron, la couleur d'accent, le curseur de main. */
+summary.repli-action {
+  cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13px;
+  list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 0;
+}
+summary.repli-action::-webkit-details-marker { display: none; }
+summary.repli-action::before { content: '\25B8'; font-size: 11px; }
+details[open] > summary.repli-action::before { content: '\25BE'; }
+summary.repli-action:hover { text-decoration: underline; }
+
+/* Le lien du bandeau : du CHROME de navigation, présent partout, jamais une
+   action d'écran (docs/DENSITE.md). */
+.topbar-lien { color: var(--topbar-link); font-weight: 600; font-size: 13px; margin-left: 14px; }
+.topbar-lien:hover { color: var(--topbar-text); }
+

@@ -156,7 +156,9 @@ est de la méthode et ce qui est du code).
 - **Stage**: C complete — all slices S0→S10 + hardening built, tested and pushed.
   The two-part demo runs end-to-end. Feature work is stopped per the program contract.
 - **Branch**: `claude/otto-audit-platform-whs17z`.
-- **Suite**: 404 tests green (`cd app && npm test`), zero network calls. Prod build clean.
+- **Suite**: voir la dernière tranche datée ci-dessous pour les compteurs à jour de
+  `npm run verify` (tests, routes, étapes cliquées, vues regardées, écrans mesurés).
+  Historique : 404 tests verts à la fin de l'étape C (`cd app && npm test`), zéro réseau.
   Le balayage des 63 écrans est DANS la suite, et `npm run screens` le refait en production.
   `npm run clics` **conduit TOUT le chemin de démonstration** dans Chromium sur le build de
   production — de l'import du grand livre définitif au téléchargement du dossier scellé, en
@@ -1168,3 +1170,74 @@ Ce que la tranche doit porter : migration SQL, isolation par cabinet vérifiée 
   becomes the file of record.
 - Acceptance-suite scope is deliberately narrow: build-time regression evidence about
   engine design, never extraction-reliability or tool-evaluation evidence (docs/09 Gate 1).
+
+## Tranche 9 close — la densité MESURÉE, le lexique appliqué, et une mesure qui refuse (2026-08-31)
+
+**Chaîne verte, code 0** (`cd app && npm run verify`, base fraîche) : **511 tests** (58 fichiers,
+zéro réseau) · **75 routes** ouvertes 0 échec · **70 écrans mesurés**, 0 au-delà de 5 actions
+primaires, **71 champs à taper** au total (`docs/DENSITE.md`) · **135 étapes cliquées** 0 échec,
+**262 clics** comptés sur 34 gestes (`docs/CLICS.md`) · **280 vues** regardées 0 défaut. Et
+`npm run mesure:testing` : « Entrée atteste la ligne ouverte — OUI (1 → 0 en attente) ».
+
+La tranche s'était close une première fois sur trois affirmations. Un sous-agent **hostile**
+(mandat v1.1 §8.5) les a cassées toutes les trois en une passe, et il avait raison :
+
+- le tableau de densité publié annonçait `0 | 0` sur des écrans qui portent des boutons
+  inconditionnels — **le chiffre publié était faux** ;
+- « ≤ 3 clics depuis **Mes travaux** » se mesurait depuis un écran qui **n'existait dans aucun
+  fichier** (zéro occurrence dans `app/src`) ;
+- `docs/LEXIQUE.md` marquait **sept** règles ✓ pour **quatre** implémentées.
+
+Ce que la correction a changé (ADR-110, DA-13, DA-14) :
+
+1. **La mesure REFUSE plutôt que de publier.** `npm run densite` s'arrête et n'écrit rien sur :
+   statut HTTP inattendu, page sans titre lu, commande que personne ne peut atteindre, marqueur
+   d'exclusion non déclaré, port déjà occupé (mesurer un serveur qu'on n'a pas lancé ne mesure
+   rien, ADR-076), `BUILD_ID` qui change pendant la mesure. Quatre silences, chacun capable de
+   produire le tableau faux ; aucun ne pouvait être vu.
+2. **Ce qui est exclu du critère est publié à côté du critère** : colonnes « Repliées » et
+   « D'item », et les écrans qui excluent des gestes le **déclarent avec leur raison**, dans le
+   code qui mesure et dans le document. Les champs sont comptés même repliés.
+3. **Un lien peint en bouton est un bouton** (`a.btn`, `input[type=submit]`, `[role=button]`),
+   `select` est un champ, le **portail client** est mesuré : 70 écrans au lieu de 67 — et un vrai
+   dépassement est apparu (`/methodology`, 10 actions), traité.
+4. **« Mes travaux » est construit** plutôt que le critère raboté : écran dérivé (notes adressées,
+   papiers dont le prochain visa manque, demandes échues), lien constant dans le bandeau, et le
+   parcours **compte** les clics jusqu'à l'objet.
+5. **Le lexique cesse de mentir sur lui-même** : le test extrait le texte LU (nœuds JSX, attributs
+   de libellé, chaînes-phrases des services), juge la **langue du texte** et non celle du fichier,
+   exclut le vocabulaire d'entrée de la recherche, applique **sept** règles. Prises : « Engagements »
+   → **Missions** (accueil + fil d'Ariane), `<th>Justificatif</th>` → **Pièce**, « Feuilles de
+   travail » → **Papiers de travail** au catalogue, en-tête de périmètre francisé, foyer de mission
+   francisé. La ligne « écart / anomalie » **perd son ✓** : deux concepts qu'un test de mots ne
+   départage pas.
+6. **Le clavier est éprouvé**, plus seulement promis. ADR-104 annonçait « ↑/↓ change de ligne,
+   Entrée atteste » depuis deux tranches sans qu'aucun harnais ne presse une touche. Le parcours
+   presse désormais **↓ et ↑** dans l'atelier ; **Entrée** se prouve par `npm run mesure:testing`
+   — le seul monde qui porte une lecture EN ATTENTE (celui du parcours lit tout par échelons
+   déterministes, et le dit au lieu de compter une preuve qu'il n'a pas faite). Le banc y gagne
+   au passage sa cohérence : son modèle KLM décrit une FRAPPE, et il cliquait la souris.
+7. **Les clics sont publiés** (`docs/CLICS.md`, engendré par `npm run clics`) : un compteur posé
+   DANS la page écoute les vrais événements de clic, geste par geste. Le document dit ce que le
+   chiffre n'est pas — le chemin optimal — parce que le parcours clique aussi exprès ce qui doit
+   être refusé.
+8. **Les gestes que personne ne cliquait sont cliqués** : les deux exports du papier (le PDF était
+   devenu inatteignable depuis son passage en repli — le harnais ne dépliait pas) et l'édition
+   motivée d'une section. Et un repli qui cache une action **le dit** (classe `repli-action`).
+
+**Deux défauts que la station « Mes travaux » a fait sortir en se plaçant** (le genre qu'on ne
+trouve qu'en conduisant) : le dossier SCELLÉ refuse toute écriture — poser une note après la
+clôture est refusé, le produit a raison, c'était la station qui était mal placée ; et la station
+de clôture n'annonçait PAS son identité — elle héritait de celle laissée par la précédente, si
+bien qu'intercaler une station a suffi pour qu'un préparateur sans droit de signature ne voie
+aucun bouton et que le parcours conclue « le dossier n'est pas scellé » avec zéro obstacle. Une
+station qui dépend de ce que la précédente a laissé mesure l'ordre du fichier ; elle dit
+désormais qui elle est.
+
+**Ce que je n'ai PAS fait dans cette tranche, exhaustivement.** Le comptage de clics par tâche du
+mandat n'est pas un tableau des 10 tâches nommées : c'est le coût mesuré des **gestes du parcours**,
+qui n'est pas le chemin optimal (dit dans le document). L'accessibilité clavier est éprouvée sur
+l'atelier **seulement** — pas sur les autres écrans. La francisation des écrans hérités
+(rapprochement, périmètre, seuils, papier) reste un chantier ouvert : le test ne police que le texte
+français, un libellé anglais lui est invisible par construction, et c'est écrit dans LEXIQUE.md. La
+mesure ne juge ni la lisibilité ni l'ordre de lecture — elle compte.

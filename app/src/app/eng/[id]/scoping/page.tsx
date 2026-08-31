@@ -60,7 +60,7 @@ export default async function ScopingPage({
       </div>
       <table className="data">
         <thead>
-          <tr><th>FSLI</th><th>Statement</th><th className="num">Balance</th><th>Scoping</th><th>Basis</th><th>Decision</th></tr>
+          <tr><th>Poste</th><th>État</th><th className="num">Solde</th><th>Périmètre</th><th>Base</th><th>Décision</th></tr>
         </thead>
         <tbody>
           {withAccounts.map((f) => (

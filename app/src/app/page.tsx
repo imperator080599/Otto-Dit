@@ -72,7 +72,7 @@ export default async function Home({
   return (
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Engagements</h1>
+        <h1>Missions</h1>
         <span className="row" style={{ gap: 8 }}>
           {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}

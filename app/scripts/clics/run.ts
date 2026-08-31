@@ -1,10 +1,12 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { binaireDe, groupeDetache, tuerArbre, cheminChromium, conseilChromium } from '../lib/portable.mjs';
 import { chromium } from 'playwright';
 import { getDb } from '../../src/lib/db/client';
 import { baseSemee } from '../screens/routes';
 import { contexte } from './contexte';
-import { conduire, type Etape } from './scenario';
+import { conduire, type Etape, type Geste } from './scenario';
 
 // npm run clics [-- --dev] : CONDUIT le parcours dans un navigateur, sur un
 // build de production, et sort en échec sur la première règle qui ne tient pas.
@@ -99,6 +101,7 @@ async function main() {
   serveur.stderr?.on('data', (d) => journal.push(String(d)));
 
   let etapes: Etape[] = [];
+  let gestes: Geste[] = [];
   const durs: string[] = [];
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
@@ -121,7 +124,7 @@ async function main() {
     });
     page.on('response', (r) => { if (r.status() >= 500) durs.push(`HTTP ${r.status()} ${r.url()}`); });
     try {
-      etapes = await conduire(page, ctx, `http://localhost:${PORT}`, c);
+      ({ etapes, gestes } = await conduire(page, ctx, `http://localhost:${PORT}`, c));
     } finally {
       await nav.close();
     }
@@ -137,15 +140,54 @@ async function main() {
     console.log(`\nseulement ${etapes.length} étape(s) conduites — le parcours s'est interrompu\n`);
     process.exit(1);
   }
+  ecrireClics(gestes);
+
   const echecs = etapes.filter((e) => !e.ok);
   if (durs.length) { console.log('\nErreurs côté navigateur :'); for (const d of durs.slice(0, 12)) console.log('  ' + d); }
-  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + durs.length} échec(s)\n`);
+  const total = gestes.reduce((n, g) => n + g.clics, 0);
+  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + durs.length} échec(s) · ${total} clics comptés sur ${gestes.length} gestes · docs/CLICS.md écrit\n`);
 
   if (echecs.length || durs.length) {
     const err = journal.join('').split('\n').filter((l) => /Error:|at async|at [A-Z]/.test(l)).slice(0, 30);
     if (err.length) console.log('Journal du serveur :\n' + err.join('\n') + '\n');
     process.exit(1);
   }
+}
+
+/**
+ * LES CLICS PUBLIÉS (mandat §3.D). Le parcours COMPTE les clics réellement
+ * dispatchés dans la page, geste métier par geste métier, et les écrit.
+ *
+ * Ce que le tableau dit : ce que coûte ce geste PAR LE CHEMIN DU PARCOURS —
+ * qui vérifie aussi des refus, déplie des replis et change d'identité. C'est
+ * un plafond honnête, jamais un record : il ne prétend pas au chemin optimal,
+ * et le document le dit en toutes lettres plutôt que de laisser croire.
+ */
+function ecrireClics(gestes: Geste[]): void {
+  if (!gestes.length) return;
+  const total = gestes.reduce((n, g) => n + g.clics, 0);
+  const md = [
+    '<!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->',
+    '# Clics comptés, geste par geste',
+    '',
+    `Parcours du ${new Date().toISOString().slice(0, 10)} · ${gestes.length} gestes · **${total} clics** au total.`,
+    '',
+    'Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce',
+    'qu\'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris',
+    '(navigation directe, changement d\'identité).',
+    '',
+    '**Ce que ce tableau n\'est PAS** : le chemin optimal. Le parcours vérifie aussi des REFUS —',
+    'il clique exprès des choses interdites pour prouver qu\'elles sont refusées — et emprunte',
+    'parfois le chemin long pour éprouver un repli. Lisez ces nombres comme un PLAFOND mesuré,',
+    'pas comme un record : le geste réel d\'un auditeur coûte au plus cela.',
+    '',
+    '| Geste (station du parcours) | Clics |',
+    '|---|---|',
+    ...gestes.map((g) => `| ${g.nom} | ${g.clics} |`),
+    '',
+  ].join('\n');
+  const dossier = path.join(process.cwd(), '..', 'docs');
+  fs.writeFileSync(path.join(dossier, 'CLICS.md'), md, 'utf8');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

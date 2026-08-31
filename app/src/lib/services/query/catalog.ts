@@ -133,7 +133,7 @@ export const CATALOG: QueryTemplate[] = [
   },
   {
     id: 'workpapers_unsigned',
-    label: { fr: 'Feuilles de travail non signées ou périmées', en: 'Workpapers unsigned or outdated' },
+    label: { fr: 'Papiers de travail non signés ou périmés', en: 'Workpapers unsigned or outdated' },
     examples: { fr: 'quelles feuilles de travail ne sont pas signées ?', en: 'which workpapers are not signed yet?' },
     params: [],
     columns: [

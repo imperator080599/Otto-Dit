@@ -202,7 +202,7 @@ export default async function TestingPage({
             <h2 id="reexecution">Re-exécution à l'aveugle (ADR-012.3)</h2>
             {!verifRun && (
               <details>
-                <summary className="muted">Lancer la re-exécution</summary>
+                <summary className="repli-action">Lancer la re-exécution</summary>
                 <form action={startVerifRun} className="mt"><button className="btn secondary small">Draw subsample</button></form>
               </details>
             )}
@@ -248,7 +248,7 @@ export default async function TestingPage({
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>Sample evaluation (vs TE)</h2>
             <details>
-              <summary className="muted">Recalculer</summary>
+              <summary className="repli-action">Recalculer</summary>
               <form action={evalAction} className="mt"><button className="btn secondary small">Recompute</button></form>
             </details>
           </div>

@@ -233,7 +233,7 @@ export default async function ControlDetail({
                   <td>
                     {d.status === 'open' ? (
                       <details>
-                        <summary className="muted">act…</summary>
+                        <summary className="repli-action">act…</summary>
                         <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 460 }}>
                           <input type="hidden" name="deviation_id" value={d.id} />
                           <textarea name="explanation" rows={2} required

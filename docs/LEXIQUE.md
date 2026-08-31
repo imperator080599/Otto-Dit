@@ -5,15 +5,19 @@ dans les libellés. Le tableau ci-dessous fait foi ; `app/src/lib/lexique.test.t
 respecter les règles marquées ✓ (échec de suite sur infraction) — les autres relèvent de
 la revue éditoriale, resserrées au fil des tranches.
 
+**Une case ✓ vaut une règle qui tourne.** La première version de ce tableau en portait sept
+et le test n'en appliquait que quatre : trois cases mentaient. Elles sont corrigées
+ci-dessous — soit la règle existe et tourne, soit la case est vide avec son motif.
+
 | Concept | Mot retenu (écrans FR) | Interdits / réservés | Appliqué par test |
 |---|---|---|---|
-| La mission d'audit (engagement) | **mission** | — | |
+| La mission d'audit (engagement) | **mission** | « engagement » à l'écran (mot de code) | ✓ |
 | Le dossier de travail de la mission (fichiers, papiers, archive) | **dossier** | « engagement » à l'écran FR | ✓ |
 | Le poste des états financiers (FSLI) | **poste** | « FSLI » dans un libellé FR (le code garde FSLI) | ✓ |
 | Une demande au client (request) | **demande** | « requête » — RÉSERVÉ à « Interroger » (NL→requête) | ✓ |
-| Une pièce probante reçue (evidence) | **pièce** | « justificatif » toléré comme périphrase explicative, jamais en titre de colonne/section | |
+| Une pièce probante reçue (evidence) | **pièce** | « justificatif » toléré comme périphrase explicative, jamais en titre de colonne/section | ✓ (titres) |
 | Un fichier au sens générique (upload, export) | **fichier** / **document** | — (« document » désigne l'objet transporté, « pièce » l'objet probant) | |
-| Un constat du testing sur une ligne (exception) | **écart** | « anomalie » pour ce concept | ✓ |
+| Un constat du testing sur une ligne (exception) | **écart** | « anomalie » pour ce concept | (revue) |
 | Une anomalie ÉVALUÉE (misstatement, corrigée ou non) | **anomalie** | « écart » pour ce concept | |
 | Une déviation d'un test de contrôle (SOX) | **déviation** | « écart » / « exception » pour ce concept | |
 | Le seuil de signification (materiality) | **seuil de signification** (« seuil » en second emploi) | « matérialité » | ✓ |
@@ -32,16 +36,31 @@ mission 38 · écart 39 · requête 3 · justificatif 5 · matérialité 1 · so
 Les collisions réelles trouvées et corrigées par la tranche 9 sont dans le commit
 qui introduit ce fichier.
 
-## Décisions d'application (2026-08-31, première exécution du test)
+## Comment le test décide (2026-08-31, deuxième version — la première mesurait mal)
 
-- L'écran **Interroger** (`ask/`) est LA réserve du mot « requête » : exclu par fichier.
-- La règle FSLI ne s'applique qu'aux lignes FRANÇAISES (heuristique : un caractère
-  accentué sur la ligne). Les écrans encore en anglais (réconciliation, scoping —
-  héritage des premières tranches) gardent leur terme technique ; leur FRANCISATION est
-  un chantier à part entière du lexique, listé ci-dessous, pas une exception passée
-  sous silence.
-- Première prise : « matérialité » corrigé en « seuil de signification » sur l'écran
-  risque (`risk/page.tsx`).
+1. **Il extrait d'abord le texte LU**, au lieu de greper des lignes de code : nœuds JSX,
+   attributs de libellé (`placeholder`, `title`, `aria-label`, `alt`), et — nouveauté —
+   les chaînes-phrases des services `.ts`, où vivent les libellés du rail, du catalogue
+   de questions et des familles d'obstacles. Un import, un identifiant, une requête SQL
+   ou un commentaire ne sont plus du texte d'écran.
+2. **Il juge la LANGUE du texte, pas le fichier.** « engagement » dans une phrase
+   anglaise est le mot juste ; dans une phrase française, c'est la collision interdite.
+   Les exemptions par fichier entier ont disparu — elles survivaient à leur motif et
+   couvraient les libellés français ajoutés depuis. Un titre court et ambigu (≤ 3 mots)
+   est jugé quand même : c'est l'endroit le plus vu de l'écran.
+3. **Le vocabulaire d'ENTRÉE est exclu** (`examples`, `keywords`, `core`, `synonymes`) :
+   la recherche doit au contraire comprendre les mots que le lexique bannit à l'écran,
+   sinon elle cesse de comprendre ce que les gens tapent.
+4. `ask/` et `services/query/` gardent le mot « requête » (c'en est la réserve) — mais
+   « requête au client » y reste interdit, dans toutes les langues.
+
+Prises de cette version, corrigées : « Engagements » → **Missions** (accueil et fil
+d'Ariane de chaque écran de mission), `<h2>Engagement</h2>` et son paragraphe anglais du
+foyer de mission → français, `<th>Justificatif</th>` → **Pièce** (estimations),
+« Feuilles de travail non signées » → **Papiers de travail non signés** (catalogue),
+en-tête du tableau de périmètre francisée (`Poste / État / Solde / Périmètre / Base /
+Décision`). Prise de la version précédente : « matérialité » → « seuil de signification »
+(écran risque).
 
 ## Chantier restant (dit, pas caché)
 
@@ -53,8 +72,15 @@ cette francisation propre).
 
 ## Ce que le test NE couvre pas (dit franchement)
 
-Le test grep les fichiers d'écran pour les mots interdits marqués ✓, en excluant les
-identifiants évidents (imports, routes, props). Un synonyme dans une phrase
-d'explication peut lui échapper — chercher un mot n'est pas vérifier un chemin
-(règle 15) : la revue à l'œil des captures de `npm run visuel` reste le filet, et
-toute collision trouvée s'ajoute ICI avec sa règle.
+- **Deux concepts qui partagent une racine.** « écart » (le constat du testing) et
+  « anomalie » (l'anomalie évaluée) sont TOUS DEUX légitimes : seul le contexte les
+  départage, et un test de mots ne lit pas le contexte. La case ✓ a donc été retirée de
+  cette ligne plutôt que maintenue par confort — mieux vaut une case vide qu'une case
+  qui ment (règle 13).
+- **Les écrans encore anglais** échappent aux règles françaises par construction (voir
+  point 2 ci-dessus). Leur francisation est le chantier ci-dessous, pas une exception
+  silencieuse.
+- **Le texte assemblé à l'exécution** (concaténations, gabarits) n'est pas vu par un
+  test qui lit des sources : chercher un mot n'est pas vérifier un chemin (règle 15).
+  La revue à l'œil des captures de `npm run visuel` reste le filet, et toute collision
+  trouvée s'ajoute ICI avec sa règle.

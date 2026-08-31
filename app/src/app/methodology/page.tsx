@@ -162,7 +162,10 @@ export default async function MethodologyPage({
             : <>Aucune méthode en vigueur : apportez le <strong>paquet entier</strong>. Il n’y a rien
               dont reprendre les fichiers absents.</>}
         </p>
-        <p className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        {/* data-actions-item : cette bande CHOISIT un fichier parmi n — un lien
+            par objet, comme les onglets de pièce de l'atelier. C'est une
+            sélection d'objet, pas n actions d'écran (docs/DENSITE.md). */}
+        <p className="row" style={{ gap: 6, flexWrap: 'wrap' }} data-actions-item>
           {courante && attendus.map((f) => (
             <Link
               key={f}

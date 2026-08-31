@@ -236,7 +236,11 @@ formateur que le papier (règle 16). Cochez deux lignes : la barre de lot appara
 clarification **sans motif est refusée**, avec motif elle naît en **brouillon**. Un écart sur la
 ligne mène à la synthèse en un clic, et la synthèse ramène à la ligne. La mesure de ce que
 l'interface coûte par ligne : `npm run mesure:testing` (gestes scriptés mesurés + modèle KLM nommé
-comme tel).
+comme tel), et le coût en CLICS de chaque geste du parcours est publié dans `docs/CLICS.md`.
+
+Le clavier n'est plus seulement promis : le parcours cliqué **presse les touches** — ↓ change de
+ligne, ↑ revient, Entrée atteste — parce qu'un geste annoncé que personne n'exerce est une
+affirmation, pas une preuve.
 
 ### 9 ter. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
 
@@ -339,6 +343,20 @@ choix est humain, toujours, et sans contact clé il est refusé en nommant le ge
 L'invitation porte les copies dans l'ORDRE CALCULÉ : Sophie (clé), puis Claire, Anne… Léa, Karim —
 du plus senior au moins senior, alphabet à grade égal. Le .ics se télécharge ; « Envoyer » est
 simulé et l'écran l'affirme.
+
+### 10 quinquies. Mes travaux — la liste de travail qui se DÉRIVE
+
+**Écran** : `Mes travaux`, par le lien du bandeau (présent sur tous les écrans).
+
+**Ce qu'il faut montrer** (ADR-110) : ce qui attend la personne connectée, **à travers tous ses
+dossiers** — les notes de revue qui lui sont adressées et pas closes, les papiers dont le prochain
+visa n'est pas posé, les demandes au client dont l'échéance est passée. Une ligne, **un clic**,
+l'objet : le parcours cliqué compte ce clic au lieu de l'affirmer.
+
+**La phrase qui compte** : « Rien n'est stocké ici. Une liste de travail tenue à la main ment le
+jour où personne ne la tient — celle-ci se relit à chaque ouverture. » Et ce que l'écran avoue
+lui-même : le produit ne modélise pas encore QUI doit poser quel visa, donc il nomme le visa
+attendu sans prétendre vous l'attribuer.
 
 ### 11. Le pointage des états financiers
 

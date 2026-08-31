@@ -134,12 +134,24 @@ async function main() {
       }
       await p.waitForSelector('.atelier iframe.piece-vue', { timeout: 10000 });
       const avant = await enAttente();
-      await p.locator('.atelier button:has-text("Attester")').first().click(); gestes++;
+      /* LE GESTE MESURÉ EST CELUI QUE LE MODÈLE DÉCRIT : une FRAPPE.
+         Le modèle KLM de cette interface vaut M + K (« Entrée atteste ») —
+         et le banc, lui, cliquait la souris : le geste scripté ne mesurait
+         pas le geste modélisé, et personne n'avait jamais pressé la touche
+         que l'ADR-104 promet depuis deux tranches (règle 13). Le banc presse
+         donc Entrée, et ÉCHOUE si la ligne n'est pas attestée — c'est ici, et
+         nulle part ailleurs, que la promesse du clavier se vérifie : le monde
+         du parcours cliqué ne porte aucune lecture en attente, et il le dit. */
+      await p.keyboard.press('Enter'); gestes++;
       const fin = Date.now() + 15000;
+      let atteste = false;
       while (Date.now() < fin) {
-        if ((await enAttente()) < avant) break;
+        if ((await enAttente()) < avant) { atteste = true; break; }
         await p.waitForTimeout(150);
       }
+      console.log(`  clavier : Entrée atteste la ligne ouverte — ${atteste ? 'OUI' : 'NON — DÉFAUT'}`
+        + ` (${avant} → ${await enAttente()} en attente)`);
+      if (!atteste) process.exitCode = 1;
     }
 
     const secondes = (Date.now() - t0) / 1000;

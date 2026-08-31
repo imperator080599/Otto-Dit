@@ -92,15 +92,15 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | M-06 | Export d'avancement, 3 audiences, envoi périodique | planifié | = F-11/F-37 |
 | M-07 | Sectoriel + LCB-FT : structure seulement | planifié | sources non atteignables — dit ici comme exigé |
 | M-08 | E-mail : (a) SMTP sortant, (b) Graph libre/occupé chiffré à part, (c) adresse entrante par dossier | planifié | |
-| M-09 | Densité & navigation mesurables (§3.D) : clics publiés, ≤3 clics depuis Mes travaux, ≤5 actions primaires, clavier, LEXIQUE.md | planifié | secondes/ligne et reprise exacte déjà mesurées (L-15) |
+| M-09 | Densité & navigation mesurables (§3.D) : clics publiés, ≤3 clics depuis Mes travaux, ≤5 actions primaires, clavier, LEXIQUE.md | en cours | ≤5 actions : MESURÉ sur 69 écrans (docs/DENSITE.md) ; « Mes travaux » CONSTRUIT (DA-14, ADR-110) et les clics COMPTÉS au parcours ; LEXIQUE appliqué ; reste : le clavier, non mesuré — dit, pas caché |
 | M-10 | Écran testing revenue = le meilleur du produit, secondes/ligne avant/après | fait | = L-15 (à re-mesurer à chaque évolution) |
 | M-11 | Estimations + ERP + tableur joint | fait | = F-36, F-41, F-17 |
 | M-12 | IA réelle livrée avec PBC jamais vus téléversés côté client | fait | = L-16 ; le scénario « Tuan téléverse lui-même en tant que client » entre au PROGRAMME_TEST_V1 |
 | M-13 | Packs complets : normes × référentiel comptable × contrôle interne ; bascule qui change l'écran | planifié | 2 dossiers démo FR/US FAITS ; libellés par pack largement en place (packs nommant, code calculant) ; la démonstration de bascule §3.A + vocabulaire comptable PCG/IFRS/US GAAP restent à couvrir |
 | M-14 | §3.B tâches manquantes : budget et heures | planifié | rien n'existe aujourd'hui — à construire |
 | M-15 | §3.B tâches manquantes : continuité d'exploitation | planifié | absente en tant que travail dédié (l'acceptation y touche) — à construire |
-| M-16 | §3.C : docs/AUTOMATISATION.md — champs tapés avant/après, par écran | planifié | |
-| M-17 | §3.D : docs/LEXIQUE.md — un concept = un mot, revue des libellés | planifié | |
+| M-16 | §3.C : docs/AUTOMATISATION.md — champs tapés avant/après, par écran | fait | docs/AUTOMATISATION.md + ligne de base MESURÉE (`npm run densite`, dans la chaîne verify) ; avant/après historiques non reconstitués de mémoire |
+| M-17 | §3.D : docs/LEXIQUE.md — un concept = un mot, revue des libellés | fait | docs/LEXIQUE.md + `app/src/lib/lexique.test.ts` v2 (extraction du texte LU, langue jugée par texte, 7 règles qui tournent — les cases ✓ correspondent enfin aux règles) |
 | M-18 | Registre des idées, DECISIONS_AUTONOMES, QUESTIONS_EN_ATTENTE, PROGRAMME_TEST_V1, LIVRAISON_V1 | en cours | ce fichier + docs/DECISIONS_AUTONOMES.md + docs/QUESTIONS_EN_ATTENTE.md créés ; programme de test et livraison = fin de v1 |
 | M-19 | §8.2 (v1.1) : état de l'art — docs/16_ETAT_DE_L_ART.md (DataSnipper, Inflo, MindBridge, CaseWare, AuditBoard, Suralink, Fieldguide : mieux qu'OTTO / moins bien / à prendre) | fait | docs/16_ETAT_DE_L_ART.md (recherche web sourcée du 2026-08-31 ; limites de méthode dites en tête) ; six idées reprises en section D (A-01..06) |
 | M-20 | §8.3 (v1.1) : les insuffisances récurrentes des rapports H2A / PCAOB, croisées aux familles d'obstacles au visa, manques comblés | planifié | c'est un cahier des charges gratuit de ce que la plateforme doit rendre IMPOSSIBLE |
@@ -120,3 +120,43 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 
 **Rappel permanent** : les 19 sources du catalogue méthodologique restent `verifie: false`
 (methodology/sources.json) — aucune n'est utilisée comme si elle était vérifiée.
+
+## E. Revue HOSTILE de la tranche 9 (mandat v1.1 §8.5) — ce que l'agent adverse a cassé
+
+Un sous-agent lancé pour CASSER la tranche, pas pour la valider. Ses constats fondés, et
+ce qu'ils sont devenus. Ce qui est corrigé l'est **par la classe**, jamais par l'instance.
+
+| # | constat | verdict | suite |
+|---|---|---|---|
+| H-01 | `docs/DENSITE.md` publiait `0 \| 0` sur des écrans qui portent des boutons inconditionnels (testing, papier, méthode) | FONDÉ — le chiffre publié était faux | la mesure REFUSE désormais de conclure : statut HTTP contrôlé, titre lu exigé, commande ni visible ni repliée ni d'item = arrêt. Rien n'est publié en cas de refus |
+| H-02 | « Mes travaux », origine du critère « ≤ 3 clics », n'existe nulle part dans `app/src` | FONDÉ | écran construit (ADR-110, DA-14) ; les clics sont COMPTÉS par le parcours, plus affirmés |
+| H-03 | aucune garde de serveur fantôme ni de build réécrit sous la mesure | FONDÉ (défaut de classe, déjà payé par le balayage — ADR-076) | port vérifié libre avant lancement ; `BUILD_ID` relu après la mesure ; divergence = refus |
+| H-04 | `a.btn`, `input[type=submit]`, `[role=button]` non comptés : les actions terminales (télécharger l'archive, choisir un fichier de méthode) étaient invisibles à la mesure | FONDÉ | sélecteur élargi — et un vrai dépassement est apparu : `/methodology` à 10 actions, traité |
+| H-05 | `select` ignoré dans les champs à taper | FONDÉ | compté |
+| H-06 | le portail client (surface anonyme) n'était pas mesuré | FONDÉ | 2 écrans de plus : 69 mesurés au lieu de 67 |
+| H-07 | `npm run densite` absent de la chaîne `verify` | FONDÉ | ajouté, après le balayage (build de production, base semée) |
+| H-08 | `data-actions-item` exclut sans garde : n'importe quelle action d'écran pouvait s'y cacher | FONDÉ | garde : un groupe UNIQUE portant une SEULE commande fait échouer la mesure |
+| H-09 | replier des boutons pour passer sous le seuil = mesurer le thermomètre | FONDÉ | colonnes « Repliées » et « D'item » PUBLIÉES ; les champs sont comptés même repliés (replier ne supprime pas la frappe) |
+| H-10 | `docs/DENSITE.md` commis désynchronisé de l'exécution qui l'a produit | FONDÉ | DA-13 : commit + build en tête du document, mesure dans la chaîne |
+| H-11 | LEXIQUE.md marquait 7 règles ✓ pour 4 implémentées | FONDÉ — trois cases mentaient | 7 règles tournent ; la case « écart/anomalie » est RETIRÉE avec son motif (deux concepts qu'un test de mots ne départage pas) |
+| H-12 | `<th>Justificatif</th>` violait la règle du fichier qui l'écrit | FONDÉ | → « Pièce » ; la règle « jamais en titre » est désormais appliquée par test |
+| H-13 | l'heuristique de langue (un accent sur la LIGNE) ratait la majorité des libellés courts | FONDÉ | la langue se juge sur le TEXTE extrait, plus sur la ligne de code ; les exemptions par fichier entier ont disparu |
+| H-14 | les libellés portés par des `.ts` de service (rail, catalogue) n'étaient pas balayés | FONDÉ | services scannés ; le vocabulaire d'ENTRÉE (`examples`, `keywords`) est exclu, et c'est écrit |
+| H-15 | `saufFichier: ask/` exemptait tout l'écran Interroger | FONDÉ en partie | l'écran reste la réserve du mot « requête », mais « requête au client » y est interdit, dans toutes les langues |
+| H-16 | `<summary className="muted">` peint un GESTE en texte d'explication | FONDÉ | classe `repli-action` : couleur d'accent, chevron, curseur — un repli qui cache une action le dit |
+| H-17 | Export PDF/Excel et « Save edit » n'étaient cliqués par AUCUN harnais (et l'export PDF était devenu inatteignable depuis son passage en repli) | FONDÉ | le parcours déplie puis clique les DEUX exports, et édite une section avec sa justification |
+| H-18 | `deplier` n'ouvrait que le premier `<details>` ancêtre | FONDÉ (préventif) | boucle du plus extérieur au plus intérieur |
+| H-19 | deux fonctions `deplier` de sens différents, l'une masquant l'autre | FONDÉ | `deplier(élément)` et `deplierTout()` — deux gestes, deux noms |
+| H-20 | `<details>` ouverts par défaut / repli = masquage / clavier inaccessible / replis imbriqués | NON FONDÉS — vérifiés par l'agent lui-même | rien à corriger ; consignés pour ne pas les re-soulever |
+
+**Ce que la correction a fait sortir à son tour** (deux défauts que seule la CONDUITE trouve) :
+le dossier scellé refuse toute écriture — une note posée après la clôture est refusée, le produit
+a raison et c'était la station qui était mal placée ; et la station de clôture n'annonçait pas son
+identité, elle HÉRITAIT de celle laissée par la précédente — intercaler une station a suffi pour
+qu'un préparateur sans droit de signature ne voie aucun bouton et que le parcours conclue « pas
+scellé » avec zéro obstacle. Les deux sont corrigés, le second par la classe : une station dit
+qui elle est.
+
+**Ce que cette revue n'a PAS couvert, et qui reste dû** : le comptage de clics des 10
+tâches du mandat (§3.D) n'est pas publié, et l'accessibilité CLAVIER n'est pas mesurée —
+aucun harnais ne la traverse aujourd'hui. Les deux restent au registre (M-09, en cours).

@@ -29,7 +29,7 @@
     "clics": "tsx scripts/clics/run.ts",
     "clics:dev": "tsx scripts/clics/run.ts -- --dev",
     "visuel": "tsx scripts/visuel/run.ts",
-    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run clics && npm run visuel",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run densite && npm run clics && npm run visuel",
     "dataset:balances-aux": "tsx scripts/dataset/balances-aux.ts"
   },
   "keywords": [],

@@ -50,12 +50,37 @@ const DEFAVORABLE: Record<string, string> = {
   predecesseur: 'non', difficultes_exercice_precedent: 'oui', honoraires_soutenables: 'non',
 };
 
+/** Un geste métier, et le nombre de clics RÉELS qu'il a coûtés. */
+export interface Geste { nom: string; clics: number }
+
 export async function conduire(
   p: Page, ctx: BrowserContext, base: string, c: Contexte,
-): Promise<Etape[]> {
+): Promise<{ etapes: Etape[]; gestes: Geste[] }> {
   const etapes: Etape[] = [];
+  const gestes: Geste[] = [];
   const dire = (nom: string, ok: boolean, detail: string) => etapes.push({ nom, ok, detail });
   const eng = `${base}/eng/${c.eng}`;
+
+  /* LES CLICS SE COMPTENT, ILS NE S'ESTIMENT PAS (mandat §3.D : « les clics
+     publiés »). Le compteur est posé DANS la page et écoute les vrais
+     événements de clic — donc il compte ce qu'un humain aurait cliqué, y
+     compris les dépliages, et jamais ce que le harnais fait sans souris
+     (navigation directe, changement d'identité). Il survit aux navigations
+     par sessionStorage : recharger une page ne remet pas un utilisateur à
+     zéro. Ce que ce chiffre N'EST PAS, et qui est écrit dans docs/CLICS.md :
+     le chemin OPTIMAL. C'est le chemin du parcours, qui vérifie aussi des
+     refus — un plafond honnête, pas un record. */
+  await ctx.addInitScript(() => {
+    const CLE = '__otto_clics';
+    document.addEventListener('click', () => {
+      try { sessionStorage.setItem(CLE, String(Number(sessionStorage.getItem(CLE) ?? '0') + 1)); }
+      catch { /* stockage refusé : le compteur se tait, il ne casse rien */ }
+    }, true);
+  });
+  const clicsCumules = async (): Promise<number> => {
+    try { return Number(await p.evaluate(`Number(sessionStorage.getItem('__otto_clics') ?? '0')`)) || 0; }
+    catch { return 0; }
+  };
 
   const texte = () => p.locator('body').innerText();
   const compte = (sel: string) => p.locator(sel).count();
@@ -98,12 +123,22 @@ export async function conduire(
      ne clique pas un bouton caché. Le geste est celui de l'utilisateur :
      déplier, puis agir. */
   const deplier = async (element: Locator) => {
-    const repli = element.locator('xpath=ancestor::details[1]');
-    if ((await repli.count()) && (await repli.first().getAttribute('open')) === null) {
-      await repli.first().locator('summary').first().click();
+    /* TOUS les replis fermés au-dessus de l'élément, du plus EXTÉRIEUR au plus
+       intérieur : ouvrir un repli intérieur ne sert à rien tant que son parent
+       est fermé. La première version n'ouvrait que le premier ancêtre — juste
+       tant qu'aucun repli n'est imbriqué, faux le jour où il l'est. */
+    for (let garde = 0; garde < 6; garde++) {
+      const fermes = element.locator('xpath=ancestor::details[not(@open)]');
+      if (!(await fermes.count())) return;
+      await fermes.first().locator('summary').first().click();
       await p.waitForTimeout(250);
     }
   };
+  /* (Il a existé ici un `deplierTout()` qui ouvrait TOUS les replis de
+     l'écran. Il portait le même nom que `deplier` dans une station — deux
+     gestes sous un seul nom, l'un masquant l'autre — et il coûtait treize
+     clics là où un humain en fait un, ce qui faussait docs/CLICS.md. Chaque
+     appel vise désormais LE repli de l'objet cherché.) */
   const soumettre = async (bouton: Locator, apres = 600) => {
     await bouton.click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
@@ -118,13 +153,20 @@ export async function conduire(
      produit. L'échec est ENREGISTRÉ, avec sa cause, et le parcours continue. */
   const station = async (nom: string, fn: () => Promise<void>): Promise<void> => {
     const avant = etapes.length;
+    const clicsAvant = await clicsCumules();
+    const coutDuGeste = async () => {
+      const n = (await clicsCumules()) - clicsAvant;
+      gestes.push({ nom, clics: n >= 0 ? n : 0 });
+    };
     try {
       await fn();
     } catch (e) {
       const cause = e instanceof Error ? e.message.split('\n')[0] : String(e);
       dire(nom, false, `station interrompue — ${cause.slice(0, 150)}`);
+      await coutDuGeste();
       return;
     }
+    await coutDuGeste();
     /* Une station qui ne produit AUCUNE étape n'a rien vérifié : c'est un
        silence, pas un succès. */
     if (etapes.length === avant) dire(nom, false, 'station muette — aucune vérification produite');
@@ -881,6 +923,47 @@ export async function conduire(
   });
 
   // ── 11bis. L'ÉCART VA À LA SYNTHÈSE EN UN CLIC, ET LA SYNTHÈSE RAMÈNE À LA LIGNE.
+  /* ── LE CLAVIER, ÉPROUVÉ. ADR-104 promet « ↑/↓ et Entrée atteste » depuis
+     deux tranches, et AUCUN harnais n'avait jamais pressé une touche : un
+     geste annoncé que personne n'exerce est une affirmation (règle 13). Le
+     critère « clavier » du mandat §3.D commence ici, sur l'écran où la
+     souris coûte le plus cher. */
+  await station('atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/testing`);
+    const nLignes = await compte('.atelier tr.sel, .atelier tbody tr');
+    if (nLignes < 2) {
+      dire('atelier clavier : au moins deux lignes à parcourir', false, `${nLignes} ligne(s)`);
+      return;
+    }
+    const ligneSel = async () => (await p.locator('.atelier tr.sel').first().innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 40);
+    const avant = await ligneSel();
+    await p.keyboard.press('ArrowDown');
+    await p.waitForTimeout(600);
+    const apres = await ligneSel();
+    dire('atelier : la flèche BAS change de ligne, sans toucher la souris',
+      Boolean(avant) && Boolean(apres) && avant !== apres, `${avant} → ${apres}`);
+    await p.keyboard.press('ArrowUp');
+    await p.waitForTimeout(600);
+    dire('atelier : la flèche HAUT revient exactement sur la ligne quittée',
+      (await ligneSel()) === avant, await ligneSel());
+
+    /* Entrée n'atteste que s'il RESTE une lecture à attester. S'il n'en reste
+       pas, on le DIT au lieu de compter une preuve qu'on n'a pas faite. */
+    const enAttente = await compte('.atelier form:has(button:has-text("Attester"))');
+    if (enAttente === 0) {
+      dire('atelier clavier : aucune lecture en attente ICI — Entrée est éprouvée par `npm run mesure:testing`',
+        true, 'monde du parcours : pièces lues par échelons déterministes, rien à attester');
+      return;
+    }
+    await p.keyboard.press('Enter');
+    await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+    await p.waitForTimeout(2500);
+    const reste = await compte('.atelier form:has(button:has-text("Attester"))');
+    dire('atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne',
+      !refus(p) && reste < enAttente, refus(p) ?? `${enAttente} → ${reste} lecture(s) en attente`);
+  });
+
   await station('atelier : l’aller-retour écart ↔ synthèse', async () => {
     await aller(`${eng}/testing`);
     const ligneEcart = p.locator('.atelier-liste tbody tr:has(.badge.red)').first();
@@ -1081,18 +1164,16 @@ export async function conduire(
   await station('résolution des écarts', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/exceptions`);
-    /* DÉPLIER AVANT DE REMPLIR. Le formulaire de disposition vit dans un
+    /* DÉPLIER AVANT DE REMPLIR — mais LE repli qui porte ce formulaire, pas
+       tous ceux de l'écran. Le formulaire de disposition vit dans un
        `<details>` replié : Playwright attend indéfiniment un champ caché, et la
        station tombait sur un délai de trente secondes sans rien dire du
-       produit. Un harnais qui échoue sur SA propre mécanique accuse le code. */
-    const deplier = async () => {
-      const n = await p.locator('details:not([open]) > summary').count();
-      for (let i = 0; i < n; i++) {
-        await p.locator('details:not([open]) > summary').first().click({ timeout: 5000 }).catch(() => undefined);
-      }
-    };
-    await deplier();
+       produit. Un harnais qui échoue sur SA propre mécanique accuse le code.
+       Et ouvrir treize replis quand un humain en ouvre UN fausse le compte de
+       clics publié (docs/CLICS.md) : le harnais doit cliquer comme la personne
+       qu'il imite. */
     const f = p.locator('form:has(button:has-text("Resolve"))').first();
+    if (await f.count()) await deplier(f);
     if (!(await f.count())) {
       dire('écarts : aucun écart ouvert à résoudre', true, 'rien à disposer');
       return;
@@ -1134,9 +1215,9 @@ export async function conduire(
        validation HTML pour vérifier que le SERVEUR refuse, et pas seulement le
        champ. */
     await aller(`${eng}/exceptions`);
-    await deplier();
     const g0 = p.locator('form:has(button:has-text("Resolve"))').first();
     if (await g0.count()) {
+      await deplier(g0);
       await g0.evaluate((el) => { (el as HTMLFormElement).noValidate = true; });
       await g0.locator('textarea[name=explanation]').fill(
         'Le client indique que la facture est correcte.');
@@ -1156,9 +1237,9 @@ export async function conduire(
     let resolus = 0; let anomalies = 0;
     for (let tour = 0; tour < 40; tour++) {
       await aller(`${eng}/exceptions`);
-      await deplier();
       const g = p.locator('form:has(button:has-text("Resolve"))').first();
       if (!(await g.count())) break;
+      await deplier(g);
       const contexte = await g.evaluate((e) => (e.closest('tr') ?? e.parentElement)?.textContent ?? '');
       /* Un écart de MONTANT est une anomalie : il se chiffre, il ne se
          « résout » pas d'un trait de plume. Le produit sépare les deux, et le
@@ -1301,6 +1382,26 @@ export async function conduire(
     dire('papier : un tableur se JOINT au papier, avec empreinte et provenance',
       refus(p) === null && (await compte('a[href^="/api/blob/"]:has-text("fae-2025.csv")')) > 0,
       'fae-2025.csv listée en annexe');
+
+    /* L'ÉDITION D'UNE SECTION — un geste que le parcours ne conduisait PAS
+       (revue hostile de la tranche 9) : le corps se corrige à la main, la
+       justification part dans l'export, et la section porte la marque
+       « modified — justified ». Avant les visas : un papier signé ne s'édite
+       plus, et c'est justement pour ça que le repli disparaît après visa. */
+    const fEdit = p.locator('form:has(button:has-text("Save edit"))').first();
+    if (await fEdit.count()) {
+      await deplier(fEdit);
+      await fEdit.locator('textarea[name=body]').fill(
+        'Conclusion reprise au clic : la couverture du tirage et les écarts relevés y sont rappelés.');
+      await fEdit.locator('input[name=justification]').fill(
+        'Revue : la conclusion doit rappeler la couverture de l’échantillon.');
+      await soumettre(fEdit.locator('button:has-text("Save edit")'), 2000);
+      dire('papier : une section s’ÉDITE à la main, et l’édition porte sa justification',
+        !refus(p) && (await compte('.mod-flag:has-text("modified")')) > 0,
+        refus(p) ?? 'section marquée « modified — justified »');
+    } else {
+      dire('papier : le formulaire d’édition de section existe avant les visas', false, 'formulaire absent');
+    }
 
     /* LE VISA HORS ORDRE. L'associé ne vise pas avant son reviewer : la règle
        est portée par un trigger, pas par l'écran. On l'essaie AVANT les
@@ -1568,13 +1669,21 @@ export async function conduire(
       (await compte('form:has(input[name=role])')) === 0,
       'préparateur, reviewer et associé ont visé');
 
-    // L'export : le papier sort du produit, en PDF.
-    if (await compte('form:has(input[name=format][value="pdf"]) button')) {
-      await p.locator('form:has(input[name=format][value="pdf"]) button').first().click();
-      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-      await p.waitForTimeout(6000);
-      dire('papier : il s’exporte en PDF depuis l’écran', !refus(p), refus(p) ?? 'export demandé');
+    /* LES EXPORTS : le papier sort du produit, en PDF ET en tableur. Ils sont
+       passés en REPLI à la tranche 9 — donc le parcours déplie d'abord, comme
+       l'utilisateur. Un bouton replié qu'on clique sans déplier n'échoue pas
+       « parce que le produit est cassé » : il échoue parce que le harnais ne
+       fait pas le geste. Et l'Excel, que personne ne cliquait, est cliqué. */
+    for (const [format, nom] of [['pdf', 'PDF'], ['xlsx', 'tableur']] as const) {
+      const fx = p.locator(`form:has(input[name=format][value="${format}"])`).first();
+      if (!(await fx.count())) { dire(`papier : l’export ${nom} est offert sur l’écran`, false, 'formulaire absent'); continue; }
+      await deplier(fx);
+      await soumettre(fx.locator('button').first(), 6000);
+      dire(`papier : il s’exporte en ${nom} depuis l’écran`, !refus(p), refus(p) ?? 'export produit');
     }
+    dire('papier : les deux exports sont TÉLÉCHARGEABLES depuis l’écran',
+      (await compte('a[href^="/api/export-file/"]')) >= 2,
+      `${await compte('a[href^="/api/export-file/"]')} lien(s) d’export`);
   });
 
   // ── 17. LA BOUCLE, RELUE
@@ -1833,7 +1942,80 @@ export async function conduire(
   });
 
   // ── 23. CLÔTURE ET ARCHIVE SCELLÉE
+  /* ── MES TRAVAUX — le point d'origine, et le critère COMPTÉ (ADR-110).
+     Le mandat mesure la navigation « en trois clics depuis Mes travaux ».
+     L'écran n'existait pas : le critère portait sur un point de départ absent.
+
+     LA CONDITION SE CRÉE PAR LE PRODUIT, et c'est le scénario lui-même : à ce
+     stade tout est visé et toutes les notes sont closes — Karim n'a plus rien
+     qui l'attend. Léa lui adresse donc une note ANCRÉE sur la conclusion du
+     papier (le geste réel : clic droit sur l'objet, type « à documenter »,
+     qui ne bloque aucun visa), puis Karim ouvre « Mes travaux » PAR LE LIEN du
+     bandeau et va à l'objet. On COMPTE les clics, on ne les affirme pas — et
+     une liste vide serait un ÉCHEC de la station, pas une excuse (deux essais
+     précédents s'étaient déclarés « ok » en ne prouvant aucun chemin).
+
+     ET AVANT LA CLÔTURE : le dossier scellé est VERROUILLÉ — la pose de note
+     y est refusée, « engagement is locked, writes rejected ». Le produit a
+     raison ; c'est la station qui était mal placée. */
+  await station('mes travaux : le point d’origine, et les clics comptés', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/workpapers`);
+    const lienWp = await p.locator('a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
+    if (!lienWp) { dire('mes travaux : un papier existe pour y ancrer une note', false, 'aucun papier'); return; }
+    await aller(base + lienWp);
+    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
+    if (!(await conclusion.count())) { dire('mes travaux : la conclusion du papier est annotable', false, 'objet annotable absent'); return; }
+    await conclusion.locator('h2').click({ button: 'right' });
+    const panneau = p.locator('.note-panneau');
+    if (!(await panneau.count())) { dire('mes travaux : le clic droit ouvre la pose de note', false, 'panneau absent'); return; }
+    await panneau.locator('textarea[name=texte]').fill(
+      'Pour Karim : compléter le renvoi à l’état des anomalies (note posée par le parcours).');
+    await panneau.locator('select[name=note_type]').selectOption('a_documenter');
+    await panneau.locator('select[name=assignee]').selectOption(c.preparateur.id);
+    await panneau.locator('button:has-text("Poser la note")').click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(1500);
+    dire('mes travaux : une note ADRESSÉE crée du travail qui attend quelqu’un',
+      !refus(p), refus(p) ?? 'note posée pour le préparateur');
+
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/dashboard`);
+    let clics = 0;
+    await p.locator('.topbar-lien:has-text("Mes travaux")').click();
+    clics++;
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
+    const surTravaux = p.url().includes('/travaux');
+    dire('mes travaux : le bandeau y mène depuis n’importe quel écran, en 1 clic',
+      surTravaux && /Mes travaux/.test(await texte()), p.url().replace(base, ''));
+    if (!surTravaux) return;
+
+    const liens = p.locator('table.data td a');
+    const n = await liens.count();
+    if (n === 0) {
+      dire('mes travaux : la note adressée APPARAÎT dans la liste de travail', false,
+        'liste VIDE — le chemin vers l’objet n’est pas éprouvé');
+      return;
+    }
+    const cible = (await liens.first().getAttribute('href')) ?? '';
+    await liens.first().click();
+    clics++;
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(800);
+    dire(`mes travaux : ${n} ligne(s), et l’objet s’atteint en ${clics} clic(s) — le critère est de 3`,
+      p.url().includes(cible.split('?')[0]) && clics <= 3,
+      `${clics} clic(s) → ${cible}`);
+  });
+
   await station('clôture et archive scellée', async () => {
+    /* CLORE, C'EST SIGNER : la station le DIT au lieu d'hériter de l'identité
+       laissée par la précédente. Ce couplage caché a mordu dès qu'une station
+       s'est intercalée : le préparateur n'a pas le droit de signature, l'écran
+       ne lui offre donc aucun bouton — et le parcours concluait « le dossier
+       n'est PAS scellé » alors que zéro obstacle subsistait. Une station qui
+       dépend de ce que la précédente a laissé mesure l'ordre du fichier. */
+    await devenir(c.associe.id);
     await aller(`${eng}/close`);
     const t = await texte();
     if (restants > 0 && !/dossier scellé/.test(t)) {
@@ -1869,5 +2051,5 @@ export async function conduire(
       `HTTP ${rep.status()} · ${(buf.length / 1024).toFixed(0)} ko · ${zip ? 'zip' : 'pas un zip'}`);
   });
 
-  return etapes;
+  return { etapes, gestes };
 }

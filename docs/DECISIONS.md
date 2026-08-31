@@ -4024,3 +4024,67 @@ runbook (pas un mode du code) ; la connexion TLS au pooler accepte une chaîne n
 vérifiée SAUF si `OTTO_DB_CA_CERT` est posée (dit dans le code — à poser en production
 réelle) ; le RLS côté application reste la défense active (l'app se connecte en
 propriétaire) — la politique mord pour tout NON-propriétaire, prouvé à chaque build.
+
+## ADR-110 — Mes travaux : le point d'origine qui manquait, et une mesure qui REFUSE de conclure
+
+**Contexte.** La tranche 9 (§3.D du mandat : densité, navigation, lexique) s'était close
+sur trois affirmations : « 0 dépassement du critère de 5 actions », « 67 écrans mesurés »,
+« le lexique est appliqué ». Un sous-agent HOSTILE (mandat v1.1 §8.5) a cassé les trois.
+
+**Ce qu'il a trouvé, et qui était vrai.** Le tableau publié annonçait `0 | 0` sur des
+écrans qui portent des boutons inconditionnels — l'atelier de testing, le papier de
+travail, la méthode du cabinet. Une mesure sans garde ne distingue pas « écran sans
+bouton » de « page qui n'est pas arrivée » : elle publie un zéro dans les deux cas. Le
+mécanisme exact n'est pas rejouable a posteriori — ce qui EST établi, c'est que la mesure
+ne contrôlait ni le statut HTTP, ni la présence d'un titre, ni qu'elle mesurait bien le
+serveur qu'elle avait lancé, ni que le build ne bougeait pas sous elle. Quatre silences,
+chacun capable de produire ce tableau. Et « ≤ 3 clics depuis Mes travaux » se mesurait
+depuis un écran qui n'existait dans aucun fichier.
+
+**Décisions.**
+1. **La mesure refuse plutôt que de publier.** `npm run densite` s'arrête, et n'écrit
+   RIEN, sur : un statut HTTP inattendu, une page sans titre lu, une commande ni visible
+   ni repliée ni d'item (personne ne peut l'atteindre), un `data-actions-item` unique
+   portant une seule commande (une action d'écran déguisée en action d'objet), un port
+   déjà occupé (mesurer un serveur qu'on n'a pas lancé ne mesure rien, ADR-076), un
+   `BUILD_ID` qui change pendant la mesure.
+2. **Ce qui est exclu du critère est PUBLIÉ.** Trois colonnes au lieu d'une : actions
+   primaires (le critère), repliées, d'item. Replier pour passer sous un seuil serait
+   mesurer le thermomètre ; le lecteur voit le troc. Les champs à taper sont comptés
+   MÊME repliés : replier ne supprime pas la frappe.
+3. **Un lien peint en bouton EST un bouton** (`a.btn`, `input[type=submit]`,
+   `[role=button]`), et `select` est un champ. Premier effet : un vrai dépassement
+   apparaît — `/methodology` à 10 actions, dont sept ne sont qu'une bande de sélection
+   de fichier, désormais déclarée comme telle dans le balisage.
+4. **Le portail client est mesuré** (surface anonyme, contexte sans cookie) : 69 écrans.
+5. **`npm run densite` entre dans `npm run verify`**, et `docs/DENSITE.md` porte en tête
+   le commit et le build qui l'ont produit (DA-13).
+6. **« Mes travaux » est construit** (DA-14) plutôt que le critère raboté : écran
+   DÉRIVÉ — notes adressées ouvertes, papiers dont le prochain visa manque, demandes
+   échues — lien constant dans le bandeau, et le parcours cliqué COMPTE les clics
+   jusqu'à l'objet au lieu de les affirmer. L'écran écrit lui-même ce qu'il ne sait pas :
+   le produit ne modélise pas QUI doit poser quel visa.
+7. **Le lexique cesse de mentir sur lui-même** : le tableau marquait sept règles ✓ pour
+   quatre implémentées. Le test v2 extrait le texte LU (nœuds JSX, attributs de libellé,
+   chaînes-phrases des services), juge la LANGUE du texte et non celle du fichier — les
+   exemptions par fichier entier ont disparu — exclut le vocabulaire d'ENTRÉE de la
+   recherche, et applique sept règles. La ligne « écart / anomalie » perd son ✓ : deux
+   concepts qu'un test de mots ne départage pas.
+8. **Un repli qui cache une action le dit** : les `<summary>` d'action passent de la
+   couleur du texte d'explication à une classe `repli-action` (accent, chevron, curseur).
+   Un geste peint en commentaire est un geste que personne ne trouve.
+
+**Conséquence de méthode.** Le parcours cliqué conduit maintenant les gestes qu'aucun
+harnais ne conduisait — les deux exports du papier (dont le PDF, devenu inatteignable
+depuis son passage en repli), l'édition motivée d'une section, et le CLAVIER de l'atelier
+(↓/↑). L'attestation par ENTRÉE se prouve dans `npm run mesure:testing`, le seul monde qui
+porte une lecture en attente : le banc y presse enfin la touche que son propre modèle KLM
+décrivait pendant qu'il cliquait la souris. Un bouton que personne ne clique n'est pas un
+bouton prouvé ; une touche que personne ne presse non plus.
+
+**Et les clics sont PUBLIÉS** (`docs/CLICS.md`, engendré par `npm run clics`) : un compteur
+posé DANS la page écoute les vrais événements de clic, geste métier par geste métier.
+Première prise de ce compteur — sur le harnais lui-même : il dépliait TREIZE replis là où
+un humain en ouvre un. 349 clics au premier comptage, **261** une fois chaque dépliage visé
+sur l'objet cherché. Un harnais doit cliquer comme la personne qu'il imite, sinon le nombre
+qu'il publie décrit le harnais et non le produit.

@@ -29,6 +29,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               données sont fictives dans TOUS les modes, pas seulement en
               public. */}
           <span className="demo-badge">DÉMONSTRATION — données fictives uniquement · synthetic data only</span>
+          {/* MES TRAVAUX — le point d'origine de la navigation (ADR-110). Le
+              lien est CONSTANT : aucune conditionnelle dans le layout racine
+              (fil n°7), et la page elle-même renvoie à l'accueil si personne
+              n'est connecté. */}
+          <Link href="/travaux" className="topbar-lien">Mes travaux</Link>
           <span className="spacer" />
           {user ? (
             <span>

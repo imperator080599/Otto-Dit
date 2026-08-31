@@ -192,7 +192,7 @@ export default async function EstimationsPage({
               <p className="faint">Chaque taux se justifie — un taux contractuel faux fausse toute sa ligne, sondée ou pas.</p>
               <div className="table-scroll">
                 <table className="data">
-                  <thead><tr><th>Paramètre</th><th>Valeur</th><th>Justificatif</th></tr></thead>
+                  <thead><tr><th>Paramètre</th><th>Valeur</th><th>Pièce</th></tr></thead>
                   <tbody>
                     {ouverte.parametres.map((p) => (
                       <tr key={p.id}>
