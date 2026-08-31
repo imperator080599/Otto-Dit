@@ -23,6 +23,10 @@ export const FAMILLES: Record<string, { titre: string; pourquoi: string }> = {
     titre: 'Questionnaire résiduel de risque',
     pourquoi: 'Ce qu’aucune autre source du dossier ne peut lever : si personne ne répond, le risque ne voit que ce qui se compte.',
   },
+  circularisation: {
+    titre: 'Circularisations',
+    pourquoi: 'Un compte que personne ne confirme, une demande jamais partie, un silence ou un écart non expliqué : la confirmation d’un tiers est une preuve qu’on ne fabrique pas soi-même.',
+  },
   programme: {
     titre: 'Périmètre sans programme',
     pourquoi: 'Un poste retenu sur lequel aucune procédure n’est planifiée est un trou : soit on le travaille, soit on le sort du périmètre avec un motif.',

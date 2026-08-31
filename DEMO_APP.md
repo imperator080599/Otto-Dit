@@ -358,6 +358,24 @@ jour où personne ne la tient — celle-ci se relit à chaque ouverture. » Et c
 lui-même : le produit ne modélise pas encore QUI doit poser quel visa, donc il nomme le visa
 attendu sans prétendre vous l'attribuer.
 
+### 10 sexies. Les circularisations — la preuve qu'on ne fabrique pas soi-même
+
+**Écran** : `Circularisations` (rail, après le premier import).
+
+**Ce qu'il faut montrer** (ADR-111) : le listing des banques fourni par le client porte deux
+défauts, et l'écran les nomme **avant** toute demande — le compte `512100` du grand livre
+qu'aucune banque du listing ne couvre, et les comptes annoncés (`512900`, `512200`) qu'aucune
+écriture ne porte. Le contrôle va dans les deux sens.
+
+Puis la suite, en quatre gestes : le **listing corrigé** referme la complétude ; la demande
+**part** (transport simulé, qui le dit — rien ne quitte la machine) ; la réponse de la banque
+se **dépose comme pièce** et son solde se saisit ; l'**écart de 1 250,00 €** apparaît, calculé
+contre le grand livre — côté banque, *tout* écart se dit, quel que soit son montant.
+
+**La phrase qui compte** : « Cet écart ne se referme pas d'un clic. » Essayez « RAS » : c'est
+**refusé**. Une explication écrite — des frais prélevés au 31/12 et comptabilisés en janvier —
+lève l'obstacle au visa, et les questions au client naissent en **brouillon** dans les demandes.
+
 ### 11. Le pointage des états financiers
 
 **Écran** : `Pointage des états financiers`.

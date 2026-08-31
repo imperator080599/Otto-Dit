@@ -10,6 +10,15 @@ import { assessFsli } from '@/lib/services/risk';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
 import { generatePbcFromSample, approveSend, requestDetail } from '@/lib/services/requests';
 import { ingestEvidence, answerExplanation, markAllSubmitted, attachEvidenceToItem } from '@/lib/services/evidence';
+import {
+  importerListing,
+  tiers as tiersCircularises,
+  envoyer as envoyerCircularisation,
+  deposerReponse as deposerReponseCircularisation,
+  rapprochement as rapprochementCircularisation,
+  expliquerEcart as expliquerEcartCircularisation,
+} from '@/lib/services/circularisations';
+import { declarerContactCle } from '@/lib/services/reunions';
 import { processInbound } from '@/lib/services/inbound';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { runMatching, listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, recordScopeLimitation } from '@/lib/services/matching';
@@ -390,6 +399,80 @@ export async function spotcheckAndEvaluate(): Promise<void> {
 }
 
 /** Run the whole Part 1 flow up to (not including) the workpaper. */
+/**
+ * LA CIRCULARISATION DES BANQUES — le listing du client, tel qu'il arrive.
+ *
+ * Le monde de démonstration s'arrête là où l'AUDITEUR doit décider : le
+ * listing est importé (avec son défaut : un compte du grand livre qu'il ne
+ * couvre pas, et deux lignes qu'aucun compte ne porte), et rien n'est envoyé.
+ * Envoyer, recevoir, rapprocher et questionner sont des GESTES — ils se
+ * cliquent, ils ne se sèment pas.
+ */
+export async function circulariserBanques(): Promise<void> {
+  const listing = fs.readFileSync(ds('circularisations', 'banques.csv'), 'utf8');
+  const { evidenceId } = await ingestEvidence({
+    engagementId: IDS.engNep,
+    filename: 'listing-banques-2025.csv',
+    mime: 'text/csv',
+    bytes: new TextEncoder().encode(listing),
+    source: 'portal',
+    uploadedBy: { kind: 'client_contact', id: null },
+    audience: 'client_provided',
+  });
+  await importerListing(IDS.engNep, 'banque', listing, IDS.users.karim, { evidenceId });
+}
+
+/**
+ * LA CIRCULARISATION, MENÉE À SON TERME.
+ *
+ * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
+ * monde de DÉMONSTRATION doit montrer (un défaut à trouver). Mais tout monde
+ * qui va jusqu'au SCELLEMENT doit la finir : un compte non couvert et une
+ * demande jamais partie sont des obstacles au visa, et c'est voulu. Cette
+ * fonction fait les quatre gestes qui restent — listing corrigé, envoi,
+ * réponse, explication de l'écart — par les MÊMES services que les clics.
+ */
+export async function acheverCircularisationBanques(): Promise<void> {
+  /* ÉCRIRE À UN TIERS AU NOM DU CLIENT EXIGE UN CONTACT CLIENT CLÉ (ADR-101) :
+     c'est lui qui reçoit copie. Le monde de démonstration le déclare ici s'il
+     ne l'est pas encore — par le service, comme l'écran le ferait. */
+  const dejaCle = await q01<{ id: string }>(
+    `select id from engagement_contact where engagement_id = $1 and role = 'cle'`, [IDS.engNep]);
+  if (!dejaCle) {
+    const contact = await q1<{ id: string }>(
+      `select c.id::text from client_contact c
+       join engagement e on e.entity_id = c.entity_id
+       where e.id = $1 and c.active order by c.email limit 1`, [IDS.engNep]);
+    await declarerContactCle(IDS.engNep, contact.id, IDS.users.karim);
+  }
+  const corrige = fs.readFileSync(ds('circularisations', 'banques-corrige.csv'), 'utf8');
+  await importerListing(IDS.engNep, 'banque', corrige, IDS.users.karim);
+  const banque = (await tiersCircularises(IDS.engNep, 'banque'))
+    .find((t) => t.compte === '512100');
+  if (!banque) throw new Error('flux : le listing corrigé n\'a pas rattaché la banque au compte 512100');
+  if (!banque.sent_at) await envoyerCircularisation(banque.id, IDS.users.karim);
+  const ligne = (await rapprochementCircularisation(IDS.engNep, 'banque'))
+    .lignes.find((l) => l.id === banque.id)!;
+  const { evidenceId } = await ingestEvidence({
+    engagementId: IDS.engNep,
+    filename: 'confirmation-bancaire-blc.txt',
+    mime: 'text/plain',
+    bytes: new TextEncoder().encode(
+      'Confirmation de solde (pièce fictive) — compte FR76 3000 1000 0100 0000 0000 123.'),
+    source: 'email',
+    uploadedBy: { kind: 'client_contact', id: null },
+    audience: 'client_provided',
+  });
+  await deposerReponseCircularisation({
+    partyId: banque.id, userId: IDS.users.karim, evidenceId,
+    montantConfirmeCents: (ligne.soldeComptableCents ?? 0) + 125000,
+  });
+  await expliquerEcartCircularisation(banque.id,
+    'Frais de tenue de compte prélevés le 31/12 par la banque et comptabilisés en janvier — '
+    + 'rattachement corrigé, écart expliqué.',
+    IDS.users.karim);
+}
+
 export async function runPart1UpToWorkpaper(): Promise<void> {
   await bootstrapNep();
   const requestId = await samplingAndRequest();
@@ -398,4 +481,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await matchAndClarify();
   await dispositions();
   await spotcheckAndEvaluate();
+  await circulariserBanques();
 }

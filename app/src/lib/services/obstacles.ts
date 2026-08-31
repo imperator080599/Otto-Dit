@@ -6,6 +6,7 @@ import { obstaclesPointage } from './tieout';
 import { currentAcceptation, jalonsEnRetard } from './acceptance';
 import { boucle } from './loop';
 import { conclusionGate, blockerText } from './evaluation';
+import { obstaclesCircularisation } from './circularisations';
 import { obstaclesAchevement } from './completion';
 import { obstaclesProcessus } from './processus';
 import { obstaclesEntretiens } from './entretiens';
@@ -29,7 +30,7 @@ import { obstaclesEntretiens } from './entretiens';
 
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
-  | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons';
+  | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation';
 
 export interface Obstacle {
   famille: Famille;
@@ -50,6 +51,7 @@ const OU: Record<Famille, string> = {
   evaluation: 'exceptions',
   achevement: 'completion',
   jalons: 'acceptance',
+  circularisation: 'circularisations',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -154,6 +156,13 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
 
   // 9. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
   ajoute('achevement', await obstaclesAchevement(engagementId));
+
+  /* CIRCULARISATIONS (point 3) : une campagne ouverte se termine — un compte
+     non couvert, une demande jamais partie, une réponse jamais venue ou un
+     écart non expliqué empêchent le visa. Aucune campagne ouverte : rien à
+     exiger (on ne reproche pas de ne pas avoir circularisé ce qu'on n'a pas
+     décidé de circulariser). */
+  ajoute('circularisation', await obstaclesCircularisation(engagementId));
 
   // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.

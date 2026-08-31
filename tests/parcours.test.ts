@@ -153,12 +153,17 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
     expect(familles.has('pointage') || familles.has('achevement')).toBe(true);
   }, 300000);
 
-  it('la fin du parcours : reprise, questionnaire, pointage, achèvement', async () => {
+  it('la fin du parcours : reprise, questionnaire, pointage, circularisation, achèvement', async () => {
     const { etapes, obstacles } = await deroulerFin(IDS.engNep);
+    /* La CIRCULARISATION est entrée dans la fin de mission (ADR-111) : le
+       listing du client arrive incomplet, et tant qu'un compte du grand livre
+       n'est couvert par personne — ou qu'un écart confirmé n'est pas expliqué
+       — le dossier ne se clôt pas. */
     expect(etapes.map((e) => e.cle)).toEqual([
-      'reponses', 'reprise', 'questionnaire', 'pointage', 'achevement', 'jalons',
+      'reponses', 'reprise', 'questionnaire', 'pointage', 'circularisation', 'achevement', 'jalons',
       'boucle', 'obstacles',
     ]);
+    expect(etapes.find((e) => e.cle === 'circularisation')?.fait).toMatch(/EXPLIQUÉ/);
     /* Ce qui RESTE doit être l'évaluation seule : le grand livre est
        provisoire dans le jeu de démonstration, et c'est délibéré — un dossier
        qui se clôt sur un FEC provisoire serait le vrai défaut. */
@@ -167,6 +172,8 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
     expect(familles.has('pointage')).toBe(false);
     expect(familles.has('achevement')).toBe(false);
     expect(familles.has('reprise')).toBe(false);
+    expect(familles.has('circularisation'),
+      'la circularisation menée à son terme ne laisse aucun obstacle').toBe(false);
   }, 900000);
 
   it('le FEC provisoire bloque la clôture — c’est la règle, pas un accident', async () => {

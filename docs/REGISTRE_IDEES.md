@@ -44,7 +44,7 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | F-31 | Revue analytique auto N/N-1 (seuil € et %) → questions client | planifié | variations visibles au pilotage/pointage, mais PAS d'écran dédié avec seuils validés + questions — à construire (rattaché à M-09/M-06) |
 | F-32 | Confirmations bancaires bout-en-bout (liste, complétude vs compta, envoi, réception, écarts) | planifié | backlog M-03 — prochain point après P0 ; boîte de réception = M-08c |
 | F-33 | Banques qui n'acceptent que confirmation.com | planifié | avec M-03 : procédure alternative documentée + QUESTIONS_EN_ATTENTE Q-01 (adhésion = décision d'argent, à Tuan) |
-| F-34 | Confirmations avocats (litiges, provisions, écarts > CTT) | planifié | backlog M-03 |
+| F-34 | Confirmations avocats (litiges, provisions, écarts > CTT) | fait (mécanique) | ADR-111 : même mécanique que les banques, comparaison provisions confirmées / compte de provisions, seuil CTT ; le jeu de démonstration ne porte pas encore de réponse d'avocat semée |
 | F-35 | Boîte e-mail intégrée par dossier (réception des pièces) | planifié | backlog M-08c (adresse entrante par dossier + quarantaine) |
 | F-36 | Estimations comptables hors litige : base rapprochée, sondée, taux justifiés | fait | ADR-106a, `dataset/estimations/fae-2025.csv`, station cliquée |
 | F-37 | Fichier de suivi modulable par audience, temps réel, statuts, n° de requête lié | planifié | backlog M-06 ; statuts par pièce et liens section↔requêtes déjà en place |
@@ -86,7 +86,7 @@ devant Tuan. Mis à jour à la fin de CHAQUE tranche.
 | M-00b | Windows : `DEMARRAGE_WINDOWS.md` ≤ 10 lignes PowerShell + contraintes de conception | fait | DEMARRAGE_WINDOWS.md (9 lignes, une commande par ligne) ; audit de classe : zéro spawn résolu par le PATH ; diagnostic + messages par cause (L-20, ADR-095/096) |
 | M-01 | Balances auxiliaires | fait | = L-17 |
 | M-02 | Contrôle interne / walkthroughs — finir proprement | fait | chaîne complète verte (code 0) : 494 tests / 74 routes / 126 étapes / 276 vues ; stations cliquées du processus passées |
-| M-03 | Confirmations banques + avocats bout-en-bout | planifié | après P0 |
+| M-03 | Confirmations banques + avocats bout-en-bout | fait | ADR-111 : migration 0030, service dérivé (complétude deux sens, rapprochement, explication écrite), écran, famille d'obstacles, station cliquée de bout en bout (listing incomplet → corrigé → envoi simulé → réponse → écart 1 250,00 € → explication → questions en brouillon) |
 | M-04 | Parties liées, y compris non déclarées | planifié | |
 | M-05 | Notes de revue : récurrence + ancienneté jours ouvrés | planifié | = L-19 |
 | M-06 | Export d'avancement, 3 audiences, envoi périodique | planifié | = F-11/F-37 |

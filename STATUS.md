@@ -1241,3 +1241,42 @@ l'atelier **seulement** — pas sur les autres écrans. La francisation des écr
 (rapprochement, périmètre, seuils, papier) reste un chantier ouvert : le test ne police que le texte
 français, un libellé anglais lui est invisible par construction, et c'est écrit dans LEXIQUE.md. La
 mesure ne juge ni la lisibilité ni l'ordre de lecture — elle compte.
+
+## Point 3 — les circularisations : banques et avocats, de bout en bout (2026-08-31)
+
+**Chaîne verte, code 0** (`cd app && npm run verify`) : **529 tests** · **78 routes** · **72
+écrans mesurés**, 0 au-delà de 5 actions, 71 champs à taper · **144 étapes cliquées** 0 échec,
+270 clics sur 35 gestes · **288 vues** 0 défaut.
+
+Le fondateur décrivait une file d'agents IA ; ce qui est livré est une **mécanique
+déterministe** (ADR-111) — aucun modèle n'y est nécessaire (P4), et ce sont ses refus qui
+travaillent :
+
+1. **Le listing du client est une pièce**, importée avec la sévérité des autres imports ;
+   réimporter ne rase pas ce qui est parti.
+2. **La complétude se dérive dans les DEUX sens**, contre le poste du pack (trésorerie,
+   provisions) — jamais contre un préfixe « 512 » écrit en dur.
+3. **L'envoi est simulé et le dit**, et il exige un contact client clé déclaré.
+4. **On ne reçoit pas une confirmation qu'on n'a pas demandée** ; la réponse est une pièce,
+   sa lecture est humaine.
+5. **Le rapprochement est dérivé** : côté banque tout écart se dit, côté avocats le seuil de
+   remontée décide.
+6. **Un écart se justifie par écrit** — « RAS » est refusé — et c'est cette phrase qui lève
+   l'obstacle au visa.
+7. **Onzième famille d'obstacles** ; aucune campagne ouverte = aucun obstacle.
+
+Le monde de démonstration porte **exprès** un listing incomplet (le compte `512100` rattaché
+à un `512900` inexistant, un `512200` qu'aucune écriture ne porte) : la complétude a quelque
+chose à trouver, et la fin de mission mène la campagne à son terme — sinon le dossier ne se
+scelle pas.
+
+**Trouvé en conduisant, pas en planifiant** : le séparateur de milliers français est une
+espace **insécable** — « 1 250,00 » cherché avec une espace ordinaire ne matche jamais ce que
+l'écran affiche (même famille que le mot capitalisé par le CSS, règle 15). Le détail d'étape
+rapporte désormais la valeur **lue**, jamais une phrase fixe.
+
+**Ce que je n'ai pas fait** : aucune réponse d'avocat n'est semée (la mécanique est la même
+et testée ; la démonstration cliquée porte sur les banques) ; la complétude côté avocats se
+juge sur les comptes de provisions, pas encore sur les honoraires versés à des cabinets
+absents du listing ; rien ne part réellement — le transport est simulé et le dit.
+

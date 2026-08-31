@@ -125,6 +125,8 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
   entrees.push(
     e('requests', 'Demandes au client', 'Les justificatifs demandés, leurs relances, et ce qui manque encore.',
       s.tirage || s.demandes, 'disponible après le tirage — les demandes naissent de l\'échantillon'),
+    e('circularisations', 'Circularisations', 'Banques et avocats : le listing du client, ce qu\'il ne couvre pas, et les soldes confirmés.',
+      s.importe, 'disponible après le premier import — la complétude se juge contre le grand livre'),
     e('evidence', 'Pièces reçues', 'Tout ce que le client a déposé, empreinte et provenance comprises.',
       s.demandes || s.pieces, 'disponible dès la première demande au client'),
     e('exceptions', sox ? 'Déviations (SOX)' : 'Écarts relevés', 'Chaque écart, son explication, sa corroboration, sa suite.',

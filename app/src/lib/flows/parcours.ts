@@ -10,6 +10,8 @@ import { assurerAchevement, conclure, sansObjet, dateRapport } from '@/lib/servi
 import { jalons, marquerJalonFait } from '@/lib/services/acceptance';
 import { answerExplanation } from '@/lib/services/evidence';
 import { boucle } from '@/lib/services/loop';
+import { campagne, rapprochement } from '@/lib/services/circularisations';
+import { acheverCircularisationBanques } from '@/lib/flows/part1';
 import { obstaclesAuVisa } from '@/lib/services/obstacles';
 import { listFslis } from '@/lib/services/fsli';
 
@@ -212,6 +214,26 @@ export async function etapeJalons(engagementId = IDS.engNep): Promise<void> {
  * Rend les obstacles RESTANTS : zéro signifie que le dossier peut être clos, et
  * c'est la seule affirmation que ce parcours produit.
  */
+/**
+ * LA CIRCULARISATION FAIT PARTIE DE LA FIN DE MISSION (ADR-111).
+ *
+ * Le monde de démonstration s'arrête au listing INCOMPLET — c'est le défaut
+ * que l'écran doit donner à trouver. Tout parcours qui va jusqu'au scellement
+ * doit donc la finir, sinon le compte non couvert et la demande jamais partie
+ * bloquent le visa : et c'est exactement ce qu'on veut qu'ils fassent.
+ */
+export async function etapeCircularisation(engagementId = IDS.engNep): Promise<void> {
+  if (engagementId !== IDS.engNep) return;   // le listing du jeu est celui du dossier NEP
+  if (!(await campagne(engagementId, 'banque'))) return;
+  await acheverCircularisationBanques();
+  const r = await rapprochement(engagementId, 'banque');
+  const ecart = r.lignes.find((l) => l.ecartCents !== null && l.ecartCents !== 0);
+  note('circularisation', 'Circularisation des banques',
+    ecart
+      ? `écart de ${((ecart.ecartCents ?? 0) / 100).toFixed(2)} € confirmé et EXPLIQUÉ`
+      : 'aucun écart');
+}
+
 export async function deroulerFin(engagementId = IDS.engNep): Promise<{
   etapes: EtapeParcours[];
   obstacles: { famille: string; libelle: string }[];
@@ -221,6 +243,7 @@ export async function deroulerFin(engagementId = IDS.engNep): Promise<{
   await etapeReprise(engagementId);
   await etapeQuestionnaire(engagementId);
   await etapePointage(engagementId);
+  await etapeCircularisation(engagementId);
   await etapeAchevement(engagementId);
   await etapeJalons(engagementId);
   /* La boucle doit être FERMÉE sur le poste travaillé : c'est la vérification

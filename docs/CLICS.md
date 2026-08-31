@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-08-31 · 34 gestes · **262 clics** au total.
+Parcours du 2026-08-31 · 35 gestes · **270 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -43,6 +43,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | la boucle | 0 |
 | reprise N-1 | 24 |
 | pointage des états financiers | 4 |
+| circularisation des banques : complétude, envoi, écart, explication | 8 |
 | achèvement | 7 |
 | jalons | 6 |
 | obstacles au visa | 0 |

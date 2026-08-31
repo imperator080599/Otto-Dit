@@ -1866,6 +1866,88 @@ export async function conduire(
   });
 
   // ── 20. ACHÈVEMENT
+  /* ── CIRCULARISATIONS (point 3, ADR-111) — le chemin entier, au clic :
+     le listing incomplet du client, les DEUX constats de complétude, le
+     listing corrigé, la demande (simulée), la réponse déposée, l'écart
+     CALCULÉ, son explication écrite, et les questions au client en brouillon.
+     C'est la station qui prouve que le module n'est pas qu'un tableau. */
+  await station('circularisation des banques : complétude, envoi, écart, explication', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/circularisations`);
+    const t0 = await texte();
+    dire('circularisation : le compte du grand livre qu\'AUCUN tiers ne couvre est nommé',
+      /512100/.test(t0) && /aucun/i.test(t0), '512100 signalé sans tiers');
+    dire('circularisation : la ligne de listing qu\'aucune écriture ne porte est nommée aussi',
+      /512900|512200/.test(t0), 'compte annoncé sans écriture signalé');
+
+    /* Le client répond : le listing corrigé rattache la banque au bon compte. */
+    await deplier(p.locator('input[name=fichier][accept*="csv"]').first());
+    await p.locator('input[name=fichier][accept*="csv"]').first()
+      .setInputFiles(ds('circularisations', 'banques-corrige.csv'));
+    await soumettre(p.locator('form:has(input[name=fichier][accept*="csv"]) button').first(), 1500);
+    dire('circularisation : le listing CORRIGÉ referme le constat de complétude',
+      !refus(p) && !/n’est couvert par|n\'est couvert par/.test(await texte()),
+      refus(p) ?? 'plus aucun compte sans tiers');
+
+    /* La demande part — simulée, et l'écran le dit. */
+    const envoyer = p.locator('button:has-text("Envoyer (simulé)")').first();
+    if (await envoyer.count()) {
+      await soumettre(envoyer, 1500);
+      dire('circularisation : la demande PART (transport simulé, jamais un envoi qui se croit réel)',
+        !refus(p) && /envoyée/.test(await texte()), refus(p) ?? 'demande envoyée');
+    } else {
+      dire('circularisation : une demande reste à envoyer après le listing corrigé', false, 'aucun bouton d\'envoi');
+      return;
+    }
+
+    /* La réponse de la banque : la pièce, et le solde LU dessus — ici,
+       1 250,00 € de plus que la comptabilité (des frais non comptabilisés). */
+    const cellules = await p.locator('table.data tbody tr').first().locator('td').allInnerTexts();
+    const compta = Number((cellules[4] ?? '').replace(/[^0-9,.-]/g, '').replace(/\s/g, '').replace(',', '.'));
+    dire('circularisation : le solde COMPTABLE est affiché en face du tiers',
+      Number.isFinite(compta) && compta !== 0, `${compta} € au grand livre`);
+    await deplier(p.locator('input[name=montant]').first());
+    await p.locator('form:has(input[name=montant]) input[type=file]').first()
+      .setInputFiles(ds('circularisations', 'banques-corrige.csv'));
+    await p.locator('input[name=montant]').first().fill(String((compta + 1250).toFixed(2)));
+    await soumettre(p.locator('form:has(input[name=montant]) button').first(), 2000);
+    /* LIRE LE TEXTE TEL QU'IL EST RENDU : le séparateur de milliers français
+       est une espace INSÉCABLE (U+00A0 / U+202F), pas une espace ordinaire —
+       « 1 250,00 » cherché avec une espace normale ne matche jamais ce que
+       l'écran affiche. Même famille que le mot capitalisé par le CSS
+       (règle 15) : on normalise, et le détail rapporte la valeur LUE. */
+    const t1 = (await texte()).replace(/[\u00a0\u202f]/g, ' ');
+    const cellulesApres = await p.locator('table.data tbody tr').first().locator('td').allInnerTexts();
+    const ecartLu = (cellulesApres[6] ?? '').replace(/[\u00a0\u202f]/g, ' ').trim().split('\n')[0];
+    dire('circularisation : l\'écart est CALCULÉ contre le grand livre, et tout écart se dit',
+      !refus(p) && /1 250,00/.test(t1), refus(p) ?? `écart lu : ${ecartLu || '(vide)'}`);
+
+    /* L'écart ne se referme pas d'un clic : il se JUSTIFIE. */
+    const sansMotif = p.locator('form:has(input[name=explication])').first();
+    if (await sansMotif.count()) {
+      await sansMotif.evaluate((el) => { (el as HTMLFormElement).noValidate = true; });
+      await sansMotif.locator('input[name=explication]').fill('RAS');
+      await soumettre(sansMotif.locator('button'), 1200);
+      dire('circularisation : « RAS » est REFUSÉ — une explication d\'écart se rédige',
+        Boolean(refus(p)), refus(p) ?? 'PASSÉ — défaut');
+      const vrai = p.locator('form:has(input[name=explication])').first();
+      await vrai.locator('input[name=explication]').fill(
+        'Frais de tenue de compte prélevés le 31/12, comptabilisés en janvier — rattachement corrigé.');
+      await soumettre(vrai.locator('button'), 1500);
+      dire('circularisation : l\'écart expliqué par écrit lève l\'obstacle au visa',
+        !refus(p) && /Frais de tenue de compte/.test(await texte()), refus(p) ?? 'explication au dossier');
+    }
+
+    /* Les questions au client : un brouillon, jamais un envoi. */
+    const qs = p.locator('button:has-text("Rédiger les questions au client")').first();
+    if (await qs.count()) {
+      await soumettre(qs, 1500);
+      await aller(`${eng}/requests`);
+      dire('circularisation : les questions naissent en BROUILLON, dans les demandes au client',
+        /Circularisation/i.test(await texte()), 'demande rédigée');
+    }
+  });
+
   await station('achèvement', async () => {
     await devenir(c.associe.id);
     await aller(`${eng}/completion`);

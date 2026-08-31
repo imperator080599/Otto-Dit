@@ -4088,3 +4088,40 @@ Première prise de ce compteur — sur le harnais lui-même : il dépliait TREIZ
 un humain en ouvre un. 349 clics au premier comptage, **261** une fois chaque dépliage visé
 sur l'objet cherché. Un harnais doit cliquer comme la personne qu'il imite, sinon le nombre
 qu'il publie décrit le harnais et non le produit.
+
+## ADR-111 — Les circularisations : une file d'agents décrite, une mécanique déterministe livrée
+
+**Contexte.** Le fondateur décrit les confirmations bancaires et avocats comme une chaîne
+d'agents IA : demander le listing, vérifier qu'il ne manque personne, envoyer, recevoir,
+comparer, relancer. Écrit ainsi, tout appelle un modèle. Regardé de près, **rien** ne
+l'appelle : chacun de ces gestes est une règle (P4).
+
+**Décision — la mécanique, et ses trois refus.**
+
+1. **Le listing du client est une pièce**, importée comme les autres, avec la même sévérité :
+   colonne absente, adresse invalide, référence en double, fichier vide → refus qui NOMME la
+   ligne. Réimporter ne rase pas ce qui est parti : une demande envoyée est un fait du
+   dossier, le listing corrigé complète.
+2. **La complétude se dérive DANS LES DEUX SENS**, contre le poste du pack (trésorerie,
+   provisions) — jamais contre un préfixe « 512 » écrit en dur, qui n'existe pas dans un plan
+   américain. Un compte du grand livre qu'aucun tiers ne couvre est le défaut classique ; une
+   ligne de listing qu'aucune écriture ne porte en est un autre, tout aussi parlant.
+3. **L'envoi est simulé et le DIT** (`remis: false`) derrière un adaptateur — le SMTP réel
+   est un chantier à part (point 8a). Il exige un contact client clé déclaré : on n'écrit pas
+   à un tiers au nom d'un client qui n'est pas en copie.
+4. **La réponse est une pièce, et sa lecture est humaine** : le solde confirmé (banque) ou
+   les litiges et provisions (cabinet) se saisissent DEPUIS la pièce. On ne « reçoit » pas
+   une confirmation qu'on n'a jamais demandée — c'est le deuxième refus.
+5. **Le rapprochement est DÉRIVÉ à la lecture**, jamais stocké : côté banque, **tout** écart
+   se dit, quel que soit son montant ; côté avocats, le seuil de remontée du dossier (CTT)
+   décide — une provision est une estimation, pas un solde.
+6. **Un écart ne se referme pas d'un clic** : il se JUSTIFIE par écrit, et c'est cette phrase
+   qui lève l'obstacle au visa — troisième refus (« RAS » est rejeté).
+7. **Une famille d'obstacles de plus** : compte non couvert, demande jamais partie, silence
+   du tiers, écart non expliqué. Aucune campagne ouverte = aucun obstacle : on ne reproche
+   pas de ne pas avoir circularisé ce qu'on n'a pas décidé de circulariser.
+
+**Ce que ça ne fait pas, et qui est écrit à l'écran** : rien ne part réellement ; les
+questions au client naissent en brouillon (L2) ; et le listing du monde de démonstration
+porte volontairement les deux défauts, pour que la complétude ait quelque chose à trouver.
+
