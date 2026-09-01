@@ -144,7 +144,12 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
        il répond 404, et c'est la règle elle-même (une identité posée par une
        URL serait une faille ailleurs). On DÉCLARE l'attente au lieu de sauter
        la route — un 200 ici serait un défaut de sécurité, et il échouerait. */
-    const lienDemo = pattern === '/demo/[qui]' && process.env.OTTO_DEMO_PUBLIC !== '1' && process.env.VERCEL !== '1';
+    /* Deux chemins n'existent QUE sur la démo publique, et c'est la règle
+       elle-même : le lien qui pose une identité, et la sonde de santé qui
+       raconte l'intérieur de l'instance. Hors d'elle, 404 — déclaré ici, donc
+       un 200 inattendu échouerait (c'est le but). */
+    const publique = process.env.OTTO_DEMO_PUBLIC === '1' || process.env.VERCEL === '1';
+    const lienDemo = (pattern === '/demo/[qui]' || pattern === '/api/sante') && !publique;
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie
@@ -154,7 +159,7 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
         ? { attendu: 404, pourquoi: 'aucun dossier scellé dans le monde de démonstration' }
         : {}),
       ...(lienDemo
-        ? { attendu: 404, pourquoi: 'le lien de démonstration n\'existe que sur la démo publique (demoPublique)' }
+        ? { attendu: 404, pourquoi: 'n\'existe que sur la démo publique (demoPublique)' }
         : {}),
     });
   }

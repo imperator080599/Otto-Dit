@@ -40,6 +40,21 @@ export function middleware(req: NextRequest) {
   return res;
 }
 
+/**
+ * IL NE TOURNE QUE QUAND IL PEUT AGIR.
+ *
+ * Premier jet : un matcher large, et un `NextResponse.next()` inerte sur
+ * chaque requête. Inerte en apparence seulement — la simple présence d'un
+ * middleware change le pipeline de rendu, et l'erreur d'hydratation #418 est
+ * revenue sur deux écrans dès son ajout (fil n°7, dont la leçon était
+ * exactement celle-là : ne pas faire varier ce que le rendu voit).
+ *
+ * La condition `has: query comme` fait que Next ne l'appelle PAS du tout sans
+ * ce paramètre : la navigation normale ne le traverse plus jamais.
+ */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg).*)'],
+  matcher: [{
+    source: '/((?!_next/static|_next/image|favicon.ico|icon.svg).*)',
+    has: [{ type: 'query', key: 'comme' }],
+  }],
 };

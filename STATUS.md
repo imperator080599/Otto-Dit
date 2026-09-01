@@ -1280,3 +1280,40 @@ et testée ; la démonstration cliquée porte sur les banques) ; la complétude 
 juge sur les comptes de provisions, pas encore sur les honoraires versés à des cabinets
 absents du listing ; rien ne part réellement — le transport est simulé et le dit.
 
+## Revue utilisateur n°1 — les deux bugs, et la leçon qui compte (2026-08-31 → 09-01)
+
+Premier test par un auditeur réel sur la plateforme déployée. Vingt-cinq remarques, cinq
+principes, deux bugs, trois manques : tout est au registre, section F (R-01..R-14).
+
+**Le diagnostic est accepté sans réserve** — *la plateforme s'explique au lieu de se laisser
+utiliser* — et devient une règle générale : **si une phrase à l'écran explique POURQUOI le
+produit est fait ainsi, elle sort.** Elle va dans un ADR ; jamais dans le flux de travail.
+
+**Les deux bugs avaient UNE cause, et elle était invisible d'ici.** Les journaux d'exécution
+de Vercel : `methodology/valider.mjs introuvable` sur `/acceptance` (digest 1111597534),
+`/team` et `/obstacles`. `next.config` traçait `dataset/fixtures`, `dataset/sox` et
+`supabase/migrations` — pas `methodology/`, que l'application IMPORTE depuis le disque à
+l'exécution. Le commentaire de ce fichier annonçait pourtant le risque, mot pour mot.
+
+**La leçon (DA-16)** : 534 tests, 79 routes et 144 étapes cliquées passaient au vert pendant
+que trois écrans rendaient 500 en ligne. La chaîne tourne sur PGlite, avec le dépôt entier
+sur le disque ; le déploiement tourne dans une fonction qui n'emporte que les fichiers
+déclarés, sur un Postgres réseau. **Deux exécutions différentes** — et c'est la seconde que
+le fondateur ouvre. D'où, désormais :
+
+- `npm run fumee [-- <url>]` — le balayage de FUMÉE : statut attendu, absence de page
+  d'erreur, **titre lu**. Sans URL il lance un serveur de production local (il est donc DANS
+  `npm run verify`, et le chemin est prouvé) ; avec une URL il éprouve le déploiement, et il
+  REFUSE de conclure si la protection Vercel répond à sa place.
+- `/api/sante` — les lectures de chaque famille d'écrans exécutées DANS la fonction
+  déployée, en un appel. Vérifié en production après correctif : **« toutes les lectures
+  passent »**, dont « méthode du cabinet (methodology/valider.mjs) ».
+- `deploiement-traces.test.ts` — le test qui lit le CODE qui lit des fichiers et la
+  CONFIGURATION qui les trace, et échoue quand le premier dépasse la seconde.
+
+**Et un défaut que le harnais a trouvé sur moi** : le middleware `?comme=` tournait sur
+CHAQUE requête pour n'y rien faire. Inerte en apparence — l'erreur d'hydratation #418 (fil
+n°7) est revenue sur deux écrans dès son ajout, et a disparu dès que le matcher a été
+restreint aux URL qui portent le paramètre (2 exceptions → 0, mesuré). Même leçon que le
+layout racine : ne pas faire varier ce que le rendu voit.
+
