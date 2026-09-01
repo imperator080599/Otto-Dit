@@ -84,6 +84,43 @@ export async function GET() {
       const { frameworkSet } = await import('@/lib/services/fsli');
       return railDuDossier(id, (await frameworkSet(id)).assurance_packs);
     }));
+    /* LES DEUX ÉCRANS NEUFS DE LA CHARPENTE (ADR-112). Ils ne se prouvent pas
+       par la chaîne locale : c'est la fonction déployée qui doit les lire. */
+    lectures.push(await essayer('vue d’ensemble (tableau de bord par personne)', async () => {
+      const { tableauDeBord } = await import('@/lib/services/tableau-de-bord');
+      const membre = await q01<{ id: string }>(
+        `select user_id::text id from engagement_member where engagement_id = $1 limit 1`, [id]);
+      if (!membre) return 'aucun membre sur la mission';
+      const b = await tableauDeBord(id, membre.id);
+      return `${b.postes.length} poste(s) · ${b.obstacles.length} obstacle(s) · ${b.equipe.length} membre(s)`;
+    }));
+    lectures.push(await essayer('espace de travail d’un poste', async () => {
+      const { postesRetenus } = await import('@/lib/services/rail');
+      const { vuePoste } = await import('@/lib/services/poste');
+      const postes = await postesRetenus(id);
+      if (postes.length === 0) return 'aucun poste retenu';
+      const v = await vuePoste(id, postes[0].code);
+      return v ? `${postes[0].code} · ${v.comptes.length} compte(s) · ${v.blocs.length} étape(s)` : 'poste introuvable';
+    }));
+    /* LA REMISE À ZÉRO (DA-17) : l'instantané existe-t-il, et correspond-il au
+       schéma ? Un bouton dont la condition n'est vraie nulle part est un geste
+       mort — et cela ne se verrait qu'au moment où quelqu'un l'utilise.
+       ON NE L'EXIGE QUE LÀ OÙ IL DOIT EXISTER : l'instantané est pris par le
+       BUILD (`deploy:reconstruire`). Sur une instance locale lancée en mode
+       démonstration pour un harnais, son absence est normale — l'exiger
+       partout ferait échouer un contrôle sain, ce qui apprend à ignorer les
+       contrôles. */
+    lectures.push(await essayer('instantané du monde de démonstration', async () => {
+      const { etatInstantane } = await import('@/lib/services/monde-demo');
+      const surVercel = process.env.VERCEL === '1';
+      const e = await etatInstantane();
+      if (!e.existe) {
+        if (surVercel) throw new Error('aucun instantané : « remettre à zéro » refuserait');
+        return 'absent (normal hors déploiement : il est pris par le build)';
+      }
+      if (!e.aJour) throw new Error(`instantané périmé : ${e.desaccords.slice(0, 2).join(' · ')}`);
+      return `pris le ${e.prisLe}`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';
