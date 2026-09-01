@@ -29,8 +29,8 @@ export default async function ImportsPage({
         <div className="panel">
           <h2>{t('imp.trialBalanceGenericImporter')}</h2>
           <p>
-            Current: {tbCur ? <span className="badge green">{tbCur.accounts.length} accounts</span> : <span className="badge gray">{t('imp.notImported')}</span>}
-            {'  '}Prior: {tbPrior ? <span className="badge green">{tbPrior.accounts.length} accounts</span> : <span className="badge gray">{t('imp.notImported')}</span>}
+            Current: {tbCur ? <span className="badge green">{t('imp.nComptes', { n: tbCur.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
+            {'  '}Prior: {tbPrior ? <span className="badge green">{t('imp.nComptes', { n: tbPrior.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
           </p>
           <form action={uploadTbAction} className="row">
             <input type="hidden" name="engagement_id" value={id} />
@@ -81,7 +81,7 @@ export default async function ImportsPage({
                   </td>
                   <td>
                     {violations.length === 0 ? (
-                      <span className="faint">none</span>
+                      <span className="faint">{t('mot.none')}</span>
                     ) : (
                       <details>
                         <summary>{violations.length} {t('imp.violationS')}</summary>
@@ -92,7 +92,7 @@ export default async function ImportsPage({
                               {v.line ? t('imp.ligneNo', { n: v.line }) : ''}: {v.message}
                             </li>
                           ))}
-                          {violations.length > 25 && <li className="faint">… {violations.length - 25} more</li>}
+                          {violations.length > 25 && <li className="faint">{t('imp.nDePlus', { n: violations.length - 25 })}</li>}
                         </ul>
                       </details>
                     )}

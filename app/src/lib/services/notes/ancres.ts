@@ -8,7 +8,8 @@ import { q, q01 } from '@/lib/db/client';
 // pas : son état devient « objet retiré » — DÉRIVÉ ici à la lecture, pas
 // stocké, parce qu'un drapeau stocké mentirait au recalcul suivant.
 
-export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer' | 'materiality_param' | 'exception' | 'deviation';
+export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer'
+  | 'materiality_param' | 'exception' | 'deviation' | 'ecran';
 
 export interface Ancre {
   kind: AncreKind;
@@ -38,6 +39,14 @@ export const KINDS: Record<AncreKind, string> = {
   materiality_param: 'paramètre de seuils',
   exception: 'écart (exception)',
   deviation: 'déviation de contrôle',
+  /* L'ÉCRAN LUI-MÊME (revue n°3 §2). Les six autres ancres visent un objet
+     métier, et c'est la bonne règle : « ligne 12 colonne 4 » se casse au
+     prochain tirage. Mais elle laissait sans recours la remarque qui porte sur
+     l'écran — « cette colonne est illisible », « ce bouton manque ici » — et
+     une remarque qui n'a nulle part où aller se dit à l'oral, puis se perd.
+     La référence est la ROUTE, pas un pixel : elle survit à une refonte de
+     mise en page. Le champ, s'il est donné, est une SECTION de la page. */
+  ecran: 'écran',
 };
 
 /**
@@ -119,6 +128,13 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
         [engagementId, a.ref.startsWith('id|') ? a.ref.slice(3) : a.ref],
       );
       return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'ecran': {
+      /* UN ÉCRAN EXISTE TANT QUE SA ROUTE EXISTE. Il n'y a pas d'état du
+         dossier à interroger : c'est ce qui distingue cette ancre des six
+         autres, et c'est pourquoi elle ne peut porter que des notes qui ne
+         prétendent rien sur le dossier. La cible est la route elle-même. */
+      return { etat: 'present', cibles: [a.field ? `${a.ref}#${a.field}` : a.ref] };
     }
     case 'materiality_param': {
       /* Un jeu de seuils existe → le paramètre existe. Retiré seulement si la

@@ -131,7 +131,7 @@ export default async function EstimationsPage({
                 <label className="row" style={{ gap: 4 }}>{t('est.randomDraw')}
                   <input type="number" name="taille" defaultValue={3} style={{ width: 60 }} />
                 </label>
-                <label className="row" style={{ gap: 4 }}>germe
+                <label className="row" style={{ gap: 4 }}>{t('mot.seed')}
                   <input name="germe" defaultValue="otto-estimation-1" className="mono" style={{ width: 160 }} />
                 </label>
                 <button className="btn secondary">{t('est.drawTheBase')}</button>

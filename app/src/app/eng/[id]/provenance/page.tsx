@@ -169,7 +169,7 @@ export default async function ProvenancePage({
                 <div key={i} className="callout">
                   <strong>{x.filename}</strong> <span className="badge violet">{x.rung}</span>{' '}
                   {x.verified_by && <span className="badge green">{t('prov.humanVerified')}</span>}
-                  <div className="faint mono">sha256 {x.sha256.slice(0, 16)}…</div>
+                  <div className="faint mono">{t('mot.sha256')} {x.sha256.slice(0, 16)}…</div>
                   <ul style={{ paddingLeft: 16, fontSize: 12 }}>
                     {x.fields.slice(0, 8).map((f) => <li key={f.name}>{f.name} = {String(f.value).slice(0, 50)} {t('prov.confiance', { c: f.confidence })}</li>)}
                   </ul>

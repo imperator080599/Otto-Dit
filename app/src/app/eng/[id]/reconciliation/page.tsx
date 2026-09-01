@@ -89,7 +89,7 @@ export default async function ReconciliationPage({
               ) : (
                 <span className="badge red">{latest.items.length} {t('rec.differenceS')}</span>
               )}
-              <span className="faint"> computed {latest.computed_at.slice(0, 16)}</span>
+              <span className="faint"> {t('mot.computed')} {latest.computed_at.slice(0, 16)}</span>
             </p>
             {latest.items.length > 0 && (
               <table className="data">

@@ -34,7 +34,7 @@ export function ecarte(p: string): boolean {
 const ATTR_TECH = /\s(?:className|style|href|src|id|key|name|type|action|method|accept|rel|target|role|htmlFor|colSpan|rowSpan|width|height|d|viewBox|fill|stroke|data-[\w-]+)=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})/g;
 
 /** Les chaînes d'un fichier, une fois retiré ce qui n'est pas de l'interface. */
-export function chaines(code: string): { chaines: string[]; refus: string[] } {
+export function chaines(code: string): { chaines: string[]; texte: string[]; refus: string[] } {
   code = code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
   code = code.replace(/^import[\s\S]*?from\s+['"][^'"]+['"];$/gm, ' ');
   /* Le SQL n'est pas de l'interface : un `select … join … on …` porte « on »,
@@ -52,19 +52,29 @@ export function chaines(code: string): { chaines: string[]; refus: string[] } {
      littéraux effacés, et les lignes repliées — un nœud écrit sur trois lignes
      reste UNE phrase. */
   const sans = code.replace(/(['"`])(?:\\.|(?!\1)[\s\S])*\1/g, ' ').replace(/\s*\n\s*/g, ' ');
-  for (const m of sans.matchAll(/[>}]([^<>{}]+)[<{]/g)) out.push(m[1]);
-  return { chaines: out.map((s) => s.trim()), refus };
+  const texte: string[] = [];
+  for (const m of sans.matchAll(/[>}]([^<>{}]+)[<{]/g)) texte.push(m[1]);
+  return { chaines: out.map((s) => s.trim()), texte: texte.map((s) => s.trim()), refus };
 }
 
 const CODE = /=>|===|!==|&&|\|\||;|\?\s*\(|\bcatch\s*\(|\b(await|const|let|return|function|async|Promise|FormData|null|undefined|typeof|import|export|useState|type|select|from|where|order by|join)\b/;
 const CSS = /(\b(px|rem|em|solid|dashed|flex|grid|nowrap|pre-wrap|space-between|inline-block)\b|var\(--|#[0-9a-f]{3,6}\b|^\d+(\.\d+)?(px|%|rem)$)/i;
 const SUFFIXES_CHAMP = new Set(['Cents', 'Id', 'At', 'By']);
+const RESTES_DE_CODE = new Set(['else', 'return', 'try', 'catch']);
 const TOUCHES = new Set(['Escape', 'Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
   'Backspace', 'Delete', 'Shift', 'Control', 'Alt', 'Meta']);
 const CLASSES = /^(badge|btn|panel|callout|row|grid|mono|faint|muted|num|data|stack|kpi|sel|warn|small|secondary|green|amber|red|gray|blue|violet|mt|ok|compare-ko|ai-flag|progressbar|table-scroll)(\s+[\w-]+)*$/;
 
-/** Une chaîne qu'un utilisateur LIT — par opposition à ce qui reste du code. */
-export function lisible(s: string): boolean {
+/**
+ * Une chaîne qu'un utilisateur LIT — par opposition à ce qui reste du code.
+ *
+ * `jsx` DIT D'OÙ VIENT LA CHAÎNE, et ce n'est pas un détail : un nœud JSX est
+ * affiché PAR CONSTRUCTION. Les filtres qui écartent les identifiants
+ * (`retenir`, `motif`, `sample_item`) n'ont donc aucun sens sur lui — c'est
+ * ainsi que deux boutons français ont survécu à la migration. Sur un littéral,
+ * au contraire, ces filtres sont indispensables.
+ */
+export function lisible(s: string, jsx = false): boolean {
   const nu = s.replace(/\$\{[^}]*\}/g, '').trim();
   if (!/[A-Za-zÀ-ÿ]{2}/.test(nu)) return false;          // que des valeurs : pas une phrase
   if (/^[a-z_]+\|/.test(s)) return false;                // clé d'ancre composée
@@ -73,10 +83,10 @@ export function lisible(s: string): boolean {
   /* UN MOT SEUL PEUT ÊTRE UN TITRE. « Missions » est un `<h1>` ; `sample_item`
      est une clé. On distingue par la FORME de l'identifiant, pas par la
      présence d'espace — sinon tout titre d'un mot sort du champ de la règle. */
-  if (/^[a-z][a-zA-Z0-9]*$/.test(s)) return false;       // camelCase ou minuscule
+  if (!jsx && /^[a-z][a-zA-Z0-9]*$/.test(s)) return false;   // camelCase ou minuscule
   if (/^[A-Z0-9_-]+$/.test(s)) return false;             // code (REVENUE, REV-01)
   if (/^[\w]+(-[\w]+)+$/.test(s)) return false;          // valeur kebab (force-dynamic, break-all)
-  if (TOUCHES.has(s)) return false;                      // nom de touche clavier
+  if (TOUCHES.has(s) || RESTES_DE_CODE.has(s)) return false;                      // nom de touche clavier
   if (/^\w+\$\{/.test(s)) return false;                  // nom de champ construit (nom${i})
   if (SUFFIXES_CHAMP.has(s)) return false;                // suffixe de nom de champ (…Cents)
   if (/^[\w.$/#?=@:{}[\]-]*[_/.@:#][\w.$/#?=@:{}[\]-]*$/.test(s) && !/\s/.test(s)) return false;
@@ -127,6 +137,7 @@ export function horsCatalogue(app: string): { restes: string[]; refus: number } 
     const r = chaines(fs.readFileSync(f, 'utf8'));
     refus += r.refus.length;
     for (const s of r.chaines) if (lisible(s)) restes.push(`${path.relative(app, f)} → « ${s.slice(0, 70)} »`);
+    for (const s of r.texte) if (lisible(s, true)) restes.push(`${path.relative(app, f)} → « ${s.slice(0, 70)} »`);
   }
   return { restes, refus };
 }

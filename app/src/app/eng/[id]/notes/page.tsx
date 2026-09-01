@@ -79,7 +79,7 @@ export default async function NotesPage({
           return (
             <div className={`callout${cr?.verdict === 'refuse' ? ' warn' : ''}`} key={r.id} style={{ marginTop: 8 }}>
               <strong>{r.author_kind === 'otto' ? 'OTTO' : r.author_name}</strong>
-              {cr?.verdict === 'refuse' && <span className="badge amber" style={{ marginLeft: 6 }}>refus</span>}
+              {cr?.verdict === 'refuse' && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.refusal')}</span>}
               {cr?.verdict === 'execute' && <span className="ai-flag" style={{ marginLeft: 6 }}>{t('notes.executeParOtto')}</span>}
               <p style={{ margin: '4px 0' }}>{r.text}</p>
               {cr && cr.verdict === 'execute' && (

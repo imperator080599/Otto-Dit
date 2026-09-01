@@ -26,14 +26,17 @@ describe('la langue des écrans', () => {
     expect(chaines("<span>{x ? 'oui' : 'non'}</span>").chaines).toContain('oui');
     expect(chaines('<p title="l\'objet ancré n\'existe plus">x</p>').chaines)
       .toContain("l'objet ancré n'existe plus");
-    expect(chaines('<h1>Missions</h1>').chaines.filter(lisible)).toEqual(['Missions']);
+    expect(chaines('<h1>Missions</h1>').texte.filter((x) => lisible(x, true))).toEqual(['Missions']);
+    /* Un bouton d'un mot minuscule est un libellé, pas un identifiant. */
+    expect(chaines('<button>retenir</button>').texte.filter((x) => lisible(x, true))).toEqual(['retenir']);
+    expect(lisible('sample_item')).toBe(false);
     /* Un nœud JSX écrit sur plusieurs lignes reste UNE phrase. */
     expect(chaines('<p>\n  Le compte <span>{c}</span> n’est couvert par aucun tiers\n</p>')
-      .chaines.filter(lisible).join(' ')).toMatch(/Le compte/);
+      .texte.filter((x) => lisible(x, true)).join(' ')).toMatch(/Le compte/);
     /* Un appel au catalogue n'est PAS un littéral. */
-    expect(chaines("<p>{t('vue.assignments')}</p>").chaines.filter(lisible)).toEqual([]);
+    expect(chaines("<p>{t('vue.assignments')}</p>").texte.filter((x) => lisible(x, true))).toEqual([]);
     /* Le SQL, le style, les classes et les chemins ne sont pas de l'interface. */
-    expect(chaines('q(`select u.id from app_user u join x on x.id = u.id`)').chaines.filter(lisible)).toEqual([]);
+    expect(chaines('q(`select u.id from app_user u join x on x.id = u.id`)').chaines.filter((x) => lisible(x))).toEqual([]);
     expect(lisible('badge amber')).toBe(false);
     expect(lisible('1px solid var(--line)')).toBe(false);
     expect(lisible('/eng/${id}/scoping')).toBe(false);

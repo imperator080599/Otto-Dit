@@ -184,10 +184,10 @@ export default async function ExceptionsPage({
                           <div className="row" style={{ gap: 4 }}>
                             <select name="fait_nature" defaultValue="controle">
                               <option value="controle">{t('exc.control')}</option>
-                              <option value="changement">changement</option>
+                              <option value="changement">{t('mot.change')}</option>
                               <option value="complexite">{t('exc.complexity')}</option>
-                              <option value="incertitude">incertitude</option>
-                              <option value="biais">biais</option>
+                              <option value="incertitude">{t('mot.uncertainty')}</option>
+                              <option value="biais">{t('mot.bias')}</option>
                             </select>
                             <input name="fait_postes" placeholder={t('exc.areasConcernedCommaSeparated')} style={{ flex: 1 }} />
                           </div>
@@ -212,12 +212,12 @@ export default async function ExceptionsPage({
                         <form action={escalateAction} className="row">
                           <input type="hidden" name="exception_id" value={x.id} />
                           <select name="kind" defaultValue="factual">
-                            <option value="factual">factual</option>
-                            <option value="judgmental">judgmental</option>
-                            <option value="projected">projected</option>
+                            <option value="factual">{t('mot.factual')}</option>
+                            <option value="judgmental">{t('mot.judgmental')}</option>
+                            <option value="projected">{t('mot.projected')}</option>
                           </select>
                           <input type="number" name="amount" step="0.01" placeholder="€" style={{ width: 100 }} required />
-                          <label className="row" style={{ gap: 3 }}><input type="checkbox" name="corrected" /> corrected</label>
+                          <label className="row" style={{ gap: 3 }}><input type="checkbox" name="corrected" /> {t('mot.corrected')}</label>
                           <button className="btn small danger">{t('exc.misstatement')}</button>
                         </form>
                       </details>
@@ -240,7 +240,7 @@ export default async function ExceptionsPage({
                 <tr key={m.id}>
                   <td><span className="badge violet">{m.kind}</span></td>
                   <td className="num">{fmtEur(numToCents(m.amount), 'fr')}</td>
-                  <td>{m.corrected ? <span className="badge green">yes</span> : <span className="badge red">no</span>}</td>
+                  <td>{m.corrected ? <span className="badge green">{t('commun.oui')}</span> : <span className="badge red">{t('commun.non')}</span>}</td>
                   <td><span className="badge gray">{m.status}</span></td>
                   <td className="muted">{m.notes}</td>
                 </tr>

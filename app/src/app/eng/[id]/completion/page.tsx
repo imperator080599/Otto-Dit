@@ -62,7 +62,7 @@ export default async function CompletionPage({
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h2>{libelle(meta.libelle)}</h2>
               <span>
-                {x.status === 'done' && <span className="badge green">conclu {fr(x.done_at)}</span>}
+                {x.status === 'done' && <span className="badge green">{libelle('mot.concluded')} {fr(x.done_at)}</span>}
                 {x.status === 'na' && <span className="badge gray">{libelle('comp.notApplicable')}</span>}
                 {x.status === 'open' && <span className="badge amber">{libelle('comp.toConclude')}</span>}
               </span>

@@ -81,6 +81,20 @@ export const NOTE_TYPES: Record<NoteType, { libelle: string; bloquante: boolean 
   remarque_n1: { libelle: 'remarque pour N+1', bloquante: false },
 };
 
+/** LA NATURE D'UNE NOTE (revue n°3 §2).
+ *
+ *  · `audit`   — elle entre au dossier, elle peut bloquer le visa, et seul un
+ *    RÉVISEUR qui n'en est pas l'auteur la clôt (ADR-028) ;
+ *  · `produit` — le retour du fondateur sur la plateforme. Elle n'entre PAS au
+ *    dossier, ne bloque AUCUN visa, ne se mêle jamais aux notes de la mission,
+ *    et SEUL SON AUTEUR la clôt : celui qui a posé le retour est le seul à
+ *    savoir si la réponse le satisfait. La machine répond ; elle ne clôt pas.
+ *
+ *  Les deux natures ont donc des règles de clôture OPPOSÉES. Ce n'est pas une
+ *  coquetterie : c'est ce qui rend le cloisonnement visible plutôt que
+ *  déclaratif. Il est tenu en base (migration 0032), pas par la discipline. */
+export type PorteeNote = 'audit' | 'produit';
+
 export interface OptionsNote {
   /** L'ancre : l'OBJET MÉTIER que la note vise (ADR-097). Absente = note de
    *  papier « flottante », le comportement historique. */
@@ -91,6 +105,9 @@ export interface OptionsNote {
   /** Défaut 'a_corriger' — le type le plus exigeant : on relâche
    *  explicitement, jamais par oubli. */
   noteType?: NoteType;
+  /** Défaut 'audit' : une note qui n'a pas dit sa nature entre au dossier —
+   *  se tromper dans ce sens est réparable, l'inverse ne l'est pas. */
+  portee?: PorteeNote;
 }
 
 export async function addReviewNote(
@@ -108,18 +125,27 @@ export async function addReviewNote(
   const ctx = await engagementCtx(engagementId);
   const noteType: NoteType = opts.noteType ?? 'a_corriger';
   if (!NOTE_TYPES[noteType]) throw new Error(`note : type « ${noteType} » inconnu`);
+  const portee: PorteeNote = opts.portee ?? 'audit';
+  /* LES TROIS REFUS DU CLOISONNEMENT, DITS ICI ET TENUS EN BASE. Les répéter
+     dans le service n'est pas une redondance : la base rend un message de
+     contrainte, l'écran a besoin d'une phrase. */
+  if (portee === 'produit') {
+    if (workpaperId) throw new Error('une note de produit ne s’attache pas à un papier de travail — elle n’entre pas au dossier');
+    if (opts.ancre?.kind !== 'ecran') throw new Error('une note de produit s’ancre sur un ÉCRAN, jamais sur un objet du dossier');
+    if (noteType === 'a_corriger') throw new Error('une note de produit ne bloque pas le visa — le dossier ne dépend pas d’un avis sur la plateforme');
+  }
   const row = await q1<{ id: string }>(
     `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, text,
-                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind, note_type)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
+                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind, note_type, scope)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning id`,
     [engagementId, workpaperId, authorId, assigneeId, text,
      opts.ancre?.kind ?? null, opts.ancre?.ref ?? null, opts.ancre?.field ?? null,
-     opts.ancre?.label ?? null, assigneeKind, noteType],
+     opts.ancre?.label ?? null, assigneeKind, noteType, portee],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: authorId,
     verb: 'review_note_added', objectType: 'review_note', objectId: row.id,
-    payload: { workpaperId, assigneeId, assigneeKind, noteType, ancre: opts.ancre ?? null },
+    payload: { workpaperId, assigneeId, assigneeKind, noteType, portee, ancre: opts.ancre ?? null },
   });
   return row.id;
 }

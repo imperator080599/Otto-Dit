@@ -363,13 +363,13 @@ export default async function ProcessusPage({
                       <td>
                         {e.description}
                         {e.citation && <div className="faint" style={{ fontSize: 12 }}>« {e.citation} »</div>}
-                        {e.coutUsd > 0 && <div className="faint mono" style={{ fontSize: 11 }}>lecture {e.coutUsd.toFixed(4)} $</div>}
+                        {e.coutUsd > 0 && <div className="faint mono" style={{ fontSize: 11 }}>{t('atl.lectureCout', { c: e.coutUsd.toFixed(4) })}</div>}
                       </td>
                       <td>
                         {e.status === 'candidate' ? (
                           <form action={ecartAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
                             <input type="hidden" name="gap" value={e.id} />
-                            <span className="badge red">candidat</span>
+                            <span className="badge red">{t('mot.candidate')}</span>
                             <button className="btn" name="decision" value="question">{t('proc.questionClient')}</button>
                             <button className="btn" name="decision" value="factor">{t('proc.proposerRegistre')}</button>
                             <input name="reason" placeholder={t('proc.motifEcarter')} style={{ minWidth: 140 }} />

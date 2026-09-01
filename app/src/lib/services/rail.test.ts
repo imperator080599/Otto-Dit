@@ -51,13 +51,13 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
       en('rail.vue'), en('rail.acceptation'), en('rail.equipe'), en('rail.reunions'),
       en('rail.journal'),
     ]);
-    expect(rail.find((x) => x.label === en('rail.reprise'))!.raison).toMatch(/antérieur/);
+    expect(rail.find((x) => x.label === en('rail.reprise'))!.raison).toBe(en('rail.raison.dossierAnterieur'));
     for (const x of rail.filter((r) => !r.atteignable)) {
       expect(x.raison, `raison manquante pour ${x.label}`).toBeTruthy();
       expect(x.raison!.length).toBeLessThan(90); // une ligne, pas un paragraphe
     }
     expect(rail.find((x) => x.label === en('rail.imports'))!.atteignable).toBe(false);
-    expect(rail.find((x) => x.label === en('rail.imports'))!.raison).toMatch(/acceptation/);
+    expect(rail.find((x) => x.label === en('rail.imports'))!.raison).toBe(en('rail.raison.apresAcceptation'));
   });
 
   it('chaque entrée porte un GROUPE connu et une phrase — aucune entrée muette', async () => {
@@ -107,7 +107,7 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     /* Le rail neuf, lui, annonce les postes AVANT qu'ils existent, avec la
        raison — jamais un groupe qui apparaît de nulle part. */
     const neuf = await railDuDossier(NEUF, ['nep-fr'], en);
-    expect(neuf.find((x) => x.groupeCle === 'rail.groupe.postes')!.raison).toMatch(/scoping/i);
+    expect(neuf.find((x) => x.groupeCle === 'rail.groupe.postes')!.raison).toBe(en('rail.raison.desQuUnPosteEstRetenu'));
   });
 
   it('le dossier déroulé ouvre presque tout ; la clôture attend l\'achèvement', async () => {

@@ -596,14 +596,14 @@ export default async function WorkpaperDetail({
           <h2>Exports (terminal, hash-stamped)</h2>
           {exports.length === 0 ? <p className="muted">None yet.</p> : (
             <table className="data">
-              <thead><tr><th>Format</th><th>sha256</th><th>{t('col.when')}</th><th></th></tr></thead>
+              <thead><tr><th>Format</th><th>{t('mot.sha256')}</th><th>{t('col.when')}</th><th></th></tr></thead>
               <tbody>
                 {exports.map((e) => (
                   <tr key={e.id}>
                     <td>{e.format}{e.supersedes_export_id && <span className="badge amber" style={{ marginLeft: 4 }}>supersedes prior</span>}</td>
                     <td className="mono faint">{e.content_hash.slice(0, 14)}…</td>
                     <td className="faint">{e.exported_at.slice(0, 16)}</td>
-                    <td><Link href={`/api/export-file/${e.id}`}>download</Link></td>
+                    <td><Link href={`/api/export-file/${e.id}`}>{t('mot.download')}</Link></td>
                   </tr>
                 ))}
               </tbody>

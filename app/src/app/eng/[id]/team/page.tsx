@@ -191,7 +191,7 @@ export default async function TeamPage({
                         ? <span className="faint">{t('team.notEntitledToSign')}</span>
                         : r.depasse
                           ? <span className="badge amber">{t('team.exceededCeiling')} {r.plafond}</span>
-                          : <span className="faint">plafond {r.plafond}</span>}
+                          : <span className="faint">{t('mot.ceiling')} {r.plafond}</span>}
                     </td>
                   </tr>
                 );
@@ -252,7 +252,7 @@ export default async function TeamPage({
                             placeholder={t('risk.detailRequiredIfYes')}
                             style={{ width: 340 }}
                           />
-                          <button className="btn small secondary">enregistrer</button>
+                          <button className="btn small secondary">{t('mot.save')}</button>
                         </form>
                       </td>
                     </tr>
@@ -322,7 +322,7 @@ export default async function TeamPage({
                     <form action={exitAction} className="row">
                       <input type="hidden" name="user_id" value={m.user_id} />
                       <input type="text" name="on" placeholder="AAAA-MM-JJ" style={{ width: 110 }} required />
-                      <button className="btn small secondary">sortie</button>
+                      <button className="btn small secondary">{t('mot.exit')}</button>
                     </form>
                   )}
                 </td>
@@ -339,14 +339,14 @@ export default async function TeamPage({
             ))}
           </select>
           <select name="eng_role" defaultValue="staff">
-            <option value="partner">partner</option>
-            <option value="manager">manager</option>
-            <option value="senior">senior</option>
-            <option value="staff">staff</option>
+            <option value="partner">{t('mot.partner')}</option>
+            <option value="manager">{t('mot.manager')}</option>
+            <option value="senior">{t('mot.senior')}</option>
+            <option value="staff">{t('mot.staff')}</option>
           </select>
           <label className="row"><input type="checkbox" name="can_sign" /> {t('team.maySignOff')}</label>
           <input type="text" name="entered_on" placeholder={t('team.joinedYyyyMmDd')} style={{ width: 130 }} />
-          <button className="btn small">affecter</button>
+          <button className="btn small">{t('mot.assign')}</button>
         </form>
       </div>
 
@@ -394,7 +394,7 @@ export default async function TeamPage({
           <input type="text" name="provider" placeholder="prestataire" style={{ width: 200 }} required />
           <input type="text" name="provided_on" placeholder="AAAA-MM-JJ" style={{ width: 120 }} required />
           <input type="text" name="amount" placeholder={t('team.montantEuros')} style={{ width: 110 }} required />
-          <button className="btn small secondary">enregistrer</button>
+          <button className="btn small secondary">{t('mot.save')}</button>
         </form>
 
       </div>

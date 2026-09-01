@@ -70,7 +70,7 @@ export default async function RemiseAZero({
           </form>
         ) : (
           <p className="mt">
-            <span className="badge amber">indisponible</span>{' '}
+            <span className="badge amber">{t('mot.unavailable')}</span>{' '}
             {etat.desaccords.join(' · ')}
           </p>
         )}

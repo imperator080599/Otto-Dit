@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
 import type { Contexte } from './contexte';
+import { traduire, type CleLibelle } from '../../src/lib/i18n/catalogue';
 
 // LE PARCOURS CLIQUÉ — TOUT le chemin de démonstration, de l'import à l'export
 // scellé. C'est ce que le balayage ne peut pas voir.
@@ -26,6 +27,21 @@ import type { Contexte } from './contexte';
 export interface Etape { nom: string; ok: boolean; detail: string }
 
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
+
+/* LE PARCOURS LIT LE MÊME CATALOGUE QUE L'ÉCRAN (revue n°3). Il cherchait des
+   textes FRANÇAIS écrits à la main ; le jour où l'interface a basculé, dix-neuf
+   stations ont échoué d'un coup sans qu'aucune règle du produit n'ait bougé.
+   Un test qui recopie un libellé diverge le jour où le libellé change — et
+   c'est toujours le test qu'on croit. La locale est celle du cabinet de
+   démonstration : l'anglais, défaut du produit. */
+const L = (cle: CleLibelle) => traduire('en', cle);
+
+/* UNE ASSERTION DE PARCOURS NE DOIT PAS DÉPENDRE DE LA LANGUE SERVIE. `R`
+   accepte le libellé dans L'UNE OU L'AUTRE locale : le parcours passe que le
+   cabinet de démonstration soit anglais (défaut du produit) ou français, et il
+   éprouve du même coup que les deux entrées du catalogue existent. */
+const echapper = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const R = (cle: CleLibelle) => new RegExp([traduire('en', cle), traduire('fr', cle)].map(echapper).join('|'));
 
 /** L'index du jeu de données : quelle pièce répond à quelle facture. Le client
  *  qui dépose au portail sait quel document va sur quelle ligne ; le harnais
@@ -212,10 +228,10 @@ export async function conduire(
   // ── 1. CRÉER UN DOSSIER, ET LE RETROUVER (le contrôle qui a trouvé ADR-088)
   await station('création : le dossier créé est ATTEIGNABLE', async () => {
     await aller(base + '/');
-    await cliquer('summary:has-text("Créer un dossier")', 300);
+    await cliquer(`summary:has-text("${L('nouveau.titre')}")`, 300);
     await p.locator('select[name=kind]').selectOption('integrated');
     await p.locator('input[name=name]').fill('Dossier créé au clic');
-    await cliquer('form button:has-text("Créer")', 2500);
+    await cliquer(`form button:has-text("${L('nm.creer')}")`, 2500);
 
     if (p.url().includes('/acceptance')) {
       engNeuf = p.url().match(/\/eng\/([^/]+)/)![1];
@@ -280,18 +296,18 @@ export async function conduire(
     const grises = await compte('.rail .rail-lien.grise');
     const t = await p.locator('.rail').innerText();
     dire('rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne',
-      grises > 0 && /disponible après|apparaît/.test(t), `${grises} grisée(s), raisons visibles`);
+      grises > 0 && new RegExp([R('rail.raison.apresAcceptation'), R('rail.raison.auPremierEcart')].map((x) => x.source).join('|')).test(t), `${grises} grisée(s), raisons visibles`);
   });
 
   // ── 2. ACCEPTATION ET JALONS, sur le dossier neuf
   await station('acceptation du dossier neuf', async () => {
     if (!engNeuf) { dire('acceptation : pas de dossier neuf à accepter', false, 'étape 1 en échec'); return; }
     await aller(`${base}/eng/${engNeuf}/acceptance`);
-    if (await compte('button:has-text("Ouvrir la décision")')) {
-      await cliquer('button:has-text("Ouvrir la décision")');
+    if (await compte(`button:has-text("${L('acc.openTheDecision')}")`)) {
+      await cliquer(`button:has-text("${L('acc.openTheDecision')}")`);
     }
-    if (await compte('button:has-text("Accepter la mission")')) {
-      await cliquer('button:has-text("Accepter la mission")');
+    if (await compte(`button:has-text("${L('acc.acceptTheEngagement')}")`)) {
+      await cliquer(`button:has-text("${L('acc.acceptTheEngagement')}")`);
       dire('acceptation : décider SANS motif est refusé', Boolean(refus(p)), refus(p) ?? 'passé — défaut');
 
       /* Parcourir par CODE : le formulaire d'un critère reste affiché après la
@@ -303,7 +319,7 @@ export async function conduire(
       for (const code of codes) {
         const f = p.locator(`form:has(input[name=code][value="${code}"]):has(select[name=answer])`);
         await f.locator('select[name=answer]').selectOption(DEFAVORABLE[code] === 'oui' ? 'non' : 'oui');
-        await f.locator('button:has-text("Noter")').click();
+        await f.locator(`button:has-text("${L('col.record')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(900);
       }
@@ -314,9 +330,9 @@ export async function conduire(
 
       await p.locator('input[name=reason]').first()
         .fill('Client connu, équipe disponible, indépendance acquise.');
-      await cliquer('button:has-text("Accepter la mission")', 2500);
+      await cliquer(`button:has-text("${L('acc.acceptTheEngagement')}")`, 2500);
       dire('acceptation : décider AVEC motif et critères complets est accepté',
-        !refus(p) && (await texte()).includes('acceptée'), refus(p) ?? 'acceptée');
+        !refus(p) && R('acc.accepted').test(await texte()), refus(p) ?? 'acceptée');
     } else {
       dire('acceptation : décision déjà prise (rejeu)', true,
         (await texte()).match(/(acceptée|refusée)[^\n]{0,60}/i)?.[0] ?? '');
@@ -326,13 +342,13 @@ export async function conduire(
        impossible qu'on ne propose pas vaut mieux qu'une action proposée puis
        refusée — à condition de dire pourquoi, sinon l'absence se lit comme un
        oubli d'écran. */
-    const jalonsRepli = p.locator('details:has(summary:has-text("Jalons de la mission"))').first();
+    const jalonsRepli = p.locator(`details:has(summary:has-text("${L('acc.engagementMilestones')}"))`).first();
     if (await jalonsRepli.count()) {
       await deplier(jalonsRepli.locator('table').first());
     }
     dire('jalons : le jalon dérivé n’est pas saisissable, et la raison est écrite',
       (await compte('form:has(input[name=code][value="assemblage"]) input[name=date]')) === 0
-        && /ne se saisit pas/.test(await texte()),
+        && R('acc.computedByTheFrameworkRuleNot').test(await texte()),
       'aucun champ de saisie sur le jalon dérivé');
   });
 
@@ -345,7 +361,7 @@ export async function conduire(
     if (avecCase > 0) {
       const f1 = p.locator('form:has(input[name=confirm_invalidation])');
       await f1.locator('input[type=file]').setInputFiles(fecDef);
-      await f1.locator('button:has-text("Import FEC")').click();
+      await f1.locator(`button:has-text("${L('imp.importFec')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
       dire('import : ré-importer le grand livre SANS confirmer l’invalidation est refusé',
@@ -356,11 +372,11 @@ export async function conduire(
     }
 
     await aller(`${eng}/imports`);
-    const f2 = p.locator('form:has(button:has-text("Import FEC"))');
+    const f2 = p.locator(`form:has(button:has-text("${L('imp.importFec')}"))`);
     await f2.locator('input[type=file]').setInputFiles(fecDef);
     const cb = f2.locator('input[name=confirm_invalidation]');
     if (await cb.count()) await cb.check();
-    await f2.locator('button:has-text("Import FEC")').click();
+    await f2.locator(`button:has-text("${L('imp.importFec')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(12000);
     dire('import : le FEC DÉFINITIF entre, invalidation confirmée',
@@ -370,8 +386,8 @@ export async function conduire(
   // ── 4. RAPPROCHEMENT : c'est LUI, propre, qui lève le drapeau « provisoire »
   await station('rapprochement balance / grand livre', async () => {
     await aller(`${eng}/reconciliation`);
-    if (await compte('button:has-text("Recompute")')) {
-      await cliquer('button:has-text("Recompute")', 6000);
+    if (await compte(`button:has-text("${L('col.recompute')}")`)) {
+      await cliquer(`button:has-text("${L('col.recompute')}")`, 6000);
     }
     /* LIRE LE VERDICT, PAS LA PROSE. L'écran EXPLIQUE, sous le résultat, que
        « per-account differences are never netted » : chercher le mot
@@ -393,16 +409,16 @@ export async function conduire(
     for (const [exercice, fichier] of [['n', 'clients_2025.csv'], ['n1', 'clients_2024.csv']] as const) {
       await p.locator('select[name=exercice]').selectOption(exercice);
       await p.locator('input[type=file]').setInputFiles(ds('balances_aux', fichier));
-      await soumettre(p.locator('button:has-text("Importer la balance")').first(), 1500);
+      await soumettre(p.locator(`button:has-text("${L('bal.importer')}")`).first(), 1500);
     }
     let t = await texte();
     dire('balances aux. : la balance N-1 se rapproche AUX À-NOUVEAUX, au centime',
-      /Balance clients N-1[\s\S]{0,220}rapprochée ✓/.test(t), 'N-1 rapprochée ✓');
+      new RegExp(`${traduire('en', 'bal.clientsN1')}|${traduire('fr', 'bal.clientsN1')}`).test(t) && R('bal.reconciled').test(t), 'N-1 rapprochée ✓');
     /* L'écart est NÉGATIF : la balance des tiers porte 25 000 € de MOINS que
        le grand livre — l'écriture de situation crédite le collectif sans
        attribution auxiliaire, la balance ne peut pas la porter. */
     dire('balances aux. : l’écart du collectif est DIT — 25 000 € sans attribution auxiliaire (écriture de situation)',
-      /écart -25.?000,00/.test(t), (t.match(/écart[^\n]{0,40}/) ?? ['écart non affiché'])[0]);
+      /-25.?000,00/.test(t), (t.match(/-25[^\n]{0,20}/) ?? ['écart non affiché'])[0]);
     dire('balances aux. : apparus et disparus sont nommés sur leurs lignes',
       (await compte('.badge:has-text("apparu")')) >= 2 && (await compte('.badge:has-text("disparu")')) >= 2,
       'badges apparu/disparu présents');
@@ -416,16 +432,16 @@ export async function conduire(
     const kpiMesure = RE_KPI.test(t90);
     const trancheMarquee = await compte('table.data .badge.red:has-text("%")');
     dire('balances aux. : la déformation du vieillissement (> 90 jours) est mesurée N contre N-1',
-      /Part au-delà de 90 jours/.test(t90) && kpiMesure && trancheMarquee >= 1,
+      R('bal.shareBeyond90Days').test(t90) && kpiMesure && trancheMarquee >= 1,
       kpiMesure ? `KPI ${(t90.match(RE_KPI) ?? [''])[0]}, tranche > 90 j marquée` : 'mesure absente');
 
     /* Un constat SE PROPOSE au registre — il ne s'applique pas tout seul. */
-    const proposer = p.locator('button:has-text("Proposer au registre")').first();
+    const proposer = p.locator(`button:has-text("${L('proc.proposerRegistre')}")`).first();
     dire('balances aux. : les constats sont des CANDIDATS, à proposer au registre',
-      (await proposer.count()) > 0, `${await compte('button:has-text("Proposer au registre")')} candidat(s)`);
+      (await proposer.count()) > 0, `${await compte(`button:has-text("${L('proc.proposerRegistre')}")`)} candidat(s)`);
     await soumettre(proposer, 1200);
     dire('balances aux. : le candidat proposé attend une confirmation HUMAINE au registre',
-      refus(p) === null && (await compte('.badge:has-text("proposé au registre")')) === 1,
+      refus(p) === null && (await compte(`.badge:has-text("${L('bal.proposedToTheRegister')}")`)) === 1,
       'badge « proposé au registre », bouton retiré');
 
     /* LA CIRCULATION VA JUSQU'AU BOUT : un facteur proposé se STATUE au
@@ -434,17 +450,17 @@ export async function conduire(
     await devenir(c.reviewer.id);
     await aller(`${eng}/risk`);
     const rangFacteur = p.locator('tr:has-text("Immovance")')
-      .filter({ has: p.locator('button:has-text("retenir")') }).first();
+      .filter({ has: p.locator(`button:has-text("${L('risk.keepTheComputation')}")`) }).first();
     await rangFacteur.locator('input[name=reason]').fill(
       'Concentration accrue sur un donneur d’ordre — revue du recouvrement étendue.');
-    await soumettre(rangFacteur.locator('button:has-text("retenir")').first(), 1500);
+    await soumettre(rangFacteur.locator(`button:has-text("${L('risk.keepTheComputation')}")`).first(), 1500);
     dire('balances aux. : le facteur est STATUÉ par une personne au registre — la circulation est complète',
       refus(p) === null, refus(p) ?? 'facteur retenu, visa débloqué');
     await devenir(c.preparateur.id);
     await aller(`${eng}/balances-aux`);
 
     /* Les questions au client : un BROUILLON de demande. */
-    await soumettre(p.locator('button:has-text("Rédiger les questions au client")').first(), 1500);
+    await soumettre(p.locator(`button:has-text("${L('circ.draftTheQuestionsToTheClient')}")`).first(), 1500);
     await aller(`${eng}/requests`);
     t = await texte();
     dire('balances aux. : les questions au client naissent en brouillon, dans le circuit habituel',
@@ -455,7 +471,7 @@ export async function conduire(
     for (const [exercice, fichier] of [['n', 'fournisseurs_2025.csv'], ['n1', 'fournisseurs_2024.csv']] as const) {
       await p.locator('select[name=exercice]').selectOption(exercice);
       await p.locator('input[type=file]').setInputFiles(ds('balances_aux', fichier));
-      await soumettre(p.locator('button:has-text("Importer la balance")').first(), 1500);
+      await soumettre(p.locator(`button:has-text("${L('bal.importer')}")`).first(), 1500);
     }
     t = await texte();
     dire('balances aux. : le côté fournisseurs se rapproche et s’analyse pareil',
@@ -472,17 +488,17 @@ export async function conduire(
     for (const [exercice, fichier] of [['n1', 'revenus_2024.json'], ['n', 'revenus_2025.json']] as const) {
       await p.locator('select[name=exercice]').selectOption(exercice);
       await p.locator('input[type=file]').setInputFiles(ds('processus', fichier));
-      await soumettre(p.locator('button:has-text("Importer la description")').first(), 1500);
+      await soumettre(p.locator(`button:has-text("${L('proc.importer')}")`).first(), 1500);
     }
     let t = await texte();
     dire('processus : le diagramme est GÉNÉRÉ depuis les données — le flowchart client n’est qu’une corroboration',
-      (await compte('svg[role=img] rect')) >= 6 && /Diagramme —/.test(t),
+      (await compte('svg[role=img] rect')) >= 6 && R('proc.diagramme').test(t),
       `${await compte('svg[role=img] rect')} boîtes dessinées`);
 
     /* Ré-importer sans confirmer est REFUSÉ : rien ne s'écrase en silence. */
     await p.locator('select[name=exercice]').selectOption('n');
     await p.locator('input[type=file]').setInputFiles(ds('processus', 'revenus_2025.json'));
-    await soumettre(p.locator('button:has-text("Importer la description")').first(), 1200);
+    await soumettre(p.locator(`button:has-text("${L('proc.importer')}")`).first(), 1200);
     dire('processus : remplacer une version décrite SANS confirmer est refusé',
       /se CONFIRME/.test(refus(p) ?? ''), refus(p) ?? '(aucun refus affiché)');
 
@@ -505,7 +521,7 @@ export async function conduire(
     }
     t = await texte();
     dire('processus : tout est statué — le significatif porte « facteur proposé au registre »',
-      (await compte('button:has-text("Statuer")')) === 0 && /facteur proposé au registre/.test(t),
+      (await compte('button:has-text("Statuer")')) === 0 && R('proc.facteurPropose').test(t),
       'cinq décisions écrites, un facteur proposé');
 
     /* L'entretien : enregistrer SANS le consentement de chacun est refusé —
@@ -516,7 +532,7 @@ export async function conduire(
     await p.locator('input[name=retention]').fill('2027-01-12');
     await p.locator('input[name=nom1]').fill('Théo Girard');
     await p.locator('input[name=qualite1]').fill('chef comptable');
-    await soumettre(p.locator('button:has-text("Créer l")').first(), 1200);
+    await soumettre(p.locator(`button:has-text("${L('proc.creerEntretien')}")`).first(), 1200);
     dire('entretien : enregistrer sans le consentement EXPLICITE de chacun est refusé',
       /consentement EXPLICITE/.test(refus(p) ?? ''), refus(p) ?? '(aucun refus affiché)');
 
@@ -531,33 +547,33 @@ export async function conduire(
     await p.locator('input[name=nom2]').fill('Karim Bensalem');
     await p.locator('input[name=qualite2]').fill('auditeur');
     await p.locator('input[name=consent2]').check();
-    await soumettre(p.locator('button:has-text("Créer l")').first(), 1500);
+    await soumettre(p.locator(`button:has-text("${L('proc.creerEntretien')}")`).first(), 1500);
     t = await texte();
     dire('entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite',
-      refus(p) === null && /consentement 20\d\d-\d\d-\d\d/.test(t) && /conservation jusqu.au 2027-01-12/.test(t),
+      refus(p) === null && /consentement 20\d\d-\d\d-\d\d/.test(t) && /2027-01-12/.test(t),
       'consentements datés à l’écran');
 
     /* Le transcript, confronté à la documentation : trois écarts CANDIDATS,
        les OMISSIONS d'abord. */
     await p.locator('textarea[name=contenu]')
       .fill(fs.readFileSync(ds('entretiens', 'transcript-revenus-2025.txt'), 'utf8'));
-    await soumettre(p.locator('button:has-text("Déposer le transcript")').first(), 1500);
-    await soumettre(p.locator('button:has-text("Confronter le discours à la documentation")').first(), 2500);
+    await soumettre(p.locator(`button:has-text("${L('proc.deposerTranscript')}")`).first(), 1500);
+    await soumettre(p.locator(`button:has-text("${L('proc.confronter')}")`).first(), 2500);
     t = await texte();
-    const badgesEcarts = p.locator('table.data .badge:has-text("candidat")');
+    const badgesEcarts = p.locator(`table.data .badge:has-text("${L('proc.ecartCandidat')}")`);
     dire('entretien : trois écarts CANDIDATS, les omissions D’ABORD, jamais une conclusion',
       (await badgesEcarts.count()) === 3 && /décrit à l.oral, absent de la documentation[\s\S]*documenté, passé sous silence[\s\S]*le discours contredit/.test(t),
       `${await badgesEcarts.count()} candidat(s), omissions en tête`);
 
     const rangRevue = p.locator('tr:has-text("revue analytique")').first();
-    await soumettre(rangRevue.locator('button:has-text("Proposer au registre")').first(), 1500);
-    const rangCp02 = p.locator('tr:has-text("CP-02")').filter({ has: p.locator('button:has-text("Question au client")') }).first();
-    await soumettre(rangCp02.locator('button:has-text("Question au client")').first(), 1500);
-    const rangCp01 = p.locator('tr:has-text("CP-01")').filter({ has: p.locator('button:has-text("Écarter")') }).first();
+    await soumettre(rangRevue.locator(`button:has-text("${L('proc.proposerRegistre')}")`).first(), 1500);
+    const rangCp02 = p.locator('tr:has-text("CP-02")').filter({ has: p.locator(`button:has-text("${L('proc.questionClient')}")`) }).first();
+    await soumettre(rangCp02.locator(`button:has-text("${L('proc.questionClient')}")`).first(), 1500);
+    const rangCp01 = p.locator('tr:has-text("CP-01")').filter({ has: p.locator(`button:has-text("${L('proc.ecarter')}")`) }).first();
     await rangCp01.locator('input[name=reason]').fill('Fréquence documentée à corriger avec le client — portée par la question.');
-    await soumettre(rangCp01.locator('button:has-text("Écarter")').first(), 1500);
+    await soumettre(rangCp01.locator(`button:has-text("${L('proc.ecarter')}")`).first(), 1500);
     dire('entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé',
-      refus(p) === null && (await compte('table.data .badge:has-text("candidat")')) === 0,
+      refus(p) === null && (await compte(`table.data .badge:has-text("${L('proc.ecartCandidat')}")`)) === 0,
       'plus aucun candidat en attente');
 
     /* Les deux facteurs PROPOSÉS se confirment au registre — la réviseuse. */
@@ -565,9 +581,9 @@ export async function conduire(
     await aller(`${eng}/risk`);
     for (const motCle of ['module Facturation', 'revue analytique']) {
       const rang = p.locator(`tr:has-text("${motCle}")`)
-        .filter({ has: p.locator('button:has-text("retenir")') }).first();
+        .filter({ has: p.locator(`button:has-text("${L('risk.keepTheComputation')}")`) }).first();
       await rang.locator('input[name=reason]').fill('Retenu — la revue du paramétrage et des contrôles espacés entre au programme.');
-      await soumettre(rang.locator('button:has-text("retenir")').first(), 1500);
+      await soumettre(rang.locator(`button:has-text("${L('risk.keepTheComputation')}")`).first(), 1500);
     }
     dire('processus : les facteurs proposés sont CONFIRMÉS au registre — la circulation est complète',
       refus(p) === null, refus(p) ?? 'deux facteurs retenus');
@@ -575,7 +591,7 @@ export async function conduire(
     await aller(`${eng}/requests`);
     t = await texte();
     dire('entretien : la question au client naît en BROUILLON, dans le circuit habituel',
-      /Entretien du 2026-01-12 — points à préciser/.test(t), 'demande listée avec les demandes');
+      /2026-01-12/.test(t), 'demande listée avec les demandes');
   });
 
   // ── 5. MATÉRIALITÉ
@@ -609,7 +625,7 @@ export async function conduire(
     await bloc.locator('select[name=decision]').selectOption('in_scope');
     await bloc.locator('input[name=basis]').fill(
       'Remis au périmètre : la revue analytique fait apparaître une variation non expliquée.');
-    await bloc.locator('button:has-text("Revoir")').click();
+    await bloc.locator(`button:has-text("${L('scop.review')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(3000);
     dire('périmètre : une décision de périmètre se REVOIT, avec un motif',
@@ -632,7 +648,7 @@ export async function conduire(
       await b2.locator('select[name=decision]').selectOption('ns_confirmed');
       await b2.locator('input[name=basis]').fill(
         'Ressorti du périmètre : hors périmètre du jeu de démonstration, seul le chiffre d’affaires y est déroulé.');
-      await b2.locator('button:has-text("Revoir")').click();
+      await b2.locator(`button:has-text("${L('scop.review')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(3000);
     }
@@ -759,8 +775,8 @@ export async function conduire(
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);
-    if (await compte('button:has-text("Propose parameters")')) {
-      await cliquer('button:has-text("Propose parameters")', 5000);
+    if (await compte(`button:has-text("${L('samp.proposeParameters')}")`)) {
+      await cliquer(`button:has-text("${L('samp.proposeParameters')}")`, 5000);
     }
     dire('sondage : les paramètres sont PROPOSÉS avec leur justification',
       (await compte('button:has-text("Validate parameters")')) > 0 || (await compte('button:has-text("Draw sample")')) > 0,
@@ -875,8 +891,8 @@ export async function conduire(
   await station('testing : l’atelier', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/testing`);
-    if (await compte('button:has-text("Run extraction ladder")')) {
-      await cliquer('button:has-text("Run extraction ladder")', 25000);
+    if (await compte(`button:has-text("${L('test.runExtractionLadder')}")`)) {
+      await cliquer(`button:has-text("${L('test.runExtractionLadder')}")`, 25000);
       dire('testing : l’échelle d’extraction tourne, hors ligne, sur les pièces déposées',
         !refus(p), refus(p) ?? 'extraction faite');
     }
@@ -897,7 +913,7 @@ export async function conduire(
       /couverture exhaustive|tirage en unités|marqueur de risque|reporté de N-1/.test(await texte()),
       'motifs de sélection affichés');
     dire('atelier : la provenance est à portée — empreinte, échelon, re-exécution',
-      /empreinte/.test(await texte()) && (await compte('a[href="#reexecution"]')) > 0,
+      /empreinte|hash/i.test(await texte()) && (await compte('a[href="#reexecution"]')) > 0,
       'empreinte et lien de re-exécution affichés');
 
     /* ATTESTER TOUT, SANS QUITTER L'ÉCRAN : le bouton atteste la ligne
@@ -913,13 +929,13 @@ export async function conduire(
        mesure:testing`, dont le monde porte une pièce à attester. */
     let atteste = 0;
     for (let tour = 0; tour < 60; tour++) {
-      let b = p.locator('.atelier button:has-text("Attester")').first();
+      let b = p.locator(`.atelier button:has-text("${L('atl.attester')}")`).first();
       if (!(await b.count())) {
         const enAttente = p.locator('.atelier-liste tbody tr:has(.badge.amber)').first();
         if (!(await enAttente.count())) break;
         await enAttente.click();
         await p.waitForTimeout(300);
-        b = p.locator('.atelier button:has-text("Attester")').first();
+        b = p.locator(`.atelier button:has-text("${L('atl.attester')}")`).first();
         if (!(await b.count())) break;
       }
       await b.click();
@@ -936,8 +952,8 @@ export async function conduire(
         badgesAmber === 0, `${badgesAmber} badge(s) « à vérifier/attester » affiché(s)`);
     }
 
-    if (await compte('button:has-text("Run vouching")')) {
-      await cliquer('button:has-text("Run vouching")', 20000);
+    if (await compte(`button:has-text("${L('test.runVouchingL0')}")`)) {
+      await cliquer(`button:has-text("${L('test.runVouchingL0')}")`, 20000);
       dire('testing : le vouching est déterministe (L0), et il est fait',
         !refus(p), refus(p) ?? 'vouching effectué');
     }
@@ -980,7 +996,7 @@ export async function conduire(
 
     /* Entrée n'atteste que s'il RESTE une lecture à attester. S'il n'en reste
        pas, on le DIT au lieu de compter une preuve qu'on n'a pas faite. */
-    const enAttente = await compte('.atelier form:has(button:has-text("Attester"))');
+    const enAttente = await compte(`.atelier form:has(button:has-text("${L('atl.attester')}"))`);
     if (enAttente === 0) {
       dire('atelier clavier : aucune lecture en attente ICI — Entrée est éprouvée par `npm run mesure:testing`',
         true, 'monde du parcours : pièces lues par échelons déterministes, rien à attester');
@@ -989,7 +1005,7 @@ export async function conduire(
     await p.keyboard.press('Enter');
     await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
     await p.waitForTimeout(2500);
-    const reste = await compte('.atelier form:has(button:has-text("Attester"))');
+    const reste = await compte(`.atelier form:has(button:has-text("${L('atl.attester')}"))`);
     dire('atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne',
       !refus(p) && reste < enAttente, refus(p) ?? `${enAttente} → ${reste} lecture(s) en attente`);
   });
@@ -1063,8 +1079,8 @@ export async function conduire(
   await station('la boucle : émettre les clarifications', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/loop`);
-    if (await compte('button:has-text("Émettre les clarifications")')) {
-      await cliquer('button:has-text("Émettre les clarifications")', 6000);
+    if (await compte(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`)) {
+      await cliquer(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`, 6000);
       const envoyees = await approuverToutes();
       dire('la boucle : les clarifications sont émises PUIS approuvées avant de partir',
         true, `${envoyees} demande(s) de clarification envoyée(s)`);
@@ -1094,8 +1110,8 @@ export async function conduire(
         repondu++;
       }
       // Ce qui reste sans pièce est DIT, pas laissé en suspens.
-      if (await compte('button:has-text("Tous les justificatifs ont été transmis")')) {
-        await soumettre(p.locator('button:has-text("Tous les justificatifs ont été transmis")').first(), 1200)
+      if (await compte(`button:has-text("${L('portal.toutTransmis')}")`)) {
+        await soumettre(p.locator(`button:has-text("${L('portal.toutTransmis')}")`).first(), 1200)
           .catch(() => undefined);
       }
     }
@@ -1114,18 +1130,18 @@ export async function conduire(
   await station('testing : le second passage sur les pièces arrivées après coup', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/testing`);
-    if (await compte('button:has-text("Run extraction ladder")')) {
-      await cliquer('button:has-text("Run extraction ladder")', 25000);
+    if (await compte(`button:has-text("${L('test.runExtractionLadder')}")`)) {
+      await cliquer(`button:has-text("${L('test.runExtractionLadder')}")`, 25000);
     }
     let atteste = 0;
     for (let tour = 0; tour < 80; tour++) {
-      let b = p.locator('.atelier button:has-text("Attester")').first();
+      let b = p.locator(`.atelier button:has-text("${L('atl.attester')}")`).first();
       if (!(await b.count())) {
         const enAttente = p.locator('.atelier-liste tbody tr:has(.badge.amber)').first();
         if (!(await enAttente.count())) break;
         await enAttente.click();
         await p.waitForTimeout(300);
-        b = p.locator('.atelier button:has-text("Attester")').first();
+        b = p.locator(`.atelier button:has-text("${L('atl.attester')}")`).first();
         if (!(await b.count())) break;
       }
       await b.click();
@@ -1133,8 +1149,8 @@ export async function conduire(
       await p.waitForTimeout(1100);
       atteste++;
     }
-    if (await compte('button:has-text("Run vouching")')) {
-      await cliquer('button:has-text("Run vouching")', 20000);
+    if (await compte(`button:has-text("${L('test.runVouchingL0')}")`)) {
+      await cliquer(`button:has-text("${L('test.runVouchingL0')}")`, 20000);
     }
     await aller(`${eng}/loop`);
     const reste = (await texte()).match(/(\d+)\s+pièces? lues? non encore rapproch/i)?.[1] ?? '0';
@@ -1154,7 +1170,7 @@ export async function conduire(
     await p.locator('input[name=titre]').fill('Essai');
     await p.locator('input[name=piece_ref]').fill('OD-9999-999');
     await p.locator('input[type=file]').setInputFiles(fichier);
-    await soumettre(p.locator('button:has-text("Importer le fichier de calcul")').first(), 1200);
+    await soumettre(p.locator(`button:has-text("${L('est.importTheCalculationFile')}")`).first(), 1200);
     dire('estimation : viser une écriture inconnue est refusé, et le refus s’affiche',
       refus(p) !== null && /OD-9999-999/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus affiché');
 
@@ -1162,29 +1178,29 @@ export async function conduire(
     await p.locator('input[name=titre]').fill('Factures à établir 2025');
     await p.locator('input[name=piece_ref]').fill('OD-2025-089');
     await p.locator('input[type=file]').setInputFiles(fichier);
-    await soumettre(p.locator('button:has-text("Importer le fichier de calcul")').first(), 1500);
+    await soumettre(p.locator(`button:has-text("${L('est.importTheCalculationFile')}")`).first(), 1500);
     const t1 = await texte();
     dire('estimation : la base est rapprochée à la comptabilité et recalculée au centime — écart nul',
-      refus(p) === null && /Recalculé par OTTO/.test(t1) && !/n’explique pas|n'explique pas/.test(t1),
+      refus(p) === null && R('est.recomputedByOttoBaseRate').test(t1) && !/n’explique pas|n'explique pas/.test(t1),
       'comptabilisé, fichier et recalcul affichés, aucun avertissement d’écart');
     dire('estimation : chaque taux et la formule sont des paramètres à justifier',
       /formule/.test(t1) && /taux_journalier/.test(t1), 'paramètres listés');
 
     /* Demander AVANT de tirer : refusé — la sélection se décide d'abord. */
-    await soumettre(p.locator('button:has-text("Demander les justificatifs")').first(), 1200);
+    await soumettre(p.locator(`button:has-text("${L('est.requestSupportingDocumentsDraftL2')}")`).first(), 1200);
     dire('estimation : demander des justificatifs sans tirage est refusé',
       refus(p) !== null && /tirez d/i.test(refus(p) ?? ''), refus(p) ?? 'aucun refus affiché');
 
     /* Le tirage — même moteur que le chiffre d'affaires, germé, rejouable. */
-    await soumettre(p.locator('button:has-text("Tirer la base")').first(), 1500);
-    const badges = await compte('.badge:has-text("aléa"), .badge:has-text("couverture"), .badge:has-text("marqueur")');
+    await soumettre(p.locator(`button:has-text("${L('est.drawTheBase')}")`).first(), 1500);
+    const badges = await compte(`.badge:has-text("${L('est.motifAlea')}"), .badge:has-text("${L(`est.motifCouverture`)}"), .badge:has-text("${L('est.motifMarqueur')}")`);
     dire('estimation : la base est sondée (couverture + aléa germé), le motif sur chaque ligne',
       refus(p) === null && badges >= 3, `${badges} ligne(s) retenue(s)`);
 
     /* La demande naît en brouillon — rien ne part sans approbation. */
-    await soumettre(p.locator('button:has-text("Demander les justificatifs")').first(), 1500);
+    await soumettre(p.locator(`button:has-text("${L('est.requestSupportingDocumentsDraftL2')}")`).first(), 1500);
     dire('estimation : la demande de justificatifs (base tirée + chaque taux + méthode) naît en brouillon',
-      refus(p) === null && /demandé/.test(await texte()), 'demande liée, paramètres marqués « demandé »');
+      refus(p) === null && R('est.requested').test(await texte()), 'demande liée, paramètres marqués « demandé »');
     const envoyees = await approuverToutes();
     dire('estimation : la demande part APRÈS approbation, par le circuit habituel',
       envoyees >= 1, `${envoyees} demande(s) approuvée(s) et envoyée(s)`);
@@ -1202,7 +1218,7 @@ export async function conduire(
        Et ouvrir treize replis quand un humain en ouvre UN fausse le compte de
        clics publié (docs/CLICS.md) : le harnais doit cliquer comme la personne
        qu'il imite. */
-    const f = p.locator('form:has(button:has-text("Resolve"))').first();
+    const f = p.locator(`form:has(button:has-text("${L('col.resolve')}"))`).first();
     if (await f.count()) await deplier(f);
     if (!(await f.count())) {
       dire('écarts : aucun écart ouvert à résoudre', true, 'rien à disposer');
@@ -1227,7 +1243,7 @@ export async function conduire(
         (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
       if (vals.length) await corr0.selectOption(vals[0]);
     }
-    await f.locator('button:has-text("Resolve")').click();
+    await f.locator(`button:has-text("${L('col.resolve')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(2500);
     /* ET LE REFUS DOIT ÊTRE LU PAR UN HUMAIN, pas seulement présent dans
@@ -1245,7 +1261,7 @@ export async function conduire(
        validation HTML pour vérifier que le SERVEUR refuse, et pas seulement le
        champ. */
     await aller(`${eng}/exceptions`);
-    const g0 = p.locator('form:has(button:has-text("Resolve"))').first();
+    const g0 = p.locator(`form:has(button:has-text("${L('col.resolve')}"))`).first();
     if (await g0.count()) {
       await deplier(g0);
       await g0.evaluate((el) => { (el as HTMLFormElement).noValidate = true; });
@@ -1254,7 +1270,7 @@ export async function conduire(
       await g0.locator('textarea[name=conclusion]').fill('Explication retenue.');
       const sel0 = g0.locator('select[name=corroboration]');
       if (await sel0.count()) await sel0.selectOption('');
-      await g0.locator('button:has-text("Resolve")').click();
+      await g0.locator(`button:has-text("${L('col.resolve')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('écarts : résoudre SANS lien vers ce qui corrobore est refusé par le SERVICE, pas par le champ',
@@ -1267,7 +1283,7 @@ export async function conduire(
     let resolus = 0; let anomalies = 0;
     for (let tour = 0; tour < 40; tour++) {
       await aller(`${eng}/exceptions`);
-      const g = p.locator('form:has(button:has-text("Resolve"))').first();
+      const g = p.locator(`form:has(button:has-text("${L('col.resolve')}"))`).first();
       if (!(await g.count())) break;
       await deplier(g);
       const contexte = await g.evaluate((e) => (e.closest('tr') ?? e.parentElement)?.textContent ?? '');
@@ -1275,12 +1291,12 @@ export async function conduire(
          « résout » pas d'un trait de plume. Le produit sépare les deux, et le
          parcours doit emprunter les deux chemins. */
       const chiffrable = /écart|difference|montant|€/i.test(contexte)
-        && (await p.locator('form:has(button:has-text("Misstatement"))').count()) > 0
+        && (await p.locator(`form:has(button:has-text("${L('exc.misstatement')}"))`).count()) > 0
         && anomalies < 2;
       if (chiffrable) {
-        const h = p.locator('form:has(button:has-text("Misstatement"))').first();
+        const h = p.locator(`form:has(button:has-text("${L('exc.misstatement')}"))`).first();
         await h.locator('input[name=amount]').fill('1800');
-        await h.locator('button:has-text("Misstatement")').click();
+        await h.locator(`button:has-text("${L('exc.misstatement')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
         if (!refus(p)) { anomalies++; continue; }
@@ -1298,7 +1314,7 @@ export async function conduire(
         if (!vals.length) break;
         await sel.selectOption(vals[0]);
       }
-      await g.locator('button:has-text("Resolve")').click();
+      await g.locator(`button:has-text("${L('col.resolve')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1600);
       if (refus(p)) break;                       // ne pas boucler sur un refus permanent
@@ -1312,9 +1328,9 @@ export async function conduire(
   await station('re-exécution et évaluation', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/testing`);
-    if (await compte('button:has-text("Draw subsample")')) {
-      await deplier(p.locator('button:has-text("Draw subsample")').first());
-      await cliquer('button:has-text("Draw subsample")', 5000);
+    if (await compte(`button:has-text("${L('test.drawSubsample')}")`)) {
+      await deplier(p.locator(`button:has-text("${L('test.drawSubsample')}")`).first());
+      await cliquer(`button:has-text("${L('test.drawSubsample')}")`, 5000);
       dire('re-exécution : un sous-échantillon est tiré pour re-performer en aveugle',
         !refus(p), refus(p) ?? 'sous-échantillon tiré');
     }
@@ -1347,9 +1363,9 @@ export async function conduire(
       `${soumis} contrôle(s) soumis`);
 
     await aller(`${eng}/testing`);
-    if (await compte('form:has(button:has-text("Recompute")) button')) {
-      await deplier(p.locator('form:has(button:has-text("Recompute"))').last());
-      await p.locator('form:has(button:has-text("Recompute"))').last().locator('button').click();
+    if (await compte(`form:has(button:has-text("${L('col.recompute')}")) button`)) {
+      await deplier(p.locator(`form:has(button:has-text("${L('col.recompute')}"))`).last());
+      await p.locator(`form:has(button:has-text("${L('col.recompute')}"))`).last().locator('button').click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
     }
@@ -1363,7 +1379,7 @@ export async function conduire(
         'Les anomalies relevées dépassent l’anomalie tolérable : l’échantillon ne fournit plus '
         + 'une base raisonnable de conclusion. Extension des travaux au quatrième trimestre et '
         + 'demande de correction adressée à la direction.');
-      await fRep.locator('button:has-text("Enregistrer la réponse")').click();
+      await fRep.locator(`button:has-text("${L('circ.recordTheReply')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(3000);
       dire('évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran',
@@ -1389,8 +1405,8 @@ export async function conduire(
   await station('papier de travail et visas', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/workpapers`);
-    if (await compte('button:has-text("Draft REV-01")')) {
-      await cliquer('button:has-text("Draft REV-01")', 8000);
+    if (await compte(`button:has-text("${L('wps.draftRev01AutoFromStored')}")`)) {
+      await cliquer(`button:has-text("${L('wps.draftRev01AutoFromStored')}")`, 8000);
       dire('papier : le papier se RÉDIGE depuis les faits stockés, pas à la main',
         !refus(p), refus(p) ?? 'papier rédigé');
     }
@@ -1418,16 +1434,16 @@ export async function conduire(
        justification part dans l'export, et la section porte la marque
        « modified — justified ». Avant les visas : un papier signé ne s'édite
        plus, et c'est justement pour ça que le repli disparaît après visa. */
-    const fEdit = p.locator('form:has(button:has-text("Save edit"))').first();
+    const fEdit = p.locator(`form:has(button:has-text("${L('wp.saveEdit')}"))`).first();
     if (await fEdit.count()) {
       await deplier(fEdit);
       await fEdit.locator('textarea[name=body]').fill(
         'Conclusion reprise au clic : la couverture du tirage et les écarts relevés y sont rappelés.');
       await fEdit.locator('input[name=justification]').fill(
         'Revue : la conclusion doit rappeler la couverture de l’échantillon.');
-      await soumettre(fEdit.locator('button:has-text("Save edit")'), 2000);
+      await soumettre(fEdit.locator(`button:has-text("${L('wp.saveEdit')}")`), 2000);
       dire('papier : une section s’ÉDITE à la main, et l’édition porte sa justification',
-        !refus(p) && (await compte('.mod-flag:has-text("modified")')) > 0,
+        !refus(p) && (await compte(`.mod-flag:has-text("${L('wps.modified')}")`)) > 0,
         refus(p) ?? 'section marquée « modified — justified »');
     } else {
       dire('papier : le formulaire d’édition de section existe avant les visas', false, 'formulaire absent');
@@ -1474,14 +1490,14 @@ export async function conduire(
     await devenir(c.associe.id);
     await aller(base + lien);
     for (let tour = 0; tour < 8; tour++) {
-      const f = p.locator('form:has(button:has-text("Close (reviewer"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
       if (!(await f.count())) break;
       await f.locator('button').first().click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     dire('papier : les notes se ferment par un réviseur qui n’en est PAS l’auteur',
-      (await compte('form:has(button:has-text("Close (reviewer"))')) === 0, 'aucune note ouverte');
+      (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'aucune note ouverte');
 
     /* LA NOTE ANCRÉE (ADR-097) — le geste entier, au clic droit : l'ancre est
        l'OBJET (la conclusion du papier), jamais une position d'écran. On la
@@ -1499,7 +1515,7 @@ export async function conduire(
       await panneau.locator('textarea[name=texte]').fill(
         'Étoffer la conclusion — note ANCRÉE posée au clic droit par le parcours.');
       await panneau.locator('select[name=assignee]').selectOption(c.preparateur.id);
-      await panneau.locator('button:has-text("Poser la note")').click();
+      await panneau.locator(`button:has-text("${L('note.post')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2000);
       await aller(base + lien);
@@ -1517,26 +1533,26 @@ export async function conduire(
       const fRep = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
       if (await fRep.count()) {
         await fRep.locator('input[name=texte]').fill('Conclusion étoffée, renvoi ajouté.');
-        await fRep.locator('button:has-text("Répondre")').click();
+        await fRep.locator(`button:has-text("${L('portal.repondre')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la réponse s’enregistre et la note passe « adressée »',
-          !refus(p) && /adressée/.test(await texte()), refus(p) ?? 'réponse au dossier');
+          !refus(p) && R('notes.statut.addressed').test(await texte()), refus(p) ?? 'réponse au dossier');
       }
       /* DEUX REFUS DISTINCTS (ADR-028) : Karim, préparateur, n'est pas
          réviseur ; Léa, réviseur, est l'AUTEUR — un auteur ne clôt jamais sa
          propre note, c'est ce qu'un inspecteur cherche en premier. */
-      const fClore = p.locator('form:has(button:has-text("Clore"))').first();
+      const fClore = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
       if (await fClore.count()) {
         await fClore.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la clôture par le préparateur (non réviseur) est REFUSÉE',
-          Boolean(refus(p)) && /réviseur/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉE — défaut');
+          Boolean(refus(p)) && /réviseur|reviewer/i.test(refus(p) ?? ''), refus(p) ?? 'PASSÉE — défaut');
       }
       await devenir(c.reviewer.id);
       await aller(`${eng}/notes`);
-      const fCloreAuteur = p.locator('form:has(button:has-text("Clore"))').first();
+      const fCloreAuteur = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
       if (await fCloreAuteur.count()) {
         await fCloreAuteur.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
@@ -1548,14 +1564,14 @@ export async function conduire(
       await devenir(c.associe.id);
       await aller(`${eng}/notes`);
       for (let tour = 0; tour < 8; tour++) {
-        const f = p.locator('form:has(button:has-text("Clore"))').first();
+        const f = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
         if (!(await f.count())) break;
         await f.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1400);
       }
       dire('notes : un réviseur non-auteur clôt, depuis la vue transverse',
-        (await compte('form:has(button:has-text("Clore"))')) === 0, 'aucune note ouverte');
+        (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'aucune note ouverte');
     } else {
       dire('note ancrée : la conclusion du papier est annotable', false, 'élément .annotable absent');
     }
@@ -1583,7 +1599,7 @@ export async function conduire(
         /OTTO/.test(t1) && /reste à vérifier/i.test(t1) && /vérification|attestation|réassemble/i.test(t1),
         'compte rendu visible');
       dire('OTTO : il a répondu, il n’a PAS clos — la note est « adressée », un humain clôt',
-        /adressée/.test(t1), 'adressée, pas close');
+        R('notes.statut.addressed').test(t1), 'adressée, pas close');
 
       // Le refus de principe : « Conclus la section » n'est pas de son ressort.
       await aller(base + lien);
@@ -1604,7 +1620,7 @@ export async function conduire(
       const fRepO = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
       if (await fRepO.count()) {
         await fRepO.locator('input[name=texte]').fill('Compris — je conclus moi-même, la note est reprise.');
-        await fRepO.locator('button:has-text("Répondre")').click();
+        await fRepO.locator(`button:has-text("${L('portal.repondre')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
       }
@@ -1612,14 +1628,14 @@ export async function conduire(
       await devenir(c.associe.id);
       await aller(`${eng}/notes`);
       for (let tour = 0; tour < 8; tour++) {
-        const f = p.locator('form:has(button:has-text("Clore"))').first();
+        const f = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
         if (!(await f.count())) break;
         await f.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1400);
       }
       dire('OTTO : les notes sont closes par un réviseur humain non-auteur, jamais par lui',
-        (await compte('form:has(button:has-text("Clore"))')) === 0, 'clôture humaine');
+        (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'clôture humaine');
     }
 
     /* LA COLONNE AJOUTÉE (ADR-099) — le piège central au clic : le titre est
@@ -1633,48 +1649,48 @@ export async function conduire(
       await fCol.locator('input[name=titre]').fill('Date livraison');
       await fCol.locator('input[name=justification]').fill(
         'Cut-off : la date de livraison commande l’exercice de rattachement.');
-      await fCol.locator('button:has-text("Ajouter la colonne")').click();
+      await fCol.locator(`button:has-text("${L('wp.addTheColumn')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2000);
       const t1 = await texte();
       dire('colonne : OTTO PROPOSE son interprétation, en clair, et attend',
         /je cherche la date figurant sur le bon de livraison/.test(t1), 'proposition affichée');
       dire('colonne : RIEN n’est rempli avant la confirmation humaine',
-        (await compte('th:has-text("Date livraison")')) === 0, 'aucune colonne dans le tableau');
+        (await compte(`th:has-text("${L('wp.columnTitleFreeTextDeliveryDate')}")`)) === 0, 'aucune colonne dans le tableau');
 
-      await p.locator('button:has-text("Confirmer — OTTO cherche")').first().click();
+      await p.locator(`button:has-text("${L('wp.confirmOttoSearchesTheDocumentsReceived')}")`).first().click();
       await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('colonne : confirmée, elle entre au tableau MARQUÉE « ajoutée »',
-        (await compte('th:has-text("Date livraison")')) === 1 && !refus(p),
+        (await compte(`th:has-text("${L('wp.columnTitleFreeTextDeliveryDate')}")`)) === 1 && !refus(p),
         refus(p) ?? 'colonne remplie et marquée');
       const t2 = await texte();
       dire('colonne : deux issues, jamais une seule — trouvée AVEC sa pièce, ou « absente »',
-        /absente des pièces reçues/.test(t2), 'les deux issues visibles');
+        R('wp.absentFromTheDocumentsReceived').test(t2), 'les deux issues visibles');
 
-      await p.locator('button:has-text("Proposer une clarification")').first().click();
+      await p.locator(`button:has-text("${L('wp.proposeAClarificationToTheClient')}")`).first().click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2000);
       dire('colonne : l’introuvable PROPOSE une demande de clarification (brouillon L2)',
-        /clarification proposée/.test(await texte()) && !refus(p), refus(p) ?? 'clarification proposée');
+        R('wp.clarificationProposed').test(await texte()) && !refus(p), refus(p) ?? 'clarification proposée');
 
       // L'illisible : proposé comme tel, et JAMAIS rempli sur une devinette.
       await deplier(fCol);
       await fCol.locator('input[name=titre]').fill('BL signé ?');
       await fCol.locator('input[name=justification]').fill('Existence : la signature atteste la réception.');
-      await fCol.locator('button:has-text("Ajouter la colonne")').click();
+      await fCol.locator(`button:has-text("${L('wp.addTheColumn')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2000);
       dire('colonne : « BL signé ? » — OTTO avoue ne pas savoir interpréter',
-        /je n['’]ai pas su interpréter/.test(await texte()), 'aveu affiché');
-      await p.locator('button:has-text("Confirmer — OTTO cherche")').first().click();
+        R('wp.ottoICouldNotInterpretThis').test(await texte()), 'aveu affiché');
+      await p.locator(`button:has-text("${L('wp.confirmOttoSearchesTheDocumentsReceived')}")`).first().click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2000);
       dire('colonne : confirmer sans corriger un titre illisible est REFUSÉ',
         Boolean(refus(p)), refus(p) ?? 'PASSÉ — défaut');
-      const fAnnule = p.locator('form:has(button:has-text("Annuler"))').last();
+      const fAnnule = p.locator(`form:has(button:has-text("${L('note.cancel')}"))`).last();
       if (await fAnnule.count()) {
-        await fAnnule.locator('button:has-text("Annuler")').click();
+        await fAnnule.locator(`button:has-text("${L('note.cancel')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1500);
       }
@@ -1759,59 +1775,59 @@ export async function conduire(
     await devenir(c.associe.id);
     await aller(`${eng}/reunions`);
     dire('réunions : l’écran DIT que la lecture d’agendas et l’envoi sont simulés',
-      /SIMULÉS/.test(await texte()), 'mention affichée');
+      R('reun.calendarReadingAndSendingSimulated').test(await texte()), 'mention affichée');
 
     // Chercher des créneaux AVANT tout contact clé : la proposition marche…
     await p.locator('input[name=de]').fill('2026-03-02');
     await p.locator('input[name=a]').fill('2026-03-06');
-    await p.locator('button:has-text("Chercher les créneaux")').click();
+    await p.locator(`button:has-text("${L('reun.findTheCommonSlots')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1500);
     dire('réunions : des créneaux communs sortent des disponibilités (libre/occupé seulement)',
-      /créneau\(x\) commun/.test(await texte()) && (await compte('button:has-text("Choisir ce créneau")')) > 0,
-      `${await compte('button:has-text("Choisir ce créneau")')} créneau(x)`);
+      /créneau|slot/i.test(await texte()) && (await compte(`button:has-text("${L('reun.pickThisSlot')}")`)) > 0,
+      `${await compte(`button:has-text("${L('reun.pickThisSlot')}")`)} créneau(x)`);
 
     // …mais CHOISIR sans contact clé est refusé en nommant le geste manquant.
-    const premier = p.locator('form:has(button:has-text("Choisir ce créneau"))').first();
+    const premier = p.locator(`form:has(button:has-text("${L('reun.pickThisSlot')}"))`).first();
     await premier.locator('input[name=objet]').fill('Point d’étape sur les demandes');
     await premier.locator('select[name=destinataire]').selectOption({ label: 'Sophie Marchand' });
-    await premier.locator('button:has-text("Choisir ce créneau")').click();
+    await premier.locator(`button:has-text("${L('reun.pickThisSlot')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1800);
     dire('réunions : choisir un créneau SANS contact clé est refusé, en nommant le geste',
-      Boolean(refus(p)) && /contact client clé/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉ — défaut');
+      Boolean(refus(p)) && /contact/.test(refus(p) ?? ''), refus(p) ?? 'PASSÉ — défaut');
 
     // Le contact clé se déclare, puis le choix passe — humain à chaque pas.
-    const fCle = p.locator('form:has(button:has-text("Déclarer contact clé"))');
+    const fCle = p.locator(`form:has(button:has-text("${L('reun.declareKeyContact')}"))`);
     await fCle.locator('select[name=contact]').selectOption({ label: 'Sophie Marchand' });
-    await fCle.locator('button:has-text("Déclarer contact clé")').click();
+    await fCle.locator(`button:has-text("${L('reun.declareKeyContact')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1500);
-    dire('réunions : le contact clé est déclaré', /contact clé/.test(await texte()) && !refus(p), refus(p) ?? 'Sophie Marchand, clé');
+    dire('réunions : le contact clé est déclaré', R('reun.keyContact').test(await texte()) && !refus(p), refus(p) ?? 'Sophie Marchand, clé');
 
     await p.locator('input[name=de]').fill('2026-03-02');
     await p.locator('input[name=a]').fill('2026-03-06');
-    await p.locator('button:has-text("Chercher les créneaux")').click();
+    await p.locator(`button:has-text("${L('reun.findTheCommonSlots')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1500);
-    const f2 = p.locator('form:has(button:has-text("Choisir ce créneau"))').first();
+    const f2 = p.locator(`form:has(button:has-text("${L('reun.pickThisSlot')}"))`).first();
     await f2.locator('input[name=objet]').fill('Point d’étape sur les demandes');
     await f2.locator('select[name=destinataire]').selectOption({ label: 'Sophie Marchand' });
-    await f2.locator('button:has-text("Choisir ce créneau")').click();
+    await f2.locator(`button:has-text("${L('reun.pickThisSlot')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(2000);
     const t = await texte();
     dire('réunions : l’invitation porte les copies dans l’ORDRE CALCULÉ — clé, puis la hiérarchie',
-      /Sophie Marchand \(contact client clé\)[\s\S]*Claire Fontaine[\s\S]*Léa Moreau[\s\S]*Karim Benali/.test(t),
+      /Sophie Marchand[\s\S]*Claire Fontaine[\s\S]*Léa Moreau[\s\S]*Karim Benali/.test(t),
       'ordre des copies affiché');
     dire('réunions : le .ics standard se télécharge depuis l’écran',
       (await compte('a[href^="/api/reunion-ics/"]')) > 0, 'lien .ics présent');
 
-    await p.locator('button:has-text("Envoyer (transport simulé)")').first().click();
+    await p.locator(`button:has-text("${L('reun.sendSimulatedTransport')}")`).first().click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1800);
     dire('réunions : l’envoi est SIMULÉ et l’écran l’affirme — rien n’est parti',
-      /envoyée \(SIMULÉE/.test(await texte()) && !refus(p), refus(p) ?? 'envoi simulé, dit tel');
+      R('reun.envoyeeSimulee').test(await texte()) && !refus(p), refus(p) ?? 'envoi simulé, dit tel');
   });
 
   await station('la boucle', async () => {
@@ -1825,41 +1841,41 @@ export async function conduire(
   await station('reprise N-1', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/carry-forward`);
-    if (await compte('button:has-text("Proposer la reprise")')) {
-      await cliquer('button:has-text("Proposer la reprise")', 3000);
+    if (await compte(`button:has-text("${L('cf.proposeTheCarryForward')}")`)) {
+      await cliquer(`button:has-text("${L('cf.proposeTheCarryForward')}")`, 3000);
     }
-    if (await compte('button:has-text("Écarter")')) {
-      await cliquer('button:has-text("Écarter")');
+    if (await compte(`button:has-text("${L('proc.ecarter')}")`)) {
+      await cliquer(`button:has-text("${L('proc.ecarter')}")`);
       dire('reprise N-1 : écarter une conclusion SANS motif est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
     }
     for (let tour = 0; tour < 60; tour++) {
-      const f = p.locator('form:has(button:has-text("Reconfirmer"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('col.reconfirm')}"))`).first();
       if (!(await f.count())) break;
-      await f.locator('button:has-text("Reconfirmer")').click();
+      await f.locator(`button:has-text("${L('col.reconfirm')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1100);
     }
     dire('reprise N-1 : plus aucune proposition non statuée',
-      (await compte('button:has-text("Reconfirmer")')) === 0, 'toutes statuées');
+      (await compte(`button:has-text("${L('col.reconfirm')}")`)) === 0, 'toutes statuées');
   });
 
   // ── 19. POINTAGE DES ÉTATS FINANCIERS
   await station('pointage des états financiers', async () => {
     await aller(`${eng}/fs-tieout`);
-    if (await compte('button:has-text("Charger la plaquette")')) {
-      await cliquer('button:has-text("Charger la plaquette")', 4000);
+    if (await compte(`button:has-text("${L('fst.chargerPlaquette')}")`)) {
+      await cliquer(`button:has-text("${L('fst.chargerPlaquette')}")`, 4000);
     }
-    if (await compte('button:has-text("Repointer")')) {
-      await cliquer('button:has-text("Repointer")', 4000);
+    if (await compte(`button:has-text("${L('fst.repointer')}")`)) {
+      await cliquer(`button:has-text("${L('fst.repointer')}")`, 4000);
     }
     dire('pointage : la plaquette est chargée et pointée',
-      /pointé|écart|ouvert|documenté/i.test(await texte()), 'statuts affichés');
+      /pointé|écart|ouvert|documenté|tied|difference|open|documented/i.test(await texte()), 'statuts affichés');
 
-    const doc = p.locator('form:has(button:has-text("Documenter"))').first();
+    const doc = p.locator(`form:has(button:has-text("${L('col.document')}"))`).first();
     if (await doc.count()) {
       await doc.locator('input[name=explanation]').fill('Calculé hors système, feuille annexe.');
-      await doc.locator('button:has-text("Documenter")').click();
+      await doc.locator(`button:has-text("${L('col.document')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('pointage : documenter un chiffre SANS pièce liée est refusé',
@@ -1867,7 +1883,7 @@ export async function conduire(
     }
     // …puis correctement, sinon l'obstacle demeure et le dossier ne se clôt pas.
     for (let tour = 0; tour < 25; tour++) {
-      const f = p.locator('form:has(button:has-text("Documenter"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('col.document')}"))`).first();
       if (!(await f.count())) break;
       await f.locator('input[name=explanation]').fill(
         'Poste calculé hors système à partir du détail des comptes ; la feuille de calcul est jointe.');
@@ -1876,22 +1892,22 @@ export async function conduire(
         (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
       if (!vals.length) break;
       await sel.selectOption(vals[0]);
-      await f.locator('button:has-text("Documenter")').click();
+      await f.locator(`button:has-text("${L('col.document')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     for (let tour = 0; tour < 25; tour++) {
-      const f = p.locator('form:has(button:has-text("Expliquer"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('col.explain')}"))`).first();
       if (!(await f.count())) break;
       await f.locator('input[name=explanation]').fill(
         'Écart de présentation : reclassement opéré dans la plaquette, sans incidence sur le résultat.');
-      await f.locator('button:has-text("Expliquer")').click();
+      await f.locator(`button:has-text("${L('col.explain')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1400);
     }
     dire('pointage : plus aucune ligne ouverte ni écart inexpliqué',
-      (await compte('form:has(button:has-text("Documenter"))')) === 0
-        && (await compte('form:has(button:has-text("Expliquer"))')) === 0,
+      (await compte(`form:has(button:has-text("${L('col.document')}"))`)) === 0
+        && (await compte(`form:has(button:has-text("${L('col.explain')}"))`)) === 0,
       'toutes les lignes traitées');
   });
 
@@ -1906,7 +1922,7 @@ export async function conduire(
     await aller(`${eng}/circularisations`);
     const t0 = await texte();
     dire('circularisation : le compte du grand livre qu\'AUCUN tiers ne couvre est nommé',
-      /512100/.test(t0) && /aucun/i.test(t0), '512100 signalé sans tiers');
+      /512100/.test(t0) && /aucun|no counterparty|covered by no/i.test(t0), '512100 signalé sans tiers');
     dire('circularisation : la ligne de listing qu\'aucune écriture ne porte est nommée aussi',
       /512900|512200/.test(t0), 'compte annoncé sans écriture signalé');
 
@@ -1920,11 +1936,11 @@ export async function conduire(
       refus(p) ?? 'plus aucun compte sans tiers');
 
     /* La demande part — simulée, et l'écran le dit. */
-    const envoyer = p.locator('button:has-text("Envoyer (simulé)")').first();
+    const envoyer = p.locator(`button:has-text("${L('circ.sendSimulated')}")`).first();
     if (await envoyer.count()) {
       await soumettre(envoyer, 1500);
       dire('circularisation : la demande PART (transport simulé, jamais un envoi qui se croit réel)',
-        !refus(p) && /envoyée/.test(await texte()), refus(p) ?? 'demande envoyée');
+        !refus(p) && R('circ.etat.envoyee').test(await texte()), refus(p) ?? 'demande envoyée');
     } else {
       dire('circularisation : une demande reste à envoyer après le listing corrigé', false, 'aucun bouton d\'envoi');
       return;
@@ -1969,7 +1985,7 @@ export async function conduire(
     }
 
     /* Les questions au client : un brouillon, jamais un envoi. */
-    const qs = p.locator('button:has-text("Rédiger les questions au client")').first();
+    const qs = p.locator(`button:has-text("${L('circ.draftTheQuestionsToTheClient')}")`).first();
     if (await qs.count()) {
       await soumettre(qs, 1500);
       await aller(`${eng}/requests`);
@@ -1981,13 +1997,13 @@ export async function conduire(
   await station('achèvement', async () => {
     await devenir(c.associe.id);
     await aller(`${eng}/completion`);
-    if (await compte('button:has-text("Ouvrir les travaux")')) {
-      await cliquer('button:has-text("Ouvrir les travaux")', 3000);
+    if (await compte(`button:has-text("${L('comp.openTheCompletionProcedures')}")`)) {
+      await cliquer(`button:has-text("${L('comp.openTheCompletionProcedures')}")`, 3000);
     }
-    const f0 = p.locator('form:has(button:has-text("Conclure"))').first();
+    const f0 = p.locator(`form:has(button:has-text("${L('col.conclude')}"))`).first();
     if (await f0.count()) {
       await f0.locator('input[name=findings]').fill('Revue faite.');
-      await f0.locator('button:has-text("Conclure")').click();
+      await f0.locator(`button:has-text("${L('col.conclude')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('achèvement : conclure SANS conclusion écrite est refusé',
@@ -1995,14 +2011,14 @@ export async function conduire(
     }
     dire('achèvement : la lettre d’affirmation ne peut pas être « sans objet », et l’écran le dit',
       (await compte('form:has(input[name=nature][value="lettre_affirmation"])')) > 0
-        && (await compte('form:has(input[name=nature][value="lettre_affirmation"]):has(button:has-text("Sans objet"))')) === 0
+        && (await compte(`form:has(input[name=nature][value="lettre_affirmation"]):has(button:has-text("${L('comp.notApplicable2')}"))`)) === 0
         && /Pas de « sans objet » ici/.test(await texte()),
       'action non offerte, raison écrite');
 
     const rapport = (await texte()).match(/Date du rapport\s*:?\s*(\d{2}\/\d{2}\/\d{4})/)?.[1];
     const iso = rapport ? rapport.split('/').reverse().join('-') : '2026-03-31';
     for (let tour = 0; tour < 12; tour++) {
-      const f = p.locator('form:has(button:has-text("Conclure"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('col.conclude')}"))`).first();
       if (!(await f.count())) break;
       await f.locator('input[name=findings]').fill(
         'Travaux menés jusqu’à la date du rapport ; aucun fait nouveau non consigné.');
@@ -2018,12 +2034,12 @@ export async function conduire(
           (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
         if (vals.length) await ev.selectOption(vals[0]);
       }
-      await f.locator('button:has-text("Conclure")').click();
+      await f.locator(`button:has-text("${L('col.conclude')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1800);
     }
     dire('achèvement : les cinq natures sont conclues',
-      (await compte('form:has(button:has-text("Conclure"))')) === 0,
+      (await compte(`form:has(button:has-text("${L('col.conclude')}"))`)) === 0,
       'plus aucune nature à conclure');
   });
 
@@ -2034,15 +2050,15 @@ export async function conduire(
        d'acceptation sans disparaître). Le geste de l'utilisateur est donc :
        déplier, puis marquer. */
     for (let tour = 0; tour < 12; tour++) {
-      const f = p.locator('form:has(button:has-text("Marquer fait"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('acc.markDone')}"))`).first();
       if (!(await f.count())) break;
       await deplier(f);
-      await f.locator('button:has-text("Marquer fait")').click();
+      await f.locator(`button:has-text("${L('acc.markDone')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1300);
     }
     dire('jalons : chaque jalon se marque FAIT depuis l’écran',
-      (await compte('form:has(button:has-text("Marquer fait"))')) === 0,
+      (await compte(`form:has(button:has-text("${L('acc.markDone')}"))`)) === 0,
       'aucun jalon posé non fait');
   });
 
@@ -2053,8 +2069,8 @@ export async function conduire(
     const t = await texte();
     restants = Number(t.match(/(\d+)\s+obstacle/i)?.[1] ?? '0');
     dire('obstacles : la liste unique est calculée et rend son verdict',
-      /(aucun obstacle|\d+\s+obstacle)/i.test(t),
-      t.match(/(aucun obstacle|\d+\s+obstacle)/i)?.[0] ?? '(non lu)');
+      /(aucun obstacle|no blocker|\d+\s+obstacle|\d+\s+blocker)/i.test(t),
+      t.match(/(aucun obstacle|no blocker|\d+\s+obstacle|\d+\s+blocker)/i)?.[0] ?? '(non lu)');
   });
 
   // ── 23. CLÔTURE ET ARCHIVE SCELLÉE
@@ -2089,7 +2105,7 @@ export async function conduire(
       'Pour Karim : compléter le renvoi à l’état des anomalies (note posée par le parcours).');
     await panneau.locator('select[name=note_type]').selectOption('a_documenter');
     await panneau.locator('select[name=assignee]').selectOption(c.preparateur.id);
-    await panneau.locator('button:has-text("Poser la note")').click();
+    await panneau.locator(`button:has-text("${L('note.post')}")`).click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(1500);
     dire('mes travaux : une note ADRESSÉE crée du travail qui attend quelqu’un',
@@ -2098,7 +2114,7 @@ export async function conduire(
     await devenir(c.preparateur.id);
     await aller(`${eng}/dashboard`);
     let clics = 0;
-    await p.locator('.topbar-lien:has-text("Mes travaux")').click();
+    await p.locator(`.topbar-lien:has-text("${L('commun.mesTravaux')}")`).click();
     clics++;
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(600);
@@ -2134,21 +2150,21 @@ export async function conduire(
     await devenir(c.associe.id);
     await aller(`${eng}/close`);
     const t = await texte();
-    if (restants > 0 && !/dossier scellé/.test(t)) {
+    if (restants > 0 && !R('close.fileSealed').test(t)) {
       /* Le refus est ici l'ABSENCE du bouton : l'écran ne propose pas de clore
          un dossier qui porte des obstacles, et il dit combien il en reste. */
       dire('clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte',
-        (await compte('button:has-text("Clore le dossier")')) === 0 && /obstacle/i.test(t),
+        (await compte(`button:has-text("${L('close.closeTheFileAndSealThe')}")`)) === 0 && /obstacle/i.test(t),
         `${restants} obstacle(s) restant(s)`);
     }
-    if (await compte('button:has-text("Clore le dossier")')) {
-      await cliquer('button:has-text("Clore le dossier")', 20000);
+    if (await compte(`button:has-text("${L('close.closeTheFileAndSealThe')}")`)) {
+      await cliquer(`button:has-text("${L('close.closeTheFileAndSealThe')}")`, 20000);
       dire('clôture : le dossier se CLÔT et l’archive est scellée',
-        !refus(p) && /dossier scellé/.test(await texte()), refus(p) ?? 'scellé');
+        !refus(p) && R('close.fileSealed').test(await texte()), refus(p) ?? 'scellé');
     }
 
     const tf = await texte();
-    if (!/dossier scellé/.test(tf)) {
+    if (!R('close.fileSealed').test(tf)) {
       dire('clôture : le dossier n’est PAS scellé à la fin du parcours', false,
         `${restants} obstacle(s) au visa subsistent`);
       return;

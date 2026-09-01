@@ -279,7 +279,7 @@ export default async function TestingPage({
           )}
           <div className={`callout ${gate.ok ? 'green' : 'warn'} mt`}>
             {t('test.conclusionGate')} {gate.ok ? t('test.openAllExceptionsDispositionedAndEvaluat') : `${gate.openExceptions} exception(s) undispositioned${gate.evaluationConcluded ? '' : '; evaluation not concluded'}`}
-            {' — '}<Link href={`/eng/${id}/exceptions`}>exceptions</Link>
+            {' — '}<Link href={`/eng/${id}/exceptions`}>{t('mot.exceptions')}</Link>
           </div>
         </div>
       </div>

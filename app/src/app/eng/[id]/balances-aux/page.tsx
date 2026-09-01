@@ -99,8 +99,8 @@ export default async function BalancesAuxPage({
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('rail.balancesAux')}</h2>
           <span className="row">
-            <Link className={`badge ${cote === 'clients' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=clients&seuil=${seuilPts}`}>clients</Link>
-            <Link className={`badge ${cote === 'fournisseurs' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=fournisseurs&seuil=${seuilPts}`}>fournisseurs</Link>
+            <Link className={`badge ${cote === 'clients' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=clients&seuil=${seuilPts}`}>{t('mot.customers')}</Link>
+            <Link className={`badge ${cote === 'fournisseurs' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=fournisseurs&seuil=${seuilPts}`}>{t('mot.suppliers')}</Link>
           </span>
         </div>
         {rapprochement('n', cote === 'clients' ? 'bal.clientsN' : 'bal.fournisseursN')}
@@ -112,7 +112,7 @@ export default async function BalancesAuxPage({
             <option value="n1">{t('commun.exerciceN1', { d: '31/12/2024' })}</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
-          <button className="btn">{t('imp.importTb')} {cote}</button>
+          <button className="btn">{t('bal.importer')} {cote}</button>
         </form>
       </div>
 
@@ -206,8 +206,8 @@ export default async function BalancesAuxPage({
                       <td className="mono">{l.aux}</td>
                       <td>
                         {l.label}
-                        {l.soldeN1 === null && <span className="badge amber" style={{ marginLeft: 6 }}>apparu</span>}
-                        {l.soldeN === null && <span className="badge amber" style={{ marginLeft: 6 }}>disparu</span>}
+                        {l.soldeN1 === null && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.new')}</span>}
+                        {l.soldeN === null && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.gone')}</span>}
                       </td>
                       <td className="num">{l.soldeN1 !== null ? fmtEur(l.soldeN1, 'fr') : '—'}</td>
                       <td className="num">{l.partN1 !== null ? `${l.partN1} %` : '—'}</td>

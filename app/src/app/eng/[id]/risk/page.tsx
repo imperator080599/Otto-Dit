@@ -280,7 +280,7 @@ export default async function RiskPage({
                           <input type="text" name="detail" defaultValue={a?.detail ?? ''}
                             placeholder={t('risk.detailRequiredIfYes')}
                             style={{ width: 240, borderColor: manque ? 'var(--red)' : undefined }} />
-                          <button className="btn small secondary">enregistrer</button>
+                          <button className="btn small secondary">{t('mot.save')}</button>
                         </form>
                         {manque && (
                           <div className="faint" style={{ color: 'var(--red)' }}>
@@ -327,7 +327,7 @@ export default async function RiskPage({
                     <form action={decideAction} className="row">
                       <input type="hidden" name="factor" value={f.id} />
                       <input type="text" name="reason" placeholder="motif" style={{ width: 160 }} />
-                      <button className="btn small secondary" name="status" value="confirmed">retenir</button>
+                      <button className="btn small secondary" name="status" value="confirmed">{t('mot.keep')}</button>
                       <button className="btn small secondary" name="status" value="dismissed">{t('risk.setAside')}</button>
                     </form>
                   )}

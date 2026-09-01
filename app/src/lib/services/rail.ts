@@ -107,24 +107,24 @@ export async function railDuDossier(
   };
 
   g('rail.groupe.dossier');
-  e('', t('rail.vue'), 'Ce qui m\'attend, l\'avancement du dossier et ce qui bloque.', true);
-  e('acceptance', t('rail.acceptation'), 'La décision d\'accepter la mission, ses critères, et les jalons.', true);
-  e('team', t('rail.equipe'), 'Qui travaille sur le dossier, déclarations d\'indépendance, ancienneté et rotation.', true);
-  e('reunions', t('rail.reunions'), 'Les contacts du client, les créneaux communs de l\'équipe, les invitations.', true);
-  e('carry-forward', t('rail.reprise'), 'Ce que le dossier de l\'an dernier propose de reprendre — jamais repris en silence.',
-    s.n1, 'disponible quand l\'entité porte un dossier antérieur');
+  e('', t('rail.vue'), t('rail.quoi.vue'), true);
+  e('acceptance', t('rail.acceptation'), t('rail.quoi.acceptation'), true);
+  e('team', t('rail.equipe'), t('rail.quoi.equipe'), true);
+  e('reunions', t('rail.reunions'), t('rail.quoi.reunions'), true);
+  e('carry-forward', t('rail.reprise'), t('rail.quoi.reprise'),
+    s.n1, t('rail.raison.dossierAnterieur'));
 
   g('rail.groupe.comptes');
-  e('imports', t('rail.imports'), 'Déposer la balance et le FEC, versions successives et rapport d\'impact.',
-    s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('reconciliation', t('rail.rapprochement'), 'La balance rapprochée du grand livre, compte par compte, écarts en tête.',
-    s.importe, 'disponible après l\'import de la balance et du grand livre');
-  e('balances-aux', t('rail.balancesAux'), 'Les tiers N/N-1 : concentration, apparus, disparus, vieillissement — candidats au registre.',
-    s.importe, 'disponible après l\'import de la balance et du grand livre');
-  e('materiality', mot('materialite'), 'Le seuil proposé par la règle du cabinet, validé par un humain, et ses déclinaisons.',
-    s.importe, 'disponible après l\'import de la balance et du grand livre');
-  e('scoping', mot('scoping'), 'Quels postes des comptes seront travaillés, et pourquoi.',
-    s.seuils_valides, `disponible après la validation de la ${mot('materialite').toLowerCase()}`);
+  e('imports', t('rail.imports'), t('rail.quoi.imports'),
+    s.acceptee, t('rail.raison.apresAcceptation'));
+  e('reconciliation', t('rail.rapprochement'), t('rail.quoi.rapprochement'),
+    s.importe, t('rail.raison.apresImport'));
+  e('balances-aux', t('rail.balancesAux'), t('rail.quoi.balancesAux'),
+    s.importe, t('rail.raison.apresImport'));
+  e('materiality', mot('materialite'), t('rail.quoi.materialite'),
+    s.importe, t('rail.raison.apresImport'));
+  e('scoping', mot('scoping'), t('rail.quoi.scoping'),
+    s.seuils_valides, t('rail.raison.apresSeuils'));
 
   /* LES POSTES RETENUS SONT DES DESTINATIONS, PAS UN FILTRE (R-03). Chaque
      poste ouvre son propre espace de travail — leadsheet, processus, contrôle
@@ -133,44 +133,44 @@ export async function railDuDossier(
   g('rail.groupe.postes');
   const postes = s.perimetre ? await postesRetenus(engagementId) : [];
   if (postes.length === 0) {
-    e('scoping', t('rail.postesRetenus'), `Un espace de travail par poste retenu, ouvert par le ${mot('scoping').toLowerCase()}.`,
-      false, `apparaissent dès qu\'un poste est retenu au ${mot('scoping').toLowerCase()}`);
+    e('scoping', t('rail.postesRetenus'), t('rail.quoi.postesRetenus'),
+      false, t('rail.raison.desQuUnPosteEstRetenu'));
   }
   for (const p of postes) {
     e(`poste/${encodeURIComponent(p.code)}`, p.name,
-      `Le poste de bout en bout : leadsheet, processus, contrôle interne, risques, échantillon, testing.`, true);
+      t('rail.quoi.poste'), true);
   }
 
   g('rail.groupe.transverse');
-  e('processus', t('rail.processus'), 'Le processus en données structurées : diagramme généré, différence N/N-1 statuée, entretiens.',
-    s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('rcm', t('rail.controleInterne'), 'La matrice des risques et des contrôles, et les tests d\'efficacité.',
-    s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('estimations', t('rail.estimations'), 'Le fichier de calcul du client : rapproché, recalculé, sondé, taux justifiés.',
-    s.perimetre, `disponible après le ${mot('scoping').toLowerCase()}`);
-  e('circularisations', t('rail.circularisations'), 'Banques et avocats : le listing du client, ce qu\'il ne couvre pas, et les soldes confirmés.',
-    s.importe, 'disponible après le premier import — la complétude se juge contre le grand livre');
-  e('exceptions', sox ? t('rail.deviations') : t('rail.ecarts'), 'Chaque écart, son explication, sa corroboration, sa suite.',
-    s.ecarts, 'apparaît au premier écart relevé');
-  e('notes', t('rail.notes'), 'Toutes les notes, ancrées sur leurs objets, et qui doit y répondre.',
-    s.papiers || s.notes, 'apparaît avec le premier papier ou la première note');
+  e('processus', t('rail.processus'), t('rail.quoi.processus'),
+    s.acceptee, t('rail.raison.apresAcceptation'));
+  e('rcm', t('rail.controleInterne'), t('rail.quoi.controleInterne'),
+    s.acceptee, t('rail.raison.apresAcceptation'));
+  e('estimations', t('rail.estimations'), t('rail.quoi.estimations'),
+    s.perimetre, t('rail.raison.apresPerimetre'));
+  e('circularisations', t('rail.circularisations'), t('rail.quoi.circularisations'),
+    s.importe, t('rail.raison.apresPremierImport'));
+  e('exceptions', sox ? t('rail.deviations') : t('rail.ecarts'), t('rail.quoi.ecarts'),
+    s.ecarts, t('rail.raison.auPremierEcart'));
+  e('notes', t('rail.notes'), t('rail.quoi.notes'),
+    s.papiers || s.notes, t('rail.raison.auPremierPapier'));
 
   g('rail.demandes');
-  e('requests', t('rail.demandes'), 'Les justificatifs demandés, leurs relances, et ce qui manque encore.',
-    s.tirage || s.demandes, 'disponible après le tirage — les demandes naissent de l\'échantillon');
-  e('evidence', t('rail.pieces'), 'Tout ce que le client a déposé, empreinte et provenance comprises.',
-    s.demandes || s.pieces, 'disponible dès la première demande au client');
+  e('requests', t('rail.demandes'), t('rail.quoi.demandes'),
+    s.tirage || s.demandes, t('rail.raison.apresTirage'));
+  e('evidence', t('rail.pieces'), t('rail.quoi.pieces'),
+    s.demandes || s.pieces, t('rail.raison.apresPremiereDemande'));
 
   g('rail.groupe.fin');
-  e('fs-tieout', t('rail.pointage'), 'Chaque chiffre de la plaquette rattaché à sa source.',
-    s.vise, 'disponible après le visa du papier de travail');
-  e('completion', t('rail.achevement'), 'Les cinq natures de fin de dossier, conclues par écrit.',
-    s.vise, 'disponible après les visas des travaux');
-  e('obstacles', mot('obstacles'), 'La liste calculée de tout ce qui reste à lever avant le visa.',
-    s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('close', t('rail.cloture'), 'Fermer le dossier et télécharger l\'archive scellée.',
-    s.acheve, 'disponible après l\'achèvement');
-  e('events', t('rail.journal'), 'Chaque geste, horodaté et chaîné — la piste d\'audit.', true);
+  e('fs-tieout', t('rail.pointage'), t('rail.quoi.pointage'),
+    s.vise, t('rail.raison.apresVisa'));
+  e('completion', t('rail.achevement'), t('rail.quoi.achevement'),
+    s.vise, t('rail.raison.apresVisas'));
+  e('obstacles', mot('obstacles'), t('rail.quoi.obstacles'),
+    s.acceptee, t('rail.raison.apresAcceptation'));
+  e('close', t('rail.cloture'), t('rail.quoi.cloture'),
+    s.acheve, t('rail.raison.apresAchevement'));
+  e('events', t('rail.journal'), t('rail.quoi.journal'), true);
 
   return entrees;
 }

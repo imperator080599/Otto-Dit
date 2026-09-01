@@ -75,7 +75,7 @@ export default async function RcmPage({
                   <td className="muted" style={{ maxWidth: 220 }}>{c.risk_desc}<div className="faint">{c.coso_component}</div></td>
                   <td>{c.frequency}</td>
                   <td>{c.nature}</td>
-                  <td>{c.is_key ? <span className="badge blue">key</span> : <span className="faint">—</span>}</td>
+                  <td>{c.is_key ? <span className="badge blue">{t('mot.key')}</span> : <span className="faint">—</span>}</td>
                   <td>
                     <span className={`badge ${DI_BADGE[c.di_status]}`}>{c.di_status}</span>
                     {c.di_status === 'not_assessed' && (
@@ -112,7 +112,7 @@ export default async function RcmPage({
                 <tr key={d.id}>
                   <td className="mono">{d.control_code}<div className="faint">{d.control_name}</div></td>
                   <td><span className={`badge ${SEV_BADGE[d.severity_proposed]}`}>{d.severity_proposed.replace(/_/g, ' ')}</span></td>
-                  <td>{d.severity_final ? <span className={`badge ${SEV_BADGE[d.severity_final]}`}>{d.severity_final.replace(/_/g, ' ')}</span> : <span className="faint">pending</span>}</td>
+                  <td>{d.severity_final ? <span className={`badge ${SEV_BADGE[d.severity_final]}`}>{d.severity_final.replace(/_/g, ' ')}</span> : <span className="faint">{t('mot.pending')}</span>}</td>
                   <td><span className="badge gray">{d.status}</span></td>
                   <td className="muted" style={{ maxWidth: 460 }}>{d.narrative}</td>
                 </tr>

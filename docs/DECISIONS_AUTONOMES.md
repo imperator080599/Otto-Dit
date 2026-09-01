@@ -240,3 +240,42 @@ l'état de CE déploiement, pas au monde semé).
 
 **Ce que ça remplace.** `OTTO_RECONSTRUIRE=1` reste, pour le build ; mais la question « veux-tu
 que je repasse la variable ? » ne se pose plus à Tuan — c'est un geste du produit.
+
+## DA-18 — La règle de langue est STRUCTURELLE, pas linguistique
+
+**Ce qui s'est passé.** La tranche « langue » a été livrée une première fois avec un test qui
+prétendait la tenir : il cherchait des chaînes FRANÇAISES dans les nœuds JSX, et — pour ne
+pas accuser le SQL — commençait par **effacer tous les littéraux**. Or c'est exactement là
+que le français vivait : tables de libellés (`FAMILLES`, `NATURES`, états de circularisation),
+ternaires (`cond ? 'oui' : 'non'`), services qui rendent les obstacles au visa. Le test
+affichait « 0 reste » sur cent quatre-vingts chaînes affichées, dont la liste que lit un
+signataire avant de signer. Un sous-agent hostile l'a établi ligne par ligne.
+
+**La décision.** On ne devine plus la langue d'une chaîne — deviner, c'est se tromper, dans
+les deux sens : « Select an object on the left » porte « on », et « Bonjour {nom} » n'a ni
+accent ni mot-outil. La règle compte les **chaînes d'écran qui ne passent pas par le
+catalogue**, quelle que soit leur langue. Elle est infalsifiable par une traduction partielle,
+et elle vaut pour l'anglais autant que pour le français.
+
+**Ce qu'elle a imposé au produit, pas seulement au test.** Un obstacle au visa n'est plus une
+phrase mais un **motif** : une clé de catalogue et ses variables. Douze services le rendaient
+en français ; l'écran « Ce qui empêche de signer » restait donc français sous un rail anglais.
+Les tests affirment désormais QUEL obstacle est levé, au lieu de chercher un bout de phrase —
+« chercher un mot n'est pas vérifier un chemin » (règle 15).
+
+**Ce qui reste dehors, et c'est dit** : les messages de refus levés par les actions serveur
+(13 au dernier compte, publié par le test). Ils portent des faits variables ; les figer en
+libellés recopierait le défaut ailleurs. Ils appellent des codes d'erreur paramétrés — un
+chantier de conception, pas une passe de traduction.
+
+**Rejouable** : `npm run langue` rend la liste et le compte. Une vérification que personne ne
+peut rejouer est une affirmation (règle 12).
+
+## DA-19 — Le parcours cliqué lit le catalogue, il ne recopie plus les libellés
+
+Le parcours cherchait des textes français écrits à la main. Le jour où l'interface a basculé,
+dix-neuf stations ont échoué d'un coup **sans qu'aucune règle du produit n'ait bougé** : le
+test mesurait le libellé, pas le comportement. Il lit désormais le même catalogue que l'écran
+(`L('cle')`), dans la locale du cabinet de démonstration. Ce qui reste écrit en clair dans le
+parcours est du CONTENU : noms de procédures, codes de contrôle, noms de fichiers du jeu de
+données — c'est-à-dire ce qui ne change pas quand la langue change.

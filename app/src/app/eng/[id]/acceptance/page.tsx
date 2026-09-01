@@ -77,7 +77,7 @@ export default async function AcceptancePage({
                     <tr key={c.code} className={defavorable && c.bloquant && !r.detail.trim() ? 'warn' : undefined}>
                       <td>
                         <strong>{c.libelle}</strong>
-                        {c.bloquant && <> <span className="badge gray">bloquant</span></>}
+                        {c.bloquant && <> <span className="badge gray">{t('mot.blocking')}</span></>}
                         <div className="faint" style={{ fontSize: 11 }} title={c.pourquoi}>{c.question}</div>
                         {/* LA RAISON D'ÊTRE DU CRITÈRE NE S'AFFICHE PLUS EN
                             CONTINU (revue n°2 : les justifications pédagogiques
