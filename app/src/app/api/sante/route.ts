@@ -90,15 +90,31 @@ export async function GET() {
        par la chaîne locale : c'est la fonction déployée qui doit les lire. */
     lectures.push(await essayer('vue d’ensemble (sections, avancement, attributions)', async () => {
       const { mesSections, avancement, sectionsDuDossier } = await import('@/lib/services/sections');
-      const membre = await q01<{ id: string }>(
-        `select user_id::text id from engagement_member where engagement_id = $1 limit 1`, [id]);
-      if (!membre) return 'aucun membre sur la mission';
       const secs = await sectionsDuDossier(id);
       const av = await avancement(id);
-      const mes = await mesSections(membre.id);
+      /* ON MESURE LES SECTIONS, PAS UN MEMBRE PRIS AU HASARD. La première
+         version interrogeait le premier membre venu et rapportait « 0 / 0 / 0 /
+         0 » sur un monde où les quatre mécanismes étaient posés : un chiffre
+         faux qui rassure dans un sens comme dans l'autre. */
+      const compte = (await q01<{ detenues: string; attribuees: string; suivies: string; vues: string }>(
+        `select count(*) filter (where s.holder_id is not null)::text detenues,
+                count(*) filter (where s.owner_id is not null)::text attribuees,
+                (select count(distinct section_id) from section_watch w
+                 join section_state s2 on s2.id = w.section_id where s2.engagement_id = $1)::text suivies,
+                (select count(distinct section_id) from section_visit v
+                 join section_state s3 on s3.id = v.section_id where s3.engagement_id = $1)::text vues
+         from section_state s where s.engagement_id = $1`, [id]))!;
+      /* Et on vérifie que la lecture PAR PERSONNE tourne, sur quelqu'un qui
+         détient vraiment quelque chose. */
+      const porteur = await q01<{ id: string; nom: string }>(
+        `select u.id::text, u.name nom from section_state s join app_user u on u.id = s.holder_id
+         where s.engagement_id = $1 limit 1`, [id]);
+      const mes = porteur ? await mesSections(porteur.id) : null;
       return `${secs.length} section(s) · ${av.map((a) => `${a.statut}:${a.n}`).join(' ')} · `
-        + `détenues ${mes.detenues.length} / attribuées ${mes.attribuees.length} / `
-        + `suivies ${mes.suivies.length} / récentes ${mes.recentes.length}`;
+        + `détenues ${compte.detenues} / attribuées ${compte.attribuees} / `
+        + `suivies ${compte.suivies} / vues ${compte.vues}`
+        + (mes ? ` · ${porteur!.nom} : ${mes.detenues.length} détenue(s), ${mes.attribuees.length} attribuée(s), `
+          + `${mes.suivies.length} suivie(s), ${mes.recentes.length} récente(s)` : ' · personne ne détient de section');
     }));
     lectures.push(await essayer('information produite par l’entité (IPE)', async () => {
       const { lireIpe, obstaclesIpe } = await import('@/lib/services/ipe');

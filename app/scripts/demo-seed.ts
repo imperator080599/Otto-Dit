@@ -87,12 +87,17 @@ export async function construireMondeDemo(stage: string = 'all') {
       const papier = await q01<{ id: string; ref: string }>(
         `select id::text, ref from section_state where engagement_id = $1 and kind = 'papier' limit 1`,
         [IDS.engNep]);
+      /* Un dossier réel : l'associée RÉPOND du poste, le préparateur le
+         DÉTIENT ; le papier appartient au préparateur et lui a été ENVOYÉ pour
+         revue. Les quatre listes de l'associée sont alors remplies, et chacune
+         par un mécanisme différent — c'est la démonstration de la remarque. */
       if (poste) {
-        await attribuerA(poste.id, IDS.users.karim, IDS.users.claire);
-        await envoyerA(poste.id, IDS.users.claire, IDS.users.karim);
+        await attribuerA(poste.id, IDS.users.claire, IDS.users.claire);
+        await envoyerA(poste.id, IDS.users.karim, IDS.users.claire);
       }
       if (papier) {
         await attribuerA(papier.id, IDS.users.karim, IDS.users.claire);
+        await envoyerA(papier.id, IDS.users.claire, IDS.users.karim);
         await suivre(papier.id, IDS.users.claire, true);
         await visiter(IDS.engNep, 'papier', papier.ref, IDS.users.claire);
       }
