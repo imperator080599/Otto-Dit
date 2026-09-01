@@ -30,12 +30,12 @@ describe('assertions rôle / RLS', () => {
     expect(texte).toContain('base non migrée');
   });
 
-  it('cas connu mauvais — une table à politique dont FORCE est retiré est nommée', async () => {
+  it('cas connu mauvais — une table dont FORCE est retiré est nommée', async () => {
     const db = await getDb();
     await db.exec('alter table engagement no force row level security');
     try {
       const d = verdictRls(await tablesRls(db));
-      expect(d.some((x) => x.startsWith('engagement : politique posée mais RLS non FORCÉE'))).toBe(true);
+      expect(d.some((x) => x.startsWith('engagement : RLS non FORCÉE'))).toBe(true);
     } finally {
       await db.exec('alter table engagement force row level security');
     }

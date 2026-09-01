@@ -51,6 +51,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: types
         run: npx tsc --noEmit
+      # tests/screens.test.ts ouvre chaque route sur un serveur de développement
+      # qui lit la base LOCALE sur disque : elle doit exister et être semée
+      # (« relation engagement does not exist » au premier lancement en CI —
+      # la machine était neuve, la base aussi). Même geste que `npm run verify`.
+      - name: base locale semée (PGlite sur disque)
+        run: npm run db:setup && npm run demo:seed
       - name: tests (PGlite, zéro réseau)
         run: npx vitest run
       - name: langue — 0 chaîne hors catalogue, et l'épreuve

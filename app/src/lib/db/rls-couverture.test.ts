@@ -36,10 +36,11 @@ describe('couverture RLS (ADR-109)', () => {
     expect(trous, 'tables sans politique RLS ni justification — en ajouter une dans la MIGRATION, pas dans la liste').toEqual([]);
   });
 
-  it('chaque table à politique a sa RLS FORCÉE — le propriétaire ne la contourne plus (0033)', async () => {
+  it('chaque table à RLS l’a FORCÉE — le propriétaire ne la contourne plus (0033, 0034)', async () => {
     const molles = await q<{ relname: string }>(
-      `select distinct c.relname from pg_class c join pg_policy p on p.polrelid = c.oid
-       where c.relnamespace = 'public'::regnamespace and not c.relforcerowsecurity order by 1`);
+      `select c.relname from pg_class c
+       where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+         and c.relrowsecurity and not c.relforcerowsecurity order by 1`);
     expect(molles.map((r) => r.relname)).toEqual([]);
   });
 

@@ -69,7 +69,11 @@ export function verdictRls(tables: TableRls[], proprietaireSeul: Set<string> = P
   if (tables.length < 90) defauts.push(`base non migrée : ${tables.length} table(s) publique(s) seulement (le schéma en compte une centaine)`);
   for (const t of tables) {
     if (!t.rls) defauts.push(`${t.table} : RLS non activée`);
-    if (t.politiques > 0 && !t.force) defauts.push(`${t.table} : politique posée mais RLS non FORCÉE — le propriétaire la contourne`);
+    /* FORCE sur TOUTE table à RLS (0034) — le premier build a montré
+       `server_error` : tenant_id, RLS, aucune politique, pas de FORCE, et un
+       verdict « aucun défaut » à côté d'une ligne « FORCE MANQUANTE ». Un bloc
+       qui se contredit lui-même n'est pas un bloc. */
+    if (t.rls && !t.force) defauts.push(`${t.table} : RLS non FORCÉE — le propriétaire la contourne`);
     if (t.politiques === 0 && !proprietaireSeul.has(t.table)) defauts.push(`${t.table} : aucune politique, et pas sur la liste propriétaire-seul justifiée`);
   }
   return defauts;
