@@ -1396,3 +1396,18 @@ d'arrière-plan dès que l'agent n'exécute plus rien, ce qui fait mourir un `np
 quinze minutes en une seule commande. Les étapes ont donc été lancées **dans l'ordre de
 `verify`, sur le même monde semé**, une commande par étape. `npm run verify` reste LA commande
 qui rejoue l'ensemble sur une machine ordinaire.
+
+**La preuve au bout de la chaîne — dans la fonction déployée, pas ici** (DA-16). Base de
+production RASÉE puis reconstruite par le build (Tuan l'a autorisé : « je n'ai rien investi
+dans les données en ligne »). `/api/sante` interrogée sur `otto-dit-imperator080599.vercel.app`,
+HTTP 200, verdict « toutes les lectures passent » — dont, exécutées DANS le lambda :
+`rail de destinations : 24 éléments` · `vue d'ensemble (tableau de bord par personne) :
+1 poste · 13 obstacles · 3 membres` · `espace de travail d'un poste : REVENUE · 3 comptes ·
+6 étapes` · `instantané du monde de démonstration : pris le 2026-09-01 09:56:55+00`.
+
+**Ce que je n'ai PAS pu faire, et qui n'est pas un détail** : ouvrir moi-même un écran de
+l'instance déployée. La protection d'accès Vercel reste ACTIVE (décision de Tuan, point 2) et
+intercepte toute page par une redirection SSO ; seule `/api/sante` a répondu. La preuve tenue
+est donc la RÉPONSE d'une sonde qui exécute les lectures de chaque écran dans la fonction —
+pas une capture. Le jour où la protection sera levée, `npm run fumee -- <url>` ouvrira les
+écrans eux-mêmes.
