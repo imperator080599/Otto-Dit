@@ -130,6 +130,14 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 
 .rail { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 14px; }
 .rail-groupe { display: flex; flex-direction: column; }
+/* LE REPLI PAR TOGGLE (revue n°2, remarque générale). Il est CHOISI par
+   l'utilisateur, et il ne remplace pas la règle d'état : ce qui n'est pas
+   disponible reste grisé avec sa raison quand le groupe est ouvert. Les deux
+   coexistent. */
+.rail-groupe > summary { list-style: none; cursor: pointer; }
+.rail-groupe > summary::-webkit-details-marker { display: none; }
+.rail-groupe > summary .chevron { display: inline-block; width: 10px; font-size: 9px; opacity: .55; }
+.rail-groupe[open] > summary .chevron { transform: rotate(90deg); }
 .rail-titre {
   font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px;
   color: var(--faint); font-weight: 700; padding: 0 8px 4px;
@@ -153,6 +161,46 @@ a.rail-lien.active {
 }
 .rail-tout:hover { color: var(--text); }
 
+/* LE LIEN VERS LE JUSTIFICATIF, SUR LA CELLULE qui a été lue dessus. */
+.lien-piece { font-size: 11px; text-decoration: none; opacity: .75; }
+.lien-piece:hover { opacity: 1; }
+/* L'en-tête de GROUPE du tableau de testing : sélection d'un côté, travaux de
+   l'autre. Le trait sépare les deux moitiés du geste. */
+table.data thead tr.groupes th {
+  border-bottom: 1px solid var(--border); text-transform: none; letter-spacing: 0;
+  font-size: 11.5px; color: var(--text); background: var(--row-hover);
+}
+label.bloc { display: block; margin-top: 8px; }
+label.bloc textarea { width: 100%; box-sizing: border-box; }
+
+/* LA BANDE D'ÉTAPES D'UN POSTE — l'ordre dans lequel on travaille, en une
+   ligne. Chaque étape porte son chiffre (ce qu'elle a produit) sous son nom :
+   la couleur dit l'avancement, le chiffre dit quoi, et ni l'un ni l'autre
+   n'explique pourquoi le produit est fait ainsi. */
+.etapes { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 14px; }
+.etape {
+  display: block; padding: 6px 10px; border-radius: 5px; font-size: 12.5px;
+  font-weight: 600; border: 1px solid var(--border); background: var(--panel);
+  border-left-width: 3px; min-width: 120px;
+}
+a.etape:hover { text-decoration: none; background: var(--row-hover); }
+.etape.green { border-left-color: var(--green); }
+.etape.amber { border-left-color: var(--amber); }
+.etape.gray { border-left-color: var(--border-strong); }
+.etape-detail { display: block; font-weight: 400; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* LE GRAPHIQUE DE STATUT — une barre empilée, et sa légende À CÔTÉ.
+   La couleur n'est jamais seule (vigilance revue n°2 §4) : chaque part porte
+   son repère de forme et son libellé dans la légende, pour rester lisible en
+   daltonisme et à l'impression. */
+.barre-empilee {
+  display: flex; height: 14px; border-radius: 3px; overflow: hidden;
+  background: var(--track); margin: 4px 0 8px;
+}
+.barre-empilee > div { height: 100%; }
+.legende { gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legende-item { white-space: nowrap; }
+
 .panel {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 16px 18px; margin-bottom: 16px;
@@ -160,6 +208,12 @@ a.rail-lien.active {
 .panel h2:first-child { margin-top: 0; }
 
 .grid { display: grid; gap: 16px; }
+/* UNE COLONNE DE GRILLE NE SE LAISSE PAS ÉLARGIR PAR SON CONTENU. Sans cela,
+   un tableau large pousse sa colonne, la grille grandit, et c'est le CORPS de
+   la page qui défile horizontalement — le défaut que `npm run visuel` mesure.
+   Avec `min-width: 0`, c'est le conteneur `.table-scroll` qui défile, à sa
+   place. */
+.grid > * { min-width: 0; }
 .grid.cols-2 { grid-template-columns: 1fr 1fr; }
 .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }

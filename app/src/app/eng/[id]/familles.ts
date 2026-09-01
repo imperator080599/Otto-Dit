@@ -35,6 +35,10 @@ export const FAMILLES: Record<string, { titre: string; pourquoi: string }> = {
     titre: 'La boucle',
     pourquoi: 'Un élément sélectionné qui n’est ni conclu ni expliqué laisse la boucle ouverte.',
   },
+  ipe: {
+    titre: 'Information produite par l’entité',
+    pourquoi: 'Un test appuyé sur un fichier du client dont l’exhaustivité n’a pas été éprouvée ne prouve rien — et c’est la question qu’un contrôleur pose en premier.',
+  },
   pointage: {
     titre: 'Pointage des états financiers',
     pourquoi: 'Conclure sur des états financiers sans les avoir pointés, c’est conclure sur ce qu’on n’a pas regardé.',

@@ -30,7 +30,8 @@ import { obstaclesEntretiens } from './entretiens';
 
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
-  | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation';
+  | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
+  | 'ipe';
 
 export interface Obstacle {
   famille: Famille;
@@ -47,6 +48,7 @@ const OU: Record<Famille, string> = {
   processus: 'processus',
   programme: 'testing',
   boucle: 'loop',
+  ipe: 'workpapers',
   pointage: 'fs-tieout',
   evaluation: 'exceptions',
   achevement: 'completion',
@@ -163,6 +165,14 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
      exiger (on ne reproche pas de ne pas avoir circularisé ce qu'on n'a pas
      décidé de circulariser). */
   ajoute('circularisation', await obstaclesCircularisation(engagementId));
+
+  /* INFORMATION PRODUITE PAR L'ENTITÉ (revue n°2 §3.1). Un papier dont on n'a
+     pas posé la question est un papier dont personne ne sait s'il s'appuie sur
+     un fichier du client — et c'est la première chose qu'un contrôleur
+     demande. Répondre « oui » sans documenter est refusé par la BASE : cet
+     obstacle porte donc sur la question NON POSÉE, pas sur la réponse. */
+  const { obstaclesIpe } = await import('./ipe');
+  ajoute('ipe', (await obstaclesIpe(engagementId)).map((o) => o.libelle));
 
   // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.

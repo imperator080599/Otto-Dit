@@ -6,7 +6,14 @@ import { q } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { repoRoot } from '@/lib/db/client';
-import { railDuDossier, postesRetenus, GROUPES } from './rail';
+import { railDuDossier, postesRetenus, GROUPES_CLES } from './rail';
+import { traduire, type Locale } from '@/lib/i18n/catalogue';
+
+/* Le rail SERT une langue, il ne la choisit pas : le test lui en donne une. */
+const tr = (l: Locale) => (c: Parameters<typeof traduire>[1], v?: Record<string, string | number>) =>
+  traduire(l, c, v);
+const en = tr('en');
+const fr = tr('fr');
 import { destinationsDuPoste } from './poste';
 
 // LE RAIL MONTRE L'ÉTAT, PAS LE CATALOGUE (ADR-103) — et depuis ADR-112 il
@@ -36,31 +43,43 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
   }, 120000);
 
   it('un dossier qui vient d\'être créé montre CINQ destinations, le reste grisé avec sa raison', async () => {
-    const rail = await railDuDossier(NEUF, ['nep-fr']);
+    const rail = await railDuDossier(NEUF, ['nep-fr'], en);
     const ouvertes = rail.filter((x) => x.atteignable).map((x) => x.label);
+    /* Les libellés viennent du CATALOGUE : les comparer à des chaînes écrites
+       ici referait deux vérités pour un même mot (revue n°2 §2). */
     expect(ouvertes).toEqual([
-      'Vue d\'ensemble', 'Acceptation', 'Équipe et indépendance', 'Réunions',
-      'Journal du dossier',
+      en('rail.vue'), en('rail.acceptation'), en('rail.equipe'), en('rail.reunions'),
+      en('rail.journal'),
     ]);
-    expect(rail.find((x) => x.label === 'Reprise du dossier N-1')!.raison).toMatch(/antérieur/);
+    expect(rail.find((x) => x.label === en('rail.reprise'))!.raison).toMatch(/antérieur/);
     for (const x of rail.filter((r) => !r.atteignable)) {
       expect(x.raison, `raison manquante pour ${x.label}`).toBeTruthy();
       expect(x.raison!.length).toBeLessThan(90); // une ligne, pas un paragraphe
     }
-    expect(rail.find((x) => x.label.startsWith('Balance et grand livre'))!.atteignable).toBe(false);
-    expect(rail.find((x) => x.label.startsWith('Balance et grand livre'))!.raison).toMatch(/acceptation/);
+    expect(rail.find((x) => x.label === en('rail.imports'))!.atteignable).toBe(false);
+    expect(rail.find((x) => x.label === en('rail.imports'))!.raison).toMatch(/acceptation/);
   });
 
   it('chaque entrée porte un GROUPE connu et une phrase — aucune entrée muette', async () => {
-    const rail = await railDuDossier(NEUF, ['nep-fr']);
+    const rail = await railDuDossier(NEUF, ['nep-fr'], en);
     for (const x of rail) {
       expect(x.phrase.length, x.label).toBeGreaterThan(20);
-      expect(GROUPES, `groupe inconnu pour ${x.label}`).toContain(x.groupe);
+      expect(GROUPES_CLES, `groupe inconnu pour ${x.label}`).toContain(x.groupeCle);
     }
   });
 
+  it('la LANGUE vient du cabinet : le même rail se lit en anglais et en français', async () => {
+    const a = await railDuDossier(NEUF, ['nep-fr'], en);
+    const b = await railDuDossier(NEUF, ['nep-fr'], fr);
+    expect(a.length).toBe(b.length);
+    expect(a[0].label).toBe('Overview');
+    expect(b[0].label).toBe('Vue d’ensemble');
+    /* Les DESTINATIONS sont les mêmes : traduire ne change pas le dossier. */
+    expect(a.map((x) => x.href)).toEqual(b.map((x) => x.href));
+  });
+
   it('le VOCABULAIRE vient du pack, jamais du code (DA-15)', async () => {
-    const rail = await railDuDossier(NEUF, ['nep-fr']);
+    const rail = await railDuDossier(NEUF, ['nep-fr'], en);
     const labels = rail.map((x) => x.label);
     expect(labels).toContain('Matérialité');
     expect(labels).toContain('Scoping');
@@ -76,8 +95,8 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     await runPart1UpToWorkpaper();
     const postes = await postesRetenus(IDS.engNep);
     expect(postes.length).toBeGreaterThan(0);
-    const rail = await railDuDossier(IDS.engNep, ['nep-fr']);
-    const groupePostes = rail.filter((x) => x.groupe === 'Les postes');
+    const rail = await railDuDossier(IDS.engNep, ['nep-fr'], en);
+    const groupePostes = rail.filter((x) => x.groupeCle === 'rail.groupe.postes');
     expect(groupePostes.length).toBe(postes.length);
     for (const p of postes) {
       const e = groupePostes.find((x) => x.label === p.name);
@@ -87,8 +106,8 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     }
     /* Le rail neuf, lui, annonce les postes AVANT qu'ils existent, avec la
        raison — jamais un groupe qui apparaît de nulle part. */
-    const neuf = await railDuDossier(NEUF, ['nep-fr']);
-    expect(neuf.find((x) => x.groupe === 'Les postes')!.raison).toMatch(/scoping/i);
+    const neuf = await railDuDossier(NEUF, ['nep-fr'], en);
+    expect(neuf.find((x) => x.groupeCle === 'rail.groupe.postes')!.raison).toMatch(/scoping/i);
   });
 
   it('le dossier déroulé ouvre presque tout ; la clôture attend l\'achèvement', async () => {
@@ -96,12 +115,12 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     const wpId = await draftRevenueWorkpaper(IDS.engNep, IDS.users.karim);
     const { signWorkpaper } = await import('./workpapers/lifecycle');
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
-    const rail = await railDuDossier(IDS.engNep, ['nep-fr']);
-    expect(rail.filter((x) => !x.atteignable).map((x) => x.label)).toContain('Clôture et archive');
-    expect(rail.find((x) => x.label === 'Pointage des états financiers')!.atteignable).toBe(true);
-    const sox = await railDuDossier(IDS.engSox, ['pcaob-sox']);
-    expect(sox.find((x) => x.label === 'Contrôle interne')!.atteignable).toBe(true);
-    expect(sox.find((x) => x.label === 'Déviations (SOX)')).toBeTruthy();
+    const rail = await railDuDossier(IDS.engNep, ['nep-fr'], en);
+    expect(rail.filter((x) => !x.atteignable).map((x) => x.label)).toContain(en('rail.cloture'));
+    expect(rail.find((x) => x.label === en('rail.pointage'))!.atteignable).toBe(true);
+    const sox = await railDuDossier(IDS.engSox, ['pcaob-sox'], en);
+    expect(sox.find((x) => x.label === en('rail.controleInterne'))!.atteignable).toBe(true);
+    expect(sox.find((x) => x.label === en('rail.deviations'))).toBeTruthy();
   });
 
   /**
@@ -132,8 +151,8 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     };
     marcher(racine, '/eng/[id]');
 
-    const rail = await railDuDossier(IDS.engNep, ['nep-fr']);
-    const railSox = await railDuDossier(IDS.engSox, ['pcaob-sox']);
+    const rail = await railDuDossier(IDS.engNep, ['nep-fr'], en);
+    const railSox = await railDuDossier(IDS.engSox, ['pcaob-sox'], en);
     const atteintes = new Set<string>();
     for (const e of [...rail, ...railSox]) {
       atteintes.add(e.href.replace(IDS.engNep, '[id]').replace(IDS.engSox, '[id]').split('?')[0]);

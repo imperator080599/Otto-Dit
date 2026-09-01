@@ -3,6 +3,7 @@ import { q1 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { missionsParClient } from '@/lib/services/bascule';
 import { railDuDossier } from '@/lib/services/rail';
+import { tr } from '@/lib/i18n';
 import { basculerAction } from './bascule-actions';
 import { EngNav } from './nav';
 
@@ -31,7 +32,8 @@ export default async function EngagementLayout({
   );
 
   /* LE RAIL D'ÉTAT (ADR-103) : calculé ici, contre l'état réel du dossier. */
-  const rail = await railDuDossier(id, eng.framework_set.assurance_packs);
+  const t = await tr();
+  const rail = await railDuDossier(id, eng.framework_set.assurance_packs, t);
 
   return (
     <div className="shell shell-wide">
@@ -84,7 +86,7 @@ export default async function EngagementLayout({
         </div>
       </header>
       <div className="dossier">
-        <EngNav entrees={rail} />
+        <EngNav entrees={rail} tout={t('rail.tout')} reduire={t('rail.reduire')} />
         <div className="dossier-corps">{children}</div>
       </div>
     </div>

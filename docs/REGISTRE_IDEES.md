@@ -191,3 +191,27 @@ ADR, dans la documentation, à la rigueur dans une infobulle ; jamais dans le fl
 | R-16 | **Un composant client n'emporte jamais la base dans le navigateur** — vérifié par le GRAPHE des imports, pas par la relecture | **fait** | Né du défaut de cette tranche (73 écrans à 500 pour un `import { GROUPES }`). `client-serveur.test.ts` suit les imports de valeur depuis chaque `'use client'` ; éprouvé en le cassant exprès (`nav.tsx → services/rail → lib/db/client`) |
 | R-17 | **Aucun écran de dossier injoignable** après une réorganisation de la navigation | **fait** | `rail.test.ts` lit l'arborescence des routes sur le disque et exige rail, poste ou déclaration écrite |
 
+
+## G. Revue UTILISATEUR n°2 (2026-09-01) — au point d'arrêt « charpente »
+
+Le périmètre de l'arrêt était P3 + P4. Deux choses y ÉTAIENT et manquaient ; le reste est
+apport neuf. La règle générale de la revue n°1 (une phrase qui explique POURQUOI le produit
+est fait ainsi sort de l'écran) **devait s'appliquer d'office** là où le rail a été refait :
+elle ne l'a pas été, et c'est le reproche le plus juste de cette revue.
+
+| id | ce qu'il faut faire | état | preuve / raison |
+|---|---|---|---|
+| S-01 | **P4 n'était pas fait** : « Ce qui m'attend » n'était pas un tableau de bord — ni graphique d'avancement, ni code couleur de statut, ni vue par membre | **fait** | ADR-113. `/eng/<id>` : deux graphiques (avancement des sections, état des notes), **My assignments** en quatre listes, vue par membre, ce qui empêche de signer. Preuve : `sections.test.ts` (7 tests), `npm run clics` 146 étapes 0 échec |
+| S-02 | **La règle générale non appliquée** : « Le travail sur ce poste », « La boucle », les justifications pédagogiques d'Acceptation, le paragraphe du contact clé | **fait** | Les deux sections du poste supprimées ; le `pourquoi` de chaque critère d'acceptation passe en infobulle (la DONNÉE reste — c'est elle qui empêche le questionnaire de devenir une formalité) ; les trois paragraphes d'Acceptation et celui des contacts retirés |
+| S-03 | **« Papiers de travail » en doublon** | **fait** | Le panneau disparaît du poste ; les papiers se lisent en **XREF sur la leadsheet**, et la liste complète (qui porte le geste « rédiger ») se rejoint par l'en-tête XREF |
+| S-04 | **Langue configurable, anglais par défaut** — catalogue de libellés par locale, français servi aux cabinets français ; les écrans migrent quand ils sont touchés | **fait (mécanisme)** | ADR-114. `i18n/catalogue.ts` + `tenant.locale`, `i18n.test.ts` (6 tests). **Migrés** : rail (groupes et destinations), vue d'ensemble, poste, bloc IPE. **Non migrés** : tout le reste, dont les infobulles du rail — dit, pas caché |
+| S-05 | **IPE sur chaque papier**, bloquant, rédaction proposée mais plafond L2, fichier = le MÊME objet que la pièce reçue ou importée | **fait** | ADR-113 ; migration 0031 (contrainte de base) ; `ipe.test.ts` (7 tests dont les trois refus) ; onzième famille d'obstacles au visa |
+| S-06 | **Leadsheet avec XREF + lien vers la balance générale** | **fait** | XREF **dérivée** (un papier référence un compte quand une ligne d'échantillon qu'il porte est une écriture de ce compte), pas recopiée |
+| S-07 | **« Testing »** : distinction nette sélection / travaux, liens au justificatif sur les cellules qui en sont tirées | **fait** | Le gabarit du cabinet porte le GROUPE de chaque colonne (`methodology/papier.json`) ; en-tête à deux niveaux ; le lien est sur les cellules LUES sur la pièce, jamais sur les colonnes du grand livre |
+| S-08 | **Repli par toggle** sur toute section du rail qui porte des sous-sections, sans remplacer la règle d'état | **fait** | Les groupes du rail sont des `<details>` à état réel ; le grisé-avec-raison reste intact derrière « tout afficher ». Le premier essai levait une exception par bascule (`currentTarget` nul dans le calcul différé) — mesurée par `npm run clics`, corrigée |
+| S-09 | **Une seule échelle de couleurs**, jamais la couleur seule, rouge réservé au bloquant | **fait** | `ECHELLE` unique + repère de forme + libellé ; test qui refuse le rouge dans l'échelle de statut |
+| S-10 | Acceptation en trois sous-sections (décision de maintien vide et qui le DIT, background check des bénéficiaires effectifs par ADAPTATEUR, rotation des associés paramétrée par juridiction et vérifiée sur texte primaire) | planifié | Les jalons sont sortis du flux (repliés, pas supprimés : le geste « marquer fait » et l'obstacle « jalons » ont besoin d'un écran). Le reste est une tranche à part |
+| S-11 | Équipe et indépendance réduite à la liste, la confirmation et le document attesté ; **attestation** dans la plateforme, jamais « signature électronique » au sens eIDAS | planifié | La distinction est écrite pour ne pas promettre une intégration qui n'existe pas |
+| S-12 | Contacts de mission → section client (P1) ; « Reprise du dossier N-1 » supprimée (question posée à la création) | planifié | Vient avec P1 ; les contacts restent joignables tant que la section client n'existe pas, parce qu'un contact clé est exigé pour circulariser |
+| S-13 | P1 (la configuration appartient à la création du dossier) et P2 (toute donnée manquante engendre une demande) | planifié | Non fait dans cette tranche — voir « ce que je n'ai pas fait » dans STATUS |
+

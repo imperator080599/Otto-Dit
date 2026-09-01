@@ -19,6 +19,10 @@ import {
 import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { lireIpe, piecesDisponibles } from '@/lib/services/ipe';
+import { visiter } from '@/lib/services/sections';
+import { tr } from '@/lib/i18n';
+import { ipeAction, proposerIpeAction } from './ipe-actions';
 
 const WP_BADGE: Record<string, string> = { draft: 'gray', in_review: 'blue', reviewed: 'amber', signed: 'green', outdated: 'red' };
 
@@ -26,10 +30,14 @@ export default async function WorkpaperDetail({
   params, searchParams,
 }: {
   params: Promise<{ id: string; wid: string }>;
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{
+    erreur?: string; propose?: string; nature?: string; evidence_id?: string;
+    exhaustivite?: string; exactitude?: string;
+  }>;
 }) {
   const { id, wid } = await params;
-  const { erreur } = await searchParams;
+  const sp = await searchParams;
+  const { erreur } = sp;
   const { user } = await requireMember(id);
   const wp = await getWorkpaper(wid);
   if (!wp || wp.engagement_id !== id) return <div className="panel">Not found.</div>;
@@ -38,6 +46,22 @@ export default async function WorkpaperDetail({
   const notes = await listNotes(wid);
   const signoffs = await listSignoffs(wid);
   const exports = await listExports(wid);
+  const t = await tr();
+  const ipe = await lireIpe(wid);
+  const pieces = await piecesDisponibles(id);
+  /* « Recent » se remplit en OUVRANT — le papier est une section du dossier. */
+  await visiter(id, 'papier', wid, user.id);
+  /* Une rédaction PROPOSÉE arrive par l'URL et remplit les zones : elle n'est
+     pas enregistrée tant qu'un humain n'a pas cliqué (plafond L2). */
+  const propose = sp.propose === '1';
+  const val = {
+    utilisee: propose ? true : ipe?.utilisee ?? null,
+    nature: propose ? sp.nature ?? '' : ipe?.nature ?? '',
+    evidenceId: propose ? sp.evidence_id ?? ''
+      : ipe?.importFileId ? `f:${ipe.importFileId}` : ipe?.evidenceId ? `e:${ipe.evidenceId}` : '',
+    exhaustivite: propose ? sp.exhaustivite ?? '' : ipe?.exhaustivite ?? '',
+    exactitude: propose ? sp.exactitude ?? '' : ipe?.exactitude ?? '',
+  };
   const members = await q<{ id: string; name: string }>(
     `select u.id, u.name from engagement_member m join app_user u on u.id = m.user_id where m.engagement_id = $1`,
     [id],
@@ -224,6 +248,105 @@ export default async function WorkpaperDetail({
         </div>
       </div>
 
+      {/* L'INFORMATION PRODUITE PAR L'ENTITÉ — sur CHAQUE papier, pas dans une
+          section à part (revue n°2 §3.1). Répondre « oui » sans documenter est
+          refusé par le service ET par la base ; ne pas répondre du tout lève un
+          obstacle au visa. */}
+      <div className="panel" id="ipe">
+        <h2 style={{ marginTop: 0 }}>
+          {t('wp.ipe')}{' '}
+          {ipe === null
+            ? <span className="badge red">?</span>
+            : <span className="badge green">{ipe.utilisee ? t('wp.ipe.yes') : t('wp.ipe.no')}</span>}
+        </h2>
+        <p>{t('wp.ipe.question')}</p>
+        {propose && (
+          <p><span className="badge blue">{t('wp.ipe.proposed')}</span></p>
+        )}
+        <form action={ipeAction}>
+          <input type="hidden" name="workpaper_id" value={wid} />
+          <div className="row" style={{ gap: 14 }}>
+            <label className="row" style={{ gap: 4 }}>
+              <input type="radio" name="utilisee" value="oui" defaultChecked={val.utilisee === true} />
+              {t('wp.ipe.yes')}
+            </label>
+            <label className="row" style={{ gap: 4 }}>
+              <input type="radio" name="utilisee" value="non" defaultChecked={val.utilisee === false} />
+              {t('wp.ipe.no')}
+            </label>
+          </div>
+
+          <div className="grid cols-2 mt">
+            <label>
+              {t('wp.ipe.nature')}
+              <select name="nature" defaultValue={val.nature ?? ''}>
+                <option value="">—</option>
+                <option value="manuelle">{t('wp.ipe.manual')}</option>
+                <option value="systeme">{t('wp.ipe.system')}</option>
+              </select>
+            </label>
+            <label>
+              {t('wp.ipe.reportCode')}
+              <input name="rapport_code" defaultValue={ipe?.rapportCode ?? ''} placeholder="ex. S_ALR_87012284" />
+            </label>
+            <label>
+              {t('wp.ipe.file')}
+              {/* LA MÊME PIÈCE que celle reçue au portail ou importée : la
+                  liste ne propose que des pièces DU DOSSIER. */}
+              <select name="evidence_id" defaultValue={val.evidenceId ?? ''}>
+                <option value="">—</option>
+                {pieces.map((e) => (
+                  <option key={e.cle} value={e.cle}>{e.filename} ({e.source})</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t('wp.ipe.date')}
+              <input name="date_document" defaultValue={ipe?.dateDocument ?? ''} placeholder="AAAA-MM-JJ" />
+            </label>
+          </div>
+
+          <label className="bloc mt">
+            {t('wp.ipe.completeness')}
+            <textarea name="exhaustivite" rows={3} defaultValue={val.exhaustivite ?? ''} />
+          </label>
+          <label className="bloc">
+            {t('wp.ipe.accuracy')}
+            <textarea name="exactitude" rows={3} defaultValue={val.exactitude ?? ''} />
+          </label>
+
+          <div className="row mt" style={{ justifyContent: 'space-between' }}>
+            <label className="row" style={{ gap: 6 }}>
+              {t('wp.ipe.appropriate')}
+              <select name="approprie" defaultValue={ipe?.approprie === null || ipe?.approprie === undefined ? '' : (ipe.approprie ? 'oui' : 'non')}>
+                <option value="">—</option>
+                <option value="oui">{t('wp.ipe.yes')}</option>
+                <option value="non">{t('wp.ipe.no')}</option>
+              </select>
+            </label>
+            <span className="row">
+              {propose && <input type="hidden" name="redige_par_ia" value="1" />}
+              <button className="btn">{t('wp.ipe.record')}</button>
+            </span>
+          </div>
+        </form>
+
+        <form action={proposerIpeAction} className="mt">
+          <input type="hidden" name="workpaper_id" value={wid} />
+          <input type="hidden" name="nature" value={val.nature ?? ''} />
+          <input type="hidden" name="evidence_id" value={val.evidenceId ?? ''} />
+          <input type="hidden" name="rapport_code" value={ipe?.rapportCode ?? ''} />
+          <button className="btn secondary small">{t('wp.ipe.draft')}</button>
+        </form>
+
+        {ipe?.valideParNom && (
+          <p className="faint mt">
+            {ipe.valideParNom} · {ipe.valideLe?.slice(0, 10)}
+            {ipe.redigeParIa && <> · <span className="ai-flag">rédaction proposée, validée par un humain</span></>}
+          </p>
+        )}
+      </div>
+
       {(wp.sections as WpSection[]).map((s) => (
         <div className="panel" key={s.key}>
           <Annotable
@@ -239,7 +362,24 @@ export default async function WorkpaperDetail({
           {s.table && (
             <div className="table-scroll">
               <table className="data">
-                <thead><tr>
+                <thead>
+                {/* LA DISTINCTION SÉLECTION / TRAVAUX (revue n°2 §3.3), portée
+                    par le GABARIT DU CABINET : un réviseur doit voir d'un coup
+                    d'œil ce qui a été choisi et ce qui a été contrôlé. */}
+                {(() => {
+                  const gr = (s.meta as { groupes?: string[] } | undefined)?.groupes;
+                  if (!gr) return null;
+                  const nSel = gr.filter((g) => g === 'selection').length;
+                  const nTra = gr.length - nSel;
+                  return (
+                    <tr className="groupes">
+                      {nSel > 0 && <th colSpan={nSel}>{t('wp.selected')}</th>}
+                      {nTra > 0 && <th colSpan={nTra}>{t('wp.work')}</th>}
+                      {colonnesRemplies.length > 0 && <th colSpan={colonnesRemplies.length} />}
+                    </tr>
+                  );
+                })()}
+                <tr>
                   {s.table.headers.map((h) => <th key={h}>{h}</th>)}
                   {s.key === 'tableau_echantillon' && colonnesRemplies.map((c) => (
                     <th key={c.id}>
@@ -257,12 +397,18 @@ export default async function WorkpaperDetail({
                     return (
                       <tr key={i}>
                         {r.cells.map((c, j) => {
-                          const contenu = j === 0 && r.refs?.evidenceIds?.length ? (
+                          /* LE LIEN EST SUR LA CELLULE QUI A ÉTÉ LUE SUR LA
+                             PIÈCE — pas sur la première venue. Les colonnes du
+                             grand livre (pièce, tiers, date, montant) n'en
+                             portent pas : les lier laisserait croire qu'elles
+                             sortent du justificatif, ce qui est exactement
+                             l'erreur qu'un contrôle sur pièces cherche. */
+                          const src = r.cellRefs?.[j] ?? null;
+                          const contenu = src ? (
                             <span>
                               {String(c)}{' '}
-                              {r.refs.evidenceIds.map((eid, k) => (
-                                <a key={eid} href={`/api/blob/${eid}`} target="_blank" className="faint" title="open evidence">[{k + 1}]</a>
-                              ))}
+                              <a href={`/api/blob/${src}`} target="_blank" className="lien-piece"
+                                title="ouvrir le justificatif d’où vient cette donnée">↗</a>
                             </span>
                           ) : (
                             String(c)

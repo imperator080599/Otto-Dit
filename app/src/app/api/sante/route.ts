@@ -82,7 +82,9 @@ export async function GET() {
     lectures.push(await essayer('rail de destinations', async () => {
       const { railDuDossier } = await import('@/lib/services/rail');
       const { frameworkSet } = await import('@/lib/services/fsli');
-      return railDuDossier(id, (await frameworkSet(id)).assurance_packs);
+      const { traduire } = await import('@/lib/i18n/catalogue');
+      return railDuDossier(id, (await frameworkSet(id)).assurance_packs,
+        (c, v) => traduire('en', c, v));
     }));
     /* LES DEUX ÉCRANS NEUFS DE LA CHARPENTE (ADR-112). Ils ne se prouvent pas
        par la chaîne locale : c'est la fonction déployée qui doit les lire. */

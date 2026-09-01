@@ -271,9 +271,12 @@ export async function conduire(
     /* `allInnerTexts` rend le texte TEL QU'IL S'AFFICHE : la feuille de style
        met les titres de groupe en capitales, et comparer au libellé du code
        échouerait sur une différence de casse — pas sur une règle. */
-    const titres = (await p.locator('.rail .rail-titre').allInnerTexts()).map((t) => t.toLowerCase());
+    /* Les titres viennent du CATALOGUE (anglais par défaut) et portent un
+       chevron : on compare au libellé servi, chevron ôté. */
+    const titres = (await p.locator('.rail .rail-titre').allInnerTexts())
+      .map((x) => x.replace(/[▸▾]/g, '').trim().toLowerCase());
     dire('rail : groupé par nature de travail, les POSTES au milieu',
-      titres.length === 6 && titres[2] === 'les postes', titres.join(' · '));
+      titres.length === 6 && titres[2] === 'areas', titres.join(' · '));
     const grises = await compte('.rail .rail-lien.grise');
     const t = await p.locator('.rail').innerText();
     dire('rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne',
@@ -323,6 +326,10 @@ export async function conduire(
        impossible qu'on ne propose pas vaut mieux qu'une action proposée puis
        refusée — à condition de dire pourquoi, sinon l'absence se lit comme un
        oubli d'écran. */
+    const jalonsRepli = p.locator('details:has(summary:has-text("Jalons de la mission"))').first();
+    if (await jalonsRepli.count()) {
+      await deplier(jalonsRepli.locator('table').first());
+    }
     dire('jalons : le jalon dérivé n’est pas saisissable, et la raison est écrite',
       (await compte('form:has(input[name=code][value="assemblage"]) input[name=date]')) === 0
         && /ne se saisit pas/.test(await texte()),
@@ -2023,9 +2030,13 @@ export async function conduire(
   // ── 21. JALONS : poser, puis MARQUER FAIT (le geste qui n'avait pas d'écran)
   await station('jalons', async () => {
     await aller(`${eng}/acceptance`);
+    /* LES JALONS SONT DANS UN REPLI depuis la revue n°2 (ils sortent du flux
+       d'acceptation sans disparaître). Le geste de l'utilisateur est donc :
+       déplier, puis marquer. */
     for (let tour = 0; tour < 12; tour++) {
       const f = p.locator('form:has(button:has-text("Marquer fait"))').first();
       if (!(await f.count())) break;
+      await deplier(f);
       await f.locator('button:has-text("Marquer fait")').click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1300);

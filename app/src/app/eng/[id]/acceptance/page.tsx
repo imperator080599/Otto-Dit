@@ -48,20 +48,11 @@ export default async function AcceptancePage({
 
       <div className="panel">
         <h2>Acceptation et maintien de la mission</h2>
-        <p className="faint">
-          <strong>Aucun travail ne se planifie avant cette décision</strong> : ni affectation, ni
-          évaluation du risque. Le système refuse, il ne rappelle pas.
-        </p>
 
         {!a ? (
           <form action={ouvrirAction}>
             <input type="hidden" name="engagement_id" value={id} />
             <button className="btn">Ouvrir la décision</button>
-            <p className="faint mt">
-              La nature — <strong>acceptation</strong> en première année,{' '}
-              <strong>maintien</strong> en renouvellement — se déduit de l’existence d’un exercice
-              précédent. Une question dont la réponse est dans le dossier ne se pose pas.
-            </p>
           </form>
         ) : (
           <>
@@ -89,11 +80,14 @@ export default async function AcceptancePage({
                       <td>
                         <strong>{c.libelle}</strong>
                         {c.bloquant && <> <span className="badge gray">bloquant</span></>}
-                        <div className="faint" style={{ fontSize: 11 }}>{c.question}</div>
-                        {/* La RAISON d'être du critère, portée par la méthode :
-                            sans elle, un questionnaire d'acceptation devient une
-                            formalité qu'on remplit sans la lire. */}
-                        <div className="faint" style={{ fontSize: 11, fontStyle: 'italic' }}>{c.pourquoi}</div>
+                        <div className="faint" style={{ fontSize: 11 }} title={c.pourquoi}>{c.question}</div>
+                        {/* LA RAISON D'ÊTRE DU CRITÈRE NE S'AFFICHE PLUS EN
+                            CONTINU (revue n°2 : les justifications pédagogiques
+                            sortent du flux de travail). Elle N'EST PAS
+                            SUPPRIMÉE — elle vient de la méthode du cabinet et
+                            reste consultable au survol : supprimer la donnée
+                            aurait retiré au questionnaire ce qui l'empêche de
+                            devenir une formalité. */}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {a.status !== 'open' ? (
@@ -129,10 +123,6 @@ export default async function AcceptancePage({
                   <div className="panel warn" style={{ marginTop: 12 }}>
                     <p><strong>Ce qui manque pour décider</strong></p>
                     <ul>{manque.map((m) => <li key={m.code}>{m.libelle} — {m.raison}</li>)}</ul>
-                    <p className="faint">
-                      « Bloquant » ne veut pas dire « interdit d’accepter » : un cabinet peut accepter
-                      une mission difficile, il ne peut pas l’accepter <strong>sans le dire</strong>.
-                    </p>
                   </div>
                 )}
                 <form action={deciderAction} className="mt">
@@ -156,9 +146,14 @@ export default async function AcceptancePage({
         )}
       </div>
 
+      {/* LES JALONS SORTENT DU FLUX D'ACCEPTATION (revue n°2 §3.4) — DEMOTÉS,
+          pas supprimés. Les supprimer de l'écran laisserait un geste du métier
+          sans écran (marquer un jalon fait) et un obstacle au visa sans
+          destination : deux défauts que ce dépôt refuse. Ils sont donc repliés
+          ici, et l'obstacle « jalons » y mène toujours. */}
       {liste.length > 0 && (
-        <div className="panel">
-          <h2>Jalons de la mission</h2>
+        <details className="panel repli-action">
+          <summary>Jalons de la mission{retard.length > 0 ? ` — ${retard.length} échu(s)` : ''}</summary>
           {retard.length > 0 && (
             <p><span className="badge amber">{retard.length} jalon(s) échu(s) et non faits</span></p>
           )}
@@ -207,12 +202,7 @@ export default async function AcceptancePage({
               ))}
             </tbody>
           </table>
-          <p className="faint">
-            Le délai d’assemblage <strong>se dérive</strong> de la date de rapport par la règle du
-            référentiel : une date dérivée qu’on pourrait saisir deviendrait fausse le jour où
-            quelqu’un la corrige à la main.
-          </p>
-        </div>
+        </details>
       )}
     </div>
   );

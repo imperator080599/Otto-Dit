@@ -31,9 +31,22 @@ import { latestExtraction } from '../extraction/ladder';
 
 export interface WpTableRow {
   cells: (string | number)[];
+  /** La pièce sur laquelle CETTE cellule a été lue, ou null (voir WpSection). */
+  cellRefs?: (string | null)[];
   refs?: { evidenceIds?: string[]; sampleItemId?: string; exceptionIds?: string[] };
 }
 
+/**
+ * LA SOURCE D'UNE CELLULE (revue utilisateur n°2 §3.3).
+ *
+ * « Les liens aux justificatifs doivent être sur toutes les cellules où des
+ * données ont été cherchées sur ce justificatif. » Le mot juste est *cherchées*
+ * : le numéro de pièce, le tiers, la date et le montant de ce tableau viennent
+ * du GRAND LIVRE — les lier au justificatif laisserait croire qu'ils en sont
+ * tirés, ce qui est précisément l'erreur qu'un contrôle sur pièces cherche.
+ * Portent une source : ce qui a été LU sur le document (les justificatifs
+ * obtenus, les contrôles effectués contre eux, les anomalies qui en sortent).
+ */
 export interface WpSection {
   key: string;
   title: string;
@@ -154,6 +167,9 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       if (cand && cand.status !== 'pending_verify') { x = cand; break; }
     }
     const itemExceptions = exceptions.filter((xx) => xx.sample_item_id === it.id);
+    /* LA pièce sur laquelle les données ont été cherchées — la même que celle
+       que le vouching a lue (l'ordre des pièces est déjà celui du vouching). */
+    const inv = evidences.find((e) => e.doc_type === 'invoice' || e.doc_type === 'credit_note');
     /* Les champs sont NOMMÉS (formateur partagé avec l'aperçu vivant de
        l'atelier), et les colonnes du cabinet en choisissent l'ordre et le
        sous-ensemble. */
@@ -162,8 +178,14 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       extraction: x ? { rung: x.rung, verified_by: x.verified_by, fields: x.fields } : null,
       match, exceptions: itemExceptions,
     });
+    const source = inv?.id ?? null;
+    const SOURCE_PAR_CHAMP: Record<string, string | null> = {
+      justificatifs: source, controles: source, anomalies: source,
+    };
     sampleRows.push({
       cells: colonnes(cat, 'substantif', 'echantillon').map((c) => champs[c.champ] ?? ''),
+      cellRefs: colonnes(cat, 'substantif', 'echantillon')
+        .map((c) => SOURCE_PAR_CHAMP[c.champ] ?? null),
       refs: {
         evidenceIds: evidences.map((e) => e.id),
         sampleItemId: it.id,
@@ -228,6 +250,12 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
       table: {
         headers: colonnes(cat, 'substantif', 'echantillon').map((c) => c.titre),
         rows: sampleRows,
+      },
+      /* Le GROUPE vient du gabarit du cabinet : c'est la méthode qui dit ce
+         qui décrit l'élément TIRÉ et ce qui décrit les TRAVAUX. */
+      meta: {
+        groupes: colonnes(cat, 'substantif', 'echantillon')
+          .map((c) => c.groupe ?? 'selection'),
       },
     },
     exceptions: {

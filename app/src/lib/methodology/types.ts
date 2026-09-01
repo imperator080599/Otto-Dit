@@ -270,7 +270,14 @@ export interface Catalogue {
    cabinet. Elle vit donc dans la méthode, pas dans un pack (ADR-079).      */
 
 export interface SectionGabarit { bloc: string; titre: string; }
-export interface ColonneGabarit { champ: string; titre: string; }
+export interface ColonneGabarit {
+  champ: string;
+  titre: string;
+  /** « selection » décrit l'élément TIRÉ, « travaux » ce qu'on en a fait
+   *  (revue utilisateur n°2 : la distinction est une exigence de lecture, et
+   *  elle appartient à la méthode du cabinet). */
+  groupe?: 'selection' | 'travaux';
+}
 export interface GabaritPapier {
   libelle: string;
   sections: SectionGabarit[];

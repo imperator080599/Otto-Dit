@@ -4196,3 +4196,85 @@ Vrai, et inutilisable : la cause tenait en une ligne (`Module not found: Can't r
 et dormait dans le journal du serveur, qu'une assertion PLUS LOIN aurait imprimée. Un harnais
 qui sait et ne dit pas est un silence lu comme un diagnostic (règle 13). `causeServeur()`
 joint désormais ce que le serveur a dit à la liste de ce qui est cassé.
+
+## ADR-113 — Détenir n'est pas répondre de : les sections du dossier, et l'IPE
+
+**Contexte.** La revue utilisateur n°2 apporte quatre choses de fond. Deux touchent le
+MODÈLE, et c'est pour cela qu'elles font une décision plutôt qu'un écran.
+
+**1. « Currently With Me » et « Assigned To Me » sont deux ATTRIBUTS, pas deux filtres.**
+La revue le dit et elle a raison : *détenir* (on me l'a envoyée) et *répondre de* (j'en suis
+responsable) sont deux notions différentes. Modélisées en un seul champ, les deux listes
+affichent la même chose — et personne ne s'en aperçoit, parce qu'elles sont toutes les deux
+« justes ». Une SECTION du dossier (un poste, un papier) porte donc un **propriétaire** et un
+**détenteur courant** ; « envoyer à » déplace le second sans toucher au premier.
+« Tracked By Me » est un **abonnement volontaire** — un troisième mécanisme, pas un dérivé.
+« Recent » est un **journal de consultation par personne**, qui n'entre PAS dans `event_log` :
+lire n'est pas changer d'état, et une piste d'audit qui enfle d'une ligne à chaque coup d'œil
+cesse d'être lisible.
+
+**Ce qui n'est PAS stocké** : le statut. L'échelle est unique (not started · in preparation ·
+completed · reviewed) et se DÉRIVE du visa du papier et de l'avancement du contrôle sur pièces.
+Un statut tenu à part diverge un jour de ce qu'il décrit.
+
+**L'échelle de couleurs, et la tension que la revue avait vue.** Quatre couleurs de statut
+contredisent « la couleur ne marque que les problèmes ». La résolution tient en trois règles,
+tenues par test : **une seule échelle** partout ; la couleur **jamais seule** (chaque statut
+porte un repère de forme et son libellé) ; le **rouge hors échelle**, réservé à ce qui bloque —
+une note « à corriger », une demande échue, un obstacle au visa.
+
+**2. L'information produite par l'entité (IPE), attachée à CHAQUE papier.** Un test substantif
+appuyé sur un listing du client dont l'exhaustivité n'a pas été éprouvée ne prouve rien, et
+c'est la première question d'un contrôleur. Le bloc vit sur le papier, pas dans une section à
+part. Trois refus, et ils sont dans la BASE avant d'être à l'écran :
+répondre « oui » sans nature, exhaustivité, exactitude, date, pertinence **et sans désigner le
+fichier** est refusé par une contrainte (0031) ; le fichier désigné doit être **un objet du
+dossier** — une pièce reçue au portail ou un fichier importé, jamais une pièce jointe
+orpheline ; un papier **visé** ne se modifie plus. Ne pas répondre du tout lève une
+**nouvelle famille d'obstacles au visa**.
+
+**La rédaction proposée.** La revue demande un libellé rédigé par un agent. Ce que le produit
+fait honnêtement aujourd'hui : proposer la phrase **à partir des faits déjà saisis** (nature de
+la source, fichier désigné, code du rapport), de façon déterministe, marquée « proposée » et
+portant « à revoir » — et elle n'entre au dossier qu'après validation humaine tracée
+(plafond L2). Le jour où l'échelon vivant l'écrira, ce sera la même case et le même plafond,
+pas un autre chemin.
+
+**3. La leadsheet porte les XREF, et « Papiers de travail » disparaît.** Le geste de navigation
+d'un réviseur est : partir du solde, suivre la référence, arriver au travail. La XREF se
+DÉRIVE — un papier référence un compte quand une ligne d'échantillon qu'il porte est une
+écriture de ce compte. Écrire la même référence à côté de chaque compte du poste aurait été
+plus simple et faux. Le compte renvoie à la balance générale rapprochée ; l'en-tête XREF
+renvoie à la liste complète des papiers, qui porte le geste « rédiger » et cesse d'être une
+section.
+
+**4. La cellule renvoie au justificatif — celle qui a été LUE dessus.** Le tableau de testing
+se lit en deux moitiés, nommées par le gabarit du cabinet : ce qui a été **sélectionné**
+(pièce, tiers, date, montant, motif — le grand livre) et les **travaux réalisés**
+(justificatifs, contrôles, anomalies — le document). Seule la seconde moitié porte le lien :
+lier les colonnes du grand livre laisserait croire qu'elles sortent du justificatif, ce qui est
+exactement l'erreur qu'un contrôle sur pièces cherche.
+
+## ADR-114 — La langue vient du cabinet : un catalogue de libellés, l'anglais par défaut
+
+**Contexte.** Les clients visés sont des cabinets anglo-saxons ; la demande est de passer la
+plateforme en anglais. **Traduire en dur reproduirait exactement le défaut dénoncé partout
+ailleurs** : du non modulable. Une plateforme qui vise plusieurs référentiels vise plusieurs
+langues — c'est la même dimension que le pack, et c'est DA-15 étendu.
+
+**Décision.** Un **catalogue de libellés par locale** (`src/lib/i18n/catalogue.ts`), l'anglais
+en défaut, le français conservé et **servi aux cabinets français** : la locale est une donnée
+du CABINET (`tenant.locale`), pas un réglage d'utilisateur. La démonstration se montre donc en
+français à un cabinet français et en anglais au reste — ce qui règle l'arbitrage que le
+fondateur relevait sur ses cinq premiers contacts.
+
+**Le moment est la décision.** Le catalogue entre AVANT la verticale profonde : l'introduire
+après trois cents libellés, c'est faire le travail deux fois. Et les écrans **migrent quand ils
+sont touchés**, jamais en une passe de traduction séparée — une passe séparée touche tout et
+n'éprouve rien.
+
+**Ce que la règle de lexique devient, et ce qu'elle ne devient pas.** `i18n.test.ts` tient la
+complétude : un concept = une entrée, dans chaque locale servie, variables comprises. Il
+**s'ajoute** à `lexique.test.ts`, il ne le remplace pas : les écrans non migrés portent encore
+leurs libellés en clair, et retirer la règle française maintenant les laisserait sans règle du
+tout. Les deux coexistent jusqu'à la fin de la migration.

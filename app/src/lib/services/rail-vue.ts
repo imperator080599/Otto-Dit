@@ -22,12 +22,18 @@ export interface EntreeRail {
   atteignable: boolean;
   /** La raison, en une ligne, quand ce n'est pas atteignable. */
   raison?: string;
-  /** Le groupe du rail vertical. */
+  /** Le groupe du rail vertical, DÉJÀ TRADUIT (le rail est rendu côté client). */
   groupe: string;
+  /** La clé du groupe — stable, c'est elle qu'un test interroge. */
+  groupeCle: CleGroupe;
 }
 
-/** L'ordre des groupes du rail — l'ordre du dossier, pas celui du code. */
-export const GROUPES = [
-  'Le dossier', 'Les comptes', 'Les postes', 'Travaux transverses',
-  'Demandes au client', 'Fin de mission',
+/**
+ * L'ordre des groupes du rail — l'ordre du dossier, pas celui du code.
+ * Ce sont des CLÉS de catalogue : le rail se lit dans la langue du cabinet.
+ */
+export const GROUPES_CLES = [
+  'rail.groupe.dossier', 'rail.groupe.comptes', 'rail.groupe.postes',
+  'rail.groupe.transverse', 'rail.groupe.demandes', 'rail.groupe.fin',
 ] as const;
+export type CleGroupe = (typeof GROUPES_CLES)[number];

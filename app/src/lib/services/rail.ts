@@ -1,11 +1,15 @@
 import { q, q1 } from '@/lib/db/client';
 import { motDuPack } from '@/lib/packs';
-import { GROUPES, type EntreeRail } from './rail-vue';
+import { GROUPES_CLES, type CleGroupe, type EntreeRail } from './rail-vue';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 /* La FORME du rail vit dans `rail-vue.ts`, sans un import de base : c'est le
    seul module que le composant client a le droit de lire (voir son en-tête). */
-export { GROUPES };
-export type { EntreeRail };
+export { GROUPES_CLES };
+export type { CleGroupe, EntreeRail };
+
+/** Le traducteur que le rail reçoit — il ne choisit pas la langue, il la sert. */
+export type Traducteur = (cle: CleLibelle, vars?: Record<string, string | number>) => string;
 
 // LE RAIL SUIT LE DOSSIER, PAS LE CATALOGUE DES FONCTIONS (ADR-103, ADR-112).
 //
@@ -80,39 +84,42 @@ export async function postesRetenus(engagementId: string): Promise<{ code: strin
  * Les entrées du rail, dans l'ordre du parcours, chacune avec sa PHRASE (ce
  * qu'on y trouve) et — dérivée de l'état — son atteignabilité et sa raison.
  */
-export async function railDuDossier(engagementId: string, packs: string[]): Promise<EntreeRail[]> {
+export async function railDuDossier(
+  engagementId: string, packs: string[], t: Traducteur,
+): Promise<EntreeRail[]> {
   const s = await etatDossier(engagementId);
   const base = `/eng/${engagementId}`;
   const sox = packs.includes('pcaob-sox');
   const mot = (c: Parameters<typeof motDuPack>[1]) => motDuPack(packs, c);
 
-  let groupe = '';
+  let groupeCle: CleGroupe = GROUPES_CLES[0];
   const entrees: EntreeRail[] = [];
-  const g = (nom: string) => { groupe = nom; };
+  const g = (cle: CleGroupe) => { groupeCle = cle; };
   const e = (
     chemin: string, label: string, phrase: string,
     atteignable: boolean, raison?: string,
   ) => {
     entrees.push({
-      href: chemin ? `${base}/${chemin}` : base, label, phrase, groupe,
+      href: chemin ? `${base}/${chemin}` : base, label, phrase,
+      groupe: t(groupeCle), groupeCle,
       atteignable, raison: atteignable ? undefined : raison,
     });
   };
 
-  g('Le dossier');
-  e('', 'Vue d\'ensemble', 'Ce qui m\'attend, l\'avancement du dossier et ce qui bloque.', true);
-  e('acceptance', 'Acceptation', 'La décision d\'accepter la mission, ses critères, et les jalons.', true);
-  e('team', 'Équipe et indépendance', 'Qui travaille sur le dossier, déclarations d\'indépendance, ancienneté et rotation.', true);
-  e('reunions', 'Réunions', 'Les contacts du client, les créneaux communs de l\'équipe, les invitations.', true);
-  e('carry-forward', 'Reprise du dossier N-1', 'Ce que le dossier de l\'an dernier propose de reprendre — jamais repris en silence.',
+  g('rail.groupe.dossier');
+  e('', t('rail.vue'), 'Ce qui m\'attend, l\'avancement du dossier et ce qui bloque.', true);
+  e('acceptance', t('rail.acceptation'), 'La décision d\'accepter la mission, ses critères, et les jalons.', true);
+  e('team', t('rail.equipe'), 'Qui travaille sur le dossier, déclarations d\'indépendance, ancienneté et rotation.', true);
+  e('reunions', t('rail.reunions'), 'Les contacts du client, les créneaux communs de l\'équipe, les invitations.', true);
+  e('carry-forward', t('rail.reprise'), 'Ce que le dossier de l\'an dernier propose de reprendre — jamais repris en silence.',
     s.n1, 'disponible quand l\'entité porte un dossier antérieur');
 
-  g('Les comptes');
-  e('imports', 'Balance et grand livre', 'Déposer la balance et le FEC, versions successives et rapport d\'impact.',
+  g('rail.groupe.comptes');
+  e('imports', t('rail.imports'), 'Déposer la balance et le FEC, versions successives et rapport d\'impact.',
     s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('reconciliation', 'Rapprochement comptable', 'La balance rapprochée du grand livre, compte par compte, écarts en tête.',
+  e('reconciliation', t('rail.rapprochement'), 'La balance rapprochée du grand livre, compte par compte, écarts en tête.',
     s.importe, 'disponible après l\'import de la balance et du grand livre');
-  e('balances-aux', 'Balances auxiliaires', 'Les tiers N/N-1 : concentration, apparus, disparus, vieillissement — candidats au registre.',
+  e('balances-aux', t('rail.balancesAux'), 'Les tiers N/N-1 : concentration, apparus, disparus, vieillissement — candidats au registre.',
     s.importe, 'disponible après l\'import de la balance et du grand livre');
   e('materiality', mot('materialite'), 'Le seuil proposé par la règle du cabinet, validé par un humain, et ses déclinaisons.',
     s.importe, 'disponible après l\'import de la balance et du grand livre');
@@ -123,10 +130,10 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
      poste ouvre son propre espace de travail — leadsheet, processus, contrôle
      interne, risques, échantillon, testing — et c'est là que se trouvent les
      écrans qui ne sont plus dans le rail. */
-  g('Les postes');
+  g('rail.groupe.postes');
   const postes = s.perimetre ? await postesRetenus(engagementId) : [];
   if (postes.length === 0) {
-    e('scoping', `${mot('postes')} retenus`, `Un espace de travail par poste retenu, ouvert par le ${mot('scoping').toLowerCase()}.`,
+    e('scoping', t('rail.postesRetenus'), `Un espace de travail par poste retenu, ouvert par le ${mot('scoping').toLowerCase()}.`,
       false, `apparaissent dès qu\'un poste est retenu au ${mot('scoping').toLowerCase()}`);
   }
   for (const p of postes) {
@@ -134,36 +141,36 @@ export async function railDuDossier(engagementId: string, packs: string[]): Prom
       `Le poste de bout en bout : leadsheet, processus, contrôle interne, risques, échantillon, testing.`, true);
   }
 
-  g('Travaux transverses');
-  e('processus', 'Processus', 'Le processus en données structurées : diagramme généré, différence N/N-1 statuée, entretiens.',
+  g('rail.groupe.transverse');
+  e('processus', t('rail.processus'), 'Le processus en données structurées : diagramme généré, différence N/N-1 statuée, entretiens.',
     s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('rcm', 'Contrôle interne', 'La matrice des risques et des contrôles, et les tests d\'efficacité.',
+  e('rcm', t('rail.controleInterne'), 'La matrice des risques et des contrôles, et les tests d\'efficacité.',
     s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('estimations', 'Estimations comptables', 'Le fichier de calcul du client : rapproché, recalculé, sondé, taux justifiés.',
+  e('estimations', t('rail.estimations'), 'Le fichier de calcul du client : rapproché, recalculé, sondé, taux justifiés.',
     s.perimetre, `disponible après le ${mot('scoping').toLowerCase()}`);
-  e('circularisations', 'Circularisations', 'Banques et avocats : le listing du client, ce qu\'il ne couvre pas, et les soldes confirmés.',
+  e('circularisations', t('rail.circularisations'), 'Banques et avocats : le listing du client, ce qu\'il ne couvre pas, et les soldes confirmés.',
     s.importe, 'disponible après le premier import — la complétude se juge contre le grand livre');
-  e('exceptions', sox ? 'Déviations (SOX)' : 'Écarts relevés', 'Chaque écart, son explication, sa corroboration, sa suite.',
+  e('exceptions', sox ? t('rail.deviations') : t('rail.ecarts'), 'Chaque écart, son explication, sa corroboration, sa suite.',
     s.ecarts, 'apparaît au premier écart relevé');
-  e('notes', 'Notes de revue', 'Toutes les notes, ancrées sur leurs objets, et qui doit y répondre.',
+  e('notes', t('rail.notes'), 'Toutes les notes, ancrées sur leurs objets, et qui doit y répondre.',
     s.papiers || s.notes, 'apparaît avec le premier papier ou la première note');
 
-  g('Demandes au client');
-  e('requests', 'Demandes au client', 'Les justificatifs demandés, leurs relances, et ce qui manque encore.',
+  g('rail.groupe.demandes');
+  e('requests', t('rail.demandes'), 'Les justificatifs demandés, leurs relances, et ce qui manque encore.',
     s.tirage || s.demandes, 'disponible après le tirage — les demandes naissent de l\'échantillon');
-  e('evidence', 'Pièces reçues', 'Tout ce que le client a déposé, empreinte et provenance comprises.',
+  e('evidence', t('rail.pieces'), 'Tout ce que le client a déposé, empreinte et provenance comprises.',
     s.demandes || s.pieces, 'disponible dès la première demande au client');
 
-  g('Fin de mission');
-  e('fs-tieout', 'Pointage des états financiers', 'Chaque chiffre de la plaquette rattaché à sa source.',
+  g('rail.groupe.fin');
+  e('fs-tieout', t('rail.pointage'), 'Chaque chiffre de la plaquette rattaché à sa source.',
     s.vise, 'disponible après le visa du papier de travail');
-  e('completion', 'Achèvement', 'Les cinq natures de fin de dossier, conclues par écrit.',
+  e('completion', t('rail.achevement'), 'Les cinq natures de fin de dossier, conclues par écrit.',
     s.vise, 'disponible après les visas des travaux');
   e('obstacles', mot('obstacles'), 'La liste calculée de tout ce qui reste à lever avant le visa.',
     s.acceptee, 'disponible après l\'acceptation de la mission');
-  e('close', 'Clôture et archive', 'Fermer le dossier et télécharger l\'archive scellée.',
+  e('close', t('rail.cloture'), 'Fermer le dossier et télécharger l\'archive scellée.',
     s.acheve, 'disponible après l\'achèvement');
-  e('events', 'Journal du dossier', 'Chaque geste, horodaté et chaîné — la piste d\'audit.', true);
+  e('events', t('rail.journal'), 'Chaque geste, horodaté et chaîné — la piste d\'audit.', true);
 
   return entrees;
 }

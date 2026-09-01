@@ -1,47 +1,116 @@
 {
   "_note": "LE GABARIT DU PAPIER DE TRAVAIL — la signature du cabinet. Un papier sort d'OTTO et va vivre dans le dossier du cabinet, sous les yeux de son réviseur puis d'un inspecteur : ses sections, ses colonnes, son en-tête et ses références lui appartiennent. La frontière reste la même que partout ailleurs — la méthode NOMME un bloc, le code sait le REMPLIR. Un bloc nommé que le moteur ne sait pas remplir arrête l'assemblage.",
   "version": "1.0.0",
-
   "_note_papiers": "Un gabarit par NATURE de papier. « substantif » est le seul que le moteur sache produire aujourd'hui ; en nommer un autre arrêterait l'assemblage plutôt que de sortir un document vide.",
   "papiers": {
     "substantif": {
       "libelle": "Papier de travail — contrôle substantif",
       "sections": [
-        { "bloc": "objectif", "titre": "Objectif et seuils" },
-        { "bloc": "etendue", "titre": "Étendue et population" },
-        { "bloc": "methode", "titre": "Méthode de sélection" },
-        { "bloc": "tableau_echantillon", "titre": "Éléments sélectionnés et travaux réalisés" },
-        { "bloc": "exceptions", "titre": "Anomalies et points relevés" },
-        { "bloc": "evaluation", "titre": "Évaluation des anomalies" },
-        { "bloc": "verification", "titre": "Contrôle de fiabilité" },
-        { "bloc": "conclusion", "titre": "Conclusion" }
+        {
+          "bloc": "objectif",
+          "titre": "Objectif et seuils"
+        },
+        {
+          "bloc": "etendue",
+          "titre": "Étendue et population"
+        },
+        {
+          "bloc": "methode",
+          "titre": "Méthode de sélection"
+        },
+        {
+          "bloc": "tableau_echantillon",
+          "titre": "Testing"
+        },
+        {
+          "bloc": "exceptions",
+          "titre": "Anomalies et points relevés"
+        },
+        {
+          "bloc": "evaluation",
+          "titre": "Évaluation des anomalies"
+        },
+        {
+          "bloc": "verification",
+          "titre": "Contrôle de fiabilité"
+        },
+        {
+          "bloc": "conclusion",
+          "titre": "Conclusion"
+        }
       ],
       "tableaux": {
         "echantillon": {
           "colonnes": [
-            { "champ": "piece", "titre": "Pièce" },
-            { "champ": "tiers", "titre": "Tiers" },
-            { "champ": "date", "titre": "Date" },
-            { "champ": "montant", "titre": "Montant HT" },
-            { "champ": "selection", "titre": "Motif de sélection" },
-            { "champ": "justificatifs", "titre": "Justificatifs obtenus" },
-            { "champ": "controles", "titre": "Contrôles effectués" },
-            { "champ": "anomalies", "titre": "Anomalies" }
+            {
+              "champ": "piece",
+              "titre": "Pièce",
+              "groupe": "selection"
+            },
+            {
+              "champ": "tiers",
+              "titre": "Tiers",
+              "groupe": "selection"
+            },
+            {
+              "champ": "date",
+              "titre": "Date",
+              "groupe": "selection"
+            },
+            {
+              "champ": "montant",
+              "titre": "Montant HT",
+              "groupe": "selection"
+            },
+            {
+              "champ": "selection",
+              "titre": "Motif de sélection",
+              "groupe": "selection"
+            },
+            {
+              "champ": "justificatifs",
+              "titre": "Justificatifs obtenus",
+              "groupe": "travaux"
+            },
+            {
+              "champ": "controles",
+              "titre": "Contrôles effectués",
+              "groupe": "travaux"
+            },
+            {
+              "champ": "anomalies",
+              "titre": "Anomalies",
+              "groupe": "travaux"
+            }
           ]
         },
         "exceptions": {
           "colonnes": [
-            { "champ": "type", "titre": "Type" },
-            { "champ": "description", "titre": "Description" },
-            { "champ": "impact", "titre": "Impact" },
-            { "champ": "statut", "titre": "Statut" },
-            { "champ": "suite", "titre": "Suite donnée" }
+            {
+              "champ": "type",
+              "titre": "Type"
+            },
+            {
+              "champ": "description",
+              "titre": "Description"
+            },
+            {
+              "champ": "impact",
+              "titre": "Impact"
+            },
+            {
+              "champ": "statut",
+              "titre": "Statut"
+            },
+            {
+              "champ": "suite",
+              "titre": "Suite donnée"
+            }
           ]
         }
       }
     }
   },
-
   "_note_annexes": "Les annexes rendent l'export AUTO-PORTANT : relisible sans OTTO, des années plus tard. Leur ordre et leur libellé sont à vous ; leur présence ne l'est pas — voir _note_obligatoires.",
   "annexes": {
     "parametres": "Annexe A — Paramètres de sondage et empreinte de population",
@@ -50,14 +119,12 @@
     "reviewNotes": "Annexe D — Notes de revue",
     "signoffs": "Annexe E — Visas"
   },
-
   "mentions": {
     "etabli_par": "Établi par",
     "valide_par": "Validé par",
     "modifications": "Modifications",
     "visas": "Visas"
   },
-
   "_note_entete": "L'en-tête du cabinet. `logo_data_uri` accepte une image en data: URI ; null = pas de logo. Rien n'est chargé depuis le réseau : un papier de travail qui dépend d'un serveur pour s'afficher n'est pas auto-portant.",
   "entete": {
     "cabinet": "Vermeil Audit — cabinet fictif",
@@ -65,20 +132,30 @@
     "logo_data_uri": null,
     "pied": "Document de travail — usage interne au dossier"
   },
-
   "_note_mise_en_page": "Tailles en points, couleurs en RVB 0..1. Le corps doit rester lisible imprimé : le validateur refuse en dessous de 6 pt.",
   "mise_en_page": {
     "corps_pt": 9,
     "titre_pt": 15,
     "section_pt": 11,
     "tableau_pt": 7.5,
-    "couleur_titre": [0.12, 0.3, 0.55],
-    "couleur_texte": [0.1, 0.12, 0.16],
-    "couleur_discrete": [0.4, 0.45, 0.55],
+    "couleur_titre": [
+      0.12,
+      0.3,
+      0.55
+    ],
+    "couleur_texte": [
+      0.1,
+      0.12,
+      0.16
+    ],
+    "couleur_discrete": [
+      0.4,
+      0.45,
+      0.55
+    ],
     "marge_gauche": 40,
     "marge_droite": 555
   },
-
   "_note_referencement": "LE SCHÉMA DE RÉFÉRENCEMENT — ce dont un réviseur se sert pour savoir où les travaux ont été faits. `modele` accepte les variables énumérées par le schéma ; `lettres_par_poste` donne la lettre de chaque poste dans VOTRE plan de classement.",
   "referencement": {
     "modele": "{lettre}-{sequence}",
@@ -92,6 +169,5 @@
       "_defaut": "Z"
     }
   },
-
   "_note_obligatoires": "CE QUI NE SE RETIRE PAS, et pourquoi c'est un argument et non une contrainte : le bloc de visas, la mention de version et l'empreinte de population restent sur chaque papier. Ce sont eux qui font que si OTTO disparaît demain, le papier dit encore à un inspecteur qui l'a signé, sur quelle version et sur quelle population — sans nous, sans licence, sans accès. Leur PLACE et leur LIBELLÉ sont à vous ; leur PRÉSENCE, non."
 }

@@ -52,11 +52,12 @@ export default async function ReunionsPage({
 
       <div className="panel">
         <h2>Les contacts de la mission</h2>
-        <p className="faint">
-          Le contact CLÉ fait le lien entre nos demandes et les responsables internes ; les contacts
-          par domaine répondent chacun de leur sujet. C&apos;est une donnée de la mission, pas de
-          l&apos;entité.
-        </p>
+        {/* LE PARAGRAPHE D'EXPLICATION SORT (règle générale de la revue n°1,
+            rappelée par la revue n°2). Les contacts eux-mêmes DÉMÉNAGENT vers
+            une section client à la création du dossier (P1) : ils restent ici
+            tant que cet écran n'existe pas, parce qu'un contact clé est exigé
+            pour envoyer une circularisation — le retirer sans destination
+            casserait ce chemin. */}
         {contacts.length === 0
           ? <p className="muted">Aucun contact déclaré — commencez par le contact clé.</p>
           : (

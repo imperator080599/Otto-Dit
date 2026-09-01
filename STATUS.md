@@ -1411,3 +1411,71 @@ intercepte toute page par une redirection SSO ; seule `/api/sante` a répondu. L
 est donc la RÉPONSE d'une sonde qui exécute les lectures de chaque écran dans la fonction —
 pas une capture. Le jour où la protection sera levée, `npm run fumee -- <url>` ouvrira les
 écrans eux-mêmes.
+
+## Revue n°2 — détenir ≠ répondre de, l'IPE, les XREF, et la langue qui vient du cabinet (2026-09-01)
+
+**Les deux manques du périmètre, d'abord.**
+
+- **P4 est fait** : la vue d'ensemble porte deux graphiques (avancement des sections, état des
+  notes de revue), **My assignments** en quatre listes qui ne se recouvrent pas, la vue par
+  membre, et ce qui empêche de signer. Le modèle qui le rend possible est la décision de fond
+  de cette tranche (ADR-113) : *détenir* et *répondre de* sont **deux attributs**, pas deux
+  filtres du même champ — sans quoi les deux listes montrent la même chose et personne ne s'en
+  aperçoit.
+- **La règle générale est appliquée** là où le rail avait été refait : « Le travail sur ce
+  poste » et « La boucle » supprimées, les trois paragraphes explicatifs d'Acceptation et celui
+  des contacts retirés, le *pourquoi* de chaque critère d'acceptation passé en infobulle. La
+  DONNÉE reste : c'est elle qui empêche un questionnaire d'acceptation de devenir une
+  formalité. **« Papiers de travail » ne subsiste plus** : les papiers se lisent en XREF sur la
+  leadsheet.
+
+**La langue est une donnée du CABINET** (ADR-114) : catalogue de libellés par locale, anglais
+par défaut, français servi aux cabinets français. Le mécanisme entre **avant** la verticale
+profonde, parce qu'un catalogue introduit après trois cents libellés se paie deux fois ; les
+écrans migrent quand ils sont touchés.
+
+**L'IPE est un bloc de chaque papier, et il BLOQUE** (ADR-113, migration 0031) : nature,
+exhaustivité, exactitude, date, pertinence et **le fichier désigné parmi les objets du
+dossier** — la contrainte est en base, pas seulement à l'écran ; ne pas répondre lève la
+onzième famille d'obstacles au visa. La rédaction est **proposée** à partir des faits saisis,
+marquée « à revoir », et n'entre au dossier que validée par un humain (L2).
+
+**La chaîne, verte, et la commande qui la rejoue.** `cd app && npm run verify` —
+**567 tests** (68 fichiers) · **81 routes** balayées en production, 0 échec · **47 routes de
+fumée**, 0 échec · **73 écrans mesurés**, 0 au-delà de 5 actions primaires, 86 champs à taper ·
+**146 étapes cliquées**, 0 échec, 272 clics sur 35 gestes, aucune exception navigateur ·
+**296 vues regardées**, 0 défaut. Les étapes ont été lancées dans l'ordre de `verify` sur le
+même monde semé (ce bac à sable suspend un processus d'arrière-plan dès que l'agent n'exécute
+plus rien).
+
+**Deux défauts que cette tranche a produits et corrigés, parce qu'ils se sont VUS :**
+le repli des groupes du rail levait une exception par bascule (`currentTarget` déjà libéré dans
+le calcul différé) — invisible tant qu'on ne clique pas, mesurée par `npm run clics` ; et les
+tableaux d'attributions faisaient défiler le CORPS de la page (une colonne de grille se
+laissait élargir par son contenu) — mesuré par `npm run visuel`, corrigé par `min-width: 0`
+sur les colonnes de grille.
+
+### Ce que je n'ai PAS fait — exhaustivement
+
+- **P1 et P2 ne sont pas faits**, et c'est un ÉCART À L'ORDRE DEMANDÉ, assumé et nommé :
+  l'ordre était « les deux manques → le catalogue → P1 + P2 → la verticale ». Le point d'arrêt,
+  lui, se juge sur les cinq points du §6 de la revue — dont deux (leadsheet avec XREF, papier
+  avec IPE) appartiennent à la verticale. Livrer P1+P2 avant la verticale aurait donné un arrêt
+  qui échoue à son propre critère. J'ai donc fait A → catalogue → verticale, et laissé P1+P2.
+- **La migration de langue est partielle** : rail (groupes et destinations), vue d'ensemble,
+  poste, bloc IPE. Le reste des écrans porte encore ses libellés en clair, **y compris les
+  infobulles du rail** — un rail dont les titres sont anglais et les infobulles françaises.
+- **Acceptation en trois sous-sections** (décision de maintien, background check par adaptateur,
+  rotation des associés) n'est pas faite. Les jalons sont **repliés, pas supprimés** : les
+  supprimer laisserait le geste « marquer un jalon fait » sans écran et l'obstacle « jalons »
+  sans destination.
+- **Équipe et indépendance** n'est pas réduite ; l'attestation reste ce qu'elle est (pas de
+  signature électronique qualifiée, et le mot n'est pas employé).
+- **Les contacts de mission** restent dans Réunions : les déplacer sans la section client de P1
+  casserait l'envoi des circularisations, qui exige un contact clé.
+- **« Reprise du dossier N-1 »** n'est pas supprimée (elle part avec P1).
+- **Le background check et la rotation des associés** ne sont pas commencés — et quand ils le
+  seront, l'un sera un adaptateur de fournisseur, l'autre un paramètre de pack vérifié sur
+  texte primaire et daté. Aucune durée de rotation n'a été écrite de mémoire ici.
+- **Les trois manques de la revue n°1** (test des écritures NEP 240, intragroupe, ajustements)
+  restent ouverts.

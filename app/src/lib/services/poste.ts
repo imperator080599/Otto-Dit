@@ -37,9 +37,26 @@ export interface BlocPoste {
   href: string | null;
 }
 
+/**
+ * UNE LIGNE DE LEADSHEET, avec ses RÉFÉRENCES CROISÉES (revue n°2 §3.2).
+ *
+ * Le geste de navigation de tout réviseur : on part du solde, on suit la
+ * référence, on arrive au travail. La XREF n'est pas décorative — c'est la
+ * PROVENANCE, exprimée en langage d'auditeur au lieu d'être une page qui
+ * s'explique. Elle se dérive : un papier référence un compte quand une ligne
+ * qu'il a testée porte ce compte. Écrire « REV-01 » à côté de chaque compte du
+ * poste serait plus simple et faux — un papier ne teste pas ce qu'il n'a pas vu.
+ */
+export interface LigneLeadsheet {
+  number: string;
+  label: string;
+  balanceCents: number;
+  xref: { id: string; code: string }[];
+}
+
 export interface VuePoste {
   fsli: { code: string; name: string; statement: string; balance: string; scoping: string; scoping_basis: string | null };
-  comptes: { number: string; label: string; balanceCents: number }[];
+  comptes: LigneLeadsheet[];
   totalCents: number;
   blocs: BlocPoste[];
   boucle: Boucle | null;
@@ -61,6 +78,8 @@ export function destinationsDuPoste(engagementId: string, code: string): string[
   return [
     `${b}/processus`, `${b}/rcm`, `${b}/risk`, `${b}/population`, `${b}/sampling`,
     `${b}/testing`, `${b}/loop`, `${b}/workpapers`, `${b}/exceptions`,
+    /* `/workpapers` : atteint par l'en-tête XREF de la leadsheet — la liste
+       porte le geste « rédiger le papier », elle n'est plus une section. */
     `${b}/provenance`, `${b}/dashboard`, `${b}/ask`, `${b}/poste/${c}`,
   ];
 }
@@ -75,8 +94,25 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
 
   const base = `/eng/${engagementId}`;
   const c = encodeURIComponent(code);
-  const comptes = await fsliAccounts(engagementId, code);
-  const totalCents = comptes.reduce((s, a) => s + a.balanceCents, 0);
+  const bruts = await fsliAccounts(engagementId, code);
+  const totalCents = bruts.reduce((s, a) => s + a.balanceCents, 0);
+
+  /* LES RÉFÉRENCES CROISÉES, par compte. Un papier référence un compte quand
+     une ligne d'échantillon qu'il porte est une écriture de ce compte. */
+  const refs = await q<{ account_no: string; id: string; code: string }>(
+    `select distinct g.account_no, w.id::text, w.code
+     from workpaper w
+     join procedure_instance p on p.id = w.procedure_id
+     join sample sa on sa.procedure_id = p.id
+     join sample_item i on i.sample_id = sa.id
+     join gl_entry g on g.id = i.unit_id
+     where w.engagement_id = $1 and p.fsli_code = $2
+     order by g.account_no, w.code`,
+    [engagementId, code]);
+  const comptes: LigneLeadsheet[] = bruts.map((a) => ({
+    ...a,
+    xref: refs.filter((r) => r.account_no === a.number).map((r) => ({ id: r.id, code: r.code })),
+  }));
 
   /* PROCESSUS — ce qui est décrit sur le dossier, et les changements N/N-1 non
      statués : un changement non statué est un travail qui reste. */

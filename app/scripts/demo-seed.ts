@@ -1,4 +1,4 @@
-import { closeDb, q1 } from '../src/lib/db/client';
+import { closeDb, q1, q01 } from '../src/lib/db/client';
 import { migrate } from '../src/lib/db/migrate';
 import { seedBase, IDS } from '../src/lib/seed';
 import { runPart1UpToWorkpaper } from '../src/lib/flows/part1';
@@ -38,6 +38,30 @@ export async function construireMondeDemo(stage: string = 'all') {
     await transitionNote(noteId, IDS.users.karim, 'addressed');
     /* ADR-028 (ADR-102) : jamais l'auteur — la note de Léa se clôt par Claire. */
     await transitionNote(noteId, IDS.users.claire, 'closed');
+
+    /* L'INFORMATION PRODUITE PAR L'ENTITÉ, répondue AVANT le visa — c'est
+       l'ordre réel : sans elle, le visa reste bloqué (obstacle « ipe »). Le
+       fichier désigné est le grand livre IMPORTÉ, qui est bien un objet du
+       dossier : l'échantillon en est tiré. */
+    {
+      const { enregistrerIpe, proposerRedaction } = await import('../src/lib/services/ipe');
+      const fec = await q01<{ id: string; filename: string }>(
+        `select id::text, filename from import_file
+         where engagement_id = $1 and kind in ('fec','gl_generic') order by created_at desc limit 1`,
+        [IDS.engNep]);
+      if (!fec) throw new Error('demo: aucun grand livre importé — l’IPE n’aurait rien à désigner');
+      const red = proposerRedaction({ nature: 'systeme', rapportCode: 'FEC-2025', nomFichier: fec.filename });
+      await enregistrerIpe(wpId, {
+        utilisee: true, nature: 'systeme', rapportCode: 'FEC-2025',
+        importFileId: fec.id,
+        exhaustivite: red.exhaustivite.replace(' [à revoir et à compléter par le préparateur avant visa]',
+          ' Total et nombre de lignes rapprochés de la balance générale : concordants.'),
+        exactitude: red.exactitude.replace(' [à revoir et à compléter par le préparateur avant visa]',
+          ' Quatre lignes rapprochées des factures d’origine : concordantes.'),
+        dateDocument: '2025-12-31', approprie: true, redigeParIa: true,
+      }, IDS.users.karim);
+    }
+
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');
     await signWorkpaper(wpId, IDS.users.claire, 'partner');
@@ -49,6 +73,31 @@ export async function construireMondeDemo(stage: string = 'all') {
     // follow-up position — some requested items never arrived, the deadline has passed
     // and the reminder cadence has fired. This is the real reminder engine on the real
     // clock (docs/07 story 11), not a backdated row.
+    /* LES SECTIONS DU DOSSIER — « My assignments » ne se démontre pas sur des
+       listes vides. Karim répond du poste, Claire le DÉTIENT (on la lui a
+       envoyée), et Léa suit le papier : les trois mécanismes sont distincts,
+       et le monde le montre. */
+    {
+      const { assurerSections, attribuerA, envoyerA, suivre, visiter } =
+        await import('../src/lib/services/sections');
+      await assurerSections(IDS.engNep);
+      const poste = await q01<{ id: string }>(
+        `select id::text from section_state where engagement_id = $1 and kind = 'poste' limit 1`,
+        [IDS.engNep]);
+      const papier = await q01<{ id: string; ref: string }>(
+        `select id::text, ref from section_state where engagement_id = $1 and kind = 'papier' limit 1`,
+        [IDS.engNep]);
+      if (poste) {
+        await attribuerA(poste.id, IDS.users.karim, IDS.users.claire);
+        await envoyerA(poste.id, IDS.users.claire, IDS.users.karim);
+      }
+      if (papier) {
+        await attribuerA(papier.id, IDS.users.karim, IDS.users.claire);
+        await suivre(papier.id, IDS.users.claire, true);
+        await visiter(IDS.engNep, 'papier', papier.ref, IDS.users.claire);
+      }
+    }
+
     await warp(25 * DAY_MS);
     await ensureReminders(IDS.engNep);
     console.log('  clock advanced 25 days — reminders sent; the revenue request is now overdue');
