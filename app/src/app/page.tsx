@@ -5,6 +5,7 @@ import { q } from '@/lib/db/client';
 import { getSessionUser } from '@/lib/core/auth';
 import { PORTAL_TOKENS } from '@/lib/seed';
 import { missionsParClient } from '@/lib/services/bascule';
+import { demoPublique } from '@/lib/core/demo-public';
 import { NouvelleMission } from './nouvelle-mission';
 
 // Home: dev sign-in switcher (ADR-006) + engagement list for the signed-in auditor.
@@ -29,9 +30,9 @@ async function logoutAction() {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; remis?: string }>;
 }) {
-  const { erreur } = await searchParams;
+  const { erreur, remis } = await searchParams;
   const user = await getSessionUser();
   const users = await q<{ id: string; name: string; firm_role: string }>(
     `select id, name, firm_role from app_user order by name`,
@@ -77,11 +78,26 @@ export default async function Home({
           {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
           <Link href="/methodology" className="btn secondary small">La méthode du cabinet</Link>
+          {/* LE GESTE, PAS LA VARIABLE D'ENVIRONNEMENT. Il n'existe que sur la
+              démonstration publique : ailleurs, aucun écran ne rase un dossier. */}
+          {demoPublique() && (
+            <Link href="/demo/remise-a-zero" className="btn secondary small">
+              Remettre le monde de démonstration à zéro
+            </Link>
+          )}
           <form action={logoutAction}>
             <button className="btn secondary small">Switch user</button>
           </form>
         </span>
       </div>
+      {remis === '1' && (
+        <div className="panel">
+          <p>
+            <span className="badge green">monde de démonstration remis à zéro</span> — tout est
+            revenu à l’état du dernier déploiement.
+          </p>
+        </div>
+      )}
       <NouvelleMission tenantId={user.tenant_id} erreur={erreur} />
 
       {/* GROUPÉES PAR CLIENT (ADR-100) : le groupe est le client, ses

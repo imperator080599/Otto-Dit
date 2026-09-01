@@ -115,8 +115,16 @@ export async function balayer(
         if (m.type() === 'error' && !bruit(m.text())) erreurs.push(`console : ${m.text()}`);
       });
       page.on('response', (r) => {
+        /* LA RÉPONSE DE LA PAGE ELLE-MÊME N'EST PAS UNE « RESSOURCE ».
+           Elle est jugée plus bas, par `status`, et elle peut être un 404
+           DÉCLARÉ (l'écran de remise à zéro n'existe qu'en démonstration
+           publique). La compter ici faisait échouer une attente explicite au
+           motif exact qu'elle était satisfaite — un contrôle qui se contredit
+           lui-même, et qui accuse l'écran innocent. */
+        const chemin = r.url().replace(base, '');
+        if (chemin === route.url && route.attendu !== undefined && r.status() === route.attendu) return;
         if (r.status() >= 400 && !ressourceIgnorable(r.url())) {
-          erreurs.push(`ressource ${r.status()} : ${r.url().replace(base, '')}`);
+          erreurs.push(`ressource ${r.status()} : ${chemin}`);
         }
       });
 
@@ -178,6 +186,29 @@ export async function balayer(
  * pendant qu'on lui dit « tout va bien » est le silence lu comme un succès,
  * une couche plus bas.
  */
+/**
+ * CE QUE LE SERVEUR A DIT AVANT DE RENDRE 500 — la cause, pas le symptôme.
+ *
+ * LE DÉFAUT VÉCU (2026-09-01) : un import de valeur depuis un composant client
+ * a emporté `pg` dans le bundle, et les 73 écrans ont rendu 500 d'un coup. Le
+ * harnais a annoncé « 73 écrans ne rendent pas » — vrai, et inutilisable : la
+ * cause tenait en une ligne (« Module not found: Can't resolve 'net' ») et
+ * dormait dans le journal du serveur, que l'assertion suivante n'atteignait
+ * jamais. Un harnais qui SAIT et ne dit pas est un silence lu comme un
+ * diagnostic (règle 13).
+ */
+export function causeServeur(journal: string): string {
+  const lignes = journal.split('\n').map((l) => l.replace(/\s+$/, ''));
+  const gardees: string[] = [];
+  for (const l of lignes) {
+    if (!/⨯|Error|error|Module not found|Can't resolve|Failed to compile|unhandledRejection|uncaughtException/.test(l)) continue;
+    const nette = l.replace(/\u001b\[[0-9;]*m/g, '').trim();
+    if (nette && !gardees.includes(nette)) gardees.push(nette);
+  }
+  if (!gardees.length) return '';
+  return `\n\nCE QUE LE SERVEUR A DIT (cause probable) :\n  ${gardees.slice(0, 12).join('\n  ')}`;
+}
+
 export function erreursServeur(journal: string): string[] {
   const lignes = journal.split('\n');
   const vues = new Set<string>();

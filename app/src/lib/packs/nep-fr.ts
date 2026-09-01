@@ -9,6 +9,16 @@ export const nepFr: AssurancePack = {
   id: 'nep-fr',
   name: 'NEP — Audit légal (France)',
   language: 'fr',
+  /* Le mot du terrain, pas celui du texte : « matérialité » est ce que disent
+     les cabinets français au quotidien (DA-15). Le concept, son calcul et ses
+     déclinaisons ne bougent pas d'un iota. */
+  vocabulaire: {
+    materialite: 'Matérialité',
+    scoping: 'Scoping',
+    poste: 'Poste',
+    postes: 'Postes',
+    obstacles: 'Ce qui empêche de signer',
+  },
   materiality: {
     benchmarks: [
       { code: 'pbt', label: { fr: 'Résultat courant avant impôt', en: 'Profit before tax' }, pctRange: [0.05, 0.1], pctDefault: 0.05 },

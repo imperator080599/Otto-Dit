@@ -131,6 +131,11 @@ async function main() {
     vals.wid = await depuis(`/eng/${engId}/workpapers`, /href="\/eng\/[0-9a-f-]{36}\/workpapers\/([0-9a-f-]{36})/);
     vals.rid = await depuis(`/eng/${engId}/requests`, /href="\/eng\/[0-9a-f-]{36}\/requests\/([0-9a-f-]{36})/);
     vals.cid = await depuis(`/eng/${engId}/rcm`, /href="\/eng\/[0-9a-f-]{36}\/rcm\/([0-9a-f-]{36})/);
+    /* LE POSTE se lit dans le RAIL lui-même (ADR-112) : c'est le seul endroit
+       qui connaît les postes RETENUS du dossier, et c'est précisément le
+       chemin qu'un auditeur emprunte. Le déduire d'un code écrit en dur
+       laisserait l'écran non balayé le jour où le monde change de poste. */
+    vals.code = await depuis(`/eng/${engId}`, /href="\/eng\/[0-9a-f-]{36}\/poste\/([A-Za-z0-9_%-]+)"/);
     /* La pièce se trouve là où l'écran en met une : le papier de travail porte
        ses annexes, les balances auxiliaires leur fichier. */
     vals.evidenceId = (vals.wid ? await depuis(`/eng/${engId}/workpapers/${vals.wid}`, /href="\/api\/blob\/([0-9a-f-]{36})/) : null)

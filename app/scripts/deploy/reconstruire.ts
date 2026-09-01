@@ -1,5 +1,6 @@
 import { getDb, closeDb, dbKind } from '../../src/lib/db/client';
 import { construireMondeDemo } from '../demo-seed';
+import { instantanerLeMonde, etatInstantane } from '../../src/lib/services/monde-demo';
 
 // npm run deploy:reconstruire (ADR-109, P0a) — reconstruit LA DÉMO PUBLIQUE
 // dans la base réseau : schéma rasé, migrations, monde de démonstration
@@ -54,6 +55,7 @@ async function main() {
     `select count(*)::text n from information_schema.tables
      where table_schema = 'public' and table_name = 'tenant'`)).rows[0].n !== '0'
     && (await db.query<{ n: string }>(`select count(*)::text n from tenant`)).rows[0].n !== '0';
+  let reconstruit = false;
   if (dejaSeme && process.env.OTTO_RECONSTRUIRE !== '1') {
     const { migrate } = await import('../../src/lib/db/migrate');
     const appliquees = await migrate();
@@ -65,6 +67,29 @@ async function main() {
        demo:seed — c'est aussi la VÉRIFICATION du pilote réseau : chaque
        service, chaque contrainte, chaque trigger tourne sur le vrai Postgres. */
     await construireMondeDemo('all');
+    reconstruit = true;
+  }
+
+  /* L'INSTANTANÉ DU MONDE — ce que le bouton « remettre à zéro » restaure.
+     Semer prend une dizaine de minutes sur la base réseau : aucune fonction
+     serverless ne peut le rejouer. On fige donc ici, au build, l'état exact
+     que le bouton rendra — et l'écran affiche la date de ce figeage, pour que
+     « à zéro » veuille dire quelque chose de vérifiable.
+
+     QUAND ON LE REPREND : après une reconstruction (évident), quand il
+     n'existe pas, et quand une migration a changé la forme des tables — dans
+     ce dernier cas l'instantané fige le monde TEL QU'IL EST à ce déploiement,
+     et le journal le dit au lieu de le taire. */
+  const avant = await etatInstantane();
+  if (reconstruit || !avant.existe || !avant.aJour) {
+    const raison = reconstruit ? 'monde reconstruit'
+      : !avant.existe ? 'aucun instantané sur cette base'
+        : `schéma changé depuis l'instantané (${avant.desaccords.slice(0, 3).join(' · ')})`;
+    const inst = await instantanerLeMonde();
+    console.log(`instantané du monde repris — ${raison} : ${inst.tables} table(s), ${inst.lignes} ligne(s)`
+      + (reconstruit ? '' : ' — « remettre à zéro » ramènera donc à l\'état de CE déploiement'));
+  } else {
+    console.log(`instantané du monde conservé (pris le ${avant.prisLe ?? '—'})`);
   }
 
   /* LA TENTATIVE DE FUITE, SUR LE VRAI POSTGRES, À CHAQUE DÉPLOIEMENT.

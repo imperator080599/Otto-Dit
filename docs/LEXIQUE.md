@@ -20,12 +20,35 @@ ci-dessous — soit la règle existe et tourne, soit la case est vide avec son m
 | Un constat du testing sur une ligne (exception) | **écart** | « anomalie » pour ce concept | (revue) |
 | Une anomalie ÉVALUÉE (misstatement, corrigée ou non) | **anomalie** | « écart » pour ce concept | |
 | Une déviation d'un test de contrôle (SOX) | **déviation** | « écart » / « exception » pour ce concept | |
-| Le seuil de signification (materiality) | **seuil de signification** (« seuil » en second emploi) | « matérialité » | ✓ |
+| Le seuil de signification (materiality) | **le mot du PACK** — pack France : **matérialité** (« seuil » en second emploi) | l'autre mot du même concept : sur un pack qui dit « matérialité », « seuil de signification » est l'écart | ✓ |
 | La sélection d'items à tester | **échantillon** (l'acte : **tirage**) | « sondage » comme titre | |
 | Le papier de travail (workpaper) | **papier** | « feuille de travail » | ✓ |
 | Un facteur de risque déclaré au registre | **facteur** | « risque » seul pour cet objet (le « risque » est le niveau par assertion) | |
 | La signature d'étape (signoff) | **visa** | « signature » réservé au geste sur le papier | |
 | L'écriture comptable (gl entry) | **écriture** | « transaction » dans un libellé FR | ✓ |
+
+## Le mot du concept vient du PACK (DA-15, R-11, ADR-112 — 2026-09-01)
+
+La règle s'est **retournée**, et il faut le lire jusqu'au bout. Le Code de commerce et les NEP
+disent *seuil de signification* ; les cabinets français, au quotidien, disent *matérialité* —
+et c'est ce que le fondateur dit. Les deux ont raison dans leur registre. Le produit ne
+tranche donc plus pour tout le monde : le libellé est une **donnée du référentiel**
+(`packs/types.ts` → `vocabulaire`, lu par `motDuPack()`), au même titre que les seuils et les
+taxonomies.
+
+La règle appliquée par test n'est pas « le mot est libre ». C'est : **le mot vient du pack, et
+un écran n'en mélange jamais deux pour un concept.** Sur les deux packs livrés, le mot est
+« matérialité » ; « seuil de signification » devient donc l'écart — sauf là où l'on CITE un
+texte légal (le noyau de rétention, les citations d'articles) : on ne récrit pas une source.
+
+Trois libellés ont suivi le même chemin : « Périmètre (postes retenus) » → **Scoping**,
+« Seuils de signification » → **Matérialité**, « Obstacles au visa » → **Ce qui empêche de
+signer**.
+
+**Ce qui n'est PAS encore fait, et qui est dit plutôt que caché** : `services/query`
+(Interroger) porte le mot en dur, parce que ce service ne reçoit pas le référentiel du
+dossier. Le jour où un pack déclare un autre mot, cette table doit le LIRE. C'est écrit dans
+le code, à l'endroit exact, et inscrit au registre.
 
 ## L'état des lieux qui a fondé ce tableau (compté le 2026-08-31)
 

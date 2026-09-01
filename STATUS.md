@@ -1317,3 +1317,82 @@ n°7) est revenue sur deux écrans dès son ajout, et a disparu dès que le matc
 restreint aux URL qui portent le paramètre (2 exceptions → 0, mesuré). Même leçon que le
 layout racine : ne pas faire varier ce que le rendu voit.
 
+## P3 + P4 — la charpente : rail vertical, navigation PAR POSTE, vue d'ensemble qui sert (2026-09-01)
+
+**Pourquoi cette tranche existe.** La revue utilisateur n°1 n'a pas cassé le contenu, elle a
+cassé le **cadre** : « onglets en haut », « vue d'ensemble inutile ». Tuan a déplacé le point
+d'arrêt ici, avant la création de dossier et la verticale chiffre d'affaires : *si la charpente
+est fausse, tout ce qu'on bâtit dessus est à refaire*.
+
+**Ce qui a changé, à l'écran.**
+
+- **Le rail est vertical et groupé** (ADR-112) : Le dossier · Les comptes · **Les postes** ·
+  Travaux transverses · Demandes au client · Fin de mission. La règle ADR-103 est intacte —
+  une destination n'apparaît que quand l'état du dossier la rend atteignable, le reste est
+  grisé avec sa raison derrière « tout afficher ».
+- **Un poste retenu = une destination** (`/eng/<id>/poste/<code>`), avec les six étapes dans
+  l'ordre où on les travaille : leadsheet → processus → contrôle interne → évaluation des
+  risques → échantillon → contrôle sur pièces. Chaque étape porte des CHIFFRES dérivés et un
+  lien vers l'endroit où l'on agit. Population, sondage, testing, risque, boucle, papiers et
+  provenance **quittent le rail** : ce sont des étapes d'un poste, pas des sections.
+- **La vue d'ensemble est un tableau de bord, et d'abord le MIEN** : ce qui m'attend (même
+  dérivation que « Mes travaux », restreinte au dossier), l'avancement par poste en barres
+  colorées par statut, demandes et papiers, ce qui empêche de signer par famille, qui porte
+  quoi dans l'équipe, notes de revue ouvertes rédigées.
+- **Le vocabulaire vient du pack** (DA-15) : « Matérialité », « Scoping », « Ce qui empêche de
+  signer ». Le pack porte un bloc `vocabulaire`, les écrans le lisent, et la règle du lexique
+  s'est retournée : ce n'est pas « le mot est libre », c'est « le mot vient du pack, et un
+  écran n'en mélange jamais deux pour un concept ».
+- **« Remettre le monde de démonstration à zéro »** est un geste du produit (DA-17), visible
+  seulement en démonstration publique : un écran de confirmation qui CHIFFRE ce qu'il efface
+  (aujourd'hui / après, ligne par ligne) et la date de l'instantané qu'il restaure. Il ne
+  rejoue pas le semis — dix minutes sur la base réseau, aucune fonction serverless ne vit
+  aussi longtemps : il restaure l'instantané pris au déploiement, en une transaction.
+
+**Les trois gardes que cette tranche ajoute, et le défaut qui les a produits.**
+
+1. **Aucun écran de dossier injoignable.** Réorganiser une navigation, c'est retirer des
+   entrées ; une entrée retirée dont l'écran n'est repris nulle part devient un objet qu'aucun
+   chemin de lecture n'atteint, et rien ne le signale. `rail.test.ts` lit l'arborescence des
+   routes sur le disque et exige : rail, poste, ou déclaration écrite avec la destination.
+2. **Aucun composant client n'emporte la base dans le navigateur.** Le rail vertical est un
+   composant client ; un `import { GROUPES } from 'services/rail'` — valeur, pas type — a
+   suffi à tirer `pg`, donc `net`/`tls`/`dns`, dans le bundle. Le build de production a échoué
+   et, en développement, **73 écrans ont rendu 500 d'un coup**, y compris le portail client.
+   `client-serveur.test.ts` suit désormais le GRAPHE des imports depuis chaque `'use client'`.
+   Éprouvé en le cassant exprès : il rend la chaîne `nav.tsx → services/rail → lib/db/client`.
+3. **Un harnais qui sait le DIT.** Le balayage a annoncé « 73 écrans ne rendent pas » — vrai et
+   inutilisable : la cause tenait en une ligne (`Module not found: Can't resolve 'net'`) et
+   dormait dans le journal du serveur, qu'une assertion plus loin aurait imprimée.
+   `causeServeur()` joint maintenant ce que le serveur a dit à la liste de ce qui est cassé.
+
+**Ce que je n'ai PAS fait, et qu'il faut lire avant de croire l'écran.**
+
+- **P1 (création de dossier) et P2 (toute donnée manquante engendre une demande)** ne sont pas
+  faits : c'était le point d'arrêt demandé.
+- **Le lien poste ↔ cycle de processus n'est pas modélisé.** L'étape « Processus » d'un poste
+  montre ce qui est décrit sur le DOSSIER et laisse l'auditeur juger. Inventer un rattachement
+  aurait été pire que l'avouer.
+- **« Qui doit poser quel visa » n'est toujours pas un droit modélisé.** Le tableau de bord ne
+  montre par personne que les deux attributions nominatives réelles : notes reçues, notes
+  posées. Il n'y a pas de troisième colonne parce qu'il n'y a pas de troisième vérité.
+- **`services/query` (Interroger) porte encore « matérialité » en dur** : ce service ne reçoit
+  pas le référentiel du dossier. Écrit dans le code, à l'endroit exact, et au registre.
+- **Les écrans `materiality` et `scoping` restent en anglais sous leur titre** : seul le titre
+  a suivi le pack. La francisation complète est le chantier M-13, pas cette tranche.
+- **Le contrôle interne et le processus sont séparés dans la NAVIGATION**, pas encore dans le
+  contenu : deux écrans qui existaient déjà, désormais à deux entrées distinctes.
+- **Les trois manques de la revue** (test des écritures NEP 240, intragroupe, ajustements du
+  client) ne sont pas ouverts ; le point-par-point R-14 non plus.
+
+**La chaîne, verte, et la commande qui la rejoue.** `cd app && npm run verify` —
+**546 tests** (65 fichiers) · **81 routes** balayées sur un build de production, 0 échec ·
+**47 routes de fumée**, 0 échec · **73 écrans mesurés**, 0 au-delà de 5 actions primaires,
+71 champs à taper · **146 étapes cliquées**, 0 échec, 270 clics sur 35 gestes ·
+**296 vues regardées** (clair/sombre, large/390 px), 0 défaut.
+
+*Comment elle a été passée ici, et pourquoi c'est dit* : ce bac à sable suspend un processus
+d'arrière-plan dès que l'agent n'exécute plus rien, ce qui fait mourir un `npm run verify` de
+quinze minutes en une seule commande. Les étapes ont donc été lancées **dans l'ordre de
+`verify`, sur le même monde semé**, une commande par étape. `npm run verify` reste LA commande
+qui rejoue l'ensemble sur une machine ordinaire.

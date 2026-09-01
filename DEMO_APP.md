@@ -65,12 +65,19 @@ désignée — sans elle il ne pourrait rien planifier, et personne ne saurait p
 **Ce qu'il faut montrer** : recréez le même dossier une seconde fois. Refusé : *deux dossiers de même
 nature sur le même exercice feraient deux vérités sur les mêmes comptes.*
 
-**Et regardez le rail à gauche** (ADR-103) : le dossier qui vient de naître montre **cinq
+**Et regardez le rail à gauche** (ADR-103, ADR-112) : le dossier qui vient de naître montre **cinq
 destinations** — vue d'ensemble, acceptation, équipe, réunions, journal — parce que le rail montre
 **l'état du dossier, pas le catalogue des fonctions**. « Tout afficher » déplie la carte complète :
 ce qui n'est pas encore atteignable y est **grisé avec sa raison** (« disponible après le tirage de
 l'échantillon ») — jamais masqué sans explication. Le rail grandit à mesure que vous travaillez ;
 sur Altiverre, déjà conduit, il est presque entier.
+
+Il est **vertical et groupé** : Le dossier · Les comptes · **Les postes** · Travaux transverses ·
+Demandes au client · Fin de mission. Le groupe du milieu porte **un poste retenu par ligne** — c'est
+l'axe du produit : on ne va pas dans « échantillon », on va dans « chiffre d'affaires », et on y
+trouve les six étapes dans l'ordre où on les travaille (leadsheet, processus, contrôle interne,
+risques, échantillon, contrôle sur pièces). Les écrans qui servaient ces étapes ne sont plus dans le
+rail : ils sont **dans le poste**.
 
 ---
 
@@ -118,7 +125,8 @@ toujours vrai » ; écarter sans motif est indistinguable d'un oubli.*
 
 ### 6. Les données, le rapprochement, les seuils, le périmètre
 
-**Écrans** : `Imports (balance et grand livre)`, `Rapprochement comptable`, `Seuils de signification`, `Périmètre (postes retenus)`.
+**Écrans** : `Balance et grand livre`, `Rapprochement comptable`, `Matérialité`, `Scoping`
+(les deux derniers portent le mot du **pack de référentiel**, pas un mot du code — DA-15).
 
 Déjà déroulés par `npm run demo:seed`. Le rapprochement porte une **limitation consignée** : l'écart
 tient à une écriture absente du grand livre, il n'y a ni pièce à joindre ni écriture à citer, et le

@@ -55,7 +55,7 @@ const REFUSAL: Record<string, { fr: string; en: string }> = {
     en: 'This question does not translate into a catalogue query. OTTO does not answer from memory — it only shows records from the file. Rephrase, or pick a query below.',
   },
   threshold_not_validated: {
-    fr: 'Le seuil demandé n’est pas encore validé sur ce dossier — validez le seuil de signification, puis reposez la question.',
+    fr: 'Le seuil demandé n’est pas encore validé sur ce dossier — validez la matérialité, puis reposez la question.',
     en: 'The requested threshold is not validated on this engagement yet — validate materiality, then ask again.',
   },
 };
@@ -76,8 +76,12 @@ function refusalMessage(reason: string, lang: 'fr' | 'en'): string {
   return lang === 'fr' ? 'Question non traduisible.' : 'Question could not be translated.';
 }
 
+/* Le mot du concept vient du PACK (DA-15). Ici il est écrit en dur au mot du
+   pack France, parce que ce service ne reçoit pas encore le référentiel du
+   dossier ; le jour où un pack déclare un autre mot, cette table le LIT au
+   lieu de le porter (inscrit au registre — R-11). */
 const THRESHOLD_LABEL: Record<string, { fr: string; en: string }> = {
-  materiality: { fr: 'seuil de signification', en: 'materiality' },
+  materiality: { fr: 'matérialité', en: 'materiality' },
   performance_materiality: { fr: 'seuil de planification', en: 'performance materiality' },
   clearly_trivial: { fr: 'seuil de remontée des anomalies', en: 'clearly trivial threshold' },
   tolerable_misstatement: { fr: 'anomalie tolérable', en: 'tolerable misstatement' },

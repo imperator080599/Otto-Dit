@@ -23,7 +23,7 @@ import { binaireDe, groupeDetache, tuerArbre } from '../app/scripts/lib/portable
 import path from 'node:path';
 import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
 import { closeDb } from '../app/src/lib/db/client';
-import { balayer, erreursServeur, ServeurTombe } from '../app/scripts/screens/sweep';
+import { balayer, causeServeur, erreursServeur, ServeurTombe } from '../app/scripts/screens/sweep';
 
 const PORT = Number(process.env.SCREENS_TEST_PORT ?? 3299);
 const BASE = `http://localhost:${PORT}`;
@@ -162,7 +162,9 @@ describe('tous les écrans rendent', () => {
     const casses = verdicts.filter((v) => !v.ok).map(
       (v) => `${v.route.pattern} → HTTP ${v.status}, ${v.texte} car.${v.erreurs.length ? ' · ' + v.erreurs.join(' · ') : ''}`,
     );
-    expect(casses, 'écrans qui ne rendent pas').toEqual([]);
+    /* La LISTE des écrans cassés dit le symptôme ; le journal du serveur dit
+       la cause. Les deux ensemble, ou l'échec fait perdre une heure. */
+    expect(casses, `écrans qui ne rendent pas${casses.length ? causeServeur(journal.join('')) : ''}`).toEqual([]);
 
     /* Une route peut rendre 200 pendant que le serveur lève : c'est ce qui a
        laissé six formulaires inertes en production une tranche entière. */

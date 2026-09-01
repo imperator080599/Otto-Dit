@@ -9,6 +9,13 @@ export const pcaobSox: AssurancePack = {
   id: 'pcaob-sox',
   name: 'PCAOB AS / SOX 404 + COSO 2013 (ICFR)',
   language: 'en',
+  vocabulaire: {
+    materialite: 'Matérialité',
+    scoping: 'Scoping',
+    poste: 'Poste',
+    postes: 'Postes',
+    obstacles: 'Ce qui empêche de signer',
+  },
   materiality: {
     benchmarks: [
       { code: 'pbt', label: { fr: 'Résultat avant impôt', en: 'Pre-tax income' }, pctRange: [0.05, 0.1], pctDefault: 0.05 },

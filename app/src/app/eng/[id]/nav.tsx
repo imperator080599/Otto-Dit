@@ -3,35 +3,47 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import type { EntreeRail } from '@/lib/services/rail';
+import { GROUPES, type EntreeRail } from '@/lib/services/rail-vue';
 
-// LE RAIL D'ÉTAT (ADR-103). Il reçoit ses entrées CALCULÉES côté serveur
-// (services/rail.ts) : atteignable ou pas, et pourquoi. Par défaut il ne
-// montre que ce qui est atteignable — un dossier neuf en montre cinq, et le
-// rail grandit à mesure qu'on travaille. « Tout afficher » déplie la carte
-// complète : ce qui n'est pas encore atteignable y est GRISÉ avec sa raison
-// en une ligne — jamais masqué sans explication.
+// LE RAIL VERTICAL (ADR-112, R-03). Il reçoit ses entrées CALCULÉES côté
+// serveur (services/rail.ts) : atteignable ou pas, et pourquoi — et son
+// GROUPE. Les onglets en haut mettaient trente destinations sur une ligne et
+// suggéraient qu'elles étaient toutes du même rang ; elles ne le sont pas.
+// À gauche, en colonne, un groupe par nature de travail, les POSTES au milieu
+// parce que c'est là que le dossier se fait.
+//
+// Par défaut il ne montre que ce qui est atteignable. « Tout afficher »
+// déplie la carte complète : ce qui n'est pas encore atteignable y est GRISÉ
+// avec sa raison — jamais masqué sans explication.
 
 export function EngNav({ entrees }: { entrees: EntreeRail[] }) {
   const pathname = usePathname();
   const [tout, setTout] = useState(false);
   const aVenir = entrees.filter((x) => !x.atteignable);
+  const actif = (href: string) =>
+    (/\/eng\/[^/]+$/.test(href) ? pathname === href : pathname.startsWith(href));
+
   return (
-    <nav className="engnav">
-      {entrees.map((it) => {
-        if (it.atteignable) {
-          const active = /\/eng\/[^/]+$/.test(it.href) ? pathname === it.href : pathname.startsWith(it.href);
-          return (
-            <Link key={it.href} href={it.href} className={active ? 'active' : ''} title={it.phrase}>
-              {it.label}
-            </Link>
-          );
-        }
-        if (!tout) return null;
+    <nav className="rail" aria-label="Sections du dossier">
+      {GROUPES.map((g) => {
+        const dedans = entrees.filter((x) => x.groupe === g);
+        const visibles = dedans.filter((x) => x.atteignable || tout);
+        if (visibles.length === 0) return null;
         return (
-          <span key={it.href} className="grise" title={it.phrase}>
-            {it.label} <span className="raison">— {it.raison}</span>
-          </span>
+          <div className="rail-groupe" key={g}>
+            <div className="rail-titre">{g}</div>
+            {visibles.map((it) => (it.atteignable ? (
+              <Link key={it.href + it.label} href={it.href}
+                className={`rail-lien${actif(it.href) ? ' active' : ''}`} title={it.phrase}>
+                {it.label}
+              </Link>
+            ) : (
+              <span key={it.href + it.label} className="rail-lien grise" title={it.phrase}>
+                {it.label}
+                <span className="raison">{it.raison}</span>
+              </span>
+            )))}
+          </div>
         );
       })}
       {aVenir.length > 0 && (

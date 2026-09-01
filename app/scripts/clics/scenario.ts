@@ -241,18 +241,41 @@ export async function conduire(
   await station('rail : l\'état du dossier, pas le catalogue', async () => {
     if (!engNeuf) { dire('rail : pas de dossier neuf', false, 'étape 1 en échec'); return; }
     await aller(`${base}/eng/${engNeuf}`);
-    const liens = await compte('.engnav a');
+    const liens = await compte('.rail a.rail-lien');
     /* Un dossier neuf (accepté ou pas selon le rejeu) montre PEU : le rail
        grandit avec le travail, il ne présente pas le catalogue. */
     dire('rail : un dossier jeune montre un rail COURT (état, pas catalogue)',
       liens >= 5 && liens <= 12, `${liens} destination(s) atteignable(s)`);
+    /* LE RAIL EST VERTICAL ET GROUPÉ (ADR-112) : ce n'est pas une préférence
+       d'affichage, c'est la thèse — les destinations ne sont pas toutes du
+       même rang, et un groupe le dit. On le MESURE dans le navigateur : une
+       classe posée ne prouve pas une colonne. */
+    /* LE RAIL EST VERTICAL (ADR-112) : ce n'est pas une préférence
+       d'affichage, c'est la thèse — les destinations ne sont pas toutes du
+       même rang. On le MESURE dans le navigateur : une classe posée ne prouve
+       pas une colonne (règle 15). */
+    const enColonne = await p.evaluate(`(() => {
+      const l = [...document.querySelectorAll('.rail a.rail-lien')].slice(0, 2)
+        .map((e) => e.getBoundingClientRect());
+      return l.length === 2 ? l[1].top > l[0].top + 4 : false;
+    })()`);
+    dire('rail : vertical — les destinations sont empilées, pas alignées',
+      enColonne === true, `liens empilés : ${enColonne}`);
     dire('rail : « tout afficher » annonce ce qui reste, jamais un masquage muet',
-      (await compte('.engnav .rail-tout')) === 1,
-      await p.locator('.engnav .rail-tout').innerText().catch(() => 'absent'));
-    await p.locator('.engnav .rail-tout').click();
+      (await compte('.rail .rail-tout')) === 1,
+      await p.locator('.rail .rail-tout').innerText().catch(() => 'absent'));
+    await p.locator('.rail .rail-tout').click();
     await p.waitForTimeout(400);
-    const grises = await compte('.engnav .grise');
-    const t = await p.locator('.engnav').innerText();
+    /* Déplié, le rail montre les SIX groupes — un dossier jeune n'en ouvre que
+       deux, et c'est ce qui rendrait le compte instable sans le dépliage. */
+    /* `allInnerTexts` rend le texte TEL QU'IL S'AFFICHE : la feuille de style
+       met les titres de groupe en capitales, et comparer au libellé du code
+       échouerait sur une différence de casse — pas sur une règle. */
+    const titres = (await p.locator('.rail .rail-titre').allInnerTexts()).map((t) => t.toLowerCase());
+    dire('rail : groupé par nature de travail, les POSTES au milieu',
+      titres.length === 6 && titres[2] === 'les postes', titres.join(' · '));
+    const grises = await compte('.rail .rail-lien.grise');
+    const t = await p.locator('.rail').innerText();
     dire('rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne',
       grises > 0 && /disponible après|apparaît/.test(t), `${grises} grisée(s), raisons visibles`);
   });

@@ -87,6 +87,11 @@ export async function parametres(): Promise<Record<string, string>> {
     cid: await un(`select id::text v from control order by code limit 1`),
     // /eng/[id]/requests/[rid]
     rid: await un(`select id::text v from request where engagement_id = '${engId}' order by seq_no limit 1`),
+    // /eng/[id]/poste/[code] — l'espace de travail d'un poste RETENU (ADR-112).
+    // Un poste hors périmètre rendrait une page vraie mais vide : on balaye
+    // celui sur lequel le dossier travaille.
+    code: await un(`select code v from fsli where engagement_id = '${engId}'
+                    and scoping in ('in_scope','in_scope_qualitative') order by code limit 1`),
     // /eng/[id]/workpapers/[wid]
     wid: await un(`select id::text v from workpaper where engagement_id = '${engId}' order by code limit 1`),
     // /portal/[token]
@@ -149,7 +154,8 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
        raconte l'intérieur de l'instance. Hors d'elle, 404 — déclaré ici, donc
        un 200 inattendu échouerait (c'est le but). */
     const publique = process.env.OTTO_DEMO_PUBLIC === '1' || process.env.VERCEL === '1';
-    const lienDemo = (pattern === '/demo/[qui]' || pattern === '/api/sante') && !publique;
+    const lienDemo = (pattern === '/demo/[qui]' || pattern === '/api/sante'
+      || pattern === '/demo/remise-a-zero') && !publique;
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie

@@ -28,8 +28,15 @@ import { repoRoot, closeDb } from '../../src/lib/db/client';
 //     un champ ne supprime pas la frappe. C'est la matière de
 //     docs/AUTOMATISATION.md — ce compte doit baisser tranche après tranche.
 //
-// Le chrome de navigation (bandeau, rail) n'est ni une action d'écran ni un
-// champ : il est le même partout, par conception.
+// Le chrome de navigation n'est ni une action d'écran ni un champ : il est le
+// même partout, par conception. Il en existe TROIS, et ils sont nommés ici
+// pour qu'on ne puisse pas en ajouter un quatrième en silence : le bandeau
+// haut (.topbar), le rail du dossier (nav) et l'EN-TÊTE DU DOSSIER
+// (.dossier-entete — fil d'Ariane, bascule entre dossiers, référentiels,
+// bouton « interroger le dossier »), identique sur tous les écrans d'un
+// dossier depuis ADR-112. Cette exclusion CHANGE les chiffres publiés : la
+// bascule comptait pour deux commandes repliées sur chaque écran, elle n'y
+// compte plus. C'est une reclassification, pas un allègement.
 //
 // CE QUE LA MESURE REFUSE DE PUBLIER (leçon de la première version, dont le
 // tableau annonçait 0|0 sur des écrans qui portent des boutons inconditionnels
@@ -78,7 +85,7 @@ function lancer(args: string[]): ChildProcess {
    au premier evaluate — vécu, pas supposé). */
 const COMPTER = `(() => {
   const rects = (e) => e.getClientRects().length > 0;
-  const chrome = (e) => e.closest('.topbar') || e.closest('nav');
+  const chrome = (e) => e.closest('.topbar') || e.closest('nav') || e.closest('.dossier-entete');
   const item = (e) => e.closest('table') || e.closest('[data-actions-item]')
                    || e.closest('.annotable') || e.closest('.note-voile');
   const repli = (e) => e.closest('details:not([open])');

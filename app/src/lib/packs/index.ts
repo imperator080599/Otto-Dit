@@ -1,4 +1,4 @@
-import type { AccountingMapPack, AssurancePack, FrameworkSet } from './types';
+import type { AccountingMapPack, AssurancePack, FrameworkSet, Vocabulaire } from './types';
 import { nepFr } from './nep-fr';
 import { pcaobSox } from './pcaob-sox';
 import { pcg } from './coa/pcg';
@@ -33,4 +33,14 @@ export function primaryPack(fs: FrameworkSet): AssurancePack {
   return getAssurancePack(fs.assurance_packs[0]);
 }
 
-export type { AssurancePack, AccountingMapPack, FrameworkSet } from './types';
+/**
+ * Le mot du référentiel pour un concept. Le premier pack déclaré commande —
+ * un dossier qui porte deux packs porte deux méthodes, jamais deux mots pour
+ * la même chose sur le même écran (DA-15).
+ */
+export function motDuPack(packs: string[], cle: keyof Vocabulaire): string {
+  const id = packs.find((p) => p in assurancePacks);
+  return (id ? assurancePacks[id].vocabulaire : nepFr.vocabulaire)[cle];
+}
+
+export type { AssurancePack, AccountingMapPack, FrameworkSet, Vocabulaire } from './types';

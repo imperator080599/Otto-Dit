@@ -35,7 +35,11 @@ export default async function EngagementLayout({
 
   return (
     <div className="shell shell-wide">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      {/* L'EN-TÊTE DU DOSSIER EST DU CHROME (ADR-112) : fil d'Ariane, bascule,
+          référentiels, et le bouton qui ouvre la conversation avec le dossier.
+          Identique sur tous les écrans du dossier, par conception — la mesure
+          de densité l'exclut donc du compte des actions d'écran, et le dit. */}
+      <header className="dossier-entete row" style={{ justifyContent: 'space-between' }}>
         <div>
           <div className="faint">
             <Link href="/">Missions</Link> / {eng.entity_name} · {eng.period_label}
@@ -73,10 +77,16 @@ export default async function EngagementLayout({
           <span className="badge gray">{eng.framework_set.accounting_map}</span>
           <span className="badge gray">{eng.framework_set.language}</span>
           <span className={`badge ${eng.status === 'locked' ? 'amber' : 'green'}`}>{eng.status}</span>
+          {/* INTERROGER LE DOSSIER — un bouton en haut à droite, plus une
+              section du rail (R-03) : on pose une question depuis l'écran où
+              elle vient, pas en quittant son travail pour aller la poser. */}
+          <Link href={`/eng/${id}/ask`} className="btn secondary small">Interroger le dossier</Link>
         </div>
+      </header>
+      <div className="dossier">
+        <EngNav entrees={rail} />
+        <div className="dossier-corps">{children}</div>
       </div>
-      <EngNav entrees={rail} />
-      {children}
     </div>
   );
 }

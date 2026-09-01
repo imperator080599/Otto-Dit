@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import { propose, validate, currentMateriality, materialityVersions } from '@/lib/services/materiality';
 import { proposeScoping } from '@/lib/services/fsli';
-import { primaryPack } from '@/lib/packs';
+import { primaryPack, motDuPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
 import { fmtEur } from '@/lib/kernel/canon';
 import { q } from '@/lib/db/client';
@@ -78,7 +78,7 @@ export default async function MaterialityPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Materiality — {pack.name}</h2>
+          <h2>{motDuPack(fs.assurance_packs, 'materialite')} — {pack.name}</h2>
           <form action={proposeAction}>
             <button className="btn secondary">Propose (L3)</button>
           </form>

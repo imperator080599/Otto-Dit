@@ -4125,3 +4125,74 @@ l'appelle : chacun de ces gestes est une règle (P4).
 questions au client naissent en brouillon (L2) ; et le listing du monde de démonstration
 porte volontairement les deux défauts, pour que la complétude ait quelque chose à trouver.
 
+
+## ADR-112 — La charpente : rail vertical, navigation PAR POSTE, vue d'ensemble qui sert
+
+**Contexte.** La revue utilisateur n°1 (docs/REGISTRE_IDEES.md §F) a cassé le cadre, pas le
+contenu : « onglets en haut » et « vue d'ensemble inutile ». Le diagnostic qui les relie est
+plus large — *la plateforme s'explique au lieu de se laisser utiliser*. Une trentaine
+d'onglets sur une ligne affirment que toutes les destinations sont du même rang ; une page
+d'accueil de dossier qui montre le référentiel et deux échéances légales fait perdre le
+premier clic à tout le monde.
+
+**Décision — trois gestes, et ce qu'ils entraînent.**
+
+1. **Le rail devient VERTICAL et GROUPÉ.** Six groupes, dans l'ordre du dossier : Le dossier ·
+   Les comptes · **Les postes** · Travaux transverses · Demandes au client · Fin de mission.
+   La règle ADR-103 ne bouge pas — une destination n'apparaît que quand l'état du dossier la
+   rend atteignable, le reste est grisé avec sa raison derrière « tout afficher ».
+2. **L'axe de la navigation est le POSTE.** Chaque poste retenu est une destination de premier
+   rang (`/eng/<id>/poste/<code>`) qui déroule les six étapes dans l'ordre où on les
+   travaille : leadsheet → processus → contrôle interne → évaluation des risques →
+   échantillon → contrôle sur pièces. Les écrans qui servaient ces étapes (population,
+   sondage, testing, risque, boucle, papiers, provenance) **quittent le rail** et vivent
+   dans le poste : ce sont des étapes, pas des sections.
+3. **La vue d'ensemble devient un tableau de bord, et d'abord LE MIEN.** Ce qui m'attend (la
+   même dérivation que « Mes travaux », ADR-110, restreinte au dossier), l'avancement par
+   poste en barres colorées par statut, les demandes et les papiers, ce qui empêche de
+   signer par famille, qui porte quoi dans l'équipe, et les notes de revue ouvertes rédigées.
+
+**Le vocabulaire suit le pack (DA-15, R-11).** « Périmètre (postes retenus) » → **Scoping**,
+« Seuils de signification » → **Matérialité**, « Obstacles au visa » → **Ce qui empêche de
+signer**. Ce ne sont pas des chaînes dans le code : le pack porte un bloc `vocabulaire`, le
+rail et les écrans le LISENT, et la règle du lexique s'est retournée en conséquence — ce
+n'est pas « le mot est libre », c'est « le mot vient du pack, et l'écran n'en mélange
+jamais deux pour un concept ».
+
+**Le refus qui va avec — le garde de couverture.** Réorganiser une navigation, c'est retirer
+des entrées ; une entrée retirée dont l'écran n'est repris nulle part devient un objet
+qu'aucun chemin de lecture n'atteint, et **rien ne le signale** : la page rend toujours 200
+pour qui connaît son URL. C'est le défaut de la règle 13 dans sa forme la plus facile à
+commettre. `rail.test.ts` lit donc l'arborescence de `src/app/eng/[id]` sur le disque et
+exige que chaque écran soit atteignable depuis le rail, depuis un poste, ou **déclaré** avec
+la destination par laquelle on y arrive.
+
+**Ce que ça change aux mesures, et qu'il faut lire comme une reclassification.** L'en-tête du
+dossier (fil d'Ariane, bascule, référentiels, bouton « interroger le dossier ») est du CHROME
+— identique sur tous les écrans d'un dossier, par conception. `densite.ts` l'exclut donc du
+compte des actions d'écran, comme il exclut déjà le bandeau haut et le rail. Les chiffres
+publiés dans docs/DENSITE.md baissent de deux commandes repliées sur presque chaque écran :
+ce n'est pas un allègement, c'est la bascule qui cesse d'être comptée deux fois par écran.
+
+**Ce que la décision NE fait pas**, et qui reste ouvert au registre : le lien poste ↔ cycle de
+processus n'est pas modélisé (l'étape « Processus » d'un poste montre ce qui est décrit sur le
+dossier et laisse l'auditeur juger, au lieu d'inventer un rattachement) ; « qui doit poser quel
+visa » n'est toujours pas un droit modélisé, donc le tableau de bord ne montre par personne
+que les deux attributions nominatives réelles — notes reçues, notes posées.
+
+**Le défaut que cette tranche a produit, et le garde qui en sort.** Le rail vertical est un
+composant CLIENT ; il avait besoin de la liste des groupes. Un `import { GROUPES } from
+'services/rail'` — un import de **valeur**, pas de type — a suffi : `rail.ts` importe
+`db/client`, qui importe `pg`, qui importe `net`, `tls`, `dns`. Le bundle du navigateur est
+parti chercher la couche réseau de PostgreSQL. Le build de production a échoué et, en
+développement, **73 écrans ont rendu 500 d'un coup** — y compris le portail client, qui ne
+touche pas au rail. Deux corrections, et la seconde est celle qui compte : la forme du rail
+vit maintenant dans `rail-vue.ts`, sans un import de base ; et `client-serveur.test.ts` suit
+le **graphe des imports** depuis chaque `'use client'` et refuse toute chaîne qui atteint la
+base. Relire les fichiers ne protégeait de rien — la chaîne faisait quatre sauts.
+
+**Et le harnais qui savait sans le dire.** Le balayage a annoncé « 73 écrans ne rendent pas ».
+Vrai, et inutilisable : la cause tenait en une ligne (`Module not found: Can't resolve 'net'`)
+et dormait dans le journal du serveur, qu'une assertion PLUS LOIN aurait imprimée. Un harnais
+qui sait et ne dit pas est un silence lu comme un diagnostic (règle 13). `causeServeur()`
+joint désormais ce que le serveur a dit à la liste de ce qui est cassé.

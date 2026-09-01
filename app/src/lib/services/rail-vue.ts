@@ -1,0 +1,33 @@
+// LA FORME DU RAIL, SANS LE SERVEUR (ADR-112).
+//
+// POURQUOI CE FICHIER EXISTE, ET C'EST UNE LEÇON CHÈRE. `nav.tsx` porte
+// 'use client'. Il importait `GROUPES` depuis `services/rail.ts` — un import
+// de VALEUR, pas de type — et `rail.ts` importe `db/client`, qui importe `pg`,
+// qui importe `net`, `tls`, `dns`. Le bundle client est parti chercher la
+// couche réseau de PostgreSQL : le build de production a échoué, et en mode
+// développement CHAQUE écran a rendu 500. Le harnais de balayage l'a vu ; il
+// a annoncé « 73 écrans ne rendent pas » sans dire pourquoi, parce que la
+// cause était dans le journal du serveur qu'il n'imprimait qu'après.
+//
+// La règle, elle, est ancienne et vaut pour tout composant client : un
+// 'use client' n'importe RIEN qui touche la base — types et constantes pures
+// seulement. `client-serveur.test.ts` la vérifie maintenant par le graphe des
+// imports, et non par la relecture.
+
+export interface EntreeRail {
+  href: string;
+  label: string;
+  /** Ce qu'un auditeur qui ouvre l'outil pour la première fois y trouvera. */
+  phrase: string;
+  atteignable: boolean;
+  /** La raison, en une ligne, quand ce n'est pas atteignable. */
+  raison?: string;
+  /** Le groupe du rail vertical. */
+  groupe: string;
+}
+
+/** L'ordre des groupes du rail — l'ordre du dossier, pas celui du code. */
+export const GROUPES = [
+  'Le dossier', 'Les comptes', 'Les postes', 'Travaux transverses',
+  'Demandes au client', 'Fin de mission',
+] as const;

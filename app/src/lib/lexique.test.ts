@@ -61,7 +61,16 @@ interface Regle {
 }
 
 const REGLES: Regle[] = [
-  { motif: /matérialité/i, regle: '« seuil de signification », jamais « matérialité »' },
+  /* LE MOT VIENT DU PACK (DA-15, R-11), ET LA RÈGLE S'EST RETOURNÉE.
+     Le Code de commerce dit « seuil de signification » ; les cabinets disent
+     « matérialité », et c'est ce que le pack France déclare. La règle n'est
+     donc pas « le mot est libre » : c'est « l'écran ne mélange jamais deux
+     mots pour un concept » — le mot du pack, et pas l'autre. Les CITATIONS
+     de textes légaux et le noyau qui les porte gardent le mot du texte : on
+     ne récrit pas une source. */
+  { motif: /seuils? de signification/i,
+    regle: 'le mot du référentiel (pack France : « matérialité ») — jamais deux mots pour un concept',
+    saufFichier: /(^|\/)kernel\/|(^|\/)packs\/|(^|\/)services\/retention/ },
   { motif: /feuille[s]? de travail/i, regle: '« papier », jamais « feuille de travail »' },
   /* « requête » est RÉSERVÉ à Interroger (NL→requête). L'écran ask/ garde le
      mot pour ce concept ; le contresens « requête au client » y reste interdit,
@@ -133,7 +142,7 @@ export function texteService(source: string): Texte[] {
        l'utilisateur TAPE (examples, keywords, core) doivent au contraire
        couvrir les mots que le lexique bannit à l'écran — sinon la recherche
        ne comprend plus ce que les gens écrivent. */
-    if (/\b(examples?|keywords?|core|synonym\w*|variantes?|mots)\s*:/.test(l)) return;
+    if (/\b(examples?|keywords?|core|synonym\w*|variantes?|mots|needle)\s*:/.test(l)) return;
     for (const m of l.matchAll(/'((?:[^'\\]|\\.){6,}?)'|"((?:[^"\\]|\\.){6,}?)"/g)) {
       const t = (m[1] ?? m[2]).replace(/\\'/g, '\'').trim();
       /* Une PHRASE : une espace, et pas un chemin, une requête SQL, une clé. */

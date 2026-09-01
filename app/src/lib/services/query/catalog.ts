@@ -38,7 +38,7 @@ export const CATALOG: QueryTemplate[] = [
       en: 'Unresolved exceptions with impact above a threshold',
     },
     examples: {
-      fr: 'quelles sections ont des exceptions non résolues au-dessus du seuil de signification ?',
+      fr: 'quelles sections ont des exceptions non résolues au-dessus de la matérialité ?',
       en: 'which sections have unresolved exceptions above materiality?',
     },
     params: [

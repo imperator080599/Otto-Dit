@@ -106,10 +106,34 @@ export interface WorkpaperStrings {
   };
 }
 
+/**
+ * LE VOCABULAIRE DU PACK (DA-15, R-11).
+ *
+ * Le Code de commerce dit « seuil de signification » ; les cabinets disent
+ * « matérialité ». Les deux ont raison dans leur registre, et le produit n'a
+ * pas à trancher pour tout le monde : le MOT est une donnée du référentiel,
+ * comme les seuils et les taxonomies. Le code, lui, ne change pas.
+ *
+ * La règle n'est donc pas « le mot est libre » : c'est « le mot vient du pack,
+ * et un écran ne mélange jamais deux mots pour un concept ».
+ */
+export interface Vocabulaire {
+  /** Le seuil au-delà duquel une anomalie compte. */
+  materialite: string;
+  /** Le choix des postes des comptes qui seront travaillés. */
+  scoping: string;
+  /** Un poste des états financiers (FSLI). */
+  poste: string;
+  postes: string;
+  /** Ce qui reste à lever avant de signer. */
+  obstacles: string;
+}
+
 export interface AssurancePack {
   id: string;
   name: string;
   language: Lang;
+  vocabulaire: Vocabulaire;
   materiality: MaterialityConfig;
   substantive?: SubstantiveConfig;
   attributeSampleSizes?: Record<Frequency, number>;

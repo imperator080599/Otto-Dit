@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { listFslis, confirmScoping, fsliAccounts, rebuildFslis } from '@/lib/services/fsli';
+import { listFslis, confirmScoping, fsliAccounts, rebuildFslis, frameworkSet } from '@/lib/services/fsli';
+import { motDuPack } from '@/lib/packs';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
@@ -23,6 +24,7 @@ export default async function ScopingPage({
   const { id } = await params;
   const { erreur } = await searchParams;
   await requireMember(id);
+  const packs = (await frameworkSet(id)).assurance_packs;
   const fslis = await listFslis(id);
   const withAccounts = await Promise.all(
     fslis.map(async (f) => ({ ...f, accounts: await fsliAccounts(id, f.code) })),
@@ -55,7 +57,7 @@ export default async function ScopingPage({
     <div className="panel">
       <BandeauRefus erreur={erreur} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h2>FSLI scoping — propose &amp; confirm (D9: never silently NS)</h2>
+        <h2>{motDuPack(packs, 'scoping')} — quels postes seront travaillés, et pourquoi</h2>
         <form action={rebuildAction}><button className="btn secondary small">Rebuild from TB</button></form>
       </div>
       <table className="data">

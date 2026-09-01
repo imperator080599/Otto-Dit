@@ -211,3 +211,32 @@ l'URL** (par qui peut l'atteindre) ou, à défaut, `/api/sante` est interrogée 
 de chaque famille d'écrans exécutées DANS la fonction déployée ; (3) aucune tranche n'est
 déclarée finie sur la seule foi de la chaîne locale.
 
+
+## DA-17 — « Remettre à zéro » restaure un INSTANTANÉ, il ne rejoue pas le semis
+
+**Contrainte, mesurée.** Semer le monde de démonstration passe par les mêmes services que
+l'interface — c'est le prix de « aucun raccourci », et c'est ce qui fait de chaque
+déploiement une vérification du pilote réseau. Sur la base Supabase, cela prend une dizaine
+de minutes. Aucune fonction serverless ne vit aussi longtemps. Un bouton qui rejouerait le
+semis serait donc un bouton qui échoue **toujours**.
+
+**Décision.** Le build prend un **instantané** du monde juste après l'avoir semé : une copie
+table par table dans le schéma `demo_instantane`, hors d'atteinte du public. Le bouton vide
+les tables publiques et y réinjecte l'instantané dans l'ordre des dépendances, en une
+transaction — quelques secondes. Les séquences sont recalées après coup : restaurer
+`event_log` sans recaler la sienne ferait entrer le geste SUIVANT en collision, c'est-à-dire
+au pire moment.
+
+**Ce que « à zéro » veut dire, et l'écran le dit** : *à l'état du dernier déploiement*, avec
+la DATE de l'instantané affichée. L'écran de confirmation ne demande pas « êtes-vous sûr ? » :
+il montre, ligne par ligne, ce qu'il y a aujourd'hui et ce qui reviendra. Une confirmation
+qui ne chiffre rien n'informe personne.
+
+**Trois refus, dans le service et pas dans l'écran** : hors démonstration publique (aucun
+écran ne rase un dossier d'audit) ; sans instantané (il n'y a rien à restaurer) ; si une
+migration a changé la forme des tables depuis l'instantané (restaurer casserait la base — le
+déploiement suivant le reprend, et le journal de build dit alors que « à zéro » ramènera à
+l'état de CE déploiement, pas au monde semé).
+
+**Ce que ça remplace.** `OTTO_RECONSTRUIRE=1` reste, pour le build ; mais la question « veux-tu
+que je repasse la variable ? » ne se pose plus à Tuan — c'est un geste du produit.
