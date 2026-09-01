@@ -15,7 +15,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
   return (
     <div className="panel">
       <details>
-        <summary><strong>{t('nm.creerUnDossier')}</strong></summary>
+        <summary><strong>{t('nouveau.titre')}</strong></summary>
         <BandeauRefus erreur={erreur} />
         <form action={creerAction} className="mt">
           <p className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -36,8 +36,8 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
               <option value="integrated">{t('nm.integre')}</option>
             </select>
             <select name="pack" defaultValue="nep-fr">
-              <option value="nep-fr">NEP (France)</option>
-              <option value="pcaob-sox">PCAOB / SOX</option>
+              <option value="nep-fr">{t('nm.packNep')}</option>
+              <option value="pcaob-sox">{t('nm.packPcaob')}</option>
             </select>
             <select name="language" defaultValue="fr">
               <option value="fr">{t('nm.langueFr')}</option>
@@ -45,7 +45,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
             </select>
           </p>
           <p className="row" style={{ gap: 8 }}>
-            <input name="name" placeholder={t('nm.nomDuDossier')} style={{ flex: 1, minWidth: 260 }} />
+            <input name="name" placeholder={t('nouveau.nom')} style={{ flex: 1, minWidth: 260 }} />
             <button className="btn">{t('nm.creer')}</button>
           </p>
         </form>

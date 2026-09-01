@@ -44,10 +44,9 @@ export default async function Home({
     return (
       <div className="shell" style={{ maxWidth: 560 }}>
         <div className="panel">
-          <h1>Sign in — demo mode</h1>
+          <h1>{t('home.connexionDemo')}</h1>
           <p className="muted">
-            Local demo authentication (no passwords). Production uses Supabase Auth magic
-            links — see DEPLOY.md.
+            {t('home.authLocale')}
           </p>
           <form action={loginAction}>
             {users.map((u) => (
@@ -59,7 +58,7 @@ export default async function Home({
             ))}
           </form>
           <p className="faint mt">
-            Client portal (magic links): <Link href={`/portal/${PORTAL_TOKENS.sophie}`}>Sophie Marchand (CFO)</Link>
+            {t('home.portailClient')} <Link href={`/portal/${PORTAL_TOKENS.sophie}`}>{t('home.sophie')}</Link>
             {' · '}
             <Link href={`/portal/${PORTAL_TOKENS.theo}`}>{t('home.thOGirardChiefAccountant')}</Link>
           </p>
@@ -75,20 +74,20 @@ export default async function Home({
   return (
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Missions</h1>
+        <h1>{t('col.engagements')}</h1>
         <span className="row" style={{ gap: 8 }}>
           {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
-          <Link href="/methodology" className="btn secondary small">{t('home.theFirmMethodology')}</Link>
+          <Link href="/methodology" className="btn secondary small">{t('commun.methode')}</Link>
           {/* LE GESTE, PAS LA VARIABLE D'ENVIRONNEMENT. Il n'existe que sur la
               démonstration publique : ailleurs, aucun écran ne rase un dossier. */}
           {demoPublique() && (
             <Link href="/demo/remise-a-zero" className="btn secondary small">
-              {t('home.resetTheDemonstrationWorld')}
+              {t('raz.titre')}
             </Link>
           )}
           <form action={logoutAction}>
-            <button className="btn secondary small">Switch user</button>
+            <button className="btn secondary small">{t('commun.changerUtilisateur')}</button>
           </form>
         </span>
       </div>

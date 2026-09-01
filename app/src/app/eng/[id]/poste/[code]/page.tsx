@@ -56,11 +56,11 @@ export default async function PostePage({
       <nav className="etapes" aria-label={t('poste.testing')}>
         {v.blocs.map((b) => (b.href ? (
           <Link key={b.cle} href={b.href} className={`etape ${CLASSE[b.etat]}`} title={b.resume}>
-            {b.titre}<span className="etape-detail">{b.resume}</span>
+            {t(b.titre)}<span className="etape-detail">{b.resume}</span>
           </Link>
         ) : (
           <span key={b.cle} className={`etape ${CLASSE[b.etat]}`} title={b.resume}>
-            {b.titre}<span className="etape-detail">{b.resume}</span>
+            {t(b.titre)}<span className="etape-detail">{b.resume}</span>
           </span>
         )))}
       </nav>
@@ -130,12 +130,12 @@ export default async function PostePage({
               <td className="faint">/ {v.ecarts.total}</td>
             </tr>
             <tr>
-              <td><Link href={`${base}/notes`}>{t('poste.reviewNotes')}</Link></td>
+              <td><Link href={`${base}/notes`}>{t('rail.notes')}</Link></td>
               <td className="num">{v.notes > 0 ? v.notes : <span className="faint">0</span>}</td>
               <td />
             </tr>
             <tr>
-              <td><Link href={`${base}/requests`}>{t('poste.requests')}</Link></td>
+              <td><Link href={`${base}/requests`}>{t('rail.demandes')}</Link></td>
               <td colSpan={2} />
             </tr>
           </tbody>

@@ -44,13 +44,13 @@ export default async function EngagementLayout({
       <header className="dossier-entete row" style={{ justifyContent: 'space-between' }}>
         <div>
           <div className="faint">
-            <Link href="/">Missions</Link> / {eng.entity_name} · {eng.period_label}
+            <Link href="/">{t('col.engagements')}</Link> / {eng.entity_name} · {eng.period_label}
           </div>
           <h1>{eng.name}</h1>
         </div>
         <div className="row">
           <details className="bascule">
-            <summary className="btn secondary small">{t('nav.switchEngagement')}</summary>
+            <summary className="btn secondary small">{t('commun.changerDossier')}</summary>
             <div className="bascule-liste">
               {clients.map((c) => (
                 <div key={c.client}>
@@ -82,7 +82,7 @@ export default async function EngagementLayout({
           {/* INTERROGER LE DOSSIER — un bouton en haut à droite, plus une
               section du rail (R-03) : on pose une question depuis l'écran où
               elle vient, pas en quittant son travail pour aller la poser. */}
-          <Link href={`/eng/${id}/ask`} className="btn secondary small">{t('nav.askTheFile')}</Link>
+          <Link href={`/eng/${id}/ask`} className="btn secondary small">{t('commun.interroger')}</Link>
         </div>
       </header>
       <div className="dossier">

@@ -193,8 +193,8 @@ describe('équipe et indépendance', () => {
       'Prise de participation de mon conjoint dans un fournisseur du client, déclarée le 18 mars.');
     const obstacles = await independenceObstacles(IDS.engNep);
     expect(obstacles).toHaveLength(1);
-    expect(obstacles[0]).toContain('Léa Moreau');
-    expect(obstacles[0]).toContain('bloquent le visa');
+    expect(obstacles[0].cle).toBe('obst.declarationNonSignee');
+    expect(obstacles[0].vars?.nom).toBe('Léa Moreau');
   });
 
   it('un membre sorti ne bloque plus rien, et n’est pas supprimé du dossier', async () => {

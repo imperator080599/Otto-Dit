@@ -20,6 +20,7 @@ import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { assertAccepte } from './acceptance';
 import type { Catalogue } from '@/lib/methodology/types';
+import { motif, type Motif } from './motif';
 
 export class TeamRuleError extends Error {
   constructor(message: string) {
@@ -480,12 +481,12 @@ export async function members(engagementId: string): Promise<MemberRow[]> {
  * révision n'est pas signée. C'est le prolongement de la règle d'affectation —
  * sans lui, il suffirait d'affecter avant de réviser pour passer au travers.
  */
-export async function independenceObstacles(engagementId: string): Promise<string[]> {
-  const out: string[] = [];
+export async function independenceObstacles(engagementId: string): Promise<Motif[]> {
+  const out: Motif[] = [];
   for (const m of await members(engagementId)) {
     if (m.exited_on) continue;
     if (!m.declaration.holds) {
-      out.push(`${m.name} : ${m.declaration.label} — ses travaux bloquent le visa de leur section`);
+      out.push(motif('obst.declarationNonSignee', { nom: m.name, etat: m.declaration.label }));
     }
   }
 
@@ -494,10 +495,7 @@ export async function independenceObstacles(engagementId: string): Promise<strin
      calculait : le dossier avait l'air de contrôler la rotation. */
   for (const r of await rotationSignataire(engagementId)) {
     if (r.depasse) {
-      out.push(
-        `${r.name} signe depuis ${r.exercices} exercices consécutifs, au-delà du plafond de `
-        + `${r.plafond} fixé par le cabinet — la rotation est due`,
-      );
+      out.push(motif('obst.rotationDue', { nom: r.name, n: r.exercices, plafond: r.plafond }));
     }
   }
 
@@ -516,10 +514,7 @@ export async function independenceObstacles(engagementId: string): Promise<strin
       [engagementId, a.userId],
     );
     if (!couvert) {
-      out.push(
-        `${a.name} intervient depuis ${a.exercices} exercices consécutifs (seuil ${a.seuil}) : `
-        + `la menace de familiarité doit être documentée avec sa sauvegarde`,
-      );
+      out.push(motif('obst.familiarite', { nom: a.name, n: a.exercices, seuil: a.seuil }));
     }
   }
   return out;

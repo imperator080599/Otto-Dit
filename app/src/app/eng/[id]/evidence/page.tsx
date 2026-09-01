@@ -1,18 +1,20 @@
 import { requireMember } from '@/lib/core/auth';
 import { listEvidence } from '@/lib/services/evidence';
+import { tr } from '@/lib/i18n';
 
 export default async function EvidencePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const evidence = await listEvidence(id);
 
   return (
     <div className="panel">
-      <h2>Evidence inbox</h2>
+      <h2>{t('rail.pieces')}</h2>
       <div className="table-scroll">
         <table className="data">
           <thead>
-            <tr><th>File</th><th>Source</th><th>For request item</th><th>Type</th><th>Dup</th><th>sha256</th><th>Received</th></tr>
+            <tr><th>{t('col.file')}</th><th>{t('col.source')}</th><th>{t('evi.forRequestItem')}</th><th>{t('col.type')}</th><th>{t('col.dup')}</th><th>sha256</th><th>{t('col.received')}</th></tr>
           </thead>
           <tbody>
             {evidence.map((e) => (
@@ -29,7 +31,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ id: s
           </tbody>
         </table>
       </div>
-      {evidence.length === 0 && <p className="muted">Nothing received yet.</p>}
+      {evidence.length === 0 && <p className="muted">{t('evi.nothingReceivedYet')}</p>}
     </div>
   );
 }

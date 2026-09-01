@@ -7,6 +7,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const REASON_BADGE: Record<string, string> = { high_value: 'blue', risk_flag: 'amber', random: 'gray' };
 
@@ -17,6 +18,7 @@ export default async function SamplingPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const sample = await currentRevenueSample(id);
@@ -66,13 +68,13 @@ export default async function SamplingPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Revenue sampling — propose (L3) → validate → draw (L0, deterministic)</h2>
+          <h2>{t('samp.revenueSamplingProposeL3ValidateDraw')}</h2>
           {!sample && (
-            <form action={proposeAction}><button className="btn">Propose parameters</button></form>
+            <form action={proposeAction}><button className="btn">{t('samp.proposeParameters')}</button></form>
           )}
         </div>
         {!sample ? (
-          <p className="muted">No sampling yet. Prerequisites: reconciliation gate passed + validated materiality.</p>
+          <p className="muted">{t('samp.noSamplingYetPrerequisitesReconciliation')}</p>
         ) : (
           <>
             <p>
@@ -114,7 +116,7 @@ export default async function SamplingPage({
                 <div className="table-scroll">
                   <table className="data">
                     <thead>
-                      <tr><th>Reason</th><th>Entry</th><th>Date</th><th>Account</th><th>Piece</th><th>Counterparty</th><th className="num">Amount</th><th>Flags</th></tr>
+                      <tr><th>Reason</th><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th></tr>
                     </thead>
                     <tbody>
                       {sample.items.map((it) => (

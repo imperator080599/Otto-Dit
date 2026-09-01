@@ -155,7 +155,7 @@ export async function railDuDossier(
   e('notes', t('rail.notes'), 'Toutes les notes, ancrées sur leurs objets, et qui doit y répondre.',
     s.papiers || s.notes, 'apparaît avec le premier papier ou la première note');
 
-  g('rail.groupe.demandes');
+  g('rail.demandes');
   e('requests', t('rail.demandes'), 'Les justificatifs demandés, leurs relances, et ce qui manque encore.',
     s.tirage || s.demandes, 'disponible après le tirage — les demandes naissent de l\'échantillon');
   e('evidence', t('rail.pieces'), 'Tout ce que le client a déposé, empreinte et provenance comprises.',

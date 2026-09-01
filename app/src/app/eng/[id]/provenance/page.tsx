@@ -4,6 +4,7 @@ import { q } from '@/lib/db/client';
 import { whyEvidenceExists, whatSupportsConclusion, whereFigureFrom } from '@/lib/services/provenance';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import { tr } from '@/lib/i18n';
 
 // S9 — the three provenance questions, answered from stored links (P7). Pick an object on
 // the left; the answer chain renders on the right. ≤3 clicks from anywhere in the app.
@@ -16,6 +17,7 @@ export default async function ProvenancePage({
   searchParams: Promise<{ q?: string; evidence?: string; workpaper?: string; item?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const sp = await searchParams;
   await requireMember(id);
   const question = sp.q ?? 'why';
@@ -43,20 +45,20 @@ export default async function ProvenancePage({
   return (
     <div>
       <div className="panel">
-        <h2>Provenance — the three questions (P7)</h2>
+        <h2>{t('prov.provenanceTheThreeQuestionsP7')}</h2>
         <div className="row">
-          <Link className={`btn small ${question === 'why' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=why`}>Why does this evidence exist?</Link>
-          <Link className={`btn small ${question === 'supports' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=supports`}>What supports this conclusion?</Link>
-          <Link className={`btn small ${question === 'figure' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=figure`}>Where did this figure come from?</Link>
+          <Link className={`btn small ${question === 'why' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=why`}>{t('prov.whyDoesThisEvidenceExist')}</Link>
+          <Link className={`btn small ${question === 'supports' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=supports`}>{t('prov.whatSupportsThisConclusion')}</Link>
+          <Link className={`btn small ${question === 'figure' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=figure`}>{t('prov.whereDidThisFigureComeFrom')}</Link>
         </div>
-        <p className="faint mt">Every answer is a stored fact — the chain is walked, never reconstructed.</p>
+        <p className="faint mt">{t('prov.everyAnswerIsAStoredFact')}</p>
       </div>
 
       <div className="grid cols-2">
         <div className="panel">
           {question === 'why' && (
             <>
-              <h2>Pick an evidence document</h2>
+              <h2>{t('prov.pickAnEvidenceDocument')}</h2>
               <table className="data">
                 <tbody>
                   {evidences.map((e) => (
@@ -71,7 +73,7 @@ export default async function ProvenancePage({
           )}
           {question === 'supports' && (
             <>
-              <h2>Pick a workpaper</h2>
+              <h2>{t('prov.pickAWorkpaper')}</h2>
               <table className="data">
                 <tbody>
                   {workpapers.map((w) => (
@@ -86,7 +88,7 @@ export default async function ProvenancePage({
           )}
           {question === 'figure' && (
             <>
-              <h2>Pick a tested item (figure)</h2>
+              <h2>{t('prov.pickATestedItemFigure')}</h2>
               <table className="data">
                 <tbody>
                   {items.map((i) => (
@@ -103,7 +105,7 @@ export default async function ProvenancePage({
         </div>
 
         <div className="panel">
-          <h2>Answer</h2>
+          <h2>{t('col.answer')}</h2>
           {why && (
             <ol style={{ paddingLeft: 18 }}>
               {why.map((n, i) => (
@@ -121,32 +123,32 @@ export default async function ProvenancePage({
                 <strong>{supports.wp.code} v{supports.wp.version}</strong> <span className="badge gray">{supports.wp.status}</span>
                 <br />
                 <span className="faint">
-                  Performed by engine {supports.run?.engine} {supports.run?.engine_version} (pack {supports.run?.pack_id}) —
-                  facts hash {supports.wp.based_on_hash?.slice(0, 16)}…
+                  {t('prov.performedByEngine')} {supports.run?.engine} {supports.run?.engine_version}{' '}
+                  {t('prov.packEtEmpreinte', { pack: supports.run?.pack_id ?? '—', h: supports.wp.based_on_hash?.slice(0, 16) ?? '—' })}
                 </span>
               </p>
-              <h3>Validated by</h3>
+              <h3>{t('prov.validatedBy')}</h3>
               <ul style={{ paddingLeft: 18 }}>
                 {supports.signoffs.map((s, i) => <li key={i}>{s.sign_role}: {s.user_name} ({s.signed_at.slice(0, 16)})</li>)}
-                {supports.signoffs.length === 0 && <li className="faint">not yet signed</li>}
+                {supports.signoffs.length === 0 && <li className="faint">{t('prov.notYetSigned')}</li>}
               </ul>
-              <h3>Supporting evidence ({supports.evidence.length})</h3>
+              <h3>{t('prov.piecesAppui', { n: supports.evidence.length })}</h3>
               <ul style={{ paddingLeft: 18, fontSize: 12 }}>
                 {supports.evidence.map((e) => (
                   <li key={e.id}>
                     <a href={`/api/blob/${e.id}`} target="_blank">{e.filename}</a>{' '}
-                    <span className="faint">[{e.doc_type} · rung {e.rung}{e.verified_by ? ' · human-verified' : ''} · {e.sha256.slice(0, 10)}…]</span>
+                    <span className="faint">[{e.doc_type} · {t('atl.echelon')} {e.rung}{e.verified_by ? ` · ${t('prov.humanVerified')}` : ''} · {e.sha256.slice(0, 10)}…]</span>
                   </li>
                 ))}
               </ul>
-              <h3>AI involvement ({supports.aiRuns.length} run(s))</h3>
+              <h3>{t('prov.partIa', { n: supports.aiRuns.length })}</h3>
               <ul style={{ paddingLeft: 18, fontSize: 12 }}>
                 {supports.aiRuns.map((r, i) => <li key={i}>{r.purpose} · {r.adapter}/{r.model} · {r.created_at.slice(0, 16)}</li>)}
-                {supports.aiRuns.length === 0 && <li className="faint">no AI/OCR runs — deterministic rungs only</li>}
+                {supports.aiRuns.length === 0 && <li className="faint">{t('prov.noAiOcrRunsDeterministicRungs')}</li>}
               </ul>
               {supports.edits.length > 0 && (
                 <>
-                  <h3>Manual modifications</h3>
+                  <h3>{t('prov.manualModifications')}</h3>
                   <ul style={{ paddingLeft: 18, fontSize: 12 }}>
                     {supports.edits.map((e, i) => <li key={i}><span className="mod-flag">{e.section}</span> {e.user_name}: {e.justification}</li>)}
                   </ul>
@@ -156,30 +158,30 @@ export default async function ProvenancePage({
           )}
           {figure && (
             <>
-              <h3>Ledger origin</h3>
+              <h3>{t('prov.ledgerOrigin')}</h3>
               <p className="mono" style={{ fontSize: 12 }}>
-                {figure.item.entry_no} · {figure.item.entry_date} · account {figure.item.account_no} · piece {figure.item.piece_ref}
-                <br />debit {figure.item.debit} / credit {figure.item.credit} — imported from {figure.item.import_filename}
-                <br />natural key {figure.item.natural_key}
+                {figure.item.entry_no} · {figure.item.entry_date} · {t('prov.compteEtPiece', { compte: figure.item.account_no, piece: figure.item.piece_ref ?? '—' })}
+                <br />{t('prov.debitCredit', { d: figure.item.debit, c: figure.item.credit, fichier: figure.item.import_filename })}
+                <br />{t('prov.naturalKey')} {figure.item.natural_key}
               </p>
-              <h3>Extractions</h3>
+              <h3>{t('col.extractions')}</h3>
               {figure.extractions.map((x, i) => (
                 <div key={i} className="callout">
                   <strong>{x.filename}</strong> <span className="badge violet">{x.rung}</span>{' '}
-                  {x.verified_by && <span className="badge green">human-verified</span>}
+                  {x.verified_by && <span className="badge green">{t('prov.humanVerified')}</span>}
                   <div className="faint mono">sha256 {x.sha256.slice(0, 16)}…</div>
                   <ul style={{ paddingLeft: 16, fontSize: 12 }}>
-                    {x.fields.slice(0, 8).map((f) => <li key={f.name}>{f.name} = {String(f.value).slice(0, 50)} (conf {f.confidence})</li>)}
+                    {x.fields.slice(0, 8).map((f) => <li key={f.name}>{f.name} = {String(f.value).slice(0, 50)} {t('prov.confiance', { c: f.confidence })}</li>)}
                   </ul>
                 </div>
               ))}
               {figure.match && (
                 <>
-                  <h3>Vouching checks</h3>
+                  <h3>{t('prov.vouchingChecks')}</h3>
                   <ul style={{ paddingLeft: 18, fontSize: 12 }}>
                     {figure.match.checks.map((c, i) => (
                       <li key={i} style={{ color: c.pass ? 'var(--green)' : 'var(--red)' }}>
-                        {c.check}: expected {c.expected}, found {c.found}
+                        {t('prov.attenduTrouve', { regle: c.check, attendu: c.expected, trouve: c.found })}
                       </li>
                     ))}
                   </ul>
@@ -187,7 +189,7 @@ export default async function ProvenancePage({
               )}
             </>
           )}
-          {!why && !supports && !figure && <p className="muted">Select an object on the left.</p>}
+          {!why && !supports && !figure && <p className="muted">{t('prov.selectAnObjectOnTheLeft')}</p>}
         </div>
       </div>
     </div>

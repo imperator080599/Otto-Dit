@@ -29,7 +29,7 @@ export default async function ReconciliationPage({
       `select id, entry_no, piece_ref, entry_date::text from gl_entry
        where engagement_id = $1 and journal_code = 'OD' order by entry_date desc limit 25`,
       [id],
-    )).map((g) => ({ value: `gl:${g.id}`, label: `écriture · ${g.entry_no} ${g.piece_ref ?? ''} (${g.entry_date})` })),
+    )).map((g) => ({ value: `gl:${g.id}`, label: t('exc.ecritureLabel', { no: g.entry_no, piece: g.piece_ref ?? '', date: g.entry_date }) })),
   ];
 
   async function computeAction() {
@@ -73,28 +73,28 @@ export default async function ReconciliationPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>TB ↔ GL reconciliation (deterministic, L0)</h2>
+          <h2>{t('rec.tbGlReconciliationDeterministicL0')}</h2>
           <form action={computeAction}>
-            <button className="btn">Recompute</button>
+            <button className="btn">{t('col.recompute')}</button>
           </form>
         </div>
         {!latest ? (
-          <p className="muted">Not computed yet. Import the TB and the FEC first, then recompute.</p>
+          <p className="muted">{t('rec.notComputedYetImportTheTb')}</p>
         ) : (
           <>
             <p>
-              {latest.summary.accounts} accounts compared —{' '}
+              {latest.summary.accounts} {t('rec.accountsCompared')}{' '}
               {latest.items.length === 0 ? (
-                <span className="badge green">all accounts tie</span>
+                <span className="badge green">{t('rec.allAccountsTie')}</span>
               ) : (
-                <span className="badge red">{latest.items.length} difference(s)</span>
+                <span className="badge red">{latest.items.length} {t('rec.differenceS')}</span>
               )}
               <span className="faint"> computed {latest.computed_at.slice(0, 16)}</span>
             </p>
             {latest.items.length > 0 && (
               <table className="data">
                 <thead>
-                  <tr><th>Account</th><th className="num">TB</th><th className="num">GL (FEC)</th><th className="num">Δ</th><th>Status</th><th>Resolution</th></tr>
+                  <tr><th>{t('col.account')}</th><th className="num">TB</th><th className="num">{t('rec.glFec')}</th><th className="num">Δ</th><th>{t('col.status')}</th><th>{t('col.resolution')}</th></tr>
                 </thead>
                 <tbody>
                   {latest.items.map((it) => (
@@ -111,7 +111,7 @@ export default async function ReconciliationPage({
                       <td>
                         {it.status === 'open' ? (
                           <details>
-                            <summary className="repli-action">act…</summary>
+                            <summary className="repli-action">{t('commun.actions')}</summary>
                             <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required
@@ -131,13 +131,13 @@ export default async function ReconciliationPage({
                                     <option key={c.value} value={c.value}>{c.label}</option>
                                   ))}
                                 </select>
-                                <button className="btn small secondary">Document difference</button>
+                                <button className="btn small secondary">{t('rec.documentDifference')}</button>
                               </div>
                             </form>
                             <form action={limitationAction} style={{ display: 'grid', gap: 4, maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required
-                                placeholder="Pourquoi l'écart ne peut pas être corroboré, dans les mots du client" />
+                                placeholder={t('rec.whyTheDifferenceCannotBeCorroborated')} />
                               <textarea name="alternative" rows={2} required
                                 placeholder={t('rap.alternatives')} />
                               <button className="btn small danger">{t('rap.limitation')}</button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { traduire, type CleLibelle, type Locale } from './catalogue';
+import { traduire, type CleLibelle, type Locale, type Variable } from './catalogue';
 
 // LA LANGUE DANS LE NAVIGATEUR.
 //
@@ -22,7 +22,7 @@ export function FournisseurLocale({ locale, children }: { locale: Locale; childr
 }
 
 /** Le traducteur, côté navigateur : `const t = useT(); t('note.post')`. */
-export function useT(): (cle: CleLibelle, vars?: Record<string, string | number>) => string {
+export function useT(): (cle: CleLibelle, vars?: Record<string, Variable>) => string {
   const l = useContext(Ctx);
   return (cle, vars) => traduire(l, cle, vars);
 }

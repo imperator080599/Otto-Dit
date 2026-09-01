@@ -4,6 +4,7 @@ import { missionPrecedente, reprises, obstaclesReprise } from '@/lib/services/ca
 import { proposerAction, deciderAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LA REPRISE DU DOSSIER N-1 (point 2).
 //
@@ -14,11 +15,9 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 
 export const dynamic = 'force-dynamic';
 
-const NATURES: Record<string, string> = {
-  scoping: 'Périmètre',
-  risk_factor: 'Facteur de risque',
-  question_answer: 'Questionnaire résiduel',
-  workpaper: 'Papier de travail',
+const NATURES: Record<string, CleLibelle> = {
+  scoping: 'cf.nature.scoping', risk_factor: 'cf.nature.risk_factor',
+  question_answer: 'cf.nature.question_answer', workpaper: 'cf.nature.workpaper',
 };
 
 export default async function CarryForwardPage({
@@ -42,7 +41,7 @@ export default async function CarryForwardPage({
       <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>{t('cf.carryForwardFromThePriorYear')}</h2>
+        <h2>{t('famille.reprise.titre')}</h2>
         {!prev ? (
           /* DIRE CE QU'ON A CHERCHÉ, pas seulement qu'on n'a rien trouvé. Le
              message annonçait « aucune mission sur l'exercice précédent pour
@@ -73,19 +72,19 @@ export default async function CarryForwardPage({
         <div className="panel">
           <table className="data">
             <thead>
-              <tr><th>Nature</th><th>{t('cf.whatThePriorYearProposes')}</th><th>{t('cf.decision')}</th></tr>
+              <tr><th>{t('col.nature')}</th><th>{t('cf.whatThePriorYearProposes')}</th><th>{t('cf.decision')}</th></tr>
             </thead>
             <tbody>
               {liste.map((r) => (
                 <tr key={r.id} className={r.status === 'proposed' ? 'warn' : undefined}>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    <span className="badge gray">{NATURES[r.kind] ?? r.kind}</span>
+                    <span className="badge gray">{NATURES[r.kind] ? t(NATURES[r.kind]) : r.kind}</span>
                   </td>
                   <td>
                     {r.label}
                     {r.detail && <div className="faint" style={{ fontSize: 11, maxWidth: 520 }}>{r.detail}</div>}
                     {r.decision_reason && (
-                      <div className="faint" style={{ fontSize: 11 }}><em>Motif : {r.decision_reason}</em></div>
+                      <div className="faint" style={{ fontSize: 11 }}><em>{t('commun.motif')} {r.decision_reason}</em></div>
                     )}
                   </td>
                   <td>
@@ -94,12 +93,12 @@ export default async function CarryForwardPage({
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="reprise_id" value={r.id} />
                         <input name="reason" placeholder={t('cf.reasonRequiredToRuleOut')} style={{ width: 200 }} />
-                        <button className="btn secondary small" name="status" value="reconfirmed">Reconfirmer</button>
+                        <button className="btn secondary small" name="status" value="reconfirmed">{t('col.reconfirm')}</button>
                         <button className="btn secondary small" name="status" value="dismissed">{t('cf.ruleOut')}</button>
                       </form>
                     ) : (
                       <span className={`badge ${r.status === 'reconfirmed' ? 'green' : 'gray'}`}>
-                        {r.status === 'reconfirmed' ? 'reconfirmé' : 'écarté'}
+                        {r.status === 'reconfirmed' ? t('cf.reconfirmed') : t('cf.ruledOut')}
                       </span>
                     )}
                   </td>
@@ -113,7 +112,7 @@ export default async function CarryForwardPage({
       {obstacles.length > 0 && (
         <div className="panel warn">
           <h2>{t('cf.blockersToSignOffCarryForward')}</h2>
-          <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+          <ul>{obstacles.map((o, i) => <li key={i}>{t(o.cle, o.vars)}</li>)}</ul>
         </div>
       )}
     </div>

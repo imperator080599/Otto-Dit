@@ -20,7 +20,7 @@ export default async function PortalRequestPage({
   const session = await portalSession(token);
   if (!session) return <div className="shell"><div className="panel">{deuxLangues('portal.lienInvalide')}</div></div>;
   if (!(await portalRequestGuard(rid, session.contact.entity_id))) {
-    return <div className="shell"><div className="panel">{deuxLangues('portal.demandeIntrouvable')}</div></div>;
+    return <div className="shell"><div className="panel">{deuxLangues('req.requestNotFound')}</div></div>;
   }
   const requests = await portalRequests(session.contact.entity_id);
   const request = requests.find((r) => r.id === rid);
@@ -76,7 +76,7 @@ export default async function PortalRequestPage({
       <h1>R-{String(request.seq_no).padStart(3, '0')} — {request.title}</h1>
       <div className="panel">
         <table className="data">
-          <thead><tr><th>{lang === 'fr' ? 'Élément demandé' : 'Requested item'}</th><th>{lang === 'fr' ? 'Statut' : 'Status'}</th><th>{lang === 'fr' ? 'Action' : 'Action'}</th></tr></thead>
+          <thead><tr><th>{t('portal.elementDemande')}</th><th>{t('portal.statut')}</th><th>{t('portal.action')}</th></tr></thead>
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
@@ -108,7 +108,7 @@ export default async function PortalRequestPage({
             <button className="btn" style={{ background: 'var(--green)' }}>{t('portal.toutTransmis')}</button>
           </form>
         )}
-        {request.status === 'submitted' && <p className="callout green mt">{lang === 'fr' ? 'Demande marquée comme complète — merci.' : 'Request marked complete — thank you.'}</p>}
+        {request.status === 'submitted' && <p className="callout green mt">{t('portal.demandeComplete')}</p>}
       </div>
     </div>
   );

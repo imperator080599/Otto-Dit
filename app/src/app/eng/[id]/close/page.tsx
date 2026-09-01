@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 
 const fr = (iso: string | null | undefined) =>
   (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '—');
-const ko = (n: string | number) => `${(Number(n) / 1024).toFixed(0)} ko`;
+const ko = (n: string | number) => `${(Number(n) / 1024).toFixed(0)} kB`;
 
 export default async function ClosePage({
   params, searchParams,
@@ -68,7 +68,7 @@ export default async function ClosePage({
               {' '}{ko(archive!.size_bytes)} {t('close.retainedUntil')} {fr(archive!.retention_until)}
             </p>
             <p className="mono faint" style={{ wordBreak: 'break-all' }}>
-              empreinte SHA-256 : {archive!.sha256}
+              {t('close.sha256Hash')} {archive!.sha256}
             </p>
             <p>
               {/* LE CHEMIN DE LECTURE QUI MANQUAIT. Une archive qu'on ne peut pas
@@ -85,7 +85,7 @@ export default async function ClosePage({
               {[...parFamille.entries()].map(([f, n]) => (
                 /* Le NOM de la famille, pas son code : « achevement — 1 » n'est
                    pas une phrase qu'on donne à lire à un signataire. */
-                <li key={f}>{FAMILLES[f]?.titre ?? f} — {n}</li>
+                <li key={f}>{FAMILLES[f] ? t(FAMILLES[f].titre) : f} — {n}</li>
               ))}
             </ul>
             <p>

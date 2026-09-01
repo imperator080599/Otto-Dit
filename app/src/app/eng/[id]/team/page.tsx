@@ -162,7 +162,7 @@ export default async function TeamPage({
       {obstacles.length > 0 && (
         <div className="panel warn">
           <h2>{t('team.blockersToSignOffIndependence')}</h2>
-          <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+          <ul>{obstacles.map((o, i) => <li key={i}>{t(o.cle, o.vars)}</li>)}</ul>
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default async function TeamPage({
           <h2>{t('team.tenureAndRotation')}</h2>
           <table className="data">
             <thead>
-              <tr><th>Membre</th><th className="num">{t('team.consecutiveYears')}</th><th>{t('team.familiarity')}</th><th>Rotation</th></tr>
+              <tr><th>{t('col.member')}</th><th className="num">{t('team.consecutiveYears')}</th><th>{t('team.familiarity')}</th><th>{t('col.rotation')}</th></tr>
             </thead>
             <tbody>
               {anc.map((a) => {
@@ -209,11 +209,11 @@ export default async function TeamPage({
             <input
               type="text"
               name="reason"
-              placeholder={mine ? 'motif de la révision (obligatoire)' : ''}
+              placeholder={mine ? t('scop.motif') : ''}
               style={{ width: 420 }}
               required={!!mine}
             />
-            <button className="btn small">{mine ? 'Réviser ma déclaration' : 'Ouvrir ma déclaration'}</button>
+            <button className="btn small">{mine ? t('team.reviserMaDeclaration') : t('team.ouvrirMaDeclaration')}</button>
             {mine && (
               <span className="faint">
                 {t('team.aRevisionStacksAVersionThe')}
@@ -222,10 +222,10 @@ export default async function TeamPage({
           </form>
         ) : (
           <>
-            {mine.version > 1 && <p className="faint">{t('team.revisionV')}{mine.version} — motif : {mine.reason}</p>}
+            {mine.version > 1 && <p className="faint">{t('team.revisionV')}{mine.version}{t('team.motifSuffixe', { motif: mine.reason })}</p>}
             <table className="data">
               <thead>
-                <tr><th>Rubrique</th><th>{t('team.answer')}</th><th>{t('team.detail')}</th></tr>
+                <tr><th>{t('col.section')}</th><th>{t('team.answer')}</th><th>{t('team.detail')}</th></tr>
               </thead>
               <tbody>
                 {cat.independance.rubriques.map((r) => {
@@ -241,7 +241,7 @@ export default async function TeamPage({
                           <input type="hidden" name="declaration_id" value={mine.id} />
                           <input type="hidden" name="code" value={r.code} />
                           <select name="answer" defaultValue={a?.answer ?? ''} required>
-                            <option value="" disabled>{t('team.toAnswer')}</option>
+                            <option value="" disabled>{t('risk.toAnswer')}</option>
                             <option value="non">{t('commun.non')}</option>
                             <option value="oui">{t('commun.oui')}</option>
                           </select>
@@ -249,7 +249,7 @@ export default async function TeamPage({
                             type="text"
                             name="detail"
                             defaultValue={a?.detail ?? ''}
-                            placeholder={t('team.detailRequiredIfYes')}
+                            placeholder={t('risk.detailRequiredIfYes')}
                             style={{ width: 340 }}
                           />
                           <button className="btn small secondary">enregistrer</button>
@@ -280,9 +280,9 @@ export default async function TeamPage({
 
         {myStack.length > 1 && (
           <details className="mt">
-            <summary>{t('team.historyOfMyDeclarations')}{myStack.length} versions)</summary>
+            <summary>{t('team.historyOfMyDeclarations')}{t('team.nVersions', { n: myStack.length })}</summary>
             <table className="data" style={{ marginTop: 6 }}>
-              <thead><tr><th>Version</th><th>Motif</th><th>{t('team.signed')}</th></tr></thead>
+              <thead><tr><th>{t('col.version')}</th><th>{t('col.reason')}</th><th>{t('team.signed')}</th></tr></thead>
               <tbody>
                 {myStack.map((d) => (
                   <tr key={d.id}>
@@ -302,7 +302,7 @@ export default async function TeamPage({
         <h2>{t('team.engagementTeam')}</h2>
         <table className="data">
           <thead>
-            <tr><th>Personne</th><th>{t('team.role')}</th><th>Visa</th><th>{t('team.joined')}</th><th>Sortie</th><th>{t('team.declaration')}</th><th /></tr>
+            <tr><th>{t('col.person')}</th><th>{t('team.role')}</th><th>{t('col.signoff')}</th><th>{t('team.joined')}</th><th>{t('col.exit')}</th><th>{t('team.declaration')}</th><th /></tr>
           </thead>
           <tbody>
             {roster.map((m) => (
@@ -355,7 +355,7 @@ export default async function TeamPage({
         <h2>{t('team.nonAuditServices')}</h2>
         <table className="data">
           <thead>
-            <tr><th>Date</th><th>Nature</th><th>Objet</th><th>Prestataire</th><th className="num">Montant</th></tr>
+            <tr><th>{t('col.date')}</th><th>{t('col.nature')}</th><th>{t('col.subject')}</th><th>{t('col.provider')}</th><th className="num">{t('col.amount')}</th></tr>
           </thead>
           <tbody>
             {services.length === 0 ? (
@@ -393,7 +393,7 @@ export default async function TeamPage({
           <input type="text" name="label" placeholder="objet" style={{ width: 240 }} required />
           <input type="text" name="provider" placeholder="prestataire" style={{ width: 200 }} required />
           <input type="text" name="provided_on" placeholder="AAAA-MM-JJ" style={{ width: 120 }} required />
-          <input type="text" name="amount" placeholder="montant €" style={{ width: 110 }} required />
+          <input type="text" name="amount" placeholder={t('team.montantEuros')} style={{ width: 110 }} required />
           <button className="btn small secondary">enregistrer</button>
         </form>
 

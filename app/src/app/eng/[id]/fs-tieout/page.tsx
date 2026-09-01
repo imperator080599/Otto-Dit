@@ -5,6 +5,7 @@ import { lignes, totaux, obstaclesPointage } from '@/lib/services/tieout';
 import { chargerAction, pointerAction, documenterAction, expliquerAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -14,17 +15,15 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 
 export const dynamic = 'force-dynamic';
 
-const ETATS: Record<string, string> = {
-  IS: 'Compte de résultat',
-  BS_ASSET: 'Bilan — actif',
-  BS_LIAB: 'Bilan — passif',
-  NOTES: 'Annexe',
+const ETATS: Record<string, CleLibelle> = {
+  IS: 'fst.etat.IS', BS_ASSET: 'fst.etat.BS_ASSET',
+  BS_LIAB: 'fst.etat.BS_LIAB', NOTES: 'fst.etat.NOTES',
 };
 
-const NATURES: Record<string, string> = {
-  solde_balance: 'solde de balance',
-  agregat_comptes: 'agrégat de comptes',
-  calcul_documente: 'calcul à documenter',
+const NATURES: Record<string, CleLibelle> = {
+  solde_balance: 'fst.nature.solde_balance',
+  agregat_comptes: 'fst.nature.agregat_comptes',
+  calcul_documente: 'fst.nature.calcul_documente',
 };
 
 export default async function TieOutPage({
@@ -53,16 +52,16 @@ export default async function TieOutPage({
       <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>{t('fst.financialStatementTieOut')}</h2>
+        <h2>{t('rail.pointage')}</h2>
         <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
           <input type="hidden" name="engagement_id" value={id} />
-          <button className="btn">{l.length === 0 ? 'Charger la plaquette' : 'Repointer'}</button>
+          <button className="btn">{l.length === 0 ? t('fst.chargerPlaquette') : t('fst.repointer')}</button>
         </form>
         {tot.length > 0 && (
           <p className="mt">
             {tot.map((x) => (
               <span key={x.statement} style={{ marginRight: 14 }}>
-                <strong>{ETATS[x.statement] ?? x.statement}</strong> :{' '}
+                <strong>{ETATS[x.statement] ? t(ETATS[x.statement]) : x.statement}</strong> :{' '}
                 {x.pointees}/{x.lignes} {t('fst.tied')}
               </span>
             ))}
@@ -75,22 +74,22 @@ export default async function TieOutPage({
           <table className="data">
             <thead>
               <tr>
-                <th>{t('fst.state')}</th><th>Ligne</th><th>Nature</th>
+                <th>{t('fst.state')}</th><th>{t('col.line')}</th><th>{t('col.nature')}</th>
                 <th className="num">{t('fst.presented')}</th><th className="num">{t('fst.computed')}</th><th className="num">{t('fst.difference')}</th>
-                <th>Pointage</th>
+                <th>{t('col.tieout')}</th>
               </tr>
             </thead>
             <tbody>
               {l.map((x) => (
                 <tr key={x.id} className={!x.status || x.status === 'open' ? 'warn' : undefined}>
-                  <td className="faint" style={{ fontSize: 11 }}>{ETATS[x.statement] ?? x.statement}</td>
+                  <td className="faint" style={{ fontSize: 11 }}>{ETATS[x.statement] ? t(ETATS[x.statement]) : x.statement}</td>
                   <td>
                     <span className="mono">{x.ref}</span> {x.label}
                     {x.explanation && (
                       <div className="faint" style={{ fontSize: 11, maxWidth: 420 }}><em>{x.explanation}</em></div>
                     )}
                   </td>
-                  <td className="faint" style={{ fontSize: 11 }}>{NATURES[x.nature ?? ''] ?? '—'}</td>
+                  <td className="faint" style={{ fontSize: 11 }}>{NATURES[x.nature ?? ''] ? t(NATURES[x.nature ?? '']) : '—'}</td>
                   <td className="num">{eur(x.presented)}</td>
                   <td className="num">{x.nature === 'calcul_documente' ? <span className="faint">—</span> : eur(x.computed)}</td>
                   <td className="num">
@@ -114,14 +113,14 @@ export default async function TieOutPage({
                             <option value="">{t('fst.document')}</option>
                             {pieces.map((p) => <option key={p.id} value={p.id}>{p.filename}</option>)}
                           </select>
-                          <button className="btn secondary small">Documenter</button>
+                          <button className="btn secondary small">{t('col.document')}</button>
                         </form>
                       ) : (
                         <form action={expliquerAction} className="row" style={{ gap: 4 }}>
                           <input type="hidden" name="engagement_id" value={id} />
                           <input type="hidden" name="ligne_id" value={x.id} />
                           <input name="explanation" placeholder={t('fst.explanationOfTheDifference')} style={{ width: 240 }} />
-                          <button className="btn secondary small">Expliquer</button>
+                          <button className="btn secondary small">{t('col.explain')}</button>
                         </form>
                       )
                     )}
@@ -136,7 +135,7 @@ export default async function TieOutPage({
       {obstacles.length > 0 && (
         <div className="panel warn">
           <h2>{t('fst.blockersToSignOffTieOut')}</h2>
-          <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+          <ul>{obstacles.map((o, i) => <li key={i}>{t(o.cle, o.vars)}</li>)}</ul>
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LES CIRCULARISATIONS (point 3, ADR-111) — banques et avocats.
 //
@@ -18,27 +19,17 @@ import { tr } from '@/lib/i18n';
 // un humain), la réponse déposée comme pièce, le RAPPROCHEMENT calculé à la
 // lecture. Aucun état n'est stocké : ce qui est affiché se recalcule.
 
-const NATURES: { cle: Nature; titre: string; quoi: string; poste: string }[] = [
-  {
-    cle: 'banque',
-    titre: 'Banques',
-    quoi: 'Le solde de chaque compte à la date de clôture, confirmé par la banque elle-même.',
-    poste: 'trésorerie',
-  },
-  {
-    cle: 'avocat',
-    titre: 'Avocats',
-    quoi: 'Les litiges en cours et les montants provisionnés, confirmés par le cabinet qui les suit.',
-    poste: 'provisions',
-  },
+const NATURES: { cle: Nature; titre: CleLibelle; quoi: CleLibelle; poste: CleLibelle }[] = [
+  { cle: 'banque', titre: 'circ.banques', quoi: 'circ.banquesQuoi', poste: 'circ.posteTresorerie' },
+  { cle: 'avocat', titre: 'circ.avocats', quoi: 'circ.avocatsQuoi', poste: 'circ.posteProvisions' },
 ];
 
-const ETATS: Record<string, { libelle: string; badge: string }> = {
-  a_envoyer: { libelle: 'à envoyer', badge: 'badge amber' },
-  envoyee: { libelle: 'envoyée — sans réponse', badge: 'badge gray' },
-  recue: { libelle: 'reçue', badge: 'badge gray' },
-  rapprochee: { libelle: 'rapprochée', badge: 'badge green' },
-  ecart: { libelle: 'écart', badge: 'badge red' },
+const ETATS: Record<string, { libelle: CleLibelle; badge: string }> = {
+  a_envoyer: { libelle: 'circ.etat.a_envoyer', badge: 'badge amber' },
+  envoyee: { libelle: 'circ.etat.envoyee', badge: 'badge gray' },
+  recue: { libelle: 'circ.etat.recue', badge: 'badge gray' },
+  rapprochee: { libelle: 'circ.etat.rapprochee', badge: 'badge green' },
+  ecart: { libelle: 'circ.etat.ecart', badge: 'badge red' },
 };
 
 export default async function CircularisationsPage({
@@ -113,7 +104,7 @@ export default async function CircularisationsPage({
         const existants = (await tiers(id, 'avocat')).find((t) => t.id === partyId)?.litiges ?? [];
         const litiges: Litige[] = [
           ...existants,
-          { objet, provision_cents: Math.round(Number(provision) * 100), statut: String(formData.get('statut') ?? 'en cours') },
+          { objet, provision_cents: Math.round(Number(provision) * 100), statut: String(formData.get('statut') ?? 'ongoing') },
         ];
         await deposerReponse({ partyId, userId: user.id, evidenceId, litiges });
       }
@@ -150,13 +141,13 @@ export default async function CircularisationsPage({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="panel">
-        <h2>Circularisations</h2>
+        <h2>{t('rail.circularisations')}</h2>
       </div>
 
       {sections.map((s) => (
         <div className="panel" key={s.cle}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <h2>{s.titre} <span className="faint">— poste {s.poste}</span></h2>
+            <h2>{t(s.titre)} <span className="faint">{t('circ.posteSuffixe', { poste: { cle: s.poste } })}</span></h2>
             {s.camp && (
               <form action={questionsAction}>
                 <input type="hidden" name="kind" value={s.cle} />
@@ -164,7 +155,7 @@ export default async function CircularisationsPage({
               </form>
             )}
           </div>
-          <p className="faint">{s.quoi}</p>
+          <p className="faint">{t(s.quoi)}</p>
 
           {/* L'IMPORT RESTE OFFERT UNE FOIS LA CAMPAGNE OUVERTE : le premier
               listing d'un client est presque toujours incomplet — c'est le
@@ -172,13 +163,13 @@ export default async function CircularisationsPage({
               est parti (le service garde les demandes envoyées). */}
           <details>
             <summary className="repli-action">
-              {s.camp ? 'Corriger le listing (le client a répondu)' : 'Importer le listing fourni par le client'}
+              {s.camp ? t('circ.corrigerListing') : t('circ.importerListing')}
             </summary>
               <form action={importAction} className="mt">
                 <input type="hidden" name="kind" value={s.cle} />
                 <div className="row">
                   <input type="file" name="fichier" accept=".csv,text/csv" required />
-                  <button className="btn small">Importer</button>
+                  <button className="btn small">{t('col.import')}</button>
                 </div>
               </form>
           </details>
@@ -195,11 +186,11 @@ export default async function CircularisationsPage({
 
               {(s.comp.comptesSansTiers.length > 0 || s.comp.tiersSansCompte.length > 0) && (
                 <div className="callout warn">
-                  <strong>{t('circ.completeness')} {s.comp.comptesSansTiers.length + s.comp.tiersSansCompte.length} constat(s).</strong>
+                  <strong>{t('circ.completeness')} {t('circ.nConstats', { n: s.comp.comptesSansTiers.length + s.comp.tiersSansCompte.length })}</strong>
                   <ul>
                     {s.comp.comptesSansTiers.map((c) => (
                       <li key={c.compte}>
-                        Le compte <span className="mono">{c.compte}</span> « {c.libelle} » ({fmtEur(c.soldeCents, 'fr')}{t('circ.isCoveredByNo')} <strong>{t('commun.aucun')}</strong> {t('circ.counterpartiesInTheListing')}
+                        {t('circ.leCompte')} <span className="mono">{c.compte}</span> « {c.libelle} » ({fmtEur(c.soldeCents, 'fr')}{t('circ.isCoveredByNo')} <strong>{t('commun.aucun')}</strong> {t('circ.counterpartiesInTheListing')}
                       </li>
                     ))}
                     {s.comp.tiersSansCompte.map((x) => (
@@ -216,7 +207,7 @@ export default async function CircularisationsPage({
                 <table className="data">
                   <thead>
                     <tr>
-                      <th>Tiers</th><th>{t('circ.reference')}</th><th>Compte</th><th>{t('circ.state')}</th>
+                      <th>{t('col.counterparty')}</th><th>{t('circ.reference')}</th><th>{t('col.account')}</th><th>{t('circ.state')}</th>
                       <th className="num">{t('circ.books')}</th><th className="num">{t('circ.confirmed')}</th><th className="num">{t('circ.difference')}</th>
                       <th>{t('circ.reply')}</th><th></th>
                     </tr>
@@ -227,7 +218,7 @@ export default async function CircularisationsPage({
                         <td>{l.nom}</td>
                         <td className="mono" style={{ fontSize: 11 }}>{l.reference}</td>
                         <td className="mono">{l.compte ?? '—'}</td>
-                        <td><span className={ETATS[l.etat].badge}>{ETATS[l.etat].libelle}</span></td>
+                        <td><span className={ETATS[l.etat].badge}>{t(ETATS[l.etat].libelle)}</span></td>
                         <td className="num">{l.soldeComptableCents === null ? '—' : fmtEur(l.soldeComptableCents, 'fr')}</td>
                         <td className="num">
                           {s.cle === 'banque'
@@ -241,7 +232,7 @@ export default async function CircularisationsPage({
                               <form action={expliquerAction}>
                                 <input type="hidden" name="party_id" value={l.id} />
                                 <input name="explication" placeholder={t('circ.whyThisDifference')} required style={{ width: 200 }} />
-                                <button className="btn small">Expliquer</button>
+                                <button className="btn small">{t('col.explain')}</button>
                               </form>
                             </div>
                           )}
@@ -271,7 +262,7 @@ export default async function CircularisationsPage({
                                   <>
                                     <input name="objet" placeholder={t('circ.subjectOfTheDispute')} required />
                                     <input name="provision" placeholder={t('circ.declaredProvision')} required />
-                                    <input name="statut" placeholder={t('circ.statusOngoingJudged')} defaultValue="en cours" />
+                                    <input name="statut" placeholder={t('circ.statusOngoingJudged')} defaultValue={t('circ.statutEnCours')} />
                                   </>
                                 )}
                                 <button className="btn small">{t('circ.recordTheReply')}</button>

@@ -12,6 +12,7 @@ import { poserNoteAncreeAction } from '../notes/actions';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 export default async function MaterialityPage({
   params, searchParams,
@@ -20,6 +21,7 @@ export default async function MaterialityPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const current = await currentMateriality(id);
@@ -64,7 +66,7 @@ export default async function MaterialityPage({
   const annotable = (param: string, libelle: string, contenu: React.ReactNode) => (
     <Annotable
       bloc
-      ancre={{ kind: 'materiality_param', aRef: param, label: `Seuils · ${libelle}` }}
+      ancre={{ kind: 'materiality_param', aRef: param, label: t('mat.ancreSeuil', { param: libelle }) }}
       marques={marques[`materiality_param|${param}`] ?? []}
       membres={membresNotes} engagementId={id} chemin={`/eng/${id}/materiality`}
       notesHref={`/eng/${id}/notes`} action={poserNoteAncreeAction}
@@ -80,11 +82,11 @@ export default async function MaterialityPage({
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{motDuPack(fs.assurance_packs, 'materialite')} — {pack.name}</h2>
           <form action={proposeAction}>
-            <button className="btn secondary">Propose (L3)</button>
+            <button className="btn secondary">{t('mat.proposeL3')}</button>
           </form>
         </div>
         {!current ? (
-          <p className="muted">No proposal yet.</p>
+          <p className="muted">{t('mat.noProposalYet')}</p>
         ) : (
           <>
             <p>
@@ -130,7 +132,7 @@ export default async function MaterialityPage({
       <div className="panel">
         <h2>Versions</h2>
         <table className="data">
-          <thead><tr><th>v</th><th>Benchmark</th><th className="num">Materiality</th><th>Status</th></tr></thead>
+          <thead><tr><th>v</th><th>Benchmark</th><th className="num">Materiality</th><th>{t('col.status')}</th></tr></thead>
           <tbody>
             {versions.map((v) => (
               <tr key={v.id}>

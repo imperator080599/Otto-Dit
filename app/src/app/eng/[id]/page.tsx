@@ -177,14 +177,14 @@ export default async function VueDEnsemble({
           }))} />
         </div>
         <div className="panel">
-          <h2 style={{ marginTop: 0 }}>{t('vue.reviewNotes')}</h2>
+          <h2 style={{ marginTop: 0 }}>{t('rail.notes')}</h2>
           <Barre parts={[
             { cle: 'b', n: Number(notes.bloquantes), classe: 'red', repere: '▲', libelle: t('note.priority') },
             { cle: 'o', n: Number(notes.ouvertes), classe: 'amber', repere: '◐', libelle: t('note.open') },
             { cle: 'c', n: Number(notes.closes), classe: 'gray', repere: '●', libelle: t('note.closed') },
           ]} />
           <p className="faint mt">
-            <Link href={`/eng/${id}/notes`}>{t('vue.reviewNotes')} →</Link>
+            <Link href={`/eng/${id}/notes`}>{t('rail.notes')} →</Link>
           </p>
         </div>
       </div>
@@ -246,7 +246,7 @@ export default async function VueDEnsemble({
             <table className="data">
               <tbody>
                 {[...parFamille.entries()].map(([f, n]) => (
-                  <tr key={f}><td>{FAMILLES[f]?.titre ?? f}</td><td className="num">{n}</td></tr>
+                  <tr key={f}><td>{FAMILLES[f] ? t(FAMILLES[f].titre) : f}</td><td className="num">{n}</td></tr>
                 ))}
               </tbody>
             </table>

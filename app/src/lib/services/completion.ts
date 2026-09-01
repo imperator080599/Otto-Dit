@@ -2,6 +2,8 @@ import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { currentEvaluation } from './evaluation';
 import { jalons } from './acceptance';
+import { motif, type Motif } from './motif';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // L'ACHÈVEMENT (point 10).
 //
@@ -24,32 +26,12 @@ export type NatureAchevement =
   | 'evenements_posterieurs' | 'continuite' | 'anomalies_non_corrigees'
   | 'lettre_affirmation' | 'gouvernance';
 
-export const NATURES: { code: NatureAchevement; libelle: string; pourquoi: string }[] = [
-  {
-    code: 'evenements_posterieurs',
-    libelle: 'Événements postérieurs à la clôture',
-    pourquoi: 'Les travaux doivent aller JUSQU’À la date du rapport. S’ils s’arrêtent avant, il y a un trou — et le trou se nomme.',
-  },
-  {
-    code: 'continuite',
-    libelle: 'Continuité d’exploitation',
-    pourquoi: 'C’est le travail qu’on relit après une défaillance. Une conclusion sans constatations écrites ne se relit pas.',
-  },
-  {
-    code: 'anomalies_non_corrigees',
-    libelle: 'Anomalies non corrigées et incidence sur l’opinion',
-    pourquoi: 'Le cumul se calcule ; ce qu’on en fait est un jugement, et il se motive.',
-  },
-  {
-    code: 'lettre_affirmation',
-    libelle: 'Lettre d’affirmation',
-    pourquoi: 'Datée du jour du rapport ou après, jamais avant : une lettre antérieure ne couvre pas la période auditée.',
-  },
-  {
-    code: 'gouvernance',
-    libelle: 'Communication à la gouvernance',
-    pourquoi: 'Ce qui a été communiqué, à qui, et quand. Une communication non consignée n’a pas eu lieu pour qui relit le dossier.',
-  },
+export const NATURES: { code: NatureAchevement; libelle: CleLibelle; pourquoi: CleLibelle }[] = [
+  { code: 'evenements_posterieurs', libelle: 'ach.evenements_posterieurs.titre', pourquoi: 'ach.evenements_posterieurs.pourquoi' },
+  { code: 'continuite', libelle: 'ach.continuite.titre', pourquoi: 'ach.continuite.pourquoi' },
+  { code: 'anomalies_non_corrigees', libelle: 'ach.anomalies_non_corrigees.titre', pourquoi: 'ach.anomalies_non_corrigees.pourquoi' },
+  { code: 'lettre_affirmation', libelle: 'ach.lettre_affirmation.titre', pourquoi: 'ach.lettre_affirmation.pourquoi' },
+  { code: 'gouvernance', libelle: 'ach.gouvernance.titre', pourquoi: 'ach.gouvernance.pourquoi' },
 ];
 
 export interface Achevement {
@@ -249,13 +231,13 @@ export async function rouvrir(
 
 /* ── ce qui bloque ──────────────────────────────────────────────────────── */
 
-export async function obstaclesAchevement(engagementId: string): Promise<string[]> {
+export async function obstaclesAchevement(engagementId: string): Promise<Motif[]> {
   const t = await travaux(engagementId);
-  if (t.length === 0) return ['Achèvement : les travaux d’achèvement n’ont pas été ouverts.'];
-  const out: string[] = [];
+  if (t.length === 0) return [motif('obst.achevementNonOuvert')];
+  const out: Motif[] = [];
   for (const n of NATURES) {
     const x = t.find((y) => y.nature === n.code);
-    if (!x || x.status === 'open') out.push(`Achèvement : ${n.libelle} — non conclu`);
+    if (!x || x.status === 'open') out.push(motif('obst.achevementNonConclu', { nature: { cle: n.libelle } }));
   }
   return out;
 }

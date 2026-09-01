@@ -67,12 +67,12 @@ export default async function LoopPage({
         </div>
         <p>
           <strong>{b.tours}</strong> {t('loop.loopTurnS')} {b.tours === 0
-            ? 'aucun écart n’a encore relancé une demande'
-            : 'autant de fois qu’un écart a fait repartir une demande de clarification'}
+            ? t('loop.noExceptionHasYetTriggeredA')
+            : t('loop.asManyTimesAsAnException')}
           {' · '}
           {b.fermee
             ? <span className="badge green">{t('loop.loopClosedEverySelectedItemIs')}</span>
-            : <span className="badge amber">boucle ouverte</span>}
+            : <span className="badge amber">{t('loop.loopOpen')}</span>}
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default async function LoopPage({
           <thead>
             <tr>
               <th style={{ width: 170 }}>{t('loop.step')}</th>
-              <th className="num">Franchi</th>
+              <th className="num">{t('col.passed')}</th>
               <th style={{ width: 220 }}></th>
               <th className="num">{t('loop.stoppedHere')}</th>
               <th>{t('loop.whatIsAwaited')}</th>
@@ -117,7 +117,7 @@ export default async function LoopPage({
         {b.obstacles.length > 0 && (
           <>
             <p className="mt"><strong>{t('loop.whatKeepsTheLoopFromClosing')}</strong></p>
-            <ul>{b.obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+            <ul>{b.obstacles.map((o, i) => <li key={i}>{t(o.cle, o.vars)}</li>)}</ul>
           </>
         )}
       </div>

@@ -62,7 +62,7 @@ export default async function AcceptancePage({
               {a.decided_at && <> le {fr(a.decided_at)}</>}
             </p>
             {a.decision_reason && (
-              <p><strong>Motif :</strong> {a.decision_reason}</p>
+              <p><strong>{t('commun.motif')}</strong> {a.decision_reason}</p>
             )}
 
             <table className="data">
@@ -101,10 +101,10 @@ export default async function AcceptancePage({
                             <input
                               name="detail"
                               defaultValue={r?.detail ?? ''}
-                              placeholder={defavorable ? 'précision (obligatoire)' : 'précision'}
+                              placeholder={defavorable ? t('acc.detailRequired') : t('acc.detail')}
                               style={{ width: 220 }}
                             />
-                            <button className="btn secondary small">Noter</button>
+                            <button className="btn secondary small">{t('col.record')}</button>
                           </form>
                         )}
                       </td>
@@ -146,12 +146,12 @@ export default async function AcceptancePage({
           ici, et l'obstacle « jalons » y mène toujours. */}
       {liste.length > 0 && (
         <details className="panel repli-action">
-          <summary>{t('acc.engagementMilestones')}{retard.length > 0 ? ` — ${retard.length} échu(s)` : ''}</summary>
+          <summary>{t('acc.engagementMilestones')}{retard.length > 0 ? t('acc.nEchus', { n: retard.length }) : ''}</summary>
           {retard.length > 0 && (
             <p><span className="badge amber">{retard.length} {t('acc.milestoneSOverdueAndNotDone')}</span></p>
           )}
           <table className="data">
-            <thead><tr><th>Jalon</th><th>{t('acc.due')}</th><th>Poser</th><th>{t('acc.done')}</th></tr></thead>
+            <thead><tr><th>{t('col.milestone')}</th><th>{t('acc.due')}</th><th>{t('col.set')}</th><th>{t('acc.done')}</th></tr></thead>
             <tbody>
               {liste.map((j) => (
                 <tr key={j.code} className={retard.some((r) => r.code === j.code) ? 'warn' : undefined}>
@@ -171,7 +171,7 @@ export default async function AcceptancePage({
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="code" value={j.code} />
                         <input name="date" placeholder="AAAA-MM-JJ" defaultValue={j.due_date ?? ''} style={{ width: 120 }} />
-                        <button className="btn secondary small">Poser</button>
+                        <button className="btn secondary small">{t('col.set')}</button>
                       </form>
                     )}
                   </td>

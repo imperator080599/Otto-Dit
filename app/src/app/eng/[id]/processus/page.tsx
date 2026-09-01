@@ -163,14 +163,14 @@ export default async function ProcessusPage({
         </form>
         <p className="faint mono" style={{ marginBottom: 0 }}>
           {(['n1', 'n'] as const).map((ex) => versions[ex]
-            ? `${NOM_EXERCICE[ex]} : ${versions[ex]!.filename} (${versions[ex]!.etapes.length} étapes, ${versions[ex]!.controles.length} contrôles)`
-            : `${NOM_EXERCICE[ex]} : non décrite`).join(' · ')}
+            ? t('proc.versionDecrite', { ex: NOM_EXERCICE[ex], fichier: versions[ex]!.filename, e: versions[ex]!.etapes.length, c: versions[ex]!.controles.length })
+            : t('proc.versionNonDecrite', { ex: NOM_EXERCICE[ex] })).join(' · ')}
         </p>
       </div>
 
       {montre && diagramme && (
         <div className="panel">
-          <h2>Diagramme — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</h2>
+          <h2>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</h2>
           <p className="faint"></p>
           <div className="table-scroll">
             <svg width={diagramme.w} height={diagramme.h} viewBox={`0 0 ${diagramme.w} ${diagramme.h}`} role="img"
@@ -303,7 +303,7 @@ export default async function ProcessusPage({
           </div>
           {[1, 2, 3].map((i) => (
             <div key={i} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
-              <input name={`nom${i}`} placeholder={`participant ${i} — nom`} style={{ minWidth: 180 }} />
+              <input name={`nom${i}`} placeholder={t('proc.participantNom', { i })} style={{ minWidth: 180 }} />
               <input name={`qualite${i}`} placeholder={t('proc.qualite')} style={{ minWidth: 140 }} />
               <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <input type="checkbox" name={`consent${i}`} /> {t('proc.consent')}
@@ -320,7 +320,7 @@ export default async function ProcessusPage({
             {t('proc.interviewOf')} {itv.date} — {itv.sujet}{' '}
             <span className="badge gray">{itv.support === 'notes' ? 'notes' : 'enregistrement'}</span>
             {itv.ecarts.some((e) => e.status === 'candidate') && (
-              <span className="badge red">{itv.ecarts.filter((e) => e.status === 'candidate').length} candidat(s)</span>
+              <span className="badge red">{t('proc.nCandidats', { n: itv.ecarts.filter((e) => e.status === 'candidate').length })}</span>
             )}
           </h2>
           {itv.comprehension ? (
@@ -329,7 +329,7 @@ export default async function ProcessusPage({
             <form action={comprehensionAction} className="row" style={{ gap: 6, alignItems: 'flex-start' }}>
               <input type="hidden" name="itv" value={itv.id} />
               <textarea name="texte" rows={2} placeholder={t('proc.comprehensionLivrable')} style={{ flex: 1, minWidth: 240 }} />
-              <button className="btn">Consigner</button>
+              <button className="btn">{t('col.record')}</button>
             </form>
           )}
 
@@ -354,7 +354,7 @@ export default async function ProcessusPage({
           {itv.ecarts.length > 0 && (
             <div className="table-scroll mt">
               <table className="data">
-                <thead><tr><th>#</th><th>Nature</th><th>{t('proc.ecartCandidat')}</th><th>{t('proc.decision')}</th></tr></thead>
+                <thead><tr><th>#</th><th>{t('col.nature')}</th><th>{t('proc.ecartCandidat')}</th><th>{t('proc.decision')}</th></tr></thead>
                 <tbody>
                   {itv.ecarts.map((e) => (
                     <tr key={e.id}>
@@ -378,8 +378,8 @@ export default async function ProcessusPage({
                         ) : (
                           <>
                             <span className="badge gray">
-                              {e.status === 'question' ? 'question au client (brouillon)'
-                                : e.status === 'factor' ? 'facteur proposé au registre' : 'écarté'}
+                              {e.status === 'question' ? t('proc.questionBrouillon')
+                                : e.status === 'factor' ? t('proc.facteurPropose') : t('proc.ecarte')}
                             </span>
                             <div className="faint" style={{ fontSize: 12 }}>
                               {e.decisionReason ? `${e.decisionReason} — ` : ''}{e.decideur}

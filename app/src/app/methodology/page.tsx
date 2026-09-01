@@ -74,16 +74,16 @@ export default async function MethodologyPage({
   return (
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>{t('meth.theFirmMethodology')}</h1>
-        <Link href="/" className="btn secondary small">Missions</Link>
+        <h1>{t('commun.methode')}</h1>
+        <Link href="/" className="btn secondary small">{t('col.engagements')}</Link>
       </div>
 
       <div className="panel">
         <table className="data">
           <thead>
             <tr>
-              <th>Version</th><th>{t('meth.published')}</th><th>{t('meth.procedures')}</th><th>Risque</th>
-              <th>Assertions</th><th>Empreinte</th><th>Missions</th>
+              <th>{t('col.version')}</th><th>{t('meth.published')}</th><th>{t('meth.procedures')}</th><th>{t('col.risk')}</th>
+              <th>{t('col.assertions')}</th><th>{t('col.hash')}</th><th>{t('col.engagements')}</th>
             </tr>
           </thead>
           <tbody>
@@ -113,7 +113,7 @@ export default async function MethodologyPage({
       <div className="panel">
         <h2>{t('meth.whichEngagementWorksUnderWhichMethodolog')}</h2>
         <table className="data">
-          <thead><tr><th>Mission</th><th>{t('meth.methodology')}</th><th>{t('meth.reAssign')}</th></tr></thead>
+          <thead><tr><th>{t('col.engagement')}</th><th>{t('meth.methodology')}</th><th>{t('meth.reAssign')}</th></tr></thead>
           <tbody>
             {engagements.map((e) => (
               <tr key={e.id}>

@@ -23,6 +23,7 @@ import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import type { Catalogue, QuestionResiduelle } from '@/lib/methodology/types';
 import { engagementContext } from './team';
+import { motif, type Motif } from './motif';
 
 export class QuestionnaireError extends Error {
   constructor(message: string) {
@@ -300,7 +301,7 @@ export async function declaredFactorsFor(
 export async function questionnaireObstacles(
   engagementId: string,
   fsliCode: string | null,
-): Promise<string[]> {
+): Promise<Motif[]> {
   const cat = await catalogueDeLaMission(engagementId);
   const scope = fsliCode === null ? 'entite' : 'section';
   const asked = questionsOfScope(cat, scope);
@@ -313,21 +314,20 @@ export async function questionnaireObstacles(
     return a?.answer === 'oui' && a.detail.trim() === '';
   });
 
-  const out: string[] = [];
+  const out: Motif[] = [];
   if (unanswered.length) {
-    out.push(
-      `${unanswered.length} question(s) ${scope === 'entite' ? 'd’entité' : 'de section'} sans réponse`,
-    );
+    out.push(motif(scope === 'entite' ? 'obst.questionsEntiteSansReponse' : 'obst.questionsSectionSansReponse',
+      { n: unanswered.length }));
   }
   if (yesWithoutDetail.length) {
-    out.push(`${yesWithoutDetail.length} réponse(s) « oui » sans précision écrite`);
+    out.push(motif('obst.ouiSansPrecision', { n: yesWithoutDetail.length }));
   }
   const pending = await q1<{ n: string }>(
     `select count(*)::text as n from risk_factor_declared
      where engagement_id = $1 and status = 'proposed'`,
     [engagementId],
   );
-  if (Number(pending.n) > 0) out.push(`${pending.n} facteur(s) de risque non statué(s)`);
+  if (Number(pending.n) > 0) out.push(motif('obst.facteursNonStatues', { n: pending.n }));
   return out;
 }
 

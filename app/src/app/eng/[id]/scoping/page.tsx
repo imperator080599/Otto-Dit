@@ -60,11 +60,11 @@ export default async function ScopingPage({
       <BandeauRefus erreur={erreur} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h2>{motDuPack(packs, 'scoping')} {t('scop.whichAreasWillBeWorkedAnd')}</h2>
-        <form action={rebuildAction}><button className="btn secondary small">Rebuild from TB</button></form>
+        <form action={rebuildAction}><button className="btn secondary small">{t('scop.rebuildFromTb')}</button></form>
       </div>
       <table className="data">
         <thead>
-          <tr><th>Poste</th><th>{t('scop.etat')}</th><th className="num">Solde</th><th>{t('scop.perimetre')}</th><th>Base</th><th>{t('scop.decision')}</th></tr>
+          <tr><th>{t('col.area')}</th><th>{t('scop.etat')}</th><th className="num">{t('col.balance')}</th><th>{t('scop.perimetre')}</th><th>{t('col.basis')}</th><th>{t('scop.decision')}</th></tr>
         </thead>
         <tbody>
           {withAccounts.map((f) => (
@@ -121,20 +121,20 @@ export default async function ScopingPage({
                     <form action={confirmAction} className="row" style={{ marginBottom: 4 }}>
                       <input type="hidden" name="fsli_id" value={f.id} />
                       <input type="hidden" name="decision" value="ns_confirmed" />
-                      <button className="btn small secondary">Confirm NS</button>
+                      <button className="btn small secondary">{t('scop.confirmNs')}</button>
                     </form>
                     <form action={confirmAction} className="row">
                       <input type="hidden" name="fsli_id" value={f.id} />
                       <input type="hidden" name="decision" value="in_scope_qualitative" />
-                      <input type="text" name="basis" placeholder="qualitative basis (required)" style={{ width: 180 }} required />
-                      <button className="btn small secondary">Scope in</button>
+                      <input type="text" name="basis" placeholder={t('scop.qualitativeBasisRequired')} style={{ width: 180 }} required />
+                      <button className="btn small secondary">{t('scop.scopeIn')}</button>
                     </form>
                   </div>
                 ) : f.scoping === 'in_scope' ? (
                   <form action={confirmAction} className="row">
                     <input type="hidden" name="fsli_id" value={f.id} />
                     <input type="hidden" name="decision" value="in_scope" />
-                    <button className="btn small secondary">Confirm in scope</button>
+                    <button className="btn small secondary">{t('scop.confirmInScope')}</button>
                   </form>
                 ) : (
                   <span className="faint">—</span>

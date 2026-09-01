@@ -6,8 +6,8 @@ import { locale, traduire } from '@/lib/i18n';
 import { FournisseurLocale } from '@/lib/i18n/client';
 
 export const metadata: Metadata = {
-  title: 'OTTO — AI-native assurance platform',
-  description: 'Financial-statement audit & SOX/ICFR assurance — demo (synthetic data only)',
+  title: traduire('en', 'meta.titre'),
+  description: traduire('en', 'meta.description'),
   /* URL publique : jamais indexée — c'est une démonstration, pas un site.
      (Toujours noindex : la seule instance indexable serait une production
      réelle, qui n'existe pas — et une constante ne peut pas diverger entre
@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <FournisseurLocale locale={l}>
         <div className="topbar">
           <Link href="/" className="brand">
-            OTTO<small>assurance platform</small>
+            OTTO<small>{traduire(l, 'meta.baseline')}</small>
           </Link>
           {/* PERMANENT ET CONSTANT (fil n°7, expérience du 2026-08-31) : le
               layout racine ne porte AUCUNE conditionnelle d'environnement —

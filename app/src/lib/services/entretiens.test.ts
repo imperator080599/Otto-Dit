@@ -110,7 +110,7 @@ describe('entretiens et écarts candidats (ADR-108)', () => {
     const [lu] = (await lireEntretiens(IDS.engNep)).filter((i) => i.id === itvId);
     const [omissionDoc, omissionOrale, contradiction] = lu.ecarts;
 
-    expect((await obstaclesEntretiens(IDS.engNep))[0]).toMatch(/3 écart\(s\) candidat\(s\)/);
+    expect((await obstaclesEntretiens(IDS.engNep))[0]).toMatchObject({ cle: 'obst.entretienEcartsCandidats', vars: { n: '3' } });
 
     await statuerEcart({ gapId: omissionDoc.id, decision: 'factor', userId: IDS.users.lea });
     const f = await q01<{ status: string }>(

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { GROUPES_CLES, type EntreeRail } from '@/lib/services/rail-vue';
+import { useT } from '@/lib/i18n/client';
 
 // LE RAIL VERTICAL (ADR-112, R-03) — avec le REPLI PAR GROUPE (revue n°2).
 //
@@ -22,6 +23,7 @@ import { GROUPES_CLES, type EntreeRail } from '@/lib/services/rail-vue';
 export function EngNav({ entrees, tout: libelleTout, reduire }: {
   entrees: EntreeRail[]; tout: string; reduire: string;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const [tout, setTout] = useState(false);
   /* Le repli est un ÉTAT, pas un attribut posé une fois : sans lui, chaque
@@ -32,7 +34,7 @@ export function EngNav({ entrees, tout: libelleTout, reduire }: {
     (/\/eng\/[^/]+$/.test(href) ? pathname === href : pathname.startsWith(href));
 
   return (
-    <nav className="rail" aria-label="Sections">
+    <nav className="rail" aria-label={t('col.sections')}>
       {GROUPES_CLES.map((cle) => {
         const dedans = entrees.filter((x) => x.groupeCle === cle);
         const visibles = dedans.filter((x) => x.atteignable || tout);

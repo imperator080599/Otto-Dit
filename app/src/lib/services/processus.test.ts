@@ -133,7 +133,7 @@ describe('processus en données structurées (ADR-108)', () => {
   it('les changements non statués sont un OBSTACLE au visa, et il s\'éteint en statuant tout', async () => {
     const avant = await obstaclesProcessus(IDS.engNep);
     expect(avant).toHaveLength(1);
-    expect(avant[0]).toMatch(/3 changement\(s\) N\/N-1 non statué\(s\)/);
+    expect(avant[0]).toMatchObject({ cle: 'obst.processusChangementsNonStatues', vars: { n: 3 } });
     for (const code of ['proc:REVENUE:etape-:REL', 'proc:REVENUE:controle~:CP-01:proprietaire', 'proc:REVENUE:controle~:CP-03:frequence']) {
       await statuerChangement({
         engagementId: IDS.engNep, cycle: 'REVENUE', changeCode: code,

@@ -9,6 +9,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q, q1 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
+import { traduire } from '@/lib/i18n/catalogue';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import {
   assurerAchevement, travaux, conclure, sansObjet, rouvrir,
@@ -34,7 +35,7 @@ describe('l’achèvement : des règles de DATE, pas des rappels', () => {
     const t = await travaux(IDS.engNep);
     expect(t).toHaveLength(5);
     expect(t.every((x) => x.status === 'open')).toBe(true);
-    for (const n of NATURES) expect(n.pourquoi.length).toBeGreaterThan(30);
+    for (const n of NATURES) expect(traduire('fr', n.pourquoi).length).toBeGreaterThan(30);
   });
 
   it('la date de rapport vient du JALON, pas d’un champ oublié', async () => {
@@ -150,13 +151,14 @@ describe('l’achèvement : des règles de DATE, pas des rappels', () => {
 
   it('un travail non conclu bloque, et il apparaît dans LA liste des obstacles', async () => {
     const propres = await obstaclesAchevement(IDS.engNep);
-    expect(propres.some((o) => /Communication à la gouvernance/.test(o))).toBe(true);
+    expect(propres.some((o) => o.cle === 'obst.achevementNonConclu'
+      && (o.vars?.nature as { cle: string })?.cle === 'ach.gouvernance.titre')).toBe(true);
 
     const tous = await obstaclesAuVisa(IDS.engNep);
     expect(tous.some((o) => o.famille === 'achevement')).toBe(true);
     /* Le corollaire d'ADR-085 : un obstacle qui n'est pas dans LA liste n'en
        est pas un. On vérifie donc qu'ils y sont tous. */
-    for (const p of propres) expect(tous.map((o) => o.libelle)).toContain(p);
+    for (const p of propres) expect(tous.map((o) => JSON.stringify(o.motif))).toContain(JSON.stringify(p));
   });
 
   it('tout conclure ferme les obstacles d’achèvement', async () => {

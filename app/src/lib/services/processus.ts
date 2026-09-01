@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { engagementCtx } from './imports';
 import { ingestEvidence } from './evidence';
 import { raiseFactor } from './questionnaire';
+import { motif, type Motif } from './motif';
 
 // LE PROCESSUS EN DONNÉES STRUCTURÉES (point 2, ADR-108). On ne lit pas le
 // flowchart du client : la plateforme héberge les étapes, acteurs, systèmes,
@@ -363,16 +364,16 @@ export function layoutDiagramme(v: VersionProcessus): Diagramme {
 
 /** Les obstacles au visa portés par ce module : des changements N/N-1 non
  *  statués. (Les écarts d'entretien non statués sont portés par entretiens.ts.) */
-export async function obstaclesProcessus(engagementId: string): Promise<string[]> {
+export async function obstaclesProcessus(engagementId: string): Promise<Motif[]> {
   const cycles = await q<{ cycle_ref: string }>(
     `select distinct cycle_ref from process_model where engagement_id = $1 order by cycle_ref`,
     [engagementId],
   );
-  const out: string[] = [];
+  const out: Motif[] = [];
   for (const c of cycles) {
     const diff = await diffProcessus(engagementId, c.cycle_ref);
     if (diff && diff.aStatuer.length > 0) {
-      out.push(`Processus ${c.cycle_ref} : ${diff.aStatuer.length} changement(s) N/N-1 non statué(s)`);
+      out.push(motif('obst.processusChangementsNonStatues', { cycle: c.cycle_ref, n: diff.aStatuer.length }));
     }
   }
   return out;

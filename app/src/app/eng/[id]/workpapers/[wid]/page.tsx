@@ -39,14 +39,14 @@ export default async function WorkpaperDetail({
   const sp = await searchParams;
   const { erreur } = sp;
   const { user } = await requireMember(id);
+  const t = await tr();
   const wp = await getWorkpaper(wid);
-  if (!wp || wp.engagement_id !== id) return <div className="panel">Not found.</div>;
+  if (!wp || wp.engagement_id !== id) return <div className="panel">{t('wp.notFound')}</div>;
   const edits = await listEdits(wid);
   const annexes = await annexesDuPapier(wid);
   const notes = await listNotes(wid);
   const signoffs = await listSignoffs(wid);
   const exports = await listExports(wid);
-  const t = await tr();
   const ipe = await lireIpe(wid);
   const pieces = await piecesDisponibles(id);
   /* « Recent » se remplit en OUVRANT — le papier est une section du dossier. */
@@ -205,13 +205,13 @@ export default async function WorkpaperDetail({
           <h2>
             {wp.title} <span className="badge gray">v{wp.version}</span>{' '}
             <span className={`badge ${WP_BADGE[wp.status]}`}>{wp.status}</span>
-            {edits.length > 0 && <span className="mod-flag" style={{ marginLeft: 6 }}>modified — justified</span>}
+            {edits.length > 0 && <span className="mod-flag" style={{ marginLeft: 6 }}>{t('wp.modifiedJustified')}</span>}
           </h2>
           <details>
-            <summary className="repli-action">Exporter (PDF, Excel)</summary>
+            <summary className="repli-action">{t('wp.exporterPdfExcel')}</summary>
             <span className="row mt">
-              <form action={exportAction}><input type="hidden" name="format" value="pdf" /><button className="btn secondary small">Export PDF</button></form>
-              <form action={exportAction}><input type="hidden" name="format" value="xlsx" /><button className="btn secondary small">Export Excel</button></form>
+              <form action={exportAction}><input type="hidden" name="format" value="pdf" /><button className="btn secondary small">{t('wp.exportPdf')}</button></form>
+              <form action={exportAction}><input type="hidden" name="format" value="xlsx" /><button className="btn secondary small">{t('wp.exportExcel')}</button></form>
             </span>
           </details>
         </div>
@@ -222,7 +222,7 @@ export default async function WorkpaperDetail({
         <div className="mt">
           {annexes.length > 0 && (
             <p style={{ margin: '4px 0' }}>
-              <span className="faint">Annexes jointes :</span>{' '}
+              <span className="faint">{t('wp.annexesJointes')}</span>{' '}
               {annexes.map((a) => (
                 <a key={a.id} href={`/api/blob/${a.evidenceId}`} target="_blank" className="mono"
                   title={t('wp.annexeTitre', { h: a.sha256.slice(0, 14), ko: Math.round(a.sizeBytes / 1024), quand: a.joinedAt.slice(0, 16) })}
@@ -415,7 +415,7 @@ export default async function WorkpaperDetail({
                               <Annotable
                                 ancre={{
                                   kind: 'sample_item', aRef: ident.natural_key, field: champ.champ,
-                                  label: `Élément ${ident.piece} · ${champ.titre}`,
+                                  label: t('wp.ancreElement', { piece: ident.piece, champ: champ.titre }),
                                 }}
                                 marques={marques[`sample_item|${r.refs!.sampleItemId}|${champ.champ}`] ?? []}
                                 membres={membresNotes} engagementId={id} chemin={chemin} notesHref={notesHref}
@@ -462,13 +462,13 @@ export default async function WorkpaperDetail({
           )}
           {wp.status !== 'signed' && wp.status !== 'outdated' && s.body !== undefined && (
             <details className="mt">
-              <summary className="repli-action">Edit this section (visible flag + justification)</summary>
+              <summary className="repli-action">{t('wp.editThisSectionVisibleFlagJustification')}</summary>
               <form action={editAction}>
                 <input type="hidden" name="section" value={s.key} />
                 <textarea name="body" defaultValue={s.body} style={{ minHeight: 100 }} />
                 <div className="row mt">
                   <input type="text" name="justification" placeholder="Justification (required — rendered in the export)" style={{ flex: 1 }} required />
-                  <button className="btn small">Save edit</button>
+                  <button className="btn small">{t('wp.saveEdit')}</button>
                 </div>
               </form>
             </details>
@@ -506,7 +506,7 @@ export default async function WorkpaperDetail({
                 </form>
                 <form action={annulerColonneAction}>
                   <input type="hidden" name="column_id" value={c.id} />
-                  <button className="btn secondary small">Annuler</button>
+                  <button className="btn secondary small">{t('col.cancel')}</button>
                 </form>
               </div>
             )}
@@ -557,10 +557,10 @@ export default async function WorkpaperDetail({
             <textarea name="text" placeholder="New review note…" required />
             <div className="row mt">
               <select name="note_type" defaultValue="a_corriger" title={t('wp.onlyBlockingNotesPreventSignOff')}>
-                <option value="a_corriger">{t('wp.toFixBlocking')}</option>
-                <option value="a_documenter">{t('wp.toDocument')}</option>
+                <option value="a_corriger">{t('note.type.a_corriger')}</option>
+                <option value="a_documenter">{t('note.type.a_documenter')}</option>
                 <option value="question">question</option>
-                <option value="remarque_n1">{t('wp.noteForNextYear')}</option>
+                <option value="remarque_n1">{t('note.type.remarque_n1')}</option>
               </select>
               <select name="assignee" defaultValue="">
                 <option value="">unassigned</option>
@@ -575,7 +575,7 @@ export default async function WorkpaperDetail({
         <div className="panel">
           <h2>Sign-offs (dated, immutable)</h2>
           <table className="data">
-            <thead><tr><th>Role</th><th>Signed by</th><th>When</th></tr></thead>
+            <thead><tr><th>Role</th><th>Signed by</th><th>{t('col.when')}</th></tr></thead>
             <tbody>
               {(['preparer_validator', 'reviewer', 'partner'] as const).map((role) => {
                 const s = signoffs.find((x) => x.sign_role === role);
@@ -596,7 +596,7 @@ export default async function WorkpaperDetail({
           <h2>Exports (terminal, hash-stamped)</h2>
           {exports.length === 0 ? <p className="muted">None yet.</p> : (
             <table className="data">
-              <thead><tr><th>Format</th><th>sha256</th><th>When</th><th></th></tr></thead>
+              <thead><tr><th>Format</th><th>sha256</th><th>{t('col.when')}</th><th></th></tr></thead>
               <tbody>
                 {exports.map((e) => (
                   <tr key={e.id}>

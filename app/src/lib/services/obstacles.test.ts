@@ -44,16 +44,16 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
 
   it('la liste est la RÉUNION de ce que chaque service refuse — rien n’est rédigé ici', async () => {
     const l = await obstaclesAuVisa(IDS.engNep);
-    const libelles = l.map((o) => o.libelle);
+    const motifs = l.map((o) => JSON.stringify(o.motif));
 
     for (const attendu of await independenceObstacles(IDS.engNep)) {
-      expect(libelles).toContain(attendu);
+      expect(motifs).toContain(JSON.stringify(attendu));
     }
     for (const attendu of await questionnaireObstacles(IDS.engNep, null)) {
-      expect(libelles).toContain(attendu);
+      expect(motifs).toContain(JSON.stringify(attendu));
     }
     for (const attendu of await obstaclesPointage(IDS.engNep)) {
-      expect(libelles).toContain(attendu);
+      expect(motifs).toContain(JSON.stringify(attendu));
     }
   });
 
@@ -62,7 +62,7 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
     expect(l.length).toBeGreaterThan(0);
     for (const o of l) {
       expect(o.ou.length).toBeGreaterThan(2);
-      expect(o.libelle.length).toBeGreaterThan(5);
+      expect(o.motif.cle.length).toBeGreaterThan(5);
     }
   });
 
@@ -90,7 +90,7 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
       [IDS.engNep, code],
     );
     const avec = await obstaclesAuVisa(IDS.engNep);
-    const mien = avec.filter((o) => o.famille === 'programme' && o.libelle.includes(code));
+    const mien = avec.filter((o) => o.famille === 'programme' && o.motif.vars?.code === code);
     expect(mien, 'un poste retenu sans procédure doit bloquer le visa').toHaveLength(1);
     expect(mien[0].ou).toBe('testing');
 
@@ -99,7 +99,7 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
     await q(`update fsli set scoping = 'ns_confirmed' where engagement_id = $1 and code = $2`,
       [IDS.engNep, code]);
     const sorti = await obstaclesAuVisa(IDS.engNep);
-    expect(sorti.filter((o) => o.libelle.includes(code))).toHaveLength(0);
+    expect(sorti.filter((o) => o.motif.vars?.code === code)).toHaveLength(0);
 
     // Ensuite en le travaillant : une procédure planifiée suffit à lever l'obstacle.
     await q(`update fsli set scoping = 'in_scope' where engagement_id = $1 and code = $2`,
@@ -110,7 +110,7 @@ describe('les obstacles au visa sont UNE liste, et elle est calculée', () => {
       [IDS.engNep, code],
     );
     const travaille = await obstaclesAuVisa(IDS.engNep);
-    expect(travaille.filter((o) => o.famille === 'programme' && o.libelle.includes(code))).toHaveLength(0);
+    expect(travaille.filter((o) => o.famille === 'programme' && o.motif.vars?.code === code)).toHaveLength(0);
 
     // Remettre le monde comme on l'a trouvé : les tests suivants lisent la même liste.
     await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = $2`, [IDS.engNep, code]);

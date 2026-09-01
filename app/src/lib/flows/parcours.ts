@@ -14,6 +14,7 @@ import { campagne, rapprochement } from '@/lib/services/circularisations';
 import { acheverCircularisationBanques } from '@/lib/flows/part1';
 import { obstaclesAuVisa } from '@/lib/services/obstacles';
 import { listFslis } from '@/lib/services/fsli';
+import { traduire } from '@/lib/i18n/catalogue';
 
 // LE PARCOURS COMPLET — de la reprise à la clôture (DEMO_APP.md).
 //
@@ -249,10 +250,10 @@ export async function deroulerFin(engagementId = IDS.engNep): Promise<{
   /* La boucle doit être FERMÉE sur le poste travaillé : c'est la vérification
      que le parcours a bien tourné, pas seulement qu'il s'est déroulé. */
   const b = await boucle(engagementId, 'REVENUE');
-  note('boucle', 'La boucle', b.fermee ? 'fermée' : `ouverte — ${b.obstacles.join(' ; ')}`);
+  note('boucle', 'La boucle', b.fermee ? 'fermée' : `ouverte — ${b.obstacles.map((o) => traduire('fr', o.cle, o.vars)).join(' ; ')}`);
 
   const obstacles = (await obstaclesAuVisa(engagementId))
-    .map((o) => ({ famille: o.famille, libelle: o.libelle }));
+    .map((o) => ({ famille: o.famille, libelle: traduire('fr', o.motif.cle, o.motif.vars) }));
   note('obstacles', 'Obstacles au visa', `${obstacles.length} restant(s)`);
   return { etapes: [...journal], obstacles };
 }

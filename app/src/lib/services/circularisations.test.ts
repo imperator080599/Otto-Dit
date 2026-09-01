@@ -165,13 +165,13 @@ describe('circularisations : la complétude et le rapprochement se DÉRIVENT', (
 
   it('un écart NON EXPLIQUÉ bloque le visa ; une explication écrite le lève', async () => {
     const enEcart = (await rapprochement(IDS.engNep, 'banque')).lignes.find((l) => l.etat === 'ecart')!;
-    expect((await obstaclesCircularisation(IDS.engNep)).join(' ')).toMatch(/n’est pas expliqué|n'est pas expliqué/);
+    expect((await obstaclesCircularisation(IDS.engNep)).some((o) => o.cle === 'obst.circEcartNonExplique')).toBe(true);
 
     await expect(expliquerEcart(enEcart.id, 'RAS', K)).rejects.toThrow(/se rédige/);
     await expliquerEcart(enEcart.id,
       'Frais de tenue de compte prélevés le 31/12 et comptabilisés en janvier — rattachement corrigé.', K);
     const apres = await obstaclesCircularisation(IDS.engNep);
-    expect(apres.join(' ')).not.toMatch(new RegExp(`écart de ${enEcart.nom}`));
+    expect(apres.some((o) => o.cle === 'obst.circEcartNonExplique' && o.vars?.nom === enEcart.nom)).toBe(false);
 
     /* Une explication sans écart n'a pas lieu d'être. */
     const sansEcart = (await rapprochement(IDS.engNep, 'banque')).lignes.find((l) => l.etat === 'rapprochee')!;

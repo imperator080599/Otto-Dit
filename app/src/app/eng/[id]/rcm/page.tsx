@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const DI_BADGE: Record<string, string> = { not_assessed: 'gray', effective: 'green', deficient: 'red' };
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
@@ -18,6 +19,7 @@ export default async function RcmPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const controls = await listControls(id);
@@ -51,15 +53,15 @@ export default async function RcmPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Risk–Control Matrix (RCM)</h2>
+          <h2>{t('rcm.riskControlMatrixRcm')}</h2>
           {controls.length === 0 && (
-            <form action={importDatasetRcm}><button className="btn">Import RCM (client listing)</button></form>
+            <form action={importDatasetRcm}><button className="btn">{t('rcm.importRcmClientListing')}</button></form>
           )}
         </div>
         <div className="table-scroll">
           <table className="data">
             <thead>
-              <tr><th>Control</th><th>Process</th><th>Risk / assertions</th><th>Freq.</th><th>Nature</th><th>Key</th><th>D&amp;I</th><th>Instances</th><th>Deviations</th><th>OE test</th></tr>
+              <tr><th>Control</th><th>{t('col.process')}</th><th>{t('rcm.riskAssertions')}</th><th>Freq.</th><th>{t('col.nature')}</th><th>{t('col.key')}</th><th>D&amp;I</th><th>{t('col.instances')}</th><th>{t('col.deviations')}</th><th>{t('rcm.oeTest')}</th></tr>
             </thead>
             <tbody>
               {controls.map((c) => (
@@ -80,8 +82,8 @@ export default async function RcmPage({
                       <form action={diAction} className="mt">
                         <input type="hidden" name="control_id" value={c.id} />
                         <input type="hidden" name="status" value="effective" />
-                        <input type="text" name="conclusion" placeholder="D&I conclusion" style={{ width: 150 }} required />
-                        <button className="btn small secondary mt">Assess effective</button>
+                        <input type="text" name="conclusion" placeholder={t('rcm.dIConclusion')} style={{ width: 150 }} required />
+                        <button className="btn small secondary mt">{t('rcm.assessEffective')}</button>
                       </form>
                     )}
                   </td>
@@ -89,7 +91,7 @@ export default async function RcmPage({
                   <td className="num">{Number(c.deviation_count) > 0 ? <span className="badge red">{c.deviation_count}</span> : '—'}</td>
                   <td>
                     <Link className="btn small secondary" href={`/eng/${id}/rcm/${c.id}`}>
-                      {c.test_status === 'complete' ? 'View test' : 'Test OE →'}
+                      {c.test_status === 'complete' ? t('rcm.viewTest') : t('rcm.testOe')}
                     </Link>
                   </td>
                 </tr>
@@ -97,14 +99,14 @@ export default async function RcmPage({
             </tbody>
           </table>
         </div>
-        {controls.length === 0 && <p className="muted">No RCM imported yet.</p>}
+        {controls.length === 0 && <p className="muted">{t('rcm.noRcmImportedYet')}</p>}
       </div>
 
       {deficiencies.length > 0 && (
         <div className="panel">
-          <h2>Deficiency aggregation</h2>
+          <h2>{t('rcm.deficiencyAggregation')}</h2>
           <table className="data">
-            <thead><tr><th>Control</th><th>Proposed (rules, L3)</th><th>Final (human)</th><th>Status</th><th>Basis / narrative</th></tr></thead>
+            <thead><tr><th>Control</th><th>{t('rcm.proposedRulesL3')}</th><th>{t('rcm.finalHuman')}</th><th>{t('col.status')}</th><th>{t('rcm.basisNarrative')}</th></tr></thead>
             <tbody>
               {deficiencies.map((d) => (
                 <tr key={d.id}>

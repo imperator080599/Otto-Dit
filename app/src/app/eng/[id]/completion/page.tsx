@@ -60,14 +60,14 @@ export default async function CompletionPage({
         return (
           <div className="panel" key={x.id}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h2>{meta.libelle}</h2>
+              <h2>{libelle(meta.libelle)}</h2>
               <span>
                 {x.status === 'done' && <span className="badge green">conclu {fr(x.done_at)}</span>}
                 {x.status === 'na' && <span className="badge gray">{libelle('comp.notApplicable')}</span>}
                 {x.status === 'open' && <span className="badge amber">{libelle('comp.toConclude')}</span>}
               </span>
             </div>
-            <p className="faint">{meta.pourquoi}</p>
+            <p className="faint">{libelle(meta.pourquoi)}</p>
 
             {x.status === 'open' ? (
               <>
@@ -79,7 +79,7 @@ export default async function CompletionPage({
                       style={{ width: '100%', maxWidth: 680 }} />
                   </p>
                   <p>
-                    <input name="conclusion" placeholder="conclusion (obligatoire)"
+                    <input name="conclusion" placeholder={libelle('comp.conclusionRequired')}
                       style={{ width: '100%', maxWidth: 680 }} />
                   </p>
                   <p className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -101,7 +101,7 @@ export default async function CompletionPage({
                         </select>
                       </>
                     )}
-                    <button className="btn">Conclure</button>
+                    <button className="btn">{libelle('col.conclude')}</button>
                   </p>
                 </form>
                 {x.nature !== 'lettre_affirmation' ? (
@@ -123,16 +123,16 @@ export default async function CompletionPage({
               </>
             ) : (
               <>
-                {x.findings && <p><strong>Constatations :</strong> {x.findings}</p>}
-                {x.conclusion && <p><strong>Conclusion :</strong> {x.conclusion}</p>}
-                {x.na_reason && <p><strong>Motif :</strong> {x.na_reason}</p>}
+                {x.findings && <p><strong>{libelle('comp.findings')}</strong> {x.findings}</p>}
+                {x.conclusion && <p><strong>{libelle('comp.conclusion')}</strong> {x.conclusion}</p>}
+                {x.na_reason && <p><strong>{libelle('commun.motif')}</strong> {x.na_reason}</p>}
                 {x.covered_through && <p className="faint">{libelle('comp.proceduresCarriedThroughTo2')} {fr(x.covered_through)}.</p>}
                 {x.signed_on && <p className="faint">{libelle('comp.letterDated')} {fr(x.signed_on)}.</p>}
                 <form action={rouvrirAction} className="row" style={{ gap: 6 }}>
                   <input type="hidden" name="engagement_id" value={id} />
                   <input type="hidden" name="nature" value={x.nature} />
                   <input name="reason" placeholder={libelle('comp.reasonForReopening')} style={{ width: 340 }} />
-                  <button className="btn secondary small">Rouvrir</button>
+                  <button className="btn secondary small">{libelle('col.reopen')}</button>
                 </form>
                 <p className="faint" style={{ fontSize: 11 }}>
                   {libelle('comp.aNewFactIsDealtWith')}
@@ -146,7 +146,7 @@ export default async function CompletionPage({
       {obstacles.length > 0 && t.length > 0 && (
         <div className="panel warn">
           <h2>{libelle('comp.blockersToSignOffCompletion')}</h2>
-          <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
+          <ul>{obstacles.map((o, i) => <li key={i}>{libelle(o.cle, o.vars)}</li>)}</ul>
         </div>
       )}
     </div>

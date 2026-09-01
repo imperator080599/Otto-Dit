@@ -156,8 +156,8 @@ describe('on pointe le montant PRÉSENTÉ, pas le sien', () => {
     }]);
     await pointer(IDS.engNep, IDS.users.lea);
     const obstacles = await obstaclesPointage(IDS.engNep);
-    expect(obstacles.some((o) => o.includes('CLI'))).toBe(true);
-    expect(obstacles.some((o) => /non expliqué/.test(o))).toBe(true);
+    expect(obstacles.some((o) => String(o.vars?.ref).includes('CLI'))).toBe(true);
+    expect(obstacles.some((o) => o.cle === 'obst.pointageEcart')).toBe(true);
   });
 
   it('tout pointer ferme les obstacles', async () => {

@@ -127,9 +127,9 @@ export default async function ReunionsPage({
           : invs.map((i) => (
             <div className={`callout ${i.statut === 'envoyee_simulee' ? 'green' : ''}`} key={i.id}>
               <strong>{i.objet}</strong>{' '}
-              <span className="badge gray">{i.statut === 'envoyee_simulee' ? 'envoyée (SIMULÉE — rien n\'est parti)' : 'choisie — à envoyer'}</span>
+              <span className="badge gray">{i.statut === 'envoyee_simulee' ? t('reun.envoyeeSimulee') : t('reun.chosenToSend')}</span>
               <p style={{ margin: '4px 0' }}>
-                {fr(i.debut)} · {heure(i.debut)}–{heure(i.fin)} UTC · destinataire : {i.destinataire}
+                {fr(i.debut)} · {heure(i.debut)}–{heure(i.fin)} {t('reun.utcDestinataire')} {i.destinataire}
               </p>
               <p className="faint" style={{ margin: '4px 0' }}>
                 {t('reun.copiesInTheComputedOrder')} {i.copies.map((c) => `${c.nom} (${c.titre})`).join(' ; ')}

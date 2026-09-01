@@ -25,7 +25,7 @@ export default async function ControlDetail({
   const { erreur } = await searchParams;
   await requireMember(id);
   const control = (await listControls(id)).find((c) => c.id === cid);
-  if (!control) return <div className="panel">Control not found.</div>;
+  if (!control) return <div className="panel">{t('rcmc.controlNotFound')}</div>;
   const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null; sampled: boolean; evidence_count: string }>(
     `select ci.id, ci.label, ci.occurred_on::text, ci.performer_name,
             exists(select 1 from sample_item si join sample s on s.id = si.sample_id
@@ -136,7 +136,7 @@ export default async function ControlDetail({
           <span className="badge gray">{control.frequency}</span>
           <span className="badge gray">{control.nature}</span>
           <span className="badge gray">{control.effect}</span>
-          {control.is_key && <span className="badge blue">key control</span>}
+          {control.is_key && <span className="badge blue">{t('rcmc.keyControl')}</span>}
           <span className={`badge ${control.di_status === 'effective' ? 'green' : 'red'}`}>D&amp;I {control.di_status}</span>
           <span className="faint">owner {control.owner_name}</span>
         </div>
@@ -162,7 +162,7 @@ export default async function ControlDetail({
           </div>
           <div className="table-scroll" style={{ maxHeight: 320 }}>
             <table className="data">
-              <thead><tr><th>Instance</th><th>Occurred</th><th>Performer</th><th>Sampled</th><th>Evidence</th></tr></thead>
+              <thead><tr><th>{t('col.instance')}</th><th>Occurred</th><th>Performer</th><th>Sampled</th><th>{t('col.evidence')}</th></tr></thead>
               <tbody>
                 {instances.map((i) => (
                   <tr key={i.id}>
@@ -182,7 +182,7 @@ export default async function ControlDetail({
           <h2>Attribute grid</h2>
           {grid.length === 0 ? <p className="muted">Not tested yet.</p> : (
             <table className="data">
-              <thead><tr><th>Instance</th>{attrCodes.map((a) => <th key={a}>{a}</th>)}</tr></thead>
+              <thead><tr><th>{t('col.instance')}</th>{attrCodes.map((a) => <th key={a}>{a}</th>)}</tr></thead>
               <tbody>
                 {gridLabels.map((label) => (
                   <tr key={label}>
@@ -205,25 +205,25 @@ export default async function ControlDetail({
 
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Deviations ({deviations.length})</h2>
+          <h2>{t('rcmc.nDeviations', { n: deviations.length })}</h2>
           <span className="row">
             {deviations.length > 0 && !deficiency && (
               <form action={deficiencyAction} className="row">
-                <input type="number" name="magnitude" step="0.01" placeholder="magnitude exposure €" style={{ width: 160 }} required />
+                <input type="number" name="magnitude" step="0.01" placeholder={t('rcmc.magnitudeExposure')} style={{ width: 160 }} required />
                 <input type="text" name="magnitude_basis" required style={{ width: 320 }}
-                  placeholder="where that exposure comes from (account, balance, source)" />
-                <label className="row" style={{ gap: 3 }}><input type="checkbox" name="compensating" /> compensating control</label>
-                <button className="btn small">Propose deficiency (L3)</button>
+                  placeholder={t('rcmc.whereThatExposureComesFromAccount')} />
+                <label className="row" style={{ gap: 3 }}><input type="checkbox" name="compensating" /> {t('rcmc.compensatingControl')}</label>
+                <button className="btn small">{t('rcmc.proposeDeficiencyL3')}</button>
               </form>
             )}
             {grid.length > 0 && (
-              <form action={draftWpAction}><button className="btn small">Draft OE workpaper</button></form>
+              <form action={draftWpAction}><button className="btn small">{t('rcmc.draftOeWorkpaper')}</button></form>
             )}
           </span>
         </div>
-        {deviations.length === 0 ? <p className="muted">None — control operated as designed in the sample tested.</p> : (
+        {deviations.length === 0 ? <p className="muted">{t('rcmc.noneControlOperatedAsDesignedIn')}</p> : (
           <table className="data">
-            <thead><tr><th>Instance</th><th>Attribute</th><th>Type</th><th>Status</th><th>Description</th><th>Disposition</th></tr></thead>
+            <thead><tr><th>{t('col.instance')}</th><th>{t('col.attribute')}</th><th>{t('col.type')}</th><th>{t('col.status')}</th><th>{t('col.description')}</th><th>{t('col.disposition')}</th></tr></thead>
             <tbody>
               {deviations.map((d) => (
                 <tr key={d.id}>
@@ -241,7 +241,7 @@ export default async function ControlDetail({
                           <textarea name="explanation" rows={2} required
                             placeholder={t('commun.explicationMotPourMot')} />
                           <textarea name="conclusion" rows={2} required
-                            placeholder={t('rcm.yourConclusionOnThisExplanation')} />
+                            placeholder={t('rap.conclusion')} />
                           <select name="disposition" defaultValue="control_operated">
                             <option value="control_operated">{t('rcm.theControlDidOperateDocumentLinked')}</option>
                             <option value="compensating_control">{t('rcm.compensatingControlLinked')}</option>

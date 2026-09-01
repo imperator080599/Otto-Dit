@@ -31,8 +31,8 @@ export default async function RemiseAZero({
 
   return (
     <div className="shell" style={{ maxWidth: 720 }}>
-      <div className="faint"><Link href="/">Missions</Link> {t('raz.reset')}</div>
-      <h1>{t('raz.resetTheDemonstrationWorld')}</h1>
+      <div className="faint"><Link href="/">{t('col.engagements')}</Link> {t('raz.reset')}</div>
+      <h1>{t('raz.titre')}</h1>
 
       <BandeauRefus erreur={erreur} />
 
@@ -43,7 +43,7 @@ export default async function RemiseAZero({
         </p>
         <table className="data">
           <thead>
-            <tr><th>{t('raz.whatThereIs')}</th><th className="num">aujourd’hui</th><th className="num">{t('raz.after')}</th></tr>
+            <tr><th>{t('raz.quoi')}</th><th className="num">{t('raz.today')}</th><th className="num">{t('raz.after')}</th></tr>
           </thead>
           <tbody>
             {lignes.map((l) => (
@@ -65,8 +65,8 @@ export default async function RemiseAZero({
 
         {etat.aJour ? (
           <form action={remettreAZeroAction} className="mt">
-            <button className="btn danger">{t('raz.eraseAndRestoreTheSnapshot')}</button>
-            <Link href="/" className="btn secondary" style={{ marginLeft: 8 }}>Annuler</Link>
+            <button className="btn danger">{t('raz.faire')}</button>
+            <Link href="/" className="btn secondary" style={{ marginLeft: 8 }}>{t('col.cancel')}</Link>
           </form>
         ) : (
           <p className="mt">

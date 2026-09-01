@@ -24,7 +24,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
   const parFamille = new Map<string, string[]>();
   for (const o of liste) {
     if (!parFamille.has(o.famille)) parFamille.set(o.famille, []);
-    parFamille.get(o.famille)!.push(o.libelle);
+    parFamille.get(o.famille)!.push(t(o.motif.cle, o.motif.vars));
   }
 
   return (
@@ -40,7 +40,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
         <div className="panel warn" key={famille}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>
-              {FAMILLES[famille]?.titre ?? famille}{' '}
+              {FAMILLES[famille] ? t(FAMILLES[famille].titre) : famille}{' '}
               <span className="badge amber">{libelles.length}</span>
             </h2>
             <Link
@@ -48,7 +48,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
               className="btn secondary small"
             >{t('obst.aller')}</Link>
           </div>
-          <p className="faint">{FAMILLES[famille]?.pourquoi}</p>
+          <p className="faint">{FAMILLES[famille] ? t(FAMILLES[famille].pourquoi) : null}</p>
           <ul>{libelles.map((l, i) => <li key={i}>{l}</li>)}</ul>
         </div>
       ))}

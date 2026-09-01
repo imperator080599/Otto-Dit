@@ -9,6 +9,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LES BALANCES AUXILIAIRES ÂGÉES (point 1, ADR-107). Les exports du client
 // (clients / fournisseurs, N / N-1) se rapprochent au grand livre, puis
@@ -75,14 +76,14 @@ export default async function BalancesAuxPage({
     });
   }
 
-  const rapprochement = (ex: Exercice, libelle: string) => {
+  const rapprochement = (ex: Exercice, libelle: CleLibelle) => {
     const f = a.fichiers[ex];
     if (!f) return null;
     const ecart = f.totalCents - f.attenduCents;
     return (
       <p key={ex} className={ecart === 0 ? 'faint' : undefined} style={{ margin: '2px 0' }}>
-        {libelle} : <span className="mono">{f.filename}</span> — total {fmtEur(f.totalCents, 'fr')} ·{' '}
-        {ex === 'n' ? 'solde du grand livre actif' : 'à-nouveaux du grand livre'} {fmtEur(f.attenduCents, 'fr')} ·{' '}
+        {t(libelle)} : <span className="mono">{f.filename}</span> {t('bal.total', { m: fmtEur(f.totalCents, 'fr') })} ·{' '}
+        {t(ex === 'n' ? 'bal.soldeGlActif' : 'bal.aNouveaux')} {fmtEur(f.attenduCents, 'fr')} ·{' '}
         {ecart === 0
           ? <>{t('bal.reconciled')}</>
           : <span className="badge red">{t('bal.difference')} {fmtEur(ecart, 'fr')} {t('bal.theAgedBalanceDoesNotTie')}</span>}
@@ -96,14 +97,14 @@ export default async function BalancesAuxPage({
       <BandeauRefus erreur={sp.erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Balances auxiliaires</h2>
+          <h2>{t('rail.balancesAux')}</h2>
           <span className="row">
             <Link className={`badge ${cote === 'clients' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=clients&seuil=${seuilPts}`}>clients</Link>
             <Link className={`badge ${cote === 'fournisseurs' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=fournisseurs&seuil=${seuilPts}`}>fournisseurs</Link>
           </span>
         </div>
-        {rapprochement('n', `Balance ${cote} N`)}
-        {rapprochement('n1', `Balance ${cote} N-1`)}
+        {rapprochement('n', cote === 'clients' ? 'bal.clientsN' : 'bal.fournisseursN')}
+        {rapprochement('n1', cote === 'clients' ? 'bal.clientsN1' : 'bal.fournisseursN1')}
         <form action={importAction} className="row mt" style={{ flexWrap: 'wrap', gap: 6 }}>
           <input type="hidden" name="cote" value={cote} />
           <select name="exercice" defaultValue={a.fichiers.n ? 'n1' : 'n'}>
@@ -111,7 +112,7 @@ export default async function BalancesAuxPage({
             <option value="n1">{t('commun.exerciceN1', { d: '31/12/2024' })}</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
-          <button className="btn">{t('bal.importTheAgedBalance')} {cote}</button>
+          <button className="btn">{t('imp.importTb')} {cote}</button>
         </form>
       </div>
 
@@ -137,7 +138,7 @@ export default async function BalancesAuxPage({
             {a.vieillissement && (
               <div className="table-scroll mt">
                 <table className="data">
-                  <thead><tr><th>Vieillissement</th>{TRANCHE_CLES.map((t) => <th key={t} className="num">{LIBELLES_TRANCHES[t]}</th>)}</tr></thead>
+                  <thead><tr><th>{t('col.ageing')}</th>{TRANCHE_CLES.map((t) => <th key={t} className="num">{LIBELLES_TRANCHES[t]}</th>)}</tr></thead>
                   <tbody>
                     <tr><td>N-1</td>{a.vieillissement.partsN1.map((p, i) => <td key={i} className="num">{p} %</td>)}</tr>
                     <tr><td>N</td>{a.vieillissement.partsN.map((p, i) => (
@@ -164,7 +165,7 @@ export default async function BalancesAuxPage({
               <p className="muted">{t('bal.noFindingAtTheThresholdOf')} {seuilPts} {t('bal.ptsNothingToProposeNothingTo')}</p>
             ) : (
               <table className="data">
-                <thead><tr><th>Constat</th><th>{t('bal.suggestedNature')}</th><th></th></tr></thead>
+                <thead><tr><th>{t('col.finding')}</th><th>{t('bal.suggestedNature')}</th><th></th></tr></thead>
                 <tbody>
                   {a.candidats.map((c) => (
                     <tr key={c.code}>
@@ -178,7 +179,7 @@ export default async function BalancesAuxPage({
                             <input type="hidden" name="cote" value={cote} />
                             <input type="hidden" name="seuil" value={seuilPts} />
                             <input type="hidden" name="code" value={c.code} />
-                            <button className="btn small secondary">{t('bal.proposeToTheRegister')}</button>
+                            <button className="btn small secondary">{t('proc.proposerRegistre')}</button>
                           </form>
                         )}
                       </td>
@@ -194,9 +195,9 @@ export default async function BalancesAuxPage({
             <div className="table-scroll">
               <table className="data">
                 <thead><tr>
-                  <th>Compte</th><th>Tiers</th>
-                  <th className="num">Solde N-1</th><th className="num">Part N-1</th>
-                  <th className="num">Solde N</th><th className="num">Part N</th>
+                  <th>{t('col.account')}</th><th>{t('col.counterparty')}</th>
+                  <th className="num">{t('bal.soldeN1')}</th><th className="num">{t('bal.partN1')}</th>
+                  <th className="num">{t('bal.soldeN')}</th><th className="num">{t('bal.partN')}</th>
                   <th className="num">&gt; 90 j (N)</th>
                 </tr></thead>
                 <tbody>

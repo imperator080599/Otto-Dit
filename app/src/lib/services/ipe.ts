@@ -1,5 +1,6 @@
 import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
+import { motif, type Motif } from './motif';
 
 // L'INFORMATION PRODUITE PAR L'ENTITÉ — IPE (revue utilisateur n°2 §3.1).
 //
@@ -159,7 +160,7 @@ export async function enregistrerIpe(
  * question qu'on n'a pas posée ; « oui » sans documentation est refusé par la
  * base, donc n'arrive pas ici. Ce contrôle porte donc sur l'ABSENCE de réponse.
  */
-export async function obstaclesIpe(engagementId: string): Promise<{ code: string; libelle: string; ou: string }[]> {
+export async function obstaclesIpe(engagementId: string): Promise<{ code: string; motif: Motif; ou: string }[]> {
   const sans = await q<{ id: string; code: string; title: string }>(
     `select w.id::text, w.code, w.title from workpaper w
      where w.engagement_id = $1
@@ -168,7 +169,7 @@ export async function obstaclesIpe(engagementId: string): Promise<{ code: string
     [engagementId]);
   return sans.map((w) => ({
     code: `ipe:${w.code}`,
-    libelle: `${w.code} — la question de l’information produite par l’entité n’a pas été posée`,
+    motif: motif('obst.ipeQuestionNonPosee', { papier: w.code }),
     ou: `/eng/${engagementId}/workpapers/${w.id}`,
   }));
 }

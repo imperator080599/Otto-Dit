@@ -10,6 +10,7 @@ import { obstaclesCircularisation } from './circularisations';
 import { obstaclesAchevement } from './completion';
 import { obstaclesProcessus } from './processus';
 import { obstaclesEntretiens } from './entretiens';
+import { motif, type Motif } from './motif';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -35,7 +36,8 @@ export type Famille =
 
 export interface Obstacle {
   famille: Famille;
-  libelle: string;
+  /** CE QUI bloque, en clé de catalogue — jamais une phrase (revue n°3). */
+  motif: Motif;
   /** Où l'on va pour le lever. Un obstacle sans destination se contemple. */
   ou: string;
 }
@@ -75,20 +77,20 @@ async function postesRetenus(engagementId: string): Promise<string[]> {
  */
 export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]> {
   const out: Obstacle[] = [];
-  const ajoute = (famille: Famille, libelles: string[]) => {
-    for (const l of libelles) out.push({ famille, libelle: l, ou: OU[famille] });
+  const ajoute = (famille: Famille, motifs: Motif[]) => {
+    for (const m of motifs) out.push({ famille, motif: m, ou: OU[famille] });
   };
 
   // 1. L'acceptation, avant tout le reste.
   const acc = await currentAcceptation(engagementId);
   if (!acc || acc.status === 'open') {
-    ajoute('acceptation', ['La mission n’est pas acceptée : aucun travail ne devrait y être planifié.']);
+    ajoute('acceptation', [motif('obst.missionNonAcceptee')]);
     /* On s'arrête là. Lister les obstacles d'un dossier non accepté noierait
        le seul qui compte sous quarante autres. */
     return out;
   }
   if (acc.status === 'declined') {
-    ajoute('acceptation', [`La mission a été REFUSÉE — ${acc.decision_reason ?? ''}`]);
+    ajoute('acceptation', [motif('obst.missionRefusee', { motif: acc.decision_reason ?? '' })]);
     return out;
   }
 
@@ -108,7 +110,7 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
      jusqu'au visa. */
   for (const p of postes) {
     ajoute('questionnaire', (await questionnaireObstacles(engagementId, p))
-      .filter((x) => !/facteur\(s\) de risque non statué/.test(x)));
+      .filter((x) => x.cle !== 'obst.facteursNonStatues'));
   }
 
   /* 4 bis. LE PROCESSUS ET LES ENTRETIENS (ADR-108) : un changement N/N-1
@@ -139,14 +141,14 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
     [engagementId],
   );
   ajoute('programme', sansProgramme.map(
-    (f) => `${f.code} — ${f.name} : retenu au périmètre, aucune procédure planifiée`,
+    (f) => motif('obst.posteSansProcedure', { code: f.code, nom: f.name }),
   ));
 
   // 6. La boucle, poste par poste : ce qui n'a pas fini de tourner.
   for (const p of postes) {
     const b = await boucle(engagementId, p);
     if (b.etapes.length === 0) continue;   // aucun échantillon : rien à reprocher ici
-    ajoute('boucle', b.obstacles.map((o) => `${p} — ${o}`));
+    ajoute('boucle', b.obstacles);
   }
 
   // 7. Le pointage des états financiers.
@@ -154,7 +156,7 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
 
   // 8. L'évaluation des anomalies et la conclusion.
   const gate = await conclusionGate(engagementId);
-  if (!gate.ok) ajoute('evaluation', gate.blockers.map((b) => blockerText(b, 'fr')));
+  if (!gate.ok) ajoute('evaluation', gate.blockers.map((b) => motif('obst.evaluation', { quoi: blockerText(b, 'en') })));
 
   // 9. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
   ajoute('achevement', await obstaclesAchevement(engagementId));
@@ -172,13 +174,13 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
      demande. Répondre « oui » sans documenter est refusé par la BASE : cet
      obstacle porte donc sur la question NON POSÉE, pas sur la réponse. */
   const { obstaclesIpe } = await import('./ipe');
-  ajoute('ipe', (await obstaclesIpe(engagementId)).map((o) => o.libelle));
+  ajoute('ipe', (await obstaclesIpe(engagementId)).map((o) => o.motif));
 
   // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const retard = await jalonsEnRetard(engagementId, aujourdhui);
-  ajoute('jalons', retard.map((j) => `Jalon échu et non fait : ${j.label} (${j.due_date})`));
+  ajoute('jalons', retard.map((j) => motif('obst.jalonEnRetard', { libelle: j.label, date: j.due_date ?? '' })));
 
   return out;
 }

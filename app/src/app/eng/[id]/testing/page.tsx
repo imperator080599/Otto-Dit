@@ -129,10 +129,10 @@ export default async function TestingPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Testing workbench — extraction → vouching → verification → evaluation</h2>
+          <h2>{t('test.testingWorkbenchExtractionVouchingVerifi')}</h2>
           <span className="row">
-            <form action={extractAction}><button className="btn secondary">Run extraction ladder</button></form>
-            <form action={matchAction}><button className="btn">Run vouching (L0)</button></form>
+            <form action={extractAction}><button className="btn secondary">{t('test.runExtractionLadder')}</button></form>
+            <form action={matchAction}><button className="btn">{t('test.runVouchingL0')}</button></form>
           </span>
         </div>
         {(process.env.OTTO_OCR_ADAPTER ?? 'mock') === 'anthropic' && (
@@ -188,7 +188,7 @@ export default async function TestingPage({
             {!verifRun && (
               <details>
                 <summary className="repli-action">{t('test.runTheRePerformance')}</summary>
-                <form action={startVerifRun} className="mt"><button className="btn secondary small">Draw subsample</button></form>
+                <form action={startVerifRun} className="mt"><button className="btn secondary small">{t('test.drawSubsample')}</button></form>
               </details>
             )}
           </div>
@@ -197,11 +197,11 @@ export default async function TestingPage({
           ) : (
             <>
               <p className="faint">
-                {verifRun.drawn_count} of {verifRun.machine_passed_count} machine-passed items — seed{' '}
+                {verifRun.drawn_count} of {verifRun.machine_passed_count} {t('test.machinePassedItemsSeed')}{' '}
                 <span className="mono">{verifRun.seed}</span>
               </p>
               <table className="data">
-                <thead><tr><th>Piece</th><th className="num">GL amount</th><th>Blind re-performance</th></tr></thead>
+                <thead><tr><th>{t('col.piece')}</th><th className="num">{t('test.glAmount')}</th><th>{t('test.blindRePerformance')}</th></tr></thead>
                 <tbody>
                   {verifRun.items.map((it) => (
                     <tr key={it.sample_item_id}>
@@ -262,7 +262,7 @@ export default async function TestingPage({
                       <option value="conclude_with_justification">{t('test.concludeWithAJustification')}</option>
                     </select>
                     <input name="rationale" placeholder="motif — obligatoire" style={{ flex: 1, minWidth: 260 }} />
-                    <button className="btn secondary small">{t('test.recordTheResponse')}</button>
+                    <button className="btn secondary small">{t('circ.recordTheReply')}</button>
                   </p>
                 </form>
               )}
@@ -278,7 +278,7 @@ export default async function TestingPage({
             </>
           )}
           <div className={`callout ${gate.ok ? 'green' : 'warn'} mt`}>
-            Conclusion gate: {gate.ok ? 'OPEN — all exceptions dispositioned and evaluation concluded' : `${gate.openExceptions} exception(s) undispositioned${gate.evaluationConcluded ? '' : '; evaluation not concluded'}`}
+            {t('test.conclusionGate')} {gate.ok ? t('test.openAllExceptionsDispositionedAndEvaluat') : `${gate.openExceptions} exception(s) undispositioned${gate.evaluationConcluded ? '' : '; evaluation not concluded'}`}
             {' — '}<Link href={`/eng/${id}/exceptions`}>exceptions</Link>
           </div>
         </div>

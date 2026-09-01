@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { listRequests, ensureReminders } from '@/lib/services/requests';
+import { tr } from '@/lib/i18n';
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'gray', sent: 'blue', partially_submitted: 'amber', submitted: 'green', accepted: 'green', reopened: 'red',
@@ -8,16 +9,17 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default async function RequestsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   await ensureReminders(id);
   const requests = await listRequests(id);
 
   return (
     <div className="panel">
-      <h2>Client requests (PBC)</h2>
+      <h2>{t('req.clientRequestsPbc')}</h2>
       <table className="data">
         <thead>
-          <tr><th>#</th><th>Title</th><th>Status</th><th>Items</th><th>Due</th><th>Reminders sent</th></tr>
+          <tr><th>#</th><th>{t('col.title')}</th><th>{t('col.status')}</th><th>{t('col.items')}</th><th>{t('col.due')}</th><th>{t('req.remindersSent')}</th></tr>
         </thead>
         <tbody>
           {requests.map((r) => (
@@ -37,7 +39,7 @@ export default async function RequestsPage({ params }: { params: Promise<{ id: s
           ))}
         </tbody>
       </table>
-      {requests.length === 0 && <p className="muted">No requests yet — draw a sample and generate the PBC request.</p>}
+      {requests.length === 0 && <p className="muted">{t('req.noRequestsYetDrawASample')}</p>}
     </div>
   );
 }

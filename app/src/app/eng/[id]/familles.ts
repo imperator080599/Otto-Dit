@@ -5,51 +5,23 @@
 // titres existaient déjà sur l'écran des obstacles. Les recopier aurait créé
 // deux vérités sur les mêmes familles, et c'est exactement ce que ce dossier
 // refuse ailleurs : elles vivent ici, et les deux écrans les lisent.
+//
+// CE QUI VIT ICI, DEPUIS LA REVUE N°3, CE SONT DES CLÉS — pas des phrases. Une
+// table de libellés est un écran comme un autre : le français y était invisible
+// au détecteur de langue, et trois écrans le rendaient.
 
-export const FAMILLES: Record<string, { titre: string; pourquoi: string }> = {
-  acceptation: {
-    titre: 'Acceptation de la mission',
-    pourquoi: 'Un dossier commence par une décision. Tant qu’elle n’est pas prise, rien d’autre ne compte.',
-  },
-  independance: {
-    titre: 'Indépendance',
-    pourquoi: 'Aucun travail attribué à quelqu’un dont la déclaration n’est pas signée n’entre au dossier.',
-  },
-  reprise: {
-    titre: 'Reprise de l’exercice précédent',
-    pourquoi: 'Une conclusion de N-1 non statuée serait reprise en silence — ou perdue en silence.',
-  },
-  questionnaire: {
-    titre: 'Questionnaire résiduel de risque',
-    pourquoi: 'Ce qu’aucune autre source du dossier ne peut lever : si personne ne répond, le risque ne voit que ce qui se compte.',
-  },
-  circularisation: {
-    titre: 'Circularisations',
-    pourquoi: 'Un compte que personne ne confirme, une demande jamais partie, un silence ou un écart non expliqué : la confirmation d’un tiers est une preuve qu’on ne fabrique pas soi-même.',
-  },
-  programme: {
-    titre: 'Périmètre sans programme',
-    pourquoi: 'Un poste retenu sur lequel aucune procédure n’est planifiée est un trou : soit on le travaille, soit on le sort du périmètre avec un motif.',
-  },
-  boucle: {
-    titre: 'La boucle',
-    pourquoi: 'Un élément sélectionné qui n’est ni conclu ni expliqué laisse la boucle ouverte.',
-  },
-  ipe: {
-    titre: 'Information produite par l’entité',
-    pourquoi: 'Un test appuyé sur un fichier du client dont l’exhaustivité n’a pas été éprouvée ne prouve rien — et c’est la question qu’un contrôleur pose en premier.',
-  },
-  pointage: {
-    titre: 'Pointage des états financiers',
-    pourquoi: 'Conclure sur des états financiers sans les avoir pointés, c’est conclure sur ce qu’on n’a pas regardé.',
-  },
-  evaluation: {
-    titre: 'Évaluation des anomalies',
-    pourquoi: 'Une anomalie chiffrée ne sort pas de l’accumulation sans disposition.',
-  },
-  jalons: {
-    titre: 'Jalons',
-    pourquoi: 'Un retard n’est pas un défaut de substance, c’est un défaut de tenue — et il se voit.',
-  },
+import type { CleLibelle } from '@/lib/i18n/catalogue';
+
+export const FAMILLES: Record<string, { titre: CleLibelle; pourquoi: CleLibelle }> = {
+  acceptation: { titre: 'famille.acceptation.titre', pourquoi: 'famille.acceptation.pourquoi' },
+  independance: { titre: 'famille.independance.titre', pourquoi: 'famille.independance.pourquoi' },
+  reprise: { titre: 'famille.reprise.titre', pourquoi: 'famille.reprise.pourquoi' },
+  questionnaire: { titre: 'famille.questionnaire.titre', pourquoi: 'famille.questionnaire.pourquoi' },
+  circularisation: { titre: 'rail.circularisations', pourquoi: 'famille.circularisation.pourquoi' },
+  programme: { titre: 'famille.programme.titre', pourquoi: 'famille.programme.pourquoi' },
+  boucle: { titre: 'famille.boucle.titre', pourquoi: 'famille.boucle.pourquoi' },
+  ipe: { titre: 'wp.ipe', pourquoi: 'famille.ipe.pourquoi' },
+  pointage: { titre: 'rail.pointage', pourquoi: 'famille.pointage.pourquoi' },
+  evaluation: { titre: 'famille.evaluation.titre', pourquoi: 'famille.evaluation.pourquoi' },
+  jalons: { titre: 'famille.jalons.titre', pourquoi: 'famille.jalons.pourquoi' },
 };
-

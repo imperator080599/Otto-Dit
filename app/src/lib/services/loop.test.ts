@@ -105,7 +105,7 @@ describe('la boucle tourne, et elle le dit', () => {
   it('sans échantillon tiré, la boucle le DIT au lieu de rendre des zéros', async () => {
     const b = await boucle(IDS.engSox, 'REVENUE');
     expect(b.etapes).toHaveLength(0);
-    expect(b.obstacles[0]).toMatch(/n’a pas commencé/);
+    expect(b.obstacles[0].cle).toBe('loop.aucunEchantillon');
     expect(b.fermee).toBe(false);
   });
 

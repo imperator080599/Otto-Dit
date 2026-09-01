@@ -4,11 +4,13 @@ import { q1 } from '@/lib/db/client';
 import { dashboard } from '@/lib/services/dashboard';
 import { ensureReminders } from '@/lib/services/requests';
 import { frameworkSet } from '@/lib/services/fsli';
+import { tr } from '@/lib/i18n';
 
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
 
 export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await tr();
   const { user } = await requireMember(id);
   await ensureReminders(id);
   const d = await dashboard(id, user.tenant_id);
@@ -20,28 +22,28 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
       <div className="grid cols-4">
         <div className="panel kpi">
           <span className="v">{d.progressPct}%</span>
-          <span className="l">Evidence received</span>
+          <span className="l">{t('rail.pieces')}</span>
           <div className="progressbar mt"><div style={{ width: `${d.progressPct}%` }} /></div>
         </div>
         <div className="panel kpi">
           <span className="v" style={{ color: d.exceptions.open ? 'var(--red)' : 'var(--green)' }}>{d.exceptions.open}</span>
-          <span className="l">Open exceptions ({d.exceptions.total} total, {d.exceptions.escalated} escalated)</span>
+          <span className="l">{t('dash.ecartsOuverts', { total: d.exceptions.total, esc: d.exceptions.escalated })}</span>
         </div>
         <div className="panel kpi">
           <span className="v" style={{ color: d.deviations.open ? 'var(--red)' : undefined }}>{d.deviations.total}</span>
-          <span className="l">Control deviations ({d.deviations.open} open)</span>
+          <span className="l">{t('dash.deviations', { n: d.deviations.open })}</span>
         </div>
         <div className="panel kpi">
           <span className="v">{d.evidence.extracted}/{d.evidence.total}</span>
-          <span className="l">Evidence extracted ({d.evidence.pendingVerify} pending verify)</span>
+          <span className="l">{t('dash.piecesLues', { n: d.evidence.pendingVerify })}</span>
         </div>
       </div>
 
       <div className="grid cols-2">
         <div className="panel">
-          <h2>Request tracker</h2>
+          <h2>{t('dash.requestTracker')}</h2>
           <table className="data">
-            <thead><tr><th>#</th><th>Request</th><th>Status</th><th>Progress</th><th>Reminders</th></tr></thead>
+            <thead><tr><th>#</th><th>{t('col.request')}</th><th>{t('col.status')}</th><th>{t('col.progress')}</th><th>{t('col.reminders')}</th></tr></thead>
             <tbody>
               {d.requests.map((r) => (
                 <tr key={r.seq_no}>
@@ -59,18 +61,18 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
               ))}
             </tbody>
           </table>
-          <h2>Exports (generated views — P6)</h2>
+          <h2>{t('dash.exportsGeneratedViewsP6')}</h2>
           <div className="row">
-            <a className="btn secondary small" href={`/api/tracker/${id}?audience=team`}>Team tracker (Excel)</a>
-            <a className="btn secondary small" href={`/api/tracker/${id}?audience=client`}>Client tracker (Excel)</a>
-            <a className="btn secondary small" href={`/api/tracker/${id}?audience=group`}>Group/component tracker</a>
+            <a className="btn secondary small" href={`/api/tracker/${id}?audience=team`}>{t('dash.teamTrackerExcel')}</a>
+            <a className="btn secondary small" href={`/api/tracker/${id}?audience=client`}>{t('dash.clientTrackerExcel')}</a>
+            <a className="btn secondary small" href={`/api/tracker/${id}?audience=group`}>{t('dash.groupComponentTracker')}</a>
           </div>
         </div>
 
         <div className="panel">
-          <h2>Workpapers</h2>
+          <h2>{t('col.workpapers')}</h2>
           <table className="data">
-            <thead><tr><th>Code</th><th>v</th><th>Status</th><th>Last sign-off</th></tr></thead>
+            <thead><tr><th>{t('col.code')}</th><th>v</th><th>{t('col.status')}</th><th>{t('dash.lastSignOff')}</th></tr></thead>
             <tbody>
               {d.workpapers.map((w) => (
                 <tr key={w.code}>
@@ -84,7 +86,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           </table>
           {d.deficiencies.length > 0 && (
             <>
-              <h2>Deficiencies</h2>
+              <h2>{t('col.deficiencies')}</h2>
               <div className="row">
                 {d.deficiencies.map((x) => (
                   <span key={x.severity} className={`badge ${SEV_BADGE[x.severity] ?? 'gray'}`}>{x.severity.replace(/_/g, ' ')}: {x.n}</span>
@@ -94,10 +96,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           )}
           <h2>AI usage &amp; cost (D12)</h2>
           <p>
-            <span className="ai-flag">{d.ai.runs} AI/OCR run(s)</span>{' '}
-            <span className="faint">${d.ai.costUsd.toFixed(4)} — demo runs on recorded fixtures (zero live spend)</span>
+            <span className="ai-flag">{d.ai.runs} {t('dash.aiOcrRunS')}</span>{' '}
+            <span className="faint">${d.ai.costUsd.toFixed(4)} {t('dash.demoRunsOnRecordedFixturesZero')}</span>
           </p>
-          <h2>Framework</h2>
+          <h2>{t('col.framework')}</h2>
           <div className="row">
             {fs.assurance_packs.map((p) => <span key={p} className="badge blue">{p}</span>)}
             <span className="badge gray">{fs.accounting_map}</span>

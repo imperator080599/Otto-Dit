@@ -102,7 +102,7 @@ describe('on ne reprend pas des chiffres, on reprend des conclusions', () => {
        bloque rien, parce qu'elle ne demande rien à personne. */
     const obstacles = await obstaclesReprise(IDS.engNep);
     expect(obstacles.length).toBeGreaterThan(0);
-    expect(obstacles[0]).toMatch(/Reprise N-1 non statuée/);
+    expect(obstacles[0].cle).toBe('obst.repriseNonStatuee');
   });
 
   it('ÉCARTER sans motif est refusé ; RECONFIRMER sans motif ne l’est pas', async () => {

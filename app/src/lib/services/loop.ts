@@ -1,4 +1,6 @@
 import { q, q01 } from '@/lib/db/client';
+import { motif, type Motif } from './motif';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LA BOUCLE, COMME OBJET (point 7).
 //
@@ -26,15 +28,17 @@ export type EtapeCode =
 
 export interface Etape {
   code: EtapeCode;
-  libelle: string;
+  /* LE LIBELLÉ ET LA PHRASE SONT DES CLÉS, pas des mots (revue n°3) : la
+     boucle est un écran, et un écran ne porte plus de littéral. */
+  libelle: CleLibelle;
   /** Ce que cette étape fait, en une phrase relisible par un auditeur. */
-  quoi: string;
+  quoi: CleLibelle;
   /** Éléments qui ont franchi l'étape. */
   franchi: number;
   /** Éléments arrêtés ici, en attente de quelque chose. */
   enAttente: number;
   /** Ce qu'on attend, nommément — jamais « en cours ». */
-  attendQuoi: string;
+  attendQuoi: CleLibelle | '';
   /** L'étape suivante à laquelle ceux qui sont franchis passent. */
   versEtape: EtapeCode | null;
 }
@@ -46,8 +50,8 @@ export interface Boucle {
   tours: number;
   /** L'étape qui bloque, s'il y en a une. */
   bloqueA: EtapeCode | null;
-  /** Ce qui empêche la boucle de se fermer, en toutes lettres. */
-  obstacles: string[];
+  /** Ce qui empêche la boucle de se fermer, en motifs catalogués. */
+  obstacles: Motif[];
   /** La boucle est-elle fermée : tout sélectionné est conclu. */
   fermee: boolean;
 }
@@ -105,7 +109,7 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
   if (!ech) {
     return {
       fsliCode, tours: 0, bloqueA: 'selection', fermee: false,
-      obstacles: ['aucun échantillon tiré sur ce poste — la boucle n’a pas commencé'],
+      obstacles: [motif('loop.aucunEchantillon')],
       etapes: etapesVides(),
     };
   }
@@ -186,55 +190,55 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
 
   const etapes: Etape[] = [
     {
-      code: 'selection', libelle: 'Sélection', versEtape: 'demande',
-      quoi: 'Les éléments tirés de la population, par la méthode du cabinet.',
+      code: 'selection', libelle: 'loop.etape.selection', versEtape: 'demande',
+      quoi: 'loop.quoi.selection',
       franchi: selectionnes, enAttente: 0, attendQuoi: '',
     },
     {
-      code: 'demande', libelle: 'Demande au client', versEtape: 'depot',
-      quoi: 'Chaque élément sélectionné devient une ligne de demande, nommée.',
+      code: 'demande', libelle: 'loop.etape.demande', versEtape: 'depot',
+      quoi: 'loop.quoi.demande',
       franchi: demandes, enAttente: selectionnes - demandes,
-      attendQuoi: 'éléments sélectionnés sans demande émise',
+      attendQuoi: 'loop.attend.demande',
     },
     {
-      code: 'depot', libelle: 'Réponse du client', versEtape: 'lecture',
-      quoi: 'Le client dépose la pièce par le portail, ou répond à une demande d’explication. Une pièce qui n’a pas pu être obtenue sort d’ici par une limitation consignée, pas par l’oubli.',
+      code: 'depot', libelle: 'loop.etape.depot', versEtape: 'lecture',
+      quoi: 'loop.quoi.depot',
       franchi: deposes, enAttente: demandes - deposes,
-      attendQuoi: 'demandes émises restées sans réponse',
+      attendQuoi: 'loop.attend.depot',
     },
     {
-      code: 'lecture', libelle: 'Lecture de la pièce', versEtape: 'rapprochement',
-      quoi: 'L’extraction relève les champs ; une date ambiguë est refusée, jamais devinée.',
+      code: 'lecture', libelle: 'loop.etape.lecture', versEtape: 'rapprochement',
+      quoi: 'loop.quoi.lecture',
       franchi: lus, enAttente: deposes - lus,
-      attendQuoi: 'pièces déposées non encore lues',
+      attendQuoi: 'loop.attend.lecture',
     },
     {
-      code: 'rapprochement', libelle: 'Rapprochement', versEtape: 'ecart',
-      quoi: 'Les champs relevés sont confrontés à l’écriture : montant, date, tiers, référence.',
+      code: 'rapprochement', libelle: 'loop.etape.rapprochement', versEtape: 'ecart',
+      quoi: 'loop.quoi.rapprochement',
       franchi: rapproches, enAttente: lus - rapproches,
-      attendQuoi: 'pièces lues non encore rapprochées',
+      attendQuoi: 'loop.attend.rapprochement',
     },
     {
-      code: 'ecart', libelle: 'Écart', versEtape: 'clarification',
-      quoi: 'Un contrôle qui échoue crée un écart nommé — il ne disparaît pas dans un taux.',
+      code: 'ecart', libelle: 'loop.etape.ecart', versEtape: 'clarification',
+      quoi: 'loop.quoi.ecart',
       franchi: ecarts, enAttente: 0,
       attendQuoi: '',
     },
     {
-      code: 'clarification', libelle: 'Clarification', versEtape: 'resolution',
-      quoi: 'L’écart REPART en demande : c’est ce qui fait de cette suite une boucle.',
+      code: 'clarification', libelle: 'loop.etape.clarification', versEtape: 'resolution',
+      quoi: 'loop.quoi.clarification',
       franchi: clarifies, enAttente: Math.max(0, ecartsOuverts - clarifies),
-      attendQuoi: 'écarts ouverts sans demande de clarification',
+      attendQuoi: 'loop.attend.clarification',
     },
     {
-      code: 'resolution', libelle: 'Résolution probante', versEtape: 'cumul',
-      quoi: 'Un écart ne se clôt qu’avec explication, pièce liée et suite donnée.',
+      code: 'resolution', libelle: 'loop.etape.resolution', versEtape: 'cumul',
+      quoi: 'loop.quoi.resolution',
       franchi: resolus, enAttente: ecartsOuverts,
-      attendQuoi: 'écarts non résolus',
+      attendQuoi: 'loop.attend.resolution',
     },
     {
-      code: 'cumul', libelle: 'Cumul et évaluation', versEtape: null,
-      quoi: 'Ce qui reste une anomalie entre dans l’état des anomalies et pèse sur la conclusion.',
+      code: 'cumul', libelle: 'loop.etape.cumul', versEtape: null,
+      quoi: 'loop.quoi.cumul',
       franchi: cumules, enAttente: 0, attendQuoi: '',
     },
   ];
@@ -242,7 +246,7 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
   const bloquante = etapes.find((e) => e.enAttente > 0) ?? null;
   const obstacles = etapes
     .filter((e) => e.enAttente > 0)
-    .map((e) => `${e.libelle} : ${e.enAttente} ${e.attendQuoi}`);
+    .map((e) => motif('loop.etapeEnAttente', { etape: { cle: e.libelle }, n: e.enAttente, quoi: e.attendQuoi ? { cle: e.attendQuoi } : '' }));
 
   /* La boucle est fermée quand tout ce qui a été sélectionné est conclu :
      rapproché sans écart, ou avec un écart résolu. Un élément qui n'est ni

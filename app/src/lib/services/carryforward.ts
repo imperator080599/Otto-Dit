@@ -1,5 +1,6 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
+import { motif, type Motif } from './motif';
 
 // LA REPRISE DU DOSSIER PRÉCÉDENT (point 2b).
 //
@@ -220,13 +221,13 @@ export async function deciderReprise(
  * reprise et une recopie : la recopie ne bloque rien, parce qu'elle ne demande
  * rien à personne.
  */
-export async function obstaclesReprise(engagementId: string): Promise<string[]> {
+export async function obstaclesReprise(engagementId: string): Promise<Motif[]> {
   const enAttente = await q<{ kind: string; label: string }>(
     `select kind, label from carry_forward where engagement_id = $1 and status = 'proposed'
      order by kind, source_ref`,
     [engagementId],
   );
-  return enAttente.map((r) => `Reprise N-1 non statuée — ${r.label}`);
+  return enAttente.map((r) => motif('obst.repriseNonStatuee', { objet: r.label }));
 }
 
 /** Ce qui a été repris, pour le dire dans le dossier. */

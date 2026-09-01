@@ -219,7 +219,7 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
 
   it('une question sans réponse est un obstacle au visa', async () => {
     const o = await questionnaireObstacles(IDS.engNep, 'REVENUE');
-    expect(o.some((x) => /sans réponse/.test(x))).toBe(true);
+    expect(o.some((x) => x.cle === 'obst.questionsSectionSansReponse')).toBe(true);
   });
 
   it('un « oui » sans précision écrite est un obstacle au visa — la réponse est gardée, le dossier ne se ferme pas', async () => {
@@ -228,22 +228,22 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
     const gardee = (await answers(IDS.engNep, 'REVENUE')).find((a) => a.question_code === 'LITIGE')!;
     expect(gardee.answer).toBe('oui');                       // le fait n'est pas perdu
     const o = await questionnaireObstacles(IDS.engNep, 'REVENUE');
-    expect(o.some((x) => /sans précision écrite/.test(x))).toBe(true);
+    expect(o.some((x) => x.cle === 'obst.ouiSansPrecision')).toBe(true);
 
     await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'LITIGE',
       answer: 'oui', detail: 'Litige commercial de 42 000 € avec un distributeur, non provisionné au 31/12.',
       actorUserId: IDS.users.karim });
     const apres = await questionnaireObstacles(IDS.engNep, 'REVENUE');
-    expect(apres.some((x) => /sans précision écrite/.test(x))).toBe(false);
+    expect(apres.some((x) => x.cle === 'obst.ouiSansPrecision')).toBe(false);
   });
 
   it('un facteur non statué est un obstacle au visa', async () => {
     const r = await raiseFactor({ engagementId: IDS.engNep, source: 'manual', nature: 'complexite',
       description: 'Contrat de distribution à paliers signé en novembre, traitement du chiffre d’affaires à documenter.',
       targets: [{ fsli: 'REVENUE', assertions: ['mesure'] }], actorUserId: IDS.users.karim });
-    expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => /non statué/.test(x))).toBe(true);
+    expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => x.cle === 'obst.facteursNonStatues')).toBe(true);
     await decideFactor(IDS.engNep, r.id, 'confirmed', 'Retenu.', IDS.users.lea);
-    expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => /non statué/.test(x))).toBe(false);
+    expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => x.cle === 'obst.facteursNonStatues')).toBe(false);
   });
 
   it('répondre à TOUT lève les obstacles de la section', async () => {

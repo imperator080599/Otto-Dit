@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { eventLog, eventVerbs, chainStatus } from '@/lib/services/provenance';
+import { tr } from '@/lib/i18n';
 
 const ACTOR_BADGE: Record<string, string> = { user: 'blue', system: 'gray', ai: 'violet' };
 
 export default async function EventsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ verb?: string; actor?: string }> }) {
   const { id } = await params;
+  const t = await tr();
   const { verb, actor } = await searchParams;
   const { user } = await requireMember(id);
   const events = await eventLog(id, { verb, actorKind: actor });
@@ -16,13 +18,13 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
     <div>
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Event log — append-only, hash-chained</h2>
+          <h2>{t('ev.eventLogAppendOnlyHashChained')}</h2>
           <span className={`badge ${chain.ok ? 'green' : 'red'}`}>
-            {chain.ok ? `chain verified · ${chain.count} events` : `CHAIN BROKEN at #${chain.brokenAtId}`}
+            {chain.ok ? t('ev.chaineVerifiee', { n: chain.count }) : t('ev.chaineRompue', { id: chain.brokenAtId ?? '?' })}
           </span>
         </div>
         <div className="row">
-          <Link className={`btn small ${verb || actor ? 'secondary' : ''}`} href={`/eng/${id}/events`}>All</Link>
+          <Link className={`btn small ${verb || actor ? 'secondary' : ''}`} href={`/eng/${id}/events`}>{t('col.all')}</Link>
           {(['user', 'system', 'ai'] as const).map((a) => (
             <Link key={a} className={`btn small ${actor === a ? '' : 'secondary'}`} href={`/eng/${id}/events?actor=${a}`}>{a}</Link>
           ))}
@@ -46,7 +48,7 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
       <div className="panel">
         <div className="table-scroll">
           <table className="data">
-            <thead><tr><th>#</th><th>When</th><th>Actor</th><th>Verb</th><th>Object</th><th>Payload</th><th>Hash</th></tr></thead>
+            <thead><tr><th>#</th><th>{t('col.when')}</th><th>{t('col.actor')}</th><th>{t('col.verb')}</th><th>{t('col.object')}</th><th>{t('col.payload')}</th><th>{t('col.hash')}</th></tr></thead>
             <tbody>
               {events.map((e) => (
                 <tr key={e.id}>

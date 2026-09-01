@@ -5,6 +5,7 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 import { repondreNoteAction, transitionNoteAction, executerNoteOttoAction } from './actions';
 import type { CompteRenduOtto } from '@/lib/services/notes/otto';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // LA VUE TRANSVERSE DES NOTES DE REVUE (ADR-097). Toutes les notes de la
 // mission, leurs ancres RÉSOLUES contre l'état actuel du dossier : une note
@@ -12,18 +13,18 @@ import { tr } from '@/lib/i18n';
 // disparaît pas — elle remonte ici, marquée « objet retiré », avec son
 // histoire. C'est la vue de travail d'un chef de mission.
 
-const STATUT: Record<string, { badge: string; libelle: string }> = {
-  open: { badge: 'amber', libelle: 'ouverte' },
-  addressed: { badge: 'blue', libelle: 'adressée' },
-  closed: { badge: 'green', libelle: 'close' },
+const STATUT: Record<string, { badge: string; libelle: CleLibelle }> = {
+  open: { badge: 'amber', libelle: 'notes.statut.open' },
+  addressed: { badge: 'blue', libelle: 'notes.statut.addressed' },
+  closed: { badge: 'green', libelle: 'notes.statut.closed' },
 };
 
-function ecranPorteur(engId: string, n: NoteAncree): { href: string; libelle: string } {
-  if (n.workpaper_id) return { href: `/eng/${engId}/workpapers/${n.workpaper_id}`, libelle: 'ouvrir le papier' };
+function ecranPorteur(engId: string, n: NoteAncree): { href: string; libelle: CleLibelle } {
+  if (n.workpaper_id) return { href: `/eng/${engId}/workpapers/${n.workpaper_id}`, libelle: 'notes.openTheWorkpaper' };
   switch (n.anchor_kind) {
-    case 'questionnaire_answer': return { href: `/eng/${engId}/risk`, libelle: 'ouvrir le risque' };
-    case 'materiality_param': return { href: `/eng/${engId}/materiality`, libelle: 'ouvrir les seuils' };
-    default: return { href: `/eng/${engId}/workpapers`, libelle: 'ouvrir les papiers' };
+    case 'questionnaire_answer': return { href: `/eng/${engId}/risk`, libelle: 'notes.openTheRisk' };
+    case 'materiality_param': return { href: `/eng/${engId}/materiality`, libelle: 'notes.openTheThresholds' };
+    default: return { href: `/eng/${engId}/workpapers`, libelle: 'notes.openTheWorkpapers' };
   }
 }
 
@@ -46,19 +47,19 @@ export default async function NotesPage({
   const closes = notes.filter((n) => n.status === 'closed');
 
   const carte = (n: NoteAncree) => {
-    const st = STATUT[n.status] ?? { badge: 'gray', libelle: n.status };
+    const st = STATUT[n.status];
     const porteur = ecranPorteur(id, n);
     return (
       <div className="panel" key={n.id}>
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="row">
-            <span className={`badge ${st.badge}`}>{st.libelle}</span>
+            <span className={`badge ${st?.badge ?? 'gray'}`}>{st ? t(st.libelle) : n.status}</span>
             <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>
               {NOTE_TYPES[n.note_type as NoteType]?.libelle ?? n.note_type}
             </span>
             {n.anchor_label && <span className="note-cible" style={{ marginBottom: 0 }}>{n.anchor_label}</span>}
             {n.etat_ancre === 'retire' && (
-              <span className="badge amber" title="l'objet ancré n'existe plus dans l'état actuel du dossier">{t('notes.objetRetire')}</span>
+              <span className="badge amber" title={t('notes.theAnchoredObjectNoLongerExists')}>{t('notes.objetRetire')}</span>
             )}
           </span>
           <span className="faint">{n.created_at.slice(0, 16)}</span>
@@ -67,9 +68,9 @@ export default async function NotesPage({
         <p className="faint" style={{ margin: 0 }}>
           {n.author_name}
           {' → '}
-          {n.assignee_kind === 'otto' ? 'OTTO' : (n.assignee_name ?? 'non attribuée')}
+          {n.assignee_kind === 'otto' ? 'OTTO' : (n.assignee_name ?? t('notes.unassigned'))}
           {' · '}
-          <Link href={porteur.href}>{porteur.libelle}</Link>
+          <Link href={porteur.href}>{t(porteur.libelle)}</Link>
         </p>
         {(reponses.get(n.id) ?? []).map((r) => {
           /* LA RÉPONSE D'OTTO ENTRE AU DOSSIER en trois volets : demandé,
@@ -132,7 +133,7 @@ export default async function NotesPage({
       {ouvertes.map(carte)}
       {closes.length > 0 && (
         <details className="panel">
-          <summary>{closes.length} note(s) close(s)</summary>
+          <summary>{t('notes.nCloses', { n: closes.length })}</summary>
           {closes.map(carte)}
         </details>
       )}

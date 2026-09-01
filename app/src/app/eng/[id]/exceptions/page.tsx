@@ -123,7 +123,7 @@ export default async function ExceptionsPage({
       `select id, entry_no, piece_ref, entry_date::text from gl_entry
        where engagement_id = $1 and journal_code = 'OD' order by entry_date desc limit 25`,
       [id],
-    )).map((g) => ({ value: `gl:${g.id}`, label: `écriture · ${g.entry_no} ${g.piece_ref ?? ''} (${g.entry_date})` })),
+    )).map((g) => ({ value: `gl:${g.id}`, label: t('exc.ecritureLabel', { no: g.entry_no, piece: g.piece_ref ?? '', date: g.entry_date }) })),
   ];
 
   return (
@@ -131,16 +131,16 @@ export default async function ExceptionsPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>{isSox ? 'Deviations & exceptions' : 'Exceptions'} <span className="badge gray">{exceptions.length}</span></h2>
+          <h2>{isSox ? t('exc.deviationsExceptions') : t('col.exceptions')} <span className="badge gray">{exceptions.length}</span></h2>
           {open.length > 0 && (
             <form action={draftAction}>
-              <button className="btn">Draft clarification request ({open.length} open) — L2</button>
+              <button className="btn">{t('exc.draftClarificationRequest')}{open.length} {t('exc.openL2')}</button>
             </form>
           )}
         </div>
         <div className="table-scroll">
           <table className="data">
-            <thead><tr><th>Type</th><th>Description</th><th className="num">Impact</th><th>Status</th><th>Disposition</th></tr></thead>
+            <thead><tr><th>{t('col.type')}</th><th>{t('col.description')}</th><th className="num">{t('col.impact')}</th><th>{t('col.status')}</th><th>{t('col.disposition')}</th></tr></thead>
             <tbody>
               {exceptions.map((x) => (
                 /* L'ANCRE DE L'ÉCART (point 10) : l'atelier pointe ici en un
@@ -175,7 +175,7 @@ export default async function ExceptionsPage({
                   <td>
                     {(x.status === 'explained' || x.status === 'open') && (
                       <details>
-                        <summary className="repli-action">act…</summary>
+                        <summary className="repli-action">{t('commun.actions')}</summary>
                         <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                           <input type="hidden" name="exception_id" value={x.id} />
                           <textarea name="explanation" rows={2} required
@@ -192,21 +192,21 @@ export default async function ExceptionsPage({
                             <input name="fait_postes" placeholder={t('exc.areasConcernedCommaSeparated')} style={{ flex: 1 }} />
                           </div>
                           <textarea name="conclusion" rows={2} required
-                            placeholder={t('exc.yourConclusionOnThisExplanation')} />
+                            placeholder={t('rap.conclusion')} />
                           <div className="row" style={{ gap: 4 }}>
                             <select name="disposition" defaultValue="no_misstatement">
                               <option value="no_misstatement">{t('commun.aucuneAnomalie')}</option>
-                              <option value="corrected">{t('exc.correctedEntryLinked')}</option>
-                              <option value="compensated">{t('exc.coveredByAnotherItem')}</option>
-                              <option value="already_accumulated">{t('exc.sameEventAlreadyAccumulated')}</option>
+                              <option value="corrected">{t('rap.corrige')}</option>
+                              <option value="compensated">{t('rap.couvert')}</option>
+                              <option value="already_accumulated">{t('rap.dejaCumule')}</option>
                             </select>
                             <select name="corroboration" required style={{ flex: 1 }}>
-                              <option value="">{t('exc.documentOrEntryThatCorroboratesRequired')}</option>
+                              <option value="">{t('rap.corroboration')}</option>
                               {corroborations.map((c) => (
                                 <option key={c.value} value={c.value}>{c.label}</option>
                               ))}
                             </select>
-                            <button className="btn small secondary">Resolve</button>
+                            <button className="btn small secondary">{t('col.resolve')}</button>
                           </div>
                         </form>
                         <form action={escalateAction} className="row">
@@ -218,7 +218,7 @@ export default async function ExceptionsPage({
                           </select>
                           <input type="number" name="amount" step="0.01" placeholder="€" style={{ width: 100 }} required />
                           <label className="row" style={{ gap: 3 }}><input type="checkbox" name="corrected" /> corrected</label>
-                          <button className="btn small danger">→ Misstatement</button>
+                          <button className="btn small danger">{t('exc.misstatement')}</button>
                         </form>
                       </details>
                     )}
@@ -232,9 +232,9 @@ export default async function ExceptionsPage({
 
       {misstatements.length > 0 && (
         <div className="panel">
-          <h2>Misstatements (ISA 450-shaped ledger)</h2>
+          <h2>{t('exc.misstatementsIsa450ShapedLedger')}</h2>
           <table className="data">
-            <thead><tr><th>Kind</th><th className="num">Amount</th><th>Corrected</th><th>Status</th><th>Notes</th></tr></thead>
+            <thead><tr><th>{t('col.kind')}</th><th className="num">{t('col.amount')}</th><th>{t('col.corrected')}</th><th>{t('col.status')}</th><th>{t('col.notes')}</th></tr></thead>
             <tbody>
               {misstatements.map((m) => (
                 <tr key={m.id}>

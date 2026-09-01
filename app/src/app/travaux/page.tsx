@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/core/auth';
 import { mesTravaux, type LigneTravail } from '@/lib/services/travaux';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // MES TRAVAUX — l'écran d'où l'on part (ADR-110).
 //
@@ -11,16 +12,12 @@ import { tr } from '@/lib/i18n';
 // de travail qui se maintient à la main ment le jour où on oublie de la
 // tenir. Une ligne, un clic, l'objet.
 
-const TITRES: Record<LigneTravail['nature'], string> = {
-  note: 'Notes qui m’attendent',
-  visa: 'Papiers en attente d’un visa',
-  demande: 'Demandes au client échues',
+const TITRES: Record<LigneTravail['nature'], CleLibelle> = {
+  note: 'trav.titre.note', visa: 'trav.titre.visa', demande: 'trav.titre.demande',
 };
 
-const SOUS_TITRES: Record<LigneTravail['nature'], string> = {
-  note: 'Les notes de revue qui me sont adressées et qui ne sont pas closes. Une note « à corriger » bloque le visa du papier qu’elle vise.',
-  visa: 'Sur mes dossiers, les papiers dont le prochain visa n’est pas posé. Qui doit poser quel visa n’est pas encore un droit modélisé : la ligne le dit sans l’inventer.',
-  demande: 'Les demandes envoyées au client dont l’échéance est passée, et qui ne sont pas complètes.',
+const SOUS_TITRES: Record<LigneTravail['nature'], CleLibelle> = {
+  note: 'trav.quoi.note', visa: 'trav.quoi.visa', demande: 'trav.quoi.demande',
 };
 
 export default async function MesTravaux() {
@@ -33,7 +30,7 @@ export default async function MesTravaux() {
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h1>{t('commun.mesTravaux')}</h1>
-        <span className="faint">{user.name} · {lignes.length} ligne(s)</span>
+        <span className="faint">{user.name} · {t('trav.nLignes', { n: lignes.length })}</span>
       </div>
 
       {lignes.length === 0 && (
@@ -49,11 +46,11 @@ export default async function MesTravaux() {
         if (groupe.length === 0) return null;
         return (
           <div className="panel" key={nature}>
-            <h2>{TITRES[nature]} <span className="faint">({groupe.length})</span></h2>
-            <p className="faint">{SOUS_TITRES[nature]}</p>
+            <h2>{t(TITRES[nature])} <span className="faint">({groupe.length})</span></h2>
+            <p className="faint">{t(SOUS_TITRES[nature])}</p>
             <table className="data">
               <thead>
-                <tr><th>Mission</th><th>Objet</th><th>{t('trav.whereItStands')}</th><th>Date</th></tr>
+                <tr><th>{t('col.engagement')}</th><th>{t('col.subject')}</th><th>{t('trav.whereItStands')}</th><th>{t('col.date')}</th></tr>
               </thead>
               <tbody>
                 {groupe.map((l, i) => (

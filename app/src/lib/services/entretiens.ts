@@ -7,6 +7,7 @@ import { raiseFactor } from './questionnaire';
 import { lireProcessus, FSLI_DU_CYCLE } from './processus';
 import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
 import { gardeBudget } from './extraction/budget';
+import { motif, type Motif } from './motif';
 
 // L'ENTRETIEN DU RESPONSABLE DE PROCESSUS (point 2, ADR-108) — participants,
 // date, support, compréhension documentée. PRÉCAUTION JURIDIQUE formalisée
@@ -349,7 +350,7 @@ export async function purgerTranscriptsEchus(engagementId: string, aujourdHui: s
 
 /** Les obstacles au visa portés par les entretiens : des écarts CANDIDATS
  *  jamais statués — une analyse lancée puis abandonnée ne se scelle pas. */
-export async function obstaclesEntretiens(engagementId: string): Promise<string[]> {
+export async function obstaclesEntretiens(engagementId: string): Promise<Motif[]> {
   const lignes = await q<{ date_entretien: string; n: string }>(
     `select i.date_entretien::text, count(*)::text n
      from transcript_gap g join process_interview i on i.id = g.interview_id
@@ -357,5 +358,5 @@ export async function obstaclesEntretiens(engagementId: string): Promise<string[
      group by i.date_entretien order by i.date_entretien`,
     [engagementId],
   );
-  return lignes.map((l) => `Entretien du ${l.date_entretien} : ${l.n} écart(s) candidat(s) non statué(s)`);
+  return lignes.map((l) => motif('obst.entretienEcartsCandidats', { date: l.date_entretien, n: l.n }));
 }

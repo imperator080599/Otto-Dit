@@ -3,6 +3,7 @@ import { listImports, activeTb, drawnSamples } from '@/lib/services/imports';
 import type { Violation } from '@/lib/kernel/types';
 import { uploadTbAction, uploadFecAction } from './actions';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,7 @@ export default async function ImportsPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const { erreur } = await searchParams;
   const imports = await listImports(id);
@@ -25,28 +27,26 @@ export default async function ImportsPage({
       <BandeauRefus erreur={erreur} />
       <div className="grid cols-2">
         <div className="panel">
-          <h2>Trial balance (generic importer)</h2>
+          <h2>{t('imp.trialBalanceGenericImporter')}</h2>
           <p>
-            Current: {tbCur ? <span className="badge green">{tbCur.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
-            {'  '}Prior: {tbPrior ? <span className="badge green">{tbPrior.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
+            Current: {tbCur ? <span className="badge green">{tbCur.accounts.length} accounts</span> : <span className="badge gray">{t('imp.notImported')}</span>}
+            {'  '}Prior: {tbPrior ? <span className="badge green">{tbPrior.accounts.length} accounts</span> : <span className="badge gray">{t('imp.notImported')}</span>}
           </p>
           <form action={uploadTbAction} className="row">
             <input type="hidden" name="engagement_id" value={id} />
             <input type="file" name="file" accept=".csv,.txt" required />
             <select name="period_kind" defaultValue="current">
-              <option value="current">Current period (N)</option>
-              <option value="prior">Prior period (N-1)</option>
+              <option value="current">{t('imp.currentPeriodN')}</option>
+              <option value="prior">{t('imp.priorPeriodN1')}</option>
             </select>
-            <button className="btn">Import TB</button>
+            <button className="btn">{t('imp.importTb')}</button>
           </form>
         </div>
         <div className="panel">
-          <h2>General ledger — FEC adapter (France pack)</h2>
+          <h2>{t('imp.generalLedgerFecAdapterFrancePack')}</h2>
           {affected.length > 0 && (
             <div className="callout warn">
-              ADR-016 — {affected.length} drawn sample(s) depend on the current ledger.
-              Re-importing requires confirming downstream invalidation (samples superseded,
-              workpapers flagged outdated, all logged).
+              {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}
             </div>
           )}
           <form action={uploadFecAction} className="row">
@@ -54,19 +54,19 @@ export default async function ImportsPage({
             <input type="file" name="file" accept=".txt,.csv" required />
             {affected.length > 0 && (
               <label className="row" style={{ gap: 4 }}>
-                <input type="checkbox" name="confirm_invalidation" /> confirm invalidation
+                <input type="checkbox" name="confirm_invalidation" /> {t('imp.confirmInvalidation')}
               </label>
             )}
-            <button className="btn">Import FEC</button>
+            <button className="btn">{t('imp.importFec')}</button>
           </form>
         </div>
       </div>
 
       <div className="panel">
-        <h2>Import history & validation reports</h2>
+        <h2>{t('imp.importHistoryValidationReports')}</h2>
         <table className="data">
           <thead>
-            <tr><th>File</th><th>Kind</th><th>Rows</th><th>Status</th><th>Violations</th><th>When</th></tr>
+            <tr><th>{t('col.file')}</th><th>{t('col.kind')}</th><th>{t('col.rows')}</th><th>{t('col.status')}</th><th>{t('col.violations')}</th><th>{t('col.when')}</th></tr>
           </thead>
           <tbody>
             {imports.map((f) => {
@@ -84,12 +84,12 @@ export default async function ImportsPage({
                       <span className="faint">none</span>
                     ) : (
                       <details>
-                        <summary>{violations.length} violation(s)</summary>
+                        <summary>{violations.length} {t('imp.violationS')}</summary>
                         <ul style={{ margin: '6px 0', paddingLeft: 18 }}>
                           {violations.slice(0, 25).map((v, i) => (
                             <li key={i} className={v.severity === 'error' ? 'mono' : 'mono muted'} style={{ fontSize: 12 }}>
                               [{v.severity}] {v.code}
-                              {v.line ? ` (line ${v.line})` : ''}: {v.message}
+                              {v.line ? t('imp.ligneNo', { n: v.line }) : ''}: {v.message}
                             </li>
                           ))}
                           {violations.length > 25 && <li className="faint">… {violations.length - 25} more</li>}

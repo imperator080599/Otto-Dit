@@ -77,7 +77,7 @@ export default async function EstimationsPage({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="panel">
-        <h2>Estimations comptables <span className="badge gray">{estimations.length}</span></h2>
+        <h2>{t('rail.estimations')} <span className="badge gray">{estimations.length}</span></h2>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <input name="titre" placeholder={t('est.titleEGAccruedRevenue2025')} style={{ minWidth: 220 }} />
           <input name="piece_ref" placeholder={t('est.referenceOfTheEntryConcernedE')} className="mono" style={{ minWidth: 200 }} />
@@ -102,9 +102,9 @@ export default async function EstimationsPage({
           <div className="panel">
             <h2>{ouverte.titre} <span className="badge gray">{ouverte.statut}</span></h2>
             <p className="faint">
-              Fichier <span className="mono">{ouverte.sourceFilename}</span> · empreinte{' '}
+              {t('est.fichier')} <span className="mono">{ouverte.sourceFilename}</span> {t('est.empreinte')}{' '}
               <span className="mono">{ouverte.sourceSha256.slice(0, 14)}…</span> ·{' '}
-              <a href={`/api/blob/${ouverte.sourceEvidenceId}`} target="_blank">{t('est.openTheDocument')}</a>
+              <a href={`/api/blob/${ouverte.sourceEvidenceId}`} target="_blank">{t('bal.openTheDocument')}</a>
               {ouverte.requestId && <> · <Link href={`/eng/${id}/requests/${ouverte.requestId}`}>{t('est.theRequestForSupportingDocuments')}</Link></>}
             </p>
             {/* LE RAPPROCHEMENT — le montant comptabilisé est DÉRIVÉ du grand
@@ -125,7 +125,7 @@ export default async function EstimationsPage({
             {ouverte.statut !== 'demandee' && (
               <form action={tirerAction} className="row mt" style={{ flexWrap: 'wrap', gap: 6 }}>
                 <input type="hidden" name="estimation_id" value={ouverte.id} />
-                <label className="row" style={{ gap: 4 }}>couverture ≥
+                <label className="row" style={{ gap: 4 }}>{t('est.couvertureSup')}
                   <input type="number" name="cap" step="0.01" defaultValue={(capProposeCents / 100).toFixed(2)} style={{ width: 110 }} /> €
                 </label>
                 <label className="row" style={{ gap: 4 }}>{t('est.randomDraw')}
@@ -157,7 +157,7 @@ export default async function EstimationsPage({
                   <thead><tr>
                     <th>{ouverte.libelles[0]}</th><th className="num">{ouverte.libelles[1]}</th>
                     <th className="num">{ouverte.libelles[2]}</th><th className="num">{ouverte.libelles[3]}</th>
-                    <th className="num">Recalcul</th><th>Tirage</th>
+                    <th className="num">{t('col.recomputation')}</th><th>{t('col.draw')}</th>
                   </tr></thead>
                   <tbody>
                     {ouverte.lignes.map((l) => (
@@ -171,7 +171,7 @@ export default async function EstimationsPage({
                         </td>
                         <td>
                           {l.retenu
-                            ? <span className="badge blue">{l.motif === 'high_value' ? 'couverture' : l.motif === 'risk_flag' ? 'marqueur' : 'aléa'}</span>
+                            ? <span className="badge blue">{t(l.motif === 'high_value' ? 'est.motifCouverture' : l.motif === 'risk_flag' ? 'est.motifMarqueur' : 'est.motifAlea')}</span>
                             : <span className="faint">—</span>}
                         </td>
                       </tr>
@@ -185,7 +185,7 @@ export default async function EstimationsPage({
               <p className="faint">{t('est.everyRateMustBeSupportedA')}</p>
               <div className="table-scroll">
                 <table className="data">
-                  <thead><tr><th>{t('est.parameter')}</th><th>Valeur</th><th>{t('est.document')}</th></tr></thead>
+                  <thead><tr><th>{t('est.parameter')}</th><th>{t('col.value')}</th><th>{t('est.document')}</th></tr></thead>
                   <tbody>
                     {ouverte.parametres.map((p) => (
                       <tr key={p.id}>

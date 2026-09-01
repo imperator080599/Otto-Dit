@@ -66,7 +66,7 @@ describe('l’ancienneté et la rotation se COMPTENT', () => {
     const cat = await chargerCatalogue();
     const plafond = cat.independance.parametres.rotation_signataire_exercices.valeur;
     const avant = await independenceObstacles(IDS.engNep);
-    expect(avant.some((o) => /signe depuis/.test(o))).toBe(false);   // 2 exercices < plafond
+    expect(avant.some((o) => o.cle === 'obst.rotationDue')).toBe(false);   // 2 exercices < plafond
 
     /* On fabrique un dépassement en abaissant le plafond du CABINET : c'est la
        méthode qui porte le seuil, donc c'est par elle qu'on éprouve la règle. */

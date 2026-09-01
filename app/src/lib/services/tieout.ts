@@ -1,5 +1,6 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
+import { motif, type Motif } from './motif';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -270,15 +271,14 @@ export async function expliquerEcart(
  * Une ligne non pointée bloque. Un écart non expliqué bloque. Ce sont les deux
  * seules manières de conclure sur des états financiers sans les avoir regardés.
  */
-export async function obstaclesPointage(engagementId: string): Promise<string[]> {
+export async function obstaclesPointage(engagementId: string): Promise<Motif[]> {
   const l = await lignes(engagementId);
-  const out: string[] = [];
+  const out: Motif[] = [];
   for (const x of l) {
     if (!x.status || x.status === 'open') {
-      const ecart = x.difference && Number(x.difference) !== 0
-        ? ` — écart de ${x.difference} € non expliqué`
-        : ' — non pointée';
-      out.push(`États financiers : ${x.ref} « ${x.label} »${ecart}`);
+      out.push(x.difference && Number(x.difference) !== 0
+        ? motif('obst.pointageEcart', { ref: x.ref, libelle: x.label, ecart: x.difference })
+        : motif('obst.pointageNonPointee', { ref: x.ref, libelle: x.label }));
     }
   }
   return out;

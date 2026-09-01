@@ -34,6 +34,6 @@ export interface EntreeRail {
  */
 export const GROUPES_CLES = [
   'rail.groupe.dossier', 'rail.groupe.comptes', 'rail.groupe.postes',
-  'rail.groupe.transverse', 'rail.groupe.demandes', 'rail.groupe.fin',
+  'rail.groupe.transverse', 'rail.demandes', 'rail.groupe.fin',
 ] as const;
 export type CleGroupe = (typeof GROUPES_CLES)[number];

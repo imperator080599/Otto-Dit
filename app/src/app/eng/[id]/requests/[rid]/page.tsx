@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/core/auth';
 import { requestDetail, approveSend, pauseReminders, ensureReminders } from '@/lib/services/requests';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const ITEM_BADGE: Record<string, string> = { pending: 'gray', uploaded: 'blue', complete: 'green', na: 'gray' };
 
@@ -14,12 +15,13 @@ export default async function RequestDetailPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id, rid } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   await ensureReminders(id);
   const detail = await requestDetail(rid);
   if (!detail || detail.request.engagement_id !== id) {
-    return <div className="panel">Request not found.</div>;
+    return <div className="panel">{t('req.requestNotFound')}</div>;
   }
   const { request, items, reminders } = detail;
 
@@ -56,12 +58,12 @@ export default async function RequestDetailPage({
           )}
         </div>
         <table className="data">
-          <thead><tr><th>Kind</th><th>Item</th><th>Status</th><th>Evidence</th><th>Client answer</th></tr></thead>
+          <thead><tr><th>{t('col.kind')}</th><th>{t('col.item')}</th><th>{t('col.status')}</th><th>{t('col.evidence')}</th><th>{t('loop.etape.depot')}</th></tr></thead>
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
                 <td><span className="badge gray">{i.kind}</span></td>
-                <td>{i.description}{!i.sample_item_id && !i.control_instance_id && <span className="faint"> (standing)</span>}</td>
+                <td>{i.description}{!i.sample_item_id && !i.control_instance_id && <span className="faint"> {t('req.standing')}</span>}</td>
                 <td><span className={`badge ${ITEM_BADGE[i.status]}`}>{i.status}</span></td>
                 <td className="num">{i.evidence_count}</td>
                 <td className="muted">{i.client_note}</td>
@@ -72,12 +74,12 @@ export default async function RequestDetailPage({
       </div>
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>Reminder log (L1 — visible, pausable)</h2>
-          <form action={pauseAction}><button className="btn secondary small">Pause reminders</button></form>
+          <h2>{t('req.reminderLogL1VisiblePausable')}</h2>
+          <form action={pauseAction}><button className="btn secondary small">{t('req.pauseReminders')}</button></form>
         </div>
-        {reminders.length === 0 ? <p className="muted">None yet.</p> : (
+        {reminders.length === 0 ? <p className="muted">{t('req.noneYet')}</p> : (
           <table className="data">
-            <thead><tr><th>Scheduled</th><th>Sent</th><th>Status</th></tr></thead>
+            <thead><tr><th>{t('col.scheduled')}</th><th>{t('col.sent')}</th><th>{t('col.status')}</th></tr></thead>
             <tbody>
               {reminders.map((r, i) => (
                 <tr key={i}>
@@ -91,7 +93,7 @@ export default async function RequestDetailPage({
         )}
       </div>
       <div className="panel">
-        <h2>Provenance</h2>
+        <h2>{t('col.provenance')}</h2>
       </div>
     </div>
   );

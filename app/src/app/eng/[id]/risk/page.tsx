@@ -159,8 +159,8 @@ export default async function RiskPage({
         <table className="data" style={{ marginTop: 10 }}>
           <thead>
             <tr>
-              <th>Assertion</th><th>{t('risk.computed')}</th><th>Retenu</th>
-              <th>{t('risk.whatProducedIt')}</th><th>Arbitrer</th>
+              <th>{t('col.assertion')}</th><th>{t('risk.computed')}</th><th>{t('col.retained')}</th>
+              <th>{t('risk.whatProducedIt')}</th><th>{t('col.arbitrate')}</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +169,7 @@ export default async function RiskPage({
                 <td><strong>{r.assertion}</strong></td>
                 <td>
                   <span className={`badge ${badge(r.computed_level)}`}>{r.computed_level}</span>
-                  <div className="faint">{r.factor_count} facteur(s)</div>
+                  <div className="faint">{t('risk.nFacteurs', { n: r.factor_count })}</div>
                 </td>
                 <td>
                   {r.retained_level ? (
@@ -226,20 +226,20 @@ export default async function RiskPage({
           de dirigeant, une pression sur le résultat, un litige non provisionné
           ne sont dans aucun grand livre. */}
       <div className="panel">
-        <h2>{t('risk.residualQuestionnaire')}</h2>
+        <h2>{t('cf.nature.question_answer')}</h2>
         {(obstaclesEntity.length > 0 || obstaclesSection.length > 0) && (
           <div className="callout warn">
             <strong>{t('risk.whatPreventsSigning')}</strong>
             <ul>
-              {obstaclesEntity.map((o) => <li key={`e-${o}`}>{t('risk.entity')} {o}</li>)}
-              {obstaclesSection.map((o) => <li key={`s-${o}`}>{code} — {o}</li>)}
+              {obstaclesEntity.map((o, i) => <li key={`e-${i}`}>{t('risk.entity')} {t(o.cle, o.vars)}</li>)}
+              {obstaclesSection.map((o, i) => <li key={`s-${i}`}>{code} — {t(o.cle, o.vars)}</li>)}
             </ul>
           </div>
         )}
 
         {(['entite', 'section'] as const).map((scope) => (
           <div key={scope}>
-            <h3>{scope === 'entite' ? 'Questions d’entité — posées une fois' : `Questions de section — ${code}`}</h3>
+            <h3>{scope === 'entite' ? t('risk.questionsEntite') : t('risk.questionsSection', { code })}</h3>
             <table className="data">
               <tbody>
                 {questionsOfScope(cat, scope).map((x) => {
@@ -251,7 +251,7 @@ export default async function RiskPage({
                         {a ? (
                           <Annotable
                             bloc
-                            ancre={{ kind: 'questionnaire_answer', aRef: x.code, label: `Questionnaire · ${x.code}` }}
+                            ancre={{ kind: 'questionnaire_answer', aRef: x.code, label: t('risk.ancreQuestionnaire', { code: x.code }) }}
                             marques={marquesNotes[`questionnaire_answer|${x.code}`] ?? []}
                             membres={membresNotes} engagementId={id} chemin={`/eng/${id}/risk`}
                             notesHref={`/eng/${id}/notes`} action={poserNoteAncreeAction}
@@ -301,7 +301,7 @@ export default async function RiskPage({
         <h2>{t('risk.registerOfDeclaredFactors')} {reg.length}</h2>
         <table className="data">
           <thead>
-            <tr><th>Source</th><th>Nature</th><th>Constatation</th><th>Vise</th><th>Statut</th><th /></tr>
+            <tr><th>{t('col.source')}</th><th>{t('col.nature')}</th><th>Constatation</th><th>Vise</th><th>Statut</th><th /></tr>
           </thead>
           <tbody>
             {reg.length === 0 ? (
@@ -344,9 +344,9 @@ export default async function RiskPage({
         <table className="data">
           <thead>
             <tr>
-              <th>{t('risk.procedure')}</th><th>Assertion</th><th>Sens</th>
+              <th>{t('risk.procedure')}</th><th>{t('col.assertion')}</th><th>{t('col.direction')}</th>
               <th>{t('risk.populationAndSelection')}</th>
-              <th>{t('risk.requiredBecause')}</th><th className="num">Taille</th>
+              <th>{t('risk.requiredBecause')}</th><th className="num">{t('col.size')}</th>
             </tr>
           </thead>
           <tbody>
@@ -371,13 +371,13 @@ export default async function RiskPage({
                   )}
                   <div>{p.procedure.selection === 'exhaustive_au_seuil'
                     ? t('risk.exhaustiveAuSeuil')
-                    : `sélection : ${p.procedure.selection}`}</div>
+                    : t('risk.selectionSuffixe', { s: p.procedure.selection ?? '—' })}</div>
                 </td>
                 <td className="faint" style={{ maxWidth: 300 }}>{p.because}</td>
                 <td className="num">
                   {p.sampleSize === null
                     ? <span className="faint" title={p.taille.obstacle ?? ''}>
-                        {p.taille.origine === 'sans_objet' ? '—' : (p.taille.obstacle ?? 'à calculer')}
+                        {p.taille.origine === 'sans_objet' ? '—' : (p.taille.obstacle ?? t('risk.aCalculer'))}
                       </span>
                     : <strong>{p.sampleSize}</strong>}
                   {/* Un chiffre affiché doit savoir dire D'OÙ IL VIENT (P7). */}
@@ -385,7 +385,7 @@ export default async function RiskPage({
                     <div className="faint" style={{ fontSize: 10, fontWeight: 400 }}>
                       {p.taille.libelle}
                       {p.taille.entrees && (
-                        <> — population {fmtEur(p.taille.entrees.valeurPopulationCents, 'fr')},
+                        <> {t('risk.populationSuffixe')} {fmtEur(p.taille.entrees.valeurPopulationCents, 'fr')},
                           {t('commun.seuil')} {fmtEur(p.taille.entrees.seuilPlanificationCents, 'fr')}</>
                       )}
                     </div>
@@ -408,7 +408,7 @@ export default async function RiskPage({
             </summary>
             <table className="data" style={{ marginTop: 8 }}>
               <thead>
-                <tr><th>{t('risk.procedure')}</th><th>Assertion</th><th>Niveau atteint</th><th>{t('risk.minimumRequired')}</th></tr>
+                <tr><th>{t('risk.procedure')}</th><th>{t('risk.assertion')}</th><th>{t('risk.niveauAtteint')}</th><th>{t('risk.minimumRequired')}</th></tr>
               </thead>
               <tbody>
                 {excluded.map((e) => (

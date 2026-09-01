@@ -8,6 +8,7 @@ import { conclusionGate, blockerText } from './evaluation';
 import { obstaclesAuVisa } from './obstacles';
 import { fileDeadlines } from './retention';
 import { renderWorkpaperPdf } from './workpapers/render';
+import { traduire } from '@/lib/i18n/catalogue';
 
 // ADR-022 — closing the file.
 //
@@ -131,7 +132,7 @@ export async function sealFile(engagementId: string, userId: string, reportDate:
   if (obstacles.length > 0) {
     throw new Error(
       `le dossier ne se clôt pas tant qu'un obstacle au visa subsiste — ${obstacles.length} obstacle(s) : `
-      + obstacles.slice(0, 6).map((o) => o.libelle).join(' ; ')
+      + obstacles.slice(0, 6).map((o) => traduire('en', o.motif.cle, o.motif.vars)).join(' ; ')
       + (obstacles.length > 6 ? ` … et ${obstacles.length - 6} autre(s)` : ''),
     );
   }

@@ -6,6 +6,7 @@ import { draftRevenueWorkpaper } from '@/lib/services/workpapers/draft';
 import { frameworkSet } from '@/lib/services/fsli';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const WP_BADGE: Record<string, string> = { draft: 'gray', in_review: 'blue', reviewed: 'amber', signed: 'green', outdated: 'red' };
 
@@ -16,6 +17,7 @@ export default async function WorkpapersPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const fs = await frameworkSet(id);
@@ -34,13 +36,13 @@ export default async function WorkpapersPage({
     <div className="panel">
       <BandeauRefus erreur={erreur} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h2>Workpapers</h2>
+        <h2>{t('col.workpapers')}</h2>
         {fs.assurance_packs.includes('nep-fr') && (
-          <form action={draftAction}><button className="btn">Draft REV-01 (auto, from stored facts)</button></form>
+          <form action={draftAction}><button className="btn">{t('wps.draftRev01AutoFromStored')}</button></form>
         )}
       </div>
       <table className="data">
-        <thead><tr><th>Code</th><th>Title</th><th>v</th><th>Status</th><th>Edits</th><th>Sign-offs</th><th>Open notes</th></tr></thead>
+        <thead><tr><th>{t('col.code')}</th><th>{t('col.title')}</th><th>v</th><th>{t('col.status')}</th><th>{t('col.edits')}</th><th>Sign-offs</th><th>{t('wps.openNotes')}</th></tr></thead>
         <tbody>
           {workpapers.map((w) => (
             <tr key={w.id}>
@@ -48,14 +50,14 @@ export default async function WorkpapersPage({
               <td><Link href={`/eng/${id}/workpapers/${w.id}`}>{w.title}</Link></td>
               <td>{w.version}</td>
               <td><span className={`badge ${WP_BADGE[w.status]}`}>{w.status}</span></td>
-              <td>{Number(w.edit_count) > 0 ? <span className="mod-flag">modified ×{w.edit_count}</span> : <span className="faint">—</span>}</td>
+              <td>{Number(w.edit_count) > 0 ? <span className="mod-flag">{t('wps.modified')}{w.edit_count}</span> : <span className="faint">—</span>}</td>
               <td className="num">{w.signoff_count}</td>
               <td className="num">{w.note_open}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      {workpapers.length === 0 && <p className="muted">No workpapers yet — complete testing, then draft.</p>}
+      {workpapers.length === 0 && <p className="muted">{t('wps.noWorkpapersYetCompleteTestingThen')}</p>}
     </div>
   );
 }

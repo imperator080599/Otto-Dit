@@ -6,6 +6,7 @@ import { currentMateriality } from './materiality';
 import { copiesCalculees } from './reunions';
 import { numToCents } from '@/lib/util/num';
 import { getTransportCircularisation } from './circularisations/transport';
+import { motif, type Motif } from './motif';
 
 // LES CIRCULARISATIONS — banques et avocats (point 3 du mandat, ADR-111).
 //
@@ -414,20 +415,20 @@ export async function redigerQuestions(engagementId: string, kind: Nature, userI
 }
 
 /** Ce qui EMPÊCHE le visa — calculé, jamais saisi (famille « circularisation »). */
-export async function obstaclesCircularisation(engagementId: string): Promise<string[]> {
-  const out: string[] = [];
+export async function obstaclesCircularisation(engagementId: string): Promise<Motif[]> {
+  const out: Motif[] = [];
   for (const kind of ['banque', 'avocat'] as const) {
     const camp = await campagne(engagementId, kind);
     if (!camp) continue;   // pas de campagne ouverte : rien à exiger
     const c = await completude(engagementId, kind);
     for (const x of c.comptesSansTiers) {
-      out.push(`Circularisation ${NOM[kind].pluriel} : le compte ${x.compte} « ${x.libelle} » n'est couvert par aucun ${NOM[kind].tiers} du listing.`);
+      out.push(motif('obst.circCompteSansTiers', { nature: kind, compte: x.compte, libelle: x.libelle }));
     }
     const r = await rapprochement(engagementId, kind);
     for (const l of r.lignes) {
-      if (l.etat === 'a_envoyer') out.push(`Circularisation ${NOM[kind].pluriel} : la demande à ${l.nom} n'est pas partie.`);
-      else if (l.etat === 'envoyee') out.push(`Circularisation ${NOM[kind].pluriel} : ${l.nom} n'a pas répondu.`);
-      else if (l.etat === 'ecart' && !l.explication) out.push(`Circularisation ${NOM[kind].pluriel} : l'écart de ${l.nom} n'est pas expliqué.`);
+      if (l.etat === 'a_envoyer') out.push(motif('obst.circDemandeNonPartie', { nature: kind, nom: l.nom }));
+      else if (l.etat === 'envoyee') out.push(motif('obst.circSansReponse', { nature: kind, nom: l.nom }));
+      else if (l.etat === 'ecart' && !l.explication) out.push(motif('obst.circEcartNonExplique', { nature: kind, nom: l.nom }));
     }
   }
   return out;
