@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-01 · 35 gestes · **268 clics** au total.
+Parcours du 2026-09-01 · 35 gestes · **271 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -19,14 +19,14 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | acceptation du dossier neuf | 9 |
 | import du grand livre définitif | 3 |
 | rapprochement balance / grand livre | 1 |
-| balances auxiliaires : concentration, apparus, vieillissement | 3 |
-| contrôle interne : processus, différence statuée, entretien | 17 |
+| balances auxiliaires : concentration, apparus, vieillissement | 7 |
+| contrôle interne : processus, différence statuée, entretien | 19 |
 | matérialité | 0 |
 | périmètre sans programme | 4 |
 | risque par assertion | 12 |
 | sondage | 4 |
-| demande au client | 2 |
-| portail client | 51 |
+| demande au client | 3 |
+| portail client | 57 |
 | testing : l’atelier | 4 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
 | atelier : l’aller-retour écart ↔ synthèse | 3 |
@@ -37,7 +37,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | estimation : le fichier de calcul de la cliente | 7 |
 | résolution des écarts | 26 |
 | re-exécution et évaluation | 2 |
-| papier de travail et visas | 45 |
+| papier de travail et visas | 34 |
 | bascule entre missions du groupe | 2 |
 | réunions : créneaux, ordre des copies, envoi simulé | 6 |
 | la boucle | 0 |
@@ -48,4 +48,4 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | jalons | 7 |
 | obstacles au visa | 0 |
 | mes travaux : le point d’origine, et les clics comptés | 3 |
-| clôture et archive scellée | 0 |
+| clôture et archive scellée | 1 |

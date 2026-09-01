@@ -30,9 +30,12 @@
     "clics": "tsx scripts/clics/run.ts",
     "clics:dev": "tsx scripts/clics/run.ts -- --dev",
     "visuel": "tsx scripts/visuel/run.ts",
-    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run screens && npm run fumee && npm run densite && npm run clics && npm run visuel",
+    "verify": "npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run langue && npm run langue:epreuve && npm run lectures && npm run lectures:epreuve && npm run screens && npm run fumee && npm run densite && npm run clics && npm run visuel",
     "dataset:balances-aux": "tsx scripts/dataset/balances-aux.ts",
-    "langue": "tsx scripts/langue.ts"
+    "langue": "tsx scripts/langue.ts",
+    "langue:epreuve": "tsx scripts/langue-epreuve.ts",
+    "lectures": "tsx scripts/lectures.ts",
+    "lectures:epreuve": "tsx scripts/lectures-epreuve.ts"
   },
   "keywords": [],
   "author": "",

@@ -1239,6 +1239,36 @@ export const LIBELLES = {
   'imp.nComptes': { en: '{n} accounts', fr: '{n} comptes' },
   'imp.nDePlus': { en: '… {n} more', fr: '… {n} de plus' },
 
+  'commun.motifCourt': { en: 'reason', fr: 'motif' },
+  'commun.objetCourt': { en: 'subject', fr: 'objet' },
+  'commun.prestataireCourt': { en: 'provider', fr: 'prestataire' },
+  'facteur.proposed': { en: 'proposed', fr: 'proposé' },
+  'facteur.confirmed': { en: 'confirmed', fr: 'retenu' },
+  'facteur.dismissed': { en: 'dismissed', fr: 'écarté' },
+
+  'proc.consentementLe': { en: 'consent', fr: 'consentement' },
+  'proc.conservationJusquAu': { en: 'retained until', fr: 'conservation jusqu’au' },
+
+  // ── Les lectures rétablies (un fait stocké que rien ne rend n'existe pas) ─
+  'cf.source': { en: 'Source:', fr: 'Source :' },
+  'dash.vueClient': { en: 'Client-safe live view:', fr: 'Vue client, en direct :' },
+  'rail.portail': { en: 'portal', fr: 'portail' },
+  'obst.nObstacles': { en: '{n} blocker(s)', fr: '{n} obstacle(s)' },
+  'obst.repartis': { en: 'spread over {n} family(ies).', fr: 'répartis sur {n} famille(s).' },
+  'pop.empreinte': { en: 'Population hash', fr: 'Empreinte de la population' },
+  'reun.agendasLus': { en: 'Calendars read (adapter “{adaptateur}”): {equipe} — free/busy only.', fr: 'Agendas lus (adaptateur « {adaptateur} ») : {equipe} — libre/occupé seulement.' },
+  'reun.nCreneaux': { en: '{n} common slot(s).', fr: '{n} créneau(x) commun(s).' },
+  'risk.methodePart': { en: '{q} computed rules, {ql} declared sources: {pct} % quantitative.', fr: '{q} règles calculées, {ql} sources déclarées : {pct} % de quantitatif.' },
+  'risk.dossierPart': { en: '{q} factor(s) observed, {ql} declared and retained: {pct} % quantitative.', fr: '{q} facteur(s) observé(s), {ql} déclaré(s) retenu(s) : {pct} % de quantitatif.' },
+  'risk.ceQueLeCabinetAEcrit': { en: 'What the firm wrote:', fr: 'Ce que le cabinet a écrit :' },
+  'risk.methode': { en: 'Methodology', fr: 'Méthode' },
+  'risk.ceDossier': { en: 'This engagement', fr: 'Ce dossier' },
+  'team.ratioNonCalcule': { en: 'Audit fees not recorded — ratio NOT computed. A ratio on an assumed denominator would be worse than no ratio.', fr: 'Honoraires d’audit non saisis — ratio NON calculé. Un ratio sur un dénominateur supposé serait pire que pas de ratio.' },
+  'team.honoraires': { en: 'Audit fees: {audit} · non-audit services: {sacc}.', fr: 'Honoraires d’audit : {audit} · services non-audit : {sacc}.' },
+  'team.plafondRetenu': { en: 'Ceiling applied: {v} % — {pourquoi}', fr: 'Plafond retenu : {v} % — {pourquoi}' },
+  'team.plafondNonVerifie': { en: 'Ceiling drawn from {sources}, whose primary text could not be reached — it is applied, and said to be unverified.', fr: 'Plafond tiré de {sources}, dont le texte primaire n’a pas pu être atteint — il est appliqué, et dit non vérifié.' },
+  'wp.provenanceMoteur': { en: 'Performed by OTTO engine run {run} — facts hash {h}… — language {langue}.', fr: 'Exécuté par le moteur OTTO, run {run} — empreinte des faits {h}… — langue {langue}.' },
+
   // ── Commun ─────────────────────────────────────────────────────────────
 } satisfies Record<string, Entree>;
 

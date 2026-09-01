@@ -420,7 +420,7 @@ export async function conduire(
     dire('balances aux. : l’écart du collectif est DIT — 25 000 € sans attribution auxiliaire (écriture de situation)',
       /-25.?000,00/.test(t), (t.match(/-25[^\n]{0,20}/) ?? ['écart non affiché'])[0]);
     dire('balances aux. : apparus et disparus sont nommés sur leurs lignes',
-      (await compte('.badge:has-text("apparu")')) >= 2 && (await compte('.badge:has-text("disparu")')) >= 2,
+      (await compte(`.badge:has-text("${L('mot.new')}")`)) >= 2 && (await compte(`.badge:has-text("${L('mot.gone')}")`)) >= 2,
       'badges apparu/disparu présents');
     /* innerText rend le texte TEL QU'AFFICHÉ : les en-têtes de table sont en
        capitales par CSS (text-transform), donc /Vieillissement/ échouait alors
@@ -450,10 +450,10 @@ export async function conduire(
     await devenir(c.reviewer.id);
     await aller(`${eng}/risk`);
     const rangFacteur = p.locator('tr:has-text("Immovance")')
-      .filter({ has: p.locator(`button:has-text("${L('risk.keepTheComputation')}")`) }).first();
+      .filter({ has: p.locator(`button:has-text("${L('mot.keep')}")`) }).first();
     await rangFacteur.locator('input[name=reason]').fill(
       'Concentration accrue sur un donneur d’ordre — revue du recouvrement étendue.');
-    await soumettre(rangFacteur.locator(`button:has-text("${L('risk.keepTheComputation')}")`).first(), 1500);
+    await soumettre(rangFacteur.locator(`button:has-text("${L('mot.keep')}")`).first(), 1500);
     dire('balances aux. : le facteur est STATUÉ par une personne au registre — la circulation est complète',
       refus(p) === null, refus(p) ?? 'facteur retenu, visa débloqué');
     await devenir(c.preparateur.id);
@@ -475,7 +475,8 @@ export async function conduire(
     }
     t = await texte();
     dire('balances aux. : le côté fournisseurs se rapproche et s’analyse pareil',
-      /Balance fournisseurs N-1[\s\S]{0,220}rapprochée ✓/.test(t) && /Concentration du top 10/.test(t),
+      new RegExp(`${traduire('en', 'bal.fournisseursN1')}|${traduire('fr', 'bal.fournisseursN1')}`).test(t)
+      && R('bal.reconciled').test(t) && R('bal.top10ConcentrationShareOfThe').test(t),
       'fournisseurs N-1 rapprochée ✓, analyse rendue');
   });
 
@@ -550,7 +551,7 @@ export async function conduire(
     await soumettre(p.locator(`button:has-text("${L('proc.creerEntretien')}")`).first(), 1500);
     t = await texte();
     dire('entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite',
-      refus(p) === null && /consentement 20\d\d-\d\d-\d\d/.test(t) && /2027-01-12/.test(t),
+      refus(p) === null && R('proc.consentementLe').test(t) && /20\d\d-\d\d-\d\d/.test(t) && /2027-01-12/.test(t),
       'consentements datés à l’écran');
 
     /* Le transcript, confronté à la documentation : trois écarts CANDIDATS,
@@ -560,7 +561,7 @@ export async function conduire(
     await soumettre(p.locator(`button:has-text("${L('proc.deposerTranscript')}")`).first(), 1500);
     await soumettre(p.locator(`button:has-text("${L('proc.confronter')}")`).first(), 2500);
     t = await texte();
-    const badgesEcarts = p.locator(`table.data .badge:has-text("${L('proc.ecartCandidat')}")`);
+    const badgesEcarts = p.locator(`table.data .badge:has-text("${L('mot.candidate')}")`);
     dire('entretien : trois écarts CANDIDATS, les omissions D’ABORD, jamais une conclusion',
       (await badgesEcarts.count()) === 3 && /décrit à l.oral, absent de la documentation[\s\S]*documenté, passé sous silence[\s\S]*le discours contredit/.test(t),
       `${await badgesEcarts.count()} candidat(s), omissions en tête`);
@@ -573,7 +574,7 @@ export async function conduire(
     await rangCp01.locator('input[name=reason]').fill('Fréquence documentée à corriger avec le client — portée par la question.');
     await soumettre(rangCp01.locator(`button:has-text("${L('proc.ecarter')}")`).first(), 1500);
     dire('entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé',
-      refus(p) === null && (await compte(`table.data .badge:has-text("${L('proc.ecartCandidat')}")`)) === 0,
+      refus(p) === null && (await compte(`table.data .badge:has-text("${L('mot.candidate')}")`)) === 0,
       'plus aucun candidat en attente');
 
     /* Les deux facteurs PROPOSÉS se confirment au registre — la réviseuse. */
@@ -581,9 +582,9 @@ export async function conduire(
     await aller(`${eng}/risk`);
     for (const motCle of ['module Facturation', 'revue analytique']) {
       const rang = p.locator(`tr:has-text("${motCle}")`)
-        .filter({ has: p.locator(`button:has-text("${L('risk.keepTheComputation')}")`) }).first();
+        .filter({ has: p.locator(`button:has-text("${L('mot.keep')}")`) }).first();
       await rang.locator('input[name=reason]').fill('Retenu — la revue du paramétrage et des contrôles espacés entre au programme.');
-      await soumettre(rang.locator(`button:has-text("${L('risk.keepTheComputation')}")`).first(), 1500);
+      await soumettre(rang.locator(`button:has-text("${L('mot.keep')}")`).first(), 1500);
     }
     dire('processus : les facteurs proposés sont CONFIRMÉS au registre — la circulation est complète',
       refus(p) === null, refus(p) ?? 'deux facteurs retenus');
@@ -632,7 +633,7 @@ export async function conduire(
       !refus(p), refus(p) ?? 'décision revue');
 
     await aller(`${eng}/obstacles`);
-    const bloque = /Périmètre sans programme/i.test(await texte());
+    const bloque = R('famille.programme.titre').test(await texte());
     dire('périmètre : un poste retenu SANS procédure planifiée bloque le visa',
       bloque, bloque ? 'famille « périmètre sans programme » affichée' : 'aucun obstacle — défaut');
 
@@ -1250,7 +1251,7 @@ export async function conduire(
        l'URL. Vérifier `?erreur=` prouve que le service a refusé ; il ne prouve
        pas que l'écran le MONTRE. Les deux se sont déjà dissociés : dix écrans
        calculaient un refus et rendaient une page 500. On regarde donc le texte. */
-    const messageVisible = (await texte()).includes('refusé');
+    const messageVisible = R('commun.refuse').test(await texte());
     dire('écarts : une explication vide de contenu (des espaces) est refusée, et le refus S’AFFICHE',
       Boolean(refus(p)) && messageVisible,
       refus(p) ? (messageVisible ? refus(p)! : 'refusé mais RIEN À L’ÉCRAN — défaut') : 'passé — défaut');
@@ -1443,7 +1444,7 @@ export async function conduire(
         'Revue : la conclusion doit rappeler la couverture de l’échantillon.');
       await soumettre(fEdit.locator(`button:has-text("${L('wp.saveEdit')}")`), 2000);
       dire('papier : une section s’ÉDITE à la main, et l’édition porte sa justification',
-        !refus(p) && (await compte(`.mod-flag:has-text("${L('wps.modified')}")`)) > 0,
+        !refus(p) && (await compte(`.mod-flag:has-text("${L('wp.modifiedJustified')}")`)) > 0,
         refus(p) ?? 'section marquée « modified — justified »');
     } else {
       dire('papier : le formulaire d’édition de section existe avant les visas', false, 'formulaire absent');
@@ -1505,7 +1506,7 @@ export async function conduire(
        par un non-auteur, et l'auteur clôt — dans la vue transverse. */
     await devenir(c.reviewer.id);
     await aller(base + lien);
-    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
+    const conclusion = p.locator('.annotable').filter({ has: p.locator('h2:text-is("Conclusion")') }).first();
     if (await conclusion.count()) {
       await conclusion.locator('h2').click({ button: 'right' });
       const panneau = p.locator('.note-panneau');
@@ -1530,10 +1531,10 @@ export async function conduire(
       // Le préparateur répond — la réponse entre au dossier et la note passe « adressée ».
       await devenir(c.preparateur.id);
       await aller(`${eng}/notes`);
-      const fRep = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
+      const fRep = p.locator(`form:has(input[name=texte]):has(button:has-text("${L('notes.repondre')}"))`).first();
       if (await fRep.count()) {
         await fRep.locator('input[name=texte]').fill('Conclusion étoffée, renvoi ajouté.');
-        await fRep.locator(`button:has-text("${L('portal.repondre')}")`).click();
+        await fRep.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la réponse s’enregistre et la note passe « adressée »',
@@ -1617,10 +1618,10 @@ export async function conduire(
       /* On referme les deux notes OTTO avant les visas : l'exécutée se clôt,
          la refusée se reprend (réponse humaine) puis se clôt — une note
          refusée reste OUVERTE, c'est la règle, et elle bloque le visa. */
-      const fRepO = p.locator('form:has(input[name=texte][placeholder*="Répondre"])').first();
+      const fRepO = p.locator(`form:has(input[name=texte]):has(button:has-text("${L('notes.repondre')}"))`).first();
       if (await fRepO.count()) {
         await fRepO.locator('input[name=texte]').fill('Compris — je conclus moi-même, la note est reprise.');
-        await fRepO.locator(`button:has-text("${L('portal.repondre')}")`).click();
+        await fRepO.locator('button').first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
       }
@@ -1656,13 +1657,13 @@ export async function conduire(
       dire('colonne : OTTO PROPOSE son interprétation, en clair, et attend',
         /je cherche la date figurant sur le bon de livraison/.test(t1), 'proposition affichée');
       dire('colonne : RIEN n’est rempli avant la confirmation humaine',
-        (await compte(`th:has-text("${L('wp.columnTitleFreeTextDeliveryDate')}")`)) === 0, 'aucune colonne dans le tableau');
+        (await compte('th:has-text("Date livraison")')) === 0, 'aucune colonne dans le tableau');
 
       await p.locator(`button:has-text("${L('wp.confirmOttoSearchesTheDocumentsReceived')}")`).first().click();
       await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('colonne : confirmée, elle entre au tableau MARQUÉE « ajoutée »',
-        (await compte(`th:has-text("${L('wp.columnTitleFreeTextDeliveryDate')}")`)) === 1 && !refus(p),
+        (await compte('th:has-text("Date livraison")')) === 1 && !refus(p),
         refus(p) ?? 'colonne remplie et marquée');
       const t2 = await texte();
       dire('colonne : deux issues, jamais une seule — trouvée AVEC sa pièce, ou « absente »',
@@ -2012,7 +2013,7 @@ export async function conduire(
     dire('achèvement : la lettre d’affirmation ne peut pas être « sans objet », et l’écran le dit',
       (await compte('form:has(input[name=nature][value="lettre_affirmation"])')) > 0
         && (await compte(`form:has(input[name=nature][value="lettre_affirmation"]):has(button:has-text("${L('comp.notApplicable2')}"))`)) === 0
-        && /Pas de « sans objet » ici/.test(await texte()),
+        && R('comp.pasSansObjet').test(await texte()),
       'action non offerte, raison écrite');
 
     const rapport = (await texte()).match(/Date du rapport\s*:?\s*(\d{2}\/\d{2}\/\d{4})/)?.[1];
@@ -2069,8 +2070,8 @@ export async function conduire(
     const t = await texte();
     restants = Number(t.match(/(\d+)\s+obstacle/i)?.[1] ?? '0');
     dire('obstacles : la liste unique est calculée et rend son verdict',
-      /(aucun obstacle|no blocker|\d+\s+obstacle|\d+\s+blocker)/i.test(t),
-      t.match(/(aucun obstacle|no blocker|\d+\s+obstacle|\d+\s+blocker)/i)?.[0] ?? '(non lu)');
+      R('obst.aucun').test(t) || /\d+\s+(obstacle|blocker)/i.test(t),
+      R('obst.aucun').test(t) ? L('obst.aucun') : (t.match(/\d+\s+(obstacle|blocker)/i)?.[0] ?? '(non lu)'));
   });
 
   // ── 23. CLÔTURE ET ARCHIVE SCELLÉE
@@ -2096,7 +2097,7 @@ export async function conduire(
     const lienWp = await p.locator('a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
     if (!lienWp) { dire('mes travaux : un papier existe pour y ancrer une note', false, 'aucun papier'); return; }
     await aller(base + lienWp);
-    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
+    const conclusion = p.locator('.annotable').filter({ has: p.locator('h2:text-is("Conclusion")') }).first();
     if (!(await conclusion.count())) { dire('mes travaux : la conclusion du papier est annotable', false, 'objet annotable absent'); return; }
     await conclusion.locator('h2').click({ button: 'right' });
     const panneau = p.locator('.note-panneau');
@@ -2120,7 +2121,7 @@ export async function conduire(
     await p.waitForTimeout(600);
     const surTravaux = p.url().includes('/travaux');
     dire('mes travaux : le bandeau y mène depuis n’importe quel écran, en 1 clic',
-      surTravaux && /Mes travaux/.test(await texte()), p.url().replace(base, ''));
+      surTravaux && R('commun.mesTravaux').test(await texte()), p.url().replace(base, ''));
     if (!surTravaux) return;
 
     const liens = p.locator('table.data td a');

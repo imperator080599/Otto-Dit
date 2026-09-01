@@ -279,3 +279,48 @@ test mesurait le libellé, pas le comportement. Il lit désormais le même catal
 (`L('cle')`), dans la locale du cabinet de démonstration. Ce qui reste écrit en clair dans le
 parcours est du CONTENU : noms de procédures, codes de contrôle, noms de fichiers du jeu de
 données — c'est-à-dire ce qui ne change pas quand la langue change.
+
+## DA-20 — Un balayage de prose a emporté HUIT chemins de lecture ; un garde les tient désormais
+
+**Ce qui s'est passé.** Pour appliquer la règle du fondateur — pas de justification
+pédagogique à l'écran — j'ai supprimé les paragraphes d'explication. Le balayage a emporté,
+en même temps, **huit lectures de données** sur huit écrans :
+
+| écran | ce qui a disparu |
+|---|---|
+| processus | qui a consenti à être enregistré, **quand**, et jusqu'à quand le transcript est conservé |
+| papier de travail | le run du moteur, l'**empreinte des faits**, la langue — la provenance du papier (P7) |
+| population | l'**empreinte de population** à laquelle l'échantillon se lie (ADR-016) |
+| risque | la part de quantitatif (méthode / dossier) **et** les tailles d'échantillon écrites par le cabinet |
+| équipe | le dénominateur du ratio SACC, le plafond retenu, son motif, et son éventuelle non-vérification |
+| reprise N-1 | le **lien vers le dossier source** |
+| réunions | quel adaptateur a lu quels agendas, et combien de créneaux en sortent |
+| obstacles | le compte total et sa répartition par famille |
+
+**Aucun test ne l'a vu.** Les services rendaient toujours les données, les écrans rendaient
+toujours 200, la sonde de santé restait verte. Le parcours cliqué en a attrapé **une sur
+huit** — le consentement — et je l'avais d'abord expliquée comme « un libellé qui a changé ».
+C'est exactement l'hypothèse plausible que la règle 18 interdit désormais.
+
+**Le garde.** `npm run lectures` compare les écrans à une référence (`origin/main` par défaut)
+et refuse toute **expression de donnée** (`{objet.champ}`) retirée d'un écran et jamais
+rétablie. Il compare sur le CHEMIN DE CHAMP, pas sur le nom de la variable : renommer `t` en
+`x` dans un `map` n'est pas perdre une lecture, et un détecteur qui crie faux se fait taire.
+Ce qu'il ne peut pas distinguer est **déclaré dans le script**, avec sa raison — aujourd'hui
+la table de libellés propre au portail, remplacée par le catalogue.
+
+**Éprouvé contre un cas connu mauvais** (règle 17) : `npm run lectures:epreuve` retire la
+ligne du consentement, vérifie que la règle la dénonce, et remet le fichier.
+
+## DA-21 — Les instruments s'éprouvent, et l'épreuve est dans la chaîne
+
+`npm run langue:epreuve` injecte **cinq** défauts connus dans de vrais écrans et vérifie que
+la règle échoue sur chacun : une phrase française dans un nœud JSX, une phrase rangée dans une
+table de libellés, un bouton d'un seul mot en minuscule, **une chaîne anglaise** hors catalogue
+(la règle est structurelle, pas linguistique — si elle ne voit que le français, elle n'a rien
+prouvé), et un attribut de libellé d'un seul mot. Les cinq correspondent à une classe qu'une
+version antérieure de la règle laissait passer : ce ne sont pas des cas imaginés, ce sont les
+trous constatés.
+
+Les deux épreuves entrent dans `npm run verify`, entre les tests et le balayage des écrans.
+Un instrument qui n'a jamais échoué exprès n'a jamais été testé.

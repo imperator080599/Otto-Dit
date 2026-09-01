@@ -41,6 +41,12 @@ export default async function PopulationPage({ params, searchParams }: { params:
             </a>
           </span>
         </div>
+        {/* L'EMPREINTE DE POPULATION : l'échantillon s'y lie, et une population
+            changée force un nouveau tirage (ADR-016). C'est la provenance du
+            tirage — la supprimer rendait le lien invérifiable à l'écran. */}
+        <p className="faint">
+          {t('pop.empreinte')} <span className="mono">{pop.hash.slice(0, 30)}…</span>
+        </p>
         <div className="table-scroll">
           <table className="data">
             <thead>

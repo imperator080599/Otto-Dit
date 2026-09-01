@@ -52,6 +52,11 @@ export default async function CarryForwardPage({
           <p className="faint">{t('cf.rienAReprendre')}</p>
         ) : (
           <>
+            {/* LE DOSSIER SOURCE, CLIQUABLE. Un balayage de prose l'avait emporté :
+                sans lui, « reprise de N-1 » ne dit pas DE QUEL N-1. */}
+            <p className="faint">
+              {t('cf.source')} <Link href={`/eng/${prev.id}`}>{prev.name}</Link>
+            </p>
             {liste.length === 0 ? (
               <form action={proposerAction}>
                 <input type="hidden" name="engagement_id" value={id} />

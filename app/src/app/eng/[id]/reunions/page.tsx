@@ -103,6 +103,12 @@ export default async function ReunionsPage({
         {refusCreneaux && <div className="callout danger mt">{refusCreneaux}</div>}
         {proposition && (
           <>
+            {/* QUI A ÉTÉ LU, PAR QUEL ADAPTATEUR, ET COMBIEN DE CRÉNEAUX EN SORTENT.
+                « Simulé » sans dire ce qui a été lu ne se vérifie pas. */}
+            <p className="faint mt">
+              {t('reun.agendasLus', { adaptateur: proposition.adaptateur, equipe: proposition.equipe.join(', ') })}{' '}
+              {t('reun.nCreneaux', { n: proposition.creneaux.length })}
+            </p>
             {proposition.creneaux.map((c) => (
               <form action={choisirCreneauAction} className="row" key={c.debut} style={{ marginTop: 6 }}>
                 <input type="hidden" name="engagement_id" value={id} />

@@ -353,6 +353,18 @@ export default async function TeamPage({
       {/* ── services autres que la certification ─────────────────────── */}
       <div className="panel">
         <h2>{t('team.nonAuditServices')}</h2>
+        {/* LE DÉNOMINATEUR, LE PLAFOND ET SA SOURCE. Un ratio sans son
+            dénominateur ni le motif de son plafond ne se relit pas — et ces
+            trois lectures avaient disparu dans un balayage de prose. */}
+        <p className="faint">
+          {ratio.auditFeeCents === null
+            ? t('team.ratioNonCalcule')
+            : t('team.honoraires', {
+                audit: fmtEur(ratio.auditFeeCents, 'fr'), sacc: fmtEur(ratio.nonAuditCents, 'fr'),
+              })}{' '}
+          {t('team.plafondRetenu', { v: cap.valeur, pourquoi: cap.pourquoi })}
+          {ratio.capUnverified && <> {t('team.plafondNonVerifie', { sources: cap.sources.join(', ') })}</>}
+        </p>
         <table className="data">
           <thead>
             <tr><th>{t('col.date')}</th><th>{t('col.nature')}</th><th>{t('col.subject')}</th><th>{t('col.provider')}</th><th className="num">{t('col.amount')}</th></tr>
@@ -390,8 +402,8 @@ export default async function TeamPage({
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
-          <input type="text" name="label" placeholder="objet" style={{ width: 240 }} required />
-          <input type="text" name="provider" placeholder="prestataire" style={{ width: 200 }} required />
+          <input type="text" name="label" placeholder={t('commun.objetCourt')} style={{ width: 240 }} required />
+          <input type="text" name="provider" placeholder={t('commun.prestataireCourt')} style={{ width: 200 }} required />
           <input type="text" name="provided_on" placeholder="AAAA-MM-JJ" style={{ width: 120 }} required />
           <input type="text" name="amount" placeholder={t('team.montantEuros')} style={{ width: 110 }} required />
           <button className="btn small secondary">{t('mot.save')}</button>

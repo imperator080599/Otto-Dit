@@ -60,6 +60,18 @@ current state.**
     l'objet qui les a produits — et il faut le nommer. Corollaire du 13 : une preuve empruntée
     est la forme la plus convaincante du silence lu comme un succès.
 
+17. **Tout instrument de mesure s'éprouve d'abord contre un cas connu MAUVAIS.** On
+    introduit délibérément le défaut que l'instrument existe pour attraper — une chaîne
+    française hors catalogue, un écran à sept actions, une lecture que plus aucun écran
+    n'atteint — on vérifie qu'il ÉCHOUE, puis on retire le défaut. **Un détecteur qui n'a
+    jamais échoué exprès n'a jamais été testé.** Quatre instruments de suite ont mesuré à
+    côté de ce qu'ils devaient voir : le middleware « inerte », DENSITE à 0 action,
+    /api/sante braqué sur du code mort, et le détecteur de langue qui affichait « 0 reste »
+    sur les 22 phrases de la liste que lit un signataire avant de signer.
+18. **Une explication plausible d'un échec de test est une HYPOTHÈSE, pas un diagnostic.**
+    « C'est juste le libellé qui a changé » se prouve station par station, pas en gros.
+    Dans ce dépôt, l'hypothèse plausible a caché un vrai défaut quatre fois sur quatre.
+
 ## Repo layout
 
 - `docs/` — program documents (00 founder ideas … 09 gates, DECISIONS, ASSUMPTIONS,

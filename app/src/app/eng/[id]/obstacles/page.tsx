@@ -31,8 +31,13 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
     <div className="stack">
       <div className="panel">
         <h2>{t('obst.titre')}</h2>
-        {liste.length === 0 && (
+        {liste.length === 0 ? (
           <p><span className="badge green">{t('obst.aucun')}</span></p>
+        ) : (
+          /* LE COMPTE, ET SUR COMBIEN DE FAMILLES. Sans lui l'écran montrait des
+             panneaux sans jamais dire combien il en reste au total. */
+          <p><span className="badge amber">{t('obst.nObstacles', { n: liste.length })}</span>{' '}
+            {t('obst.repartis', { n: parFamille.size })}</p>
         )}
       </div>
 

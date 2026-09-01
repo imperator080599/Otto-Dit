@@ -42,6 +42,14 @@ export function chaines(code: string): { chaines: string[]; texte: string[]; ref
   code = code.replace(/`[^`]*\b(select|insert into|update |delete from|alter table|create )[^`]*`/gi, '` `');
   const refus = [...code.matchAll(/new Error\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g)].map((m) => m[2]);
   code = code.replace(/new Error\(\s*(['"`])(?:\\.|(?!\1)[\s\S])*\1/g, 'new Error( )');
+  /* LES ATTRIBUTS DE LIBELLÉ SONT AFFICHÉS PAR CONSTRUCTION, exactement comme
+     un nœud JSX — ils partent donc dans le même seau et échappent aux filtres
+     qui écartent les identifiants. Un `placeholder="motif"` a survécu à deux
+     versions de cette règle parce qu'il était relevé comme un LITTÉRAL, et
+     qu'un mot minuscule d'un seul tenant y passe pour un nom de variable. */
+  const attributs: string[] = [];
+  for (const m of code.matchAll(
+    /(?:placeholder|title|aria-label|alt|label|summary)=\{?["'`]([^"'`]+)["'`]\}?/g)) attributs.push(m[1]);
   code = code.replace(ATTR_TECH, ' ');
   /* Un appel au catalogue n'est pas un littéral d'écran. */
   code = code.replace(/\bt\w*\(\s*['"`][^'"`]*['"`]/g, 'T( ');
@@ -52,7 +60,7 @@ export function chaines(code: string): { chaines: string[]; texte: string[]; ref
      littéraux effacés, et les lignes repliées — un nœud écrit sur trois lignes
      reste UNE phrase. */
   const sans = code.replace(/(['"`])(?:\\.|(?!\1)[\s\S])*\1/g, ' ').replace(/\s*\n\s*/g, ' ');
-  const texte: string[] = [];
+  const texte: string[] = [...attributs];
   for (const m of sans.matchAll(/[>}]([^<>{}]+)[<{]/g)) texte.push(m[1]);
   return { chaines: out.map((s) => s.trim()), texte: texte.map((s) => s.trim()), refus };
 }

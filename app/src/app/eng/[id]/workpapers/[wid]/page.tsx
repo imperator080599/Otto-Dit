@@ -201,6 +201,9 @@ export default async function WorkpaperDetail({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="panel">
+        {/* LA PROVENANCE DU PAPIER : quel run du moteur l'a produit, sur quelle
+            empreinte de faits, dans quelle langue. P7 doit rester répondable —
+            « d'où vient ce papier ? » n'a plus de réponse à l'écran sans ceci. */}
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>
             {wp.title} <span className="badge gray">v{wp.version}</span>{' '}
@@ -215,6 +218,13 @@ export default async function WorkpaperDetail({
             </span>
           </details>
         </div>
+        <p className="faint">
+          {t('wp.provenanceMoteur', {
+            run: wp.engine_run_id?.slice(0, 8) ?? '—',
+            h: wp.based_on_hash?.slice(0, 16) ?? '—',
+            langue: wp.language.toUpperCase(),
+          })}
+        </p>
         {/* LES ANNEXES (ADR-106) : un tableur de calcul — ou toute pièce de
             travail — se JOINT au papier pour les cas qui sortent du cadre
             standard. Le fichier passe par le moteur de pièces (empreinte,

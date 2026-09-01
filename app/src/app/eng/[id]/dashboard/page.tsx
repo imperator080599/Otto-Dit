@@ -67,6 +67,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
             <a className="btn secondary small" href={`/api/tracker/${id}?audience=client`}>{t('dash.clientTrackerExcel')}</a>
             <a className="btn secondary small" href={`/api/tracker/${id}?audience=group`}>{t('dash.groupComponentTracker')}</a>
           </div>
+          {/* CE QUE LA VUE CLIENT MONTRE, ET SUR QUELLE ENTITÉ. */}
+          <p className="faint mt">
+            {t('dash.vueClient')}{' '}
+            <Link href="/portal/demo-sophie-altiverre">{t('rail.portail')}</Link>{' '}
+            <span className="mono">{entity.entity_id.slice(0, 8)}…</span>
+          </p>
         </div>
 
         <div className="panel">

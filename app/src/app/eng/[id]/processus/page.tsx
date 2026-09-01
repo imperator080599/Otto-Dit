@@ -323,6 +323,16 @@ export default async function ProcessusPage({
               <span className="badge red">{t('proc.nCandidats', { n: itv.ecarts.filter((e) => e.status === 'candidate').length })}</span>
             )}
           </h2>
+          {/* QUI A CONSENTI, ET QUAND. Cette ligne avait DISPARU dans un balayage
+              de prose : elle ressemblait à une explication, elle était le seul
+              chemin de lecture d'un fait qu'on doit pouvoir montrer — sur quelle
+              base cette personne a-t-elle été enregistrée, et jusqu'à quand le
+              transcript est-il conservé (ADR-101, docs/14). Un fait stocké que
+              plus aucun écran ne rend n'existe pas pour qui relit le dossier. */}
+          <p className="faint">
+            {itv.participants.map((x) => `${x.nom}${x.qualite ? ` (${x.qualite})` : ''}${x.consentement ? ` — ${t('proc.consentementLe')} ${x.quand ? x.quand.slice(0, 10) : '✓'}` : ''}`).join(' · ')}
+            {itv.retentionUntil && <> · {t('proc.conservationJusquAu')} {itv.retentionUntil}</>}
+          </p>
           {itv.comprehension ? (
             <p><strong>{t('proc.comprehension')}</strong> {itv.comprehension}</p>
           ) : (

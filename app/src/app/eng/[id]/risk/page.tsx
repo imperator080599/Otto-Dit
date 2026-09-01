@@ -17,6 +17,7 @@ import {
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // Le risque par assertion, et CE QU'IL COMMANDE.
 //
@@ -25,6 +26,8 @@ import { tr } from '@/lib/i18n';
 // ce niveau fait entrer — et celles qu'il fait sortir, avec la raison. Un écran
 // qui n'afficherait que le niveau laisserait croire que le risque est une
 // opinion qu'on note quelque part.
+
+const STATUTS_FACTEUR = ['proposed', 'confirmed', 'dismissed'];
 
 export default async function RiskPage({
   params, searchParams,
@@ -219,6 +222,28 @@ export default async function RiskPage({
           {t('risk.scaleRule', { v: cat.risque.version })} :{' '}
           {cat.risque.paliers.map((p) => `${p.facteurs_min}+ → ${p.niveau}`).join(' · ')}
         </p>
+        {/* CE QUE LE CABINET A ÉCRIT : la taille d'échantillon par assertion,
+            nombre fixe ou FORMULE. C'est de la méthode, pas de la pédagogie —
+            trente lignes sur 12 M€ ne couvrent pas ce que trente lignes
+            couvrent sur 800 k€, et l'auditeur doit voir laquelle s'applique.
+            Un balayage de prose l'avait emportée. */}
+        <p className="faint">
+          <strong>{t('risk.ceQueLeCabinetAEcrit')}</strong>{' '}
+          {Object.entries(cat.risque.tailles).map(([k, v]) => (typeof v === 'number'
+            ? `${k} → ${v}`
+            : `${k} → ${cat.risque.formules?.[v.formule]?.calcul ?? v.formule}`)).join(' · ')}
+        </p>
+        {/* LA PART DE QUANTITATIF, MESURÉE — de la méthode d'un côté, de CE
+            dossier de l'autre. C'est le chiffre qui dit si le risque ne voit
+            que ce qui se compte ; il avait disparu dans un balayage de prose. */}
+        <p className="faint">
+          <strong>{t('risk.methode')}</strong> — {t('risk.methodePart', {
+            q: share.quantitative, ql: share.qualitative, pct: share.pctQuantitative.toFixed(1),
+          })}<br />
+          <strong>{t('risk.ceDossier')}</strong> — {t('risk.dossierPart', {
+            q: raised.quantitative, ql: raised.qualitative, pct: raised.pctQuantitative.toFixed(1),
+          })}
+        </p>
       </div>
 
       {/* ── LE QUALITATIF ─────────────────────────────────────────────
@@ -319,14 +344,14 @@ export default async function RiskPage({
                 </td>
                 <td>
                   <span className={`badge ${f.status === 'confirmed' ? 'blue' : f.status === 'dismissed' ? 'gray' : 'amber'}`}>
-                    {f.status}
+                    {STATUTS_FACTEUR.includes(f.status) ? t(`facteur.${f.status}` as CleLibelle) : f.status}
                   </span>
                 </td>
                 <td>
                   {f.status === 'proposed' && (
                     <form action={decideAction} className="row">
                       <input type="hidden" name="factor" value={f.id} />
-                      <input type="text" name="reason" placeholder="motif" style={{ width: 160 }} />
+                      <input type="text" name="reason" placeholder={t('commun.motifCourt')} style={{ width: 160 }} />
                       <button className="btn small secondary" name="status" value="confirmed">{t('mot.keep')}</button>
                       <button className="btn small secondary" name="status" value="dismissed">{t('risk.setAside')}</button>
                     </form>
