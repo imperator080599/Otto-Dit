@@ -4278,3 +4278,28 @@ complétude : un concept = une entrée, dans chaque locale servie, variables com
 **s'ajoute** à `lexique.test.ts`, il ne le remplace pas : les écrans non migrés portent encore
 leurs libellés en clair, et retirer la règle française maintenant les laisserait sans règle du
 tout. Les deux coexistent jusqu'à la fin de la migration.
+
+## ADR-115 — La sécurité par ligne est FORCÉE, et chaque exception de rendu a une ligne (migration 0033)
+
+**Contexte.** La chaîne locale tourne sur PGlite en superutilisateur ; la production tourne sur
+Supabase sous `postgres`, un rôle **BYPASSRLS**. Ni l'un ni l'autre n'éprouve la RLS pour
+l'application : les politiques (0004, 0029) ne sont exercées que par la tentative de fuite du
+build, sous `otto_lecteur_demo`. Et sans `FORCE ROW LEVEL SECURITY`, le PROPRIÉTAIRE d'une
+table la contourne même sans BYPASSRLS — un jour où l'application passerait sous un rôle
+propriétaire non-bypass, tout resterait ouvert sans qu'aucun test ne le voie.
+
+**Décision.** (1) `FORCE ROW LEVEL SECURITY` sur toute table à politique, posé maintenant,
+avant d'en dépendre ; inerte pour le rôle actuel, et le bloc d'assertions du build le dit en
+toutes lettres. (2) Le passage de l'application sous un rôle sans BYPASSRLS est **reporté**
+(R9, `docs/BACKLOG_REPORTE.md`) : il exige que chaque requête pose le locataire dans sa
+transaction — un mécanisme testé à chaque déploiement, qui ne se réécrit pas une nuit.
+(3) `server_error` : chaque exception de rendu est écrite, clé par le digest affiché, par le
+crochet `onRequestError` — au mieux, pas garanti (Next n'attend pas ce crochet), et
+`/api/erreur?digest=…` la résout. (4) Un réglage de session (`set_config(…, false)`, `SET`
+sans `LOCAL`) est interdit à la source : sur un pooler de transaction, la requête suivante
+peut partir sur une autre connexion — `acceptance.ts` en portait un, corrigé.
+
+**Conséquences.** Le bloc d'assertions rôle / RLS s'imprime à chaque build et arrête le
+déploiement sur un défaut (table sans RLS, politique sans FORCE, table sans politique hors liste
+justifiée, base non migrée). La liste propriétaire-seul vit dans `assertions-role.ts`, partagée
+par le test et par le build. Voir DA-28 pour le détail de la tranche.

@@ -1,0 +1,101 @@
+# LA CHAÎNE, SUR UNE MACHINE QUI N'EST PAS LA MIENNE — et LE BOUT DE LA CHAÎNE
+# EST L'URL (DA-16, Groupe 0 du mandat de nuit).
+#
+# Deux travaux, deux déclencheurs :
+#  · `local`  — à chaque pousse : types, tests (dont le balayage des écrans
+#    en développement, qui OUVRE chaque route dans Chromium), et les trois
+#    gardes statiques (langue, lectures, parcours) avec leurs épreuves. Le
+#    balayage de PRODUCTION et le parcours cliqué restent dans `npm run verify`.
+#  · `url`    — quand Vercel annonce un déploiement RÉUSSI (événement
+#    deployment_status) : la sonde de fumée ouvre TOUTES les routes de
+#    l'inventaire contre l'URL DÉPLOYÉE et exige 200, un titre, un contenu et
+#    aucune page d'erreur. Le rapport est publié en artefact et dans le
+#    résumé du travail. Zéro route ouverte est un échec, pas un succès.
+name: vérifier
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL déployée à balayer (vide = la production)"
+        required: false
+        default: "https://otto-dit-imperator080599.vercel.app"
+
+concurrency:
+  group: verifier-${{ github.event_name }}-${{ github.ref }}-${{ github.event.deployment_status.environment_url || 'x' }}
+  cancel-in-progress: false
+
+jobs:
+  local:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: chromium (tests/screens.test.ts ouvre chaque route dans un navigateur)
+        run: npx playwright install --with-deps chromium
+      - name: types
+        run: npx tsc --noEmit
+      - name: tests (PGlite, zéro réseau)
+        run: npx vitest run
+      - name: langue — 0 chaîne hors catalogue, et l'épreuve
+        run: npm run langue && npm run langue:epreuve
+      - name: lectures — 0 lecture perdue, et l'épreuve
+        run: npm run lectures && npm run lectures:epreuve
+      - name: parcours — 0 station perdue, et l'épreuve
+        run: npm run parcours && npm run parcours:epreuve
+
+  url:
+    # Vercel pousse un deployment_status par déploiement ; on ne balaye que
+    # ceux qui ont RÉUSSI. Un déploiement en échec se lit sur Vercel.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: quelle URL
+        id: cible
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          if [ -z "$URL" ]; then URL="${{ github.event.deployment_status.environment_url }}"; fi
+          if [ -z "$URL" ]; then URL="${{ github.event.deployment_status.target_url }}"; fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "environnement : ${{ github.event.deployment.environment }} · url : $URL"
+      - name: balayage de fumée contre l'URL déployée
+        run: npx tsx scripts/fumee/run.ts "${{ steps.cible.outputs.url }}" --rapport=../balayage.md --minimum=40
+      - name: rapport dans le résumé
+        if: always()
+        run: cat ../balayage.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: balayage-${{ github.run_id }}
+          path: balayage.md

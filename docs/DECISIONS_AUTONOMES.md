@@ -457,3 +457,58 @@ d'afficher une donnée — un garde qui crie faux se fait taire.
 La clé (le **premier** argument) est effacée avant lecture ; les variables qui suivent ne le
 sont pas — ce sont de vraies lectures, et c'est l'un des six cas connus mauvais du garde.
 L'instantané tombe à **1 328 chemins dans 74 écrans**, et redevient relisible.
+
+## DA-28 — Groupe 0 du mandat de nuit : la preuve se prend contre l'URL et contre la base réseau
+
+**Le fait.** La chaîne tourne sur PGlite, en local, en superutilisateur. La production tourne
+sur Postgres réseau, par un pooler de transaction, sous `postgres` — un rôle **BYPASSRLS**.
+Ce sont deux exécutions (règle 11). Trois 500 et sept libellés inversés ont coexisté avec une
+chaîne verte parce que personne ne mesurait la seconde.
+
+**Ce qui est construit, et ce que chaque pièce prouve :**
+
+1. **Le bloc d'assertions rôle / RLS**, imprimé par le build Vercel à chaque déploiement
+   (`deploy:reconstruire`), contre la base réseau : rôle servi, `rolbypassrls`, RLS et FORCE
+   par table, tables sans politique. Un défaut **arrête le déploiement**. Éprouvé contre trois
+   cas connus mauvais sur PGlite (`assertions-role.test.ts` : FORCE retiré, politique
+   supprimée, RLS désactivée). **Ce qu'il dit en toutes lettres** : le rôle qui sert
+   l'application contourne la RLS ; FORCE et les politiques sont donc inertes pour elle, et
+   éprouvées sous `otto_lecteur_demo` seulement.
+2. **FORCE ROW LEVEL SECURITY** sur toute table à politique (migration 0033) — posé avant d'en
+   dépendre. Passer l'application sous un rôle sans BYPASSRLS demande qu'elle pose le locataire
+   dans chaque transaction ; elle ne le fait pas, et c'est R9 : reporté, nommé.
+3. **Un réglage de session n'existe pas sur un pooler de transaction.** `acceptance.ts` posait
+   `otto.derive_milestone` en session par une requête et faisait l'UPDATE par une autre : sur
+   PGlite une connexion, ça tient ; en ligne, la garde peut lire une autre connexion et refuser
+   la dérivation — **par malchance, donc invisible en test et intermittent en production**.
+   Corrigé (une transaction, réglage local), et interdit à la source par
+   `pooler-compat.test.ts`, éprouvé contre le code exact qui a vécu.
+4. **`server_error`** : chaque exception de rendu est passée par `instrumentation.ts`
+   (`onRequestError`, patron documenté par Next : condition sur le runtime puis import
+   dynamique) à `erreurs-serveur.ts`, qui l'écrit clé par le digest que l'écran affiche, avec
+   route, chemin, mission, version. **Au mieux, pas garanti** : Next n'attend pas ce crochet
+   sur le chemin des erreurs de rendu ; `after()` demande à la plateforme de garder la fonction
+   vivante, et à défaut l'écriture est directe. Un digest sans ligne se lit « non résolu »,
+   jamais « jamais arrivé ». `error.tsx` montre le digest et le lien ; `global-error.tsx`
+   attrape la panne du layout racine (base injoignable) avec la langue du navigateur ;
+   `/api/erreur?digest=…` rend route et pile — ouvert sur tout déploiement Vercel (DA-10 : tout
+   déploiement EST la démo publique), à revoir avant une instance réelle.
+5. **La CI** (`.github/workflows/verifier.yml`) : la chaîne statique à chaque pousse, et le
+   balayage de fumée **contre l'URL déployée** dès que Vercel annonce un déploiement réussi
+   (`deployment_status`) — 50 motifs de route dans l'inventaire, dont au plus 48 résolubles par
+   le crawl (`exportId` et `iid` n'ont pas de lien sur les écrans) ; titre lu et publié,
+   contenu non vide, aucune page d'erreur ; moins de 40 routes ouvertes = échec du harnais. Ces
+   comptes sont **prédits** jusqu'à la première exécution en CI, qui les mesure.
+6. **`rôle de production`** (`role-production.yml`) : la suite entière contre une base réseau
+   **séparée** par le pooler, sous un rôle de CI qui a **BYPASSRLS comme `postgres` en
+   production** (l'application ne pose pas le locataire par transaction : un rôle sans
+   BYPASSRLS ne lirait ni ne sèmerait rien — R9). La suite refuse par construction une base
+   qui porte `demo_instantane`, et exige la déclaration `OTTO_CI_BASE_JETABLE=1` : elle VIDE ce
+   qu'on lui donne. **Gated sur un secret que seul le fondateur peut poser** ; sans lui, rouge
+   et le dit. Le mode réseau (`test/setup.ts`, un fichier à la fois, `DATABASE_URL` injectée
+   dans chaque processus) est **écrit sans avoir pu être exécuté**. Nommé dans la déclaration
+   de fin.
+
+**Ce que ce groupe ne fait pas** : il ne change pas le rôle qui sert l'application (R9), il
+n'exécute pas la suite réseau (secret), et il ne remplace pas `npm run clics` par une sonde HTTP
+— le parcours cliqué reste local.

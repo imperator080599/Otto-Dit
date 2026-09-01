@@ -19,6 +19,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
+import fs from 'node:fs';
 import { binaireDe, groupeDetache, tuerArbre } from '../app/scripts/lib/portable.mjs';
 import path from 'node:path';
 import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
@@ -106,6 +107,13 @@ describe('tous les écrans rendent', () => {
        se tue par `taskkill /T` (portable.mjs). */
     const next = binaireDe('next', RACINE);
     if (!next) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
+    /* UN `.next` LAISSÉ PAR UN BUILD DE PRODUCTION INTERROMPU FAIT TOMBER LE
+       SERVEUR DE DÉVELOPPEMENT — `ENOENT required-server-files.json` sur les
+       82 routes, un échec qui n'a rien à voir avec le produit (un conteneur
+       tué au milieu de `npm run visuel`, mesuré le 2026-09-01). Le balayage
+       repart d'un répertoire vide : les harnais de production reconstruisent
+       de toute façon avant de servir. */
+    fs.rmSync(path.join(RACINE, '.next'), { recursive: true, force: true });
     serveur = spawn(process.execPath, [next, 'dev', '-p', String(PORT)], {
       cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'], detached: groupeDetache(),
     });

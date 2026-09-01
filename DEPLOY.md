@@ -47,6 +47,33 @@ parle d'hôte et jamais de mot de passe.
 
 Rien d'autre à poser : sur la démo publique, le magasin de pièces bascule en base tout seul,
 et aucune clé de modèle n'est requise ni lue.
+
+### La CI, et le seul secret qu'elle demande (Groupe 0 du mandat de nuit)
+
+- **`.github/workflows/verifier.yml`** tourne seul : la chaîne statique à chaque pousse, et le
+  balayage de fumée contre l'URL déployée à chaque déploiement Vercel réussi (événement
+  `deployment_status`). Le rapport — route, statut, **titre**, verdict — est dans le résumé du
+  travail et en artefact. Aucun secret.
+- **`.github/workflows/role-production.yml`** exécute la suite entière contre une base RÉSEAU
+  par le pooler, après le bloc d'assertions rôle / RLS. Il exige **un secret** :
+  `OTTO_CI_DATABASE_URL` — l'URI du **pooler de transaction** (port 6543) d'une **base de CI
+  SÉPARÉE** : la suite VIDE toutes les tables à chaque fichier de test, et refuse par
+  construction une base qui porte le schéma `demo_instantane` (celle de la démo publique).
+  Sans le secret, le travail est **rouge et le dit** ; il ne tourne qu'à la main et chaque nuit.
+  Pour le poser : un second projet Supabase (ou une base dédiée), puis un rôle de CI qui
+  **hérite de `postgres`** — il doit migrer, tronquer et remettre les séquences à zéro :
+  `create role otto_ci login password '…' bypassrls; grant postgres to otto_ci;` — et l'URI du
+  pooler avec `otto_ci.<ref-du-projet>` comme utilisateur [UNVERIFIED : le format
+  `rôle.<ref>` au pooler n'a été vu que pour `postgres`], collée dans GitHub → Settings →
+  Secrets → Actions. **Ce rôle a BYPASSRLS, comme `postgres` qui sert la production** : ce
+  n'est pas un choix, c'est l'état de l'application — elle ne pose pas le locataire par
+  transaction, donc un rôle sans BYPASSRLS ne pourrait ni lire ni semer (R9,
+  `docs/BACKLOG_REPORTE.md`). Le bloc d'assertions l'imprime tel quel au lieu d'afficher
+  une RLS « forcée » qui ne s'appliquerait pas. **Ce travail n'a jamais tourné** : écrit sans
+  route réseau vers un pooler ; sa première exécution avec le secret est sa première épreuve.
+- **Le bloc d'assertions est aussi imprimé par chaque build Vercel**, avant le semis : rôle
+  servi, `rolbypassrls`, RLS et FORCE par table, tables sans politique. Un défaut arrête le
+  déploiement.
 - Couverture RLS : 0029 couvre TOUTES les tables (la dérive depuis 0004 est comblée), et
   `rls-couverture.test.ts` échoue si une table future arrive sans politique.
 

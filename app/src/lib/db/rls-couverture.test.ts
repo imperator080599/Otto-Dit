@@ -1,23 +1,17 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q } from '@/lib/db/client';
+import { PROPRIETAIRE_SEUL } from './assertions-role';
 
 // LA COUVERTURE RLS NE DOIT PLUS POUVOIR DÉRIVER (ADR-109). 0004 avait posé
 // le filet, puis 46 tables sont arrivées sans politique — invisible en local
 // (le propriétaire contourne RLS), réel sur une base hébergée. Ce test
 // échoue le jour où une table future arrive sans politique : l'oubli
 // redevient un test rouge, pas un trou silencieux.
-
-/** Tables d'infrastructure sans périmètre métier : RLS activée, AUCUNE
- *  politique — seul le propriétaire (l'application) les lit. Toute addition
- *  ici se justifie par écrit, pas par commodité. */
-const PROPRIETAIRE_SEUL = new Set([
-  '_migrations',   // registre des migrations — aucun contenu métier
-  'app_state',     // préférences locales d'affichage
-  'blob_store',    // octets adressés par contenu, servis uniquement par l'app
-  'itgc_area',     // référentiel ITGC non rattaché à une mission
-  'notification',  // file technique de notifications
-]);
+//
+// La liste propriétaire-seul vit dans `assertions-role.ts` : c'est le MÊME
+// ensemble que le bloc d'assertions imprimé au build contre la base réseau,
+// pour qu'une justification ne puisse pas exister ici et manquer là.
 
 describe('couverture RLS (ADR-109)', () => {
   beforeAll(async () => {
@@ -40,6 +34,13 @@ describe('couverture RLS (ADR-109)', () => {
       .map((t) => t.tablename)
       .filter((t) => !avec.has(t) && !PROPRIETAIRE_SEUL.has(t));
     expect(trous, 'tables sans politique RLS ni justification — en ajouter une dans la MIGRATION, pas dans la liste').toEqual([]);
+  });
+
+  it('chaque table à politique a sa RLS FORCÉE — le propriétaire ne la contourne plus (0033)', async () => {
+    const molles = await q<{ relname: string }>(
+      `select distinct c.relname from pg_class c join pg_policy p on p.polrelid = c.oid
+       where c.relnamespace = 'public'::regnamespace and not c.relforcerowsecurity order by 1`);
+    expect(molles.map((r) => r.relname)).toEqual([]);
   });
 
   it('la liste propriétaire-seul ne porte que des tables qui existent — pas de justification fantôme', async () => {

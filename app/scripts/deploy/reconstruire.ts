@@ -92,6 +92,24 @@ async function main() {
     console.log(`instantané du monde conservé (pris le ${avant.prisLe ?? '—'})`);
   }
 
+  /* LE BLOC D'ASSERTIONS RÔLE / RLS — CONTRE LA BASE RÉSEAU, À CHAQUE BUILD
+     (Groupe 0 du mandat de nuit, item 106). Qui sert l'application, si ce
+     rôle contourne la RLS, quelles tables sont couvertes et FORCÉES, et
+     lesquelles n'ont aucune politique. Un défaut ARRÊTE le déploiement : une
+     table à locataire sans politique en ligne est exactement ce que la chaîne
+     locale — superutilisateur sur PGlite — ne peut pas voir. */
+  {
+    const { etatRole, tablesRls, verdictRls, bloc } = await import('../../src/lib/db/assertions-role');
+    const role = await etatRole(db);
+    const tables = await tablesRls(db);
+    const defauts = verdictRls(tables);
+    for (const l of bloc(role, tables, defauts)) console.log(l);
+    if (defauts.length) {
+      console.error(`deploy:reconstruire : ${defauts.length} défaut(s) de couverture RLS sur la base réseau — le déploiement s'arrête.`);
+      process.exit(1);
+    }
+  }
+
   /* LA TENTATIVE DE FUITE, SUR LE VRAI POSTGRES, À CHAQUE DÉPLOIEMENT.
      Localement, RLS est inerte (le propriétaire la contourne) : la seule
      preuve qui compte se prend ici. Un rôle NON propriétaire, avec SELECT

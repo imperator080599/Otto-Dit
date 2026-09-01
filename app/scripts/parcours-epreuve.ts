@@ -152,9 +152,15 @@ if (figeReel.conduites.length === 0) {
     echecs += 1;
   }
   /* Et le cas symétrique : rien retiré, rien dénoncé — une garde qui crie
-     toujours ne vaut pas mieux qu'une garde muette. */
-  if (jamaisAtteintes(figeReel.conduites, conduites).length !== 0) {
-    console.error('  ÉCHEC  la garde d’exécution crie sur un parcours COMPLET');
+     toujours ne vaut pas mieux qu'une garde muette. SUR LES STATIONS
+     LITTÉRALES : le `nom` d'une station construite est une EXPRESSION, pas un
+     nom conduit — la lui redonner comme si elle avait été conduite ne teste
+     rien (et l'expression ne se reconnaît pas elle-même). Les stations
+     construites sont éprouvées par le parcours réel, qui les atteint. */
+  const litterales = figeReel.conduites.filter((x) => !x.gabarit);
+  const crie = jamaisAtteintes(litterales, litterales.map((x) => x.nom));
+  if (crie.length !== 0) {
+    console.error(`  ÉCHEC  la garde d’exécution crie sur un parcours COMPLET : ${crie.map((x) => x.nom).join(' · ')}`);
     echecs += 1;
   }
 }

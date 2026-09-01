@@ -1,0 +1,64 @@
+# LA SUITE SOUS LE RÔLE DE PRODUCTION, PAR LE POOLER (Groupe 0, item 106,
+# première moitié).
+#
+# La chaîne tourne sur PGlite en local ; la production tourne sur Postgres
+# réseau, par un pooler de transaction, sous le rôle que DATABASE_URL désigne.
+# Ce travail exécute la MÊME suite contre la base réseau, et imprime d'abord le
+# bloc d'assertions : rôle servi, rolbypassrls, RLS et FORCE par table.
+#
+# IL EXIGE UN SECRET — OTTO_CI_DATABASE_URL, l'URI du pooler de transaction
+# d'une base de CI SÉPARÉE (jamais celle de la démo publique : la suite la
+# VIDE à chaque fichier), sous un rôle de CI (DEPLOY.md §0). Sans lui, ce
+# travail ÉCHOUE en le disant : un vert sans exécution serait le silence lu
+# comme un succès. C'est pourquoi il ne tourne pas à chaque pousse : à la
+# main, et chaque nuit.
+#
+# CE QU'IL NE PROUVE PAS, dit ici : le rôle de CI a BYPASSRLS, comme le rôle
+# qui sert la production — l'application ne pose pas encore le locataire par
+# transaction, donc un rôle sans BYPASSRLS ne pourrait rien lire ni semer
+# (docs/BACKLOG_REPORTE.md, R9). Le bloc d'assertions l'imprime tel quel.
+#
+# CE TRAVAIL N'A JAMAIS TOURNÉ : écrit sans route réseau vers un pooler. Sa
+# première exécution avec le secret posé est sa première épreuve.
+name: rôle de production
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+jobs:
+  suite-reseau:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: app
+    env:
+      OTTO_CI_DATABASE_URL: ${{ secrets.OTTO_CI_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: chromium (la suite ouvre chaque route dans un navigateur)
+        run: npx playwright install --with-deps chromium
+      - name: le secret est-il posé ?
+        run: |
+          if [ -z "$OTTO_CI_DATABASE_URL" ]; then
+            echo "::error::OTTO_CI_DATABASE_URL est ABSENT — la suite n'a PAS tourné contre la base réseau. Posez le secret (DEPLOY.md §0 : base de CI SÉPARÉE + rôle de CI + pooler de transaction) ; ce travail restera rouge tant qu'il manque, parce qu'un vert sans exécution ne prouverait rien."
+            exit 1
+          fi
+      - name: migration de la base de CI, puis bloc d'assertions rôle / RLS
+        run: npx tsx scripts/db/assertions.ts
+        env:
+          OTTO_CI_BASE_JETABLE: "1"
+      - name: la suite entière, contre la base réseau par le pooler
+        run: npx vitest run
+        env:
+          OTTO_CI_BASE_JETABLE: "1"

@@ -32,7 +32,7 @@ const ERREURS: RegExp[] = [
   /Digest:\s*\d+/,
 ];
 
-interface Resultat { route: string; url: string; statut: number; verdict: 'ok' | 'ÉCHEC'; detail: string }
+interface Resultat { route: string; url: string; statut: number; verdict: 'ok' | 'ÉCHEC'; detail: string; titre?: string }
 
 function lancerServeur(port: number): ChildProcess {
   const next = binaireDe('next', process.cwd());
@@ -74,6 +74,12 @@ async function main() {
   const args = process.argv.slice(2).filter((a) => a !== '--');
   const urlArg = args.find((a) => a.startsWith('http'));
   const commeArg = args.find((a) => a.startsWith('--comme='))?.slice('--comme='.length) ?? null;
+  /* --rapport=<fichier> écrit le tableau (route, statut, TITRE, verdict) en
+     Markdown — ce que la CI publie dans son résumé ; --minimum=<n> refuse un
+     balayage qui aurait ouvert moins de n routes : un inventaire qui rétrécit
+     en silence est le défaut que ce harnais existe pour attraper. */
+  const rapportArg = args.find((a) => a.startsWith('--rapport='))?.slice('--rapport='.length) ?? null;
+  const minimum = Number(args.find((a) => a.startsWith('--minimum='))?.slice('--minimum='.length) ?? '0');
 
   let serveur: ChildProcess | null = null;
   let base = urlArg ?? '';
@@ -162,26 +168,71 @@ async function main() {
       if (manquants.length) { nonResolues.push(`${pattern} (${manquants.join(', ')})`); continue; }
       const { statut, corps } = await lire(base, chemin, comme);
       const erreur = ERREURS.find((e) => e.test(corps));
-      const titre = /<h1|<h2/.test(corps);
+      const entete = /<h1|<h2/.test(corps);
+      /* LE TITRE DE LA PAGE est lu et rapporté : « 24/24 en vert avec les
+         titres » (Groupe 0, item 106). Le gabarit 404 de Next porte son propre
+         titre ; le rencontrer sur une page attendue en 200 est un échec. */
+      const titre = corps.match(/<title>([^<]*)<\/title>/)?.[1]?.trim() ?? '';
+      const titre404 = /^404: /.test(titre);
+      /* UN 200 VIDE N'EST PAS UN ÉCRAN : on exige que le corps, balises ôtées,
+         porte assez de texte pour être lu par un humain. */
+      const texte = corps.replace(/<(script|style|noscript)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       const attendu = pattern === '/api/archive/[engagementId]' ? [200, 404] : [200];
       let verdict: 'ok' | 'ÉCHEC' = 'ok';
       let detail = `${(corps.length / 1024).toFixed(0)} ko`;
       if (!attendu.includes(statut)) { verdict = 'ÉCHEC'; detail = `statut ${statut} (attendu ${attendu.join(' ou ')})`; }
       else if (erreur) { verdict = 'ÉCHEC'; detail = `page d'erreur (${erreur.source})`; }
-      else if (kind === 'page' && !titre) { verdict = 'ÉCHEC'; detail = '200 sans titre — un écran qui ne rend rien n\'est pas un écran'; }
-      resultats.push({ route: pattern, url: chemin, statut, verdict, detail });
+      else if (kind === 'page' && !titre) { verdict = 'ÉCHEC'; detail = '200 sans <title> — un écran sans titre n\'est pas un écran'; }
+      else if (kind === 'page' && titre404) { verdict = 'ÉCHEC'; detail = `200 avec le titre du gabarit 404 (« ${titre} »)`; }
+      else if (kind === 'page' && !entete) { verdict = 'ÉCHEC'; detail = '200 sans en-tête — un écran qui ne rend rien n\'est pas un écran'; }
+      else if (kind === 'page' && texte.length < 200) { verdict = 'ÉCHEC'; detail = `200 quasi vide (${texte.length} caractères de texte)`; }
+      resultats.push({ route: pattern, url: chemin, statut, verdict, detail, titre });
     }
 
     const echecs = resultats.filter((r) => r.verdict === 'ÉCHEC');
-    for (const r of echecs) console.log(`  ÉCHEC  ${r.route}\n         ${r.detail}`);
+    for (const r of resultats) {
+      if (r.verdict === 'ÉCHEC') console.log(`  ÉCHEC  ${r.route}\n         ${r.detail}`);
+      else console.log(`  ok     ${r.route.padEnd(40)} ${r.statut}  ${r.titre ? `« ${r.titre.slice(0, 60)} »` : ''}`);
+    }
     if (nonResolues.length) {
       console.log(`\n  non résolues (aucun objet de ce type sur l'instance) : ${nonResolues.join(' · ')}`);
     }
+    /* UN INVENTAIRE QUI RÉTRÉCIT EN SILENCE : moins de routes qu'exigé est un
+       échec du HARNAIS, pas un succès plus court. */
+    const tropPeu = minimum > 0 && resultats.length < minimum;
+    if (tropPeu) console.log(`\n  ÉCHEC  seulement ${resultats.length} route(s) ouverte(s) — ${minimum} exigées`);
     console.log(`\n${resultats.length} route(s) ouvertes sur ${base} · ${echecs.length} échec(s)\n`);
-    if (echecs.length) process.exit(1);
+    if (rapportArg) {
+      const md = [
+        `# Balayage de fumée — ${base}`, '',
+        `${resultats.length} route(s) ouvertes · **${echecs.length} échec(s)**`
+          + (tropPeu ? ` · **inventaire trop court : ${resultats.length} < ${minimum}**` : '')
+          + ` · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`, '',
+        '| route | statut | titre | verdict |', '|---|---|---|---|',
+        ...resultats.map((r) => `| \`${r.route}\` | ${r.statut} | ${r.titre ? r.titre.replace(/\|/g, '¦').slice(0, 70) : '—'} | ${r.verdict === 'ok' ? 'ok' : `**ÉCHEC** — ${r.detail}`} |`),
+        ...(nonResolues.length ? ['', `Non résolues (aucun objet de ce type sur l'instance) : ${nonResolues.join(' · ')}`] : []),
+        '',
+      ].join('\n');
+      const fs = await import('node:fs');
+      fs.writeFileSync(rapportArg, md, 'utf8');
+      console.log(`rapport écrit : ${rapportArg}`);
+    }
+    if (echecs.length || tropPeu) process.exit(1);
   } finally {
     if (serveur?.pid) tuerArbre(serveur.pid);
   }
 }
 
-main().catch((e) => { console.error(`\nfumée : ${e instanceof Error ? e.message : e}\n`); process.exit(1); });
+main().catch(async (e) => {
+  const message = e instanceof Error ? e.message : String(e);
+  console.error(`\nfumée : ${message}\n`);
+  /* LE RAPPORT EXISTE MÊME QUAND LA SONDE TOMBE AVANT D'OUVRIR QUOI QUE CE
+     SOIT : sinon le résumé de la CI est vide, et un résumé vide se lit comme
+     « rien à signaler ». */
+  const rapport = process.argv.find((a) => a.startsWith('--rapport='))?.slice('--rapport='.length);
+  if (rapport) {
+    const fs = await import('node:fs');
+    fs.writeFileSync(rapport, `# Balayage de fumée — INTERROMPU\n\n**Aucune route ouverte.** ${message}\n`, 'utf8');
+  }
+  process.exit(1);
+});

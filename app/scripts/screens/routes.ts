@@ -155,7 +155,7 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
        un 200 inattendu échouerait (c'est le but). */
     const publique = process.env.OTTO_DEMO_PUBLIC === '1' || process.env.VERCEL === '1';
     const lienDemo = (pattern === '/demo/[qui]' || pattern === '/api/sante'
-      || pattern === '/demo/remise-a-zero') && !publique;
+      || pattern === '/api/erreur' || pattern === '/demo/remise-a-zero') && !publique;
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie

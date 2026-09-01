@@ -272,8 +272,8 @@ export async function freshMemoryDb(): Promise<PGlite> {
 }
 
 /** Test helper: point the singleton at a given PGlite instance. */
-export function _setDbForTests(db: PGlite): void {
+export function _setDbForTests(db: PGlite | OttoDb): void {
   g.__ottoDb = db as unknown as OttoDb;
   g.__ottoDbReady = Promise.resolve(db as unknown as OttoDb);
-  g.__ottoDbKind = 'pglite';
+  g.__ottoDbKind = db instanceof PGlite ? 'pglite' : 'pg';
 }

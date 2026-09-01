@@ -116,7 +116,7 @@ export function chaines(code: string): { chaines: string[]; texte: string[]; ref
 }
 
 const CODE = /=>|===|!==|&&|\|\||;|\?\s*\w*\(|\bcatch\s*\(|\b(await|const|let|return|function|async|Promise|FormData|null|undefined|typeof|import|export|useState|type|select|from|where|order by|join)\b/;
-const CSS = /(\b(px|rem|em|solid|dashed|flex|grid|nowrap|pre-wrap|space-between|inline-block)\b|var\(--|#[0-9a-f]{3,6}\b|^\d+(\.\d+)?(px|%|rem)$)/i;
+const CSS = /(\b(px|rem|em|solid|dashed|flex|grid|nowrap|pre-wrap|space-between|inline-block|system-ui|sans-serif|monospace)\b|var\(--|#[0-9a-f]{3,6}\b|^\d+(\.\d+)?(px|%|rem)$)/i;
 const SUFFIXES_CHAMP = new Set(['Cents', 'Id', 'At', 'By']);
 const RESTES_DE_CODE = new Set(['else', 'return', 'try', 'catch']);
 const TOUCHES = new Set(['Escape', 'Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',

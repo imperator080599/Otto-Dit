@@ -1,4 +1,4 @@
-import { q, q1, q01 } from '@/lib/db/client';
+import { q, q1, q01, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { criteres } from '@/lib/methodology/catalogue';
@@ -326,23 +326,25 @@ export async function recalculerDerives(engagementId: string): Promise<void> {
     if (!source?.due_date) continue;   // rien à calculer tant que la source n'est pas posée
 
     const deadlines = await fileDeadlines(engagementId, source.due_date);
-    /* LE DRAPEAU EST DE SESSION, PAS DE TRANSACTION. La première version le
-       posait en local (`true`) : chaque requête ouvrant sa propre transaction
-       implicite, il avait disparu avant que l'UPDATE ne déclenche la garde, et
-       le peuplement refusait sa propre dérivation. Le `finally` le remet à
-       zéro même si la mise à jour échoue — sans quoi une erreur laisserait la
-       garde ouverte pour la suite de la session. */
-    await q(`select set_config('otto.derive_milestone', 'on', false)`);
-    try {
-      await q(
+    /* LE DRAPEAU ET LA MISE À JOUR DANS UNE SEULE TRANSACTION, RÉGLAGE LOCAL.
+       La version précédente posait le drapeau EN SESSION (`false`) par une
+       requête, puis faisait l'UPDATE par une autre. Sur PGlite — une seule
+       connexion — ça tient. Sur le POOLER DE TRANSACTION de la production,
+       chaque requête hors transaction peut partir sur une connexion
+       différente : le drapeau est posé sur l'une, la garde lit l'autre, et
+       la dérivation est refusée — en ligne seulement, et seulement quand une
+       autre connexion est libre, c'est-à-dire par malchance. Un `set_config`
+       de session sur un pooler de transaction est interdit par
+       `pooler-compat.test.ts` depuis cette correction (Groupe 0, item 106). */
+    await tx(async (run) => {
+      await run(`select set_config('otto.derive_milestone', 'on', true)`);
+      await run(
         `update engagement_milestone set due_date = $3, basis = $4
          where engagement_id = $1 and code = $2`,
         [engagementId, j.code, deadlines.completionDue,
          `${d.calcul} — ${deadlines.completion.days} jours${deadlines.anyUnverified ? ' [UNVERIFIED]' : ''}`],
       );
-    } finally {
-      await q(`select set_config('otto.derive_milestone', 'off', false)`);
-    }
+    });
   }
 }
 
