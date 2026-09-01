@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useT } from '@/lib/i18n/client';
 
 // Le formulaire d'import, côté client — et il l'est pour UNE raison.
 //
@@ -32,6 +33,7 @@ export function ImportForm({
   /** Le fichier édité, ou « * » pour le paquet entier. */
   fichier: string;
 }) {
+  const t = useT();
   const [etat, envoyer, enCours] = useActionState(action, VIDE);
   const [texte, setTexte] = useState(gabarit);
   const seul = fichier !== '*';
@@ -39,17 +41,16 @@ export function ImportForm({
     <form action={envoyer}>
       <input type="hidden" name="fichier" value={fichier} />
       <p>
-        <label className="faint">Nom de la version</label>
+        <label className="faint">{t('imp.nomVersion')}</label>
         <br />
-        <input name="label" defaultValue="Méthode du cabinet — millésime 2026" style={{ width: '100%', maxWidth: 480 }} />
+        <input name="label" defaultValue={t('imp.millesime')} style={{ width: '100%', maxWidth: 480 }} />
       </p>
       <p>
         <label className="faint">
           {seul
-            ? <>Correctif — pré-rempli avec <span className="mono">{fichier}</span>. Ajoutez d’autres
-              clés si la modification en demande plusieurs. Fichiers reconnus :{' '}
+            ? <>{t('imp.correctifPrerempli')} <span className="mono">{fichier}</span>. {t('imp.ajoutezDautresCles')}{' '}
               <span className="mono">{attendus.join(', ')}</span></>
-            : <>Le paquet entier : un objet portant les {attendus.length} fichiers —{' '}
+            : <>{t('imp.paquetEntier', { n: attendus.length })}{' '}
               <span className="mono">{attendus.join(', ')}</span></>}
         </label>
         <br />
@@ -65,31 +66,27 @@ export function ImportForm({
       </p>
       <p className="row" style={{ gap: 8 }}>
         <button className="btn secondary" name="intention" value="verifier" disabled={enCours}>
-          Vérifier sans publier
+          {t('imp.verifierSansPublier')}
         </button>
         {texte !== gabarit && (
           <button type="button" className="btn secondary" onClick={() => setTexte(gabarit)} disabled={enCours}>
-            Revenir à la version en vigueur
+            {t('imp.revenirVersionEnVigueur')}
           </button>
         )}
         <button className="btn" name="intention" value="publier" disabled={enCours}>
-          Publier pour mon cabinet
+          {t('imp.publierPourMonCabinet')}
         </button>
       </p>
 
       {etat.erreurs.length > 0 && (
         <div className="panel" style={{ borderColor: 'var(--amber)' }}>
           <p>
-            <span className="badge amber">refusé</span>{' '}
-            <strong>{etat.erreurs.length} erreur(s)</strong> — rien n’a été écrit.
+            <span className="badge amber">{t('commun.refuse')}</span>{' '}
+            <strong>{t('imp.nErreurs', { n: etat.erreurs.length })}</strong> {t('imp.rienEcrit')}
           </p>
           <ul className="mono" style={{ fontSize: 12 }}>
             {etat.erreurs.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
-          <p className="faint">
-            C’est la liste exacte que le moteur produirait au chargement : l’écran ne re-dérive
-            rien, sinon il pourrait dire « valide » là où la publication refuse.
-          </p>
         </div>
       )}
 

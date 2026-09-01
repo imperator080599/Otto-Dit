@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { missionPrecedente, reprises, obstaclesReprise } from '@/lib/services/carryforward';
 import { proposerAction, deciderAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // LA REPRISE DU DOSSIER N-1 (point 2).
 //
@@ -26,6 +28,7 @@ export default async function CarryForwardPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const { erreur } = await searchParams;
 
@@ -36,14 +39,10 @@ export default async function CarryForwardPage({
 
   return (
     <div className="stack">
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>Reprise de l’exercice précédent</h2>
+        <h2>{t('cf.carryForwardFromThePriorYear')}</h2>
         {!prev ? (
           /* DIRE CE QU'ON A CHERCHÉ, pas seulement qu'on n'a rien trouvé. Le
              message annonçait « aucune mission sur l'exercice précédent pour
@@ -51,34 +50,19 @@ export default async function CarryForwardPage({
              la mission : sur un dossier intégré dont le N-1 était un audit
              légal, il affirmait faux. Un écran qui affirme plus que ce qu'il a
              vérifié se fait croire une fois, puis plus jamais. */
-          <p className="faint">
-            Rien à reprendre : aucune mission <strong>de même nature</strong> sur l’exercice
-            précédent de cette entité — la recherche suit le chaînage des exercices, pas les
-            dates. <strong>Une première année se planifie, elle ne se reprend pas</strong> ; et
-            un dossier d’une autre nature ne se reprend pas non plus, ses conclusions ne
-            portent pas sur le même travail.
-          </p>
+          <p className="faint">{t('cf.rienAReprendre')}</p>
         ) : (
           <>
-            <p className="faint">
-              Source : <Link href={`/eng/${prev.id}`}>{prev.name}</Link>. On ne reprend pas des
-              chiffres, on reprend des <strong>conclusions</strong> — et une conclusion se
-              reconfirme ou s’écarte, elle ne se recopie pas.
-            </p>
             {liste.length === 0 ? (
               <form action={proposerAction}>
                 <input type="hidden" name="engagement_id" value={id} />
-                <button className="btn">Proposer la reprise</button>
-                <p className="faint mt">
-                  Rien ne sera appliqué : chaque élément arrivera <strong>proposé</strong>, et tant
-                  qu’il n’est pas statué il <strong>bloque le visa</strong>.
-                </p>
+                <button className="btn">{t('cf.proposeTheCarryForward')}</button>
               </form>
             ) : (
               <p>
                 {enAttente.length > 0
-                  ? <span className="badge amber">{enAttente.length} proposition(s) non statuée(s) — le visa est bloqué</span>
-                  : <span className="badge green">toutes les propositions sont statuées</span>}
+                  ? <span className="badge amber">{enAttente.length} {t('cf.proposalSNotDecidedSignOff')}</span>
+                  : <span className="badge green">{t('cf.everyProposalIsDecided')}</span>}
               </p>
             )}
           </>
@@ -89,7 +73,7 @@ export default async function CarryForwardPage({
         <div className="panel">
           <table className="data">
             <thead>
-              <tr><th>Nature</th><th>Ce que N-1 propose</th><th>Décision</th></tr>
+              <tr><th>Nature</th><th>{t('cf.whatThePriorYearProposes')}</th><th>{t('cf.decision')}</th></tr>
             </thead>
             <tbody>
               {liste.map((r) => (
@@ -109,9 +93,9 @@ export default async function CarryForwardPage({
                       <form action={deciderAction} className="row" style={{ gap: 4 }}>
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="reprise_id" value={r.id} />
-                        <input name="reason" placeholder="motif (obligatoire pour écarter)" style={{ width: 200 }} />
+                        <input name="reason" placeholder={t('cf.reasonRequiredToRuleOut')} style={{ width: 200 }} />
                         <button className="btn secondary small" name="status" value="reconfirmed">Reconfirmer</button>
-                        <button className="btn secondary small" name="status" value="dismissed">Écarter</button>
+                        <button className="btn secondary small" name="status" value="dismissed">{t('cf.ruleOut')}</button>
                       </form>
                     ) : (
                       <span className={`badge ${r.status === 'reconfirmed' ? 'green' : 'gray'}`}>
@@ -123,17 +107,12 @@ export default async function CarryForwardPage({
               ))}
             </tbody>
           </table>
-          <p className="faint">
-            <strong>Reconfirmer</strong> ne demande pas de motif — reconfirmer, c’est dire « j’ai
-            regardé et c’est toujours vrai ». <strong>Écarter</strong> en exige un : sans motif, un
-            écart est indistinguable d’un oubli.
-          </p>
         </div>
       )}
 
       {obstacles.length > 0 && (
         <div className="panel warn">
-          <h2>Obstacles au visa — reprise</h2>
+          <h2>{t('cf.blockersToSignOffCarryForward')}</h2>
           <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
         </div>
       )}

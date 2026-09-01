@@ -15,11 +15,6 @@ export default async function RequestsPage({ params }: { params: Promise<{ id: s
   return (
     <div className="panel">
       <h2>Client requests (PBC)</h2>
-      <p className="faint">
-        Per-tested-unit items are generated from the sample; standing items exist at
-        procedure level (Gate 2). Sending is an L2 gate. Reminders follow the pack cadence
-        (due +3 days, then weekly), visible and pausable.
-      </p>
       <table className="data">
         <thead>
           <tr><th>#</th><th>Title</th><th>Status</th><th>Items</th><th>Due</th><th>Reminders sent</th></tr>

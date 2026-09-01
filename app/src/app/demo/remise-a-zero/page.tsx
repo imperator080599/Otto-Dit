@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/core/auth';
 import { comparaison, etatInstantane } from '@/lib/services/monde-demo';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { remettreAZeroAction } from './actions';
+import { tr } from '@/lib/i18n';
 
 // L'ÉCRAN DE CONFIRMATION DE LA REMISE À ZÉRO.
 //
@@ -22,6 +23,7 @@ export default async function RemiseAZero({
   if (!demoPublique()) notFound();
   await requireUser();
   const { erreur } = await searchParams;
+  const t = await tr();
   const etat = await etatInstantane();
   const lignes = await comparaison();
   const fr = (iso: string | null) =>
@@ -29,20 +31,19 @@ export default async function RemiseAZero({
 
   return (
     <div className="shell" style={{ maxWidth: 720 }}>
-      <div className="faint"><Link href="/">Missions</Link> / Remise à zéro</div>
-      <h1>Remettre le monde de démonstration à zéro</h1>
+      <div className="faint"><Link href="/">Missions</Link> {t('raz.reset')}</div>
+      <h1>{t('raz.resetTheDemonstrationWorld')}</h1>
 
       <BandeauRefus erreur={erreur} />
 
       <div className="panel">
         <p>
-          Le monde revient exactement à l’état du dernier déploiement, pris le{' '}
-          <strong>{fr(etat.prisLe)}</strong>. Tout ce qui a été fait depuis est effacé :
-          missions rouvertes, pièces déposées, notes posées, visas, écarts, dossiers scellés.
+          {t('raz.theWorldReturnsExactlyToThe')}{' '}
+          <strong>{fr(etat.prisLe)}</strong>{t('raz.everythingDoneSinceIsErasedEngagements')}
         </p>
         <table className="data">
           <thead>
-            <tr><th>Ce qu’il y a</th><th className="num">aujourd’hui</th><th className="num">après</th></tr>
+            <tr><th>{t('raz.whatThereIs')}</th><th className="num">aujourd’hui</th><th className="num">{t('raz.after')}</th></tr>
           </thead>
           <tbody>
             {lignes.map((l) => (
@@ -64,7 +65,7 @@ export default async function RemiseAZero({
 
         {etat.aJour ? (
           <form action={remettreAZeroAction} className="mt">
-            <button className="btn danger">Effacer et restaurer l’instantané</button>
+            <button className="btn danger">{t('raz.eraseAndRestoreTheSnapshot')}</button>
             <Link href="/" className="btn secondary" style={{ marginLeft: 8 }}>Annuler</Link>
           </form>
         ) : (

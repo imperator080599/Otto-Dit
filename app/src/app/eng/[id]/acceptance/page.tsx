@@ -5,6 +5,8 @@ import {
   currentAcceptation, manquePourDecider, jalons, jalonsEnRetard,
 } from '@/lib/services/acceptance';
 import { ouvrirAction, repondreAction, deciderAction, jalonAction, jalonFaitAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // ACCEPTATION, MAINTIEN ET JALONS — le premier bout de l'arc (point 1).
 //
@@ -27,6 +29,7 @@ export default async function AcceptancePage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const { erreur } = await searchParams;
 
@@ -39,28 +42,23 @@ export default async function AcceptancePage({
 
   return (
     <div className="stack">
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-          <p className="faint">Rien n’a été enregistré. Le refus vient du service, pas de l’écran.</p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>Acceptation et maintien de la mission</h2>
+        <h2>{t('acc.acceptanceAndContinuance')}</h2>
 
         {!a ? (
           <form action={ouvrirAction}>
             <input type="hidden" name="engagement_id" value={id} />
-            <button className="btn">Ouvrir la décision</button>
+            <button className="btn">{t('acc.openTheDecision')}</button>
           </form>
         ) : (
           <>
             <p>
               <span className="badge blue">{a.kind}</span>{' '}
-              {a.status === 'open' && <span className="badge amber">à décider</span>}
-              {a.status === 'accepted' && <span className="badge green">acceptée</span>}
-              {a.status === 'declined' && <span className="badge amber">refusée</span>}
+              {a.status === 'open' && <span className="badge amber">{t('acc.toDecide')}</span>}
+              {a.status === 'accepted' && <span className="badge green">{t('acc.accepted')}</span>}
+              {a.status === 'declined' && <span className="badge amber">{t('acc.declined')}</span>}
               {a.decided_at && <> le {fr(a.decided_at)}</>}
             </p>
             {a.decision_reason && (
@@ -69,7 +67,7 @@ export default async function AcceptancePage({
 
             <table className="data">
               <thead>
-                <tr><th>Critère</th><th>Réponse</th><th>Précision</th></tr>
+                <tr><th>{t('acc.criterion')}</th><th>{t('acc.answer')}</th><th>{t('acc.detail')}</th></tr>
               </thead>
               <tbody>
                 {criteres(cat, a.kind).map((c) => {
@@ -97,8 +95,8 @@ export default async function AcceptancePage({
                             <input type="hidden" name="engagement_id" value={id} />
                             <input type="hidden" name="code" value={c.code} />
                             <select name="answer" defaultValue={r?.answer ?? ''}>
-                              <option value="oui">oui</option>
-                              <option value="non">non</option>
+                              <option value="oui">{t('commun.oui')}</option>
+                              <option value="non">{t('commun.non')}</option>
                             </select>
                             <input
                               name="detail"
@@ -121,23 +119,18 @@ export default async function AcceptancePage({
               <>
                 {manque.length > 0 && (
                   <div className="panel warn" style={{ marginTop: 12 }}>
-                    <p><strong>Ce qui manque pour décider</strong></p>
+                    <p><strong>{t('acc.whatIsMissingBeforeDeciding')}</strong></p>
                     <ul>{manque.map((m) => <li key={m.code}>{m.libelle} — {m.raison}</li>)}</ul>
                   </div>
                 )}
                 <form action={deciderAction} className="mt">
                   <input type="hidden" name="engagement_id" value={id} />
                   <p>
-                    <input name="reason" placeholder="motif de la décision (obligatoire)" style={{ width: '100%', maxWidth: 620 }} />
+                    <input name="reason" placeholder={t('acc.reasonForTheDecisionRequired')} style={{ width: '100%', maxWidth: 620 }} />
                   </p>
                   <p className="row" style={{ gap: 8 }}>
-                    <button className="btn" name="status" value="accepted">Accepter la mission</button>
-                    <button className="btn secondary" name="status" value="declined">Refuser la mission</button>
-                  </p>
-                  <p className="faint">
-                    Le motif est exigé <strong>dans les deux sens</strong> : accepter sans motif ne se
-                    relit pas plus que refuser sans motif. C’est la pièce qu’un inspecteur demande en
-                    premier quand un dossier tourne mal.
+                    <button className="btn" name="status" value="accepted">{t('acc.acceptTheEngagement')}</button>
+                    <button className="btn secondary" name="status" value="declined">{t('acc.declineTheEngagement')}</button>
                   </p>
                 </form>
               </>
@@ -153,25 +146,25 @@ export default async function AcceptancePage({
           ici, et l'obstacle « jalons » y mène toujours. */}
       {liste.length > 0 && (
         <details className="panel repli-action">
-          <summary>Jalons de la mission{retard.length > 0 ? ` — ${retard.length} échu(s)` : ''}</summary>
+          <summary>{t('acc.engagementMilestones')}{retard.length > 0 ? ` — ${retard.length} échu(s)` : ''}</summary>
           {retard.length > 0 && (
-            <p><span className="badge amber">{retard.length} jalon(s) échu(s) et non faits</span></p>
+            <p><span className="badge amber">{retard.length} {t('acc.milestoneSOverdueAndNotDone')}</span></p>
           )}
           <table className="data">
-            <thead><tr><th>Jalon</th><th>Échéance</th><th>Poser</th><th>Fait</th></tr></thead>
+            <thead><tr><th>Jalon</th><th>{t('acc.due')}</th><th>Poser</th><th>{t('acc.done')}</th></tr></thead>
             <tbody>
               {liste.map((j) => (
                 <tr key={j.code} className={retard.some((r) => r.code === j.code) ? 'warn' : undefined}>
                   <td>
                     {j.label}
-                    {j.derived && <> <span className="badge violet">dérivé</span></>}
+                    {j.derived && <> <span className="badge violet">{t('acc.derived')}</span></>}
                     {j.basis && <div className="faint" style={{ fontSize: 11 }}>{j.basis}</div>}
                   </td>
                   <td>{fr(j.due_date) || <span className="faint">—</span>}</td>
                   <td>
                     {j.derived ? (
                       <span className="faint" style={{ fontSize: 11 }}>
-                        calculé par la règle du référentiel — ne se saisit pas
+                        {t('acc.computedByTheFrameworkRuleNot')}
                       </span>
                     ) : (
                       <form action={jalonAction} className="row" style={{ gap: 4 }}>
@@ -187,15 +180,15 @@ export default async function AcceptancePage({
                         n'était appelé par aucun écran : un jalon échu bloque le visa,
                         et le seul moyen de le lever était d'écrire en base. */}
                     {j.done_at ? (
-                      <span className="badge green">fait le {fr(j.done_at)}</span>
+                      <span className="badge green">{t('commun.faitLe', { d: fr(j.done_at) })}</span>
                     ) : j.due_date ? (
                       <form action={jalonFaitAction}>
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="code" value={j.code} />
-                        <button className="btn secondary small">Marquer fait</button>
+                        <button className="btn secondary small">{t('acc.markDone')}</button>
                       </form>
                     ) : (
-                      <span className="faint" style={{ fontSize: 11 }}>pose d’abord l’échéance</span>
+                      <span className="faint" style={{ fontSize: 11 }}>{t('acc.setTheDueDateFirst')}</span>
                     )}
                   </td>
                 </tr>

@@ -12,6 +12,7 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
 import { poserNoteAncreeAction } from '../notes/actions';
+import { tr } from '@/lib/i18n';
 
 const STATUS_BADGE: Record<string, string> = {
   open: 'red', clarification_requested: 'amber', explained: 'blue', resolved: 'green', escalated: 'violet',
@@ -24,6 +25,7 @@ export default async function ExceptionsPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const fs = await frameworkSet(id);
@@ -136,11 +138,6 @@ export default async function ExceptionsPage({
             </form>
           )}
         </div>
-        <p className="faint">
-          Typed objects with a lifecycle: open → clarification_requested → explained →
-          resolved / escalated to misstatement. Auditors consume exceptions, never raw
-          populations (P8). Every transition is event-logged.
-        </p>
         <div className="table-scroll">
           <table className="data">
             <thead><tr><th>Type</th><th>Description</th><th className="num">Impact</th><th>Status</th><th>Disposition</th></tr></thead>
@@ -168,7 +165,7 @@ export default async function ExceptionsPage({
                     {identitesEcarts.get(x.id)?.item && (
                       <div>
                         <Link className="faint" href={`/eng/${id}/testing?item=${identitesEcarts.get(x.id)!.item}`}>
-                          ↩ la ligne testée, dans l&apos;atelier
+                          {t('exc.theTestedLineInTheWorkbench')}
                         </Link>
                       </div>
                     )}
@@ -182,29 +179,29 @@ export default async function ExceptionsPage({
                         <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                           <input type="hidden" name="exception_id" value={x.id} />
                           <textarea name="explanation" rows={2} required
-                            placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
-                          <input name="fait" placeholder="constatation qui dépasse cet élément (facultatif) — elle lèvera un facteur au registre" />
+                            placeholder={t('commun.explicationMotPourMot')} />
+                          <input name="fait" placeholder={t('exc.findingBeyondThisItemOptionalIt')} />
                           <div className="row" style={{ gap: 4 }}>
                             <select name="fait_nature" defaultValue="controle">
-                              <option value="controle">contrôle</option>
+                              <option value="controle">{t('exc.control')}</option>
                               <option value="changement">changement</option>
-                              <option value="complexite">complexité</option>
+                              <option value="complexite">{t('exc.complexity')}</option>
                               <option value="incertitude">incertitude</option>
                               <option value="biais">biais</option>
                             </select>
-                            <input name="fait_postes" placeholder="postes visés, séparés par des virgules" style={{ flex: 1 }} />
+                            <input name="fait_postes" placeholder={t('exc.areasConcernedCommaSeparated')} style={{ flex: 1 }} />
                           </div>
                           <textarea name="conclusion" rows={2} required
-                            placeholder="Votre conclusion sur cette explication" />
+                            placeholder={t('exc.yourConclusionOnThisExplanation')} />
                           <div className="row" style={{ gap: 4 }}>
                             <select name="disposition" defaultValue="no_misstatement">
-                              <option value="no_misstatement">aucune anomalie</option>
-                              <option value="corrected">corrigé (écriture liée)</option>
-                              <option value="compensated">couvert par un autre élément</option>
-                              <option value="already_accumulated">même événement, déjà accumulé</option>
+                              <option value="no_misstatement">{t('commun.aucuneAnomalie')}</option>
+                              <option value="corrected">{t('exc.correctedEntryLinked')}</option>
+                              <option value="compensated">{t('exc.coveredByAnotherItem')}</option>
+                              <option value="already_accumulated">{t('exc.sameEventAlreadyAccumulated')}</option>
                             </select>
                             <select name="corroboration" required style={{ flex: 1 }}>
-                              <option value="">— pièce ou écriture qui corrobore (obligatoire) —</option>
+                              <option value="">{t('exc.documentOrEntryThatCorroboratesRequired')}</option>
                               {corroborations.map((c) => (
                                 <option key={c.value} value={c.value}>{c.label}</option>
                               ))}

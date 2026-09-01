@@ -8,6 +8,7 @@ import { currentMateriality } from '@/lib/services/materiality';
 import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 // LES ESTIMATIONS COMPTABLES HORS LITIGE (point 11a, ADR-106). Le client
 // fournit son fichier de calcul ; l'écran : importer → rapprocher à la
@@ -23,6 +24,7 @@ export default async function EstimationsPage({
   searchParams: Promise<{ erreur?: string; est?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur, est } = await searchParams;
   await requireMember(id);
   const estimations = await listeEstimations(id);
@@ -76,19 +78,11 @@ export default async function EstimationsPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <h2>Estimations comptables <span className="badge gray">{estimations.length}</span></h2>
-        <p className="faint">
-          Le client fournit son FICHIER DE CALCUL (quatre colonnes : clé ; base ; taux ; montant,
-          séparées par des points-virgules — le montant doit valoir base × taux). OTTO rapproche le
-          total à l&apos;écriture comptable visée, recalcule chaque ligne au centime, sonde la base
-          avec le même moteur de tirage que le chiffre d&apos;affaires, et demande les justificatifs :
-          la pièce de base pour chaque ligne tirée, le contrat pour CHAQUE taux, la note de méthode
-          pour la formule. Rien ne part au client sans approbation.
-        </p>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
-          <input name="titre" placeholder="titre — ex. Factures à établir 2025" style={{ minWidth: 220 }} />
-          <input name="piece_ref" placeholder="référence de l'écriture visée — ex. OD-2025-089" className="mono" style={{ minWidth: 200 }} />
+          <input name="titre" placeholder={t('est.titleEGAccruedRevenue2025')} style={{ minWidth: 220 }} />
+          <input name="piece_ref" placeholder={t('est.referenceOfTheEntryConcernedE')} className="mono" style={{ minWidth: 200 }} />
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
-          <button className="btn">Importer le fichier de calcul</button>
+          <button className="btn">{t('est.importTheCalculationFile')}</button>
         </form>
       </div>
 
@@ -110,22 +104,21 @@ export default async function EstimationsPage({
             <p className="faint">
               Fichier <span className="mono">{ouverte.sourceFilename}</span> · empreinte{' '}
               <span className="mono">{ouverte.sourceSha256.slice(0, 14)}…</span> ·{' '}
-              <a href={`/api/blob/${ouverte.sourceEvidenceId}`} target="_blank">ouvrir la pièce</a>
-              {ouverte.requestId && <> · <Link href={`/eng/${id}/requests/${ouverte.requestId}`}>la demande de justificatifs</Link></>}
+              <a href={`/api/blob/${ouverte.sourceEvidenceId}`} target="_blank">{t('est.openTheDocument')}</a>
+              {ouverte.requestId && <> · <Link href={`/eng/${id}/requests/${ouverte.requestId}`}>{t('est.theRequestForSupportingDocuments')}</Link></>}
             </p>
             {/* LE RAPPROCHEMENT — le montant comptabilisé est DÉRIVÉ du grand
                 livre actif à chaque lecture, jamais stocké. */}
             <div className="grid cols-2">
-              <div className="kpi"><span className="v">{fmtEur(ouverte.montantComptabiliseCents, 'fr')}</span><span className="l">Comptabilisé ({ouverte.pieceRef}, grand livre actif)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.declareTotalCents, 'fr')}</span><span className="l">Total du fichier du client</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.recalculTotalCents, 'fr')}</span><span className="l">Recalculé par OTTO (Σ base × taux)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.ecartCents, 'fr')}</span><span className="l">Écart comptabilisé − fichier</span></div>
+              <div className="kpi"><span className="v">{fmtEur(ouverte.montantComptabiliseCents, 'fr')}</span><span className="l">{t('est.booked')}{ouverte.pieceRef}, grand livre actif)</span></div>
+              <div className="kpi"><span className="v">{fmtEur(ouverte.declareTotalCents, 'fr')}</span><span className="l">{t('est.totalOfTheClientFile')}</span></div>
+              <div className="kpi"><span className="v">{fmtEur(ouverte.recalculTotalCents, 'fr')}</span><span className="l">{t('est.recomputedByOttoBaseRate')}</span></div>
+              <div className="kpi"><span className="v">{fmtEur(ouverte.ecartCents, 'fr')}</span><span className="l">{t('est.differenceBookedFile')}</span></div>
             </div>
             {ouverte.ecartCents !== 0 && (
               <div className="callout warn mt">
-                La base fournie n&apos;explique pas le montant comptabilisé : écart de{' '}
-                <strong>{fmtEur(ouverte.ecartCents, 'fr')}</strong>. Demandez au client la version du
-                fichier qui fonde l&apos;écriture — un fichier qui ne la reconstitue pas ne la justifie pas.
+                {t('est.baseNExpliquePas')}{' '}
+                <strong>{fmtEur(ouverte.ecartCents, 'fr')}</strong>. {t('est.demandezLaVersion')}
               </div>
             )}
 
@@ -135,21 +128,21 @@ export default async function EstimationsPage({
                 <label className="row" style={{ gap: 4 }}>couverture ≥
                   <input type="number" name="cap" step="0.01" defaultValue={(capProposeCents / 100).toFixed(2)} style={{ width: 110 }} /> €
                 </label>
-                <label className="row" style={{ gap: 4 }}>tirage aléatoire
+                <label className="row" style={{ gap: 4 }}>{t('est.randomDraw')}
                   <input type="number" name="taille" defaultValue={3} style={{ width: 60 }} />
                 </label>
                 <label className="row" style={{ gap: 4 }}>germe
                   <input name="germe" defaultValue="otto-estimation-1" className="mono" style={{ width: 160 }} />
                 </label>
-                <button className="btn secondary">Tirer la base</button>
-                <span className="faint">même moteur que l&apos;échantillon du chiffre d&apos;affaires — déterministe, rejouable</span>
+                <button className="btn secondary">{t('est.drawTheBase')}</button>
+                <span className="faint">{t('est.sameEngineAsTheRevenueSample')}</span>
               </form>
             )}
             <form action={demanderAction} className="mt">
               <input type="hidden" name="estimation_id" value={ouverte.id} />
-              <button className="btn">Demander les justificatifs (brouillon — L2)</button>
+              <button className="btn">{t('est.requestSupportingDocumentsDraftL2')}</button>
               <span className="faint" style={{ marginLeft: 8 }}>
-                base des lignes tirées + chaque taux + la note de méthode ; à approuver avant l&apos;envoi
+                {t('est.baseOfTheDrawnLinesEach')}
               </span>
             </form>
           </div>
@@ -158,7 +151,7 @@ export default async function EstimationsPage({
               grille à deux colonnes forcent la page à déborder (min-content). */}
           <div>
             <div className="panel">
-              <h2>La base, ligne par ligne <span className="badge gray">{ouverte.lignes.length}</span></h2>
+              <h2>{t('est.theBaseLineByLine')} <span className="badge gray">{ouverte.lignes.length}</span></h2>
               <div className="table-scroll">
                 <table className="data">
                   <thead><tr>
@@ -188,19 +181,19 @@ export default async function EstimationsPage({
               </div>
             </div>
             <div className="panel">
-              <h2>Les taux et la formule <span className="badge gray">{ouverte.parametres.length}</span></h2>
-              <p className="faint">Chaque taux se justifie — un taux contractuel faux fausse toute sa ligne, sondée ou pas.</p>
+              <h2>{t('est.theRatesAndTheFormula')} <span className="badge gray">{ouverte.parametres.length}</span></h2>
+              <p className="faint">{t('est.everyRateMustBeSupportedA')}</p>
               <div className="table-scroll">
                 <table className="data">
-                  <thead><tr><th>Paramètre</th><th>Valeur</th><th>Pièce</th></tr></thead>
+                  <thead><tr><th>{t('est.parameter')}</th><th>Valeur</th><th>{t('est.document')}</th></tr></thead>
                   <tbody>
                     {ouverte.parametres.map((p) => (
                       <tr key={p.id}>
                         <td>{p.nom}</td>
                         <td className="mono">{p.valeur}</td>
                         <td>{ouverte.requestId
-                          ? <span className="badge blue">demandé</span>
-                          : <span className="faint">pas encore demandé</span>}</td>
+                          ? <span className="badge blue">{t('est.requested')}</span>
+                          : <span className="faint">{t('est.notRequestedYet')}</span>}</td>
                       </tr>
                     ))}
                   </tbody>

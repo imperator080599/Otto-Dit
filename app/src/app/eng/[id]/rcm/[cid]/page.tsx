@@ -10,6 +10,7 @@ import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/servic
 import { approveSend } from '@/lib/services/requests';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const RESULT_STYLE: Record<string, string> = { pass: 'green', fail: 'red', na: 'gray' };
 
@@ -20,6 +21,7 @@ export default async function ControlDetail({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id, cid } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const control = (await listControls(id)).find((c) => c.id === cid);
@@ -237,15 +239,15 @@ export default async function ControlDetail({
                         <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 460 }}>
                           <input type="hidden" name="deviation_id" value={d.id} />
                           <textarea name="explanation" rows={2} required
-                            placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                            placeholder={t('commun.explicationMotPourMot')} />
                           <textarea name="conclusion" rows={2} required
-                            placeholder="Votre conclusion sur cette explication" />
+                            placeholder={t('rcm.yourConclusionOnThisExplanation')} />
                           <select name="disposition" defaultValue="control_operated">
-                            <option value="control_operated">le contrôle a bien fonctionné (pièce liée)</option>
-                            <option value="compensating_control">contrôle compensatoire lié</option>
+                            <option value="control_operated">{t('rcm.theControlDidOperateDocumentLinked')}</option>
+                            <option value="compensating_control">{t('rcm.compensatingControlLinked')}</option>
                           </select>
                           <select name="evidence_id" required>
-                            <option value="">— pièce qui le démontre (obligatoire) —</option>
+                            <option value="">{t('rcm.documentThatShowsItRequired')}</option>
                             {corroborations.map((c) => (
                               <option key={c.id} value={c.id}>{c.filename}</option>
                             ))}
@@ -253,9 +255,7 @@ export default async function ControlDetail({
                           <button className="btn small secondary">Record</button>
                         </form>
                         <p className="faint" style={{ maxWidth: 460 }}>
-                          Une déviation qui subsiste n&apos;a aucune de ces deux dispositions : elle reste
-                          ouverte et alimente le taux de déviation. Il n&apos;y a délibérément pas de
-                          disposition « expliquée par la direction » (migration 0010).
+                          {t('rcm.aDeviationThatRemainsHasNeither')}
                         </p>
                       </details>
                     ) : <span className="muted">{d.resolution}</span>}

@@ -2,6 +2,8 @@ import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
 import { travaux, NATURES, dateRapport, obstaclesAchevement } from '@/lib/services/completion';
 import { ouvrirAction, conclureAction, sansObjetAction, rouvrirAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // L'ACHÈVEMENT (point 10).
 //
@@ -20,6 +22,7 @@ export default async function CompletionPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const libelle = await tr();
   await requireMember(id);
   const { erreur } = await searchParams;
 
@@ -34,30 +37,20 @@ export default async function CompletionPage({
 
   return (
     <div className="stack">
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-          <p className="faint">Rien n’a été enregistré.</p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>Achèvement</h2>
-        <p className="faint">
-          Les travaux qu’un inspecteur regarde <strong>en premier</strong> quand une défaillance
-          survient après le rapport. Chaque nature porte une règle qui refuse, et ces règles sont
-          des <strong>dates</strong> — donc vérifiables, donc autre chose que des rappels.
-        </p>
+        <h2>{libelle('comp.completion')}</h2>
         <p>
-          Date du rapport : <strong>{fr(rapport)}</strong>
+          {libelle('comp.reportDate')} <strong>{fr(rapport)}</strong>
           {!rapport && (
-            <> <span className="badge amber">non posée — les règles d’achèvement n’ont rien à quoi se comparer</span></>
+            <> <span className="badge amber">{libelle('comp.notSetTheCompletionRulesHave')}</span></>
           )}
         </p>
         {t.length === 0 && (
           <form action={ouvrirAction}>
             <input type="hidden" name="engagement_id" value={id} />
-            <button className="btn">Ouvrir les travaux d’achèvement</button>
+            <button className="btn">{libelle('comp.openTheCompletionProcedures')}</button>
           </form>
         )}
       </div>
@@ -70,8 +63,8 @@ export default async function CompletionPage({
               <h2>{meta.libelle}</h2>
               <span>
                 {x.status === 'done' && <span className="badge green">conclu {fr(x.done_at)}</span>}
-                {x.status === 'na' && <span className="badge gray">sans objet</span>}
-                {x.status === 'open' && <span className="badge amber">à conclure</span>}
+                {x.status === 'na' && <span className="badge gray">{libelle('comp.notApplicable')}</span>}
+                {x.status === 'open' && <span className="badge amber">{libelle('comp.toConclude')}</span>}
               </span>
             </div>
             <p className="faint">{meta.pourquoi}</p>
@@ -82,7 +75,7 @@ export default async function CompletionPage({
                   <input type="hidden" name="engagement_id" value={id} />
                   <input type="hidden" name="nature" value={x.nature} />
                   <p>
-                    <input name="findings" placeholder="constatations (ce qui a été fait, ce qui a été trouvé)"
+                    <input name="findings" placeholder={libelle('comp.findingsWhatWasDoneWhatWas')}
                       style={{ width: '100%', maxWidth: 680 }} />
                   </p>
                   <p>
@@ -92,18 +85,18 @@ export default async function CompletionPage({
                   <p className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                     {x.nature === 'evenements_posterieurs' && (
                       <label className="faint">
-                        travaux menés jusqu’au{' '}
+                        {libelle('comp.proceduresCarriedThroughTo')}{' '}
                         <input name="covered_through" placeholder="AAAA-MM-JJ" defaultValue={rapport ?? ''} style={{ width: 120 }} />
                       </label>
                     )}
                     {x.nature === 'lettre_affirmation' && (
                       <>
                         <label className="faint">
-                          datée du{' '}
+                          {libelle('comp.dated')}{' '}
                           <input name="signed_on" placeholder="AAAA-MM-JJ" defaultValue={rapport ?? ''} style={{ width: 120 }} />
                         </label>
                         <select name="evidence_id" defaultValue="">
-                          <option value="">— la lettre —</option>
+                          <option value="">{libelle('comp.theLetter')}</option>
                           {pieces.map((p) => <option key={p.id} value={p.id}>{p.filename}</option>)}
                         </select>
                       </>
@@ -115,8 +108,8 @@ export default async function CompletionPage({
                   <form action={sansObjetAction} className="row" style={{ gap: 6 }}>
                     <input type="hidden" name="engagement_id" value={id} />
                     <input type="hidden" name="nature" value={x.nature} />
-                    <input name="reason" placeholder="motif du « sans objet » (obligatoire)" style={{ width: 380 }} />
-                    <button className="btn secondary small">Sans objet</button>
+                    <input name="reason" placeholder={libelle('comp.reasonForNotApplicableRequired')} style={{ width: 380 }} />
+                    <button className="btn secondary small">{libelle('comp.notApplicable2')}</button>
                   </form>
                 ) : (
                   /* NE PAS OFFRIR L'ACTION IMPOSSIBLE — ET DIRE POURQUOI. Le
@@ -125,11 +118,7 @@ export default async function CompletionPage({
                      juste mais muet : qui cherche l'action croit à un oubli
                      d'écran plutôt qu'à une règle. Un contrôle absent sans
                      raison affichée se lit comme un manque. */
-                  <p className="faint">
-                    Pas de « sans objet » ici : une mission peut se passer de communication
-                    à la gouvernance, jamais de lettre d’affirmation. La déclarer sans objet
-                    reviendrait à conclure sans elle.
-                  </p>
+                  <p className="faint">{libelle('comp.pasSansObjet')}</p>
                 )}
               </>
             ) : (
@@ -137,16 +126,16 @@ export default async function CompletionPage({
                 {x.findings && <p><strong>Constatations :</strong> {x.findings}</p>}
                 {x.conclusion && <p><strong>Conclusion :</strong> {x.conclusion}</p>}
                 {x.na_reason && <p><strong>Motif :</strong> {x.na_reason}</p>}
-                {x.covered_through && <p className="faint">Travaux menés jusqu’au {fr(x.covered_through)}.</p>}
-                {x.signed_on && <p className="faint">Lettre datée du {fr(x.signed_on)}.</p>}
+                {x.covered_through && <p className="faint">{libelle('comp.proceduresCarriedThroughTo2')} {fr(x.covered_through)}.</p>}
+                {x.signed_on && <p className="faint">{libelle('comp.letterDated')} {fr(x.signed_on)}.</p>}
                 <form action={rouvrirAction} className="row" style={{ gap: 6 }}>
                   <input type="hidden" name="engagement_id" value={id} />
                   <input type="hidden" name="nature" value={x.nature} />
-                  <input name="reason" placeholder="motif de la réouverture" style={{ width: 340 }} />
+                  <input name="reason" placeholder={libelle('comp.reasonForReopening')} style={{ width: 340 }} />
                   <button className="btn secondary small">Rouvrir</button>
                 </form>
                 <p className="faint" style={{ fontSize: 11 }}>
-                  Un fait nouveau se traite, il ne se cache pas : rouvrir est prévu, et tracé.
+                  {libelle('comp.aNewFactIsDealtWith')}
                 </p>
               </>
             )}
@@ -156,7 +145,7 @@ export default async function CompletionPage({
 
       {obstacles.length > 0 && t.length > 0 && (
         <div className="panel warn">
-          <h2>Obstacles au visa — achèvement</h2>
+          <h2>{libelle('comp.blockersToSignOffCompletion')}</h2>
           <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
         </div>
       )}

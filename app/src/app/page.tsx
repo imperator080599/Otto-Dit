@@ -7,6 +7,7 @@ import { PORTAL_TOKENS } from '@/lib/seed';
 import { missionsParClient } from '@/lib/services/bascule';
 import { demoPublique } from '@/lib/core/demo-public';
 import { NouvelleMission } from './nouvelle-mission';
+import { tr } from '@/lib/i18n';
 
 // Home: dev sign-in switcher (ADR-006) + engagement list for the signed-in auditor.
 
@@ -33,6 +34,7 @@ export default async function Home({
   searchParams: Promise<{ erreur?: string; remis?: string }>;
 }) {
   const { erreur, remis } = await searchParams;
+  const t = await tr();
   const user = await getSessionUser();
   const users = await q<{ id: string; name: string; firm_role: string }>(
     `select id, name, firm_role from app_user order by name`,
@@ -59,7 +61,7 @@ export default async function Home({
           <p className="faint mt">
             Client portal (magic links): <Link href={`/portal/${PORTAL_TOKENS.sophie}`}>Sophie Marchand (CFO)</Link>
             {' · '}
-            <Link href={`/portal/${PORTAL_TOKENS.theo}`}>Théo Girard (chef comptable)</Link>
+            <Link href={`/portal/${PORTAL_TOKENS.theo}`}>{t('home.thOGirardChiefAccountant')}</Link>
           </p>
         </div>
       </div>
@@ -77,12 +79,12 @@ export default async function Home({
         <span className="row" style={{ gap: 8 }}>
           {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
-          <Link href="/methodology" className="btn secondary small">La méthode du cabinet</Link>
+          <Link href="/methodology" className="btn secondary small">{t('home.theFirmMethodology')}</Link>
           {/* LE GESTE, PAS LA VARIABLE D'ENVIRONNEMENT. Il n'existe que sur la
               démonstration publique : ailleurs, aucun écran ne rase un dossier. */}
           {demoPublique() && (
             <Link href="/demo/remise-a-zero" className="btn secondary small">
-              Remettre le monde de démonstration à zéro
+              {t('home.resetTheDemonstrationWorld')}
             </Link>
           )}
           <form action={logoutAction}>
@@ -93,8 +95,7 @@ export default async function Home({
       {remis === '1' && (
         <div className="panel">
           <p>
-            <span className="badge green">monde de démonstration remis à zéro</span> — tout est
-            revenu à l’état du dernier déploiement.
+            <span className="badge green">{t('home.demonstrationWorldReset')}</span> {t('home.everythingIsBackToTheState')}
           </p>
         </div>
       )}
@@ -129,12 +130,8 @@ export default async function Home({
         </div>
       ))}
       {clients.length === 0 && (
-        <div className="panel"><p className="muted">Aucune mission ne vous est affectée.</p></div>
+        <div className="panel"><p className="muted">{t('home.noEngagementIsAssignedToYou')}</p></div>
       )}
-      <p className="faint">
-        Fictional demo world: Vermeil Audit — Altiverre SAS (French subsidiary of Meridian
-        Industrial Group, Inc., US-listed, fictional). All data synthetic.
-      </p>
     </div>
   );
 }

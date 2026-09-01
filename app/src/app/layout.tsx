@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { getSessionUser } from '@/lib/core/auth';
+import { locale, traduire } from '@/lib/i18n';
+import { FournisseurLocale } from '@/lib/i18n/client';
 
 export const metadata: Metadata = {
   title: 'OTTO — AI-native assurance platform',
@@ -15,9 +17,11 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
+  const l = await locale();
   return (
-    <html lang="en">
+    <html lang={l}>
       <body>
+        <FournisseurLocale locale={l}>
         <div className="topbar">
           <Link href="/" className="brand">
             OTTO<small>assurance platform</small>
@@ -28,12 +32,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               ternaire ici, zéro sans. Et le fond est plus juste ainsi : les
               données sont fictives dans TOUS les modes, pas seulement en
               public. */}
-          <span className="demo-badge">DÉMONSTRATION — données fictives uniquement · synthetic data only</span>
+          <span className="demo-badge">{traduire(l, 'commun.demoBandeau')}</span>
           {/* MES TRAVAUX — le point d'origine de la navigation (ADR-110). Le
               lien est CONSTANT : aucune conditionnelle dans le layout racine
               (fil n°7), et la page elle-même renvoie à l'accueil si personne
               n'est connecté. */}
-          <Link href="/travaux" className="topbar-lien">Mes travaux</Link>
+          <Link href="/travaux" className="topbar-lien">{traduire(l, 'commun.mesTravaux')}</Link>
           <span className="spacer" />
           {user ? (
             <span>
@@ -49,6 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           )}
         </div>
         {children}
+        </FournisseurLocale>
       </body>
     </html>
   );

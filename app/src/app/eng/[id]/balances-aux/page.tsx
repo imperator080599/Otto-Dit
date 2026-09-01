@@ -8,6 +8,7 @@ import {
 import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 // LES BALANCES AUXILIAIRES ÂGÉES (point 1, ADR-107). Les exports du client
 // (clients / fournisseurs, N / N-1) se rapprochent au grand livre, puis
@@ -26,6 +27,7 @@ export default async function BalancesAuxPage({
   searchParams: Promise<{ erreur?: string; cote?: string; seuil?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const sp = await searchParams;
   await requireMember(id);
   const cote: Cote = sp.cote === 'fournisseurs' ? 'fournisseurs' : 'clients';
@@ -82,9 +84,9 @@ export default async function BalancesAuxPage({
         {libelle} : <span className="mono">{f.filename}</span> — total {fmtEur(f.totalCents, 'fr')} ·{' '}
         {ex === 'n' ? 'solde du grand livre actif' : 'à-nouveaux du grand livre'} {fmtEur(f.attenduCents, 'fr')} ·{' '}
         {ecart === 0
-          ? <>rapprochée ✓</>
-          : <span className="badge red">écart {fmtEur(ecart, 'fr')} — la balance ne colle pas au grand livre</span>}
-        {' '}· <a href={`/api/blob/${f.evidenceId}`} target="_blank">ouvrir la pièce</a>
+          ? <>{t('bal.reconciled')}</>
+          : <span className="badge red">{t('bal.difference')} {fmtEur(ecart, 'fr')} {t('bal.theAgedBalanceDoesNotTie')}</span>}
+        {' '}· <a href={`/api/blob/${f.evidenceId}`} target="_blank">{t('bal.openTheDocument')}</a>
       </p>
     );
   };
@@ -100,22 +102,16 @@ export default async function BalancesAuxPage({
             <Link className={`badge ${cote === 'fournisseurs' ? 'blue' : 'gray'}`} href={`/eng/${id}/balances-aux?cote=fournisseurs&seuil=${seuilPts}`}>fournisseurs</Link>
           </span>
         </div>
-        <p className="faint">
-          Le FEC ne porte aucun lettrage : la balance ÂGÉE vient de l&apos;export du client (sept
-          colonnes : compte ; intitulé ; cinq tranches d&apos;ancienneté) et se RAPPROCHE au grand
-          livre — le fichier N au solde actif, le fichier N-1 aux à-nouveaux. Un constat ne devient
-          facteur qu&apos;en étant proposé au registre, puis confirmé par une personne.
-        </p>
         {rapprochement('n', `Balance ${cote} N`)}
         {rapprochement('n1', `Balance ${cote} N-1`)}
         <form action={importAction} className="row mt" style={{ flexWrap: 'wrap', gap: 6 }}>
           <input type="hidden" name="cote" value={cote} />
           <select name="exercice" defaultValue={a.fichiers.n ? 'n1' : 'n'}>
-            <option value="n">exercice N (31/12/2025)</option>
-            <option value="n1">exercice N-1 (31/12/2024)</option>
+            <option value="n">{t('commun.exerciceN', { d: '31/12/2025' })}</option>
+            <option value="n1">{t('commun.exerciceN1', { d: '31/12/2024' })}</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
-          <button className="btn">Importer la balance {cote}</button>
+          <button className="btn">{t('bal.importTheAgedBalance')} {cote}</button>
         </form>
       </div>
 
@@ -123,20 +119,20 @@ export default async function BalancesAuxPage({
         <>
           <div className="panel">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h2>Ce que la comparaison N / N-1 dit</h2>
+              <h2>{t('bal.whatTheYearOnYearComparison')}</h2>
               <form className="row" style={{ gap: 4 }}>
                 <input type="hidden" name="cote" value={cote} />
-                <label className="row faint" style={{ gap: 4 }}>seuil de part
+                <label className="row faint" style={{ gap: 4 }}>{t('bal.shareThreshold')}
                   <input type="number" name="seuil" defaultValue={seuilPts} min={1} max={20} style={{ width: 60 }} /> pts
                 </label>
                 <button className="btn secondary small">Recalculer</button>
               </form>
             </div>
             <div className="grid cols-2">
-              <div className="kpi"><span className="v">{a.top10?.partN1} % → {a.top10?.partN} %</span><span className="l">Concentration du top 10 (part du solde)</span></div>
+              <div className="kpi"><span className="v">{a.top10?.partN1} % → {a.top10?.partN} %</span><span className="l">{t('bal.top10ConcentrationShareOfThe')}</span></div>
               <div className="kpi"><span className="v">{a.apparus.length} / {a.disparus.length}</span><span className="l">Tiers apparus / disparus</span></div>
-              <div className="kpi"><span className="v">{a.deplacements.length}</span><span className="l">Déplacements de part ≥ {seuilPts} pts</span></div>
-              <div className="kpi"><span className="v">{a.vieillissement ? `${a.vieillissement.partsN1[4]} % → ${a.vieillissement.partsN[4]} %` : '—'}</span><span className="l">Part au-delà de 90 jours</span></div>
+              <div className="kpi"><span className="v">{a.deplacements.length}</span><span className="l">{t('bal.shareMovements')} {seuilPts} pts</span></div>
+              <div className="kpi"><span className="v">{a.vieillissement ? `${a.vieillissement.partsN1[4]} % → ${a.vieillissement.partsN[4]} %` : '—'}</span><span className="l">{t('bal.shareBeyond90Days')}</span></div>
             </div>
             {a.vieillissement && (
               <div className="table-scroll mt">
@@ -155,20 +151,20 @@ export default async function BalancesAuxPage({
 
           <div className="panel">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h2>Candidats facteurs de risque <span className="badge gray">{a.candidats.length}</span></h2>
+              <h2>{t('bal.candidateRiskFactors')} <span className="badge gray">{a.candidats.length}</span></h2>
               {a.candidats.length > 0 && (
                 <form action={questionsAction}>
                   <input type="hidden" name="cote" value={cote} />
                   <input type="hidden" name="seuil" value={seuilPts} />
-                  <button className="btn">Rédiger les questions au client (brouillon — L2)</button>
+                  <button className="btn">{t('bal.draftTheQuestionsToTheClient')}</button>
                 </form>
               )}
             </div>
             {a.candidats.length === 0 ? (
-              <p className="muted">Aucun constat au seuil de {seuilPts} pts — rien à proposer, rien à questionner.</p>
+              <p className="muted">{t('bal.noFindingAtTheThresholdOf')} {seuilPts} {t('bal.ptsNothingToProposeNothingTo')}</p>
             ) : (
               <table className="data">
-                <thead><tr><th>Constat</th><th>Nature suggérée</th><th></th></tr></thead>
+                <thead><tr><th>Constat</th><th>{t('bal.suggestedNature')}</th><th></th></tr></thead>
                 <tbody>
                   {a.candidats.map((c) => (
                     <tr key={c.code}>
@@ -176,13 +172,13 @@ export default async function BalancesAuxPage({
                       <td><span className="badge gray">{c.nature}</span></td>
                       <td>
                         {a.proposes.includes(c.code) ? (
-                          <span className="badge blue" title="au registre, en attente de confirmation humaine">proposé au registre</span>
+                          <span className="badge blue" title={t('bal.inTheRegisterAwaitingHumanConfirmation')}>{t('bal.proposedToTheRegister')}</span>
                         ) : (
                           <form action={proposerAction}>
                             <input type="hidden" name="cote" value={cote} />
                             <input type="hidden" name="seuil" value={seuilPts} />
                             <input type="hidden" name="code" value={c.code} />
-                            <button className="btn small secondary">Proposer au registre</button>
+                            <button className="btn small secondary">{t('bal.proposeToTheRegister')}</button>
                           </form>
                         )}
                       </td>
@@ -191,15 +187,10 @@ export default async function BalancesAuxPage({
                 </tbody>
               </table>
             )}
-            <p className="faint">
-              Un candidat proposé n&apos;est PAS un facteur : il attend sa confirmation au{' '}
-              <Link href={`/eng/${id}/risk`}>registre des facteurs</Link> — c&apos;est là que la
-              circulation se décide.
-            </p>
           </div>
 
           <div className="panel">
-            <h2>Tiers par tiers <span className="badge gray">{a.lignes.length}</span></h2>
+            <h2>{t('bal.counterpartyByCounterparty')} <span className="badge gray">{a.lignes.length}</span></h2>
             <div className="table-scroll">
               <table className="data">
                 <thead><tr>
@@ -233,7 +224,7 @@ export default async function BalancesAuxPage({
       {!lesDeux && (a.fichiers.n || a.fichiers.n1) && (
         <div className="panel">
           <p className="muted">
-            La comparaison N / N-1 attend les DEUX balances {cote} — importez celle qui manque.
+            {t('bal.theYearOnYearComparisonNeeds')} {cote} {t('bal.importTheMissingOne')}
           </p>
         </div>
       )}

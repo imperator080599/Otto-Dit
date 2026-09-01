@@ -7,6 +7,8 @@ import { dateRapport } from '@/lib/services/completion';
 import { fileDeadlines } from '@/lib/services/retention';
 import { cloreAction } from './actions';
 import { FAMILLES } from '../familles';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // LA CLÔTURE ET L'ARCHIVE SCELLÉE — la fin de l'arc, enfin dans l'application.
 //
@@ -31,6 +33,7 @@ export default async function ClosePage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { membership } = await requireMember(id);
   const { erreur } = await searchParams;
 
@@ -53,26 +56,16 @@ export default async function ClosePage({
 
   return (
     <div className="stack">
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-          <p className="faint">Rien n’a été enregistré. Le refus vient du service, pas de l’écran.</p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>Clôture et archive scellée</h2>
-        <p className="faint">
-          Clore, c’est <strong>signer</strong> : le rapport est daté, l’assemblage part, la durée de
-          conservation commence. L’archive est produite <strong>avant</strong> le verrou, à partir
-          d’un dossier encore lisible — c’est le verrou qui la rend définitive.
-        </p>
+        <h2>{t('close.closeAndSealedArchive')}</h2>
 
         {scelle ? (
           <>
             <p>
-              <span className="badge green">dossier scellé</span> le {fr(archive!.sealed_at)} ·
-              {' '}{ko(archive!.size_bytes)} · conservation jusqu’au {fr(archive!.retention_until)}
+              <span className="badge green">{t('close.fileSealed')}</span> le {fr(archive!.sealed_at)} ·
+              {' '}{ko(archive!.size_bytes)} {t('close.retainedUntil')} {fr(archive!.retention_until)}
             </p>
             <p className="mono faint" style={{ wordBreak: 'break-all' }}>
               empreinte SHA-256 : {archive!.sha256}
@@ -80,19 +73,13 @@ export default async function ClosePage({
             <p>
               {/* LE CHEMIN DE LECTURE QUI MANQUAIT. Une archive qu'on ne peut pas
                   sortir ne prouve rien à un inspecteur. */}
-              <a className="btn" href={`/api/archive/${id}`}>Télécharger le dossier scellé (.zip)</a>
-            </p>
-            <p className="faint">
-              L’archive est autoportante : elle s’ouvre sans le produit, sans réseau et sans script.
-              Deux exports du même dossier donnent les mêmes octets — c’est ce qui rend un export
-              jetable.
+              <a className="btn" href={`/api/archive/${id}`}>{t('close.downloadTheSealedFileZip')}</a>
             </p>
           </>
         ) : obstacles.length > 0 ? (
           <>
             <p>
-              <span className="badge amber">{obstacles.length} obstacle(s) au visa</span> — le dossier
-              ne se clôt pas tant qu’il en reste un.
+              <span className="badge amber">{obstacles.length} {t('close.blockerSToSignOff')}</span> {t('close.theFileCannotBeClosedWhile')}
             </p>
             <ul>
               {[...parFamille.entries()].map(([f, n]) => (
@@ -102,52 +89,38 @@ export default async function ClosePage({
               ))}
             </ul>
             <p>
-              <Link href={`/eng/${id}/obstacles`}>Voir la liste, obstacle par obstacle →</Link>
-            </p>
-            <p className="faint">
-              Cette liste est <strong>la même</strong> que celle que la clôture interroge : deux
-              vérités sur ce qui bloque divergeraient un jour, et ce serait toujours celle qu’on
-              croit.
+              <Link href={`/eng/${id}/obstacles`}>{t('close.seeTheListBlockerByBlocker')}</Link>
             </p>
           </>
         ) : (
           <>
-            <p><span className="badge green">aucun obstacle au visa</span></p>
+            <p><span className="badge green">{t('close.noBlockerToSignOff')}</span></p>
             <p className="faint">
-              Échéances calculées&nbsp;: assemblage à clore le <strong>{fr(echeances.completionDue)}</strong>
-              {' '}({echeances.completion.source.citation}), conservation jusqu’au{' '}
+              {t('close.computedDeadlinesAssemblyToBeClosed')} <strong>{fr(echeances.completionDue)}</strong>
+              {' '}({echeances.completion.source.citation}{t('close.retainedUntil2')}{' '}
               <strong>{fr(echeances.retentionUntil)}</strong> ({echeances.retention.source.citation})
-              {echeances.anyUnverified && <> · <span className="badge amber">référence non vérifiée</span></>}
+              {echeances.anyUnverified && <> · <span className="badge amber">{t('close.referenceUnverified')}</span></>}
             </p>
             {membership.can_sign ? (
               <form action={cloreAction} className="row" style={{ gap: 6 }}>
                 <input type="hidden" name="engagement_id" value={id} />
                 <label className="row" style={{ gap: 4 }}>
-                  Date du rapport
+                  {t('close.reportDate')}
                   <input name="report_date" placeholder="AAAA-MM-JJ"
                     defaultValue={rapport ?? eng?.report_date ?? ''} style={{ width: 120 }} />
                 </label>
-                <button className="btn">Clore le dossier et sceller l’archive</button>
+                <button className="btn">{t('close.closeTheFileAndSealThe')}</button>
               </form>
             ) : (
               /* Ne pas offrir l'action impossible — et dire pourquoi (ADR-090). */
-              <p className="faint">
-                Pas de bouton de clôture ici : clore revient à signer, et vous n’avez pas le droit
-                de signature sur cette mission. Ouvrir un dossier n’est pas y travailler, et y
-                travailler n’est pas le signer.
-              </p>
+              <p className="faint">{t('close.pasDeDroit')}</p>
             )}
           </>
         )}
       </div>
 
       <div className="panel">
-        <h3>Ce que le verrou change</h3>
-        <p className="faint">
-          Après la clôture le dossier passe en <strong>verrouillé</strong> : les écritures y sont
-          refusées par la base, pas seulement par l’écran. L’état actuel est{' '}
-          <strong>{eng?.status ?? '—'}</strong>.
-        </p>
+        <h3>{t('close.whatTheLockChanges')}</h3>
       </div>
     </div>
   );

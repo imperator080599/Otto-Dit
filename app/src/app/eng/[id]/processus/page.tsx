@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/entretiens';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 // LE CONTRÔLE INTERNE ET LES PROCESSUS (point 2, ADR-108). La plateforme
 // héberge le processus en DONNÉES STRUCTURÉES et GÉNÈRE le diagramme — le
@@ -28,6 +29,7 @@ export default async function ProcessusPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const versions = await lireProcessus(id, CYCLE);
@@ -145,26 +147,19 @@ export default async function ProcessusPage({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="panel">
-        <h2>Contrôle interne et processus {diff && diff.aStatuer.length > 0 && (
-          <span className="badge red">{diff.aStatuer.length} changement(s) à statuer</span>
+        <h2>{t('proc.internalControlAndProcesses')} {diff && diff.aStatuer.length > 0 && (
+          <span className="badge red">{diff.aStatuer.length} {t('proc.changeSToDecide')}</span>
         )}</h2>
-        <p className="faint">
-          Le processus vit ici en DONNÉES STRUCTURÉES — étapes, acteurs, systèmes, entrées/sorties,
-          contrôles rattachés — et le diagramme est GÉNÉRÉ. Le flowchart fourni par le client est une
-          pièce de corroboration, pas la source. La comparaison N/N-1 est une différence exacte :
-          chaque changement se statue, et un changement significatif propose un facteur de risque au
-          registre — une personne confirme là-bas.
-        </p>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <select name="exercice" defaultValue="n">
-            <option value="n">version N (exercice audité)</option>
+            <option value="n">{t('proc.versionN')}</option>
             <option value="n1">version N-1 (reprise)</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 240 }} />
           <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <input type="checkbox" name="remplacer" /> confirmer le remplacement
+            <input type="checkbox" name="remplacer" /> {t('proc.confirmer')}
           </label>
-          <button className="btn">Importer la description</button>
+          <button className="btn">{t('proc.importer')}</button>
         </form>
         <p className="faint mono" style={{ marginBottom: 0 }}>
           {(['n1', 'n'] as const).map((ex) => versions[ex]
@@ -176,10 +171,10 @@ export default async function ProcessusPage({
       {montre && diagramme && (
         <div className="panel">
           <h2>Diagramme — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</h2>
-          <p className="faint">Généré depuis les données ci-dessous ; il n&apos;existe pas d&apos;autre source.</p>
+          <p className="faint"></p>
           <div className="table-scroll">
             <svg width={diagramme.w} height={diagramme.h} viewBox={`0 0 ${diagramme.w} ${diagramme.h}`} role="img"
-              aria-label={`Diagramme du processus ${montre.nom}`} style={{ maxWidth: 'none' }}>
+              aria-label={t('proc.diagramme', { nom: montre.nom })} style={{ maxWidth: 'none' }}>
               {diagramme.fleches.map((f, i) => (
                 <line key={`f${i}`} x1={f.x1} y1={f.y1} x2={f.x2} y2={f.y2} stroke="currentColor" strokeWidth="1.2" />
               ))}
@@ -205,7 +200,7 @@ export default async function ProcessusPage({
           </div>
           <div className="table-scroll mt">
             <table className="data">
-              <thead><tr><th>Étape</th><th>Libellé</th><th>Acteur</th><th>Système</th><th>Entrées</th><th>Sorties</th></tr></thead>
+              <thead><tr><th>{t('proc.etape')}</th><th>{t('proc.libelle')}</th><th>Acteur</th><th>{t('proc.systeme')}</th><th>{t('proc.entrees')}</th><th>Sorties</th></tr></thead>
               <tbody>
                 {montre.etapes.map((e) => (
                   <tr key={e.code}>
@@ -218,7 +213,7 @@ export default async function ProcessusPage({
           </div>
           <div className="table-scroll mt">
             <table className="data">
-              <thead><tr><th>Contrôle</th><th>Étape</th><th>Libellé</th><th>Fréquence</th><th>Propriétaire</th></tr></thead>
+              <thead><tr><th>{t('proc.controle')}</th><th>{t('proc.etape')}</th><th>{t('proc.libelle')}</th><th>{t('proc.frequence')}</th><th>{t('proc.proprietaire')}</th></tr></thead>
               <tbody>
                 {montre.controles.map((c) => (
                   <tr key={c.code}>
@@ -234,17 +229,12 @@ export default async function ProcessusPage({
 
       {diff && (
         <div className="panel">
-          <h2>Différence N / N-1 — exacte, champ par champ</h2>
-          <p className="faint">
-            Étape supprimée, contrôle dont le propriétaire a changé, système remplacé : la différence
-            est CALCULÉE depuis les deux versions, jamais devinée sur deux images. Chaque changement
-            se statue par écrit ; « significatif » propose un facteur de risque au registre.
-          </p>
-          {diff.changements.length === 0 && <p className="faint">Aucun changement entre N-1 et N.</p>}
+          <h2>{t('proc.diff')}</h2>
+          {diff.changements.length === 0 && <p className="faint">{t('proc.aucunChangement')}</p>}
           {diff.changements.length > 0 && (
             <div className="table-scroll">
               <table className="data">
-                <thead><tr><th>Changement</th><th>Avant (N-1)</th><th>Après (N)</th><th>Décision</th></tr></thead>
+                <thead><tr><th>Changement</th><th>Avant (N-1)</th><th>{t('proc.apres')}</th><th>{t('proc.decision')}</th></tr></thead>
                 <tbody>
                   {diff.changements.map((c) => {
                     const d = diff.decisions[c.code];
@@ -259,18 +249,18 @@ export default async function ProcessusPage({
                         <td>
                           {d ? (
                             <>
-                              <span className="badge gray">{d.significance === 'significatif' ? 'significatif — facteur proposé au registre' : 'non significatif'}</span>
+                              <span className="badge gray">{d.significance === 'significatif' ? t('proc.significatif') : t('proc.nonSignificatif')}</span>
                               <div className="faint" style={{ fontSize: 12 }}>{d.reason} — {d.decideur}</div>
                             </>
                           ) : (
                             <form action={statuerAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
                               <input type="hidden" name="code" value={c.code} />
-                              <span className="badge red">à statuer</span>
+                              <span className="badge red">{t('proc.aStatuer')}</span>
                               <select name="significance" defaultValue="non_significatif">
-                                <option value="non_significatif">non significatif</option>
-                                <option value="significatif">significatif</option>
+                                <option value="non_significatif">{t('proc.nonSignificatif')}</option>
+                                <option value="significatif">{t('proc.significatifCourt')}</option>
                               </select>
-                              <input name="reason" placeholder="motif écrit" style={{ minWidth: 160 }} />
+                              <input name="reason" placeholder={t('proc.motifEcrit')} style={{ minWidth: 160 }} />
                               <button className="btn">Statuer</button>
                             </form>
                           )}
@@ -287,35 +277,26 @@ export default async function ProcessusPage({
 
       <div className="panel">
         <h2>Entretiens {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
-          <span className="badge red">écarts candidats à statuer</span>
+          <span className="badge red">{t('proc.ecartsAStatuer')}</span>
         )}</h2>
-        <p className="faint">
-          Participants, date, support, compréhension documentée. Enregistrer exige le consentement
-          EXPLICITE de chaque participant — tracé — et une durée de conservation ; sans
-          enregistrement, les notes saisies à la main suffisent et le module fonctionne en entier
-          (docs/14_ENTRETIENS_CONSENTEMENT.md).
-        </p>
         {adaptateur === 'mock' ? (
           <div className="callout">
-            <strong>Analyste de transcript : REJEU (démonstration).</strong> L&apos;analyse retrouve les
-            écarts enregistrés du jeu de données ; un transcript inconnu est refusé en le disant.
-            Le mode IA réelle (<span className="mono">npm run demo:ia</span>) analyse un entretien
-            jamais vu, avec garde de budget et journalisation ai_run.
+            {/* LA PROSE EXPLICATIVE SORT (règle générale) : le mode se DIT en
+                un mot, il ne se raconte pas. */}
+            <strong>{t('proc.analysteRejeu')}</strong>
           </div>
         ) : (
           <div className="callout">
-            <strong>Analyste de transcript : IA RÉELLE ({process.env.OTTO_TRANSCRIPT_MODEL ?? 'claude-sonnet-5'}).</strong>{' '}
-            L&apos;analyse confronte le discours à la documentation et produit des écarts CANDIDATS —
-            jamais une conclusion. Chaque lecture est journalisée (ai_run), coûte de l&apos;argent réel,
-            et la garde de budget refuse proprement au plafond.
+            <strong>{t('proc.transcriptAnalystRealAi')}{process.env.OTTO_TRANSCRIPT_MODEL ?? 'claude-sonnet-5'}).</strong>{' '}
+            {t('proc.analyseCandidats')}
           </div>
         )}
         <form action={entretienAction} className="mt" style={{ display: 'grid', gap: 6 }}>
           <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
             <input name="date" placeholder="AAAA-MM-JJ" style={{ width: 110 }} />
-            <input name="sujet" placeholder="sujet — ex. Cycle ventes, compréhension du processus" style={{ minWidth: 260, flex: 1 }} />
+            <input name="sujet" placeholder={t('proc.sujet')} style={{ minWidth: 260, flex: 1 }} />
             <select name="support" defaultValue="notes">
-              <option value="notes">notes (sans enregistrement)</option>
+              <option value="notes">{t('proc.notesSansEnr')}</option>
               <option value="enregistrement">enregistrement (consentements requis)</option>
             </select>
             <input name="retention" placeholder="conservation AAAA-MM-JJ" style={{ width: 170 }} />
@@ -323,36 +304,31 @@ export default async function ProcessusPage({
           {[1, 2, 3].map((i) => (
             <div key={i} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
               <input name={`nom${i}`} placeholder={`participant ${i} — nom`} style={{ minWidth: 180 }} />
-              <input name={`qualite${i}`} placeholder="qualité" style={{ minWidth: 140 }} />
+              <input name={`qualite${i}`} placeholder={t('proc.qualite')} style={{ minWidth: 140 }} />
               <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input type="checkbox" name={`consent${i}`} /> consent à l&apos;enregistrement
+                <input type="checkbox" name={`consent${i}`} /> {t('proc.consent')}
               </label>
             </div>
           ))}
-          <div><button className="btn">Créer l&apos;entretien</button></div>
+          <div><button className="btn">{t('proc.creerEntretien')}</button></div>
         </form>
       </div>
 
       {entretiens.map((itv) => (
         <div className="panel" key={itv.id}>
           <h2>
-            Entretien du {itv.date} — {itv.sujet}{' '}
+            {t('proc.interviewOf')} {itv.date} — {itv.sujet}{' '}
             <span className="badge gray">{itv.support === 'notes' ? 'notes' : 'enregistrement'}</span>
             {itv.ecarts.some((e) => e.status === 'candidate') && (
               <span className="badge red">{itv.ecarts.filter((e) => e.status === 'candidate').length} candidat(s)</span>
             )}
           </h2>
-          <p className="faint">
-            {itv.participants.map((p) => `${p.nom}${p.qualite ? ` (${p.qualite})` : ''}${p.consentement ? ` — consentement ${p.quand ? p.quand.slice(0, 10) : '✓'}` : ''}`).join(' · ')}
-            {itv.retentionUntil && <> · conservation jusqu&apos;au {itv.retentionUntil}</>}
-          </p>
-
           {itv.comprehension ? (
-            <p><strong>Compréhension documentée.</strong> {itv.comprehension}</p>
+            <p><strong>{t('proc.comprehension')}</strong> {itv.comprehension}</p>
           ) : (
             <form action={comprehensionAction} className="row" style={{ gap: 6, alignItems: 'flex-start' }}>
               <input type="hidden" name="itv" value={itv.id} />
-              <textarea name="texte" rows={2} placeholder="la compréhension documentée — le livrable de l'entretien" style={{ flex: 1, minWidth: 240 }} />
+              <textarea name="texte" rows={2} placeholder={t('proc.comprehensionLivrable')} style={{ flex: 1, minWidth: 240 }} />
               <button className="btn">Consigner</button>
             </form>
           )}
@@ -360,25 +336,25 @@ export default async function ProcessusPage({
           {itv.support === 'enregistrement' && !itv.transcriptDepose && !itv.transcriptPurge && (
             <form action={transcriptAction} className="row mt" style={{ gap: 6, alignItems: 'flex-start' }}>
               <input type="hidden" name="itv" value={itv.id} />
-              <textarea name="contenu" rows={3} placeholder="coller le transcript de l'enregistrement" style={{ flex: 1, minWidth: 240 }} />
-              <button className="btn">Déposer le transcript</button>
+              <textarea name="contenu" rows={3} placeholder={t('proc.collerTranscript')} style={{ flex: 1, minWidth: 240 }} />
+              <button className="btn">{t('proc.deposerTranscript')}</button>
             </form>
           )}
           {itv.transcriptDepose && itv.ecarts.length === 0 && (
             <form action={analyserAction} className="row mt" style={{ gap: 6 }}>
               <input type="hidden" name="itv" value={itv.id} />
-              <span className="faint">Transcript déposé.</span>
-              <button className="btn">Confronter le discours à la documentation</button>
+              <span className="faint">{t('proc.transcriptDepose')}</span>
+              <button className="btn">{t('proc.confronter')}</button>
             </form>
           )}
           {itv.transcriptPurge && (
-            <p className="faint">Transcript purgé à l&apos;échéance de conservation — les écarts et la compréhension restent.</p>
+            <p className="faint">{t('proc.transcriptPurge')}</p>
           )}
 
           {itv.ecarts.length > 0 && (
             <div className="table-scroll mt">
               <table className="data">
-                <thead><tr><th>#</th><th>Nature</th><th>Écart candidat</th><th>Décision</th></tr></thead>
+                <thead><tr><th>#</th><th>Nature</th><th>{t('proc.ecartCandidat')}</th><th>{t('proc.decision')}</th></tr></thead>
                 <tbody>
                   {itv.ecarts.map((e) => (
                     <tr key={e.id}>
@@ -394,10 +370,10 @@ export default async function ProcessusPage({
                           <form action={ecartAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
                             <input type="hidden" name="gap" value={e.id} />
                             <span className="badge red">candidat</span>
-                            <button className="btn" name="decision" value="question">Question au client</button>
-                            <button className="btn" name="decision" value="factor">Proposer au registre</button>
-                            <input name="reason" placeholder="motif (pour écarter)" style={{ minWidth: 140 }} />
-                            <button className="btn" name="decision" value="dismissed">Écarter</button>
+                            <button className="btn" name="decision" value="question">{t('proc.questionClient')}</button>
+                            <button className="btn" name="decision" value="factor">{t('proc.proposerRegistre')}</button>
+                            <input name="reason" placeholder={t('proc.motifEcarter')} style={{ minWidth: 140 }} />
+                            <button className="btn" name="decision" value="dismissed">{t('proc.ecarter')}</button>
                           </form>
                         ) : (
                           <>
@@ -424,18 +400,13 @@ export default async function ProcessusPage({
         <div className="panel">
           <form action={purgeAction} className="row" style={{ gap: 6 }}>
             <span className="faint">
-              Un transcript est une donnée personnelle à durée de vie limitée : à l&apos;échéance de
-              conservation, il se purge — les écarts et la compréhension restent au dossier.
+              {t('proc.aTranscriptIsPersonalDataWith')}
             </span>
-            <button className="btn">Purger les transcripts échus</button>
+            <button className="btn">{t('proc.purger')}</button>
           </form>
         </div>
       )}
 
-      <p className="faint">
-        Les facteurs proposés se confirment au <Link href={`/eng/${id}/risk`}>registre des risques</Link> ;
-        les questions partent par les <Link href={`/eng/${id}/requests`}>demandes</Link> après approbation.
-      </p>
     </div>
   );
 }

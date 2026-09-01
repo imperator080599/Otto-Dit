@@ -7,6 +7,7 @@ import {
 } from '@/lib/methodology/depot';
 import { ImportForm } from './import-form';
 import { soumettreMethode, designerAction } from './actions';
+import { tr } from '@/lib/i18n';
 
 // LA MÉTHODE DU CABINET — l'écran qui rend la phrase démontrable.
 //
@@ -44,6 +45,7 @@ export default async function MethodologyPage({
   searchParams: Promise<{ fichier?: string }>;
 }) {
   const user = await requireUser();
+  const t = await tr();
   const sp = await searchParams;
   const attendus = await fichiersAttendus();
   const liste = await methodologies(user.tenant_id);
@@ -72,22 +74,15 @@ export default async function MethodologyPage({
   return (
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>La méthode du cabinet</h1>
+        <h1>{t('meth.theFirmMethodology')}</h1>
         <Link href="/" className="btn secondary small">Missions</Link>
       </div>
 
       <div className="panel">
-        <p className="faint">
-          Vos procédures, vos seuils, votre échelle de risque, votre jeu d’assertions, votre
-          questionnaire et vos rubriques d’indépendance sont des <strong>données</strong>. Elles sont
-          publiées pour <strong>votre</strong> cabinet et lues depuis votre base : une méthode
-          publiée ne se modifie pas — on en publie une nouvelle, et les dossiers en cours{' '}
-          <strong>gardent la leur</strong>.
-        </p>
         <table className="data">
           <thead>
             <tr>
-              <th>Version</th><th>Publiée le</th><th>Procédures</th><th>Risque</th>
+              <th>Version</th><th>{t('meth.published')}</th><th>{t('meth.procedures')}</th><th>Risque</th>
               <th>Assertions</th><th>Empreinte</th><th>Missions</th>
             </tr>
           </thead>
@@ -96,7 +91,7 @@ export default async function MethodologyPage({
               <tr key={m.id}>
                 <td>
                   {m.label}
-                  {courante?.id === m.id && <> <span className="badge green">en vigueur</span></>}
+                  {courante?.id === m.id && <> <span className="badge green">{t('meth.inForce')}</span></>}
                 </td>
                 <td>{ligne(m.published_at)}</td>
                 <td className="mono">{m.versions.procedures ?? '—'}</td>
@@ -108,8 +103,7 @@ export default async function MethodologyPage({
             ))}
             {liste.length === 0 && (
               <tr><td colSpan={7} className="faint">
-                Aucune méthode publiée. Tant qu’il n’y en a pas, <strong>aucune mission ne peut être
-                planifiée</strong> : le moteur refuse plutôt que de retomber sur celle de l’éditeur.
+                {t('meth.noMethodologyPublishedUntilThereIs')} <strong>{t('meth.noEngagementCanBePlanned')}</strong> {t('meth.theEngineRefusesRatherThanFalling')}
               </td></tr>
             )}
           </tbody>
@@ -117,20 +111,15 @@ export default async function MethodologyPage({
       </div>
 
       <div className="panel">
-        <h2>Quelle mission travaille sous quelle méthode</h2>
-        <p className="faint">
-          Une mission <strong>désigne</strong> sa méthode : elle ne prend pas la dernière publiée à
-          chaque lecture. Une version publiée en mars ne change pas rétroactivement les travaux
-          requis d’un dossier planifié en janvier.
-        </p>
+        <h2>{t('meth.whichEngagementWorksUnderWhichMethodolog')}</h2>
         <table className="data">
-          <thead><tr><th>Mission</th><th>Méthode</th><th>Redésigner</th></tr></thead>
+          <thead><tr><th>Mission</th><th>{t('meth.methodology')}</th><th>{t('meth.reAssign')}</th></tr></thead>
           <tbody>
             {engagements.map((e) => (
               <tr key={e.id}>
                 <td><Link href={`/eng/${e.id}`}>{e.name}</Link></td>
                 <td>
-                  {e.label ?? <span className="badge amber">aucune — la mission ne peut pas être planifiée</span>}
+                  {e.label ?? <span className="badge amber">{t('meth.noneTheEngagementCannotBePlanned')}</span>}
                 </td>
                 <td>
                   <form action={designerAction} className="row" style={{ gap: 6 }}>
@@ -138,7 +127,7 @@ export default async function MethodologyPage({
                     <select name="methodology_id" defaultValue={e.methodology_id ?? ''}>
                       {liste.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                     </select>
-                    <button className="btn secondary small" disabled={liste.length === 0}>Désigner</button>
+                    <button className="btn secondary small" disabled={liste.length === 0}>{t('meth.assign')}</button>
                   </form>
                 </td>
               </tr>
@@ -148,20 +137,7 @@ export default async function MethodologyPage({
       </div>
 
       <div className="panel">
-        <h2>Charger une méthode</h2>
-        <p className="faint">
-          {courante
-            ? <>Le texte est un objet dont les clés sont des <strong>noms de fichiers</strong>. En
-              correctif, les fichiers présents remplacent les leurs et les autres sont repris de la
-              version en vigueur — vous pouvez donc en corriger <strong>plusieurs à la fois</strong>,
-              et certaines modifications l’exigent : passer votre échelle de trois à quatre niveaux
-              demande <span className="mono">risque.json</span> et{' '}
-              <span className="mono">procedures.json</span> dans la même publication, sinon le
-              contrôle croisé refuse — à juste titre. Rien n’est écrit tant que le résultat n’est pas
-              valide, et « Vérifier » n’écrit jamais.</>
-            : <>Aucune méthode en vigueur : apportez le <strong>paquet entier</strong>. Il n’y a rien
-              dont reprendre les fichiers absents.</>}
-        </p>
+        <h2>{t('meth.loadAMethodology')}</h2>
         {/* data-actions-item : cette bande CHOISIT un fichier parmi n — un lien
             par objet, comme les onglets de pièce de l'atelier. C'est une
             sélection d'objet, pas n actions d'écran (docs/DENSITE.md). */}
@@ -174,22 +150,16 @@ export default async function MethodologyPage({
             >{f}</Link>
           ))}
           <Link href="/methodology?fichier=*" className={`btn small ${fichier === '*' ? '' : 'secondary'}`}>
-            le paquet entier
+            {t('meth.theWholePackage')}
           </Link>
         </p>
         {fichier ? (
           <ImportForm action={soumettreMethode} attendus={attendus} gabarit={gabarit} fichier={fichier} />
         ) : (
-          <p className="faint">Choisissez un fichier, ou le paquet entier.</p>
+          <p className="faint">{t('meth.chooseAFileOrTheWhole')}</p>
         )}
       </div>
 
-      <p className="faint">
-        Ce qu’un paquet entier ne peut pas contenir : <strong>ses propres schémas</strong> — ils
-        énumèrent ce que le moteur sait calculer, les livrer désactiverait tous les contrôles en une
-        ligne — ni un fichier en moins, qui serait refusé plutôt que complété en silence avec le
-        nôtre.
-      </p>
     </div>
   );
 }

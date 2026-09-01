@@ -65,11 +65,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
             <a className="btn secondary small" href={`/api/tracker/${id}?audience=client`}>Client tracker (Excel)</a>
             <a className="btn secondary small" href={`/api/tracker/${id}?audience=group`}>Group/component tracker</a>
           </div>
-          <p className="faint mt">
-            The client variant carries no internal review statuses, exceptions or workpaper
-            state. Client-safe live view: <Link href={`/portal/demo-sophie-altiverre`}>portal</Link>{' '}
-            (entity {entity.entity_id.slice(0, 8)}…).
-          </p>
         </div>
 
         <div className="panel">

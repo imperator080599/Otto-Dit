@@ -10,6 +10,8 @@ import {
   independenceObstacles, recordNonAuditService, feeRatio, TeamRuleError,
   anciennetes, rotationSignataire,
 } from '@/lib/services/team';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // Équipe et indépendance. L'écran ne porte AUCUNE règle : il montre celles du
 // service, et il montre surtout ce qu'elles refusent. « Ce qui manque pour
@@ -53,6 +55,7 @@ export default async function TeamPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   const { user } = await requireMember(id);
   const cat = await catalogueDeLaMission(id);
@@ -154,39 +157,22 @@ export default async function TeamPage({
           silence ne se distingue pas d'un bouton cassé — et la règle phare de
           cet écran, « aucun travail ne s'attribue sans déclaration signée »,
           était refusée sans que rien ne s'affiche. */}
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-          <p className="faint">
-            Rien n’a été enregistré. Le refus vient du service, pas de l’écran : la même règle
-            s’applique par l’interface, par l’API et par un test.
-          </p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       {obstacles.length > 0 && (
         <div className="panel warn">
-          <h2>Obstacles au visa — indépendance</h2>
+          <h2>{t('team.blockersToSignOffIndependence')}</h2>
           <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
-          <p className="faint">
-            Ces travaux ne disparaissent pas : ils deviennent invisables tant que la révision
-            n’est pas signée. Sans cette règle, il suffirait d’affecter avant de réviser.
-          </p>
         </div>
       )}
 
       {/* ── ancienneté et rotation : ce qui se compte ─────────────────── */}
       {anc.length > 0 && (
         <div className="panel">
-          <h2>Ancienneté et rotation</h2>
-          <p className="faint">
-            L’ancienneté se <strong>compte</strong>, elle ne se juge pas : exercices{' '}
-            <strong>consécutifs</strong> sur cette entité, une rupture d’un an casse le compte.
-            Revenir après une interruption ne recrée pas l’ancienneté d’avant.
-          </p>
+          <h2>{t('team.tenureAndRotation')}</h2>
           <table className="data">
             <thead>
-              <tr><th>Membre</th><th className="num">Exercices consécutifs</th><th>Familiarité</th><th>Rotation</th></tr>
+              <tr><th>Membre</th><th className="num">{t('team.consecutiveYears')}</th><th>{t('team.familiarity')}</th><th>Rotation</th></tr>
             </thead>
             <tbody>
               {anc.map((a) => {
@@ -197,14 +183,14 @@ export default async function TeamPage({
                     <td className="num"><strong>{a.exercices}</strong></td>
                     <td>
                       {a.menace
-                        ? <span className="badge amber">menace — seuil {a.seuil}, sauvegarde à documenter</span>
-                        : <span className="faint">sous le seuil de {a.seuil}</span>}
+                        ? <span className="badge amber">{t('team.menaceSeuil')} {a.seuil}{t('team.safeguardToBeDocumented')}</span>
+                        : <span className="faint">{t('team.belowTheThresholdOf')} {a.seuil}</span>}
                     </td>
                     <td>
                       {!r
-                        ? <span className="faint">non habilité à signer</span>
+                        ? <span className="faint">{t('team.notEntitledToSign')}</span>
                         : r.depasse
-                          ? <span className="badge amber">dépassée — plafond {r.plafond}</span>
+                          ? <span className="badge amber">{t('team.exceededCeiling')} {r.plafond}</span>
                           : <span className="faint">plafond {r.plafond}</span>}
                     </td>
                   </tr>
@@ -212,18 +198,12 @@ export default async function TeamPage({
               })}
             </tbody>
           </table>
-          <p className="faint">
-            La <strong>familiarité</strong> n’interdit rien : elle exige une sauvegarde documentée —
-            la traiter comme un empêchement rendrait tout dossier ancien impossible. Le{' '}
-            <strong>dépassement de rotation</strong>, lui, est une faute de dossier, pas un oubli
-            d’agenda : il bloque le visa.
-          </p>
         </div>
       )}
 
       {/* ── ma déclaration ───────────────────────────────────────────── */}
       <div className="panel">
-        <h2>Ma déclaration d’indépendance — {user.name}</h2>
+        <h2>{t('team.myIndependenceDeclaration')} {user.name}</h2>
         {!mine || mine.signed_at ? (
           <form action={openAction} className="row">
             <input
@@ -236,16 +216,16 @@ export default async function TeamPage({
             <button className="btn small">{mine ? 'Réviser ma déclaration' : 'Ouvrir ma déclaration'}</button>
             {mine && (
               <span className="faint">
-                Une révision empile une version : la précédente reste lisible, avec sa signature.
+                {t('team.aRevisionStacksAVersionThe')}
               </span>
             )}
           </form>
         ) : (
           <>
-            {mine.version > 1 && <p className="faint">Révision v{mine.version} — motif : {mine.reason}</p>}
+            {mine.version > 1 && <p className="faint">{t('team.revisionV')}{mine.version} — motif : {mine.reason}</p>}
             <table className="data">
               <thead>
-                <tr><th>Rubrique</th><th>Réponse</th><th>Précision</th></tr>
+                <tr><th>Rubrique</th><th>{t('team.answer')}</th><th>{t('team.detail')}</th></tr>
               </thead>
               <tbody>
                 {cat.independance.rubriques.map((r) => {
@@ -261,15 +241,15 @@ export default async function TeamPage({
                           <input type="hidden" name="declaration_id" value={mine.id} />
                           <input type="hidden" name="code" value={r.code} />
                           <select name="answer" defaultValue={a?.answer ?? ''} required>
-                            <option value="" disabled>— à répondre —</option>
-                            <option value="non">non</option>
-                            <option value="oui">oui</option>
+                            <option value="" disabled>{t('team.toAnswer')}</option>
+                            <option value="non">{t('commun.non')}</option>
+                            <option value="oui">{t('commun.oui')}</option>
                           </select>
                           <input
                             type="text"
                             name="detail"
                             defaultValue={a?.detail ?? ''}
-                            placeholder="précision — obligatoire si « oui »"
+                            placeholder={t('team.detailRequiredIfYes')}
                             style={{ width: 340 }}
                           />
                           <button className="btn small secondary">enregistrer</button>
@@ -282,17 +262,17 @@ export default async function TeamPage({
             </table>
             {missing.length > 0 ? (
               <div className="mt">
-                <p><strong>Ce qui manque pour signer :</strong></p>
+                <p><strong>{t('team.whatIsMissingBeforeSigning')}</strong></p>
                 <ul>{missing.map((m) => <li key={m}>{m}</li>)}</ul>
                 <p className="faint">
-                  Un formulaire qu’on peut signer vide est un formulaire qui ne dit rien.
+                  {t('team.aFormYouCanSignBlank')}
                 </p>
               </div>
             ) : (
               <form action={signAction} className="mt">
                 <input type="hidden" name="declaration_id" value={mine.id} />
-                <button className="btn">Signer ma déclaration</button>
-                <span className="faint"> — on signe pour soi ; personne ne signe pour un autre.</span>
+                <button className="btn">{t('team.signMyDeclaration')}</button>
+                <span className="faint"> {t('team.youSignForYourselfNobodySigns')}</span>
               </form>
             )}
           </>
@@ -300,15 +280,15 @@ export default async function TeamPage({
 
         {myStack.length > 1 && (
           <details className="mt">
-            <summary>Historique de mes déclarations ({myStack.length} versions)</summary>
+            <summary>{t('team.historyOfMyDeclarations')}{myStack.length} versions)</summary>
             <table className="data" style={{ marginTop: 6 }}>
-              <thead><tr><th>Version</th><th>Motif</th><th>Signée</th></tr></thead>
+              <thead><tr><th>Version</th><th>Motif</th><th>{t('team.signed')}</th></tr></thead>
               <tbody>
                 {myStack.map((d) => (
                   <tr key={d.id}>
                     <td className="mono">v{d.version}</td>
                     <td>{d.reason || <span className="faint">—</span>}</td>
-                    <td>{d.signed_at ? d.signed_at.slice(0, 16) : <span className="badge amber">non signée</span>}</td>
+                    <td>{d.signed_at ? d.signed_at.slice(0, 16) : <span className="badge amber">{t('team.notSigned')}</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -319,10 +299,10 @@ export default async function TeamPage({
 
       {/* ── l'équipe ─────────────────────────────────────────────────── */}
       <div className="panel">
-        <h2>Équipe de la mission</h2>
+        <h2>{t('team.engagementTeam')}</h2>
         <table className="data">
           <thead>
-            <tr><th>Personne</th><th>Rôle</th><th>Visa</th><th>Entrée</th><th>Sortie</th><th>Déclaration</th><th /></tr>
+            <tr><th>Personne</th><th>{t('team.role')}</th><th>Visa</th><th>{t('team.joined')}</th><th>Sortie</th><th>{t('team.declaration')}</th><th /></tr>
           </thead>
           <tbody>
             {roster.map((m) => (
@@ -351,7 +331,7 @@ export default async function TeamPage({
           </tbody>
         </table>
 
-        <h3 className="mt">Affecter une personne</h3>
+        <h3 className="mt">{t('team.assignAPerson')}</h3>
         <form action={assignAction} className="row">
           <select name="user_id" required>
             {firmPeople.map((p) => (
@@ -364,27 +344,22 @@ export default async function TeamPage({
             <option value="senior">senior</option>
             <option value="staff">staff</option>
           </select>
-          <label className="row"><input type="checkbox" name="can_sign" /> peut viser</label>
-          <input type="text" name="entered_on" placeholder="entrée AAAA-MM-JJ" style={{ width: 130 }} />
+          <label className="row"><input type="checkbox" name="can_sign" /> {t('team.maySignOff')}</label>
+          <input type="text" name="entered_on" placeholder={t('team.joinedYyyyMmDd')} style={{ width: 130 }} />
           <button className="btn small">affecter</button>
         </form>
-        <p className="faint mt">
-          Le système <strong>refuse</strong> une affectation à qui n’a pas signé sa déclaration —
-          il ne le rappelle pas. La liste ne propose que des personnes du cabinet de la mission :
-          l’isolation est vérifiée à l’écriture, pas seulement à l’affichage.
-        </p>
       </div>
 
       {/* ── services autres que la certification ─────────────────────── */}
       <div className="panel">
-        <h2>Services autres que la certification</h2>
+        <h2>{t('team.nonAuditServices')}</h2>
         <table className="data">
           <thead>
             <tr><th>Date</th><th>Nature</th><th>Objet</th><th>Prestataire</th><th className="num">Montant</th></tr>
           </thead>
           <tbody>
             {services.length === 0 ? (
-              <tr><td colSpan={5} className="faint">Aucun service déclaré.</td></tr>
+              <tr><td colSpan={5} className="faint">{t('team.noServiceDeclared')}</td></tr>
             ) : services.map((s) => (
               <tr key={s.id}>
                 <td className="mono">{s.provided_on}</td>
@@ -397,10 +372,10 @@ export default async function TeamPage({
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={4}><strong>Ratio sur les honoraires d’audit</strong></td>
+              <td colSpan={4}><strong>{t('team.ratioToAuditFees')}</strong></td>
               <td className="num">
                 {ratio.ratioPct === null ? (
-                  <span className="faint">non calculé</span>
+                  <span className="faint">{t('team.notComputed')}</span>
                 ) : (
                   <span className={ratio.overCap ? 'badge red' : ''}>{ratio.ratioPct.toFixed(1)} %</span>
                 )}
@@ -422,26 +397,6 @@ export default async function TeamPage({
           <button className="btn small secondary">enregistrer</button>
         </form>
 
-        <p className="faint mt">
-          {ratio.auditFeeCents === null ? (
-            <>
-              Les honoraires d’audit de la mission ne sont pas saisis : le ratio <strong>n’est pas
-              calculé</strong>. Un ratio sur un dénominateur supposé serait pire que pas de ratio.
-            </>
-          ) : (
-            <>
-              Honoraires d’audit : {fmtEur(ratio.auditFeeCents, 'fr')} · services non-audit :{' '}
-              {fmtEur(ratio.nonAuditCents, 'fr')}.
-            </>
-          )}
-          {' '}Plafond retenu : <strong>{cap.valeur} %</strong> — {cap.pourquoi}
-          {ratio.capUnverified && (
-            <> {' '}<span className="badge amber">UNVERIFIED</span> : ce seuil vient de{' '}
-            {cap.sources.join(', ')}, dont le texte primaire n’a pas pu être atteint. Il est
-            modifiable dans <span className="mono">methodology/independance.json</span> —
-            c’est du contenu de cabinet, pas du code.</>
-          )}
-        </p>
       </div>
     </div>
   );

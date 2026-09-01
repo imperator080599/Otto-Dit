@@ -50,7 +50,7 @@ export default async function EngagementLayout({
         </div>
         <div className="row">
           <details className="bascule">
-            <summary className="btn secondary small">Changer de dossier</summary>
+            <summary className="btn secondary small">{t('nav.switchEngagement')}</summary>
             <div className="bascule-liste">
               {clients.map((c) => (
                 <div key={c.client}>
@@ -59,7 +59,7 @@ export default async function EngagementLayout({
                     <div key={en.entity_id} style={{ paddingLeft: 8 }}>
                       {c.entites.length > 1 || en.entity_name !== c.client ? <div>{en.entity_name}</div> : null}
                       {en.missions.map((m) => m.id === id ? (
-                        <div key={m.id} className="faint" style={{ paddingLeft: 8 }}>▸ {m.name} · {m.period_label} (dossier ouvert)</div>
+                        <div key={m.id} className="faint" style={{ paddingLeft: 8 }}>▸ {m.name} · {m.period_label} {t('commun.dossierOuvert')}</div>
                       ) : (
                         <form key={m.id} action={basculerAction} style={{ paddingLeft: 8 }}>
                           <input type="hidden" name="vers" value={m.id} />
@@ -82,7 +82,7 @@ export default async function EngagementLayout({
           {/* INTERROGER LE DOSSIER — un bouton en haut à droite, plus une
               section du rail (R-03) : on pose une question depuis l'écran où
               elle vient, pas en quittant son travail pour aller la poser. */}
-          <Link href={`/eng/${id}/ask`} className="btn secondary small">Interroger le dossier</Link>
+          <Link href={`/eng/${id}/ask`} className="btn secondary small">{t('nav.askTheFile')}</Link>
         </div>
       </header>
       <div className="dossier">

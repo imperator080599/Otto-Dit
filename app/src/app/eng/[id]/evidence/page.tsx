@@ -9,11 +9,6 @@ export default async function EvidencePage({ params }: { params: Promise<{ id: s
   return (
     <div className="panel">
       <h2>Evidence inbox</h2>
-      <p className="faint">
-        Intake via portal, per-engagement inbound email (stub locally) and auditor upload.
-        Content-addressed (sha256); duplicates are flagged, never merged — a duplicate
-        invoice is audit information. Classification and extraction run in the S5 ladder.
-      </p>
       <div className="table-scroll">
         <table className="data">
           <thead>

@@ -39,11 +39,6 @@ export default async function WorkpapersPage({
           <form action={draftAction}><button className="btn">Draft REV-01 (auto, from stored facts)</button></form>
         )}
       </div>
-      <p className="faint">
-        Assembled from stored facts — every figure click-through to source (P7).
-        Attribution: performed by OTTO engine run, validated by humans (ADR-012.4).
-        Re-drafting supersedes; sign-offs are dated and immutable.
-      </p>
       <table className="data">
         <thead><tr><th>Code</th><th>Title</th><th>v</th><th>Status</th><th>Edits</th><th>Sign-offs</th><th>Open notes</th></tr></thead>
         <tbody>

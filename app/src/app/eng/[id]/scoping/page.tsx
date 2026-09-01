@@ -6,6 +6,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 const SCOPING_BADGE: Record<string, string> = {
   unscoped: 'gray',
@@ -22,6 +23,7 @@ export default async function ScopingPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const packs = (await frameworkSet(id)).assurance_packs;
@@ -57,12 +59,12 @@ export default async function ScopingPage({
     <div className="panel">
       <BandeauRefus erreur={erreur} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h2>{motDuPack(packs, 'scoping')} — quels postes seront travaillés, et pourquoi</h2>
+        <h2>{motDuPack(packs, 'scoping')} {t('scop.whichAreasWillBeWorkedAnd')}</h2>
         <form action={rebuildAction}><button className="btn secondary small">Rebuild from TB</button></form>
       </div>
       <table className="data">
         <thead>
-          <tr><th>Poste</th><th>État</th><th className="num">Solde</th><th>Périmètre</th><th>Base</th><th>Décision</th></tr>
+          <tr><th>Poste</th><th>{t('scop.etat')}</th><th className="num">Solde</th><th>{t('scop.perimetre')}</th><th>Base</th><th>{t('scop.decision')}</th></tr>
         </thead>
         <tbody>
           {withAccounts.map((f) => (
@@ -101,17 +103,17 @@ export default async function ScopingPage({
                      Le motif est OBLIGATOIRE : revenir sur une décision prise
                      se justifie, sinon la trace ne dit pas pourquoi. */
                   <details>
-                    <summary className="faint">confirmé — revoir</summary>
+                    <summary className="faint">{t('scop.confirmeRevoir')}</summary>
                     <form action={confirmAction} className="row" style={{ gap: 4, marginTop: 4 }}>
                       <input type="hidden" name="fsli_id" value={f.id} />
                       <select name="decision" defaultValue="in_scope">
-                        <option value="in_scope">remettre au périmètre</option>
-                        <option value="in_scope_qualitative">retenir pour un motif qualitatif</option>
-                        <option value="ns_confirmed">sortir du périmètre</option>
+                        <option value="in_scope">{t('scop.remettre')}</option>
+                        <option value="in_scope_qualitative">{t('scop.qualitatif')}</option>
+                        <option value="ns_confirmed">{t('scop.sortir')}</option>
                       </select>
-                      <input type="text" name="basis" placeholder="motif de la révision (obligatoire)"
+                      <input type="text" name="basis" placeholder={t('scop.motif')}
                         style={{ width: 200 }} required />
-                      <button className="btn small secondary">Revoir</button>
+                      <button className="btn small secondary">{t('scop.review')}</button>
                     </form>
                   </details>
                 ) : f.scoping === 'ns_proposed' ? (
@@ -142,10 +144,6 @@ export default async function ScopingPage({
           ))}
         </tbody>
       </table>
-      <p className="faint mt">
-        Proposed NS = |balance| below performance materiality; a human must confirm or
-        override with a qualitative basis. Confirmed decisions survive TB re-imports.
-      </p>
     </div>
   );
 }

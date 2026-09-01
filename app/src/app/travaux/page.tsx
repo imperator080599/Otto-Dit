@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/core/auth';
 import { mesTravaux, type LigneTravail } from '@/lib/services/travaux';
+import { tr } from '@/lib/i18n';
 
 // MES TRAVAUX — l'écran d'où l'on part (ADR-110).
 //
@@ -24,25 +25,21 @@ const SOUS_TITRES: Record<LigneTravail['nature'], string> = {
 
 export default async function MesTravaux() {
   const user = await requireUser();
+  const t = await tr();
   const lignes = await mesTravaux(user.id);
   const natures: LigneTravail['nature'][] = ['note', 'visa', 'demande'];
 
   return (
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Mes travaux</h1>
+        <h1>{t('commun.mesTravaux')}</h1>
         <span className="faint">{user.name} · {lignes.length} ligne(s)</span>
       </div>
 
       {lignes.length === 0 && (
         <div className="panel">
           <p>
-            <span className="badge green">rien ne vous attend</span> — aucune note adressée,
-            aucun papier en attente de visa sur vos dossiers, aucune demande échue.
-          </p>
-          <p className="faint">
-            Cet écran ne stocke rien : il relit à chaque ouverture. Une liste de travail tenue
-            à la main ment le jour où personne ne la tient.
+            <span className="badge green">{t('trav.nothingIsWaitingForYou')}</span> {t('trav.noNoteAddressedToYouNo')}
           </p>
         </div>
       )}
@@ -56,7 +53,7 @@ export default async function MesTravaux() {
             <p className="faint">{SOUS_TITRES[nature]}</p>
             <table className="data">
               <thead>
-                <tr><th>Mission</th><th>Objet</th><th>Où en est-ce</th><th>Date</th></tr>
+                <tr><th>Mission</th><th>Objet</th><th>{t('trav.whereItStands')}</th><th>Date</th></tr>
               </thead>
               <tbody>
                 {groupe.map((l, i) => (
@@ -64,7 +61,7 @@ export default async function MesTravaux() {
                     <td className="faint">{l.mission}</td>
                     <td><Link href={l.href}>{l.titre}</Link></td>
                     <td>
-                      {l.retard && <span className="badge amber" style={{ marginRight: 6 }}>à traiter</span>}
+                      {l.retard && <span className="badge amber" style={{ marginRight: 6 }}>{t('trav.toHandle')}</span>}
                       {l.detail}
                     </td>
                     <td className="faint">{l.quand ?? '—'}</td>
@@ -76,12 +73,6 @@ export default async function MesTravaux() {
         );
       })}
 
-      <p className="faint">
-        Ce que cet écran ne montre PAS, et qui est dit plutôt que caché : les lignes
-        d’échantillon ne portent pas encore de destinataire (le produit propose une
-        répartition, il ne l’attribue pas nominativement au niveau de la ligne), et les
-        obstacles au visa se lisent dossier par dossier, sur leur écran.
-      </p>
     </div>
   );
 }

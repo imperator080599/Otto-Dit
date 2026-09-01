@@ -21,10 +21,6 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
             {chain.ok ? `chain verified · ${chain.count} events` : `CHAIN BROKEN at #${chain.brokenAtId}`}
           </span>
         </div>
-        <p className="faint">
-          Every state change writes here (P11). UPDATE/DELETE are rejected at the database
-          level; each row hashes the previous one, so tampering is detectable.
-        </p>
         <div className="row">
           <Link className={`btn small ${verb || actor ? 'secondary' : ''}`} href={`/eng/${id}/events`}>All</Link>
           {(['user', 'system', 'ai'] as const).map((a) => (

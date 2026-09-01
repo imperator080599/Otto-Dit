@@ -5,21 +5,9 @@ import { portalItems, portalRequestGuard, portalRequests } from '@/lib/services/
 import { ingestEvidence, markAllSubmitted, answerExplanation } from '@/lib/services/evidence';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { deuxLangues } from '@/app/portal/deux-langues';
+import { traduire, type CleLibelle } from '@/lib/i18n/catalogue';
 
-const STR = {
-  fr: {
-    back: '← Toutes les demandes', upload: 'Téléverser', answer: 'Répondre',
-    allDone: 'Tous les justificatifs ont été transmis',
-    itemStatus: { pending: 'En attente', uploaded: 'Transmis (à confirmer)', complete: 'Complet', na: 'N/A' } as Record<string, string>,
-    explain: 'Votre explication…', files: 'fichier(s) transmis',
-  },
-  en: {
-    back: '← All requests', upload: 'Upload', answer: 'Answer',
-    allDone: 'All supporting evidence submitted',
-    itemStatus: { pending: 'Pending', uploaded: 'Uploaded (to confirm)', complete: 'Complete', na: 'N/A' } as Record<string, string>,
-    explain: 'Your explanation…', files: 'file(s) submitted',
-  },
-};
 
 export default async function PortalRequestPage({
   params, searchParams,
@@ -30,15 +18,15 @@ export default async function PortalRequestPage({
   const { token, rid } = await params;
   const { erreur } = await searchParams;
   const session = await portalSession(token);
-  if (!session) return <div className="shell"><div className="panel">Lien invalide. / Invalid link.</div></div>;
+  if (!session) return <div className="shell"><div className="panel">{deuxLangues('portal.lienInvalide')}</div></div>;
   if (!(await portalRequestGuard(rid, session.contact.entity_id))) {
-    return <div className="shell"><div className="panel">Demande introuvable. / Request not found.</div></div>;
+    return <div className="shell"><div className="panel">{deuxLangues('portal.demandeIntrouvable')}</div></div>;
   }
   const requests = await portalRequests(session.contact.entity_id);
   const request = requests.find((r) => r.id === rid);
-  if (!request) return <div className="shell"><div className="panel">Demande clôturée. / Request closed.</div></div>;
+  if (!request) return <div className="shell"><div className="panel">{deuxLangues('portal.demandeCloturee')}</div></div>;
   const lang = (request.language === 'fr' ? 'fr' : 'en') as 'fr' | 'en';
-  const t = STR[lang];
+  const t = (cle: CleLibelle, vars?: Record<string, string | number>) => traduire(lang, cle, vars);
   const items = await portalItems(rid);
 
   async function uploadAction(formData: FormData) {
@@ -84,7 +72,7 @@ export default async function PortalRequestPage({
   return (
     <div className="shell" style={{ maxWidth: 860 }}>
       <BandeauRefus erreur={erreur} />
-      <p><Link href={`/portal/${token}`}>{t.back}</Link></p>
+      <p><Link href={`/portal/${token}`}>{t('portal.retour')}</Link></p>
       <h1>R-{String(request.seq_no).padStart(3, '0')} — {request.title}</h1>
       <div className="panel">
         <table className="data">
@@ -92,22 +80,22 @@ export default async function PortalRequestPage({
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
-                <td style={{ maxWidth: 380 }}>{i.description}{Number(i.evidence_count) > 0 && <div className="faint">{i.evidence_count} {t.files}</div>}</td>
-                <td><span className={`badge ${i.status === 'complete' ? 'green' : i.status === 'uploaded' ? 'blue' : 'gray'}`}>{t.itemStatus[i.status]}</span></td>
+                <td style={{ maxWidth: 380 }}>{i.description}{Number(i.evidence_count) > 0 && <div className="faint">{i.evidence_count} {t('portal.fichiersTransmis')}</div>}</td>
+                <td><span className={`badge ${i.status === 'complete' ? 'green' : i.status === 'uploaded' ? 'blue' : 'gray'}`}>{t(`portal.item.${i.status}` as CleLibelle)}</span></td>
                 <td>
                   {i.kind === 'explanation' ? (
                     i.client_note ? <span className="muted">{i.client_note}</span> : (
                       <form action={answerAction} className="row">
                         <input type="hidden" name="item_id" value={i.id} />
-                        <input type="text" name="text" placeholder={t.explain} style={{ width: 220 }} required />
-                        <button className="btn small">{t.answer}</button>
+                        <input type="text" name="text" placeholder={t('portal.explication')} style={{ width: 220 }} required />
+                        <button className="btn small">{t('portal.repondre')}</button>
                       </form>
                     )
                   ) : (
                     <form action={uploadAction} className="row">
                       <input type="hidden" name="item_id" value={i.id} />
                       <input type="file" name="file" required style={{ maxWidth: 210 }} />
-                      <button className="btn small">{t.upload}</button>
+                      <button className="btn small">{t('portal.televerser')}</button>
                     </form>
                   )}
                 </td>
@@ -117,7 +105,7 @@ export default async function PortalRequestPage({
         </table>
         {request.status !== 'submitted' && (
           <form action={allDoneAction} className="mt">
-            <button className="btn" style={{ background: 'var(--green)' }}>{t.allDone}</button>
+            <button className="btn" style={{ background: 'var(--green)' }}>{t('portal.toutTransmis')}</button>
           </form>
         )}
         {request.status === 'submitted' && <p className="callout green mt">{lang === 'fr' ? 'Demande marquée comme complète — merci.' : 'Request marked complete — thank you.'}</p>}

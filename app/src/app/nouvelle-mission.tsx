@@ -1,5 +1,7 @@
 import { optionsCreation } from '@/lib/services/engagement';
 import { creerAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from './bandeau-refus';
 
 // LA CRÉATION DU DOSSIER, sur l'accueil — parce que c'est là qu'on arrive.
 //
@@ -9,15 +11,12 @@ import { creerAction } from './actions';
 
 export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; erreur?: string }) {
   const { entites, exercices } = await optionsCreation(tenantId);
+  const t = await tr();
   return (
     <div className="panel">
       <details>
-        <summary><strong>Créer un dossier</strong></summary>
-        {erreur && (
-          <p style={{ marginTop: 8 }}>
-            <span className="badge amber">refusé</span> {erreur}
-          </p>
-        )}
+        <summary><strong>{t('nm.creerUnDossier')}</strong></summary>
+        <BandeauRefus erreur={erreur} />
         <form action={creerAction} className="mt">
           <p className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <select name="entity_id" required>
@@ -32,30 +31,24 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
               ))}
             </select>
             <select name="kind" defaultValue="statutory_audit">
-              <option value="statutory_audit">audit légal</option>
-              <option value="sox_component">composante SOX</option>
-              <option value="integrated">intégré</option>
+              <option value="statutory_audit">{t('nm.auditLegal')}</option>
+              <option value="sox_component">{t('nm.composanteSox')}</option>
+              <option value="integrated">{t('nm.integre')}</option>
             </select>
             <select name="pack" defaultValue="nep-fr">
               <option value="nep-fr">NEP (France)</option>
               <option value="pcaob-sox">PCAOB / SOX</option>
             </select>
             <select name="language" defaultValue="fr">
-              <option value="fr">français</option>
-              <option value="en">anglais</option>
+              <option value="fr">{t('nm.langueFr')}</option>
+              <option value="en">{t('nm.langueEn')}</option>
             </select>
           </p>
           <p className="row" style={{ gap: 8 }}>
-            <input name="name" placeholder="nom du dossier (facultatif)" style={{ flex: 1, minWidth: 260 }} />
-            <button className="btn">Créer</button>
+            <input name="name" placeholder={t('nm.nomDuDossier')} style={{ flex: 1, minWidth: 260 }} />
+            <button className="btn">{t('nm.creer')}</button>
           </p>
         </form>
-        <p className="faint">
-          Le dossier naît en <strong>setup</strong>, avec la méthode <strong>en vigueur</strong> de
-          votre cabinet désignée : sans elle, il ne pourrait rien planifier et personne ne saurait
-          pourquoi. La première étape est ensuite l’<strong>acceptation</strong> — aucun travail ne
-          se planifie avant elle.
-        </p>
       </details>
     </div>
   );

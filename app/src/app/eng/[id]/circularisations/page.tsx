@@ -9,6 +9,7 @@ import { ingestEvidence } from '@/lib/services/evidence';
 import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 // LES CIRCULARISATIONS (point 3, ADR-111) — banques et avocats.
 //
@@ -47,6 +48,7 @@ export default async function CircularisationsPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
 
@@ -149,13 +151,6 @@ export default async function CircularisationsPage({
       <BandeauRefus erreur={erreur} />
       <div className="panel">
         <h2>Circularisations</h2>
-        <p className="faint">
-          Une confirmation de tiers est la preuve qu’on <strong>ne fabrique pas soi-même</strong> :
-          elle vient de la banque ou du cabinet, directement. Le contrôle se fait dans les deux
-          sens — un compte du grand livre qu’aucun tiers ne couvre est un trou, une ligne de
-          listing qu’aucun compte ne porte en est un autre. Rien n’est stocké de ce qui se
-          calcule : les états ci-dessous sont dérivés à chaque ouverture.
-        </p>
       </div>
 
       {sections.map((s) => (
@@ -165,7 +160,7 @@ export default async function CircularisationsPage({
             {s.camp && (
               <form action={questionsAction}>
                 <input type="hidden" name="kind" value={s.cle} />
-                <button className="btn secondary small">Rédiger les questions au client</button>
+                <button className="btn secondary small">{t('circ.draftTheQuestionsToTheClient')}</button>
               </form>
             )}
           </div>
@@ -181,11 +176,6 @@ export default async function CircularisationsPage({
             </summary>
               <form action={importAction} className="mt">
                 <input type="hidden" name="kind" value={s.cle} />
-                <p className="faint">
-                  Un tableau <span className="mono">Tiers;Contact;Reference;Compte</span> — une ligne
-                  par {s.cle === 'banque' ? 'banque' : 'cabinet'}. Une colonne absente, une adresse
-                  invalide ou une référence en double sont refusées en nommant la ligne.
-                </p>
                 <div className="row">
                   <input type="file" name="fichier" accept=".csv,text/csv" required />
                   <button className="btn small">Importer</button>
@@ -196,27 +186,26 @@ export default async function CircularisationsPage({
           {s.camp && (
             <>
               <p className="faint">
-                Campagne ouverte à la date du <strong>{s.camp.as_of}</strong> ·{' '}
-                {s.rap.lignes.length} tiers · règle d’écart : {s.rap.regle}
+                {t('circ.campaignOpenedAsAt')} <strong>{s.camp.as_of}</strong> ·{' '}
+                {s.rap.lignes.length} {t('circ.counterpartiesDifferenceRule')} {s.rap.regle}
                 {s.camp.listing_evidence_id && (
-                  <> · <a href={`/api/blob/${s.camp.listing_evidence_id}`}>le listing reçu</a></>
+                  <> · <a href={`/api/blob/${s.camp.listing_evidence_id}`}>{t('circ.theListingReceived')}</a></>
                 )}
               </p>
 
               {(s.comp.comptesSansTiers.length > 0 || s.comp.tiersSansCompte.length > 0) && (
                 <div className="callout warn">
-                  <strong>Complétude — {s.comp.comptesSansTiers.length + s.comp.tiersSansCompte.length} constat(s).</strong>
+                  <strong>{t('circ.completeness')} {s.comp.comptesSansTiers.length + s.comp.tiersSansCompte.length} constat(s).</strong>
                   <ul>
                     {s.comp.comptesSansTiers.map((c) => (
                       <li key={c.compte}>
-                        Le compte <span className="mono">{c.compte}</span> « {c.libelle} » ({fmtEur(c.soldeCents, 'fr')})
-                        n’est couvert par <strong>aucun</strong> tiers du listing.
+                        Le compte <span className="mono">{c.compte}</span> « {c.libelle} » ({fmtEur(c.soldeCents, 'fr')}{t('circ.isCoveredByNo')} <strong>{t('commun.aucun')}</strong> {t('circ.counterpartiesInTheListing')}
                       </li>
                     ))}
-                    {s.comp.tiersSansCompte.map((t) => (
-                      <li key={t.reference}>
-                        « {t.nom} » ({t.reference}) annonce le compte{' '}
-                        <span className="mono">{t.compte ?? '—'}</span>, qu’aucune écriture ne porte.
+                    {s.comp.tiersSansCompte.map((x) => (
+                      <li key={x.reference}>
+                        « {x.nom} » ({x.reference}{t('circ.statesAccount')}{' '}
+                        <span className="mono">{x.compte ?? '—'}</span>{t('circ.whichNoEntryCarries')}
                       </li>
                     ))}
                   </ul>
@@ -227,9 +216,9 @@ export default async function CircularisationsPage({
                 <table className="data">
                   <thead>
                     <tr>
-                      <th>Tiers</th><th>Référence</th><th>Compte</th><th>État</th>
-                      <th className="num">Comptabilité</th><th className="num">Confirmé</th><th className="num">Écart</th>
-                      <th>Réponse</th><th></th>
+                      <th>Tiers</th><th>{t('circ.reference')}</th><th>Compte</th><th>{t('circ.state')}</th>
+                      <th className="num">{t('circ.books')}</th><th className="num">{t('circ.confirmed')}</th><th className="num">{t('circ.difference')}</th>
+                      <th>{t('circ.reply')}</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -251,7 +240,7 @@ export default async function CircularisationsPage({
                             <div style={{ marginTop: 4 }}>
                               <form action={expliquerAction}>
                                 <input type="hidden" name="party_id" value={l.id} />
-                                <input name="explication" placeholder="Pourquoi cet écart ?" required style={{ width: 200 }} />
+                                <input name="explication" placeholder={t('circ.whyThisDifference')} required style={{ width: 200 }} />
                                 <button className="btn small">Expliquer</button>
                               </form>
                             </div>
@@ -260,32 +249,32 @@ export default async function CircularisationsPage({
                         </td>
                         <td>
                           {l.evidenceId
-                            ? <a href={`/api/blob/${l.evidenceId}`}>la réponse</a>
+                            ? <a href={`/api/blob/${l.evidenceId}`}>{t('circ.theReply')}</a>
                             : <span className="faint">—</span>}
                         </td>
                         <td>
                           {l.etat === 'a_envoyer' ? (
                             <form action={envoyerAction}>
                               <input type="hidden" name="party_id" value={l.id} />
-                              <button className="btn small secondary">Envoyer (simulé)</button>
+                              <button className="btn small secondary">{t('circ.sendSimulated')}</button>
                             </form>
                           ) : (
                             <details>
-                              <summary className="repli-action">Déposer la réponse</summary>
+                              <summary className="repli-action">{t('circ.uploadTheReply')}</summary>
                               <form action={deposerAction}>
                                 <input type="hidden" name="party_id" value={l.id} />
                                 <input type="hidden" name="kind" value={s.cle} />
                                 <input type="file" name="fichier" required />
                                 {s.cle === 'banque' ? (
-                                  <input name="montant" placeholder="Solde confirmé (€)" required />
+                                  <input name="montant" placeholder={t('circ.confirmedBalance')} required />
                                 ) : (
                                   <>
-                                    <input name="objet" placeholder="Objet du litige" required />
-                                    <input name="provision" placeholder="Provision déclarée (€)" required />
-                                    <input name="statut" placeholder="Statut (en cours, jugé…)" defaultValue="en cours" />
+                                    <input name="objet" placeholder={t('circ.subjectOfTheDispute')} required />
+                                    <input name="provision" placeholder={t('circ.declaredProvision')} required />
+                                    <input name="statut" placeholder={t('circ.statusOngoingJudged')} defaultValue="en cours" />
                                   </>
                                 )}
-                                <button className="btn small">Enregistrer la réponse</button>
+                                <button className="btn small">{t('circ.recordTheReply')}</button>
                               </form>
                             </details>
                           )}
@@ -300,12 +289,6 @@ export default async function CircularisationsPage({
         </div>
       ))}
 
-      <p className="faint">
-        Ce que l’écran ne prétend pas faire : <strong>rien ne part réellement</strong>. Le
-        transport est simulé et le dit à chaque envoi ; le SMTP sortant est un chantier à part,
-        avec sa configuration par dossier. Les questions au client naissent en{' '}
-        <Link href={`/eng/${id}/requests`}>brouillon</Link> — elles ne partent qu’approuvées.
-      </p>
     </div>
   );
 }

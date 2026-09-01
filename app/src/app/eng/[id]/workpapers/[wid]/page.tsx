@@ -215,11 +215,6 @@ export default async function WorkpaperDetail({
             </span>
           </details>
         </div>
-        <p className="faint">
-          Performed by OTTO engine run <span className="mono">{wp.engine_run_id?.slice(0, 8)}</span> — facts hash{' '}
-          <span className="mono">{wp.based_on_hash?.slice(0, 16)}…</span> — language {wp.language.toUpperCase()}.
-          Exports are terminal, hash-stamped and self-contained (ADR-013).
-        </p>
         {/* LES ANNEXES (ADR-106) : un tableur de calcul — ou toute pièce de
             travail — se JOINT au papier pour les cas qui sortent du cadre
             standard. Le fichier passe par le moteur de pièces (empreinte,
@@ -230,7 +225,7 @@ export default async function WorkpaperDetail({
               <span className="faint">Annexes jointes :</span>{' '}
               {annexes.map((a) => (
                 <a key={a.id} href={`/api/blob/${a.evidenceId}`} target="_blank" className="mono"
-                  title={`empreinte ${a.sha256.slice(0, 14)}… · ${Math.round(a.sizeBytes / 1024)} ko · jointe le ${a.joinedAt.slice(0, 16)}`}
+                  title={t('wp.annexeTitre', { h: a.sha256.slice(0, 14), ko: Math.round(a.sizeBytes / 1024), quand: a.joinedAt.slice(0, 16) })}
                   style={{ marginRight: 10 }}>
                   {a.filename}
                 </a>
@@ -238,11 +233,11 @@ export default async function WorkpaperDetail({
             </p>
           )}
           <details>
-            <summary className="repli-action">Joindre une annexe (tableur, note de calcul…)</summary>
+            <summary className="repli-action">{t('wp.attachAnAppendixSpreadsheetCalculationNo')}</summary>
             <form action={annexeAction} className="row mt">
               <input type="file" name="fichier" style={{ maxWidth: 240 }} />
               <button className="btn secondary small">Joindre</button>
-              <span className="faint">entre au dossier avec empreinte et provenance, comme toute pièce</span>
+              <span className="faint">{t('wp.entersTheFileWithHashAnd')}</span>
             </form>
           </details>
         </div>
@@ -342,7 +337,7 @@ export default async function WorkpaperDetail({
         {ipe?.valideParNom && (
           <p className="faint mt">
             {ipe.valideParNom} · {ipe.valideLe?.slice(0, 10)}
-            {ipe.redigeParIa && <> · <span className="ai-flag">rédaction proposée, validée par un humain</span></>}
+            {ipe.redigeParIa && <> · <span className="ai-flag">{t('wp.draftedByTheEngineApprovedBy')}</span></>}
           </p>
         )}
       </div>
@@ -383,7 +378,7 @@ export default async function WorkpaperDetail({
                   {s.table.headers.map((h) => <th key={h}>{h}</th>)}
                   {s.key === 'tableau_echantillon' && colonnesRemplies.map((c) => (
                     <th key={c.id}>
-                      {c.titre} <span className="mod-flag" title={`colonne ajoutée au modèle standard — ${c.justification}`}>ajoutée</span>
+                      {c.titre} <span className="mod-flag" title={t('wp.colonneAjouteeTitre', { motif: c.justification })}>{t('wp.added')}</span>
                     </th>
                   ))}
                 </tr></thead>
@@ -408,7 +403,7 @@ export default async function WorkpaperDetail({
                             <span>
                               {String(c)}{' '}
                               <a href={`/api/blob/${src}`} target="_blank" className="lien-piece"
-                                title="ouvrir le justificatif d’où vient cette donnée">↗</a>
+                                title={t('wp.openTheSupportingDocumentThisFigure')}>↗</a>
                             </span>
                           ) : (
                             String(c)
@@ -438,9 +433,9 @@ export default async function WorkpaperDetail({
                           if (cel.outcome === 'introuvable') {
                             return (
                               <td key={c.id} className="faint">
-                                absente des pièces reçues
+                                {t('wp.absentFromTheDocumentsReceived')}
                                 {cel.clarification_request_item_id && (
-                                  <span className="badge blue" style={{ marginLeft: 4 }}>clarification proposée</span>
+                                  <span className="badge blue" style={{ marginLeft: 4 }}>{t('wp.clarificationProposed')}</span>
                                 )}
                               </td>
                             );
@@ -452,9 +447,9 @@ export default async function WorkpaperDetail({
                           return (
                             <td key={c.id}>
                               {cel.evidence_id
-                                ? <a href={`/api/blob/${cel.evidence_id}`} target="_blank" title="la pièce qui porte la donnée">{affiche}</a>
+                                ? <a href={`/api/blob/${cel.evidence_id}`} target="_blank" title={t('wp.theDocumentCarryingTheFigure')}>{affiche}</a>
                                 : affiche}
-                              {!cel.verifie && <span className="ai-flag" style={{ marginLeft: 4 }}>à vérifier</span>}
+                              {!cel.verifie && <span className="ai-flag" style={{ marginLeft: 4 }}>{t('wp.toCheck')}</span>}
                             </td>
                           );
                         })}
@@ -482,14 +477,7 @@ export default async function WorkpaperDetail({
       ))}
 
       <div className="panel">
-        <h2>Colonnes ajoutées au tableau de testing <span className="mod-flag">modèle standard modifié</span></h2>
-        <p className="faint">
-          Le titre est du texte libre — OTTO PROPOSE son interprétation et n&apos;écrit RIEN avant votre
-          confirmation : s&apos;il devinait mal et remplissait quand même, une donnée fausse entrerait dans
-          un papier de travail. Chaque cellule a deux issues : trouvée dans une pièce REÇUE (avec sa
-          provenance, héritant de la file de vérification), ou introuvable — et alors une demande de
-          clarification se propose au lieu d&apos;une case vide muette (ADR-099).
-        </p>
+        <h2>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></h2>
         {colonnesAjoutees.map((c) => (
           <div className={`callout ${c.statut === 'proposee' ? 'warn' : c.statut === 'remplie' ? 'green' : ''}`} key={c.id}>
             <strong>{c.titre}</strong>{' '}
@@ -499,19 +487,19 @@ export default async function WorkpaperDetail({
             <p style={{ margin: '6px 0' }}>
               {c.interpretation
                 ? <>OTTO : « {(c.interpretation as { phrase: string }).phrase} »</>
-                : <>OTTO : « je n&apos;ai pas su interpréter ce titre — choisissez un champ du catalogue, ou annulez. »</>}
-              {' '}<span className="faint">coût : {Number(c.cout_usd).toFixed(2)} $ (interprétation par règles, aucun appel payant)</span>
+                : <>{t('wp.ottoICouldNotInterpretThis')}</>}
+              {' '}<span className="faint">{t('wp.coutRegles', { c: Number(c.cout_usd).toFixed(2) })}</span>
             </p>
             {c.statut === 'proposee' && (
               <div className="row">
                 <form action={confirmerColonneAction} className="row">
                   <input type="hidden" name="column_id" value={c.id} />
-                  <button className="btn small">Confirmer — OTTO cherche dans les pièces reçues</button>
+                  <button className="btn small">{t('wp.confirmOttoSearchesTheDocumentsReceived')}</button>
                 </form>
                 <form action={confirmerColonneAction} className="row">
                   <input type="hidden" name="column_id" value={c.id} />
                   <select name="champ" defaultValue="" required>
-                    <option value="" disabled>— corriger : choisir le champ —</option>
+                    <option value="" disabled>{t('wp.correctPickTheField')}</option>
                     {CHAMPS_LISIBLES.map((ch) => <option key={ch.champ} value={ch.champ}>{ch.libelle}</option>)}
                   </select>
                   <button className="btn secondary small">Corriger puis chercher</button>
@@ -525,19 +513,19 @@ export default async function WorkpaperDetail({
             {c.statut === 'remplie' && (
               <form action={clarifierColonneAction}>
                 <input type="hidden" name="column_id" value={c.id} />
-                <button className="btn secondary small">Proposer une clarification au client pour les lignes sans donnée</button>
+                <button className="btn secondary small">{t('wp.proposeAClarificationToTheClient')}</button>
               </form>
             )}
           </div>
         ))}
         {wp.status !== 'signed' && wp.status !== 'outdated' && (
           <details className="mt">
-            <summary className="repli-action">Ajouter une colonne (marquée, justifiée)</summary>
+            <summary className="repli-action">{t('wp.addAColumnFlaggedJustified')}</summary>
             <form action={ajouterColonneAction} className="mt">
               <div className="row">
-                <input name="titre" placeholder="Titre de la colonne (texte libre — « Date livraison », « Qté livrée »…)" style={{ flex: 1 }} required />
-                <input name="justification" placeholder="Justification (obligatoire — sort dans l'export)" style={{ flex: 1 }} required />
-                <button className="btn small">Ajouter la colonne</button>
+                <input name="titre" placeholder={t('wp.columnTitleFreeTextDeliveryDate')} style={{ flex: 1 }} required />
+                <input name="justification" placeholder={t('wp.justificationPlaceholder')} style={{ flex: 1 }} required />
+                <button className="btn small">{t('wp.addTheColumn')}</button>
               </div>
             </form>
           </details>
@@ -568,16 +556,16 @@ export default async function WorkpaperDetail({
           <form action={noteAction} className="mt">
             <textarea name="text" placeholder="New review note…" required />
             <div className="row mt">
-              <select name="note_type" defaultValue="a_corriger" title="seules les bloquantes empêchent le visa (ADR-028)">
-                <option value="a_corriger">à corriger (bloquante)</option>
-                <option value="a_documenter">à documenter</option>
+              <select name="note_type" defaultValue="a_corriger" title={t('wp.onlyBlockingNotesPreventSignOff')}>
+                <option value="a_corriger">{t('wp.toFixBlocking')}</option>
+                <option value="a_documenter">{t('wp.toDocument')}</option>
                 <option value="question">question</option>
-                <option value="remarque_n1">remarque pour N+1</option>
+                <option value="remarque_n1">{t('wp.noteForNextYear')}</option>
               </select>
               <select name="assignee" defaultValue="">
                 <option value="">unassigned</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                <option value="otto">OTTO — exécute l&apos;instruction</option>
+                <option value="otto">{t('wp.ottoCarryOutTheInstruction')}</option>
               </select>
               <button className="btn small">Add note</button>
             </div>

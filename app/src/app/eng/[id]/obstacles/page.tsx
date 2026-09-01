@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { obstaclesAuVisa } from '@/lib/services/obstacles';
 import { FAMILLES } from '../familles';
+import { tr } from '@/lib/i18n';
 
 // LES OBSTACLES AU VISA — une seule liste, calculée (point 8).
 //
@@ -16,6 +17,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function ObstaclesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const liste = await obstaclesAuVisa(id);
 
@@ -28,28 +30,9 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
   return (
     <div className="stack">
       <div className="panel">
-        <h2>Ce qui empêche de viser ce dossier</h2>
-        {liste.length === 0 ? (
-          <>
-            <p><span className="badge green">Aucun obstacle</span></p>
-            <p className="faint">
-              Toutes les règles du dossier sont satisfaites. Cette page n’affirme rien d’autre :
-              elle ne dit pas que le dossier est <em>bon</em>, elle dit qu’aucune règle ne le
-              <strong> refuse</strong>. Le jugement reste au signataire.
-            </p>
-          </>
-        ) : (
-          <>
-            <p>
-              <span className="badge amber">{liste.length} obstacle(s)</span>{' '}
-              répartis sur {parFamille.size} famille(s).
-            </p>
-            <p className="faint">
-              Chaque obstacle est <strong>calculé</strong> par le service qui le connaît — aucun
-              n’est rédigé ici. Un obstacle qui n’apparaît pas dans cette liste n’en est pas un :
-              si une règle bloque ailleurs sans figurer ici, c’est un défaut, pas une subtilité.
-            </p>
-          </>
+        <h2>{t('obst.titre')}</h2>
+        {liste.length === 0 && (
+          <p><span className="badge green">{t('obst.aucun')}</span></p>
         )}
       </div>
 
@@ -63,7 +46,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
             <Link
               href={`/eng/${id}/${liste.find((o) => o.famille === famille)!.ou}`}
               className="btn secondary small"
-            >Aller le lever</Link>
+            >{t('obst.aller')}</Link>
           </div>
           <p className="faint">{FAMILLES[famille]?.pourquoi}</p>
           <ul>{libelles.map((l, i) => <li key={i}>{l}</li>)}</ul>

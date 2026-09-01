@@ -6,6 +6,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { tr } from '@/lib/i18n';
 
 export default async function ReconciliationPage({
   params, searchParams,
@@ -14,6 +15,7 @@ export default async function ReconciliationPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   const { erreur } = await searchParams;
   await requireMember(id);
   const latest = await latestTbGl(id);
@@ -89,20 +91,6 @@ export default async function ReconciliationPage({
               )}
               <span className="faint"> computed {latest.computed_at.slice(0, 16)}</span>
             </p>
-            <p className="faint">
-              Per-account differences are never netted; each one raises a typed exception.
-              The population gate (Gate 2) is per tested FSLI: an open difference on the
-              FSLI&apos;s accounts blocks its population build; a documented difference passes
-              with the note rendered in the workpaper.
-            </p>
-            <p className="faint">
-              Documenting a difference carries the same six elements as resolving an exception
-              (migration 0010): the explanation received verbatim, the auditor&apos;s conclusion, a
-              disposition, a LINK to the evidence or entry that corroborates it, and who concluded
-              when. A difference nobody can corroborate — an entry absent from the ledger has none —
-              takes the scope-limitation path instead: it records what was done instead, it never
-              claims to be corroborated, and the ledger stays provisional until the definitive file.
-            </p>
             {latest.items.length > 0 && (
               <table className="data">
                 <thead>
@@ -127,18 +115,18 @@ export default async function ReconciliationPage({
                             <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required
-                                placeholder="Explication reçue, mot pour mot (l'entretien seul n'est pas un élément probant — NEP 500)" />
+                                placeholder={t('commun.explicationMotPourMot')} />
                               <textarea name="conclusion" rows={2} required
-                                placeholder="Votre conclusion sur cette explication" />
+                                placeholder={t('rap.conclusion')} />
                               <div className="row" style={{ gap: 4 }}>
                                 <select name="disposition" defaultValue="no_misstatement">
-                                  <option value="no_misstatement">aucune anomalie</option>
-                                  <option value="corrected">corrigé (écriture liée)</option>
-                                  <option value="compensated">couvert par un autre élément</option>
-                                  <option value="already_accumulated">même événement, déjà accumulé</option>
+                                  <option value="no_misstatement">{t('commun.aucuneAnomalie')}</option>
+                                  <option value="corrected">{t('rap.corrige')}</option>
+                                  <option value="compensated">{t('rap.couvert')}</option>
+                                  <option value="already_accumulated">{t('rap.dejaCumule')}</option>
                                 </select>
                                 <select name="corroboration" required style={{ flex: 1 }}>
-                                  <option value="">— pièce ou écriture qui corrobore (obligatoire) —</option>
+                                  <option value="">{t('rap.corroboration')}</option>
                                   {corroborations.map((c) => (
                                     <option key={c.value} value={c.value}>{c.label}</option>
                                   ))}
@@ -151,8 +139,8 @@ export default async function ReconciliationPage({
                               <textarea name="explanation" rows={2} required
                                 placeholder="Pourquoi l'écart ne peut pas être corroboré, dans les mots du client" />
                               <textarea name="alternative" rows={2} required
-                                placeholder="Ce qui a été fait à la place (procédures alternatives)" />
-                              <button className="btn small danger">→ Limitation de périmètre</button>
+                                placeholder={t('rap.alternatives')} />
+                              <button className="btn small danger">{t('rap.limitation')}</button>
                             </form>
                           </details>
                         ) : (

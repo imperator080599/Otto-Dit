@@ -84,7 +84,7 @@ export default async function MaterialityPage({
           </form>
         </div>
         {!current ? (
-          <p className="muted">No proposal yet. The engine proposes a benchmark, %, and written rationale from the pack rules; a human validates (L3) and the arithmetic is deterministic (L0).</p>
+          <p className="muted">No proposal yet.</p>
         ) : (
           <>
             <p>
@@ -142,10 +142,6 @@ export default async function MaterialityPage({
             ))}
           </tbody>
         </table>
-        <p className="faint mt">
-          Every version is kept (supersede, never overwrite). The validation act, validator
-          and timestamp are in the event log.
-        </p>
       </div>
     </div>
   );

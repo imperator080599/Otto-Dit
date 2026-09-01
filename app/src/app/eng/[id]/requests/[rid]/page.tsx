@@ -92,11 +92,6 @@ export default async function RequestDetailPage({
       </div>
       <div className="panel">
         <h2>Provenance</h2>
-        <p className="muted">
-          Each per-unit item links request → sample item → GL line: the answer to “why does
-          this evidence exist?” is stored, not reconstructed (P7). See the{' '}
-          <Link href={`/eng/${id}/evidence`}>evidence inbox</Link> for received documents.
-        </p>
       </div>
     </div>
   );

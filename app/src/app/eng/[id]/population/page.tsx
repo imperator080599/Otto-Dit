@@ -39,13 +39,6 @@ export default async function PopulationPage({ params, searchParams }: { params:
             </a>
           </span>
         </div>
-        <p className="faint">
-          Population hash <span className="mono">{pop.hash.slice(0, 30)}…</span> — the sample
-          binds to this hash; a changed population forces a re-draw (ADR-016). Flags are
-          deterministic rules (weekend, round amount, manual journal, period end,
-          credit-note pattern); auditors consume exceptions and flags, never raw
-          populations (P8).
-        </p>
         <div className="table-scroll">
           <table className="data">
             <thead>

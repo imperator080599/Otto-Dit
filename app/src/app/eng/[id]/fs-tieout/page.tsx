@@ -3,6 +3,8 @@ import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import { lignes, totaux, obstaclesPointage } from '@/lib/services/tieout';
 import { chargerAction, pointerAction, documenterAction, expliquerAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -32,11 +34,12 @@ export default async function TieOutPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const { erreur } = await searchParams;
 
   const l = await lignes(id);
-  const t = await totaux(id);
+  const tot = await totaux(id);
   const obstacles = await obstaclesPointage(id);
   const pieces = await q<{ id: string; filename: string }>(
     `select id, filename from evidence where engagement_id = $1 and quarantined = false
@@ -47,30 +50,20 @@ export default async function TieOutPage({
 
   return (
     <div className="stack">
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
 
       <div className="panel">
-        <h2>Pointage des états financiers</h2>
-        <p className="faint">
-          On pointe le <strong>montant présenté</strong>, pas le sien : recalculer la ligne et la
-          comparer à son propre calcul ne pointe rien, ça vérifie qu’on sait additionner.
-          Trois natures, et elles ne se valent pas — deux se <strong>calculent</strong>, la
-          troisième se <strong>justifie</strong>.
-        </p>
+        <h2>{t('fst.financialStatementTieOut')}</h2>
         <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
           <input type="hidden" name="engagement_id" value={id} />
           <button className="btn">{l.length === 0 ? 'Charger la plaquette' : 'Repointer'}</button>
         </form>
-        {t.length > 0 && (
+        {tot.length > 0 && (
           <p className="mt">
-            {t.map((x) => (
+            {tot.map((x) => (
               <span key={x.statement} style={{ marginRight: 14 }}>
                 <strong>{ETATS[x.statement] ?? x.statement}</strong> :{' '}
-                {x.pointees}/{x.lignes} pointée(s)
+                {x.pointees}/{x.lignes} {t('fst.tied')}
               </span>
             ))}
           </p>
@@ -82,8 +75,8 @@ export default async function TieOutPage({
           <table className="data">
             <thead>
               <tr>
-                <th>État</th><th>Ligne</th><th>Nature</th>
-                <th className="num">Présenté</th><th className="num">Calculé</th><th className="num">Écart</th>
+                <th>{t('fst.state')}</th><th>Ligne</th><th>Nature</th>
+                <th className="num">{t('fst.presented')}</th><th className="num">{t('fst.computed')}</th><th className="num">{t('fst.difference')}</th>
                 <th>Pointage</th>
               </tr>
             </thead>
@@ -108,17 +101,17 @@ export default async function TieOutPage({
                         : <strong style={{ color: 'var(--amber)' }}>{eur(x.difference)}</strong>}
                   </td>
                   <td>
-                    {x.status === 'tied' && <span className="badge green">pointé</span>}
-                    {x.status === 'documented' && <span className="badge green">documenté</span>}
-                    {x.status === 'difference' && <span className="badge amber">écart expliqué</span>}
+                    {x.status === 'tied' && <span className="badge green">{t('fst.tied2')}</span>}
+                    {x.status === 'documented' && <span className="badge green">{t('fst.documented')}</span>}
+                    {x.status === 'difference' && <span className="badge amber">{t('fst.differenceExplained')}</span>}
                     {(!x.status || x.status === 'open') && (
                       x.nature === 'calcul_documente' ? (
                         <form action={documenterAction} className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
                           <input type="hidden" name="engagement_id" value={id} />
                           <input type="hidden" name="ligne_id" value={x.id} />
-                          <input name="explanation" placeholder="comment ce chiffre est obtenu" style={{ width: 240 }} />
+                          <input name="explanation" placeholder={t('fst.howThisFigureIsObtained')} style={{ width: 240 }} />
                           <select name="evidence_id" defaultValue="">
-                            <option value="">— pièce —</option>
+                            <option value="">{t('fst.document')}</option>
                             {pieces.map((p) => <option key={p.id} value={p.id}>{p.filename}</option>)}
                           </select>
                           <button className="btn secondary small">Documenter</button>
@@ -127,7 +120,7 @@ export default async function TieOutPage({
                         <form action={expliquerAction} className="row" style={{ gap: 4 }}>
                           <input type="hidden" name="engagement_id" value={id} />
                           <input type="hidden" name="ligne_id" value={x.id} />
-                          <input name="explanation" placeholder="explication de l’écart" style={{ width: 240 }} />
+                          <input name="explanation" placeholder={t('fst.explanationOfTheDifference')} style={{ width: 240 }} />
                           <button className="btn secondary small">Expliquer</button>
                         </form>
                       )
@@ -137,18 +130,12 @@ export default async function TieOutPage({
               ))}
             </tbody>
           </table>
-          <p className="faint">
-            Un <strong>calcul à documenter</strong> — un effectif moyen, un résultat par action —
-            ne vient d’aucun compte : le seul pointage possible est une explication écrite{' '}
-            <strong>avec la pièce qui la porte</strong>. Une justification sans pièce n’est pas une
-            justification.
-          </p>
         </div>
       )}
 
       {obstacles.length > 0 && (
         <div className="panel warn">
-          <h2>Obstacles au visa — pointage</h2>
+          <h2>{t('fst.blockersToSignOffTieOut')}</h2>
           <ul>{obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
         </div>
       )}

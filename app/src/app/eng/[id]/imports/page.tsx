@@ -2,6 +2,7 @@ import { requireMember } from '@/lib/core/auth';
 import { listImports, activeTb, drawnSamples } from '@/lib/services/imports';
 import type { Violation } from '@/lib/kernel/types';
 import { uploadTbAction, uploadFecAction } from './actions';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,22 +22,10 @@ export default async function ImportsPage({
 
   return (
     <div>
-      {erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {erreur}</p>
-          <p className="faint">
-            Rien n’a été importé. Le refus vient du service, pas de l’écran — et il
-            s’affiche ici plutôt que de faire tomber la page.
-          </p>
-        </div>
-      )}
+      <BandeauRefus erreur={erreur} />
       <div className="grid cols-2">
         <div className="panel">
           <h2>Trial balance (generic importer)</h2>
-          <p className="muted">
-            CSV/Excel export with column mapping (auto-detected: account / label / debit /
-            credit / balance; separators ; , tab; decimal comma). Re-import supersedes.
-          </p>
           <p>
             Current: {tbCur ? <span className="badge green">{tbCur.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
             {'  '}Prior: {tbPrior ? <span className="badge green">{tbPrior.accounts.length} accounts</span> : <span className="badge gray">not imported</span>}
@@ -53,11 +42,6 @@ export default async function ImportsPage({
         </div>
         <div className="panel">
           <h2>General ledger — FEC adapter (France pack)</h2>
-          <p className="muted">
-            Strict 18-field validator (art. A.47 A-1 LPF): field order, AAAAMMJJ dates,
-            decimal comma, Montant/Sens variant, per-entry balance, filename
-            SirenFECAAAAMMJJ. JE risk flags computed at import (ADR-003).
-          </p>
           {affected.length > 0 && (
             <div className="callout warn">
               ADR-016 — {affected.length} drawn sample(s) depend on the current ledger.

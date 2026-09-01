@@ -56,12 +56,6 @@ export default async function RcmPage({
             <form action={importDatasetRcm}><button className="btn">Import RCM (client listing)</button></form>
           )}
         </div>
-        <p className="faint">
-          Operating-effectiveness testing is gated on an effective design &amp;
-          implementation assessment. Sample sizes come from the pack frequency table
-          (common practice derived from AICPA guidance — not a PCAOB requirement),
-          overridable with justification.
-        </p>
         <div className="table-scroll">
           <table className="data">
             <thead>

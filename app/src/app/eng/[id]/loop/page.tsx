@@ -3,6 +3,8 @@ import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
 import { boucle, tours } from '@/lib/services/loop';
 import { boucleAction } from './actions';
+import { tr } from '@/lib/i18n';
+import { BandeauRefus } from '@/app/bandeau-refus';
 
 // LA BOUCLE, VISIBLE COMME UNE BOUCLE (point 7).
 //
@@ -24,6 +26,7 @@ export default async function LoopPage({
   searchParams: Promise<{ poste?: string; erreur?: string; ok?: string }>;
 }) {
   const { id } = await params;
+  const t = await tr();
   await requireMember(id);
   const sp = await searchParams;
 
@@ -35,26 +38,22 @@ export default async function LoopPage({
   );
   const poste = sp.poste ?? postes[0]?.code ?? 'REVENUE';
   const b = await boucle(id, poste);
-  const t = await tours(id);
+  const tourList = await tours(id);
 
   const largeur = (n: number) => Math.max(2, Math.round((n / Math.max(1, b.etapes[0]?.franchi || 1)) * 100));
 
   return (
     <div className="stack">
-      {sp.erreur && (
-        <div className="panel warn">
-          <p><span className="badge amber">refusé</span> {sp.erreur}</p>
-        </div>
-      )}
+      <BandeauRefus erreur={sp.erreur} />
       {sp.ok && (
         <div className="panel">
-          <p><span className="badge green">fait</span> {sp.ok}</p>
+          <p><span className="badge green">{t('commun.fait')}</span> {sp.ok}</p>
         </div>
       )}
 
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2>La boucle — {poste}</h2>
+          <h2>{t('loop.theLoop')} {poste}</h2>
           <span>
             {postes.map((p) => (
               <Link
@@ -66,19 +65,13 @@ export default async function LoopPage({
             ))}
           </span>
         </div>
-        <p className="faint">
-          Une demande, un dépôt, une lecture, un rapprochement, un écart — et l’écart{' '}
-          <strong>repart en demande</strong>. C’est ce dernier trait qui fait de cette suite une
-          boucle, et c’est pour ça que le chiffre à regarder est le nombre de tours.
-        </p>
-
         <p>
-          <strong>{b.tours}</strong> tour(s) de boucle — {b.tours === 0
+          <strong>{b.tours}</strong> {t('loop.loopTurnS')} {b.tours === 0
             ? 'aucun écart n’a encore relancé une demande'
             : 'autant de fois qu’un écart a fait repartir une demande de clarification'}
           {' · '}
           {b.fermee
-            ? <span className="badge green">boucle fermée — tout élément sélectionné est conclu</span>
+            ? <span className="badge green">{t('loop.loopClosedEverySelectedItemIs')}</span>
             : <span className="badge amber">boucle ouverte</span>}
         </p>
       </div>
@@ -87,11 +80,11 @@ export default async function LoopPage({
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: 170 }}>Étape</th>
+              <th style={{ width: 170 }}>{t('loop.step')}</th>
               <th className="num">Franchi</th>
               <th style={{ width: 220 }}></th>
-              <th className="num">Arrêtés ici</th>
-              <th>Ce qu’on attend</th>
+              <th className="num">{t('loop.stoppedHere')}</th>
+              <th>{t('loop.whatIsAwaited')}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,37 +116,29 @@ export default async function LoopPage({
 
         {b.obstacles.length > 0 && (
           <>
-            <p className="mt"><strong>Ce qui empêche la boucle de se fermer</strong></p>
+            <p className="mt"><strong>{t('loop.whatKeepsTheLoopFromClosing')}</strong></p>
             <ul>{b.obstacles.map((o) => <li key={o}>{o}</li>)}</ul>
-            <p className="faint">
-              Nommément, et jamais « en cours » : un écran qui dit « en cours » ne dit rien de ce
-              qu’il faut faire ensuite.
-            </p>
           </>
         )}
       </div>
 
       <div className="panel">
-        <h2>Les tours — quelles demandes sont nées d’un écart</h2>
+        <h2>{t('loop.theTurnsWhichRequestsCameOut')}</h2>
         {t.length === 0 ? (
           <>
-            <p className="faint">
-              Aucune demande de clarification n’a encore été émise depuis un écart. Tant que cette
-              liste est vide, la boucle n’a pas bouclé : elle a été parcourue, pas tournée.
-            </p>
             <form action={boucleAction}>
               <input type="hidden" name="engagement_id" value={id} />
               <input type="hidden" name="poste" value={poste} />
-              <button className="btn">Émettre les clarifications dues aux écarts ouverts</button>
+              <button className="btn">{t('loop.issueTheClarificationsOwedOnOpen')}</button>
             </form>
           </>
         ) : (
           <table className="data">
             <thead>
-              <tr><th>Demande</th><th>Née de l’écart</th><th>État de l’écart</th><th>Le</th></tr>
+              <tr><th>{t('loop.request')}</th><th>{t('loop.bornOfDifference')}</th><th>{t('loop.stateOfTheDifference')}</th><th>Le</th></tr>
             </thead>
             <tbody>
-              {t.map((x) => (
+              {tourList.map((x) => (
                 <tr key={x.request_id + x.exception_id}>
                   <td>
                     <Link href={`/eng/${id}/requests/${x.request_id}`}>

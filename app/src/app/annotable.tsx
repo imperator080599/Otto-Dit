@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useT } from '@/lib/i18n/client';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // L'ÉLÉMENT ANNOTABLE (ADR-097). Trois gestes pour le même acte : clic droit,
 // appui long (tablette — le clic droit seul est inaccessible au doigt), et la
@@ -9,6 +11,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // pose passe par la server action partagée, et la règle vit dans le service.
 
 export interface Marque { noteId: string; status: string; label: string }
+
+/**
+ * LES LIBELLÉS ARRIVENT EN PROPS, et c'est une contrainte, pas un choix : ce
+ * composant est CLIENT : il traduit avec `useT()`, qui lit la locale posée par
+ * le layout racine et appelle le MÊME catalogue que les composants serveur.
+ */
+const TYPES_NOTE = ['a_corriger', 'a_documenter', 'question', 'remarque_n1'] as const;
 
 export interface AncreProps {
   kind: string;
@@ -19,7 +28,8 @@ export interface AncreProps {
 }
 
 export function Annotable({
-  ancre, marques = [], membres, engagementId, chemin, notesHref, workpaperId = null, action, bloc = false, children,
+  ancre, marques = [], membres, engagementId, chemin, notesHref, workpaperId = null, action,
+  bloc = false, children,
 }: {
   ancre: AncreProps;
   marques?: Marque[];
@@ -35,6 +45,7 @@ export function Annotable({
   bloc?: boolean;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const [ouvert, setOuvert] = useState(false);
   const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,12 +84,13 @@ export function Annotable({
           ✎ {marques.length}
         </a>
       )}
-      <button type="button" className="puce-note" aria-label={`ajouter une note de revue — ${ancre.label}`} onClick={ouvrir}>
+      <button type="button" className="puce-note"
+        aria-label={t('note.addFor', { objet: ancre.label })} onClick={ouvrir}>
         ✎
       </button>
       {ouvert && (
         <div className="note-voile" onClick={(e) => { if (e.target === e.currentTarget) setOuvert(false); }}>
-          <div className="note-panneau" role="dialog" aria-label="ajouter une note de revue">
+          <div className="note-panneau" role="dialog" aria-label={t('note.dialog')}>
             <div className="note-cible">{ancre.label}</div>
             <form action={action}>
               <input type="hidden" name="engagement_id" value={engagementId} />
@@ -88,24 +100,23 @@ export function Annotable({
               <input type="hidden" name="label" value={ancre.label} />
               <input type="hidden" name="chemin" value={chemin} />
               {workpaperId && <input type="hidden" name="workpaper_id" value={workpaperId} />}
-              <textarea name="texte" required placeholder="La note — ce qui doit être corrigé, documenté ou expliqué." autoFocus />
+              <textarea name="texte" required placeholder={t('note.text')} autoFocus />
               <div className="row mt">
-                <select name="note_type" defaultValue="a_corriger" title="seules les bloquantes empêchent le visa (ADR-028)">
-                  <option value="a_corriger">à corriger (bloquante)</option>
-                  <option value="a_documenter">à documenter</option>
-                  <option value="question">question</option>
-                  <option value="remarque_n1">remarque pour N+1</option>
+                <select name="note_type" defaultValue="a_corriger" title={t('note.blockingHint')}>
+                  {TYPES_NOTE.map((x) => (
+                    <option key={x} value={x}>{t(`note.type.${x}` as CleLibelle)}</option>
+                  ))}
                 </select>
               </div>
               <div className="row mt" style={{ justifyContent: 'space-between' }}>
                 <select name="assignee" defaultValue="">
-                  <option value="">— non attribuée —</option>
+                  <option value="">{t('note.unassigned')}</option>
                   {membres.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
-                  <option value="otto">OTTO — exécute l&apos;instruction (et refuse ce qui n&apos;est pas de son ressort)</option>
+                  <option value="otto">{t('note.toOtto')}</option>
                 </select>
                 <span className="row">
-                  <button type="button" className="btn secondary small" onClick={() => setOuvert(false)}>Annuler</button>
-                  <button type="submit" className="btn small">Poser la note</button>
+                  <button type="button" className="btn secondary small" onClick={() => setOuvert(false)}>{t('note.cancel')}</button>
+                  <button type="submit" className="btn small">{t('note.post')}</button>
                 </span>
               </div>
             </form>

@@ -18,6 +18,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
 import { Atelier } from './atelier';
 import { attesterAction, clarifierLotAction } from './actions-atelier';
+import { tr } from '@/lib/i18n';
 
 export default async function TestingPage({
   params, searchParams,
@@ -27,6 +28,7 @@ export default async function TestingPage({
 }) {
   const { id } = await params;
   const { erreur, item } = await searchParams;
+  const t = await tr();
   await requireMember(id);
   /* L'ATELIER (ADR-104) : chaque ligne avec sa pièce, sa comparaison, son
      motif, sa provenance, et la ligne de papier qu'elle produira. */
@@ -133,11 +135,6 @@ export default async function TestingPage({
             <form action={matchAction}><button className="btn">Run vouching (L0)</button></form>
           </span>
         </div>
-        <p className="faint">
-          Ladder: Factur-X XML (exact) → PDF text layer (deterministic) → OCR/LLM adapter
-          (recorded — always human-verified, ADR-012) → human. Vouching is deterministic
-          with pack tolerances; exceptions land in the exceptions tab.
-        </p>
         {(process.env.OTTO_OCR_ADAPTER ?? 'mock') === 'anthropic' && (
           /* MODE « IA RÉELLE » (ADR-105) : l'échelon OCR lit avec le modèle.
              L'écran DIT lequel tourne, ce que ça a coûté et où est le plafond
@@ -145,12 +142,9 @@ export default async function TestingPage({
              l'autre sens. Rien d'autre ne change : mêmes échelons gratuits
              d'abord, même file d'attestation humaine (L2), même provenance. */
           <div className="callout">
-            <strong>Adaptateur OCR/LLM : IA RÉELLE ({process.env.OTTO_EXTRACT_MODEL ?? 'claude-opus-5'}).</strong>{' '}
-            Les échelons XML et couche texte lisent d&apos;abord, gratuitement ; une pièce qu&apos;ils ne
-            savent pas lire part au modèle — chaque lecture est journalisée (ai_run) et coûte de
-            l&apos;argent réel. Dépense depuis cette base : <strong>{(await depenseCumuleeUsd()).toFixed(4)} $</strong>{' '}
-            sur un plafond de {plafondUsd().toFixed(2)} $ — au plafond, la lecture suivante est refusée
-            proprement. Rien n&apos;entre au dossier sans attestation humaine (L2).
+            <strong>{t('test.ocrLlmAdapterRealAi')}{process.env.OTTO_EXTRACT_MODEL ?? 'claude-opus-5'}).</strong>{' '}
+            {t('test.echelonsGratuitsDabord')} <strong>{(await depenseCumuleeUsd()).toFixed(4)} $</strong>{' '}
+            {t('test.surUnPlafondDe')} {plafondUsd().toFixed(2)} {t('test.auPlafondRefusPropre')}
           </div>
         )}
         {(process.env.OTTO_OCR_ADAPTER ?? 'mock') !== 'anthropic' && (
@@ -162,11 +156,7 @@ export default async function TestingPage({
              centime. En production, un modèle lit au même endroit, avec la
              même file de vérification humaine. */
           <div className="callout warn">
-            <strong>Adaptateur OCR/LLM : REJEU (démonstration).</strong> Sur cet écran, les échelons
-            XML et couche texte lisent réellement le fichier de la pièce (déterministes) ; l&apos;échelon
-            OCR/LLM ne lit rien — il REJOUE des extractions enregistrées du jeu synthétique, sans
-            appel à un modèle et sans dépense. En production, un modèle lit à cet endroit précis,
-            derrière la même file de vérification humaine (L2).
+            <strong>{t('test.ocrLlmAdapterReplayDemonstration')}</strong> {t('test.onThisScreenTheXmlAnd')}
           </div>
         )}
       </div>
@@ -177,14 +167,9 @@ export default async function TestingPage({
           ligne par ligne, l'attestation emportant les corrections tapées. */}
       <div className="panel">
         <h2>
-          L'échantillon, ligne par ligne{' '}
-          {pending.length > 0 && <span className="badge amber">{pending.length} à attester</span>}
+          {t('test.theSampleLineByLine')}{' '}
+          {pending.length > 0 && <span className="badge amber">{pending.length} {t('test.toAttest')}</span>}
         </h2>
-        <p className="faint">
-          ↑/↓ change de ligne · Entrée atteste · la pièce est à droite, la comparaison sur la
-          ligne, le motif de sélection sur chaque élément · cases à cocher pour les actions en
-          lot · vous reprenez là où vous en étiez.
-        </p>
         <Atelier
           engId={id}
           lignes={lignes}
@@ -199,16 +184,16 @@ export default async function TestingPage({
       <div className="grid cols-2">
         <div className="panel">
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <h2 id="reexecution">Re-exécution à l'aveugle (ADR-012.3)</h2>
+            <h2 id="reexecution">{t('test.blindRePerformanceAdr0123')}</h2>
             {!verifRun && (
               <details>
-                <summary className="repli-action">Lancer la re-exécution</summary>
+                <summary className="repli-action">{t('test.runTheRePerformance')}</summary>
                 <form action={startVerifRun} className="mt"><button className="btn secondary small">Draw subsample</button></form>
               </details>
             )}
           </div>
           {!verifRun ? (
-            <p className="muted">Seeded, reproducible draw over machine-passed items; the verifier re-performs blind (no machine result shown) and agreement is computed.</p>
+            <p className="muted">{t('test.pasTire')}</p>
           ) : (
             <>
               <p className="faint">
@@ -239,7 +224,6 @@ export default async function TestingPage({
                   ))}
                 </tbody>
               </table>
-              <p className="faint">Open the document from the evidence inbox to re-perform; the machine result stays hidden until submission.</p>
             </>
           )}
         </div>
@@ -264,27 +248,21 @@ export default async function TestingPage({
               </div>
               {reponses.length > 0 ? (
                 <div className="callout mt">
-                  <strong>Réponse au dépassement de l’anomalie tolérable :</strong>{' '}
+                  <strong>{t('test.responseToExceedingTolerableMisstatement')}</strong>{' '}
                   {reponses.map((r) => r.kind).join(', ')}
                   {reponses[0]?.rationale && <p className="faint">{reponses[0].rationale}</p>}
                 </div>
               ) : (
                 <form action={repondreAction} className="mt stack">
                   <input type="hidden" name="evaluation_id" value={evaluation.id} />
-                  <p className="faint">
-                    Quand les anomalies relevées dépassent l’anomalie tolérable, l’échantillon ne
-                    fournit plus une base raisonnable de conclusion sur la population. Le produit
-                    refuse la conclusion tant que la <strong>réponse</strong> n’est pas écrite —
-                    étendre les travaux, réviser la stratégie, ou conclure en le justifiant.
-                  </p>
                   <p className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                     <select name="kind" defaultValue="revise_strategy">
-                      <option value="extend_testing">étendre les travaux</option>
-                      <option value="revise_strategy">réviser la stratégie</option>
-                      <option value="conclude_with_justification">conclure en le justifiant</option>
+                      <option value="extend_testing">{t('test.extendTheProcedures')}</option>
+                      <option value="revise_strategy">{t('test.reviseTheStrategy')}</option>
+                      <option value="conclude_with_justification">{t('test.concludeWithAJustification')}</option>
                     </select>
                     <input name="rationale" placeholder="motif — obligatoire" style={{ flex: 1, minWidth: 260 }} />
-                    <button className="btn secondary small">Enregistrer la réponse</button>
+                    <button className="btn secondary small">{t('test.recordTheResponse')}</button>
                   </p>
                 </form>
               )}
