@@ -88,13 +88,35 @@ export async function GET() {
     }));
     /* LES DEUX ÉCRANS NEUFS DE LA CHARPENTE (ADR-112). Ils ne se prouvent pas
        par la chaîne locale : c'est la fonction déployée qui doit les lire. */
-    lectures.push(await essayer('vue d’ensemble (tableau de bord par personne)', async () => {
-      const { tableauDeBord } = await import('@/lib/services/tableau-de-bord');
+    lectures.push(await essayer('vue d’ensemble (sections, avancement, attributions)', async () => {
+      const { mesSections, avancement, sectionsDuDossier } = await import('@/lib/services/sections');
       const membre = await q01<{ id: string }>(
         `select user_id::text id from engagement_member where engagement_id = $1 limit 1`, [id]);
       if (!membre) return 'aucun membre sur la mission';
-      const b = await tableauDeBord(id, membre.id);
-      return `${b.postes.length} poste(s) · ${b.obstacles.length} obstacle(s) · ${b.equipe.length} membre(s)`;
+      const secs = await sectionsDuDossier(id);
+      const av = await avancement(id);
+      const mes = await mesSections(membre.id);
+      return `${secs.length} section(s) · ${av.map((a) => `${a.statut}:${a.n}`).join(' ')} · `
+        + `détenues ${mes.detenues.length} / attribuées ${mes.attribuees.length} / `
+        + `suivies ${mes.suivies.length} / récentes ${mes.recentes.length}`;
+    }));
+    lectures.push(await essayer('information produite par l’entité (IPE)', async () => {
+      const { lireIpe, obstaclesIpe } = await import('@/lib/services/ipe');
+      const w = await q01<{ id: string; code: string }>(
+        `select id::text, code from workpaper where engagement_id = $1 order by code limit 1`, [id]);
+      if (!w) return 'aucun papier';
+      const i = await lireIpe(w.id);
+      const o = await obstaclesIpe(id);
+      return `${w.code} : ${i ? (i.utilisee ? `oui, ${i.nature}, ${i.evidenceNom}` : 'non') : 'SANS RÉPONSE'}`
+        + ` · ${o.length} papier(s) sans réponse`;
+    }));
+    lectures.push(await essayer('catalogue de libellés (langue du cabinet)', async () => {
+      const { localeDuCabinet } = await import('@/lib/i18n');
+      const { traduire } = await import('@/lib/i18n/catalogue');
+      const t = await q01<{ id: string }>(
+        `select tenant_id::text id from engagement where id = $1`, [id]);
+      const l = await localeDuCabinet(t!.id);
+      return `${l} → « ${traduire(l, 'vue.assignments')} »`;
     }));
     lectures.push(await essayer('espace de travail d’un poste', async () => {
       const { postesRetenus } = await import('@/lib/services/rail');
