@@ -1,0 +1,1359 @@
+{
+  "declarees": [
+    {
+      "nom": "langue : le parcours lit le catalogue DANS la langue réellement servie",
+      "gabarit": false
+    },
+    {
+      "nom": "création : le dossier créé s’ouvre sur son acceptation — donc il est ATTEIGNABLE",
+      "gabarit": false
+    },
+    {
+      "nom": "création : refusée en doublon, et le dossier déjà créé reste ATTEIGNABLE",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : pas de dossier neuf",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : un dossier jeune montre un rail COURT (état, pas catalogue)",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : vertical — les destinations sont empilées, pas alignées",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : « tout afficher » annonce ce qui reste, jamais un masquage muet",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : groupé par nature de travail, les POSTES au milieu",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : pas de dossier neuf à accepter",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : décider SANS motif est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : tous les critères notés",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : décider AVEC motif et critères complets est accepté",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : décision déjà prise (rejeu)",
+      "gabarit": false
+    },
+    {
+      "nom": "jalons : le jalon dérivé n’est pas saisissable, et la raison est écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "import : ré-importer le grand livre SANS confirmer l’invalidation est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "import : aucune sélection en aval, la confirmation n’est pas demandée",
+      "gabarit": false
+    },
+    {
+      "nom": "import : le FEC DÉFINITIF entre, invalidation confirmée",
+      "gabarit": false
+    },
+    {
+      "nom": "rapprochement : re-exécuté sur le fichier définitif, il est PROPRE",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : la balance N-1 se rapproche AUX À-NOUVEAUX, au centime",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : l’écart du collectif est DIT — 25 000 € sans attribution auxiliaire (écriture de situation)",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : apparus et disparus sont nommés sur leurs lignes",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : la déformation du vieillissement (> 90 jours) est mesurée N contre N-1",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : les constats sont des CANDIDATS, à proposer au registre",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le candidat proposé attend une confirmation HUMAINE au registre",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le facteur est STATUÉ par une personne au registre — la circulation est complète",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : les questions au client naissent en brouillon, dans le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le côté fournisseurs se rapproche et s’analyse pareil",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : le diagramme est GÉNÉRÉ depuis les données — le flowchart client n’est qu’une corroboration",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : remplacer une version décrite SANS confirmer est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : la différence N/N-1 est EXACTE et chaque changement attend une décision",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : tout est statué — le significatif porte « facteur proposé au registre »",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : enregistrer sans le consentement EXPLICITE de chacun est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : trois écarts CANDIDATS, les omissions D’ABORD, jamais une conclusion",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : les facteurs proposés sont CONFIRMÉS au registre — la circulation est complète",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : la question au client naît en BROUILLON, dans le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "matérialité : le seuil validé et sa justification sont à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : aucun poste décidé à revoir",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : une décision de périmètre se REVOIT, avec un motif",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : un poste retenu SANS procédure planifiée bloque le visa",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : le sortir du périmètre lève l’obstacle — c’est la sortie prévue",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : aucune assertion à arbitrer — la table du risque est VIDE",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : une seule valeur dans l’échelle — rien à arbitrer",
+      "gabarit": false
+    },
+    {
+      "nom": "^risque : surcharger le niveau \\([\\s\\S]* → [\\s\\S]*\\) SANS motif écrit est refusé$",
+      "gabarit": true
+    },
+    {
+      "nom": "risque : la même surcharge AVEC motif est acceptée, et le motif est conservé",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : aucun formulaire de questionnaire à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : une réponse au questionnaire ne s’enregistre pas",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : la réponse au questionnaire est REFUSÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : le questionnaire résiduel est répondu, question par question",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : une PERSONNE valide les paramètres avant tout tirage",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : le tirage est déterministe, et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : la sélection tirée est affichée avec sa méthode et son germe",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : la demande de pièces naît DE la sélection, pas d’une saisie",
+      "gabarit": false
+    },
+    {
+      "nom": "demande : rien ne part au client sans qu’une personne l’approuve",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client voit ses demandes sans compte ni mot de passe",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client dépose ses pièces, chacune sur la ligne qu’elle répond",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : l’échelle d’extraction tourne, hors ligne, sur les pièces déposées",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la pièce est dans l’écran, à côté de la ligne — pas dans un autre onglet",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : le motif de sélection est lisible sur chaque ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la provenance est à portée — empreinte, échelon, re-exécution",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : rien à attester ici (échelons déterministes), et AUCUN badge ne prétend le contraire",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : le vouching est déterministe (L0), et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la comparaison est lisible sur la ligne — pièce, GL, tolérance, règle",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la ligne de papier se remplit sous les yeux, même formateur que le papier",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier clavier : au moins deux lignes à parcourir",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la flèche BAS change de ligne, sans toucher la souris",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la flèche HAUT revient exactement sur la ligne quittée",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier clavier : aucune lecture en attente ICI — Entrée est éprouvée par `npm run mesure:testing`",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : l’écart de la ligne porte un lien vers la synthèse",
+      "gabarit": false
+    },
+    {
+      "nom": "synthèse : chaque écart a son ancre, le lien atterrit sur la ligne visée",
+      "gabarit": false
+    },
+    {
+      "nom": "synthèse : la ligne testée est à un clic en retour",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : le retour ouvre la ligne même d’où venait l’écart",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : aucune ligne à grouper",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : cocher des lignes fait apparaître la barre d’actions en lot",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : une clarification en lot sans motif est refusée, et le refus s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la clarification en lot naît en brouillon — rien ne part au client sans approbation",
+      "gabarit": false
+    },
+    {
+      "nom": "la boucle : les clarifications sont émises PUIS approuvées avant de partir",
+      "gabarit": false
+    },
+    {
+      "nom": "la boucle : aucun écart ouvert ne réclame de clarification",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client répond aux clarifications, et clôt sa demande",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : plus aucune pièce lue ne reste sans rapprochement",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : viser une écriture inconnue est refusé, et le refus s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la base est rapprochée à la comptabilité et recalculée au centime — écart nul",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : chaque taux et la formule sont des paramètres à justifier",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : demander des justificatifs sans tirage est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la base est sondée (couverture + aléa germé), le motif sur chaque ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la demande de justificatifs (base tirée + chaque taux + méthode) naît en brouillon",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la demande part APRÈS approbation, par le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : aucun écart ouvert à résoudre",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : une explication vide de contenu (des espaces) est refusée, et le refus S’AFFICHE",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : résoudre SANS lien vers ce qui corrobore est refusé par le SERVICE, pas par le champ",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : chacun est disposé avec explication, conclusion et pièce liée",
+      "gabarit": false
+    },
+    {
+      "nom": "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
+      "gabarit": false
+    },
+    {
+      "nom": "re-exécution : aucun sous-échantillon à tirer sur cet écran",
+      "gabarit": false
+    },
+    {
+      "nom": "re-exécution : les contrôles en aveugle sont soumis depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : aucun dépassement à répondre sur cet écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : déjà conclue",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : le papier se RÉDIGE depuis les faits stockés, pas à la main",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : aucun papier de travail dans le dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : le papier rend, avec ses sections et son bloc de visas",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : un tableur se JOINT au papier, avec empreinte et provenance",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : une section s’ÉDITE à la main, et l’édition porte sa justification",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : le formulaire d’édition de section existe avant les visas",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : l’associé ne vise pas avant le préparateur et le reviewer",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : une note de revue s’ajoute et s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : les notes se ferment par un réviseur qui n’en est PAS l’auteur",
+      "gabarit": false
+    },
+    {
+      "nom": "note ancrée : le clic droit ouvre la pose et NOMME l’objet visé",
+      "gabarit": false
+    },
+    {
+      "nom": "note ancrée : l’élément annoté porte le jeton d’attention",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la vue transverse porte l’ancre de la note",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la réponse s’enregistre et la note passe « adressée »",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la clôture par le préparateur (non réviseur) est REFUSÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la clôture par l’AUTEUR est refusée — même réviseur",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : un réviseur non-auteur clôt, depuis la vue transverse",
+      "gabarit": false
+    },
+    {
+      "nom": "note ancrée : la conclusion du papier est annotable",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : l’instruction est exécutée à la pose",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : sa réponse entre au dossier — fait, pièces, reste à vérifier",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : il a répondu, il n’a PAS clos — la note est « adressée », un humain clôt",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : « conclus la section » est REFUSÉ, avec la liste de ce qu’il sait faire",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : les notes sont closes par un réviseur humain non-auteur, jamais par lui",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : OTTO PROPOSE son interprétation, en clair, et attend",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : RIEN n’est rempli avant la confirmation humaine",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : confirmée, elle entre au tableau MARQUÉE « ajoutée »",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : deux issues, jamais une seule — trouvée AVEC sa pièce, ou « absente »",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : l’introuvable PROPOSE une demande de clarification (brouillon L2)",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : « BL signé ? » — OTTO avoue ne pas savoir interpréter",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : confirmer sans corriger un titre illisible est REFUSÉ",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : le formulaire d’ajout est présent sur le papier",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : les trois visas se posent dans l’ordre de la hiérarchie de revue",
+      "gabarit": false
+    },
+    {
+      "nom": "^papier : l’export [\\s\\S]* est offert sur l’écran$",
+      "gabarit": true
+    },
+    {
+      "nom": "^papier : il s’exporte en [\\s\\S]* depuis l’écran$",
+      "gabarit": true
+    },
+    {
+      "nom": "papier : les deux exports sont TÉLÉCHARGEABLES depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : les missions sont groupées par CLIENT (le groupe), pas en liste plate",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : le clic CHANGE de dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : chaque changement s’inscrit au journal (engagement.switched)",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : une autre mission est proposée au clic",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’écran DIT que la lecture d’agendas et l’envoi sont simulés",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : des créneaux communs sortent des disponibilités (libre/occupé seulement)",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : choisir un créneau SANS contact clé est refusé, en nommant le geste",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : le contact clé est déclaré",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’invitation porte les copies dans l’ORDRE CALCULÉ — clé, puis la hiérarchie",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : le .ics standard se télécharge depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’envoi est SIMULÉ et l’écran l’affirme — rien n’est parti",
+      "gabarit": false
+    },
+    {
+      "nom": "la boucle : les étapes du cycle sont rendues avec leur reste",
+      "gabarit": false
+    },
+    {
+      "nom": "reprise N-1 : écarter une conclusion SANS motif est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "reprise N-1 : plus aucune proposition non statuée",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : la plaquette est chargée et pointée",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : documenter un chiffre SANS pièce liée est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : plus aucune ligne ouverte ni écart inexpliqué",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le compte du grand livre qu'AUCUN tiers ne couvre est nommé",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : la ligne de listing qu'aucune écriture ne porte est nommée aussi",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le listing CORRIGÉ referme le constat de complétude",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : la demande PART (transport simulé, jamais un envoi qui se croit réel)",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : une demande reste à envoyer après le listing corrigé",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le solde COMPTABLE est affiché en face du tiers",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : l'écart est CALCULÉ contre le grand livre, et tout écart se dit",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : « RAS » est REFUSÉ — une explication d'écart se rédige",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : l'écart expliqué par écrit lève l'obstacle au visa",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : les questions naissent en BROUILLON, dans les demandes au client",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : conclure SANS conclusion écrite est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : la lettre d’affirmation ne peut pas être « sans objet », et l’écran le dit",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : les cinq natures sont conclues",
+      "gabarit": false
+    },
+    {
+      "nom": "jalons : chaque jalon se marque FAIT depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : un papier existe pour y ancrer une note",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : la conclusion du papier est annotable",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : le clic droit ouvre la pose de note",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : une note ADRESSÉE crée du travail qui attend quelqu’un",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : le bandeau y mène depuis n’importe quel écran, en 1 clic",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : la note adressée APPARAÎT dans la liste de travail",
+      "gabarit": false
+    },
+    {
+      "nom": "^mes travaux : [\\s\\S]* ligne\\(s\\), et l’objet s’atteint en [\\s\\S]* clic\\(s\\) — le critère est de 3$",
+      "gabarit": true
+    },
+    {
+      "nom": "clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte",
+      "gabarit": false
+    },
+    {
+      "nom": "clôture : le dossier se CLÔT et l’archive est scellée",
+      "gabarit": false
+    },
+    {
+      "nom": "clôture : le dossier n’est PAS scellé à la fin du parcours",
+      "gabarit": false
+    },
+    {
+      "nom": "archive : le dossier scellé porte son empreinte SHA-256 à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "archive : elle se TÉLÉCHARGE, et ce sont bien les octets d’un zip",
+      "gabarit": false
+    }
+  ],
+  "conduites": [
+    {
+      "nom": "langue : le parcours lit le catalogue DANS la langue réellement servie",
+      "gabarit": false
+    },
+    {
+      "nom": "création : le dossier créé s’ouvre sur son acceptation — donc il est ATTEIGNABLE",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : un dossier jeune montre un rail COURT (état, pas catalogue)",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : vertical — les destinations sont empilées, pas alignées",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : « tout afficher » annonce ce qui reste, jamais un masquage muet",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : groupé par nature de travail, les POSTES au milieu",
+      "gabarit": false
+    },
+    {
+      "nom": "rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : décider SANS motif est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : tous les critères notés",
+      "gabarit": false
+    },
+    {
+      "nom": "acceptation : décider AVEC motif et critères complets est accepté",
+      "gabarit": false
+    },
+    {
+      "nom": "jalons : le jalon dérivé n’est pas saisissable, et la raison est écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "import : ré-importer le grand livre SANS confirmer l’invalidation est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "import : le FEC DÉFINITIF entre, invalidation confirmée",
+      "gabarit": false
+    },
+    {
+      "nom": "rapprochement : re-exécuté sur le fichier définitif, il est PROPRE",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : la balance N-1 se rapproche AUX À-NOUVEAUX, au centime",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : l’écart du collectif est DIT — 25 000 € sans attribution auxiliaire (écriture de situation)",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : apparus et disparus sont nommés sur leurs lignes",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : la déformation du vieillissement (> 90 jours) est mesurée N contre N-1",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : les constats sont des CANDIDATS, à proposer au registre",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le candidat proposé attend une confirmation HUMAINE au registre",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le facteur est STATUÉ par une personne au registre — la circulation est complète",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : les questions au client naissent en brouillon, dans le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "balances aux. : le côté fournisseurs se rapproche et s’analyse pareil",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : le diagramme est GÉNÉRÉ depuis les données — le flowchart client n’est qu’une corroboration",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : remplacer une version décrite SANS confirmer est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : la différence N/N-1 est EXACTE et chaque changement attend une décision",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : tout est statué — le significatif porte « facteur proposé au registre »",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : enregistrer sans le consentement EXPLICITE de chacun est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : trois écarts CANDIDATS, les omissions D’ABORD, jamais une conclusion",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé",
+      "gabarit": false
+    },
+    {
+      "nom": "processus : les facteurs proposés sont CONFIRMÉS au registre — la circulation est complète",
+      "gabarit": false
+    },
+    {
+      "nom": "entretien : la question au client naît en BROUILLON, dans le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "matérialité : le seuil validé et sa justification sont à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : une décision de périmètre se REVOIT, avec un motif",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : un poste retenu SANS procédure planifiée bloque le visa",
+      "gabarit": false
+    },
+    {
+      "nom": "périmètre : le sortir du périmètre lève l’obstacle — c’est la sortie prévue",
+      "gabarit": false
+    },
+    {
+      "nom": "^risque : surcharger le niveau \\([\\s\\S]* → [\\s\\S]*\\) SANS motif écrit est refusé$",
+      "gabarit": true
+    },
+    {
+      "nom": "risque : la même surcharge AVEC motif est acceptée, et le motif est conservé",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : le questionnaire résiduel est répondu, question par question",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : une PERSONNE valide les paramètres avant tout tirage",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : le tirage est déterministe, et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : la sélection tirée est affichée avec sa méthode et son germe",
+      "gabarit": false
+    },
+    {
+      "nom": "sondage : la demande de pièces naît DE la sélection, pas d’une saisie",
+      "gabarit": false
+    },
+    {
+      "nom": "demande : rien ne part au client sans qu’une personne l’approuve",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client voit ses demandes sans compte ni mot de passe",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client dépose ses pièces, chacune sur la ligne qu’elle répond",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : l’échelle d’extraction tourne, hors ligne, sur les pièces déposées",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la pièce est dans l’écran, à côté de la ligne — pas dans un autre onglet",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : le motif de sélection est lisible sur chaque ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la provenance est à portée — empreinte, échelon, re-exécution",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : rien à attester ici (échelons déterministes), et AUCUN badge ne prétend le contraire",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : le vouching est déterministe (L0), et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la comparaison est lisible sur la ligne — pièce, GL, tolérance, règle",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la ligne de papier se remplit sous les yeux, même formateur que le papier",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la flèche BAS change de ligne, sans toucher la souris",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la flèche HAUT revient exactement sur la ligne quittée",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier clavier : aucune lecture en attente ICI — Entrée est éprouvée par `npm run mesure:testing`",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : l’écart de la ligne porte un lien vers la synthèse",
+      "gabarit": false
+    },
+    {
+      "nom": "synthèse : chaque écart a son ancre, le lien atterrit sur la ligne visée",
+      "gabarit": false
+    },
+    {
+      "nom": "synthèse : la ligne testée est à un clic en retour",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : le retour ouvre la ligne même d’où venait l’écart",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : cocher des lignes fait apparaître la barre d’actions en lot",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : une clarification en lot sans motif est refusée, et le refus s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "atelier : la clarification en lot naît en brouillon — rien ne part au client sans approbation",
+      "gabarit": false
+    },
+    {
+      "nom": "la boucle : aucun écart ouvert ne réclame de clarification",
+      "gabarit": false
+    },
+    {
+      "nom": "portail : le client répond aux clarifications, et clôt sa demande",
+      "gabarit": false
+    },
+    {
+      "nom": "testing : plus aucune pièce lue ne reste sans rapprochement",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : viser une écriture inconnue est refusé, et le refus s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la base est rapprochée à la comptabilité et recalculée au centime — écart nul",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : chaque taux et la formule sont des paramètres à justifier",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : demander des justificatifs sans tirage est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la base est sondée (couverture + aléa germé), le motif sur chaque ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la demande de justificatifs (base tirée + chaque taux + méthode) naît en brouillon",
+      "gabarit": false
+    },
+    {
+      "nom": "estimation : la demande part APRÈS approbation, par le circuit habituel",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : une explication vide de contenu (des espaces) est refusée, et le refus S’AFFICHE",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : résoudre SANS lien vers ce qui corrobore est refusé par le SERVICE, pas par le champ",
+      "gabarit": false
+    },
+    {
+      "nom": "écarts : chacun est disposé avec explication, conclusion et pièce liée",
+      "gabarit": false
+    },
+    {
+      "nom": "re-exécution : aucun sous-échantillon à tirer sur cet écran",
+      "gabarit": false
+    },
+    {
+      "nom": "re-exécution : les contrôles en aveugle sont soumis depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : aucun dépassement à répondre sur cet écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : déjà conclue",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : le papier se RÉDIGE depuis les faits stockés, pas à la main",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : le papier rend, avec ses sections et son bloc de visas",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : un tableur se JOINT au papier, avec empreinte et provenance",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : une section s’ÉDITE à la main, et l’édition porte sa justification",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : l’associé ne vise pas avant le préparateur et le reviewer",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : une note de revue s’ajoute et s’affiche",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : les notes se ferment par un réviseur qui n’en est PAS l’auteur",
+      "gabarit": false
+    },
+    {
+      "nom": "note ancrée : le clic droit ouvre la pose et NOMME l’objet visé",
+      "gabarit": false
+    },
+    {
+      "nom": "note ancrée : l’élément annoté porte le jeton d’attention",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la vue transverse porte l’ancre de la note",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la réponse s’enregistre et la note passe « adressée »",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la clôture par le préparateur (non réviseur) est REFUSÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : la clôture par l’AUTEUR est refusée — même réviseur",
+      "gabarit": false
+    },
+    {
+      "nom": "notes : un réviseur non-auteur clôt, depuis la vue transverse",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : l’instruction est exécutée à la pose",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : sa réponse entre au dossier — fait, pièces, reste à vérifier",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : il a répondu, il n’a PAS clos — la note est « adressée », un humain clôt",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : « conclus la section » est REFUSÉ, avec la liste de ce qu’il sait faire",
+      "gabarit": false
+    },
+    {
+      "nom": "OTTO : les notes sont closes par un réviseur humain non-auteur, jamais par lui",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : OTTO PROPOSE son interprétation, en clair, et attend",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : RIEN n’est rempli avant la confirmation humaine",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : confirmée, elle entre au tableau MARQUÉE « ajoutée »",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : deux issues, jamais une seule — trouvée AVEC sa pièce, ou « absente »",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : l’introuvable PROPOSE une demande de clarification (brouillon L2)",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : « BL signé ? » — OTTO avoue ne pas savoir interpréter",
+      "gabarit": false
+    },
+    {
+      "nom": "colonne : confirmer sans corriger un titre illisible est REFUSÉ",
+      "gabarit": false
+    },
+    {
+      "nom": "papier : les trois visas se posent dans l’ordre de la hiérarchie de revue",
+      "gabarit": false
+    },
+    {
+      "nom": "^papier : il s’exporte en [\\s\\S]* depuis l’écran$",
+      "gabarit": true
+    },
+    {
+      "nom": "papier : les deux exports sont TÉLÉCHARGEABLES depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : les missions sont groupées par CLIENT (le groupe), pas en liste plate",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : le clic CHANGE de dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : chaque changement s’inscrit au journal (engagement.switched)",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’écran DIT que la lecture d’agendas et l’envoi sont simulés",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : des créneaux communs sortent des disponibilités (libre/occupé seulement)",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : choisir un créneau SANS contact clé est refusé, en nommant le geste",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : le contact clé est déclaré",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’invitation porte les copies dans l’ORDRE CALCULÉ — clé, puis la hiérarchie",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : le .ics standard se télécharge depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "réunions : l’envoi est SIMULÉ et l’écran l’affirme — rien n’est parti",
+      "gabarit": false
+    },
+    {
+      "nom": "la boucle : les étapes du cycle sont rendues avec leur reste",
+      "gabarit": false
+    },
+    {
+      "nom": "reprise N-1 : plus aucune proposition non statuée",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : la plaquette est chargée et pointée",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : documenter un chiffre SANS pièce liée est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "pointage : plus aucune ligne ouverte ni écart inexpliqué",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le compte du grand livre qu'AUCUN tiers ne couvre est nommé",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : la ligne de listing qu'aucune écriture ne porte est nommée aussi",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le listing CORRIGÉ referme le constat de complétude",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : la demande PART (transport simulé, jamais un envoi qui se croit réel)",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : le solde COMPTABLE est affiché en face du tiers",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : l'écart est CALCULÉ contre le grand livre, et tout écart se dit",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : « RAS » est REFUSÉ — une explication d'écart se rédige",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : l'écart expliqué par écrit lève l'obstacle au visa",
+      "gabarit": false
+    },
+    {
+      "nom": "circularisation : les questions naissent en BROUILLON, dans les demandes au client",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : conclure SANS conclusion écrite est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : la lettre d’affirmation ne peut pas être « sans objet », et l’écran le dit",
+      "gabarit": false
+    },
+    {
+      "nom": "achèvement : les cinq natures sont conclues",
+      "gabarit": false
+    },
+    {
+      "nom": "jalons : chaque jalon se marque FAIT depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : une note ADRESSÉE crée du travail qui attend quelqu’un",
+      "gabarit": false
+    },
+    {
+      "nom": "mes travaux : le bandeau y mène depuis n’importe quel écran, en 1 clic",
+      "gabarit": false
+    },
+    {
+      "nom": "^mes travaux : [\\s\\S]* ligne\\(s\\), et l’objet s’atteint en [\\s\\S]* clic\\(s\\) — le critère est de 3$",
+      "gabarit": true
+    },
+    {
+      "nom": "clôture : le dossier se CLÔT et l’archive est scellée",
+      "gabarit": false
+    },
+    {
+      "nom": "archive : le dossier scellé porte son empreinte SHA-256 à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "archive : elle se TÉLÉCHARGE, et ce sont bien les octets d’un zip",
+      "gabarit": false
+    }
+  ],
+  "jamaisConduites": [
+    "création : refusée en doublon, et le dossier déjà créé reste ATTEIGNABLE",
+    "rail : pas de dossier neuf",
+    "acceptation : pas de dossier neuf à accepter",
+    "acceptation : décision déjà prise (rejeu)",
+    "import : aucune sélection en aval, la confirmation n’est pas demandée",
+    "périmètre : aucun poste décidé à revoir",
+    "risque : aucune assertion à arbitrer — la table du risque est VIDE",
+    "risque : une seule valeur dans l’échelle — rien à arbitrer",
+    "risque : aucun formulaire de questionnaire à l’écran",
+    "risque : une réponse au questionnaire ne s’enregistre pas",
+    "risque : la réponse au questionnaire est REFUSÉE",
+    "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
+    "atelier clavier : au moins deux lignes à parcourir",
+    "atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne",
+    "atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer",
+    "atelier : aucune ligne à grouper",
+    "la boucle : les clarifications sont émises PUIS approuvées avant de partir",
+    "écarts : aucun écart ouvert à résoudre",
+    "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
+    "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
+    "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
+    "papier : aucun papier de travail dans le dossier",
+    "papier : le formulaire d’édition de section existe avant les visas",
+    "note ancrée : la conclusion du papier est annotable",
+    "colonne : le formulaire d’ajout est présent sur le papier",
+    "^papier : l’export [\\s\\S]* est offert sur l’écran$",
+    "bascule : une autre mission est proposée au clic",
+    "reprise N-1 : écarter une conclusion SANS motif est refusé",
+    "circularisation : une demande reste à envoyer après le listing corrigé",
+    "mes travaux : un papier existe pour y ancrer une note",
+    "mes travaux : la conclusion du papier est annotable",
+    "mes travaux : le clic droit ouvre la pose de note",
+    "mes travaux : la note adressée APPARAÎT dans la liste de travail",
+    "clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte",
+    "clôture : le dossier n’est PAS scellé à la fin du parcours"
+  ]
+}

@@ -55,7 +55,7 @@ export default async function NotesPage({
           <span className="row">
             <span className={`badge ${st?.badge ?? 'gray'}`}>{st ? t(st.libelle) : n.status}</span>
             <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>
-              {NOTE_TYPES[n.note_type as NoteType]?.libelle ?? n.note_type}
+              {NOTE_TYPES[n.note_type as NoteType] ? t(NOTE_TYPES[n.note_type as NoteType].libelle) : n.note_type}
             </span>
             {n.anchor_label && <span className="note-cible" style={{ marginBottom: 0 }}>{n.anchor_label}</span>}
             {n.etat_ancre === 'retire' && (

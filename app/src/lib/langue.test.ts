@@ -1,13 +1,56 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
-import { chaines, lisible, horsCatalogue } from './langue';
+import { chaines, lisible, horsCatalogue, inversions, libellesDeService } from './langue';
 import { LIBELLES, LOCALES, traduire, type Locale } from './i18n/catalogue';
 
 // Le détecteur vit dans `langue.ts`, pas ici : une vérification que personne ne
 // peut rejouer est une affirmation (règle 12). `npm run langue` la rejoue.
 
 const APP = path.join(__dirname, '..', 'app');
+
+describe('le catalogue lui-même', () => {
+  /* L'ANGLE MORT DE LA RÈGLE : elle compte ce qui ne passe PAS par le
+     catalogue, donc elle ne regarde jamais ce qu'il contient. Sept entrées
+     avaient leurs deux colonnes ÉCHANGÉES — sur l'instance anglaise, l'écran
+     des seuils affichait « Seuil de signification » à côté de « Materiality »
+     pour le même concept. La règle disait zéro. */
+  it('aucune entrée n’a ses deux colonnes échangées', () => {
+    const vues = inversions(LIBELLES as Record<string, { en: string; fr: string }>);
+    expect(vues.length, `colonnes échangées :\n  ${vues.join('\n  ')}`).toBe(0);
+  });
+
+  /* CE QUE CETTE VÉRIFICATION NE VOIT PAS, ÉPROUVÉ PLUTÔT QUE SUPPOSÉ : on
+     remet chacune des sept inversions constatées, une par une, et on compte
+     celles qu'elle dénonce. Cinq sur sept — une inversion d'un seul mot sans
+     mot-outil ni accent (« Joindre » contre « Attach ») lui échappe, et c'est
+     écrit ici pour que personne ne croie la règle complète. */
+  it('dénonce cinq des sept inversions réellement constatées', () => {
+    const sept = ['mat.seuilDeSignification', 'mat.seuilDeTravail', 'mat.anomalieTolRable',
+      'test.motifObligatoire', 'wp.corrigerPuisChercher', 'wp.joindre',
+      'wp.interprTationProposEConfirmer'];
+    const cat = LIBELLES as Record<string, { en: string; fr: string }>;
+    const vues = sept.filter((c) => {
+      const copie = { ...cat, [c]: { en: cat[c].fr, fr: cat[c].en } };
+      return inversions(copie).some((x) => x.startsWith(`${c} `));
+    });
+    expect(vues.length).toBe(5);
+  });
+});
+
+describe('les libellés tenus dans les services', () => {
+  /* UN ÉCRAN IRRÉPROCHABLE PEUT AFFICHER DU FRANÇAIS : il suffit qu'il rende
+     une table de libellés tenue dans un service. `NOTE_TYPES` portait « à
+     corriger (bloquante) » et deux écrans l'affichaient tel quel. */
+  it('une propriété de libellé tient une CLÉ, jamais une phrase', () => {
+    const { restes, differes } = libellesDeService(
+      path.join(__dirname, '..', 'lib'), new Set(Object.keys(LIBELLES)));
+    /* Le compte des différés est publié, comme celui des refus : une exception
+       qui ne se compte pas est une exception qui s'oublie. */
+    expect(differes.length).toBeGreaterThan(0);
+    expect(restes.length, `libellés en dur dans un service :\n  ${restes.join('\n  ')}`).toBe(0);
+  });
+});
 
 describe('la langue des écrans', () => {
   it('aucune chaîne d’écran hors catalogue — quelle que soit sa langue', () => {

@@ -330,17 +330,29 @@ export async function independenceHolds(engagementId: string, userId: string): P
 }
 
 export interface DeclarationState {
-  label: string;
+  /** L'état, EN CLÉ du catalogue — l'écran choisit la langue, pas le service. */
+  label: Motif;
   holds: boolean;
   version: number | null;
 }
 
 export async function declarationState(engagementId: string, userId: string): Promise<DeclarationState> {
   const d = await currentDeclaration(engagementId, userId);
-  if (!d) return { label: 'aucune déclaration', holds: false, version: null };
-  if (d.signed_at) return { label: `signée le ${d.signed_at.slice(0, 10)} (v${d.version})`, holds: true, version: d.version };
+  /* L'ÉTAT SE REND EN CLÉ, PAS EN PHRASE. Un service qui renvoie « signée le… »
+     impose sa langue à l'écran ; le catalogue est le seul endroit où une phrase
+     s'écrit (revue n°3, point 1). */
+  if (!d) return { label: motif('team.aucuneDeclaration'), holds: false, version: null };
+  if (d.signed_at) {
+    return {
+      label: motif('team.signeeLe', { date: d.signed_at.slice(0, 10), v: d.version }),
+      holds: true,
+      version: d.version,
+    };
+  }
   return {
-    label: d.version === 1 ? 'ouverte, non signée' : `révision v${d.version} ouverte, non signée — la précédente est caduque`,
+    label: d.version === 1
+      ? motif('team.ouverteNonSignee')
+      : motif('team.revisionOuverteNonSignee', { v: d.version }),
     holds: false,
     version: d.version,
   };
@@ -396,7 +408,7 @@ export async function assignMember(input: AssignInput): Promise<{ id: string }> 
   if (!(await independenceHolds(input.engagementId, input.userId))) {
     const st = await declarationState(input.engagementId, input.userId);
     throw new TeamRuleError(
-      `déclaration d’indépendance de ${user.name} : ${st.label} — aucun travail ne peut lui être attribué`,
+      `déclaration d’indépendance de ${user.name} (${st.label.cle}) — aucun travail ne peut lui être attribué`,
     );
   }
   const row = existing

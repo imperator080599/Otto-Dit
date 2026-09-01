@@ -209,7 +209,7 @@ export default async function RiskPage({
                       ))}
                     </select>
                     <input type="text" name="reason" placeholder={t('risk.reasonRequiredIfTheLevelDiffers')} style={{ width: 230 }} />
-                    <button className="btn small secondary">arbitrer</button>
+                    <button className="btn small secondary">{t('risk.arbitrate')}</button>
                   </form>
                 </td>
               </tr>
@@ -244,6 +244,14 @@ export default async function RiskPage({
             q: raised.quantitative, ql: raised.qualitative, pct: raised.pctQuantitative.toFixed(1),
           })}
         </p>
+        {/* LE CHIFFRE SANS SON AVERTISSEMENT N'EST PAS ACTIONNABLE. Ma première
+            réparation avait ramené les deux pourcentages et laissé tomber la
+            pastille : une méthode équilibrée dont personne ne remplit le
+            questionnaire redonne une évaluation qui ne voit que ce qui se
+            compte, et c'est CE fait-là qu'un réviseur doit voir. */}
+        {raised.qualitative === 0 && (
+          <p><span className="badge amber">{t('risk.aucunQualitatif')}</span></p>
+        )}
       </div>
 
       {/* ── LE QUALITATIF ─────────────────────────────────────────────
@@ -326,7 +334,7 @@ export default async function RiskPage({
         <h2>{t('risk.registerOfDeclaredFactors')} {reg.length}</h2>
         <table className="data">
           <thead>
-            <tr><th>{t('col.source')}</th><th>{t('col.nature')}</th><th>Constatation</th><th>Vise</th><th>Statut</th><th /></tr>
+            <tr><th>{t('col.source')}</th><th>{t('col.nature')}</th><th>{t('risk.finding')}</th><th>{t('risk.targets')}</th><th>{t('risk.status')}</th><th /></tr>
           </thead>
           <tbody>
             {reg.length === 0 ? (

@@ -153,7 +153,7 @@ export default async function ProcessusPage({
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <select name="exercice" defaultValue="n">
             <option value="n">{t('proc.versionN')}</option>
-            <option value="n1">version N-1 (reprise)</option>
+            <option value="n1">{t('proc.yearN1VersionCarriedForward')}</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 240 }} />
           <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -171,8 +171,7 @@ export default async function ProcessusPage({
       {montre && diagramme && (
         <div className="panel">
           <h2>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</h2>
-          <p className="faint"></p>
-          <div className="table-scroll">
+            <div className="table-scroll">
             <svg width={diagramme.w} height={diagramme.h} viewBox={`0 0 ${diagramme.w} ${diagramme.h}`} role="img"
               aria-label={t('proc.diagramme', { nom: montre.nom })} style={{ maxWidth: 'none' }}>
               {diagramme.fleches.map((f, i) => (
@@ -200,7 +199,7 @@ export default async function ProcessusPage({
           </div>
           <div className="table-scroll mt">
             <table className="data">
-              <thead><tr><th>{t('proc.etape')}</th><th>{t('proc.libelle')}</th><th>Acteur</th><th>{t('proc.systeme')}</th><th>{t('proc.entrees')}</th><th>Sorties</th></tr></thead>
+              <thead><tr><th>{t('proc.etape')}</th><th>{t('proc.libelle')}</th><th>{t('proc.actor')}</th><th>{t('proc.systeme')}</th><th>{t('proc.entrees')}</th><th>{t('proc.outputs')}</th></tr></thead>
               <tbody>
                 {montre.etapes.map((e) => (
                   <tr key={e.code}>
@@ -234,7 +233,7 @@ export default async function ProcessusPage({
           {diff.changements.length > 0 && (
             <div className="table-scroll">
               <table className="data">
-                <thead><tr><th>Changement</th><th>Avant (N-1)</th><th>{t('proc.apres')}</th><th>{t('proc.decision')}</th></tr></thead>
+                <thead><tr><th>{t('proc.change')}</th><th>{t('proc.beforeN1')}</th><th>{t('proc.apres')}</th><th>{t('proc.decision')}</th></tr></thead>
                 <tbody>
                   {diff.changements.map((c) => {
                     const d = diff.decisions[c.code];
@@ -261,7 +260,7 @@ export default async function ProcessusPage({
                                 <option value="significatif">{t('proc.significatifCourt')}</option>
                               </select>
                               <input name="reason" placeholder={t('proc.motifEcrit')} style={{ minWidth: 160 }} />
-                              <button className="btn">Statuer</button>
+                              <button className="btn">{t('proc.decide')}</button>
                             </form>
                           )}
                         </td>
@@ -276,7 +275,7 @@ export default async function ProcessusPage({
       )}
 
       <div className="panel">
-        <h2>Entretiens {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
+        <h2>{t('proc.interviews')} {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
           <span className="badge red">{t('proc.ecartsAStatuer')}</span>
         )}</h2>
         {adaptateur === 'mock' ? (
@@ -297,9 +296,9 @@ export default async function ProcessusPage({
             <input name="sujet" placeholder={t('proc.sujet')} style={{ minWidth: 260, flex: 1 }} />
             <select name="support" defaultValue="notes">
               <option value="notes">{t('proc.notesSansEnr')}</option>
-              <option value="enregistrement">enregistrement (consentements requis)</option>
+              <option value="enregistrement">{t('proc.recordingConsentRequired')}</option>
             </select>
-            <input name="retention" placeholder="conservation AAAA-MM-JJ" style={{ width: 170 }} />
+            <input name="retention" placeholder={t('proc.retentionYyyyMmDd')} style={{ width: 170 }} />
           </div>
           {[1, 2, 3].map((i) => (
             <div key={i} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
@@ -318,7 +317,7 @@ export default async function ProcessusPage({
         <div className="panel" key={itv.id}>
           <h2>
             {t('proc.interviewOf')} {itv.date} — {itv.sujet}{' '}
-            <span className="badge gray">{itv.support === 'notes' ? 'notes' : 'enregistrement'}</span>
+            <span className="badge gray">{itv.support === 'notes' ? t('proc.supportNotes') : t('proc.supportEnregistrement')}</span>
             {itv.ecarts.some((e) => e.status === 'candidate') && (
               <span className="badge red">{t('proc.nCandidats', { n: itv.ecarts.filter((e) => e.status === 'candidate').length })}</span>
             )}
@@ -329,7 +328,7 @@ export default async function ProcessusPage({
               base cette personne a-t-elle été enregistrée, et jusqu'à quand le
               transcript est-il conservé (ADR-101, docs/14). Un fait stocké que
               plus aucun écran ne rend n'existe pas pour qui relit le dossier. */}
-          <p className="faint">
+          <p className="faint" data-consentements>
             {itv.participants.map((x) => `${x.nom}${x.qualite ? ` (${x.qualite})` : ''}${x.consentement ? ` — ${t('proc.consentementLe')} ${x.quand ? x.quand.slice(0, 10) : '✓'}` : ''}`).join(' · ')}
             {itv.retentionUntil && <> · {t('proc.conservationJusquAu')} {itv.retentionUntil}</>}
           </p>

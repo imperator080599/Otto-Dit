@@ -61,7 +61,7 @@ export default async function RcmPage({
         <div className="table-scroll">
           <table className="data">
             <thead>
-              <tr><th>Control</th><th>{t('col.process')}</th><th>{t('rcm.riskAssertions')}</th><th>Freq.</th><th>{t('col.nature')}</th><th>{t('col.key')}</th><th>D&amp;I</th><th>{t('col.instances')}</th><th>{t('col.deviations')}</th><th>{t('rcm.oeTest')}</th></tr>
+              <tr><th>{t('proc.controle')}</th><th>{t('col.process')}</th><th>{t('rcm.riskAssertions')}</th><th>{t('rcm.freqCourt')}</th><th>{t('col.nature')}</th><th>{t('col.key')}</th><th>{t('rcm.di')}</th><th>{t('col.instances')}</th><th>{t('col.deviations')}</th><th>{t('rcm.oeTest')}</th></tr>
             </thead>
             <tbody>
               {controls.map((c) => (
@@ -106,7 +106,7 @@ export default async function RcmPage({
         <div className="panel">
           <h2>{t('rcm.deficiencyAggregation')}</h2>
           <table className="data">
-            <thead><tr><th>Control</th><th>{t('rcm.proposedRulesL3')}</th><th>{t('rcm.finalHuman')}</th><th>{t('col.status')}</th><th>{t('rcm.basisNarrative')}</th></tr></thead>
+            <thead><tr><th>{t('proc.controle')}</th><th>{t('rcm.proposedRulesL3')}</th><th>{t('rcm.finalHuman')}</th><th>{t('col.status')}</th><th>{t('rcm.basisNarrative')}</th></tr></thead>
             <tbody>
               {deficiencies.map((d) => (
                 <tr key={d.id}>

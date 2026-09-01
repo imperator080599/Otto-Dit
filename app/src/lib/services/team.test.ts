@@ -159,7 +159,11 @@ describe('équipe et indépendance', () => {
   it('tant que la révision n’est pas signée, l’indépendance ne tient plus', async () => {
     expect(await independenceHolds(IDS.engNep, IDS.users.hugo)).toBe(false);
     const st = await declarationState(IDS.engNep, IDS.users.hugo);
-    expect(st.label).toContain('la précédente est caduque');
+    /* L'ÉTAT SE VÉRIFIE SUR SA CLÉ, PAS SUR UNE PHRASE : le service rend un
+       motif (clé + variables), et une assertion sur la phrase française
+       vérifiait le catalogue au lieu de la règle. */
+    expect(st.label.cle).toBe('team.revisionOuverteNonSignee');
+    expect(st.label.vars).toMatchObject({ v: 2 });
   });
 
   /* ═══ 3. LE REFUS D'AFFECTER ══════════════════════════════════════════ */

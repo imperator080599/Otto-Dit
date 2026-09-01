@@ -324,3 +324,136 @@ trous constatés.
 
 Les deux épreuves entrent dans `npm run verify`, entre les tests et le balayage des écrans.
 Un instrument qui n'a jamais échoué exprès n'a jamais été testé.
+
+## DA-22 — La règle de langue voyait le code là où il y avait du texte
+
+Cinquième et sixième versions de cet instrument, cinquième et sixième fois qu'il mesurait à
+côté. Quatre classes de chaînes affichées lui échappaient, et chacune est devenue un cas
+connu mauvais :
+
+| classe | pourquoi elle échappait | exemple réel |
+|---|---|---|
+| entité HTML | `&amp;amp;` porte un **point-virgule**, et le filtre qui écarte le code écartait la phrase | `Approve & send (L2)` — le bouton qui envoie une demande au client |
+| nom de touche | `Control` était dans la liste des touches du clavier, appliquée à un nœud JSX | l'en-tête de la première colonne du RCM |
+| ternaire affiché | les deux branches partaient dans le seau des LITTÉRAUX, où un mot minuscule passe pour un identifiant | `{m.can_sign ? 'oui' : 'non'}` |
+| moins de deux lettres | le tout premier filtre exigeait deux lettres de suite | `> 90 j (N)` — « j » pour jours |
+
+Le ternaire n'est pris que s'il est **enfant JSX** (l'accolade qui suit `>` ou `}`) :
+`defaultValue={x ? 'oui' : 'non'}` choisit une valeur d'option, pas un texte, et une règle qui
+crie faux se fait taire.
+
+`npm run langue:epreuve` : **12/12**. Le compte est publié à chaque exécution, ainsi que celui
+des libellés **différés avec leur raison** (`npm run langue -- --differes` les déroule).
+
+## DA-23 — Le catalogue était l'angle mort de sa propre règle : sept entrées à l'envers
+
+La règle compte ce qui ne passe **pas** par le catalogue. Elle ne regardait donc jamais ce que
+le catalogue **contient** — si bien que la façon la plus simple de rendre une phrase française
+invisible était de l'écrire dans la colonne `en`. Sept entrées l'étaient :
+
+    'mat.seuilDeSignification': { en: 'Seuil de signification', fr: 'Materiality threshold' }
+
+Sur l'instance anglaise, l'écran des seuils affichait **« Seuil de signification »** juste à
+côté de « Materiality » pour le même concept ; idem sur le testing et sur trois endroits du
+papier de travail. Les sept sont remises à l'endroit, et deux paires devenues doubles ont
+fusionné.
+
+**La règle est linguistique ici, et elle a le droit de l'être.** Ailleurs, deviner la langue
+d'une chaîne était le défaut ; dans un **dictionnaire bilingue**, c'est la seule question qui
+se pose. On ne devine pas : on constate qu'une entrée porte, du mauvais côté, des mots-outils
+ou des accents qui n'existent que dans l'autre langue.
+
+**Ce qu'elle ne voit pas, mesuré plutôt que supposé** : on remet les sept inversions, une par
+une, et on compte celles qu'elle dénonce — **cinq sur sept**. Une inversion d'un seul mot sans
+mot-outil ni accent (« Joindre » contre « Attach ») lui échappe ; les deux qui restent ont été
+trouvées à l'œil. Le test le dit en toutes lettres plutôt que de laisser croire à une règle
+complète.
+
+## DA-24 — Un écran irréprochable peut afficher du français : la règle suit les services
+
+`NOTE_TYPES` portait « à corriger (bloquante) » dans `services/workpapers/lifecycle.ts`, et
+deux écrans l'affichaient tel quel. La règle ne lisait que `src/app` : elle ne pouvait pas le
+voir, et elle annonçait « 0 reste ».
+
+**La règle est structurelle ici aussi** : une propriété qui s'APPELLE un libellé (`libelle`,
+`label`, `titre`, `phrase`, `raison`) tient une **clé** du catalogue, jamais une phrase.
+Beaucoup de services le faisaient déjà (`loop.ts`, `completion.ts`, `poste.ts`) — la règle
+constate ce que le dépôt fait de mieux, elle ne l'invente pas.
+
+Vingt-sept libellés relevés. Sept migrés (les quatre types de note, l'état de déclaration
+d'indépendance en `Motif` avec ses variables). **Vingt et un différés, chacun avec sa raison
+écrite dans `src/lib/langue.ts` et son compte publié** :
+
+- `notes/otto.ts`, `workpapers/colonne.ts`, `provenance.ts` — un texte **écrit puis stocké**
+  (réponse d'OTTO dans une note, interprétation figée d'une colonne) ne se relit pas dans une
+  autre langue : la langue s'y décide à **l'écriture**, ce qui demande que le service reçoive
+  la locale du cabinet. Chantier nommé, pas un `t()` de plus ;
+- `acceptance.ts`, `reunions.ts` — ces phrases **côtoient du contenu de pack** (le catalogue de
+  méthode NEP, en français) ou des codes bruts. Les traduire seules donnerait une liste moitié
+  anglaise moitié française, pire que l'état actuel ; le pack est du contenu et le périmètre
+  est gelé (règle 14).
+
+Un `payload:` de journal n'est pas un libellé : il est écrit une fois dans `event_log` et le
+traduire au rendu réécrirait l'histoire du dossier.
+
+## DA-25 — Une station du parcours ne peut plus s'éteindre en silence
+
+Le parcours porte cent quatre-vingts vérifications, beaucoup derrière un `if` (« si le bouton
+est là, clique »). Le jour où le bouton change de nom, le `if` devient faux, la station
+disparaît du rapport — et le rapport reste **vert avec moins d'étapes**. Le seul garde était
+« au moins 30 étapes » : il dit combien, jamais **lesquelles**.
+
+Deux gardes, un seul fichier figé (`docs/PARCOURS.json`) :
+
+| garde | ce qu'elle voit | éprouvée par |
+|---|---|---|
+| `npm run parcours` (statique, 1 s) | une station **retirée ou renommée** dans le code | station retirée · station renommée · station littérale voisine d'une station construite · station construite |
+| `npm run clics` (à l'exécution) | une station **figée mais jamais conduite** | une station retirée de la liste des conduites, et le cas symétrique (ne rien crier sur un parcours complet) |
+
+`npm run parcours:epreuve` : **5/5**.
+
+**Trois pièges, et ils étaient tous armés :**
+
+1. *Un nom construit figé sur son DÉBUT.* « mes travaux : » — quatorze caractères — avalait les
+   six stations qui le suivaient : toutes pouvaient s'éteindre sans que la garde bronche. Un nom
+   construit est désormais figé comme une **expression ancrée aux deux bouts**.
+2. *Figer sur un parcours vert n'est pas figer un parcours complet.* Le figé porte donc aussi,
+   sous leur nom, les stations **déclarées et jamais atteintes** — trente-cinq aujourd'hui, la
+   plupart des branches d'échec (« aucun papier dans le dossier »), et deux `if` sans `else` à
+   qui on a rendu une voix.
+3. *Une garde qui ne vérifie rien doit le dire.* Avec un figé vide, `jamaisAtteintes` rendait
+   une liste vide et se laissait lire comme un succès — le défaut que cette garde existe pour
+   attraper, appliqué à elle-même. Le parcours annonce désormais combien de stations figées il
+   a vérifiées, et sort en échec si c'est zéro.
+
+## DA-26 — Le parcours lit la langue réellement servie, et prouve ses absences dans les deux
+
+`L('cle')` était figé sur l'anglais parce que c'est la locale du cabinet de démonstration.
+Vrai aujourd'hui, écrit nulle part. Sur une instance servie en français, les sélecteurs du
+parcours accrochent le vide : les stations de **présence** échouent bruyamment — on les
+verrait — mais les onze stations d'**absence** passent en prouvant exactement rien.
+
+1. **La langue se mesure.** Le parcours relève `<html lang>` au premier écran, la sert à `L`,
+   et vérifie *sur cet écran* qu'un libellé de cette langue est bien affiché — un attribut
+   correct sur un écran traduit autrement serait le même silence.
+2. **Une absence se prouve dans les deux langues.** `compteAbsent(sel, cle)` compte sur les
+   deux libellés. Ce n'est pas l'équivalent exact de l'ancien sélecteur (`hasText` lit le texte
+   de tout l'élément) : le compte est plus large, donc un `=== 0` est plus **strict** — il ne
+   peut pas devenir un faux vert, il peut rougir pour un mot voisin. Dit plutôt que supposé.
+
+Au passage, **vingt-sept sélecteurs recopiés à la main** passent par le catalogue — dont
+**neuf** cherchaient un libellé FRANÇAIS (`Statuer` ×7, `arbitrer` ×2) sur une instance
+anglaise, donc ne pouvaient rien accrocher. Ceux qui restent en dur sont des **données** du
+jeu synthétique — « Immovance », « CP-01 », « fae-2025.csv ».
+
+## DA-27 — L'instantané des lectures comptait des clés de catalogue
+
+`docs/LECTURES.json` figeait 2 316 « chemins de champ rendus ». **1 083 d'entre eux** étaient le
+suffixe d'une clé de catalogue : `t('proc.conservationJusquAu')` contient un point, et
+l'extracteur y voyait un champ nommé `conservationJusquAu`. Conséquence mesurée dans cette
+tranche même : renommer une clé faisait crier le garde comme si un écran avait cessé
+d'afficher une donnée — un garde qui crie faux se fait taire.
+
+La clé (le **premier** argument) est effacée avant lecture ; les variables qui suivent ne le
+sont pas — ce sont de vraies lectures, et c'est l'un des six cas connus mauvais du garde.
+L'instantané tombe à **1 328 chemins dans 74 écrans**, et redevient relisible.

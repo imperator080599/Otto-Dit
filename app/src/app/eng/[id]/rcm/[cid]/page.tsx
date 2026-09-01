@@ -137,8 +137,8 @@ export default async function ControlDetail({
           <span className="badge gray">{control.nature}</span>
           <span className="badge gray">{control.effect}</span>
           {control.is_key && <span className="badge blue">{t('rcmc.keyControl')}</span>}
-          <span className={`badge ${control.di_status === 'effective' ? 'green' : 'red'}`}>D&amp;I {control.di_status}</span>
-          <span className="faint">owner {control.owner_name}</span>
+          <span className={`badge ${control.di_status === 'effective' ? 'green' : 'red'}`}>{t('rcm.di')} {control.di_status}</span>
+          <span className="faint">{t('rcmc.owner')} {control.owner_name}</span>
         </div>
       </div>
 
@@ -147,29 +147,29 @@ export default async function ControlDetail({
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>Instance population ({instances.length})</h2>
             <span className="row">
-              {instances.length === 0 && <form action={importInstancesAction}><button className="btn small secondary">Import client listing</button></form>}
+              {instances.length === 0 && <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>}
               {instances.length > 0 && !instances.some((i) => i.sampled) && (
                 <form action={drawAction} className="row">
-                  <input type="number" name="size" placeholder="size (pack default)" style={{ width: 120 }} />
-                  <input type="text" name="justification" placeholder="override justification" style={{ width: 150 }} />
-                  <button className="btn small">Draw &amp; request evidence</button>
+                  <input type="number" name="size" placeholder={t('rcmc.sizePackDefault')} style={{ width: 120 }} />
+                  <input type="text" name="justification" placeholder={t('rcmc.overrideJustification')} style={{ width: 150 }} />
+                  <button className="btn small">{t('rcm.drawAndRequestEvidence')}</button>
                 </form>
               )}
               {instances.some((i) => i.sampled) && grid.length === 0 && (
-                <form action={testAction}><button className="btn small">Extract &amp; test attributes</button></form>
+                <form action={testAction}><button className="btn small">{t('rcm.extractAndTestAttributes')}</button></form>
               )}
             </span>
           </div>
           <div className="table-scroll" style={{ maxHeight: 320 }}>
             <table className="data">
-              <thead><tr><th>{t('col.instance')}</th><th>Occurred</th><th>Performer</th><th>Sampled</th><th>{t('col.evidence')}</th></tr></thead>
+              <thead><tr><th>{t('col.instance')}</th><th>{t('rcmc.occurred')}</th><th>{t('rcmc.performer')}</th><th>{t('rcmc.sampled')}</th><th>{t('col.evidence')}</th></tr></thead>
               <tbody>
                 {instances.map((i) => (
                   <tr key={i.id}>
                     <td className="mono">{i.label}</td>
                     <td>{i.occurred_on}</td>
                     <td>{i.performer_name}</td>
-                    <td>{i.sampled ? <span className="badge blue">selected</span> : <span className="faint">—</span>}</td>
+                    <td>{i.sampled ? <span className="badge blue">{t('rcmc.selected')}</span> : <span className="faint">—</span>}</td>
                     <td className="num">{i.evidence_count}</td>
                   </tr>
                 ))}
@@ -180,7 +180,7 @@ export default async function ControlDetail({
 
         <div className="panel">
           <h2>Attribute grid</h2>
-          {grid.length === 0 ? <p className="muted">Not tested yet.</p> : (
+          {grid.length === 0 ? <p className="muted">{t('rcmc.notTestedYet')}</p> : (
             <table className="data">
               <thead><tr><th>{t('col.instance')}</th>{attrCodes.map((a) => <th key={a}>{a}</th>)}</tr></thead>
               <tbody>
@@ -235,7 +235,7 @@ export default async function ControlDetail({
                   <td>
                     {d.status === 'open' ? (
                       <details>
-                        <summary className="repli-action">act…</summary>
+                        <summary className="repli-action">{t('commun.actions')}</summary>
                         <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 460 }}>
                           <input type="hidden" name="deviation_id" value={d.id} />
                           <textarea name="explanation" rows={2} required
@@ -252,7 +252,7 @@ export default async function ControlDetail({
                               <option key={c.id} value={c.id}>{c.filename}</option>
                             ))}
                           </select>
-                          <button className="btn small secondary">Record</button>
+                          <button className="btn small secondary">{t('col.record')}</button>
                         </form>
                         <p className="faint" style={{ maxWidth: 460 }}>
                           {t('rcm.aDeviationThatRemainsHasNeither')}
@@ -274,13 +274,13 @@ export default async function ControlDetail({
               <form action={decideAction} className="row">
                 <input type="hidden" name="deficiency_id" value={deficiency.id} />
                 <select name="severity" defaultValue={deficiency.severity_proposed}>
-                  <option value="deficiency">deficiency</option>
-                  <option value="significant_deficiency">significant deficiency</option>
-                  <option value="material_weakness">material weakness</option>
+                  <option value="deficiency">{t('rcmc.deficiency')}</option>
+                  <option value="significant_deficiency">{t('rcmc.significantDeficiency')}</option>
+                  <option value="material_weakness">{t('rcmc.materialWeakness')}</option>
                 </select>
                 <input type="text" name="decision_rationale" style={{ width: 340 }}
-                  placeholder="rationale — required to go below the proposed severity" />
-                <button className="btn small">Record decision (human)</button>
+                  placeholder={t('rcmc.rationaleRequiredToGoBelowThe')} />
+                <button className="btn small">{t('rcmc.recordDecisionHuman')}</button>
               </form>
             )}
           </div>

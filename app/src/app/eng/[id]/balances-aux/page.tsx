@@ -124,15 +124,15 @@ export default async function BalancesAuxPage({
               <form className="row" style={{ gap: 4 }}>
                 <input type="hidden" name="cote" value={cote} />
                 <label className="row faint" style={{ gap: 4 }}>{t('bal.shareThreshold')}
-                  <input type="number" name="seuil" defaultValue={seuilPts} min={1} max={20} style={{ width: 60 }} /> pts
+                  <input type="number" name="seuil" defaultValue={seuilPts} min={1} max={20} style={{ width: 60 }} /> {t('bal.pts')}
                 </label>
-                <button className="btn secondary small">Recalculer</button>
+                <button className="btn secondary small">{t('bal.recompute')}</button>
               </form>
             </div>
             <div className="grid cols-2">
               <div className="kpi"><span className="v">{a.top10?.partN1} % → {a.top10?.partN} %</span><span className="l">{t('bal.top10ConcentrationShareOfThe')}</span></div>
-              <div className="kpi"><span className="v">{a.apparus.length} / {a.disparus.length}</span><span className="l">Tiers apparus / disparus</span></div>
-              <div className="kpi"><span className="v">{a.deplacements.length}</span><span className="l">{t('bal.shareMovements')} {seuilPts} pts</span></div>
+              <div className="kpi"><span className="v">{a.apparus.length} / {a.disparus.length}</span><span className="l">{t('bal.counterpartiesNewGone')}</span></div>
+              <div className="kpi"><span className="v">{a.deplacements.length}</span><span className="l">{t('bal.shareMovements')} {seuilPts} {t('bal.pts')}</span></div>
               <div className="kpi"><span className="v">{a.vieillissement ? `${a.vieillissement.partsN1[4]} % → ${a.vieillissement.partsN[4]} %` : '—'}</span><span className="l">{t('bal.shareBeyond90Days')}</span></div>
             </div>
             {a.vieillissement && (
@@ -198,7 +198,7 @@ export default async function BalancesAuxPage({
                   <th>{t('col.account')}</th><th>{t('col.counterparty')}</th>
                   <th className="num">{t('bal.soldeN1')}</th><th className="num">{t('bal.partN1')}</th>
                   <th className="num">{t('bal.soldeN')}</th><th className="num">{t('bal.partN')}</th>
-                  <th className="num">&gt; 90 j (N)</th>
+                  <th className="num">{t('bal.plus90jN')}</th>
                 </tr></thead>
                 <tbody>
                   {a.lignes.map((l) => (

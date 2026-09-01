@@ -53,7 +53,7 @@ export default async function RequestDetailPage({
           </h2>
           {request.status === 'draft' && (
             <form action={sendAction}>
-              <button className="btn">Approve &amp; send (L2)</button>
+              <button className="btn">{t('req.approveAndSendL2')}</button>
             </form>
           )}
         </div>

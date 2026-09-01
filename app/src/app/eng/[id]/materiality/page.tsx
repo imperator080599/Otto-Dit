@@ -92,26 +92,26 @@ export default async function MaterialityPage({
             <p>
               <span className={`badge ${current.status === 'validated' ? 'green' : 'amber'}`}>{current.status}</span>{' '}
               <span className="badge gray">v{current.version}</span>{' '}
-              <span className="ai-flag">engine proposal — human decides</span>
+              <span className="ai-flag">{t('mat.engineProposalHumanDecides')}</span>
             </p>
             <div className="grid cols-2">
-              {annotable('seuil_signification', 'Seuil de signification',
+              {annotable('seuil_signification', t('mat.seuilDeSignification'),
                 <div className="kpi"><span className="v">{fmtEur(numToCents(current.amount), 'fr')}</span><span className="l">Materiality ({current.benchmark_code} @ {(current.pct * 100).toFixed(1)}%)</span></div>)}
-              {annotable('seuil_travail', 'Seuil de travail',
+              {annotable('seuil_travail', t('mat.seuilDeTravail'),
                 <div className="kpi"><span className="v">{fmtEur(numToCents(current.perf_amount), 'fr')}</span><span className="l">Performance materiality ({(current.perf_pct * 100).toFixed(0)}%)</span></div>)}
-              {annotable('seuil_insignifiance', 'Seuil d\u2019insignifiance',
+              {annotable('seuil_insignifiance', t('mat.seuilInsignifiance'),
                 <div className="kpi"><span className="v">{fmtEur(numToCents(current.ctt_amount), 'fr')}</span><span className="l">Clearly trivial threshold ({(current.ctt_pct * 100).toFixed(0)}%)</span></div>)}
-              {annotable('anomalie_tolerable', 'Anomalie tolérable',
-                <div className="kpi"><span className="v">{fmtEur(numToCents(current.te_amount), 'fr')}</span><span className="l">Tolerable misstatement (sampling)</span></div>)}
+              {annotable('anomalie_tolerable', t('mat.anomalieTolRable'),
+                <div className="kpi"><span className="v">{fmtEur(numToCents(current.te_amount), 'fr')}</span><span className="l">{t('mat.tolerableMisstatementSampling')}</span></div>)}
             </div>
-            <h3>Rationale (pack language)</h3>
+            <h3>{t('mat.rationalePackLanguage')}</h3>
             <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{current.rationale}</p>
             {current.status === 'proposed' && (
               <form action={validateAction} className="mt">
                 <input type="hidden" name="materiality_id" value={current.id} />
                 <div className="row">
                   <label className="row" style={{ gap: 4 }}>
-                    <input type="checkbox" name="adjust" /> adjust before validating:
+                    <input type="checkbox" name="adjust" /> {t('mat.adjustBeforeValidating')}
                   </label>
                   <select name="benchmark_code" defaultValue={current.benchmark_code}>
                     {pack.materiality.benchmarks.map((b) => (
@@ -119,20 +119,20 @@ export default async function MaterialityPage({
                     ))}
                   </select>
                   <input type="number" name="pct" step="0.1" min="0.1" max="10" defaultValue={(current.pct * 100).toFixed(1)} style={{ width: 80 }} /> %
-                  <button className="btn">Validate (computes thresholds + proposes scoping)</button>
+                  <button className="btn">{t('mat.validateComputesThresholdsProposesScopin')}</button>
                 </div>
               </form>
             )}
             {current.status === 'validated' && (
-              <p className="faint">Validated {current.validated_at?.slice(0, 16)} — scoping proposals refreshed.</p>
+              <p className="faint">{t('mat.validated')} {current.validated_at?.slice(0, 16)} {t('mat.scopingProposalsRefreshed')}</p>
             )}
           </>
         )}
       </div>
       <div className="panel">
-        <h2>Versions</h2>
+        <h2>{t('mat.versions')}</h2>
         <table className="data">
-          <thead><tr><th>v</th><th>Benchmark</th><th className="num">Materiality</th><th>{t('col.status')}</th></tr></thead>
+          <thead><tr><th>v</th><th>{t('mat.benchmark')}</th><th className="num">{t('mat.seuilDeSignification')}</th><th>{t('col.status')}</th></tr></thead>
           <tbody>
             {versions.map((v) => (
               <tr key={v.id}>

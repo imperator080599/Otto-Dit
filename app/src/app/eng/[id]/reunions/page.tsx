@@ -59,12 +59,12 @@ export default async function ReunionsPage({
           ? <p className="muted">{t('reun.noContactDeclaredStartWithThe')}</p>
           : (
             <table className="data">
-              <thead><tr><th>Contact</th><th>{t('reun.role')}</th><th>Domaine</th></tr></thead>
+              <thead><tr><th>{t('reun.contact')}</th><th>{t('reun.role')}</th><th>{t('reun.area')}</th></tr></thead>
               <tbody>
                 {contacts.map((c) => (
                   <tr key={c.id}>
                     <td>{c.nom} <span className="faint">{c.titre ?? ''}</span></td>
-                    <td>{c.role === 'cle' ? <span className="badge green">{t('reun.keyContact')}</span> : <span className="badge gray">domaine</span>}</td>
+                    <td>{c.role === 'cle' ? <span className="badge green">{t('reun.keyContact')}</span> : <span className="badge gray">{t('col.area')}</span>}</td>
                     <td>{c.domaine ?? '—'}</td>
                   </tr>
                 ))}
@@ -83,7 +83,7 @@ export default async function ReunionsPage({
           <form action={declarerDomaineAction} className="row">
             <input type="hidden" name="engagement_id" value={id} />
             <select name="contact" defaultValue="">
-              <option value="">— contact —</option>
+              <option value="">{t('reun.contact2')}</option>
               {disponibles.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
             </select>
             <input name="domaine" placeholder={t('reun.areaSalesTreasury')} />
@@ -117,7 +117,7 @@ export default async function ReunionsPage({
                 <span style={{ minWidth: 210 }}>{fr(c.debut)} · {heure(c.debut)}–{heure(c.fin)} UTC</span>
                 <input name="objet" placeholder={t('reun.subjectOfTheMeeting')} style={{ flex: 1 }} />
                 <select name="destinataire" defaultValue={cle?.client_contact_id ?? ''}>
-                  <option value="">— destinataire (humain) —</option>
+                  <option value="">{t('reun.recipientHuman')}</option>
                   {disponibles.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
                 </select>
                 <button className="btn small">{t('reun.pickThisSlot')}</button>
@@ -128,7 +128,7 @@ export default async function ReunionsPage({
       </div>
 
       <div className="panel">
-        <h2>Invitations</h2>
+        <h2>{t('reun.invitations')}</h2>
         {invs.length === 0 ? <p className="muted">{t('reun.noInvitationThePathKeyContact')}</p>
           : invs.map((i) => (
             <div className={`callout ${i.statut === 'envoyee_simulee' ? 'green' : ''}`} key={i.id}>

@@ -214,9 +214,9 @@ export default async function TestingPage({
                           <form action={blindAction} className="row">
                             <input type="hidden" name="run_id" value={verifRun.id} />
                             <input type="hidden" name="sample_item_id" value={it.sample_item_id} />
-                            <input type="number" name="net" step="0.01" placeholder="Total HT (€)" style={{ width: 110 }} required />
+                            <input type="number" name="net" step="0.01" placeholder={t('test.totalHt')} style={{ width: 110 }} required />
                             <input type="date" name="date" required />
-                            <button className="btn small">Submit blind</button>
+                            <button className="btn small">{t('test.submitBlind')}</button>
                           </form>
                         )}
                       </td>
@@ -230,21 +230,21 @@ export default async function TestingPage({
 
         <div className="panel">
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <h2>Sample evaluation (vs TE)</h2>
+            <h2>{t('test.sampleEvaluationVsTe')}</h2>
             <details>
-              <summary className="repli-action">Recalculer</summary>
-              <form action={evalAction} className="mt"><button className="btn secondary small">Recompute</button></form>
+              <summary className="repli-action">{t('col.recompute')}</summary>
+              <form action={evalAction} className="mt"><button className="btn secondary small">{t('test.recompute')}</button></form>
             </details>
           </div>
           {!evaluation ? (
-            <p className="muted">Known + projected misstatement vs tolerable misstatement (kernel arithmetic, Gate 2).</p>
+            <p className="muted">{t('test.cumulVsTe')}</p>
           ) : (
             <>
               <div className="grid cols-2">
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">Known misstatement</span></div>
+                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span><span className="l">Projected ({evaluation.projection_method})</span></div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">Untested remainder</span></div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">Tolerable misstatement</span></div>
+                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
+                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
               </div>
               {reponses.length > 0 ? (
                 <div className="callout mt">
@@ -261,7 +261,7 @@ export default async function TestingPage({
                       <option value="revise_strategy">{t('test.reviseTheStrategy')}</option>
                       <option value="conclude_with_justification">{t('test.concludeWithAJustification')}</option>
                     </select>
-                    <input name="rationale" placeholder="motif — obligatoire" style={{ flex: 1, minWidth: 260 }} />
+                    <input name="rationale" placeholder={t('test.motifObligatoire')} style={{ flex: 1, minWidth: 260 }} />
                     <button className="btn secondary small">{t('circ.recordTheReply')}</button>
                   </p>
                 </form>
@@ -269,8 +269,8 @@ export default async function TestingPage({
               {evaluation.status === 'draft' ? (
                 <form action={concludeAction} className="mt">
                   <input type="hidden" name="evaluation_id" value={evaluation.id} />
-                  <textarea name="basis" placeholder="Conclusion basis (L4 — human judgment, required)" required />
-                  <button className="btn mt">Record conclusion (L4)</button>
+                  <textarea name="basis" placeholder={t('test.conclusionBasisL4HumanJudgmentRequired')} required />
+                  <button className="btn mt">{t('test.recordConclusionL4')}</button>
                 </form>
               ) : (
                 <div className="callout green mt">Concluded: {evaluation.conclusion_basis}</div>

@@ -5,15 +5,17 @@ import { getSessionUser } from '@/lib/core/auth';
 import { locale, traduire } from '@/lib/i18n';
 import { FournisseurLocale } from '@/lib/i18n/client';
 
-export const metadata: Metadata = {
-  title: traduire('en', 'meta.titre'),
-  description: traduire('en', 'meta.description'),
-  /* URL publique : jamais indexée — c'est une démonstration, pas un site.
-     (Toujours noindex : la seule instance indexable serait une production
-     réelle, qui n'existe pas — et une constante ne peut pas diverger entre
-     construction et exécution, expérience fil n°7.) */
-  robots: { index: false, follow: false },
-};
+/* LE TITRE D'ONGLET SUIT LA LANGUE SERVIE. `metadata` est statique ; c'est
+   `generateMetadata` qui peut lire la locale du cabinet. Un titre figé en
+   anglais sur une instance française est la même incohérence que le reste. */
+export async function generateMetadata(): Promise<Metadata> {
+  const l = await locale();
+  return {
+    title: traduire(l, 'meta.titre'),
+    description: traduire(l, 'meta.description'),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();

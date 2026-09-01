@@ -100,7 +100,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
               </div>
             </>
           )}
-          <h2>AI usage &amp; cost (D12)</h2>
+          <h2>{t('dash.aiUsageAndCostD12')}</h2>
           <p>
             <span className="ai-flag">{d.ai.runs} {t('dash.aiOcrRunS')}</span>{' '}
             <span className="faint">${d.ai.costUsd.toFixed(4)} {t('dash.demoRunsOnRecordedFixturesZero')}</span>

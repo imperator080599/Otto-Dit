@@ -34,7 +34,7 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
             disabled
             style={{ opacity: 0.7 }}
           >
-            <option value="">{verbs.length} distinct verbs</option>
+            <option value="">{verbs.length} {t('ev.distinctVerbs')}</option>
           </select>
         </div>
         <div className="row mt" style={{ gap: 4 }}>

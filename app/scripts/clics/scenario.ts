@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
 import type { Contexte } from './contexte';
-import { traduire, type CleLibelle } from '../../src/lib/i18n/catalogue';
+import { LOCALES, traduire, type CleLibelle, type Locale } from '../../src/lib/i18n/catalogue';
 
 // LE PARCOURS CLIQUÉ — TOUT le chemin de démonstration, de l'import à l'export
 // scellé. C'est ce que le balayage ne peut pas voir.
@@ -32,9 +32,20 @@ const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
    textes FRANÇAIS écrits à la main ; le jour où l'interface a basculé, dix-neuf
    stations ont échoué d'un coup sans qu'aucune règle du produit n'ait bougé.
    Un test qui recopie un libellé diverge le jour où le libellé change — et
-   c'est toujours le test qu'on croit. La locale est celle du cabinet de
-   démonstration : l'anglais, défaut du produit. */
-const L = (cle: CleLibelle) => traduire('en', cle);
+   c'est toujours le test qu'on croit.
+
+   ET IL LIT LA LANGUE RÉELLEMENT SERVIE, IL NE LA SUPPOSE PAS (défaut n°25).
+   `L` était figé sur l'anglais parce que c'est la locale du cabinet de
+   démonstration. Le jour où l'instance sert le français, tous les `has-text`
+   anglais renvoient zéro : les stations de PRÉSENCE échouent bruyamment — on le
+   verrait — mais les onze stations d'ABSENCE passent EN SILENCE, en prouvant
+   exactement rien. La locale est donc relevée sur `<html lang>` au premier
+   écran. Si ce n'est pas une locale du catalogue, la station ÉCHOUE et le
+   parcours vire au rouge — il ne s'ARRÊTE pas : les stations suivantes tournent
+   sur la locale par défaut et échouent à leur tour, ce qui est bruyant, jamais
+   silencieux. */
+let locServie: Locale = 'en';
+const L = (cle: CleLibelle) => traduire(locServie, cle);
 
 /* UNE ASSERTION DE PARCOURS NE DOIT PAS DÉPENDRE DE LA LANGUE SERVIE. `R`
    accepte le libellé dans L'UNE OU L'AUTRE locale : le parcours passe que le
@@ -100,6 +111,20 @@ export async function conduire(
 
   const texte = () => p.locator('body').innerText();
   const compte = (sel: string) => p.locator(sel).count();
+  /* UNE ABSENCE NE SE PROUVE PAS DANS UNE SEULE LANGUE (défaut n°25). Onze
+     stations concluent d'une ABSENCE : « plus aucune note ouverte », « plus
+     aucun jalon à faire », « la clôture n'est pas offerte ». Cherchées par le
+     libellé d'UNE langue, elles renvoient zéro sur une instance servie dans
+     l'autre — et l'absence est alors vraie même quand l'écran affiche dix
+     boutons. Ces stations-là comptent sur les DEUX libellés du catalogue :
+     rien n'est absent tant qu'il reste visible dans une langue.
+
+     CE N'EST PAS L'ÉQUIVALENT EXACT de `form:has(button:has-text("X"))` :
+     `hasText` lit le texte de TOUT l'élément, pas celui du bouton. Le sens va
+     dans le bon sens — le compte est plus large, donc un `=== 0` est PLUS
+     strict et ne peut pas devenir un faux vert — mais il peut rougir pour un
+     mot présent ailleurs dans le même formulaire. Dit ici plutôt que supposé. */
+  const compteAbsent = (sel: string, cle: CleLibelle) => p.locator(sel, { hasText: R(cle) }).count();
   /* `load` ne suffit PAS : l'hydratation et la fin du flux RSC arrivent
      APRÈS, et naviguer à cet instant coupe le flux — l'erreur d'hydratation
      (#418) part alors sur la page SUIVANTE, mal étiquetée (fil n°7 de
@@ -213,8 +238,8 @@ export async function conduire(
     let envoyees = 0;
     for (const href of liens) {
       await aller(base + href);
-      if (await compte('button:has-text("Approve")')) {
-        await cliquer('button:has-text("Approve")', 3000);
+      if (await compte(`button:has-text("${L('req.approveAndSendL2')}")`)) {
+        await cliquer(`button:has-text("${L('req.approveAndSendL2')}")`, 3000);
         if (!refus(p)) envoyees++;
       }
     }
@@ -224,6 +249,29 @@ export async function conduire(
   let engNeuf = '';
 
   await devenir(c.associe.id);
+
+  // ── 0. LA LANGUE SERVIE — mesurée, jamais supposée
+
+  /* `L` lisait le catalogue EN ANGLAIS parce que c'est la locale du cabinet de
+     démonstration. C'est vrai aujourd'hui et ce n'est écrit nulle part : le
+     jour où l'instance sert le français, les cent cinquante-sept sélecteurs
+     anglais du parcours accrochent le vide. Les stations de PRÉSENCE échouent
+     bruyamment — on les verrait — mais les stations d'ABSENCE passeraient en
+     prouvant exactement rien. Le parcours relève donc la langue sur
+     `<html lang>` et la SERT à `L` ; et il vérifie, sur cet écran, que le
+     libellé de cette langue est bien celui que l'utilisateur voit — un
+     attribut correct sur un écran traduit autrement serait le même silence. */
+  await station('langue : le parcours lit le catalogue DANS la langue réellement servie', async () => {
+    await aller(base + '/');
+    const lang = String(await p.evaluate('document.documentElement.lang'));
+    const connue = (LOCALES as readonly string[]).includes(lang);
+    if (connue) locServie = lang as Locale;
+    const vu = connue ? await compte(`summary:has-text("${L('nouveau.titre')}")`) : 0;
+    dire('langue : le parcours lit le catalogue DANS la langue réellement servie',
+      connue && vu > 0,
+      connue ? `<html lang="${lang}"> et le libellé de cette langue est à l’écran`
+        : `<html lang="${lang}"> n’est pas une locale du catalogue`);
+  });
 
   // ── 1. CRÉER UN DOSSIER, ET LE RETROUVER (le contrôle qui a trouvé ADR-088)
   await station('création : le dossier créé est ATTEIGNABLE', async () => {
@@ -505,24 +553,24 @@ export async function conduire(
 
     await aller(`${eng}/processus`);
     dire('processus : la différence N/N-1 est EXACTE et chaque changement attend une décision',
-      (await compte('button:has-text("Statuer")')) === 5, `${await compte('button:has-text("Statuer")')} changement(s) à statuer`);
+      (await compte(`button:has-text("${L('proc.decide')}")`)) === 5, `${await compte(`button:has-text("${L('proc.decide')}")`)} changement(s) à statuer`);
 
     /* Le passage au module de facturation est SIGNIFICATIF : il propose un
        facteur au registre. Les quatre autres se motivent sans en lever. */
     const rangFac = p.locator('tr:has-text("Étape FAC")')
-      .filter({ has: p.locator('button:has-text("Statuer")') }).first();
+      .filter({ has: p.locator(`button:has-text("${L('proc.decide')}")`) }).first();
     await rangFac.locator('select[name=significance]').selectOption('significatif');
     await rangFac.locator('input[name=reason]').fill('Facturation générée automatiquement — le risque se déplace vers le paramétrage.');
-    await soumettre(rangFac.locator('button:has-text("Statuer")').first(), 1500);
+    await soumettre(rangFac.locator(`button:has-text("${L('proc.decide')}")`).first(), 1500);
     for (let i = 0; i < 4; i++) {
-      const rang = p.locator('tr').filter({ has: p.locator('button:has-text("Statuer")') }).first();
+      const rang = p.locator('tr').filter({ has: p.locator(`button:has-text("${L('proc.decide')}")`) }).first();
       if (!(await rang.count())) break;
       await rang.locator('input[name=reason]').fill('Changement d’exécution sans déplacement du risque.');
-      await soumettre(rang.locator('button:has-text("Statuer")').first(), 1500);
+      await soumettre(rang.locator(`button:has-text("${L('proc.decide')}")`).first(), 1500);
     }
     t = await texte();
     dire('processus : tout est statué — le significatif porte « facteur proposé au registre »',
-      (await compte('button:has-text("Statuer")')) === 0 && R('proc.facteurPropose').test(t),
+      (await compteAbsent('button', 'proc.decide')) === 0 && R('proc.facteurPropose').test(t),
       'cinq décisions écrites, un facteur proposé');
 
     /* L'entretien : enregistrer SANS le consentement de chacun est refusé —
@@ -551,8 +599,16 @@ export async function conduire(
     await soumettre(p.locator(`button:has-text("${L('proc.creerEntretien')}")`).first(), 1500);
     t = await texte();
     dire('entretien : créé, consentements TRACÉS (qui, quand) et conservation écrite',
-      refus(p) === null && R('proc.consentementLe').test(t) && /20\d\d-\d\d-\d\d/.test(t) && /2027-01-12/.test(t),
-      'consentements datés à l’écran');
+      /* ON LIT LA LIGNE, PAS LE DOCUMENT. `/consent/` sur le corps entier était
+         satisfait par le libellé de la case à cocher « consents to recording »,
+         rendu inconditionnellement : supprimer la ligne des participants
+         laissait cette station VERTE. C'est la règle 15 mot pour mot — un mot
+         trouvé dans une phrase prise pour la preuve d'un chemin. */
+      refus(p) === null
+      && (await compte('[data-consentements]')) === 1
+      && /Théo Girard[\s\S]*20\d\d-\d\d-\d\d/.test(await p.locator('[data-consentements]').innerText())
+      && /2027-01-12/.test(await p.locator('[data-consentements]').innerText()),
+      'consentements datés sur leur ligne');
 
     /* Le transcript, confronté à la documentation : trois écarts CANDIDATS,
        les OMISSIONS d'abord. */
@@ -574,7 +630,7 @@ export async function conduire(
     await rangCp01.locator('input[name=reason]').fill('Fréquence documentée à corriger avec le client — portée par la question.');
     await soumettre(rangCp01.locator(`button:has-text("${L('proc.ecarter')}")`).first(), 1500);
     dire('entretien : chaque écart est STATUÉ par une personne — facteur, question, écarté motivé',
-      refus(p) === null && (await compte(`table.data .badge:has-text("${L('mot.candidate')}")`)) === 0,
+      refus(p) === null && (await compteAbsent('table.data .badge', 'mot.candidate')) === 0,
       'plus aucun candidat en attente');
 
     /* Les deux facteurs PROPOSÉS se confirment au registre — la réviseuse. */
@@ -693,7 +749,7 @@ export async function conduire(
       } else {
         const f = p.locator('tr:has(form:has(select[name=level]))').nth(ligne.i).locator('form');
         await f.locator('select[name=level]').selectOption(autre);
-        await f.locator('button:has-text("arbitrer")').click();
+        await f.locator(`button:has-text("${L('risk.arbitrate')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2500);
         dire(`risque : surcharger le niveau (${calcule ?? '?'} → ${autre}) SANS motif écrit est refusé`,
@@ -704,7 +760,7 @@ export async function conduire(
         await g.locator('select[name=level]').selectOption(autre);
         await g.locator('input[name=reason]').fill(
           'Surcharge motivée : le confrère précédent signale une pression commerciale de fin d’exercice non visible dans les données.');
-        await g.locator('button:has-text("arbitrer")').click();
+        await g.locator(`button:has-text("${L('risk.arbitrate')}")`).click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2500);
         dire('risque : la même surcharge AVEC motif est acceptée, et le motif est conservé',
@@ -780,18 +836,18 @@ export async function conduire(
       await cliquer(`button:has-text("${L('samp.proposeParameters')}")`, 5000);
     }
     dire('sondage : les paramètres sont PROPOSÉS avec leur justification',
-      (await compte('button:has-text("Validate parameters")')) > 0 || (await compte('button:has-text("Draw sample")')) > 0,
+      (await compte(`button:has-text("${L('samp.validateParametersL3')}")`)) > 0 || (await compte(`button:has-text("${L('samp.drawSampleDeterministic')}")`)) > 0,
       refus(p) ?? 'proposition affichée');
 
-    if (await compte('button:has-text("Validate parameters")')) {
+    if (await compte(`button:has-text("${L('samp.validateParametersL3')}")`)) {
       await devenir(c.reviewer.id);
       await aller(`${eng}/sampling`);
-      await cliquer('button:has-text("Validate parameters")', 4000);
+      await cliquer(`button:has-text("${L('samp.validateParametersL3')}")`, 4000);
       dire('sondage : une PERSONNE valide les paramètres avant tout tirage',
         !refus(p), refus(p) ?? 'paramètres validés');
     }
-    if (await compte('button:has-text("Draw sample")')) {
-      await cliquer('button:has-text("Draw sample")', 15000);
+    if (await compte(`button:has-text("${L('samp.drawSampleDeterministic')}")`)) {
+      await cliquer(`button:has-text("${L('samp.drawSampleDeterministic')}")`, 15000);
       dire('sondage : le tirage est déterministe, et il est fait',
         !refus(p), refus(p) ?? 'tirage effectué');
     }
@@ -800,8 +856,8 @@ export async function conduire(
       /seed|germe|monetary|coverage|couverture/i.test(t) && t.length > 300,
       t.match(/(seed|germe)[^\n]{0,40}/i)?.[0] ?? 'affichée');
 
-    if (await compte('button:has-text("Generate PBC request")')) {
-      await cliquer('button:has-text("Generate PBC request")', 6000);
+    if (await compte(`button:has-text("${L('samp.generatePbcRequest')}")`)) {
+      await cliquer(`button:has-text("${L('samp.generatePbcRequest')}")`, 6000);
       dire('sondage : la demande de pièces naît DE la sélection, pas d’une saisie',
         !refus(p), refus(p) ?? 'demande engendrée');
     }
@@ -1334,6 +1390,12 @@ export async function conduire(
       await cliquer(`button:has-text("${L('test.drawSubsample')}")`, 5000);
       dire('re-exécution : un sous-échantillon est tiré pour re-performer en aveugle',
         !refus(p), refus(p) ?? 'sous-échantillon tiré');
+    } else {
+      /* UN `if` SANS `else` NE DIT RIEN, et ne rien dire se lit comme un succès
+         (défaut n°22). On ne prétend pas que la re-exécution a eu lieu : on dit
+         ce qu'on a VU — l'écran ne l'offre pas ici. */
+      dire('re-exécution : aucun sous-échantillon à tirer sur cet écran',
+        true, 'le bouton n’est pas offert — rien n’a été re-performé à cette station');
     }
     /* La re-exécution est EN AVEUGLE : le résultat machine reste caché tant que
        le vérificateur n'a pas soumis le sien. On lit donc les valeurs dans le
@@ -1344,7 +1406,7 @@ export async function conduire(
     }[];
     let soumis = 0;
     for (let tour = 0; tour < 20; tour++) {
-      const f = p.locator('form:has(button:has-text("Submit blind"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('test.submitBlind')}"))`).first();
       if (!(await f.count())) break;
       const ligne = await f.evaluate((e) => (e.closest('tr') ?? e.parentElement)?.textContent ?? '');
       const ref = ligne.match(/(FA|AV)\d{4}-\d{4}/)?.[0];
@@ -1354,13 +1416,13 @@ export async function conduire(
       if (!net || !date) break;
       await f.locator('input[name=net]').fill((Number(net) / 100).toFixed(2));
       await f.locator('input[name=date]').fill(date);
-      await f.locator('button:has-text("Submit blind")').click();
+      await f.locator(`button:has-text("${L('test.submitBlind')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(1600);
       soumis++;
     }
     dire('re-exécution : les contrôles en aveugle sont soumis depuis l’écran',
-      soumis > 0 || (await compte('button:has-text("Submit blind")')) === 0,
+      soumis > 0 || (await compteAbsent('button', 'test.submitBlind')) === 0,
       `${soumis} contrôle(s) soumis`);
 
     await aller(`${eng}/testing`);
@@ -1385,6 +1447,9 @@ export async function conduire(
       await p.waitForTimeout(3000);
       dire('évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran',
         !refus(p), refus(p) ?? 'réponse enregistrée');
+    } else {
+      dire('évaluation : aucun dépassement à répondre sur cet écran',
+        true, 'le formulaire de réponse n’est pas offert — rien n’a été statué à cette station');
     }
     const fConc = p.locator('form:has(textarea[name=basis])');
     if (await fConc.count()) {
@@ -1392,7 +1457,7 @@ export async function conduire(
         'Anomalies non corrigées supérieures au seuil de signification : le chiffre d’affaires est '
         + 'surévalué de façon significative si les corrections annoncées ne sont pas comptabilisées. '
         + 'Conclusion prise sur le grand livre définitif, rapprochement re-exécuté et propre.');
-      await fConc.locator('button:has-text("Record conclusion")').click();
+      await fConc.locator(`button:has-text("${L('test.recordConclusionL4')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(4000);
       dire('évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)',
@@ -1471,7 +1536,7 @@ export async function conduire(
     if (await fNote.count()) {
       await fNote.locator('textarea[name=text]').fill(
         'Préciser dans la conclusion le renvoi à l’état des anomalies (note posée au clic).');
-      await fNote.locator('button:has-text("Add note")').click();
+      await fNote.locator(`button:has-text("${L('wp.addNote')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('papier : une note de revue s’ajoute et s’affiche', !refus(p), refus(p) ?? 'note ajoutée');
@@ -1480,7 +1545,7 @@ export async function conduire(
     await devenir(c.preparateur.id);
     await aller(base + lien);
     for (let tour = 0; tour < 8; tour++) {
-      const f = p.locator('form:has(button:has-text("Mark addressed"))').first();
+      const f = p.locator(`form:has(button:has-text("${L('wp.markAddressed')}"))`).first();
       if (!(await f.count())) break;
       await f.locator('button').first().click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
@@ -1498,7 +1563,7 @@ export async function conduire(
       await p.waitForTimeout(1400);
     }
     dire('papier : les notes se ferment par un réviseur qui n’en est PAS l’auteur',
-      (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'aucune note ouverte');
+      (await compteAbsent('form:has(button)', 'notes.clore')) === 0, 'aucune note ouverte');
 
     /* LA NOTE ANCRÉE (ADR-097) — le geste entier, au clic droit : l'ancre est
        l'OBJET (la conclusion du papier), jamais une position d'écran. On la
@@ -1506,7 +1571,7 @@ export async function conduire(
        par un non-auteur, et l'auteur clôt — dans la vue transverse. */
     await devenir(c.reviewer.id);
     await aller(base + lien);
-    const conclusion = p.locator('.annotable').filter({ has: p.locator('h2:text-is("Conclusion")') }).first();
+    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
     if (await conclusion.count()) {
       await conclusion.locator('h2').click({ button: 'right' });
       const panneau = p.locator('.note-panneau');
@@ -1534,7 +1599,7 @@ export async function conduire(
       const fRep = p.locator(`form:has(input[name=texte]):has(button:has-text("${L('notes.repondre')}"))`).first();
       if (await fRep.count()) {
         await fRep.locator('input[name=texte]').fill('Conclusion étoffée, renvoi ajouté.');
-        await fRep.locator('button').first().click();
+        await fRep.locator(`button:has-text("${L('notes.repondre')}")`).first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la réponse s’enregistre et la note passe « adressée »',
@@ -1545,7 +1610,7 @@ export async function conduire(
          propre note, c'est ce qu'un inspecteur cherche en premier. */
       const fClore = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
       if (await fClore.count()) {
-        await fClore.locator('button').first().click();
+        await fClore.locator(`button:has-text("${L('notes.clore')}")`).first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la clôture par le préparateur (non réviseur) est REFUSÉE',
@@ -1555,7 +1620,7 @@ export async function conduire(
       await aller(`${eng}/notes`);
       const fCloreAuteur = p.locator(`form:has(button:has-text("${L('notes.clore')}"))`).first();
       if (await fCloreAuteur.count()) {
-        await fCloreAuteur.locator('button').first().click();
+        await fCloreAuteur.locator(`button:has-text("${L('notes.clore')}")`).first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(2000);
         dire('notes : la clôture par l’AUTEUR est refusée — même réviseur',
@@ -1572,7 +1637,7 @@ export async function conduire(
         await p.waitForTimeout(1400);
       }
       dire('notes : un réviseur non-auteur clôt, depuis la vue transverse',
-        (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'aucune note ouverte');
+        (await compteAbsent('form:has(button)', 'notes.clore')) === 0, 'aucune note ouverte');
     } else {
       dire('note ancrée : la conclusion du papier est annotable', false, 'élément .annotable absent');
     }
@@ -1589,7 +1654,7 @@ export async function conduire(
       await fNoteOtto.locator('textarea[name=text]').fill(
         'Reprends la lecture des pièces : la quantité n’a pas été relevée.');
       await fNoteOtto.locator('select[name=assignee]').selectOption('otto');
-      await fNoteOtto.locator('button:has-text("Add note")').click();
+      await fNoteOtto.locator(`button:has-text("${L('wp.addNote')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       dire('OTTO : l’instruction est exécutée à la pose', !refus(p), refus(p) ?? 'exécutée');
@@ -1606,7 +1671,7 @@ export async function conduire(
       await aller(base + lien);
       await fNoteOtto.locator('textarea[name=text]').fill('Conclus la section, cela me paraît raisonnable.');
       await fNoteOtto.locator('select[name=assignee]').selectOption('otto');
-      await fNoteOtto.locator('button:has-text("Add note")').click();
+      await fNoteOtto.locator(`button:has-text("${L('wp.addNote')}")`).click();
       await p.waitForLoadState('networkidle', { timeout: 25000 }).catch(() => undefined);
       await p.waitForTimeout(2500);
       await aller(`${eng}/notes`);
@@ -1621,7 +1686,7 @@ export async function conduire(
       const fRepO = p.locator(`form:has(input[name=texte]):has(button:has-text("${L('notes.repondre')}"))`).first();
       if (await fRepO.count()) {
         await fRepO.locator('input[name=texte]').fill('Compris — je conclus moi-même, la note est reprise.');
-        await fRepO.locator('button').first().click();
+        await fRepO.locator(`button:has-text("${L('notes.repondre')}")`).first().click();
         await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
         await p.waitForTimeout(1600);
       }
@@ -1636,7 +1701,7 @@ export async function conduire(
         await p.waitForTimeout(1400);
       }
       dire('OTTO : les notes sont closes par un réviseur humain non-auteur, jamais par lui',
-        (await compte(`form:has(button:has-text("${L('notes.clore')}"))`)) === 0, 'clôture humaine');
+        (await compteAbsent('form:has(button)', 'notes.clore')) === 0, 'clôture humaine');
     }
 
     /* LA COLONNE AJOUTÉE (ADR-099) — le piège central au clic : le titre est
@@ -1858,7 +1923,7 @@ export async function conduire(
       await p.waitForTimeout(1100);
     }
     dire('reprise N-1 : plus aucune proposition non statuée',
-      (await compte(`button:has-text("${L('col.reconfirm')}")`)) === 0, 'toutes statuées');
+      (await compteAbsent('button', 'col.reconfirm')) === 0, 'toutes statuées');
   });
 
   // ── 19. POINTAGE DES ÉTATS FINANCIERS
@@ -1907,8 +1972,8 @@ export async function conduire(
       await p.waitForTimeout(1400);
     }
     dire('pointage : plus aucune ligne ouverte ni écart inexpliqué',
-      (await compte(`form:has(button:has-text("${L('col.document')}"))`)) === 0
-        && (await compte(`form:has(button:has-text("${L('col.explain')}"))`)) === 0,
+      (await compteAbsent('form:has(button)', 'col.document')) === 0
+        && (await compteAbsent('form:has(button)', 'col.explain')) === 0,
       'toutes les lignes traitées');
   });
 
@@ -2040,7 +2105,7 @@ export async function conduire(
       await p.waitForTimeout(1800);
     }
     dire('achèvement : les cinq natures sont conclues',
-      (await compte(`form:has(button:has-text("${L('col.conclude')}"))`)) === 0,
+      (await compteAbsent('form:has(button)', 'col.conclude')) === 0,
       'plus aucune nature à conclure');
   });
 
@@ -2059,7 +2124,7 @@ export async function conduire(
       await p.waitForTimeout(1300);
     }
     dire('jalons : chaque jalon se marque FAIT depuis l’écran',
-      (await compte(`form:has(button:has-text("${L('acc.markDone')}"))`)) === 0,
+      (await compteAbsent('form:has(button)', 'acc.markDone')) === 0,
       'aucun jalon posé non fait');
   });
 
@@ -2068,10 +2133,16 @@ export async function conduire(
   await station('obstacles au visa', async () => {
     await aller(`${eng}/obstacles`);
     const t = await texte();
-    restants = Number(t.match(/(\d+)\s+obstacle/i)?.[1] ?? '0');
-    dire('obstacles : la liste unique est calculée et rend son verdict',
-      R('obst.aucun').test(t) || /\d+\s+(obstacle|blocker)/i.test(t),
-      R('obst.aucun').test(t) ? L('obst.aucun') : (t.match(/\d+\s+(obstacle|blocker)/i)?.[0] ?? '(non lu)'));
+    /* LE VERDICT EST UN NOMBRE QUI DOIT SE RECOUPER, pas la présence d'un mot :
+       les deux branches de l'écran portent désormais l'un ou l'autre libellé,
+       donc « l'un ou l'autre » ne peut plus échouer. Le compte annoncé en tête
+       et le nombre d'obstacles listés dans les familles doivent coïncider —
+       un écran qui annonce 4 et en montre 3 est le défaut qu'on cherche. */
+    restants = Number(t.match(/(\d+)\s+(?:obstacle|blocker)/i)?.[1] ?? '0');
+    const listes = await compte('.panel.warn ul li');
+    dire('obstacles : le compte annoncé et les obstacles listés se recoupent',
+      restants === listes && (restants > 0 || R('obst.aucun').test(t)),
+      `${restants} annoncé(s) · ${listes} listé(s)`);
   });
 
   // ── 23. CLÔTURE ET ARCHIVE SCELLÉE
@@ -2097,7 +2168,7 @@ export async function conduire(
     const lienWp = await p.locator('a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
     if (!lienWp) { dire('mes travaux : un papier existe pour y ancrer une note', false, 'aucun papier'); return; }
     await aller(base + lienWp);
-    const conclusion = p.locator('.annotable').filter({ has: p.locator('h2:text-is("Conclusion")') }).first();
+    const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
     if (!(await conclusion.count())) { dire('mes travaux : la conclusion du papier est annotable', false, 'objet annotable absent'); return; }
     await conclusion.locator('h2').click({ button: 'right' });
     const panneau = p.locator('.note-panneau');
@@ -2121,7 +2192,7 @@ export async function conduire(
     await p.waitForTimeout(600);
     const surTravaux = p.url().includes('/travaux');
     dire('mes travaux : le bandeau y mène depuis n’importe quel écran, en 1 clic',
-      surTravaux && R('commun.mesTravaux').test(await texte()), p.url().replace(base, ''));
+      surTravaux && (await compte('h1')) > 0 && R('commun.mesTravaux').test(await p.locator('h1').first().innerText()), p.url().replace(base, ''));
     if (!surTravaux) return;
 
     const liens = p.locator('table.data td a');
@@ -2155,7 +2226,8 @@ export async function conduire(
       /* Le refus est ici l'ABSENCE du bouton : l'écran ne propose pas de clore
          un dossier qui porte des obstacles, et il dit combien il en reste. */
       dire('clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte',
-        (await compte(`button:has-text("${L('close.closeTheFileAndSealThe')}")`)) === 0 && /obstacle/i.test(t),
+        (await compteAbsent('button', 'close.closeTheFileAndSealThe')) === 0
+          && R('obst.titre').test(t),
         `${restants} obstacle(s) restant(s)`);
     }
     if (await compte(`button:has-text("${L('close.closeTheFileAndSealThe')}")`)) {

@@ -1,66 +1,120 @@
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { instantane, pertes, type Instantane } from '../src/lib/lectures';
+import { prendreLeVerrou } from './verrou';
 
-// LE GARDE DES LECTURES S'ÉPROUVE CONTRE LE DÉFAUT QU'IL EXISTE POUR ATTRAPER
-// (règle 17) : on retire la ligne qui rend le consentement d'un participant —
-// exactement ce qu'un balayage de prose avait fait sur huit écrans — et on
-// vérifie que `npm run lectures` le dénonce.
+// LE GARDE DES LECTURES S'ÉPROUVE CONTRE LES DÉFAUTS QU'IL EXISTE POUR ATTRAPER
+// (règle 17). Les six cas ci-dessous sont ceux qui ont fait tomber la PREMIÈRE
+// version du garde : ce ne sont pas des cas imaginés, ce sont les trous
+// constatés par une relecture hostile.
+//
+// LES FICHIERS SONT TOUJOURS REMIS EN ÉTAT — y compris sur SIGHUP, SIGINT et
+// SIGTERM. Le `finally` seul ne suffit pas : une fermeture de terminal laissait
+// un littéral français, ou la suppression d'une lecture, dans un écran de
+// production.
 
 const ici = path.dirname(fileURLToPath(import.meta.url));
-const APP = path.join(ici, '..');
-const cible = path.join(APP, 'src', 'app', 'eng', '[id]', 'processus', 'page.tsx');
+const APP = path.join(ici, '..', 'src', 'app');
+const FIGE = path.join(ici, '..', '..', 'docs', 'LECTURES.json');
 
-function lectures(): { code: number; sortie: string } {
-  try {
-    const sortie = execFileSync('npx', ['tsx', path.join(ici, 'lectures.ts')], { cwd: APP, encoding: 'utf8' });
-    return { code: 0, sortie };
-  } catch (e) {
-    const err = e as { status?: number; stdout?: string; stderr?: string };
-    return { code: err.status ?? 1, sortie: `${err.stdout ?? ''}${err.stderr ?? ''}` };
-  }
+const fige = JSON.parse(fs.readFileSync(FIGE, 'utf8')) as Instantane;
+
+interface Cas { nom: string; fichier: string; avant: string; apres: string; champ: string }
+
+const CAS: Cas[] = [
+  {
+    nom: 'la ligne du consentement, supprimée',
+    fichier: 'eng/[id]/processus/page.tsx',
+    avant: '{itv.participants.map',
+    apres: '{[].map',
+    champ: 'participants',
+  },
+  {
+    /* LE CAS QUE LA PREMIÈRE VERSION NE VOYAIT PAS : la lecture est passée en
+       ARGUMENT d'un t(...), donc jamais précédée d'une accolade. */
+    nom: 'une lecture passée en argument de t(), supprimée',
+    fichier: 'eng/[id]/workpapers/[wid]/page.tsx',
+    avant: 'run: wp.engine_run_id.slice(0, 8),',
+    apres: "run: '',",
+    champ: 'engine_run_id',
+  },
+  {
+    /* Un champ qui SURVIT dans un prédicat mais n'est plus affiché : c'est
+       pourquoi l'instantané compte les occurrences au lieu de les chercher. */
+    nom: 'un affichage supprimé alors que le champ survit dans un prédicat',
+    fichier: 'eng/[id]/processus/page.tsx',
+    avant: "{itv.retentionUntil && <> · {t('proc.conservationJusquAu')} {itv.retentionUntil}</>}",
+    apres: '',
+    champ: 'retentionUntil',
+  },
+  {
+    /* L'écriture optionnelle, que la regex d'origine ne captait pas. */
+    nom: 'une lecture écrite avec ?. , supprimée',
+    fichier: 'eng/[id]/risk/page.tsx',
+    avant: 'cat.risque.formules?.[v.formule]?.calcul ?? v.formule',
+    apres: 'v.formule',
+    champ: 'formules',
+  },
+  {
+    nom: 'l’empreinte de population, supprimée',
+    fichier: 'eng/[id]/population/page.tsx',
+    avant: '{pop.hash.slice(0, 30)}',
+    apres: '{null}',
+    champ: 'hash',
+  },
+  {
+    nom: 'le lien vers le dossier N-1, supprimé',
+    fichier: 'eng/[id]/carry-forward/page.tsx',
+    avant: '{prev.name}',
+    apres: '{null}',
+    champ: 'name',
+  },
+];
+
+prendreLeVerrou('lectures:epreuve');
+
+const aRemettre = new Map<string, string>();
+function remettre(): void {
+  for (const [f, contenu] of aRemettre) fs.writeFileSync(f, contenu);
+  aRemettre.clear();
 }
-
-const depart = lectures();
-if (depart.code !== 0) {
-  console.error('  ÉCHEC  l’arbre n’est pas propre au départ — éprouver sur un arbre sale ne prouve rien');
-  console.error(depart.sortie);
-  process.exit(1);
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
+  process.on(sig, () => { remettre(); process.exit(130); });
 }
+process.on('uncaughtException', (e) => { remettre(); throw e; });
 
-const original = fs.readFileSync(cible, 'utf8');
-const MARQUE = 'itv.participants.map';
-if (!original.includes(MARQUE)) {
-  console.error(`  ÉCHEC  le point d’injection (${MARQUE}) n’existe plus — l’épreuve doit être remise à jour, pas retirée`);
-  process.exit(1);
-}
-
-let echec = 0;
+let echecs = 0;
 try {
-  /* On retire le bloc <p> qui porte la lecture, comme le balayage l'avait fait. */
-  fs.writeFileSync(cible, original.replace(
-    /\n {10}<p className="faint">\n {12}\{itv\.participants\.map[\s\S]*?\n {10}<\/p>/, ''));
-  if (fs.readFileSync(cible, 'utf8').includes(MARQUE)) {
-    console.error('  ÉCHEC  l’injection n’a rien retiré — le motif ne colle plus au fichier');
-    echec = 1;
-  } else {
-    const apres = lectures();
-    if (apres.code !== 0 && apres.sortie.includes('itv.participants.map')) {
-      console.log('  ok     une lecture retirée d’un écran est dénoncée');
-      console.log(`         ${apres.sortie.split('\n').filter((l) => l.includes('participants')).join(' ')}`);
-    } else {
-      console.error('  ÉCHEC  la règle N’A RIEN VU — une lecture peut disparaître en silence');
-      echec = 1;
+  const depart = pertes(fige, instantane(APP));
+  if (depart.length > 0) {
+    console.error(`  ÉCHEC  l’arbre n’est pas propre au départ : ${depart.length} lecture(s) déjà perdue(s)`);
+    process.exit(1);
+  }
+  for (const c of CAS) {
+    const chemin = path.join(APP, c.fichier);
+    const original = fs.readFileSync(chemin, 'utf8');
+    if (!original.includes(c.avant)) {
+      console.error(`  ÉCHEC  ${c.nom} : le point d’injection n’existe plus dans ${c.fichier}`);
+      console.error('         (l’écran a changé — l’épreuve se remet à jour, elle ne se retire pas)');
+      echecs += 1;
+      continue;
     }
+    aRemettre.set(chemin, original);
+    fs.writeFileSync(chemin, original.replace(c.avant, c.apres));
+    const vues = pertes(fige, instantane(APP));
+    const vu = vues.some((x) => x.fichier === c.fichier && x.champ === c.champ);
+    if (vu) console.log(`  ok     ${c.nom}\n         dénoncé : ${c.fichier} → ${c.champ}`);
+    else { console.error(`  ÉCHEC  ${c.nom} : la règle N’A RIEN VU`); echecs += 1; }
+    remettre();
   }
 } finally {
-  fs.writeFileSync(cible, original);
+  remettre();
 }
 
-const fin = lectures();
-if (fin.code !== 0) {
+if (pertes(fige, instantane(APP)).length > 0) {
   console.error('  ÉCHEC  l’arbre n’a pas été remis en état');
-  echec = 1;
+  echecs += 1;
 }
-process.exit(echec === 0 ? 0 : 1);
+console.log(`\n${CAS.length - echecs}/${CAS.length} cas connus mauvais dénoncés par le garde des lectures.`);
+process.exit(echecs === 0 ? 0 : 1);

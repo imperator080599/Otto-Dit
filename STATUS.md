@@ -1479,3 +1479,91 @@ sur les colonnes de grille.
   texte primaire et daté. Aucune durée de rotation n'a été écrite de mémoire ici.
 - **Les trois manques de la revue n°1** (test des écritures NEP 240, intragroupe, ajustements)
   restent ouverts.
+
+## Revue n°3, point 1 — la langue, jusqu'au bout : cinq angles morts de la règle (2026-09-01)
+
+**Le point 1 de la revue n°3 était « plus une seule chaîne hors catalogue, et un test qui échoue
+s'il en reste une ». Il était annoncé fait. Il ne l'était pas** — et ce n'est pas la migration
+qui manquait, c'est l'instrument qui regardait à côté, pour la cinquième fois.
+
+**Les cinq angles morts, chacun trouvé sur un exemple RÉEL, chacun devenu un cas connu mauvais :**
+
+| angle mort | ce qui passait au travers | où |
+|---|---|---|
+| entité HTML | `&amp;` porte un point-virgule, et le filtre qui écarte le code écartait la phrase | `Approve & send (L2)`, le bouton qui envoie une demande au client |
+| nom de touche clavier | « Control » figurait dans la liste des touches, appliquée à un nœud JSX | en-tête de la première colonne du RCM |
+| ternaire affiché | les deux branches partaient dans le seau des LITTÉRAUX | `{m.can_sign ? 'oui' : 'non'}` |
+| moins de deux lettres | le tout premier filtre exigeait deux lettres de suite | `> 90 j (N)` — « j » pour jours |
+| **le catalogue lui-même** | la règle compte ce qui ne passe PAS par lui, donc ne lit jamais ce qu'il contient | **sept entrées avec `en` et `fr` ÉCHANGÉS** |
+
+**Le cinquième est le plus grave, et il était en production.** `'mat.seuilDeSignification':
+{ en: 'Seuil de signification', fr: 'Materiality threshold' }` : sur l'instance anglaise —
+l'anglais est le défaut du produit — l'écran des seuils affichait « Seuil de signification »
+à côté de « Materiality » pour le même concept, plus le testing et trois endroits du papier de
+travail. **La façon la plus simple de rendre une phrase française invisible à la règle était de
+l'écrire dans la colonne `en`.** Les sept sont remises à l'endroit ; deux paires devenues
+doubles ont fusionné.
+
+**Sixième angle mort, d'une autre nature : les services.** Un écran irréprochable peut afficher
+du français s'il rend une table de libellés tenue dans un service. `NOTE_TYPES` portait « à
+corriger (bloquante) » et deux écrans l'affichaient tel quel. La règle suit désormais le libellé
+jusque dans `src/lib` : une propriété qui s'APPELLE un libellé tient une **clé**, jamais une
+phrase. Vingt-sept relevés, sept migrés, **vingt et un différés avec leur raison écrite et leur
+compte publié** (texte écrit-puis-stocké ; phrases qui côtoient du contenu de pack français).
+
+**Ce que le parcours cliqué prouvait, et ce qu'il ne prouvait pas.** Il lisait le catalogue en
+**anglais en dur**. Sur une instance française, ses stations de PRÉSENCE échoueraient bruyamment
+— on le verrait — mais ses **onze stations d'ABSENCE** (« plus aucune note ouverte », « la
+clôture n'est pas offerte ») passeraient en prouvant exactement rien. Il relève maintenant
+`<html lang>` au premier écran, le sert à ses sélecteurs, et **vérifie sur cet écran** qu'un
+libellé de cette langue s'affiche vraiment ; les absences se comptent sur les **deux** libellés.
+Vingt-sept sélecteurs recopiés à la main passent par le catalogue — dont **neuf** cherchaient un
+libellé français (`Statuer` ×7, `arbitrer` ×2) sur une instance anglaise, donc n'accrochaient
+rien.
+
+**Et une station du parcours ne peut plus s'éteindre en silence** (`docs/PARCOURS.json`) : une
+garde STATIQUE dénonce une station retirée ou renommée du code, une garde D'EXÉCUTION dénonce
+une station figée mais jamais conduite. Trois pièges étaient armés et sont désarmés : un nom
+construit figé sur son DÉBUT avalait les six stations voisines ; figer sur un parcours *vert*
+n'est pas figer un parcours *complet* (les 35 stations déclarées et jamais atteintes sont
+écrites dans le figé, sous leur nom) ; et une garde au figé vide rendait une liste vide qui se
+lisait comme un succès — le défaut qu'elle existe pour attraper, appliqué à elle-même.
+
+**L'instantané des lectures comptait des clés de catalogue.** 1 083 des 2 316 « chemins de champ
+rendus » étaient le suffixe d'une clé (`t('proc.conservationJusquAu')` contient un point).
+Mesuré dans cette tranche même : renommer une clé faisait crier le garde comme si un écran avait
+cessé d'afficher une donnée. Il tombe à **1 328 chemins dans 74 écrans**, et redevient relisible.
+
+**La chaîne, verte, et les commandes qui la rejouent.**
+`npm test` · **577 tests** (70 fichiers) · `npm run langue` **0 chaîne d'écran hors catalogue,
+0 libellé en dur dans un service**, 21 différés avec raison, 13 messages de refus ·
+`npm run langue:epreuve` **12/12** · `npm run lectures` **0 lecture perdue sur 1 328** ·
+`npm run lectures:epreuve` **6/6** · `npm run parcours` **182 stations, 0 perdue** ·
+`npm run parcours:epreuve` **5/5** · `npm run screens` **81 routes, 0 échec** ·
+`npm run fumee` **47 routes, 0 échec** · `npm run densite` **73 écrans, 0 au-delà de 5 actions,
+78 champs à taper** · `npm run clics` **148 étapes, 0 échec, 271 clics sur 36 gestes**, garde du
+parcours **147 stations figées vérifiées** · `npm run visuel` **296 vues, 0 défaut**.
+
+### Ce que je n'ai PAS fait — exhaustivement
+
+- **Les points 2 à 5 de la revue n°3 ne sont pas faits** : notes de revue sur tout écran (la
+  migration `0032` est écrite ET APPLIQUÉE localement, mais aucun écran ne pose encore une note
+  d'écran ni ne distingue les deux natures), chat en fenêtre, P4 terminé, processus et contrôle
+  interne semés sur le poste revenue. Le point 1 a coûté toute la tranche parce qu'il était faux.
+- **Deux des sept inversions du catalogue échappent encore à la règle** — « Joindre » contre
+  « Attach » n'a ni mot-outil ni accent. Le test le dit et le compte (5/7 sur les sept cas réels)
+  plutôt que de laisser croire à une règle complète ; les deux ont été trouvées à l'œil.
+- **Vingt et un libellés de service restent en français**, chacun avec sa raison écrite : un
+  texte ÉCRIT PUIS STOCKÉ (réponse d'OTTO dans une note, interprétation figée d'une colonne) ne
+  se relit pas dans une autre langue — la langue s'y décide à l'écriture, ce qui demande que le
+  service reçoive la locale. Chantier nommé au registre.
+- **Des phrases françaises construites par concaténation dans les services** (la justification
+  d'un sondage, deux messages de circularisation) échappent aux DEUX règles : elles ne sont ni
+  dans un écran, ni dans une propriété nommée « libellé ». Nommé au registre, pas corrigé.
+- **Trente-cinq stations du parcours sont déclarées et jamais conduites** sur un parcours vert.
+  La plupart sont des branches d'échec (« aucun papier dans le dossier ») ; deux `if` sans `else`
+  ont reçu une voix, les autres n'ont pas été examinées une par une.
+- **`ANCRE_KINDS` est exporté et lu par personne** — un objet créé qu'aucun chemin de lecture
+  n'atteint (règle 13). Nommé au registre.
+- **P1, P2, la verticale complète avec P5, l'IPE sur chaque papier, les modèles de papier par
+  procédure et le test des écritures NEP 240** restent entiers.

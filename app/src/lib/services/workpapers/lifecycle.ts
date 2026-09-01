@@ -1,4 +1,5 @@
 import { q, q01, q1 } from '@/lib/db/client';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { type Ancre, assertAncrePosable, resoudreAncre, KINDS } from '../notes/ancres';
 import { logEvent } from '@/lib/core/events';
 import { engagementCtx } from '../imports';
@@ -74,11 +75,16 @@ export type NoteType = 'a_corriger' | 'a_documenter' | 'question' | 'remarque_n1
 /** Les quatre types d'ADR-028 — et SEULES LES BLOQUANTES empêchent le visa :
  *  sans le typage, « seul le réviseur clôt » serait un cérémonial imposé à
  *  des remarques qui ne le méritent pas. */
-export const NOTE_TYPES: Record<NoteType, { libelle: string; bloquante: boolean }> = {
-  a_corriger: { libelle: 'à corriger (bloquante)', bloquante: true },
-  a_documenter: { libelle: 'à documenter', bloquante: false },
-  question: { libelle: 'question', bloquante: false },
-  remarque_n1: { libelle: 'remarque pour N+1', bloquante: false },
+/* LE LIBELLÉ EST UNE CLÉ, PAS UNE PHRASE. Cette table était rendue TELLE QUELLE
+   par l'écran des notes et par celui du papier : deux écrans irréprochables qui
+   affichaient « à corriger (bloquante) » en toutes lettres, quelle que soit la
+   langue du cabinet. La règle de langue ne regardait que `src/app` — elle ne
+   pouvait pas le voir, et elle annonçait « 0 reste ». */
+export const NOTE_TYPES: Record<NoteType, { libelle: CleLibelle; bloquante: boolean }> = {
+  a_corriger: { libelle: 'note.type.a_corriger', bloquante: true },
+  a_documenter: { libelle: 'note.type.a_documenter', bloquante: false },
+  question: { libelle: 'note.type.question', bloquante: false },
+  remarque_n1: { libelle: 'note.type.remarque_n1', bloquante: false },
 };
 
 /** LA NATURE D'UNE NOTE (revue n°3 §2).

@@ -79,44 +79,44 @@ export default async function SamplingPage({
           <>
             <p>
               <span className={`badge ${sample.status === 'drawn' ? 'green' : sample.status === 'validated' ? 'blue' : 'amber'}`}>{sample.status}</span>{' '}
-              population {sample.population_size} lines / {fmtEur(numToCents(sample.population_amount), 'fr')} —{' '}
-              hash <span className="mono faint">{sample.population_hash.slice(0, 24)}…</span>
+              {t('samp.populationLignes', { n: sample.population_size, montant: fmtEur(numToCents(sample.population_amount), 'fr') })}{' '}
+              {t('samp.empreinte')} <span className="mono faint">{sample.population_hash.slice(0, 24)}…</span>
             </p>
             <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{sample.rationale}</p>
             {sample.status === 'proposed' && (
               <form action={validateAction} className="row">
                 <input type="hidden" name="sample_id" value={sample.id} />
-                <label className="fld"><span>Coverage cap (€)</span>
+                <label className="fld"><span>{t('samp.coverageCap')}</span>
                   <input type="number" name="coverage_cap" defaultValue={(sample.params.coverageCapCents / 100).toFixed(0)} style={{ width: 110 }} />
                 </label>
-                <label className="fld"><span>Random size</span>
+                <label className="fld"><span>{t('samp.randomSize')}</span>
                   <input type="number" name="random_size" defaultValue={sample.params.randomSize} style={{ width: 70 }} />
                 </label>
-                <label className="fld"><span>Seed (deterministic)</span>
+                <label className="fld"><span>{t('samp.seedDeterministic')}</span>
                   <input type="text" name="seed" defaultValue={sample.params.seed} style={{ width: 160 }} />
                 </label>
-                <button className="btn">Validate parameters (L3)</button>
+                <button className="btn">{t('samp.validateParametersL3')}</button>
               </form>
             )}
             {sample.status === 'validated' && (
               <form action={drawAction}>
                 <input type="hidden" name="sample_id" value={sample.id} />
-                <button className="btn">Draw sample (deterministic)</button>
+                <button className="btn">{t('samp.drawSampleDeterministic')}</button>
               </form>
             )}
             {sample.status === 'drawn' && (
               <>
                 <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <h3>Selected items ({sample.items.length}) — coverage {fmtEur(numToCents(sample.coverage_amount ?? '0'), 'fr')}</h3>
+                  <h3>Selected items ({sample.items.length}{t('samp.coverage')} {fmtEur(numToCents(sample.coverage_amount ?? '0'), 'fr')}</h3>
                   <form action={pbcAction}>
                     <input type="hidden" name="sample_id" value={sample.id} />
-                    <button className="btn">Generate PBC request →</button>
+                    <button className="btn">{t('samp.generatePbcRequest')}</button>
                   </form>
                 </div>
                 <div className="table-scroll">
                   <table className="data">
                     <thead>
-                      <tr><th>Reason</th><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th></tr>
+                      <tr><th>{t('samp.reason')}</th><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th></tr>
                     </thead>
                     <tbody>
                       {sample.items.map((it) => (

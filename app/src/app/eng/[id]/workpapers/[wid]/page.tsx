@@ -218,12 +218,19 @@ export default async function WorkpaperDetail({
             </span>
           </details>
         </div>
+        {/* ON N'AFFIRME PAS UNE PROVENANCE QU'ON N'A PAS. Un `?? '—'` rendait
+            « Performed by OTTO engine run — — facts hash —… » : la phrase
+            affirmait l'exécution d'un moteur pour un papier qui n'en porte
+            aucune trace (règle 13, corollaire). La branche « pas de run » est
+            une phrase à elle, et elle le dit. */}
         <p className="faint">
-          {t('wp.provenanceMoteur', {
-            run: wp.engine_run_id?.slice(0, 8) ?? '—',
-            h: wp.based_on_hash?.slice(0, 16) ?? '—',
-            langue: wp.language.toUpperCase(),
-          })}
+          {wp.engine_run_id && wp.based_on_hash
+            ? t('wp.provenanceMoteur', {
+                run: wp.engine_run_id.slice(0, 8),
+                h: wp.based_on_hash.slice(0, 16),
+                langue: wp.language.toUpperCase(),
+              })
+            : t('wp.sansProvenanceMoteur', { langue: wp.language.toUpperCase() })}
         </p>
         {/* LES ANNEXES (ADR-106) : un tableur de calcul — ou toute pièce de
             travail — se JOINT au papier pour les cas qui sortent du cadre
@@ -246,7 +253,7 @@ export default async function WorkpaperDetail({
             <summary className="repli-action">{t('wp.attachAnAppendixSpreadsheetCalculationNo')}</summary>
             <form action={annexeAction} className="row mt">
               <input type="file" name="fichier" style={{ maxWidth: 240 }} />
-              <button className="btn secondary small">Joindre</button>
+              <button className="btn secondary small">{t('wp.joindre')}</button>
               <span className="faint">{t('wp.entersTheFileWithHashAnd')}</span>
             </form>
           </details>
@@ -292,7 +299,7 @@ export default async function WorkpaperDetail({
             </label>
             <label>
               {t('wp.ipe.reportCode')}
-              <input name="rapport_code" defaultValue={ipe?.rapportCode ?? ''} placeholder="ex. S_ALR_87012284" />
+              <input name="rapport_code" defaultValue={ipe?.rapportCode ?? ''} placeholder={t('wp.exSAlr87012284')} />
             </label>
             <label>
               {t('wp.ipe.file')}
@@ -491,12 +498,12 @@ export default async function WorkpaperDetail({
         {colonnesAjoutees.map((c) => (
           <div className={`callout ${c.statut === 'proposee' ? 'warn' : c.statut === 'remplie' ? 'green' : ''}`} key={c.id}>
             <strong>{c.titre}</strong>{' '}
-            <span className="badge gray">{c.statut === 'proposee' ? 'interprétation proposée — à confirmer'
+            <span className="badge gray">{c.statut === 'proposee' ? t('wp.interprTationProposEConfirmer')
               : c.statut === 'remplie' ? 'remplie' : c.statut}</span>{' '}
-            <span className="faint">justification : {c.justification}</span>
+            <span className="faint">{t('wp.justificationDeuxPoints')} {c.justification}</span>
             <p style={{ margin: '6px 0' }}>
               {c.interpretation
-                ? <>OTTO : « {(c.interpretation as { phrase: string }).phrase} »</>
+                ? <>{t('wp.ottoDit')} {(c.interpretation as { phrase: string }).phrase} »</>
                 : <>{t('wp.ottoICouldNotInterpretThis')}</>}
               {' '}<span className="faint">{t('wp.coutRegles', { c: Number(c.cout_usd).toFixed(2) })}</span>
             </p>
@@ -512,7 +519,7 @@ export default async function WorkpaperDetail({
                     <option value="" disabled>{t('wp.correctPickTheField')}</option>
                     {CHAMPS_LISIBLES.map((ch) => <option key={ch.champ} value={ch.champ}>{ch.libelle}</option>)}
                   </select>
-                  <button className="btn secondary small">Corriger puis chercher</button>
+                  <button className="btn secondary small">{t('wp.corrigerPuisChercher')}</button>
                 </form>
                 <form action={annulerColonneAction}>
                   <input type="hidden" name="column_id" value={c.id} />
@@ -544,7 +551,7 @@ export default async function WorkpaperDetail({
 
       <div className="grid cols-2">
         <div className="panel">
-          <h2>Review notes (human-only)</h2>
+          <h2>{t('wp.reviewNotesHumanOnly')}</h2>
           {/* data-actions-item : les gestes PAR NOTE sont des actions d'item
               répétées — la mesure de densité (§3.D) les compte comme les
               gestes de ligne d'un tableau, pas comme des actions d'écran. */}
@@ -552,40 +559,40 @@ export default async function WorkpaperDetail({
           {notes.map((n) => (
             <div key={n.id} className={`callout ${n.status === 'open' ? 'warn' : n.status === 'addressed' ? '' : 'green'}`}>
               <strong>{n.author_name}</strong>{n.assignee_name ? ` → ${n.assignee_name}` : ''} <span className="badge gray">{n.status}</span>{' '}
-              <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>{NOTE_TYPES[n.note_type as NoteType]?.libelle ?? n.note_type}</span>
+              <span className={`badge ${NOTE_TYPES[n.note_type as NoteType]?.bloquante ? 'red' : 'gray'}`}>{NOTE_TYPES[n.note_type as NoteType] ? t(NOTE_TYPES[n.note_type as NoteType].libelle) : n.note_type}</span>
               <p style={{ margin: '4px 0 6px' }}>{n.text}</p>
               {n.status === 'open' && (
-                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="addressed" /><button className="btn small secondary">Mark addressed</button></form>
+                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="addressed" /><button className="btn small secondary">{t('wp.markAddressed')}</button></form>
               )}
               {n.status === 'addressed' && (
-                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="closed" /><button className="btn small secondary">Close (reviewer — never the author)</button></form>
+                <form action={noteTransition}><input type="hidden" name="note_id" value={n.id} /><input type="hidden" name="to" value="closed" /><button className="btn small secondary">{t('notes.clore')}</button></form>
               )}
             </div>
           ))}
           </div>
           <form action={noteAction} className="mt">
-            <textarea name="text" placeholder="New review note…" required />
+            <textarea name="text" placeholder={t('wp.newReviewNote')} required />
             <div className="row mt">
               <select name="note_type" defaultValue="a_corriger" title={t('wp.onlyBlockingNotesPreventSignOff')}>
                 <option value="a_corriger">{t('note.type.a_corriger')}</option>
                 <option value="a_documenter">{t('note.type.a_documenter')}</option>
-                <option value="question">question</option>
+                <option value="question">{t('wp.question')}</option>
                 <option value="remarque_n1">{t('note.type.remarque_n1')}</option>
               </select>
               <select name="assignee" defaultValue="">
-                <option value="">unassigned</option>
+                <option value="">{t('notes.unassigned')}</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 <option value="otto">{t('wp.ottoCarryOutTheInstruction')}</option>
               </select>
-              <button className="btn small">Add note</button>
+              <button className="btn small">{t('wp.addNote')}</button>
             </div>
           </form>
         </div>
 
         <div className="panel">
-          <h2>Sign-offs (dated, immutable)</h2>
+          <h2>{t('wp.signOffsDatedImmutable')}</h2>
           <table className="data">
-            <thead><tr><th>Role</th><th>Signed by</th><th>{t('col.when')}</th></tr></thead>
+            <thead><tr><th>{t('wp.role')}</th><th>{t('wp.signedBy')}</th><th>{t('col.when')}</th></tr></thead>
             <tbody>
               {(['preparer_validator', 'reviewer', 'partner'] as const).map((role) => {
                 const s = signoffs.find((x) => x.sign_role === role);
@@ -595,7 +602,7 @@ export default async function WorkpaperDetail({
                     <td>{s ? s.user_name : <span className="faint">—</span>}</td>
                     <td>
                       {s ? s.signed_at.slice(0, 16) : wp.status !== 'outdated' && !signedRoles.has(role) ? (
-                        <form action={signAction}><input type="hidden" name="role" value={role} /><button className="btn small">Sign as {role} ({user.name})</button></form>
+                        <form action={signAction}><input type="hidden" name="role" value={role} /><button className="btn small">{t('wp.signAs')} {role} ({user.name})</button></form>
                       ) : '—'}
                     </td>
                   </tr>
@@ -603,14 +610,14 @@ export default async function WorkpaperDetail({
               })}
             </tbody>
           </table>
-          <h2>Exports (terminal, hash-stamped)</h2>
-          {exports.length === 0 ? <p className="muted">None yet.</p> : (
+          <h2>{t('wp.exportsTerminalHashStamped')}</h2>
+          {exports.length === 0 ? <p className="muted">{t('req.noneYet')}</p> : (
             <table className="data">
-              <thead><tr><th>Format</th><th>{t('mot.sha256')}</th><th>{t('col.when')}</th><th></th></tr></thead>
+              <thead><tr><th>{t('wp.format')}</th><th>{t('mot.sha256')}</th><th>{t('col.when')}</th><th></th></tr></thead>
               <tbody>
                 {exports.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.format}{e.supersedes_export_id && <span className="badge amber" style={{ marginLeft: 4 }}>supersedes prior</span>}</td>
+                    <td>{e.format}{e.supersedes_export_id && <span className="badge amber" style={{ marginLeft: 4 }}>{t('wp.supersedesPrior')}</span>}</td>
                     <td className="mono faint">{e.content_hash.slice(0, 14)}…</td>
                     <td className="faint">{e.exported_at.slice(0, 16)}</td>
                     <td><Link href={`/api/export-file/${e.id}`}>{t('mot.download')}</Link></td>

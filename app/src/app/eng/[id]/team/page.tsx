@@ -309,12 +309,12 @@ export default async function TeamPage({
               <tr key={m.user_id}>
                 <td><strong>{m.name}</strong><div className="faint">{m.email}</div></td>
                 <td>{m.eng_role}</td>
-                <td>{m.can_sign ? 'oui' : 'non'}</td>
+                <td>{m.can_sign ? t('commun.oui') : t('commun.non')}</td>
                 <td className="mono">{m.entered_on ?? '—'}</td>
                 <td className="mono">{m.exited_on ?? '—'}</td>
                 <td>
                   <span className={`badge ${m.declaration.holds ? 'blue' : 'amber'}`}>
-                    {m.declaration.label}
+                    {t(m.declaration.label.cle, m.declaration.label.vars)}
                   </span>
                 </td>
                 <td>
@@ -357,7 +357,7 @@ export default async function TeamPage({
             dénominateur ni le motif de son plafond ne se relit pas — et ces
             trois lectures avaient disparu dans un balayage de prose. */}
         <p className="faint">
-          {ratio.auditFeeCents === null
+          {ratio.auditFeeCents === null || ratio.auditFeeCents === 0
             ? t('team.ratioNonCalcule')
             : t('team.honoraires', {
                 audit: fmtEur(ratio.auditFeeCents, 'fr'), sacc: fmtEur(ratio.nonAuditCents, 'fr'),

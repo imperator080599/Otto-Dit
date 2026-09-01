@@ -215,3 +215,18 @@ elle ne l'a pas été, et c'est le reproche le plus juste de cette revue.
 | S-12 | Contacts de mission → section client (P1) ; « Reprise du dossier N-1 » supprimée (question posée à la création) | planifié | Vient avec P1 ; les contacts restent joignables tant que la section client n'existe pas, parce qu'un contact clé est exigé pour circulariser |
 | S-13 | P1 (la configuration appartient à la création du dossier) et P2 (toute donnée manquante engendre une demande) | planifié | Non fait dans cette tranche — voir « ce que je n'ai pas fait » dans STATUS |
 
+- **La langue d'un texte ÉCRIT PUIS STOCKÉ se décide à l'écriture, pas au rendu.** Vingt et un
+  libellés de service sont différés pour cette raison (réponse d'OTTO dans une note,
+  interprétation figée d'une colonne, maillons de provenance) : le service doit recevoir la
+  locale du cabinet, ou stocker une clé et ses variables plutôt qu'une phrase. Chantier de
+  conception, pas un `t()` de plus. Compté et affiché par `npm run langue`.
+- **Le catalogue de méthode (pack NEP) est en français seulement.** Deux listes d'écran mêlent
+  du contenu de pack et des libellés d'interface ; traduire les seconds sans les premiers
+  donnerait une liste bilingue à moitié. Périmètre gelé (règle 14) : le jour où un pack se
+  traduit, ces deux listes suivent.
+- **Trente-cinq stations du parcours cliqué sont déclarées et jamais atteintes** sur un parcours
+  vert (`docs/PARCOURS.json`, champ `jamaisConduites`). La plupart sont des branches d'échec ;
+  vérifier lesquelles méritent un monde de démonstration qui les active est un travail à part.
+- **`ANCRE_KINDS` est exporté et lu par personne** (`services/workpapers/lifecycle.ts`) : un objet
+  créé qu'aucun chemin de lecture n'atteint (règle 13) — à brancher sur l'écran des notes, ou à
+  retirer.
