@@ -1740,3 +1740,10 @@ ce que nous ne devenons pas (GRC), ce qui est à creuser (le dossier, le refus, 
 preuve jusqu'à la cellule, le multi-pack, le portail à l'auditeur), le positionnement SOX côté
 auditeur externe, et les six points H-1 à H-6 pour la suite — le mandat du jour ne change pas.
 
+**Poussé sur `main` (2026-09-02)** : `3bc9bd0` (le produit) puis `8302a23` (le harnais attend la
+réponse de l'action avant de lire un refus). Vercel READY sur les deux ; CI `local` verte sur les
+deux ; CI `url` : balayage 7 passages vert, épreuves 3/3, acceptation 10 PASS / 1 FAIL — le FAIL est
+une exception d'hydratation #418 observée en ligne sur le papier REV-01 pendant la tâche IPE
+(refus « papier visé » lu quand même) ; W5 reporté avec cette observation. Rapport du soir :
+`docs/SOIR.md`.
+
