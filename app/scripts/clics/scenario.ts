@@ -1216,10 +1216,20 @@ export async function conduire(
       await p.waitForTimeout(200);
       if (await compte('[data-bande-cellules] form[data-disposer]')) { ligneOuverte = i; break; }
     }
-    if (ligneOuverte >= 0) {
-      await p.keyboard.press('v');
+    /* Un geste dont on lit le REFUS : on attend la réponse de l'action, puis
+       l'URL qui porte le refus — `networkidle` seul se résout tout de suite
+       si la page était déjà au repos (trouvé par la CI contre l'URL déployée). */
+    const gesteRefus = async (action: () => Promise<void>) => {
+      await Promise.all([
+        p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 30000 }).catch(() => undefined),
+        action(),
+      ]);
+      await p.waitForURL(/erreur=/, { timeout: 8000 }).catch(() => undefined);
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-      await p.waitForTimeout(600);
+      await p.waitForTimeout(300);
+    };
+    if (ligneOuverte >= 0) {
+      await gesteRefus(() => p.keyboard.press('v'));
       const r1 = refus(p) ?? '';
       dire('refus : V sur une ligne dont une cellule n’est pas conforme est REFUSÉ, l’attribut et le code sont nommés (TEST-04)',
         /TEST-04/.test(r1) && /«\s.+\s»/.test(r1), r1.slice(0, 160) || '(aucun refus — la ligne a été conclue, défaut)');
@@ -1231,7 +1241,7 @@ export async function conduire(
       await p.waitForTimeout(200);
       const formDisp = p.locator('[data-bande-cellules] form[data-disposer]').first();
       await formDisp.locator('input[name=motif]').fill('   ');
-      await soumettre(formDisp.locator('button[type=submit]'), 1200);
+      await gesteRefus(() => formDisp.locator('button[type=submit]').click());
       const r2 = refus(p) ?? '';
       dire('refus : disposer une cellule sans motif est REFUSÉ par le serveur (TEST-03), la cellule est nommée',
         /TEST-03/.test(r2), r2.slice(0, 160) || '(aucun refus — la disposition vide a été acceptée, défaut)');
@@ -1250,14 +1260,10 @@ export async function conduire(
         (await compte('[data-bande-cellules] form[data-disposer]')) === 0 && /disposée par|disposed by/.test(await texte()),
         refus(p) ?? 'dispositions écrites');
       if (await compte('[data-bande-cellules] tr[data-etat="non_recevable"]')) {
-        await p.keyboard.press('v');
-        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-        await p.waitForTimeout(600);
+        await gesteRefus(() => p.keyboard.press('v'));
         dire('refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)', /TEST-02/.test(refus(p) ?? ''), refus(p) ?? '');
       } else {
-        await p.keyboard.press('v');
-        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-        await p.waitForTimeout(600);
+        await gesteRefus(() => p.keyboard.press('v'));
         await p.locator('.atelier-liste tbody tr').nth(ligneOuverte).click();
         await p.waitForTimeout(200);
         dire('conclusion : V conclut la ligne disposée — qui, quand, et le badge « conclue » sur la ligne',

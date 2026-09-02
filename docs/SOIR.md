@@ -1,6 +1,6 @@
 # Rapport du soir — mandat du jour (2026-09-02), un seul écran
 
-**URL** : https://otto-dit.vercel.app · **SHA** : `{SHA}` · déploiement Vercel `{DPL}` · CI `local` {CI_LOCAL} · CI `url` {CI_URL}
+**URL** : https://otto-dit.vercel.app · **SHA** : `3bc9bd0` (`3bc9bd011b2f6518965f66617f40960c42a0e76c`, déclaré par `/api/sante`) · déploiement Vercel `dpl_5mrM7kAWxesEoRTSm1XXLmCWsX1V` READY à 14:11 UTC, migrations 0042 + 0050 appliquées au build, 106 tables, assertions rôle/RLS « défauts : aucun », fuite tentée 0/0/49, `/api/sante` « toutes les lectures passent » · CI `local` (run 33640213191) **vert** : types, base semée, 667 tests dont le balayage des écrans, langue 0/0, lectures 0 perdue, parcours 0 perdue · CI `url` (run 33640390712, contre le déploiement) : balayage **7 passages, graine 33640390712, vert** (la sonde sort en échec au premier RED ou INTERMITTENT), épreuve du harnais **3/3 déclarés FAIL**, acceptation **9 PASS / 2 FAIL** — voir §3, les deux FAIL sont du HARNAIS (lecture de l'URL avant la redirection), la base déployée montre 0 conclusion et 0 disposition acceptées ; corrigé et rejoué : {CI_URL_2}
 
 ## 1. Ce qui est cliquable ce soir et ne l'était pas ce matin
 
@@ -31,7 +31,7 @@
 ## 3. NON PROUVÉ
 
 - **TEST-01** : aucun écran ne peut demander une cellule verte sans ancre — refus prouvé en deux passes (G-13), jamais par un clic.
-- **Depuis le bac à sable de l'agent, l'URL déployée est inaccessible** (CONNECT 403 par la politique réseau) : les verdicts déployés ci-dessus sont ceux de la CI `url` ({CI_URL_DETAIL}), pas d'un clic de l'agent. En local, le harnais a été conduit contre un `next start` de production : {ACCEPT_LOCAL}.
+- **Depuis le bac à sable de l'agent, l'URL déployée est inaccessible** (CONNECT 403 par la politique réseau) : les verdicts déployés ci-dessus sont ceux de la CI `url`, pas d'un clic de l'agent. Premier passage (run 33640390712, SHA 3bc9bd0) : W1-03 et W1-04 déclarés FAIL « aucun refus » — le harnais lisait l'URL avant la redirection de l'action serveur (plus lente en ligne qu'en local ; `waitForLoadState('networkidle')` se résout tout de suite si la page était déjà au repos). Ce n'est PAS le produit qui a accepté : la base déployée (Supabase, lecture directe) porte 0 `test_line_conclusion`, 0 `cell_disposition`, 91 `test_cell`, 1 `test_grid` après ce passage. Le harnais attend désormais la réponse de l'action puis l'URL du refus ; second passage : {CI_URL_2_DETAIL}. En local, le harnais a été conduit contre un `next start` de production : 3 épreuves déclarées FAIL comme attendu, puis 11 tâches sur 11 PASS (A-01…A-06, W1-01…W1-05) sur une base fraîchement semée — table dans `docs/ACCEPTATION.md`.
 - **L'isolation entre cabinets est INERTE en production** : l'application tourne sous le rôle `postgres` (BYPASSRLS, ADR-115) ; la RLS est activée et forcée sur 106 tables mais n'est appliquée à personne ; la seule isolation à l'écriture est la garde de service G-20 (et, depuis ce jour, la clause `engagement_id` de la disposition de cellule). S2 (rôle `otto_app`) reporté.
 - **#418 (hydratation)** : ni reproduit sur le parcours du jour, ni expliqué.
 - **La signature du BL** n'est jamais relevée par l'extraction : la cellule est « absente » sur chaque ligne à BL, et se dispose (un humain regarde).

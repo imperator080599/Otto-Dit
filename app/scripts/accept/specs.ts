@@ -53,6 +53,22 @@ async function compte(p: Page, sel: string): Promise<number> {
   return p.locator(sel).count();
 }
 
+/** ENVOYER UN GESTE ET ATTENDRE SA RÉPONSE. `waitForLoadState('networkidle')`
+ *  se résout TOUT DE SUITE si la page était déjà au repos avant le geste : sur
+ *  l'instance déployée (action serveur plus lente qu'en local), l'URL était
+ *  lue avant la redirection et le harnais annonçait « aucun refus » là où le
+ *  serveur refusait (CI url du 2026-09-02). On attend la réponse de l'action,
+ *  puis l'URL qui porte le refus (ou le silence, dit tel quel). */
+async function geste(p: Page, action: () => Promise<void>): Promise<void> {
+  await Promise.all([
+    p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 60000 }).catch(() => undefined),
+    action(),
+  ]);
+  await p.waitForURL(/erreur=/, { timeout: 8000 }).catch(() => undefined);
+  await p.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => undefined);
+  await p.waitForTimeout(300);
+}
+
 /* ── Les tâches ────────────────────────────────────────────────────────────── */
 
 export const SPECS: Spec[] = [
@@ -249,9 +265,7 @@ export const SPECS: Spec[] = [
         ok = (await compte(c.p, '[data-bande-cellules] form[data-disposer]')) > 0;
       }
       attendre(ok, 'aucune ligne avec une cellule à disposer : le refus ne peut pas être observé ici');
-      await c.p.keyboard.press('v');
-      await c.p.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => undefined);
-      await c.p.waitForTimeout(600);
+      await geste(c.p, () => c.p.keyboard.press('v'));
       const r = refus(c.p) ?? '';
       attendre(/TEST-04/.test(r), r ? `refus sans le code : ${r.slice(0, 120)}` : 'AUCUN refus : la ligne a été conclue (défaut)');
       return `refusé : « ${r.slice(0, 120)} »`;
@@ -272,9 +286,7 @@ export const SPECS: Spec[] = [
       }
       attendre((await f.count()) > 0, 'aucune cellule à disposer');
       await f.locator('input[name=motif]').fill('   ');
-      await f.locator('button[type=submit]').click();
-      await c.p.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => undefined);
-      await c.p.waitForTimeout(600);
+      await geste(c.p, () => f.locator('button[type=submit]').click());
       const r = refus(c.p) ?? '';
       attendre(/TEST-03/.test(r), r ? `refus sans le code : ${r.slice(0, 120)}` : 'AUCUN refus : la disposition vide a été acceptée (défaut)');
       return `refusé : « ${r.slice(0, 120)} »`;
