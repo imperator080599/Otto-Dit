@@ -230,3 +230,52 @@ elle ne l'a pas été, et c'est le reproche le plus juste de cette revue.
 - **`ANCRE_KINDS` est exporté et lu par personne** (`services/workpapers/lifecycle.ts`) : un objet
   créé qu'aucun chemin de lecture n'atteint (règle 13) — à brancher sur l'écran des notes, ou à
   retirer.
+
+## H. Analyse concurrentielle Optro (ex-AuditBoard) — critère d'admission et suite du mandat (2026-09-02, `OTTO_vs_Optro.md`)
+
+**Ce que nous ne devenons pas.** Optro est AuditBoard rebaptisé : une plateforme GRC vendue à
+l'ENTITÉ AUDITÉE (audit interne, conformité, contrôles IT, risque fournisseurs, cyber). OTTO vend
+au commissaire aux comptes qui certifie les comptes de cette entité. Toute idée qui rapproche du
+GRC est un pas vers un marché où ils tiennent la moitié du Fortune 500 et où nous partons de zéro.
+
+**CRITÈRE D'ADMISSION AU REGISTRE — appliqué désormais à toute idée, celles du fondateur
+comprises :** « est-ce que cela aide un auditeur INDÉPENDANT à produire un dossier qui survivra à
+une inspection ? » Si non, c'est du GRC, et ce n'est pas ce produit. Une idée refusée par ce
+critère s'inscrit ici avec la mention « GRC — hors produit » et sa raison d'une ligne ; rien ne
+disparaît en silence.
+
+**Ce qui nous rend structurellement supérieurs — à CREUSER, jamais à diversifier :**
+- le dossier est le produit, pas le flux de travail ;
+- le REFUS comme fonctionnalité — un outil GRC relance, nous bloquons ; « ce qui empêche de
+  signer » est une catégorie qu'ils ne peuvent pas avoir, parce qu'ils n'ont rien à signer ;
+- l'IPE traitée correctement (ADR-118), que presque personne ne traite ;
+- la chaîne de preuve du solde jusqu'à la cellule du justificatif (ADR-120 : ancre à l'endroit
+  exact, delta signé toujours imprimé, refus de conclure une ligne dont l'identité diverge) ;
+- le multi-référentiel par pack, quand ils sont américains ;
+- le portail client appartient à L'AUDITEUR — ce qu'un outil vendu à l'entité ne peut pas offrir.
+
+**Sur SOX — le seul terrain commun, où ils sont l'incumbent.** Le dossier SOX d'OTTO se positionne du
+côté de l'auditeur EXTERNE : test des contrôles au sens d'AS 2201 [UNVERIFIED : numéro cité par
+l'analyse, non vérifié ici], appui sur les travaux de la direction, extrapolation à la clôture —
+jamais un outil de pilotage pour la direction. Sur ce terrain-là ils gagnent, et c'est sans
+importance. Le pack SOX reste gelé (règle 14) ; ce positionnement est du contenu et de la
+formulation, pas de l'architecture.
+
+**Ce qu'on leur prend — points du mandat pour la suite, par ordre de valeur (après la journée du
+2026-09-02, dont le mandat ne change pas) :**
+
+| # | Point | Critère d'admission | Où ça s'accroche |
+|---|---|---|---|
+| H-1 | **L'espace de demandes porté à leur niveau** : création en lot depuis le programme de travail, état par élément, relances programmées, vue côté client de ce qui reste dû, un écran « ce que vous me devez encore ». Leur meilleure fonction, et le livrable nommé par le fondateur. | Oui — une demande de pièces est la matière première du dossier ; ce qui reste dû est un obstacle au visa. | `requests`, portail client (ADR-006), rappels (`ensureReminders`), obstacles au visa |
+| H-2 | **Le cycle de vie du constat vis-à-vis du client** : propriétaire, échéance, état, relance — en distinguant NETTEMENT l'exception d'audit (le dossier) du point d'action client (l'entité). | Oui, à la condition écrite : le point d'action client ne remplace jamais l'exception d'audit et n'entre pas dans le dossier comme conclusion. | `exception`, `review_note`, portail |
+| H-3 | **L'analytique en POPULATION COMPLÈTE** à côté du sondage, avec l'énoncé honnête de ce qu'un test exhaustif couvre et ne couvre pas. | Oui — un test exhaustif déterministe sur le grand livre importé est de la preuve, si ses limites sont écrites (pas d'assertion d'existence sans pièce). | `gl_entry`, critères du test des écritures (ADR-003), `procedure_instance` |
+| H-4 | **Le reporting en trois périmètres d'audience** — équipe, direction, comité. | Oui pour l'équipe et le comité (communication à la gouvernance est un livrable d'audit) ; **non** pour un tableau de bord de direction qui piloterait l'entité (GRC — hors produit). R16 de la nuit reste : rien de signé ne sort de mémoire. | `travaux`, `dashboard`, archive |
+| H-5 | **Un adaptateur d'import GRC** : matrice risques-contrôles et tests de la direction importés COMME PIÈCE, jamais recréés. Un client équipé d'AuditBoard doit pouvoir nous les donner — argument de vente, pas concession. | Oui — l'appui sur les travaux de la direction exige de les recevoir comme IPE (ADR-118) et de les tester, pas de les ressaisir. | `import_file`, `ipe_rapport`, `rcm_row`, pack SOX (contenu gelé, adaptateur = mécanique) |
+| H-6 | **Une passe de design** prenant la crédibilité visuelle d'un logiciel d'entreprise comme référence, sans copier et sans trahir les jetons existants (une seule échelle, la couleur ne marque que les problèmes). | Oui — la crédibilité d'un dossier se joue aussi à l'écran (revue n°1 : « trop AI generated ») ; jamais un thème, une échelle (ADR-094). | `globals.css`, `npm run visuel` |
+
+**Ce que l'analyse liste et que le critère ÉCARTE (GRC — hors produit)** : la « couverture
+continue » comme flux de surveillance de l'entité (un auditeur légal couvre un exercice et le dit ;
+la reprise N-1 et les événements postérieurs sont la forme audit de cette idée, déjà au registre) ;
+tout module de gestion des contrôles pour la direction ; univers de risques, fournisseurs, cyber,
+référentiels de conformité préchargés.
+

@@ -15,6 +15,19 @@ import { GARDES } from '../src/lib/gardes/registre';
 
 const ici = path.dirname(fileURLToPath(import.meta.url));
 const CIBLE = path.join(ici, '..', '..', 'docs', 'GUARDS.md');
+const RESULTATS = path.join(ici, '..', '..', 'docs', 'GARDES_RESULTATS.json');
+
+/* LE VERDICT VIENT DE L'EXÉCUTION. `docs/GARDES_RESULTATS.json` est écrit par
+   gardes.test.ts à chaque passage ; une garde sans résultat enregistré s'écrit
+   SANS RÉSULTAT — jamais « prouvée » par le seul fait d'être au registre. */
+type Resultat = { prouvee: boolean; raison: string; quand: string };
+const resultats: Record<string, Resultat> = fs.existsSync(RESULTATS)
+  ? (JSON.parse(fs.readFileSync(RESULTATS, 'utf8')) as Record<string, Resultat>) : {};
+function verdict(code: string): string {
+  const r = resultats[code];
+  if (!r) return '**SANS RÉSULTAT**';
+  return r.prouvee ? `PROUVÉE (${r.quand.slice(0, 10)})` : `**NON PROUVÉE** — ${r.raison}`;
+}
 
 function md(): string {
   const sql = GARDES.filter((g) => g.nature === 'sql');
@@ -34,27 +47,29 @@ function md(): string {
   lignes.push('garde DÉCLARÉE n’est pas prouvée par ce registre : la colonne dit où vit sa preuve, ou qu’il n’y en a');
   lignes.push('pas. L’épreuve elle-même est éprouvée contre trois gardes connues mauvaises (règle 17).');
   lignes.push('');
-  lignes.push(`**Compte** : ${sql.length} garde(s) SQL à deux passes · ${service.length} garde(s) de service à une passe · ${declarees.length} déclarée(s), dont ${declarees.filter((g) => g.nature === 'declaree' && !g.preuve).length} sans aucune preuve.`);
+  const prouvees = [...sql, ...service].filter((g) => resultats[g.code]?.prouvee).length;
+  const sansResultat = [...sql, ...service].filter((g) => !resultats[g.code]).length;
+  lignes.push(`**Compte** : ${sql.length} garde(s) SQL à deux passes · ${service.length} garde(s) de service à une passe · ${declarees.length} déclarée(s), dont ${declarees.filter((g) => g.nature === 'declaree' && !g.preuve).length} sans aucune preuve. **Verdicts observés** (docs/GARDES_RESULTATS.json, écrit par \`npx vitest run src/lib/gardes\`) : ${prouvees} prouvée(s), ${sansResultat} sans résultat.`);
   lignes.push('');
   lignes.push('**Retirer une garde, et voir le registre le dire** : le test « une garde RETIRÉE est dénoncée par son nom » (gardes.test.ts) désactive `review_note_close_guard` et lit le verdict « G-03 : l’attaque a RÉUSSI sans neutralisation — la garde n’existe pas » ; c’est le critère du plan, joué à chaque exécution.');
   lignes.push('');
   const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
   lignes.push('## Gardes SQL — prouvées en deux passes');
   lignes.push('');
-  lignes.push('| Code | Invariant | Tenu par | Rayon si elle tombe | Refus attendu | Neutralisation d’épreuve | Où elle cesse de regarder |');
-  lignes.push('|---|---|---|---|---|---|---|');
+  lignes.push('| Code | Verdict observé | Invariant | Tenu par | Rayon si elle tombe | Refus attendu | Neutralisation d’épreuve | Où elle cesse de regarder |');
+  lignes.push('|---|---|---|---|---|---|---|---|');
   for (const g of sql) {
     if (g.nature !== 'sql') continue;
-    lignes.push(`| ${g.code} | ${cell(g.enonce)} | \`${cell(g.point)}\` | ${cell(g.rayon)} | \`${g.rejet.source}\` | \`${cell(g.neutraliser)}\` | ${cell(g.stops_looking)} |`);
+    lignes.push(`| ${g.code} | ${verdict(g.code)} | ${cell(g.enonce)} | \`${cell(g.point)}\` | ${cell(g.rayon)} | \`${g.rejet.source}\` | \`${cell(g.neutraliser)}\` | ${cell(g.stops_looking)} |`);
   }
   lignes.push('');
   lignes.push('## Gardes de service — prouvées en une passe');
   lignes.push('');
-  lignes.push('| Code | Invariant | Tenu par | Rayon si elle tombe | Refus attendu | Où elle cesse de regarder |');
-  lignes.push('|---|---|---|---|---|---|');
+  lignes.push('| Code | Verdict observé | Invariant | Tenu par | Rayon si elle tombe | Refus attendu | Où elle cesse de regarder |');
+  lignes.push('|---|---|---|---|---|---|---|');
   for (const g of service) {
     if (g.nature !== 'service') continue;
-    lignes.push(`| ${g.code} | ${cell(g.enonce)} | \`${cell(g.point)}\` | ${cell(g.rayon)} | \`${g.rejet.source}\` | ${cell(g.stops_looking)} |`);
+    lignes.push(`| ${g.code} | ${verdict(g.code)} | ${cell(g.enonce)} | \`${cell(g.point)}\` | ${cell(g.rayon)} | \`${g.rejet.source}\` | ${cell(g.stops_looking)} |`);
   }
   lignes.push('');
   lignes.push('## Gardes déclarées — la preuve vit ailleurs, ou n’existe pas');

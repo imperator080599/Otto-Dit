@@ -30,6 +30,9 @@ function estUnSignalDeNext(e: unknown): boolean {
     && (d.startsWith('NEXT_REDIRECT') || d === 'NEXT_NOT_FOUND' || d.startsWith('NEXT_HTTP_ERROR_FALLBACK'));
 }
 
+/** Le paramètre d'URL qui porte le refus — lu par BandeauRefus et par les harnais. */
+const CLE_REFUS = 'erreur';
+
 export async function executer(chemin: string, fn: () => Promise<unknown>): Promise<never> {
   let erreur = '';
   try {
@@ -45,5 +48,11 @@ export async function executer(chemin: string, fn: () => Promise<unknown>): Prom
   revalidatePath(chemin);
   /* `redirect` lève, volontairement, et DOIT être hors du `try` : l'attraper
      transformerait chaque succès en « refus » silencieux. */
-  redirect(`${chemin}${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ''}`);
+  /* UN CHEMIN QUI PORTE DÉJÀ UNE QUESTION (`?item=…`) reçoit le refus après un
+     `&`, jamais un second `?` : sinon le refus devient la fin de la valeur de
+     `item`, le bandeau ne le lit pas, et le harnais conclut « aucun refus » —
+     un refus calculé puis jeté (règle 13), trouvé par la revue hostile du jour. */
+  if (!erreur) redirect(chemin);
+  const requete = new URLSearchParams([[CLE_REFUS, erreur]]).toString();
+  redirect(`${chemin}${chemin.includes('?') ? '&' : '?'}${requete}`);
 }

@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { initTestDb } from '@/lib/test/setup';
-import { getDb, q, q1 } from '@/lib/db/client';
+import { getDb, q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { GARDES, eprouver, eprouverSql, type Contexte, type GardeSql } from './registre';
 
@@ -11,6 +13,11 @@ import { GARDES, eprouver, eprouverSql, type Contexte, type GardeSql } from './r
 // autre chose, une garde qui n'existe pas.
 
 let ctx: Contexte;
+/* LES VERDICTS OBSERVÉS, écrits à la fin : docs/GARDES_RESULTATS.json est ce
+   que `npm run gardes` lit pour dire PROUVÉE / NON PROUVÉE / SANS RÉSULTAT.
+   Le compte « prouvé » se lit dans les résultats d'exécution, jamais dans le
+   registre (mandat du jour, S1). */
+const verdicts: Record<string, { prouvee: boolean; raison: string; quand: string }> = {};
 
 /** Les tables à engagement_id SANS garde de verrou, figées — voir le test qui les compare. */
 const SANS_GARDE_DE_VERROU: string[] = [
@@ -127,20 +134,37 @@ describe('registre des gardes', () => {
      0037) : un dossier scellé acceptait des écritures IPE parce que la table
      nouvelle n'en avait pas (revue hostile n°6). Le compte est dit, pas
      supposé — la liste des tables sans garde doit être VIDE. */
-  it('toute table qui porte engagement_id a sa garde de verrou — ou figure ici, nommée', async () => {
+  /* « 0 TABLE SANS VERDICT » (mandat du jour, S5) : toute table à engagement_id
+     porte une garde de verrou OU une ligne du registre des verdicts (0042),
+     avec sa raison écrite — proposée par l'agent, confirmée par un humain. Une
+     table nouvelle sans verdict fait échouer le test : on ne l'inscrit pas dans
+     un tableau figé, on écrit son verdict. Et un verdict « garde » sans garde
+     attachée est un mensonge : vérifié dans l'autre sens aussi. */
+  it('toute table qui porte engagement_id a une garde de verrou ou un verdict écrit — 0 table sans verdict', async () => {
     const sans = await q<{ t: string }>(
       `select c.table_name t from information_schema.columns c
        where c.table_schema = 'public' and c.column_name = 'engagement_id'
          and not exists (select 1 from pg_trigger g join pg_class r on r.oid = g.tgrelid
                          where r.relname = c.table_name and g.tgname = c.table_name || '_lock_guard')
+         and not exists (select 1 from engagement_lock_verdict v where v.table_name = c.table_name)
        order by 1`);
-    /* LA LISTE EST DITE, PAS VIDE : ces tables n'ont pas de garde de verrou
-       (0003 n'en posait que sur dix-neuf tables, et chaque migration depuis en
-       a créé d'autres). Une table NOUVELLE qui apparaît ici fait échouer le
-       test : elle est gardée, ou inscrite avec sa raison. Le tri de celles-ci
-       — lesquelles sont écrites après le scellé par la clôture elle-même — est
-       au registre reporté. */
-    expect(sans.map((x) => x.t)).toEqual(SANS_GARDE_DE_VERROU);
+    expect(sans.map((x) => x.t), 'tables sans garde ni verdict').toEqual([]);
+    const menteurs = await q<{ t: string }>(
+      `select v.table_name t from engagement_lock_verdict v
+       where v.verdict = 'garde'
+         and not exists (select 1 from pg_trigger g join pg_class r on r.oid = g.tgrelid
+                         where r.relname = v.table_name and g.tgname = v.table_name || '_lock_guard')`);
+    expect(menteurs.map((x) => x.t), 'verdict « garde » sans garde attachée').toEqual([]);
+    /* Une proposition non confirmée reste une PROPOSITION : elle n'attache
+       rien (pas de garde), et le registre le dit. On ne suppose pas qu'il en
+       reste toujours — le jour où un humain aura tout confirmé, ce test n'a
+       pas à rougir (revue hostile du jour). */
+    const proposes = await q<{ t: string }>(
+      `select v.table_name t from engagement_lock_verdict v
+       where v.verdict = 'garde_proposee' and v.confirmed_by is null
+         and exists (select 1 from pg_trigger g join pg_class r on r.oid = g.tgrelid
+                     where r.relname = v.table_name and g.tgname = v.table_name || '_lock_guard')`);
+    expect(proposes.map((x) => x.t), 'proposition non confirmée qui porte déjà une garde').toEqual([]);
   });
 
   /* Chaque garde SQL et de service, une par une : le verdict est lu, pas
@@ -149,16 +173,32 @@ describe('registre des gardes', () => {
     it(`${g.code} — ${g.enonce}`, async () => {
       const db = await getDb();
       const v = await eprouver(db, g, ctx);
+      verdicts[g.code] = { prouvee: v.prouvee, raison: v.raison, quand: new Date().toISOString() };
       expect(v.prouvee, `${g.code} : ${v.raison}`).toBe(true);
     });
   }
+
+  afterAll(() => {
+    /* L'horodatage ne bouge que si le VERDICT bouge : un fichier suivi par
+       git qui change à chaque exécution est un arbre toujours sale, et un
+       changement qu'on ne lit plus (revue hostile du jour). */
+    const cible = path.join(repoRoot(), 'docs', 'GARDES_RESULTATS.json');
+    let anciens: Record<string, { prouvee: boolean; raison: string; quand: string }> = {};
+    try { anciens = JSON.parse(fs.readFileSync(cible, 'utf8')); } catch { /* premier passage */ }
+    const fusion: typeof verdicts = {};
+    for (const [code, v] of Object.entries(verdicts)) {
+      const a = anciens[code];
+      fusion[code] = a && a.prouvee === v.prouvee && a.raison === v.raison ? a : v;
+    }
+    fs.writeFileSync(cible, `${JSON.stringify(fusion, null, 2)}\n`);
+  });
 
   /* Et une passe neutralisée n'a rien laissé derrière elle : la transaction
      annulée annule aussi la neutralisation. */
   it('après l’épreuve, chaque objet neutralisé par une garde SQL est de nouveau en place', async () => {
     for (const g of GARDES) {
       if (g.nature !== 'sql') continue;
-      const m = g.neutraliser.match(/\b(?:drop constraint|disable trigger)\s+([a-z_]+)/);
+      const m = g.neutraliser.match(/\b(?:drop constraint|disable trigger)\s+([a-z0-9_]+)/);
       expect(m, g.code).not.toBeNull();
       const nom = m![1];
       const present = g.neutraliser.includes('disable trigger')

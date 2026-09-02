@@ -1129,6 +1129,148 @@ export async function conduire(
       (await compte('.papier-vivant')) > 0, 'aperçu du papier présent');
   });
 
+  /* L'ATELIER DE TEST — LA GRILLE (mandat du jour, W1). La grille figée par
+     pack ; une bande de cellules par ligne, chacune avec son delta SIGNÉ et
+     son ancre ; le rectangle dessiné sur la pièce par le serveur ; et les
+     REFUS observés, jamais supposés : V sur une ligne non conforme (TEST-04),
+     disposer sans motif (TEST-03), puis la disposition écrite et la conclusion. */
+  await station('atelier de test : la grille, les ancres, les refus, la conclusion', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/testing`);
+    /* Le calcul lit chaque pièce : on attend la RÉPONSE de l'action, puis on
+       relit l'écran jusqu'à voir les cellules — une relecture trop tôt lisait
+       « aucune cellule » sur un calcul en cours. */
+    await Promise.all([
+      p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 90000 }).catch(() => undefined),
+      cliquer('button[data-grille-calculer]', 30000),
+    ]);
+    dire('grille : le calcul est accepté (grille figée v1, cellules posées)', !refus(p), refus(p) ?? 'grille calculée');
+    await aller(`${eng}/testing`);
+    dire('grille : l’en-tête dit la version, le nombre de colonnes, le pack et l’empreinte',
+      /v1 · \d+ colonnes|v1 · \d+ columns/.test(await texte()), 'en-tête de grille lu');
+
+    /* UNE LIGNE QUI PORTE DES CELLULES COMPARÉES ET ANCRÉES — pas la première
+       venue : la première ligne de la liste peut être SANS pièce (toutes ses
+       cellules « absentes », aucun delta, aucune ancre), et un contrôle qui
+       s'arrêterait là passerait à vide (règle 13). On parcourt les lignes,
+       on relit l'écran quelques fois si le calcul finit d'écrire, et on
+       retient la première ligne qui a au moins un delta signé ET une ancre. */
+    let trouvee = -1;
+    let lignesAvecCellules = 0;
+    const deltasVus: string[] = [];
+    for (let essai = 0; essai < 8 && trouvee < 0; essai++) {
+      if (essai > 0) { await p.waitForTimeout(4000); await aller(`${eng}/testing`); }
+      for (let i = 0; i < 16; i++) {
+        const rang = p.locator('.atelier-liste tbody tr').nth(i);
+        if (!(await rang.count())) break;
+        await rang.click();
+        await p.waitForTimeout(200);
+        if (!(await compte('[data-bande-cellules] table.cellules tbody tr'))) continue;
+        lignesAvecCellules++;
+        const d = (await p.locator('[data-bande-cellules] td[data-delta]').allInnerTexts()).map((x) => x.trim());
+        deltasVus.push(...d);
+        if (d.some((x) => /^(\+|−|0)/.test(x)) && (await compte('[data-bande-cellules] button[data-ancre-page]'))) { trouvee = i; break; }
+      }
+    }
+    dire('grille : une ligne montre sa bande de cellules à droite, sous la pièce — avec un delta signé et une ancre',
+      trouvee >= 0, trouvee >= 0 ? `ligne ${trouvee + 1}, ${await compte('[data-bande-cellules] table.cellules tbody tr')} cellule(s)` : `${lignesAvecCellules} ligne(s) avec cellules, aucune comparée et ancrée`);
+    const signes = deltasVus.filter((x) => /^(\+|−|0)/.test(x));
+    dire('grille : chaque cellule comparée imprime un delta SIGNÉ (+, − ou 0), jamais une valeur absolue nue — et il y en a',
+      signes.length > 0 && deltasVus.every((d) => /^(\+|−|0|—)/.test(d)), `${signes.length} delta(s) signé(s) : ${signes.slice(0, 6).join(' · ')}`);
+    dire('grille : l’état est un mot et une marque, jamais une couleur seule',
+      (await compte('[data-bande-cellules] tr[data-etat] .badge')) > 0
+        && /dans la tolérance|hors tolérance|within tolerance|out of tolerance|non relevé|not read|sans ancre|no anchor|non recevable|not admissible/.test(await texte()),
+      'états écrits');
+
+    /* L'ANCRE : cliquer une cellule ancrée dessine le rectangle sur la pièce,
+       à sa page — le serveur rend un PDF différent de la pièce nue. */
+    const ancre = p.locator('[data-bande-cellules] button[data-ancre-page]').first();
+    if (await ancre.count()) {
+      await ancre.click();
+      await p.waitForTimeout(400);
+      const src = await p.locator('.atelier iframe.piece-vue').first().getAttribute('src') ?? '';
+      dire('ancre : la visionneuse ouvre la pièce AVEC le rectangle, à la page de l’ancre',
+        /\/api\/piece\/[0-9a-f-]{36}\/ancre\?cellule=[0-9a-f-]{36}#page=\d+$/.test(src), src.slice(0, 100));
+      const r = await p.request.get(base + src.replace(/#.*$/, ''));
+      const enTete = r.headers()['x-otto-ancre'] ?? '';
+      const nue = await p.request.get(base + src.replace(/\/ancre\?.*$/, '').replace('/api/piece/', '/api/blob/'));
+      /* LA PREUVE DU RECTANGLE : l'opérateur `re` à l'abscisse annoncée, dans
+         le PDF rendu — et PAS dans la pièce nue (sinon la preuve ne
+         discrimine pas). Comparer des tailles ne prouvait rien. */
+      const { porteLeRectangle } = await import('../../src/lib/pdf/rectangle');
+      dire('ancre : le PDF rendu porte le rectangle à l’abscisse de l’ancre (opérateur re), et la pièce nue ne le porte pas',
+        r.status() === 200 && /application\/pdf/.test(r.headers()['content-type'] ?? '') && /page=\d+;x=/.test(enTete)
+          && porteLeRectangle(await r.body(), enTete) && !porteLeRectangle(await nue.body(), enTete),
+        `${r.status()} · ${enTete}`);
+    } else {
+      dire('ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)', false, 'aucun bouton d’ancre');
+    }
+
+    /* LES REFUS, OBSERVÉS. On cherche une ligne avec une cellule non conforme
+       sans disposition : V est refusé en nommant l'attribut et le code. */
+    let ligneOuverte = -1;
+    for (let i = 0; i < 12; i++) {
+      const rang = p.locator('.atelier-liste tbody tr').nth(i);
+      if (!(await rang.count())) break;
+      await rang.click();
+      await p.waitForTimeout(200);
+      if (await compte('[data-bande-cellules] form[data-disposer]')) { ligneOuverte = i; break; }
+    }
+    if (ligneOuverte >= 0) {
+      await p.keyboard.press('v');
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(600);
+      const r1 = refus(p) ?? '';
+      dire('refus : V sur une ligne dont une cellule n’est pas conforme est REFUSÉ, l’attribut et le code sont nommés (TEST-04)',
+        /TEST-04/.test(r1) && /«\s.+\s»/.test(r1), r1.slice(0, 160) || '(aucun refus — la ligne a été conclue, défaut)');
+      /* Disposer sans motif : refusé par le SERVEUR (le champ n'est pas
+         `required`, exprès — un formulaire que le navigateur refuse d'envoyer
+         n'est pas une règle vérifiée, règle 13). */
+      const rangAvant = p.locator('.atelier-liste tbody tr').nth(ligneOuverte);
+      await rangAvant.click();
+      await p.waitForTimeout(200);
+      const formDisp = p.locator('[data-bande-cellules] form[data-disposer]').first();
+      await formDisp.locator('input[name=motif]').fill('   ');
+      await soumettre(formDisp.locator('button[type=submit]'), 1200);
+      const r2 = refus(p) ?? '';
+      dire('refus : disposer une cellule sans motif est REFUSÉ par le serveur (TEST-03), la cellule est nommée',
+        /TEST-03/.test(r2), r2.slice(0, 160) || '(aucun refus — la disposition vide a été acceptée, défaut)');
+      /* La disposition écrite, puis la conclusion : la ligne porte « conclue ». */
+      await p.locator('.atelier-liste tbody tr').nth(ligneOuverte).click();
+      await p.waitForTimeout(200);
+      for (let tour = 0; tour < 8; tour++) {
+        const f = p.locator('[data-bande-cellules] form[data-disposer]').first();
+        if (!(await f.count())) break;
+        await f.locator('input[name=motif]').fill('Écart vu sur la pièce et accepté (démonstration, données synthétiques).');
+        await soumettre(f.locator('button[type=submit]'), 1200);
+        await p.locator('.atelier-liste tbody tr').nth(ligneOuverte).click();
+        await p.waitForTimeout(200);
+      }
+      dire('disposition : chaque cellule non conforme porte désormais son motif, qui, quand',
+        (await compte('[data-bande-cellules] form[data-disposer]')) === 0 && /disposée par|disposed by/.test(await texte()),
+        refus(p) ?? 'dispositions écrites');
+      if (await compte('[data-bande-cellules] tr[data-etat="non_recevable"]')) {
+        await p.keyboard.press('v');
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(600);
+        dire('refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)', /TEST-02/.test(refus(p) ?? ''), refus(p) ?? '');
+      } else {
+        await p.keyboard.press('v');
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(600);
+        await p.locator('.atelier-liste tbody tr').nth(ligneOuverte).click();
+        await p.waitForTimeout(200);
+        dire('conclusion : V conclut la ligne disposée — qui, quand, et le badge « conclue » sur la ligne',
+          !refus(p) && (await compte('[data-bande-cellules] [data-conclusion="oui"]')) === 1 && (await compte('.atelier-liste [data-conclue="oui"]')) >= 1,
+          refus(p) ?? 'ligne conclue');
+      }
+    } else {
+      dire('refus : aucune ligne avec une cellule non conforme à disposer — les refus TEST-03/TEST-04 n’ont pas pu être observés ici', false, 'aucune cellule à disposer');
+    }
+    dire('avertissement : les lignes non conclues sont dites, en avertissement — ce pack ne bloque pas le visa pour autant',
+      (await compte('[data-avertissement-lignes]')) === 1 && /unsupported_sample_items/.test(await texte()), 'avertissement affiché');
+  });
+
   // ── 11bis. L'ÉCART VA À LA SYNTHÈSE EN UN CLIC, ET LA SYNTHÈSE RAMÈNE À LA LIGNE.
   /* ── LE CLAVIER, ÉPROUVÉ. ADR-104 promet « ↑/↓ et Entrée atteste » depuis
      deux tranches, et AUCUN harnais n'avait jamais pressé une touche : un

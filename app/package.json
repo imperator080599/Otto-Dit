@@ -13,6 +13,8 @@
     "deploy:reconstruire": "tsx scripts/deploy/reconstruire.ts",
     "densite": "tsx scripts/mesures/densite.ts",
     "fumee": "tsx scripts/fumee/run.ts",
+    "accept": "tsx scripts/accept/run.ts",
+    "accept:epreuve": "tsx scripts/accept/run.ts --epreuve",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",

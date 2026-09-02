@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { LigneAtelier } from '@/lib/services/workpapers/atelier';
+import type { Grille, Cellule, ConclusionLigne } from '@/lib/services/testing/grille';
 import { useT } from '@/lib/i18n/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 
@@ -24,6 +25,16 @@ const BADGE: Record<LigneAtelier['statut'], string> = {
   a_traiter: 'gray', a_verifier: 'amber', ecart: 'red', complete: 'green',
 };
 
+/* LA COULEUR N'EST JAMAIS SEULE (mandat du jour, règle permanente 10) : chaque
+   état de cellule porte son mot et sa marque, la couleur vient en plus. */
+const ETAT_CELLULE: Record<Cellule['etat'], { badge: string; marque: string }> = {
+  conforme: { badge: 'green', marque: '✓' },
+  hors_tolerance: { badge: 'red', marque: '✗' },
+  non_recevable: { badge: 'red', marque: '⊘' },
+  absent: { badge: 'amber', marque: '?' },
+  sans_ancre: { badge: 'amber', marque: '⌖' },
+};
+
 const CHAMPS_CONNUS = [
   'invoiceNumber', 'invoiceDate', 'totalNetCents', 'totalGrossCents', 'vatCents',
   'buyerName', 'sellerName', 'qtyTotal', 'deliveryDate', 'deliveryNoteNumber', 'invoiceRef',
@@ -40,15 +51,22 @@ function pieceAOuvrir(l: LigneAtelier | undefined): number {
 
 export function Atelier({
   engId, lignes, premierNonFini, itemInitial, colonnes,
-  attester, clarifierLot,
+  grille, cellules, conclusions,
+  attester, clarifierLot, conclure, disposer,
 }: {
   engId: string;
   lignes: LigneAtelier[];
   premierNonFini: string | null;
   itemInitial: string | null;
   colonnes: { champ: string; titre: string }[];
+  /** LA GRILLE (W1) : figée, versionnée ; les cellules par ligne ; la conclusion par ligne. */
+  grille: Grille | null;
+  cellules: Record<string, Cellule[]>;
+  conclusions: Record<string, ConclusionLigne>;
   attester: (fd: FormData) => Promise<void>;
   clarifierLot: (fd: FormData) => Promise<void>;
+  conclure: (fd: FormData) => Promise<void>;
+  disposer: (fd: FormData) => Promise<void>;
 }) {
   const t = useT();
   const nomChamp = (n: string) => (CHAMPS_CONNUS.includes(n) ? t(`atl.champ.${n}` as CleLibelle) : n);
@@ -60,6 +78,10 @@ export function Atelier({
   const [lot, setLot] = useState<Set<string>>(new Set());
   const refListe = useRef<HTMLDivElement>(null);
   const refAttester = useRef<HTMLFormElement>(null);
+  const refConclure = useRef<HTMLFormElement>(null);
+  /* L'ANCRE OUVERTE : la cellule dont le rectangle est dessiné sur la pièce.
+     Elle change avec la ligne — un rectangle d'une autre ligne serait un mensonge. */
+  const [ancreSel, setAncreSel] = useState<string | null>(null);
 
   const sel = lignes.find((l) => l.sampleItemId === selId) ?? null;
   const pieceSel = sel?.evidences[Math.min(pieceOuverte, Math.max(0, (sel?.evidences.length ?? 1) - 1))] ?? null;
@@ -96,7 +118,19 @@ export function Atelier({
   const ouvrirLigne = (l: LigneAtelier) => {
     setSelId(l.sampleItemId);
     setPieceOuverte(pieceAOuvrir(l));
+    setAncreSel(null);
   };
+
+  /* MONTRER UNE CELLULE SUR LA PIÈCE : la pièce de l'ancre s'ouvre (si ce
+     n'est pas celle affichée), et la visionneuse reçoit le fichier avec le
+     rectangle dessiné, à la page de l'ancre. */
+  const montrerAncre = (c: Cellule) => {
+    if (!sel || !c.evidenceId || !c.page) return;
+    const i = sel.evidences.findIndex((e) => e.id === c.evidenceId);
+    if (i >= 0) setPieceOuverte(i);
+    setAncreSel(c.id);
+  };
+  const cellAncre = ancreSel ? (cellules[selId ?? ''] ?? []).find((c) => c.id === ancreSel) ?? null : null;
 
   /* LE CLAVIER : ↑/↓ change de ligne, Entrée atteste la pièce ouverte.
      Dans un champ de saisie, Entrée atteste aussi (le formulaire l'entoure). */
@@ -114,6 +148,11 @@ export function Atelier({
       } else if (e.key === 'Enter' && !dansSaisie && refAttester.current) {
         e.preventDefault();
         refAttester.current.requestSubmit();
+      } else if ((e.key === 'v' || e.key === 'V') && !dansSaisie && !e.ctrlKey && !e.metaKey && refConclure.current) {
+        /* V CONCLUT LA LIGNE — et le refus (TEST-02, TEST-04) s'affiche, nommant
+           l'attribut et le code : le geste est envoyé, le serveur décide. */
+        e.preventDefault();
+        refConclure.current.requestSubmit();
       }
     };
     window.addEventListener('keydown', surTouche);
@@ -143,6 +182,15 @@ export function Atelier({
   };
 
   const extraction = pieceSel?.extraction ?? null;
+  const mesCellules = sel ? (cellules[sel.sampleItemId] ?? []) : [];
+  const conclusion = sel ? (conclusions[sel.sampleItemId] ?? null) : null;
+  /* La source de la visionneuse : la pièce nue, ou la pièce AVEC le rectangle
+     de la cellule ouverte, à sa page. */
+  const srcPiece = pieceSel
+    ? (cellAncre && cellAncre.evidenceId === pieceSel.id && cellAncre.page
+      ? `/api/piece/${pieceSel.id}/ancre?cellule=${cellAncre.id}#page=${cellAncre.page}`
+      : `/api/blob/${pieceSel.id}`)
+    : '';
 
   return (
     <div className="atelier">
@@ -175,6 +223,11 @@ export function Atelier({
                 <td><span className="badge gray" title={t('atl.motifTitre')}>{l.motif}</span></td>
                 <td>
                   <span className={`badge ${BADGE[l.statut]}`}>{t(`atl.statut.${l.statut}` as CleLibelle)}</span>
+                  {conclusions[l.sampleItemId] && (
+                    <span className={`badge ${conclusions[l.sampleItemId].perimee ? 'amber' : 'green'}`} style={{ marginLeft: 4 }} data-conclue={conclusions[l.sampleItemId].perimee ? 'perimee' : 'oui'}>
+                      {conclusions[l.sampleItemId].perimee ? t('atl.badgePerimee') : t('atl.badgeConclue')}
+                    </span>
+                  )}
                   {/* Une lecture en attente reste dite, même sur une ligne en
                       écart : l'écart n'efface pas l'attestation due. */}
                   {l.statut !== 'a_verifier' && l.evidences.some((e) => e.extraction?.statut === 'pending_verify') && (
@@ -222,13 +275,88 @@ export function Atelier({
                 </div>
                 {pieceSel && (
                   <iframe
+                    key={srcPiece}
                     className="piece-vue"
                     title={t('atl.pieceTitre', { nom: pieceSel.filename })}
-                    src={`/api/blob/${pieceSel.id}`}
+                    src={srcPiece}
+                    data-ancre={cellAncre && cellAncre.evidenceId === pieceSel.id ? cellAncre.id : undefined}
                   />
                 )}
               </>
             )}
+
+            {/* LA BANDE DE CELLULES (W1) : une par colonne de la grille figée —
+                attendu, trouvé, delta SIGNÉ, tolérance, état, ancre. Cliquer
+                l'ancre dessine le rectangle sur la pièce, à sa page. */}
+            <div className="bande-cellules mt" data-bande-cellules>
+              <div className="faint" style={{ marginBottom: 4 }}>
+                {grille
+                  ? <>{t('atl.grille.titre', { v: grille.version, n: grille.colonnes.length, quand: grille.figeeLe.slice(0, 10), pack: grille.packId })} · <span className="mono">{t('atl.grille.empreinte', { h: grille.empreinte.slice(0, 10) })}</span></>
+                  : t('atl.grille.absente')}
+              </div>
+              {grille && mesCellules.length === 0 && <p className="muted" data-cellules-aucune>{t('atl.cel.aucune')}</p>}
+              {mesCellules.length > 0 && (
+                <table className="data cellules" title={t('atl.cel.titre')}>
+                  <thead>
+                    <tr>
+                      <th>{t('atl.cel.colAttribut')}</th><th className="num">{t('atl.cel.colAttendu')}</th><th className="num">{t('atl.cel.colTrouve')}</th>
+                      <th className="num">{t('atl.cel.colDelta')}</th><th>{t('atl.cel.colTolerance')}</th><th>{t('atl.cel.colEtat')}</th><th>{t('atl.cel.colAncre')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mesCellules.map((c) => (
+                      <tr key={c.id} data-cellule={c.colonne} data-etat={c.etat} className={ancreSel === c.id ? 'sel' : ''}>
+                        <td>{c.libelle}{c.identite && <span className="faint"> · {t('atl.cel.identite')}</span>}</td>
+                        <td className="num mono">{c.attenduAffiche}</td>
+                        <td className="num mono">{c.trouveAffiche}</td>
+                        <td className="num mono" data-delta>{c.delta ?? '—'}</td>
+                        <td className="faint">{c.tolerance}</td>
+                        <td>
+                          <span className={`badge ${ETAT_CELLULE[c.etat].badge}`}>{ETAT_CELLULE[c.etat].marque} {t(`atl.cel.etat.${c.etat}` as CleLibelle)}</span>
+                          {c.disposition && <div className="faint">{t('atl.cel.disposee', { qui: c.disposition.par, motif: c.disposition.motif })}</div>}
+                          {/* UNE DISPOSITION QUI PORTAIT SUR UNE AUTRE VALEUR ne couvre plus
+                              rien : elle est dite telle quelle, et la cellule se redispose. */}
+                          {c.dispositionPerimee && (
+                            <div className="faint" data-disposition-perimee>
+                              {t('atl.cel.dispositionPerimee', { qui: c.dispositionPerimee.par, motif: c.dispositionPerimee.motif })}
+                            </div>
+                          )}
+                          {!c.disposition && c.etat !== 'conforme' && c.etat !== 'non_recevable' && (
+                            <form action={disposer} className="row" style={{ gap: 4, marginTop: 4 }} data-disposer={c.colonne}>
+                              <input type="hidden" name="engagement_id" value={engId} />
+                              <input type="hidden" name="sample_item_id" value={c.sampleItemId} />
+                              <input type="hidden" name="cell_id" value={c.id} />
+                              <input name="motif" placeholder={t('atl.cel.motifDisposition')} style={{ flex: 1, minWidth: 160 }} />
+                              <button className="btn small secondary" type="submit">{t('atl.cel.disposer')}</button>
+                            </form>
+                          )}
+                          {c.etat === 'non_recevable' && <div className="faint">{t('atl.cel.nonDisposable')}</div>}
+                        </td>
+                        <td>
+                          {c.page && c.evidenceId
+                            ? <button type="button" className="btn small secondary" onClick={() => montrerAncre(c)} data-ancre-page={c.page}>
+                                {ancreSel === c.id ? t('atl.cel.ancreOuverte', { n: c.page }) : t('atl.cel.ancrePage', { n: c.page })}
+                              </button>
+                            : <span className="faint">{t('atl.cel.sansAncre')}</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {grille && (
+                <form action={conclure} ref={refConclure} className="row mt" data-conclure>
+                  <input type="hidden" name="engagement_id" value={engId} />
+                  <input type="hidden" name="sample_item_id" value={sel.sampleItemId} />
+                  <button className="btn small" type="submit" title={t('atl.conclureTitre')}>{t('atl.conclure')}</button>
+                  {conclusion && (
+                    <span className={`badge ${conclusion.perimee ? 'amber' : 'green'}`} data-conclusion={conclusion.perimee ? 'perimee' : 'oui'}>
+                      {t(conclusion.perimee ? 'atl.concluePerimee' : 'atl.conclue', { qui: conclusion.par, quand: conclusion.quand.slice(0, 16) })}
+                    </span>
+                  )}
+                </form>
+              )}
+            </div>
 
             {/* LES CHAMPS RELEVÉS SUR LA PIÈCE OUVERTE, corrigeables au
                 clavier ; Entrée atteste. */}

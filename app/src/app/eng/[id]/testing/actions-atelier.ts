@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/core/auth';
 import { q1 } from '@/lib/db/client';
 import { verifyExtraction } from '@/lib/services/extraction/ladder';
 import { demandeClarificationLignes } from '@/lib/services/requests';
+import { conclureLigne, disposerCellule } from '@/lib/services/testing/grille';
 import type { ExtractedField } from '@/lib/services/extraction/fields';
 import { executer } from '@/app/refus';
 
@@ -41,5 +42,27 @@ export async function clarifierLotAction(fd: FormData): Promise<never> {
     const { user } = await requireMember(engagementId);
     const ids = String(fd.get('lignes') ?? '').split(',').filter(Boolean);
     await demandeClarificationLignes(engagementId, ids, String(fd.get('motif') ?? ''), user.id);
+  });
+}
+
+/* LA GRILLE (W1) : conclure une ligne (touche V) et disposer une cellule sont
+   des ACTES HUMAINS, et leurs refus (TEST-02, TEST-03, TEST-04) voyagent dans
+   `?erreur=` pour que l'écran les dise — jamais en 500. La ligne reste ouverte
+   (`?item=`) : le refus se lit à côté de ce qu'il refuse. */
+export async function conclureAction(fd: FormData): Promise<never> {
+  const engagementId = String(fd.get('engagement_id') ?? '');
+  const item = String(fd.get('sample_item_id') ?? '');
+  return executer(`/eng/${engagementId}/testing${item ? `?item=${item}` : ''}`, async () => {
+    const { user } = await requireMember(engagementId);
+    await conclureLigne(engagementId, item, user.id);
+  });
+}
+
+export async function disposerAction(fd: FormData): Promise<never> {
+  const engagementId = String(fd.get('engagement_id') ?? '');
+  const item = String(fd.get('sample_item_id') ?? '');
+  return executer(`/eng/${engagementId}/testing${item ? `?item=${item}` : ''}`, async () => {
+    const { user } = await requireMember(engagementId);
+    await disposerCellule(engagementId, String(fd.get('cell_id') ?? ''), user.id, String(fd.get('motif') ?? ''));
   });
 }

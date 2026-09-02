@@ -1690,3 +1690,53 @@ famille « achevement » rendue en code sur quatre écrans (`FAMILLES` typée su
 ajoutées) ; client orphelin par le chemin par défaut du formulaire (refusé avant écriture) ;
 `docs/PARCOURS.json` ayant perdu `jamaisConduites` (restauré, `parcours --figer` le conserve, le
 runner dit quand un `--figer` rouge n'a rien figé).
+
+## Mandat du jour (2026-09-02) — livré, reporté, non prouvé
+
+Agent seul toute la journée, aucune question, chaîne verte avant `main`. Le rapport du soir en un
+écran est `docs/SOIR.md` ; la table d'acceptation observée est `docs/ACCEPTATION.md` (locale) et le
+résumé du job `url` de la CI (déployée).
+
+**Livré.**
+
+1. **Colonne vertébrale réduite** — bandes de numéros de migration tenues par un test
+   (`migrations-bandes.test.ts`, `docs/MIGRATIONS_BANDES.md`) ; registre des verdicts de verrou
+   `engagement_lock_verdict` (0042) remplaçant la liste figée de 31 tables, propriété « 0 table sans
+   verdict » ; verdicts du registre des gardes LUS depuis l'exécution (`docs/GARDES_RESULTATS.json`),
+   une garde sans résultat s'écrit SANS RÉSULTAT.
+2. **W0** (ADR-119) — `npm run accept [-- <url>]` : tâches annoncées conduites dans un navigateur
+   contre l'URL déployée, PASS/FAIL observé, capture, horodatage, SHA déclaré par l'instance
+   (`/api/sante` → `sha`) ; `npm run accept:epreuve` (un cas connu mauvais doit être FAIL) ;
+   `npm run fumee -- --repetitions=7 --graine=<s>` : GREEN / INTERMITTENT / RED, graine imprimée ;
+   la CI `url` joue l'épreuve, l'acceptation, et publie captures et table.
+3. **W1** (ADR-120, migration 0050) — la grille FIGÉE par pack (colonnes de la méthode, tolérances
+   du pack, versionnée, empreintée) ; une cellule par ligne et par colonne, delta SIGNÉ toujours
+   imprimé, ancre (pièce, page, rectangle) lue dans la couche texte ; le rectangle dessiné sur la
+   pièce par le serveur (`/api/piece/<id>/ancre`) ; la bande de cellules dans l'atelier, la touche V,
+   les dispositions ; quatre refus tenus en base et prouvés en deux passes (G-13 à G-16 :
+   TEST-01 pas de vert sans ancre, TEST-02 identité qui diverge = preuve non recevable, TEST-03 motif
+   obligatoire, TEST-04 pas de conclusion sans disposition) ; la famille
+   `unsupported_sample_items` en AVERTISSEMENT derrière le drapeau `flags.unsupportedSampleItemsBlocking`
+   (nep-fr : off), fixture appariée ; station cliquée « la grille, les ancres, les refus, la
+   conclusion » ; tâches d'acceptation W1-01 à W1-05.
+
+**Reporté par écrit** (`docs/BACKLOG_REPORTE.md`, section du jour) : S2, S3, S4, S6, S7, S8, S9,
+W2, W3, W4, W5, §4 ; les deux lignes d'acceptation absentes du jeu synthétique (0,4 %, mauvais
+tiers — prouvées par fixtures, pas cliquables sur la démonstration publique qu'on ne re-sème pas) ;
+le commutateur de langue (n'existe pas) ; la signature du BL non relevée ; TEST-01 sans chemin
+cliquable.
+
+**Non prouvé, dit tel quel** : l'isolation entre cabinets est INERTE en production (rôle
+`postgres`, BYPASSRLS — S2 reporté) ; le harnais d'acceptation n'a pas pu être conduit depuis le
+bac à sable de l'agent contre l'URL déployée (CONNECT refusé par la politique réseau) — les
+verdicts déployés sont ceux de la CI ; TEST-01 n'a pas de refus observé par un clic ; l'erreur
+d'hydratation #418 n'est ni reproduite ni expliquée.
+
+## Reçu en cours de journée (2026-09-02) — analyse concurrentielle Optro
+
+Inscrite au registre (`docs/REGISTRE_IDEES.md` §H) : le CRITÈRE D'ADMISSION de toute idée
+(« aide-t-elle un auditeur indépendant à produire un dossier qui survivra à une inspection ? »),
+ce que nous ne devenons pas (GRC), ce qui est à creuser (le dossier, le refus, l'IPE, la chaîne de
+preuve jusqu'à la cellule, le multi-pack, le portail à l'auditeur), le positionnement SOX côté
+auditeur externe, et les six points H-1 à H-6 pour la suite — le mandat du jour ne change pas.
+

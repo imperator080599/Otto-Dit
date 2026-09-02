@@ -4,3 +4,4 @@ tsconfig.tsbuildinfo
 .env.local
 .env.*.local
 .visuel/
+.acceptation/

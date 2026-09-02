@@ -255,6 +255,18 @@ Le clavier n'est plus seulement promis : le parcours cliqué **presse les touche
 ligne, ↑ revient, Entrée atteste — parce qu'un geste annoncé que personne n'exerce est une
 affirmation, pas une preuve.
 
+**La grille (ADR-120).** Sous la pièce, la **bande de cellules** : une par colonne de la grille
+figée au pack (montant HT, date de facture, client facturé, numéro de pièce ; quantité livrée,
+date de livraison, signature quand un bon de livraison est requis) — attendu, trouvé, **delta
+signé** (« +1 800,00 € », « −22 », « +6 j », ou « 0 » : jamais omis), tolérance, état en toutes
+lettres. Cliquez « p. 1 — montrer » : la pièce se rouvre **avec le rectangle** dessiné à l'endroit
+de la valeur. Appuyez sur **V** : la ligne se conclut — ou le refus vous dit **quel attribut** et
+**quel code** (TEST-04 : une cellule non conforme sans disposition ; TEST-02 : un tiers ou un
+numéro de pièce qui diverge, la preuve n'est pas recevable et ne se dispose pas). Disposez une
+cellule **sans motif** : refusé (TEST-03) ; avec un motif, elle porte qui et quand, et V passe.
+Les lignes non conclues sont dites en **avertissement** au-dessus de la liste — ce pack ne bloque
+pas le visa pour autant.
+
 ### 9 ter. L'échelle d'extraction — et ce qui est REJOUÉ dans cette démonstration
 
 **À dire, mot pour mot, à ce moment-là** : « Ce que vous voyez ici est en partie rejoué. Les deux

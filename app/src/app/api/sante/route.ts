@@ -170,6 +170,9 @@ export async function GET() {
   const cassees = lectures.filter((l) => !l.ok);
   return NextResponse.json({
     instance: { base: dbKind(), demoPublique: demoPublique() },
+    /* LE SHA QUE CETTE INSTANCE FAIT TOURNER — pour que l'acceptation cliquée
+       (scripts/accept) cite ce qui tourne, jamais ce qu'elle a sous la main. */
+    sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
     verdict: cassees.length === 0 ? 'toutes les lectures passent' : `${cassees.length} lecture(s) CASSÉE(S)`,
     lectures,
   }, { status: cassees.length === 0 ? 200 : 500 });

@@ -11,6 +11,9 @@ import { obstaclesAchevement } from './completion';
 import { obstaclesProcessus } from './processus';
 import { obstaclesEntretiens } from './entretiens';
 import { motif, type Motif } from './motif';
+import { lignesNonConclues } from './testing/grille';
+import { frameworkSet } from './fsli';
+import { primaryPack } from '@/lib/packs';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -158,6 +161,14 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
   const gate = await conclusionGate(engagementId);
   if (!gate.ok) ajoute('evaluation', gate.blockers.map((b) => motif('obst.evaluation', { quoi: blockerText(b, 'en') })));
 
+  /* 8 bis. LES LIGNES DE L'ÉCHANTILLON NON CONCLUES DANS L'ATELIER (W1) —
+     famille `unsupported_sample_items`. Elle ne BLOQUE que si le pack le
+     déclare (drapeau `flags.unsupportedSampleItemsBlocking`) ; sinon elle est
+     un avertissement, lu par `avertissementsAuVisa`, affiché dans l'atelier.
+     Une famille neuve naît en avertissement : une démonstration insignable
+     détruit le seul dossier que le fondateur ouvrira. */
+  if (await familleLignesBloquante(engagementId)) ajoute('programme', await obstaclesLignes(engagementId));
+
   // 9. L'achèvement — les travaux qu'un inspecteur regarde en premier après coup.
   ajoute('achevement', await obstaclesAchevement(engagementId));
 
@@ -183,6 +194,29 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
   ajoute('jalons', retard.map((j) => motif('obst.jalonEnRetard', { libelle: j.label, date: j.due_date ?? '' })));
 
   return out;
+}
+
+async function familleLignesBloquante(engagementId: string): Promise<boolean> {
+  const fs = await frameworkSet(engagementId);
+  return primaryPack(fs as never).flags?.unsupportedSampleItemsBlocking === true;
+}
+
+/** Les motifs de la famille `unsupported_sample_items` — vides quand tout est conclu. */
+export async function obstaclesLignes(engagementId: string): Promise<Motif[]> {
+  const l = await lignesNonConclues(engagementId);
+  const out: Motif[] = [];
+  if (l.nonConclues > 0) out.push(motif('obst.lignesNonConclues', { n: l.nonConclues, total: l.total }));
+  if (l.perimees > 0) out.push(motif('obst.lignesConclusionPerimee', { n: l.perimees }));
+  return out;
+}
+
+/**
+ * Les AVERTISSEMENTS au visa : ce qui serait un obstacle si le pack le
+ * déclarait bloquant — dit à l'écran, jamais compté comme obstacle.
+ */
+export async function avertissementsAuVisa(engagementId: string): Promise<Obstacle[]> {
+  if (await familleLignesBloquante(engagementId)) return [];
+  return (await obstaclesLignes(engagementId)).map((m) => ({ famille: 'programme' as const, motif: m, ou: OU.programme }));
 }
 
 /** Le compte par famille, pour l'afficher sans relire la liste. */

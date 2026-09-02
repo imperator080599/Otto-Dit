@@ -156,6 +156,11 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
     const publique = process.env.OTTO_DEMO_PUBLIC === '1' || process.env.VERCEL === '1';
     const lienDemo = (pattern === '/demo/[qui]' || pattern === '/api/sante'
       || pattern === '/api/erreur' || pattern === '/demo/remise-a-zero') && !publique;
+    /* LA PIÈCE ANCRÉE exige une cellule (`?cellule=`) que l'URL du motif ne
+       porte pas : sans elle, 400 — déclaré, pour qu'un 200 (un PDF sans
+       rectangle rendu comme si de rien n'était) échoue. Le rectangle lui-même
+       est prouvé par le parcours cliqué, qui passe par une vraie cellule. */
+    const ancreSansCellule = pattern === '/api/piece/[evidenceId]/ancre';
     pretes.push({
       pattern, url, kind,
       // Le portail client est une surface ANONYME : l'ouvrir avec le cookie
@@ -166,6 +171,9 @@ export async function routes(): Promise<{ pretes: Route[]; nonResolues: string[]
         : {}),
       ...(lienDemo
         ? { attendu: 404, pourquoi: 'n\'existe que sur la démo publique (demoPublique)' }
+        : {}),
+      ...(ancreSansCellule
+        ? { attendu: 400, pourquoi: 'la pièce ancrée exige ?cellule= ; le rectangle est prouvé par le parcours cliqué' }
         : {}),
     });
   }

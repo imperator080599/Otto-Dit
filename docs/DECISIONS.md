@@ -4398,3 +4398,78 @@ auxiliaire n'est pas un `import_file` mais une pièce (`aux_balance_file` → ev
 peut la désigner par `evidence_id`, et le critère « importer la balance âgée » du plan se joue sur
 le grand livre importé ; l'inventaire des applications informatiques ; le format de date du panneau
 IPE (AAAA-MM-JJ, hérité de 0031, à aligner sur jj/mm/aaaa).
+
+## ADR-119 — L'acceptation se clique contre l'URL déployée, et le balayage se répète avec une graine imprimée (mandat du jour, W0)
+
+**Contexte.** Le parcours cliqué (`npm run clics`) prouve le produit sur un build local et une base
+semée à l'instant. Il ne prouve pas l'instance que le fondateur ouvre le soir. Le balayage de
+fumée distant OUVRE les écrans déployés ; il n'y AGIT pas, et il ne passe qu'une fois — une route
+qui tombe une fois sur sept est verte six fois sur sept.
+
+**Décision.** (1) `scripts/accept` : une liste de TÂCHES annoncées (une fonction par tâche, qui
+lève avec la raison), conduites dans un navigateur contre l'URL donnée (par défaut
+`https://otto-dit.vercel.app`), sous l'identité du préparateur, sur le premier dossier de l'accueil ;
+pour chacune un verdict OBSERVÉ (PASS/FAIL), l'horodatage, une capture, et le SHA que l'instance
+déclare elle-même (`/api/sante` porte désormais `sha`, `VERCEL_GIT_COMMIT_SHA`). Une exception du
+navigateur pendant une tâche la met en FAIL. Le rapport est une table (`docs/ACCEPTATION.md` en
+local, le résumé du job en CI). (2) `--epreuve` conduit un cas CONNU MAUVAIS (un écran qui n'existe
+pas) et n'est vert que si le harnais l'a déclaré FAIL (règle 17). (3) Le balayage de fumée accepte
+`--repetitions=n --graine=s` : n passages dans un ordre mélangé par une graine DÉTERMINISTE (mulberry32)
+imprimée dans le rapport ; chaque route est classée GREEN, INTERMITTENT ou RED ; une intermittence
+est un échec. La CI le lance sept fois, graine = numéro de run. (4) Le job `url` de la CI installe
+Chromium, joue l'épreuve, joue l'acceptation, publie la table dans le résumé et les captures en
+artefact.
+
+**Conséquences.** Le rapport du soir cite ces verdicts, jamais une intention. Ce que le harnais ne
+prouve pas est écrit dans son en-tête : une identité, un dossier, ni visa ni scellé ni isolation
+entre cabinets. Limite constatée le jour même : le bac à sable de l'agent ne peut pas atteindre
+l'URL déployée (CONNECT refusé par la politique réseau) — la table déployée vient de la CI, pas de
+l'agent ; en local, le harnais se prouve contre un `next start` de production.
+
+## ADR-120 — L'atelier de test : une grille figée par pack, des cellules ancrées, un delta signé, quatre refus tenus en base (migration 0050, mandat du jour, W1)
+
+**Contexte.** Le vouching écrivait ses contrôles dans `match.checks`, un tableau JSON par ligne
+(« pass » ou pas), et l'écran les résumait en une phrase. Rien ne disait OÙ, sur la pièce, se lit
+la valeur comparée ; un montant dans la tolérance ne montrait pas son écart ; une ligne se
+« complétait » sans qu'une personne l'ait conclue ; et un tiers différent sur la facture n'était
+qu'un contrôle rouge parmi d'autres, disposable comme un écart de montant.
+
+**Décision.** (1) `test_grid` : la grille est FIGÉE par pack — ses colonnes sont les champs des
+justificatifs du cycle CA de la procédure DETAIL de la méthode du cabinet (`procedures.json`), avec
+les tolérances du pack (`substantive.tolerances`) ; versionnée, empreintée ; une version neuve
+seulement si les colonnes commandées changent ; du CONTENU, donc les mêmes colonnes quelle que soit
+la langue de l'écran. (2) `test_cell` : une cellule par ligne et par colonne applicable — attendu
+(grand livre, exercice, règle), trouvé (pièce), delta SIGNÉ toujours imprimé quand il y a
+comparaison (centimes, jours, unités), tolérance, état (`conforme`, `hors_tolerance`,
+`non_recevable`, `absent`, `sans_ancre`), et l'ANCRE : pièce, page, rectangle en points PDF, champ.
+Les rectangles viennent de la couche texte (unpdf → pdf.js, éléments avec matrice et largeur),
+libellé par colonne ; une pièce sans couche texte n'a pas d'ancre. Le calcul est déterministe
+(P4), idempotent (la cellule garde son identité, donc sa disposition), tracé (`engine_run`,
+`event_log`). (3) Les refus, chacun tenu par UN objet SQL, au registre des gardes, prouvés en deux
+passes : TEST-01 pas de vert sans ancre (`test_cell_green_needs_anchor`, G-13) ; TEST-02 un
+attribut d'IDENTITÉ (tiers, numéro de pièce) qui diverge rend la preuve NON RECEVABLE — la ligne ne
+se conclut pas et la cellule ne se dispose pas (`test_line_conclusion_1_identity`, G-14) ; TEST-03
+une disposition porte un motif écrit (`cell_disposition_has_reason`, G-15) ; TEST-04 une ligne dont
+une cellule est hors tolérance, absente ou sans ancre ne se conclut pas sans disposition, ni une
+ligne sans cellule (`test_line_conclusion_2_cells`, G-16). L'identité tire avant les cellules
+(ordre alphabétique des déclencheurs, nommé exprès). Le service nomme l'attribut et le code AVANT
+la base, pour que l'écran parle. (4) `cell_disposition` et `test_line_conclusion` : les actes
+humains (plafond L2) — motif, qui, quand ; la conclusion signe l'EMPREINTE des cellules, et une
+cellule qui change ensuite la rend PÉRIMÉE à l'écran (jamais effacée en silence). (5) L'écran : la
+bande de cellules sous la pièce, dans le panneau de droite ; cliquer une ancre ouvre la pièce AVEC
+le rectangle dessiné côté serveur par pdf-lib (`/api/piece/<id>/ancre?cellule=`), à sa page ; la
+touche V conclut ; l'état est un mot et une marque, jamais une couleur seule. (6) La famille
+`unsupported_sample_items` (lignes non conclues) naît en AVERTISSEMENT derrière un drapeau de pack
+(`flags.unsupportedSampleItemsBlocking`, `false` dans nep-fr) : dite dans l'atelier, jamais comptée
+comme obstacle ; fixture appariée (dossier sans échantillon : rien). Les quatre tables portent la
+garde de verrou et un verdict « garde » au registre 0042, RLS activée et forcée.
+
+**Conséquences.** `match.checks` reste (le vouching et les exceptions en dépendent) ; la grille est
+la lecture par attribut, et une même action (« Lancer le vouching ») tient les deux à jour. Reporté
+(docs/BACKLOG_REPORTE.md) : les deux lignes d'acceptation du mandat qui n'existent pas dans le jeu
+synthétique (un montant à 0,4 %, un mauvais tiers) — prouvées par fixtures appariées, pas cliquables
+sur la démonstration publique qu'on ne re-sème pas ; la signature du bon de livraison, non relevée
+par l'extraction (cellule « absente », à disposer) ; TEST-01 n'a pas de chemin cliquable (aucun écran
+ne peut demander un vert sans ancre) — prouvé en deux passes seulement ; le papier de travail ne
+cite pas encore les cellules (W2).
+

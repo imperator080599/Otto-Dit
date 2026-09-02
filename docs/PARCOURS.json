@@ -317,6 +317,66 @@
       "gabarit": false
     },
     {
+      "nom": "grille : le calcul est accepté (grille figée v1, cellules posées)",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : l’en-tête dit la version, le nombre de colonnes, le pack et l’empreinte",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : une ligne montre sa bande de cellules à droite, sous la pièce — avec un delta signé et une ancre",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : chaque cellule comparée imprime un delta SIGNÉ (+, − ou 0), jamais une valeur absolue nue — et il y en a",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : l’état est un mot et une marque, jamais une couleur seule",
+      "gabarit": false
+    },
+    {
+      "nom": "ancre : la visionneuse ouvre la pièce AVEC le rectangle, à la page de l’ancre",
+      "gabarit": false
+    },
+    {
+      "nom": "ancre : le PDF rendu porte le rectangle à l’abscisse de l’ancre (opérateur re), et la pièce nue ne le porte pas",
+      "gabarit": false
+    },
+    {
+      "nom": "ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : V sur une ligne dont une cellule n’est pas conforme est REFUSÉ, l’attribut et le code sont nommés (TEST-04)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : disposer une cellule sans motif est REFUSÉ par le serveur (TEST-03), la cellule est nommée",
+      "gabarit": false
+    },
+    {
+      "nom": "disposition : chaque cellule non conforme porte désormais son motif, qui, quand",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)",
+      "gabarit": false
+    },
+    {
+      "nom": "conclusion : V conclut la ligne disposée — qui, quand, et le badge « conclue » sur la ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : aucune ligne avec une cellule non conforme à disposer — les refus TEST-03/TEST-04 n’ont pas pu être observés ici",
+      "gabarit": false
+    },
+    {
+      "nom": "avertissement : les lignes non conclues sont dites, en avertissement — ce pack ne bloque pas le visa pour autant",
+      "gabarit": false
+    },
+    {
       "nom": "atelier clavier : au moins deux lignes à parcourir",
       "gabarit": false
     },
@@ -1051,6 +1111,54 @@
       "gabarit": false
     },
     {
+      "nom": "grille : le calcul est accepté (grille figée v1, cellules posées)",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : l’en-tête dit la version, le nombre de colonnes, le pack et l’empreinte",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : une ligne montre sa bande de cellules à droite, sous la pièce — avec un delta signé et une ancre",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : chaque cellule comparée imprime un delta SIGNÉ (+, − ou 0), jamais une valeur absolue nue — et il y en a",
+      "gabarit": false
+    },
+    {
+      "nom": "grille : l’état est un mot et une marque, jamais une couleur seule",
+      "gabarit": false
+    },
+    {
+      "nom": "ancre : la visionneuse ouvre la pièce AVEC le rectangle, à la page de l’ancre",
+      "gabarit": false
+    },
+    {
+      "nom": "ancre : le PDF rendu porte le rectangle à l’abscisse de l’ancre (opérateur re), et la pièce nue ne le porte pas",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : V sur une ligne dont une cellule n’est pas conforme est REFUSÉ, l’attribut et le code sont nommés (TEST-04)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : disposer une cellule sans motif est REFUSÉ par le serveur (TEST-03), la cellule est nommée",
+      "gabarit": false
+    },
+    {
+      "nom": "disposition : chaque cellule non conforme porte désormais son motif, qui, quand",
+      "gabarit": false
+    },
+    {
+      "nom": "conclusion : V conclut la ligne disposée — qui, quand, et le badge « conclue » sur la ligne",
+      "gabarit": false
+    },
+    {
+      "nom": "avertissement : les lignes non conclues sont dites, en avertissement — ce pack ne bloque pas le visa pour autant",
+      "gabarit": false
+    },
+    {
       "nom": "atelier : la flèche BAS change de ligne, sans toucher la souris",
       "gabarit": false
     },
@@ -1438,6 +1546,9 @@
     "risque : une réponse au questionnaire ne s’enregistre pas",
     "risque : la réponse au questionnaire est REFUSÉE",
     "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
+    "ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)",
+    "refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)",
+    "refus : aucune ligne avec une cellule non conforme à disposer — les refus TEST-03/TEST-04 n’ont pas pu être observés ici",
     "atelier clavier : au moins deux lignes à parcourir",
     "atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne",
     "atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer",

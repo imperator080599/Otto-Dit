@@ -34,6 +34,18 @@ const ERREURS: RegExp[] = [
 
 interface Resultat { route: string; url: string; statut: number; verdict: 'ok' | 'ÉCHEC'; detail: string; titre?: string }
 
+/** Un mélange DÉTERMINISTE (mulberry32 sur la graine) : la même graine rejoue
+ *  le même ordre — une intermittence trouvée se retrouve. */
+function melanger<T>(items: T[], graine: string): T[] {
+  let h = 1779033703 ^ graine.length;
+  for (let i = 0; i < graine.length; i++) { h = Math.imul(h ^ graine.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  let a = h >>> 0;
+  const alea = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const out = items.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(alea() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+}
+
 function lancerServeur(port: number): ChildProcess {
   const next = binaireDe('next', process.cwd());
   if (!next) throw new Error('next absent de node_modules — npm install dans app/');
@@ -80,6 +92,12 @@ async function main() {
      en silence est le défaut que ce harnais existe pour attraper. */
   const rapportArg = args.find((a) => a.startsWith('--rapport='))?.slice('--rapport='.length) ?? null;
   const minimum = Number(args.find((a) => a.startsWith('--minimum='))?.slice('--minimum='.length) ?? '0');
+  /* --repetitions=<n> --graine=<s> : le balayage est REJOUÉ n fois, dans un
+     ordre mélangé par une graine IMPRIMÉE (mandat du jour, W0). Une route qui
+     tombe une fois sur sept n'est ni verte ni rouge : elle est INTERMITTENTE,
+     et c'est ce mot-là qui doit apparaître — un seul passage vert la cache. */
+  const repetitions = Math.max(1, Number(args.find((a) => a.startsWith('--repetitions='))?.slice('--repetitions='.length) ?? '1'));
+  const graine = args.find((a) => a.startsWith('--graine='))?.slice('--graine='.length) ?? String(Date.now() % 1000000);
 
   let serveur: ChildProcess | null = null;
   let base = urlArg ?? '';
@@ -155,10 +173,15 @@ async function main() {
       .map((m) => m[1]).find((x) => x !== engId);
     if (autreEng) vals.cid = await depuis(`/eng/${autreEng}/rcm`, /href="\/eng\/[0-9a-f-]{36}\/rcm\/([0-9a-f-]{36})/);
 
-    /* 3. LE BALAYAGE. */
+    /* 3. LE BALAYAGE — n passages, chacun dans un ordre tiré de la graine. */
     const resultats: Resultat[] = [];
     const nonResolues: string[] = [];
-    for (const { pattern, kind } of motifs()) {
+    /** Par route : les verdicts de chaque passage, pour classer GREEN / INTERMITTENT / RED. */
+    const passages = new Map<string, ('ok' | 'ÉCHEC')[]>();
+    const inventaire = motifs();
+    for (let passe = 0; passe < repetitions; passe++) {
+    const ordre = melanger(inventaire, `${graine}:${passe}`);
+    for (const { pattern, kind } of ordre) {
       const manquants: string[] = [];
       const chemin = pattern.replace(/\[(\.\.\.)?([^\]]+)\]/g, (_m, _s, nom: string) => {
         const v = vals[nom];
@@ -177,7 +200,9 @@ async function main() {
       /* UN 200 VIDE N'EST PAS UN ÉCRAN : on exige que le corps, balises ôtées,
          porte assez de texte pour être lu par un humain. */
       const texte = corps.replace(/<(script|style|noscript)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      const attendu = pattern === '/api/archive/[engagementId]' ? [200, 404] : [200];
+      const attendu = pattern === '/api/archive/[engagementId]' ? [200, 404]
+        /* La pièce ancrée exige ?cellule= (400 sans elle) — voir screens/routes.ts. */
+        : pattern === '/api/piece/[evidenceId]/ancre' ? [400] : [200];
       let verdict: 'ok' | 'ÉCHEC' = 'ok';
       let detail = `${(corps.length / 1024).toFixed(0)} ko`;
       if (!attendu.includes(statut)) { verdict = 'ÉCHEC'; detail = `statut ${statut} (attendu ${attendu.join(' ou ')})`; }
@@ -186,13 +211,37 @@ async function main() {
       else if (kind === 'page' && titre404) { verdict = 'ÉCHEC'; detail = `200 avec le titre du gabarit 404 (« ${titre} »)`; }
       else if (kind === 'page' && !entete) { verdict = 'ÉCHEC'; detail = '200 sans en-tête — un écran qui ne rend rien n\'est pas un écran'; }
       else if (kind === 'page' && texte.length < 200) { verdict = 'ÉCHEC'; detail = `200 quasi vide (${texte.length} caractères de texte)`; }
-      resultats.push({ route: pattern, url: chemin, statut, verdict, detail, titre });
+      passages.set(pattern, [...(passages.get(pattern) ?? []), verdict]);
+      /* Le tableau garde UNE ligne par route : le premier passage, remplacé par
+         un passage en échec s'il en survient un — le détail d'un échec vaut
+         plus qu'un ok. */
+      const deja = resultats.findIndex((r) => r.route === pattern);
+      const ligne = { route: pattern, url: chemin, statut, verdict, detail, titre };
+      if (deja < 0) resultats.push(ligne);
+      else if (verdict === 'ÉCHEC' && resultats[deja].verdict === 'ok') resultats[deja] = ligne;
     }
+    if (repetitions > 1) console.log(`  passage ${passe + 1}/${repetitions} fait`);
+    }
+    /* La non-résolution est la même à chaque passage : on la dit une fois. */
+    const nonResoluesUniques = [...new Set(nonResolues)];
+    nonResolues.length = 0; nonResolues.push(...nonResoluesUniques);
+    const classe = (route: string): 'GREEN' | 'INTERMITTENT' | 'RED' => {
+      const v = passages.get(route) ?? [];
+      const echecs = v.filter((x) => x === 'ÉCHEC').length;
+      return echecs === 0 ? 'GREEN' : echecs === v.length ? 'RED' : 'INTERMITTENT';
+    };
 
     const echecs = resultats.filter((r) => r.verdict === 'ÉCHEC');
+    const intermittentes = resultats.filter((r) => classe(r.route) === 'INTERMITTENT');
     for (const r of resultats) {
-      if (r.verdict === 'ÉCHEC') console.log(`  ÉCHEC  ${r.route}\n         ${r.detail}`);
-      else console.log(`  ok     ${r.route.padEnd(40)} ${r.statut}  ${r.titre ? `« ${r.titre.slice(0, 60)} »` : ''}`);
+      const cl = repetitions > 1 ? ` ${classe(r.route)}` : '';
+      if (r.verdict === 'ÉCHEC') console.log(`  ÉCHEC  ${r.route}${cl}\n         ${r.detail}`);
+      else console.log(`  ok     ${r.route.padEnd(40)} ${r.statut}${cl}  ${r.titre ? `« ${r.titre.slice(0, 60)} »` : ''}`);
+    }
+    if (repetitions > 1) {
+      console.log(`\n  ${repetitions} passages · graine ${graine} · `
+        + `${resultats.filter((r) => classe(r.route) === 'GREEN').length} GREEN · ${intermittentes.length} INTERMITTENT · `
+        + `${resultats.filter((r) => classe(r.route) === 'RED').length} RED`);
     }
     if (nonResolues.length) {
       console.log(`\n  non résolues (aucun objet de ce type sur l'instance) : ${nonResolues.join(' · ')}`);
@@ -206,10 +255,12 @@ async function main() {
       const md = [
         `# Balayage de fumée — ${base}`, '',
         `${resultats.length} route(s) ouvertes · **${echecs.length} échec(s)**`
+          + (repetitions > 1 ? ` · ${repetitions} passages, graine \`${graine}\` · **${intermittentes.length} INTERMITTENT**` : '')
           + (tropPeu ? ` · **inventaire trop court : ${resultats.length} < ${minimum}**` : '')
           + ` · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`, '',
-        '| route | statut | titre | verdict |', '|---|---|---|---|',
-        ...resultats.map((r) => `| \`${r.route}\` | ${r.statut} | ${r.titre ? r.titre.replace(/\|/g, '¦').slice(0, 70) : '—'} | ${r.verdict === 'ok' ? 'ok' : `**ÉCHEC** — ${r.detail}`} |`),
+        '| route | statut | titre | verdict |' + (repetitions > 1 ? ' classe |' : ''), '|---|---|---|---|' + (repetitions > 1 ? '---|' : ''),
+        ...resultats.map((r) => `| \`${r.route}\` | ${r.statut} | ${r.titre ? r.titre.replace(/\|/g, '¦').slice(0, 70) : '—'} | ${r.verdict === 'ok' ? 'ok' : `**ÉCHEC** — ${r.detail}`} |`
+          + (repetitions > 1 ? ` ${classe(r.route) === 'GREEN' ? 'GREEN' : `**${classe(r.route)}**`} |` : '')),
         ...(nonResolues.length ? ['', `Non résolues (aucun objet de ce type sur l'instance) : ${nonResolues.join(' · ')}`] : []),
         '',
       ].join('\n');

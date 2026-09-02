@@ -17,7 +17,8 @@ import { depenseCumuleeUsd, plafondUsd } from '@/lib/services/extraction/budget'
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
 import { Atelier } from './atelier';
-import { attesterAction, clarifierLotAction } from './actions-atelier';
+import { attesterAction, clarifierLotAction, conclureAction, disposerAction } from './actions-atelier';
+import { calculerGrille, cellulesDuDossier, lignesNonConclues } from '@/lib/services/testing/grille';
 import { tr } from '@/lib/i18n';
 
 export default async function TestingPage({
@@ -33,6 +34,11 @@ export default async function TestingPage({
   /* L'ATELIER (ADR-104) : chaque ligne avec sa pièce, sa comparaison, son
      motif, sa provenance, et la ligne de papier qu'elle produira. */
   const { lignes, premierNonFini } = await lignesAtelier(id);
+  /* LA GRILLE (W1) : les cellules de chaque ligne, la conclusion de chaque
+     ligne, et l'avertissement sur les lignes non conclues (famille en
+     avertissement, drapeau de pack à off). */
+  const { grille, cellules, conclusions } = await cellulesDuDossier(id);
+  const nonConclues = grille ? await lignesNonConclues(id) : { total: 0, nonConclues: 0, perimees: 0 };
   /* LE COMPTEUR SUIT L'ÉCHANTILLON, pas le dossier entier : une extraction en
      attente sur une pièce dont la ligne a QUITTÉ le tirage (re-tirage après
      grand livre définitif) n'est l'obligation de personne — un badge qui
@@ -66,8 +72,19 @@ export default async function TestingPage({
     return executer(`/eng/${id}/testing`, async () => {
       const { user } = await requireMember(id);
       await runMatching(id, user.id);
+      /* Le vouching et la grille lisent les MÊMES pièces : une seule action
+         les tient à jour ensemble — deux boutons finiraient par diverger. */
+      await calculerGrille(id, user.id);
       revalidatePath(`/eng/${id}/testing`);
       revalidatePath(`/eng/${id}/exceptions`);
+    });
+  }
+  async function grilleAction() {
+    'use server';
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await calculerGrille(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
     });
   }
   async function startVerifRun() {
@@ -133,6 +150,7 @@ export default async function TestingPage({
           <span className="row">
             <form action={extractAction}><button className="btn secondary">{t('test.runExtractionLadder')}</button></form>
             <form action={matchAction}><button className="btn">{t('test.runVouchingL0')}</button></form>
+            <form action={grilleAction}><button className="btn secondary" data-grille-calculer>{t('atl.grille.calculer')}</button></form>
           </span>
         </div>
         {(process.env.OTTO_OCR_ADAPTER ?? 'mock') === 'anthropic' && (
@@ -170,14 +188,24 @@ export default async function TestingPage({
           {t('test.theSampleLineByLine')}{' '}
           {pending.length > 0 && <span className="badge amber">{pending.length} {t('test.toAttest')}</span>}
         </h2>
+        {nonConclues.nonConclues > 0 && (
+          <p className="callout warn" data-avertissement-lignes>
+            {t('atl.avertissementLignes', { n: nonConclues.nonConclues, total: nonConclues.total })}
+          </p>
+        )}
         <Atelier
           engId={id}
           lignes={lignes}
           premierNonFini={premierNonFini}
           itemInitial={item ?? null}
           colonnes={colonnesEch}
+          grille={grille}
+          cellules={cellules}
+          conclusions={conclusions}
           attester={attesterAction}
           clarifierLot={clarifierLotAction}
+          conclure={conclureAction}
+          disposer={disposerAction}
         />
       </div>
 

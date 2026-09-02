@@ -36,6 +36,10 @@ export const nepFr: AssurancePack = {
     seedDefault: 'otto-demo-rev-1',
     tolerances: { amountAbs: 1, amountPct: 0.005, dateDays: 5, pricePct: 0.01, qtyAbs: 0 },
   },
+  /* La famille `unsupported_sample_items` (lignes de l'échantillon non
+     conclues dans l'atelier) est un AVERTISSEMENT : elle ne bloque pas le
+     visa tant que ce drapeau reste à false (mandat du jour, W1). */
+  flags: { unsupportedSampleItemsBlocking: false },
   exceptionTaxonomy: [
     { code: 'amount_mismatch', label: { fr: 'Écart de montant', en: 'Amount mismatch' } },
     { code: 'price_mismatch', label: { fr: 'Écart de prix unitaire', en: 'Unit price mismatch' } },

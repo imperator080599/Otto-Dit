@@ -49,3 +49,29 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 | L'erreur d'hydratation React #418, intermittente | Vue deux fois sur cinq parcours de nuit, sur deux écrans différents (écarts, papier), jamais au même endroit ; le harnais la compte en échec, à raison. Aucune hypothèse n'a été prouvée (le rail ne lit pas localStorage au rendu initial — vérifié) ; l'ADR-094 post-scriptum l'avait attribuée à l'attente après action serveur. À instrumenter en développement (build non minifié) avant de conclure. |
 | Trente et une tables à `engagement_id` sans garde de verrou (liste figée dans gardes.test.ts) | 0003 n'en posait que sur dix-neuf tables ; chaque migration depuis en a créé d'autres. Les garder toutes à l'aveugle a fait échouer la CLÔTURE du parcours (le journal et l'archive s'écrivent après le scellé). Le tri — lesquelles sont de la documentation à sceller, lesquelles s'écrivent après — se fait de jour, table par table ; d'ici là toute table NOUVELLE doit être gardée ou inscrite avec sa raison. |
 | `exception_quantified_needs_disposition`, retirée en 0037 | Inerte depuis 0009 (CHECK à NULL satisfait), puis recouverte par la résolution probante même réécrite : aucune attaque ne l'atteint seule. L'invariant vit dans G-05. Si un jour une résolution sans disposition devait être permise pour un écart NON chiffré, la contrainte reviendrait — avec son épreuve. |
+
+## Reporté par le mandat du jour (2026-09-02) — un seul agent, W1 d'abord
+
+| Reporté | Pourquoi l'exclusion tient |
+|---|---|
+| S2 — rôle `otto_app` sans BYPASSRLS (0040) | Changer le rôle sous lequel tourne l'application le jour où l'on livre W1 : une fuite ou une page 500 silencieuse sur l'URL que le fondateur ouvre le soir. Reste vrai : l'isolation entre cabinets est INERTE en production (rôle `postgres`, ADR-115 ; garde G-20 seule à l'écriture). |
+| S3 — `row_version` et verrou optimiste (0041) | Aucun écran n'écrit à deux mains aujourd'hui ; un compteur que rien ne lit est un objet sans chemin (règle 13). |
+| S4 — les emplacements de mise en page | Purement visuel ; rien ne devient cliquable. |
+| S6 — machine à états de l'import (0043/0044) | L'import définitif fonctionne et le parcours le conduit ; refaire ses états sans besoin exprimé est une réécriture. |
+| S7 — ancrage des dérivés (0045) | Dépend de S3. |
+| S8 — moteur de visa (0046) | Un seul moteur existe et il est cliqué ; le refaire est le R4 de la nuit. |
+| S9 — `withTenant` (0047) | Dépend de S2 ; sans rôle sans BYPASSRLS, un `set local` que rien n'applique est du silence. |
+| W2 — gabarits de papier citant les cellules | La grille existe et se lit ; la faire citer par le papier est la tranche suivante. Le papier cite toujours `match.checks`. |
+| W3 — visa/revue/conflit | R4 de la nuit ; un moteur, cliqué. |
+| W4 — intégrité/locataire (iso_) | Dépend de S2/S9. |
+| W5 — fiabilité, hydratation #418 | Non reproduite sur le parcours du jour ; aucune hypothèse prouvée (ligne de nuit maintenue). Le harnais d'acceptation compte désormais toute exception du navigateur en FAIL sur la tâche où elle survient. |
+| Les deux lignes d'acceptation du mandat : un montant à 0,4 % vert « dans la tolérance », un mauvais tiers « preuve non recevable » — dans la DÉMONSTRATION PUBLIQUE | Le jeu synthétique (ANOMALIES.md A1–A8) ne porte ni l'une ni l'autre, et la démonstration publique ne se re-sème pas (règle permanente 8). Les deux cas sont prouvés par fixtures APPARIÉES dans `grille.test.ts` (0,4 % vert avec delta +40,00 € / 0,6 % rouge ; mauvais tiers non recevable / bon tiers conforme). Les ajouter au générateur (A9, A10) change la population, la strate exhaustive et les artefacts figés : une demi-journée, à faire quand la démonstration pourra être re-semée. |
+| « Les mêmes colonnes en français et en anglais », cliqué | Le produit n'a AUCUN commutateur de langue (la langue est celle du cabinet) : rien à cliquer. Prouvé par construction (les colonnes sont du contenu de pack, `colonnesCommandees` ne lit pas la locale). |
+| TEST-01 observé par un clic | Aucun écran ne peut demander une cellule verte sans ancre : le refus n'a pas de chemin cliquable, il est prouvé en deux passes (G-13). L'écran montre l'état « concorde, mais sans ancre » à la place du vert. |
+| La signature du bon de livraison, relevée par l'extraction | Le BL synthétique porte « Recu par le client (signature) : … » ; le parseur de couche texte ne le relève pas. La cellule est « absente » et se dispose (un humain a regardé). Relever le champ change les extractions figées et l'éval ADR-018 : à faire avec le corpus. |
+| Une station cliquée pour TEST-02 sur la démonstration | Même cause que la ligne « mauvais tiers » : aucune ligne du jeu ne diverge sur l'identité. Le refus est prouvé par le service ET par la base (grille.test.ts, G-14). |
+| Le bloc §4 du mandat (non tenté) | Tel quel : non tenté, aucune ligne commencée. |
+| Une version neuve de la grille (colonnes de la méthode ou tolérances du pack changées) | Les cellules, dispositions et conclusions de la version précédente restent en base mais l'écran lit la version en vigueur : tout paraît « non conclu », rien ne dit « version changée, n dispositions à reprendre ». Trouvé par la revue hostile ; aucune version neuve n'existe aujourd'hui (une seule méthode, un seul pack). À traiter avec W2. |
+| Un écran pour CONFIRMER un verdict de verrou (0042, `confirmed_by`) | Le registre promet une confirmation humaine (L2) et rien ne l'écrit : un geste sans écran (règle 13). Le test ne suppose plus qu'il reste des propositions. |
+| L'acceptation cliquée ÉCRIT sur l'instance déployée (calcul de la grille à chaque déploiement) | Idempotent (mêmes cellules), mais chaque passage ajoute un `engine_run` et un événement. Un mode lecture seule (`--lecture-seule`) est à ajouter quand le harnais sera lancé plus souvent que les déploiements. |
+

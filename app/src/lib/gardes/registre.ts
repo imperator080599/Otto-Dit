@@ -100,6 +100,27 @@ async function note(run: Requete, ctx: Contexte, wp: string, status = 'open', cl
   return r.rows[0].id;
 }
 
+/** Une ligne d'échantillon et une grille figée, minimales, pour attaquer l'atelier (0050). */
+async function ligneDeGrille(run: Requete, ctx: Contexte): Promise<{ grid: string; item: string }> {
+  const proc = await run<{ id: string }>(
+    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, title)
+     values ($1, 'nep-fr', 'REV-SUBST', 'substantive', 'Attaque — test de détail') returning id::text`,
+    [ctx.engagementId]);
+  const sample = await run<{ id: string }>(
+    `insert into sample (engagement_id, procedure_id, method, params, seed, population_hash, population_size, population_amount, status)
+     values ($1, $2, 'monetary_coverage_random', '{}'::jsonb, 'attaque', 'attaque', 1, 1000, 'drawn') returning id::text`,
+    [ctx.engagementId, proc.rows[0].id]);
+  const item = await run<{ id: string }>(
+    `insert into sample_item (sample_id, unit_kind, unit_id, selection_reason, amount, status)
+     values ($1, 'gl_entry', gen_random_uuid(), 'random', 1000, 'pending') returning id::text`,
+    [sample.rows[0].id]);
+  const grid = await run<{ id: string }>(
+    `insert into test_grid (engagement_id, procedure_code, pack_id, version, columns, columns_hash)
+     values ($1, 'REV-SUBST', 'nep-fr', 1, '[{"code":"montant_ht"},{"code":"tiers"}]'::jsonb, 'attaque') returning id::text`,
+    [ctx.engagementId]);
+  return { grid: grid.rows[0].id, item: item.rows[0].id };
+}
+
 /* ── Le registre ─────────────────────────────────────────────────────────── */
 
 export const GARDES: Garde[] = [
@@ -269,6 +290,84 @@ export const GARDES: Garde[] = [
     neutraliser: 'alter table ipe_rapport drop constraint ipe_rapport_documente',
   },
 
+  /* ── L'atelier de test (0050, W1) : quatre refus, quatre objets ──────── */
+  {
+    nature: 'sql', code: 'G-13',
+    enonce: 'TEST-01 — une cellule de test « conforme » porte une ancre : pièce, page, rectangle.',
+    point: 'contrainte test_cell_green_needs_anchor (0050)',
+    rayon: 'Une cellule verte que la pièce ne montre nulle part — un vert qu’on croit sur parole.',
+    stops_looking: 'Ne vérifie pas que le rectangle est AU BON ENDROIT de la pièce : c’est la lecture de la couche texte (ancres.ts) qui le place, et l’œil qui le contrôle.',
+    attaque: async (run, ctx) => {
+      const { grid, item } = await ligneDeGrille(run, ctx);
+      await run(
+        `insert into test_cell (engagement_id, grid_id, sample_item_id, column_code, expected, found, delta_signed, delta_unit, tolerance, state)
+         values ($1, $2, $3, 'montant_ht', '100000', '100000', 0, 'cents', '± 1', 'conforme')`,
+        [ctx.engagementId, grid, item]);
+    },
+    rejet: /test_cell_green_needs_anchor/,
+    neutraliser: 'alter table test_cell drop constraint test_cell_green_needs_anchor',
+  },
+  {
+    nature: 'sql', code: 'G-14',
+    enonce: 'TEST-02 — une ligne dont un attribut d’identité diverge (tiers, numéro de pièce) ne se conclut pas : la preuve n’est pas recevable.',
+    point: 'déclencheur test_line_conclusion_1_identity (0050)',
+    rayon: 'Une ligne conclue sur la facture d’un AUTRE client — le chiffre d’affaires « justifié » par la mauvaise pièce.',
+    stops_looking: 'Ne juge pas la ressemblance des noms : c’est le calcul de la cellule (normalizeParty) qui décide « diverge » ; le déclencheur ne lit que l’état.',
+    attaque: async (run, ctx) => {
+      const { grid, item } = await ligneDeGrille(run, ctx);
+      await run(
+        `insert into test_cell (engagement_id, grid_id, sample_item_id, column_code, expected, found, delta_unit, tolerance, state)
+         values ($1, $2, $3, 'tiers', 'Client Alpha (fictif)', 'Client Beta (fictif)', 'identite', 'identité', 'non_recevable')`,
+        [ctx.engagementId, grid, item]);
+      await run(
+        `insert into test_line_conclusion (engagement_id, grid_id, sample_item_id, cells_hash, concluded_by)
+         values ($1, $2, $3, 'attaque', $4)`,
+        [ctx.engagementId, grid, item, ctx.preparateur]);
+    },
+    rejet: /TEST-02/,
+    neutraliser: 'alter table test_line_conclusion disable trigger test_line_conclusion_1_identity',
+  },
+  {
+    nature: 'sql', code: 'G-15',
+    enonce: 'TEST-03 — une disposition de cellule porte un motif écrit.',
+    point: 'contrainte cell_disposition_has_reason (0050)',
+    rayon: 'Une cellule hors tolérance « disposée » par un clic, sans un mot — la décision humaine vidée de son contenu.',
+    stops_looking: 'Ne juge pas la qualité du motif : « ok » passe. Le motif est lu par le reviewer, pas par la base.',
+    attaque: async (run, ctx) => {
+      const { grid, item } = await ligneDeGrille(run, ctx);
+      const c = await run<{ id: string }>(
+        `insert into test_cell (engagement_id, grid_id, sample_item_id, column_code, expected, found, delta_signed, delta_unit, tolerance, state)
+         values ($1, $2, $3, 'montant_ht', '100000', '100500', 500, 'cents', '± 1', 'hors_tolerance') returning id::text`,
+        [ctx.engagementId, grid, item]);
+      await run(
+        `insert into cell_disposition (engagement_id, cell_id, reason, state_at_decision, delta_at_decision, decided_by)
+         values ($1, $2, '   ', 'hors_tolerance', 500, $3)`,
+        [ctx.engagementId, c.rows[0].id, ctx.preparateur]);
+    },
+    rejet: /cell_disposition_has_reason/,
+    neutraliser: 'alter table cell_disposition drop constraint cell_disposition_has_reason',
+  },
+  {
+    nature: 'sql', code: 'G-16',
+    enonce: 'TEST-04 — une ligne dont une cellule est hors tolérance, absente ou sans ancre ne se conclut pas sans disposition écrite.',
+    point: 'déclencheur test_line_conclusion_2_cells (0050)',
+    rayon: 'Une ligne conclue « conforme » avec un écart de montant que personne n’a regardé.',
+    stops_looking: 'Ne relit pas la cellule après la conclusion : une cellule recalculée depuis rend la conclusion PÉRIMÉE (empreinte des cellules), c’est l’écran qui le dit, pas ce déclencheur.',
+    attaque: async (run, ctx) => {
+      const { grid, item } = await ligneDeGrille(run, ctx);
+      await run(
+        `insert into test_cell (engagement_id, grid_id, sample_item_id, column_code, expected, found, delta_signed, delta_unit, tolerance, state)
+         values ($1, $2, $3, 'montant_ht', '100000', '100500', 500, 'cents', '± 1', 'hors_tolerance')`,
+        [ctx.engagementId, grid, item]);
+      await run(
+        `insert into test_line_conclusion (engagement_id, grid_id, sample_item_id, cells_hash, concluded_by)
+         values ($1, $2, $3, 'attaque', $4)`,
+        [ctx.engagementId, grid, item, ctx.preparateur]);
+    },
+    rejet: /TEST-04/,
+    neutraliser: 'alter table test_line_conclusion disable trigger test_line_conclusion_2_cells',
+  },
+
   /* ── Gardes de SERVICE : une passe, par le refus nommé ─────────────────── */
   {
     nature: 'service', code: 'G-20',
@@ -322,6 +421,9 @@ export const GARDES: Garde[] = [
     ['circularisation', 'obst.circEcartNonExplique', 'circularisations.test.ts'],
     ['ipe', 'obst.ipeQuestionNonPosee', 'ipe.test.ts'],
     ['jalons', 'obst.jalonEnRetard', null],
+    /* W1 : la famille naît en AVERTISSEMENT (drapeau de pack à off) — la
+       fixture appariée (dossier sain, aucun avertissement) vit dans le test. */
+    ['unsupported_sample_items — avertissement, drapeau nep-fr à off', 'obst.lignesNonConclues / obst.lignesConclusionPerimee', 'testing/grille.test.ts'],
   ] as [string, string, string | null][]).map(([famille, motifs, preuve], i): GardeDeclaree => ({
     nature: 'declaree', code: `G-${50 + i}`,
     enonce: `Famille d’obstacles au visa « ${famille} » : le dossier ne se vise pas tant qu’un obstacle de cette famille subsiste.`,

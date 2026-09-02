@@ -95,8 +95,8 @@ jobs:
           if [ -z "$URL" ]; then URL="${{ github.event.deployment_status.target_url }}"; fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "environnement : ${{ github.event.deployment.environment }} · url : $URL"
-      - name: balayage de fumée contre l'URL déployée
-        run: npx tsx scripts/fumee/run.ts "${{ steps.cible.outputs.url }}" --rapport=../balayage.md --minimum=40
+      - name: balayage de fumée contre l'URL déployée — 7 passages, graine imprimée
+        run: npx tsx scripts/fumee/run.ts "${{ steps.cible.outputs.url }}" --rapport=../balayage.md --minimum=40 --repetitions=7 --graine=${{ github.run_id }}
       - name: rapport dans le résumé
         if: always()
         run: cat ../balayage.md >> "$GITHUB_STEP_SUMMARY" || true
@@ -105,3 +105,25 @@ jobs:
         with:
           name: balayage-${{ github.run_id }}
           path: balayage.md
+      # L'ACCEPTATION CLIQUÉE (mandat du jour, W0) : le balayage OUVRE les
+      # écrans déployés ; ceci y AGIT, tâche annoncée par tâche annoncée, et
+      # publie un verdict observé, une capture et le SHA que l'instance déclare.
+      - name: chromium (l'acceptation clique dans un navigateur)
+        if: always()
+        run: npx playwright install --with-deps chromium
+      - name: l'épreuve du harnais — un cas connu mauvais doit être déclaré FAIL
+        if: always()
+        run: npx tsx scripts/accept/run.ts "${{ steps.cible.outputs.url }}" --epreuve --captures=../captures
+      - name: acceptation cliquée contre l'URL déployée
+        if: always()
+        run: npx tsx scripts/accept/run.ts "${{ steps.cible.outputs.url }}" --rapport=../acceptation.md --captures=../captures
+      - name: acceptation dans le résumé
+        if: always()
+        run: cat ../acceptation.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptation-${{ github.run_id }}
+          path: |
+            acceptation.md
+            captures/

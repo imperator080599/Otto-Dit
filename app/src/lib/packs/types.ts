@@ -136,6 +136,16 @@ export interface AssurancePack {
   vocabulaire: Vocabulaire;
   materiality: MaterialityConfig;
   substantive?: SubstantiveConfig;
+  /**
+   * Les DRAPEAUX du pack : ce qu'une famille d'obstacles au visa fait quand
+   * elle se déclenche. Une famille neuve naît en AVERTISSEMENT (drapeau à
+   * false) : un dossier de démonstration insignable détruit le seul fichier
+   * que le fondateur ouvrira (mandat du jour, règle permanente 2).
+   */
+  flags?: {
+    /** `unsupported_sample_items` : des lignes de l'échantillon non conclues bloquent-elles le visa ? */
+    unsupportedSampleItemsBlocking?: boolean;
+  };
   attributeSampleSizes?: Record<Frequency, number>;
   attributeSampleBasis?: string;
   attributeSeedDefault?: string;

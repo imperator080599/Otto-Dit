@@ -1,0 +1,87 @@
+{
+  "G-01": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:26:59.996Z"
+  },
+  "G-02": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.002Z"
+  },
+  "G-03": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.011Z"
+  },
+  "G-04": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.018Z"
+  },
+  "G-05": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.034Z"
+  },
+  "G-07": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.039Z"
+  },
+  "G-08": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.045Z"
+  },
+  "G-09": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.062Z"
+  },
+  "G-10": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.066Z"
+  },
+  "G-11": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.071Z"
+  },
+  "G-12": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.075Z"
+  },
+  "G-13": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.100Z"
+  },
+  "G-14": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.120Z"
+  },
+  "G-15": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.134Z"
+  },
+  "G-16": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-02T09:27:00.150Z"
+  },
+  "G-20": {
+    "prouvee": true,
+    "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
+    "quand": "2026-09-02T09:27:00.153Z"
+  },
+  "G-21": {
+    "prouvee": true,
+    "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
+    "quand": "2026-09-02T09:27:00.154Z"
+  }
+}

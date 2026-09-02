@@ -28,6 +28,7 @@ export const PROPRIETAIRE_SEUL = new Set([
   'itgc_area',     // référentiel ITGC non rattaché à une mission
   'notification',  // file technique de notifications
   'server_error',  // exceptions de rendu, écrites par le crochet d'instrumentation — une pile n'est pas un contenu de locataire
+  'engagement_lock_verdict', // registre d'installation (0042) : un verdict par TABLE, pas par locataire
 ]);
 
 export interface EtatRole { utilisateur: string; bypass: boolean; superutilisateur: boolean }
