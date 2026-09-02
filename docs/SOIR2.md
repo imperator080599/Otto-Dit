@@ -3,10 +3,10 @@
 ## L'URL et le SHA réellement servis
 
 - `https://otto-dit.vercel.app` — `/api/sante` déclare le SHA **du bundle** (cuit au build,
-  ADR-121) : SHA_SERVI_A_REMPLIR. Le SHA de la plateforme est donné à côté, et
+  ADR-121) : `edb5e6cbd7db6761952bf6618df0d53a5702f705` (source `git`, `identiteCoherente: true`, lu le 2026-09-02 à 19:52 UTC ; verdict « toutes les lectures passent », dont « revue analytique du poste : REVENUE · N-1 : dossier_n1 · 3 ligne(s) · revue non rédigée » — la migration 0130 est appliquée sur la base publique, et « espace de travail d’un poste : 10 étape(s) »). Le SHA de la plateforme est donné à côté, et
   `identiteCoherente` dit s'ils concordent.
-- Poussé sur `main` : COMMIT_A_REMPLIR. CI : job `local` (chaîne complète) et job `url`
-  (acceptation cliquée contre le déploiement, en sonde) — verdicts dans la section « prouvé ».
+- Poussé sur `main` : `edb5e6c` (« Soir — §0 sonde et identité de version, §1 rail par états financiers, §2 anatomie de la page de poste (0130) »). CI : job `local` (chaîne complète) et job `url`
+  (acceptation cliquée contre le déploiement, en sonde). **Verdicts observés** : job `local` (run 33675437726) VERT ; job `url` (run 33675610608) : balayage 7× vert, épreuve 3/3, acceptation **12/13** — A-05 lit le refus attendu (« papier visé ») puis tombe sur l’exception d’hydratation #418 de la page du papier REV-01, la même qu’au run 33644396275 de l’après-midi (fil W5, deux occurrences en ligne sur la même page) ; S2-01 et S2-02 PASS. **Le témoin en production** (lecture SQL sur la base publique après le job, 19:59 UTC) : `fsli_analytique` 0, `engine_run` de revue analytique 0, `event_log` après 19:55 UTC 0, `section_visit` après 19:55 UTC 0 — la sonde n’a rien laissé sur le pilote réseau non plus ; le risque n°1 ci-dessous est mesuré, pas seulement écrit.
 
 ## Ce qui est cliquable ce soir et ne l'était pas cet après-midi (cinq lignes)
 
@@ -42,22 +42,26 @@
 
 ## Non prouvé
 
-- La sonde sur le pilote réseau (`pg`, Supabase) : le point de reprise est écrit pour les deux
-  pilotes, exécuté sur PGlite seulement ; le job `url` en sonde contre l'instance déployée est
-  la première épreuve réseau — voir son verdict.
+- ~~La sonde sur le pilote réseau~~ — PROUVÉE après coup par le job `url` (S2-02 en sonde contre
+  l'instance déployée) et la lecture SQL de la base publique : aucune ligne laissée.
 - L'application de la migration 0130 sur la base publique EXISTANTE : elle s'applique au
   déploiement (comme 0050) ; le verdict est dans le journal de build Vercel et `/api/sante`
   (lecture « revue analytique du poste »).
-- Les deux exceptions #418 vues une fois en local sur `/testing` et `/requests/[rid]` (pages non
-  touchées) et absentes au second passage : hypothèse W5, pas de diagnostic.
+- L'exception d'hydratation #418 (fil W5) : EN LIGNE, 2 fois sur 2 sur la page du papier REV-01
+  après le refus « papier visé » (tâche A-05, runs 33644396275 et 33675610608) ; EN LOCAL, 0 fois
+  sur 3 sur le même bundle et le même chemin ce soir, et une fois sur `/testing` et
+  `/requests/[rid]` au premier parcours cliqué de la tranche, absente au second. Aucune hypothèse
+  prouvée ; le différentiel (même code, exécution Vercel + pilote `pg`) est consigné et le prochain
+  geste — un déploiement de prévisualisation non minifié pour lire le texte qui diverge — est au
+  backlog.
 - Le rendu du repli et de la navigation par ancres sur un lecteur d'écran.
 
 ## Trois risques
 
-1. **La sonde sur le pooler de transaction** : si `pg` répartit une transaction imbriquée sur un
-   autre client malgré le point de reprise, la sonde écrirait en production. Déclencheur : le
-   témoin ne tourne pas contre l'instance déployée (il lit la base) — le job `url` ne le prouve
-   pas. Parade : lire `event_log` (verbe `analytique.redigee`) après le premier job `url` de ce soir.
+1. **La sonde sur le pooler de transaction** — mesuré ce soir : après le job `url`, la base
+   publique ne porte ni `fsli_analytique`, ni run, ni événement, ni visite. Le risque qui reste :
+   une action qui écrit HORS base (fichier, courriel simulé) n'est pas annulée par une
+   transaction ; aucune tâche d'acceptation n'en fait aujourd'hui, et le témoin ne le verrait pas.
 2. **Une rédaction périmée ignorée** : le marqueur est visible mais rien ne BLOQUE le visa sur un
    poste dont la revue analytique est périmée. Déclencheur : un ré-import après le visa.
    Parade : une famille d'obstacles en avertissement (comme les lignes non conclues), demain.

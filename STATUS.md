@@ -1807,8 +1807,13 @@ la page de poste), §9 (semis enrichissant), §10 (plan écrit — `docs/PLAN_RL
 exécuté, `DATABASE_URL` intacte) ; le locataire-sonde (annulation transactionnelle à la place,
 docs/BACKLOG_REPORTE.md) ; le poussé sur `main` et la CI `url` : voir le rapport du soir.
 
-**Non prouvé** : la sonde sur le pilote réseau (`pg`) — le point de reprise est écrit pour les
-deux pilotes, exécuté sur PGlite seulement ; l'application de 0130 sur la base publique
+**Poussé et déployé** : `edb5e6c` sur `main` ; Vercel READY ; `/api/sante` déclare ce SHA
+(source `git`, identité cohérente) et la lecture « revue analytique du poste » passe sur la base
+publique (0130 appliquée). CI : job `local` vert ; job `url` 12/13 (A-05 : refus lu, puis #418
+sur la page du papier REV-01 — deuxième occurrence en ligne, fil W5). Témoin en production après
+le job : 0 ligne laissée par la sonde (fsli_analytique, engine_run, event_log, section_visit).
+
+**Non prouvé** : l'application de 0130 sur la base publique
 existante (elle s'applique au prochain déploiement, comme 0050 s'est appliquée) ; le rendu
 navigateur du repli sur un lecteur d'écran ; les deux exceptions #418 du parcours cliqué
 (fil W5) — voir la ligne des clics.
