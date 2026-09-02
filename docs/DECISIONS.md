@@ -4303,3 +4303,98 @@ peut partir sur une autre connexion — `acceptance.ts` en portait un, corrigé.
 déploiement sur un défaut (table sans RLS, politique sans FORCE, table sans politique hors liste
 justifiée, base non migrée). La liste propriétaire-seul vit dans `assertions-role.ts`, partagée
 par le test et par le build. Voir DA-28 pour le détail de la tranche.
+
+## ADR-116 — La classe de mission, la préférence de seuil, et une seule règle de N-1 (migration 0035)
+
+**Contexte.** Créer un dossier devant quelqu'un (Groupe 1, 1.1) exige un client neuf, un
+exercice neuf, et deux informations que le modèle ne portait pas : la CLASSE de la mission
+(entité d'intérêt public, cotée, composante, autre), dont dépendra l'exigence de revue
+indépendante ; et le RÉFÉRENTIEL DE SEUIL préféré par l'associé, que la proposition de seuils
+doit honorer sans cesser d'être une proposition. La revue hostile n°4 a trouvé trois
+définitions de « mission N-1 » dans le code, dont une sans la nature : l'en-tête montrait la
+mission NEP comme N-1 d'une mission SOX.
+
+**Décision.** (1) `engagement.classe` (0035, `check in ('eip','cotee','composante','autre')`,
+défaut `autre`) : posée à la création, affichée en en-tête, sans règle dérivée tant qu'aucune
+n'est vérifiée (`docs/03`, règle 3 de la nuit). (2) `framework_set.materiality_benchmark`
+(`pbt` | `revenue`, absent = la règle du pack) : lue par `proposeMateriality`, suivie si le
+référentiel est représentatif, refusée et NOMMÉE dans le motif sinon — la garde du résultat
+négatif ne se contourne pas par une préférence. (3) Une seule règle de N-1, `missionN1` : même
+entité, même cabinet, même nature, exercice désigné par `period.prior_period_id` ; la reprise y
+délègue, la chaîne d'ancienneté l'applique récursivement, le rail la lit. (4) Le chaînage des
+exercices est CONTIGU et se pose dans les deux sens à la création (voir DA-29).
+
+**Conséquences.** `docs/04_DATA_MODEL.md` porte les deux champs. Un exercice créé après un trou
+n'a pas de prédécesseur : la reprise dit « rien à reprendre » et l'acceptation ne qualifie pas la
+mission de maintien. Reporté (BACKLOG_REPORTE) : l'index unique sur le nom d'entité par cabinet
+et la contrainte d'exclusion sur les exercices — la course de deux créations simultanées reste
+possible.
+
+## ADR-117 — Le registre des gardes : une ligne par invariant, une attaque par ligne, deux passes (Groupe 1, item 1.7)
+
+**Contexte.** Le dépôt porte des dizaines de gardes — contraintes, déclencheurs, refus de service —
+et personne ne pouvait dire, en un endroit, LESQUELLES ont été éprouvées, ni comment. Quatre
+instruments de mesure ont déjà mesuré à côté de ce qu'ils devaient voir (règle 17) ; une garde
+qu'on affirme n'est pas une garde.
+
+**Décision.** (1) `app/src/lib/gardes/registre.ts` : une ligne par invariant — énoncé, point
+d'application (contrainte, déclencheur, fonction), rayon si elle tombe, refus attendu (expression),
+neutralisation SQL, et la phrase « où elle cesse de regarder » (règle 4 de la nuit), obligatoire.
+(2) La preuve se prend en DEUX PASSES, dans des transactions annulées : l'attaque jouée normalement
+doit être refusée par LA garde (le refus est comparé à son expression) ; rejouée avec la garde
+neutralisée (déclencheur désactivé, contrainte retirée), elle doit RÉUSSIR. Si elle refuse encore,
+l'attaque n'a jamais atteint la garde et le test échoue en la nommant — « instrument non prouvé »,
+pas « vert ». (3) L'épreuve est elle-même éprouvée contre trois gardes connues mauvaises (attaque
+qui n'atteint pas la garde, refus venu d'autre chose, garde inexistante) et contre le critère du
+plan (le déclencheur de clôture retiré → « G-03 : l'attaque a RÉUSSI »). (4) `docs/GUARDS.md` est
+GÉNÉRÉ depuis le registre (`npm run gardes -- --figer`) et `npm run gardes` échoue s'il diverge ;
+chaque ligne porte la NATURE de sa preuve : SQL à deux passes, service à une passe, ou déclarée
+(preuve ailleurs, ou aucune — écrit tel quel). (5) Le cliquet des tests (`npm run plancher`) :
+le compte des `it(` ne descend jamais sans qu'on le dise (`docs/TESTS_PLANCHER.json`), et
+`.skip`/`.only`/`.todo` sont refusés. Les deux entrent dans `verify` et dans la CI.
+
+**Conséquences.** Vingt-huit gardes au registre : onze SQL prouvées en deux passes, deux de service
+en une passe, quinze déclarées dont quatre sans aucune preuve — les familles d'obstacles que nul test
+ne nomme (acceptation, programme, évaluation, jalons), écrites telles quelles. Le registre a servi
+le soir même : la revue hostile n°6 a montré, par lui, qu'une contrainte de 0009
+(`exception_quantified_needs_disposition`) était inerte depuis sa naissance ET recouverte par la
+résolution probante — aucune attaque ne pouvait l'atteindre seule, donc aucune épreuve ne pouvait la
+prouver ; l'épreuve disait pourtant « prouvée », parce que l'attaque acceptait DEUX refus et retirait
+DEUX contraintes. Règle du registre depuis : une garde, un refus attendu, un objet neutralisé (test
+structurel + cas connu mauvais) ; la contrainte est retirée en 0037 et son invariant vit dans G-05.
+Le cliquet des tests, lui aussi trompé (sept `it(` textuels pour vingt tests, `skipIf` invisible),
+compte désormais par `vitest list` et ses formes éteintes ont leur cas connu mauvais. Reporté
+(BACKLOG_REPORTE) : les fixtures de FAUX POSITIF par famille d'obstacle, les fichiers d'or
+(sélections par graine, seuils, totaux, familles par dossier, inventaire des routes, clés par locale,
+politiques RLS, grants), et le tri des trente et une tables à `engagement_id` sans garde de verrou.
+
+## ADR-118 — L'information produite par l'entité est UN objet au niveau du rapport, partagé (migration 0036, Groupe 1, item 1.8)
+
+**Contexte.** 0031 posait la question sur chaque papier et y rangeait la réponse : deux papiers qui
+s'appuient sur le même état système le documentaient deux fois, et rien ne disait qu'un papier
+réutilisait un état d'une AUTRE période que la sienne — la première chose qu'un contrôleur regarde.
+
+**Décision.** (1) `ipe_rapport` : nom et code du rapport, système source (texte libre — l'inventaire
+des applications est reporté), paramètres et filtres, période couverte (l'arrêté est la clé),
+généré par qui et quand, EMPREINTE du fichier désigné (un rapport désigne des octets), nature
+(générée par le système / générée puis modifiée / manuelle), les deux éléments testés
+(exhaustivité, exactitude), exactement UN fichier du dossier (pièce reçue ou fichier importé) ;
+contrainte `ipe_rapport_documente` (garde G-12, prouvée en deux passes) ; un nom et un arrêté font
+UN test IPE (unique). (2) Le papier DÉSIGNE le rapport (`ipe.rapport_id`) ; « oui » sans rapport est
+refusé par la base (`ipe_documente`, même nom, forme changée — G-08) ; l'arrêté attendu et la
+pertinence pour CE test restent des faits du papier, exigés par le SERVICE (pas par la base). Les
+lignes existantes sont migrées en un rapport chacune — sans fusion : deux papiers de même nom et
+même arrêté aux textes différents font deux rapports, le second suffixé du code du papier. (3)
+RÉUTILISER un rapport pour un autre arrêté que le sien est REFUSÉ par le service, les deux dates
+côte à côte, et un nouveau test IPE est proposé — c'est le cas mauvais du plan, cliqué. Désigner un
+rapport existant AVEC un nouveau rapport saisi est refusé (rien ne disparaît en silence) ; « oui »
+sur un nom et un arrêté déjà pris avec une autre documentation aussi. Un dossier scellé refuse toute
+écriture IPE (garde SQL sur `ipe_rapport`, service sur `ipe`). (4) L'IMPORT capture l'IPE au moment de l'import (système source, nature,
+identifiant du rapport, date et auteur de l'extraction), facultatif : rien ne bloque la
+démonstration semée (règle 2 de la nuit) ; un rapport créé sur ce fichier les reprend.
+
+**Conséquences.** `docs/04_DATA_MODEL.md` porte la table et les colonnes. Reporté : la balance
+auxiliaire n'est pas un `import_file` mais une pièce (`aux_balance_file` → evidence) — un rapport
+peut la désigner par `evidence_id`, et le critère « importer la balance âgée » du plan se joue sur
+le grand livre importé ; l'inventaire des applications informatiques ; le format de date du panneau
+IPE (AAAA-MM-JJ, hérité de 0031, à aligner sur jj/mm/aaaa).

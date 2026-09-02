@@ -1,4 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
+import { numeroDemande } from './requests';
 import { verifyChain } from '@/lib/core/events';
 
 // S9 — the three provenance questions (P7), answered by walking STORED links.
@@ -42,7 +43,7 @@ export async function whyEvidenceExists(engagementId: string, evidenceId: string
   if (!item) return chain;
   chain.push({
     kind: 'request',
-    label: `R-${String(item.seq_no).padStart(3, '0')} — ${item.title}`,
+    label: `${numeroDemande(item.seq_no)} — ${item.title}`,
     detail: `item: ${item.description}${item.sent_at ? ` · sent ${item.sent_at.slice(0, 16)}` : ''}`,
     href: `/eng/${engagementId}/requests/${item.request_id}`,
   });

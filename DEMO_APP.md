@@ -59,8 +59,13 @@ réel. *Le refus se corrige sans nous appeler.*
 
 **Écran** : accueil → **Créer un dossier**.
 
-Entité, exercice, nature, référentiel. Le dossier naît en `setup`, avec la **méthode en vigueur**
-désignée — sans elle il ne pourrait rien planifier, et personne ne saurait pourquoi.
+Un client — existant, ou **neuf par son nom** (enregistré fictif, sans numéro) — un exercice —
+existant, groupé par client, ou **neuf par sa date de clôture** (jj/mm/aaaa ; douze mois, relié
+tout seul à l'exercice qui finit la veille) — la nature, la **classe** (EIP, cotée, composante,
+autre), le référentiel, la langue, le **référentiel de seuil préféré**, le nom. Le dossier naît en
+`setup`, avec la **méthode en vigueur** désignée — sans elle il ne pourrait rien planifier, et
+personne ne saurait pourquoi. Il s'ouvre sur son acceptation ; s'il a un N-1 de même nature,
+l'en-tête le montre (**Dossier N-1**), sinon il ne l'invente pas.
 
 **Ce qu'il faut montrer** : recréez le même dossier une seconde fois. Refusé : *deux dossiers de même
 nature sur le même exercice feraient deux vérités sur les mêmes comptes.*
@@ -365,6 +370,36 @@ l'objet : le parcours cliqué compte ce clic au lieu de l'affirmer.
 jour où personne ne la tient — celle-ci se relit à chaque ouverture. » Et ce que l'écran avoue
 lui-même : le produit ne modélise pas encore QUI doit poser quel visa, donc il nomme le visa
 attendu sans prétendre vous l'attribuer.
+
+**Et depuis la nuit (DA-30), c'est LE TABLEAU DE BORD** — sans toucher au rail : ce qui empêche le
+visa sur **chacun de vos dossiers ouverts**, compté par famille, chaque famille menant à l'écran
+qui la lève (« Aller le lever ») ; vos sections sur tous vos dossiers en quatre listes (dans mon
+camp / attribuées / suivies / ouvertes récemment) ; les notes de revue ouvertes par ancienneté
+(≤ 7 j, 8–30 j, > 30 j, calendaires). Connectez-vous en Claire (associée) : les dossiers de nuit
+non acceptés y montrent leur famille « acceptation », Altiverre ses familles restantes. Ce que
+l'écran dit ne pas regarder : les dossiers scellés, les jours ouvrés, les sections d'un dossier
+dont la vue d'ensemble n'a jamais été ouverte.
+
+### 10 quinquies bis. L'IPE, un seul rapport pour tous les papiers (DA-32)
+
+**Écran** : un papier de travail, panneau *Information produite par l'entité*.
+
+**Ce qu'il faut montrer** : le papier de revenus désigne le rapport « FEC-2025 » arrêté au
+31/12/2025 — nom, système, empreinte, *utilisé par N papier(s)*. Redésignez-le en écrivant un
+autre arrêté (15/01/2026) : **refusé**, les deux dates côte à côte, et la phrase propose un nouveau
+test IPE. Un rapport ne couvre que son propre arrêté. Sur l'écran des imports, cinq champs
+facultatifs capturent l'IPE au moment de l'import (système source, nature, identifiant, extraction).
+
+### 10 quinquies ter. Le registre des gardes (ADR-117)
+
+**Fichier** : `docs/GUARDS.md`, généré depuis `app/src/lib/gardes/registre.ts`.
+
+**Ce qu'il faut montrer** : vingt-huit invariants, chacun avec la phrase « où elle cesse de
+regarder », et la NATURE de sa preuve — onze prouvées en deux passes (l'attaque refusée par la
+garde, puis acceptée sans elle), deux de service, quinze déclarées dont quatre sans preuve, écrit
+tel quel. Et ce que le registre a trouvé le soir même : une contrainte de 0009 inerte depuis sa
+naissance (ADR-117). Désactivez localement `review_note_close_guard` : `npx vitest run src/lib/gardes` dit
+« G-03 : l'attaque a RÉUSSI sans neutralisation — la garde n'existe pas ».
 
 ### 10 sexies. Les circularisations — la preuve qu'on ne fabrique pas soi-même
 

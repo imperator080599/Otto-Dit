@@ -148,7 +148,8 @@ async function main() {
   /* FIGER N'EST PAS UN EFFET DE BORD : un parcours qui figerait tout seul ce
      qu'il vient d'atteindre accepterait sa propre maigreur. On ne fige que sur
      demande explicite, et seulement si tout est vert. */
-  if (process.argv.includes('--figer') && etapes.every((e) => e.ok) && durs.length === 0) figer(etapes);
+  const figeMaintenant = process.argv.includes('--figer') && etapes.every((e) => e.ok) && durs.length === 0;
+  if (figeMaintenant) figer(etapes);
 
   const echecs = etapes.filter((e) => !e.ok);
   /* LA GARDE NOMINATIVE DU PARCOURS (défaut n°22). Une station derrière un
@@ -166,9 +167,14 @@ async function main() {
   const figees = lireFige().conduites.length;
   /* UN LANCEMENT `--figer` NE VÉRIFIE RIEN : il vient d'écrire la liste qu'il
      relit. Le dire, sinon la ligne se lit comme un contrôle passé. */
-  console.log(process.argv.includes('--figer')
+  /* ET UN `--figer` SUR UN PARCOURS ROUGE N'A RIEN FIGÉ : le dire aussi. La
+     ligne annonçait « FIGÉES à l'instant » alors que le figé précédent était
+     resté tel quel — un figé daté d'avant, lu comme un figé du jour. */
+  console.log(figeMaintenant
     ? `\ngarde du parcours : ${figees} station(s) FIGÉES à l’instant — rien n’a été vérifié contre elles.`
-    : `\ngarde du parcours : ${figees} station(s) figée(s) vérifiée(s).`);
+    : process.argv.includes('--figer')
+      ? `\ngarde du parcours : parcours ROUGE, RIEN n’a été figé — le figé précédent (${figees} station(s)) est inchangé.`
+      : `\ngarde du parcours : ${figees} station(s) figée(s) vérifiée(s).`);
   if (figees === 0 && !process.argv.includes('--figer')) {
     console.log('LA GARDE D’EXÉCUTION NE VÉRIFIE RIEN — figez un parcours vert : '
       + '`npm run clics -- --figer`.\n');

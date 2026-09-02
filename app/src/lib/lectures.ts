@@ -42,6 +42,10 @@ const BRUIT = new Set([
   'catch', 'then', 'log', 'warn', 'error', 'env', 'now', 'random', 'round', 'max', 'min',
   'abs', 'floor', 'ceil', 'sign', 'currentTarget', 'target', 'preventDefault', 'stopPropagation',
   'current', 'first', 'get', 'set', 'has', 'add', 'delete', 'size', 'default', 'tsx', 'ts',
+  /* `reverse` a compté pour une lecture : le formulaire de création faisait
+     deux `.split('-').reverse()` et n'en fait plus qu'un, dans une fonction —
+     le garde a crié « lecture perdue » sur une méthode de tableau. */
+  'reverse', 'at', 'some', 'find', 'localeCompare', 'toISOString', 'getTime',
 ]);
 
 export function champsRendus(code: string): Map<string, number> {

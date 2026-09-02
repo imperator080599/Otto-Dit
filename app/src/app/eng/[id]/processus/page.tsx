@@ -240,7 +240,7 @@ export default async function ProcessusPage({
                     return (
                       <tr key={c.code}>
                         <td>
-                          {c.libelle}
+                          {t(c.libelle.cle, c.libelle.vars)}
                           <div className="faint mono" style={{ fontSize: 11 }}>{c.code}</div>
                         </td>
                         <td>{c.avant ?? '—'}</td>

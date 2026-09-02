@@ -19,7 +19,7 @@ import {
 import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
-import { lireIpe, piecesDisponibles } from '@/lib/services/ipe';
+import { lireIpe, piecesDisponibles, rapportsDuDossier } from '@/lib/services/ipe';
 import { visiter } from '@/lib/services/sections';
 import { tr } from '@/lib/i18n';
 import { ipeAction, proposerIpeAction } from './ipe-actions';
@@ -49,6 +49,7 @@ export default async function WorkpaperDetail({
   const exports = await listExports(wid);
   const ipe = await lireIpe(wid);
   const pieces = await piecesDisponibles(id);
+  const rapports = await rapportsDuDossier(id);
   /* « Recent » se remplit en OUVRANT — le papier est une section du dossier. */
   await visiter(id, 'papier', wid, user.id);
   /* Une rédaction PROPOSÉE arrive par l'URL et remplit les zones : elle n'est
@@ -261,9 +262,13 @@ export default async function WorkpaperDetail({
       </div>
 
       {/* L'INFORMATION PRODUITE PAR L'ENTITÉ — sur CHAQUE papier, pas dans une
-          section à part (revue n°2 §3.1). Répondre « oui » sans documenter est
-          refusé par le service ET par la base ; ne pas répondre du tout lève un
-          obstacle au visa. */}
+          section à part (revue n°2 §3.1), et depuis 1.8 autour d'UN OBJET : le
+          RAPPORT, partagé par les papiers du dossier. Répondre « oui », c'est
+          désigner un rapport existant du dossier — ou en créer un, documenté —
+          en disant sur quel arrêté ce papier s'appuie : un rapport ne couvre que
+          son propre arrêté, et la réutilisation sur un autre est refusée par le
+          service, les deux dates côte à côte. Ne pas répondre lève un obstacle
+          au visa ; « oui » sans rapport est refusé par la base (ipe_documente). */}
       <div className="panel" id="ipe">
         <h2 style={{ marginTop: 0 }}>
           {t('wp.ipe')}{' '}
@@ -272,6 +277,22 @@ export default async function WorkpaperDetail({
             : <span className="badge green">{ipe.utilisee ? t('wp.ipe.yes') : t('wp.ipe.no')}</span>}
         </h2>
         <p>{t('wp.ipe.question')}</p>
+        <p className="faint">{t('wp.ipe.rapport.quoi')}</p>
+        {ipe?.utilisee && ipe.rapportId && (
+          <div className="callout" data-ipe-rapport={ipe.rapportId}>
+            <strong>{t('wp.ipe.rapport')} : {ipe.rapportNom}</strong>
+            {' · '}{t('wp.ipe.rapport.periode')} {ipe.periodeFin}
+            {ipe.systemeSource && <> · {ipe.systemeSource}</>}
+            {ipe.evidenceNom && <> · {ipe.evidenceNom}</>}
+            {ipe.empreinte && <> · {t('wp.ipe.rapport.empreinte')} <span className="mono">{ipe.empreinte.slice(0, 12)}…</span></>}
+            {' · '}<span data-ipe-papiers={ipe.papiers}>{t('wp.ipe.rapport.papiers', { n: ipe.papiers })}</span>
+            {ipe.natureRapport && <> · {t(ipe.natureRapport === 'systeme' ? 'wp.ipe.system' : ipe.natureRapport === 'systeme_modifie' ? 'wp.ipe.systemeModifie' : 'wp.ipe.manual')}</>}
+            {ipe.parametres && <div className="faint">{t('wp.ipe.rapport.parametres')} : {ipe.parametres}</div>}
+            {(ipe.generePar || ipe.genereLe) && <div className="faint">{t('wp.ipe.rapport.genere')} : {ipe.generePar ?? '—'} · {ipe.genereLe ?? '—'}</div>}
+            <div className="faint" style={{ marginTop: 4 }}>{ipe.exhaustivite}</div>
+            <div className="faint">{ipe.exactitude}</div>
+          </div>
+        )}
         {propose && (
           <p><span className="badge blue">{t('wp.ipe.proposed')}</span></p>
         )}
@@ -290,16 +311,36 @@ export default async function WorkpaperDetail({
 
           <div className="grid cols-2 mt">
             <label>
+              {t('wp.ipe.rapport.existant')}
+              {/* LES RAPPORTS DU DOSSIER, par nom et arrêté : désigner, c'est
+                  partager — et c'est l'arrêté qui décide si c'est permis. */}
+              <select name="rapport_id" defaultValue={ipe?.rapportId ?? ''}>
+                <option value="">{t('wp.ipe.rapport.nouveau')}</option>
+                {rapports.map((r) => (
+                  <option key={r.id} value={r.id}>{r.nom} · {t('wp.ipe.rapport.periode')} {r.periodeFin} · {r.fichierNom ?? ''}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t('wp.ipe.rapport.arrete')}
+              <input name="date_document" defaultValue={ipe?.dateDocument ?? ''} placeholder="AAAA-MM-JJ" />
+            </label>
+            <label>
+              {t('wp.ipe.rapport.nom')}
+              <input name="rapport_nom" placeholder={t('wp.exSAlr87012284')} />
+            </label>
+            <label>
               {t('wp.ipe.nature')}
               <select name="nature" defaultValue={val.nature ?? ''}>
                 <option value="">—</option>
                 <option value="manuelle">{t('wp.ipe.manual')}</option>
                 <option value="systeme">{t('wp.ipe.system')}</option>
+                <option value="systeme_modifie">{t('wp.ipe.systemeModifie')}</option>
               </select>
             </label>
             <label>
               {t('wp.ipe.reportCode')}
-              <input name="rapport_code" defaultValue={ipe?.rapportCode ?? ''} placeholder={t('wp.exSAlr87012284')} />
+              <input name="rapport_code" defaultValue={ipe?.rapportCode ?? ''} />
             </label>
             <label>
               {t('wp.ipe.file')}
@@ -313,8 +354,12 @@ export default async function WorkpaperDetail({
               </select>
             </label>
             <label>
-              {t('wp.ipe.date')}
-              <input name="date_document" defaultValue={ipe?.dateDocument ?? ''} placeholder="AAAA-MM-JJ" />
+              {t('wp.ipe.rapport.systeme')}
+              <input name="systeme_source" defaultValue={ipe?.systemeSource ?? ''} />
+            </label>
+            <label>
+              {t('wp.ipe.rapport.parametres')}
+              <input name="parametres" />
             </label>
           </div>
 

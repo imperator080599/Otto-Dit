@@ -11,7 +11,10 @@ describe('schema + infrastructure (S0)', () => {
 
   it('applies all migrations and seeds the demo world', async () => {
     const engs = await q<{ name: string }>(`select name from engagement order by name`);
+    /* TROIS missions : la NEP FY2024 est dans le monde de base depuis la
+       nuit du 2026-09-02 — c'est elle qui fait de FY2025 un « maintien ». */
     expect(engs.map((e) => e.name)).toEqual([
+      'Altiverre FY2024 — Audit légal (NEP)',
       'Altiverre FY2025 — Audit légal (NEP)',
       'Altiverre FY2025 — SOX 404 component (PCAOB/COSO)',
     ]);

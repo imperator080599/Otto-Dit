@@ -1,4 +1,5 @@
 import { q, q01, q1 } from '@/lib/db/client';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { logEvent } from '@/lib/core/events';
 import { engagementCtx } from './imports';
 import { ingestEvidence } from './evidence';
@@ -188,7 +189,8 @@ export interface Changement {
   code: string;
   objet: 'etape' | 'controle';
   sens: 'ajout' | 'suppression' | 'modification';
-  libelle: string;
+  /** Le changement, en CLÉ de catalogue et ses variables — jamais une phrase. */
+  libelle: Motif;
   avant: string | null;
   apres: string | null;
 }
@@ -211,46 +213,49 @@ export function diffVersions(n: VersionProcessus, n1: VersionProcessus, cycle: s
   const out: Changement[] = [];
   const eN = new Map(n.etapes.map((e) => [e.code, e]));
   const eN1 = new Map(n1.etapes.map((e) => [e.code, e]));
-  const CHAMPS_ETAPE: [keyof EtapeProcessus, string][] = [
-    ['libelle', 'libellé'], ['acteur', 'acteur'], ['systeme', 'système'],
-    ['entrees', 'entrées'], ['sorties', 'sorties'],
+  /* LES NOMS DE CHAMP SONT DES CLÉS : « Étape A — libellé modifié » se rendait
+     en français sur l'instance anglaise, invisible au détecteur tant qu'il ne
+     lisait pas les gabarits (revue hostile n°4). */
+  const CHAMPS_ETAPE: [keyof EtapeProcessus, CleLibelle][] = [
+    ['libelle', 'proc.libelle'], ['acteur', 'proc.actor'], ['systeme', 'proc.systeme'],
+    ['entrees', 'proc.entrees'], ['sorties', 'proc.outputs'],
   ];
   for (const code of [...new Set([...eN1.keys(), ...eN.keys()])].sort()) {
     const a = eN1.get(code), b = eN.get(code);
     if (a && !b) {
       out.push({ code: `proc:${cycle}:etape-:${code}`, objet: 'etape', sens: 'suppression',
-        libelle: `Étape supprimée : ${code} — ${a.libelle}`, avant: a.libelle, apres: null });
+        libelle: motif('proc.chg.etapeSupprimee', { code, libelle: a.libelle }), avant: a.libelle, apres: null });
     } else if (!a && b) {
       out.push({ code: `proc:${cycle}:etape+:${code}`, objet: 'etape', sens: 'ajout',
-        libelle: `Étape ajoutée : ${code} — ${b.libelle}`, avant: null, apres: b.libelle });
+        libelle: motif('proc.chg.etapeAjoutee', { code, libelle: b.libelle }), avant: null, apres: b.libelle });
     } else if (a && b) {
       for (const [champ, nomChamp] of CHAMPS_ETAPE) {
         if (a[champ] !== b[champ]) {
           out.push({ code: `proc:${cycle}:etape~:${code}:${champ}`, objet: 'etape', sens: 'modification',
-            libelle: `Étape ${code} — ${nomChamp} modifié`, avant: String(a[champ]), apres: String(b[champ]) });
+            libelle: motif('proc.chg.etapeModifiee', { code, champ: { cle: nomChamp } }), avant: String(a[champ]), apres: String(b[champ]) });
         }
       }
     }
   }
   const cN = new Map(n.controles.map((c) => [c.code, c]));
   const cN1 = new Map(n1.controles.map((c) => [c.code, c]));
-  const CHAMPS_CTRL: [keyof ControleProcessus, string][] = [
-    ['libelle', 'libellé'], ['etape', 'étape de rattachement'],
-    ['frequence', 'fréquence'], ['proprietaire', 'propriétaire'],
+  const CHAMPS_CTRL: [keyof ControleProcessus, CleLibelle][] = [
+    ['libelle', 'proc.libelle'], ['etape', 'proc.etape'],
+    ['frequence', 'proc.frequence'], ['proprietaire', 'proc.proprietaire'],
   ];
   for (const code of [...new Set([...cN1.keys(), ...cN.keys()])].sort()) {
     const a = cN1.get(code), b = cN.get(code);
     if (a && !b) {
       out.push({ code: `proc:${cycle}:controle-:${code}`, objet: 'controle', sens: 'suppression',
-        libelle: `Contrôle supprimé : ${code} — ${a.libelle}`, avant: a.libelle, apres: null });
+        libelle: motif('proc.chg.controleSupprime', { code, libelle: a.libelle }), avant: a.libelle, apres: null });
     } else if (!a && b) {
       out.push({ code: `proc:${cycle}:controle+:${code}`, objet: 'controle', sens: 'ajout',
-        libelle: `Contrôle ajouté : ${code} — ${b.libelle}`, avant: null, apres: b.libelle });
+        libelle: motif('proc.chg.controleAjoute', { code, libelle: b.libelle }), avant: null, apres: b.libelle });
     } else if (a && b) {
       for (const [champ, nomChamp] of CHAMPS_CTRL) {
         if (a[champ] !== b[champ]) {
           out.push({ code: `proc:${cycle}:controle~:${code}:${champ}`, objet: 'controle', sens: 'modification',
-            libelle: `Contrôle ${code} — ${nomChamp} modifié`, avant: String(a[champ]), apres: String(b[champ]) });
+            libelle: motif('proc.chg.controleModifie', { code, champ: { cle: nomChamp } }), avant: String(a[champ]), apres: String(b[champ]) });
         }
       }
     }

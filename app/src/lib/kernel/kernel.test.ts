@@ -156,6 +156,28 @@ describe('materiality (NEP pack)', () => {
     expect(prop.teAmountCents).toBe(prop.perfAmountCents); // TE default = PM (pack)
     expect(prop.cttAmountCents).toBeLessThan(prop.amountCents);
   });
+
+  /* LA PRÉFÉRENCE POSÉE À LA CRÉATION (1.1) : suivie quand elle est
+     représentative, NOMMÉE quand elle ne l'est pas. Le cas mauvais : « PBT »
+     préféré sur une entité en perte donnait 1 000 € de seuil sur une base
+     négative (revue hostile n°4). */
+  it('a creation-time benchmark preference is followed when representative, refused and named otherwise', () => {
+    const pref = proposeMateriality(tb, nepFr, 'revenue');
+    expect(pref.benchmarkCode).toBe('revenue');
+    expect(pref.basis.rule).toMatch(/preferred at engagement creation/);
+    expect(pref.basis.rule).toMatch(/would have chosen pbt/);
+    expect(pref.basis.rule).not.toMatch(/0000000/);           // 0.7000000000000001% is not a percentage
+
+    const enPerte = tb.map((r) => r.accountNo === '601000'
+      ? { ...r, debitCents: 900000000, balanceCents: 900000000 } : r);   // charges > produits : perte
+    const perte = benchmarkAggregates(enPerte);
+    expect(perte.pbtCents).toBeLessThan(0);
+    const refus = proposeMateriality(enPerte, nepFr, 'pbt');
+    expect(refus.benchmarkCode).toBe('revenue');
+    expect(refus.benchmarkAmountCents).toBe(perte.revenueCents);
+    expect(refus.basis.rule).toMatch(/NOT applied/);
+    expect(refus.amountCents).toBeGreaterThan(100000);       // pas le plancher d'arrondi sur une base négative
+  });
 });
 
 describe('FSLI mapping (PCG)', () => {

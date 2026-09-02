@@ -4,8 +4,32 @@ import type { Violation } from '@/lib/kernel/types';
 import { uploadTbAction, uploadFecAction } from './actions';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 export const dynamic = 'force-dynamic';
+
+/* L'IPE SE CAPTURE À L'IMPORT (1.8) : système source, nature, identifiant du
+   rapport, date et auteur de l'extraction — facultatifs, repris par le rapport
+   IPE créé sur ce fichier. Un fichier importé sans ces cinq réponses reste
+   importable : la démonstration ne bloque pas sur une famille nouvelle
+   (règle 2 de la nuit) ; le rapport IPE, lui, exige ce qu'il exige. */
+function ChampsIpe({ t }: { t: (c: CleLibelle) => string }) {
+  return (
+    <details className="row" style={{ gap: 6, flexBasis: '100%' }}>
+      <summary className="faint">{t('imp.ipe.legende')}</summary>
+      <input name="ipe_systeme_source" placeholder={t('imp.ipe.systemeSource')} style={{ width: 150 }} />
+      <select name="ipe_nature" defaultValue="">
+        <option value="">{t('imp.ipe.nature')}</option>
+        <option value="systeme">{t('wp.ipe.system')}</option>
+        <option value="systeme_modifie">{t('wp.ipe.systemeModifie')}</option>
+        <option value="manuelle">{t('wp.ipe.manual')}</option>
+      </select>
+      <input name="ipe_identifiant" placeholder={t('imp.ipe.identifiant')} style={{ width: 140 }} />
+      <input name="ipe_extrait_le" placeholder={t('imp.ipe.extraitLe')} style={{ width: 120 }} />
+      <input name="ipe_extrait_par" placeholder={t('imp.ipe.extraitPar')} style={{ width: 140 }} />
+    </details>
+  );
+}
 
 export default async function ImportsPage({
   params, searchParams,
@@ -32,13 +56,14 @@ export default async function ImportsPage({
             Current: {tbCur ? <span className="badge green">{t('imp.nComptes', { n: tbCur.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
             {'  '}Prior: {tbPrior ? <span className="badge green">{t('imp.nComptes', { n: tbPrior.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
           </p>
-          <form action={uploadTbAction} className="row">
+          <form action={uploadTbAction} className="row" style={{ flexWrap: 'wrap' }}>
             <input type="hidden" name="engagement_id" value={id} />
             <input type="file" name="file" accept=".csv,.txt" required />
             <select name="period_kind" defaultValue="current">
               <option value="current">{t('imp.currentPeriodN')}</option>
               <option value="prior">{t('imp.priorPeriodN1')}</option>
             </select>
+            <ChampsIpe t={t} />
             <button className="btn">{t('imp.importTb')}</button>
           </form>
         </div>
@@ -49,9 +74,10 @@ export default async function ImportsPage({
               {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}
             </div>
           )}
-          <form action={uploadFecAction} className="row">
+          <form action={uploadFecAction} className="row" style={{ flexWrap: 'wrap' }}>
             <input type="hidden" name="engagement_id" value={id} />
             <input type="file" name="file" accept=".txt,.csv" required />
+            <ChampsIpe t={t} />
             {affected.length > 0 && (
               <label className="row" style={{ gap: 4 }}>
                 <input type="checkbox" name="confirm_invalidation" /> {t('imp.confirmInvalidation')}

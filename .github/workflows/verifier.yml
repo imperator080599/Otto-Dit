@@ -60,7 +60,7 @@ jobs:
       - name: tests (PGlite, zéro réseau)
         run: npx vitest run
       - name: langue — 0 chaîne hors catalogue, et l'épreuve
-        run: npm run langue && npm run langue:epreuve
+        run: npm run gardes && npm run plancher && npm run langue && npm run langue:epreuve
       - name: lectures — 0 lecture perdue, et l'épreuve
         run: npm run lectures && npm run lectures:epreuve
       - name: parcours — 0 station perdue, et l'épreuve

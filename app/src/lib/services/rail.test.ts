@@ -46,18 +46,41 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     const rail = await railDuDossier(NEUF, ['nep-fr'], en);
     const ouvertes = rail.filter((x) => x.atteignable).map((x) => x.label);
     /* Les libellés viennent du CATALOGUE : les comparer à des chaînes écrites
-       ici referait deux vérités pour un même mot (revue n°2 §2). */
-    expect(ouvertes).toEqual([
+       ici referait deux vérités pour un même mot (revue n°2 §2). SIX, depuis
+       que le monde de base porte la mission NEP FY2024 : la reprise N-1 d'un
+       dossier neuf sur Altiverre FY2025 est atteignable — même entité, même
+       nature, exercice chaîné. */
+    expect(new Set(ouvertes)).toEqual(new Set([
       en('rail.vue'), en('rail.acceptation'), en('rail.equipe'), en('rail.reunions'),
-      en('rail.journal'),
-    ]);
-    expect(rail.find((x) => x.label === en('rail.reprise'))!.raison).toBe(en('rail.raison.dossierAnterieur'));
+      en('rail.journal'), en('rail.reprise'),
+    ]));
+    expect(rail.find((x) => x.label === en('rail.reprise'))!.atteignable).toBe(true);
     for (const x of rail.filter((r) => !r.atteignable)) {
       expect(x.raison, `raison manquante pour ${x.label}`).toBeTruthy();
       expect(x.raison!.length).toBeLessThan(90); // une ligne, pas un paragraphe
     }
     expect(rail.find((x) => x.label === en('rail.imports'))!.atteignable).toBe(false);
     expect(rail.find((x) => x.label === en('rail.imports'))!.raison).toBe(en('rail.raison.apresAcceptation'));
+  });
+
+  /* LA REPRISE EST ATTEIGNABLE QUAND UNE MISSION N-1 DE MÊME NATURE EXISTE —
+     et grisée sinon. Le cas mauvais : le drapeau calculé par `missionN1` et
+     jamais réinjecté dans l'état — le rail n'offrait plus AUCUN lien de reprise,
+     et ce test-ci passait quand même parce qu'il ne regardait que le dossier
+     neuf (revue hostile n°6 + parcours cliqué). */
+  it('la reprise N-1 s’ouvre pour la mission qui a un N-1 de même nature, reste grisée pour la première', async () => {
+    const { creerClient, creerExercice, creerMission } = await import('./engagement');
+    const c = await creerClient({ tenantId: IDS.tenant, name: 'Rail N-1 SA (fictif)', actorUserId: IDS.users.claire });
+    const p1 = await creerExercice({ tenantId: IDS.tenant, entityId: c.id, endDate: '2026-12-31', actorUserId: IDS.users.claire });
+    const p2 = await creerExercice({ tenantId: IDS.tenant, entityId: c.id, endDate: '2027-12-31', actorUserId: IDS.users.claire });
+    const base = { tenantId: IDS.tenant, entityId: c.id, kind: 'statutory_audit' as const, name: '', packs: ['nep-fr'],
+      accountingMap: 'pcg', language: 'fr' as const, actorUserId: IDS.users.claire };
+    const m1 = await creerMission({ ...base, periodId: p1.id });
+    const m2 = await creerMission({ ...base, periodId: p2.id });
+    const r1 = await railDuDossier(m1.id, ['nep-fr'], en);
+    const r2 = await railDuDossier(m2.id, ['nep-fr'], en);
+    expect(r1.find((x) => x.label === en('rail.reprise'))!.atteignable).toBe(false);
+    expect(r2.find((x) => x.label === en('rail.reprise'))!.atteignable).toBe(true);
   });
 
   it('chaque entrée porte un GROUPE connu et une phrase — aucune entrée muette', async () => {

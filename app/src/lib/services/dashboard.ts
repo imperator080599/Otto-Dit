@@ -1,4 +1,5 @@
 import { q, q1 } from '@/lib/db/client';
+import { numeroDemande } from './requests';
 import ExcelJS from 'exceljs';
 import { aiSpend } from '@/lib/core/airuns';
 
@@ -129,10 +130,10 @@ export async function trackerXlsx(engagementId: string, audience: TrackerAudienc
 
   for (const r of rows) {
     if (audience === 'client') {
-      sheet.addRow([`R-${String(r.seq_no).padStart(3, '0')}`, r.request_title, r.description, clientStatus(r.item_status), Number(r.evidence_count), r.due_date ?? '']);
+      sheet.addRow([numeroDemande(r.seq_no), r.request_title, r.description, clientStatus(r.item_status), Number(r.evidence_count), r.due_date ?? '']);
     } else {
       sheet.addRow([
-        `R-${String(r.seq_no).padStart(3, '0')}`, r.request_title, r.description, r.kind,
+        numeroDemande(r.seq_no), r.request_title, r.description, r.kind,
         teamStatus(r.item_status, r.reviewer), Number(r.evidence_count), r.reviewer ?? '',
         r.wp_code ?? '', r.wp_status ?? '', r.due_date ?? '',
       ]);

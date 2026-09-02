@@ -1,4 +1,5 @@
 import { q, q1 } from '@/lib/db/client';
+import { missionN1 } from './engagement';
 import { motDuPack } from '@/lib/packs';
 import { GROUPES_CLES, type CleGroupe, type EntreeRail } from './rail-vue';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
@@ -37,14 +38,11 @@ interface EtatDossier {
 }
 
 async function etatDossier(engagementId: string): Promise<EtatDossier> {
+  /* N-1 : LA règle, pas une copie SQL de plus (revue hostile n°5). */
+  const n1 = (await missionN1(engagementId)) !== null;
   const r = await q1<Record<keyof EtatDossier, boolean>>(
     `select
-       exists(select 1 from engagement e2
-              join engagement e1 on e1.id = $1
-              join period p2 on p2.id = e2.period_id
-              join period p1 on p1.id = e1.period_id
-              where e2.entity_id = e1.entity_id and e2.id <> e1.id
-                and p2.end_date < p1.end_date) n1,
+       false n1,
        exists(select 1 from engagement_acceptance a
               where a.engagement_id = $1 and a.status = 'accepted') acceptee,
        exists(select 1 from import_file f where f.engagement_id = $1) importe,
@@ -67,7 +65,11 @@ async function etatDossier(engagementId: string): Promise<EtatDossier> {
               where c.engagement_id = $1 and c.status = 'done') acheve`,
     [engagementId],
   );
-  return r;
+  /* Le drapeau N-1 vient de `missionN1`, pas de la requête (qui le laisse à
+     faux) : la première version calculait `n1` et rendait `r` tel quel — le
+     rail n'offrait plus AUCUN lien de reprise, et c'est la station cliquée
+     « reprise N-1 atteignable » qui l'a dit. */
+  return { ...r, n1 };
 }
 
 /** Les postes RETENUS, dans l'ordre du bilan puis du compte de résultat. */

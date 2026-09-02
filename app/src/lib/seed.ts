@@ -32,6 +32,13 @@ export const IDS = {
   // ferait — sans quoi rien ne prouverait que le chemin existe.
   methodology: demoId('methodology:vermeil-2026'),
   engNep: demoId('engagement:nep-fy2025'),
+  /* LA MISSION N-1 (NEP FY2024) EXISTE DANS LE MONDE DE BASE — une ligne, son
+     acceptation, rien d'autre ; le peuplement de démonstration la remplit.
+     Sans elle, FY2025 s'ouvrait en « acceptation » : la règle de N-1 (même
+     nature, missionN1) ne connaît pas un exercice sans mission. Altiverre
+     est un renouvellement, donc la mission d'avant existe. L'identifiant est
+     celui que le flux N-1 imposait déjà. */
+  engNepN1: '00000000-0000-4000-8000-000000002024',
   engSox: demoId('engagement:sox-fy2025'),
   contacts: {
     sophie: demoId('contact:sophie'),
@@ -108,6 +115,12 @@ export async function seedBase(): Promise<void> {
 
   await q(
     `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date, methodology_id)
+     values ($1, $2, $3, $4, null, 'statutory_audit', 'Altiverre FY2024 — Audit légal (NEP)',
+       '{"assurance_packs":["nep-fr"],"accounting_map":"pcg","language":"fr"}', 'fieldwork', '2025-03-31', $5)`,
+    [IDS.engNepN1, IDS.tenant, IDS.entity, IDS.periodFY2024, IDS.methodology],
+  );
+  await q(
+    `insert into engagement (id, tenant_id, entity_id, period_id, component_id, kind, name, framework_set, status, report_date, methodology_id)
      values ($1, $2, $3, $4, null, 'statutory_audit', 'Altiverre FY2025 — Audit légal (NEP)',
        '{"assurance_packs":["nep-fr"],"accounting_map":"pcg","language":"fr"}', 'fieldwork', '2026-03-31', $5)`,
     [IDS.engNep, IDS.tenant, IDS.entity, IDS.periodFY2025, IDS.methodology],
@@ -125,7 +138,9 @@ export async function seedBase(): Promise<void> {
      tel qu'il serait si la règle n'existait pas. Les réponses sont celles d'un
      dossier sans difficulté — le refus se démontre ailleurs, sur une mission
      faite pour ça (DEMO_APP.md). */
-  for (const engId of [IDS.engNep, IDS.engSox]) {
+  /* N-1 D'ABORD : c'est son existence, acceptée, qui fait de FY2025 un
+     « maintien » — l'ordre est la règle, pas un détail de peuplement. */
+  for (const engId of [IDS.engNepN1, IDS.engNep, IDS.engSox]) {
     const acc = await ouvrirAcceptation(engId, IDS.users.claire);
     for (const c of criteres(await catalogueParId(IDS.methodology), acc.kind)) {
       await repondreCritere(

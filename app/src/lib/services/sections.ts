@@ -136,7 +136,10 @@ export interface MesSections {
 
 /** Les quatre listes de « My assignments » — quatre mécanismes, quatre requêtes. */
 export async function mesSections(userId: string): Promise<MesSections> {
-  const membre = `s.engagement_id in (select engagement_id from engagement_member where user_id = $1)`;
+  /* L'APPARTENANCE, ET LE CABINET : une ligne d'appartenance fausse en base
+     n'affiche pas un dossier étranger avec son nom (revue hostile n°5). */
+  const membre = `s.engagement_id in (select engagement_id from engagement_member where user_id = $1)
+    and e.tenant_id = (select tenant_id from app_user where id = $1)`;
   const detenues = await q<Section>(
     `select ${CHAMPS} ${DEPUIS} where s.holder_id = $1 and ${membre} order by s.label`, [userId]);
   const attribuees = await q<Section>(
@@ -145,15 +148,16 @@ export async function mesSections(userId: string): Promise<MesSections> {
     `select ${CHAMPS} ${DEPUIS}
      join section_watch wt on wt.section_id = s.id and wt.user_id = $1
      where ${membre} order by s.label`, [userId]);
+  /* LES RÉCENTES SE TRIENT EN SQL. Le tri en JS comparait `String(Date)` —
+     « Wed Aug 26 … » — et rangeait les jours par leur NOM (revue hostile
+     n°5) : la plus ancienne visite passait en tête. */
   const recentes = await q<Section>(
-    `select distinct on (s.id) ${CHAMPS}, v.visited_at ${DEPUIS}
-     join section_visit v on v.section_id = s.id and v.user_id = $1
+    `select ${CHAMPS} ${DEPUIS}
+     join (select section_id, max(visited_at) vu from section_visit where user_id = $1 group by section_id) v
+       on v.section_id = s.id
      where ${membre}
-     order by s.id, v.visited_at desc`, [userId]);
-  recentes.sort((a, b) =>
-    String((b as unknown as { visited_at: string }).visited_at)
-      .localeCompare(String((a as unknown as { visited_at: string }).visited_at)));
-  return { detenues, attribuees, suivies, recentes: recentes.slice(0, 8) };
+     order by v.vu desc, s.id limit 8`, [userId]);
+  return { detenues, attribuees, suivies, recentes };
 }
 
 /** Toutes les sections d'un dossier, avec leur statut dérivé. */

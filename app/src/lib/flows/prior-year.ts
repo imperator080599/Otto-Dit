@@ -6,8 +6,7 @@ import { criteres } from '@/lib/methodology/catalogue';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { creerMission } from '@/lib/services/engagement';
 import {
-  ouvrirAcceptation, repondreCritere, decider, assurerJalons, poserJalon,
-} from '@/lib/services/acceptance';
+  ouvrirAcceptation, repondreCritere, decider, assurerJalons, poserJalon, currentAcceptation } from '@/lib/services/acceptance';
 import { assignMember, openDeclaration, answerRubric, signDeclaration } from '@/lib/services/team';
 import { detectTbMapping, importTb } from '@/lib/services/imports';
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis } from '@/lib/services/fsli';
@@ -32,30 +31,38 @@ import { answerQuestion, questionsOfScope, decideFactor, register } from '@/lib/
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 
 /** L'identifiant est déterministe : le dossier N-1 se retrouve d'un lancement à l'autre. */
-export const ID_MISSION_N1 = '00000000-0000-4000-8000-000000002024';
+export const ID_MISSION_N1 = IDS.engNepN1;
 
 export async function construireDossierN1(): Promise<string> {
+  /* REJOUABLE : le dossier N-1 déjà CONSTRUIT (une balance importée) n'est
+     pas refait. La mission elle-même et son acceptation viennent désormais du
+     monde de base (seedBase) ; le flux les crée seulement s'il tourne sur une
+     base qui ne les porte pas. */
+  const construit = await q01<{ n: string }>(`select count(*)::text n from import_file where engagement_id = $1`, [ID_MISSION_N1]);
+  if (construit && construit.n !== '0') return ID_MISSION_N1;
   const deja = await q01<{ id: string }>(`select id from engagement where id = $1`, [ID_MISSION_N1]);
-  if (deja) return ID_MISSION_N1;
-
-  // 1. La mission FY2024, par le service — pas par une insertion.
-  await creerMission({
-    id: ID_MISSION_N1,
-    tenantId: IDS.tenant, entityId: IDS.entity, periodId: IDS.periodFY2024,
-    kind: 'statutory_audit', name: 'Altiverre FY2024 — Audit légal (NEP)',
-    packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
-  });
+  if (!deja) {
+    // 1. La mission FY2024, par le service — pas par une insertion.
+    await creerMission({
+      id: ID_MISSION_N1,
+      tenantId: IDS.tenant, entityId: IDS.entity, periodId: IDS.periodFY2024,
+      kind: 'statutory_audit', name: 'Altiverre FY2024 — Audit légal (NEP)',
+      packs: ['nep-fr'], accountingMap: 'pcg', language: 'fr', actorUserId: IDS.users.claire,
+    });
+  }
   const id = ID_MISSION_N1;
+  const cat = await catalogueDeLaMission(id);
 
   // 2. L'acceptation : première année sur cette entité, donc « acceptation ».
-  const acc = await ouvrirAcceptation(id, IDS.users.claire);
-  const cat = await catalogueDeLaMission(id);
-  for (const c of criteres(cat, acc.kind)) {
-    await repondreCritere(id, IDS.users.claire, c.code,
-      c.reponse_defavorable === 'oui' ? 'non' : 'oui', '');
+  if ((await currentAcceptation(id))?.status !== 'accepted') {
+    const acc = await ouvrirAcceptation(id, IDS.users.claire);
+    for (const c of criteres(cat, acc.kind)) {
+      await repondreCritere(id, IDS.users.claire, c.code,
+        c.reponse_defavorable === 'oui' ? 'non' : 'oui', '');
+    }
+    await decider(id, IDS.users.claire, 'accepted',
+      'Première année : confrère précédent contacté sans réserve, compétences et disponibilité vérifiées.');
   }
-  await decider(id, IDS.users.claire, 'accepted',
-    'Première année : confrère précédent contacté sans réserve, compétences et disponibilité vérifiées.');
   await assurerJalons(id);
   await poserJalon(id, IDS.users.claire, 'date_rapport', '2025-03-31');
 

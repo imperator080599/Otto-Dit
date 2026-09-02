@@ -3,7 +3,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { importTb, importFec, detectTbMapping } from '@/lib/services/imports';
+import { importTb, importFec, detectTbMapping, type CaptureIpe } from '@/lib/services/imports';
+import { lireDateFr } from '@/lib/services/engagement';
 import { rebuildFslis } from '@/lib/services/fsli';
 
 // LES ACTIONS D'IMPORT, DANS LEUR PROPRE MODULE — et avec leurs refus RENDUS.
@@ -38,6 +39,22 @@ async function executer(id: string, fn: () => Promise<unknown>): Promise<never> 
   redirect(`/eng/${id}/imports${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ''}`);
 }
 
+/** L'IPE capturée à l'import (1.8) — cinq champs facultatifs, lus tels quels ;
+ *  la date d'extraction au format français, ou vide. */
+function captureIpe(formData: FormData): CaptureIpe {
+  const champ = (n: string) => String(formData.get(n) ?? '').trim();
+  const extrait = champ('ipe_extrait_le');
+  const extraitLe = extrait ? lireDateFr(extrait) : null;
+  if (extrait && !extraitLe) throw new Error('import : la date d’extraction se saisit au format jj/mm/aaaa');
+  return {
+    systemeSource: champ('ipe_systeme_source') || null,
+    natureIpe: (champ('ipe_nature') || null) as CaptureIpe['natureIpe'],
+    identifiantRapport: champ('ipe_identifiant') || null,
+    extraitLe,
+    extraitPar: champ('ipe_extrait_par') || null,
+  };
+}
+
 export async function uploadTbAction(formData: FormData): Promise<never> {
   const id = String(formData.get('engagement_id') ?? '');
   const { user } = await requireMember(id);
@@ -46,7 +63,7 @@ export async function uploadTbAction(formData: FormData): Promise<never> {
   return executer(id, async () => {
     const content = Buffer.from(await file.arrayBuffer()).toString('utf8');
     const mapping = detectTbMapping(content.split(/\r?\n/)[0] ?? '');
-    await importTb({ engagementId: id, userId: user.id, filename: file.name, content, mapping, periodKind });
+    await importTb({ engagementId: id, userId: user.id, filename: file.name, content, mapping, periodKind, ipe: captureIpe(formData) });
     await rebuildFslis(id, user.id).catch(() => undefined);
   });
 }
@@ -58,6 +75,6 @@ export async function uploadFecAction(formData: FormData): Promise<never> {
   const confirm = formData.get('confirm_invalidation') === 'on';
   return executer(id, async () => {
     const bytes = new Uint8Array(await file.arrayBuffer());
-    await importFec({ engagementId: id, userId: user.id, filename: file.name, bytes, confirmInvalidation: confirm });
+    await importFec({ engagementId: id, userId: user.id, filename: file.name, bytes, confirmInvalidation: confirm, ipe: captureIpe(formData) });
   });
 }

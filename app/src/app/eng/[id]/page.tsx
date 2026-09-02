@@ -3,7 +3,7 @@ import { requireMember } from '@/lib/core/auth';
 import { q, q01 } from '@/lib/db/client';
 import { motDuPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
-import { obstaclesAuVisa } from '@/lib/services/obstacles';
+import { obstaclesAuVisa, type Famille } from '@/lib/services/obstacles';
 import {
   assurerSections, mesSections, avancement, sectionsDuDossier,
   ECHELLE, ORDRE_STATUT, type Section, type Statut,
@@ -153,7 +153,7 @@ export default async function VueDEnsemble({
             count(*) filter (where status <> 'open')::text closes
      from review_note where engagement_id = $1`, [id]))!;
 
-  const parFamille = new Map<string, number>();
+  const parFamille = new Map<Famille, number>();
   for (const o of obstacles) parFamille.set(o.famille, (parFamille.get(o.famille) ?? 0) + 1);
 
   const parMembre = membres.map((m) => ({
@@ -246,7 +246,7 @@ export default async function VueDEnsemble({
             <table className="data">
               <tbody>
                 {[...parFamille.entries()].map(([f, n]) => (
-                  <tr key={f}><td>{FAMILLES[f] ? t(FAMILLES[f].titre) : f}</td><td className="num">{n}</td></tr>
+                  <tr key={f}><td>{t(FAMILLES[f].titre)}</td><td className="num">{n}</td></tr>
                 ))}
               </tbody>
             </table>

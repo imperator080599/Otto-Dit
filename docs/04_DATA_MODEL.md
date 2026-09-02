@@ -17,7 +17,7 @@ deletes** anywhere provenance flows — supersede with versions.
 | `component` | corp_group_id, entity_id, role(parent\|component), significance | Group structure. |
 | `referral_instruction` | component_id, title, body, issued_by, received_at, status | Group-auditor instructions (data-model-only MVP). |
 | `period` | entity_id, label(FY2025), start_date, end_date, prior_period_id | Roll-forward spine (D9): `prior_period_id` + `rolled_from` refs on facts. |
-| `engagement` | tenant_id, entity_id, period_id, kind(statutory_audit\|sox_component\|integrated), framework_set jsonb{assurance_packs[], accounting_map, language}, status(setup\|fieldwork\|review\|locked\|archived), locked_at, retention_until, component_id? | Demo: TWO engagements on one entity (Q6): NEP statutory + SOX component. |
+| `engagement` | tenant_id, entity_id, period_id, kind(statutory_audit\|sox_component\|integrated), **classe**(eip\|cotee\|composante\|autre, 0035), framework_set jsonb{assurance_packs[], accounting_map, language, **materiality_benchmark?**(pbt\|revenue)}, status(setup\|fieldwork\|review\|locked\|archived), locked_at, retention_until, component_id?, methodology_id | Demo: TWO engagements on one entity (Q6): NEP statutory + SOX component. |
 | `engagement_member` | engagement_id, user_id, eng_role(partner\|manager\|senior\|staff), can_sign bool | Membership drives authorization (ADR-007). |
 | `client_contact` | entity_id, name, email, portal_token, active | Portal identity; token = magic-link auth (ADR-006). |
 
@@ -25,7 +25,7 @@ deletes** anywhere provenance flows — supersede with versions.
 
 | Table | Key fields | Notes |
 |---|---|---|
-| `import_file` | engagement_id, kind(tb\|gl_generic\|fec\|rcm\|listing), filename, sha256, mapping_profile jsonb, validation_report jsonb, status(validated\|rejected), row_count | One row per upload attempt; report lists every violation (FEC 18-field checks etc.). |
+| `import_file` | engagement_id, kind(tb\|gl_generic\|fec\|rcm\|listing), filename, sha256, mapping_profile jsonb, validation_report jsonb, status(validated\|rejected), row_count | One row per upload attempt; report lists every violation (FEC 18-field checks etc.). | **0036** : + systeme_source, nature_ipe(systeme\|systeme_modifie\|manuelle), identifiant_rapport, extrait_le, extrait_par — l’IPE capturée à l’import, facultative.
 | `tb_snapshot` | engagement_id, period_kind(current\|prior), version, import_file_id, status(active\|superseded) | Re-import supersedes, never overwrites. |
 | `account` | tb_snapshot_id, number, label, debit, credit, balance | |
 | `gl_entry` | engagement_id, import_file_id, line_no, journal_code, journal_lib, entry_no, entry_date, account_no, account_label, aux_no?, aux_label?, piece_ref, piece_date, label, debit, credit, lettering?, lettering_date?, valid_date?, amount_ccy?, ccy?, flags jsonb | Canonical superset of FEC 18 fields; generic imports map into it. `flags` = deterministic JE risk flags (ADR-003): weekend, round_amount, manual_journal, period_end, credit_note_pattern. |
@@ -145,3 +145,10 @@ sorted by (label), fields `[label, occurred_on, performer_name]`.
    `reminder`, `evidence(audience=client_provided, own uploads)`, dashboard aggregates
    flagged `client_safe`. Everything else is auditor-only — enforced in the data-access
    layer locally and RLS in production (ADR-007).
+
+## 0036 — L'information produite par l'entité, au niveau du rapport (ADR-118)
+
+| Table | Colonnes | Notes |
+|---|---|---|
+| `ipe_rapport` | engagement_id, nom, code_rapport, systeme_source, parametres, periode_debut, periode_fin, genere_par, genere_le, empreinte, nature(systeme\|systeme_modifie\|manuelle), evidence_id ⊕ import_file_id, exhaustivite, exactitude, redige_par_ia, valide_par, valide_le, created_by | UN objet par rapport, partagé par les papiers ; unique (engagement_id, nom, periode_fin) ; contrainte `ipe_rapport_documente` (G-12) ; RLS forcée. |
+| `ipe` (0031) | + rapport_id → ipe_rapport | Le papier DÉSIGNE le rapport ; `ipe_documente` devient « utilisee = false ou rapport_id posé » (G-08). Les colonnes de documentation de 0031 restent, lues par compatibilité. |

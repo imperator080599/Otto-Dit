@@ -1,4 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
+import { motif, type Motif } from './motif';
 import { fsliAccounts } from './fsli';
 import { risksFor } from './risk';
 import { boucle, type Boucle } from './loop';
@@ -30,10 +31,11 @@ export interface BlocPoste {
   cle: 'leadsheet' | 'processus' | 'controle-interne' | 'risques' | 'echantillon' | 'testing';
   titre: CleLibelle;
   /** Ce qu'on y fait, en une ligne. */
-  quoi: string;
+
   etat: EtatBloc;
   /** Des CHIFFRES, jamais « en cours » : ce que l'étape a produit. */
-  resume: string;
+  /** Le résumé d'étape, en clé et variables — rendu `title` et texte par l'écran. */
+  resume: Motif;
   /** Où l'on agit. null = tout est déjà sur cet écran. */
   href: string | null;
 }
@@ -183,59 +185,54 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
   const blocs: BlocPoste[] = [
     {
       cle: 'leadsheet', titre: 'poste.section.leadsheet',
-      quoi: 'Les comptes rattachés au poste et leur solde, rapprochés de la balance.',
       etat: comptes.length ? 'fait' : 'a_faire',
       resume: comptes.length
-        ? `${comptes.length} compte(s) · ${(totalCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
-        : 'aucun compte rattaché — la balance n’est pas importée, ou la table de correspondance ne couvre pas ces comptes',
+        ? motif('poste.resume.comptes', { n: comptes.length, total: (totalCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) })
+        : motif('poste.resume.aucunCompte'),
       href: null,
     },
     {
       cle: 'processus', titre: 'poste.section.processus',
-      quoi: 'Le processus du client en données structurées : étapes, acteurs, systèmes, différence N/N-1.',
       etat: n(proc?.modeles) === 0 ? 'a_faire' : procAStatuer > 0 ? 'en_cours' : 'fait',
       resume: n(proc?.modeles) === 0
-        ? 'aucun processus décrit sur ce dossier'
-        : `${proc!.cycles} cycle(s) décrit(s) · ${proc!.modeles} version(s)`
-          + (procAStatuer > 0 ? ` · ${procAStatuer} changement(s) N/N-1 à statuer` : ''),
+        ? motif('poste.resume.aucunProcessus')
+        : procAStatuer > 0
+          ? motif('poste.resume.processusAStatuer', { cycles: proc!.cycles, versions: proc!.modeles, n: procAStatuer })
+          : motif('poste.resume.processus', { cycles: proc!.cycles, versions: proc!.modeles }),
       href: `${base}/processus`,
     },
     {
       cle: 'controle-interne', titre: 'rail.controleInterne',
-      quoi: 'Les contrôles qui couvrent le poste, leur conception et leur efficacité.',
       etat: n(ci?.controles) === 0 ? 'a_faire' : n(ci?.evalues) < n(ci?.controles) ? 'en_cours' : 'fait',
       resume: n(ci?.controles) === 0
-        ? 'aucun contrôle décrit sur ce dossier'
-        : `${ci!.controles} contrôle(s) · ${ci!.evalues} évalué(s) · ${ci!.tests} test(s)`,
+        ? motif('poste.resume.aucunControle')
+        : motif('poste.resume.controles', { n: ci!.controles, evalues: ci!.evalues, tests: ci!.tests }),
       href: `${base}/rcm`,
     },
     {
       cle: 'risques', titre: 'poste.riskAssessment',
-      quoi: 'Le niveau de risque par assertion — celui qui commande la taille des travaux.',
       etat: risques.length === 0 ? 'a_faire' : 'fait',
       resume: risques.length === 0
-        ? 'aucune assertion évaluée sur ce poste'
-        : `${risques.length} assertion(s) · ${eleves} à risque élevé · ${arbitres} arbitrage(s) humain(s)`,
+        ? motif('poste.resume.aucuneAssertion')
+        : motif('poste.resume.assertions', { n: risques.length, eleves, arbitres }),
       href: `${base}/risk?fsli=${c}`,
     },
     {
       cle: 'echantillon', titre: 'poste.section.echantillon',
-      quoi: 'La population contrôlable, puis le tirage : couverture, unités monétaires, germe rejouable.',
       etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
       resume: n(ech?.tire) > 0
-        ? `${ech!.items} élément(s) tiré(s) sur une population de ${ech!.pop}`
-        : n(ech?.pop) > 0 ? `population de ${ech!.pop} — aucun tirage validé`
-          : 'population non constituée',
+        ? motif('poste.resume.tirage', { items: ech!.items, pop: ech!.pop })
+        : n(ech?.pop) > 0 ? motif('poste.resume.populationSansTirage', { pop: ech!.pop })
+          : motif('poste.resume.populationAbsente'),
       href: n(ech?.pop) > 0 ? `${base}/sampling` : `${base}/population`,
     },
     {
       cle: 'testing', titre: 'poste.section.testing',
-      quoi: 'Chaque élément tiré contrôlé contre ses pièces, écart par écart.',
       etat: n(ech?.items) === 0 ? 'a_faire'
         : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',
       resume: n(ech?.items) === 0
-        ? 'rien à contrôler tant que l’échantillon n’est pas tiré'
-        : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,
+        ? motif('poste.resume.rienAControler')
+        : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),
       href: `${base}/testing`,
     },
   ];

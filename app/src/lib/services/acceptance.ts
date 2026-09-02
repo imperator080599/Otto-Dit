@@ -1,4 +1,5 @@
 import { q, q1, q01, tx } from '@/lib/db/client';
+import { missionN1 } from './engagement';
 import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { criteres } from '@/lib/methodology/catalogue';
@@ -66,12 +67,12 @@ export async function ouvrirAcceptation(engagementId: string, actorUserId: strin
   if (deja) return deja;
 
   const eng = await cabinetDe(engagementId);
-  const anterieur = await q01<{ id: string }>(
-    `select p.prior_period_id as id from engagement e
-     join period p on p.id = e.period_id
-     where e.id = $1 and p.prior_period_id is not null`,
-    [engagementId],
-  );
+  /* MAINTIEN = une mission N-1 DE MÊME NATURE existe (la règle unique,
+     `missionN1`). Sur `prior_period_id` seul, une première mission SOX
+     d'une entité auditée en NEP l'an passé s'ouvrait en « maintien » (revue
+     hostile n°5) — on n'évalue pas un mandat qu'on n'a jamais eu comme un
+     mandat qu'on renouvelle. */
+  const anterieur = await missionN1(engagementId);
   const kind: 'acceptation' | 'maintien' = anterieur ? 'maintien' : 'acceptation';
   const cat = await catalogueDeLaMission(engagementId);
 

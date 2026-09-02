@@ -1567,3 +1567,126 @@ parcours **147 stations figées vérifiées** · `npm run visuel` **296 vues, 0 
   n'atteint (règle 13). Nommé au registre.
 - **P1, P2, la verticale complète avec P5, l'IPE sur chaque papier, les modèles de papier par
   procédure et le test des écritures NEP 240** restent entiers.
+
+## Mandat de nuit — Groupe 0 : l'URL déployée est prouvée, et par qui (2026-09-01, nuit)
+
+**Ce qui était vrai avant cette nuit.** La chaîne tournait sur PGlite, en superutilisateur, sur
+la machine de développement ; la production tourne sur Supabase par un pooler de transaction,
+sous `postgres` — un rôle **BYPASSRLS**. Personne ne mesurait la seconde exécution : trois 500
+et sept libellés inversés ont coexisté avec 577 tests verts. La protection « Vercel
+Authentication » que STATUS annonçait active est **levée** (API Vercel, mesuré) : l'URL s'ouvre
+sans compte.
+
+**Ce qui est mesuré maintenant, et où le fondateur le lit :**
+
+| preuve | où | mesuré le 2026-09-01 |
+|---|---|---|
+| bloc d'assertions rôle / RLS contre la base réseau | journal de build Vercel de chaque déploiement (`deploy:reconstruire`) | `rôle servi : postgres · rolbypassrls : TRUE — CONTOURNE la RLS · 101 tables · 11 avec tenant_id · 95 avec politique · défauts : aucun` ; tentative de fuite `0 / 0 / 49` |
+| balayage de fumée **contre l'URL déployée** | GitHub Actions → `vérifier` → travail `url`, déclenché par Vercel (`deployment_status`), rapport dans le résumé et en artefact | **48 routes ouvertes, 0 échec** ; 2 non résolubles par le crawl (`exportId`, `iid`) ; titre lu sur chaque page |
+| exceptions de rendu par digest | `/api/erreur?digest=…` sur l'URL ; `error.tsx` montre le digest | `/api/erreur` répond 200, `trouvees: 0` — aucune exception depuis le déploiement |
+| la suite entière contre la base réseau | `rôle de production` (GitHub Actions, à la main et chaque nuit) | **jamais exécutée** : exige un secret que seul le fondateur pose (DEPLOY.md §0) |
+
+**Ce que la nuit a corrigé dans le produit** : `acceptance.ts` posait `otto.derive_milestone`
+EN SESSION par une requête et faisait l'UPDATE par une autre — sur le pooler de transaction,
+la garde peut lire une autre connexion et refuser la dérivation, par malchance, en ligne
+seulement (une transaction, réglage local ; interdit à la source, éprouvé contre neuf formes).
+FORCE ROW LEVEL SECURITY sur toute table à RLS (0033, 0034) — inerte pour le rôle actuel, et le
+bloc le dit. `global-error.tsx` pour la panne du layout racine.
+
+**Ce que le sous-agent hostile a cassé sur cette tranche** (16 défauts, tous traités sauf le
+contenu des politiques) : la suite réseau **morte par construction** sous le rôle non-bypass
+que la recette faisait créer — `seedBase()` refusé dès `tenant`, éprouvé sur PGlite avec 0033 ;
+un **TRUNCATE possible sur la démo publique** (la suite refuse maintenant par ce que la base
+EST : le schéma `demo_instantane`) ; le bloc d'assertions **vert sur une base vide** (`every()`
+sur l'ensemble vide) ; Chromium absent du travail CI ; l'écriture de `server_error` **non
+attendue par Next** ; le layout racine sans écran d'erreur ; les fichiers de test en parallèle
+sur une base partagée ; `DATABASE_URL` non héritée par les forks ; le détecteur de réglages de
+session qui ne voyait que la forme historique et dénonçait « Reset to zero » dans le catalogue ;
+« 49 routes » présenté comme mesuré. Et ce que le premier build a montré : `server_error` avec
+FORCE manquante à côté d'un verdict « aucun défaut » (0034).
+
+### Ce que je n'ai PAS fait — exhaustivement
+
+- **La suite sous le rôle de production n'a pas tourné** : ni le secret (fondateur), ni une
+  route réseau vers le pooler depuis cette machine. Le mode réseau de la suite est écrit et
+  **non éprouvé** ; sa première exécution sera sa première épreuve.
+- **Le rôle qui sert l'application reste `postgres`, BYPASSRLS.** Passer sous un rôle sans
+  BYPASSRLS exige que chaque requête pose le locataire dans sa transaction — reporté (R9).
+- **« Une politique retirée rend le build rouge »** est éprouvé sur PGlite (quatre cas connus
+  mauvais), pas sur un déploiement d'aperçu : personne n'a retiré une politique en ligne.
+- **« Une route morte rend le balayage rouge »** : les branches d'échec de la sonde distante ne
+  sont pas éprouvées contre l'URL — c'est le balayage LOCAL qui a attrapé `/api/erreur → 500`
+  (base locale non migrée), pas la sonde distante.
+- **Chaque page porte le même `<title>`** (« OTTO — AI-native assurance platform ») : la sonde
+  lit le titre et le publie, mais il ne distingue pas un écran d'un autre. Un titre par écran est
+  un chantier de produit, pas de harnais.
+- **`/api/erreur` est ouvert sans authentification** sur tout déploiement Vercel (DA-10), piles
+  comprises. Acceptable sur des données fictives, à revoir avant une instance réelle.
+- **Le contenu des politiques RLS n'est pas vérifié** : `using (true)` passerait le bloc.
+
+## Mandat de nuit — Groupe 1 : la plateforme devient testable (2026-09-02, nuit)
+
+**Ce qui était vrai avant.** Un dossier ne se créait que sur des entités et exercices déjà en base ;
+« Mes travaux » listait trois natures de travail sans traverser les dossiers ; les gardes du produit
+étaient affirmées une par une dans des commentaires, jamais inventoriées ni éprouvées contre leur
+neutralisation ; l'information produite par l'entité se documentait papier par papier, sans objet
+partagé ni refus de réutilisation sur un autre arrêté.
+
+**Ce qui est livré, tranche par tranche (chaque tranche a eu son sous-agent hostile — revues n°4, n°5,
+n°6 — et ce qu'il a cassé est corrigé ou nommé au registre reporté) :**
+
+- **1.1 Création de mission en un écran** (0035, ADR-116, DA-29) : client neuf (fictif par
+  construction, doublon normalisé refusé), exercice neuf par date de clôture (douze mois justes au
+  29 février, chaînage CONTIGU dans les deux sens), classe, référentiel de seuil préféré (suivi si
+  représentatif, refusé et nommé sinon), nature/pack/langue vérifiés AVANT toute écriture, N-1
+  unique (même nature) lu par l'en-tête, la reprise, l'acceptation et le rail. Refus dans le repli
+  ouvert. Deux stations cliquées + rejeu sous leur nom.
+- **1.2 Tableau de bord sur `/travaux`** (DA-30) : obstacles au visa de MES dossiers par famille
+  (même calcul que l'écran du dossier, test famille par famille), quatre listes de sections
+  (récentes triées en SQL — le tri JS rangeait par nom de jour), notes ouvertes par ancienneté ;
+  cabinet borné, dossiers scellés hors de tout l'écran. Libellés en clés (`detail:` en gabarit
+  était invisible au détecteur : classe fermée, cas mauvais ajouté). Station cliquée : hors rail,
+  un obstacle → l'écran qui le lève en un clic.
+- **1.7 Registre des gardes** (ADR-117, DA-31, `docs/GUARDS.md` généré, `npm run gardes`,
+  `npm run plancher`) : 28 invariants — 11 SQL prouvés en deux passes (attaque refusée par LA
+  garde, puis acceptée avec la garde neutralisée dans une transaction annulée), 2 de service en une
+  passe, 15 déclarés dont 4 SANS preuve, écrit tel quel. L'épreuve est éprouvée contre quatre gardes
+  connues mauvaises et contre le critère du plan (déclencheur retiré → « G-03 : l'attaque a RÉUSSI »).
+  Le registre a trouvé le soir même une contrainte inerte depuis 0009 (retirée en 0037, ADR-117).
+  Cliquet : les tests comptés par `vitest list`, formes éteintes refusées avec leur cas mauvais.
+- **1.8 IPE au niveau du rapport** (0036, ADR-118, DA-32) : `ipe_rapport` partagé (nom, système,
+  paramètres, période, généré par/le, empreinte, nature, deux éléments testés, un fichier du
+  dossier), le papier le désigne, réutilisation sur un autre arrêté REFUSÉE avec les deux dates,
+  capture facultative à l'import (balance, FEC). Garde G-12. Station cliquée : le refus, puis le bon
+  arrêté.
+
+**Mesures, et la commande qui les rejoue :**
+- `npx tsc --noEmit` : 0 erreur. `npx vitest run` (balayage des écrans compris) : 75 fichiers, 632 tests —
+  631 verts sur la dernière exécution complète, le dernier (une liste de missions semées, passée de
+  deux à trois) corrigé et rejoué seul ; la suite entière est à rejouer d'un bloc.
+- Parcours cliqué (`npm run clics`, production) : 159 étapes conduites, 0 station en échec sur les
+  deux derniers parcours ; 1 exception navigateur intermittente (React #418, hydratation) sur trois
+  parcours sur sept, écrans différents — comptée en échec par le harnais, à raison ; non figé tant
+  qu'un parcours n'est pas vert de bout en bout (BACKLOG_REPORTE). `docs/PARCOURS.json` : 197
+  stations déclarées ; les conduites et les « jamais conduites » (35) sont celles du dernier parcours
+  vert, avant cette nuit.
+- `npm run langue` : 0 chaîne d'écran hors catalogue · 0 libellé en dur · 39 différés avec raison ·
+  25 exclus avec raison. `npm run langue:epreuve` : 15/15 cas connus mauvais dénoncés (dont les deux
+  classes fermées cette nuit : gabarit, ternaire multi-lignes).
+- `npm run parcours:epreuve` : 5/5. `npm run lectures:epreuve` : 6/6. `npm run lectures` : 77 écrans,
+  1364 chemins figés.
+- `npx vitest run src/lib/gardes` : 23 tests, dont 11 gardes SQL × 2 passes. `npm run gardes` :
+  `docs/GUARDS.md` à jour, 28 gardes. `npm run plancher` : voir docs/TESTS_PLANCHER.json (compté
+  par `vitest list`).
+
+**Ce que la revue hostile a cassé, et l'état de chaque constat** — lisible en entier dans
+`docs/DECISIONS_AUTONOMES.md` (DA-29 réécrit, DA-30, DA-31, DA-32) et `docs/BACKLOG_REPORTE.md`
+(section « Reporté par l'exécution de la nuit »). Les plus graves : exercice créable sur l'entité
+d'un autre cabinet (corrigé, testé) ; aucun événement à la création d'exercice (corrigé) ; trois
+définitions de N-1, l'en-tête montrant la NEP comme N-1 d'une SOX (une règle, quatre lecteurs) ;
+préférence « PBT » sur une perte → seuil 1 000 € (garde, testée) ; 29 février (corrigé, testé) ;
+chaînage enjambant un trou (contigu, testé) ; « récentes » triées par nom de jour (SQL, testé) ;
+famille « achevement » rendue en code sur quatre écrans (`FAMILLES` typée sur la liste, deux clés
+ajoutées) ; client orphelin par le chemin par défaut du formulaire (refusé avant écriture) ;
+`docs/PARCOURS.json` ayant perdu `jamaisConduites` (restauré, `parcours --figer` le conserve, le
+runner dit quand un `--figer` rouge n'a rien figé).

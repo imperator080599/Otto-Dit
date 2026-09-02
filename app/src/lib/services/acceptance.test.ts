@@ -79,11 +79,17 @@ describe('l’acceptation commande, elle ne décore pas', () => {
 
   /* ═══ 2. LA NATURE SE DÉDUIT, ELLE NE SE DEMANDE PAS ═════════════════ */
 
-  it('première année = acceptation, renouvellement = maintien', async () => {
+  it('première année = acceptation, renouvellement = maintien — par une MISSION N-1 de même nature', async () => {
     const neuve = await ouvrirAcceptation(NEUVE, IDS.users.claire);
     expect(neuve.kind).toBe('acceptation');   // période sans exercice précédent
+    /* Le monde de BASE porte la mission NEP FY2024, acceptée AVANT que FY2025
+       ne s'ouvre : c'est elle qui fait le « maintien » — la règle unique de
+       N-1 (missionN1, même nature), celle qui refuse d'ouvrir en « maintien »
+       une première mission SOX d'une entité auditée en NEP l'an passé (revue
+       hostile n°5). La SOX FY2025, sans SOX FY2024, s'ouvre en acceptation. */
     const semee = await currentAcceptation(IDS.engNep);
-    expect(semee?.kind).toBe('maintien');     // FY2025 a un FY2024
+    expect(semee?.kind).toBe('maintien');
+    expect((await currentAcceptation(IDS.engSox))?.kind).toBe('acceptation');
   });
 
   it('les questions ne sont pas les mêmes selon la nature', async () => {

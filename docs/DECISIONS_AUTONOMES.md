@@ -512,3 +512,108 @@ chaîne verte parce que personne ne mesurait la seconde.
 **Ce que ce groupe ne fait pas** : il ne change pas le rôle qui sert l'application (R9), il
 n'exécute pas la suite réseau (secret), et il ne remplace pas `npm run clics` par une sonde HTTP
 — le parcours cliqué reste local.
+
+## DA-29 — La création de mission en un écran (Groupe 1, item 1.1)
+
+**Ce qui existait** : un formulaire sur l'accueil, limité aux entités et exercices déjà en
+base — donc jamais un dossier vraiment neuf devant quelqu'un.
+
+**Ce qui est décidé** (réécrit après la revue hostile n°4, qui a trouvé cinq affirmations
+fausses dans la première version de cette entrée) :
+
+1. **Un client neuf est enregistré FICTIF** (`registry_type = 'fictional'`, sans numéro
+   d'immatriculation). Ce que ça garantit : aucun identifiant réel n'entre par ce chemin. Ce que
+   ça ne garantit PAS : qu'un nom réel tapé soit fictif — la règle « données synthétiques
+   uniquement » reste celle de qui remplit le formulaire, et le dépôt ne porte que le monde de
+   démonstration. Le doublon se refuse sur la forme normalisée (casse, accents, espaces) ; sans
+   index unique en base, deux créations simultanées passent — au registre reporté.
+2. **Un exercice neuf se donne par sa date de clôture** (jj/mm/aaaa, années 1990–2100, aucun
+   `input type=date`), sur une entité DU CABINET (refus nommé sinon, jamais une clé étrangère
+   en page 500), dure douze mois par défaut — comptés depuis le lendemain de la clôture, un an
+   en arrière, donc 1er mars pour un 29 février — refuse tout chevauchement, et écrit un
+   événement `period.created`.
+3. **Le chaînage est CONTIGU, dans les deux sens.** Le prédécesseur est l'exercice qui finit la
+   veille du début ; le successeur, celui qui commence le lendemain de la fin s'il n'avait pas
+   de prédécesseur. Un exercice créé après un trou n'est PAS relié par-dessus le trou :
+   l'ancienneté et l'acceptation liraient ce lien comme une continuité (« maintien »).
+4. **Une seule définition de N-1** — `missionN1` : même entité, même cabinet, MÊME NATURE,
+   exercice désigné par `prior_period_id`. L'en-tête, la reprise (`missionPrecedente` y
+   délègue), la chaîne d'ancienneté (même règle, récursive) et le rail (« reprise atteignable »)
+   la lisent. Une mission `integrated` sans prédécesseur de même nature n'a pas de N-1 : ni
+   l'en-tête ni la reprise n'inventent.
+5. **La classe** (`eip`, `cotee`, `composante`, `autre`, migration 0035) est posée à la
+   création et affichée en en-tête ; aucune règle n'en découle encore (règle 3 de la nuit : rien
+   n'est écrit de mémoire).
+6. **Le référentiel de seuil préféré** voyage dans `framework_set.materiality_benchmark`. La
+   proposition de seuils le suit S'IL EST REPRÉSENTATIF (PBT significatif, chiffre d'affaires
+   positif) ; sinon la règle décide et le motif dit que la préférence n'a pas été suivie, et
+   pourquoi. Le cas mauvais : « pbt » préféré sur une entité en perte donnait 1 000 € de seuil
+   sur une base négative. Un test emprunte les deux branches.
+7. **L'action ne fait pas de transaction**, et le dit : les services parlent à la connexion
+   partagée. Tout refus connaissable d'avance (nature, référentiel, langue, méthode en vigueur,
+   date, deux choix contradictoires du formulaire) est vérifié AVANT la première écriture.
+8. **Le dossier neuf s'ouvre sur son acceptation** (ADR-088), avec le rail entier et ses raisons
+   de grisé — vérifié au clic, rail déplié. Le plan disait « dashboard » ; la destination
+   existante tient le même critère.
+
+## DA-30 — Le tableau de bord vit sur « Mes travaux », hors rail (Groupe 1, item 1.2)
+
+**Ce qui existait** : « Mes travaux » (ADR-110) — notes adressées, papiers en attente de visa,
+demandes échues — et, DANS chaque dossier, la vue d'ensemble avec ses quatre listes de sections
+et ses obstacles. Rien qui traverse les dossiers.
+
+**Ce qui est décidé** :
+
+1. **Le tableau de bord est l'écran existant, étendu** — pas une destination de plus. Quatre
+   listes de sections sur tous mes dossiers (dans mon camp / attribuées / suivies / ouvertes
+   récemment, par `mesSections`, déjà transverse), ce qui empêche le visa de chacun de mes
+   dossiers ouverts compté par famille (`obstaclesAuVisa`, le MÊME calcul que l'écran des
+   obstacles du dossier — le test le compare famille par famille), les notes ouvertes par
+   ancienneté (une requête).
+2. **Rien n'est stocké, rien n'est agi.** L'écran lit et mène à l'objet en un clic ; envoyer,
+   suivre, lever se font dans le dossier, là où la règle vit et où le refus s'affiche. Le
+   plafond de cinq actions primaires reste tenu par construction.
+3. **Ce qu'il ne regarde pas, écrit sur l'écran** : jours calendaires (les jours ouvrés sont
+   l'affaire de la file de revue, 1.4) ; un dossier scellé ou archivé n'apparaît nulle part
+   sur l'écran — ni obstacles, ni sections, ni notes ; les sections naissent à l'ouverture de
+   la vue d'ensemble d'un dossier, pas ici.
+4. **Le coût est celui du calcul des obstacles, dossier par dossier** — une vingtaine de
+   requêtes par dossier plus une par poste retenu. Sur les dossiers d'une personne c'est la
+   seconde ; un compteur stocké mentirait dès la prochaine action.
+5. **Les libellés de « Mes travaux » sont des clés** (`trav.detail.*`, `visa.role.*`). La
+   phrase française qui y vivait était invisible au détecteur de langue — un `detail:` en
+   gabarit n'était ni un nœud JSX ni un libellé qu'il lisait. Le détecteur lit désormais
+   `detail:` et les gabarits ; son cas connu mauvais est ce fichier-là.
+
+## DA-31 — Le registre des gardes : ce qui est prouvé, ce qui est déclaré, ce qui est reporté (Groupe 1, item 1.7)
+
+1. **Le registre est du code, la table en est générée.** Une table tenue à la main diverge un jour
+   du test qui l'éprouve — et c'est toujours la table qu'on croit.
+2. **Une garde de SERVICE n'a qu'une passe** : aucune neutralisation SQL n'existe pour une règle
+   TypeScript. Son refus est comparé à SON message ; la table le dit (« une passe »).
+3. **Les familles d'obstacles sont DÉCLARÉES, pas prouvées ici.** Neuf ont un test de service qui
+   nomme leur motif (la table le cite) ; quatre n'en ont aucun — écrit « aucune ». Les fixtures de
+   FAUX POSITIF par famille (un dossier sain qui déclencherait la famille) ne sont pas construites.
+6. **Une garde, un refus, un objet.** L'épreuve à deux passes est aveugle à une attaque qui accepte
+   deux refus et neutralise deux objets : elle a dit « prouvée » sur une contrainte inerte depuis
+   0009 (revue hostile n°6). Le registre l'interdit désormais structurellement, et le cliquet des
+   tests compte par `vitest list` — les deux instruments ont enfin échoué exprès.
+4. **Les fichiers d'or sont reportés** (sélections par graine, seuils, totaux balance/grand livre,
+   familles par dossier, routes, clés par locale, politiques RLS, grants) : chacun exige son cas
+   connu mauvais avant d'exister (règle 17), et la nuit n'en a construit aucun.
+5. **Le cliquet compte des `it(`, pas des preuves** — un test vidé compte encore ; il le dit.
+
+## DA-32 — L'IPE au niveau du rapport : la tranche bornée (Groupe 1, item 1.8)
+
+1. **Le rapport est l'objet ; le papier le désigne.** Les colonnes de 0031 restent lues par
+   compatibilité ; la documentation vit sur le rapport, l'« approprié au test » et l'arrêté attendu
+   restent sur le papier — ce sont des faits DU papier.
+2. **La réutilisation se refuse sur l'ARRÊTÉ**, pas sur les paramètres : deux rapports de mêmes
+   paramètres et d'arrêtés différents sont deux tests IPE (unique sur nom + arrêté). Un même nom sur
+   un même arrêté est un doublon, refusé en nommant le rapport à désigner.
+3. **L'import capture, il ne bloque pas** : cinq champs facultatifs sur la balance et le FEC, repris
+   par le rapport créé dessus. Un rapport, lui, exige ce qu'il exige.
+4. **Le critère du plan se joue sur le grand livre importé**, pas sur la balance âgée : la balance
+   auxiliaire est une pièce, pas un fichier importé (reporté).
+5. **Rien de l'existant ne disparaît** : `enregistrerIpe` (le peuplement, les tests d'avant) crée
+   ou reprend le rapport du même nom et du même arrêté, puis le désigne — avec le refus qui va avec.

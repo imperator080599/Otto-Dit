@@ -1,4 +1,5 @@
 import { q, q1, q01 } from '@/lib/db/client';
+import { missionN1 } from './engagement';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
 
@@ -51,17 +52,11 @@ const COLONNES = `id, engagement_id, source_engagement_id, kind, source_ref, lab
  * heuristique de date.
  */
 export async function missionPrecedente(engagementId: string): Promise<{ id: string; name: string } | null> {
-  return q01<{ id: string; name: string }>(
-    `select prev.id, prev.name
-     from engagement e
-     join period p on p.id = e.period_id
-     join engagement prev on prev.entity_id = e.entity_id
-       and prev.period_id = p.prior_period_id
-       and prev.kind = e.kind
-       and prev.tenant_id = e.tenant_id
-     where e.id = $1`,
-    [engagementId],
-  );
+  /* UNE SEULE DÉFINITION DE N-1 dans le produit : celle de `missionN1`
+     (engagement.ts). En avoir deux, c'est en avoir une fausse un jour — et
+     c'est arrivé : l'en-tête montrait la mission NEP comme N-1 d'une mission
+     SOX pendant que la reprise lisait la bonne (revue hostile n°4). */
+  return missionN1(engagementId);
 }
 
 /* ── proposer ───────────────────────────────────────────────────────────── */

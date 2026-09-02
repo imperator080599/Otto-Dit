@@ -101,6 +101,27 @@ export function parseTbCsv(content: string, mapping: TbMapping): TbParseResult {
   return { rows, violations };
 }
 
+/** CE QUE L'IMPORT CAPTURE SUR L'INFORMATION PRODUITE PAR L'ENTITÉ (1.8), au
+ *  moment de l'import : système source, généré par le système ou manuel,
+ *  identifiant du rapport, date et auteur de l'extraction. Facultatif — rien
+ *  ne bloque un import sans (règle 2 de la nuit) ; un rapport IPE créé sur ce
+ *  fichier le reprend. */
+export interface CaptureIpe {
+  systemeSource?: string | null;
+  natureIpe?: 'systeme' | 'systeme_modifie' | 'manuelle' | null;
+  identifiantRapport?: string | null;
+  extraitLe?: string | null;
+  extraitPar?: string | null;
+}
+const CAPTURE_VIDE: Required<CaptureIpe> = { systemeSource: null, natureIpe: null, identifiantRapport: null, extraitLe: null, extraitPar: null };
+function capture(c?: CaptureIpe): unknown[] {
+  const x = { ...CAPTURE_VIDE, ...(c ?? {}) };
+  if (x.natureIpe && !['systeme', 'systeme_modifie', 'manuelle'].includes(x.natureIpe)) {
+    throw new Error('import : la nature IPE est « systeme », « systeme_modifie » ou « manuelle »');
+  }
+  return [x.systemeSource || null, x.natureIpe || null, x.identifiantRapport || null, x.extraitLe || null, x.extraitPar || null];
+}
+
 export async function importTb(opts: {
   engagementId: string;
   userId: string;
@@ -108,13 +129,15 @@ export async function importTb(opts: {
   content: string;
   mapping: TbMapping;
   periodKind: 'current' | 'prior';
+  ipe?: CaptureIpe;
 }): Promise<{ importFileId: string; snapshotId?: string; violations: Violation[]; ok: boolean }> {
   const ctx = await engagementCtx(opts.engagementId);
   const parsed = parseTbCsv(opts.content, opts.mapping);
   const ok = !parsed.violations.some((v) => v.severity === 'error');
   const file = await q1<{ id: string }>(
-    `insert into import_file (engagement_id, kind, filename, sha256, mapping_profile, validation_report, status, row_count)
-     values ($1,'tb',$2,$3,$4,$5,$6,$7) returning id`,
+    `insert into import_file (engagement_id, kind, filename, sha256, mapping_profile, validation_report, status, row_count,
+                              systeme_source, nature_ipe, identifiant_rapport, extrait_le, extrait_par)
+     values ($1,'tb',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning id`,
     [
       opts.engagementId,
       opts.filename,
@@ -123,6 +146,7 @@ export async function importTb(opts: {
       JSON.stringify({ violations: parsed.violations }),
       ok ? (parsed.violations.length ? 'validated_with_warnings' : 'validated') : 'rejected',
       parsed.rows.length,
+      ...capture(opts.ipe),
     ],
   );
   let snapshotId: string | undefined;
@@ -174,6 +198,7 @@ export async function importFec(opts: {
   filename: string;
   bytes: Uint8Array;
   confirmInvalidation?: boolean;
+  ipe?: CaptureIpe;
 }): Promise<{ importFileId: string; violations: Violation[]; ok: boolean; rowCount: number; invalidatedSamples?: number }> {
   const ctx = await engagementCtx(opts.engagementId);
   const affected = await drawnSamples(opts.engagementId);
@@ -192,8 +217,9 @@ export async function importFec(opts: {
   });
   const ok = parsed.ok;
   const file = await q1<{ id: string }>(
-    `insert into import_file (engagement_id, kind, filename, sha256, validation_report, status, row_count)
-     values ($1,'fec',$2,$3,$4,$5,$6) returning id`,
+    `insert into import_file (engagement_id, kind, filename, sha256, validation_report, status, row_count,
+                              systeme_source, nature_ipe, identifiant_rapport, extrait_le, extrait_par)
+     values ($1,'fec',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
     [
       opts.engagementId,
       opts.filename,
@@ -201,6 +227,7 @@ export async function importFec(opts: {
       JSON.stringify({ violations: parsed.violations, meta: parsed.meta }),
       ok ? (parsed.violations.length ? 'validated_with_warnings' : 'validated') : 'rejected',
       parsed.rows.length,
+      ...capture(opts.ipe),
     ],
   );
 

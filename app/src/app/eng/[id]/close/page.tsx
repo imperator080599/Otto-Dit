@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { q01 } from '@/lib/db/client';
-import { obstaclesAuVisa } from '@/lib/services/obstacles';
+import { obstaclesAuVisa, type Famille } from '@/lib/services/obstacles';
 import { latestArchive } from '@/lib/services/archive';
 import { dateRapport } from '@/lib/services/completion';
 import { fileDeadlines } from '@/lib/services/retention';
@@ -51,7 +51,7 @@ export default async function ClosePage({
   const echeances = await fileDeadlines(id, rapport ?? undefined);
 
   const scelle = Boolean(archive);
-  const parFamille = new Map<string, number>();
+  const parFamille = new Map<Famille, number>();
   for (const o of obstacles) parFamille.set(o.famille, (parFamille.get(o.famille) ?? 0) + 1);
 
   return (
@@ -85,7 +85,7 @@ export default async function ClosePage({
               {[...parFamille.entries()].map(([f, n]) => (
                 /* Le NOM de la famille, pas son code : « achevement — 1 » n'est
                    pas une phrase qu'on donne à lire à un signataire. */
-                <li key={f}>{FAMILLES[f] ? t(FAMILLES[f].titre) : f} — {n}</li>
+                <li key={f}>{t(FAMILLES[f].titre)} — {n}</li>
               ))}
             </ul>
             <p>

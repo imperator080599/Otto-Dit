@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-01 · 36 gestes · **271 clics** au total.
+Parcours du 2026-09-02 · 39 gestes · **282 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -17,6 +17,9 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | langue : le parcours lit le catalogue DANS la langue réellement servie | 0 |
 | création : le dossier créé est ATTEIGNABLE | 2 |
 | rail : l'état du dossier, pas le catalogue | 1 |
+| création : un client NEUF et son exercice, en un écran | 2 |
+| création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1 | 3 |
+| tableau de bord : ce qui attend l’associé, hors rail, et le clic direct | 2 |
 | acceptation du dossier neuf | 9 |
 | import du grand livre définitif | 3 |
 | rapprochement balance / grand livre | 1 |
@@ -38,7 +41,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | estimation : le fichier de calcul de la cliente | 7 |
 | résolution des écarts | 26 |
 | re-exécution et évaluation | 2 |
-| papier de travail et visas | 34 |
+| papier de travail et visas | 38 |
 | bascule entre missions du groupe | 2 |
 | réunions : créneaux, ordre des copies, envoi simulé | 6 |
 | la boucle | 0 |

@@ -59,15 +59,35 @@ export function roundThresholdCents(cents: number): number {
 
 /** Deterministic proposal rule (documented in the rationale): profit-oriented entity with
  *  meaningful PBT (≥2% of revenue) ⇒ PBT at pack default %; else revenue at default %. */
-export function proposeMateriality(tb: TbRow[], pack: AssurancePack): MaterialityProposal {
+export function proposeMateriality(tb: TbRow[], pack: AssurancePack, prefere?: 'pbt' | 'revenue'): MaterialityProposal {
   const agg = benchmarkAggregates(tb);
   const meaningfulPbt = agg.revenueCents > 0 && agg.pbtCents >= 0.02 * agg.revenueCents;
-  const code = meaningfulPbt ? 'pbt' : 'revenue';
+  /* LE RÉFÉRENTIEL PRÉFÉRÉ À LA CRÉATION (1.1) passe avant la règle — si le
+     pack le connaît. Ce n'est pas un jugement posé par la machine : c'est une
+     préférence humaine, écrite à la création, et la règle qui aurait décidé
+     autrement est NOMMÉE dans le motif pour que le réviseur la voie. */
+  const regle = meaningfulPbt ? 'pbt' : 'revenue';
+  const pct = (b: string) => `${+(pack.materiality.benchmarks.find((x) => x.code === b)!.pctDefault * 100).toFixed(2)}%`;
+  const motifRegle = meaningfulPbt
+    ? `profit-oriented entity with stable pre-tax result (PBT ≥ 2% of revenue) ⇒ benchmark PBT at ${pct('pbt')}`
+    : `result not representative (PBT < 2% of revenue) ⇒ benchmark revenue at ${pct('revenue')}`;
+  /* LA PRÉFÉRENCE NE CONTOURNE PAS LA GARDE. « PBT » préféré sur une entité en
+     perte donnait un seuil de 1 000 € — le plancher d'arrondi — sur une base
+     négative (revue hostile n°4). Un référentiel préféré s'applique s'il est
+     REPRÉSENTATIF : le PBT s'il est significatif, le chiffre d'affaires s'il
+     est positif ; sinon la règle décide, et le motif dit que la préférence
+     n'a pas été suivie, et pourquoi. */
+  const connu = prefere && pack.materiality.benchmarks.some((b) => b.code === prefere) ? prefere : undefined;
+  const applicable = connu === 'pbt' ? meaningfulPbt : connu === 'revenue' ? agg.revenueCents > 0 : false;
+  const code = applicable ? connu! : regle;
   const def = pack.materiality.benchmarks.find((b) => b.code === code)!;
   const base = code === 'pbt' ? agg.pbtCents : agg.revenueCents;
-  return computeMateriality(code, base, def.pctDefault, pack, agg, meaningfulPbt
-    ? `profit-oriented entity with stable pre-tax result (PBT ≥ 2% of revenue) ⇒ benchmark PBT at ${def.pctDefault * 100}%`
-    : `result not representative (PBT < 2% of revenue) ⇒ benchmark revenue at ${def.pctDefault * 100}%`);
+  const motif = !connu || code === connu && code === regle
+    ? motifRegle
+    : applicable
+      ? `benchmark ${code} preferred at engagement creation (the rule alone would have chosen ${regle}: ${motifRegle}) at ${pct(code)}`
+      : `benchmark ${connu} preferred at engagement creation but NOT applied — ${connu === 'pbt' ? 'pre-tax result is negative or below 2% of revenue' : 'revenue is not positive'}; the rule decides: ${motifRegle}`;
+  return computeMateriality(code, base, def.pctDefault, pack, agg, motif);
 }
 
 export function computeMateriality(

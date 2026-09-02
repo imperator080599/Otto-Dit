@@ -218,6 +218,10 @@ export function ecransDe(dir: string, out: string[] = []): string[] {
    nommés ici, un par un, plutôt que devinés par un motif. */
 const DONNEES_SYNTHETIQUES = new Set([
   'services/monde-demo.ts', 'services/tieout-demo.ts', 'seed.ts', 'flows/part2.ts',
+  /* Le parcours de démonstration en flux : réponses d'acceptation, motifs — des
+     DONNÉES du monde fictif, pas des libellés (la forme ternaire les a fait
+     apparaître). */
+  'flows/parcours.ts',
 ]);
 
 /* CE QUE LA RÈGLE NE PEUT PAS ENCORE TENIR, ET POURQUOI — dit ici plutôt que
@@ -246,9 +250,53 @@ export const DIFFERES: Record<string, string> = {
     'liste de manques dont les autres entrées sont du contenu de pack (français)',
   'services/reunions.ts':
     'titre affiché à côté de rôles bruts (`manager`, `partner`) que le catalogue ne couvre pas non plus',
+  'services/carryforward.ts':
+    'propositions de reprise ÉCRITES PUIS STOCKÉES à la proposition (libellé et détail) — se relisent telles quelles',
+  /* DEUX COMPTES RENDUS D'ADAPTATEUR SIMULÉ : rendus à l'action, qui ne les
+     affiche pas (le journal ne garde que « remis »). Ils sont listés ici,
+     pas tus — le jour où un écran les affiche, la règle les verra. */
+  'services/agenda/adapters.ts':
+    'compte rendu d’un transport simulé, rendu à l’action qui ne l’affiche pas (journal : « remis » seulement)',
+  'services/circularisations/transport.ts':
+    'compte rendu d’un transport simulé, rendu à l’action qui ne l’affiche pas (journal : « remis » seulement)',
+  /* LES CANDIDATS DE L'ANALYSE DES BALANCES AUXILIAIRES : des constats chiffrés
+     rendus à l'écran PUIS STOCKÉS au registre des facteurs à la proposition,
+     avec la question au client — du contenu d'analyse, écrit une fois. Une
+     traduction au rendu ferait diverger l'écran de ce que le registre garde. */
+  'services/balances-aux.ts':
+    'constats d’analyse ÉCRITS PUIS STOCKÉS au registre des facteurs à la proposition (description et question au client)',
 };
 
-const PROPS_LIBELLE = /\b(libelle|label|titre|phrase|raison)\s*:\s*(['"])((?:\\.|(?!\2)[^\\])*)\2/g;
+/* ET LES GABARITS, ET `detail`. La sixième version ne lisait que les chaînes
+   entre apostrophes ou guillemets, sous cinq noms de propriété : « en attente
+   du visa réviseur », écrit `detail: \`…\``, était rendu tel quel sur l'écran
+   d'où l'on part, et le détecteur affichait 0 reste (revue hostile n°4). Un
+   gabarit se lit avec ses \${…} ôtés par `lisible`.
+   CE QU'IL NE VOIT TOUJOURS PAS, ET LE DIT : une table `Record<string,
+   string>` dont les clés sont des codes (`reviewer: 'réviseur'`) — aucun des
+   six noms de propriété n'y figure. Le cas est au registre. */
+/* CE QUI PORTE UN NOM DE LIBELLÉ SANS EN ÊTRE UN — exclu avec sa raison, et
+   COMPTÉ : une exclusion qui ne se compte pas est une exclusion qui s'oublie.
+   Ce ne sont pas des différés (rien n'est dû) : des chaînes que la règle lit
+   parce qu'elles portent `description` ou `raison`, et qui ne sont ni
+   affichées ni traduisibles par construction. */
+export const HORS_LIBELLE: Record<string, string> = {
+  'gardes/registre.ts': 'verdicts d’épreuve et données de fixture, lus dans la sortie des tests et docs/GUARDS.md — jamais sur un écran',
+  'services/sox.ts': 'attributs du pack PCAOB/SOX (contenu de pack, anglais, gelé — règle 14)',
+  'services/matching.ts': 'description d’un écart ÉCRITE PUIS STOCKÉE à sa détection (contenu du dossier, pas un libellé)',
+  'services/entretiens-analyste.ts': 'description d’outil transmise à un modèle — jamais rendue',
+  'services/query/adapter.ts': 'consigne transmise à un modèle — jamais rendue',
+};
+
+const PROPS_LIBELLE = /\b(libelle|label|titre|phrase|raison|detail|resume|description|quoi)\s*:\s*(['"`])((?:\\.|(?!\2)[^\\])*)\2/g;
+/* ET LA FORME TERNAIRE : `resume: cond ? 'a' : 'b'` — le nom de propriété est
+   suivi d'une condition, pas d'une chaîne, et la première règle ne voyait rien
+   (revue hostile n°5 : « rien à contrôler tant que l'échantillon n'est pas
+   tiré » s'affichait en français sur l'instance anglaise). La condition ne
+   contient pas de chaîne et peut s'étaler sur plusieurs lignes — la première
+   expression s'arrêtait au saut de ligne, et l'épreuve l'a dit ; les deux
+   branches sont lues. */
+const PROPS_TERNAIRE = /\b(libelle|label|titre|phrase|raison|detail|resume|description|quoi)\s*:\s*[^'"`;]{1,160}\?\s*(['"`])((?:\\.|(?!\2)[^\\])*)\2\s*:\s*(['"`])((?:\\.|(?!\4)[^\\])*)\4/g;
 
 /**
  * Les libellés que les SERVICES tiennent en dur, au lieu d'une clé du
@@ -257,9 +305,10 @@ const PROPS_LIBELLE = /\b(libelle|label|titre|phrase|raison)\s*:\s*(['"])((?:\\.
  */
 export function libellesDeService(
   lib: string, cles: Set<string>,
-): { restes: string[]; differes: string[] } {
+): { restes: string[]; differes: string[]; exclus: string[] } {
   const out: string[] = [];
   const differes: string[] = [];
+  const exclus: string[] = [];
   for (const f of modulesDe(lib)) {
     const rel = path.relative(lib, f).split(path.sep).join('/');
     if (DONNEES_SYNTHETIQUES.has(rel)) continue;
@@ -269,15 +318,18 @@ export function libellesDeService(
        échue » est écrit une fois dans `event_log` et ne se réécrit jamais :
        le traduire au rendu réécrirait l'histoire du dossier. */
     code = code.replace(/payload:\s*\{[^}]*\}/g, 'payload: { }');
-    for (const m of code.matchAll(PROPS_LIBELLE)) {
-      const v = m[3];
+    const trouvailles: [string, string][] = [];
+    for (const m of code.matchAll(PROPS_LIBELLE)) trouvailles.push([m[1], m[3]]);
+    for (const m of code.matchAll(PROPS_TERNAIRE)) { trouvailles.push([m[1], m[3]]); trouvailles.push([m[1], m[5]]); }
+    for (const [prop, v] of trouvailles) {
       if (cles.has(v)) continue;             // c'est une clé : la règle est tenue
       if (!lisible(v, true)) continue;        // un code, une valeur, un chemin
-      if (rel in DIFFERES) { differes.push(`${rel} → ${m[1]} (${DIFFERES[rel]})`); continue; }
-      out.push(`${rel} → ${m[1]}: « ${v.slice(0, 70)} »`);
+      if (rel in DIFFERES) { differes.push(`${rel} → ${prop} (${DIFFERES[rel]})`); continue; }
+      if (rel in HORS_LIBELLE) { exclus.push(`${rel} → ${prop} (${HORS_LIBELLE[rel]})`); continue; }
+      out.push(`${rel} → ${prop}: « ${v.slice(0, 70)} »`);
     }
   }
-  return { restes: out, differes };
+  return { restes: out, differes, exclus };
 }
 
 /** Les modules de `src/lib`, hors tests et hors catalogue lui-même. */

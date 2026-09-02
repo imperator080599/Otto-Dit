@@ -11,8 +11,14 @@
 // au détecteur de langue, et trois écrans le rendaient.
 
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import type { Famille } from '@/lib/services/obstacles';
 
-export const FAMILLES: Record<string, { titre: CleLibelle; pourquoi: CleLibelle }> = {
+/* TYPÉ SUR LA LISTE DES FAMILLES : « achevement » et « processus » manquaient,
+   et le monde semé affichait « achevement » en code brut sur quatre écrans —
+   un repli `FAMILLES[f] ? t(…) : f` que le détecteur de langue ne peut pas
+   voir, une variable n'étant pas un littéral (revue hostile n°5). Une famille
+   sans titre ne compile plus. */
+export const FAMILLES: Record<Famille, { titre: CleLibelle; pourquoi: CleLibelle }> = {
   acceptation: { titre: 'famille.acceptation.titre', pourquoi: 'famille.acceptation.pourquoi' },
   independance: { titre: 'famille.independance.titre', pourquoi: 'famille.independance.pourquoi' },
   reprise: { titre: 'famille.reprise.titre', pourquoi: 'famille.reprise.pourquoi' },
@@ -24,4 +30,6 @@ export const FAMILLES: Record<string, { titre: CleLibelle; pourquoi: CleLibelle 
   pointage: { titre: 'rail.pointage', pourquoi: 'famille.pointage.pourquoi' },
   evaluation: { titre: 'famille.evaluation.titre', pourquoi: 'famille.evaluation.pourquoi' },
   jalons: { titre: 'famille.jalons.titre', pourquoi: 'famille.jalons.pourquoi' },
+  processus: { titre: 'rail.processus', pourquoi: 'famille.processus.pourquoi' },
+  achevement: { titre: 'rail.achevement', pourquoi: 'famille.achevement.pourquoi' },
 };

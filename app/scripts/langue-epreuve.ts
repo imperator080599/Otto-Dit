@@ -132,6 +132,37 @@ const CAS: Cas[] = [
     attendu: '\u00e0 corriger (bloquante)',
   },
   {
+    /* LA CLASSE QUE LA SIXIÈME VERSION NE LISAIT PAS : un `detail:` en GABARIT
+       (backticks) dans un service. « en attente du visa réviseur » se rendait
+       tel quel sur l'instance anglaise, sur l'écran d'où l'on part — et le
+       détecteur affichait 0 reste (revue hostile n°4). */
+    nom: 'un « detail » français en gabarit dans un service',
+    racine: 'lib',
+    fichier: 'services/travaux.ts',
+    avant: "detail: motif('trav.detail.visa', { role: { cle: NOM_VISA[attendu] } }),",
+    apres: 'detail: `en attente du visa ${NOM_VISA[attendu]}`,',
+    attendu: 'en attente du visa',
+  },
+  {
+    /* LA FORME TERNAIRE, que la septième version ne lisait pas : la propriété
+       est suivie d'une condition, pas d'une chaîne. */
+    nom: 'un « resume » français en ternaire dans un service',
+    racine: 'lib',
+    fichier: 'services/poste.ts',
+    avant: "        ? motif('poste.resume.rienAControler')\n        : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),",
+    apres: "        ? 'rien à contrôler tant que l’échantillon n’est pas tiré'\n        : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,",
+    attendu: 'rien à contrôler',
+  },
+  {
+    /* Un nom de propriété que la liste ne portait pas. */
+    nom: 'une « description » française hors catalogue dans un service',
+    racine: 'lib',
+    fichier: 'services/travaux.ts',
+    avant: "      quand: d.due_date, retard: true,",
+    apres: "      quand: d.due_date, retard: true, description: 'échéance dépassée, sans réponse',",
+    attendu: 'échéance dépassée, sans réponse',
+  },
+  {
     /* Et la variante ANGLAISE, pour que la règle des services reste
        structurelle et non linguistique, comme celle des écrans. */
     nom: 'un libellé ANGLAIS en dur dans un service',

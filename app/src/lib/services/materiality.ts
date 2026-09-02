@@ -55,7 +55,10 @@ export async function propose(engagementId: string, userId: string): Promise<str
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);
   const tb = await tbRows(engagementId);
-  const p = proposeMateriality(tb, pack);
+  /* LE RÉFÉRENTIEL PRÉFÉRÉ À LA CRÉATION (1.1) voyage dans framework_set ; la
+     règle du pack décide s'il n'y en a pas, et le motif nomme les deux. */
+  const prefere = (fs as { materiality_benchmark?: string }).materiality_benchmark;
+  const p = proposeMateriality(tb, pack, prefere === 'pbt' || prefere === 'revenue' ? prefere : undefined);
 
   const run = await q1<{ id: string }>(
     `insert into engine_run (tenant_id, engagement_id, engine, engine_version, pack_id, config_hash, params, finished_at)

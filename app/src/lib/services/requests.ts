@@ -7,6 +7,10 @@ import { frameworkSet } from './fsli';
 // S4 request engine: PBC generation from the sample (per-tested-unit items) + standing
 // items; L2 send gate; statuses; lazy reminder cadence (Q8) against the demo clock.
 
+/** Le numéro d'une demande tel qu'il s'affiche partout : R-001. Formé ici et
+ *  nulle part ailleurs — quatre écrans le recomposaient chacun. */
+export const numeroDemande = (seq: number | string): string => `R-${String(seq).padStart(3, '0')}`;
+
 export async function nextSeq(engagementId: string): Promise<number> {
   const r = await q1<{ n: string }>(`select coalesce(max(seq_no), 0) n from request where engagement_id = $1`, [engagementId]);
   return Number(r.n) + 1;

@@ -20,11 +20,18 @@ const FIGE = path.join(ici, '..', '..', 'docs', 'PARCOURS.json');
 const courant = stationsDe(fs.readFileSync(SCENARIO, 'utf8'));
 
 if (process.argv.includes('--figer')) {
-  const ancien: Fige = fs.existsSync(FIGE)
+  /* LE FIGÉ STATIQUE NE RÉÉCRIT QUE LES DÉCLARÉES. Les conduites ET la liste
+     des « jamais conduites » viennent du parcours cliqué (`npm run clics --
+     --figer`) : les réécrire ici sans elles effaçait, sans un mot, le champ
+     qui dit que vert n'est pas complet (revue hostile n°4). */
+  const ancien: Fige & { jamaisConduites?: string[] } = fs.existsSync(FIGE)
     ? (JSON.parse(fs.readFileSync(FIGE, 'utf8')) as Fige) : { declarees: [], conduites: [] };
-  fs.writeFileSync(FIGE, `${JSON.stringify({ declarees: courant, conduites: ancien.conduites }, null, 2)}\n`);
+  fs.writeFileSync(FIGE, `${JSON.stringify({
+    declarees: courant, conduites: ancien.conduites,
+    ...(ancien.jamaisConduites ? { jamaisConduites: ancien.jamaisConduites } : {}),
+  }, null, 2)}\n`);
   console.log(`docs/PARCOURS.json figé : ${courant.length} station(s) déclarée(s), `
-    + `${ancien.conduites.length} conduite(s) conservée(s).`);
+    + `${ancien.conduites.length} conduite(s) et ${ancien.jamaisConduites?.length ?? 0} jamais conduite(s) conservée(s).`);
   process.exit(0);
 }
 

@@ -3,6 +3,7 @@ import { q1 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { missionsParClient } from '@/lib/services/bascule';
 import { railDuDossier } from '@/lib/services/rail';
+import { missionN1 } from '@/lib/services/engagement';
 import { tr } from '@/lib/i18n';
 import { basculerAction } from './bascule-actions';
 import { EngNav } from './nav';
@@ -21,15 +22,23 @@ export default async function EngagementLayout({
      plusieurs mandats — jamais une liste plate. */
   const clients = await missionsParClient(user.id);
   const eng = await q1<{
-    id: string; name: string; status: string;
+    id: string; name: string; status: string; classe: string;
     framework_set: { assurance_packs: string[]; accounting_map: string; language: string };
     entity_name: string; period_label: string;
   }>(
-    `select e.id, e.name, e.status, e.framework_set, en.name entity_name, p.label period_label
+    `select e.id, e.name, e.status, e.classe, e.framework_set, en.name entity_name, p.label period_label
      from engagement e join entity en on en.id = e.entity_id join period p on p.id = e.period_id
      where e.id = $1`,
     [id],
   );
+  /* LE DOSSIER N-1, EN EN-TÊTE (1.1) : par LA règle de N-1 (`missionN1` —
+     même entité, même cabinet, même nature, exercices chaînés), celle que
+     lisent la reprise et l'acceptation. Un lien absent veut dire « aucune
+     mission de même nature sur l'exercice chaîné » : premier exercice chez
+     nous, trou entre deux exercices, ou autre nature — l'en-tête ne devine
+     pas laquelle. Le lien mène au dossier ; si le lecteur n'en est pas membre,
+     c'est `requireMember` qui le lui dit. */
+  const n1 = await missionN1(id);
 
   /* LE RAIL D'ÉTAT (ADR-103) : calculé ici, contre l'état réel du dossier. */
   const t = await tr();
@@ -45,6 +54,9 @@ export default async function EngagementLayout({
         <div>
           <div className="faint">
             <Link href="/">{t('col.engagements')}</Link> / {eng.entity_name} · {eng.period_label}
+            {n1 && (
+              <> · {t('commun.dossierN1')} <Link href={`/eng/${n1.id}`} data-n1>{n1.name} · {n1.period_label}</Link></>
+            )}
           </div>
           <h1>{eng.name}</h1>
         </div>
@@ -78,6 +90,9 @@ export default async function EngagementLayout({
           ))}
           <span className="badge gray">{eng.framework_set.accounting_map}</span>
           <span className="badge gray">{eng.framework_set.language}</span>
+          {eng.classe !== 'autre' && (
+            <span className="badge gray" data-classe={eng.classe}>{t(`nm.classe.${eng.classe as 'eip' | 'cotee' | 'composante'}`)}</span>
+          )}
           <span className={`badge ${eng.status === 'locked' ? 'amber' : 'green'}`}>{eng.status}</span>
           {/* INTERROGER LE DOSSIER — un bouton en haut à droite, plus une
               section du rail (R-03) : on pose une question depuis l'écran où

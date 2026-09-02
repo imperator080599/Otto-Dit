@@ -55,12 +55,12 @@ export default async function PostePage({
           ligne cliquable. Elle remplace le tableau qui décrivait chaque étape. */}
       <nav className="etapes" aria-label={t('poste.testing')}>
         {v.blocs.map((b) => (b.href ? (
-          <Link key={b.cle} href={b.href} className={`etape ${CLASSE[b.etat]}`} title={b.resume}>
-            {t(b.titre)}<span className="etape-detail">{b.resume}</span>
+          <Link key={b.cle} href={b.href} className={`etape ${CLASSE[b.etat]}`} title={t(b.resume.cle, b.resume.vars)}>
+            {t(b.titre)}<span className="etape-detail">{t(b.resume.cle, b.resume.vars)}</span>
           </Link>
         ) : (
-          <span key={b.cle} className={`etape ${CLASSE[b.etat]}`} title={b.resume}>
-            {t(b.titre)}<span className="etape-detail">{b.resume}</span>
+          <span key={b.cle} className={`etape ${CLASSE[b.etat]}`} title={t(b.resume.cle, b.resume.vars)}>
+            {t(b.titre)}<span className="etape-detail">{t(b.resume.cle, b.resume.vars)}</span>
           </span>
         )))}
       </nav>

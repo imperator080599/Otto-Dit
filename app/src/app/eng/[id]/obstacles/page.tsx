@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { obstaclesAuVisa } from '@/lib/services/obstacles';
+import { obstaclesAuVisa, type Famille } from '@/lib/services/obstacles';
 import { FAMILLES } from '../familles';
 import { tr } from '@/lib/i18n';
 
@@ -21,7 +21,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
   await requireMember(id);
   const liste = await obstaclesAuVisa(id);
 
-  const parFamille = new Map<string, string[]>();
+  const parFamille = new Map<Famille, string[]>();
   for (const o of liste) {
     if (!parFamille.has(o.famille)) parFamille.set(o.famille, []);
     parFamille.get(o.famille)!.push(t(o.motif.cle, o.motif.vars));
@@ -45,7 +45,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
         <div className="panel warn" key={famille}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>
-              {FAMILLES[famille] ? t(FAMILLES[famille].titre) : famille}{' '}
+              {t(FAMILLES[famille].titre)}{' '}
               <span className="badge amber">{libelles.length}</span>
             </h2>
             <Link
@@ -53,7 +53,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
               className="btn secondary small"
             >{t('obst.aller')}</Link>
           </div>
-          <p className="faint">{FAMILLES[famille] ? t(FAMILLES[famille].pourquoi) : null}</p>
+          <p className="faint">{t(FAMILLES[famille].pourquoi)}</p>
           <ul>{libelles.map((l, i) => <li key={i}>{l}</li>)}</ul>
         </div>
       ))}

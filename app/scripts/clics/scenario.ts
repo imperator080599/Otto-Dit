@@ -347,6 +347,106 @@ export async function conduire(
       grises > 0 && new RegExp([R('rail.raison.apresAcceptation'), R('rail.raison.auPremierEcart')].map((x) => x.source).join('|')).test(t), `${grises} grisée(s), raisons visibles`);
   });
 
+  // ── 1 bis. CRÉER UN CLIENT NEUF ET SON EXERCICE, EN UN ÉCRAN (Groupe 1, 1.1)
+  //
+  // Le formulaire d'accueil accepte un client qui n'existe pas encore et un
+  // exercice par sa date de clôture ; la mission naît avec sa classe et sa
+  // préférence de seuil, et s'ouvre sur son acceptation avec le rail entier.
+  // Puis l'exercice SUIVANT du même client se relie tout seul au précédent :
+  // l'en-tête montre le lien N-1. Rejouable : un second passage tombe sur le
+  // refus « existe déjà », qui est la règle, et le dit.
+  const CLIENT_NEUF = 'Client de nuit (fictif)';
+  await station('création : un client NEUF et son exercice, en un écran', async () => {
+    await aller(base + '/');
+    await cliquer(`summary:has-text("${L('nouveau.titre')}")`, 300);
+    await p.locator('select[name=entity_id]').selectOption('__nouveau__');
+    await p.locator('input[name=entity_name]').fill(CLIENT_NEUF);
+    await p.locator('select[name=period_id]').selectOption('__nouveau__');
+    await p.locator('input[name=period_end]').fill('31/12/2026');
+    await p.locator('select[name=classe]').selectOption('eip');
+    await p.locator('select[name=benchmark]').selectOption('revenue');
+    await cliquer(`form button:has-text("${L('nm.creer')}")`, 2500);
+    const motif = refus(p);
+    /* AU REJEU, LA STATION CHANGE DE NOM : le figé dédoublonne par nom, et
+       un « ok » de rejeu sous le nom du vrai chemin ferait croire que les cinq
+       assertions ont été conduites (revue hostile n°4). Le refus du doublon
+       est une règle : il se vérifie sous son propre nom. */
+    if (motif && /existe déjà|already exists/i.test(motif)) {
+      dire('création : rejeu — le client de nuit existe déjà, et le formulaire le dit', true, motif);
+      return;
+    }
+    const ok = p.url().includes('/acceptance') && (await compte('[data-classe="eip"]')) === 1;
+    dire('création : un client NEUF et son exercice, en un écran',
+      ok, motif ?? `${p.url().replace(base, '')} · classe affichée en en-tête`);
+    dire('création : un premier exercice n’a pas de N-1 — l’en-tête ne l’invente pas',
+      (await compte('[data-n1]')) === 0, 'aucun lien N-1');
+  });
+
+  await station('création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1', async () => {
+    await aller(base + '/');
+    await cliquer(`summary:has-text("${L('nouveau.titre')}")`, 300);
+    await p.locator('select[name=entity_id]').selectOption({ label: CLIENT_NEUF });
+    await p.locator('select[name=period_id]').selectOption('__nouveau__');
+    await p.locator('input[name=period_end]').fill('31/12/2027');
+    await p.locator('input[name=name]').fill('Client de nuit — exercice suivant');
+    await cliquer(`form button:has-text("${L('nm.creer')}")`, 2500);
+    const motif = refus(p);
+    if (motif && /chevauche|overlap|existe déjà|already exists/i.test(motif)) {
+      dire('création : rejeu — l’exercice suivant existe déjà, et le formulaire le dit', true, motif);
+      return;
+    }
+    const lien = p.locator('[data-n1]');
+    dire('création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1',
+      p.url().includes('/acceptance') && (await lien.count()) === 1 && /FY2026/.test(await lien.innerText().catch(() => '')),
+      motif ?? `lien N-1 : ${await lien.innerText().catch(() => '(absent)')}`);
+    /* Le rail du dossier neuf : les imports attendent l'acceptation, et la
+       raison est ÉCRITE dans le rail — derrière « tout afficher », que l'on
+       déplie d'abord (lire le corps sans déplier ne voyait rien : le premier
+       passage a échoué exactement là). Et la reprise N-1 est ATTEIGNABLE —
+       vérifié, pas commenté : son lien n'est pas grisé. */
+    if (await compte('.rail .rail-tout')) { await p.locator('.rail .rail-tout').click(); await p.waitForTimeout(400); }
+    const rail = await p.locator('.rail').innerText().catch(() => '');
+    dire('création : le rail du dossier neuf est grisé avec ses raisons',
+      R('rail.raison.apresAcceptation').test(rail), 'raison « après acceptation » lisible dans le rail');
+    dire('création : la reprise N-1 du dossier neuf est atteignable — un N-1 existe',
+      (await compte('.rail a[href$="/carry-forward"]:not(.grise)')) === 1,
+      `${await compte('.rail a[href$="/carry-forward"]')} lien(s) reprise, ${await compte('.rail a[href$="/carry-forward"].grise')} grisé(s)`);
+  });
+
+  // ── 1 ter. LE TABLEAU DE BORD, HORS RAIL (Groupe 1, 1.2)
+  //
+  // L'associé se connecte et, sans toucher au rail, voit ce qui l'attend sur
+  // TOUS ses dossiers — les obstacles au visa par famille, ses sections, les
+  // notes ouvertes par ancienneté — et clique droit dedans. Le point de
+  // départ est le lien du bandeau ; la destination est l'écran qui lève
+  // l'obstacle. À ce stade du parcours, les dossiers neufs ne sont pas
+  // acceptés : la famille « acceptation » y est certaine.
+  await station('tableau de bord : ce qui attend l’associé, hors rail, et le clic direct', async () => {
+    await devenir(c.associe.id);
+    await aller(`${eng}/dashboard`);
+    await p.locator(`.topbar-lien:has-text("${L('commun.mesTravaux')}")`).click();
+    await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
+    const surTravaux = p.url().includes('/travaux');
+    const dossiers = await compte('[data-obstacles-dossier]');
+    const familles = await compte('[data-obstacle-famille]');
+    dire('tableau de bord : les obstacles de MES dossiers, par famille, sans toucher au rail',
+      surTravaux && dossiers > 0 && familles > 0, `${dossiers} dossier(s), ${familles} famille(s) listée(s)`);
+    dire('tableau de bord : mes sections sur tous mes dossiers, en quatre listes',
+      (await compte('[data-section-liste]')) === 4, `${await compte('[data-section-liste]')} liste(s)`);
+    dire('tableau de bord : les notes ouvertes par ancienneté, ou la phrase qui dit qu’il n’y en a pas',
+      (await compte('[data-notes-dossier]')) > 0 || R('trav.notes.aucune').test(await texte()),
+      `${await compte('[data-notes-dossier]')} dossier(s) avec notes ouvertes`);
+    if (!surTravaux || !familles) return;
+    const lien = p.locator('[data-obstacle-famille] a[href]').first();
+    const cible = (await lien.getAttribute('href')) ?? '';
+    await lien.click();
+    await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
+    dire('tableau de bord : un obstacle mène à l’écran qui le lève, en UN clic',
+      cible.length > 0 && p.url().includes(cible), `→ ${cible}`);
+  });
+
   // ── 2. ACCEPTATION ET JALONS, sur le dossier neuf
   await station('acceptation du dossier neuf', async () => {
     if (!engNeuf) { dire('acceptation : pas de dossier neuf à accepter', false, 'étape 1 en échec'); return; }
@@ -557,7 +657,11 @@ export async function conduire(
 
     /* Le passage au module de facturation est SIGNIFICATIF : il propose un
        facteur au registre. Les quatre autres se motivent sans en lever. */
-    const rangFac = p.locator('tr:has-text("Étape FAC")')
+    /* LA LIGNE SE TROUVE PAR LE CODE DU CHANGEMENT (`proc:<cycle>:etape…:FAC`),
+       affiché sous le libellé — pas par « Étape FAC », une phrase française
+       recopiée que le libellé traduit ne porte plus dès que l'instance sert
+       l'anglais (le parcours a échoué exactement là, revue hostile n°4). */
+    const rangFac = p.locator('tr', { hasText: /proc:[A-Z]+:etape[~+-]:FAC(?::|\s|$)/ })
       .filter({ has: p.locator(`button:has-text("${L('proc.decide')}")`) }).first();
     await rangFac.locator('select[name=significance]').selectOption('significatif');
     await rangFac.locator('input[name=reason]').fill('Facturation générée automatiquement — le risque se déplace vers le paramétrage.');
@@ -1762,6 +1866,40 @@ export async function conduire(
       }
     } else {
       dire('colonne : le formulaire d’ajout est présent sur le papier', false, 'formulaire absent');
+    }
+
+    /* L'INFORMATION PRODUITE PAR L'ENTITÉ — UN SEUL OBJET (Groupe 1, 1.8),
+       AVANT les visas : un papier visé ne se modifie plus. Le peuplement a
+       documenté le rapport « FEC-2025 » arrêté au 31/12/2025 et ce papier le
+       désigne. Le cas mauvais du plan : redésigner ce rapport pour un AUTRE
+       arrêté (15/01/2026) est REFUSÉ, les deux dates côte à côte — puis le
+       bon arrêté passe, et l'écran montre le rapport partagé. */
+    const selRapport = p.locator('#ipe select[name=rapport_id]');
+    if (await selRapport.count()) {
+      const optionFec = selRapport.locator('option', { hasText: 'FEC-2025' });
+      if (await optionFec.count()) {
+        await selRapport.selectOption({ label: (await optionFec.first().innerText()).trim() });
+        await p.locator('#ipe input[name=utilisee][value=oui]').check();
+        await p.locator('#ipe select[name=approprie]').selectOption('oui');
+        await p.locator('#ipe input[name=date_document]').fill('2026-01-15');
+        await soumettre(p.locator(`#ipe button:has-text("${L('wp.ipe.record')}")`).first(), 1500);
+        const r = refus(p) ?? '';
+        dire('IPE : réutiliser un rapport pour un AUTRE arrêté est refusé, les deux dates côte à côte',
+          /2025-12-31/.test(r) && /2026-01-15/.test(r), r || '(aucun refus — PASSÉ, défaut)');
+        await aller(base + lien);
+        await selRapport.selectOption({ label: (await optionFec.first().innerText()).trim() });
+        await p.locator('#ipe input[name=utilisee][value=oui]').check();
+        await p.locator('#ipe select[name=approprie]').selectOption('oui');
+        await p.locator('#ipe input[name=date_document]').fill('2025-12-31');
+        await soumettre(p.locator(`#ipe button:has-text("${L('wp.ipe.record')}")`).first(), 1500);
+        dire('IPE : le rapport du bon arrêté se désigne, et l’écran montre le rapport (empreinte, nombre de papiers)',
+          !refus(p) && (await compte('[data-ipe-rapport]')) === 1 && (await compte('[data-ipe-papiers]')) === 1,
+          refus(p) ?? `rapport affiché · ${await p.locator('[data-ipe-papiers]').first().innerText().catch(() => '')}`);
+      } else {
+        dire('IPE : le rapport FEC-2025 du peuplement est proposé au papier', false, 'option absente');
+      }
+    } else {
+      dire('IPE : le panneau propose les rapports du dossier', false, 'sélecteur absent');
     }
 
     // Les visas, DANS L'ORDRE : préparateur, reviewer, associé.
