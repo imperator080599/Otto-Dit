@@ -819,6 +819,42 @@
       "gabarit": false
     },
     {
+      "nom": "création : un client NEUF et son exercice, en un écran",
+      "gabarit": false
+    },
+    {
+      "nom": "création : un premier exercice n’a pas de N-1 — l’en-tête ne l’invente pas",
+      "gabarit": false
+    },
+    {
+      "nom": "création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1",
+      "gabarit": false
+    },
+    {
+      "nom": "création : le rail du dossier neuf est grisé avec ses raisons",
+      "gabarit": false
+    },
+    {
+      "nom": "création : la reprise N-1 du dossier neuf est atteignable — un N-1 existe",
+      "gabarit": false
+    },
+    {
+      "nom": "tableau de bord : les obstacles de MES dossiers, par famille, sans toucher au rail",
+      "gabarit": false
+    },
+    {
+      "nom": "tableau de bord : mes sections sur tous mes dossiers, en quatre listes",
+      "gabarit": false
+    },
+    {
+      "nom": "tableau de bord : les notes ouvertes par ancienneté, ou la phrase qui dit qu’il n’y en a pas",
+      "gabarit": false
+    },
+    {
+      "nom": "tableau de bord : un obstacle mène à l’écran qui le lève, en UN clic",
+      "gabarit": false
+    },
+    {
       "nom": "acceptation : décider SANS motif est refusé",
       "gabarit": false
     },
@@ -1227,6 +1263,14 @@
       "gabarit": false
     },
     {
+      "nom": "IPE : réutiliser un rapport pour un AUTRE arrêté est refusé, les deux dates côte à côte",
+      "gabarit": false
+    },
+    {
+      "nom": "IPE : le rapport du bon arrêté se désigne, et l’écran montre le rapport (empreinte, nombre de papiers)",
+      "gabarit": false
+    },
+    {
       "nom": "papier : les trois visas se posent dans l’ordre de la hiérarchie de revue",
       "gabarit": false
     },
@@ -1382,6 +1426,8 @@
   "jamaisConduites": [
     "création : refusée en doublon, et le dossier déjà créé reste ATTEIGNABLE",
     "rail : pas de dossier neuf",
+    "création : rejeu — le client de nuit existe déjà, et le formulaire le dit",
+    "création : rejeu — l’exercice suivant existe déjà, et le formulaire le dit",
     "acceptation : pas de dossier neuf à accepter",
     "acceptation : décision déjà prise (rejeu)",
     "import : aucune sélection en aval, la confirmation n’est pas demandée",
@@ -1405,6 +1451,8 @@
     "papier : le formulaire d’édition de section existe avant les visas",
     "note ancrée : la conclusion du papier est annotable",
     "colonne : le formulaire d’ajout est présent sur le papier",
+    "IPE : le rapport FEC-2025 du peuplement est proposé au papier",
+    "IPE : le panneau propose les rapports du dossier",
     "^papier : l’export [\\s\\S]* est offert sur l’écran$",
     "bascule : une autre mission est proposée au clic",
     "reprise N-1 : écarter une conclusion SANS motif est refusé",

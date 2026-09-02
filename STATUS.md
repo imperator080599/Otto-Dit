@@ -1664,12 +1664,12 @@ n°6 — et ce qu'il a cassé est corrigé ou nommé au registre reporté) :**
 - `npx tsc --noEmit` : 0 erreur. `npx vitest run` (balayage des écrans compris) : 75 fichiers, 632 tests —
   631 verts sur la dernière exécution complète, le dernier (une liste de missions semées, passée de
   deux à trois) corrigé et rejoué seul ; la suite entière est à rejouer d'un bloc.
-- Parcours cliqué (`npm run clics`, production) : 159 étapes conduites, 0 station en échec sur les
-  deux derniers parcours ; 1 exception navigateur intermittente (React #418, hydratation) sur trois
-  parcours sur sept, écrans différents — comptée en échec par le harnais, à raison ; non figé tant
-  qu'un parcours n'est pas vert de bout en bout (BACKLOG_REPORTE). `docs/PARCOURS.json` : 197
-  stations déclarées ; les conduites et les « jamais conduites » (35) sont celles du dernier parcours
-  vert, avant cette nuit.
+- Parcours cliqué (`npm run clics`, production) : 159 étapes conduites, 0 échec sur le septième
+  parcours de la nuit — FIGÉ : `docs/PARCOURS.json` porte 197 stations déclarées, 158 conduites,
+  39 déclarées jamais atteintes (branches d'échec, écrites). Sur les six parcours précédents, une
+  exception navigateur intermittente (React #418, hydratation) est apparue trois fois, sur deux
+  écrans différents, toutes stations vertes — comptée en échec par le harnais, à raison ; cause non
+  trouvée, au registre reporté.
 - `npm run langue` : 0 chaîne d'écran hors catalogue · 0 libellé en dur · 39 différés avec raison ·
   25 exclus avec raison. `npm run langue:epreuve` : 15/15 cas connus mauvais dénoncés (dont les deux
   classes fermées cette nuit : gabarit, ternaire multi-lignes).
