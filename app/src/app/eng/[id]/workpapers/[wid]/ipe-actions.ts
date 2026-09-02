@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { conduire } from '@/lib/core/sonde';
 import { requireMember } from '@/lib/core/auth';
 import { q1 } from '@/lib/db/client';
 import {
@@ -26,35 +27,38 @@ export async function ipeAction(fd: FormData): Promise<void> {
   const utilisee = fd.get('utilisee') === 'oui';
   const approprie = champ('approprie') === '' ? null : champ('approprie') === 'oui';
   try {
-    if (!utilisee) {
-      await enregistrerIpe(wid, { utilisee: false, redigeParIa: fd.get('redige_par_ia') === '1' }, userId);
-    } else if (champ('rapport_id')) {
-      /* UN RAPPORT EXISTANT, DÉSIGNÉ : le service refuse s'il ne couvre pas
-         l'arrêté de ce papier — les deux dates côte à côte. ET RIEN NE DISPARAÎT
-         EN SILENCE : un rapport désigné AVEC un nouveau rapport saisi est
-         refusé (revue hostile n°6), pas tronqué. */
-      const saisi = ['rapport_nom', 'exhaustivite', 'exactitude', 'parametres', 'systeme_source'].filter((n) => champ(n));
-      if (saisi.length) {
-        throw new Error('Un rapport existant est désigné ET un nouveau rapport est saisi (' + saisi.join(', ')
-          + ') — l’un ou l’autre : choisissez « nouveau rapport IPE » pour créer, ou videz les champs pour désigner.');
+    /* SOUS LA SONDE (core/sonde.ts) : conduit, puis annulé — rien d'écrit. */
+    await conduire(async () => {
+      if (!utilisee) {
+        await enregistrerIpe(wid, { utilisee: false, redigeParIa: fd.get('redige_par_ia') === '1' }, userId);
+      } else if (champ('rapport_id')) {
+        /* UN RAPPORT EXISTANT, DÉSIGNÉ : le service refuse s'il ne couvre pas
+           l'arrêté de ce papier — les deux dates côte à côte. ET RIEN NE DISPARAÎT
+           EN SILENCE : un rapport désigné AVEC un nouveau rapport saisi est
+           refusé (revue hostile n°6), pas tronqué. */
+        const saisi = ['rapport_nom', 'exhaustivite', 'exactitude', 'parametres', 'systeme_source'].filter((n) => champ(n));
+        if (saisi.length) {
+          throw new Error('Un rapport existant est désigné ET un nouveau rapport est saisi (' + saisi.join(', ')
+            + ') — l’un ou l’autre : choisissez « nouveau rapport IPE » pour créer, ou videz les champs pour désigner.');
+        }
+        await utiliserRapport(wid, champ('rapport_id'), champ('date_document'), userId, approprie);
+      } else {
+        /* UN RAPPORT NEUF, documenté, puis désigné. */
+        const { evidenceId, importFileId } = decouperCle(champ('evidence_id'));
+        const r = await creerRapport(engagementId, {
+          nom: champ('rapport_nom') || champ('rapport_code'),
+          codeRapport: champ('rapport_code') || null,
+          systemeSource: champ('systeme_source') || null,
+          parametres: champ('parametres') || null,
+          periodeFin: champ('date_document'),
+          nature: champ('nature') as NatureRapport,
+          evidenceId, importFileId,
+          exhaustivite: champ('exhaustivite'), exactitude: champ('exactitude'),
+          redigeParIa: fd.get('redige_par_ia') === '1',
+        }, userId);
+        await utiliserRapport(wid, r.id, champ('date_document'), userId, approprie);
       }
-      await utiliserRapport(wid, champ('rapport_id'), champ('date_document'), userId, approprie);
-    } else {
-      /* UN RAPPORT NEUF, documenté, puis désigné. */
-      const { evidenceId, importFileId } = decouperCle(champ('evidence_id'));
-      const r = await creerRapport(engagementId, {
-        nom: champ('rapport_nom') || champ('rapport_code'),
-        codeRapport: champ('rapport_code') || null,
-        systemeSource: champ('systeme_source') || null,
-        parametres: champ('parametres') || null,
-        periodeFin: champ('date_document'),
-        nature: champ('nature') as NatureRapport,
-        evidenceId, importFileId,
-        exhaustivite: champ('exhaustivite'), exactitude: champ('exactitude'),
-        redigeParIa: fd.get('redige_par_ia') === '1',
-      }, userId);
-      await utiliserRapport(wid, r.id, champ('date_document'), userId, approprie);
-    }
+    });
   } catch (e) {
     redirect(`${url}?erreur=${encodeURIComponent(e instanceof Error ? e.message : String(e))}`);
   }

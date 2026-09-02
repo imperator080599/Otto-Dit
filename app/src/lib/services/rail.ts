@@ -1,6 +1,7 @@
 import { q, q1 } from '@/lib/db/client';
 import { missionN1 } from './engagement';
-import { motDuPack } from '@/lib/packs';
+import { frameworkSet } from './fsli';
+import { motDuPack, getAccountingMap } from '@/lib/packs';
 import { GROUPES_CLES, type CleGroupe, type EntreeRail } from './rail-vue';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 
@@ -128,19 +129,35 @@ export async function railDuDossier(
   e('scoping', mot('scoping'), t('rail.quoi.scoping'),
     s.seuils_valides, t('rail.raison.apresSeuils'));
 
-  /* LES POSTES RETENUS SONT DES DESTINATIONS, PAS UN FILTRE (R-03). Chaque
-     poste ouvre son propre espace de travail — leadsheet, processus, contrôle
-     interne, risques, échantillon, testing — et c'est là que se trouvent les
-     écrans qui ne sont plus dans le rail. */
-  g('rail.groupe.postes');
-  const postes = s.perimetre ? await postesRetenus(engagementId) : [];
-  if (postes.length === 0) {
-    e('scoping', t('rail.postesRetenus'), t('rail.quoi.postesRetenus'),
-      false, t('rail.raison.desQuUnPosteEstRetenu'));
-  }
-  for (const p of postes) {
-    e(`poste/${encodeURIComponent(p.code)}`, p.name,
-      t('rail.quoi.poste'), true);
+  /* LE DOSSIER SE LIT PAR ÉTATS FINANCIERS (mandat de la soirée, §1) : le
+     bilan, puis le compte de résultat, et dans chacun TOUS les postes que le
+     pack comptable déclare — des DONNÉES de pack, jamais une liste en dur :
+     le PCG et l'US GAAP n'ont ni les mêmes postes ni le même ordre. Un poste
+     retenu au périmètre ouvre son espace de travail (R-03) ; un poste hors
+     périmètre est grisé AVEC SA RAISON (le motif de périmètre) ; un poste
+     sans compte sur la balance est grisé aussi, et le dit. Un lien mort n'est
+     pas un lien cassé : il n'ouvre rien et il ne ment pas. */
+  const fs = await frameworkSet(engagementId);
+  const carte = getAccountingMap(fs.accounting_map);
+  const lignes = await q<{ code: string; name: string; scoping: string; scoping_basis: string | null }>(
+    `select code, name, scoping, scoping_basis from fsli where engagement_id = $1`, [engagementId]);
+  const parCode = new Map(lignes.map((l) => [l.code, l]));
+  const langue = (fs.language === 'fr' ? 'fr' : 'en') as 'fr' | 'en';
+  for (const etat of ['BS', 'IS'] as const) {
+    g(etat === 'BS' ? 'rail.groupe.bilan' : 'rail.groupe.resultat');
+    if (!s.perimetre && etat === 'BS') {
+      e('scoping', t('rail.postesRetenus'), t('rail.quoi.postesRetenus'),
+        false, t('rail.raison.desQuUnPosteEstRetenu'));
+    }
+    for (const def of carte.fslis.filter((d) => d.statement === etat)) {
+      const ligne = parCode.get(def.code);
+      const nom = ligne?.name ?? def.name[langue] ?? def.name.en;
+      const retenu = Boolean(ligne && (ligne.scoping === 'in_scope' || ligne.scoping === 'in_scope_qualitative'));
+      const raison = !ligne
+        ? t('rail.raison.aucunCompte')
+        : t('rail.raison.horsPerimetre', { motif: ligne.scoping_basis?.trim() || t('rail.raison.horsPerimetreSansMotif') });
+      e(`poste/${encodeURIComponent(def.code)}`, nom, t('rail.quoi.poste'), retenu, raison);
+    }
   }
 
   g('rail.groupe.transverse');
@@ -148,6 +165,11 @@ export async function railDuDossier(
     s.acceptee, t('rail.raison.apresAcceptation'));
   e('rcm', t('rail.controleInterne'), t('rail.quoi.controleInterne'),
     s.acceptee, t('rail.raison.apresAcceptation'));
+  /* LA REVUE ANALYTIQUE DU DOSSIER (mandat de la soirée, §2.2) : N contre N-1
+     sur tous les postes, et le texte rédigé sur chacun — le même objet que sous
+     la leadsheet du poste. Atteignable dès qu'une balance est importée. */
+  e('analytique', t('poste.analytique'), t('rail.quoi.analytique'),
+    s.importe, t('rail.raison.apresImport'));
   e('estimations', t('rail.estimations'), t('rail.quoi.estimations'),
     s.perimetre, t('rail.raison.apresPerimetre'));
   e('circularisations', t('rail.circularisations'), t('rail.quoi.circularisations'),

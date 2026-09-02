@@ -198,7 +198,9 @@ export async function missionN1(engagementId: string): Promise<{ id: string; nam
      join period pp on pp.id = p.prior_period_id
      join engagement prev on prev.entity_id = e.entity_id and prev.period_id = pp.id
        and prev.kind = e.kind and prev.tenant_id = e.tenant_id
-     where e.id = $1`,
+     where e.id = $1
+     order by prev.created_at desc, prev.id
+     limit 1`,
     [engagementId]);
 }
 

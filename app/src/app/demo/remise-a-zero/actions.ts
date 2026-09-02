@@ -1,5 +1,7 @@
 'use server';
 
+import { conduire } from '@/lib/core/sonde';
+
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/core/auth';
 import { remettreLeMondeAZero } from '@/lib/services/monde-demo';
@@ -8,7 +10,7 @@ export async function remettreAZeroAction(): Promise<void> {
   const user = await getSessionUser();
   let ok = false;
   try {
-    await remettreLeMondeAZero({ userId: user?.id ?? null });
+    await conduire(() => remettreLeMondeAZero({ userId: user?.id ?? null }));
     ok = true;
   } catch (e) {
     /* Le refus est RENDU, jamais avalé ni servi en page 500 (règle 13). */

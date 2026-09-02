@@ -38,7 +38,7 @@ export default async function TestingPage({
      ligne, et l'avertissement sur les lignes non conclues (famille en
      avertissement, drapeau de pack à off). */
   const { grille, cellules, conclusions } = await cellulesDuDossier(id);
-  const nonConclues = grille ? await lignesNonConclues(id) : { total: 0, nonConclues: 0, perimees: 0 };
+  const nonConclues = grille ? await lignesNonConclues(id) : { total: 0, nonConclues: 0, perimees: 0, perimeesParGrille: 0 };
   /* LE COMPTEUR SUIT L'ÉCHANTILLON, pas le dossier entier : une extraction en
      attente sur une pièce dont la ligne a QUITTÉ le tirage (re-tirage après
      grand livre définitif) n'est l'obligation de personne — un badge qui
@@ -191,6 +191,13 @@ export default async function TestingPage({
         {nonConclues.nonConclues > 0 && (
           <p className="callout warn" data-avertissement-lignes>
             {t('atl.avertissementLignes', { n: nonConclues.nonConclues, total: nonConclues.total })}
+          </p>
+        )}
+        {nonConclues.perimeesParGrille > 0 && (
+          /* UNE VERSION NEUVE DE LA GRILLE NE FAIT PAS DISPARAÎTRE DES
+             CONCLUSIONS : elle les nomme, ici, et sur chaque ligne (§0.3). */
+          <p className="callout warn" data-avertissement-grille>
+            {t('atl.avertissementGrille', { n: nonConclues.perimeesParGrille, v: grille?.version ?? 0 })}
           </p>
         )}
         <Atelier

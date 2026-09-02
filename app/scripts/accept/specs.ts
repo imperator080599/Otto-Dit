@@ -21,6 +21,8 @@ export interface Contexte {
   eng: string;
   identite: string;
   p: Page;
+  /** true : le harnais ÉCRIT (base jetable) ; false : sonde, chaque écriture est annulée par le serveur. */
+  ecrire: boolean;
 }
 
 export interface Spec {
@@ -186,19 +188,24 @@ export const SPECS: Spec[] = [
   /* ── W1 : l'atelier de test — la grille, les ancres, les refus ─────────── */
   {
     code: 'W1-01',
-    tache: 'grille : le calcul est accepté et la ligne ouverte montre sa bande de cellules avec un delta signé',
+    tache: 'grille : la grille est calculée (cliquée en écriture, lue en mode sonde) et une ligne montre sa bande de cellules avec un delta signé',
     conduire: async (c) => {
       await ouvrir(c, `/eng/${c.eng}/testing`);
-      /* Le calcul lit chaque pièce : on attend la RÉPONSE de l'action, pas le
-         silence du réseau — puis on relit l'écran jusqu'à voir les cellules
-         (une relecture trop tôt lisait « aucune cellule » sur un calcul en
-         cours, trouvé en conduisant le harnais en local). */
-      await Promise.all([
-        c.p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 90000 }).catch(() => undefined),
-        c.p.locator('button[data-grille-calculer]').click(),
-      ]);
-      await c.p.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => undefined);
-      attendre(!refus(c.p), `le calcul de la grille est refusé : ${refus(c.p)}`);
+      /* EN MODE SONDE, le calcul serait conduit puis annulé : on ne clique pas,
+         on lit la grille qu'une personne (ou un passage en écriture) a déjà
+         calculée — et s'il n'y en a pas, on le dit au lieu de l'inventer. */
+      if (c.ecrire) {
+        /* Le calcul lit chaque pièce : on attend la RÉPONSE de l'action, pas le
+           silence du réseau — puis on relit l'écran jusqu'à voir les cellules
+           (une relecture trop tôt lisait « aucune cellule » sur un calcul en
+           cours, trouvé en conduisant le harnais en local). */
+        await Promise.all([
+          c.p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 90000 }).catch(() => undefined),
+          c.p.locator('button[data-grille-calculer]').click(),
+        ]);
+        await c.p.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => undefined);
+        attendre(!refus(c.p), `le calcul de la grille est refusé : ${refus(c.p)}`);
+      }
       /* Une ligne SANS pièce a des cellules toutes « absentes » (aucun delta) :
          s'arrêter à la première ligne avec cellules passerait à vide. On lit
          toutes les lignes et on exige au moins un delta SIGNÉ. */
@@ -216,7 +223,8 @@ export const SPECS: Spec[] = [
         }
         if (n === 0) await c.p.waitForTimeout(4000);
       }
-      attendre(n > 0, 'aucune ligne ne montre de cellules (après huit relectures)');
+      attendre(n > 0, c.ecrire ? 'aucune ligne ne montre de cellules (après huit relectures)'
+        : 'aucune grille calculée sur ce dossier — la sonde n’écrit pas : calculez-la à la main, ou lancez le harnais avec --ecrire sur une base jetable');
       const signes = deltas.filter((d) => /^(\+|−|0)/.test(d));
       attendre(signes.length > 0, 'aucune cellule comparée : tous les deltas sont absents');
       attendre(deltas.every((d) => /^(\+|−|0|—)/.test(d)), `delta non signé : ${deltas.join(' · ')}`);
@@ -316,6 +324,67 @@ export const SPECS: Spec[] = [
       }
       attendre(max > 0 && max <= n, `${max} cellule(s) sur une ligne pour ${n} colonne(s) figées`);
       return `grille v${m![1]}, ${n} colonnes ; au plus ${max} cellules par ligne`;
+    },
+  },
+  /* ── §2 : l'anatomie de la page de poste (mandat de la soirée) ─────────── */
+  {
+    code: 'S2-01',
+    tache: 'poste : visas en haut, leadsheet N/N-1 signée avec son origine, dix sections en ancres, plus de « ce qui reste ouvert », refus ANA-01 observé',
+    conduire: async (c) => {
+      /* Le poste travaillé se lit dans le rail — jamais un code supposé. */
+      await ouvrir(c, `/eng/${c.eng}`);
+      const lien = await c.p.locator('.rail a.rail-lien[href*="/poste/"]').first().getAttribute('href');
+      attendre(Boolean(lien), 'aucun poste atteignable dans le rail');
+      await ouvrir(c, lien!);
+      const visas = await compte(c.p, '[data-visas] [data-visa]');
+      const enHaut = await c.p.evaluate(`(() => {
+        const v = document.querySelector('[data-visas]'); const l = document.querySelector('[data-leadsheet]');
+        return v && l ? v.getBoundingClientRect().bottom <= l.getBoundingClientRect().top : false;
+      })()`);
+      attendre(visas === 3 && enHaut === true, `${visas} visa(s), au-dessus de la leadsheet : ${enHaut}`);
+      const entetes = await c.p.locator('[data-leadsheet] thead th').allInnerTexts();
+      attendre(entetes.length === 7, `leadsheet à ${entetes.length} colonne(s) : ${entetes.join(' · ')}`);
+      const origine = await c.p.locator('[data-origine-n1]').first().getAttribute('data-origine-n1');
+      attendre(origine === 'dossier_n1' || origine === 'balance_n1' || origine === 'aucune', `origine N-1 non dite : ${origine}`);
+      const variations = (await c.p.locator('[data-leadsheet] tbody td[data-variation]').allInnerTexts()).map((x) => x.trim());
+      attendre(variations.length > 0 && variations.every((x) => /^(\+|−|0|—)/.test(x)), `variation non signée : ${variations.join(' · ')}`);
+      const ancres = await compte(c.p, '[data-ancres] a[data-ancre]');
+      attendre(ancres === 10, `${ancres} ancre(s) de section (attendu : 10)`);
+      const resteOuvert = await c.p.locator('h2, h3, summary', { hasText: /Still open|Ce qui reste ouvert/ }).count();
+      attendre(resteOuvert === 0, '« ce qui reste ouvert » est encore à l’écran');
+      /* Le refus se VOIT — en écriture comme en sonde, un refus n'écrit rien. */
+      await c.p.locator('[data-analytique-texte]').fill('');
+      await geste(c.p, () => c.p.locator('[data-analytique-enregistrer]').click());
+      attendre(/ANA-01/.test(refus(c.p) ?? ''), `vide accepté ou refus muet : ${refus(c.p) ?? 'aucun refus'}`);
+      return `${visas} visas en haut · 7 colonnes · N-1 : ${origine} · ${ancres} ancres · refus ANA-01 : « ${(refus(c.p) ?? '').slice(0, 60)} »`;
+    },
+  },
+  {
+    code: 'S2-02',
+    tache: 'sonde : un geste qui RÉUSSIT (enregistrer une revue analytique) répond sans figer le serveur — en sonde la version n’avance pas, en écriture elle avance',
+    conduire: async (c) => {
+      /* LE CAS QUE LA REVUE HOSTILE A TROUVÉ : sous la sonde, seuls des REFUS
+         étaient conduits ; un service qui réussit ouvrait une transaction sous
+         la transaction annulée et figeait PGlite. Ici le geste réussit, et
+         c'est le témoin (accept:temoin) qui prouve ensuite qu'il n'a rien
+         laissé — cette tâche prouve qu'il RÉPOND, et ce que l'écran montre. */
+      await ouvrir(c, `/eng/${c.eng}`);
+      const lien = await c.p.locator('.rail a.rail-lien[href*="/poste/"]').first().getAttribute('href');
+      attendre(Boolean(lien), 'aucun poste atteignable dans le rail');
+      await ouvrir(c, lien!);
+      const version = async () => c.p.locator('[data-analytique-provenance]').getAttribute('data-analytique-version').catch(() => null);
+      const avant = await version();
+      await c.p.locator('[data-analytique-texte]').fill(`Revue analytique d’acceptation (fictive), ${c.ecrire ? 'en écriture' : 'en sonde'}.`);
+      const debut = Date.now();
+      await geste(c.p, () => c.p.locator('[data-analytique-enregistrer]').click());
+      const duree = Date.now() - debut;
+      attendre(duree < 30000, `le serveur n’a pas répondu en ${Math.round(duree / 1000)} s — figé ?`);
+      attendre(!refus(c.p), `enregistrer une revue analytique est refusé : ${refus(c.p)}`);
+      await ouvrir(c, lien!);
+      const apres = await version();
+      if (c.ecrire) attendre(apres !== null && apres !== avant, `en écriture, la version devait avancer : ${avant} → ${apres}`);
+      else attendre(apres === avant, `en SONDE, la version ne doit pas bouger : ${avant} → ${apres} — la sonde a écrit`);
+      return `réponse en ${Math.round(duree / 100) / 10} s · version ${avant ?? '—'} → ${apres ?? '—'} (${c.ecrire ? 'écriture' : 'sonde'})`;
     },
   },
 ];

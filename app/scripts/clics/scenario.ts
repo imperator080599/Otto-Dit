@@ -339,8 +339,12 @@ export async function conduire(
        chevron : on compare au libellé servi, chevron ôté. */
     const titres = (await p.locator('.rail .rail-titre').allInnerTexts())
       .map((x) => x.replace(/[▸▾]/g, '').trim().toLowerCase());
-    dire('rail : groupé par nature de travail, les POSTES au milieu',
-      titres.length === 6 && titres[2] === 'areas', titres.join(' · '));
+    /* SEPT groupes depuis le mandat de la soirée (§1) : les ÉTATS FINANCIERS —
+       bilan puis compte de résultat — au milieu, lus par le catalogue dans les
+       deux langues, casse ignorée (les titres s'affichent en capitales). */
+    const groupe = (cle: CleLibelle) => new RegExp(R(cle).source, 'i');
+    dire('rail : groupé par nature de travail, le BILAN puis le COMPTE DE RÉSULTAT au milieu',
+      titres.length === 7 && groupe('rail.groupe.bilan').test(titres[2]) && groupe('rail.groupe.resultat').test(titres[3]), titres.join(' · '));
     const grises = await compte('.rail .rail-lien.grise');
     const t = await p.locator('.rail').innerText();
     dire('rail : le pas-encore-atteignable est GRISÉ avec sa raison en une ligne',
@@ -2082,6 +2086,90 @@ export async function conduire(
     dire('papier : les deux exports sont TÉLÉCHARGEABLES depuis l’écran',
       (await compte('a[href^="/api/export-file/"]')) >= 2,
       `${await compte('a[href^="/api/export-file/"]')} lien(s) d’export`);
+  });
+
+  // ── 16 ter. L'ANATOMIE DE LA PAGE DE POSTE (mandat de la soirée, §2)
+  //
+  // Visas en haut, leadsheet N/N-1 avec son origine et une variation signée,
+  // revue analytique éditable (refus du vide, rédaction, proposition L2 puis
+  // validation), dix sections en ancres, replis mémorisés, et « ce qui reste
+  // ouvert » disparu — dans les deux langues.
+  await station('poste : l’anatomie — visas en haut, leadsheet N/N-1, revue analytique, sections repliées mémorisées', async () => {
+    await devenir(c.preparateur.id);
+    const url = `${eng}/poste/REVENUE`;
+    await aller(url);
+    /* 2.1 — les trois visas, EN HAUT : mesurés dans le navigateur, au-dessus
+       de la leadsheet — une classe posée ne prouve pas une position (règle 15). */
+    const visas = await compte('[data-visas] [data-visa]');
+    const enHaut = await p.evaluate(`(() => {
+      const v = document.querySelector('[data-visas]'); const l = document.querySelector('[data-leadsheet]');
+      return v && l ? v.getBoundingClientRect().bottom <= l.getBoundingClientRect().top : false;
+    })()`);
+    dire('poste : trois visas compacts, au-dessus de la leadsheet', visas === 3 && enHaut === true, `${visas} visa(s), au-dessus : ${enHaut}`);
+    const vises = await compte('[data-visa-etat="vise"]');
+    dire('poste : le visa posé sur le papier (station 16) se lit en en-tête du poste', vises >= 1, `${vises} visa(s) lu(s)`);
+    /* 2.2 — sept colonnes, N-1 renseigné, variation SIGNÉE, origine dite. */
+    const entetes = (await p.locator('[data-leadsheet] thead th').allInnerTexts()).map((x) => x.trim());
+    dire('poste : la leadsheet a sept colonnes (compte, intitulé, N, N-1, variation, variation %, XREF)', entetes.length === 7, entetes.join(' · '));
+    const n1 = (await p.locator('[data-leadsheet] tbody td[data-solde-n1]').allInnerTexts()).filter((x) => x.trim() !== '—').length;
+    const variations = (await p.locator('[data-leadsheet] tbody td[data-variation]').allInnerTexts()).map((x) => x.trim());
+    dire('poste : les soldes N-1 sont renseignés et la variation est SIGNÉE',
+      n1 > 0 && variations.length > 0 && variations.every((x) => /^(\+|−|0|—)/.test(x)),
+      `${n1} solde(s) N-1 · variations : ${variations.slice(0, 4).join(' · ')}`);
+    const origine = await p.locator('[data-origine-n1]').first().getAttribute('data-origine-n1');
+    dire('poste : l’origine des chiffres N-1 est dite (dossier N-1 ou balance comparative)', origine === 'dossier_n1' || origine === 'balance_n1', `origine : ${origine}`);
+    const lienVariation = (await p.locator('[data-leadsheet] td[data-variation] a').first().getAttribute('href')) ?? '';
+    dire('poste : la variation renvoie à la revue analytique du dossier', lienVariation.includes('/analytique#'), lienVariation || 'aucun lien');
+    /* 2.4 — la navigation par ancres : une entrée par section. */
+    const ancres = await compte('[data-ancres] a[data-ancre]');
+    dire('poste : la navigation par ancres liste les dix sections', ancres === 10, `${ancres} ancre(s)`);
+    /* « Ce qui reste ouvert » a disparu — dans les DEUX langues (défaut n°25). */
+    const resteOuvert = await compteAbsent('h2, h3, summary', 'poste.openItems');
+    dire('poste : « ce qui reste ouvert » a disparu', resteOuvert === 0, `${resteOuvert} occurrence(s)`);
+    /* 2.3 — papiers avec visa, écarts avec leur papier, demandes : sections du poste. */
+    const papiers = await compte('[data-papiers-du-poste] tbody tr');
+    dire('poste : les papiers du poste sont listés, avec leur visa et leur date', papiers >= 1, `${papiers} papier(s)`);
+    const ecarts = await compte('[data-ecarts-du-poste] tbody tr');
+    const ecartsAvecPapier = await compte('[data-ecarts-du-poste] a[data-ecart-papier]');
+    dire('poste : chaque écart du poste porte le lien vers son papier', ecarts >= 1 && ecartsAvecPapier === ecarts, `${ecartsAvecPapier}/${ecarts} écart(s) avec papier`);
+    const demandes = await compte('[data-demandes-du-poste] tbody tr');
+    dire('poste : les demandes au client du poste sont listées', demandes >= 1, `${demandes} demande(s)`);
+    /* 2.2 — la revue analytique : REFUS du vide (le navigateur n'arrête pas le
+       formulaire, c'est le service qui refuse — ADR-091), puis rédaction,
+       puis proposition L2 marquée et non enregistrée, puis validation. */
+    await p.locator('[data-analytique-texte]').fill('');
+    await soumettre(p.locator('[data-analytique-enregistrer]'));
+    dire('poste : REFUS — une revue analytique vide n’est pas enregistrée (ANA-01)', /ANA-01/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus');
+    await aller(url);
+    await p.locator('[data-analytique-texte]').fill('Le chiffre d’affaires progresse avec le volume facturé au second semestre (rédaction de parcours, fictive).');
+    await soumettre(p.locator('[data-analytique-enregistrer]'));
+    const version = async () => p.locator('[data-analytique-provenance]').getAttribute('data-analytique-version').catch(() => null);
+    dire('poste : la revue analytique s’enregistre — version 1, rédigée par le préparateur', !refus(p) && (await version()) === '1', refus(p) ?? `version ${await version()}`);
+    await soumettre(p.locator('[data-analytique-proposer]'));
+    const proposee = await compte('[data-analytique-propose]');
+    const texteProp = await p.locator('[data-analytique-texte]').inputValue();
+    dire('poste : OTTO propose une rédaction d’après les chiffres — marquée, pré-remplie, NON enregistrée (L2)',
+      proposee === 1 && texteProp.includes('N-1') && (await version()) === '1',
+      `proposée : ${proposee} · version enregistrée : ${await version()}`);
+    await soumettre(p.locator('[data-analytique-enregistrer]'));
+    dire('poste : la proposition validée devient la version 2, d’origine « proposée, validée »',
+      !refus(p) && (await version()) === '2' && R('poste.analytique.origine.proposee_validee').test(await texte()),
+      refus(p) ?? `version ${await version()}`);
+    /* 2.3 — le repli se MÉMORISE : replier, recharger, toujours replié ; l'ancre le rouvre. */
+    await p.locator('details[data-repli="poste.papiers"] > summary').click();
+    await p.waitForTimeout(300);
+    await aller(url);
+    const replie = await p.evaluate(`!document.querySelector('details[data-repli="poste.papiers"]').open`);
+    dire('poste : un repli se mémorise — replié, rechargé, toujours replié', replie === true, `replié après rechargement : ${replie}`);
+    await p.locator('[data-ancres] a[data-ancre="papiers"]').click();
+    await p.waitForTimeout(300);
+    const rouvert = await p.evaluate(`document.querySelector('details[data-repli="poste.papiers"]').open`);
+    dire('poste : l’ancre rouvre une section repliée', rouvert === true, `rouvert : ${rouvert}`);
+    /* La revue analytique du DOSSIER lit le même objet : la version 2, sur le poste. */
+    await aller(`${eng}/analytique`);
+    const memeTexte = await compte('tr[data-poste="REVENUE"] [data-revue-version="2"]');
+    dire('revue analytique du dossier : le poste y porte la MÊME rédaction (version 2), parmi tous les postes du pack',
+      memeTexte === 1 && (await compte('tr[data-poste]')) > 1, `${await compte('tr[data-poste]')} poste(s) · v2 lue : ${memeTexte}`);
   });
 
   // ── 17. LA BOUCLE, RELUE

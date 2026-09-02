@@ -101,7 +101,8 @@ export default async function EngagementLayout({
         </div>
       </header>
       <div className="dossier">
-        <EngNav entrees={rail} tout={t('rail.tout')} reduire={t('rail.reduire')} />
+        <EngNav entrees={rail} tout={t('rail.tout')} reduire={t('rail.reduire')}
+          libelles={{ replier: t('rail.replier'), deplier: t('rail.deplier'), astuce: t('rail.astuce'), astuceVue: t('rail.astuceVue') }} />
         <div className="dossier-corps">{children}</div>
       </div>
     </div>

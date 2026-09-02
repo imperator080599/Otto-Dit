@@ -1,5 +1,7 @@
 'use server';
 
+import { conduire } from '@/lib/core/sonde';
+
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/core/auth';
 import { basculer } from '@/lib/services/bascule';
@@ -14,7 +16,7 @@ export async function basculerAction(fd: FormData): Promise<never> {
   const user = await requireUser();
   let erreur = '';
   try {
-    await basculer(user.id, vers, depuis);
+    await conduire(() => basculer(user.id, vers, depuis));
   } catch (e) {
     erreur = e instanceof Error ? e.message : String(e);
   }

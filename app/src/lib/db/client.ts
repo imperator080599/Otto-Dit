@@ -1,6 +1,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import path from 'node:path';
 import fs from 'node:fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 // LA BASE, DEUX PILOTES, UNE SURFACE (ADR-109, P0a du mandat).
 //
@@ -213,8 +214,19 @@ export async function getDb(): Promise<OttoDb> {
   return g.__ottoDbReady;
 }
 
+/* LA TRANSACTION COURANTE SUIT LE CONTEXTE ASYNCHRONE (mandat de la soirée,
+   §0.2). `tx()` ouvrait une transaction et tendait `run` à l'appelant ; tout
+   `q()` appelé PLUS BAS (un service, une lecture) passait à côté, sur la
+   connexion de base. Avec ce registre, un `q()` exécuté sous `tx()` ou sous
+   `annulerApres()` va dans LA transaction ouverte — ce qui rend possible la
+   sonde en transaction annulée : le geste réel, le refus réel, rien d'écrit. */
+interface Interrogeable { query<R>(sql: string, params?: unknown[]): Promise<{ rows: R[] }> }
+const transactionCourante = new AsyncLocalStorage<Interrogeable>();
+
 /** Query returning rows. Placeholders: $1, $2… */
 export async function q<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const t = transactionCourante.getStore();
+  if (t) return (await t.query<T>(sql, params)).rows;
   const db = await getDb();
   const res = await db.query<T>(sql, params);
   return res.rows;
@@ -233,14 +245,66 @@ export async function q01<T = Record<string, unknown>>(sql: string, params: unkn
   return rows[0] ?? null;
 }
 
-/** Run statements inside a transaction. */
+let compteurPointDeReprise = 0;
+
+/**
+ * Run statements inside a transaction — `run` ET tout `q()` appelé dessous.
+ *
+ * UNE TRANSACTION OUVERTE SOUS UNE TRANSACTION OUVERTE LA REJOINT. La première
+ * version rappelait `db.transaction()` : sur PGlite (une seule connexion), la
+ * transaction intérieure attendait l'extérieure qui l'attendait — le SERVEUR
+ * ENTIER se figeait au premier geste d'écriture réussi sous la sonde, parce
+ * que `logEvent` ouvre sa propre transaction ; et sur le pilote réseau, la
+ * transaction intérieure prenait un SECOND client et VALIDAIT seule — la sonde
+ * aurait écrit dans event_log des événements sans objet. Trouvé par la revue
+ * hostile de la soirée : la branche « succès sous la sonde » n'était exécutée
+ * nulle part (règle 17). Désormais, une transaction imbriquée est un POINT DE
+ * REPRISE (savepoint) de la transaction courante : ses écritures sont annulées
+ * avec elle, ou seules si elle échoue. Éprouvé : sonde.test.ts.
+ */
 export async function tx<T>(fn: (run: (sql: string, params?: unknown[]) => Promise<unknown>) => Promise<T>): Promise<T> {
+  const courante = transactionCourante.getStore();
+  if (courante) {
+    const point = `otto_reprise_${++compteurPointDeReprise}`;
+    await courante.query(`savepoint ${point}`);
+    try {
+      const r = await fn(async (sql, params = []) => (await courante.query(sql, params)).rows);
+      await courante.query(`release savepoint ${point}`);
+      return r;
+    } catch (e) {
+      await courante.query(`rollback to savepoint ${point}`).catch(() => undefined);
+      throw e;
+    }
+  }
   const db = await getDb();
   let result!: T;
   await db.transaction(async (t) => {
-    result = await fn(async (sql, params = []) => (await t.query(sql, params)).rows);
+    await transactionCourante.run(t, async () => {
+      result = await fn(async (sql, params = []) => (await t.query(sql, params)).rows);
+    });
   });
   return result;
+}
+
+class Annulation { constructor(public readonly resultat: unknown) {} }
+
+/**
+ * CONDUIRE UN GESTE ET L'ANNULER : tout ce que `fn` écrit (par `q()`, `q1()`,
+ * `tx()`…) part dans une transaction qui est TOUJOURS annulée. Le résultat de
+ * `fn` est rendu ; son refus (une exception) est relancé tel quel — après
+ * l'annulation. C'est le mode « sonde » de l'acceptation cliquée : elle
+ * observe le refus ou le succès RÉELS du produit, et la démonstration ne
+ * porte pas une ligne de plus. Éprouvé : sonde.test.ts.
+ */
+export async function annulerApres<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    await tx(async () => { throw new Annulation(await fn()); });
+  } catch (e) {
+    if (e instanceof Annulation) return e.resultat as T;
+    throw e;
+  }
+  /* Inatteignable : la transaction lève toujours (annulation ou refus). */
+  throw new Error('annulerApres : la transaction a été validée — impossible par construction');
 }
 
 /**

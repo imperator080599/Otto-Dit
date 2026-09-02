@@ -35,6 +35,11 @@ async function main() {
   const seulement = option(args, 'seulement');
   const comme = option(args, 'comme');
   const epreuve = args.includes('--epreuve');
+  /* LA SONDE N'ÉCRIT PAS (mandat de la soirée, §0.2) : par défaut, chaque
+     requête porte `X-Otto-Sonde`, et le serveur conduit puis ANNULE tout geste
+     d'écriture. `--ecrire` omet l'en-tête — pour une base jetable, jamais
+     pour la démonstration publique. */
+  const ecrire = args.includes('--ecrire');
   fs.mkdirSync(captures, { recursive: true });
 
   /* LE SHA QUE L'INSTANCE DÉCLARE — pas celui du dépôt local : on prouve ce
@@ -43,10 +48,21 @@ async function main() {
     .then((r) => r.json() as Promise<{ sha?: string | null; verdict?: string }>)
     .catch(() => null);
   const sha = sante?.sha ?? null;
+  /* --sha=<attendu> : le SHA que l'instance déclare doit être celui qu'on
+     vient prouver (la CI passe le commit du déploiement). Un autre SHA, ou
+     aucun, est un échec AVANT toute tâche : on ne prouve pas un inconnu. */
+  const shaAttendu = option(args, 'sha');
+  if (shaAttendu && sha !== shaAttendu) {
+    console.error(`\nacceptation : l'instance déclare ${sha ?? 'aucun SHA'}, on attendait ${shaAttendu} — ce n'est pas le bundle à prouver.\n`);
+    process.exit(1);
+  }
 
   const navigateur = await chromium.launch({ executablePath: cheminChromium() })
     .catch((e) => { throw new Error(`${conseilChromium()}\n${e.message}`); });
-  const ctx = await navigateur.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await navigateur.newContext({
+    viewport: { width: 1280, height: 900 },
+    extraHTTPHeaders: ecrire ? {} : { 'X-Otto-Sonde': 'acceptation' },
+  });
   const p = await ctx.newPage();
   /* Une exception côté navigateur est un ÉCHEC de la tâche pendant laquelle
      elle survient — pas un bruit de console. */
@@ -86,9 +102,9 @@ async function main() {
     }
     if (!eng) throw new Error('aucune identité n\'a de dossier sur son accueil — la base de l\'instance est-elle semée ?');
 
-    const c: Contexte = { base, eng, identite, p };
+    const c: Contexte = { base, eng, identite, p, ecrire };
     const specs: Spec[] = epreuve ? EPREUVES : SPECS.filter((s) => !seulement || s.code.startsWith(seulement));
-    console.log(`\nAcceptation cliquée — ${base} · SHA ${sha ? sha.slice(0, 7) : '(non déclaré)'} · ${identite} · dossier ${eng.slice(0, 8)}…\n`);
+    console.log(`\nAcceptation cliquée — ${base} · SHA ${sha ? sha.slice(0, 7) : '(non déclaré)'} · ${identite} · dossier ${eng.slice(0, 8)}… · ${ecrire ? 'ÉCRITURE (base jetable)' : 'sonde : chaque écriture est annulée'}\n`);
 
     for (const s of specs) {
       const quand = new Date().toISOString();
@@ -121,7 +137,7 @@ async function main() {
   const entete = `# Acceptation cliquée — ${base}`;
   const md = [
     entete, '',
-    `SHA déclaré par l'instance : ${sha ? `\`${sha}\`` : '**non déclaré** (/api/sante sans \`sha\`)'} · `
+    `SHA déclaré par l'instance : ${sha ? `\`${sha}\`` : '**non déclaré** (/api/sante sans \`sha\`)'} · mode ${ecrire ? '**écriture**' : 'sonde (écritures annulées)'} · `
       + `${resultats.length} tâche(s) · **${echecs.length} FAIL** · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`
       + (interrompu ? ` · **INTERROMPUE** : ${interrompu}` : ''),
     '',

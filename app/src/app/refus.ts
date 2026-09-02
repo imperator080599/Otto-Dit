@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { conduire } from '@/lib/core/sonde';
 
 // UN REFUS S'AFFICHE — IL NE TOMBE PAS EN 500.
 //
@@ -24,7 +25,7 @@ import { revalidatePath } from 'next/cache';
    passer transforme une navigation réussie en refus affiché : le parcours
    cliqué a montré « refusé : NEXT_REDIRECT » à l'utilisateur.
    C'est le défaut que ce fichier corrige, reproduit dans sa correction. */
-function estUnSignalDeNext(e: unknown): boolean {
+export function estUnSignalDeNext(e: unknown): boolean {
   const d = (e as { digest?: unknown } | null)?.digest;
   return typeof d === 'string'
     && (d.startsWith('NEXT_REDIRECT') || d === 'NEXT_NOT_FOUND' || d.startsWith('NEXT_HTTP_ERROR_FALLBACK'));
@@ -36,7 +37,9 @@ const CLE_REFUS = 'erreur';
 export async function executer(chemin: string, fn: () => Promise<unknown>): Promise<never> {
   let erreur = '';
   try {
-    await fn();
+    /* SOUS LA SONDE, le geste est conduit puis annulé (core/sonde.ts) : le
+       refus observé est le vrai, et rien n'est écrit. */
+    await conduire(fn);
   } catch (e) {
     if (estUnSignalDeNext(e)) throw e;
     /* On attrape TOUT : ces services lèvent des `Error` nues autant que des

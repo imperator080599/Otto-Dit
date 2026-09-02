@@ -351,7 +351,11 @@ export function Atelier({
                   <button className="btn small" type="submit" title={t('atl.conclureTitre')}>{t('atl.conclure')}</button>
                   {conclusion && (
                     <span className={`badge ${conclusion.perimee ? 'amber' : 'green'}`} data-conclusion={conclusion.perimee ? 'perimee' : 'oui'}>
-                      {t(conclusion.perimee ? 'atl.concluePerimee' : 'atl.conclue', { qui: conclusion.par, quand: conclusion.quand.slice(0, 16) })}
+                      {conclusion.perimee && conclusion.cause === 'grille'
+                        ? t('atl.concluePerimeeGrille', { qui: conclusion.par, quand: conclusion.quand.slice(0, 16), v: conclusion.version, vv: grille?.version ?? 0 })
+                        : conclusion.perimee
+                          ? t('atl.concluePerimee', { qui: conclusion.par, quand: conclusion.quand.slice(0, 16) })
+                          : t('atl.conclue', { qui: conclusion.par, quand: conclusion.quand.slice(0, 16) })}
                     </span>
                   )}
                 </form>

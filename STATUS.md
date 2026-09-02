@@ -1747,3 +1747,68 @@ une exception d'hydratation #418 observée en ligne sur le papier REV-01 pendant
 (refus « papier visé » lu quand même) ; W5 reporté avec cette observation. Rapport du soir :
 `docs/SOIR.md`.
 
+
+## Mandat de la soirée (2026-09-02) — §0, §1, §2 livrés ; §3, §4, §5, §6/§7, §9 non tentés
+
+**Ce qui est cliquable ce soir et ne l'était pas cet après-midi** (ADR-121, ADR-122, ADR-123) :
+
+- **§0.1** `/api/sante` déclare le SHA du BUNDLE qui répond (cuit au build par
+  `scripts/lib/version.mjs` → `next.config.mjs`), à côté de celui que la plateforme prétend, et
+  dit quand ils divergent ; éprouvé par un cas connu mauvais (`version.test.ts` : une variable
+  forgée ne l'emporte jamais sur le dépôt). `npm run accept -- --sha=<attendu>` échoue sur une
+  autre identité.
+- **§0.2** `npm run accept` est une SONDE par défaut : chaque action serveur est conduite dans
+  une transaction annulée (`core/sonde.ts`, `annulerApres`), le refus observé est le vrai, rien
+  n'est écrit — mesuré par `npm run accept:temoin` (11 tables comptées avant/après :
+  « aucune écriture »). `--ecrire` reste l'option des bases jetables. Le journal de consultation
+  (`section_visit`) se tait sous la sonde. Une transaction ouverte sous une transaction ouverte
+  la REJOINT (point de reprise) — c'était le défaut trouvé par la revue hostile : un service qui
+  réussissait sous la sonde figeait PGlite ; `sonde.test.ts` conduit désormais un service réel
+  sous la sonde avec un délai qui refuse « BLOQUÉ », et la tâche S2-02 le clique.
+- **§0.3** une grille de test figée en version neuve NOMME les conclusions qu'elle invalide et
+  l'atelier les montre périmées avec la version ; la même règle tient la revue analytique
+  (empreinte des soldes, marqueur « périmée », rien d'effacé).
+- **§0.4** la sonde lit l'échantillonnage, la grille, les écarts, et la revue analytique du poste.
+- **§1** le rail se lit par états financiers — `Balance sheet` puis `Profit and loss`, TOUS les
+  postes du pack comptable (données de pack), retenus → espace de travail, hors périmètre →
+  grisé avec le motif, sans compte → grisé et dit ; le rail se range (`[`), mémorisé par navigateur.
+- **§2** la page de poste tenue comme un cabinet la tient : trois visas en en-tête (ceux des
+  papiers du poste, PÉRIMÉS quand le papier est dépassé) ; leadsheet compte · intitulé · N · N-1 ·
+  variation signée · % · XREF, avec l'ORIGINE de N-1 écrite (dossier N-1, sinon balance
+  comparative, sinon rien) ; la variation renvoie à la **revue analytique du dossier** (écran
+  neuf `/eng/[id]/analytique`, tous les postes du pack) ; sous la leadsheet la **revue analytique
+  du poste** — le même objet — versionnée, ajout seul, vide refusé (ANA-01), proposition du moteur
+  déterministe et tracée, qui ne compte qu'enregistrée par une personne (ANA-02 : le run cité
+  est celui de ce poste), jamais réécrite (ANA-03), PÉRIMÉE quand les soldes ou les comptes
+  bougent ; dix sections repliables et mémorisées (dont papiers avec visas, écarts avec leur
+  papier, demandes du poste) ; navigation par ancres ; « ce qui reste ouvert » disparu ; une note
+  de revue se pose sur une cellule de leadsheet (ancre `compte`).
+
+**Prouvé, et comment (chaîne locale du soir, base neuve, build de production)** :
+`tsc` 0 · `npm run langue` 0 hors catalogue · `npm run lectures` 0 perdue (instantané refigé :
+lectures déplacées dans des fonctions d'aide de la page de poste, mêmes chemins) · gardes
+G-17..G-19 PROUVÉES en deux passes (36 gardes au registre) · `accept:epreuve` 3/3 cas mauvais
+vus · `accept --ecrire` 13/13 · `accept` (sonde) 13/13 · témoin « aucune écriture (11 tables) » ·
+`npm run screens` 85 routes, 0 échec · `npm run clics` : voir la ligne ci-dessous.
+
+`npm run clics` : **189 étapes conduites, 0 échec, 188 stations figées** (docs/PARCOURS.json), 305 clics
+comptés sur 41 gestes — dont la station neuve « poste : l’anatomie » (visas mesurés au-dessus de la
+leadsheet, sept colonnes, variation signée, origine N-1, dix ancres, refus ANA-01, rédaction v1,
+proposition non enregistrée, validation v2, repli mémorisé et rouvert par l’ancre, même texte sur
+la revue du dossier). Le PREMIER passage était rouge : la station du rail attendait six groupes et
+« areas » (corrigée : sept, bilan puis résultat, lus au catalogue), et deux exceptions #418 sont
+apparues sur `/testing` et `/requests/[rid]` — pages non touchées par la tranche — puis n’ont pas
+reparu au second passage. HYPOTHÈSE, pas diagnostic (règle 18) : le fil W5 (navigation pendant le
+flux RSC). Non prouvé ; consigné dans docs/BACKLOG_REPORTE.md (W5).
+
+**Non fait, exhaustivement** : §3 (section « Audit procedures »), §4 (re-tirage et sa règle),
+§5 (notes en panneau latéral), §6/§7 (passe esthétique ; les replis mémorisés n'existent que sur
+la page de poste), §9 (semis enrichissant), §10 (plan écrit — `docs/PLAN_RLS.md` —, rien
+exécuté, `DATABASE_URL` intacte) ; le locataire-sonde (annulation transactionnelle à la place,
+docs/BACKLOG_REPORTE.md) ; le poussé sur `main` et la CI `url` : voir le rapport du soir.
+
+**Non prouvé** : la sonde sur le pilote réseau (`pg`) — le point de reprise est écrit pour les
+deux pilotes, exécuté sur PGlite seulement ; l'application de 0130 sur la base publique
+existante (elle s'applique au prochain déploiement, comme 0050 s'est appliquée) ; le rendu
+navigateur du repli sur un lecteur d'écran ; les deux exceptions #418 du parcours cliqué
+(fil W5) — voir la ligne des clics.

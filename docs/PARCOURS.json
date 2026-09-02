@@ -29,7 +29,7 @@
       "gabarit": false
     },
     {
-      "nom": "rail : groupé par nature de travail, les POSTES au milieu",
+      "nom": "rail : groupé par nature de travail, le BILAN puis le COMPTE DE RÉSULTAT au milieu",
       "gabarit": false
     },
     {
@@ -673,6 +673,78 @@
       "gabarit": false
     },
     {
+      "nom": "poste : trois visas compacts, au-dessus de la leadsheet",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : le visa posé sur le papier (station 16) se lit en en-tête du poste",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la leadsheet a sept colonnes (compte, intitulé, N, N-1, variation, variation %, XREF)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les soldes N-1 sont renseignés et la variation est SIGNÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : l’origine des chiffres N-1 est dite (dossier N-1 ou balance comparative)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la variation renvoie à la revue analytique du dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la navigation par ancres liste les dix sections",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : « ce qui reste ouvert » a disparu",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les papiers du poste sont listés, avec leur visa et leur date",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : chaque écart du poste porte le lien vers son papier",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les demandes au client du poste sont listées",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : REFUS — une revue analytique vide n’est pas enregistrée (ANA-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la revue analytique s’enregistre — version 1, rédigée par le préparateur",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : OTTO propose une rédaction d’après les chiffres — marquée, pré-remplie, NON enregistrée (L2)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la proposition validée devient la version 2, d’origine « proposée, validée »",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : un repli se mémorise — replié, rechargé, toujours replié",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : l’ancre rouvre une section repliée",
+      "gabarit": false
+    },
+    {
+      "nom": "revue analytique du dossier : le poste y porte la MÊME rédaction (version 2), parmi tous les postes du pack",
+      "gabarit": false
+    },
+    {
       "nom": "bascule : les missions sont groupées par CLIENT (le groupe), pas en liste plate",
       "gabarit": false
     },
@@ -871,7 +943,7 @@
       "gabarit": false
     },
     {
-      "nom": "rail : groupé par nature de travail, les POSTES au milieu",
+      "nom": "rail : groupé par nature de travail, le BILAN puis le COMPTE DE RÉSULTAT au milieu",
       "gabarit": false
     },
     {
@@ -1388,6 +1460,78 @@
     },
     {
       "nom": "papier : les deux exports sont TÉLÉCHARGEABLES depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : trois visas compacts, au-dessus de la leadsheet",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : le visa posé sur le papier (station 16) se lit en en-tête du poste",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la leadsheet a sept colonnes (compte, intitulé, N, N-1, variation, variation %, XREF)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les soldes N-1 sont renseignés et la variation est SIGNÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : l’origine des chiffres N-1 est dite (dossier N-1 ou balance comparative)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la variation renvoie à la revue analytique du dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la navigation par ancres liste les dix sections",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : « ce qui reste ouvert » a disparu",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les papiers du poste sont listés, avec leur visa et leur date",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : chaque écart du poste porte le lien vers son papier",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : les demandes au client du poste sont listées",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : REFUS — une revue analytique vide n’est pas enregistrée (ANA-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la revue analytique s’enregistre — version 1, rédigée par le préparateur",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : OTTO propose une rédaction d’après les chiffres — marquée, pré-remplie, NON enregistrée (L2)",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : la proposition validée devient la version 2, d’origine « proposée, validée »",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : un repli se mémorise — replié, rechargé, toujours replié",
+      "gabarit": false
+    },
+    {
+      "nom": "poste : l’ancre rouvre une section repliée",
+      "gabarit": false
+    },
+    {
+      "nom": "revue analytique du dossier : le poste y porte la MÊME rédaction (version 2), parmi tous les postes du pack",
       "gabarit": false
     },
     {

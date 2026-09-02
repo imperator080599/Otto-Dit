@@ -367,6 +367,53 @@ export const GARDES: Garde[] = [
     rejet: /TEST-04/,
     neutraliser: 'alter table test_line_conclusion disable trigger test_line_conclusion_2_cells',
   },
+  /* ── La revue analytique du poste (0130, mandat de la soirée §2.2) ───── */
+  {
+    nature: 'sql', code: 'G-17',
+    enonce: 'ANA-01 — une revue analytique vide n’est pas une revue analytique.',
+    point: 'contrainte fsli_analytique_text_not_empty (0130)',
+    rayon: 'Un poste « revu » par un enregistrement à blanc — la section existe, elle ne dit rien, et le statut la compte.',
+    stops_looking: 'Ne juge pas le contenu : « RAS » passe. La substance est lue par le réviseur, pas par la base.',
+    attaque: async (run, ctx) => {
+      await run(
+        `insert into fsli_analytique (engagement_id, fsli_code, version, text, origine, soldes_hash, author_id)
+         values ($1, 'REVENUE', 900, '   ', 'humaine', 'attaque', $2)`,
+        [ctx.engagementId, ctx.preparateur]);
+    },
+    rejet: /fsli_analytique_text_not_empty/,
+    neutraliser: 'alter table fsli_analytique drop constraint fsli_analytique_text_not_empty',
+  },
+  {
+    nature: 'sql', code: 'G-18',
+    enonce: 'ANA-02 — une rédaction « proposée puis validée » cite le run qui l’a produite.',
+    point: 'contrainte fsli_analytique_proposal_has_run (0130)',
+    rayon: 'Une phrase attribuée au moteur sans la trace de son calcul : « d’où vient cette rédaction ? » sans réponse (P7).',
+    stops_looking: 'Ne vérifie pas que le run cité est bien celui de CE poste : la clé étrangère garantit qu’il existe, pas qu’il correspond.',
+    attaque: async (run, ctx) => {
+      await run(
+        `insert into fsli_analytique (engagement_id, fsli_code, version, text, origine, engine_run_id, soldes_hash, author_id)
+         values ($1, 'REVENUE', 901, 'Rédaction proposée, sans run.', 'proposee_validee', null, 'attaque', $2)`,
+        [ctx.engagementId, ctx.preparateur]);
+    },
+    rejet: /fsli_analytique_proposal_has_run/,
+    neutraliser: 'alter table fsli_analytique drop constraint fsli_analytique_proposal_has_run',
+  },
+  {
+    nature: 'sql', code: 'G-19',
+    enonce: 'ANA-03 — une version de revue analytique ne se modifie ni ne s’efface : on en écrit une nouvelle.',
+    point: 'déclencheur fsli_analytique_append_only (0130)',
+    rayon: 'Un texte réécrit sous la même version, sans trace : l’inspecteur lit une rédaction qui n’est pas celle qui a été visée.',
+    stops_looking: 'Ne protège pas contre une suppression en cascade par la table mère : engagement est en « on delete restrict », donc rien ne cascade — mais c’est cette autre garde qui le tient.',
+    attaque: async (run, ctx) => {
+      const r = await run<{ id: string }>(
+        `insert into fsli_analytique (engagement_id, fsli_code, version, text, origine, soldes_hash, author_id)
+         values ($1, 'REVENUE', 902, 'Première rédaction.', 'humaine', 'attaque', $2) returning id::text`,
+        [ctx.engagementId, ctx.preparateur]);
+      await run(`update fsli_analytique set text = 'Réécrite en silence.' where id = $1`, [r.rows[0].id]);
+    },
+    rejet: /ANA-03/,
+    neutraliser: 'alter table fsli_analytique disable trigger fsli_analytique_append_only',
+  },
 
   /* ── Gardes de SERVICE : une passe, par le refus nommé ─────────────────── */
   {

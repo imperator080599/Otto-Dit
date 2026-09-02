@@ -24,6 +24,7 @@ function ecranPorteur(engId: string, n: NoteAncree): { href: string; libelle: Cl
   switch (n.anchor_kind) {
     case 'questionnaire_answer': return { href: `/eng/${engId}/risk`, libelle: 'notes.openTheRisk' };
     case 'materiality_param': return { href: `/eng/${engId}/materiality`, libelle: 'notes.openTheThresholds' };
+    case 'compte': return { href: `/eng/${engId}/poste/${encodeURIComponent((n.anchor_ref ?? '').split('|')[0])}`, libelle: 'notes.openThePoste' };
     default: return { href: `/eng/${engId}/workpapers`, libelle: 'notes.openTheWorkpapers' };
   }
 }

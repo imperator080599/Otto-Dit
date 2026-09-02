@@ -1,10 +1,21 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shaDuBundle } from './scripts/lib/version.mjs';
 
 const ici = path.dirname(fileURLToPath(import.meta.url));
 
+/* L'IDENTITÉ DE VERSION EST CUITE DANS LE BUNDLE (mandat de la soirée, §0.1) :
+   calculée ICI, au build, et inlinée par Next — jamais lue dans
+   l'environnement de la machine qui répond. `/api/sante` la sert avec sa
+   source, et dit quand la plateforme prétend un autre commit. */
+const version = shaDuBundle({ cwd: ici });
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    OTTO_BUILD_SHA: version.sha ?? '',
+    OTTO_BUILD_SOURCE: version.source,
+  },
   serverExternalPackages: ['@electric-sql/pglite', 'exceljs', 'unpdf', 'pg'],
   experimental: {
     serverActions: { bodySizeLimit: '20mb' },

@@ -1,4 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
+import { missionN1 } from '../engagement';
 
 // L'ANCRE D'UNE NOTE DE REVUE EST L'IDENTITÉ MÉTIER DE L'OBJET, JAMAIS UNE
 // POSITION À L'ÉCRAN (ADR-097). « Ligne 12 colonne 4 » se casse au prochain
@@ -9,7 +10,7 @@ import { q, q01 } from '@/lib/db/client';
 // stocké, parce qu'un drapeau stocké mentirait au recalcul suivant.
 
 export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer'
-  | 'materiality_param' | 'exception' | 'deviation' | 'ecran';
+  | 'materiality_param' | 'exception' | 'deviation' | 'ecran' | 'compte';
 
 export interface Ancre {
   kind: AncreKind;
@@ -47,6 +48,11 @@ export const KINDS: Record<AncreKind, string> = {
      La référence est la ROUTE, pas un pixel : elle survit à une refonte de
      mise en page. Le champ, s'il est donné, est une SECTION de la page. */
   ecran: 'écran',
+  /* LA CELLULE DE LEADSHEET (mandat de la soirée, §2.2 et §5) : un compte dans
+     son poste — « 706000, solde N ». L'identité est le code du poste et le
+     numéro de compte, jamais la ligne du tableau ; le champ dit quelle
+     colonne (solde, solde N-1, variation). */
+  compte: 'compte de la leadsheet',
 };
 
 /**
@@ -135,6 +141,31 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
          autres, et c'est pourquoi elle ne peut porter que des notes qui ne
          prétendent rien sur le dossier. La cible est la route elle-même. */
       return { etat: 'present', cibles: [a.field ? `${a.ref}#${a.field}` : a.ref] };
+    }
+    case 'compte': {
+      /* Présent tant que le compte figure sur une balance ACTIVE du dossier (N
+         ou comparative) ou sur la balance du dossier N-1 : un compte soldé
+         cette année reste une cellule de la leadsheet (colonne N-1). */
+      const coupe = a.ref.indexOf('|');
+      const numero = coupe < 0 ? a.ref : a.ref.slice(coupe + 1);
+      const ici = await q01<{ n: string }>(
+        `select count(*)::text n from account x join tb_snapshot s on s.id = x.tb_snapshot_id
+         where s.engagement_id = $1 and s.status = 'active' and x.number = $2`,
+        [engagementId, numero],
+      );
+      let present = Number(ici?.n ?? 0) > 0;
+      if (!present) {
+        const n1 = await missionN1(engagementId);
+        if (n1) {
+          const la = await q01<{ n: string }>(
+            `select count(*)::text n from account x join tb_snapshot s on s.id = x.tb_snapshot_id
+             where s.engagement_id = $1 and s.status = 'active' and x.number = $2`,
+            [n1.id, numero],
+          );
+          present = Number(la?.n ?? 0) > 0;
+        }
+      }
+      return { etat: present ? 'present' : 'retire', cibles: present ? [a.ref] : [] };
     }
     case 'materiality_param': {
       /* Un jeu de seuils existe → le paramètre existe. Retiré seulement si la

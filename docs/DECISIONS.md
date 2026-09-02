@@ -4473,3 +4473,131 @@ par l'extraction (cellule « absente », à disposer) ; TEST-01 n'a pas de chemi
 ne peut demander un vert sans ancre) — prouvé en deux passes seulement ; le papier de travail ne
 cite pas encore les cellules (W2).
 
+
+## ADR-121 — L'instance dit quel bundle répond, la sonde d'acceptation ne laisse rien en base, et un recalcul nomme ce qu'il invalide (mandat de la soirée, §0)
+
+**Contexte.** `/api/sante` déclarait un SHA lu d'une variable d'exécution : un bundle servi par
+une autre construction que celle qu'on croyait aurait répondu avec le SHA de la plateforme, pas le
+sien. Le harnais d'acceptation cliquée (ADR-119) ÉCRIVAIT sur l'instance qu'il visitait (une
+grille calculée, un `engine_run`, un événement à chaque passage) — sur la démonstration publique
+qu'on ne re-sème pas. Et la version 2 d'une grille de test laissait les conclusions de la v1
+paraître « non conclues », sans dire qu'une version neuve les avait invalidées (revue hostile du
+jour).
+
+**Décision.** (1) L'IDENTITÉ DE VERSION EST CUITE AU BUILD : `scripts/lib/version.mjs` lit
+`git rev-parse HEAD` (source `git`), sinon la variable de plateforme (`env`), sinon `inconnu` ;
+`next.config.mjs` la pose dans le bundle (`OTTO_BUILD_SHA`, `OTTO_BUILD_SOURCE`) ; `/api/sante`
+déclare ce SHA-là et, à côté, celui que la plateforme prétend, avec `identiteCoherente` quand ils
+divergent. Éprouvé par un cas connu MAUVAIS (`version.test.ts`) : une variable forgée ne l'emporte
+jamais sur le dépôt ; hors dépôt elle fait foi et la source le dit ; une valeur qui n'a pas la forme
+d'un SHA n'est pas un SHA. `npm run accept -- --sha=<attendu>` échoue si l'instance en déclare un
+autre. (2) LA SONDE : par défaut, `npm run accept` envoie l'en-tête `X-Otto-Sonde` et chaque action
+serveur passe par `conduire()` (`core/sonde.ts`), qui conduit le geste RÉEL dans une transaction
+puis l'ANNULE (`annulerApres`, `db/client.ts` : la transaction courante voyage en
+`AsyncLocalStorage`, tout `q()` appelé plus bas y participe). Le refus observé est le vrai ; rien
+n'est écrit. `--ecrire` est l'option explicite des bases jetables. Le TÉMOIN (`accept:temoin`)
+compte les lignes des neuf tables que l'acceptation toucherait avant et après un passage en sonde :
+une différence est un échec. (3) LA SONDE LIT CE QUI EST LIVRÉ LE JOUR MÊME (§0.4) : échantillonnage,
+grille de test, écarts, et depuis §2 la revue analytique du poste. (4) LA RÈGLE DU RECALCUL (§0.3) :
+« aucun recalcul ne détruit ni n'invalide en silence du travail humain — il le marque, le nomme et
+le donne à statuer ». Une grille figée en version neuve nomme dans son événement les conclusions
+qu'elle invalide (`conclusionsInvalidees`), les conclusions se lisent à travers toutes les versions
+avec leur cause (`perimee`, `cause: 'grille' | 'cellules'`), l'atelier les montre PÉRIMÉES avec la
+version qui les a invalidées, et `lignesNonConclues` rend `perimeesParGrille`. La même règle tient
+la revue analytique du poste (ADR-123 : une empreinte des soldes, un marqueur « périmée », jamais
+un effacement).
+
+**Conséquences.** Le locataire-sonde du mandat (créé et détruit par le harnais) n'est PAS fait :
+l'annulation transactionnelle donne la garantie « rien n'est écrit » pour chaque requête, et le
+témoin la mesure ; ce qu'un locataire ajouterait — isoler aussi les LECTURES du harnais de la
+démonstration — est reporté avec sa raison (docs/BACKLOG_REPORTE.md). Ce que la sonde ne couvre pas,
+et qui est dit : une action qui ÉCRIT HORS de la base (un fichier sur le disque, un courriel
+simulé) n'est pas annulée par une transaction ; aucune action d'acceptation n'en fait aujourd'hui.
+
+## ADR-122 — Le rail se lit par états financiers : chaque poste du pack, travaillé ou grisé avec sa raison, et le rail se range (mandat de la soirée, §1)
+
+**Contexte.** Le rail portait un groupe « Areas » qui listait les seuls postes retenus : un dossier
+au périmètre d'un poste montrait UN poste, et rien ne disait qu'un bilan existe. Un auditeur navigue
+par bilan et compte de résultat.
+
+**Décision.** Deux groupes, `Balance sheet` et `Profit and loss`, et dans chacun TOUS les postes
+que le pack comptable déclare (`getAccountingMap(...).fslis`, données de pack — jamais une liste en
+dur : le PCG et l'US GAAP n'ont ni les mêmes postes ni le même ordre). Un poste retenu ouvre son
+espace de travail ; un poste hors périmètre est grisé AVEC le motif du périmètre (« hors périmètre
+du jeu de démonstration », tel que confirmé) ; un poste sans compte sur la balance est grisé et le
+dit. Le rail se REPLIE en bande d'icônes (bouton, touche `[` hors d'un champ de saisie), l'état
+est mémorisé par profil de navigateur (localStorage — dit tel quel, pas « par compte »), l'astuce
+du raccourci s'affiche une fois. Le repli est un choix de la personne ; la règle d'état (ADR-103)
+reste entière : rien ne disparaît sans raison.
+
+**Conséquences.** `rail.test.ts` vérifie les deux groupes, les raisons des grisés et le dossier
+neuf ; la station cliquée du rail lit désormais les titres de groupe par le catalogue. La mémoire
+du repli n'est pas synchronisée entre navigateurs : un compte serait un objet de plus pour un
+confort d'affichage.
+
+## ADR-123 — La page de poste tenue comme un cabinet la tient : visas en en-tête, leadsheet N/N-1, revue analytique versionnée, sections repliables (migration 0130, mandat de la soirée, §2)
+
+**Contexte.** La page de poste montrait une leadsheet à un seul solde, une bande d'étapes, et un
+panneau « ce qui reste ouvert » qui comptait les écarts et les notes de TOUT le dossier. Rien ne
+disait N-1, rien ne portait ce que l'auditeur conclut de la variation, les visas se lisaient au bas
+du papier, les papiers du poste n'étaient qu'une référence croisée.
+
+**Décision.** (1) L'EN-TÊTE porte les trois visas — préparateur, réviseur, associé — dérivés des
+PAPIERS du poste (le visa le plus récent par rôle), avec nom, date, état ; un papier dépassé rend
+son visa PÉRIMÉ, lu là et pas en bas. (2) LA LEADSHEET : compte · intitulé · solde N · solde N-1 ·
+variation (signée) · variation % (sur |N-1|, null quand N-1 est nul) · XREF. N-1 vient, dans
+l'ordre, du DOSSIER DE L'EXERCICE PRÉCÉDENT s'il porte une balance (LA règle `missionN1`), sinon de
+la balance COMPARATIVE importée sur ce dossier, sinon de rien — et l'origine est écrite à l'écran
+(`data-origine-n1`). Les comptes N-1 sont rattachés au poste par la table de correspondance de CE
+dossier ; un compte soldé cette année reste sur la leadsheet (colonne N-1) ; sans N-1 la colonne est
+NULLE, jamais zéro. La variation renvoie à la REVUE ANALYTIQUE DU DOSSIER (`/eng/[id]/analytique`,
+écran neuf : chaque poste du pack, N contre N-1, et le texte rédigé). (3) LA REVUE ANALYTIQUE DU
+POSTE (`fsli_analytique`, 0130) : sous la leadsheet, éditable ; le MÊME objet que la revue du dossier.
+Versionnée, ajout seul (ANA-03, déclencheur), texte non vide (ANA-01), origine `humaine` ou
+`proposee_validee` — cette dernière cite le `engine_run` qui l'a produite (ANA-02) ; garde de
+verrou, verdict « garde » (0042), RLS forcée. Chaque version porte l'EMPREINTE DES SOLDES (compte, N,
+N-1) au moment de la rédaction ; la lecture la compare aux soldes actuels et marque PÉRIMÉE quand ils
+ont bougé — sans rien effacer (ADR-121 §0.3). La PROPOSITION du moteur est déterministe (P4 : les
+totaux, la variation, les trois plus grands mouvements, en langue du dossier, par le catalogue),
+tracée par un `engine_run` et un événement, rendue pré-remplie et marquée « proposée » ; elle ne
+compte qu'enregistrée par une personne, corrigée ou non (plafond L2). (4) LES SOUS-SECTIONS,
+repliables et mémorisées (`Repli`, localStorage par profil de navigateur, ouvertes par défaut) :
+leadsheet, revue analytique, processus, contrôle interne, risques (avec le tableau des assertions),
+échantillon, testing, PAPIERS (référence, statut, visas, date, lien), ÉCARTS (avec le papier vivant
+qui documente leur procédure — dérivé, jamais stocké ; les écarts sans écriture restent sur l'écran
+des écarts, le compte du dossier est donné à côté), DEMANDES AU CLIENT (celles dont un élément vise
+une ligne ou un écart du poste). « Ce qui reste ouvert » disparaît ; le compte de notes ouvertes du
+DOSSIER passe en en-tête, dit tel quel. (5) LES ONGLETS deviennent une NAVIGATION PAR ANCRES :
+soulignée quand active, jamais encadrée, un repère de forme et un mot par section — aucune couleur
+d'état ; cliquer une ancre rouvre une section repliée. (6) Une note de revue se pose sur une CELLULE
+de leadsheet (ancre `compte` : poste|numéro, champ solde ou variation — identité métier, jamais une
+position).
+
+**Conséquences.** Prouvé : `analytique.test.ts` (leadsheet pure, origines N-1 en bascule, trois
+refus par le service ET par la base, proposition déterministe et tracée, péremption sans
+effacement, revue du dossier = même objet), `poste.test.ts` (visas dérivés et périmés, papiers,
+écarts avec papier, demandes, dix sections), G-17..G-19 en deux passes, la station cliquée « poste :
+l'anatomie » (visas mesurés AU-DESSUS de la leadsheet, sept colonnes, variation signée, origine,
+dix ancres, absence de « ce qui reste ouvert » dans les deux langues, refus ANA-01 observé,
+rédaction v1, proposition non enregistrée, validation v2, repli mémorisé et rouvert par l'ancre,
+même texte sur la revue du dossier) et la tâche d'acceptation S2-01 contre l'URL. Ce que cela ne
+fait pas, et qui est dit : le visa du poste n'est pas un objet — c'est celui de ses papiers ; le
+dossier N-1 se lit par tout membre du dossier N du même cabinet (la politique de lignes est par
+locataire, 0004 ; par dossier, c'est §10) ; un changement de SOURCE N-1 sans changement de chiffres
+ne périme rien, mais un compte rattaché ou détaché du poste (correspondance) périme — l'empreinte
+porte les comptes ET les soldes, et le marqueur le dit ; les états « processus » et « contrôle
+interne » se comptent sur le dossier entier et l'écran le dit ; la section « Audit procedures »
+(§3) n'existe pas encore dans cette anatomie.
+
+**Ce que la revue hostile de la soirée a cassé, et qui est corrigé dans la même tranche** : (a) une
+transaction ouverte sous une transaction ouverte (le service écrit, `logEvent` ouvre la sienne)
+FIGEAIT PGlite sous la sonde — la branche « succès sous la sonde » n'était exécutée par aucun
+harnais (les seuls gestes en sonde étaient des refus) ; `tx()` rejoint désormais la transaction
+courante par un point de reprise, et `sonde.test.ts` conduit un service réel sous `annulerApres`
+avec un délai qui refuse « BLOQUÉ » ; (b) le run cité par une rédaction « proposée, validée »
+arrivait de l'URL sans vérification — un run de sondage d'un autre dossier faisait lire « proposée
+par OTTO » ; le service exige un run `revue_analytique` de ce dossier et de ce poste (ANA-02) ;
+(c) le journal de consultation (`section_visit`) s'écrivait au rendu, hors de toute action, donc
+sous la sonde — tu sous la sonde, et compté par le témoin ; (d) un refus effaçait la saisie — elle
+revient avec lui ; (e) « les soldes ont changé » alors qu'un compte détaché suffisait — la phrase
+dit les deux ; (f) `missionN1` sans ordre — ordonnée.

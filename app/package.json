@@ -15,6 +15,7 @@
     "fumee": "tsx scripts/fumee/run.ts",
     "accept": "tsx scripts/accept/run.ts",
     "accept:epreuve": "tsx scripts/accept/run.ts --epreuve",
+    "accept:temoin": "tsx scripts/accept/temoin.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
     "dev": "next dev",

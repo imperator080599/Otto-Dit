@@ -119,8 +119,14 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     const postes = await postesRetenus(IDS.engNep);
     expect(postes.length).toBeGreaterThan(0);
     const rail = await railDuDossier(IDS.engNep, ['nep-fr'], en);
-    const groupePostes = rail.filter((x) => x.groupeCle === 'rail.groupe.postes');
+    /* Les postes RETENUS sont atteignables dans les groupes bilan / compte de
+       résultat ; les autres postes du pack y sont aussi, grisés avec leur
+       raison (mandat de la soirée, §1). */
+    const groupesEtats = rail.filter((x) => x.groupeCle === 'rail.groupe.bilan' || x.groupeCle === 'rail.groupe.resultat');
+    const groupePostes = groupesEtats.filter((x) => x.atteignable);
     expect(groupePostes.length).toBe(postes.length);
+    expect(groupesEtats.length).toBeGreaterThan(postes.length);
+    for (const g of groupesEtats.filter((x) => !x.atteignable)) expect(g.raison, g.label).toBeTruthy();
     for (const p of postes) {
       const e = groupePostes.find((x) => x.label === p.name);
       expect(e, `poste ${p.code} absent du rail`).toBeTruthy();
@@ -130,7 +136,7 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     /* Le rail neuf, lui, annonce les postes AVANT qu'ils existent, avec la
        raison — jamais un groupe qui apparaît de nulle part. */
     const neuf = await railDuDossier(NEUF, ['nep-fr'], en);
-    expect(neuf.find((x) => x.groupeCle === 'rail.groupe.postes')!.raison).toBe(en('rail.raison.desQuUnPosteEstRetenu'));
+    expect(neuf.find((x) => x.groupeCle === 'rail.groupe.bilan')!.raison).toBe(en('rail.raison.desQuUnPosteEstRetenu'));
   });
 
   it('le dossier déroulé ouvre presque tout ; la clôture attend l\'achèvement', async () => {

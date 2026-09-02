@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { dbKind } from '@/lib/db/client';
+import { versionServie } from '@/lib/version';
 
 // LA SANTÉ DE L'INSTANCE DÉPLOYÉE — `/api/sante`.
 //
@@ -161,18 +162,52 @@ export async function GET() {
       if (!e.aJour) throw new Error(`instantané périmé : ${e.desaccords.slice(0, 2).join(' · ')}`);
       return `pris le ${e.prisLe}`;
     }));
+    /* CE QUI A ÉTÉ LIVRÉ AUJOURD'HUI EST LU PAR LA SONDE LE JOUR MÊME (§0.4) :
+       la grille de test, l'échantillonnage, les écarts — sinon la fonction la
+       plus récente est hors du seul instrument interrogeable de l'extérieur. */
+    lectures.push(await essayer('revue analytique du poste (N/N-1, texte versionné)', async () => {
+      const { postesRetenus } = await import('@/lib/services/rail');
+      const { leadsheetDuPoste, lireAnalytique } = await import('@/lib/services/analytique');
+      const postes = await postesRetenus(id);
+      if (postes.length === 0) return 'aucun poste retenu';
+      const ls = await leadsheetDuPoste(id, postes[0].code);
+      const r = await lireAnalytique(id, postes[0].code, ls.empreinte);
+      return `${postes[0].code} · N-1 : ${ls.origine.source} · ${ls.lignes.length} ligne(s) · revue ${r ? `v${r.version}${r.perimee ? ' PÉRIMÉE' : ''}` : 'non rédigée'}`;
+    }));
+    lectures.push(await essayer('échantillonnage (sélection tirée)', async () => {
+      const { currentRevenueSample } = await import('@/lib/services/sampling');
+      const s = await currentRevenueSample(id);
+      return s ? `${s.status} · ${s.items.length} ligne(s) · graine ${s.seed}` : 'aucune sélection';
+    }));
+    lectures.push(await essayer('grille de test (cellules, conclusions)', async () => {
+      const { cellulesDuDossier } = await import('@/lib/services/testing/grille');
+      const g = await cellulesDuDossier(id);
+      if (!g.grille) return 'aucune grille calculée';
+      const cellules = Object.values(g.cellules).flat();
+      return `v${g.grille.version} · ${g.grille.colonnes.length} colonne(s) · ${cellules.length} cellule(s) · `
+        + `${cellules.filter((c) => c.etat === 'conforme').length} conforme(s) · ${Object.keys(g.conclusions).length} ligne(s) conclue(s)`;
+    }));
+    lectures.push(await essayer('écarts (exceptions)', async () => {
+      const { listExceptions } = await import('@/lib/services/matching');
+      const x = await listExceptions(id);
+      return `${x.length} écart(s) · ${x.filter((e) => e.status === 'open').length} ouvert(s)`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';
     }));
   }
 
+  const version = versionServie();
   const cassees = lectures.filter((l) => !l.ok);
   return NextResponse.json({
     instance: { base: dbKind(), demoPublique: demoPublique() },
-    /* LE SHA QUE CETTE INSTANCE FAIT TOURNER — pour que l'acceptation cliquée
-       (scripts/accept) cite ce qui tourne, jamais ce qu'elle a sous la main. */
-    sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+    /* LE SHA QUE CE BUNDLE PORTE — cuit au build (§0.1), pas lu dans
+       l'environnement qui répond ; la source est dite, et la divergence avec
+       ce que la plateforme prétend aussi. L'acceptation cliquée le compare au
+       commit qu'elle attend. */
+    sha: version.sha,
+    version,
     verdict: cassees.length === 0 ? 'toutes les lectures passent' : `${cassees.length} lecture(s) CASSÉE(S)`,
     lectures,
   }, { status: cassees.length === 0 ? 200 : 500 });

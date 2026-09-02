@@ -21,6 +21,7 @@ import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { lireIpe, piecesDisponibles, rapportsDuDossier } from '@/lib/services/ipe';
 import { visiter } from '@/lib/services/sections';
+import { modeSonde } from '@/lib/core/sonde';
 import { tr } from '@/lib/i18n';
 import { ipeAction, proposerIpeAction } from './ipe-actions';
 
@@ -51,7 +52,7 @@ export default async function WorkpaperDetail({
   const pieces = await piecesDisponibles(id);
   const rapports = await rapportsDuDossier(id);
   /* « Recent » se remplit en OUVRANT — le papier est une section du dossier. */
-  await visiter(id, 'papier', wid, user.id);
+  if (!(await modeSonde())) await visiter(id, 'papier', wid, user.id);
   /* Une rédaction PROPOSÉE arrive par l'URL et remplit les zones : elle n'est
      pas enregistrée tant qu'un humain n'a pas cliqué (plafond L2). */
   const propose = sp.propose === '1';

@@ -1,5 +1,7 @@
 'use server';
 
+import { conduire } from '@/lib/core/sonde';
+
 import { redirect } from 'next/navigation';
 import { requireMember } from '@/lib/core/auth';
 import { envoyerA, attribuerA, suivre } from '@/lib/services/sections';
@@ -22,7 +24,7 @@ export async function envoyerAction(fd: FormData): Promise<void> {
   const eng = String(fd.get('engagement_id') ?? '');
   const moi = await acteur(eng);
   try {
-    await envoyerA(String(fd.get('section_id') ?? ''), String(fd.get('vers') ?? ''), moi);
+    await conduire(() => envoyerA(String(fd.get('section_id') ?? ''), String(fd.get('vers') ?? ''), moi));
   } catch (e) { retour(eng, e); }
   redirect(`/eng/${eng}`);
 }
@@ -31,7 +33,7 @@ export async function attribuerAction(fd: FormData): Promise<void> {
   const eng = String(fd.get('engagement_id') ?? '');
   const moi = await acteur(eng);
   try {
-    await attribuerA(String(fd.get('section_id') ?? ''), String(fd.get('owner') ?? ''), moi);
+    await conduire(() => attribuerA(String(fd.get('section_id') ?? ''), String(fd.get('owner') ?? ''), moi));
   } catch (e) { retour(eng, e); }
   redirect(`/eng/${eng}`);
 }
@@ -40,7 +42,7 @@ export async function suivreAction(fd: FormData): Promise<void> {
   const eng = String(fd.get('engagement_id') ?? '');
   const moi = await acteur(eng);
   try {
-    await suivre(String(fd.get('section_id') ?? ''), moi, fd.get('suivre') === '1');
+    await conduire(() => suivre(String(fd.get('section_id') ?? ''), moi, fd.get('suivre') === '1'));
   } catch (e) { retour(eng, e); }
   redirect(`/eng/${eng}`);
 }

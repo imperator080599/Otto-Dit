@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import { draftClarificationRequest } from '@/lib/services/matching';
+import { conduire } from '@/lib/core/sonde';
 
 // Les actions vivent dans leur propre fichier : une action définie dans le
 // rendu et passée plus loin n'est pas encodable en production (ADR-078).
@@ -15,7 +16,7 @@ export async function boucleAction(formData: FormData): Promise<void> {
   let message = '';
   let erreur = '';
   try {
-    await draftClarificationRequest(id, user.id);
+    await conduire(() => draftClarificationRequest(id, user.id));
     message = 'demande de clarification créée depuis les écarts ouverts — la boucle repart';
   } catch (e) {
     /* Le service LÈVE quand il n'y a rien à clarifier. Ce n'est pas une panne :

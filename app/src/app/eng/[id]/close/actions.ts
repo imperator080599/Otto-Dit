@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import { closeFile } from '@/lib/services/retention';
+import { conduire } from '@/lib/core/sonde';
 
 /* Toute action dans son propre module `'use server'` (ADR-078) : une action
    déclarée dans le composant capture sa portée et n'est pas encodable dans un
@@ -20,7 +21,7 @@ export async function cloreAction(formData: FormData): Promise<never> {
     erreur = 'clore le dossier revient à le signer : cela demande le droit de signature sur cette mission';
   } else {
     try {
-      await closeFile(id, user.id, String(formData.get('report_date') ?? ''));
+      await conduire(() => closeFile(id, user.id, String(formData.get('report_date') ?? '')));
     } catch (e) {
       const d = (e as { digest?: unknown } | null)?.digest;
       if (typeof d === 'string' && d.startsWith('NEXT_')) throw e;

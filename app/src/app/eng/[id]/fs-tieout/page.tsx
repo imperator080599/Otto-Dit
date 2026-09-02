@@ -16,7 +16,7 @@ import type { CleLibelle } from '@/lib/i18n/catalogue';
 export const dynamic = 'force-dynamic';
 
 const ETATS: Record<string, CleLibelle> = {
-  IS: 'fst.etat.IS', BS_ASSET: 'fst.etat.BS_ASSET',
+  IS: 'rail.groupe.resultat', BS_ASSET: 'fst.etat.BS_ASSET',
   BS_LIAB: 'fst.etat.BS_LIAB', NOTES: 'fst.etat.NOTES',
 };
 

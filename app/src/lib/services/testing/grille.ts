@@ -84,7 +84,13 @@ export interface Cellule {
   dispositionPerimee: { motif: string; par: string; quand: string; etat: EtatCellule; delta: number | null } | null;
 }
 
-export interface ConclusionLigne { par: string; quand: string; perimee: boolean }
+export interface ConclusionLigne {
+  par: string; quand: string; perimee: boolean;
+  /** POURQUOI la conclusion est périmée : les cellules ont changé, ou la grille a changé de version (« v1 → v2 »). */
+  cause: 'cellules' | 'grille' | null;
+  /** La version de grille sous laquelle la ligne a été conclue. */
+  version: number;
+}
 
 /* ── La grille figée ─────────────────────────────────────────────────────── */
 
@@ -165,10 +171,24 @@ export async function figerGrille(engagementId: string, userId: string | null): 
      values ($1, 'REV-SUBST', $2, $3, $4, $5)
      returning id::text, version, pack_id, columns, columns_hash, frozen_at::text`,
     [engagementId, packId, version, JSON.stringify(colonnes), empreinte]);
+  /* CE QUE LA VERSION NEUVE INVALIDE EST NOMMÉ, ligne par ligne, dans le
+     journal — et l'écran le relit (conclusions périmées, cause « grille »). */
+  const invalidees = courante
+    ? await q<{ sample_item_id: string; piece: string | null }>(
+      `select c.sample_item_id::text, g.piece_ref piece
+       from test_line_conclusion c
+       join sample_item si on si.id = c.sample_item_id
+       join gl_entry g on g.id = si.unit_id
+       where c.grid_id = $1 order by g.piece_ref`, [courante.id])
+    : [];
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
     verb: 'test_grid_frozen', objectType: 'test_grid', objectId: g.id,
-    payload: { version, packId, colonnes: colonnes.map((c) => c.code), empreinte },
+    payload: {
+      version, packId, colonnes: colonnes.map((c) => c.code), empreinte,
+      remplace: courante ? { version: courante.version, empreinte: courante.empreinte } : null,
+      conclusionsInvalidees: invalidees.map((i) => ({ ligne: i.sample_item_id, piece: i.piece })),
+    },
   });
   return versGrille(g);
 }
@@ -484,12 +504,26 @@ export async function cellulesDuDossier(engagementId: string): Promise<{
     });
   }
   for (const l of Object.values(cellules)) l.sort((a, b) => (ordre.get(a.colonne) ?? 99) - (ordre.get(b.colonne) ?? 99));
-  const concl = await q<{ sample_item_id: string; par: string; quand: string; cells_hash: string }>(
-    `select c.sample_item_id::text, u.name par, c.concluded_at::text quand, c.cells_hash
-     from test_line_conclusion c join app_user u on u.id = c.concluded_by where c.grid_id = $1`, [grille.id]);
+  /* AUCUN RECALCUL NE DÉTRUIT NI N'INVALIDE EN SILENCE DU TRAVAIL HUMAIN
+     (mandat de la soirée, §0.3). Une conclusion prise sous une version
+     ANCIENNE de la grille n'est pas effacée par la version neuve : elle est
+     lue, dite PÉRIMÉE avec sa cause (« grille v1 → v2 ») et donnée à
+     re-statuer — jamais un basculement muet en « non conclue ». */
+  const concl = await q<{ sample_item_id: string; par: string; quand: string; cells_hash: string; version: number }>(
+    `select c.sample_item_id::text, u.name par, c.concluded_at::text quand, c.cells_hash, g.version
+     from test_line_conclusion c
+     join app_user u on u.id = c.concluded_by
+     join test_grid g on g.id = c.grid_id
+     where c.engagement_id = $1`, [engagementId]);
   const conclusions: Record<string, ConclusionLigne> = {};
   for (const c of concl) {
-    conclusions[c.sample_item_id] = { par: c.par, quand: c.quand, perimee: c.cells_hash !== empreinteCellules(cellules[c.sample_item_id] ?? []) };
+    const autreGrille = c.version !== grille.version;
+    const cellulesChangees = c.cells_hash !== empreinteCellules(cellules[c.sample_item_id] ?? []);
+    conclusions[c.sample_item_id] = {
+      par: c.par, quand: c.quand, version: c.version,
+      perimee: autreGrille || cellulesChangees,
+      cause: autreGrille ? 'grille' : cellulesChangees ? 'cellules' : null,
+    };
   }
   return { grille, cellules, conclusions };
 }
@@ -598,16 +632,17 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
  * AVERTISSEMENT tant que le pack ne la déclare pas bloquante (drapeau
  * `flags.unsupportedSampleItemsBlocking`, à `false` dans nep-fr).
  */
-export async function lignesNonConclues(engagementId: string): Promise<{ total: number; nonConclues: number; perimees: number }> {
+export async function lignesNonConclues(engagementId: string): Promise<{ total: number; nonConclues: number; perimees: number; perimeesParGrille: number }> {
   const sample = await currentRevenueSample(engagementId);
-  if (!sample || sample.status !== 'drawn') return { total: 0, nonConclues: 0, perimees: 0 };
+  if (!sample || sample.status !== 'drawn') return { total: 0, nonConclues: 0, perimees: 0, perimeesParGrille: 0 };
   const { conclusions } = await cellulesDuDossier(engagementId);
   let nonConclues = 0;
   let perimees = 0;
+  let perimeesParGrille = 0;
   for (const it of sample.items) {
     const c = conclusions[it.id];
     if (!c) nonConclues++;
-    else if (c.perimee) perimees++;
+    else if (c.perimee) { perimees++; if (c.cause === 'grille') perimeesParGrille++; }
   }
-  return { total: sample.items.length, nonConclues, perimees };
+  return { total: sample.items.length, nonConclues, perimees, perimeesParGrille };
 }

@@ -33,7 +33,11 @@ export interface EntreeRail {
  * Ce sont des CLÉS de catalogue : le rail se lit dans la langue du cabinet.
  */
 export const GROUPES_CLES = [
-  'rail.groupe.dossier', 'rail.groupe.comptes', 'rail.groupe.postes',
+  'rail.groupe.dossier', 'rail.groupe.comptes',
+  /* LES ÉTATS FINANCIERS, PAS « AREAS » (mandat de la soirée, §1) : un auditeur
+     navigue par bilan et compte de résultat — chaque poste du pack y figure,
+     travaillé ou grisé avec sa raison. */
+  'rail.groupe.bilan', 'rail.groupe.resultat',
   'rail.groupe.transverse', 'rail.demandes', 'rail.groupe.fin',
 ] as const;
 export type CleGroupe = (typeof GROUPES_CLES)[number];

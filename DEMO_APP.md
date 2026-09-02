@@ -77,12 +77,15 @@ ce qui n'est pas encore atteignable y est **grisé avec sa raison** (« disponib
 l'échantillon ») — jamais masqué sans explication. Le rail grandit à mesure que vous travaillez ;
 sur Altiverre, déjà conduit, il est presque entier.
 
-Il est **vertical et groupé** : Le dossier · Les comptes · **Les postes** · Travaux transverses ·
-Demandes au client · Fin de mission. Le groupe du milieu porte **un poste retenu par ligne** — c'est
-l'axe du produit : on ne va pas dans « échantillon », on va dans « chiffre d'affaires », et on y
-trouve les six étapes dans l'ordre où on les travaille (leadsheet, processus, contrôle interne,
-risques, échantillon, contrôle sur pièces). Les écrans qui servaient ces étapes ne sont plus dans le
-rail : ils sont **dans le poste**.
+Il est **vertical et groupé** : Le dossier · Les comptes · **Balance sheet** · **Profit and loss** ·
+Travaux transverses · Demandes au client · Fin de mission. Les deux groupes du milieu portent **tous
+les postes du pack comptable** (ADR-122) — du PCG ici, de l'US GAAP sur un autre dossier : un poste
+retenu ouvre son espace de travail ; un poste hors périmètre est **grisé avec le motif du périmètre**
+(« hors périmètre du jeu de démonstration ») ; un poste sans compte sur la balance est grisé et le
+dit. C'est l'axe du produit : on ne va pas dans « échantillon », on va dans « chiffre d'affaires »,
+et on y trouve les étapes dans l'ordre où on les travaille. Les écrans qui servaient ces étapes ne
+sont plus dans le rail : ils sont **dans le poste**. Le rail se **range** d'un clic (ou de la touche
+`[`) en bande d'icônes ; l'état est retenu par ce navigateur.
 
 ---
 
@@ -147,6 +150,45 @@ et un dossier réel les travaillerait. Le motif est visible à l'écran, au jour
 Allez sur `Obstacles au visa` : la famille **« périmètre sans programme »** apparaît. Un poste retenu
 sur lequel aucune procédure n'est planifiée est un trou dans le dossier — soit on le travaille, soit
 on le sort avec un motif. Ressortez-le : l'obstacle tombe.
+
+---
+
+### 6 quater. La page de poste — tenue comme un cabinet la tient (ADR-123)
+
+**Écran** : `Profit and loss › Chiffre d'affaires` (`/eng/<id>/poste/REVENUE`).
+
+**Ce qu'il faut montrer.** En haut à droite, les **trois visas** — préparateur, réviseur, associé —
+avec le nom, la date et l'état : ce sont ceux des papiers du poste, et un papier dépassé les rend
+**périmés**, lus ici et pas au bas du papier. Sous l'en-tête, la phrase qui dit **d'où vient N-1**
+(le dossier FY2024, ou la balance comparative importée sur ce dossier — jamais un chiffre sans
+origine), puis la **navigation par ancres** : dix sections, un repère et un mot par section, la
+section active soulignée.
+
+**La leadsheet** : compte · intitulé · solde N · solde N-1 · variation signée · variation % · XREF.
+Cliquez une **variation** : elle mène à la **revue analytique du dossier** (`Travaux transverses ›
+Revue analytique`), tous les postes du pack, N contre N-1, retenus ou non. Chaque solde et chaque
+variation est **annotable** — une note de revue s'y pose sur l'identité du compte, jamais sur la
+ligne du tableau.
+
+**La revue analytique du poste**, sous la leadsheet — **le même objet** que la section du dossier.
+Trois gestes, dont un refus à voir :
+1. Videz la zone de texte et cliquez **Enregistrer** : le produit refuse (**ANA-01**) — le navigateur
+   n'arrête pas le formulaire, c'est le service, et la base tient la même règle.
+2. Écrivez une phrase et enregistrez : **version 1**, rédigée par vous, datée. Une version ne se
+   modifie ni ne s'efface (**ANA-03**) : on en écrit une nouvelle, la précédente reste.
+3. Cliquez **Proposer une rédaction d'après les chiffres** : OTTO pré-remplit une phrase construite
+   depuis les totaux et les trois plus grands mouvements (déterministe, tracée par un run), marquée
+   « proposée » et **non enregistrée** ; relisez, corrigez, enregistrez — **version 2**, d'origine
+   « proposée par OTTO, validée par une personne ». Re-importez une balance dont les chiffres bougent :
+   la rédaction se lit **PÉRIMÉE**, elle n'est pas effacée (règle du recalcul, ADR-121).
+
+**Les sections** (processus, contrôle interne, risques, échantillon, testing, **papiers**, **écarts**,
+**demandes au client**) se **replient** d'un clic sur leur titre et l'état est retenu : repliez
+« Papiers de travail », rechargez, c'est toujours replié ; cliquez l'ancre « Papiers », la section
+se rouvre. Les papiers y sont listés avec référence, statut, visas et date ; chaque écart porte le
+lien vers **le papier qui documente sa procédure** ; les demandes au client sont celles dont un
+élément vise une ligne du poste. Le panneau « ce qui reste ouvert » n'existe plus : ce qu'il
+comptait vit dans les sections qui le portent.
 
 ---
 

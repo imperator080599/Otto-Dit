@@ -339,6 +339,37 @@ describe('grille — le dossier de démonstration entier', () => {
     expect((await cellulesDuDossier(IDS.engNep)).cellules[itemId].find((x) => x.id === disposee.id)!.disposition).not.toBeNull();
   });
 
+  it('§0.3 — une version NEUVE de la grille n’efface pas une conclusion : elle la nomme périmée, cause « grille », et le journal la liste', async () => {
+    const lu = await cellulesDuDossier(IDS.engNep);
+    const conclue = Object.keys(lu.conclusions)[0];
+    expect(conclue).toBeTruthy();
+    const v1 = (await grilleDuDossier(IDS.engNep))!;
+    /* Une version neuve : les colonnes commandées ont « changé » — on la pose
+       comme figerGrille le ferait, avec une autre empreinte. */
+    await q(
+      `insert into test_grid (engagement_id, procedure_code, pack_id, version, columns, columns_hash)
+       values ($1, 'REV-SUBST', $2, $3, $4, 'empreinte-v2-fictive')`,
+      [IDS.engNep, v1.packId, v1.version + 1, JSON.stringify(v1.colonnes)]);
+    try {
+      const relu = await cellulesDuDossier(IDS.engNep);
+      expect(relu.grille!.version).toBe(v1.version + 1);
+      /* La conclusion n'a pas disparu : elle est là, périmée, avec sa cause. */
+      expect(relu.conclusions[conclue]).toMatchObject({ perimee: true, cause: 'grille', version: v1.version });
+      const l = await lignesNonConclues(IDS.engNep);
+      expect(l.perimeesParGrille).toBeGreaterThan(0);
+      /* Et le calcul sous la v2 ne la fait pas non plus disparaître. */
+      await calculerGrille(IDS.engNep, IDS.users.karim);
+      expect((await cellulesDuDossier(IDS.engNep)).conclusions[conclue]?.cause).toBe('grille');
+    } finally {
+      /* Le calcul sous la v2 fictive a figé une v3 (empreinte réelle ≠ empreinte
+         fictive) : on retire TOUT ce qui dépasse la v1 — cellules puis grilles. */
+      await q(`delete from test_cell where grid_id in (select id from test_grid where engagement_id = $1 and version > $2)`, [IDS.engNep, v1.version]);
+      await q(`delete from test_grid where engagement_id = $1 and version > $2`, [IDS.engNep, v1.version]);
+    }
+    /* CAS APPARIÉ : figerGrille sur des colonnes INCHANGÉES ne crée pas de version — rien à invalider. */
+    expect((await figerGrille(IDS.engNep, IDS.users.karim)).version).toBe(v1.version);
+  });
+
   it('famille unsupported_sample_items : un AVERTISSEMENT (drapeau nep-fr à off), jamais un obstacle — et la fixture appariée d’un dossier sain ne le déclenche pas', async () => {
     const l = await lignesNonConclues(IDS.engNep);
     expect(l.total).toBeGreaterThan(0);
@@ -351,7 +382,7 @@ describe('grille — le dossier de démonstration entier', () => {
     expect(obst.some((o) => o.motif.cle === 'obst.lignesNonConclues')).toBe(false);
     /* Le dossier N-1 n'a pas d'échantillon : aucun avertissement — la famille
        ne crie pas sur un dossier qui n'a rien à conclure. */
-    expect(await lignesNonConclues(IDS.engNepN1)).toEqual({ total: 0, nonConclues: 0, perimees: 0 });
+    expect(await lignesNonConclues(IDS.engNepN1)).toEqual({ total: 0, nonConclues: 0, perimees: 0, perimeesParGrille: 0 });
     expect(await avertissementsAuVisa(IDS.engNepN1)).toEqual([]);
   });
 
