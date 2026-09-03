@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q } from '@/lib/db/client';
-import { PROPRIETAIRE_SEUL } from './assertions-role';
+import { PROPRIETAIRE_SEUL, RETRAITS_0140, verdictOttoApp } from './assertions-role';
 
 // LA COUVERTURE RLS NE DOIT PLUS POUVOIR DÉRIVER (ADR-109). 0004 avait posé
 // le filet, puis 46 tables sont arrivées sans politique — invisible en local
@@ -44,9 +44,67 @@ describe('couverture RLS (ADR-109)', () => {
     expect(molles.map((r) => r.relname)).toEqual([]);
   });
 
+  it('la liste propriétaire-seul ne porte AUCUNE table qui a désormais une politique — une justification périmée est un mensonge', async () => {
+    /* LE SENS QUI MANQUAIT. Le test ci-dessus attrape une table sans politique
+       ABSENTE de la liste. Il ne voyait pas le contraire : une table sur la
+       liste à qui une migration a DONNÉ une politique — la justification
+       « seul le propriétaire la lit » devient fausse et personne ne le sait.
+       C'est arrivé le 2026-09-03 avec 0140 (cinq tables). */
+    const avec = new Set((await q<{ tablename: string }>(
+      `select distinct tablename from pg_policies where schemaname = 'public'`)).map((r) => r.tablename));
+    const perimees = [...PROPRIETAIRE_SEUL].filter((t) => avec.has(t));
+    expect(perimees, 'tables dites « propriétaire-seul » qui portent pourtant une politique — retirez-les de la liste').toEqual([]);
+  });
+
   it('la liste propriétaire-seul ne porte que des tables qui existent — pas de justification fantôme', async () => {
     const tables = new Set((await q<{ tablename: string }>(
       `select tablename from pg_tables where schemaname = 'public'`)).map((r) => r.tablename));
     for (const t of PROPRIETAIRE_SEUL) expect(tables.has(t), t).toBe(true);
+  });
+
+  /**
+   * LES SIX RETRAITS DE 0140, ÉPROUVÉS ICI ET PAS SEULEMENT EN CI (revue
+   * hostile n°9, constat 14). Le script `scripts/db/otto-app.ts` ne tourne que
+   * contre un Postgres RÉSEAU, dont le secret n'est pas posé : il n'a jamais
+   * tourné. PGlite, lui, EST postgres — le rôle et ses droits existent après
+   * migration, donc la vérification se fait ici, à chaque suite.
+   */
+  it('les six retraits de privilège de 0140 tiennent — une migration qui re-`grant`e en bloc rougit', async () => {
+    const role = await q<{ b: boolean; s: boolean; l: boolean }>(
+      `select rolbypassrls b, rolsuper s, rolcanlogin l from pg_roles where rolname = 'otto_app'`);
+    expect(role.length, 'le rôle otto_app n’existe pas : 0140 n’est pas appliquée').toBe(1);
+    const ouvertes: string[] = [];
+    for (const r of RETRAITS_0140) {
+      for (const priv of r.privileges) {
+        const p = await q<{ ok: boolean }>(
+          `select has_table_privilege('otto_app', $1, $2) ok`, [r.table, priv]);
+        if (p[0]?.ok === true) ouvertes.push(`${r.table}.${priv}`);
+      }
+    }
+    const definers = await q<{ n: string }>(
+      `select count(*)::text n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+       where s.nspname = 'public' and p.prosecdef
+         and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')`);
+    const defauts = verdictOttoApp({
+      role: { bypass: role[0].b, superutilisateur: role[0].s, connexion: role[0].l },
+      ouvertes,
+      definers: Number(definers[0].n),
+    });
+    expect(defauts, 'le rôle applicatif ne tient pas ce que 0140 promet').toEqual([]);
+  });
+
+  it('0140 est REJOUABLE — une seconde application ne lève pas (les politiques se déposent avant d’être posées)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { repoRoot } = await import('@/lib/db/client');
+    const sql = fs.readFileSync(
+      path.join(repoRoot(), 'supabase', 'migrations', '0140_role_applicatif.sql'), 'utf8');
+    const { getDb } = await import('@/lib/db/client');
+    const db = await getDb();
+    /* Elle vient d'être appliquée par `migrate()` : on la rejoue telle quelle.
+       Sans `drop policy if exists`, cette ligne lèverait « policy already
+       exists » — et une migration non rejouable est une migration qu'on ne
+       peut pas réparer sur place (revue hostile n°9, constat 18). */
+    await db.exec(sql);
   });
 });

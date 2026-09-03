@@ -4,12 +4,14 @@ import { evaluateSample } from '@/lib/kernel/projection';
 import { centsToNum, numToCents } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { validatedThresholds } from './materiality';
+import { assertMembre } from '@/lib/core/membre';
 
 // Gate 2 (audit partner): sample evaluation inside the procedure workpaper — known +
 // projected misstatement vs tolerable misstatement, computed L0, concluded L4. The
 // conclusion gate is: all exceptions dispositioned AND the aggregate evaluated vs TE.
 
 export async function computeSampleEvaluation(engagementId: string, userId: string | null): Promise<string> {
+  await assertMembre(engagementId, userId, 'computeSampleEvaluation');
   const ctx = await engagementCtx(engagementId);
   const thresholds = await validatedThresholds(engagementId);
   if (!thresholds) throw new Error('validated materiality required');

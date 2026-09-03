@@ -13,6 +13,7 @@ import { engagementCtx } from '../imports';
 import { getWorkpaper, listEdits, listNotes, listSignoffs, listReplies } from './lifecycle';
 import { colonnesDuPapier, cellulesDuPapier } from './colonne';
 import type { WpSection } from './draft';
+import { assertMembre } from '@/lib/core/membre';
 
 // ADR-013 — exports are terminal, versioned, hash-stamped and SELF-CONTAINED: embedded
 // sample parameters, per-item evidence sha256s, modification history, review trail and
@@ -416,6 +417,7 @@ export async function renderWorkpaperXlsx(workpaperId: string): Promise<{ bytes:
 export async function exportWorkpaper(workpaperId: string, userId: string, format: 'pdf' | 'xlsx'): Promise<{ exportId: string; sha256: string }> {
   const wp = await getWorkpaper(workpaperId);
   if (!wp) throw new Error('workpaper not found');
+  await assertMembre(wp.engagement_id, userId, 'exporter un papier de travail');
   const ctx = await engagementCtx(wp.engagement_id);
   const rendered = format === 'pdf' ? await renderWorkpaperPdf(workpaperId) : await renderWorkpaperXlsx(workpaperId);
   const blob = await saveBlob(rendered.bytes);

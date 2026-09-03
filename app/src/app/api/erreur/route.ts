@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { q } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
+import { sansLocataire } from '@/lib/db/sans-locataire';
 
 // LE DIGEST D'UN ÉCRAN EN ERREUR SE COLLE ICI ET RÉSOUT EN ROUTE + PILE.
 //
@@ -25,14 +26,15 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Ce chemin n’existe que sur la démonstration publique.', { status: 404 });
   }
   const digest = req.nextUrl.searchParams.get('digest')?.trim() || null;
-  const lignes = await q<Ligne>(
+  /* UNE PANNE N'A PAS DE COOKIE — dérogation NOMMÉE (clé « erreur »). */
+  const lignes = await sansLocataire('erreur', () => q<Ligne>(
     `select digest, route, path, method, engagement_id::text, release_sha, message,
             stack, occurred_at::text
      from server_error
      where ($1::text is null or digest = $1)
      order by occurred_at desc limit 20`,
     [digest],
-  );
+  ));
   return NextResponse.json({
     digest,
     trouvees: lignes.length,

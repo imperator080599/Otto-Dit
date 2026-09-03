@@ -29,6 +29,7 @@ import { declaredFactorsFor } from './questionnaire';
 import { numToCents } from '@/lib/util/num';
 import { engagementRules } from './fsli';
 import { mapAccount } from '@/lib/kernel/fsli-map';
+import { assertMembre } from '@/lib/core/membre';
 
 export class RiskRuleError extends Error {
   constructor(message: string) {
@@ -244,6 +245,7 @@ export async function assessFsli(
 ): Promise<AssertionRisk[]> {
   /* Évaluer le risque, c'est planifier des travaux. Une mission non acceptée
      n'en planifie aucun : le système refuse, il ne rappelle pas. */
+  await assertMembre(engagementId, actorUserId, 'évaluer le risque d’un poste');
   await assertAccepte(engagementId);
   const cat = await catalogueDeLaMission(engagementId);
   assertPredicatesImplemented(cat);
@@ -404,6 +406,7 @@ export async function overrideLevel(
   reason: string,
   actorUserId: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'overrideLevel');
   const cat = await catalogueDeLaMission(engagementId);
   const eng = await engagementContext(engagementId);
   const row = await q01<{ computed_level: string }>(

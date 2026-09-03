@@ -2,6 +2,7 @@ import { q, q1, q01 } from '@/lib/db/client';
 import { missionN1 } from './engagement';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // LA REPRISE DU DOSSIER PRÉCÉDENT (point 2b).
 //
@@ -69,6 +70,7 @@ export async function missionPrecedente(engagementId: string): Promise<{ id: str
  * avoir été écartée.
  */
 export async function proposerReprise(engagementId: string, actorUserId: string): Promise<Reprise[]> {
+  await assertMembre(engagementId, actorUserId, 'proposerReprise');
   const prev = await missionPrecedente(engagementId);
   if (!prev) {
     throw new CarryForwardError(

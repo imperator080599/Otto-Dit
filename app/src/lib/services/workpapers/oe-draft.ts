@@ -10,12 +10,14 @@ import { engagementCtx } from '../imports';
 import { frameworkSet } from '../fsli';
 import { attributeGrid, listDeficiencies, listDeviations } from '../sox';
 import type { WpSection, WpTableRow } from './draft';
+import { assertMembre } from '@/lib/core/membre';
 
 // S8b — the OE workpaper goes through the SAME documentation engine as REV-01: only the
 // pack (strings, language, format) and the fact sources differ. This is the D2
 // pluggability proof.
 
 export async function draftOeWorkpaper(engagementId: string, controlId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'draftOeWorkpaper');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);

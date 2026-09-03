@@ -24,6 +24,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import type { Catalogue, QuestionResiduelle } from '@/lib/methodology/types';
 import { engagementContext } from './team';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 export class QuestionnaireError extends Error {
   constructor(message: string) {
@@ -239,6 +240,7 @@ export async function decideFactor(
   reason: string,
   actorUserId: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'decideFactor');
   const eng = await engagementContext(engagementId);
   if (status === 'dismissed' && !reason.trim()) {
     throw new QuestionnaireError('écarter un facteur sans motif écrit le rend indistinguable d’un oubli');

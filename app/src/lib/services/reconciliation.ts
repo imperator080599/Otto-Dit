@@ -4,11 +4,14 @@ import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { numToCents, centsToNum } from '@/lib/util/num';
 import { engagementCtx } from './imports';
+import { assertMembre } from '@/lib/core/membre';
 
 // S1 deterministic TB↔GL reconciliation (L0). Per-account diffs, never netted; the
 // population gate reads per-FSLI account statuses (Gate 2). Diffs raise typed exceptions.
 
-export async function computeTbGl(engagementId: string, userId: string | null): Promise<{ reconciliationId: string; diffCount: number }> {
+export async function computeTbGl(engagementId: string, userId: string | null): Promise<{
+  reconciliationId: string; diffCount: number }> {
+  await assertMembre(engagementId, userId, 'computeTbGl');
   const ctx = await engagementCtx(engagementId);
   const tb = await q<{ number: string; balance: string }>(
     `select a.number, a.balance::text from account a

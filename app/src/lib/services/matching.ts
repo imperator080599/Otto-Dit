@@ -10,6 +10,7 @@ import { frameworkSet } from './fsli';
 import { currentRevenueSample } from './sampling';
 import { latestExtraction } from './extraction/ladder';
 import { fieldsToInvoice, fieldsToDelivery } from './extraction/fields';
+import { assertMembre } from '@/lib/core/membre';
 
 // S6 — deterministic vouching over the drawn sample (L0, engine_run recorded), typed
 // exceptions with lifecycle, risk-flag exceptions (manual JE, credit-note pattern),
@@ -127,7 +128,9 @@ async function raiseException(opts: {
   return row.id;
 }
 
-export async function runMatching(engagementId: string, userId: string | null): Promise<{ matched: number; exceptions: number; pending: number }> {
+export async function runMatching(engagementId: string, userId: string | null): Promise<{
+  matched: number; exceptions: number; pending: number }> {
+  await assertMembre(engagementId, userId, 'runMatching');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);
@@ -338,6 +341,7 @@ const CLARIFICATION_TEMPLATES: Record<string, string> = {
 
 /** Draft ONE clarification request from the open exceptions (L2 — approve to send). */
 export async function draftClarificationRequest(engagementId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'draftClarificationRequest');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const open = await q<{ id: string; taxonomy_code: string; description: string; sample_item_id: string | null; piece_ref: string | null }>(
@@ -429,6 +433,7 @@ export async function resolveException(exceptionId: string, userId: string, inpu
     `select engagement_id, amount_impact::text, taxonomy_code from exception where id = $1`,
     [exceptionId],
   );
+  await assertMembre(x.engagement_id, userId, 'résoudre un écart');
   if (!input.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
   if (!input.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
   const evidenceId = input.corroboration?.evidenceId ?? null;

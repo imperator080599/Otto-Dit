@@ -4,6 +4,7 @@ import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { criteres } from '@/lib/methodology/catalogue';
 import { fileDeadlines } from './retention';
+import { assertMembre } from '@/lib/core/membre';
 
 /* Le cabinet d'une mission, lu ICI plutôt qu'importé de `team.ts` : celui-ci
    importe `assertAccepte`, et le cycle d'imports qui en résulterait tient
@@ -63,6 +64,7 @@ const COLONNES = `id, engagement_id, kind, answers, status, decision_reason,
  * une question dont la réponse est dans le dossier ne se pose pas.
  */
 export async function ouvrirAcceptation(engagementId: string, actorUserId: string): Promise<Acceptation> {
+  await assertMembre(engagementId, actorUserId, 'ouvrirAcceptation');
   const deja = await currentAcceptation(engagementId);
   if (deja) return deja;
 
@@ -105,6 +107,7 @@ export async function repondreCritere(
   answer: 'oui' | 'non',
   detail = '',
 ): Promise<Acceptation> {
+  await assertMembre(engagementId, actorUserId, 'repondreCritere');
   const a = await currentAcceptation(engagementId);
   if (!a) throw new AcceptanceRuleError('la décision d’acceptation n’est pas ouverte');
   if (a.status !== 'open') {
@@ -180,6 +183,7 @@ export async function decider(
   status: 'accepted' | 'declined',
   reason: string,
 ): Promise<Acceptation> {
+  await assertMembre(engagementId, actorUserId, 'decider');
   const a = await currentAcceptation(engagementId);
   if (!a) throw new AcceptanceRuleError('la décision d’acceptation n’est pas ouverte');
   if (a.status !== 'open') throw new AcceptanceRuleError('décision déjà prise');
@@ -272,6 +276,7 @@ export async function jalons(engagementId: string): Promise<Jalon[]> {
 export async function poserJalon(
   engagementId: string, actorUserId: string, code: string, date: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'poserJalon');
   const j = await q01<{ derived: boolean }>(
     `select derived from engagement_milestone where engagement_id = $1 and code = $2`,
     [engagementId, code],
@@ -360,6 +365,7 @@ export async function recalculerDerives(engagementId: string): Promise<void> {
 export async function marquerJalonFait(
   engagementId: string, actorUserId: string, code: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'marquerJalonFait');
   const j = await q01<{ code: string }>(
     `select code from engagement_milestone where engagement_id = $1 and code = $2`,
     [engagementId, code],

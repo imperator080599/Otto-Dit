@@ -487,6 +487,67 @@ export const GARDES: Garde[] = [
     rejet: /NOT applied/,
   },
 
+  {
+    nature: 'service', code: 'G-24',
+    enonce: 'ETANCH-01/02/03 — aucun geste d’un cabinet ÉTRANGER n’entre dans un dossier : ni comme acteur, ni comme destinataire.',
+    point: 'core/membre.ts → assertMembre / assertDestinataire, appelées par sections, testing/grille, analytique, workpapers/lifecycle (les notes de revue vivent là, pas dans services/notes/), fsli, risk, programme, et 44 autres services depuis le câblage du 2026-09-03',
+    rayon: 'Quatre-vingt-seize fonctions de service exportées prennent un acteur ET écrivent ; à la découverte, QUATRE-VINGT-ONZE n’avaient aucune garde d’isolation. Sur treize gestes tentés depuis un autre cabinet, DIX ont été acceptés (le premier compte publié disait onze : faux, corrigé par la revue hostile n°9). Un cabinet étranger a notamment RÉÉCRIT le contenu d’un papier de travail, avec sa trace au journal. Le secret professionnel entre deux clients concurrents ne tenait qu’à `requireMember` sur les écrans.',
+    stops_looking: 'Ne juge PAS le rôle (un membre est un membre : qui vise, qui clôt, qui scelle sont d’autres règles). Se tait pour un acteur nul (chemin SYSTÈME) et pour une mission dont l’équipe est VIDE (c’est l’acceptation qui parle). Ne couvre PAS encore 37 fonctions désignées par l’identifiant d’un objet FILS, écrites une par une avec leur raison dans core/couverture-etancheite.test.ts — le compte est publié et ne peut que baisser. Ne remplace PAS la RLS : le rôle servi la contourne encore (PLAN_RLS, étape 3 non exécutée).',
+    attaque: async (ctx) => {
+      const { q1 } = await import('@/lib/db/client');
+      const { assertMembre } = await import('@/lib/core/membre');
+      const cab = await q1<{ id: string }>(
+        `insert into tenant (name) values ('Cabinet d’attaque étanchéité (fictif)') returning id::text`);
+      const u = await q1<{ id: string }>(
+        `insert into app_user (tenant_id, name, email, firm_role)
+         values ($1, 'Intruse d’épreuve', 'intruse.epreuve@etranger.test', 'partner') returning id::text`, [cab.id]);
+      await assertMembre(ctx.engagementId, u.id, 'attaque d’épreuve');
+    },
+    rejet: /ETANCH-01/,
+  },
+  {
+    nature: 'service', code: 'G-25',
+    enonce: 'LOC-01/LOC-02 — sous un rôle qui n’a pas BYPASSRLS, une requête sans locataire posé LÈVE au lieu de rendre zéro ligne ; et une dérogation dont la clé n’est pas écrite est refusée.',
+    point: 'db/sans-locataire.ts → assertLocataire, appelé par q() ; la liste des chemins légitimes vit dans le même fichier',
+    rayon: 'Le silence lu comme un succès (règle 13) : écran vide sans message, tableau de bord à zéro obstacle, grille sans cellule — et rien au journal. Pire, les gardes SQL de 0037/0042/ADR-028 LISENT des tables pour décider de refuser : sans locataire elles ne voient rien, donc elles ne refusent rien. Un garde qui ne voit pas devient un garde qui laisse passer.',
+    stops_looking: 'DÉSARMÉ tant que le rôle servi contourne la RLS — c’est le cas aujourd’hui, en production comme en local : il ne protège rien AUJOURD’HUI. Il regarde le contexte asynchrone, pas la base. Il ne couvre pas `db.query`/`db.exec` appelés directement (migrations, catalogue).',
+    attaque: async () => {
+      const { armerLeGarde, sansLocataire } = await import('@/lib/db/sans-locataire');
+      const { q } = await import('@/lib/db/client');
+      try {
+        armerLeGarde(false);                       // le rôle « ne contourne pas »
+        await sansLocataire('session', () => q(`select 1 from app_user limit 1`));   // une dérogation ÉCRITE passe
+        await q(`select count(*) from engagement`);                                  // celle-ci ne devrait pas
+      } finally {
+        armerLeGarde(true);                        // et on rend la base au reste de la suite
+      }
+    },
+    rejet: /LOC-01/,
+  },
+
+  {
+    nature: 'service', code: 'G-26',
+    enonce: 'BLOB-01 — une pièce ne se sert que si son CONTENU rend l’adresse par laquelle on l’a demandée.',
+    point: 'core/storage.ts → readBlob / verifierAdresse (le magasin est adressé par contenu : le chemin EST le sha256)',
+    rayon: 'Substitution de preuve dans un fichier d’audit, sans une ligne de journal. `saveBlob` fait `on conflict (storage_path) do nothing` : le PREMIER qui dépose un chemin le tient, et `readBlob` ne revérifiait rien. Sous otto_app (étape 3), un cabinet pouvait pré-insérer un couple chemin/octets et faire relire SES octets à la place de la facture d’un autre (revue hostile n°9, constat 9).',
+    stops_looking: 'Ne protège que la LECTURE d’une pièce donnée, jamais la lecture CROISÉE : la politique de blob_store reste `using (true)`, donc sous otto_app un `select bytes from blob_store` rend les pièces de tous les cabinets — dette nommée dans 0140. Ne vérifie pas un chemin qui ne suit pas la convention `aa/sha256` (magasins d’avant 0028), et le dit.',
+    attaque: async () => {
+      const { saveBlob, readBlob } = await import('@/lib/core/storage');
+      const { q } = await import('@/lib/db/client');
+      const avant = process.env.OTTO_STORAGE;
+      process.env.OTTO_STORAGE = 'db';
+      try {
+        const { storagePath } = await saveBlob(new TextEncoder().encode('pièce d’épreuve (fictive)'));
+        await q(`update blob_store set bytes = $1 where storage_path = $2`,
+          [Buffer.from(new TextEncoder().encode('octets substitués')), storagePath]);
+        await readBlob(storagePath);
+      } finally {
+        if (avant === undefined) delete process.env.OTTO_STORAGE; else process.env.OTTO_STORAGE = avant;
+      }
+    },
+    rejet: /BLOB-01/,
+  },
+
   /* ── Gardes DÉCLARÉES : la preuve vit ailleurs, ou n'existe pas ────────── */
   ...([
     ['acceptation', 'obst.missionNonAcceptee', null],

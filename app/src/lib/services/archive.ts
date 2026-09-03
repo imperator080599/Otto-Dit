@@ -9,6 +9,7 @@ import { obstaclesAuVisa } from './obstacles';
 import { fileDeadlines } from './retention';
 import { renderWorkpaperPdf } from './workpapers/render';
 import { traduire } from '@/lib/i18n/catalogue';
+import { assertMembre } from '@/lib/core/membre';
 
 // ADR-022 — closing the file.
 //
@@ -109,6 +110,7 @@ export async function buildArchive(engagementId: string, reportDate: string): Pr
 }
 
 export async function sealFile(engagementId: string, userId: string, reportDate: string): Promise<SealResult> {
+  await assertMembre(engagementId, userId, 'sealFile');
   const ctx = await engagementCtx(engagementId);
 
   /* L'ORDRE DES DEUX VERROUS. Le plus SPÉCIFIQUE d'abord : « le grand livre est

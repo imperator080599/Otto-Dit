@@ -1,6 +1,7 @@
 import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // L'INFORMATION PRODUITE PAR L'ENTITÉ — IPE (revue utilisateur n°2 §3.1).
 //
@@ -176,7 +177,9 @@ async function refuserSiScelle(engagementId: string): Promise<void> {
   }
 }
 
-export async function creerRapport(engagementId: string, s: SaisieRapport, userId: string): Promise<{ id: string }> {
+export async function creerRapport(engagementId: string, s: SaisieRapport, userId: string): Promise<{
+  id: string }> {
+  await assertMembre(engagementId, userId, 'creerRapport');
   await refuserSiScelle(engagementId);
   const nom = (s.nom ?? '').trim();
   if (!nom) throw new Error('Un rapport IPE se nomme — le nom de l’état tel que le système le produit.');

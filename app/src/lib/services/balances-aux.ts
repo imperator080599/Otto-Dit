@@ -4,6 +4,7 @@ import { engagementCtx } from './imports';
 import { ingestEvidence } from './evidence';
 import { nextSeq } from './requests';
 import { raiseFactor } from './questionnaire';
+import { assertMembre } from '@/lib/core/membre';
 
 // L'ANALYSE DES BALANCES AUXILIAIRES (point 1, ADR-107). Le client fournit
 // ses balances auxiliaires ÂGÉES (clients / fournisseurs, N / N-1, cinq
@@ -298,6 +299,7 @@ export async function proposerCandidat(
 
 /** Les questions au client — un BROUILLON de demande (L2), une question par candidat. */
 export async function redigerQuestionsClient(engagementId: string, cote: Cote, seuilPts: number, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'redigerQuestionsClient');
   const analyse = await analyseAux(engagementId, cote, seuilPts);
   if (!analyse.candidats.length) {
     throw new Error('balance auxiliaire : aucun constat à questionner — rien ne justifie une demande');

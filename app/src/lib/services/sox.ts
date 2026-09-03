@@ -12,6 +12,7 @@ import { frameworkSet } from './fsli';
 import { validatedThresholds } from './materiality';
 import { latestExtraction } from './extraction/ladder';
 import type { ExtractedField } from './extraction/fields';
+import { assertMembre } from '@/lib/core/membre';
 
 // S8 — SOX OE cycle on the SAME engines (request, evidence, extraction, sampling,
 // exception/deviation, documentation) under the PCAOB/COSO pack. UI held to the four
@@ -57,6 +58,7 @@ function splitCsvLine(line: string): string[] {
 }
 
 export async function importRcm(engagementId: string, csv: string, userId: string): Promise<number> {
+  await assertMembre(engagementId, userId, 'importRcm');
   const ctx = await engagementCtx(engagementId);
   const lines = csv.trim().split(/\r?\n/);
   const headers = splitCsvLine(lines[0]);

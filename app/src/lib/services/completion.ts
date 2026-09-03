@@ -4,6 +4,7 @@ import { currentEvaluation } from './evaluation';
 import { jalons } from './acceptance';
 import { motif, type Motif } from './motif';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { assertMembre } from '@/lib/core/membre';
 
 // L'ACHÈVEMENT (point 10).
 //
@@ -98,6 +99,7 @@ export interface ConclusionInput {
 export async function conclure(
   engagementId: string, actorUserId: string, nature: NatureAchevement, input: ConclusionInput,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'conclure');
   const t = await q01<Achevement>(
     `select ${COLONNES} from completion_item where engagement_id = $1 and nature = $2`,
     [engagementId, nature],
@@ -183,6 +185,7 @@ export async function conclure(
 export async function sansObjet(
   engagementId: string, actorUserId: string, nature: NatureAchevement, reason: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'sansObjet');
   if (!reason.trim()) {
     throw new CompletionError(
       'un travail « sans objet » se motive : sans motif, il est indistinguable d’un travail oublié',
@@ -214,6 +217,7 @@ export async function sansObjet(
 export async function rouvrir(
   engagementId: string, actorUserId: string, nature: NatureAchevement, reason: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'rouvrir');
   if (!reason.trim()) throw new CompletionError('rouvrir un travail conclu se motive');
   const eng = await q1<{ tenant_id: string }>(`select tenant_id from engagement where id = $1`, [engagementId]);
   await q(

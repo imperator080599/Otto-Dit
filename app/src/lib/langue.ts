@@ -286,6 +286,7 @@ export const HORS_LIBELLE: Record<string, string> = {
   'services/matching.ts': 'description d’un écart ÉCRITE PUIS STOCKÉE à sa détection (contenu du dossier, pas un libellé)',
   'services/entretiens-analyste.ts': 'description d’outil transmise à un modèle — jamais rendue',
   'services/query/adapter.ts': 'consigne transmise à un modèle — jamais rendue',
+  'db/sans-locataire.ts': 'la liste écrite des chemins légitimement sans locataire (PLAN_RLS A.4) : `raison` s’adresse au développeur qui ajoute un chemin, dans le message d’un refus technique (LOC-01/LOC-02) — jamais à un utilisateur, jamais sur un écran',
   'flows/enrichir.ts': 'étiquettes d’ancre des notes SEMÉES : contenu du monde de démonstration, figé à la pose comme le texte des notes (ADR-097) — jamais un libellé d’écran',
 };
 

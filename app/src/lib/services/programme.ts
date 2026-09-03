@@ -10,6 +10,7 @@ import {
   justificatifs, executable,
 } from '@/lib/methodology/catalogue';
 import type { WpSection } from './workpapers/draft';
+import { assertMembre } from '@/lib/core/membre';
 
 // LE PROGRAMME DE TRAVAIL D'UN POSTE — une procédure du catalogue devient une
 // UNITÉ DE TRAVAIL (mandat de nuit n°2, 1.1 et 1.4).
@@ -73,6 +74,7 @@ export async function proceduresPlanifiees(engagementId: string, fsliCode: strin
 export async function planifierProcedure(o: {
   engagementId: string; fsliCode: string; code: string; userId: string;
 }): Promise<{ id: string; creee: boolean }> {
+  await assertMembre(o.engagementId, o.userId, 'planifier une procédure');
   const cat = await catalogueDeLaMission(o.engagementId);
   const p = procedureDuCatalogue(cat, o.code);
   if (!p) {
@@ -124,6 +126,12 @@ export async function redigerPapierDeProcedure(o: {
     `select id::text, engagement_id::text, template_code, fsli_code, title from procedure_instance where id = $1`,
     [o.procedureId]);
   if (!pi) throw new Error('PROG-01 : procédure inconnue');
+  /* ETANCH-01 AVANT PROG-05, ET L'ORDRE EST LA RÈGLE (revue hostile n°9,
+     constat 6). PROG-05 ne consulte que `engagement_member` : il distingue
+     donc « procédure inconnue » de « pas membre du dossier », ce qui APPREND à
+     un intrus d'un autre cabinet que la procédure existe — exactement la
+     divulgation qu'ETANCH-01-d'abord existe pour empêcher (ADR-069/ADR-082). */
+  await assertMembre(pi.engagement_id, o.userId, 'rédiger le papier d’une procédure');
   if (!pi.fsli_code) {
     throw new Error('PROG-04 : cette procédure n’est rattachée à aucun poste — le papier d’un contrôle se rédige depuis le contrôle');
   }

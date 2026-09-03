@@ -5,6 +5,7 @@ import { logEvent } from '@/lib/core/events';
 import { joursOuvresEntre } from '@/lib/core/jours';
 import { engagementCtx } from '../imports';
 import type { WpSection } from './draft';
+import { assertMembre } from '@/lib/core/membre';
 
 // S7 lifecycle: visible-flag edits with mandatory justification (idea #14), review notes
 // (human-only, idea #17), dated immutable sign-offs; re-draft after sign-off ⇒ new version
@@ -43,6 +44,9 @@ export async function editSection(workpaperId: string, userId: string, sectionKe
     `select id, engagement_id, sections, status from workpaper where id = $1`,
     [workpaperId],
   );
+  /* LE PAPIER DIT SON DOSSIER (revue hostile n°9, constat 4 : un cabinet
+     étranger a RÉÉCRIT le contenu d'un papier de travail, trace au journal). */
+  await assertMembre(wp.engagement_id, userId, 'réécrire une section de papier');
   if (wp.status === 'signed') throw new Error('signed workpaper — redraft to a new version first');
   const ctx = await engagementCtx(wp.engagement_id);
   const sections = wp.sections.map((s) => (s.key === sectionKey ? { ...s, body: newBody } : s));
@@ -121,6 +125,7 @@ export async function addReviewNote(
   engagementId: string, workpaperId: string | null, authorId: string,
   assigneeId: string | null, text: string, opts: OptionsNote = {},
 ): Promise<string> {
+  await assertMembre(engagementId, authorId, 'poser une note de revue');
   if (!text.trim()) throw new Error('empty note');
   const assigneeKind = opts.assigneeKind ?? 'user';
   if (assigneeKind === 'otto' && assigneeId !== null) {
@@ -169,6 +174,7 @@ export async function repondreNote(noteId: string, userId: string, texte: string
   const note = await q1<{ id: string; engagement_id: string; status: string }>(
     `select id, engagement_id, status from review_note where id = $1`, [noteId],
   );
+  await assertMembre(note.engagement_id, userId, 'répondre à une note');
   if (note.status === 'closed') throw new Error('note close — une note close ne se rouvre pas, on en pose une nouvelle');
   const ctx = await engagementCtx(note.engagement_id);
   const row = await q1<{ id: string }>(
@@ -296,6 +302,7 @@ export async function transitionNote(noteId: string, userId: string, to: 'addres
     `select id, engagement_id, status, author_id from review_note where id = $1`,
     [noteId],
   );
+  await assertMembre(note.engagement_id, userId, to === 'closed' ? 'clore une note' : 'traiter une note');
   if (to === 'addressed' && note.status !== 'open') throw new Error('only open notes can be addressed');
   if (to === 'closed' && note.status !== 'addressed') throw new Error('only addressed notes can be closed');
   /* LE PRÉPARATEUR RÉPOND, SEUL LE RÉVISEUR CLÔT — ET JAMAIS L'AUTEUR
@@ -350,6 +357,9 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
     `select id, engagement_id, status from workpaper where id = $1`,
     [workpaperId],
   );
+  /* LE VISA — le plafond HITL L2 lui-même. Il n'était gardé par aucune règle
+     d'étanchéité (revue hostile n°9, constat 4). */
+  await assertMembre(wp.engagement_id, userId, 'viser un papier de travail');
   if (wp.status === 'outdated') throw new Error('outdated workpaper — redraft first');
   const ctx = await engagementCtx(wp.engagement_id);
   const member = await q01<{ can_sign: boolean; eng_role: string }>(

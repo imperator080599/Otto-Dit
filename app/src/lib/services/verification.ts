@@ -6,6 +6,7 @@ import { centsToNum, numToCents } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import type { ExtractedField } from './extraction/fields';
+import { assertMembre } from '@/lib/core/membre';
 
 // ADR-012.3 — the engagement-level tool-reliability control: a seeded, reproducible
 // subsample of machine-PASSED items is BLIND re-performed by a human (independent values
@@ -13,6 +14,7 @@ import type { ExtractedField } from './extraction/fields';
 // and records an escalation decision. All stored — never recomputed (Gate 2).
 
 export async function startVerificationRun(engagementId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'startVerificationRun');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);

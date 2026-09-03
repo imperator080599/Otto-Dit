@@ -108,5 +108,20 @@
     "prouvee": true,
     "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
     "quand": "2026-09-02T09:27:00.154Z"
+  },
+  "G-24": {
+    "prouvee": true,
+    "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
+    "quand": "2026-09-03T08:04:50.261Z"
+  },
+  "G-25": {
+    "prouvee": true,
+    "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
+    "quand": "2026-09-03T08:04:50.263Z"
+  },
+  "G-26": {
+    "prouvee": true,
+    "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
+    "quand": "2026-09-03T08:36:36.294Z"
   }
 }

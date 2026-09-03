@@ -8,6 +8,7 @@ import { missionsParClient } from '@/lib/services/bascule';
 import { demoPublique } from '@/lib/core/demo-public';
 import { NouvelleMission } from './nouvelle-mission';
 import { tr } from '@/lib/i18n';
+import { sansLocataire } from '@/lib/db/sans-locataire';
 
 // Home: dev sign-in switcher (ADR-006) + engagement list for the signed-in auditor.
 
@@ -36,9 +37,11 @@ export default async function Home({
   const { erreur, remis } = await searchParams;
   const t = await tr();
   const user = await getSessionUser();
-  const users = await q<{ id: string; name: string; firm_role: string }>(
-    `select id, name, firm_role from app_user order by name`,
-  );
+  /* L'ÉCRAN D'ENTRÉE PRÉCÈDE TOUTE SESSION — dérogation NOMMÉE
+     (clé « choix-identite », app/src/lib/db/sans-locataire.ts). */
+  const users = await sansLocataire('choix-identite', () =>
+    q<{ id: string; name: string; firm_role: string }>(
+      `select id, name, firm_role from app_user order by name`));
 
   if (!user) {
     return (

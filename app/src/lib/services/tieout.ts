@@ -1,6 +1,7 @@
 import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -82,6 +83,7 @@ export interface LigneAPointer {
 export async function declarerLignes(
   engagementId: string, actorUserId: string, entrantes: LigneAPointer[],
 ): Promise<LigneEtats[]> {
+  await assertMembre(engagementId, actorUserId, 'declarerLignes');
   for (const l of entrantes) {
     if (l.nature !== 'calcul_documente' && !(l.accounts ?? []).length) {
       throw new TieOutError(
@@ -131,6 +133,7 @@ export async function declarerLignes(
  * calcul serait exactement la faute que sa nature existe pour éviter.
  */
 export async function pointer(engagementId: string, actorUserId: string): Promise<LigneEtats[]> {
+  await assertMembre(engagementId, actorUserId, 'pointer');
   const snap = await q01<{ id: string }>(
     `select id from tb_snapshot where engagement_id = $1 and period_kind = 'current' and status = 'active'
      order by version desc limit 1`,
@@ -198,6 +201,7 @@ export async function documenter(
   engagementId: string, actorUserId: string, ligneId: string,
   explanation: string, evidenceId: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'documenter');
   const t = await q01<{ id: string; nature: NatureTie }>(
     `select t.id, t.nature from fs_tie t join fs_line l on l.id = t.fs_line_id
      where l.id = $1 and l.engagement_id = $2`,
@@ -238,6 +242,7 @@ export async function documenter(
 export async function expliquerEcart(
   engagementId: string, actorUserId: string, ligneId: string, explanation: string,
 ): Promise<void> {
+  await assertMembre(engagementId, actorUserId, 'expliquerEcart');
   if (!explanation.trim()) {
     throw new TieOutError('un écart accepté sans un mot est indistinguable d’un oubli');
   }

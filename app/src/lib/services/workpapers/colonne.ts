@@ -2,6 +2,7 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { getField, type ExtractedField } from '@/lib/services/extraction/fields';
 import { nextSeq } from '@/lib/services/requests';
+import { assertMembre } from '@/lib/core/membre';
 
 // LA COLONNE AJOUTÉE AU TABLEAU DE TESTING (ADR-099).
 //
@@ -86,6 +87,7 @@ export interface ColonneAjoutee {
 export async function ajouterColonne(
   engagementId: string, workpaperCode: string, titre: string, justification: string, userId: string,
 ): Promise<ColonneAjoutee> {
+  await assertMembre(engagementId, userId, 'ajouterColonne');
   if (!titre.trim()) throw new Error('colonne : le titre est vide');
   if (!justification.trim()) {
     throw new Error('colonne : ajouter une colonne modifie le modèle standard du papier — la justification est obligatoire, elle sort dans l\'export');

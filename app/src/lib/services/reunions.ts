@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { now } from '@/lib/core/clock';
 import { genererIcs } from '@/lib/kernel/ics';
 import { getAgendaAdapter, getTransportInvitation, type CreneauOccupe } from './agenda/adapters';
+import { assertMembre } from '@/lib/core/membre';
 
 // LES INVITATIONS DE RÉUNION — LA PARTIE DÉTERMINISTE (ADR-101).
 // Tout ce qui peut être calculé l'est ici, testé, hors ligne : les contacts
@@ -46,6 +47,7 @@ export async function contactsDisponibles(engagementId: string) {
 /** Déclarer le contact CLÉ. Une nouvelle clé REMPLACE l'ancienne — qui
  *  redevient contact simple — et le remplacement se journalise. */
 export async function declarerContactCle(engagementId: string, clientContactId: string, userId: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'declarerContactCle');
   const contact = await q01<{ id: string; entity_id: string }>(
     `select cc.id, cc.entity_id from client_contact cc where cc.id = $1 and cc.active`, [clientContactId],
   );
@@ -74,6 +76,7 @@ export async function declarerContactCle(engagementId: string, clientContactId: 
 }
 
 export async function declarerContactDomaine(engagementId: string, clientContactId: string, domaine: string, userId: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'declarerContactDomaine');
   if (!domaine.trim()) throw new Error('contact : le domaine est vide — « ventes », « trésorerie »…');
   const eng = await ctxEng(engagementId);
   await q(

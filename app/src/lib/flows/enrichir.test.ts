@@ -212,7 +212,12 @@ describe('enrichirMondeDemo', () => {
     const etranger = await q1<{ id: string }>(
       `insert into app_user (tenant_id, name, email, firm_role)
        values ($1, 'Nadia Ferrand', 'nadia.ferrand@vermeil-audit.test', 'senior') returning id::text`, [IDS.tenant]);
-    await expect(redigerPapierDeProcedure({ procedureId: seq!.id, userId: etranger.id, motif: 'essai' })).rejects.toThrow(/PROG-05/);
+    /* ETANCH-01/03 REMPLACE PROG-05 ICI, ET C'EST LA CORRECTION D'UN DÉFAUT
+       (revue hostile n°9, constat 6) : PROG-05 ne consultait QUE
+       `engagement_member`, jamais `tenant_id`. Il distinguait donc « procédure
+       inconnue » de « pas membre du dossier » — ce qui APPREND à un intrus
+       d'un autre cabinet que la procédure existe. L'étanchéité passe avant. */
+    await expect(redigerPapierDeProcedure({ procedureId: seq!.id, userId: etranger.id, motif: 'essai' })).rejects.toThrow(/ETANCH-01|ETANCH-03/);
     /* MANUEL porte trois visas : une version nouvelle sans motif est refusée. */
     await expect(redigerPapierDeProcedure({ procedureId: seq!.id, userId: IDS.users.karim })).rejects.toThrow(/PROG-06/);
   });

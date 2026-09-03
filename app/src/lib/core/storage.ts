@@ -48,14 +48,55 @@ export async function saveBlob(bytes: Uint8Array): Promise<{ sha256: string; sto
   return { sha256: hash, storagePath: rel, size: bytes.byteLength };
 }
 
+/**
+ * LIRE UNE PIÈCE, ET VÉRIFIER QU'ELLE EST BIEN CELLE QU'ON DEMANDE
+ * (revue hostile n°9, constat 9).
+ *
+ * Le magasin est ADRESSÉ PAR CONTENU : le chemin EST le sha256. Cette
+ * propriété n'était affirmée nulle part et vérifiée nulle part — et
+ * `saveBlob` fait `on conflict (storage_path) do nothing`, donc le PREMIER
+ * qui dépose un chemin le tient. Sous `otto_app` (étape 3 de PLAN_RLS), un
+ * cabinet aurait pu pré-insérer un couple chemin/octets et faire relire SES
+ * octets à la place de la pièce d'un autre : une substitution de preuve dans
+ * un fichier d'audit, sans une ligne de journal.
+ *
+ * Le contrat se vérifie donc à la lecture, des deux côtés (base ET disque) :
+ * si le contenu ne rend pas l'adresse qu'on a demandée, on REFUSE. Coût : un
+ * sha256 sur des octets déjà chargés.
+ *
+ * OÙ CETTE VÉRIFICATION CESSE DE REGARDER : elle protège la LECTURE, pas la
+ * lecture croisée. La politique de `blob_store` reste `using (true)` : sous
+ * `otto_app`, `select bytes from blob_store` rend les pièces de tous les
+ * cabinets. Dette nommée dans 0140 et docs/PLAN_RLS.md, à fermer avant l'étape 3.
+ */
 export async function readBlob(storagePath: string): Promise<Uint8Array> {
+  let bytes: Uint8Array;
   if (mode() === 'db') {
     const row = await q01<{ bytes: Uint8Array | Buffer }>(
       `select bytes from blob_store where storage_path = $1`, [storagePath]);
     if (!row) throw new Error(`pièce absente du magasin : ${storagePath}`);
-    return new Uint8Array(row.bytes);
+    bytes = new Uint8Array(row.bytes);
+  } else {
+    bytes = new Uint8Array(fs.readFileSync(path.join(blobRoot(), storagePath)));
   }
-  return fs.readFileSync(path.join(blobRoot(), storagePath));
+  verifierAdresse(storagePath, bytes);
+  return bytes;
+}
+
+/** BLOB-01 — le contenu doit rendre l'adresse par laquelle on l'a demandé. */
+export function verifierAdresse(storagePath: string, bytes: Uint8Array): void {
+  /* Un chemin qui ne suit pas la convention `aa/sha256` n'est pas adressé par
+     contenu : on ne prétend pas le vérifier (les magasins d'avant 0028, s'il
+     en reste). La règle dit où elle cesse de regarder. */
+  const attendu = storagePath.split(/[\\/]/).pop() ?? '';
+  if (!/^[0-9a-f]{64}$/.test(attendu)) return;
+  const reel = sha256(bytes);
+  if (reel !== attendu) {
+    throw new Error(
+      `BLOB-01 : la pièce « ${storagePath} » ne rend pas son adresse — le magasin est adressé par CONTENU, `
+      + `et le contenu lu a pour empreinte ${reel.slice(0, 12)}…. Contenu substitué, ou magasin corrompu : `
+      + `la pièce n’est pas servie.`);
+  }
 }
 
 export async function blobExists(storagePath: string): Promise<boolean> {

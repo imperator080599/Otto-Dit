@@ -87,8 +87,31 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 | --- | --- | --- |
 | N2-1 | **Les onglets d'ancrage n'existent que sur la page de poste.** Les 55 sections rendues repliables sur 34 écrans (1.2) n'ont pas de barre d'ancres. | Une barre construite côté client par lecture du DOM rendrait un `<nav>` vide au premier rendu puis rempli après hydratation — exactement la forme qui a produit le #418 quatre fois dans ce dépôt (fil n°7). Il faut la construire côté SERVEUR, donc passer la liste des sections à chaque page : un passage par écran, pas une astuce globale. |
 | N2-2 | **Le semis vise au nom de personnes fictives** (revue hostile n°7, constat 11). | Tenu pour acquis : convention du monde de démonstration, données fictives, et le flux n'agit que sur les papiers qu'il a créés. À revoir le jour où la démonstration publique accueille de vrais comptes. |
-| N2-6 | **Un test de la grille rougit sur la CI et pas en local** : `grille.test.ts`, dernière assertion de « la disposition écrite lève TEST-04 … » (« expected null not to be null »). | Rejoué 4 fois en local sans le reproduire (2 suites complètes 710/710, 2 fois le fichier seul 24/24). Chaque fichier de test a sa propre base en mémoire : pas de couplage entre fichiers. Aucun diagnostic — à reprendre avec une exécution qui échoue sous la main (relancer le job, ou boucler le fichier avec `--repeat`), pas en devinant. |
+| N2-6 | ~~**Un test de la grille rougit sur la CI et pas en local**~~ — **SOLDÉ le 2026-09-03** : le test n'était pas réversible (`coalesce(null,0)+1−1` rend 0, pas NULL) et l'intermittence venait de `order by sample_item_id`, un uuid aléatoire qui changeait la ligne choisie à chaque exécution. Le produit avait raison. 8 boucles vertes après correction. Reste l'observation J3-6 : l'ordre des lignes de la grille n'est pas stable. Texte d'origine : | Rejoué 4 fois en local sans le reproduire (2 suites complètes 710/710, 2 fois le fichier seul 24/24). Chaque fichier de test a sa propre base en mémoire : pas de couplage entre fichiers. Aucun diagnostic — à reprendre avec une exécution qui échoue sous la main (relancer le job, ou boucler le fichier avec `--repeat`), pas en devinant. |
 | N2-5 | **Quarante-quatre tables sans `engagement_id` n'ont pas de verdict de verrou écrit** (revue hostile n°8, constat 9, élargi puis resserré). | Le test de couverture visait les tables porteuses de dossier ; il couvre désormais AUSSI les objets d'écran par personne (locataire + personne, sans dossier). Le reste — référentiels, journaux techniques, tables de pack — demande un jugement table par table : c'est un travail de classement, pas une ligne de code, et il n'entre pas dans le périmètre gelé. Nommé ici pour ne pas être oublié en silence. |
 | N2-4 | **Le squelette de chargement est retiré** (`eng/[id]/loading.tsx`, écrit puis retiré cette nuit). | Une frontière de suspension change le MOMENT où le contenu existe : le parcours cliqué est passé de 0 à **20 stations rouges** et l'acceptation a lu « aucun refus » deux fois là où le produit refusait — le harnais lisait l'écran pendant que le squelette était à l'affiche. Bisection : squelette présent → 21 puis 20 échecs (deux exécutions, stations différentes) ; squelette retiré, tout le reste identique → **1 échec** (le #418 connu). À livrer avec un harnais qui attend le CONTENU, pas la page ; sinon l'instrument ment. |
 | N2-3 | **`created_at` des notes semées est reposé à chaque passage.** | C'est ce qui garde « la plus ancienne, 14 jours ouvrés » vraie. Effet de bord : une note semée ne vieillit jamais sur la démonstration publique. Assumé et dit (ADR-126, constat 5). |
 
+
+## Reportés du jour n°3, tranche §1.1 (2026-09-03)
+
+- **R24 — le câblage de `withTenant`** (fil J3-2). Le mécanisme existe, l'emploi non :
+  `executer()` pour les actions serveur, puis un choix (a)/(b) de PLAN_RLS pour les rendus.
+  Tant qu'il manque, armer LOC-01 éteint l'application — c'est mesuré, pas supposé.
+- **R25 — les 37 gestes de service encore nus** (fil J3-3). Tous désignés par l'identifiant
+  d'un objet FILS ; le patron à appliquer existe dans le dépôt (résoudre le dossier DEPUIS
+  l'objet, comme `ipe-actions.ts` et désormais `sections.suivre`). Liste écrite et comptée
+  dans `app/src/lib/core/couverture-etancheite.test.ts`.
+- **R26 — l'isolation de `blob_store`** (fil J3-4). Les octets sont dans la table et la
+  politique est `using (true)` : sous `otto_app`, un cabinet lirait les pièces de tous les
+  autres. Une colonne `tenant_id` casserait la déduplication par contenu ; la sortie est
+  probablement une table de rattachement par locataire. **À fermer AVANT l'étape 3.**
+- **R27 — la politique par jeton du portail client** (fil J3-5). Ses deux pages lisent hors de
+  la portée où le jeton a été résolu : sous garde armé, le contact du client reçoit une page
+  500. **À fermer AVANT l'étape 3.**
+- **R28 — `app_state` inscriptible par tout locataire.** C'est l'horloge de toute
+  l'application. Risque théorique aujourd'hui (`warp` n'est appelé que par le semis), mais la
+  table demandera une clé par locataire le jour où un écran l'appelle.
+- **R29 — le chemin `scripts` du garde de locataire, à câbler.** Semis, migrations et harnais
+  tournent sous `postgres` : le câblage ne changerait rien tant que la CI « rôle de
+  production » ne rejoue pas la suite sous `otto_app`.

@@ -14,9 +14,11 @@
 # main, et chaque nuit.
 #
 # CE QU'IL NE PROUVE PAS, dit ici : le rôle de CI a BYPASSRLS, comme le rôle
-# qui sert la production — l'application ne pose pas encore le locataire par
-# transaction, donc un rôle sans BYPASSRLS ne pourrait rien lire ni semer
-# (docs/BACKLOG_REPORTE.md, R9). Le bloc d'assertions l'imprime tel quel.
+# qui sert la production. `withTenant` EXISTE (docs/PLAN_RLS.md étape 1) mais
+# n'a AUCUN appelant de production : le câblage n'est pas fait. Sous un rôle
+# sans BYPASSRLS, ni l'application ni le semis ne poseraient de locataire —
+# donc ce travail ne pourrait ni semer ni lire. Le bloc d'assertions imprime le
+# rôle tel quel, et ne prétend rien de plus.
 #
 # CE TRAVAIL N'A JAMAIS TOURNÉ : écrit sans route réseau vers un pooler. Sa
 # première exécution avec le secret posé est sa première épreuve.
@@ -56,6 +58,15 @@ jobs:
           fi
       - name: migration de la base de CI, puis bloc d'assertions rôle / RLS
         run: npx tsx scripts/db/assertions.ts
+        env:
+          OTTO_CI_BASE_JETABLE: "1"
+      - name: le rôle otto_app existe et ne contourne PAS la RLS (migration 0140)
+        # LE SEUL ENDROIT OÙ CETTE LIGNE SE LIT SUR UN VRAI POSTGRES. En local,
+        # PGlite crée le rôle et l'épreuve tourne dessus ; ici c'est le moteur
+        # que la production emploie qui répond. Un `rolbypassrls = t` sur
+        # `otto_app` interdirait l'étape 3 : le travail rougit plutôt que de
+        # laisser passer un rôle qui ne garderait rien.
+        run: npx tsx scripts/db/otto-app.ts
         env:
           OTTO_CI_BASE_JETABLE: "1"
       - name: la suite entière, contre la base réseau par le pooler

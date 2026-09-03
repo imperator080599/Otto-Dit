@@ -1,9 +1,31 @@
 # Plan §10 — la sécurité par ligne APPLIQUÉE à l'application (préparé le 2026-09-02 au soir, à exécuter avec le fondateur à l'écran)
 
 **Ordre, tel que corrigé par le fondateur** : `withTenant` d'abord, puis le rôle, puis la chaîne
-de connexion. Rien de ce qui suit n'a été exécuté ce soir ; `DATABASE_URL` n'est pas modifiée.
-Ce document est le plan complet, avec pour chaque étape la commande, le cas connu MAUVAIS qui
-doit échouer (règle 17), et le retour arrière.
+de connexion. Ce document est le plan complet, avec pour chaque étape la commande, le cas connu
+MAUVAIS qui doit échouer (règle 17), et le retour arrière.
+
+> **ÉTAT AU 2026-09-03 — étape 2 EXÉCUTÉE ; étape 1 à MOITIÉ ; étape 3 NON.**
+>
+> La première rédaction de cet encadré disait « étapes 1 et 2 EXÉCUTÉES ». **C'était faux**, et
+> la revue hostile n°9 l'a montré en une commande : `withTenant` n'a **aucun appelant de
+> production**. L'étape 1, telle que ce document la définit lui-même plus bas, est le
+> **câblage** — `executer()` pour les actions serveur, et un choix (a)/(b) pour les rendus.
+> Ni l'un ni l'autre n'est fait. Ce qui existe est le MÉCANISME, pas son emploi.
+>
+> **Ce qui est fait :** `app/src/lib/db/tenant.ts` (`withTenant`), `sans-locataire.ts` (la liste
+> écrite + le garde LOC-01/LOC-02, armé depuis le rôle SERVI),
+> `supabase/migrations/0140_role_applicatif.sql` (le rôle `otto_app`, ses droits, ses six
+> retraits, les cinq politiques qui manquaient — **rejouable**, et éprouvée comme telle), et
+> trois suites qui les exercent sous un rôle **sans BYPASSRLS créé par le test lui-même** :
+> `tenant.test.ts` (15 cas), `sans-locataire.test.ts` (6 cas), `rls-couverture.test.ts` (7 cas).
+>
+> **Ce qui n'est PAS fait, et la conséquence, MESURÉE :** armer le garde aujourd'hui
+> **éteindrait l'application**. `tenant.test.ts` l'observe — l'écran d'accueil
+> (`missionsParClient`) et `logEvent`, donc **tout changement d'état du produit**, lèvent
+> LOC-01. Le garde n'« empêche pas l'oubli » : il attend le câblage. Tant qu'il n'est pas fait,
+> l'étape 3 est **interdite**, et ce n'est pas une prudence — c'est une mesure.
+>
+> **Trois affirmations de ce plan ont été corrigées par la MESURE** — voir §0 bis.
 
 ## 0. L'état de départ, mesuré
 
@@ -25,14 +47,39 @@ doit échouer (règle 17), et le retour arrière.
 
 ## 0 bis. AVANT TOUT — les quatre questions que le plan du soir ne posait pas (addendum A.4–A.6 du mandat de nuit n°2)
 
-**A.5 — `with check` d'abord, pas en quatrième.** Une politique en `using` seul empêche de LIRE
-chez le voisin mais laisse ÉCRIRE chez lui (un `insert` d'un dossier d'un autre `tenant_id`
-passe). C'est CE point qui décide si l'isolation est réelle. Première action de l'étape 1 :
-recenser les politiques de 0004/0029 sans `with check` —
-`select tablename, policyname from pg_policies where schemaname = 'public' and with_check is null` —
-et les compléter dans **0140** (`create policy … using (…) with check (…)`, même prédicat).
-Le test de fuite de l'étape 1 (cas 4) devient le PREMIER cas, et il doit échouer sur le schéma
-actuel avant 0140 (règle 17).
+**A.5 — `with check` d'abord, pas en quatrième. ~~Une politique en `using` seul laisse ÉCRIRE
+chez le voisin.~~ FAUX ICI, ET C'EST UNE MESURE QUI LE DIT (2026-09-03).**
+
+Ce que le recensement a rendu, sur le schéma complet migré :
+
+| mesure | valeur |
+|---|---|
+| politiques `public` | **102** |
+| dont `for all` | **102** (aucune `for select` / `for insert` séparée) |
+| dont **sans** `with check` | **101** (seule `ui_repli_tenant` en porte un) |
+| fonctions `security definer` | **0** sur 12 |
+| tables publiques · vues | **109** · 0 |
+| rôles non système | **1** — `postgres`, superutilisateur, BYPASSRLS |
+
+Pour une politique `for all`, PostgreSQL fait servir `using` **aussi** de contrôle à l'écriture
+quand `with check` est omis. La documentation le dit ; une documentation n'est pas une
+observation (règle 15), donc le test le TENTE et regarde :
+- `tenant.test.ts` **cas 4** — un `insert` dans `event_log` au nom d'un autre cabinet, sous le
+  bon locataire, rôle sans BYPASSRLS → **refusé** (`new row violates row-level security policy`),
+  et rien ne reste.
+- `tenant.test.ts` **cas 4 bis** — un `update` qui DÉPLACE une ligne existante chez le voisin →
+  **refusé** aussi. (Premier choix de table faux : sur `event_log` c'est la garde *append-only*
+  de 0003 qui refuse, pas la politique — on aurait présenté le refus d'un autre objet comme
+  preuve de celui-ci, règle 16. La mesure se fait donc sur `app_user`, et le test vérifie
+  explicitement que le message n'est PAS celui de l'append-only.)
+
+**Conséquence : 0140 ne complète AUCUN `with check` sur les 101 politiques.** Elle en écrit un
+seul là où il doit DIVERGER de `using` — `server_error`, qui doit accepter toute écriture
+(une panne n'a pas de locataire) et ne rendre en lecture que les siennes.
+
+**Ce qui reste vrai de l'inquiétude d'origine** : le jour où une politique `for select` ou
+`for update` séparée apparaîtra, elle n'aura pas ce filet. Rien ne l'interdit aujourd'hui ;
+c'est une dette nommée, pas un garde.
 
 **A.4 — la liste écrite des chemins SANS locataire légitime.** Le garde « un `q()` hors
 transaction et sans session lisible lève » casserait la connexion elle-même : la recherche d'un
@@ -47,7 +94,16 @@ listés lisent normalement ; sous `otto_app`, ils lisent ce que leur politique l
 portail par jeton n'a pas de locataire : sa politique doit être PAR JETON, à écrire dans 0140).
 
 **A.6 — quatre angles morts, comblés par écrit.**
-- *Les fonctions `SECURITY DEFINER`* : `grant execute on all functions` accorde tout en bloc,
+- *Les fonctions `SECURITY DEFINER`* — **RECENSÉES LE 2026-09-03 : ZÉRO sur douze.** Les douze
+  fonctions de `public` (`otto_tenant`, `otto_engagements`, les neuf gardes de verrou et
+  `forbid_mutation`) sont toutes `security invoker`. La migration 0140 ne se contente pas de
+  l'écrire : elle **revérifie** à l'application et lève si une `definer` apparaît — une règle
+  qui ne s'exécute jamais n'est pas une règle. Reste un angle mort NOMMÉ : ces gardes lisent
+  des tables pour décider de refuser ; sous un rôle sans BYPASSRLS et SANS locataire posé,
+  elles ne verraient rien, donc elles ne refuseraient rien. C'est l'argument premier du garde
+  LOC-01 (`sans-locataire.ts`), qui transforme ce zéro silencieux en refus.
+  Le texte d'origine du plan, conservé :
+  `grant execute on all functions` accorde tout en bloc,
   et une fonction appartenant à `postgres` s'exécute avec les droits du propriétaire — elle
   CONTOURNE la RLS. Recensement avant l'étape 2 :
   `select proname, prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace where nspname = 'public' and prosecdef` ;
@@ -55,11 +111,15 @@ portail par jeton n'a pas de locataire : sa politique doit être PAR JETON, à �
   les gardes de verrou), soit un `security definer` JUSTIFIÉ et statué par écrit dans 0140.
   Verdict attendu : aucune fonction `definer` n'existe aujourd'hui — à VÉRIFIER par la requête,
   pas à supposer.
-- *Les migrations après bascule* : `_migrations` est fermée à `otto_app`. Les migrations
+- *Les migrations après bascule* — **TRANCHÉ ET APPLIQUÉ (0140)** : `revoke all on _migrations
+  from otto_app`, avec la raison écrite dans la migration.
+  `_migrations` est fermée à `otto_app`. Les migrations
   ET le semis ET la remise à zéro tournent sous `SUPABASE_DB_URL` (rôle `postgres`), au build
   (`scripts/deploy/reconstruire.ts`) — jamais sous la chaîne de l'application. Écrit ici, et à
   écrire dans DEPLOY.md le jour de l'étape 3.
-- *Ce qui tourne hors requête* : à ce jour AUCUNE tâche de fond, aucun cron, aucun webhook
+- *Ce qui tourne hors requête* — **RECENSÉ LE 2026-09-03 : AUCUN.** Le seul `cron` du dépôt est
+  un travail de CI GitHub (`role-production.yml`), qui parle avec sa propre chaîne.
+  À ce jour AUCUNE tâche de fond, aucun cron, aucun webhook
   entrant n'existe dans l'application (les relances sont posées par `ensureReminders` DANS une
   requête ; l'horloge de démonstration est une valeur d'`app_state`). Le jour où l'un naît, il
   pose son locataire par `withTenant` explicitement — il n'a pas de cookie.
@@ -120,11 +180,55 @@ lui-même (PGlite permet `create role … nobypassrls` et `set role`) :
    check` ; sinon les compléter (migration 0140) : une politique `using` seule laisse ÉCRIRE
    chez le voisin.
 
-**Le garde contre l'oubli** : sous un rôle sans BYPASSRLS, un `q()` hors transaction et sans
-session lisible **lève** (« requête sans locataire ») au lieu de rendre zéro ligne. Testé par le
-cas 1.
+**Le garde contre l'oubli — ÉCRIT (`app/src/lib/db/sans-locataire.ts`).** Sous un rôle sans
+BYPASSRLS, un `q()` qu'aucun `withTenant` et aucune dérogation n'englobe **lève LOC-01** en
+citant la table visée, au lieu de rendre zéro ligne. Il regarde le CONTEXTE ASYNCHRONE, pas la
+base : `withTenant` pose DEUX fois — dans la base (`set local`, pour les politiques) et dans le
+contexte (pour le garde).
 
-**Retour arrière** : aucun (le code est inerte sous BYPASSRLS — c'est l'étape 2 qui l'arme).
+**Il s'arme tout seul, à partir du rôle SERVI** (une requête sur `pg_roles` à l'ouverture de la
+base) : désarmé sous un rôle BYPASSRLS — donc inerte aujourd'hui, en production comme en local
+— armé sous `otto_app`. `OTTO_GARDE_LOCATAIRE=1/0` tranche à la main.
+
+**Il a REFUSÉ, et c'est observé, pas déclaré** (règle 17) : `tenant.test.ts` l'arme et vérifie
+qu'une lecture nue lève LOC-01 en nommant `engagement` ; que la même lecture passe sous
+`withTenant` et sous une dérogation listée ; qu'une clé de dérogation NON écrite est refusée
+(LOC-02) armé ou non ; et — la branche que rien n'exécuterait autrement — qu'un pilote qui
+répond « rolbypassrls = false » arme le garde sans variable d'environnement.
+
+**La liste écrite des chemins sans locataire (A.4)** vit dans le même fichier : **sept** chemins,
+**six câblés** (`session`, `choix-identite`, `lien-demo`, `portail-client`, `sante`, `erreur`) et
+un déclaré **à câbler** (`scripts`, qui tourne sous `postgres`). Le compte est ASSERTÉ par le
+test, pas récité — la première rédaction disait « six chemins, cinq câblés » en énumérant six
+clés dans la même parenthèse. `sans-locataire.test.ts` vérifie les DEUX sens : une clé annoncée
+câblée et absente du code rougit, une clé annoncée « à câbler » et posée rougit.
+
+**Le balayage des points d'entrée a été REFAIT, parce que le premier mentait.** Il comptait
+quatre marqueurs de texte — `sansLocataire(`, `requireUser(`, `requireMember(`,
+`getSessionUser(` — et déclarait « couvert » tout fichier qui en portait un ; il ne trouvait que
+**deux** découverts. Or `requireUser` et `getSessionUser` prouvent qu'une SESSION existe, jamais
+qu'un LOCATAIRE est posé : l'écran d'accueil portait les deux marqueurs et lisait `engagement`
+hors de toute portée. Le critère est désormais le seul vrai — poser un locataire, c'est appeler
+`withTenant(` ou `sansLocataire(` — et le résultat est celui qu'il faut dire en face : sur
+**52** points d'entrée, **6** en posent un. Le cas connu mauvais du critère (l'accueil) est un
+test à part entière.
+
+*Ce balayage a trouvé une route que l'inventaire à la main avait manquée* — `/demo/[qui]`, hors
+de `src/app/api/` : elle CRÉE la session, donc elle s'exécute forcément sans cabinet.
+
+**Et toute pose de `otto.tenant_id` est écrite** : le commentaire du garde affirmait « il
+n'existe pas d'autre chemin dans ce dépôt, et le test le vérifie » — il en existait un
+(`scripts/deploy/reconstruire.ts`) et aucun test ne vérifiait rien. Un balayage énumère
+désormais les trois poses connues et rougit sur une quatrième.
+
+*Ce balayage a trouvé une route que l'inventaire à la main avait manquée* — `/demo/[qui]`,
+hors de `src/app/api/` : elle CRÉE la session, donc elle s'exécute forcément sans cabinet.
+
+**Retour arrière** : aucun tant que le rôle servi contourne la RLS — le code est alors inerte.
+**MAIS l'armement n'est pas une bascule sans conséquence**, et la première rédaction le laissait
+croire : tant que le câblage n'est pas fait, armer refuse `logEvent` — donc tout changement
+d'état — et l'écran d'accueil. Mesuré par `tenant.test.ts`, « ce que l'armement coûterait
+aujourd'hui ».
 
 ## 2. Le rôle applicatif `otto_app` sans BYPASSRLS (base)
 
@@ -153,6 +257,30 @@ grant execute on all functions in schema public to otto_app;
 - **La remise à zéro de la démonstration** (`demo/remise-a-zero`, `truncate` + reprise de
   l'instantané) et **le semis au build** tournent sous `postgres` : ils gardent leur chaîne
   (`SUPABASE_DB_URL` du build), pas celle de l'application.
+
+**CE QUE 0140 FAIT RÉELLEMENT (écrite et appliquée le 2026-09-03)**, au-delà du canevas
+ci-dessus :
+- elle **retire** deux droits que `grant … on all tables` avait donnés en bloc : `_migrations`
+  (les migrations tournent sous `postgres`) et `notification` — **aucun chemin de l'application
+  ne la lit ni ne l'écrit**, recensé ; une table qu'aucun chemin n'atteint est un objet mort
+  (règle 13), on ne lui ouvre pas de droit « au cas où » ;
+- elle donne une **politique** aux cinq tables que l'application lit et qui n'en avaient
+  aucune — `app_state`, `blob_store`, `itgc_area`, `engagement_lock_verdict`, `server_error` :
+  sous `otto_app` elles auraient rendu ZÉRO LIGNE sans un mot (horloge muette, pièces jointes
+  introuvables, sonde de santé aveugle). Chaque prédicat `true` porte sa justification écrite ;
+- elle **revérifie** l'absence de fonction `security definer` et lève sinon.
+
+`PROPRIETAIRE_SEUL` (dans `assertions-role.ts`) tombe donc de sept noms à deux, et un test
+neuf attrape le sens qui manquait : une table restée sur la liste alors qu'une migration lui a
+DONNÉ une politique — une justification périmée que rien ne voyait.
+
+**LA DETTE QUE 0140 NE FERME PAS, ET QUI DOIT L'ÊTRE AVANT L'ÉTAPE 3** :
+1. `blob_store` est adressé par CONTENU (déduplication comprise) : sa politique est `true`, donc
+   sous `otto_app` un `select storage_path from blob_store` **énumère les chemins de tous les
+   cabinets**, et un chemin connu se lit. Une colonne `tenant_id` casserait la déduplication ;
+   la sortie est probablement une table de rattachement par locataire. **Non fermé.**
+2. Le **portail client n'a pas de politique par jeton** : ses deux pages lisent hors de la
+   portée de la dérogation. **Non fermé.**
 
 **Le cas connu MAUVAIS** : la CI « rôle de production » (`role-production.yml`), qui n'a
 jamais tourné, se lance avec `OTTO_CI_DATABASE_URL` sur le rôle `otto_app` d'une base de CI
@@ -190,5 +318,11 @@ Avec le fondateur à l'écran, dans cet ordre, et **pas un soir** :
   poser AUSSI l'utilisateur (`otto_user()`) par transaction et de réécrire `otto_engagements()`
   — une autre tranche, après celle-ci.
 - Pas de RLS sur PGlite en local hors des tests dédiés (le propriétaire contourne, FORCE ou pas).
+- **Pas d'isolation de `blob_store`** : politique `true`, chemins énumérables entre cabinets
+  (dette n°1 ci-dessus).
+- **Pas de politique par jeton pour le portail client** (dette n°2 ci-dessus).
+- Pas de couverture du chemin `scripts` par le garde : il tourne sous `postgres`, le garde y
+  est désarmé, et le câblage ne changerait rien tant que la CI « rôle de production » ne
+  rejoue pas le semis sous `otto_app`.
 - La sonde d'acceptation et le témoin restent valables : un `set local` vit et meurt avec la
   transaction annulée.

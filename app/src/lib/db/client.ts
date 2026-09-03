@@ -2,6 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import path from 'node:path';
 import fs from 'node:fs';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { armerLeGarde, assertLocataire, OUVERTURE_TRANSACTION } from './sans-locataire';
 
 // LA BASE, DEUX PILOTES, UNE SURFACE (ADR-109, P0a du mandat).
 //
@@ -206,12 +207,47 @@ async function open(): Promise<OttoDb> {
 export async function getDb(): Promise<OttoDb> {
   if (g.__ottoDb) return g.__ottoDb;
   if (!g.__ottoDbReady) {
-    g.__ottoDbReady = open().then((db) => {
+    /* ARMER AVANT DE PUBLIER (revue hostile n°9, constat 13). La première
+       version posait `g.__ottoDb = db` PUIS mesurait le rôle : la garde
+       `if (g.__ottoDb) return g.__ottoDb;` en tête rendait donc la base à tout
+       appelant concurrent AVANT l'armement — sur une instance serverless
+       froide, la première vague de requêtes tournait garde éteint, c'est-à-dire
+       exactement le défaut que ce garde existe pour supprimer. */
+    g.__ottoDbReady = open().then(async (db) => {
+      await armerDepuisLeRole(db);
       g.__ottoDb = db;
       return db;
     });
   }
   return g.__ottoDbReady;
+}
+
+/**
+ * ARMER LE GARDE DE LOCATAIRE À PARTIR DU RÔLE RÉELLEMENT SERVI (une requête,
+ * une fois par processus, sur le catalogue — jamais sur le schéma métier).
+ *
+ * Sous un rôle qui CONTOURNE la RLS — `postgres` en production aujourd'hui,
+ * le propriétaire sous PGlite — le garde reste DÉSARMÉ : il ne changerait
+ * rien, puisque les politiques sont inertes. Sous un rôle sans BYPASSRLS
+ * (`otto_app`, migration 0140, étape 3 de PLAN_RLS non exécutée), il s'arme :
+ * une requête sans locataire cesse de rendre zéro ligne en silence et lève
+ * LOC-01. `OTTO_GARDE_LOCATAIRE=1` l'arme à la main — c'est par là que le test
+ * le fait REFUSER (règle 17).
+ *
+ * Si la mesure elle-même échoue, on n'arme pas et on le DIT : armer sur une
+ * mesure ratée casserait l'application entière ; se taire ferait croire à un
+ * garde qui n'existe pas.
+ */
+async function armerDepuisLeRole(db: OttoDb): Promise<void> {
+  try {
+    const r = await db.query<{ b: boolean }>(
+      `select coalesce(rolbypassrls, true) b from pg_roles where rolname = current_user`);
+    armerLeGarde(r.rows[0]?.b ?? true);
+  } catch (e) {
+    armerLeGarde(true);
+    console.warn(`garde de locataire : le rôle servi n'a pas pu être mesuré — garde DÉSARMÉ. `
+      + `cause : ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 /* LA TRANSACTION COURANTE SUIT LE CONTEXTE ASYNCHRONE (mandat de la soirée,
@@ -225,6 +261,7 @@ const transactionCourante = new AsyncLocalStorage<Interrogeable>();
 
 /** Query returning rows. Placeholders: $1, $2… */
 export async function q<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  assertLocataire(sql);
   const t = transactionCourante.getStore();
   if (t) return (await t.query<T>(sql, params)).rows;
   const db = await getDb();
@@ -264,6 +301,14 @@ let compteurPointDeReprise = 0;
  */
 export async function tx<T>(fn: (run: (sql: string, params?: unknown[]) => Promise<unknown>) => Promise<T>): Promise<T> {
   const courante = transactionCourante.getStore();
+  /* LE GARDE REGARDE AUSSI L'OUVERTURE D'UNE TRANSACTION. `run()` parle au
+     pilote sans passer par `q()` : un service qui écrit par
+     `tx(async run => run('insert …'))` échapperait au garde de `q()`. Il y en
+     a trois dans le dépôt (events.ts, acceptance.ts, et tenant.ts lui-même).
+     On garde donc l'ENTRÉE — l'ouverture d'une transaction NEUVE ; un `run()`
+     à l'intérieur n'est pas revérifié, parce que la transaction l'a été, et un
+     point de reprise (savepoint) non plus, pour la même raison. */
+  if (!courante) assertLocataire(OUVERTURE_TRANSACTION);
   if (courante) {
     const point = `otto_reprise_${++compteurPointDeReprise}`;
     await courante.query(`savepoint ${point}`);
@@ -336,8 +381,14 @@ export async function freshMemoryDb(): Promise<PGlite> {
 }
 
 /** Test helper: point the singleton at a given PGlite instance. */
-export function _setDbForTests(db: PGlite | OttoDb): void {
+export function _setDbForTests(db: PGlite | OttoDb): Promise<void> {
   g.__ottoDb = db as unknown as OttoDb;
   g.__ottoDbReady = Promise.resolve(db as unknown as OttoDb);
   g.__ottoDbKind = db instanceof PGlite ? 'pglite' : 'pg';
+  /* Le pilote change : la mesure du rôle qui a armé le garde ne vaut plus. On
+     la refait. Ce point d'entrée est SYNCHRONE (les tests l'appellent ainsi),
+     donc la promesse est RENDUE au lieu d'être jetée — un `void` obligeait
+     l'appelant à dormir vingt millisecondes pour se synchroniser sur un état
+     global de processus (revue hostile n°9, constat 13). */
+  return armerDepuisLeRole(db as unknown as OttoDb);
 }

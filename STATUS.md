@@ -1976,3 +1976,163 @@ Chaîne rejouée après correction : `accept --ecrire` 17/17 · `accept` (sonde)
 « aucune écriture (12 tables) » · `screens` 85/0 · `clics` **194 étapes, 0 échec**, et les cinq
 stations neuves de 1.3 figées (193 au total).
 
+
+## Jour n°3 — §1.1 : l'étanchéité entre cabinets, et le plan RLS corrigé par la mesure (2026-09-03)
+
+**Le mandat exigeait le test de non-régression AVANT la garde. Il a trouvé dix trous sur
+treize — puis la revue hostile a montré que treize n'était pas le nombre des gestes, mais le
+nombre des gestes REGARDÉS : quatre-vingt-onze fonctions de service sur quatre-vingt-seize
+n'avaient aucune garde.** `app/src/lib/core/etancheite.test.ts` crée un autre cabinet et une personne à lui
+(Nadia Ferrand, fictive), puis tente treize gestes d'écriture sur le dossier de démonstration.
+**Dix ont été acceptés** (« onze » dans la première rédaction : faux, corrigé par mesure ;
+trois des treize échouaient déjà pour un état du dossier ou pour PROG-05, donc ils ne prouvent
+rien de la garde neuve).** Les services prenaient un `userId` sans jamais vérifier qu'il
+appartient à l'équipe : `requireMember` gardait les ÉCRANS, rien ne gardait les ACTIONS, et la
+politique RLS est inerte (le rôle servi contourne). Entre deux clients concurrents, le secret
+professionnel ne tenait qu'à la porte d'entrée.
+
+**Ce qui est neuf et cliquable — rien.** Cette tranche n'ajoute aucun écran : elle referme un
+trou. Ce qui est neuf et VÉRIFIABLE :
+
+| quoi | où | preuve |
+|---|---|---|
+| ETANCH-01 / 02 / 03, dans les services | `core/membre.ts`, câblé dans **59** des 96 fonctions de service qui prennent un acteur et écrivent | `core/etancheite.test.ts` — 13 gestes, 13 refus nommés, dont **10 vrais cas mauvais** ; garde **G-24** prouvée par exécution |
+| le COMPTE des gestes encore nus, écrit et borné | `core/couverture-etancheite.test.ts` | **37** fonctions nues, chacune avec sa raison ; une 38ᵉ rougit, une ligne périmée rougit |
+| BLOB-01 — une pièce ne se sert que si son contenu rend son adresse | `core/storage.ts` | substitution tentée puis refusée ; garde **G-26** prouvée par exécution |
+| `withTenant` + le garde LOC-01 / LOC-02 | `db/tenant.ts`, `db/sans-locataire.ts`, appelé par `q()` | `db/tenant.test.ts` 13 cas sous un rôle **sans BYPASSRLS** créé par le test ; garde **G-25** |
+| la liste écrite des chemins sans locataire | `db/sans-locataire.ts` — 6 chemins, 5 câblés, 1 « à câbler » | `db/sans-locataire.test.ts`, qui vérifie les DEUX sens et balaye tous les points d'entrée |
+| le rôle `otto_app`, ses droits, 5 politiques manquantes | `supabase/migrations/0140_role_applicatif.sql` | appliquée ; `verdictOttoApp` éprouvé sur 5 cas connus mauvais |
+| trois lectures neuves de santé | `/api/sante` | rôle servi + garde armé/désarmé · `otto_app` présent · un refus d'étanchéité VÉRIFIÉ, pas déclaré |
+
+**Trois choses que la MESURE a corrigées, et que la documentation affirmait de travers.**
+1. *La prémisse d'A.5 était fausse.* « Une politique en `using` seul laisse ÉCRIRE chez le
+   voisin » — non : les 102 politiques sont `for all`, et pour `for all` un `with check` omis
+   fait servir `using` aussi au contrôle de l'écriture. Observé (cas 4 : `insert` refusé ;
+   cas 4 bis : `update` de déplacement refusé), pas lu dans une documentation. **0140 ne
+   complète donc aucun `with check`** — sauf un, `server_error`, où il doit DIVERGER.
+2. *Le premier choix de table pour le cas 4 bis mesurait autre chose.* Sur `event_log`, c'est la
+   garde append-only de 0003 qui refuse, pas la politique : le refus d'un autre objet aurait été
+   présenté comme preuve de celui-ci (règle 16). Mesure déplacée sur `app_user`, et le test
+   vérifie explicitement que le message n'est PAS celui de l'append-only.
+3. *« Propriétaire-seul » décrivait la base, pas le produit.* Cinq tables portaient RLS + FORCE
+   et aucune politique alors que l'application les lit toutes : sous `otto_app` elles auraient
+   rendu zéro ligne **sans un mot**. Chacune reçoit sa politique ; la liste tombe de sept noms à
+   deux ; et un test neuf attrape le sens qui manquait — une table restée sur la liste alors
+   qu'une migration lui a donné une politique.
+
+**Un instrument a trouvé ce que l'inventaire à la main avait manqué** : le balayage des points
+d'entrée a dénoncé `/demo/[qui]` — hors de `src/app/api/`, donc absente de mon relevé — qui CRÉE
+la session et s'exécute forcément sans cabinet.
+
+**LE FAIT QUI PRIME, MESURÉ APRÈS COUP PAR LA REVUE HOSTILE n°9.** `withTenant` n'a **aucun
+appelant de production** : l'étape 1 de PLAN_RLS n'est faite qu'à moitié — le mécanisme, pas le
+câblage. Armer le garde LOC-01 aujourd'hui n'« empêcherait pas l'oubli », il **éteindrait
+l'application** : `missionsParClient` (l'écran d'accueil) et `logEvent` (donc tout changement
+d'état) lèvent. C'est désormais un TEST, pas une prudence. Trois textes affirmaient le contraire
+(le workflow de CI, l'en-tête de PLAN_RLS, la première rédaction de l'ADR) pendant
+qu'`assertions-role.ts`, livré dans le même commit, disait le vrai : les trois sont corrigés.
+
+**Les vingt-deux constats de la revue hostile n°9 sont énumérés dans ADR-131**, chacun avec sa
+gravité et son état : dix-huit corrigés, deux corrigés en partie avec la dette écrite
+(`blob_store` en lecture croisée, les 37 gestes nus), deux constatés non corrigés et écrits
+(la politique par jeton du portail, l'écriture d'`app_state`).
+
+**Non prouvé, et dit tel quel :**
+- **L'étape 3 de PLAN_RLS n'est PAS exécutée.** `DATABASE_URL` désigne toujours `postgres`
+  (BYPASSRLS) : les 102 politiques restent **inertes** pour l'application, et le garde LOC-01
+  reste **désarmé**. Un accès direct à Postgres avec la chaîne de l'application voit tout.
+  L'étanchéité livrée ici est celle de l'APPLICATION, pas celle de la BASE.
+- **`blob_store` n'est pas isolé** : politique `true` (adressage par contenu, déduplication
+  entre cabinets par construction). Sous `otto_app`, `select storage_path from blob_store`
+  énumérerait les chemins de tous les cabinets. Dette à fermer AVANT l'étape 3.
+- **Le portail client n'a pas de politique par jeton** : ses deux pages lisent hors de la portée
+  de la dérogation. Conséquence MESURÉE par la revue hostile : sous garde armé, `portalRequests`
+  lève LOC-01 — le portail rendrait **une page 500 au contact du client**, « un refus rendu en
+  page 500 », mot pour mot dans la règle 13. Pas refermé.
+- **Trente-sept fonctions de service restent sans garde d'étanchéité**, toutes désignées par
+  l'identifiant d'un objet FILS. Elles sont écrites une par une, avec leur raison, dans
+  `core/couverture-etancheite.test.ts`.
+- **`app_state` reste entièrement inscriptible sous `otto_app`** : c'est l'horloge de toute
+  l'application. Risque théorique aujourd'hui (`warp` n'est appelé que par le semis), écrit dans
+  0140, non refermé.
+- **`scripts/db/otto-app.ts` n'a jamais tourné contre un vrai Postgres** ; sa logique est
+  éprouvée sur cinq cas connus mauvais, et les six retraits de 0140 sont vérifiés localement.
+- **Le chemin `scripts` n'est pas câblé** : semis et harnais tournent sous `postgres`.
+- **Un balayage d'écrans est tombé une fois** dans la suite complète (serveur mort à la 45ᵉ
+  route, `/eng/[id]/testing`). **Non reproduit seul** : le même fichier passe seul sur HEAD sans
+  la tranche (326 s) et seul avec la tranche (457 s), et `npm run screens` sur build de
+  PRODUCTION rend **85 routes, 0 échec**. Pas de diagnostic — donc pas de correctif deviné
+  (règle 18). Fil ouvert **J3-1**.
+
+### La chaîne des fils ouverts, remise d'aplomb (2026-09-03)
+
+*Le mandat du jour n°3 §0 point 5 relève que **N2-3 n'existe nulle part**. J'ai d'abord écrit ici
+qu'il n'avait jamais été attribué — **c'était faux, et c'est la même faute que le mandat
+reproche** : je n'avais cherché que dans STATUS.md. Les six fils N2-1 à N2-6 vivent tous dans
+`docs/BACKLOG_REPORTE.md`, dans un tableau, et STATUS.md n'en citait que trois au fil du texte.
+Le défaut n'était donc pas un numéro manquant mais **deux endroits pour une même liste**. Cette
+table est désormais l'unique chaîne, et elle recopie le backlog au lieu de le doubler.*
+
+| fil | quoi | état |
+|---|---|---|
+| **N2-1** | les onglets d'ancrage manquent sur les 34 écrans neufs (une barre d'ancres rendue côté serveur) | ouvert — mandat jour 3 §2.3, à faire après 1.3 |
+| **N2-2** | le semis VISE au nom de personnes fictives (revue hostile n°7, constat 11) : les états doivent être produits autrement | ouvert — mandat jour 3 §1.2, non fait aujourd'hui |
+| **N2-3** | le `created_at` des notes semées est reposé à chaque passage : c'est ce qui garde « la plus ancienne, N jours ouvrés » vraie, au prix qu'une note semée ne vieillit jamais sur la démonstration publique | tenu pour acquis, écrit (ADR-126 constat 5) |
+| **N2-4** | le squelette `loading.tsx` retiré : il rougissait 20 à 21 stations du parcours cliqué (le harnais attendait un écran, il recevait un squelette) ; il ne revient qu'avec un harnais qui attend le CONTENU | ouvert |
+| **N2-5** | le classement des tables hors dossier (`PROPRIETAIRE_SEUL`) — **partiellement soldé le 2026-09-03** : cinq des sept ont reçu leur politique (0140), deux restent propriétaire-seul avec leur raison | partiellement soldé |
+| **N2-6** | `grille.test.ts > la disposition écrite lève TEST-04…` rougissait par intermittence | **DIAGNOSTIQUÉ ET CORRIGÉ le 2026-09-03** — voir ci-dessous |
+| **J3-1** | le balayage des écrans est tombé **une fois** dans la suite complète (serveur mort à la 45ᵉ route, `/eng/[id]/testing`). Non reproduit : le fichier seul passe sur HEAD sans la tranche (326 s) et seul avec la tranche (457 s), la suite complète repasse ensuite (751/751), et `npm run screens` sur build de PRODUCTION rend 85 routes / 0 échec. Aucun diagnostic | ouvert, non reproduit |
+| **J3-2** | `withTenant` n'a aucun appelant de production : l'étape 1 de PLAN_RLS n'est faite qu'à moitié. Armer le garde LOC-01 éteindrait l'application (mesuré) | ouvert — c'est le prochain geste de l'étape 1 |
+| **J3-3** | 37 fonctions de service restent sans garde d'étanchéité, toutes désignées par l'identifiant d'un objet fils ; écrites une par une dans `core/couverture-etancheite.test.ts` | ouvert, borné et compté |
+| **J3-4** | `blob_store` : lecture croisée entre cabinets sous `otto_app` (politique `using (true)`, octets dans la table). La substitution de pièce, elle, est refermée (BLOB-01) | ouvert — à fermer avant l'étape 3 |
+| **J3-5** | le portail client n'a pas de politique par jeton : sous garde armé il rendrait une page 500 au contact du client | ouvert — à fermer avant l'étape 3 |
+| **J3-6** | **l'ordre des lignes de la grille de test n'est pas stable** : `cellulesDuDossier` trie par `c.sample_item_id`, un uuid ALÉATOIRE. Le tableau que l'auditeur lit change donc d'ordre d'un déploiement à l'autre, et le fichier d'audit ne montre pas deux fois la même chose. Trouvé en instruisant N2-6 | ouvert — hors périmètre de la tranche, pas corrigé aujourd'hui |
+
+### N2-6, instruit : le test était faux, le produit avait raison (2026-09-03)
+
+Ce test rougissait « une fois sur je-ne-sais-combien » depuis la nuit du 2 au 3 ; quatre rejeux
+locaux verts n'avaient rien appris, et **aucun correctif n'avait été deviné** (règle 18). Il a
+rougi de nouveau dans la suite complète de ce jour — cette fois avec la main dessus. La méthode :
+boucler le fichier seul jusqu'à l'échec (1 sur 6), et faire cracher au test l'état exact des
+lignes au moment où il tombe, plutôt que de raisonner sur ce qu'il aurait pu être.
+
+Le diagnostic, en deux morceaux :
+
+1. **Le test n'était pas réversible.** Il éprouve « une cellule qui change après coup périme la
+   conclusion » par un `+1` puis un `−1` sur `delta_signed`. Or `coalesce(null, 0) + 1 − 1` rend
+   **0**, pas NULL : quand le delta valait NULL, la cellule restait modifiée après l'aller-retour.
+2. **L'intermittence venait d'un uuid.** La lecture trie par `c.sample_item_id`, qui est un
+   `gen_random_uuid()` : la LIGNE choisie par le test change à chaque exécution. Le test ne
+   tombait que lorsque la cellule abîmée au point 1 se trouvait être AUSSI la cellule disposée
+   plus bas — alors la disposition, prise sur un delta NULL, ne couvrait plus un delta 0.
+
+**Et c'est le produit qui avait raison** : une disposition ne couvre que la valeur qu'elle a
+disposée, NULL n'est pas 0, la règle a fonctionné exactement comme elle est écrite. Le test
+capture désormais la valeur d'origine et la restaure à l'identique : **8 boucles vertes** contre
+1 échec sur 6 avant. Huit vertes ne prouvent pas l'éradication — le mécanisme compris, si.
+
+Le point 2 laisse une observation qui n'est pas un défaut de test : **l'ordre des lignes de la
+grille dépend d'un uuid aléatoire** (fil J3-6). Non corrigé aujourd'hui : c'est un changement de
+produit, hors du périmètre de cette tranche.
+
+### La chaîne de la tranche §1.1, rejouée (2026-09-03)
+
+| commande | résultat |
+|---|---|
+| `npx vitest run` (base fraîche, semée, enrichie) | **751/751**, 90 fichiers |
+| `npm run gardes -- --figer` | **41 gardes**, dont G-24 (ETANCH) et G-26 (BLOB-01) prouvées par exécution |
+| `npm run plancher` | 751 tests collectés · plancher 632 |
+| `npm run langue` · `langue:epreuve` | 0 chaîne hors catalogue · **15/15** cas connus mauvais dénoncés |
+| `npm run lectures` · `lectures:epreuve` | 0 lecture perdue sur 1627 chemins · **6/6** |
+| `npx next build` + `npm run screens` | **85 routes ouvertes · 0 échec** |
+| `npm run clics` (build de PRODUCTION) | **194 étapes · 0 échec · 307 clics · 193 stations figées vérifiées** |
+| `accept --epreuve` | **3 cas connus mauvais, 3 déclarés FAIL** |
+| `accept --ecrire` · `accept` (sonde) | **17/17** · **17/17** |
+| témoin avant/après la sonde | **aucune écriture (12 tables identiques)** |
+| `/api/sante` local, build de production | HTTP 200 · 24 lectures · **2 vides nommées** (`ui_repli`, `blob_store`) |
+
+**Une exécution du parcours cliqué a annoncé « 1 échec » et je ne peux pas dire lequel** : mon
+propre journal était tronqué (`tail -3`), la station n'a donc pas été capturée. L'exécution
+suivante, sur le MÊME code, a rendu 0 échec. Je ne conclus donc rien : ni « c'était un faux
+positif », ni « c'est réparé ». C'est une faute d'instrumentation de ma part, et le fil reste
+ouvert tant qu'une exécution rouge n'a pas été capturée en entier.

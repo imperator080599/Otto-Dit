@@ -14,6 +14,7 @@ import { currentRevenueSample } from '../sampling';
 import { latestExtraction } from '../extraction/ladder';
 import { fieldsToInvoice, type ExtractedField } from '../extraction/fields';
 import { elementsDePage, rectangleDe, type Rect } from './ancres';
+import { assertMembre } from '@/lib/core/membre';
 
 // L'ATELIER DE TEST — LA GRILLE (mandat du jour, W1).
 //
@@ -160,6 +161,7 @@ export async function grilleDuDossier(engagementId: string): Promise<Grille | nu
  * grille figée ne se modifie jamais — elle se remplace, et l'ancienne reste.
  */
 export async function figerGrille(engagementId: string, userId: string | null): Promise<Grille> {
+  await assertMembre(engagementId, userId, 'figerGrille');
   const { packId, colonnes } = await colonnesCommandees(engagementId);
   const empreinte = hashObject(colonnes);
   const courante = await grilleDuDossier(engagementId);
@@ -374,6 +376,7 @@ async function pieceLue(sampleItemId: string, types: string[]): Promise<PieceLue
  * disposition) d'un calcul à l'autre — seule sa valeur change.
  */
 export async function calculerGrille(engagementId: string, userId: string | null): Promise<{ grille: Grille; lignes: number; cellules: number }> {
+  await assertMembre(engagementId, userId, 'calculer la grille de test');
   const ctx = await engagementCtx(engagementId);
   const sample = await currentRevenueSample(engagementId);
   if (!sample || sample.status !== 'drawn') throw new Error('Aucun échantillon tiré : la grille se calcule sur une sélection tirée.');
@@ -559,6 +562,7 @@ async function refuserSiScelle(engagementId: string): Promise<void> {
 
 /** Disposer une cellule non conforme : un motif écrit, par une personne (L2). TEST-03. */
 export async function disposerCellule(engagementId: string, cellId: string, userId: string, motif: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'disposer une cellule');
   /* LA CELLULE EST CELLE DU DOSSIER QU'ON A LE DROIT D'ÉCRIRE : l'identifiant
      d'une cellule d'un autre dossier ne passe pas — l'application tourne sous
      un rôle qui contourne la RLS (ADR-115), cette clause est le mur (revue
@@ -596,6 +600,7 @@ export async function disposerCellule(engagementId: string, cellId: string, user
  * nomme AVANT, avec l'attribut, pour que l'écran parle.
  */
 export async function conclureLigne(engagementId: string, sampleItemId: string, userId: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'conclure une ligne');
   await refuserSiScelle(engagementId);
   const grille = await grilleDuDossier(engagementId);
   if (!grille) throw new Error('TEST-04 : la ligne ne se conclut pas — aucune grille calculée (lancez le calcul de la grille).');

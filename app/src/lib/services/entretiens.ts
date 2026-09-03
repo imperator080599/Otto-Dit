@@ -8,6 +8,7 @@ import { lireProcessus, FSLI_DU_CYCLE } from './processus';
 import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
 import { gardeBudget } from './extraction/budget';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // L'ENTRETIEN DU RESPONSABLE DE PROCESSUS (point 2, ADR-108) — participants,
 // date, support, compréhension documentée. PRÉCAUTION JURIDIQUE formalisée
@@ -327,6 +328,7 @@ export async function statuerEcart(opts: {
  *  compréhension restent : ce sont les travaux de l'auditeur ; c'est
  *  l'ENREGISTREMENT transcrit qui a une durée de vie. */
 export async function purgerTranscriptsEchus(engagementId: string, aujourdHui: string, userId: string): Promise<number> {
+  await assertMembre(engagementId, userId, 'purgerTranscriptsEchus');
   if (!DATE_ISO.test(aujourdHui)) throw new Error('purge : la date s\'écrit AAAA-MM-JJ');
   const echus = await q<{ id: string; interview_id: string }>(
     `select t.id::text, t.interview_id::text

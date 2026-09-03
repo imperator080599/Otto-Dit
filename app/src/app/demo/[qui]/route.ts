@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
+import { sansLocataire } from '@/lib/db/sans-locataire';
 
 // LE LIEN DE DÉMONSTRATION — `/demo/claire?vers=/eng/<id>/testing`.
 //
@@ -38,15 +39,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ qui: string }> 
   const cle = decodeURIComponent(qui).trim().toLowerCase();
   /* Par identifiant, ou par PRÉNOM — un lien qu'on envoie à quelqu'un se lit :
      /demo/claire vaut mieux que /demo/e4f6dc10-2b93-…. */
-  const u = await q01<{ id: string; name: string }>(
+  /* CE CHEMIN CRÉE LA SESSION : il n'y a pas encore de cabinet à poser.
+     Dérogation NOMMÉE, clé « lien-demo » (app/src/lib/db/sans-locataire.ts). */
+  const u = await sansLocataire('lien-demo', () => q01<{ id: string; name: string }>(
     `select id::text, name from app_user
      where id::text = $1 or lower(split_part(name, ' ', 1)) = $1
      order by name limit 1`,
     [cle],
-  );
+  ));
   if (!u) {
-    const tous = await q01<{ noms: string }>(
-      `select string_agg(lower(split_part(name, ' ', 1)), ', ' order by name) noms from app_user`);
+    const tous = await sansLocataire('lien-demo', () => q01<{ noms: string }>(
+      `select string_agg(lower(split_part(name, ' ', 1)), ', ' order by name) noms from app_user`));
     return new NextResponse(
       `Personne ne s’appelle « ${cle} » dans ce dossier de démonstration. Essayez : ${tous?.noms ?? '—'}.`,
       { status: 404 },

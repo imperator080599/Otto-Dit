@@ -1,6 +1,7 @@
 import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { postesRetenus } from './rail';
+import { assertMembre, assertDestinataire } from '@/lib/core/membre';
 
 // LES SECTIONS DU DOSSIER — détenir, répondre de, suivre, avoir ouvert
 // (revue utilisateur n°2, §4 et §5).
@@ -205,12 +206,8 @@ async function tenantDe(engagementId: string): Promise<string> {
  */
 export async function envoyerA(sectionId: string, versUserId: string, parUserId: string): Promise<void> {
   const s = await section(sectionId);
-  const membre = await q01<{ n: string }>(
-    `select count(*) n from engagement_member where engagement_id = $1 and user_id = $2`,
-    [s.engagement_id, versUserId]);
-  if (Number(membre?.n ?? 0) === 0) {
-    throw new Error('On n’envoie pas une section à quelqu’un qui n’est pas sur la mission.');
-  }
+  await assertMembre(s.engagement_id, parUserId, 'envoyer une section');
+  await assertDestinataire(s.engagement_id, versUserId, 'envoyer une section');
   await q(`update section_state set holder_id = $2, updated_at = now() where id = $1`,
     [sectionId, versUserId]);
   await logEvent({
@@ -224,6 +221,8 @@ export async function envoyerA(sectionId: string, versUserId: string, parUserId:
 /** ATTRIBUER une section : le propriétaire change, le détenteur non. */
 export async function attribuerA(sectionId: string, ownerId: string, parUserId: string): Promise<void> {
   const s = await section(sectionId);
+  await assertMembre(s.engagement_id, parUserId, 'attribuer une section');
+  await assertDestinataire(s.engagement_id, ownerId, 'attribuer une section');
   await q(`update section_state set owner_id = $2, updated_at = now() where id = $1`,
     [sectionId, ownerId]);
   await logEvent({
@@ -236,6 +235,14 @@ export async function attribuerA(sectionId: string, ownerId: string, parUserId: 
 
 /** SUIVRE : un abonnement volontaire, qu'on pose et qu'on retire. */
 export async function suivre(sectionId: string, userId: string, suivi: boolean): Promise<void> {
+  /* LE DOSSIER VIENT DE LA SECTION, PAS DE L'APPELANT (revue hostile n°9,
+     constat 21) : `sections-actions.ts` prend `engagement_id` ET `section_id`
+     du formulaire — `requireMember` valide le dossier que l'attaquant DÉCLARE
+     pendant que le geste porte sur la section qu'il DÉSIGNE. Mesuré : un
+     cabinet étranger écrivait `section_watch`. */
+  const s = await q1<{ engagement_id: string }>(
+    `select engagement_id::text from section_state where id = $1`, [sectionId]);
+  await assertMembre(s.engagement_id, userId, 'suivre une section');
   if (suivi) {
     await q(`insert into section_watch (section_id, user_id) values ($1,$2)
              on conflict do nothing`, [sectionId, userId]);
@@ -250,6 +257,7 @@ export async function suivre(sectionId: string, userId: string, suivi: boolean):
  * cesse d'être lisible, et lire n'est pas un changement d'état.
  */
 export async function visiter(engagementId: string, kind: 'poste' | 'papier', ref: string, userId: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'visiter');
   const s = await q01<{ id: string }>(
     `select id::text from section_state where engagement_id = $1 and kind = $2 and ref = $3`,
     [engagementId, kind, ref]);

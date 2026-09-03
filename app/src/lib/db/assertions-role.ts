@@ -16,20 +16,29 @@ import type { OttoDb } from './client';
 // sur Supabase — et le bloc le DIT en toutes lettres plutôt que d'afficher
 // « RLS forcée » comme si elle s'appliquait à l'application. Passer sous un
 // rôle sans BYPASSRLS demande que l'application pose le locataire dans chaque
-// transaction (elle ne le fait pas encore) : chantier nommé au registre.
+// transaction. LE MÉCANISME EXISTE depuis le 2026-09-03 (`db/tenant.ts`,
+// `db/sans-locataire.ts`, migration 0140) ; LE CÂBLAGE, NON — `withTenant`
+// n'a aucun appelant de production, et `tenant.test.ts` MESURE ce que
+// l'armement coûterait aujourd'hui : l'écran d'accueil et `logEvent` lèvent.
+// C'est l'étape 1 de docs/PLAN_RLS.md, à moitié faite, et écrite comme telle.
 
 /** Tables d'infrastructure sans périmètre métier : RLS activée, AUCUNE
  *  politique — seul le propriétaire (l'application) les lit. Toute addition
  *  ici se justifie par écrit, pas par commodité. */
 export const PROPRIETAIRE_SEUL = new Set([
-  '_migrations',   // registre des migrations — aucun contenu métier
-  'app_state',     // préférences locales d'affichage
-  'blob_store',    // octets adressés par contenu, servis uniquement par l'app
-  'itgc_area',     // référentiel ITGC non rattaché à une mission
-  'notification',  // file technique de notifications
-  'server_error',  // exceptions de rendu, écrites par le crochet d'instrumentation — une pile n'est pas un contenu de locataire
-  'engagement_lock_verdict', // registre d'installation (0042) : un verdict par TABLE, pas par locataire
+  '_migrations',   // registre des migrations — appliquées sous SUPABASE_DB_URL (postgres), jamais par l'application (0140)
+  'notification',  // file technique : AUCUN chemin de l'application ne la lit ni ne l'écrit (recensé le 2026-09-03) — droit retiré à otto_app (0140)
 ]);
+
+/* CINQ NOMS ONT QUITTÉ CETTE LISTE LE 2026-09-03 (migration 0140) — et le
+   départ vaut d'être écrit. `app_state`, `blob_store`, `itgc_area`,
+   `server_error` et `engagement_lock_verdict` portaient RLS + FORCE et AUCUNE
+   politique : « propriétaire-seul » décrivait un état de la BASE, pas un
+   besoin du PRODUIT — l'application les lit toutes. Sous `otto_app` (sans
+   BYPASSRLS) elles auraient rendu ZÉRO LIGNE sans un mot : horloge de
+   démonstration muette, pièces jointes introuvables, sonde de santé aveugle.
+   Chacune a donc reçu sa politique, avec sa justification écrite dans 0140 —
+   dont une, `server_error`, où `using` et `with check` DIVERGENT à dessein. */
 
 export interface EtatRole { utilisateur: string; bypass: boolean; superutilisateur: boolean }
 export interface TableRls { table: string; tenant: boolean; rls: boolean; force: boolean; politiques: number }
@@ -76,6 +85,54 @@ export function verdictRls(tables: TableRls[], proprietaireSeul: Set<string> = P
        qui se contredit lui-même n'est pas un bloc. */
     if (t.rls && !t.force) defauts.push(`${t.table} : RLS non FORCÉE — le propriétaire la contourne`);
     if (t.politiques === 0 && !proprietaireSeul.has(t.table)) defauts.push(`${t.table} : aucune politique, et pas sur la liste propriétaire-seul justifiée`);
+  }
+  return defauts;
+}
+
+/**
+ * LES SIX RETRAITS QUE 0140 POSE, ET QU'IL FAUT DONC VÉRIFIER — les six, pas
+ * deux (revue hostile n°9, constat 14 : le script n'en contrôlait que deux, et
+ * une migration future re-`grant`ant en bloc — le geste que 0140 fait
+ * lui-même — rouvrirait quatre tables sans qu'aucun voyant s'allume).
+ */
+export const RETRAITS_0140: { table: string; privileges: string[] }[] = [
+  { table: '_migrations', privileges: ['select', 'insert', 'update', 'delete'] },
+  { table: 'notification', privileges: ['select', 'insert', 'update', 'delete'] },
+  { table: 'blob_store', privileges: ['update', 'delete'] },
+  { table: 'itgc_area', privileges: ['insert', 'update', 'delete'] },
+  { table: 'engagement_lock_verdict', privileges: ['insert', 'update', 'delete'] },
+  { table: 'server_error', privileges: ['update', 'delete'] },
+];
+
+export interface EtatOttoApp {
+  /** null = le rôle n'existe pas (migration 0140 non appliquée). */
+  role: { bypass: boolean; superutilisateur: boolean; connexion: boolean } | null;
+  /** Les couples table/privilège que 0140 referme et qui sont RESTÉS ouverts. */
+  ouvertes: string[];
+  /** Le nombre de fonctions `security definer` dans public. */
+  definers: number;
+}
+
+/**
+ * LE VERDICT SUR LE RÔLE APPLICATIF, pur — `scripts/db/otto-app.ts` l'appelle
+ * sur ce qu'un vrai Postgres a répondu, le test l'appelle sur des cas connus
+ * MAUVAIS (règle 17 : un détecteur qui n'a jamais échoué exprès n'a jamais été
+ * testé, et celui-ci ne peut pas s'exécuter en local — aucune base réseau).
+ */
+export function verdictOttoApp(e: EtatOttoApp): string[] {
+  const defauts: string[] = [];
+  if (!e.role) {
+    defauts.push('otto_app ABSENT — la migration 0140 n’a pas été appliquée à cette base');
+  } else {
+    if (e.role.bypass) defauts.push('otto_app CONTOURNE la RLS — il ne garderait rien ; l’étape 3 est interdite tant que c’est vrai');
+    if (e.role.superutilisateur) defauts.push('otto_app est SUPERUTILISATEUR — il contourne tout');
+    if (!e.role.connexion) defauts.push('otto_app ne peut pas se connecter (rolcanlogin=false) — la chaîne de l’étape 3 échouerait');
+  }
+  for (const t of e.ouvertes) {
+    defauts.push(`${t} est ouvert à otto_app — 0140 devait le retirer (raison écrite dans la migration)`);
+  }
+  if (e.definers > 0) {
+    defauts.push(`${e.definers} fonction(s) SECURITY DEFINER — elles contournent la RLS avec les droits du propriétaire`);
   }
   return defauts;
 }

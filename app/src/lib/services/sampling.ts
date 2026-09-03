@@ -8,6 +8,7 @@ import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { validatedThresholds } from './materiality';
 import { revenuePopulation } from './population';
+import { assertMembre } from '@/lib/core/membre';
 
 // S3 sampling flows: propose (L3, pack defaults + rationale) → validate (human, may edit)
 // → draw (L0, kernel, engine_run recorded). Deterministic given (population, seed, params).
@@ -28,6 +29,7 @@ export async function ensureRevenueProcedure(engagementId: string): Promise<stri
 }
 
 export async function proposeRevenueSample(engagementId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'proposeRevenueSample');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);

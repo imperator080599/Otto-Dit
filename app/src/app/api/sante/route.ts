@@ -3,6 +3,7 @@ import { q, q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { dbKind } from '@/lib/db/client';
 import { versionServie } from '@/lib/version';
+import { sansLocataire } from '@/lib/db/sans-locataire';
 
 // LA SANTÉ DE L'INSTANCE DÉPLOYÉE — `/api/sante`.
 //
@@ -22,14 +23,34 @@ import { versionServie } from '@/lib/version';
 
 export const dynamic = 'force-dynamic';
 
-interface Lecture { nom: string; ok: boolean; detail: string }
+interface Lecture { nom: string; ok: boolean; vide?: boolean; detail: string }
 
+/**
+ * UNE LECTURE VIDE N'EST PAS UNE LECTURE QUI PASSE (revue hostile n°9,
+ * constat 7). La première version marquait `ok: true` avec « 0 élément(s) » :
+ * sous un rôle sans BYPASSRLS et sans locataire, TOUTES les lectures rendraient
+ * zéro ligne sans erreur, et la sonde aurait répondu « toutes les lectures
+ * passent · 200 » sur une base entièrement aveugle. L'instrument aurait été
+ * structurellement incapable de voir l'incident qu'il existe pour détecter.
+ */
 async function essayer(nom: string, fn: () => Promise<unknown>): Promise<Lecture> {
   try {
     const v = await fn();
+    const vide = Array.isArray(v) ? v.length === 0
+      : v === null || v === undefined ? true
+        : typeof v === 'string' ? v.trim() === '' || /^(aucun|0 )/i.test(v.trim())
+          : false;
     const detail = Array.isArray(v) ? `${v.length} élément(s)`
       : v === null || v === undefined ? 'vide'
         : typeof v === 'object' ? 'objet' : String(v);
+    if (vide) {
+      /* PAS `ok: false` — une lecture légitimement vide (un monde neuf, une
+         fonctionnalité jamais employée) n'est pas une panne, et un 500 ici
+         casserait le balayage des écrans sans rien apprendre. Mais le vide est
+         NOMMÉ, compté, et il remonte dans le verdict : c'est exactement le
+         silence que la règle 13 traque, et il cesse d'être silencieux. */
+      return { nom, ok: true, vide: true, detail: `VIDE — ${detail}` };
+    }
     return { nom, ok: true, detail };
   } catch (e) {
     return { nom, ok: false, detail: e instanceof Error ? e.message.split('\n')[0].slice(0, 300) : String(e) };
@@ -40,8 +61,28 @@ export async function GET() {
   if (!demoPublique()) {
     return new NextResponse('Ce chemin n’existe que sur la démonstration publique.', { status: 404 });
   }
+  /* SONDE PUBLIQUE, SANS COOKIE — dérogation NOMMÉE (clé « sante »). Elle ne
+     sert QUE la démonstration publique, et elle n'est JAMAIS le test
+     d'isolation entre cabinets : celui-là se conduit par l'acceptation avec
+     deux identités de deux cabinets (docs/PLAN_RLS.md, A.6). */
+  return sansLocataire('sante', () => corpsDeLaSonde());
+}
+
+async function corpsDeLaSonde() {
+  /* LE DOSSIER QUE LA SONDE DÉCRIT — et le premier choix était FAUX.
+     `order by created_at limit 1` prenait le PLUS ANCIEN dossier d'audit
+     légal : en local, c'est le dossier de l'exercice PRÉCÉDENT (FY2024, celui
+     que la reprise construit), pas celui que la démonstration montre. La sonde
+     décrivait donc un autre objet que celui dont elle parlait (règle 16), et
+     rendait « 0 papier · 0 section · 0 écart » en VERT sur un monde plein.
+     Personne ne l'a vu tant qu'une lecture vide passait pour une lecture qui
+     passe : c'est le compteur de vides, écrit une heure plus tôt, qui l'a
+     dénoncé. On prend désormais le dossier de l'exercice le plus RÉCENT, et
+     l'ordre est déterministe jusqu'au dernier critère. */
   const eng = await q01<{ id: string }>(
-    `select id::text from engagement where kind = 'statutory_audit' order by created_at limit 1`)
+    `select e.id::text from engagement e join period p on p.id = e.period_id
+     where e.kind = 'statutory_audit'
+     order by p.end_date desc, e.created_at desc, e.id limit 1`)
     .catch(() => null);
 
   const lectures: Lecture[] = [];
@@ -220,8 +261,115 @@ export async function GET() {
     }));
   }
 
+  /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
+     (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
+     jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que
+     ni la suite locale ni le plan ne peuvent affirmer à sa place : quel rôle
+     sert, si le garde de locataire est armé, et si `otto_app` existe et ne
+     contourne pas. Un « rôle : postgres · bypass : oui » est la MESURE que
+     l'étape 3 de PLAN_RLS n'est pas exécutée — écrite, pas supposée. */
+  lectures.push(await essayer('rôle servi et garde de locataire (PLAN_RLS)', async () => {
+    const { gardeArme, CHEMINS_SANS_LOCATAIRE } = await import('@/lib/db/sans-locataire');
+    const r = await q01<{ u: string; b: boolean }>(
+      `select current_user u, coalesce(rolbypassrls, true) b from pg_roles where rolname = current_user`);
+    const cables = CHEMINS_SANS_LOCATAIRE.filter((c) => c.etat === 'cable').length;
+    return `rôle ${r?.u ?? '?'} · contourne la RLS : ${r?.b ? 'OUI (politiques inertes)' : 'non'}`
+      + ` · garde LOC-01 ${gardeArme() ? 'ARMÉ' : 'désarmé'}`
+      + ` · ${cables}/${CHEMINS_SANS_LOCATAIRE.length} chemin(s) sans locataire câblé(s)`;
+  }));
+  lectures.push(await essayer('rôle applicatif otto_app (migration 0140)', async () => {
+    const r = await q01<{ b: boolean; l: boolean }>(
+      `select rolbypassrls b, rolcanlogin l from pg_roles where rolname = 'otto_app'`);
+    if (!r) return 'ABSENT — la migration 0140 n’est pas appliquée sur cette base';
+    return `présent · contourne la RLS : ${r.b ? 'OUI (défaut)' : 'non'} · connexion : ${r.l ? 'oui' : 'non'}`
+      + ` — non employé tant que DATABASE_URL désigne un autre rôle (étape 3 NON exécutée)`;
+  }));
+  lectures.push(await essayer('gardes d’étanchéité dans les services (ETANCH-01/02/03)', async () => {
+    /* TROIS FAILLES CORRIGÉES (revue hostile n°9, constat 8). La première
+       version : (1) rendait « aucune mission » en VERT sur une base vide ;
+       (2) éprouvait un UUID nul, donc le refus venait de « cette personne
+       n'existe pas », pas de « elle est d'un autre cabinet » — le même refus
+       serait rendu si `app_user` était entièrement illisible, c'est-à-dire
+       DANS l'incident que la sonde doit dénoncer ; (3) ne vérifiait pas
+       l'autre sens, donc une garde cassée en « refuse tout » passait. Et elle
+       éprouvait `estMembre`, qu'aucun service n'appelle, au lieu
+       d'`assertMembre` — la preuve venait d'un autre objet (règle 16). */
+    const { assertMembre } = await import('@/lib/core/membre');
+    if (!eng?.id) throw new Error('aucune mission : la garde n’a pas pu être éprouvée — ce n’est PAS un succès');
+    /* LE SENS « ELLE LAISSE PASSER » : un vrai membre du dossier passe. */
+    const membre = await q01<{ id: string }>(
+      `select user_id::text id from engagement_member where engagement_id = $1 and exited_on is null limit 1`,
+      [eng.id]);
+    if (!membre) throw new Error('aucun membre sur la mission : la garde n’a pas pu être éprouvée dans le sens « laisse passer »');
+    await assertMembre(eng.id, membre.id, 'sonde de santé');
+    /* LE SENS « ELLE REFUSE » : une personne d'un AUTRE cabinet — pas une
+       personne inexistante. La sonde ne crée rien : elle prend une personne
+       réelle dont le cabinet diffère de celui de la mission, s'il en existe. */
+    const etranger = await q01<{ id: string }>(
+      `select u.id::text id from app_user u
+       where u.tenant_id <> (select tenant_id from engagement where id = $1) limit 1`, [eng.id]);
+    const refuser = async (id: string) => {
+      try { await assertMembre(eng.id, id, 'sonde de santé'); return ''; }
+      catch (e) { return e instanceof Error ? e.message : String(e); }
+    };
+    const dits: string[] = ['un membre passe'];
+    if (etranger) {
+      const r = await refuser(etranger.id);
+      if (!/ETANCH-01/.test(r)) throw new Error(`une personne d’un AUTRE cabinet n’est pas refusée par ETANCH-01 (lu : « ${r || 'aucun refus'} »)`);
+      dits.push('un autre cabinet est refusé (ETANCH-01)');
+    } else {
+      /* AUCUN AUTRE CABINET N'EXISTE dans le monde de démonstration — alors on
+         en fabrique un DANS UNE TRANSACTION ANNULÉE. C'est le mécanisme de la
+         sonde d'acceptation (`annulerApres`, ADR-123) : le geste est réel, le
+         refus est réel, et la base ne porte pas une ligne de plus. Sans cela,
+         ce sens de la garde ne serait jamais éprouvé sur l'instance
+         déployée — et une garde qui n'a jamais refusé n'est pas une garde
+         (règle 17). Si la fabrication échoue (droits, contrainte), on le DIT
+         au lieu de conclure. */
+      try {
+        const { annulerApres } = await import('@/lib/db/client');
+        const r = await annulerApres(async () => {
+          const t = await q01<{ id: string }>(
+            `insert into tenant (name) values ('Cabinet d’épreuve de la sonde (fictif)') returning id::text`);
+          const u = await q01<{ id: string }>(
+            `insert into app_user (tenant_id, name, email, firm_role)
+             values ($1, 'Épreuve de la sonde', 'epreuve.sonde@etranger.test', 'partner') returning id::text`,
+            [t!.id]);
+          return refuser(u!.id);
+        });
+        if (!/ETANCH-01/.test(r)) throw new Error(`une personne d’un AUTRE cabinet n’est pas refusée par ETANCH-01 (lu : « ${r || 'aucun refus'} »)`);
+        dits.push('un autre cabinet est refusé (ETANCH-01, éprouvé dans une transaction ANNULÉE — rien n’est écrit)');
+      } catch (e) {
+        dits.push(`ETANCH-01 NON éprouvé ici : ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`);
+      }
+    }
+    /* ET LE SECOND REFUS, celui que le monde de démonstration permet toujours
+       d'éprouver : quelqu'un du MÊME cabinet qui n'est pas de l'équipe. */
+    const horsEquipe = await q01<{ id: string }>(
+      `select u.id::text id from app_user u
+       where u.tenant_id = (select tenant_id from engagement where id = $1)
+         and not exists (select 1 from engagement_member m
+                         where m.engagement_id = $1 and m.user_id = u.id and m.exited_on is null)
+       limit 1`, [eng.id]);
+    if (horsEquipe) {
+      const r = await refuser(horsEquipe.id);
+      if (!/ETANCH-03/.test(r)) throw new Error(`une personne du cabinet hors de l’équipe n’est pas refusée par ETANCH-03 (lu : « ${r || 'aucun refus'} »)`);
+      dits.push('une personne du cabinet hors équipe est refusée (ETANCH-03)');
+    }
+    /* Si AUCUN des deux refus n'a pu être joué, la lecture ne conclut pas : le
+       message commence par « aucun », donc elle est marquée VIDE, comptée, et
+       remonte dans le verdict. Nommer l'absence de mesure, plutôt que la
+       peindre en vert ou en rouge — l'un mentirait, l'autre ferait tomber la
+       sonde entière sur une garde qui, elle, va très bien. */
+    if (dits.length === 1 || dits.every((d) => d === 'un membre passe' || d.startsWith('ETANCH-01 NON éprouvé'))) {
+      return `aucun refus éprouvé ici — ${dits.join(' · ')}`;
+    }
+    return dits.join(' · ') + ' — refus VÉRIFIÉS ici, pas déclarés';
+  }));
+
   const version = versionServie();
   const cassees = lectures.filter((l) => !l.ok);
+  const vides = lectures.filter((l) => l.vide);
   return NextResponse.json({
     instance: { base: dbKind(), demoPublique: demoPublique() },
     /* LE SHA QUE CE BUNDLE PORTE — cuit au build (§0.1), pas lu dans
@@ -230,7 +378,12 @@ export async function GET() {
        commit qu'elle attend. */
     sha: version.sha,
     version,
-    verdict: cassees.length === 0 ? 'toutes les lectures passent' : `${cassees.length} lecture(s) CASSÉE(S)`,
+    verdict: (cassees.length === 0 ? 'toutes les lectures passent' : `${cassees.length} lecture(s) CASSÉE(S)`)
+      + (vides.length
+        ? ` · ${vides.length} lecture(s) VIDE(S) : ${vides.map((l) => l.nom).join(' · ')}. `
+          + `Une lecture vide n’est pas une lecture qui passe — sous un rôle sans BYPASSRLS et sans locataire posé, `
+          + `la base rend zéro ligne SANS erreur (docs/PLAN_RLS.md).`
+        : ' · aucune lecture vide'),
     lectures,
   }, { status: cassees.length === 0 ? 200 : 500 });
 }

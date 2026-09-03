@@ -316,12 +316,24 @@ describe('grille — le dossier de démonstration entier', () => {
     /* Le journal porte la conclusion et la disposition (provenance). */
     const ev = await q<{ verb: string }>(`select verb from event_log where engagement_id = $1 and verb in ('test_line_concluded','test_cell_dispositioned','test_grid_frozen','test_grid_computed')`, [IDS.engNep]);
     expect(new Set(ev.map((e) => e.verb))).toEqual(new Set(['test_line_concluded', 'test_cell_dispositioned', 'test_grid_frozen', 'test_grid_computed']));
-    /* Une cellule qui change après coup : la conclusion ne ment pas, elle se dit périmée. */
+    /* Une cellule qui change après coup : la conclusion ne ment pas, elle se dit périmée.
+       ET LA REMISE EN ÉTAT DOIT ÊTRE EXACTE — c'est ici que vivait le fil N2-6,
+       ce test qui rougissait une fois sur six sans qu'on sache pourquoi. Le
+       « +1 puis −1 » n'est PAS un aller-retour quand le delta vaut NULL :
+       `coalesce(null,0)+1-1` rend **0**, pas NULL. La cellule restait donc
+       modifiée, et si elle se trouvait être AUSSI la cellule disposée plus bas,
+       la disposition (prise sur un delta NULL) ne couvrait plus un delta 0 —
+       ce qui est le comportement JUSTE du produit, mesuré par un test faux.
+       L'intermittence venait de `order by c.sample_item_id` : l'identifiant est
+       un uuid ALÉATOIRE, donc la ligne choisie changeait à chaque exécution.
+       Diagnostic obtenu en reproduisant (1 échec sur 6 boucles), pas en
+       supposant (règle 18). On capture et on restaure la valeur exacte. */
     const c0 = cells[0];
+    const deltaC0 = (await q1<{ d: string | null }>(`select delta_signed::text d from test_cell where id = $1`, [c0.id])).d;
     await q(`update test_cell set delta_signed = coalesce(delta_signed, 0) + 1 where id = $1`, [c0.id]);
     concl = (await cellulesDuDossier(IDS.engNep)).conclusions[itemId];
     expect(concl.perimee).toBe(true);
-    await q(`update test_cell set delta_signed = delta_signed - 1 where id = $1`, [c0.id]);
+    await q(`update test_cell set delta_signed = $2 where id = $1`, [c0.id, deltaC0]);
     /* ET UNE DISPOSITION NE COUVRE QUE LA VALEUR QU'ELLE A DISPOSÉE : la
        cellule disposée qui change de delta redevient « à disposer », le
        service ET la base refusent de conclure (revue hostile du jour). */
@@ -336,7 +348,8 @@ describe('grille — le dossier de démonstration entier', () => {
     await expect(q(`update test_line_conclusion set cells_hash = 'x' where sample_item_id = $1 and grid_id = $2`, [itemId, g.id])).rejects.toThrow(/TEST-04/);
     /* Remise à la valeur d'origine (qui peut être NULL — une cellule absente) : la disposition couvre de nouveau. */
     await q(`update test_cell set delta_signed = $2 where id = $1`, [disposee.id, deltaOrigine]);
-    expect((await cellulesDuDossier(IDS.engNep)).cellules[itemId].find((x) => x.id === disposee.id)!.disposition).not.toBeNull();
+    expect((await cellulesDuDossier(IDS.engNep)).cellules[itemId].find((x) => x.id === disposee.id)!.disposition,
+      'la disposition ne couvre plus une valeur pourtant remise à l’identique').not.toBeNull();
   });
 
   it('§0.3 — une version NEUVE de la grille n’efface pas une conclusion : elle la nomme périmée, cause « grille », et le journal la liste', async () => {

@@ -7,6 +7,7 @@ import type { TbRow } from '@/lib/kernel/types';
 import { numToCents, centsToNum } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
+import { assertMembre } from '@/lib/core/membre';
 
 // S2 framework-aware materiality: deterministic proposal rule + template rationale (L3 —
 // the human validates or adjusts; arithmetic L0). In live mode an LLM can redraft the
@@ -51,6 +52,7 @@ function rationaleText(p: MaterialityProposal, lang: 'fr' | 'en'): string {
 }
 
 export async function propose(engagementId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'propose');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);
@@ -105,6 +107,7 @@ export async function validate(
     `select id, engagement_id, version, status from materiality where id = $1`,
     [materialityId],
   );
+  await assertMembre(row.engagement_id, userId, 'valider une matérialité');
   if (row.status !== 'proposed') throw new Error('only a proposed version can be validated');
   const ctx = await engagementCtx(row.engagement_id);
   const fs = await frameworkSet(row.engagement_id);

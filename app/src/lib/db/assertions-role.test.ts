@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { getDb } from '@/lib/db/client';
-import { etatRole, tablesRls, verdictRls, bloc } from './assertions-role';
+import { etatRole, tablesRls, verdictRls, verdictOttoApp, bloc } from './assertions-role';
 
 // LE BLOC D'ASSERTIONS S'ÉPROUVE CONTRE UN CAS CONNU MAUVAIS (règle 17) —
 // ici, sur PGlite, avant de tourner sur la base réseau au build.
@@ -64,5 +64,45 @@ describe('assertions rôle / RLS', () => {
     } finally {
       await db.exec('alter table risk enable row level security');
     }
+  });
+
+  /**
+   * LE VERDICT SUR `otto_app`, ÉPROUVÉ CONTRE CINQ CAS CONNUS MAUVAIS.
+   *
+   * POURQUOI ICI ET PAS DANS LE SCRIPT : `scripts/db/otto-app.ts` ne s'exécute
+   * QUE contre un Postgres réseau (une base de CI, secret non posé). Sa logique
+   * ne serait donc jamais jouée — un détecteur qui n'a jamais échoué exprès n'a
+   * jamais été testé (règle 17). Elle vit dans une fonction pure, et ces cas la
+   * font échouer une fois par défaut possible.
+   */
+  describe('le verdict sur le rôle applicatif otto_app (0140)', () => {
+    const bon = { role: { bypass: false, superutilisateur: false, connexion: true }, ouvertes: [], definers: 0 };
+
+    it('le cas SAIN ne dit rien', () => {
+      expect(verdictOttoApp(bon)).toEqual([]);
+    });
+
+    it('rôle ABSENT — la migration n’a pas été appliquée', () => {
+      expect(verdictOttoApp({ ...bon, role: null }).join(' ')).toMatch(/ABSENT/);
+    });
+
+    it('rôle qui CONTOURNE la RLS — l’étape 3 serait un théâtre', () => {
+      const d = verdictOttoApp({ ...bon, role: { ...bon.role, bypass: true } });
+      expect(d.join(' ')).toMatch(/CONTOURNE la RLS/);
+      expect(d.join(' ')).toMatch(/étape 3 est interdite/);
+    });
+
+    it('rôle SUPERUTILISATEUR, ou incapable de se connecter', () => {
+      expect(verdictOttoApp({ ...bon, role: { ...bon.role, superutilisateur: true } }).join(' ')).toMatch(/SUPERUTILISATEUR/);
+      expect(verdictOttoApp({ ...bon, role: { ...bon.role, connexion: false } }).join(' ')).toMatch(/ne peut pas se connecter/);
+    });
+
+    it('un privilège que 0140 devait retirer est resté ouvert, et une fonction definer est apparue', () => {
+      const d = verdictOttoApp({ ...bon, ouvertes: ['_migrations.select', 'notification.insert'], definers: 2 });
+      expect(d.length).toBe(3);
+      expect(d.join(' ')).toMatch(/_migrations\.select est ouvert/);
+      expect(d.join(' ')).toMatch(/notification\.insert est ouvert/);
+      expect(d.join(' ')).toMatch(/2 fonction\(s\) SECURITY DEFINER/);
+    });
   });
 });

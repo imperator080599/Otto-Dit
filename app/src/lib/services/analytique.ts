@@ -9,6 +9,7 @@ import { numToCents } from '@/lib/util/num';
 import { fmtEur } from '@/lib/kernel/canon';
 import { getAccountingMap } from '@/lib/packs';
 import { traduire, type Locale } from '@/lib/i18n/catalogue';
+import { assertMembre } from '@/lib/core/membre';
 
 // LA LEADSHEET N / N-1 ET LA REVUE ANALYTIQUE DU POSTE (mandat de la soirée, §2.2).
 //
@@ -191,6 +192,7 @@ export async function enregistrerAnalytique(
   engagementId: string, code: string, userId: string, texte: string,
   opts: { origine: OrigineRevue; engineRunId?: string | null },
 ): Promise<{ id: string; version: number }> {
+  await assertMembre(engagementId, userId, 'rédiger une revue analytique');
   if (!texte.trim()) throw new Error('ANA-01 : une revue analytique vide n’est pas une revue analytique — rien n’est enregistré');
   if (opts.origine === 'proposee_validee' && !opts.engineRunId) {
     throw new Error('ANA-02 : une rédaction proposée puis validée cite le run qui l’a produite — sans lui, enregistrez-la comme rédaction humaine');

@@ -7,6 +7,7 @@ import { copiesCalculees } from './reunions';
 import { numToCents } from '@/lib/util/num';
 import { getTransportCircularisation } from './circularisations/transport';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // LES CIRCULARISATIONS — banques et avocats (point 3 du mandat, ADR-111).
 //
@@ -89,7 +90,9 @@ export async function tiers(engagementId: string, kind: Nature): Promise<Tiers[]
 export async function importerListing(
   engagementId: string, kind: Nature, contenu: string, userId: string,
   opts: { asOf?: string; evidenceId?: string | null } = {},
-): Promise<{ campagneId: string; lignes: number }> {
+): Promise<{
+  campagneId: string; lignes: number }> {
+  await assertMembre(engagementId, userId, 'importerListing');
   const ctx = await engagementCtx(engagementId);
   const lignes = contenu.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lignes.length < 2) {
@@ -383,6 +386,7 @@ async function nextSeq(engagementId: string): Promise<number> {
 
 /** Les questions au client — un BROUILLON (L2), une question par constat. */
 export async function redigerQuestions(engagementId: string, kind: Nature, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'redigerQuestions');
   const c = await completude(engagementId, kind);
   const r = await rapprochement(engagementId, kind);
   const questions: string[] = [

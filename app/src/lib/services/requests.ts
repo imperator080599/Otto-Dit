@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { now, DAY_MS } from '@/lib/core/clock';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
+import { assertMembre } from '@/lib/core/membre';
 
 // S4 request engine: PBC generation from the sample (per-tested-unit items) + standing
 // items; L2 send gate; statuses; lazy reminder cadence (Q8) against the demo clock.
@@ -18,6 +19,7 @@ export async function nextSeq(engagementId: string): Promise<number> {
 
 /** Generate the PBC request from a drawn sample (draft — auditor approves send, L2). */
 export async function generatePbcFromSample(engagementId: string, sampleId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'generatePbcFromSample');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const fr = fs.language === 'fr';
@@ -147,7 +149,9 @@ export async function pauseReminders(requestId: string, userId: string): Promise
  */
 export async function demandeClarificationLignes(
   engagementId: string, sampleItemIds: string[], motif: string, userId: string,
-): Promise<{ requestId: string; items: number }> {
+): Promise<{
+  requestId: string; items: number }> {
+  await assertMembre(engagementId, userId, 'demandeClarificationLignes');
   if (!sampleItemIds.length) throw new Error('clarification : aucune ligne sélectionnée');
   if (!motif.trim()) throw new Error('clarification : le motif est vide — le client doit savoir quoi expliquer');
   const ctx = await engagementCtx(engagementId);

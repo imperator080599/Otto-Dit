@@ -14,6 +14,7 @@ import { latestTbGl } from '../reconciliation';
 import { listExceptions, scopeLimitations } from '../matching';
 import { currentEvaluation, conclusionGate, evaluationResponses, blockerText } from '../evaluation';
 import { latestExtraction } from '../extraction/ladder';
+import { assertMembre } from '@/lib/core/membre';
 
 // S7 — documentation engine. Workpapers are STRUCTURED sections assembled from stored
 // facts (never recomputed): every figure carries its source refs (P7). Attribution per
@@ -119,6 +120,7 @@ export function champsLigneEchantillon(o: {
 }
 
 export async function draftRevenueWorkpaper(engagementId: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'draftRevenueWorkpaper');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);

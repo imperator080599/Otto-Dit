@@ -4829,3 +4829,175 @@ REPLI-01 refuse douze clés hostiles AVANT la base ; la sonde annule bien l'écr
 aucun bandeau de refus ne se trouve dans un repli ; aucune collision de clés ; le contour de
 focus et `prefers-reduced-motion` tiennent ; deux comptes ont bien deux mémoires.
 
+
+## ADR-129
+
+**L'étanchéité entre cabinets tenait à la porte d'entrée, et onze gestes sur treize entraient par
+la fenêtre.** (Mandat du jour n°3, §1.1 — la première des trois dettes graves.)
+
+**Le constat, avant toute écriture de garde.** Le mandat exigeait le test de non-régression
+D'ABORD. `app/src/lib/core/etancheite.test.ts` crée un autre cabinet, une personne à lui (Nadia
+Ferrand, fictive), et tente treize gestes d'écriture sur le dossier de démonstration : attribuer
+une section, l'envoyer, poser une note de revue, y répondre, la traiter, disposer une cellule,
+conclure une ligne, rédiger une revue analytique, planifier une procédure, rédiger le papier
+d'une procédure, statuer un périmètre, évaluer le risque d'un poste, recalculer la grille.
+**DIX sur treize ont été ACCEPTÉS** — et ce chiffre est une correction : la première rédaction
+de cet ADR disait « onze », la revue hostile n°9 l'a rejoué en neutralisant les gardes et a
+compté dix. Trois des treize échouaient déjà pour une raison qui n'est PAS l'étanchéité (un
+état du dossier, ou PROG-05) : ils sont refusés, tant mieux, mais ils ne prouvent rien de la
+garde neuve (règle 16), et le test les marque désormais `casMauvais: false` avec leur raison.
+
+**Et treize n'était pas le nombre des gestes — c'était le nombre des gestes REGARDÉS.** Le dépôt
+compte **96** fonctions de service exportées qui prennent un acteur ET écrivent ; à la
+découverte, **91 n'avaient aucune garde d'isolation**. La revue hostile a emprunté le chemin
+plutôt que de chercher un mot : un cabinet étranger a **réécrit le contenu d'un papier de
+travail** (`editSection`) et **suivi une section** (`suivre`), traces au journal comprises. Le
+câblage a donc été étendu le jour même — 44 fonctions désignées par `engagementId`, puis sept
+autres résolues depuis leur objet fils dont le VISA (`signWorkpaper`), la réécriture de papier,
+l'export, la résolution d'écart, la validation d'un seuil et `redigerPapierDeProcedure` : **59
+gardées, 37 encore nues**. Les 37 sont écrites une par une, avec leur raison, dans
+`core/couverture-etancheite.test.ts`, qui refuse qu'une trente-huitième arrive en silence et
+refuse une ligne périmée. Le compte est publié ; il ne peut que baisser. Les services prenaient un `userId` en paramètre et ne
+vérifiaient jamais qu'il appartenait à l'équipe : `requireMember` gardait les ÉCRANS, et rien ne
+gardait les actions. Une action serveur atteinte autrement que par son écran — un identifiant
+deviné, un formulaire rejoué, un appel direct — écrivait dans le dossier d'un concurrent. Et la
+base ne rattrapait rien : le rôle qui sert l'application porte BYPASSRLS, donc les cent-deux
+politiques sont inertes (ADR-115). Entre deux clients concurrents, le secret professionnel ne
+tenait qu'à une seule couche, et cette couche ne couvrait pas les gestes.
+
+**La garde, et l'ORDRE de ses deux refus.** `app/src/lib/core/membre.ts` :
+ETANCH-01 — l'acteur n'est pas du CABINET du dossier — passe AVANT ETANCH-03 — l'acteur est du
+cabinet mais n'est pas sur cette mission. L'ordre est la règle : répondre « faites d'abord
+accepter la mission » à quelqu'un qui vise le dossier d'un autre cabinet lui apprendrait que la
+mission existe (même doctrine qu'ADR-069/ADR-082). ETANCH-02 garde le DESTINATAIRE d'une
+attribution — on ne confie pas un travail à quelqu'un qui n'est pas sur la mission.
+Où elle cesse de regarder, écrit dans le fichier : elle ne juge pas le rôle ; elle se tait pour
+un acteur nul (un moteur qui recalcule n'a pas de personne) ; **une mission dont l'ÉQUIPE EST
+VIDE ne se garde pas par l'équipe** — avant l'acceptation personne ne peut être membre, et c'est
+`assertAccepte` qui parle ; elle ne remplace pas la RLS.
+
+**PROG-05 ne regardait que l'équipe, jamais le cabinet.** `redigerPapierDeProcedure` distinguait
+« procédure inconnue » (PROG-01) de « pas membre du dossier » (PROG-05) — ce qui APPREND à un
+intrus d'un autre cabinet que la procédure existe et qu'elle est rattachée à un poste : exactement
+la divulgation que l'ordre « ETANCH-01 d'abord » existe pour empêcher. ETANCH-01 passe désormais
+avant.
+
+**Registre** : G-24 et G-26 (BLOB-01), prouvées par exécution (`docs/GARDES_RESULTATS.json`).
+
+## ADR-130
+
+**Le plan RLS se trompait sur le point qu'il disait décisif — et c'est une mesure, pas une
+lecture de documentation, qui l'a dit.** (PLAN_RLS étapes 1 et 2 ; mandat du jour n°3, §1.1.)
+
+**La prémisse fausse.** L'addendum A.5 posait : « une politique en `using` seul empêche de LIRE
+chez le voisin mais laisse ÉCRIRE chez lui », et en tirait une action prioritaire — compléter
+101 `with check` dans une migration 0140. Le recensement donne : 102 politiques, **toutes**
+`for all` ; 101 sans `with check` ; 0 fonction `security definer` sur 12 ; 109 tables, 0 vue ;
+un seul rôle non système (`postgres`, BYPASSRLS). Or pour une politique `for all`, un `with
+check` OMIS fait servir `using` AUSSI au contrôle de l'écriture. La documentation le dit ; une
+documentation n'est pas une observation (règle 15). `tenant.test.ts` crée donc un rôle
+`nobypassrls` **dans le test**, lui donne les droits de l'application, et TENTE : un `insert` au
+nom d'un autre cabinet est refusé (cas 4) ; un `update` qui déplace une ligne chez le voisin est
+refusé (cas 4 bis). **0140 ne complète donc aucun `with check`** — sauf un, là où il doit
+DIVERGER de `using` : `server_error` accepte toute écriture (une panne n'a pas de locataire) et
+ne rend en lecture que les siennes.
+
+**Le premier choix de table pour le cas 4 bis était faux, et l'instrument l'a dit.** Sur
+`event_log`, c'est la garde *append-only* de 0003 qui refuse, pas la politique : on aurait
+présenté le refus d'un AUTRE objet comme preuve de celui-ci (règle 16). La mesure se fait sur
+`app_user`, et le test vérifie explicitement que le message n'est pas celui de l'append-only.
+
+**Le silence que 0140 a failli laisser en place.** Cinq tables portaient RLS + FORCE et AUCUNE
+politique, justifiées comme « propriétaire-seul » : `app_state`, `blob_store`, `itgc_area`,
+`server_error`, `engagement_lock_verdict`. La justification décrivait un état de la BASE, pas un
+besoin du PRODUIT — l'application les lit toutes. Sous `otto_app`, elles auraient rendu zéro
+ligne sans un mot : horloge de démonstration muette, pièces jointes introuvables, sonde de santé
+aveugle. Chacune reçoit sa politique. `PROPRIETAIRE_SEUL` tombe de sept noms à deux
+(`_migrations`, et `notification` — qu'AUCUN chemin de l'application ne touche, recensé), et un
+test neuf attrape le sens qui manquait : une table restée sur la liste alors qu'une migration lui
+a DONNÉ une politique.
+
+**Le garde LOC-01, et pourquoi un refus vaut mieux qu'un zéro.** Sous un rôle sans BYPASSRLS,
+une requête sans locataire ne se plaint pas : elle rend zéro ligne. Et les gardes SQL du schéma
+(0037, 0042, ADR-028) sont des fonctions `security invoker` qui LISENT des tables pour décider
+de refuser : sans locataire, elles ne voient rien, donc **elles ne refusent rien**. Un garde qui
+ne voit pas devient un garde qui laisse passer. `q()` consulte donc `assertLocataire` :
+armé — automatiquement, à partir du rôle réellement servi, mesuré une fois à l'ouverture de la
+base — il lève LOC-01 en nommant la table visée. Aujourd'hui il est DÉSARMÉ partout (le rôle
+contourne), donc il ne protège rien ; son refus est néanmoins OBSERVÉ (règle 17), et la branche
+d'armement automatique aussi, par un pilote qui répond « rolbypassrls = false ».
+
+**La liste écrite des chemins sans locataire (A.4)** vit dans `sans-locataire.ts` : six chemins,
+chacun avec son lieu, sa raison et ce qu'il lit ; cinq câblés, un déclaré « à câbler ». Le test
+vérifie les DEUX sens, et balaye tous les points d'entrée publics — celui qui ne pose ni session
+ni dérogation doit figurer dans une liste écrite de découverts. **Ce balayage a trouvé une route
+que l'inventaire à la main avait manquée** : `/demo/[qui]`, hors de `src/app/api/`, qui CRÉE la
+session. Deux découverts restent écrits : les deux pages du portail client.
+
+**Registre** : G-25, prouvée par exécution.
+
+**Ce qui n'est PAS fait, et doit l'être avant l'étape 3.**
+- `blob_store` a une politique `true`. La première rédaction de cet ADR sous-estimait le risque
+  DEUX FOIS, et la revue hostile n°9 l'a mesuré : (i) **les octets sont dans la table**, donc
+  sous `otto_app` un `select bytes from blob_store` rend **toutes les pièces de tous les
+  cabinets** — il n'y a aucun « chemin à connaître » ; (ii) l'`insert` reste ouvert (il le doit :
+  l'application dépose des pièces) et `saveBlob` fait `on conflict do nothing`, donc un cabinet
+  pouvait pré-insérer un couple chemin/octets et faire relire SES octets à la place de la facture
+  d'un autre. **Le point (ii) est refermé aujourd'hui** : `readBlob` recalcule le sha256 et refuse
+  un contenu qui ne rend pas son adresse (BLOB-01, garde G-26, éprouvée par substitution). Le
+  point (i) reste ouvert.
+- Le **portail client n'a pas de politique par jeton**, et la conséquence a été mesurée : sous
+  garde armé, `portalRequests` lève LOC-01 — donc le portail rendrait **une page 500 au contact
+  du client**, « un refus rendu en page 500 », mot pour mot dans la règle 13.
+- **L'étape 3 n'est pas exécutée**, et l'étape 1 n'est faite qu'à moitié (le mécanisme, pas le
+  câblage) : `DATABASE_URL` désigne toujours `postgres`, et `/api/sante` le DIT en toutes lettres.
+
+**LE FAIT QUI PRIME, ET QU'IL FAUT LIRE AVANT LE RESTE.** `withTenant` n'a **aucun appelant de
+production**. Armer le garde aujourd'hui n'« empêcherait pas l'oubli » : il **éteindrait
+l'application** — `tenant.test.ts` observe que `missionsParClient` (l'écran d'accueil) et
+`logEvent` (donc tout changement d'état) lèvent LOC-01. La première rédaction de cet ADR, du
+workflow de CI et de l'en-tête de PLAN_RLS annonçait « étapes 1 et 2 exécutées » pendant que
+`assertions-role.ts`, livré dans le même commit, disait le vrai. Les trois sont corrigés.
+
+## ADR-131
+
+**Revue hostile n°9 — les vingt-deux constats sur la tranche « étanchéité », énumérés.**
+
+*Le mandat du jour n°3 §0 règle 4 : les constats hostiles sont ÉNUMÉRÉS, pas comptés, chacun avec
+son état. Les voici, dans l'ordre du rapport. Le SHA du vert est celui de la livraison de cette
+tranche (voir STATUS.md, section du jour) ; les mesures de la revue elle-même ont été prises sur
+l'arbre de travail entre 08:12 et 08:17 UTC, avant commit — c'est dit parce que l'arbre a bougé
+pendant la revue.*
+
+| n° | constat | gravité | état |
+|---|---|---|---|
+| 1 | `withTenant` n'a aucun appelant de production ; le workflow de CI et l'en-tête de PLAN_RLS annoncent « étape 1 exécutée » pendant qu'`assertions-role.ts` dit le vrai | BLOQUANT | **corrigé** — les trois textes corrigés ; l'état réel écrit (« étape 1 à MOITIÉ : le mécanisme, pas le câblage ») |
+| 2 | armer LOC-01 aujourd'hui refuserait `logEvent` et l'écran d'accueil — donc éteindrait le produit ; rien ne le disait | BLOQUANT | **corrigé** — mesuré par un test (`tenant.test.ts`, « ce que l'armement coûterait aujourd'hui ») ; PLAN_RLS « retour arrière : aucun » corrigé |
+| 3 | le balayage des points d'entrée comptait quatre marqueurs de texte et déclarait couvert l'écran d'accueil, qui lève LOC-01 | BLOQUANT | **corrigé** — critère refait (`withTenant(` / `sansLocataire(` seuls) ; 6 couverts sur 52 ; l'accueil est devenu le cas connu mauvais du critère |
+| 4 | 91 fonctions de service sur 96 sans garde d'isolation ; un cabinet étranger a réécrit un papier de travail | BLOQUANT | **corrigé en partie** — 59 gardées, 37 nues, écrites une par une avec leur raison et un instrument qui refuse la 38ᵉ (`couverture-etancheite.test.ts`) |
+| 5 | « onze sur treize » ne se reproduit pas (dix) ; trois gestes n'étaient pas des cas mauvais ; un libellé mentait sur son geste | GRAVE | **corrigé** — chiffre corrigé partout, `casMauvais` écrit par geste et ASSERTÉ, « clore » → « traiter » |
+| 6 | PROG-05 ne consulte que l'équipe, jamais le cabinet : il apprend à un intrus que la procédure existe | GRAVE | **corrigé** — ETANCH-01 passe avant PROG-05 |
+| 7 | `/api/sante` conduit toute sa sonde sous dérogation : sous `otto_app` elle dirait « toutes les lectures passent » sur une base aveugle | GRAVE | **corrigé** — une lecture VIDE est nommée, comptée et remonte dans le verdict |
+| 8 | la lecture « gardes d'étanchéité » passait sur base vide, passait parce que l'utilisateur testé n'existe pas, passait pour un garde cassé en « refuse tout », et éprouvait `estMembre` qu'aucun service n'appelle | GRAVE | **corrigé** — les deux sens éprouvés, sur `assertMembre`, avec des personnes RÉELLES (ETANCH-01 et ETANCH-03) ; base sans mission = lecture cassée |
+| 9 | `blob_store` : les octets sont DANS la table (pas seulement des chemins), et l'`insert` ouvert + `on conflict do nothing` + aucune revérification de sha permettait la substitution de pièce | BLOQUANT | **corrigé en partie** — BLOB-01 écrit et éprouvé (G-26) ferme la substitution ; la lecture croisée reste ouverte, dette écrite |
+| 10 | `app_state` reste entièrement inscriptible et sa justification ne parlait que de lecture (l'horloge de toute l'application) | MINEUR | **constaté, écrit** — l'écriture est examinée par écrit dans 0140, le risque nommé ; `warp` n'est appelé que par le semis (recensé) |
+| 11 | le commentaire du garde de `tx()` comptait trois appelants au lieu de quatre (`testing/grille.ts` manquait) | GRAVE | **corrigé** — recensement refait |
+| 12 | le refus à l'entrée de `tx()` ne nommait aucune table, et aucun test n'empruntait la branche | GRAVE | **corrigé** — sentinelle `OUVERTURE_TRANSACTION`, message explicite, test qui l'exerce |
+| 13 | course d'armement : `getDb()` publiait la base avant de mesurer le rôle ; le test se synchronisait par un `setTimeout(20)` | GRAVE | **corrigé** — on arme AVANT de publier ; `_setDbForTests` rend sa promesse, le sommeil disparaît |
+| 14 | quatre des six retraits de privilège de 0140 n'étaient vérifiés par rien | GRAVE | **corrigé** — `RETRAITS_0140` recense les six ; vérifiés en CI *et* localement (`rls-couverture.test.ts`) |
+| 15 | « il n'existe pas d'autre chemin … et le test le vérifie » : il en existait un, et aucun test ne vérifiait | GRAVE | **corrigé** — commentaire corrigé, balayage des poses de `otto.tenant_id` avec liste écrite |
+| 16 | PLAN_RLS comptait six chemins là où le code en porte sept, et rien ne comptait | MINEUR | **corrigé** — compte asserté par le test, docs corrigées |
+| 17 | les chiffres cités par 0140 sont d'AVANT 0140 et le texte ne le disait pas | MINEUR | **corrigé** — avant/après écrits tous les deux |
+| 18 | 0140 n'était pas rejouable ; son bloc `DO` pouvait abattre un déploiement sur une fonction d'extension | GRAVE | **corrigé** — `drop policy if exists` (rejouabilité éprouvée par un test) ; les fonctions d'extension exclues du recensement |
+| 19 | `alter default privileges` sans `for role` ne couvre pas les tables créées par un autre rôle | MINEUR | **constaté, écrit** — la limite est écrite dans 0140 ; l'échec serait bruyant |
+| 20 | les deux découverts du portail : diagnostic exact, mais vérification purement textuelle | GRAVE | **constaté non corrigé** — la conséquence (page 500 au client) est écrite dans PLAN_RLS et l'ADR ; la politique par jeton reste la dette à fermer avant l'étape 3 |
+| 21 | `sections-actions.ts` prend `engagement_id` ET `section_id` du formulaire : `requireMember` valide le dossier DÉCLARÉ pendant que le geste porte sur l'objet DÉSIGNÉ | GRAVE | **corrigé pour `suivre`** (le dossier vient de la section) ; le patron reste à appliquer ailleurs — c'est la forme même des 37 gestes nus |
+| 22 | deux imports morts (`assertDestinataire`) et un `point` de registre citant `services/notes/` | MINEUR | **corrigé** |
+
+**Ce que la revue a cherché et N'A PAS trouvé, et qui compte autant** : `q1`/`q01` passent bien
+par `q()` ; les six `revoke` de 0140 font ce qu'ils annoncent ; `otto_lecteur_demo` existe bien ;
+`engagement_lock_verdict` en `using (true)` n'expose rien de sensible ; aucun `grant … to public` ;
+« 109 tables · 0 vue · 12 fonctions · 0 definer » se reproduit exactement ; sur 38 fichiers
+`'use server'`, aucune action n'écrit sans passer par `requireMember`/`getSessionUser` ; et la
+refactorisation de `/api/sante` en `corpsDeLaSonde()` n'a changé ni le 404 hors démo, ni la forme
+du JSON, ni le 200/500.

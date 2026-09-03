@@ -7,6 +7,7 @@ import {
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { sealFile } from './archive';
+import { assertMembre } from '@/lib/core/membre';
 
 // ADR-014 rev. 2 — file deadlines are computed from the engagement's own facts and stored
 // with the provision that produced them. Nothing here is a hardcoded duration: the pack
@@ -42,7 +43,9 @@ export async function fileDeadlines(engagementId: string, reportDate?: string): 
 
 /** Signing the report starts both clocks. Writes the two dates and the provision behind
  *  each, then locks the file — after this the lock guard rejects further writes. */
-export async function closeFile(engagementId: string, userId: string, reportDate: string): Promise<FileDeadlines & { archive: { sha256: string; fileCount: number } }> {
+export async function closeFile(engagementId: string, userId: string, reportDate: string): Promise<FileDeadlines & {
+  archive: { sha256: string; fileCount: number } }> {
+  await assertMembre(engagementId, userId, 'closeFile');
   const ctx = await engagementCtx(engagementId);
   const d = await fileDeadlines(engagementId, reportDate);
 

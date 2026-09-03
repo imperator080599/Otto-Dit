@@ -21,6 +21,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { assertAccepte } from './acceptance';
 import type { Catalogue } from '@/lib/methodology/types';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 export class TeamRuleError extends Error {
   constructor(message: string) {
@@ -224,6 +225,11 @@ export async function openDeclaration(
   userId: string,
   reason = '',
 ): Promise<Declaration> {
+  /* PAS `assertMembre` ICI, ET C'EST LA RÈGLE QUI L'INTERDIT : la déclaration
+     d'indépendance PRÉCÈDE l'affectation — on la signe pour POUVOIR rejoindre
+     la mission. Exiger l'appartenance à l'équipe rendrait l'entrée dans une
+     équipe impossible. Le CABINET, lui, est vérifié (assertSameFirm, la même
+     doctrine qu'ETANCH-01 écrite ici avant core/membre.ts). */
   const eng = await assertSameFirm(engagementId, userId);
   const previous = await currentDeclaration(engagementId, userId);
   if (previous && previous.signed_at === null) return previous; // déjà ouverte, non signée
@@ -442,6 +448,7 @@ export async function exitMember(
   on: string,
   actorUserId: string,
 ): Promise<void> {
+  await assertMembre(engagementId, userId, 'exitMember');
   const eng = await assertSameFirm(engagementId, userId);
   await q(`update engagement_member set exited_on = $3 where engagement_id = $1 and user_id = $2`, [
     engagementId,

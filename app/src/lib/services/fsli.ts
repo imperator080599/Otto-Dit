@@ -5,6 +5,7 @@ import { mapAccount } from '@/lib/kernel/fsli-map';
 import type { CoaMapRule } from '@/lib/packs/types';
 import { numToCents, centsToNum } from '@/lib/util/num';
 import { engagementCtx } from './imports';
+import { assertMembre } from '@/lib/core/membre';
 
 // S1/S2: account→FSLI mapping (pack default + engagement overrides) and FSLI scoping
 // with propose-and-confirm NS statuses (D9 — never silently descoped).
@@ -32,6 +33,7 @@ export async function engagementRules(engagementId: string): Promise<CoaMapRule[
 
 /** Rebuild FSLI rows from the active current TB. Preserves confirmed scoping decisions. */
 export async function rebuildFslis(engagementId: string, userId: string | null): Promise<void> {
+  await assertMembre(engagementId, userId, 'rebuildFslis');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   const map = getAccountingMap(fs.accounting_map);
@@ -87,6 +89,7 @@ export async function rebuildFslis(engagementId: string, userId: string | null):
 /** Propose scoping: |balance| < performance materiality ⇒ ns_proposed; else in_scope
  *  (still to confirm — D9). CTT governs misstatement accumulation, not scoping. */
 export async function proposeScoping(engagementId: string, userId: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'proposeScoping');
   const ctx = await engagementCtx(engagementId);
   const mat = await q01<{ perf_amount: string }>(
     `select perf_amount::text from materiality where engagement_id = $1 and status = 'validated'
@@ -128,6 +131,7 @@ export async function confirmScoping(
     `select id, engagement_id, code, scoping from fsli where id = $1`,
     [fsliId],
   );
+  await assertMembre(f.engagement_id, userId, 'statuer le périmètre d’un poste');
   if (decision === 'in_scope_qualitative' && !basis?.trim()) {
     throw new Error('qualitative in-scope override requires a written basis');
   }
@@ -172,6 +176,7 @@ export async function fsliAccounts(engagementId: string, fsliCode: string): Prom
 }
 
 export async function addMappingOverride(engagementId: string, userId: string, prefix: string, fsliCode: string): Promise<void> {
+  await assertMembre(engagementId, userId, 'addMappingOverride');
   const ctx = await engagementCtx(engagementId);
   const fs = await frameworkSet(engagementId);
   await q(
