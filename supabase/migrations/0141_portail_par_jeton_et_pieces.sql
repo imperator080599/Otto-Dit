@@ -47,6 +47,35 @@
 -- modèle assumé du portail (ADR-006), écrit ici pour qu'on ne le découvre pas
 -- ailleurs.
 
+/* LE REGISTRE EST CRÉÉ ICI S'IL N'EXISTE PAS, ET VOICI POURQUOI CETTE LIGNE
+   EXISTE — c'est la trace d'un défaut qui a coûté trois déploiements.
+
+   0140 a été appliquée en production le 3 septembre. Le SOIR du même jour,
+   j'ai AJOUTÉ ce registre au fichier 0140 — un fichier DÉJÀ APPLIQUÉ. Une
+   migration appliquée ne rejoue jamais : `_migrations` la connaît par son nom.
+   Sur une base fraîche, 0140 crée la table et tout va bien ; sur la base de
+   PRODUCTION, elle n'existera JAMAIS. 0141, qui écrit dedans, a donc échoué à
+   chaque déploiement — `relation "rls_definer_justifiee" does not exist` — et
+   trois tranches poussées sur `main` ne sont jamais arrivées à l'URL.
+
+   La règle, apprise à ce prix : ON N'ÉDITE PAS UNE MIGRATION APPLIQUÉE. Ce que
+   0140 a gagné après coup se recrée donc ICI, de façon idempotente : sur une
+   base fraîche c'est un no-op, sur la production c'est la réparation. Et la
+   récidive est désormais rendue impossible par l'empreinte que `migrate()`
+   enregistre à l'application (voir `db/migrate.ts`). */
+create table if not exists rls_definer_justifiee (
+  nom text primary key,
+  raison text not null check (btrim(raison) <> ''),
+  inscrite_le timestamptz not null default now()
+);
+alter table rls_definer_justifiee enable row level security;
+alter table rls_definer_justifiee force row level security;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'otto_app') then
+    execute 'revoke all on rls_definer_justifiee from otto_app';
+  end if;
+end $$;
+
 /* INSCRITES AU REGISTRE AVANT D'EXISTER : la garde de 0140 (et celle de toute
    migration ultérieure) lit cette table, pas un commentaire. */
 insert into rls_definer_justifiee (nom, raison) values
