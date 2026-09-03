@@ -58,7 +58,7 @@ const C = process.stdout.isTTY
   : { gras: '', faible: '', vert: '', jaune: '', rouge: '', bleu: '', fin: '' };
 
 let etape = 0;
-const TOTAL = (DEV ? 4 : 5) + (IA ? 1 : 0);
+const TOTAL = (DEV ? 5 : 6) + (IA ? 1 : 0);
 function annonce(texte) {
   etape += 1;
   process.stdout.write(`${C.faible}[${chrono()}]${C.fin} ${C.gras}${etape}/${TOTAL}${C.fin} ${texte}\n`);
@@ -313,6 +313,27 @@ detail('acceptation, équipe, import du grand livre, sondage, vouching, papier d
   }
   const resume = (res.sortie.match(/demo state ready[^\n]*/) || [''])[0];
   if (resume) detail(resume.replace('demo state ready — ', '').replace(' Run "npm run dev" and sign in as any user.', ''));
+}
+
+// ── 2 ter. LE MONDE ENRICHI (mandat de nuit n°2, 1.1) ─────────────────────
+/* Additif et rejouable : des sections aux quatre états, des papiers à des
+   visas différents, des notes qui datent, le processus et la matrice du
+   cycle, des lignes conclues. Rien n'est remplacé. */
+annonce('enrichissement du monde de démonstration…');
+detail('sections aux quatre états, papiers à visas différents, notes de revue, processus et matrice, lignes conclues');
+{
+  const res = await lancer(OUTILS.tsx, ['scripts/demo-enrichir.ts']);
+  gardeLancement(res, "L'enrichissement du monde de démonstration");
+  if (res.code !== 0) {
+    arret({
+      quoi: "L'enrichissement du monde de démonstration a échoué.",
+      pourquoi: 'Chaque étape passe par les services réels du produit : un refus arrête l\'enrichissement — c\'est voulu.',
+      faire: `\`${enchaine(['cd app', 'npm run demo:enrichir'])}\` reproduit l'erreur seule ; envoyez-la telle quelle.`,
+      sortie: res.sortie,
+    });
+  }
+  const bilan = (res.sortie.match(/monde enrichi[^\n]*/) || [''])[0];
+  if (bilan) detail(bilan);
 }
 
 // ── 2 bis. LES PIÈCES NEUVES (mode IA réelle seulement) ──────────────────────

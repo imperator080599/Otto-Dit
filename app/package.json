@@ -25,6 +25,7 @@
     "db:reset": "tsx scripts/db-setup.ts --reset",
     "dataset:generate": "tsx scripts/dataset/generate.ts",
     "demo:seed": "tsx scripts/demo-seed.ts",
+    "demo:enrichir": "tsx scripts/demo-enrichir.ts",
     "demo:email": "tsx scripts/demo-email.ts",
     "eval:extraction": "tsx scripts/eval/run.ts",
     "cost:measure": "tsx scripts/cost/measure.ts",

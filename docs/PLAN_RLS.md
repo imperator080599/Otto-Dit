@@ -23,6 +23,62 @@ doit échouer (règle 17), et le retour arrière.
   englobe donc tous les `q()` et tous les `logEvent` qu'elle contient. C'est la brique qui
   rend `withTenant` possible sans réécrire les services.
 
+## 0 bis. AVANT TOUT — les quatre questions que le plan du soir ne posait pas (addendum A.4–A.6 du mandat de nuit n°2)
+
+**A.5 — `with check` d'abord, pas en quatrième.** Une politique en `using` seul empêche de LIRE
+chez le voisin mais laisse ÉCRIRE chez lui (un `insert` d'un dossier d'un autre `tenant_id`
+passe). C'est CE point qui décide si l'isolation est réelle. Première action de l'étape 1 :
+recenser les politiques de 0004/0029 sans `with check` —
+`select tablename, policyname from pg_policies where schemaname = 'public' and with_check is null` —
+et les compléter dans **0140** (`create policy … using (…) with check (…)`, même prédicat).
+Le test de fuite de l'étape 1 (cas 4) devient le PREMIER cas, et il doit échouer sur le schéma
+actuel avant 0140 (règle 17).
+
+**A.4 — la liste écrite des chemins SANS locataire légitime.** Le garde « un `q()` hors
+transaction et sans session lisible lève » casserait la connexion elle-même : la recherche d'un
+utilisateur par courriel PRÉCÈDE la session ; les pages publiques (accueil, sélection d'identité
+de démonstration, portail client par jeton), `/api/sante`, `/api/erreur`, les routes de blob
+signées, et les scripts (semis, migration, harnais) n'ont pas de session non plus. La liste vit
+dans le code (`app/src/lib/db/sans-locataire.ts`), chaque chemin avec sa raison, et un test
+échoue si un chemin NON listé contourne le garde : le garde lève une erreur nommée
+(« requête sans locataire ») dont le message cite le chemin ; le test parcourt les routes
+publiques et vérifie qu'elles sont toutes listées. Sous BYPASSRLS (aujourd'hui), les chemins
+listés lisent normalement ; sous `otto_app`, ils lisent ce que leur politique laisse (le
+portail par jeton n'a pas de locataire : sa politique doit être PAR JETON, à écrire dans 0140).
+
+**A.6 — quatre angles morts, comblés par écrit.**
+- *Les fonctions `SECURITY DEFINER`* : `grant execute on all functions` accorde tout en bloc,
+  et une fonction appartenant à `postgres` s'exécute avec les droits du propriétaire — elle
+  CONTOURNE la RLS. Recensement avant l'étape 2 :
+  `select proname, prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace where nspname = 'public' and prosecdef` ;
+  pour chacune : soit `security invoker` (par défaut : `otto_tenant()`, `otto_engagements()`,
+  les gardes de verrou), soit un `security definer` JUSTIFIÉ et statué par écrit dans 0140.
+  Verdict attendu : aucune fonction `definer` n'existe aujourd'hui — à VÉRIFIER par la requête,
+  pas à supposer.
+- *Les migrations après bascule* : `_migrations` est fermée à `otto_app`. Les migrations
+  ET le semis ET la remise à zéro tournent sous `SUPABASE_DB_URL` (rôle `postgres`), au build
+  (`scripts/deploy/reconstruire.ts`) — jamais sous la chaîne de l'application. Écrit ici, et à
+  écrire dans DEPLOY.md le jour de l'étape 3.
+- *Ce qui tourne hors requête* : à ce jour AUCUNE tâche de fond, aucun cron, aucun webhook
+  entrant n'existe dans l'application (les relances sont posées par `ensureReminders` DANS une
+  requête ; l'horloge de démonstration est une valeur d'`app_state`). Le jour où l'un naît, il
+  pose son locataire par `withTenant` explicitement — il n'a pas de cookie.
+- *Le format `otto_app.<ref>` est `[UNVERIFIED]`* : **étape 2 bis** — le fondateur essaie la
+  chaîne depuis sa machine avec `psql` AVANT de toucher Vercel :
+  `psql "postgresql://otto_app.<ref>:…@…:6543/postgres" -c "select current_user, (select rolbypassrls from pg_roles where rolname = current_user)"`
+  et attend `otto_app` / `f`. Tant que cette ligne n'a pas été vue, l'étape 3 n'existe pas.
+- *La contradiction de l'étape 3* : `/api/sante` n'a pas de session et déclencherait le garde.
+  Tranché : `/api/sante` est un chemin LISTÉ sans locataire (A.4) et lit sous une DÉROGATION
+  NOMMÉE (`withTenant(<locataire de la démonstration>)` posé par la route elle-même, parce
+  qu'elle ne sert que la démonstration publique) ; le test négatif « un cabinet ne lit pas
+  l'autre » se conduit AUTREMENT : par le harnais d'acceptation avec deux identités de deux
+  cabinets (le second cabinet fictif est créé par `creerMission` avant l'étape 3), jamais par
+  la sonde de santé.
+- *Point de restauration et surveillance* : avant l'étape 3, un `pg_dump` du schéma public
+  (ou le point de restauration Supabase) ; dans les minutes qui suivent la bascule, lire
+  `server_error` et le journal Vercel pour le taux d'erreurs « requête sans locataire » —
+  c'est ce chiffre qui distingue « ça marche » de « une partie de l'application est muette ».
+
 ## 1. `withTenant` — poser le locataire dans CHAQUE transaction (code, sans changer la base)
 
 **Ce qu'on écrit.**

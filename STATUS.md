@@ -1817,3 +1817,54 @@ le job : 0 ligne laissée par la sonde (fsli_analytique, engine_run, event_log, 
 existante (elle s'applique au prochain déploiement, comme 0050 s'est appliquée) ; le rendu
 navigateur du repli sur un lecteur d'écran ; les deux exceptions #418 du parcours cliqué
 (fil W5) — voir la ligne des clics.
+
+## Mandat de nuit n°2 (2026-09-02 → 03) — 1.1 livré : un monde qui a quelque chose à montrer
+
+**Ce qui est cliquable maintenant et ne l'était pas ce soir** (ADR-124) :
+
+- **`npm run demo:enrichir`**, joué à CHAQUE déploiement (`scripts/deploy/reconstruire.ts`, monde
+  conservé ou reconstruit, avant l'instantané) et en étape « 2 ter » de `npm run demo` : le monde
+  de démonstration est ENRICHI, jamais remplacé — dix étapes idempotentes, chacune dit « déjà en
+  place » ou ce qu'elle a posé ; les données du fondateur survivent (REV-01 reste signé, aucun
+  compteur ne baisse — `flows/enrichir.test.ts`, 5/5). Un dossier scellé ou absent : rien n'est
+  touché, et c'est dit.
+- **Ce que l'écran montre.** Tableau de bord : des sections dans les QUATRE états, tenues par
+  plusieurs personnes (Hugo Vasseur, staff, rejoint l'équipe avec sa déclaration d'indépendance
+  signée). Poste Chiffre d'affaires : SEPT lignes de papier — REV-01 du fondateur, et cinq
+  papiers rédigés depuis la méthode (MANUEL signé aux trois visas, CUTOFF et RECALC en revue, RA en
+  brouillon, SEQ dont la v1 est PÉRIMÉE par une v2 motivée — le visa du préparateur se lit périmé
+  en en-tête). Notes de revue ouvertes de 1 à 14 jours ouvrés, dont une sur la cellule
+  « Montant HT » d'une ligne d'échantillon et une sur la cellule « solde » d'un compte de la
+  leadsheet (ancre `compte`, migration 0131). Processus ventes N et N-1 avec les changements
+  statués, RCM du cycle importée. Grille calculée, quatre lignes conclues dont une cellule
+  « absent » disposée. Revue analytique v1. Clients et comptes rattachés au périmètre, ses
+  questions statuées, une procédure planifiée.
+- **`services/programme.ts`** : planifier une procédure du catalogue sur un poste (refus PROG-01
+  hors catalogue, PROG-02 méthode inapplicable au poste, PROG-03 poste hors périmètre) et rédiger
+  son papier depuis le gabarit du pack (PROG-04) — version nouvelle qui PÉRIME la précédente sous
+  le même code, moteur tracé (`engine_run`), événement avec le motif. Ce sont les briques de 1.4.
+- **`/api/sante`** lit le monde enrichi : sections par état, papiers par statut, notes ouvertes
+  et l'âge de la plus ancienne, lignes conclues.
+- **Les écarts sont COMPTÉS, jamais fabriqués** : 13 dont 5 ouverts sur une base neuve ; sur la
+  base publique déjà statuée, 0 ouvert — l'enrichissement le dit au lieu d'en inventer
+  (docs/BACKLOG_REPORTE.md).
+
+**Prouvé, et comment (chaîne locale de nuit, base neuve, build de production)** : `tsc` 0 ·
+`npm run langue` 0 hors catalogue · `npm run lectures` 0 perdue (1 556 chemins, 82 écrans) ·
+`npm run gardes` 36 · `enrichir.test.ts` 5/5 · `demo:enrichir` 10/10 étapes · `accept:epreuve`
+3/3 cas mauvais vus · `accept --ecrire` **16/16** · `accept` (sonde) **16/16** · témoin « aucune
+écriture (11 tables identiques) » · `npm run screens` 85 routes, 0 échec · `npm run clics` 189
+étapes, 0 échec (188 stations figées, 305 clics sur 41 gestes). Les trois tâches neuves lisent
+l'écran, pas la base : E-01 « quatre états portés par des lignes de section · 6 détenteurs »,
+E-02 « 7 papiers · statuts signed, in_review, draft, outdated · 1 visa périmé en en-tête »,
+E-03 « 10 notes ouvertes, dont une sur une cellule ». Le parcours cliqué joue sur le monde de
+BASE (il importe, tire, conclut lui-même) ; l'enrichissement est prouvé par E-01..E-03 et le test.
+
+Le premier passage était ROUGE : E-02 ouvrait le premier poste du rail — devenu Clients (bilan
+avant résultat) depuis que le monde en porte un — et y comptait 0 papier. Hypothèse tenue contre
+la capture (règle 18) : c'était bien Clients à l'écran ; la tâche vise désormais le poste REVENUE,
+seul poste du périmètre gelé (règle 14). Rejouée : 16/16 dans les deux modes.
+
+**Ce que je n'ai PAS fait** : la revue hostile de 1.1 — le premier sous-agent est mort en limite
+de débit avant d'écrire une ligne ; relancé, ses constats et leur sort (corrigé / constaté non
+corrigé, A.1) suivent dans le commit suivant. Rien de 1.2 à 1.5 à cet instant.

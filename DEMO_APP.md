@@ -567,6 +567,26 @@ Dit ici pour ne pas être cru par omission.
 
 ---
 
+## Le monde enrichi — ce que `npm run demo` montre au réveil (ADR-124)
+
+Le monde de base ci-dessus est celui que le parcours cliqué conduit et scelle. `npm run demo` y
+ajoute, SANS rien remplacer (`npm run demo:enrichir`, rejouable ; joué aussi au déploiement) :
+
+- un quatrième membre — **Hugo Vasseur**, staff — avec sa déclaration d'indépendance signée ;
+- un second poste du cycle ventes retenu (**Clients et comptes rattachés**), questionnaire
+  répondu, procédure planifiée : la section **« non commencée »** du tableau de bord ;
+- **cinq papiers de plus** sur le chiffre d'affaires, rédigés depuis le catalogue de la méthode
+  (REV-02 à REV-06) : un visé par les trois rôles, deux en revue, un en préparation, un dont la
+  version 1 visée est dépassée par une version 2 — l'en-tête du poste lit un visa **PÉRIMÉ** ;
+- les sections attribuées et envoyées entre les quatre personnes : le tableau de bord a une forme ;
+- **cinq notes de revue ouvertes**, datées de 1 à 14 jours ouvrés, dont une sur une cellule de la
+  grille (« Montant HT ») et une sur une cellule de la leadsheet (le solde d'un compte) ;
+- le **processus ventes** N-1 et N, ses changements statués, et la **matrice risques-contrôles** ;
+- la grille de test calculée et **quatre lignes conclues** (dont une après disposition) ;
+- la **revue analytique** du poste rédigée (v1).
+
+Ce qu'il ne fait pas, et dit : il ne fabrique aucun écart. Un écart naît du contrôle sur pièces.
+
 ## Les commandes qui rejouent tout
 
 | Ce que ça prouve | Commande |

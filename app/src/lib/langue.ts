@@ -286,6 +286,7 @@ export const HORS_LIBELLE: Record<string, string> = {
   'services/matching.ts': 'description d’un écart ÉCRITE PUIS STOCKÉE à sa détection (contenu du dossier, pas un libellé)',
   'services/entretiens-analyste.ts': 'description d’outil transmise à un modèle — jamais rendue',
   'services/query/adapter.ts': 'consigne transmise à un modèle — jamais rendue',
+  'flows/enrichir.ts': 'étiquettes d’ancre des notes SEMÉES : contenu du monde de démonstration, figé à la pose comme le texte des notes (ADR-097) — jamais un libellé d’écran',
 };
 
 const PROPS_LIBELLE = /\b(libelle|label|titre|phrase|raison|detail|resume|description|quoi)\s*:\s*(['"`])((?:\\.|(?!\2)[^\\])*)\2/g;

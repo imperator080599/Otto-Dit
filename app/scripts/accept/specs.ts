@@ -387,6 +387,58 @@ export const SPECS: Spec[] = [
       return `réponse en ${Math.round(duree / 100) / 10} s · version ${avant ?? '—'} → ${apres ?? '—'} (${c.ecrire ? 'écriture' : 'sonde'})`;
     },
   },
+  /* ── Nuit 2, 1.1 : le monde enrichi — ce que le fondateur voit au réveil ── */
+  {
+    code: 'E-01',
+    tache: 'monde enrichi : le tableau de bord a une forme — des sections dans les quatre états, réparties entre plusieurs personnes',
+    conduire: async (c) => {
+      await ouvrir(c, `/eng/${c.eng}`);
+      /* LES BADGES DES LIGNES, pas la légende : la légende du graphique nomme
+         toujours les quatre états, même à zéro — la lire serait un faux vert
+         (règle 17). Un état compte quand une LIGNE de section le porte. */
+      const badges = (await c.p.locator('table.data tbody .badge').allInnerTexts()).map((x) => x.trim());
+      const etats = ['not started|non commencé', 'in preparation|en préparation', 'completed|terminé', 'reviewed|revu']
+        .map((re) => new RegExp(re, 'i'));
+      const presents = etats.filter((re) => badges.some((b) => re.test(b)));
+      attendre(presents.length === 4, `${presents.length}/4 état(s) portés par une ligne de section (badges : ${[...new Set(badges)].slice(0, 8).join(' · ')})`);
+      const personnes = new Set((await c.p.locator('table.data tbody tr td:nth-child(3)').allInnerTexts()).map((x) => x.trim()).filter((x) => x && x !== '—'));
+      attendre(personnes.size >= 2, `${personnes.size} détenteur(s) distinct(s) sur les sections`);
+      return `quatre états portés par des lignes de section · ${personnes.size} détenteur(s)`;
+    },
+  },
+  {
+    code: 'E-02',
+    tache: 'monde enrichi : le poste porte au moins cinq papiers à des visas différents, et l’en-tête lit un visa PÉRIMÉ',
+    conduire: async (c) => {
+      await ouvrir(c, `/eng/${c.eng}`);
+      // Le poste ENRICHI est le chiffre d'affaires (périmètre gelé, règle 14) — pas le
+      // premier poste du rail, qui est un poste de bilan depuis que le monde en porte un.
+      const lien = await c.p.locator('.rail a.rail-lien[href*="/poste/REVENUE"]').first().getAttribute('href');
+      attendre(Boolean(lien), 'le poste REVENUE n’est pas atteignable dans le rail');
+      await ouvrir(c, lien!);
+      await c.p.locator('[data-ancres] a[data-ancre="papiers"]').click().catch(() => undefined);
+      const papiers = await compte(c.p, '[data-papiers-du-poste] tbody tr');
+      const statuts = new Set(await c.p.locator('[data-papiers-du-poste] tbody tr').evaluateAll((rs) => rs.map((r) => r.getAttribute('data-papier-statut'))));
+      attendre(papiers >= 5, `${papiers} papier(s) sur le poste (attendu : au moins 5)`);
+      attendre(statuts.size >= 3, `${statuts.size} statut(s) de papier distincts : ${[...statuts].join(', ')}`);
+      const perimes = await compte(c.p, '[data-visas] [data-visa-etat="perime"]');
+      attendre(perimes >= 1, 'aucun visa périmé en en-tête du poste');
+      return `${papiers} papier(s) · statuts ${[...statuts].join(', ')} · ${perimes} visa(s) périmé(s) en en-tête`;
+    },
+  },
+  {
+    code: 'E-03',
+    tache: 'monde enrichi : des notes de revue ouvertes, d’ancienneté variable, dont une posée sur une cellule',
+    conduire: async (c) => {
+      await ouvrir(c, `/eng/${c.eng}/notes`);
+      const texte = await c.p.locator('body').innerText();
+      const ouvertes = await compte(c.p, '[data-note-statut="open"], .note[data-statut="open"]');
+      const nOuvertes = ouvertes > 0 ? ouvertes : (texte.match(/\b(open|ouverte)\b/gi) ?? []).length;
+      attendre(nOuvertes >= 3, `${nOuvertes} note(s) ouverte(s) lisible(s) (attendu : au moins 3)`);
+      attendre(/Montant HT/.test(texte), 'aucune note posée sur une cellule (« Montant HT ») à l’écran des notes');
+      return `${nOuvertes} note(s) ouverte(s), dont une sur une cellule`;
+    },
+  },
 ];
 
 /* LES ÉPREUVES (règle 17) : des cas CONNUS MAUVAIS que le harnais doit

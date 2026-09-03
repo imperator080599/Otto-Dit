@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { q01 } from '@/lib/db/client';
+import { q, q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { dbKind } from '@/lib/db/client';
 import { versionServie } from '@/lib/version';
@@ -173,6 +173,23 @@ export async function GET() {
       const ls = await leadsheetDuPoste(id, postes[0].code);
       const r = await lireAnalytique(id, postes[0].code, ls.empreinte);
       return `${postes[0].code} · N-1 : ${ls.origine.source} · ${ls.lignes.length} ligne(s) · revue ${r ? `v${r.version}${r.perimee ? ' PÉRIMÉE' : ''}` : 'non rédigée'}`;
+    }));
+    /* LE MONDE ENRICHI (mandat de nuit n°2, 1.1) : ce que le fondateur verra —
+       des sections aux quatre états, des papiers à des visas différents, des
+       notes qui datent, des lignes conclues. Compté ici le jour même. */
+    lectures.push(await essayer('monde enrichi (sections par état, papiers par statut, notes ouvertes, lignes conclues)', async () => {
+      const { avancement } = await import('@/lib/services/sections');
+      const { lignesNonConclues } = await import('@/lib/services/testing/grille');
+      const etats = (await avancement(id)).filter((x) => x.n > 0).map((x) => `${x.statut}:${x.n}`);
+      const papiers = await q<{ status: string; n: string }>(
+        `select w.status, count(*)::text n from workpaper w join procedure_instance p on p.id = w.procedure_id
+         where w.engagement_id = $1 and p.fsli_code = 'REVENUE' group by w.status order by w.status`, [id]);
+      const notes = await q01<{ n: string; age: string }>(
+        `select count(*)::text n, coalesce(max(extract(day from now() - created_at))::int, 0)::text age
+         from review_note where engagement_id = $1 and status = 'open'`, [id]);
+      const lignes = await lignesNonConclues(id);
+      return `sections ${etats.join(' ')} · papiers CA ${papiers.map((p) => `${p.status}:${p.n}`).join(' ')}`
+        + ` · ${notes?.n ?? 0} note(s) ouverte(s), la plus ancienne ${notes?.age ?? 0} j · lignes conclues ${lignes.total - lignes.nonConclues}/${lignes.total}`;
     }));
     lectures.push(await essayer('échantillonnage (sélection tirée)', async () => {
       const { currentRevenueSample } = await import('@/lib/services/sampling');

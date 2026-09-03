@@ -4601,3 +4601,47 @@ par OTTO » ; le service exige un run `revue_analytique` de ce dossier et de ce 
 sous la sonde — tu sous la sonde, et compté par le témoin ; (d) un refus effaçait la saisie — elle
 revient avec lui ; (e) « les soldes ont changé » alors qu'un compte détaché suffisait — la phrase
 dit les deux ; (f) `missionN1` sans ordre — ordonnée.
+
+## ADR-124 — Le monde de démonstration s'ENRICHIT sans se remplacer, et une procédure du catalogue devient une unité de travail (mandat de nuit n°2, 1.1)
+
+**Contexte.** Le monde de base (`npm run demo:seed`) déroule le cycle chiffre d'affaires de bout
+en bout et c'est lui que le parcours cliqué conduit jusqu'au dossier scellé. Mais il s'ouvre sur
+deux sections, toutes deux revues, un seul papier, aucune ligne conclue, une revue analytique
+vide : un tableau de bord sans forme. La démonstration publique ne se re-sème pas (règle
+permanente) ; le fondateur y a peut-être saisi des choses.
+
+**Décision.** (1) Un flux d'ENRICHISSEMENT (`src/lib/flows/enrichir.ts`, `npm run demo:enrichir`),
+ADDITIF et REJOUABLE : chaque étape vérifie ce qui existe et n'ajoute que ce qui manque, par les
+mêmes services que les clics — jamais une insertion qui contourne une règle. Il tourne au
+déploiement (`scripts/deploy/reconstruire.ts`, monde conservé ou reconstruit), derrière
+`npm run demo`, et il est lu par `/api/sante` (« monde enrichi »). Il ne tourne PAS dans le
+parcours cliqué, qui prouve le chemin sur le monde de base ; l'acceptation cliquée (E-01…E-03)
+prouve le monde enrichi contre l'URL. Ce qu'il ajoute : un quatrième membre (staff) avec sa
+déclaration signée ; un second poste du cycle ventes retenu, questionnaire répondu, procédure
+planifiée — la section « non commencée » ; cinq papiers de plus sur le poste, à des visas
+différents (un visé par les trois rôles, deux en revue, un en préparation, un dont la version 1
+visée est dépassée par une version 2 : le visa se lit PÉRIMÉ en en-tête du poste) ; les sections
+attribuées et envoyées entre quatre personnes ; cinq notes de revue ouvertes datées en jours ouvrés
+(1 à 14), dont une sur une cellule de la grille (`sample_item`, champ) et une sur une cellule de
+leadsheet (ancre `compte`, migration 0131) ; le processus ventes N-1 et N avec ses changements
+statués ; la matrice risques-contrôles de l'entité ; la grille calculée et quatre lignes conclues
+(dont une après disposition) ; la revue analytique du poste rédigée. Une étape qui ne tient pas est
+DITE (journal de build, `npm run demo:enrichir` sort en erreur), jamais tue. (2) LE PROGRAMME DE
+TRAVAIL (`services/programme.ts`) : `planifierProcedure` crée une procédure depuis le CATALOGUE
+de la méthode, sur un poste retenu, si la méthode l'applique à ce poste (PROG-01/02/03) ;
+`redigerPapierDeProcedure` rédige le papier qu'elle engendre — les blocs du gabarit du cabinet,
+remplis depuis le texte de la procédure (objectif, contrôle, population, sens de test,
+justificatifs attendus) et laissés au préparateur là où le moteur n'a rien à écrire ; une
+rédaction nouvelle dépasse la précédente, le code est stable (REV-02…), la référence est celle du
+plan de classement du cabinet. C'est la brique de la section « Audit procedures » (1.4).
+
+**Conséquences.** Le mandat demandait aussi « des écarts ouverts rattachés à leur papier » : le
+flux n'en FABRIQUE aucun — un écart naît du contrôle sur pièces, et inventer un écart dans un
+dossier d'audit est la fiction que ce produit refuse partout. Il les COMPTE (le monde de base en
+porte cinq ouverts à la sortie du semis ; la démonstration publique, dont les écarts ont été
+statués par les passages du jour, n'en porte aucun) et le dit. Les notes sont DATÉES par le flux
+(mise à jour de `created_at` en jours ouvrés) : c'est le seul endroit où le monde écrit une date
+qui n'est pas « maintenant », et il est nommé ici. Prouvé : `enrichir.test.ts` (quatre états,
+quatre personnes, papiers et visa périmé, notes et ancres, processus et matrice, lignes conclues,
+AUCUNE famille d'obstacles nouvelle, et le cas connu mauvais de l'idempotence : un second passage
+ne crée rien), `programme` refuse hors méthode et hors périmètre.

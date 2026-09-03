@@ -44,6 +44,15 @@ async function main() {
   })();
   console.log(`reconstruction de la démo publique sur ${hote} — schéma rasé, données 100 % fictives`);
 
+  /* LE MONDE ENRICHI (mandat de nuit n°2, 1.1) : ADDITIF, rejouable — sur un
+     monde conservé comme sur un monde reconstruit. Il ne remplace rien : ce
+     que quelqu'un a saisi sur la démonstration survit. Une étape qui ne tient
+     pas est DITE dans le journal de build, jamais tue. */
+  const enrichir = async () => {
+    const { enrichirMondeDemo } = await import('../../src/lib/flows/enrichir');
+    const r = await enrichirMondeDemo();
+    for (const e of r.etapes) console.log(`  enrichissement ${e.fait ? 'ok ' : 'NON'} ${e.nom} — ${e.detail}`);
+  };
   const db = await getDb();
   /* SEMER SI VIDE (décision de Tuan, 2026-08-31) : quelqu'un TESTE peut-être
      l'URL en ce moment — un push pendant sa séance ne doit pas lui retirer
@@ -61,6 +70,7 @@ async function main() {
     const appliquees = await migrate();
     console.log(`monde déjà semé — conservé (OTTO_RECONSTRUIRE=1 pour raser) ; `
       + `migrations nouvelles : ${appliquees.length ? appliquees.join(', ') : 'aucune'}`);
+    await enrichir();
   } else {
     await db.exec('drop schema if exists public cascade; create schema public; grant all on schema public to public;');
     /* Le monde entier passe par migrate() + les mêmes flux que npm run
@@ -68,6 +78,7 @@ async function main() {
        service, chaque contrainte, chaque trigger tourne sur le vrai Postgres. */
     await construireMondeDemo('all');
     reconstruit = true;
+    await enrichir();
   }
 
   /* L'INSTANTANÉ DU MONDE — ce que le bouton « remettre à zéro » restaure.
