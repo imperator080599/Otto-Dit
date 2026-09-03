@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useT } from '@/lib/i18n/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { PanneauNotes, type MarqueNote, type Moi } from './panneau-notes';
 
 // L'ÉLÉMENT ANNOTABLE (ADR-097). Trois gestes pour le même acte : clic droit,
 // appui long (tablette — le clic droit seul est inaccessible au doigt), et la
@@ -10,7 +11,9 @@ import type { CleLibelle } from '@/lib/i18n/catalogue';
 // l'ancre est fournie par l'écran (identité métier, jamais une position), la
 // pose passe par la server action partagée, et la règle vit dans le service.
 
-export interface Marque { noteId: string; status: string; label: string }
+/* LE REPÈRE PORTE LA NOTE ENTIÈRE (1.3) : le panneau latéral s'ouvre sur le
+   fil complet sans un aller-retour au serveur. */
+export type Marque = MarqueNote;
 
 /**
  * LES LIBELLÉS ARRIVENT EN PROPS, et c'est une contrainte, pas un choix : ce
@@ -29,7 +32,7 @@ export interface AncreProps {
 
 export function Annotable({
   ancre, marques = [], membres, engagementId, chemin, notesHref, workpaperId = null, action,
-  bloc = false, children,
+  moi, repondre, transitionner, bloc = false, children,
 }: {
   ancre: AncreProps;
   marques?: Marque[];
@@ -41,12 +44,22 @@ export function Annotable({
   notesHref: string;
   workpaperId?: string | null;
   action: (fd: FormData) => Promise<void>;
+  /** QUI REGARDE, et ce que le serveur l'autorise à faire (1.3, ADR-028). La
+      propriété est OBLIGATOIRE : un défaut « ne peut pas clore » ferait
+      disparaître un geste sans que personne sache pourquoi. */
+  moi: Moi;
+  repondre: (fd: FormData) => Promise<void>;
+  transitionner: (fd: FormData) => Promise<void>;
   /** true : rend un <div> (section entière) au lieu d'un <span> (cellule). */
   bloc?: boolean;
   children: React.ReactNode;
 }) {
   const t = useT();
   const [ouvert, setOuvert] = useState(false);
+  /* Le PANNEAU (lire le fil) et le FORMULAIRE (poser une note) sont deux
+     gestes distincts sur le même objet : le repère chiffré ouvre l'un, la
+     puce ouvre l'autre. */
+  const [panneau, setPanneau] = useState(false);
   const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ouvrir = useCallback((e?: { preventDefault(): void }) => {
@@ -80,14 +93,20 @@ export function Annotable({
     >
       {children}
       {marques.length > 0 && (
-        <a className="compte-notes" href={notesHref} title={marques.map((m) => m.label).join(' · ')}>
+        <button type="button" className="compte-notes" data-ouvrir-notes={ancre.label}
+          title={marques.map((m) => m.label).join(' · ')} onClick={() => setPanneau(true)}>
           ✎ {marques.length}
-        </a>
+        </button>
       )}
       <button type="button" className="puce-note"
         aria-label={t('note.addFor', { objet: ancre.label })} onClick={ouvrir}>
         ✎
       </button>
+      {panneau && (
+        <PanneauNotes marques={marques} cible={ancre.label} engagementId={engagementId} chemin={chemin}
+          moi={moi} notesHref={notesHref} repondre={repondre} transitionner={transitionner}
+          onFermer={() => setPanneau(false)} />
+      )}
       {ouvert && (
         <div className="note-voile" onClick={(e) => { if (e.target === e.currentTarget) setOuvert(false); }}>
           <div className="note-panneau" role="dialog" aria-label={t('note.dialog')}>

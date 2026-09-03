@@ -59,7 +59,8 @@ export default async function ClosePage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <Repli cle="close.closeAndSealedArchive" niveau={2} titre={t('close.closeAndSealedArchive')}>
+      <div className="panel">
+            <h2>{t('close.closeAndSealedArchive')}</h2>
 
         {scelle ? (
           <>
@@ -117,7 +118,7 @@ export default async function ClosePage({
             )}
           </>
         )}
-      </Repli>
+      </div>
 
       <div className="panel">
         <h3>{t('close.whatTheLockChanges')}</h3>

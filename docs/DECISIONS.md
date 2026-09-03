@@ -4744,3 +4744,88 @@ et documenté. Chaque correction porte son cas connu mauvais dans `flows/enrichi
 12. **Les documents affirmaient plus que le code ne tenait** (« idempotent », « rien n'est
     remplacé »). STATUS.md et cet ADR portent désormais la formulation exacte : additif,
     idempotent **y compris sur la piste d'audit**, et une décision humaine postérieure l'arrête.
+
+## ADR-127 — Le fil de revue s'ouvre à côté du travail, pas à la place (nuit n°2, 1.3)
+
+**Contexte.** Le repère au bord d'une cellule disait « il y a des notes ici » et emmenait à la
+vue transverse : on quittait l'écran, on perdait la ligne qu'on lisait, et on revenait — pour
+trois mots de réponse. Une note de revue est une conversation SUR un objet ; la lire ne devrait
+pas coûter la perte de cet objet.
+
+**Décision.** Un panneau latéral droit (`app/panneau-notes.tsx`), ouvert par le repère chiffré,
+qui porte **la note, son type, son ancienneté en jours OUVRÉS, son destinataire, le fil des
+réponses**, et de quoi **répondre depuis là**. Le marqueur d'écran transporte désormais la note
+ENTIÈRE (`notesPourEcran` rend des `MarqueEcran`), donc le panneau s'ouvre sans un aller-retour
+au serveur.
+
+- **Ce que le panneau ne décide pas.** La clôture appartient à un réviseur qui n'est pas
+  l'auteur (ADR-028, service + déclencheur en base, inchangés). Le serveur dit à l'écran ce que
+  cette personne peut faire (`moi.peutClore`, propriété OBLIGATOIRE — un défaut « ne peut pas »
+  aurait fait disparaître un geste en silence). Quand le bouton n'est pas offert, **la raison
+  est écrite à sa place** : « vous avez écrit cette note », « une note se clôt une fois
+  traitée », « seul un réviseur clôt ».
+- **Le geste revient là d'où il part** : répondre depuis un écran de travail y ramène
+  (`chemin` dans le formulaire), et un refus s'y affiche. La vue « Review notes » ne bouge pas :
+  elle reste l'ensemble du dossier — y compris les notes dont l'objet a été RETIRÉ (ADR-097),
+  que ce panneau, ancré à un objet vivant, ne peut par construction pas montrer.
+- **Les jours ouvrés sont une règle partagée** (`core/jours.ts`) : le semis les compte pour
+  POSER les dates, l'écran pour DIRE l'ancienneté — une seule règle, quatre cas connus mauvais
+  (week-end, futur, date illisible, aller-retour). Elle **ne connaît aucun jour férié** et le
+  dit : un férié est une donnée de cabinet, l'inventer serait une constante sortie de nulle part.
+
+**Prouvé** : tâche d'acceptation N-01 (repère → panneau, ancienneté en jours ouvrés lue à
+l'écran, raison de non-clôture écrite, leadsheet toujours présente) et station cliquée
+(poser → repère → fil → répondre depuis le panneau → retour sur l'écran de travail).
+
+## ADR-128 — Ce que la revue hostile n°8 a cassé dans 1.2, et ce qui est corrigé
+
+Onze constats (2 bloquants, 4 importants, 5 mineurs) sur le commit `5ba3408`. **Dix corrigés**,
+un déjà corrigé dans l'arbre de travail avant la revue. Chaque correction porte son cas connu
+mauvais (règle 17).
+
+1. **BLOQUANT — un repli pouvait ranger un GESTE.** L'écran de clôture mettait la liste des
+   obstacles, le bouton de scellement, l'empreinte et le téléchargement dans un seul repli : un
+   clic vidait l'écran — et la clé étant par NATURE, il se vidait sur tous les dossiers, y
+   compris ceux jamais ouverts. **Règle tenue désormais : une section repliable ne porte que de
+   la LECTURE.** Vingt-six sections qui portaient un bouton, un formulaire ou une action sont
+   redevenues des panneaux ; l'écran des obstacles ne se range plus du tout (sa liste EST la
+   raison pour laquelle on ne peut pas signer). Il reste 30 sections repliables, toutes en
+   lecture seule, sur 19 écrans.
+2. **BLOQUANT — le rail jetait le résultat de la mémorisation** (`void memoire.memoriser(...)`).
+   « Un rangement que la base n'a pas retenu le dit » était donc faux exactement là où 1.2
+   déplaçait la mémoire. Le refus s'affiche maintenant sous le rail.
+3. **Le locataire d'un rangement était un PARAMÈTRE** : un appel forgé écrivait une ligne au nom
+   d'un autre cabinet, et la lecture, qui ne filtrait que la personne, la relisait. Le locataire
+   vient désormais de la PERSONNE (insertion par jointure sur `app_user`), la lecture le filtre,
+   et **G-23 (REPLI-03)** l'éprouve.
+4. **Quatre replis VIDES** (un panneau de titre seul devenu une boîte dépliable sans contenu) —
+   corrigés avant la revue, dans l'arbre de travail : `children` était devenu facultatif pour
+   faire taire `tsc`, qui avait justement signalé les quatre. **Faire taire un instrument qui a
+   raison est la faute de la règle 13, appliquée à soi-même** ; `children` est redevenu obligatoire.
+5. **Un effet de bord DANS l'updater de `setState`** : React s'en plaignait (« Cannot update a
+   component while rendering a different component »), avertissement muet en production — donc
+   invisible aux harnais, qui tournent sur un build de production. L'état se calcule d'abord,
+   l'écriture part ensuite.
+6. **Le témoin comptait `ui_repli` sans qu'aucune tâche ne l'écrive** : 0 = 0 pour toujours,
+   une table « identique » qui ne prouvait rien. La tâche N-01 bascule désormais un repli.
+7. **Le nombre de rangements n'était borné par rien** (5 000 écrits en trois secondes, et la
+   charge repartait dans le rendu de chaque page) : **REPLI-04**, plafond de 500 par personne,
+   avec son test.
+8. **`updated_at` n'était jamais relu** : `/api/sante` dit maintenant la date du dernier rangement.
+9. **Le verdict de verrou de `ui_repli` n'était vérifié par personne** : le test de couverture ne
+   regardait que les tables portant `engagement_id`. Il couvre désormais les **objets d'écran par
+   personne** (locataire + personne, sans dossier). Son cas connu mauvais est DANS la session de
+   test : posé à l'extérieur, il était emporté par la remise à zéro et le détecteur passait au
+   vert sans avoir rien vu — c'est la règle 17 qui l'a montré, pas la relecture.
+10. **Le CSS du squelette restait** dans le commit qui déclarait le squelette retiré — retiré.
+11. **« Le mouvement ne porte jamais sur la touche qui conclut » était littéralement faux** :
+    `.btn` est une règle générale, elle atteint le bouton qui scelle. La phrase dit maintenant ce
+    qui est vrai : la transition porte sur la COULEUR, ne retarde aucun clic, ne déplace aucun
+    contrôle.
+
+**Ce que la revue a confirmé** (et qui n'était donc pas une affirmation en l'air) : le serveur
+connaît le repli au premier rendu (`open` absent du HTML servi, aucun #418 à l'hydratation) ;
+REPLI-01 refuse douze clés hostiles AVANT la base ; la sonde annule bien l'écriture d'un repli ;
+aucun bandeau de refus ne se trouve dans un repli ; aucune collision de clés ; le contour de
+focus et `prefers-reduced-motion` tiennent ; deux comptes ont bien deux mémoires.
+

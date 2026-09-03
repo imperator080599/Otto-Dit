@@ -155,6 +155,40 @@ describe('registre des gardes', () => {
          and not exists (select 1 from pg_trigger g join pg_class r on r.oid = g.tgrelid
                          where r.relname = v.table_name and g.tgname = v.table_name || '_lock_guard')`);
     expect(menteurs.map((x) => x.t), 'verdict « garde » sans garde attachée').toEqual([]);
+    /* LES OBJETS D'ÉCRAN PAR PERSONNE (revue hostile n°8, constat 9). Le test
+       ne regardait que les tables porteuses de dossier : `ui_repli` (0132)
+       portait un verdict que PERSONNE ne vérifiait. Une table qui porte un
+       LOCATAIRE et une PERSONNE sans dossier est de cette famille — rangement
+       d'écran, préférence, journal de consultation — et le scellé la concerne
+       (elle doit dire « lecture », ou porter une garde). Ce qui reste hors de
+       ce filet est nommé au backlog (N2-5), pas oublié en silence. */
+    const parPersonne = await q<{ t: string }>(
+      `select c.relname t from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relkind = 'r'
+         and exists (select 1 from information_schema.columns i
+                     where i.table_schema = 'public' and i.table_name = c.relname and i.column_name = 'user_id')
+         and exists (select 1 from information_schema.columns i
+                     where i.table_schema = 'public' and i.table_name = c.relname and i.column_name = 'tenant_id')
+         and not exists (select 1 from information_schema.columns i
+                         where i.table_schema = 'public' and i.table_name = c.relname and i.column_name = 'engagement_id')
+         and not exists (select 1 from engagement_lock_verdict v where v.table_name = c.relname)
+       order by 1`);
+    expect(parPersonne.map((x) => x.t), 'objets d’écran par personne sans verdict de verrou écrit').toEqual([]);
+    /* ET LE CAS CONNU MAUVAIS, DANS LA MÊME SESSION (règle 17). Posé hors de
+       la session, il était emporté par `initTestDb` : le détecteur passait au
+       vert sur une table qu'il n'avait jamais vue — l'instrument mesurait à
+       côté, et c'est la règle 17 qui l'a montré, pas la relecture. */
+    await q(`create table ui_essai_mauvais (tenant_id uuid not null, user_id uuid not null, x text)`);
+    const vu = await q<{ t: string }>(
+      `select c.relname t from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relkind = 'r' and c.relname = 'ui_essai_mauvais'
+         and exists (select 1 from information_schema.columns i
+                     where i.table_schema = 'public' and i.table_name = c.relname and i.column_name = 'user_id')
+         and exists (select 1 from information_schema.columns i
+                     where i.table_schema = 'public' and i.table_name = c.relname and i.column_name = 'tenant_id')
+         and not exists (select 1 from engagement_lock_verdict v where v.table_name = c.relname)`);
+    expect(vu.map((x) => x.t), 'le détecteur ne voit pas une table par personne SANS verdict').toEqual(['ui_essai_mauvais']);
+    await q(`drop table ui_essai_mauvais`);
     /* Une proposition non confirmée reste une PROPOSITION : elle n'attache
        rien (pas de garde), et le registre le dit. On ne suppose pas qu'il en
        reste toujours — le jour où un humain aura tout confirmé, ce test n'a

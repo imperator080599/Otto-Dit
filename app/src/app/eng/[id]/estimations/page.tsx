@@ -77,14 +77,15 @@ export default async function EstimationsPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <Repli cle="rail.estimations" niveau={2} titre={<>{t('rail.estimations')} <span className="badge gray">{estimations.length}</span></>}>
+      <div className="panel">
+            <h2>{t('rail.estimations')} <span className="badge gray">{estimations.length}</span></h2>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <input name="titre" placeholder={t('est.titleEGAccruedRevenue2025')} style={{ minWidth: 220 }} />
           <input name="piece_ref" placeholder={t('est.referenceOfTheEntryConcernedE')} className="mono" style={{ minWidth: 200 }} />
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
           <button className="btn">{t('est.importTheCalculationFile')}</button>
         </form>
-      </Repli>
+      </div>
 
       {estimations.length > 1 && (
         <p className="row" style={{ gap: 6 }}>
@@ -99,7 +100,8 @@ export default async function EstimationsPage({
 
       {ouverte && (
         <>
-          <Repli cle="eng.id.estimations.2" niveau={2} titre={<>{ouverte.titre} <span className="badge gray">{ouverte.statut}</span></>}>
+          <div className="panel">
+            <h2>{ouverte.titre} <span className="badge gray">{ouverte.statut}</span></h2>
             <p className="faint">
               {t('est.fichier')} <span className="mono">{ouverte.sourceFilename}</span> {t('est.empreinte')}{' '}
               <span className="mono">{ouverte.sourceSha256.slice(0, 14)}…</span> ·{' '}
@@ -144,7 +146,7 @@ export default async function EstimationsPage({
                 {t('est.baseOfTheDrawnLinesEach')}
               </span>
             </form>
-          </Repli>
+          </div>
 
           {/* Pleine largeur, l'un sous l'autre : deux tableaux larges dans une
               grille à deux colonnes forcent la page à déborder (min-content). */}

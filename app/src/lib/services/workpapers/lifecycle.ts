@@ -2,6 +2,7 @@ import { q, q01, q1 } from '@/lib/db/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { type Ancre, assertAncrePosable, resoudreAncre, KINDS } from '../notes/ancres';
 import { logEvent } from '@/lib/core/events';
+import { joursOuvresEntre } from '@/lib/core/jours';
 import { engagementCtx } from '../imports';
 import type { WpSection } from './draft';
 
@@ -236,22 +237,53 @@ export async function notesDeLaMission(engagementId: string): Promise<NoteAncree
 }
 
 /**
- * Les marqueurs d'écran : pour chaque note ancrée non close, les CIBLES
- * ACTUELLES qui la portent, indexées `kind|cible` — les écrans posent le
- * jeton d'attention sur ces éléments-là et n'ont aucune opinion propre sur
- * la résolution.
+ * LE MARQUEUR D'ÉCRAN, ET TOUT CE QUE LE PANNEAU LATÉRAL MONTRE (1.3). Pour
+ * chaque note ancrée non close, les CIBLES ACTUELLES qui la portent, indexées
+ * `kind|cible` — les écrans posent le jeton d'attention sur ces éléments-là et
+ * n'ont aucune opinion propre sur la résolution.
+ *
+ * LE MARQUEUR PORTE LA NOTE ENTIÈRE, pas seulement son compte : le panneau
+ * s'ouvre sur le fil complet (type, ancienneté en jours OUVRÉS, destinataire,
+ * réponses) sans un aller-retour au serveur. C'est ce qui fait la différence
+ * entre « il y a des notes ici » et « voici ce qu'on te demande ».
  */
-export async function notesPourEcran(engagementId: string): Promise<Record<string, { noteId: string; status: string; label: string }[]>> {
+export interface MarqueEcran {
+  noteId: string;
+  status: string;
+  label: string;
+  type: string;
+  texte: string;
+  auteurId: string;
+  auteur: string;
+  destinataire: string | null;
+  destinataireKind: string;
+  creeLe: string;
+  /** L'ancienneté en jours OUVRÉS — le week-end ne compte pas (core/jours.ts). */
+  ageJoursOuvres: number;
+  reponses: { auteur: string; kind: string; texte: string; quand: string }[];
+}
+
+export async function notesPourEcran(engagementId: string): Promise<Record<string, MarqueEcran[]>> {
   const notes = await notesDeLaMission(engagementId);
-  const parCible: Record<string, { noteId: string; status: string; label: string }[]> = {};
+  const parCible: Record<string, MarqueEcran[]> = {};
   for (const n of notes) {
     if (!n.anchor_kind || n.status === 'closed') continue;
     const r = await resoudreAncre(engagementId, {
       kind: n.anchor_kind as Ancre['kind'], ref: n.anchor_ref!, field: n.anchor_field, label: n.anchor_label!,
     });
+    const fil = n.reponses > 0 ? await listReplies(n.id) : [];
+    const marque: MarqueEcran = {
+      noteId: n.id, status: n.status, label: n.anchor_label!,
+      type: n.note_type, texte: n.text, auteurId: n.author_id, auteur: n.author_name,
+      destinataire: n.assignee_kind === 'otto' ? 'OTTO' : n.assignee_name,
+      destinataireKind: n.assignee_kind,
+      creeLe: n.created_at,
+      ageJoursOuvres: joursOuvresEntre(n.created_at),
+      reponses: fil.map((x) => ({ auteur: x.author_kind === 'otto' ? 'OTTO' : (x.author_name ?? ''), kind: x.author_kind, texte: x.text, quand: x.created_at })),
+    };
     for (const cible of r.cibles) {
       const cle = n.anchor_field ? `${n.anchor_kind}|${cible}|${n.anchor_field}` : `${n.anchor_kind}|${cible}`;
-      (parCible[cle] ??= []).push({ noteId: n.id, status: n.status, label: n.anchor_label! });
+      (parCible[cle] ??= []).push(marque);
     }
   }
   return parCible;

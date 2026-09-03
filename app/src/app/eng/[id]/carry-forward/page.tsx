@@ -41,7 +41,8 @@ export default async function CarryForwardPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <Repli cle="famille.reprise.titre" niveau={2} titre={t('famille.reprise.titre')}>
+      <div className="panel">
+            <h2>{t('famille.reprise.titre')}</h2>
         {!prev ? (
           /* DIRE CE QU'ON A CHERCHÉ, pas seulement qu'on n'a rien trouvé. Le
              message annonçait « aucune mission sur l'exercice précédent pour
@@ -71,7 +72,7 @@ export default async function CarryForwardPage({
             )}
           </>
         )}
-      </Repli>
+      </div>
 
       {liste.length > 0 && (
         <div className="panel">

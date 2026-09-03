@@ -1917,3 +1917,44 @@ harnais lisait l'écran pendant que le squelette était à l'affiche. Le squelet
 **Ce que je n'ai PAS fait** : les onglets d'ancrage sur les 34 écrans neufs (N2-1 — une barre
 construite côté client rendrait un `<nav>` vide au premier rendu, la forme même du #418) ; le
 squelette (N2-4) ; les tranches 1.3, 1.4, 1.5 et tout l'étage 2.
+
+## Nuit n°2 — 1.3 le fil de revue à côté du travail, et les onze constats de la revue hostile n°8
+
+**Ce qui est cliquable maintenant** (ADR-127, ADR-128) :
+
+- **Le fil d'une note s'ouvre à côté du travail** : le repère chiffré d'une cellule ouvre un
+  panneau latéral droit — la note, son type, son **ancienneté en jours OUVRÉS**, son
+  destinataire, le fil des réponses — où l'on répond sans quitter l'écran ; le geste revient
+  sur l'écran de travail, jamais sur la vue transverse. La clôture n'est offerte qu'à un
+  réviseur non-auteur (ADR-028, service et déclencheur inchangés) et, quand elle ne l'est pas,
+  **la raison est écrite à la place du bouton**. La vue « Review notes » reste l'ensemble du
+  dossier, y compris les notes dont l'objet a été retiré — que le panneau, ancré à un objet
+  vivant, ne peut par construction pas montrer.
+- **Les jours ouvrés sont une règle partagée** (`core/jours.ts`) : le semis les compte pour poser
+  les dates, l'écran pour dire l'ancienneté. Elle **ne connaît aucun jour férié** et le dit.
+- **Onze constats de la revue hostile n°8 sur 1.2, dix corrigés** (ADR-128) : un repli pouvait
+  ranger le bouton qui SCELLE (26 sections rendues à des panneaux ; il reste 30 replis, tous en
+  lecture seule) ; le rail jetait le résultat de la mémorisation ; le locataire d'un rangement
+  était un paramètre (il vient de la personne, garde G-23) ; le témoin comptait une table que
+  rien n'écrivait ; le nombre de rangements n'était borné par rien (REPLI-04, 500) ; le CSS d'un
+  composant retiré restait ; une phrase affirmait plus que le CSS ne tient.
+
+**Prouvé, et comment** (chaîne locale, base neuve, build de production, `scratchpad/chaine-n8.log`) :
+`tsc` 0 · `npm run langue` 0 hors catalogue · `npm run lectures` 0 perdue (instantané refigé : les
+clés des sections rendues à des panneaux, et le locataire retiré de l'action) · `npm run gardes`
+**38** dont G-22 et G-23 · `npm test` **710 tests, 0 échec** (plancher 632) · `demo:enrichir` 10/10
+· `accept:epreuve` 3/3 · `accept --ecrire` **17/17** · `accept` (sonde) **17/17** · témoin
+« aucune écriture (12 tables identiques) » — et cette fois la 12ᵉ table est écrite en mode
+écriture (`ui_repli=1`) avant d'être annulée sous la sonde, ce qui la fait enfin compter ·
+`npm run screens` 85 routes, 0 échec · `npm run clics` **194 étapes, 0 échec d'assertion**,
+188 stations figées vérifiées.
+
+**Le seul rouge restant** : une exception d'hydratation **#418**, une fois sur ce parcours, sur
+`/eng/[id]/exceptions`. Sur les six exécutions de la nuit elle est apparue trois fois, sur
+**trois écrans différents** (`/testing`, `/exceptions`, et zéro fois sur trois autres passages) :
+ce n'est donc pas un écran, c'est une condition. Aucune hypothèse prouvée — c'est la tranche 3.2
+du mandat, non faite.
+
+**Ce que je n'ai PAS fait** : 1.4, 1.5, tout l'étage 2, tout l'étage 3, tout l'étage 4 ; les
+onglets d'ancrage (N2-1) ; le squelette (N2-4) ; le classement des tables hors dossier (N2-5).
+

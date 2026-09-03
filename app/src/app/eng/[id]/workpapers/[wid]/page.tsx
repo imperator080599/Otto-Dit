@@ -9,7 +9,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes } from '@/lib/methodology/catalogue';
 import type { WpSection } from '@/lib/services/workpapers/draft';
 import { Annotable } from '@/app/annotable';
-import { poserNoteAncreeAction } from '../../notes/actions';
+import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../../notes/actions';
 import { executerNoteOtto } from '@/lib/services/notes/otto';
 import { joindreAnnexe, annexesDuPapier } from '@/lib/services/workpapers/annexes';
 import {
@@ -40,7 +40,13 @@ export default async function WorkpaperDetail({
   const { id, wid } = await params;
   const sp = await searchParams;
   const { erreur } = sp;
-  const { user } = await requireMember(id);
+  const membreCourant = await requireMember(id);
+  const { user } = membreCourant;
+  /* QUI REGARDE, ET CE QU'IL PEUT (1.3, ADR-028) : seul un réviseur de la
+     mission clôt une note, et jamais l'auteur. Le panneau latéral n'invente
+     pas la règle — il reçoit la réponse du serveur et, quand le geste n'est
+     pas offert, il écrit pourquoi. */
+  const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const t = await tr();
   const wp = await getWorkpaper(wid);
   if (!wp || wp.engagement_id !== id) return <div className="panel">{t('wp.notFound')}</div>;
@@ -408,7 +414,7 @@ export default async function WorkpaperDetail({
 
       {(wp.sections as WpSection[]).map((s) => (
         <div className="panel" key={s.key}>
-          <Annotable
+          <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
             bloc
             ancre={{ kind: 'workpaper_section', aRef: `${wp.code}:${s.key}`, label: `${wp.code} · ${s.title}` }}
             marques={marques[`workpaper_section|${wp.code}:${s.key}`] ?? []}
@@ -476,7 +482,7 @@ export default async function WorkpaperDetail({
                           if (!ident || !champ) return <td key={j} style={{ maxWidth: 220 }}>{contenu}</td>;
                           return (
                             <td key={j} style={{ maxWidth: 220 }}>
-                              <Annotable
+                              <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
                                 ancre={{
                                   kind: 'sample_item', aRef: ident.natural_key, field: champ.champ,
                                   label: t('wp.ancreElement', { piece: ident.piece, champ: champ.titre }),
@@ -540,7 +546,8 @@ export default async function WorkpaperDetail({
         </div>
       ))}
 
-      <Repli cle="wp.columnsAddedToTheTestingTable" niveau={2} titre={<>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></>}>
+      <div className="panel">
+            <h2>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></h2>
         {colonnesAjoutees.map((c) => (
           <div className={`callout ${c.statut === 'proposee' ? 'warn' : c.statut === 'remplie' ? 'green' : ''}`} key={c.id}>
             <strong>{c.titre}</strong>{' '}
@@ -593,10 +600,11 @@ export default async function WorkpaperDetail({
             </form>
           </details>
         )}
-      </Repli>
+      </div>
 
       <div className="grid cols-2">
-        <Repli cle="wp.reviewNotesHumanOnly" niveau={2} titre={t('wp.reviewNotesHumanOnly')}>
+        <div className="panel">
+            <h2>{<>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></>}</h2>
           {/* data-actions-item : les gestes PAR NOTE sont des actions d'item
               répétées — la mesure de densité (§3.D) les compte comme les
               gestes de ligne d'un tableau, pas comme des actions d'écran. */}
@@ -632,9 +640,10 @@ export default async function WorkpaperDetail({
               <button className="btn small">{t('wp.addNote')}</button>
             </div>
           </form>
-        </Repli>
+        </div>
 
-        <Repli cle="wp.signOffsDatedImmutable" niveau={2} titre={t('wp.signOffsDatedImmutable')}>
+        <div className="panel">
+            <h2>{t('wp.reviewNotesHumanOnly')}</h2>
           <table className="data">
             <thead><tr><th>{t('wp.role')}</th><th>{t('wp.signedBy')}</th><th>{t('col.when')}</th></tr></thead>
             <tbody>
@@ -670,7 +679,7 @@ export default async function WorkpaperDetail({
               </tbody>
             </table>
           )}
-        </Repli>
+        </div>
       </div>
     </div>
   );

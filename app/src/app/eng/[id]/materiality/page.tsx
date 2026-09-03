@@ -8,7 +8,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { q } from '@/lib/db/client';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
-import { poserNoteAncreeAction } from '../notes/actions';
+import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../notes/actions';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -24,7 +24,12 @@ export default async function MaterialityPage({
   const { id } = await params;
   const t = await tr();
   const { erreur } = await searchParams;
-  await requireMember(id);
+  const membreCourant = await requireMember(id);
+  /* QUI REGARDE, ET CE QU'IL PEUT (1.3, ADR-028) : seul un réviseur de la
+     mission clôt une note, et jamais l'auteur. Le panneau latéral n'invente
+     pas la règle — il reçoit la réponse du serveur et, quand le geste n'est
+     pas offert, il écrit pourquoi. */
+  const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const current = await currentMateriality(id);
   const versions = await materialityVersions(id);
   const fs = await frameworkSet(id);
@@ -65,7 +70,7 @@ export default async function MaterialityPage({
     [id],
   ));
   const annotable = (param: string, libelle: string, contenu: React.ReactNode) => (
-    <Annotable
+    <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
       bloc
       ancre={{ kind: 'materiality_param', aRef: param, label: t('mat.ancreSeuil', { param: libelle }) }}
       marques={marques[`materiality_param|${param}`] ?? []}

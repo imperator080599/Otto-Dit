@@ -11,7 +11,7 @@ import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
-import { poserNoteAncreeAction } from '../notes/actions';
+import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../notes/actions';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
 
@@ -28,7 +28,12 @@ export default async function ExceptionsPage({
   const { id } = await params;
   const t = await tr();
   const { erreur } = await searchParams;
-  await requireMember(id);
+  const membreCourant = await requireMember(id);
+  /* QUI REGARDE, ET CE QU'IL PEUT (1.3, ADR-028) : seul un réviseur de la
+     mission clôt une note, et jamais l'auteur. Le panneau latéral n'invente
+     pas la règle — il reçoit la réponse du serveur et, quand le geste n'est
+     pas offert, il écrit pourquoi. */
+  const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const fs = await frameworkSet(id);
   const isSox = fs.assurance_packs.includes('pcaob-sox');
   const exceptions = await listExceptions(id);
@@ -148,7 +153,7 @@ export default async function ExceptionsPage({
                    clic (#x-<id>), et la ligne testée est à un clic en retour. */
                 <tr key={x.id} id={`x-${x.id}`}>
                   <td>
-                    <Annotable
+                    <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
                       ancre={{
                         kind: 'exception',
                         aRef: identitesEcarts.get(x.id)?.aref ?? `id|${x.id}`,

@@ -202,7 +202,8 @@ export default async function TeamPage({
       )}
 
       {/* ── ma déclaration ───────────────────────────────────────────── */}
-      <Repli cle="team.myIndependenceDeclaration" niveau={2} titre={<>{t('team.myIndependenceDeclaration')} {user.name}</>}>
+      <div className="panel">
+            <h2>{t('team.myIndependenceDeclaration')} {user.name}</h2>
         {!mine || mine.signed_at ? (
           <form action={openAction} className="row">
             <input
@@ -294,10 +295,11 @@ export default async function TeamPage({
             </table>
           </details>
         )}
-      </Repli>
+      </div>
 
       {/* ── l'équipe ─────────────────────────────────────────────────── */}
-      <Repli cle="team.engagementTeam" niveau={2} titre={t('team.engagementTeam')}>
+      <div className="panel">
+            <h2>{<>{t('team.myIndependenceDeclaration')} {user.name}</>}</h2>
         <table className="data">
           <thead>
             <tr><th>{t('col.person')}</th><th>{t('team.role')}</th><th>{t('col.signoff')}</th><th>{t('team.joined')}</th><th>{t('col.exit')}</th><th>{t('team.declaration')}</th><th /></tr>
@@ -346,10 +348,11 @@ export default async function TeamPage({
           <input type="text" name="entered_on" placeholder={t('team.joinedYyyyMmDd')} style={{ width: 130 }} />
           <button className="btn small">{t('mot.assign')}</button>
         </form>
-      </Repli>
+      </div>
 
       {/* ── services autres que la certification ─────────────────────── */}
-      <Repli cle="team.nonAuditServices" niveau={2} titre={t('team.nonAuditServices')}>
+      <div className="panel">
+            <h2>{t('team.engagementTeam')}</h2>
         {/* LE DÉNOMINATEUR, LE PLAFOND ET SA SOURCE. Un ratio sans son
             dénominateur ni le motif de son plafond ne se relit pas — et ces
             trois lectures avaient disparu dans un balayage de prose. */}
@@ -406,7 +409,7 @@ export default async function TeamPage({
           <button className="btn small secondary">{t('mot.save')}</button>
         </form>
 
-      </Repli>
+      </div>
     </div>
   );
 }

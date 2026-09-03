@@ -575,23 +575,38 @@ details.repli.niveau-2 { margin-bottom: 16px; }
 .repli-defaut { font-size: 11.5px; color: var(--amber); flex-basis: 100%; }
 .grid > details.repli { margin-bottom: 0; }
 
-/* Le squelette de chargement : la forme de la page, sans un mot. */
-.squelette { display: grid; gap: var(--e3); padding-top: var(--e2); }
-.squelette .sq {
-  border-radius: 6px; background: var(--track);
-  background-image: linear-gradient(90deg, var(--track) 0%, var(--gray-soft) 40%, var(--track) 80%);
-  background-size: 200% 100%; animation: chatoiement 1.4s linear infinite;
-}
-.squelette .sq.titre { height: 22px; width: 38%; }
-.squelette .sq.ligne { height: 12px; width: 60%; }
-.squelette .sq.ligne.courte { width: 28%; }
-.squelette .sq.bande { height: 36px; width: 100%; margin-top: var(--e2); }
-.squelette .sq.bloc { height: 180px; width: 100%; }
-.squelette .sq.bloc.bas { height: 120px; }
-@keyframes chatoiement { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 /* Le mouvement s'arrête quand la personne le demande — tout, d'un coup. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-  .squelette .sq { background-image: none; }
 }
+
+/* ── LE PANNEAU LATÉRAL DES NOTES DE REVUE (nuit n°2, 1.3 ; ADR-127) ────────
+   Le fil s'ouvre À CÔTÉ du travail, jamais à la place : la ligne qu'on lisait
+   reste à l'écran. À l'étroit (téléphone), il prend toute la largeur en bas —
+   un tiroir de 380 px sur 390 px d'écran cacherait la page. */
+.panneau-notes {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); z-index: 45;
+  background: var(--panel); border-left: 1px solid var(--border); box-shadow: var(--ombre-2);
+  padding: var(--e4); overflow-y: auto; font-size: 13px;
+}
+.panneau-notes-entete {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: var(--e2);
+  padding-bottom: var(--e2); border-bottom: 1px solid var(--border); margin-bottom: var(--e3);
+}
+.panneau-note {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--e3); margin-bottom: var(--e3);
+}
+.panneau-note + .panneau-note { margin-top: 0; }
+.panneau-note [data-clore-refuse] { line-height: 1.35; }
+@media (max-width: 760px) {
+  .panneau-notes { top: auto; left: 0; width: auto; max-height: 70vh; border-left: none; border-top: 1px solid var(--border); }
+}
+/* Le repère chiffré est un BOUTON depuis 1.3 (il ouvre le panneau) : il garde
+   l'allure du lien qu'il était — la forme dit ce que le geste fait. */
+button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
+
+/* Le refus de mémorisation du RAIL (revue hostile n°8, constat 2) : il se lit
+   sous le rail, comme celui d'une section se lit à côté de son titre. */
+.rail-defaut { font-size: 11px; color: var(--amber); padding: 2px 8px; margin: 0; line-height: 1.35; }

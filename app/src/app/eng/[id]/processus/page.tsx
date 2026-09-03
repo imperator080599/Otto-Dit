@@ -147,9 +147,10 @@ export default async function ProcessusPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <Repli cle="proc.internalControlAndProcesses" niveau={2} titre={<>{t('proc.internalControlAndProcesses')} {diff && diff.aStatuer.length > 0 && (
+      <div className="panel">
+            <h2>{t('proc.internalControlAndProcesses')} {diff && diff.aStatuer.length > 0 && (
           <span className="badge red">{diff.aStatuer.length} {t('proc.changeSToDecide')}</span>
-        )}</>}>
+        )}</h2>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <select name="exercice" defaultValue="n">
             <option value="n">{t('proc.versionN')}</option>
@@ -166,7 +167,7 @@ export default async function ProcessusPage({
             ? t('proc.versionDecrite', { ex: NOM_EXERCICE[ex], fichier: versions[ex]!.filename, e: versions[ex]!.etapes.length, c: versions[ex]!.controles.length })
             : t('proc.versionNonDecrite', { ex: NOM_EXERCICE[ex] })).join(' · ')}
         </p>
-      </Repli>
+      </div>
 
       {montre && diagramme && (
         <Repli cle="proc.diagramme" niveau={2} titre={<>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</>}>
@@ -226,7 +227,8 @@ export default async function ProcessusPage({
       )}
 
       {diff && (
-        <Repli cle="proc.diff" niveau={2} titre={t('proc.diff')}>
+        <div className="panel">
+            <h2>{t('proc.diff')}</h2>
           {diff.changements.length === 0 && <p className="faint">{t('proc.aucunChangement')}</p>}
           {diff.changements.length > 0 && (
             <div className="table-scroll">
@@ -269,12 +271,13 @@ export default async function ProcessusPage({
               </table>
             </div>
           )}
-        </Repli>
+        </div>
       )}
 
-      <Repli cle="proc.interviews" niveau={2} titre={<>{t('proc.interviews')} {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
+      <div className="panel">
+            <h2>{t('proc.interviews')} {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
           <span className="badge red">{t('proc.ecartsAStatuer')}</span>
-        )}</>}>
+        )}</h2>
         {adaptateur === 'mock' ? (
           <div className="callout">
             {/* LA PROSE EXPLICATIVE SORT (règle générale) : le mode se DIT en
@@ -308,7 +311,7 @@ export default async function ProcessusPage({
           ))}
           <div><button className="btn">{t('proc.creerEntretien')}</button></div>
         </form>
-      </Repli>
+      </div>
 
       {entretiens.map((itv) => (
         <div className="panel" key={itv.id}>

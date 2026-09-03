@@ -51,7 +51,8 @@ export default async function ImportsPage({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="grid cols-2">
-        <Repli cle="imp.trialBalanceGenericImporter" niveau={2} titre={t('imp.trialBalanceGenericImporter')}>
+        <div className="panel">
+            <h2>{t('imp.trialBalanceGenericImporter')}</h2>
           <p>
             Current: {tbCur ? <span className="badge green">{t('imp.nComptes', { n: tbCur.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
             {'  '}Prior: {tbPrior ? <span className="badge green">{t('imp.nComptes', { n: tbPrior.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
@@ -66,8 +67,9 @@ export default async function ImportsPage({
             <ChampsIpe t={t} />
             <button className="btn">{t('imp.importTb')}</button>
           </form>
-        </Repli>
-        <Repli cle="imp.generalLedgerFecAdapterFrancePack" niveau={2} titre={t('imp.generalLedgerFecAdapterFrancePack')}>
+        </div>
+        <div className="panel">
+            <h2>{t('imp.generalLedgerFecAdapterFrancePack')}</h2>
           {affected.length > 0 && (
             <div className="callout warn">
               {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}
@@ -84,7 +86,7 @@ export default async function ImportsPage({
             )}
             <button className="btn">{t('imp.importFec')}</button>
           </form>
-        </Repli>
+        </div>
       </div>
 
       <Repli cle="imp.importHistoryValidationReports" niveau={2} titre={t('imp.importHistoryValidationReports')}>

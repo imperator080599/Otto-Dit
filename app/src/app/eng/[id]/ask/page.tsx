@@ -40,7 +40,8 @@ export default async function AskPage({
 
   return (
     <div>
-      <Repli cle="commun.interroger" niveau={2} titre={t('commun.interroger')}>
+      <div className="panel">
+            <h2>{t('commun.interroger')}</h2>
         <p className="faint">
           {t('ask.explication')}
         </p>
@@ -53,7 +54,7 @@ export default async function AskPage({
           />
           <button className="btn">{t('ask.interroger')}</button>
         </form>
-      </Repli>
+      </div>
 
       {result?.status === 'answered' && (
         <div className="panel">

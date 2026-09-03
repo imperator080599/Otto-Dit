@@ -11,7 +11,7 @@ nommant. Une garde de SERVICE n’a qu’une passe (aucune neutralisation SQL) :
 garde DÉCLARÉE n’est pas prouvée par ce registre : la colonne dit où vit sa preuve, ou qu’il n’y en a
 pas. L’épreuve elle-même est éprouvée contre trois gardes connues mauvaises (règle 17).
 
-**Compte** : 19 garde(s) SQL à deux passes · 2 garde(s) de service à une passe · 16 déclarée(s), dont 4 sans aucune preuve. **Verdicts observés** (docs/GARDES_RESULTATS.json, écrit par `npx vitest run src/lib/gardes`) : 21 prouvée(s), 0 sans résultat.
+**Compte** : 19 garde(s) SQL à deux passes · 3 garde(s) de service à une passe · 16 déclarée(s), dont 4 sans aucune preuve. **Verdicts observés** (docs/GARDES_RESULTATS.json, écrit par `npx vitest run src/lib/gardes`) : 22 prouvée(s), 0 sans résultat.
 
 **Retirer une garde, et voir le registre le dire** : le test « une garde RETIRÉE est dénoncée par son nom » (gardes.test.ts) désactive `review_note_close_guard` et lit le verdict « G-03 : l’attaque a RÉUSSI sans neutralisation — la garde n’existe pas » ; c’est le critère du plan, joué à chaque exécution.
 
@@ -43,6 +43,7 @@ pas. L’épreuve elle-même est éprouvée contre trois gardes connues mauvaise
 
 | Code | Verdict observé | Invariant | Tenu par | Rayon si elle tombe | Refus attendu | Où elle cesse de regarder |
 |---|---|---|---|---|---|---|
+| G-23 | PROUVÉE (2026-09-03) | REPLI-03 — le locataire d’un rangement vient de la PERSONNE : aucune écriture ne peut le poser au nom d’un autre cabinet. | `memoriserRepli (services/replis.ts) : la ligne est insérée par jointure sur app_user, le locataire n’est pas un paramètre` | Un appel forgé écrivait une ligne portant le locataire d’un AUTRE cabinet, et la lecture, qui ne filtrait que la personne, la relisait — une fuite d’un cabinet à l’autre sur un objet d’écran (revue hostile n°8, constat 3). | `REPLI-03` | Ne dit rien de la RLS : le rôle qui sert l’application la contourne encore (PLAN_RLS, étape 3 non exécutée). Ne borne pas ce qu’une personne range chez elle — c’est REPLI-04 qui le fait. |
 | G-20 | PROUVÉE (2026-09-02) | Un exercice ou une mission ne se crée pas sur l’entité d’un autre cabinet. | `engagement.ts → creerExercice / creerMission (EngagementRuleError « isolation »)` | Le nom d’un client étranger dans nos papiers ; et l’inverse. | `isolation` | Ne remplace pas la RLS : l’application tourne sous un rôle qui la contourne (ADR-115), donc cette règle est la SEULE isolation à l’écriture pour ces deux objets. |
 | G-21 | PROUVÉE (2026-09-02) | Une préférence de référentiel de seuil ne contourne pas la garde du résultat non représentatif. | `kernel/materiality.ts → proposeMateriality (motif « NOT applied »)` | Un seuil de 1 000 € — le plancher d’arrondi — sur une base négative. | `NOT applied` | Ne juge pas si 2 % du chiffre d’affaires est le bon critère de représentativité : c’est la règle du pack, écrite telle quelle. |
 

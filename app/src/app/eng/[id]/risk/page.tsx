@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { q } from '@/lib/db/client';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
-import { poserNoteAncreeAction } from '../notes/actions';
+import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../notes/actions';
 import { requireMember } from '@/lib/core/auth';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { fmtEur } from '@/lib/kernel/canon';
@@ -39,7 +39,12 @@ export default async function RiskPage({
   const { id } = await params;
   const t = await tr();
   const { fsli, erreur } = await searchParams;
-  await requireMember(id);
+  const membreCourant = await requireMember(id);
+  /* QUI REGARDE, ET CE QU'IL PEUT (1.3, ADR-028) : seul un réviseur de la
+     mission clôt une note, et jamais l'auteur. Le panneau latéral n'invente
+     pas la règle — il reçoit la réponse du serveur et, quand le geste n'est
+     pas offert, il écrit pourquoi. */
+  const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const cat = await catalogueDeLaMission(id);
 
   const fslis = (await listFslis(id)).filter(
@@ -49,8 +54,7 @@ export default async function RiskPage({
 
   if (!code) {
     return (
-      <Repli cle="risk.riskByAssertion" niveau={2} titre={t('risk.riskByAssertion')}>
-      </Repli>
+      <div className="panel"><h2 style={{ margin: 0 }}>{t('risk.riskByAssertion')}</h2></div>
     );
   }
 
@@ -258,7 +262,8 @@ export default async function RiskPage({
           Sans lui l'évaluation ne verrait que ce qui se compte : un changement
           de dirigeant, une pression sur le résultat, un litige non provisionné
           ne sont dans aucun grand livre. */}
-      <Repli cle="cf.nature.question_answer" niveau={2} titre={t('cf.nature.question_answer')}>
+      <div className="panel">
+            <h2>{t('risk.riskByAssertion')}</h2>
         {(obstaclesEntity.length > 0 || obstaclesSection.length > 0) && (
           <div className="callout warn">
             <strong>{t('risk.whatPreventsSigning')}</strong>
@@ -281,7 +286,7 @@ export default async function RiskPage({
                     <tr key={x.code}>
                       <td>
                         {a ? (
-                          <Annotable
+                          <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
                             bloc
                             ancre={{ kind: 'questionnaire_answer', aRef: x.code, label: t('risk.ancreQuestionnaire', { code: x.code }) }}
                             marques={marquesNotes[`questionnaire_answer|${x.code}`] ?? []}
@@ -327,9 +332,10 @@ export default async function RiskPage({
             </table>
           </div>
         ))}
-      </Repli>
+      </div>
 
-      <Repli cle="risk.registerOfDeclaredFactors" niveau={2} titre={<>{t('risk.registerOfDeclaredFactors')} {reg.length}</>}>
+      <div className="panel">
+            <h2>{t('risk.registerOfDeclaredFactors')} {reg.length}</h2>
         <table className="data">
           <thead>
             <tr><th>{t('col.source')}</th><th>{t('col.nature')}</th><th>{t('risk.finding')}</th><th>{t('risk.targets')}</th><th>{t('risk.status')}</th><th /></tr>
@@ -367,7 +373,7 @@ export default async function RiskPage({
             ))}
           </tbody>
         </table>
-      </Repli>
+      </div>
 
       {/* ── CE QUE LE RISQUE COMMANDE ─────────────────────────────────── */}
       <Repli cle="risk.whatThisRiskCommands" niveau={2} titre={<>{t('risk.whatThisRiskCommands')} {required.length} {t('risk.procedureSRequired')}</>}>

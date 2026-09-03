@@ -93,8 +93,7 @@ export default async function RequestDetailPage({
           </table>
         )}
       </div>
-      <Repli cle="col.provenance" niveau={2} titre={t('col.provenance')}>
-      </Repli>
+      <div className="panel"><h2 style={{ margin: 0 }}>{t('col.provenance')}</h2></div>
     </div>
   );
 }

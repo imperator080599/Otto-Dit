@@ -19,7 +19,7 @@ export async function memoriserRepliAction(cle: string, ouvert: boolean): Promis
   const user = await getSessionUser();
   if (!user) return { ok: false, raison: 'REPLI-02 : personne n’est connecté — rien à mémoriser' };
   try {
-    await conduire(() => memoriserRepli({ tenantId: user.tenant_id, userId: user.id, cle: String(cle), ouvert: Boolean(ouvert) }));
+    await conduire(() => memoriserRepli({ userId: user.id, cle: String(cle), ouvert: Boolean(ouvert) }));
     return { ok: true };
   } catch (e) {
     return { ok: false, raison: e instanceof Error ? e.message : String(e) };

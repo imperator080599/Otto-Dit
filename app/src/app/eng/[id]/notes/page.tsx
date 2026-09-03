@@ -126,8 +126,7 @@ export default async function NotesPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <Repli cle="notes.titreVue" niveau={2} titre={t('notes.titreVue')}>
-      </Repli>
+      <div className="panel"><h2 style={{ margin: 0 }}>{t('notes.titreVue')}</h2></div>
       {ouvertes.length === 0 && closes.length === 0 && (
         <div className="panel"><p className="muted">{t('notes.aucuneAide')}</p></div>
       )}

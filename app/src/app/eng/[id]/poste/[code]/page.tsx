@@ -13,7 +13,7 @@ import { Annotable } from '@/app/annotable';
 import { Repli } from '@/app/repli';
 import { AncresNav } from '@/app/ancres-nav';
 import { BandeauRefus } from '@/app/bandeau-refus';
-import { poserNoteAncreeAction } from '../../notes/actions';
+import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../../notes/actions';
 import { phraseOrigineN1, signe, pct } from '@/lib/services/analytique-vue';
 import { enregistrerAnalytiqueAction, proposerAnalytiqueAction } from './actions';
 
@@ -50,7 +50,13 @@ export default async function PostePage({
 }) {
   const { id, code } = await params;
   const sp = await searchParams;
-  const { user } = await requireMember(id);
+  const membreCourant = await requireMember(id);
+  const { user } = membreCourant;
+  /* QUI REGARDE, ET CE QU'IL PEUT (1.3, ADR-028) : seul un réviseur de la
+     mission clôt une note, et jamais l'auteur. Le panneau latéral n'invente
+     pas la règle — il reçoit la réponse du serveur et, quand le geste n'est
+     pas offert, il écrit pourquoi. */
+  const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const t = await tr();
   const l = await locale();
   const ref = decodeURIComponent(code);
@@ -84,7 +90,7 @@ export default async function PostePage({
   /* Une cellule annotable de la leadsheet : l'ancre est l'identité métier —
      le poste, le compte, la colonne — jamais la ligne du tableau. */
   const cellule = (numero: string, champ: 'solde' | 'variation', libelle: string, contenu: React.ReactNode) => (
-    <Annotable
+    <Annotable moi={moi} repondre={repondreNoteAction} transitionner={transitionNoteAction}
       ancre={{ kind: 'compte', aRef: `${ref}|${numero}`, field: champ, label: `${numero} · ${libelle}` }}
       marques={marques[`compte|${ref}|${numero}|${champ}`] ?? []}
       membres={membres} engagementId={id} chemin={chemin} notesHref={`${base}/notes`}
@@ -199,7 +205,8 @@ export default async function PostePage({
       </Repli>
 
       {/* 2.2 — LA REVUE ANALYTIQUE DU POSTE, sous la leadsheet. */}
-      <Repli cle="poste.analytique" id="analytique" titre={t('poste.analytique')} etat={etat(bloc('analytique'))} resume={resume(bloc('analytique'))}>
+      <div className="panel">
+            <h2>{t('poste.analytique')}</h2>
         <p className="faint" style={{ marginTop: 0 }}>
           {t('poste.analytique.aide')} <Link href={`${base}/analytique#${encodeURIComponent(ref)}`}>{t('poste.analytique.globale')}</Link>
         </p>
@@ -238,7 +245,7 @@ export default async function PostePage({
           <input type="hidden" name="code" value={ref} />
           <button type="submit" className="btn secondary small" data-analytique-proposer>{t('poste.analytique.proposer')}</button>
         </form>
-      </Repli>
+      </div>
 
       {/* 2.3 — LES ÉTAPES DU TRAVAIL, chacune une sous-section repliable. */}
       {(['processus', 'controle-interne', 'risques', 'echantillon', 'testing'] as const).map((cle) => {

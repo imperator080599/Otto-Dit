@@ -52,7 +52,11 @@ export async function executerNoteOttoAction(fd: FormData): Promise<never> {
 
 export async function repondreNoteAction(fd: FormData): Promise<never> {
   const engagementId = String(fd.get('engagement_id') ?? '');
-  const chemin = `/eng/${engagementId}/notes`;
+  /* LE GESTE REVIENT LÀ D'OÙ IL PART (1.3) : répondre depuis le panneau
+     latéral d'un écran de travail ne doit pas emmener à la vue transverse.
+     Le chemin est celui que l'écran porteur a mis dans le formulaire ; à
+     défaut, la vue des notes. Un refus s'affiche sur l'écran d'origine. */
+  const chemin = String(fd.get('chemin') ?? '') || `/eng/${engagementId}/notes`;
   return executer(chemin, async () => {
     const { user } = await requireMember(engagementId);
     await repondreNote(String(fd.get('note_id')), user.id, String(fd.get('texte') ?? ''));
@@ -61,7 +65,11 @@ export async function repondreNoteAction(fd: FormData): Promise<never> {
 
 export async function transitionNoteAction(fd: FormData): Promise<never> {
   const engagementId = String(fd.get('engagement_id') ?? '');
-  const chemin = `/eng/${engagementId}/notes`;
+  /* LE GESTE REVIENT LÀ D'OÙ IL PART (1.3) : répondre depuis le panneau
+     latéral d'un écran de travail ne doit pas emmener à la vue transverse.
+     Le chemin est celui que l'écran porteur a mis dans le formulaire ; à
+     défaut, la vue des notes. Un refus s'affiche sur l'écran d'origine. */
+  const chemin = String(fd.get('chemin') ?? '') || `/eng/${engagementId}/notes`;
   return executer(chemin, async () => {
     const { user } = await requireMember(engagementId);
     await transitionNote(String(fd.get('note_id')), user.id, String(fd.get('to')) as 'addressed' | 'closed');

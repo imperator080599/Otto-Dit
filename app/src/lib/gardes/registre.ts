@@ -427,6 +427,27 @@ export const GARDES: Garde[] = [
     rejet: /ui_repli_cle_valide/,
     neutraliser: 'alter table ui_repli drop constraint ui_repli_cle_valide',
   },
+  {
+    nature: 'service', code: 'G-23',
+    enonce: 'REPLI-03 — le locataire d’un rangement vient de la PERSONNE : aucune écriture ne peut le poser au nom d’un autre cabinet.',
+    point: 'memoriserRepli (services/replis.ts) : la ligne est insérée par jointure sur app_user, le locataire n’est pas un paramètre',
+    rayon: 'Un appel forgé écrivait une ligne portant le locataire d’un AUTRE cabinet, et la lecture, qui ne filtrait que la personne, la relisait — une fuite d’un cabinet à l’autre sur un objet d’écran (revue hostile n°8, constat 3).',
+    stops_looking: 'Ne dit rien de la RLS : le rôle qui sert l’application la contourne encore (PLAN_RLS, étape 3 non exécutée). Ne borne pas ce qu’une personne range chez elle — c’est REPLI-04 qui le fait.',
+    attaque: async (ctx) => {
+      /* On écrit un rangement pour une personne, puis on VÉRIFIE qu'aucune
+         ligne ne porte un locataire étranger : le service n'offre plus de
+         paramètre pour cela, et la jointure le rend impossible. */
+      const { memoriserRepli } = await import('@/lib/services/replis');
+      const { q } = await import('@/lib/db/client');
+      await memoriserRepli({ userId: ctx.preparateur, cle: 'attaque.locataire', ouvert: false });
+      const r = await q<{ n: string }>(
+        `select count(*)::text n from ui_repli u join app_user a on a.id = u.user_id
+         where u.cle = 'attaque.locataire' and u.tenant_id <> a.tenant_id`);
+      if (Number(r[0].n) > 0) throw new Error('IMPOSSIBLE : un rangement porte le locataire d’un autre cabinet');
+      throw new Error('REPLI-03 : le locataire vient de la personne — aucune ligne étrangère écrite');
+    },
+    rejet: /REPLI-03/,
+  },
 
   /* ── Gardes de SERVICE : une passe, par le refus nommé ─────────────────── */
   {

@@ -1844,6 +1844,35 @@ export async function conduire(
       dire('note ancrée : l’élément annoté porte le jeton d’attention',
         (await compte('.annotable.a-note')) >= 1, `${await compte('.annotable.a-note')} élément(s) marqué(s)`);
 
+      /* 1.3 — LE FIL S'OUVRE À CÔTÉ DU TRAVAIL. Le repère chiffré n'emmène
+         plus à la vue transverse : il ouvre le panneau latéral, sur place. */
+      const repere = p.locator('button.compte-notes').first();
+      dire('panneau : l’objet annoté porte un repère chiffré, et c’est un GESTE (il ouvre le fil)',
+        (await repere.count()) === 1, `${await compte('button.compte-notes')} repère(s)`);
+      if (await repere.count()) {
+        await repere.click();
+        await p.waitForTimeout(400);
+        const pan = p.locator('[data-panneau-notes]');
+        const texteP = (await pan.innerText().catch(() => '')).trim();
+        dire('panneau : le fil dit le type, l’ancienneté en jours OUVRÉS et le destinataire',
+          /ouvr|business/i.test(texteP) && R('note.type.a_corriger').test(texteP),
+          texteP.replace(/\s+/g, ' ').slice(0, 110) || 'panneau absent');
+        dire('panneau : le travail reste à l’écran — le fil s’ouvre À CÔTÉ, pas à la place',
+          (await compte('.annotable.a-note')) >= 1 && (await pan.count()) === 1,
+          `${await compte('.annotable.a-note')} objet(s) annoté(s) encore visible(s)`);
+        /* La clôture n'est pas offerte à l'auteur — et la RAISON est écrite
+           (ADR-028) : un geste absent sans explication est un geste disparu. */
+        const raison = await compte('[data-panneau-notes] [data-clore-refuse]');
+        dire('panneau : la clôture n’est pas offerte ici, et la raison est ÉCRITE',
+          raison >= 1 && (await compte('[data-panneau-notes] [data-clore]')) === 0,
+          `${raison} raison(s) écrite(s)`);
+        /* Répondre DEPUIS le fil : le geste revient sur l'écran de travail. */
+        await pan.locator('[data-repondre-texte]').first().fill('Réponse écrite depuis le panneau latéral (parcours).');
+        await soumettre(pan.locator(`button:has-text("${L('notes.repondre')}")`).first());
+        dire('panneau : répondre depuis le fil ramène à l’ÉCRAN DE TRAVAIL, jamais à la vue transverse',
+          !refus(p) && p.url().includes('/workpapers/'), refus(p) ?? p.url().replace(/^https?:\/\/[^/]+/, ''));
+      }
+
       // La vue transverse la montre, avec son ancre.
       await aller(`${eng}/notes`);
       dire('notes : la vue transverse porte l’ancre de la note',

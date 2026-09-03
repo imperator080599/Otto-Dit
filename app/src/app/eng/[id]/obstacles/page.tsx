@@ -3,7 +3,6 @@ import { requireMember } from '@/lib/core/auth';
 import { obstaclesAuVisa, type Famille } from '@/lib/services/obstacles';
 import { FAMILLES } from '../familles';
 import { tr } from '@/lib/i18n';
-import { Repli } from '@/app/repli';
 
 // LES OBSTACLES AU VISA — une seule liste, calculée (point 8).
 //
@@ -30,7 +29,8 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="stack">
-      <Repli cle="obst.titre" niveau={2} titre={t('obst.titre')}>
+      <div className="panel">
+        <h2>{t('obst.titre')}</h2>
         {liste.length === 0 ? (
           <p><span className="badge green">{t('obst.aucun')}</span></p>
         ) : (
@@ -39,7 +39,7 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
           <p><span className="badge amber">{t('obst.nObstacles', { n: liste.length })}</span>{' '}
             {t('obst.repartis', { n: parFamille.size })}</p>
         )}
-      </Repli>
+      </div>
 
       {[...parFamille.entries()].map(([famille, libelles]) => (
         <div className="panel warn" key={famille}>

@@ -141,8 +141,7 @@ export default async function CircularisationsPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <Repli cle="rail.circularisations" niveau={2} titre={t('rail.circularisations')}>
-      </Repli>
+      <div className="panel"><h2 style={{ margin: 0 }}>{t('rail.circularisations')}</h2></div>
 
       {sections.map((s) => (
         <div className="panel" key={s.cle}>

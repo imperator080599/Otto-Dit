@@ -439,6 +439,56 @@ export const SPECS: Spec[] = [
       return `${nOuvertes} note(s) ouverte(s), dont une sur une cellule`;
     },
   },
+  /* ── Nuit 2, 1.3 : le fil de revue s'ouvre à côté du travail ───────────── */
+  {
+    code: 'N-01',
+    tache: 'notes de revue : le repère d’une cellule ouvre le FIL à côté du travail — type, ancienneté en jours ouvrés, destinataire, réponses — et la clôture par l’auteur est refusée en toutes lettres',
+    conduire: async (c) => {
+      await ouvrir(c, `/eng/${c.eng}`);
+      const lien = await c.p.locator('.rail a.rail-lien[href*="/poste/REVENUE"]').first().getAttribute('href');
+      attendre(Boolean(lien), 'le poste REVENUE n’est pas atteignable dans le rail');
+      await ouvrir(c, lien!);
+      const reperes = await compte(c.p, 'button.compte-notes');
+      attendre(reperes >= 1, 'aucun repère de note sur le poste (le monde enrichi en pose une sur une cellule de leadsheet)');
+      await c.p.locator('button.compte-notes').first().click();
+      const panneau = c.p.locator('[data-panneau-notes]');
+      await panneau.waitFor({ state: 'visible', timeout: 10000 });
+      const notes = await compte(c.p, '[data-panneau-notes] [data-note]');
+      attendre(notes >= 1, 'le panneau s’ouvre sans aucune note');
+      const age = (await c.p.locator('[data-panneau-notes] [data-age]').first().innerText()).trim();
+      attendre(/ouvr|business/i.test(age), `l’ancienneté n’est pas dite en jours ouvrés : « ${age} »`);
+      /* LE GESTE ABSENT DIT POURQUOI : la note du monde enrichi est OUVERTE,
+         donc elle se traite avant de se clore — et le panneau l'écrit. */
+      const refus = await compte(c.p, '[data-panneau-notes] [data-clore-refuse]');
+      const clore = await compte(c.p, '[data-panneau-notes] [data-clore]');
+      attendre(refus + clore >= 1, 'ni bouton de clôture, ni raison écrite — le geste a disparu en silence');
+      /* Le travail est TOUJOURS à l'écran : le panneau s'ouvre à côté. */
+      const leadsheet = await compte(c.p, '[data-leadsheet]');
+      attendre(leadsheet === 1, 'la leadsheet a disparu quand le panneau s’est ouvert');
+      /* LE REPLI EST BASCULÉ EN DERNIER, ET REMIS COMME IL ÉTAIT (revue hostile
+         n°8, constat 6). `ui_repli` entrait au témoin sans qu'aucune tâche ne
+         l'écrive : 0 = 0 pour toujours, une table « identique » qui ne prouvait
+         rien. Le geste part donc du harnais — en écriture il laisse une ligne,
+         en sonde le témoin doit en trouver zéro.
+         DEUX PRÉCAUTIONS APPRISES ICI MÊME : on ne replie pas la section qui
+         PORTE le repère (la première du poste est la leadsheet : la replier
+         cache la cellule annotée, et le clic suivant attend un élément caché
+         trente secondes) ; et on REMET la section comme on l'a trouvée, sinon
+         la tâche suivante travaille sur un écran qu'on a rangé pour elle. */
+      const cle = 'poste.papiers';
+      const sommaire = c.p.locator(`details[data-repli="${cle}"] > summary`);
+      const etat = async () => c.p.evaluate(`!!document.querySelector('details[data-repli="${cle}"]')?.open`);
+      const avantRepli = await etat();
+      attendre((await sommaire.count()) === 1, `la section « ${cle} » n’est pas repliable`);
+      await sommaire.click();
+      await c.p.waitForTimeout(800);
+      const apresRepli = await etat();
+      attendre(apresRepli !== avantRepli, 'la section n’a pas changé d’état au clic');
+      await sommaire.click();
+      await c.p.waitForTimeout(800);
+      return `${reperes} repère(s) · ${notes} note(s) dans le panneau · ${age} · ${clore} clôture(s) offerte(s), ${refus} raison(s) écrite(s) · repli basculé puis remis`;
+    },
+  },
 ];
 
 /* LES ÉPREUVES (règle 17) : des cas CONNUS MAUVAIS que le harnais doit

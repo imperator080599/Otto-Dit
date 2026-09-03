@@ -111,7 +111,8 @@ export default async function MethodologyPage({
         </table>
       </div>
 
-      <Repli cle="meth.whichEngagementWorksUnderWhichMethodolog" niveau={2} titre={t('meth.whichEngagementWorksUnderWhichMethodolog')}>
+      <div className="panel">
+            <h2>{t('meth.whichEngagementWorksUnderWhichMethodolog')}</h2>
         <table className="data">
           <thead><tr><th>{t('col.engagement')}</th><th>{t('meth.methodology')}</th><th>{t('meth.reAssign')}</th></tr></thead>
           <tbody>
@@ -134,9 +135,10 @@ export default async function MethodologyPage({
             ))}
           </tbody>
         </table>
-      </Repli>
+      </div>
 
-      <Repli cle="meth.loadAMethodology" niveau={2} titre={t('meth.loadAMethodology')}>
+      <div className="panel">
+            <h2>{t('meth.loadAMethodology')}</h2>
         {/* data-actions-item : cette bande CHOISIT un fichier parmi n — un lien
             par objet, comme les onglets de pièce de l'atelier. C'est une
             sélection d'objet, pas n actions d'écran (docs/DENSITE.md). */}
@@ -157,7 +159,7 @@ export default async function MethodologyPage({
         ) : (
           <p className="faint">{t('meth.chooseAFileOrTheWhole')}</p>
         )}
-      </Repli>
+      </div>
 
     </div>
   );

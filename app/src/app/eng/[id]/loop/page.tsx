@@ -123,7 +123,8 @@ export default async function LoopPage({
         )}
       </div>
 
-      <Repli cle="loop.theTurnsWhichRequestsCameOut" niveau={2} titre={t('loop.theTurnsWhichRequestsCameOut')}>
+      <div className="panel">
+            <h2>{t('loop.theTurnsWhichRequestsCameOut')}</h2>
         {t.length === 0 ? (
           <>
             <form action={boucleAction}>
@@ -161,7 +162,7 @@ export default async function LoopPage({
             </tbody>
           </table>
         )}
-      </Repli>
+      </div>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function Repli({ cle, id, titre, etat, resume, niveau = 3, children }: {
   resume?: ReactNode;
   /** 2 pour une section de page (h2), 3 pour une sous-section (h3). */
   niveau?: 2 | 3;
-  children?: ReactNode;
+  children: ReactNode;
 }) {
   const t = useT();
   const memoire = useReplis();

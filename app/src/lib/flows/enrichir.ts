@@ -20,6 +20,7 @@ import { enregistrerAnalytique, lireAnalytique } from '@/lib/services/analytique
 import { vuePoste } from '@/lib/services/poste';
 import { logEvent } from '@/lib/core/events';
 import type { Ancre } from '@/lib/services/notes/ancres';
+import { joursOuvresAvant } from '@/lib/core/jours';
 
 // UN MONDE QUI A QUELQUE CHOSE À MONTRER (mandat de nuit n°2, 1.1).
 //
@@ -48,17 +49,9 @@ export interface RapportEnrichissement { etapes: EtapeEnrichissement[] }
 const ENG = IDS.engNep;
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 
-/** La date d'il y a `n` jours OUVRÉS (samedi et dimanche sautés). */
-export function joursOuvresAvant(n: number, depuis: Date = new Date()): Date {
-  const d = new Date(depuis);
-  let reste = n;
-  while (reste > 0) {
-    d.setUTCDate(d.getUTCDate() - 1);
-    const j = d.getUTCDay();
-    if (j !== 0 && j !== 6) reste--;
-  }
-  return d;
-}
+/* Le calcul des jours ouvrés vit dans `core/jours.ts` : le semis le lit pour
+   POSER les dates, l'écran le lit pour DIRE l'ancienneté — une seule règle. */
+export { joursOuvresAvant } from '@/lib/core/jours';
 
 /* Les papiers à créer sur le poste, dans l'ORDRE : le dernier visa de
    préparateur posé est celui du papier refait (v1 dépassée) — c'est lui que

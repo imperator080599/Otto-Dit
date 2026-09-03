@@ -57,6 +57,8 @@ export function EngNav({ entrees, tout: libelleTout, reduire, libelles }: {
     Object.fromEntries(GROUPES_CLES.map((g) => [g, memoire.lire(cleGroupe(g)) === false])));
   const [replie, setReplie] = useState(() => memoire.lire(CLE_RAIL) === false);
   const [astuce, setAstuce] = useState(false);
+  /* Le refus de mémorisation, écrit sous le rail — jamais tu. */
+  const [defaut, setDefaut] = useState<string | null>(null);
 
   useEffect(() => {
     setAstuce(lire(CLE_ASTUCE) !== '1');
@@ -69,8 +71,16 @@ export function EngNav({ entrees, tout: libelleTout, reduire, libelles }: {
     if (dossier) dossier.classList.toggle('rail-replie', replie);
   }, [replie]);
 
+  /* UN RANGEMENT QUE LA BASE N'A PAS RETENU LE DIT, ICI AUSSI (revue hostile
+     n°8, constats 2 et 5). Le résultat de la mémorisation était JETÉ (`void`)
+     et l'appel vivait DANS l'updater de `setState` — React s'en plaignait
+     (« Cannot update a component while rendering a different component »),
+     invisible en production où l'avertissement se tait. L'état se calcule
+     d'abord, l'écriture part ensuite, et son refus s'affiche. */
   const basculer = () => {
-    setReplie((r) => { void memoire.memoriser(CLE_RAIL, r); return !r; });
+    const versReplie = !replie;
+    setReplie(versReplie);
+    memoire.memoriser(CLE_RAIL, !versReplie).then((r) => setDefaut(r.ok ? null : r.raison));
   };
 
   /* LA TOUCHE [ : hors d'un champ de saisie, elle replie ou déplie le rail. */
@@ -94,6 +104,9 @@ export function EngNav({ entrees, tout: libelleTout, reduire, libelles }: {
         title={`${replie ? libelles.deplier : libelles.replier} — [`}>
         {replie ? '›' : `‹ ${libelles.replier}`}
       </button>
+      {defaut && (
+        <p className="rail-defaut" data-rail-defaut role="status">{t('repli.nonMemorise')} — {defaut}</p>
+      )}
       {astuce && !replie && (
         <div className="rail-astuce" data-rail-astuce>
           <span>{libelles.astuce}</span>
@@ -114,7 +127,7 @@ export function EngNav({ entrees, tout: libelleTout, reduire, libelles }: {
                  pas. Mesurée par `npm run clics`, corrigée ici. */
               const ouvert = ev.currentTarget.open;
               setReplies((r) => ({ ...r, [cle]: !ouvert }));
-              void memoire.memoriser(cleGroupe(cle), ouvert);
+              memoire.memoriser(cleGroupe(cle), ouvert).then((r) => setDefaut(r.ok ? null : r.raison));
             }}>
             <summary className="rail-titre">
               <span className="chevron" aria-hidden="true">▸</span>{titre}

@@ -52,7 +52,8 @@ export default async function TieOutPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <Repli cle="rail.pointage" niveau={2} titre={t('rail.pointage')}>
+      <div className="panel">
+            <h2>{t('rail.pointage')}</h2>
         <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
           <input type="hidden" name="engagement_id" value={id} />
           <button className="btn">{l.length === 0 ? t('fst.chargerPlaquette') : t('fst.repointer')}</button>
@@ -67,7 +68,7 @@ export default async function TieOutPage({
             ))}
           </p>
         )}
-      </Repli>
+      </div>
 
       {l.length > 0 && (
         <div className="panel">

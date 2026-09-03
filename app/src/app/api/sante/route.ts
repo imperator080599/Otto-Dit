@@ -194,7 +194,7 @@ export async function GET() {
     lectures.push(await essayer('replis mémorisés par personne (ui_repli, 0132)', async () => {
       const { compterReplis } = await import('@/lib/services/replis');
       const r = await compterReplis();
-      return `${r.replis} rangement(s) chez ${r.personnes} personne(s)`;
+      return `${r.replis} rangement(s) chez ${r.personnes} personne(s) · dernier ${r.dernier ?? '—'}`;
     }));
     lectures.push(await essayer('échantillonnage (sélection tirée)', async () => {
       const { currentRevenueSample } = await import('@/lib/services/sampling');

@@ -40,7 +40,8 @@ export default async function CompletionPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <Repli cle="eng.id.completion.1" niveau={2} titre={libelle('comp.completion')}>
+      <div className="panel">
+            <h2>{libelle('comp.completion')}</h2>
         <p>
           {libelle('comp.reportDate')} <strong>{fr(rapport)}</strong>
           {!rapport && (
@@ -53,7 +54,7 @@ export default async function CompletionPage({
             <button className="btn">{libelle('comp.openTheCompletionProcedures')}</button>
           </form>
         )}
-      </Repli>
+      </div>
 
       {t.map((x) => {
         const meta = NATURES.find((n) => n.code === x.nature)!;
