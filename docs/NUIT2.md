@@ -38,6 +38,20 @@ précédente, mesuré à 00:07 UTC, était `5f7c28b17e2b7e940a2c84f0d9997acb5eb3
 - **Le squelette de chargement** (N2-4) : écrit, puis retiré (voir plus bas).
 - **Le classement des tables hors dossier** (N2-5).
 
+## Ce que la CI a rougi cette nuit, et pourquoi
+
+Deux travaux rouges sur `main`, tous deux **des instruments qui mesuraient à côté**, pas des
+défauts du produit — et tous deux corrigés :
+
+- **`langue:epreuve` 13/15** : un point d'injection de l'épreuve n'existait plus (le titre
+  `<h2>{t('dash.requestTracker')}</h2>` est devenu le titre d'une section repliable). L'épreuve
+  suit l'écran : le point est déplacé, la règle redevient 15/15. Une épreuve qu'on retire parce
+  que l'écran a changé est une épreuve qu'on perd.
+- **`accept` contre l'URL, E-01 3/4** : la tâche lisait les badges des LIGNES de section — or
+  la liste dépend de qui regarde. Elle passait en local et tombait en ligne : elle mesurait
+  l'identité, pas l'écran. Elle lit désormais l'avancement du DOSSIER (le compte par état de la
+  barre, `data-legende`/`data-n`), et un état à zéro ne compte toujours pas.
+
 ## Ce qui n'est PAS prouvé
 
 - La **RLS** n'est toujours pas éprouvée sous le rôle qui sert l'application : il la contourne

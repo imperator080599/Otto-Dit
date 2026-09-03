@@ -565,6 +565,26 @@
       "gabarit": false
     },
     {
+      "nom": "panneau : l’objet annoté porte un repère chiffré, et c’est un GESTE (il ouvre le fil)",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : le fil dit le type, l’ancienneté en jours OUVRÉS et le destinataire",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : le travail reste à l’écran — le fil s’ouvre À CÔTÉ, pas à la place",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : la clôture n’est pas offerte ici, et la raison est ÉCRITE",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : répondre depuis le fil ramène à l’ÉCRAN DE TRAVAIL, jamais à la vue transverse",
+      "gabarit": false
+    },
+    {
       "nom": "notes : la vue transverse porte l’ancre de la note",
       "gabarit": false
     },
@@ -1372,6 +1392,26 @@
     },
     {
       "nom": "note ancrée : l’élément annoté porte le jeton d’attention",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : l’objet annoté porte un repère chiffré, et c’est un GESTE (il ouvre le fil)",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : le fil dit le type, l’ancienneté en jours OUVRÉS et le destinataire",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : le travail reste à l’écran — le fil s’ouvre À CÔTÉ, pas à la place",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : la clôture n’est pas offerte ici, et la raison est ÉCRITE",
+      "gabarit": false
+    },
+    {
+      "nom": "panneau : répondre depuis le fil ramène à l’ÉCRAN DE TRAVAIL, jamais à la vue transverse",
       "gabarit": false
     },
     {

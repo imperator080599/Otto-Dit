@@ -393,14 +393,20 @@ export const SPECS: Spec[] = [
     tache: 'monde enrichi : le tableau de bord a une forme — des sections dans les quatre états, réparties entre plusieurs personnes',
     conduire: async (c) => {
       await ouvrir(c, `/eng/${c.eng}`);
-      /* LES BADGES DES LIGNES, pas la légende : la légende du graphique nomme
-         toujours les quatre états, même à zéro — la lire serait un faux vert
-         (règle 17). Un état compte quand une LIGNE de section le porte. */
-      const badges = (await c.p.locator('table.data tbody .badge').allInnerTexts()).map((x) => x.trim());
-      const etats = ['not started|non commencé', 'in preparation|en préparation', 'completed|terminé', 'reviewed|revu']
-        .map((re) => new RegExp(re, 'i'));
-      const presents = etats.filter((re) => badges.some((b) => re.test(b)));
-      attendre(presents.length === 4, `${presents.length}/4 état(s) portés par une ligne de section (badges : ${[...new Set(badges)].slice(0, 8).join(' · ')})`);
+      /* L'AVANCEMENT DU DOSSIER, PAS LA LISTE D'UNE PERSONNE. La première
+         version lisait les badges des lignes de section : en local elle
+         passait, en ligne elle tombait — la table ne montre pas les mêmes
+         sections selon qui regarde, et la tâche mesurait alors l'identité,
+         pas l'écran (CI url du 2026-09-03).
+         La légende du graphique porte le COMPTE par état : un état compte
+         quand son compte est > 0 — une légende à zéro reste un zéro, donc pas
+         de faux vert (règle 17). */
+      const parts = await c.p.locator('[data-legende][data-n]').evaluateAll(
+        (els) => els.map((e) => ({ cle: e.getAttribute('data-legende'), n: Number(e.getAttribute('data-n')) })));
+      const attendus = ['not_started', 'in_preparation', 'completed', 'reviewed'];
+      const portes = attendus.filter((k) => parts.some((p) => p.cle === k && p.n > 0));
+      attendre(portes.length === 4,
+        `${portes.length}/4 état(s) portés par au moins une section (${parts.filter((p) => attendus.includes(p.cle ?? '')).map((p) => `${p.cle}:${p.n}`).join(' · ')})`);
       const personnes = new Set((await c.p.locator('table.data tbody tr td:nth-child(3)').allInnerTexts()).map((x) => x.trim()).filter((x) => x && x !== '—'));
       attendre(personnes.size >= 2, `${personnes.size} détenteur(s) distinct(s) sur les sections`);
       return `quatre états portés par des lignes de section · ${personnes.size} détenteur(s)`;

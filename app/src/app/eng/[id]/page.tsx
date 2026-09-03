@@ -46,7 +46,12 @@ function Barre({ parts }: { parts: { cle: string; n: number; classe: string; lib
       </div>
       <div className="row legende">
         {parts.map((p) => (
-          <span key={p.cle} className="legende-item">
+          /* La part est LISIBLE PAR UNE MACHINE (data-legende, data-n) : le
+             harnais lit l'avancement du DOSSIER, pas la liste de sections
+             qu'une personne voit — celle-ci dépend de qui regarde, et une
+             tâche d'acceptation qui en dépend mesure l'identité, pas l'écran
+             (CI url du 2026-09-03, E-01 rouge en ligne, verte en local). */
+          <span key={p.cle} className="legende-item" data-legende={p.cle} data-n={p.n}>
             <span aria-hidden="true" style={{ color: COULEUR[p.classe] }}>{p.repere}</span>
             {' '}{p.libelle} <strong>{p.n}</strong>
           </span>

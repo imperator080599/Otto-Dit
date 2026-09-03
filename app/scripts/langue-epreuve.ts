@@ -69,10 +69,14 @@ const CAS: Cas[] = [
     /* LA RÈGLE EST STRUCTURELLE, PAS LINGUISTIQUE : si elle ne voit que le
        français, elle n'a rien prouvé — l'état mixte revient par l'anglais. */
     nom: 'une chaîne ANGLAISE hors catalogue',
+    /* Le point d'injection a changé d'ancre le 2026-09-03 : « Request tracker »
+       est devenu le TITRE d'une section repliable (`titre={t(...)}`), donc la
+       chaîne `<h2>{t('dash.requestTracker')}</h2>` n'existe plus dans l'écran.
+       L'épreuve suit l'écran — on la remet à jour, on ne la retire pas. */
     fichier: 'eng/[id]/dashboard/page.tsx',
-    avant: "<h2>{t('dash.requestTracker')}</h2>",
-    apres: '<h2>Request tracker</h2>',
-    attendu: 'Request tracker',
+    avant: "<h2>{t('col.deficiencies')}</h2>",
+    apres: '<h2>Deficiency register</h2>',
+    attendu: 'Deficiency register',
   },
   {
     /* LA CLASSE QUE LA TROISIÈME VERSION RELEVAIT COMME UN LITTÉRAL : un

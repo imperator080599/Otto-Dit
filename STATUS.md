@@ -1958,3 +1958,21 @@ du mandat, non faite.
 **Ce que je n'ai PAS fait** : 1.4, 1.5, tout l'étage 2, tout l'étage 3, tout l'étage 4 ; les
 onglets d'ancrage (N2-1) ; le squelette (N2-4) ; le classement des tables hors dossier (N2-5).
 
+### Deux instruments qui mesuraient à côté, trouvés par la CI (2026-09-03, 03 h)
+
+La CI a rougi sur `main` deux fois de suite, et **aucune des deux fois ce n'était le produit** :
+
+- **`langue:epreuve` 13/15** : un point d'injection de l'épreuve n'existait plus — le titre
+  `<h2>{t('dash.requestTracker')}</h2>` était devenu le titre d'une section repliable. L'épreuve
+  suit l'écran : le point est déplacé, la règle redevient **15/15**. Une épreuve qu'on retire
+  parce que l'écran a changé est une épreuve qu'on perd.
+- **`accept` contre l'URL déployée, E-01 3/4** : la tâche lisait les badges des LIGNES de
+  section — or la liste montrée dépend de qui regarde. Elle passait en local et tombait en
+  ligne : **elle mesurait l'identité, pas l'écran**. Elle lit désormais l'avancement du DOSSIER
+  (le compte par état de la barre, `data-legende`/`data-n`) ; un état à zéro ne compte toujours
+  pas, donc pas de faux vert.
+
+Chaîne rejouée après correction : `accept --ecrire` 17/17 · `accept` (sonde) 17/17 · témoin
+« aucune écriture (12 tables) » · `screens` 85/0 · `clics` **194 étapes, 0 échec**, et les cinq
+stations neuves de 1.3 figées (193 au total).
+
