@@ -66,7 +66,7 @@ jobs:
         # que la production emploie qui répond. Un `rolbypassrls = t` sur
         # `otto_app` interdirait l'étape 3 : le travail rougit plutôt que de
         # laisser passer un rôle qui ne garderait rien.
-        run: npx tsx scripts/db/otto-app.ts
+        run: npx tsx scripts/db/verifier-role-applicatif.ts
         env:
           OTTO_CI_BASE_JETABLE: "1"
       - name: la suite entière, contre la base réseau par le pooler

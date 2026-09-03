@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { q01 } from '@/lib/db/client';
-import { sansLocataire } from '@/lib/db/sans-locataire';
+import { sansLocataire, enregistrerPoseurDeLocataire } from '@/lib/db/sans-locataire';
 
 // Demo auth (ADR-006): auditor side = dev user switcher setting an httpOnly cookie;
 // client side = per-contact magic token in the portal URL. Authorization (engagement
@@ -77,3 +77,18 @@ export async function portalSession(token: string): Promise<PortalSession | null
     return { contact, engagements };
   });
 }
+
+/* ── LE POSEUR DE LOCATAIRE DU RUNTIME NEXT (PLAN_RLS étape 1, option (a)) ──
+   Enregistré à l'import de ce module, que tout écran traverse. Il rend le
+   cabinet de la personne connectée — et RIEN quand personne ne l'est : à ce
+   moment-là, ce sont les chemins écrits (sans-locataire.ts) qui parlent.
+
+   PAS DE RÉCURSION : `getSessionUser` lit sous la dérogation « session », qui
+   ouvre une portée — le garde de `q()` rend donc la main avant de redemander.
+   Ce module importe déjà `next/headers` ; `db/client.ts`, lui, ne le pourra
+   jamais (les scripts, les tests et les migrations l'importent), et c'est
+   pourquoi le poseur est ENREGISTRÉ plutôt qu'appelé. */
+enregistrerPoseurDeLocataire(async () => {
+  const u = await getSessionUser();
+  return u?.tenant_id ?? null;
+});

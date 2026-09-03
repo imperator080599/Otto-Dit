@@ -64,7 +64,7 @@ describe('couverture RLS (ADR-109)', () => {
 
   /**
    * LES SIX RETRAITS DE 0140, ÉPROUVÉS ICI ET PAS SEULEMENT EN CI (revue
-   * hostile n°9, constat 14). Le script `scripts/db/otto-app.ts` ne tourne que
+   * hostile n°9, constat 14). Le script `scripts/db/verifier-role-applicatif.ts` ne tourne que
    * contre un Postgres RÉSEAU, dont le secret n'est pas posé : il n'a jamais
    * tourné. PGlite, lui, EST postgres — le rôle et ses droits existent après
    * migration, donc la vérification se fait ici, à chaque suite.
@@ -82,15 +82,27 @@ describe('couverture RLS (ADR-109)', () => {
       }
     }
     const definers = await q<{ n: string }>(
-      `select count(*)::text n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+      `select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
        where s.nspname = 'public' and p.prosecdef
-         and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')`);
+         and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+       order by 1`);
     const defauts = verdictOttoApp({
       role: { bypass: role[0].b, superutilisateur: role[0].s, connexion: role[0].l },
       ouvertes,
-      definers: Number(definers[0].n),
+      definers: definers.map((x) => x.n),
     });
     expect(defauts, 'le rôle applicatif ne tient pas ce que 0140 promet').toEqual([]);
+  });
+
+  it('le registre SQL des `security definer` et la liste du CODE disent la même chose', async () => {
+    /* Deux sources pour une même règle : celle qu'on croit a toujours tort
+       (règle 1). Le registre vit en base parce qu'une migration doit pouvoir
+       le consulter ; la liste vit dans le code parce que le build et la suite
+       doivent pouvoir le lire. Ce test les tient ensemble. */
+    const { DEFINERS_JUSTIFIEES } = await import('./assertions-role');
+    const enBase = (await q<{ nom: string }>(`select nom from rls_definer_justifiee order by 1`)).map((x) => x.nom);
+    expect(enBase, 'le registre SQL est vide — 0141 ne l’a pas rempli').not.toEqual([]);
+    expect(enBase).toEqual(Object.keys(DEFINERS_JUSTIFIEES).sort());
   });
 
   it('0140 est REJOUABLE — une seconde application ne lève pas (les politiques se déposent avant d’être posées)', async () => {

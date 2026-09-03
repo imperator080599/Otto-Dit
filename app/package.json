@@ -48,7 +48,8 @@
     "gardes": "tsx scripts/gardes.ts",
     "gardes:figer": "tsx scripts/gardes.ts --figer",
     "plancher": "tsx scripts/plancher.ts",
-    "plancher:figer": "tsx scripts/plancher.ts --figer"
+    "plancher:figer": "tsx scripts/plancher.ts --figer",
+    "screens:garde": "tsx scripts/screens/run.ts --garde"
   },
   "keywords": [],
   "author": "",

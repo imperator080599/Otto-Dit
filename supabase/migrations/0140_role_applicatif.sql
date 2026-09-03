@@ -145,6 +145,22 @@ revoke update, delete on server_error from otto_app;
 -- elle CONTOURNERAIT la RLS. Mesuré : 0 fonction `definer` sur 12. Ce bloc le
 -- REVÉRIFIE à l'application de la migration et ARRÊTE tout si une apparaît —
 -- une règle qui ne s'exécute jamais n'est pas une règle.
+/* LE REGISTRE DES `SECURITY DEFINER` JUSTIFIÉES — une TABLE, pas un
+   commentaire. Le bloc ci-dessous garde le jour de l'application ; le registre
+   permet à une migration ULTÉRIEURE d'ajouter une fonction `definer` en
+   écrivant sa raison au même endroit, plutôt qu'en désarmant la garde. Le code
+   tient la même liste (assertions-role.ts, DEFINERS_JUSTIFIEES) et un test
+   vérifie que les deux disent la même chose — deux sources qui divergent, c'est
+   toujours celle qu'on croit qui a tort (règle 1). */
+create table if not exists rls_definer_justifiee (
+  nom text primary key,
+  raison text not null check (btrim(raison) <> ''),
+  inscrite_le timestamptz not null default now()
+);
+alter table rls_definer_justifiee enable row level security;
+alter table rls_definer_justifiee force row level security;
+revoke all on rls_definer_justifiee from otto_app;
+
 do $$
 declare n int;
 begin
@@ -159,9 +175,15 @@ begin
   select count(*) into n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
    where s.nspname = 'public' and p.prosecdef
      and not exists (select 1 from pg_depend d
-                     where d.objid = p.oid and d.deptype = 'e');
+                     where d.objid = p.oid and d.deptype = 'e')
+     and not exists (select 1 from rls_definer_justifiee j where j.nom = p.proname);
+  /* LA LISTE DES JUSTIFIÉES VIT DANS LE CODE (assertions-role.ts,
+     DEFINERS_JUSTIFIEES) et non ici : une migration ne se relit pas, un
+     recensement si. Ce bloc garde le jour de l'application ; le verdict du
+     build et la suite gardent tous les jours. Au 2026-09-03, 0141 en ajoute
+     deux (le portail par jeton), et elles sont créées APRÈS ce bloc. */
   if n > 0 then
-    raise exception '0140 : % fonction(s) SECURITY DEFINER dans public — elles contournent la RLS. Statuez-les par écrit avant d''accorder execute à otto_app.', n;
+    raise exception '0140 : % fonction(s) SECURITY DEFINER dans public — elles contournent la RLS. Statuez-les par écrit (DEFINERS_JUSTIFIEES) avant d''accorder execute à otto_app.', n;
   end if;
 end $$;
 

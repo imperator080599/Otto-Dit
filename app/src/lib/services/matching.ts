@@ -10,7 +10,7 @@ import { frameworkSet } from './fsli';
 import { currentRevenueSample } from './sampling';
 import { latestExtraction } from './extraction/ladder';
 import { fieldsToInvoice, fieldsToDelivery } from './extraction/fields';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S6 — deterministic vouching over the drawn sample (L0, engine_run recorded), typed
 // exceptions with lifecycle, risk-flag exceptions (manual JE, credit-note pattern),
@@ -503,6 +503,7 @@ export async function recordScopeLimitation(
   userId: string,
   input: { explanation: string; alternativeProcedures: string; amountAtRiskCents?: number | null },
 ): Promise<void> {
+  await assertMembreDe('exception', exceptionId, userId, 'consigner une limitation d’étendue sur un écart');
   if (!input.explanation?.trim()) throw new Error('record why the evidence could not be obtained, in the client’s words');
   if (!input.alternativeProcedures?.trim()) {
     throw new Error('record the alternative procedures performed (or state explicitly that none was possible)');
@@ -549,6 +550,7 @@ export async function escalateToMisstatement(
   userId: string,
   opts: { kind: 'factual' | 'judgmental' | 'projected'; amountCents: number; corrected: boolean; notes?: string },
 ): Promise<string> {
+  await assertMembreDe('exception', exceptionId, userId, 'escalader un écart en anomalie');
   const x = await q1<{ engagement_id: string; description: string }>(`select engagement_id, description from exception where id = $1`, [exceptionId]);
   const ctx = await engagementCtx(x.engagement_id);
   const m = await q1<{ id: string }>(

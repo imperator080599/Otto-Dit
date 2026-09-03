@@ -2055,7 +2055,7 @@ gravité et son état : dix-huit corrigés, deux corrigés en partie avec la det
 - **`app_state` reste entièrement inscriptible sous `otto_app`** : c'est l'horloge de toute
   l'application. Risque théorique aujourd'hui (`warp` n'est appelé que par le semis), écrit dans
   0140, non refermé.
-- **`scripts/db/otto-app.ts` n'a jamais tourné contre un vrai Postgres** ; sa logique est
+- **`scripts/db/verifier-role-applicatif.ts` n'a jamais tourné contre un vrai Postgres** ; sa logique est
   éprouvée sur cinq cas connus mauvais, et les six retraits de 0140 sont vérifiés localement.
 - **Le chemin `scripts` n'est pas câblé** : semis et harnais tournent sous `postgres`.
 - **Un balayage d'écrans est tombé une fois** dans la suite complète (serveur mort à la 45ᵉ

@@ -21,7 +21,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { assertAccepte } from './acceptance';
 import type { Catalogue } from '@/lib/methodology/types';
 import { motif, type Motif } from './motif';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 export class TeamRuleError extends Error {
   constructor(message: string) {
@@ -268,6 +268,7 @@ export async function answerRubric(
   answer: 'oui' | 'non',
   detail = '',
 ): Promise<Declaration> {
+  await assertMembreDe('independence_declaration', declarationId, actorUserId, 'répondre à une rubrique d’indépendance', { equipe: false });
   const d = await q1<Declaration>(`select ${COLONNES_DECL} from independence_declaration where id = $1`, [declarationId]);
   if (d.signed_at) throw new TeamRuleError('déclaration déjà signée : elle se révise, elle ne se réécrit pas');
   if (actorUserId !== d.user_id) throw new TeamRuleError('on remplit sa propre déclaration, pas celle d’un autre');
@@ -302,6 +303,7 @@ export function missingForSignature(cat: Catalogue, d: Declaration | null): stri
 
 /** On signe POUR SOI. La base le refuse aussi (contrainte), et c'est voulu. */
 export async function signDeclaration(declarationId: string, actorUserId: string): Promise<Declaration> {
+  await assertMembreDe('independence_declaration', declarationId, actorUserId, 'signer une déclaration d’indépendance', { equipe: false });
   const d = await q1<Declaration>(`select ${COLONNES_DECL} from independence_declaration where id = $1`, [declarationId]);
   if (d.signed_at) throw new TeamRuleError('déclaration déjà signée');
   if (actorUserId !== d.user_id) {

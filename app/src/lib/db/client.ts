@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import path from 'node:path';
 import fs from 'node:fs';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { armerLeGarde, assertLocataire, OUVERTURE_TRANSACTION } from './sans-locataire';
+import { armerLeGarde, assertLocataire, contexteDeLocataire, gardeArme, locataireDeLaSession, sousLocataire, OUVERTURE_TRANSACTION } from './sans-locataire';
 
 // LA BASE, DEUX PILOTES, UNE SURFACE (ADR-109, P0a du mandat).
 //
@@ -261,9 +261,18 @@ const transactionCourante = new AsyncLocalStorage<Interrogeable>();
 
 /** Query returning rows. Placeholders: $1, $2… */
 export async function q<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  assertLocataire(sql);
   const t = transactionCourante.getStore();
-  if (t) return (await t.query<T>(sql, params)).rows;
+  if (t) { assertLocataire(sql); return (await t.query<T>(sql, params)).rows; }
+  /* PERSONNE N'A POSÉ LE LOCATAIRE, ET LE GARDE EST ARMÉ : on le DEMANDE à la
+     session avant de refuser. C'est le câblage de l'étape 1 (option (a) de
+     PLAN_RLS) : un écran n'a rien à envelopper, et un oubli ne peut donc pas
+     rendre une page vide. Si la session ne donne rien, `assertLocataire` parle
+     comme avant — c'est aux chemins ÉCRITS de se déclarer. */
+  if (gardeArme() && !contexteDeLocataire()) {
+    const locataire = await locataireDeLaSession();
+    if (locataire) return sousLocataire(locataire, () => q<T>(sql, params));
+  }
+  assertLocataire(sql);
   const db = await getDb();
   const res = await db.query<T>(sql, params);
   return res.rows;
@@ -308,7 +317,15 @@ export async function tx<T>(fn: (run: (sql: string, params?: unknown[]) => Promi
      On garde donc l'ENTRÉE — l'ouverture d'une transaction NEUVE ; un `run()`
      à l'intérieur n'est pas revérifié, parce que la transaction l'a été, et un
      point de reprise (savepoint) non plus, pour la même raison. */
-  if (!courante) assertLocataire(OUVERTURE_TRANSACTION);
+  if (!courante) {
+    /* Même règle qu'au-dessus : on DEMANDE avant de refuser. Une action serveur
+       qui ouvre une transaction sans avoir posé le locataire le reçoit ici. */
+    if (gardeArme() && !contexteDeLocataire()) {
+      const locataire = await locataireDeLaSession();
+      if (locataire) return sousLocataire(locataire, () => tx(fn));
+    }
+    assertLocataire(OUVERTURE_TRANSACTION);
+  }
   if (courante) {
     const point = `otto_reprise_${++compteurPointDeReprise}`;
     await courante.query(`savepoint ${point}`);

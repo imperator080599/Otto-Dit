@@ -1,5 +1,5 @@
 import { tx, q } from '@/lib/db/client';
-import { sousLocataire, locataireDuContexte } from '@/lib/db/sans-locataire';
+import { sousLocataire, sousDerogation, locataireDuContexte } from '@/lib/db/sans-locataire';
 
 // POSER LE LOCATAIRE DANS LA TRANSACTION (docs/PLAN_RLS.md, étape 1).
 //
@@ -42,4 +42,32 @@ export async function withTenant<T>(tenantId: string, fn: () => Promise<T>): Pro
 /** Le locataire tel que le CODE l'a posé (le contexte asynchrone), sans requête. */
 export function locataireDuCode(): string | null {
   return locataireDuContexte();
+}
+
+/**
+ * LE PORTAIL CLIENT : LE JETON POSÉ POUR LA DURÉE DE LA TRANSACTION
+ * (migration 0141 ; mandat du soir, étage 0.2).
+ *
+ * Le contact client n'appartient à AUCUN cabinet : aucune politique par
+ * locataire ne peut rien pour lui. Son identité, c'est son jeton — comme le
+ * cookie l'est pour l'auditeur. On le pose donc de la même façon (`set local`,
+ * seul réglage sûr derrière un pooler de transaction), et les politiques
+ * `*_portail` de 0141 s'en servent.
+ *
+ * On ouvre AUSSI la dérogation « portail-client » : sans elle, le garde LOC-01
+ * refuserait une transaction sans locataire — or ici l'absence de locataire est
+ * la règle, pas l'oubli.
+ *
+ * OÙ ELLE CESSE DE REGARDER : elle ne vérifie pas que le jeton existe (la base
+ * s'en charge : sans contact actif, `otto_portal_contact()` rend NULL et les
+ * politiques ne laissent rien passer) ; et elle ne borne pas ce que le code du
+ * portail fait de ce qu'il lit — la liste blanche (docs/04 §9.7) reste tenue en
+ * application.
+ */
+export async function withJeton<T>(token: string, fn: () => Promise<T>): Promise<T> {
+  if (!token) throw new Error('withJeton : un jeton vide n’est pas un jeton');
+  return sousDerogation('portail-client', () => tx(async (run) => {
+    await run(`select set_config('otto.portal_token', $1, true)`, [token]);
+    return fn();
+  }));
 }

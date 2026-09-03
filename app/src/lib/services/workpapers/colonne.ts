@@ -2,7 +2,7 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { getField, type ExtractedField } from '@/lib/services/extraction/fields';
 import { nextSeq } from '@/lib/services/requests';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // LA COLONNE AJOUTÉE AU TABLEAU DE TESTING (ADR-099).
 //
@@ -123,6 +123,7 @@ export async function ajouterColonne(
 export async function confirmerEtRemplir(
   columnId: string, userId: string, correction?: { champ: string },
 ): Promise<{ trouvees: number; introuvables: number }> {
+  await assertMembreDe('wp_extra_column', columnId, userId, 'confirmer et remplir une colonne ajoutée');
   const col = await q1<{
     id: string; engagement_id: string; statut: string; titre: string;
     interpretation: Interpretation | null;
@@ -218,6 +219,7 @@ export async function confirmerEtRemplir(
 
 /** Une colonne ne se supprime pas : elle s'annule, et l'annulation se voit. */
 export async function annulerColonne(columnId: string, userId: string): Promise<void> {
+  await assertMembreDe('wp_extra_column', columnId, userId, 'annuler une colonne ajoutée');
   const col = await q1<{ id: string; engagement_id: string; statut: string }>(
     `select id, engagement_id, statut from wp_extra_column where id = $1`, [columnId],
   );
@@ -238,6 +240,7 @@ export async function annulerColonne(columnId: string, userId: string): Promise<
  * par le circuit L2 existant (approveSend). Jamais d'envoi automatique.
  */
 export async function proposerClarification(columnId: string, userId: string): Promise<{ requestId: string; items: number }> {
+  await assertMembreDe('wp_extra_column', columnId, userId, 'proposer une clarification sur une colonne');
   const col = await q1<{ id: string; engagement_id: string; titre: string; statut: string; interpretation: Interpretation | null }>(
     `select id, engagement_id, titre, statut, interpretation from wp_extra_column where id = $1`, [columnId],
   );

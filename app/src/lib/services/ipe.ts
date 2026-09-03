@@ -1,7 +1,7 @@
 import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // L'INFORMATION PRODUITE PAR L'ENTITÉ — IPE (revue utilisateur n°2 §3.1).
 //
@@ -238,6 +238,12 @@ export async function utiliserRapport(
   workpaperId: string, rapportId: string, periodeAttendue: string, userId: string,
   approprie: boolean | null = true,
 ): Promise<void> {
+  /* DEUX OBJETS : le papier ET le rapport IPE qu'on lui rattache. */
+  const engPapier = await assertMembreDe('workpaper', workpaperId, userId, 'employer un rapport IPE dans un papier');
+  const engRapport = await assertMembreDe('ipe_rapport', rapportId, userId, 'employer un rapport IPE dans un papier');
+  if (engPapier !== engRapport) {
+    throw new Error('ETANCH-06 : employer un rapport IPE dans un papier — le papier et le rapport ne sont pas du même dossier');
+  }
   const wp = await q1<{ engagement_id: string; tenant_id: string; status: string }>(
     `select w.engagement_id::text, e.tenant_id::text, w.status
      from workpaper w join engagement e on e.id = w.engagement_id where w.id = $1`, [workpaperId]);
@@ -312,6 +318,7 @@ export interface SaisieIpe {
 export async function enregistrerIpe(
   workpaperId: string, s: SaisieIpe, userId: string,
 ): Promise<void> {
+  await assertMembreDe('workpaper', workpaperId, userId, 'déclarer l’IPE d’un papier');
   const wp = await q1<{ engagement_id: string; tenant_id: string; code: string; status: string }>(
     `select w.engagement_id::text, e.tenant_id::text, w.code, w.status
      from workpaper w join engagement e on e.id = w.engagement_id where w.id = $1`,

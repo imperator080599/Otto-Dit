@@ -58,6 +58,7 @@ export async function importerBalanceAux(opts: {
   contenu: Uint8Array;
   userId: string;
 }): Promise<string> {
+  await assertMembre(opts.engagementId, opts.userId, 'importer une balance auxiliaire');
   if (!opts.contenu.length) throw new Error('balance auxiliaire : le fichier est vide — rien à importer');
   const deja = await q01<{ id: string }>(
     `select id from aux_balance_file where engagement_id = $1 and cote = $2 and exercice = $3`,
@@ -280,6 +281,7 @@ export async function analyseAux(engagementId: string, cote: Cote, seuilPts = 3)
 export async function proposerCandidat(
   engagementId: string, cote: Cote, code: string, seuilPts: number, userId: string,
 ): Promise<void> {
+  await assertMembre(engagementId, userId, 'proposer un candidat de balance auxiliaire');
   const analyse = await analyseAux(engagementId, cote, seuilPts);
   const c = analyse.candidats.find((x) => x.code === code);
   if (!c) throw new Error(`balance auxiliaire : le candidat « ${code} » n'existe pas (l'analyse a peut-être changé avec le seuil)`);

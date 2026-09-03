@@ -6,6 +6,7 @@ import { decodeFecBytes, parseFec } from '@/lib/kernel/fec';
 import { computeFlags, defaultFlagConfig } from '@/lib/kernel/flags';
 import type { Violation } from '@/lib/kernel/types';
 import { centsToNum } from '@/lib/util/num';
+import { assertMembre } from '@/lib/core/membre';
 
 // S1 import services: generic TB importer (column mapping) + FEC adapter wiring.
 // Re-import supersedes, never overwrites; ADR-016 guards drawn samples.
@@ -131,6 +132,7 @@ export async function importTb(opts: {
   periodKind: 'current' | 'prior';
   ipe?: CaptureIpe;
 }): Promise<{ importFileId: string; snapshotId?: string; violations: Violation[]; ok: boolean }> {
+  await assertMembre(opts.engagementId, opts.userId, 'importer une balance générale');
   const ctx = await engagementCtx(opts.engagementId);
   const parsed = parseTbCsv(opts.content, opts.mapping);
   const ok = !parsed.violations.some((v) => v.severity === 'error');
@@ -200,6 +202,7 @@ export async function importFec(opts: {
   confirmInvalidation?: boolean;
   ipe?: CaptureIpe;
 }): Promise<{ importFileId: string; violations: Violation[]; ok: boolean; rowCount: number; invalidatedSamples?: number }> {
+  await assertMembre(opts.engagementId, opts.userId, 'importer un grand livre (FEC)');
   const ctx = await engagementCtx(opts.engagementId);
   const affected = await drawnSamples(opts.engagementId);
   if (affected.length > 0 && !opts.confirmInvalidation) {

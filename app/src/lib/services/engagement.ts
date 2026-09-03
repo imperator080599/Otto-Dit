@@ -2,6 +2,7 @@ import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { methodologieCourante } from '@/lib/methodology/depot';
 import { assurancePacks } from '@/lib/packs';
+import { assertCabinetDuLocataire } from '@/lib/core/membre';
 
 // LA CRÉATION DU DOSSIER — l'autre moitié du point 1.
 //
@@ -70,6 +71,7 @@ export function lireDateFr(s: string): string | null {
 export async function creerClient(input: {
   tenantId: string; name: string; country?: string; currency?: string; actorUserId: string;
 }): Promise<{ id: string }> {
+  await assertCabinetDuLocataire(input.tenantId, input.actorUserId, 'créer un client');
   const name = input.name.trim().replace(/\s+/g, ' ');
   if (name.length < 2) throw new EngagementRuleError('un client se nomme — au moins deux caractères');
   /* LE DOUBLON SE CHERCHE SUR LA FORME NORMALISÉE — casse, accents, espaces

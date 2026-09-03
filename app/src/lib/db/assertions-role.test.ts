@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { getDb } from '@/lib/db/client';
-import { etatRole, tablesRls, verdictRls, verdictOttoApp, bloc } from './assertions-role';
+import { etatRole, tablesRls, verdictRls, verdictOttoApp, verdictPolitiques, politiquesRls, POLITIQUES_JUSTIFIEES, bloc, type PolitiqueRls } from './assertions-role';
 
 // LE BLOC D'ASSERTIONS S'ÉPROUVE CONTRE UN CAS CONNU MAUVAIS (règle 17) —
 // ici, sur PGlite, avant de tourner sur la base réseau au build.
@@ -69,14 +69,14 @@ describe('assertions rôle / RLS', () => {
   /**
    * LE VERDICT SUR `otto_app`, ÉPROUVÉ CONTRE CINQ CAS CONNUS MAUVAIS.
    *
-   * POURQUOI ICI ET PAS DANS LE SCRIPT : `scripts/db/otto-app.ts` ne s'exécute
+   * POURQUOI ICI ET PAS DANS LE SCRIPT : `scripts/db/verifier-role-applicatif.ts` ne s'exécute
    * QUE contre un Postgres réseau (une base de CI, secret non posé). Sa logique
    * ne serait donc jamais jouée — un détecteur qui n'a jamais échoué exprès n'a
    * jamais été testé (règle 17). Elle vit dans une fonction pure, et ces cas la
    * font échouer une fois par défaut possible.
    */
   describe('le verdict sur le rôle applicatif otto_app (0140)', () => {
-    const bon = { role: { bypass: false, superutilisateur: false, connexion: true }, ouvertes: [], definers: 0 };
+    const bon = { role: { bypass: false, superutilisateur: false, connexion: true }, ouvertes: [], definers: [] as string[] };
 
     it('le cas SAIN ne dit rien', () => {
       expect(verdictOttoApp(bon)).toEqual([]);
@@ -98,11 +98,55 @@ describe('assertions rôle / RLS', () => {
     });
 
     it('un privilège que 0140 devait retirer est resté ouvert, et une fonction definer est apparue', () => {
-      const d = verdictOttoApp({ ...bon, ouvertes: ['_migrations.select', 'notification.insert'], definers: 2 });
-      expect(d.length).toBe(3);
+      const d = verdictOttoApp({ ...bon, ouvertes: ['_migrations.select', 'notification.insert'], definers: ['fuite_definer', 'otto_portal_contact'] });
+      expect(d.length, 'la fonction JUSTIFIÉE ne doit pas compter comme un défaut').toBe(3);
       expect(d.join(' ')).toMatch(/_migrations\.select est ouvert/);
       expect(d.join(' ')).toMatch(/notification\.insert est ouvert/);
-      expect(d.join(' ')).toMatch(/2 fonction\(s\) SECURITY DEFINER/);
+      expect(d.join(' ')).toMatch(/fuite_definer : fonction SECURITY DEFINER non justifiée/);
+    });
+  });
+
+  /**
+   * LE VERDICT QUI REGARDE `cmd`, ÉPROUVÉ CONTRE QUATRE CAS CONNUS MAUVAIS
+   * (règle 17) — et contre le schéma RÉEL, qui doit être sain.
+   */
+  describe('le verdict sur les politiques (la commande, pas seulement le prédicat)', () => {
+    const p = (o: Partial<PolitiqueRls>): PolitiqueRls => ({
+      table: 't', nom: 'p', cmd: 'ALL', using: '(tenant_id = otto_tenant())',
+      withCheck: null, tenant: true, ...o,
+    });
+
+    it('le schéma RÉEL ne porte aucun de ces défauts', async () => {
+      const pol = await politiquesRls(await getDb());
+      expect(pol.length, 'aucune politique lue : l’instrument mesure à côté').toBeGreaterThan(100);
+      expect(verdictPolitiques(pol)).toEqual([]);
+    });
+
+    it('LA DIVERGENCE VOULUE est bien un défaut quand on retire sa justification — sinon la règle ne servirait à rien', async () => {
+      const pol = await politiquesRls(await getDb());
+      const sans = verdictPolitiques(pol, {});
+      expect(sans.join(' '), 'server_error n’est plus dénoncée sans sa justification : la règle ne voit plus rien')
+        .toMatch(/server_error.*with check \(true\)/);
+      for (const [k, raison] of Object.entries(POLITIQUES_JUSTIFIEES)) {
+        expect(raison.length, `${k} : divergence sans raison écrite`).toBeGreaterThan(60);
+      }
+    });
+
+    it('CAS MAUVAIS 1 — `with check (true)` sur une table à locataire', () => {
+      expect(verdictPolitiques([p({ withCheck: 'true' })]).join(' ')).toMatch(/with check \(true\)/);
+    });
+
+    it('CAS MAUVAIS 2 — `using (true)` sur une table à locataire', () => {
+      expect(verdictPolitiques([p({ using: 'true' })]).join(' ')).toMatch(/using \(true\)/);
+    });
+
+    it('CAS MAUVAIS 3 — une table à locataire dont AUCUNE politique ne couvre l’écriture', () => {
+      const d = verdictPolitiques([p({ cmd: 'SELECT' }), p({ nom: 'q', cmd: 'DELETE' })]);
+      expect(d.join(' ')).toMatch(/aucune politique ne couvre l’ÉCRITURE/);
+    });
+
+    it('CAS SAIN — une table SANS locataire échappe à la règle, et c’est écrit', () => {
+      expect(verdictPolitiques([p({ tenant: false, using: 'true', withCheck: 'true' })])).toEqual([]);
     });
   });
 });

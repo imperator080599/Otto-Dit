@@ -220,14 +220,15 @@ describe('la fuite entre cabinets, sous un rôle sans BYPASSRLS', () => {
       expect(Number(sousDerogation[0].n)).toBeGreaterThan(0);
     });
 
-    it('CE QUE L’ARMEMENT COÛTERAIT AUJOURD’HUI : deux chemins RÉELS du produit lèvent — donc on ne peut pas l’armer', async () => {
-      /* LE CONSTAT LE PLUS GRAVE DE LA REVUE HOSTILE n°9 (n°2), mesuré ici au
-         lieu d'être supposé. `withTenant` n'a AUCUN appelant de production : le
-         câblage de l'étape 1 de PLAN_RLS n'est pas fait. Armer le garde
-         n'« empêcherait pas l'oubli » — il éteindrait l'application. Ce test
-         existe pour que ce fait soit une MESURE dans la suite, et pour qu'il
-         devienne rouge le jour où le câblage sera fait (il faudra alors le
-         réécrire, et ce sera la bonne nouvelle). */
+    it('SANS POSEUR, un chemin non enveloppé lève — c’est le filet, pas la panne', async () => {
+      /* CE TEST A CHANGÉ DE SENS, ET C'EST LA BONNE NOUVELLE. Il mesurait
+         « armer le garde éteindrait l'application » : c'était vrai tant que
+         `withTenant` n'avait aucun appelant de production (revue hostile n°9,
+         constat 2). Le câblage est fait (mandat du soir, 0.5) : `q()` DEMANDE
+         désormais le locataire à la session avant de refuser, et `executer()`
+         le pose une fois pour tout un geste. Ici, dans la suite, AUCUN poseur
+         n'est enregistré — c'est le runtime Next qui l'enregistre — donc le
+         refus reste ce qu'il doit être : le filet du dernier recours. */
       armerLeGarde(false);
       const { missionsParClient } = await import('@/lib/services/bascule');
       await expect(missionsParClient(IDS.users.karim), 'l’écran d’accueil ne lève plus : le câblage a-t-il été fait ?')
@@ -237,6 +238,38 @@ describe('la fuite entre cabinets, sous un rôle sans BYPASSRLS', () => {
         tenantId: IDS.tenant, engagementId: IDS.engNep, actorKind: 'system',
         verb: 'essai_garde', objectType: 'engagement', payload: {},
       } as never), 'logEvent ne lève plus : tout changement d’état passait par lui').rejects.toThrow(/LOC-01/);
+    });
+
+    it('AVEC UN POSEUR, la même lecture PASSE — et le locataire posé est celui de la session', async () => {
+      /* LE CÂBLAGE, ÉPROUVÉ. Un poseur rend le cabinet de la personne
+         connectée ; `q()` s'en sert et pose la portée pour l'appel. C'est
+         l'option (a) de PLAN_RLS : aucun écran n'a rien à envelopper, et un
+         oubli ne peut donc pas rendre une page vide. */
+      armerLeGarde(false);
+      const { enregistrerPoseurDeLocataire, locataireDuContexte } = await import('@/lib/db/sans-locataire');
+      let vu: string | null = null;
+      try {
+        enregistrerPoseurDeLocataire(async () => IDS.tenant);
+        const r = await q<{ n: string }>(`select count(*)::text n from engagement`);
+        expect(Number(r[0].n), 'le poseur n’a pas ouvert la lecture').toBeGreaterThan(0);
+        /* Et la portée est bien REFERMÉE après l'appel : elle vaut pour la
+           requête, pas pour le processus. */
+        vu = locataireDuContexte();
+      } finally {
+        enregistrerPoseurDeLocataire(null);
+      }
+      expect(vu, 'le locataire a survécu à l’appel').toBeNull();
+    });
+
+    it('UN POSEUR QUI NE TROUVE RIEN ne masque pas le refus — le silence resterait un silence', async () => {
+      armerLeGarde(false);
+      const { enregistrerPoseurDeLocataire } = await import('@/lib/db/sans-locataire');
+      try {
+        enregistrerPoseurDeLocataire(async () => null);
+        await expect(q(`select count(*) from engagement`)).rejects.toThrow(/LOC-01/);
+      } finally {
+        enregistrerPoseurDeLocataire(null);
+      }
     });
 
     it('ARMÉ OU NON, une dérogation dont la clé n’est pas ÉCRITE est refusée (LOC-02)', async () => {
@@ -268,6 +301,76 @@ describe('la fuite entre cabinets, sous un rôle sans BYPASSRLS', () => {
       } finally {
         await _setDbForTests(vrai as never);
       }
+    });
+  });
+
+  /**
+   * LE PORTAIL CLIENT, SOUS LE MÊME RÔLE SANS BYPASSRLS (migration 0141 ;
+   * mandat du soir, étage 0.2).
+   *
+   * CE QUE CES CAS ÉPROUVENT, ET QUE RIEN N'ÉPROUVAIT : le contact client n'a
+   * pas de locataire — aucune politique par cabinet ne pouvait rien pour lui,
+   * et sous `otto_app` ses deux écrans levaient (revue hostile n°9, constat 20).
+   * Son identité, c'est son jeton. Ici on le pose, et on regarde ce que la BASE
+   * laisse passer : ce qui est à lui, et rien d'autre.
+   */
+  describe('le portail client, par jeton', () => {
+    it('avec SON jeton : ses missions, et AUCUN papier de travail', async () => {
+      const jeton = (await q<{ t: string }>(
+        `select portal_token t from client_contact where active limit 1`))[0]?.t;
+      expect(jeton, 'aucun contact actif dans le monde de démonstration').toBeTruthy();
+      const vu = await sousLeRole(async (run) => {
+        await run(`select set_config('otto.portal_token', $1, true)`, [jeton]);
+        const missions = await run(`select count(*)::text n from engagement`) as { n: string }[];
+        const papiers = await run(`select count(*)::text n from workpaper`) as { n: string }[];
+        const notes = await run(`select count(*)::text n from review_note`) as { n: string }[];
+        return { missions: Number(missions[0].n), papiers: Number(papiers[0].n), notes: Number(notes[0].n) };
+      });
+      expect(vu.missions, 'le contact ne voit aucune mission de SON entité').toBeGreaterThan(0);
+      expect(vu.papiers, 'le portail voit des PAPIERS DE TRAVAIL — le dossier n’est pas à lui').toBe(0);
+      expect(vu.notes, 'le portail voit des NOTES DE REVUE — la revue n’est pas à lui').toBe(0);
+    });
+
+    it('CAS CONNU MAUVAIS — un jeton INCONNU ne voit rien du tout', async () => {
+      const vu = await sousLeRole(async (run) => {
+        await run(`select set_config('otto.portal_token', 'jeton-qui-n-existe-pas', true)`);
+        const r = await run(`select count(*)::text n from engagement`) as { n: string }[];
+        return Number(r[0].n);
+      });
+      expect(vu, 'un jeton inconnu ouvre le portail').toBe(0);
+    });
+
+    it('CAS CONNU MAUVAIS — un contact DÉSACTIVÉ ne voit plus rien', async () => {
+      const c = await q1<{ id: string; t: string }>(
+        `select id::text, portal_token t from client_contact where active limit 1`);
+      await q(`update client_contact set active = false where id = $1`, [c.id]);
+      try {
+        const vu = await sousLeRole(async (run) => {
+          await run(`select set_config('otto.portal_token', $1, true)`, [c.t]);
+          const r = await run(`select count(*)::text n from engagement`) as { n: string }[];
+          return Number(r[0].n);
+        });
+        expect(vu, 'un contact désactivé ouvre encore le portail').toBe(0);
+      } finally {
+        await q(`update client_contact set active = true where id = $1`, [c.id]);
+      }
+    });
+
+    it('CAS CONNU MAUVAIS — les OCTETS d’une pièce ne se lisent plus entre cabinets (0141)', async () => {
+      /* 0140 laissait `blob_store` en `using (true)` : sous otto_app, un
+         `select bytes` rendait les pièces de TOUS les cabinets. La politique
+         passe désormais par ce qui RÉFÉRENCE la pièce. On dépose des octets que
+         rien ne référence : personne ne doit les lire. */
+      const chemin = `zz/${'f'.repeat(64)}`;
+      await q(`insert into blob_store (storage_path, sha256, size, bytes)
+               values ($1, $2, 3, $3) on conflict do nothing`,
+        [chemin, 'f'.repeat(64), Buffer.from([1, 2, 3])]);
+      const vus = await sousLeRole(async (run) => {
+        await run(`select set_config('otto.tenant_id', $1, true)`, [IDS.tenant]);
+        const r = await run(`select storage_path from blob_store where storage_path = $1`, [chemin]) as unknown[];
+        return r.length;
+      });
+      expect(vus, 'une pièce qu’AUCUN dossier ne référence reste lisible').toBe(0);
     });
   });
 

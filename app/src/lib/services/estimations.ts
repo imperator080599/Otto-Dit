@@ -5,6 +5,7 @@ import { ingestEvidence } from './evidence';
 import { nextSeq } from './requests';
 import { monetaryDraw } from '@/lib/kernel/sampling';
 import { sha256 } from '@/lib/core/hash';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // LES ESTIMATIONS COMPTABLES HORS LITIGE (point 11a, ADR-106). Le client
 // fournit un fichier de calcul (tableur) : clé ; base ; taux ; montant.
@@ -70,6 +71,7 @@ export async function importerEstimation(opts: {
   contenu: Uint8Array;
   userId: string;
 }): Promise<string> {
+  await assertMembre(opts.engagementId, opts.userId, 'importer une estimation');
   if (!opts.titre.trim()) throw new Error('estimation : le titre est vide — nommez ce que le fichier estime');
   if (!opts.contenu.length) throw new Error('estimation : le fichier est vide — rien à importer');
   // le rapprochement d'abord : un fichier qui ne vise aucune écriture ne s'importe pas
@@ -165,6 +167,7 @@ export async function tirerBase(
   params: { coverageCapCents: number; randomSize: number; seed: string },
   userId: string,
 ): Promise<{ retenues: number }> {
+  await assertMembreDe('estimation', estimationId, userId, 'tirer la base d’une estimation');
   const est = await q1<{ id: string; engagement_id: string; statut: string }>(
     `select id, engagement_id, statut from estimation where id = $1`, [estimationId],
   );
@@ -200,6 +203,7 @@ export async function tirerBase(
  *  (rien ne part au client sans approbation), un élément par ligne tirée
  *  (la pièce de base), un par taux, un pour la formule. */
 export async function demanderJustificatifs(estimationId: string, userId: string): Promise<string> {
+  await assertMembreDe('estimation', estimationId, userId, 'demander les justificatifs d’une estimation');
   const est = await q1<{ id: string; engagement_id: string; statut: string; titre: string; libelles: string[]; request_id: string | null }>(
     `select id, engagement_id, statut, titre, libelles, request_id from estimation where id = $1`, [estimationId],
   );

@@ -143,6 +143,43 @@ export function armerLeGarde(contourneLaRls: boolean): void {
 
 export function gardeArme(): boolean { return arme; }
 
+/**
+ * LE POSEUR DE LOCATAIRE — le câblage de l'étape 1 de PLAN_RLS, option (a)
+ * (mandat du soir, 0.5).
+ *
+ * LE PROBLÈME QU'IL RÉSOUT. `withTenant` existait sans AUCUN appelant de
+ * production : armer le garde éteignait l'application. Câbler quatre-vingts
+ * écrans à la main aurait été l'option (b) du plan — « un oubli = une page vide
+ * sans erreur », c'est-à-dire le défaut que le garde existe pour supprimer.
+ * Option (a), donc : quand une requête arrive sans locataire et que le garde
+ * est armé, `q()` DEMANDE le locataire au poseur, et le pose pour la durée de
+ * l'appel.
+ *
+ * POURQUOI UN POSEUR ENREGISTRÉ, ET NON UN APPEL DIRECT : lire le cookie
+ * demande `next/headers`, que ni les scripts, ni les tests, ni les migrations
+ * ne peuvent importer. Le runtime Next enregistre le sien (core/auth.ts) ; hors
+ * de lui, il n'y en a pas, et le garde parle comme avant.
+ *
+ * OÙ IL CESSE DE REGARDER : il ne pose RIEN quand le garde est désarmé (le cas
+ * de toutes les exécutions d'aujourd'hui) — il ne coûte donc pas un aller-retour
+ * de plus tant que l'étape 3 n'est pas faite. Il ne pose rien non plus quand la
+ * session est absente : c'est aux chemins ÉCRITS (sans-locataire) de parler.
+ */
+export type PoseurDeLocataire = () => Promise<string | null>;
+let poseur: PoseurDeLocataire | null = null;
+
+export function enregistrerPoseurDeLocataire(p: PoseurDeLocataire | null): void { poseur = p; }
+export function poseurEnregistre(): boolean { return poseur !== null; }
+
+/** Le locataire que le poseur trouve, ou null. Jamais appelé garde désarmé. */
+export async function locataireDeLaSession(): Promise<string | null> {
+  if (!poseur) return null;
+  try { return await poseur(); } catch { return null; }
+}
+
+/** Une portée est-elle ouverte (locataire posé OU dérogation) ? */
+export function contexteDeLocataire(): boolean { return contexte.getStore() !== undefined; }
+
 /** Le locataire posé pour l'appel courant, s'il y en a un. */
 export function locataireDuContexte(): string | null {
   const c = contexte.getStore();
@@ -159,6 +196,12 @@ export function sousLocataire<T>(tenantId: string, fn: () => Promise<T>): Promis
  * est REFUSÉE, armée ou non : une règle inconnue qu'on ignore est le défaut que
  * la règle 13 traque.
  */
+/** La même chose que `sansLocataire`, nommée pour ce qu'elle fait quand la
+ *  portée dure plus qu'un appel (le portail pose son jeton pour tout l'écran). */
+export function sousDerogation<T>(cle: string, fn: () => Promise<T>): Promise<T> {
+  return sansLocataire(cle, fn);
+}
+
 export function sansLocataire<T>(cle: string, fn: () => Promise<T>): Promise<T> {
   if (!PAR_CLE.has(cle)) {
     return Promise.reject(new Error(

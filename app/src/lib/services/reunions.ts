@@ -3,7 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { now } from '@/lib/core/clock';
 import { genererIcs } from '@/lib/kernel/ics';
 import { getAgendaAdapter, getTransportInvitation, type CreneauOccupe } from './agenda/adapters';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // LES INVITATIONS DE RÉUNION — LA PARTIE DÉTERMINISTE (ADR-101).
 // Tout ce qui peut être calculé l'est ici, testé, hors ligne : les contacts
@@ -179,6 +179,7 @@ export async function choisirCreneau(input: {
   engagementId: string; userId: string;
   debut: string; fin: string; objet: string; destinataireContactId: string;
 }): Promise<string> {
+  await assertMembre(input.engagementId, input.userId, 'choisir un créneau de réunion');
   if (!input.objet.trim()) throw new Error('invitation : l\'objet est vide');
   if (!input.destinataireContactId) throw new Error('invitation : choisissez le contact client destinataire — le choix est humain, toujours');
   const dest = await q01<{ id: string; nom: string; email: string; entity_id: string }>(
@@ -234,6 +235,7 @@ export async function choisirCreneau(input: {
 }
 
 export async function envoyer(invitationId: string, userId: string): Promise<{ remis: boolean; detail: string }> {
+  await assertMembreDe('meeting_invitation', invitationId, userId, 'envoyer une invitation de réunion');
   const inv = await q1<{ id: string; engagement_id: string; statut: string; objet: string; corps: string; ics: string; copies: Copie[]; destinataire_contact_id: string }>(
     `select id, engagement_id, statut, objet, corps, ics, copies, destinataire_contact_id from meeting_invitation where id = $1`,
     [invitationId],

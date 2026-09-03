@@ -8,7 +8,7 @@ import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { validatedThresholds } from './materiality';
 import { revenuePopulation } from './population';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S3 sampling flows: propose (L3, pack defaults + rationale) → validate (human, may edit)
 // → draw (L0, kernel, engine_run recorded). Deterministic given (population, seed, params).
@@ -77,6 +77,7 @@ export async function validateSampleParams(
   userId: string,
   edits?: { coverageCapCents?: number; randomSize?: number; seed?: string },
 ): Promise<void> {
+  await assertMembreDe('sample', sampleId, userId, 'valider les paramètres d’un échantillon');
   const s = await q1<{ id: string; engagement_id: string; params: { coverageCapCents: number; randomSize: number; seed: string }; status: string }>(
     `select id, engagement_id, params, status from sample where id = $1`,
     [sampleId],
@@ -96,6 +97,7 @@ export async function validateSampleParams(
 }
 
 export async function drawRevenueSample(sampleId: string, userId: string): Promise<{ items: number }> {
+  await assertMembreDe('sample', sampleId, userId, 'tirer un échantillon');
   const s = await q1<{ id: string; engagement_id: string; procedure_id: string; params: { coverageCapCents: number; randomSize: number; seed: string }; status: string; population_hash: string }>(
     `select id, engagement_id, procedure_id, params, status, population_hash from sample where id = $1`,
     [sampleId],

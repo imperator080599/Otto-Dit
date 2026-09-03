@@ -284,6 +284,26 @@ async function corpsDeLaSonde() {
     return `présent · contourne la RLS : ${r.b ? 'OUI (défaut)' : 'non'} · connexion : ${r.l ? 'oui' : 'non'}`
       + ` — non employé tant que DATABASE_URL désigne un autre rôle (étape 3 NON exécutée)`;
   }));
+  /* ── LA TRANCHE DE LA NUIT, LUE DANS L'INSTANCE DÉPLOYÉE (0141) ────────
+     Le portail par jeton et l'isolation des pièces sont des POLITIQUES : elles
+     ne s'exercent que sous un rôle sans BYPASSRLS, donc pas ici. Ce qu'on peut
+     lire, et qui vaut d'être lu, c'est qu'elles EXISTENT, et que le registre
+     des `security definer` justifiées dit la même chose que le code. */
+  lectures.push(await essayer('portail par jeton et pièces (migration 0141)', async () => {
+    const pol = await q<{ n: string }>(
+      `select policyname n from pg_policies where schemaname = 'public'
+        and (policyname like '%_portail%' or policyname = 'blob_store_par_reference') order by 1`);
+    const reg = await q<{ nom: string }>(`select nom from rls_definer_justifiee order by 1`);
+    const { DEFINERS_JUSTIFIEES } = await import('@/lib/db/assertions-role');
+    const memeListe = reg.map((x) => x.nom).join(',') === Object.keys(DEFINERS_JUSTIFIEES).sort().join(',');
+    if (!memeListe) {
+      throw new Error(`le registre SQL des SECURITY DEFINER (${reg.map((x) => x.nom).join(', ')}) `
+        + `diverge de la liste du code (${Object.keys(DEFINERS_JUSTIFIEES).sort().join(', ')})`);
+    }
+    return `${pol.length} politique(s) : ${pol.map((x) => x.n).join(' · ')} · `
+      + `${reg.length} fonction(s) definer justifiée(s), registre SQL et code d’accord`;
+  }));
+
   lectures.push(await essayer('gardes d’étanchéité dans les services (ETANCH-01/02/03)', async () => {
     /* TROIS FAILLES CORRIGÉES (revue hostile n°9, constat 8). La première
        version : (1) rendait « aucune mission » en VERT sur une base vide ;

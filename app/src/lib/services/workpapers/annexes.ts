@@ -1,6 +1,7 @@
 import { q, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { ingestEvidence } from '../evidence';
+import { assertMembreDe } from '@/lib/core/membre';
 
 // LES ANNEXES DU PAPIER (point 11c, ADR-106). La table `wp_attachment` existe
 // depuis la PREMIÈRE migration (0002) — demandée dès le début pour joindre un
@@ -25,6 +26,7 @@ export async function joindreAnnexe(
   fichier: { filename: string; mime: string; bytes: Uint8Array },
   userId: string,
 ): Promise<string> {
+  await assertMembreDe('workpaper', workpaperId, userId, 'joindre une annexe à un papier');
   if (!fichier.bytes.length) throw new Error('annexe : le fichier est vide — rien à joindre');
   const wp = await q1<{ id: string; engagement_id: string; tenant_id: string }>(
     `select w.id, w.engagement_id, e.tenant_id from workpaper w

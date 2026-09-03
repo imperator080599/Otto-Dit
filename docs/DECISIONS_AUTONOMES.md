@@ -617,3 +617,57 @@ et ses obstacles. Rien qui traverse les dossiers.
    auxiliaire est une pièce, pas un fichier importé (reporté).
 5. **Rien de l'existant ne disparaît** : `enregistrerIpe` (le peuplement, les tests d'avant) crée
    ou reprend le rapport du même nom et du même arrêté, puis le désigne — avec le refus qui va avec.
+
+## Nuit du 3 au 4 septembre 2026 — étage 0 (la dette d'étanchéité)
+
+*Pleine autonomie : chaque décision est tranchée par la voie la plus défendable et inscrite ici.*
+
+**D-J3N-01 — `engagementDe(kind, id)` est un CATALOGUE, pas un `switch`.** Les trente-sept
+écritures nues étaient désignées par un objet FILS. La résolution vers le dossier vit une seule
+fois, sous forme de table `kind → requête SQL`, et **un type absent du catalogue est refusé**
+(ETANCH-05). Un `default:` silencieux aurait rouvert le trou à la première table neuve.
+
+**D-J3N-02 — « objet introuvable » et « objet d'un autre cabinet » reçoivent le MÊME refus**
+(ETANCH-04). Distinguer les deux apprend à un intrus que l'objet existe. Même doctrine
+qu'ETANCH-01 avant ETANCH-03 (ADR-069/ADR-082).
+
+**D-J3N-03 — le critère de couverture passe de « écrit » à « prend un acteur ».** L'ancien
+ratait les écritures PAR DÉLÉGATION (`joindreAnnexe` → `ingestEvidence`) : trois fonctions
+passaient pour des lectures. Les seules exceptions sont les gestes qui portent sur la PERSONNE
+elle-même, treize, écrites avec leur raison.
+
+**D-J3N-04 — l'instrument d'étanchéité EXÉCUTE, il ne lit plus.** Il fabrique les arguments à
+partir des signatures, place l'intrus à la place de l'acteur et un identifiant RÉEL à la place de
+chaque objet, puis appelle. Aucune liste d'appels écrite à la main : une fonction neuve est
+appelée le jour où elle est écrite. Il a trouvé son premier vrai cas au premier lancement
+(`memoriserRepli`, que j'avais classée « gardée » à tort).
+
+**D-J3N-05 — `otto_portal_contact()` et `otto_portal_entity()` sont `security definer`, et
+c'est MESURÉ.** En `security invoker`, elles produisent une récursion infinie entre la politique
+de `engagement` et celle de `client_contact` — vue de l'application comme ZÉRO LIGNE, le silence
+que la règle 13 nomme. C'est le cas justifié que PLAN_RLS (A.6) prévoyait. La règle passe donc de
+« zéro fonction definer » à « aucune qui ne soit ÉCRITE », avec un registre en base
+(`rls_definer_justifiee`) que la migration consulte et que le code duplique — un test tient les
+deux ensemble.
+
+**D-J3N-06 — `blob_store` s'isole PAR CE QUI LE RÉFÉRENCE, pas par une colonne de locataire.**
+Le magasin est adressé par contenu et déduplique entre cabinets par construction : une colonne
+`tenant_id` casserait cela. La politique passe par `evidence`, `export_record` et `file_archive`.
+Conséquence assumée : une pièce qu'aucune de ces tables ne référence devient illisible pour
+l'application — un octet que rien ne réclame n'a pas de raison d'être servi.
+
+**D-J3N-07 — le câblage de `withTenant` se fait par un POSEUR enregistré, pas écran par écran.**
+Option (a) de PLAN_RLS : `q()` demande le locataire à la session avant de refuser. L'option (b) —
+envelopper quatre-vingts écrans — aurait fait qu'un oubli rende une page vide, c'est-à-dire le
+défaut que le garde existe pour supprimer. Le poseur est ENREGISTRÉ (et non appelé) parce que
+lire le cookie demande `next/headers`, que ni les scripts ni les tests ne peuvent importer.
+
+**D-J3N-08 — le garde s'arme dans le SERVEUR, pas dans le harnais.** La première tentative a
+armé LOC-01 dans le processus du balayage : c'est le harnais qui a levé, pas le produit — on
+aurait mesuré l'instrument. `npm run screens:garde` n'arme que le serveur.
+
+**D-J3N-09 — le mandat demandait une FRONTIÈRE D'ERREUR pour le #418 : c'est le mauvais
+instrument, et je ne l'écris pas.** Instruit dans le bundle servi : une erreur d'hydratation est
+*récupérable* — React la signale par `onRecoverableError` → `reportGlobalError` → `window.reportError`,
+hors bande. `componentDidCatch` ne la voit JAMAIS. Écrire la frontière aurait donné un détecteur
+muet (règle 13). L'instrument correct est un écouteur navigateur, et il est écrit à sa place.

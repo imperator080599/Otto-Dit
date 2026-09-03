@@ -27,6 +27,7 @@ import type { OttoDb } from './client';
  *  ici se justifie par écrit, pas par commodité. */
 export const PROPRIETAIRE_SEUL = new Set([
   '_migrations',   // registre des migrations — appliquées sous SUPABASE_DB_URL (postgres), jamais par l'application (0140)
+  'rls_definer_justifiee', // registre des fonctions SECURITY DEFINER statuées (0140) — un verdict par FONCTION, pas par locataire
   'notification',  // file technique : AUCUN chemin de l'application ne la lit ni ne l'écrit (recensé le 2026-09-03) — droit retiré à otto_app (0140)
 ]);
 
@@ -104,17 +105,39 @@ export const RETRAITS_0140: { table: string; privileges: string[] }[] = [
   { table: 'server_error', privileges: ['update', 'delete'] },
 ];
 
+/**
+ * LES FONCTIONS `SECURITY DEFINER` JUSTIFIÉES, NOMMÉES UNE PAR UNE.
+ *
+ * Une fonction `definer` s'exécute avec les droits de son PROPRIÉTAIRE : elle
+ * contourne la RLS. Le recensement valait zéro jusqu'au 2026-09-03 au soir ; il
+ * en compte deux depuis 0141, et la règle n'est donc plus « zéro » mais
+ * « AUCUNE QUI NE SOIT ÉCRITE ICI ». Les fonctions installées par une EXTENSION
+ * sont hors sujet et exclues à la source (pg_depend.deptype = 'e').
+ */
+export const DEFINERS_JUSTIFIEES: Record<string, string> = {
+  otto_portal_contact:
+    'PORTAIL CLIENT (0141) : résout UN jeton vers UN contact actif. En `security invoker`, elle produit une RÉCURSION INFINIE entre la politique de `engagement` et celle de `client_contact` — mesuré, et vu de l’application comme ZÉRO LIGNE. Sans argument (rien à injecter), `search_path` figé, ne rend aucune donnée de dossier.',
+  otto_portal_entity:
+    'PORTAIL CLIENT (0141) : l’entité du contact que le jeton désigne. Même raison, même forme : sans argument, `search_path` figé, rend un seul identifiant d’entité.',
+};
+
+/** Les `security definer` non justifiées — la liste qui doit rester vide. */
+export function verdictDefiners(presentes: string[], justifiees = DEFINERS_JUSTIFIEES): string[] {
+  return presentes.filter((n) => !(n in justifiees))
+    .map((n) => `${n} : fonction SECURITY DEFINER non justifiée — elle contourne la RLS avec les droits du propriétaire. Écrivez sa raison dans DEFINERS_JUSTIFIEES, ou repassez-la en security invoker.`);
+}
+
 export interface EtatOttoApp {
   /** null = le rôle n'existe pas (migration 0140 non appliquée). */
   role: { bypass: boolean; superutilisateur: boolean; connexion: boolean } | null;
   /** Les couples table/privilège que 0140 referme et qui sont RESTÉS ouverts. */
   ouvertes: string[];
-  /** Le nombre de fonctions `security definer` dans public. */
-  definers: number;
+  /** Les fonctions `security definer` de `public`, hors extensions. */
+  definers: string[];
 }
 
 /**
- * LE VERDICT SUR LE RÔLE APPLICATIF, pur — `scripts/db/otto-app.ts` l'appelle
+ * LE VERDICT SUR LE RÔLE APPLICATIF, pur — `scripts/db/verifier-role-applicatif.ts` l'appelle
  * sur ce qu'un vrai Postgres a répondu, le test l'appelle sur des cas connus
  * MAUVAIS (règle 17 : un détecteur qui n'a jamais échoué exprès n'a jamais été
  * testé, et celui-ci ne peut pas s'exécuter en local — aucune base réseau).
@@ -131,10 +154,86 @@ export function verdictOttoApp(e: EtatOttoApp): string[] {
   for (const t of e.ouvertes) {
     defauts.push(`${t} est ouvert à otto_app — 0140 devait le retirer (raison écrite dans la migration)`);
   }
-  if (e.definers > 0) {
-    defauts.push(`${e.definers} fonction(s) SECURITY DEFINER — elles contournent la RLS avec les droits du propriétaire`);
-  }
+  defauts.push(...verdictDefiners(e.definers));
   return defauts;
+}
+
+export interface PolitiqueRls {
+  table: string; nom: string;
+  /** `ALL` | `SELECT` | `INSERT` | `UPDATE` | `DELETE`, tel que pg_policies le rend. */
+  cmd: string;
+  using: string | null;
+  withCheck: string | null;
+  /** La table porte-t-elle une colonne `tenant_id` ? */
+  tenant: boolean;
+}
+
+/**
+ * LE VERDICT QUI REGARDE `cmd` — celui qui manquait (mandat du soir, 0.3).
+ *
+ * La propriété sur laquelle tout le reste s'appuie — « `USING` tient lieu de
+ * `WITH CHECK` » — n'est PAS générale : PostgreSQL ne l'applique qu'aux
+ * politiques `FOR ALL` et `FOR UPDATE`. `verdictRls()` ne lisait jamais la
+ * commande : il aurait donc béni un schéma où quelqu'un écrit un jour
+ * `for select using (…)` sur une table à locataire, laissant l'écriture
+ * couverte par une AUTRE politique — ou par aucune.
+ *
+ * Trois défauts, chacun nommé avec sa table :
+ *   · une politique `with check (true)` sur une table à locataire : l'écriture
+ *     n'est contrainte par RIEN, quel que soit le `using` ;
+ *   · une table à locataire dont AUCUNE politique ne couvre l'écriture
+ *     (ni `ALL`, ni `INSERT`, ni `UPDATE`) : l'application écrira et la base
+ *     refusera — panne franche, mais il vaut mieux le savoir au build ;
+ *   · une politique `FOR UPDATE` ou `FOR ALL` dont le `using` vaut `true` sur
+ *     une table à locataire : la lecture n'est pas bornée.
+ */
+/**
+ * LES DIVERGENCES VOULUES, ÉCRITES. Une règle qui n'a pas d'exception écrite
+ * finit par être désarmée en bloc le jour où elle gêne : celle-ci nomme les
+ * siennes, et le test vérifie que chacune porte sa raison.
+ */
+export const POLITIQUES_JUSTIFIEES: Record<string, string> = {
+  'server_error.server_error_applicatif':
+    'DÉLIBÉRÉ (0140) : `with check (true)` parce qu’une exception peut survenir AVANT toute session — un crochet qui échoue à consigner la panne est la panne qui disparaît. La LECTURE, elle, reste bornée (`tenant_id is null or tenant_id = otto_tenant()`).',
+};
+
+export function verdictPolitiques(
+  politiques: PolitiqueRls[],
+  justifiees: Record<string, string> = POLITIQUES_JUSTIFIEES,
+): string[] {
+  const defauts: string[] = [];
+  const parTable = new Map<string, PolitiqueRls[]>();
+  for (const p of politiques) parTable.set(p.table, [...(parTable.get(p.table) ?? []), p]);
+  for (const p of politiques) {
+    if (!p.tenant) continue;
+    if (`${p.table}.${p.nom}` in justifiees) continue;
+    const vrai = (x: string | null) => x !== null && /^\(?\s*true\s*\)?$/i.test(x.trim());
+    if (vrai(p.withCheck)) {
+      defauts.push(`${p.table}.${p.nom} : \`with check (true)\` sur une table à locataire — l’écriture n’est contrainte par rien`);
+    }
+    if ((p.cmd === 'ALL' || p.cmd === 'SELECT') && vrai(p.using)) {
+      defauts.push(`${p.table}.${p.nom} : \`using (true)\` sur une table à locataire — la lecture n’est bornée par rien`);
+    }
+  }
+  for (const [table, ps] of parTable) {
+    if (!ps[0].tenant) continue;
+    const ecrit = ps.some((p) => p.cmd === 'ALL' || p.cmd === 'INSERT' || p.cmd === 'UPDATE');
+    if (!ecrit) {
+      defauts.push(`${table} : aucune politique ne couvre l’ÉCRITURE (${ps.map((p) => p.cmd).join(', ')}) — la base refusera toute écriture de l’application`);
+    }
+  }
+  return defauts.sort();
+}
+
+/** Les politiques du schéma, telles que le catalogue les rend. */
+export async function politiquesRls(db: OttoDb): Promise<PolitiqueRls[]> {
+  const r = await db.query<{ t: string; n: string; c: string; u: string | null; w: string | null; tenant: boolean }>(
+    `select p.tablename t, p.policyname n, p.cmd c, p.qual u, p.with_check w,
+            exists(select 1 from information_schema.columns c2
+                   where c2.table_schema = 'public' and c2.table_name = p.tablename
+                     and c2.column_name = 'tenant_id') tenant
+     from pg_policies p where p.schemaname = 'public' order by 1, 2`);
+  return r.rows.map((x) => ({ table: x.t, nom: x.n, cmd: x.c, using: x.u, withCheck: x.w, tenant: x.tenant }));
 }
 
 /** Le bloc tel qu'il s'imprime dans un journal de build. */

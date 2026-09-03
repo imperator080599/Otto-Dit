@@ -4,7 +4,7 @@ import { evaluateSample } from '@/lib/kernel/projection';
 import { centsToNum, numToCents } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { validatedThresholds } from './materiality';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // Gate 2 (audit partner): sample evaluation inside the procedure workpaper — known +
 // projected misstatement vs tolerable misstatement, computed L0, concluded L4. The
@@ -120,6 +120,7 @@ export async function recordEvaluationResponse(
   kind: ResponseKind,
   rationale: string,
 ): Promise<string> {
+  await assertMembreDe('sample_evaluation', evaluationId, userId, 'répondre à une évaluation d’échantillon');
   if (!rationale.trim()) throw new Error('a rationale is required for the response to the tolerable-misstatement breach');
   const e = await q1<{ sample_id: string }>(`select sample_id from sample_evaluation where id = $1`, [evaluationId]);
   const s = await q1<{ engagement_id: string }>(`select engagement_id from sample where id = $1`, [e.sample_id]);
@@ -147,6 +148,7 @@ export async function evaluationResponses(evaluationId: string) {
 }
 
 export async function concludeEvaluation(evaluationId: string, userId: string, basis: string): Promise<void> {
+  await assertMembreDe('sample_evaluation', evaluationId, userId, 'conclure une évaluation d’échantillon');
   if (!basis.trim()) throw new Error('conclusion basis required (L4)');
   const e = await q1<{ id: string; sample_id: string; known_misstatement: string; projected_misstatement: string; te_amount: string }>(
     `select id, sample_id, known_misstatement::text, projected_misstatement::text, te_amount::text

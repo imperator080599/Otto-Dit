@@ -12,7 +12,7 @@ import { frameworkSet } from './fsli';
 import { validatedThresholds } from './materiality';
 import { latestExtraction } from './extraction/ladder';
 import type { ExtractedField } from './extraction/fields';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S8 — SOX OE cycle on the SAME engines (request, evidence, extraction, sampling,
 // exception/deviation, documentation) under the PCAOB/COSO pack. UI held to the four
@@ -130,6 +130,7 @@ export async function listControls(engagementId: string) {
 }
 
 export async function setDiStatus(controlId: string, userId: string, status: 'effective' | 'deficient', conclusion: string): Promise<void> {
+  await assertMembreDe('control', controlId, userId, 'statuer la conception d’un contrôle');
   if (!conclusion.trim()) throw new Error('D&I conclusion required');
   const c = await q1<{ engagement_id: string; code: string }>(`select engagement_id, code from control where id = $1`, [controlId]);
   const ctx = await engagementCtx(c.engagement_id);
@@ -141,6 +142,7 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
 }
 
 export async function importInstances(controlId: string, csv: string, userId: string): Promise<number> {
+  await assertMembreDe('control', controlId, userId, 'importer les occurrences d’un contrôle');
   const c = await q1<{ engagement_id: string; code: string; di_status: string }>(
     `select engagement_id, code, di_status from control where id = $1`,
     [controlId],
@@ -169,6 +171,7 @@ export async function importInstances(controlId: string, csv: string, userId: st
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
 export async function drawAttributeSample(controlId: string, userId: string, overrideSize?: number, overrideJustification?: string): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
+  await assertMembreDe('control', controlId, userId, 'tirer un échantillon d’attributs');
   const c = await q1<{ id: string; engagement_id: string; code: string; name: string; frequency: Frequency; di_status: string }>(
     `select id, engagement_id, code, name, frequency, di_status from control where id = $1`,
     [controlId],
@@ -268,6 +271,7 @@ async function raiseDeviation(engagementId: string, controlId: string, sampleIte
 }
 
 export async function runAttributeTesting(controlId: string, userId: string): Promise<{ tested: number; deviations: number; extensionRequired: boolean }> {
+  await assertMembreDe('control', controlId, userId, 'conduire le test d’attributs');
   const c = await q1<{ id: string; engagement_id: string; code: string }>(
     `select id, engagement_id, code from control where id = $1`,
     [controlId],
@@ -443,6 +447,7 @@ export type DeviationClosure = {
 };
 
 export async function resolveDeviation(deviationId: string, userId: string, closure: DeviationClosure): Promise<void> {
+  await assertMembreDe('deviation', deviationId, userId, 'statuer une déviation');
   if (!closure.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
   if (!closure.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
   if (!closure.evidenceId) {
@@ -480,6 +485,7 @@ export async function extendToFullPopulation(
   userId: string,
   reason: string,
 ): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
+  await assertMembreDe('control', controlId, userId, 'étendre un test à la population complète');
   const test = await q01<{ id: string; extension_required: boolean }>(
     `select id, extension_required from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
     [controlId],
@@ -491,6 +497,7 @@ export async function extendToFullPopulation(
 
 /** A human may decide the extension is unnecessary — with a reason, on the record. */
 export async function waiveExtension(controlId: string, userId: string, reason: string): Promise<void> {
+  await assertMembreDe('control', controlId, userId, 'renoncer à l’extension d’un test');
   if (!reason.trim()) throw new Error('waiving a required population extension needs a documented reason');
   const test = await q1<{ id: string; control_id: string }>(
     `select id, control_id from control_test where control_id = $1 order by created_at desc, id desc limit 1`,
@@ -528,6 +535,7 @@ export async function proposeDeficiency(
   userId: string,
   inputs: { magnitudeExposureCents: number; compensatingControl: boolean; magnitudeBasis: string },
 ): Promise<string> {
+  await assertMembreDe('control', controlId, userId, 'proposer une déficience');
   // The exposure is the number that decides severity, so it may not be an assertion:
   // where it comes from is stored next to it (migration 0009).
   if (!inputs.magnitudeBasis?.trim()) {
@@ -610,6 +618,7 @@ export async function decideDeficiency(
   severity: 'deficiency' | 'significant_deficiency' | 'material_weakness',
   rationale?: string,
 ): Promise<void> {
+  await assertMembreDe('deficiency', deficiencyId, userId, 'statuer une déficience');
   const d = await q1<{ engagement_id: string; severity_proposed: keyof typeof SEVERITY_RANK; narrative: string }>(
     `select engagement_id, severity_proposed, narrative from deficiency where id = $1`,
     [deficiencyId],

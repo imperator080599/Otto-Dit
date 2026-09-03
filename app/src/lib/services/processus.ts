@@ -5,6 +5,7 @@ import { engagementCtx } from './imports';
 import { ingestEvidence } from './evidence';
 import { raiseFactor } from './questionnaire';
 import { motif, type Motif } from './motif';
+import { assertMembre } from '@/lib/core/membre';
 
 // LE PROCESSUS EN DONNÉES STRUCTURÉES (point 2, ADR-108). On ne lit pas le
 // flowchart du client : la plateforme héberge les étapes, acteurs, systèmes,
@@ -53,6 +54,7 @@ export async function importerProcessus(opts: {
   userId: string;
   confirmerRemplacement?: boolean;
 }): Promise<string> {
+  await assertMembre(opts.engagementId, opts.userId, 'importer une description de processus');
   if (!opts.contenu.length) throw new Error('processus : le fichier est vide — rien à importer');
   let racine: { cycle?: unknown; nom?: unknown; etapes?: unknown; controles?: unknown };
   try {
@@ -290,6 +292,7 @@ export async function statuerChangement(opts: {
   engagementId: string; cycle: string; changeCode: string;
   significance: 'significatif' | 'non_significatif'; reason: string; userId: string;
 }): Promise<void> {
+  await assertMembre(opts.engagementId, opts.userId, 'statuer un changement de processus');
   if (!opts.reason.trim()) {
     throw new Error('processus : statuer un changement sans motif écrit ne se relit pas — motif requis');
   }

@@ -4,7 +4,7 @@ import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { numToCents, centsToNum } from '@/lib/util/num';
 import { engagementCtx } from './imports';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S1 deterministic TB↔GL reconciliation (L0). Per-account diffs, never netted; the
 // population gate reads per-FSLI account statuses (Gate 2). Diffs raise typed exceptions.
@@ -128,6 +128,7 @@ export async function latestTbGl(engagementId: string) {
  *  releases the Gate-2 population gate, so it may not be reachable on a sentence
  *  (migration 0010). */
 export async function documentDifference(itemId: string, userId: string, closure: ResolutionInput): Promise<void> {
+  await assertMembreDe('reconciliation_item', itemId, userId, 'documenter un écart de rapprochement');
   if (!closure.explanation?.trim()) throw new Error('the explanation received is required — record it verbatim, not as a summary');
   if (!closure.conclusion?.trim()) throw new Error('an audit conclusion on the explanation is required');
   const evidenceId = closure.corroboration?.evidenceId ?? null;
@@ -191,6 +192,7 @@ export async function noteReconciliationLimitation(
   userId: string,
   input: { explanation: string; alternativeProcedures: string },
 ): Promise<void> {
+  await assertMembreDe('reconciliation_item', itemId, userId, 'consigner une limitation sur un rapprochement');
   if (!input.explanation?.trim()) throw new Error('record why the difference could not be corroborated, in the client’s words');
   if (!input.alternativeProcedures?.trim()) throw new Error('record what was done instead — a limitation without alternative procedures is an omission');
   const item = await q1<{ id: string; reconciliation_id: string; account_no: string }>(

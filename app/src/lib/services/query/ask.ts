@@ -10,6 +10,7 @@ import { validatedThresholds } from '../materiality';
 import { catalogueOffer, validatePlan, type PlanSource, type QueryPlan, type ValidPlan } from './plan';
 import { planByRules } from './rules';
 import { getQueryPlanner, type QueryPlannerAdapter } from './adapter';
+import { assertMembre } from '@/lib/core/membre';
 
 // ADR-017 — « Interroger ». A question becomes a catalogue query or it becomes a refusal.
 // There is no third outcome: the answer is ALWAYS a table of stored records with links
@@ -96,6 +97,7 @@ export async function runCatalogue(
   params: Record<string, string | number>,
   userId: string,
 ): Promise<AskResult> {
+  await assertMembre(engagementId, userId, 'exécuter une interrogation du catalogue');
   const ctx = await engagementCtx(engagementId);
   const lang = (await frameworkSet(engagementId)).language;
   return execute(ctx.tenant_id, engagementId, lang, '', { templateId, params }, userId, 'explicit', null);
@@ -107,6 +109,7 @@ export async function ask(
   userId: string,
   planner: QueryPlannerAdapter = getQueryPlanner(),
 ): Promise<AskResult> {
+  await assertMembre(engagementId, userId, 'interroger le dossier');
   const ctx = await engagementCtx(engagementId);
   const lang = (await frameworkSet(engagementId)).language;
   const asked = (question ?? '').trim();

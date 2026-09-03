@@ -75,6 +75,7 @@ export async function answerQuestion(input: {
   detail?: string;
   actorUserId: string;
 }): Promise<void> {
+  await assertMembre(input.engagementId, input.actorUserId, 'répondre à une question du questionnaire');
   const cat = await catalogueDeLaMission(input.engagementId);
   const eng = await engagementContext(input.engagementId);
   const question = cat.questionnaire.questions.find((x) => x.code === input.questionCode);
@@ -205,6 +206,7 @@ export async function raiseFactor(input: {
   targets: { fsli: string; assertions: string[] }[];
   actorUserId: string;
 }): Promise<{ id: string }> {
+  await assertMembre(input.engagementId, input.actorUserId, 'consigner un facteur de risque');
   const cat = await catalogueDeLaMission(input.engagementId);
   const eng = await engagementContext(input.engagementId);
   if (!cat.questionnaire.naturesRi[input.nature]) {

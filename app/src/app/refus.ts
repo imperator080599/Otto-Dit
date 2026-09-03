@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { conduire } from '@/lib/core/sonde';
+import { getSessionUser } from '@/lib/core/auth';
+import { withTenant } from '@/lib/db/tenant';
 
 // UN REFUS S'AFFICHE — IL NE TOMBE PAS EN 500.
 //
@@ -38,8 +40,14 @@ export async function executer(chemin: string, fn: () => Promise<unknown>): Prom
   let erreur = '';
   try {
     /* SOUS LA SONDE, le geste est conduit puis annulé (core/sonde.ts) : le
-       refus observé est le vrai, et rien n'est écrit. */
-    await conduire(fn);
+       refus observé est le vrai, et rien n'est écrit.
+       ET LE LOCATAIRE EST POSÉ ICI, UNE FOIS, POUR TOUT LE GESTE (PLAN_RLS
+       étape 1) : c'est l'endroit unique que le plan nomme. Le poseur de `q()`
+       reste le filet des RENDUS ; ici, on économise un aller-retour par
+       requête. Sans session — un geste public, s'il en existait — on laisse le
+       chemin parler comme avant. */
+    const qui = await getSessionUser();
+    await (qui ? withTenant(qui.tenant_id, () => conduire(fn)) : conduire(fn));
   } catch (e) {
     if (estUnSignalDeNext(e)) throw e;
     /* On attrape TOUT : ces services lèvent des `Error` nues autant que des

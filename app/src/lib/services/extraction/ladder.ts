@@ -8,6 +8,7 @@ import { classify, parseByType, pdfText, type DocType } from './textlayer';
 import { getOcrAdapter, type OcrAdapter } from './adapters';
 import { gardeBudget } from './budget';
 import type { ExtractedField } from './fields';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // The extraction ladder (ADR-002/ADR-012): XML → text layer → OCR/LLM → human.
 // Rungs 1–2 are deterministic (L0/L1, complete immediately, spot-check control covers
@@ -93,6 +94,7 @@ export async function runLadder(
 }
 
 export async function extractEvidence(evidenceId: string, userId: string | null): Promise<ExtractionOutcome> {
+  await assertMembreDe('evidence', evidenceId, userId, 'extraire une pièce');
   const ev = await q1<{ id: string; engagement_id: string; filename: string; storage_path: string; doc_type: string | null }>(
     `select id, engagement_id, filename, storage_path, doc_type from evidence where id = $1`,
     [evidenceId],
@@ -163,6 +165,7 @@ async function logExtract(tenantId: string, engagementId: string, evidenceId: st
 
 /** Run the ladder over all unextracted evidence of an engagement. */
 export async function extractAll(engagementId: string, userId: string | null): Promise<{ processed: number; pendingVerify: number }> {
+  await assertMembre(engagementId, userId, 'extraire toutes les pièces');
   const rows = await q<{ id: string }>(
     `select e.id from evidence e
      where e.engagement_id = $1 and e.quarantined = false
@@ -206,6 +209,7 @@ export async function pendingVerifications(engagementId: string) {
 /** L2 verification act (ADR-012): validator sees evidence + fields side-by-side and
  *  attests, correcting fields where needed. */
 export async function verifyExtraction(extractionId: string, userId: string, corrected?: ExtractedField[]): Promise<void> {
+  await assertMembreDe('extraction', extractionId, userId, 'vérifier une extraction');
   const x = await q1<{ id: string; evidence_id: string; fields: ExtractedField[] }>(
     `select id, evidence_id, fields from extraction where id = $1`,
     [extractionId],

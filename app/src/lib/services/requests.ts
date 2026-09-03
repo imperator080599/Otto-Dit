@@ -3,7 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { now, DAY_MS } from '@/lib/core/clock';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S4 request engine: PBC generation from the sample (per-tested-unit items) + standing
 // items; L2 send gate; statuses; lazy reminder cadence (Q8) against the demo clock.
@@ -87,6 +87,7 @@ export async function generatePbcFromSample(engagementId: string, sampleId: stri
 }
 
 export async function approveSend(requestId: string, userId: string): Promise<void> {
+  await assertMembreDe('request', requestId, userId, 'approuver l’envoi d’une demande');
   const r = await q1<{ id: string; engagement_id: string; status: string; seq_no: number }>(
     `select id, engagement_id, status, seq_no from request where id = $1`,
     [requestId],
@@ -133,6 +134,7 @@ export async function ensureReminders(engagementId: string): Promise<void> {
 }
 
 export async function pauseReminders(requestId: string, userId: string): Promise<void> {
+  await assertMembreDe('request', requestId, userId, 'suspendre les relances d’une demande');
   const r = await q1<{ engagement_id: string }>(`select engagement_id from request where id = $1`, [requestId]);
   const ctx = await engagementCtx(r.engagement_id);
   await q(`insert into reminder (request_id, scheduled_for, channel, status) values ($1, now(), 'portal', 'paused')`, [requestId]);

@@ -7,7 +7,7 @@ import { copiesCalculees } from './reunions';
 import { numToCents } from '@/lib/util/num';
 import { getTransportCircularisation } from './circularisations/transport';
 import { motif, type Motif } from './motif';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // LES CIRCULARISATIONS — banques et avocats (point 3 du mandat, ADR-111).
 //
@@ -208,6 +208,7 @@ export async function completude(engagementId: string, kind: Nature): Promise<Co
 // ── 3. L'ENVOI (simulé, jamais sans humain) ─────────────────────────────────
 
 export async function envoyer(partyId: string, userId: string): Promise<{ remis: boolean; detail: string }> {
+  await assertMembreDe('confirmation_party', partyId, userId, 'envoyer une demande de circularisation');
   const p = await q1<{ id: string; nom: string; email: string; reference: string; sent_at: string | null; engagement_id: string; kind: Nature; as_of: string }>(
     `select p.id::text, p.nom, p.email, p.reference, p.sent_at::text,
             c.engagement_id::text, c.kind, c.as_of::text
@@ -256,6 +257,7 @@ export async function deposerReponse(input: {
   partyId: string; userId: string; evidenceId: string;
   montantConfirmeCents?: number; litiges?: Litige[];
 }): Promise<void> {
+  await assertMembreDe('confirmation_party', input.partyId, input.userId, 'déposer une réponse de circularisation');
   const p = await q1<{ sent_at: string | null; engagement_id: string; kind: Nature; nom: string }>(
     `select p.sent_at::text, c.engagement_id::text, c.kind, p.nom
      from confirmation_party p join confirmation_campaign c on c.id = p.campaign_id
@@ -353,6 +355,7 @@ export async function rapprochement(engagementId: string, kind: Nature): Promise
  * elle qui rend le dossier relisible par un inspecteur.
  */
 export async function expliquerEcart(partyId: string, texte: string, userId: string): Promise<void> {
+  await assertMembreDe('confirmation_party', partyId, userId, 'expliquer un écart de circularisation');
   const t = texte.trim();
   if (t.length < 10) {
     throw new CircularisationError('circularisation : une explication d\'écart se rédige — « RAS » n\'explique rien à qui relira le dossier.');

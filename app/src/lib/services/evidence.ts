@@ -2,6 +2,7 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { saveBlob } from '@/lib/core/storage';
 import { engagementCtx } from './imports';
+import { assertMembreDe } from '@/lib/core/membre';
 
 // S4 evidence engine: intake with provenance; sha256 dedupe FLAGS duplicates (a duplicate
 // invoice is audit information, never merged); quarantine is a structural/manual flag
@@ -76,6 +77,16 @@ async function refreshRequestStatus(requestItemId: string): Promise<void> {
  *  unlinked until a human (or a matching rule) says which request item it belongs to.
  *  Linking is what makes it audit evidence for that item, so it is an event. */
 export async function attachEvidenceToItem(evidenceId: string, requestItemId: string, userId: string): Promise<void> {
+  /* DEUX OBJETS, DEUX RÉSOLUTIONS. Garder la pièce ne suffit pas : l'élément de
+     demande arrive du même formulaire. Rattacher MA pièce à l'élément d'un
+     autre cabinet écrirait chez lui — et les deux gardes doivent viser le MÊME
+     dossier, sinon on a vérifié deux choses vraies séparément et fausses
+     ensemble (mandat du soir, étage 0.1). */
+  const engRattache = await assertMembreDe('evidence', evidenceId, userId, 'rattacher une pièce à un élément de demande');
+  const engElement = await assertMembreDe('request_item', requestItemId, userId, 'rattacher une pièce à un élément de demande');
+  if (engRattache !== engElement) {
+    throw new Error('ETANCH-06 : rattacher une pièce à un élément de demande — la pièce et l’élément ne sont pas du même dossier');
+  }
   const ev = await q1<{ id: string; engagement_id: string; filename: string; quarantined: boolean }>(
     `select id, engagement_id, filename, quarantined from evidence where id = $1`,
     [evidenceId],
@@ -160,6 +171,7 @@ export async function listEvidence(engagementId: string) {
 }
 
 export async function setQuarantine(evidenceId: string, userId: string, reason: string | null): Promise<void> {
+  await assertMembreDe('evidence', evidenceId, userId, 'mettre une pièce en quarantaine');
   const e = await q1<{ engagement_id: string }>(`select engagement_id from evidence where id = $1`, [evidenceId]);
   const ctx = await engagementCtx(e.engagement_id);
   await q(`update evidence set quarantined = $2, quarantine_reason = $3 where id = $1`, [evidenceId, reason !== null, reason]);

@@ -4,135 +4,107 @@ import path from 'node:path';
 import { repoRoot } from '@/lib/db/client';
 
 /**
- * COMBIEN DE GESTES UN CABINET ÉTRANGER PEUT-IL ENCORE FAIRE ? (mandat du jour
- * n°3, §1.1.)
+ * AUCUNE FONCTION DE SERVICE PRENANT UN ACTEUR NE PEUT EXISTER SANS GARDE
+ * (mandat du soir, étage 0.1 : « le compteur qui refuse la 38ᵉ devient un
+ * compteur qui refuse LA PREMIÈRE »).
  *
- * POURQUOI CET INSTRUMENT EXISTE. `core/etancheite.test.ts` éprouve TREIZE
- * gestes et les refuse tous — et il serait facile de lire ce vert comme « les
- * services sont étanches ». Ils ne le sont pas : le dépôt compte
- * **quatre-vingt-seize** fonctions de service exportées qui prennent un acteur
- * ET écrivent. Treize refus sur quatre-vingt-seize, c'est un vert qui ment
- * (règle 13, corollaire : n'affirme jamais plus que ce que tu vérifies).
- *
- * Ce fichier compte donc, et il fait DEUX choses qu'un compte ne fait pas :
- *   · il refuse qu'une fonction NEUVE arrive sans garde et sans être écrite —
- *     la dette ne peut que rétrécir, jamais grossir en silence ;
- *   · il refuse une ligne PÉRIMÉE — une fonction inscrite comme découverte
- *     alors qu'elle a reçu sa garde, ou qui n'existe plus.
+ * CE QUI A CHANGÉ, ET POURQUOI. La version précédente comptait les fonctions
+ * qui écrivaient — au sens d'un `insert into` VISIBLE dans le corps — et
+ * tolérait trente-sept manques écrits un par un. Deux défauts :
+ *   · le critère ratait les écritures PAR DÉLÉGATION (`joindreAnnexe` appelle
+ *     `ingestEvidence`, `deposerReponse` et `statuerEcart` écrivent plus bas) —
+ *     trois fonctions passaient pour des lectures ;
+ *   · une liste de manques tolérés est une liste qui s'allonge.
+ * Le critère est désormais le plus large possible : PRENDRE UN ACTEUR suffit à
+ * devoir se garder. Les seules exceptions sont les gestes qui portent sur la
+ * PERSONNE elle-même, écrits ci-dessous avec leur raison.
  *
  * CE QU'IL NE PROUVE PAS, ET IL LE DIT : c'est un balayage de TEXTE. Il
- * constate qu'un appel de garde figure dans le corps de la fonction ; il ne
- * dit pas que cet appel s'exécute sur le bon dossier (règle 15). Le chemin
- * réel, lui, est emprunté par `core/etancheite.test.ts` — treize fois.
+ * constate qu'un appel de garde FIGURE dans le corps — jamais qu'il s'exécute
+ * sur le bon dossier (règle 15). La preuve, elle, est dans
+ * `etancheite-executee.test.ts`, qui APPELLE chaque fonction avec un acteur
+ * d'un autre cabinet et observe le refus.
  */
 describe('la couverture des gardes d’étanchéité dans les services', () => {
   const dir = path.join(repoRoot(), 'app', 'src', 'lib', 'services');
-  const ACTEUR = /\b(userId|actorUserId|authorId|byUserId|actorId)\b\s*[:,?]/;
-  const ECRIT = /\b(insert into|update\s+[a-z_]+\s+set|delete from)\b|logEvent\(/;
-  const GARDE = /assertMembre\(|assertDestinataire\(|assertSameFirm\(|isolation/;
+  const ACTEUR = /\b(userId|actorUserId|authorId|byUserId|actorId)\b\s*[:;,?]/;
+  const GARDE = /assertMembreDe\(|assertMembre\(|assertDestinataire\(|assertCabinet\(|assertCabinetDuLocataire\(|assertSameFirm\(|isolation/;
 
   /**
-   * LES GESTES ENCORE NUS, un par un, avec la raison pour laquelle ils le sont.
-   * Tous portent la même forme : ils sont désignés par l'identifiant d'un OBJET
-   * FILS (un papier, un échantillon, un écart, une pièce, une déclaration), pas
-   * par celui du dossier — la garde exige donc une résolution vers le dossier,
-   * qui n'est pas écrite. Ce n'est pas une excuse : c'est la description exacte
-   * de ce qui reste à faire, et le compte est publié.
+   * CE QUI PORTE SUR LA PERSONNE ELLE-MÊME. L'acteur n'y est pas l'AUTEUR d'un
+   * geste sur l'objet d'autrui : il en est le SUJET. Il n'y a aucun dossier
+   * d'un autre cabinet à atteindre, donc rien à garder par dossier.
    */
-  const NUS: Record<string, string> = Object.fromEntries([
-    ['carryforward.ts::deciderReprise', 'désigné par l’identifiant d’une proposition de reprise'],
-    ['circularisations.ts::envoyer', 'désigné par l’identifiant d’un tiers circularisé'],
-    ['circularisations.ts::expliquerEcart', 'désigné par l’identifiant d’un tiers circularisé'],
-    ['entretiens.ts::consignerComprehension', 'désigné par l’identifiant d’un entretien'],
-    ['entretiens.ts::deposerTranscript', 'désigné par l’identifiant d’un entretien'],
-    ['entretiens.ts::analyserTranscript', 'désigné par l’identifiant d’un entretien'],
-    ['estimations.ts::demanderJustificatifs', 'désigné par l’identifiant d’une estimation'],
-    ['evaluation.ts::recordEvaluationResponse', 'désigné par l’identifiant d’une évaluation'],
-    ['evaluation.ts::concludeEvaluation', 'désigné par l’identifiant d’une évaluation'],
-    ['evidence.ts::attachEvidenceToItem', 'désigné par l’identifiant d’une pièce'],
-    ['evidence.ts::setQuarantine', 'désigné par l’identifiant d’une pièce'],
-    ['extraction/ladder.ts::extractEvidence', 'désigné par l’identifiant d’une pièce'],
-    ['extraction/ladder.ts::verifyExtraction', 'désigné par l’identifiant d’une extraction'],
-    ['ipe.ts::utiliserRapport', 'désigné par l’identifiant d’un rapport IPE'],
-    ['ipe.ts::enregistrerIpe', 'désigné par l’identifiant d’un rapport IPE'],
-    ['matching.ts::recordScopeLimitation', 'désigné par l’identifiant d’un écart'],
-    ['matching.ts::escalateToMisstatement', 'désigné par l’identifiant d’un écart'],
-    ['reconciliation.ts::documentDifference', 'désigné par l’identifiant d’une ligne de rapprochement'],
-    ['reconciliation.ts::noteReconciliationLimitation', 'désigné par l’identifiant d’un rapprochement'],
-    ['requests.ts::approveSend', 'désigné par l’identifiant d’une demande'],
-    ['requests.ts::pauseReminders', 'désigné par l’identifiant d’une demande'],
-    ['reunions.ts::envoyer', 'désigné par l’identifiant d’une réunion ; porte déjà sa garde d’isolation par ENTITÉ'],
-    ['sampling.ts::validateSampleParams', 'désigné par l’identifiant d’un échantillon'],
-    ['sampling.ts::drawRevenueSample', 'désigné par l’identifiant d’un échantillon'],
-    ['sox.ts::setDiStatus', 'désigné par l’identifiant d’un contrôle'],
-    ['sox.ts::importInstances', 'désigné par l’identifiant d’un contrôle'],
-    ['sox.ts::drawAttributeSample', 'désigné par l’identifiant d’un contrôle'],
-    ['sox.ts::runAttributeTesting', 'désigné par l’identifiant d’un échantillon d’attributs'],
-    ['sox.ts::resolveDeviation', 'désigné par l’identifiant d’une déviation'],
-    ['sox.ts::waiveExtension', 'désigné par l’identifiant d’une déviation'],
-    ['sox.ts::proposeDeficiency', 'désigné par l’identifiant d’un contrôle'],
-    ['sox.ts::decideDeficiency', 'désigné par l’identifiant d’une déficience'],
-    ['team.ts::answerRubric', 'désigné par l’identifiant d’une déclaration ; la règle « on remplit pour soi » le tient déjà (team.test.ts)'],
-    ['team.ts::signDeclaration', 'désigné par l’identifiant d’une déclaration ; la règle « on signe pour soi » le tient déjà, service ET base'],
-    ['workpapers/colonne.ts::confirmerEtRemplir', 'désigné par l’identifiant d’une colonne ajoutée'],
-    ['workpapers/colonne.ts::annulerColonne', 'désigné par l’identifiant d’une colonne ajoutée'],
-    ['workpapers/colonne.ts::proposerClarification', 'désigné par l’identifiant d’une colonne ajoutée'],
-  ]);
+  const PAR_PERSONNE: Record<string, string> = {
+    'bascule.ts::missionsParClient': 'les missions de CETTE personne : la requête est bornée par son appartenance à l’équipe',
+    'replis.ts::lireReplis': 'les rangements d’écran de CETTE personne',
+    'replis.ts::memoriserRepli': 'un rangement d’écran chez CETTE personne ; le locataire de la ligne vient de la personne par jointure (REPLI-03, G-23)',
+    'sections.ts::mesSections': 'les sections détenues par CETTE personne',
+    'team.ts::declarations': 'les déclarations d’indépendance de CETTE personne sur ce dossier',
+    'team.ts::currentDeclaration': 'la déclaration courante de CETTE personne',
+    'team.ts::independenceHolds': 'l’indépendance de CETTE personne tient-elle',
+    'team.ts::declarationState': 'l’état de la déclaration de CETTE personne',
+    'travaux.ts::mesTravaux': 'le tableau de bord de CETTE personne',
+    'travaux.ts::obstaclesDeMesDossiers': 'les obstacles des dossiers de CETTE personne',
+    'travaux.ts::notesOuvertesParAnciennete': 'les notes adressées à CETTE personne',
+    'travaux.ts::tableauDeBord': 'le tableau de bord de CETTE personne',
+    'monde-demo.ts::remettreLeMondeAZero': 'la remise à zéro de la DÉMONSTRATION : gardée par demoPublique et par l’instantané, et son acteur peut être nul (chemin système)',
+  };
 
-  function inventaire(): { gardes: string[]; nus: string[] } {
-    const gardes: string[] = []; const nus: string[] = [];
-    const marcher = (d: string, out: string[] = []): string[] => {
+  function inventaire(): { gardees: string[]; nues: string[] } {
+    const fichiers: string[] = [];
+    const marcher = (d: string) => {
       for (const e of fs.readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, e.name);
-        if (e.isDirectory()) marcher(p, out);
-        else if (/\.ts$/.test(e.name) && !/\.test\./.test(e.name)) out.push(p);
+        if (e.isDirectory()) marcher(p);
+        else if (/\.ts$/.test(e.name) && !/\.test\./.test(e.name)) fichiers.push(p);
       }
-      return out;
     };
-    for (const f of marcher(dir).sort()) {
+    marcher(dir);
+    const gardees: string[] = []; const nues: string[] = [];
+    for (const f of fichiers.sort()) {
       const s = fs.readFileSync(f, 'utf8');
       for (const m of s.matchAll(/^export async function (\w+)\(/gm)) {
-        const nom = m[1]; const i = m.index! + m[0].length;
-        const j = s.indexOf('\n}\n', i);
-        const corps = s.slice(i, j === -1 ? s.length : j);
-        const sig = corps.includes('{') ? corps.slice(0, corps.indexOf('{')) : corps;
-        if (!ACTEUR.test(sig) || !ECRIT.test(corps)) continue;
+        const nom = m[1];
+        if (/^assert/.test(nom)) continue;                 // une garde n'est pas un geste
+        const i = m.index! + m[0].length - 1;
+        let d = 0; let fin = -1;
+        for (let k = i; k < s.length; k++) {
+          if (s[k] === '(') d++;
+          else if (s[k] === ')') { d--; if (d === 0) { fin = k; break; } }
+        }
+        if (fin === -1) continue;
+        const j = s.indexOf('\n}\n', fin);
+        const corps = s.slice(fin, j === -1 ? s.length : j);
+        if (!ACTEUR.test(s.slice(i + 1, fin))) continue;
         const cle = `${path.relative(dir, f).split(path.sep).join('/')}::${nom}`;
-        (GARDE.test(corps) ? gardes : nus).push(cle);
+        (GARDE.test(corps) ? gardees : nues).push(cle);
       }
     }
-    return { gardes, nus };
+    return { gardees, nues };
   }
 
-  it('l’instrument VOIT quelque chose — un balayage muet dirait « zéro nu » et aurait l’air vert', () => {
-    const { gardes, nus } = inventaire();
-    expect(gardes.length + nus.length, 'aucune fonction d’écriture trouvée : l’instrument mesure à côté').toBeGreaterThan(80);
-    expect(gardes.length, 'aucune garde trouvée : l’instrument ne reconnaît plus les appels').toBeGreaterThan(50);
+  it('l’instrument VOIT quelque chose — un balayage muet dirait « zéro nue » et aurait l’air vert', () => {
+    const { gardees, nues } = inventaire();
+    expect(gardees.length + nues.length, 'aucune fonction à acteur trouvée : l’instrument mesure à côté').toBeGreaterThan(100);
+    expect(gardees.length, 'aucune garde reconnue : l’instrument ne lit plus les appels').toBeGreaterThan(95);
   });
 
-  it('aucun geste NU qui ne soit ÉCRIT — la dette ne grossit pas en silence', () => {
-    const { nus } = inventaire();
-    const inconnus = nus.filter((n) => !(n in NUS));
-    expect(inconnus, 'gestes d’écriture sans garde d’étanchéité et sans ligne écrite :\n  ' + inconnus.join('\n  ')).toEqual([]);
+  it('AUCUNE fonction à acteur sans garde — la première rougit, pas la trente-huitième', () => {
+    const { nues } = inventaire();
+    const fautives = nues.filter((n) => !(n in PAR_PERSONNE));
+    expect(fautives, 'fonctions de service prenant un acteur SANS garde d’étanchéité :\n  ' + fautives.join('\n  ')).toEqual([]);
   });
 
-  it('aucune ligne PÉRIMÉE — une fonction gardée, ou disparue, ne reste pas inscrite comme nue', () => {
-    const { gardes, nus } = inventaire();
-    const vus = new Set(nus);
-    const tous = new Set([...gardes, ...nus]);
-    const perimees = Object.keys(NUS).filter((k) => !vus.has(k));
-    expect(perimees.map((k) => k + (tous.has(k) ? ' (elle est GARDÉE désormais)' : ' (elle n’existe plus)')),
-      'lignes périmées dans la liste des gestes nus').toEqual([]);
-    for (const [k, raison] of Object.entries(NUS)) {
-      expect(raison.length, `${k} : inscrit sans raison écrite`).toBeGreaterThan(20);
+  it('aucune ligne PÉRIMÉE dans la liste « par personne », et chacune porte sa raison', () => {
+    const { gardees, nues } = inventaire();
+    const vues = new Set(nues);
+    const toutes = new Set([...gardees, ...nues]);
+    const perimees = Object.keys(PAR_PERSONNE).filter((k) => !vues.has(k))
+      .map((k) => k + (toutes.has(k) ? ' (elle est GARDÉE désormais)' : ' (elle n’existe plus)'));
+    expect(perimees, 'lignes périmées dans la liste « par personne »').toEqual([]);
+    for (const [k, raison] of Object.entries(PAR_PERSONNE)) {
+      expect(raison.length, `${k} : inscrit sans raison écrite`).toBeGreaterThan(30);
     }
-  });
-
-  it('le COMPTE est publié — c’est lui qu’on lit, pas une impression', () => {
-    const { gardes, nus } = inventaire();
-    /* Au 2026-09-03, après la revue hostile n°9 : 37 nus. Le plancher
-       empêche une régression silencieuse ; la liste ci-dessus porte le détail. */
-    expect(gardes.length).toBeGreaterThanOrEqual(55);
-    expect(nus.length).toBeLessThanOrEqual(Object.keys(NUS).length);
   });
 });

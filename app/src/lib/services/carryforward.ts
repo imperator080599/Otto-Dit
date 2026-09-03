@@ -2,7 +2,7 @@ import { q, q1, q01 } from '@/lib/db/client';
 import { missionN1 } from './engagement';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // LA REPRISE DU DOSSIER PRÉCÉDENT (point 2b).
 //
@@ -183,6 +183,7 @@ export async function deciderReprise(
   status: 'reconfirmed' | 'dismissed',
   reason = '',
 ): Promise<Reprise> {
+  await assertMembreDe('carry_forward', id, actorUserId, 'statuer une reprise de l’exercice précédent');
   const r = await q01<Reprise>(`select ${COLONNES} from carry_forward where id = $1`, [id]);
   if (!r) throw new CarryForwardError('proposition de reprise inconnue');
   if (r.status !== 'proposed') throw new CarryForwardError('proposition déjà statuée');

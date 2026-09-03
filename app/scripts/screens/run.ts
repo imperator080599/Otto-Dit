@@ -1,4 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+
+/** Le balayage arme-t-il le garde de locataire dans le serveur ? */
+const garde = process.argv.includes('--garde') || process.env.OTTO_SCREENS_GARDE === '1';
 import { binaireDe, groupeDetache, tuerArbre } from '../lib/portable.mjs';
 import { getDb } from '../../src/lib/db/client';
 import { routes, auditeur, baseSemee } from './routes';
@@ -24,7 +27,18 @@ const BIN_NEXT = binaireDe('next', process.cwd());
 function lancer(args: string[]): ChildProcess {
   if (!BIN_NEXT) throw new Error('next est absent de node_modules — lancez `npm install` dans app/');
   return spawn(process.execPath, [BIN_NEXT, ...args], {
-    env: { ...process.env, PORT: String(PORT) },
+    /* LE GARDE DE LOCATAIRE S'ARME DANS LE SERVEUR, PAS DANS LE HARNAIS
+       (mandat du soir, 0.5). `npm run screens -- --garde` — ou
+       OTTO_SCREENS_GARDE=1 — fait tourner l'application avec LOC-01 ARMÉ :
+       chaque écran doit alors poser son locataire, sinon il rend 500 et le
+       balayage le dit. Le harnais, lui, reste désarmé : il lit la base en
+       script, sans session, et l'armer aurait mesuré le harnais au lieu du
+       produit — c'est ce que la première tentative a fait. */
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      ...(garde ? { OTTO_GARDE_LOCATAIRE: '1' } : {}),
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: groupeDetache(),
   });

@@ -8,7 +8,7 @@ import { lireProcessus, FSLI_DU_CYCLE } from './processus';
 import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
 import { gardeBudget } from './extraction/budget';
 import { motif, type Motif } from './motif';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // L'ENTRETIEN DU RESPONSABLE DE PROCESSUS (point 2, ADR-108) — participants,
 // date, support, compréhension documentée. PRÉCAUTION JURIDIQUE formalisée
@@ -40,6 +40,7 @@ export async function creerEntretien(opts: {
   retentionUntil?: string | null;
   userId: string;
 }): Promise<string> {
+  await assertMembre(opts.engagementId, opts.userId, 'créer un entretien de processus');
   if (!DATE_ISO.test(opts.date)) throw new Error('entretien : la date s\'écrit AAAA-MM-JJ');
   if (!opts.sujet.trim()) throw new Error('entretien : le sujet est vide — un entretien sans objet ne se relit pas');
   const participants = opts.participants.filter((p) => p.nom.trim());
@@ -83,6 +84,7 @@ export async function creerEntretien(opts: {
 }
 
 export async function consignerComprehension(interviewId: string, texte: string, userId: string): Promise<void> {
+  await assertMembreDe('process_interview', interviewId, userId, 'consigner la compréhension d’un entretien');
   if (!texte.trim()) throw new Error('entretien : la compréhension documentée est vide — écrire ce qu\'on a compris est le livrable de l\'entretien');
   const itv = await q1<{ engagement_id: string }>(
     `update process_interview set comprehension = $2 where id = $1 returning engagement_id`,
@@ -98,6 +100,7 @@ export async function consignerComprehension(interviewId: string, texte: string,
 }
 
 export async function deposerTranscript(interviewId: string, contenu: string, userId: string): Promise<void> {
+  await assertMembreDe('process_interview', interviewId, userId, 'déposer le transcript d’un entretien');
   const itv = await q1<{ engagement_id: string; support: string }>(
     `select engagement_id, support from process_interview where id = $1`, [interviewId],
   );
@@ -137,6 +140,7 @@ function digestDocumentation(nom: string, etapes: { code: string; libelle: strin
  *  conclusion. Rejeu enregistré par défaut ; adaptateur réel = garde de
  *  budget puis ai_run, comme toute lecture payante (ADR-105). */
 export async function analyserTranscript(interviewId: string, userId: string): Promise<{ ajoutes: number; coutUsd: number; adapter: string }> {
+  await assertMembreDe('process_interview', interviewId, userId, 'analyser le transcript d’un entretien');
   const itv = await q1<{ engagement_id: string; cycle_ref: string; date_entretien: string }>(
     `select engagement_id, cycle_ref, date_entretien::text from process_interview where id = $1`, [interviewId],
   );
@@ -253,6 +257,7 @@ export async function lireEntretiens(engagementId: string, cycle?: string): Prom
 export async function statuerEcart(opts: {
   gapId: string; decision: 'question' | 'factor' | 'dismissed'; reason?: string; userId: string;
 }): Promise<void> {
+  await assertMembreDe('transcript_gap', opts.gapId, opts.userId, 'statuer un écart d’entretien');
   const g = await q1<{ id: string; interview_id: string; seq: number; kind: string; citation: string; description: string; status: string; engagement_id: string; cycle_ref: string; date_entretien: string }>(
     `select g.id::text, g.interview_id::text, g.seq, g.kind, g.citation, g.description, g.status,
             i.engagement_id::text, i.cycle_ref, i.date_entretien::text

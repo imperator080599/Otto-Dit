@@ -1,7 +1,13 @@
 import { getDb, closeDb, dbKind, hote } from '../../src/lib/db/client';
 import { verdictOttoApp, RETRAITS_0140, type EtatOttoApp } from '../../src/lib/db/assertions-role';
 
-// npx tsx scripts/db/otto-app.ts — LE RÔLE APPLICATIF, LU SUR UN VRAI POSTGRES
+// npx tsx scripts/db/verifier-role-applicatif.ts — LE RÔLE APPLICATIF, VÉRIFIÉ
+// SUR UN VRAI POSTGRES
+//
+// IL S'APPELAIT `otto-app.ts`, ET CE NOM MENTAIT : on pouvait croire qu'il
+// CRÉAIT le rôle. Il ne crée rien — c'est la migration 0140 qui crée. Il LIT le
+// catalogue et rend un verdict. Un instrument mal nommé est un instrument mal
+// cru (mandat du soir, 0.3).
 // (migration 0140 ; docs/PLAN_RLS.md étape 2).
 //
 // POURQUOI CE SCRIPT EXISTE ALORS QUE LA SUITE ÉPROUVE DÉJÀ LE RÔLE. En local,
@@ -25,7 +31,7 @@ async function main() {
     process.env.DATABASE_URL = process.env.OTTO_CI_DATABASE_URL;
   }
   if (dbKind() !== 'pg') {
-    console.error('otto-app : ni DATABASE_URL ni OTTO_CI_DATABASE_URL — cette lecture ne vaut que contre une base RÉSEAU.');
+    console.error('vérification du rôle applicatif : ni DATABASE_URL ni OTTO_CI_DATABASE_URL — cette lecture ne vaut que contre une base RÉSEAU.');
     process.exit(1);
   }
   console.log(`base réseau : ${hote(process.env.DATABASE_URL!)}`);
@@ -52,16 +58,24 @@ async function main() {
     }
   }
 
-  /* ET LE RECENSEMENT QUI DOIT RESTER À ZÉRO. */
+  /* ET LE RECENSEMENT QUI DOIT RESTER À ZÉRO — POSÉ EXACTEMENT COMME DANS LA
+     MIGRATION. Les deux inventaires ne posaient pas la même question : 0140
+     exclut les fonctions installées par une EXTENSION (`pg_depend.deptype =
+     'e'`), ce script ne les excluait pas. Sur un vrai Supabase — où `public`
+     peut porter pgcrypto ou uuid-ossp — le script aurait échoué là où la
+     migration passe, et on aurait cherché le défaut du mauvais côté
+     (mandat du soir, 0.3). */
   const sd = await db.query<{ n: string }>(
-    `select count(*)::text n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-     where s.nspname = 'public' and p.prosecdef`);
-  console.log(`fonctions SECURITY DEFINER : ${sd.rows[0].n}`);
+    `select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+     where s.nspname = 'public' and p.prosecdef
+       and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+     order by 1`);
+  console.log(`fonctions SECURITY DEFINER : ${sd.rows.map((x) => x.n).join(', ') || '(aucune)'}`);
 
   const etat: EtatOttoApp = {
     role: x ? { bypass: x.b, superutilisateur: x.s, connexion: x.l } : null,
     ouvertes,
-    definers: Number(sd.rows[0].n),
+    definers: sd.rows.map((x) => x.n),
   };
   const defauts = verdictOttoApp(etat);
 
@@ -70,7 +84,7 @@ async function main() {
     for (const d of defauts) console.error(`::error::${d}`);
     process.exit(1);
   }
-  console.log('otto_app : rôle présent, sans bypass, tables fermées, aucune fonction definer.');
+  console.log('otto_app : rôle présent, sans bypass, six retraits tenus, aucune fonction definer (hors extensions).');
 }
 
 main().catch(async (e) => {
