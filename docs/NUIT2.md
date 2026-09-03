@@ -1,9 +1,11 @@
 # Mandat de nuit n°2 — le rapport du réveil
 
-**L'URL** : https://otto-dit.vercel.app — le SHA réellement servi est celui de `/api/sante`
-(`version.shaExecution`), à relire après le déploiement de ce commit ; le SHA de la nuit
-précédente, mesuré à 00:07 UTC, était `5f7c28b17e2b7e940a2c84f0d9997acb5eb3d3b9`
-(source `git`, identité cohérente, 20 lectures vertes).
+**L'URL** : https://otto-dit.vercel.app — SHA réellement servi au moment où j'écris,
+**`d8d9e03b67cc8add843e18119d93551aace5e08a`**, mesuré à 03:51 UTC sur `/api/sante`
+(`version.shaExecution` = `sha` = source `git`, identité cohérente) : **vingt et une lectures,
+toutes vertes**, dont « monde enrichi » et « replis mémorisés par personne ». Les trois
+livraisons de la nuit ont été servies tour à tour (`5f7c28b`, `5ba3408`, `fa448d8`, `d8d9e03`) ;
+c'est le dernier qui répond.
 
 ## Ce qui est cliquable ce matin et ne l'était pas hier soir — en cinq lignes
 
@@ -51,6 +53,21 @@ défauts du produit — et tous deux corrigés :
   la liste dépend de qui regarde. Elle passait en local et tombait en ligne : elle mesurait
   l'identité, pas l'écran. Elle lit désormais l'avancement du DOSSIER (le compte par état de la
   barre, `data-legende`/`data-n`), et un état à zéro ne compte toujours pas.
+
+## Un rouge que je n'ai PAS su reproduire (et que je ne maquille pas)
+
+La CI du commit `d8d9e03` a rougi sur **un test, une fois** :
+`grille.test.ts > la disposition écrite lève TEST-04 … » — « expected null not to be null »` à la
+dernière assertion (après remise du delta à sa valeur d'origine, la disposition doit couvrir de
+nouveau). **Rejoué quatre fois en local — deux suites complètes (710/710) et deux fois le fichier
+seul (24/24) — sans jamais le reproduire.** Les fichiers de test tournent chacun sur une base
+PGlite neuve en mémoire : il n'y a pas de couplage entre fichiers à incriminer, et rien dans le
+commit ne touche la grille (il ne change que deux harnais, un attribut de page et des documents).
+
+Je n'ai donc **pas de diagnostic**, seulement une hypothèse non prouvée (une donnée limite —
+un delta nul contre un delta chiffré — dans la cellule que le test choisit). Conformément à la
+règle 18, je ne l'écris pas comme une cause et je ne « corrige » pas un test que je ne comprends
+pas : c'est inscrit comme fil ouvert (N2-6), à reprendre avec une exécution qui échoue.
 
 ## Ce qui n'est PAS prouvé
 
