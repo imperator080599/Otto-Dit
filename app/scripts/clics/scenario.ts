@@ -937,6 +937,106 @@ export async function conduire(
   //    lui-même dans sa limitation de périmètre — « le rapprochement sera
   //    re-exécuté sur le FEC définitif avant conclusion définitive ». Les
   //    travaux se REFONT donc sur le grand livre définitif, au clic.
+  /* ── 8 ter. LE PROGRAMME DE TRAVAIL (étage 1.1). L'écran qui manquait :
+        planifier une procédure que le risque commande, et rédiger son papier,
+        en cliquant. Avant, ces deux services n'étaient appelés que par le
+        semeur de la démonstration. */
+  await station('programme de travail', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/programme`);
+    const postes = await compte('[data-poste-programme]');
+    dire('programme : chaque poste retenu porte ce que le risque lui commande',
+      postes > 0 && (await compte('[data-ligne-programme]')) > 0,
+      `${postes} poste(s), ${await compte('[data-ligne-programme]')} procédure(s) commandée(s)`);
+
+    /* PLANIFIER — le geste qui n'existait nulle part.
+       CE QUE LA REVUE HOSTILE A CASSÉ DANS LA PREMIÈRE VERSION DE CETTE STATION
+       (constat 1) : le verdict était « il existe au moins une ligne planifiée »,
+       et le REFUS éventuel n'allait que dans le détail imprimé. Or le semeur de
+       la démonstration planifie déjà plusieurs procédures : le compteur était
+       vrai AVANT le clic, et un clic refusé laissait l'étape verte — « un refus
+       calculé puis jeté », règle 13, dans l'instrument même qui existe pour
+       attraper ce défaut. Le verdict est désormais : aucun refus ET le compte a
+       AUGMENTÉ. */
+    const dejaPlanifiees = await compte('[data-planifiee]');
+    const aPlanifier = await compte('[data-planifier]');
+    if (aPlanifier > 0) {
+      const f = p.locator('form:has([data-planifier])').first();
+      await soumettre(f.locator('button').first());
+      await aller(`${eng}/programme`);
+      const apres = await compte('[data-planifiee]');
+      dire('programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée',
+        !refus(p) && apres > dejaPlanifiees,
+        refus(p) ?? `${dejaPlanifiees} → ${apres} procédure(s) planifiée(s)`);
+    } else {
+      /* PAS DE SUCCÈS MUET : sur ce monde, le risque est évalué et la méthode
+         commande plus de procédures que le semeur n'en planifie. N'avoir rien à
+         planifier est le signe que l'écran n'offre plus le geste. */
+      dire('programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée',
+        false, 'AUCUNE procédure à planifier sur ce dossier — l’écran n’offre plus le geste');
+    }
+
+    /* RÉDIGER LE PAPIER — depuis la même ligne, sans changer d'écran. */
+    if (await compte('[data-rediger]')) {
+      const g = p.locator('form:has([data-rediger])').first();
+      await soumettre(g.locator('button').first());
+      await aller(`${eng}/programme`);
+      dire('programme : le papier de la procédure se RÉDIGE depuis la ligne, et devient atteignable',
+        !refus(p) && /WP-|REV-|[A-Z]{2,3}-\d{2}/.test(await texte()),
+        refus(p) ?? 'papier rédigé et lié depuis le programme');
+
+      /* ET LA QUESTION QUI SUIT LE PAPIER, PARCE QU'ELLE LE SUIT VRAIMENT.
+         Rédiger un papier ouvre une obligation : dire s'il s'appuie sur une
+         information produite par l'entité (Groupe 1, 1.8) — sinon le visa est
+         bloqué, et c'est le produit qui a raison. La première version de cette
+         station rédigeait le papier et laissait l'obstacle derrière elle : un
+         harnais qui crée du travail et s'en va. On va donc au papier neuf et on
+         répond, comme le ferait le préparateur. */
+      const lienPapier = p.locator('[data-planifiee] a[href*="/workpapers/"]').last();
+      if (!(await lienPapier.count())) {
+        /* PAS DE BRANCHE MUETTE : si le papier qu'on vient de rédiger n'est pas
+           atteignable depuis sa ligne, l'assertion précédente ment. */
+        dire('programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue',
+          false, 'le papier rédigé n’est pas atteignable depuis sa ligne');
+      } else {
+        await lienPapier.click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        const sel = p.locator('#ipe select[name=rapport_id]');
+        if (!(await sel.count())) {
+          dire('programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue',
+            false, 'le formulaire IPE est absent du papier rédigé — obligation créée et non tenue');
+        } else {
+          const opts = await sel.locator('option').evaluateAll(
+            (els) => els.map((e) => (e as HTMLOptionElement).label).filter((l) => l && !/^—|^$/.test(l)));
+          if (opts.length > 0) {
+            await sel.selectOption({ label: opts[0] });
+            await p.locator('#ipe input[name=utilisee][value=oui]').check();
+            await p.locator('#ipe select[name=approprie]').selectOption('oui');
+            await soumettre(p.locator(`#ipe button:has-text("${L('wp.ipe.record')}")`).first(), 1500);
+          } else {
+            await p.locator('#ipe input[name=utilisee][value=non]').check();
+            await soumettre(p.locator(`#ipe button:has-text("${L('wp.ipe.record')}")`).first(), 1500);
+          }
+          dire('programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue',
+            !refus(p), refus(p) ?? 'question IPE posée et répondue sur le papier rédigé');
+        }
+        await aller(`${eng}/programme`);
+      }
+    }
+
+    /* LE REFUS PROG-06, EMPRUNTÉ ET NON CHERCHÉ. Un papier VISÉ ne se dépasse
+       pas sans motif écrit : l'écran n'offre le champ que sur une ligne visée,
+       et il n'est pas `required` — c'est le serveur qui refuse (ADR-091). */
+    const visees = p.locator('form:has(input[name=motif]):has([data-nouvelle-version])');
+    if (await visees.count()) {
+      await soumettre(visees.first().locator('button').first());
+      dire('refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)',
+        /PROG-06/.test(refus(p) ?? ''),
+        refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+      await aller(`${eng}/programme`);
+    }
+  });
+
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);

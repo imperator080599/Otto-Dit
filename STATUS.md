@@ -167,6 +167,24 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Étage 1.1 — le programme de travail : l'écran qui manquait (2026-09-03, nuit J3)
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Ouvrir « Programme de travail »
+dans le rail, voir poste par poste ce que l'évaluation du risque COMMANDE — avec la phrase qui le
+justifie et la taille d'échantillon —, **planifier une procédure en un clic**, et **rédiger son
+papier de travail depuis la même ligne**. Ces trois services existaient depuis des semaines : leurs
+seuls appelants étaient le semeur de la démonstration et leurs propres tests. Le dossier semblait
+complet parce que le semeur planifiait à la place de l'auditeur.
+
+**La deuxième liste est celle qui compte** : ce qui est planifié et que le risque ne commande plus.
+Baisser un niveau d'assertion retire une procédure des requises ; le papier rédigé dessous ne
+disparaît pas de la vue pour autant. Même règle qu'au re-tirage (ADR-133).
+
+**Réparé au passage** : `avertissementsAuVisa` était calculé et lu par AUCUN écran. Il est sur
+l'écran des obstacles, à part, jamais compté parmi eux.
+
+**Lecture ajoutée à `/api/sante` le jour même** : « programme de travail (commandé / planifié) ».
+
 ## Étage 1.2 — le re-tirage ne fait pas disparaître le travail humain (2026-09-03, nuit J3)
 
 **Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Ré-importer le grand livre

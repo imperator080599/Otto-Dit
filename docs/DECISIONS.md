@@ -5252,3 +5252,59 @@ l'hydratation et la navigation — bruyante (elle rougit le job `url` de la CI e
 `server_error`), rarement visible pour l'utilisateur. Le remède se choisirait alors entre : laisser
 passer une erreur récupérable en la reconnaissant pour ce qu'elle est, ou empêcher la navigation
 tant que l'hydratation n'est pas finie. Aucun des deux ne s'écrit avant que l'expérience ait parlé.
+
+## ADR-134
+
+**Le programme de travail : l'écran qui manquait, et ce que son absence coûtait.**
+(Mandat du soir et de la nuit J3, étage 1.1.)
+
+**LE FAIT, mesurable en une commande.** `requiredProcedures` (ce que le risque commande),
+`planifierProcedure` (planifier une procédure du catalogue) et `redigerPapierDeProcedure` (rédiger
+son papier, blocs du gabarit du cabinet compris) existaient depuis des semaines, testés, avec leurs
+six refus nommés. Leurs seuls appelants étaient le semeur de la démonstration
+(`lib/flows/enrichir.ts`) et leurs propres tests :
+
+```
+grep -rn "planifierProcedure\|redigerPapierDeProcedure" app/src/app app/src/lib \
+  | grep -v "services/programme.ts\|\.test\.ts"
+→ app/src/lib/flows/enrichir.ts (deux lignes)
+```
+
+Un auditeur lisait donc, sur l'écran du risque, une liste de procédures « commandées » qui n'ouvrait
+sur rien. **Un geste du métier sans écran** — règle 13, mot pour mot. Le dossier de démonstration
+paraissait complet parce que le SEMEUR planifiait à sa place.
+
+**TROIS LISTES PAR POSTE, ET LA DEUXIÈME EST CELLE QU'ON OUBLIE.**
+
+1. *Ce que le risque commande*, avec la phrase qui le justifie (« risque « moyen » sur
+   « séparation » ≥ minimum « moyen » de la procédure »), la taille d'échantillon et son origine —
+   et, en face, le geste : planifier, puis rédiger le papier.
+2. *Ce qui est planifié et que le risque ne commande PLUS.* Baisser un niveau d'assertion retire une
+   procédure des requises. Si l'écran s'arrêtait à la première liste, le papier déjà rédigé dessous
+   sortirait de la vue sans qu'aucune personne ne l'ait décidé. C'est la même règle qu'au re-tirage
+   (ADR-133) : **un recalcul ne fait pas disparaître du travail humain en silence.**
+3. *Ce qui est écarté*, avec le niveau atteint et le minimum exigé — une liste qui ne dit que ce
+   qu'elle retient ne se conteste pas.
+
+**LE CAS CONNU MAUVAIS A REFUSÉ DE PASSER, DEUX FOIS, ET C'EST CE QU'ON LUI DEMANDAIT.** Écrit pour
+prouver le point 2, il a d'abord dénoncé sa propre fixture : sur ce dossier, toutes les assertions
+sont au plancher de l'échelle, donc seules les procédures de minimum « plancher » sont requises — et
+aucune ne peut SORTIR des requises. Le test a jeté au lieu de passer (« la fixture n'exerce pas la
+sortie des requises — à réécrire, pas à ignorer »). Il fait désormais le geste réel d'un auditeur :
+MONTER une assertion avec un motif écrit, planifier, rédiger le papier, puis la redescendre — et il
+vérifie que la procédure sortie apparaît dans la deuxième liste, son papier atteignable.
+
+Deuxième refus : le premier jet lisait le niveau le plus bas par un tri alphabétique, où « eleve »
+précède « faible » — il descendait donc les assertions au niveau le plus HAUT en croyant faire
+l'inverse. L'échelle vient de la méthode (`risque.niveaux`, ordonnée du plus faible au plus élevé),
+jamais d'un tri.
+
+**CE QUI EST RÉPARÉ AU PASSAGE : les AVERTISSEMENTS au visa atteignent enfin un écran.**
+`avertissementsAuVisa` — ce qui bloquerait si le pack le déclarait bloquant — était CALCULÉ et lu
+par personne : une fonction dont le résultat n'atteignait aucun chemin de lecture. Il est désormais
+sur l'écran des obstacles, à part, nommé pour ce qu'il est, et jamais compté parmi les obstacles.
+
+**OÙ CET ÉCRAN S'ARRÊTE, écrit plutôt que découvert** : il ne réordonne pas le programme, ne saisit
+ni population ni taille (elles viennent de la méthode), et ne supprime pas une procédure planifiée —
+dépasser un papier visé exige un motif écrit (PROG-06), et retirer une procédure du programme n'est
+pas un geste que cette tranche offre.

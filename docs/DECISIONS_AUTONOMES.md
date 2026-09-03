@@ -712,3 +712,23 @@ neuve. Elle aurait été plus courte et fausse : neuf tables à migrer à chaque
 d'audit qui perd le lien avec le tirage d'origine, et « les données produites ne sont jamais
 supprimées » réduit à une intention. La ligne neuve DÉSIGNE celle qu'elle reprend, et les chemins de
 lecture suivent la chaîne : une colonne, une jointure récursive, et rien qui bouge.
+
+**D-J3N-16 — la station cliquée juge le REFUS, jamais un compteur déjà vrai.** La première version
+de la station du programme rendait vert dès qu'une ligne planifiée existait à l'écran — or le semeur
+en planifie déjà plusieurs. Le refus était calculé puis rangé dans le détail imprimé. Un clic refusé
+laissait l'étape verte, dans l'instrument même qui existe pour attraper ce défaut. Le verdict est
+désormais : aucun refus ET le compte a augmenté. La branche « rien à planifier » ne se déclare plus
+verte : sur ce monde, elle signifie que l'écran n'offre plus le geste.
+
+**D-J3N-17 — `programmeDuDossier` demande le risque AVANT de payer le calcul complet.** La revue
+hostile a mesuré 272 requêtes pour un rendu à quinze postes, dont quatorze n'affichent qu'une
+phrase : `requiredProcedures` et `excludedProcedures` rejouent chacune `risksFor`, et le catalogue
+se recharge à chaque appel. La boucle demande maintenant le risque (deux requêtes) et ne va plus
+loin que s'il existe — mais elle rend TOUJOURS ce qui est planifié dessous, sans quoi la correction
+du coût aurait créé le silence que le constat 3 dénonçait.
+
+**D-J3N-18 — la lecture `/api/sante` du programme LÈVE au lieu de rendre une phrase.** Un poste
+évalué qui ne commande aucune procédure était rendu comme « 15 poste(s) · 0 commandée(s) … » : la
+chaîne ne commençait ni par « aucun » ni par « 0 », donc le prédicat de vacuité la laissait passer.
+La lecture imprimait le chiffre qu'elle prétendait surveiller sans jamais pouvoir rougir dessus —
+quatrième récidive de la famille « /api/sante braqué à côté ».

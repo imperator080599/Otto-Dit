@@ -11,22 +11,25 @@
 
 ## Nouvellement cliquable, en cinq lignes
 
-1. **Ré-importer le grand livre définitif, re-tirer, et retrouver les pièces du client** sur les
+1. **« Programme de travail »**, destination neuve du rail : poste par poste, ce que l'évaluation du
+   risque COMMANDE, avec la phrase qui le justifie et la taille d'échantillon. **Planifier une
+   procédure en un clic**, puis **rédiger son papier depuis la même ligne**. Ces trois services
+   existaient depuis des semaines sans qu'aucun écran ne les appelle : seul le semeur les touchait.
+2. **Ré-importer le grand livre définitif, re-tirer, et retrouver les pièces du client** sur les
    lignes du nouveau tirage. Avant cette nuit, elles disparaissaient sans un mot.
-2. Sur l'écran du **sondage**, une section neuve : *ce qui est sorti du tirage et porte du travail*,
-   avec ce que chaque ligne porte (pièces, écarts, cellules).
-3. **Statuer** une de ces lignes — sans suite motivée, ou remise au tirage — et voir la décision
-   affichée avec qui l'a prise et quand.
-4. **Deux refus de plus à voir** : statuer sans motif écrit (TIRAGE-03), statuer une ligne qui n'est
-   pas sortie du tirage (TIRAGE-02).
-5. Sur `/api/sante`, une lecture de plus : *« re-tirage : reprises et sorties statuées »*.
+3. Sur l'écran du **sondage**, une section neuve : *ce qui est sorti du tirage et porte du travail*
+   — et une décision écrite pour chaque ligne, affichée avec qui l'a prise et quand.
+4. **Trois refus de plus à voir** : statuer sans motif (TIRAGE-03), statuer une ligne qui n'est pas
+   sortie (TIRAGE-02), dépasser un papier visé sans motif (PROG-06).
+5. Sur l'écran des **obstacles**, les AVERTISSEMENTS — ce qui bloquerait si le pack le déclarait
+   bloquant — étaient calculés et lus par personne. Ils sont là, à part, jamais comptés parmi les
+   obstacles.
 
 ## Ce qui N'EST PAS fait, exhaustivement
 
-- **Étage 1.1 — l'écran « Audit procedures »** : non livré. Les briques existent depuis des semaines
-  (`requiredProcedures`, `planifierProcedure`, `redigerPapierDeProcedure`) et **aucun écran ne les
-  appelle** : seul le semeur de la démonstration les touche. Un auditeur ne peut toujours pas
-  planifier une procédure en cliquant. C'est le premier chantier du jour qui vient.
+- **Étage 1.1 — livré** (ADR-134), avec ses six constats hostiles corrigés et quatre reportés
+  (R38 à R40). Ce qu'il NE fait pas, écrit : il ne réordonne pas le programme, ne saisit ni
+  population ni taille (elles viennent de la méthode), et ne retire pas une procédure planifiée.
 - **Étages 2, 3, 4, 5** : rien. L'épure, le test des écritures, le registre des anomalies, la revue
   analytique périmée, l'espace de demandes, le cycle de vie du constat client, l'IA vivante — aucun
   n'a été commencé.
@@ -39,17 +42,25 @@
 | Mesure | Valeur | SHA | Commande qui la reproduit |
 |---|---|---|---|
 | Types | 0 erreur | `580f2cf` | `cd app && npx tsc --noEmit` |
-| Tests | **799 / 799** | `580f2cf` | `cd app && npm test` |
+| Tests | **806 / 806** | dernier arbre | `cd app && npm test` |
 | Registre des gardes | **43**, toutes attaquées | `580f2cf` | `cd app && npm run gardes` |
 | Plancher de tests | 793 collectés, plancher 632 | `580f2cf` | `cd app && npm run plancher` |
 | Langue | 0 chaîne hors catalogue, 0 libellé en dur | `580f2cf` | `cd app && npm run langue` |
 | Lectures d'écran | 0 perdue sur 1 627 chemins, 85 écrans | `580f2cf` | `cd app && npm run lectures` |
-| Parcours **cliqué** | **197 étapes, 2 échecs** (9 en début de nuit) | `580f2cf` | `cd app && npm run db:reset && npm run demo:seed && npm run clics` |
+| Parcours **cliqué** | **201 étapes, 3 échecs** (9 en début de nuit, et 4 étapes de plus) | dernier arbre | `cd app && npm run db:reset && npm run demo:seed && npm run clics` |
 | Sonde d'hydratation | **0 incident** sur ce passage ; **1 capturé** au passage précédent, analysé dans ADR-132 | `580f2cf` | idem (le rapport est en fin de sortie) |
 | Étanchéité, garde armé | 85 routes, 0 échec sous LOC-01 | `c36076f` | `cd app && npm run screens:garde` |
 | Reprises / sorties du re-tirage | 12 écritures communes · 33 pièces sauvées · 4 sorties statuées | `580f2cf` | requêtes dans ADR-133 |
 
-**Les deux échecs qui restent** sont un seul fait, écrit en **R37** : après le re-tirage, cinq
+**Les trois échecs qui restent** : deux de **R37** (la clôture), un de **R41**. R41 est de mon fait,
+et la station le DIT désormais mot pour mot au lieu de le taire : « le formulaire IPE est absent du
+papier rédigé — obligation créée et non tenue ». Rédiger un papier ouvre l'obligation de dire s'il
+s'appuie sur une information produite par l'entité ; ma station crée cette obligation et ne la tient
+pas. Deux tentatives n'ont pas abouti ; plutôt que de corriger à l'aveugle avec des cycles de vingt
+minutes (règle 18), la branche a été rendue BRUYANTE, sa cause nommée, et la sortie écrite en R41.
+Le fait d'origine des deux autres :
+
+**R37 :** après le re-tirage, cinq
 lignes neuves n'ont jamais été demandées au client — la demande de justificatifs de l'échantillon
 courant n'existe pas, alors que l'écran a annoncé l'avoir engendrée. La boucle les compte « en
 attente de dépôt », l'obstacle subsiste, le dossier ne se clôt pas. Avant l'étage 1.2, c'étaient
@@ -143,6 +154,34 @@ jamais par un `grep` seul.
 | 12 | Les documents affirmaient plus que le code (« les chemins de lecture », « dans les deux sens », « neuf tables »). | **CORRIGÉ** : la liste exacte est écrite, et le chiffre est remplacé par la commande qui le rend |
 | 13 | `union all` sans détection de cycle, pas de `check (repris_de <> id)`. | **CORRIGÉ EN PARTIE** : `union` partout ; la contrainte SQL reste à poser |
 | 14 | Coût de lecture de `sortiesNonStatuees`, appelée par dossier. | **NON CORRIGÉ — R36** |
+
+### Étage 1.1 — quatorze constats de plus, sur une seconde revue
+
+| # | Constat | État |
+|---|---|---|
+| 1 | **Ma propre station cliquée notait VERT une action REFUSÉE** : le verdict portait sur « il existe une ligne planifiée » — vrai avant le clic, le semeur en planifiant déjà — et le refus n'allait que dans le détail imprimé. « Un refus calculé puis jeté », dans l'instrument qui existe pour l'attraper. | **CORRIGÉ** : aucun refus ET le compte augmente ; la branche « rien à planifier » ne se déclare plus verte |
+| 2 | PROG-06 — la règle que l'écran met en avant — n'était éprouvée par aucun harnais livré. | **CORRIGÉ** : un cas de test qui vérifie aussi que la VUE sait que le papier est visé, et un pas cliqué |
+| 3 | `horsCommande` était calculé puis **jeté par l'écran** quand le risque n'était pas évalué : un papier existant, invisible, pendant que `/api/sante` le comptait. | **CORRIGÉ** |
+| 4 | **272 requêtes pour un rendu** à quinze postes, dont quatorze n'affichent qu'une phrase. | **CORRIGÉ** : le risque est demandé d'abord ; le calcul complet n'est payé que là où il sert |
+| 5 | La lecture `/api/sante` **ne pouvait pas rougir** sur le cas qu'elle disait surveiller (le prédicat de vacuité est ancré au début de la chaîne). Quatrième récidive de la famille. | **CORRIGÉ** : elle LÈVE |
+| 6 | Le panneau d'avertissements des obstacles n'est atteint par aucun harnais. | **NON CORRIGÉ** — le balayage l'ouvre, aucun clic ne le vise |
+| 7 | Le défaut était constaté sur **l'écran du risque**, qui continuait d'ouvrir sur rien. | **CORRIGÉ** : un lien y mène au programme |
+| 8 | Un poste **sorti du périmètre** emporte ses procédures et papiers hors du programme, alors que le libellé affirmait le contraire. | **Libellé CORRIGÉ · fond en R38** |
+| 9 | Aucun document n'accompagnait la tranche. | **CORRIGÉ** : ADR-134, STATUS, backlog |
+| 10 | Le commentaire de PROG-05 était périmé et sa garde presque morte. | **CORRIGÉ** (dit pour ce qu'elle est) |
+| 11 | Deux scories : un champ créé pour être retiré, un libellé orphelin. | **CORRIGÉ** |
+| — | Le rail place le programme au **transverse** alors que R-03 pose le poste comme axe. | **NON CORRIGÉ — R39** |
+| — | `requireMember` ne filtre pas `exited_on` : un membre sorti voit les boutons. | **NON CORRIGÉ — R40**, défaut préexistant à toutes les pages |
+
+**Ce que cette seconde revue a explicitement dédouané** : le refus PROG-06 s'affiche bien dans le
+bandeau et non en page 500 (`executer` exécuté pour de vrai) ; `vise` et `dejaVise` utilisent la
+même condition et basculent ensemble ; l'étanchéité des deux actions est tenue et éprouvée par un
+harnais qui les APPELLE avec un intrus ; le champ motif n'est pas `required` ; la densité de l'écran
+ne dépasse pas le plafond.
+
+**Ce que cette seconde revue n'a pas pu vérifier, dans ses mots** : « je n'ai vu aucun rendu HTML du
+nouvel écran — la règle 10 reste, pour cette tranche, non satisfaite par quiconque » (elle n'avait
+pas le droit de lancer le navigateur ; c'est le parcours cliqué, lancé après, qui répond).
 
 **Ce que la revue n'a pas pu vérifier, dans ses mots** : que la station 8 bis du parcours cliqué
 rencontre réellement des sorties (`npm run clics` lui était interdit) ; le comportement de la

@@ -377,6 +377,14 @@ export default async function RiskPage({
 
       {/* ── CE QUE LE RISQUE COMMANDE ─────────────────────────────────── */}
       <Repli cle="risk.whatThisRiskCommands" niveau={2} titre={<>{t('risk.whatThisRiskCommands')} {required.length} {t('risk.procedureSRequired')}</>}>
+        {/* LA LISTE OUVRE ENFIN SUR QUELQUE CHOSE (revue hostile de la nuit,
+            constat 7). Le défaut que l'étage 1.1 corrige a été CONSTATÉ ici :
+            une liste de procédures « commandées » qui ne menait nulle part. Le
+            refermer ailleurs et laisser cet écran tel quel aurait laissé
+            l'auditeur exactement où il était. */}
+        <p className="faint" style={{ marginTop: 0 }}>
+          <a href={`/eng/${id}/programme`} data-vers-programme>{t('risk.versProgramme')}</a>
+        </p>
         <table className="data">
           <thead>
             <tr>

@@ -36,6 +36,7 @@ interface EtatDossier {
   n1: boolean; acceptee: boolean; importe: boolean; seuils_valides: boolean;
   perimetre: boolean; tirage: boolean; demandes: boolean; pieces: boolean;
   ecarts: boolean; papiers: boolean; notes: boolean; vise: boolean; acheve: boolean;
+  risque: boolean;
 }
 
 async function etatDossier(engagementId: string): Promise<EtatDossier> {
@@ -63,7 +64,9 @@ async function etatDossier(engagementId: string): Promise<EtatDossier> {
               join signoff s on s.workpaper_id = w.id
               where w.engagement_id = $1) vise,
        exists(select 1 from completion_item c
-              where c.engagement_id = $1 and c.status = 'done') acheve`,
+              where c.engagement_id = $1 and c.status = 'done') acheve,
+       exists(select 1 from fsli_assertion_risk r
+              where r.engagement_id = $1) risque`,
     [engagementId],
   );
   /* Le drapeau N-1 vient de `missionN1`, pas de la requête (qui le laisse à
@@ -161,6 +164,12 @@ export async function railDuDossier(
   }
 
   g('rail.groupe.transverse');
+  /* LE PROGRAMME DE TRAVAIL (étage 1.1). Atteignable dès qu'un risque est
+     évalué sur un poste : avant, il n'y a rien à commander, et l'écran le
+     dirait sans rien offrir. C'est la destination qui manquait — les services
+     de planification existaient sans qu'aucun écran ne les appelle. */
+  e('programme', t('rail.programme'), t('rail.quoi.programme'),
+    s.risque, t('rail.raison.apresRisque'));
   e('processus', t('rail.processus'), t('rail.quoi.processus'),
     s.acceptee, t('rail.raison.apresAcceptation'));
   e('rcm', t('rail.controleInterne'), t('rail.quoi.controleInterne'),

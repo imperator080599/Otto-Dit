@@ -271,6 +271,34 @@ async function corpsDeLaSonde() {
       return `${r?.n ?? 0} ligne(s) reprise(s) · ${sorties.length} sortie(s) porteuse(s) de travail, `
         + `dont ${sorties.filter((l) => l.decision === null).length} à statuer`;
     }));
+    /* LE PROGRAMME DE TRAVAIL (étage 1.1 — livré ce jour, lu ce jour). Deux
+       chiffres qui disent si l'écran a de quoi parler : ce que le risque
+       commande, et ce qui est planifié en face. Un « 0 commandée » sur un
+       dossier dont le risque est évalué serait le signe que la méthode ne
+       commande plus rien — exactement ce que personne ne verrait sans cette
+       ligne. */
+    lectures.push(await essayer('programme de travail (commandé / planifié)', async () => {
+      const { programmeDuDossier } = await import('@/lib/services/programme');
+      const postes = await programmeDuDossier(id);
+      if (postes.length === 0) return 'aucun poste retenu';
+      const commandees = postes.reduce((n, p) => n + p.commandees.length, 0);
+      const planifiees = postes.reduce((n, p) => n + p.commandees.filter((l) => l.planifiee).length, 0);
+      const hors = postes.reduce((n, p) => n + p.horsCommande.length, 0);
+      const evalues = postes.filter((p) => p.risqueEvalue).length;
+      /* ELLE PEUT ROUGIR, ET C'EST TOUT L'INTÉRÊT (revue hostile de la nuit,
+         constat 5). La première version rendait une phrase commençant par le
+         nombre de postes : « 15 poste(s) · 0 commandée(s) … » passait le
+         prédicat de vacuité (ancré au début) et la lecture était verte sur le
+         cas même qu'elle disait surveiller — quatrième récidive de la famille
+         « /api/sante braqué à côté ». Un poste évalué qui ne commande RIEN est
+         désormais une erreur, pas une phrase. */
+      if (evalues > 0 && commandees === 0) {
+        throw new Error(`${evalues} poste(s) évalué(s) et AUCUNE procédure commandée `
+          + '— la méthode ne commande plus rien, ou le catalogue n’est plus lu');
+      }
+      return `${postes.length} poste(s) dont ${evalues} évalué(s) · ${commandees} commandée(s) · `
+        + `${planifiees} planifiée(s) · ${hors} planifiée(s) hors commande`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

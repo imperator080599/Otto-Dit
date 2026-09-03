@@ -178,3 +178,32 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   produit DOIT faire d'un re-tirage : engendrer automatiquement la demande des lignes neuves, ou
   la proposer. C'est la matière de l'étage 4.1 du mandat (« création en lot depuis le programme »),
   et cela se décide avec un auditeur, pas à deux heures du matin.
+- **R38 — un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme.**
+  Mesuré par la revue hostile de l'étage 1.1 : après `confirmScoping(..., 'ns_confirmed', motif)`,
+  le poste disparaît de l'écran du programme et le papier REV-01 reste en base, atteignable
+  seulement par `/eng/[id]/workpapers` — qui n'est pas au rail, et où l'on n'arrive que depuis la
+  leadsheet du poste (morte pour un poste hors périmètre) ou depuis une note. Le mécanisme
+  `horsCommande` couvre la baisse d'un niveau d'assertion et l'absence d'évaluation, pas la sortie
+  de périmètre ; le libellé de l'écran a été corrigé pour ne plus affirmer le contraire. La vraie
+  question — *sortir un poste du périmètre alors qu'on y a travaillé doit-il se STATUER, comme une
+  ligne sortie du tirage ?* — est la même que celle d'ADR-133, et se tranche avec un auditeur.
+- **R39 — le programme de travail vit dans le groupe TRANSVERSE du rail, alors que R-03/ADR-112
+  posent que l'axe de la navigation est le POSTE.** Le programme est par nature un contenu de
+  poste. Il a été placé au transverse parce qu'il se lit d'abord de bout en bout — « qu'est-ce qui
+  est planifié sur tout le dossier ? » — mais la divergence avec la règle écrite du fichier
+  lui-même est réelle, et relevée par la revue hostile (constat 7). À trancher en même temps que
+  l'épure (étage 2), qui reprend la question du rail.
+- **R40 — `requireMember` ne filtre pas `exited_on`, alors que `assertMembre` le fait.** Un membre
+  SORTI de la mission voit donc les écrans et leurs boutons, et sera refusé par le service au
+  moment du geste. Défaut préexistant à toutes les pages, relevé en passant par la revue hostile de
+  l'étage 1.1 — donc à corriger une fois, à un endroit.
+- **R41 — rédiger un papier depuis le programme crée une obligation que le parcours ne tient pas.**
+  Un papier neuf doit porter la question de l'information produite par l'entité (Groupe 1, 1.8) ;
+  sans réponse, le visa est bloqué — et le produit a raison. La station cliquée du programme rédige
+  REV-02 et laisse l'obstacle derrière elle : **c'est un défaut de la station, pas du produit**.
+  La tentative de réponse dans la station n'a pas abouti cette nuit et la branche a été rendue
+  BRUYANTE plutôt que corrigée à l'aveugle (règle 18 : deux itérations de vingt minutes ne font pas
+  un diagnostic). Deux sorties possibles, à trancher en regardant l'écran : soit la station répond à
+  la question sur le papier qu'elle vient de rédiger, soit la station IPE existante cesse de ne
+  traiter QUE le papier qu'elle a ouvert et couvre tous les papiers en attente — la seconde
+  corrigerait la cause plutôt que ce cas.

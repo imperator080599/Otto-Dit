@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { obstaclesAuVisa, type Famille } from '@/lib/services/obstacles';
+import { obstaclesAuVisa, avertissementsAuVisa, type Famille } from '@/lib/services/obstacles';
 import { FAMILLES } from '../familles';
 import { tr } from '@/lib/i18n';
 
@@ -20,6 +20,13 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
   const t = await tr();
   await requireMember(id);
   const liste = await obstaclesAuVisa(id);
+  /* LES AVERTISSEMENTS — ce qui bloquerait si le pack le déclarait bloquant.
+     `avertissementsAuVisa` était CALCULÉ et lu par AUCUN écran : une
+     fonction dont le résultat n'atteignait personne, « un objet créé qu'aucun
+     chemin de lecture n'atteint » (règle 13). Il atteint désormais l'écran
+     que le signataire lit en premier, et il y est dit pour ce qu'il est :
+     un avertissement, jamais compté parmi les obstacles. */
+  const avertissements = await avertissementsAuVisa(id);
 
   const parFamille = new Map<Famille, string[]>();
   for (const o of liste) {
@@ -40,6 +47,29 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
             {t('obst.repartis', { n: parFamille.size })}</p>
         )}
       </div>
+
+      {/* CE QUI N'EST PAS UN OBSTACLE, ET QUI SE DIT QUAND MÊME. Une famille que
+          le pack ne déclare pas bloquante ne compte pas dans la liste — mais la
+          taire reviendrait à cacher au signataire un travail inachevé sous
+          prétexte qu'il ne l'empêche pas de signer. Elle est donc ici, à part,
+          nommée avertissement, et le compte des obstacles ne l'inclut pas. */}
+      {avertissements.length > 0 && (
+        <div className="panel" data-avertissements>
+          <h3 style={{ marginTop: 0 }}>
+            {t('obst.avertissementsTitre')}{' '}
+            <span className="badge blue">{avertissements.length}</span>
+          </h3>
+          <p className="faint">{t('obst.avertissementsAide')}</p>
+          <ul>
+            {avertissements.map((a, i) => (
+              <li key={i}>
+                {t(a.motif.cle, a.motif.vars)}{' '}
+                <Link href={`/eng/${id}/${a.ou}`}>{t('obst.aller')}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {[...parFamille.entries()].map(([famille, libelles]) => (
         /* LA FAMILLE EST NOMMÉE DANS LE DOM, et c'est une réponse à la règle 15 :
