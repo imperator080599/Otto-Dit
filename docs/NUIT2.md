@@ -54,6 +54,18 @@ défauts du produit — et tous deux corrigés :
   l'identité, pas l'écran. Elle lit désormais l'avancement du DOSSIER (le compte par état de la
   barre, `data-legende`/`data-n`), et un état à zéro ne compte toujours pas.
 
+## Les verdicts de la CI sur le SHA servi (`d8d9e03`), lus, pas supposés
+
+- **Travail `url` (contre l'instance déployée) : 16 tâches sur 17.** Passent en ligne, entre
+  autres : le monde enrichi (quatre états, sept papiers dont un visa périmé, dix notes ouvertes
+  dont une sur une cellule) et **N-01 — le panneau latéral** : « 1 repère · 1 note dans le
+  panneau · *posted 1 business day(s) ago* · 0 clôture offerte, 1 raison écrite · repli basculé
+  puis remis ». La seule rouge est **A-05**, et son message dit tout : le refus attendu est bien
+  observé (« Ce papier est visé : l'information produite par l'entité ne se modifie plus »),
+  puis une **exception #418** est comptée sur la page — la tâche tombe à cause du fil ouvert
+  du #418, pas de la règle qu'elle vérifie.
+- **Travail `local` : un test rouge sur 710**, ci-dessous.
+
 ## Un rouge que je n'ai PAS su reproduire (et que je ne maquille pas)
 
 La CI du commit `d8d9e03` a rougi sur **un test, une fois** :
