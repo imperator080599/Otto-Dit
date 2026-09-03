@@ -20,6 +20,7 @@ import { Atelier } from './atelier';
 import { attesterAction, clarifierLotAction, conclureAction, disposerAction } from './actions-atelier';
 import { calculerGrille, cellulesDuDossier, lignesNonConclues } from '@/lib/services/testing/grille';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 export default async function TestingPage({
   params, searchParams,
@@ -183,11 +184,8 @@ export default async function TestingPage({
           La file d'attestation et le tableau de vouching vivaient en deux
           panneaux séparés de la ligne : ils sont désormais la MÊME chose,
           ligne par ligne, l'attestation emportant les corrections tapées. */}
-      <div className="panel">
-        <h2>
-          {t('test.theSampleLineByLine')}{' '}
-          {pending.length > 0 && <span className="badge amber">{pending.length} {t('test.toAttest')}</span>}
-        </h2>
+      <Repli cle="test.theSampleLineByLine" niveau={2} titre={<>{t('test.theSampleLineByLine')}{' '}
+          {pending.length > 0 && <span className="badge amber">{pending.length} {t('test.toAttest')}</span>}</>}>
         {nonConclues.nonConclues > 0 && (
           <p className="callout warn" data-avertissement-lignes>
             {t('atl.avertissementLignes', { n: nonConclues.nonConclues, total: nonConclues.total })}
@@ -214,7 +212,7 @@ export default async function TestingPage({
           conclure={conclureAction}
           disposer={disposerAction}
         />
-      </div>
+      </Repli>
 
       <div className="grid cols-2">
         <div className="panel">

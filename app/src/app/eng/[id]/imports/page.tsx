@@ -5,6 +5,7 @@ import { uploadTbAction, uploadFecAction } from './actions';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,7 @@ export default async function ImportsPage({
     <div>
       <BandeauRefus erreur={erreur} />
       <div className="grid cols-2">
-        <div className="panel">
-          <h2>{t('imp.trialBalanceGenericImporter')}</h2>
+        <Repli cle="imp.trialBalanceGenericImporter" niveau={2} titre={t('imp.trialBalanceGenericImporter')}>
           <p>
             Current: {tbCur ? <span className="badge green">{t('imp.nComptes', { n: tbCur.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
             {'  '}Prior: {tbPrior ? <span className="badge green">{t('imp.nComptes', { n: tbPrior.accounts.length })}</span> : <span className="badge gray">{t('imp.notImported')}</span>}
@@ -66,9 +66,8 @@ export default async function ImportsPage({
             <ChampsIpe t={t} />
             <button className="btn">{t('imp.importTb')}</button>
           </form>
-        </div>
-        <div className="panel">
-          <h2>{t('imp.generalLedgerFecAdapterFrancePack')}</h2>
+        </Repli>
+        <Repli cle="imp.generalLedgerFecAdapterFrancePack" niveau={2} titre={t('imp.generalLedgerFecAdapterFrancePack')}>
           {affected.length > 0 && (
             <div className="callout warn">
               {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}
@@ -85,11 +84,10 @@ export default async function ImportsPage({
             )}
             <button className="btn">{t('imp.importFec')}</button>
           </form>
-        </div>
+        </Repli>
       </div>
 
-      <div className="panel">
-        <h2>{t('imp.importHistoryValidationReports')}</h2>
+      <Repli cle="imp.importHistoryValidationReports" niveau={2} titre={t('imp.importHistoryValidationReports')}>
         <table className="data">
           <thead>
             <tr><th>{t('col.file')}</th><th>{t('col.kind')}</th><th>{t('col.rows')}</th><th>{t('col.status')}</th><th>{t('col.violations')}</th><th>{t('col.when')}</th></tr>
@@ -129,7 +127,7 @@ export default async function ImportsPage({
             })}
           </tbody>
         </table>
-      </div>
+      </Repli>
     </div>
   );
 }

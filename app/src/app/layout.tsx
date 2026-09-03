@@ -4,6 +4,8 @@ import './globals.css';
 import { getSessionUser } from '@/lib/core/auth';
 import { locale, traduire } from '@/lib/i18n';
 import { FournisseurLocale } from '@/lib/i18n/client';
+import { FournisseurReplis } from './replis-contexte';
+import { lireReplis } from '@/lib/services/replis';
 
 /* LE TITRE D'ONGLET SUIT LA LANGUE SERVIE. `metadata` est statique ; c'est
    `generateMetadata` qui peut lire la locale du cabinet. Un titre figé en
@@ -20,10 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   const l = await locale();
+  /* LA MÉMOIRE DES REPLIS (1.2, migration 0132) : lue ici, une fois par
+     requête, pour la personne connectée ; chaque section repliable la trouve
+     au premier rendu. Personne de connecté (portail client) : rien à lire. */
+  const replis = user ? await lireReplis(user.id) : {};
   return (
     <html lang={l}>
       <body>
         <FournisseurLocale locale={l}>
+        <FournisseurReplis replis={replis} connecte={Boolean(user)}>
         <div className="topbar">
           <Link href="/" className="brand">
             OTTO<small>{traduire(l, 'meta.baseline')}</small>
@@ -55,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           )}
         </div>
         {children}
+        </FournisseurReplis>
         </FournisseurLocale>
       </body>
     </html>

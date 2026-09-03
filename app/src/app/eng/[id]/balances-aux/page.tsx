@@ -10,6 +10,7 @@ import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // LES BALANCES AUXILIAIRES ÂGÉES (point 1, ADR-107). Les exports du client
 // (clients / fournisseurs, N / N-1) se rapprochent au grand livre, puis
@@ -190,8 +191,7 @@ export default async function BalancesAuxPage({
             )}
           </div>
 
-          <div className="panel">
-            <h2>{t('bal.counterpartyByCounterparty')} <span className="badge gray">{a.lignes.length}</span></h2>
+          <Repli cle="bal.counterpartyByCounterparty" niveau={2} titre={<>{t('bal.counterpartyByCounterparty')} <span className="badge gray">{a.lignes.length}</span></>}>
             <div className="table-scroll">
               <table className="data">
                 <thead><tr>
@@ -219,7 +219,7 @@ export default async function BalancesAuxPage({
                 </tbody>
               </table>
             </div>
-          </div>
+          </Repli>
         </>
       )}
       {!lesDeux && (a.fichiers.n || a.fichiers.n1) && (

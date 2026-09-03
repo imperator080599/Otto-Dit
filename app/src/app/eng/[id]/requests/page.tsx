@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { listRequests, ensureReminders } from '@/lib/services/requests';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'gray', sent: 'blue', partially_submitted: 'amber', submitted: 'green', accepted: 'green', reopened: 'red',
@@ -15,8 +16,7 @@ export default async function RequestsPage({ params }: { params: Promise<{ id: s
   const requests = await listRequests(id);
 
   return (
-    <div className="panel">
-      <h2>{t('req.clientRequestsPbc')}</h2>
+    <Repli cle="req.clientRequestsPbc" niveau={2} titre={t('req.clientRequestsPbc')}>
       <table className="data">
         <thead>
           <tr><th>#</th><th>{t('col.title')}</th><th>{t('col.status')}</th><th>{t('col.items')}</th><th>{t('col.due')}</th><th>{t('req.remindersSent')}</th></tr>
@@ -40,6 +40,6 @@ export default async function RequestsPage({ params }: { params: Promise<{ id: s
         </tbody>
       </table>
       {requests.length === 0 && <p className="muted">{t('req.noRequestsYetDrawASample')}</p>}
-    </div>
+    </Repli>
   );
 }

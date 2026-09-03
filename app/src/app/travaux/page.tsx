@@ -5,6 +5,7 @@ import { ECHELLE, type Section, type Statut } from '@/lib/services/sections';
 import { FAMILLES } from '@/app/eng/[id]/familles';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // MES TRAVAUX — l'écran d'où l'on part (ADR-110), devenu LE TABLEAU DE BORD
 // (Groupe 1, 1.2).
@@ -156,18 +157,16 @@ export default async function MesTravaux() {
         )}
       </div>
 
-      <div className="panel">
-        <h2>{t('vue.assignments')} <span className="faint">— {user.name}</span></h2>
+      <Repli cle="vue.assignments" niveau={2} titre={<>{t('vue.assignments')} <span className="faint">— {user.name}</span></>}>
         <p className="faint">{t('trav.sections.quoi')}</p>
         <div className="grid cols-2">
           {LISTES.map((l) => (
             <ListeSections key={l.cle} cle={l.cle} titre={t(l.titre)} sections={sections[l.cle]} t={t} />
           ))}
         </div>
-      </div>
+      </Repli>
 
-      <div className="panel">
-        <h2>{t('trav.notes.titre')}</h2>
+      <Repli cle="trav.notes.titre" niveau={2} titre={t('trav.notes.titre')}>
         <p className="faint">{t('trav.notes.quoi')}</p>
         {notes.length === 0 ? <p className="faint">{t('trav.notes.aucune')}</p> : (
           <table className="data">
@@ -195,7 +194,7 @@ export default async function MesTravaux() {
             </tbody>
           </table>
         )}
-      </div>
+      </Repli>
     </div>
   );
 }

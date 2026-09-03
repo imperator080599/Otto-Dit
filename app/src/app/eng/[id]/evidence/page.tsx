@@ -2,6 +2,7 @@ import { requireMember } from '@/lib/core/auth';
 import { numeroDemande } from '@/lib/services/requests';
 import { listEvidence } from '@/lib/services/evidence';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 export default async function EvidencePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,8 +11,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ id: s
   const evidence = await listEvidence(id);
 
   return (
-    <div className="panel">
-      <h2>{t('rail.pieces')}</h2>
+    <Repli cle="rail.pieces" niveau={2} titre={t('rail.pieces')}>
       <div className="table-scroll">
         <table className="data">
           <thead>
@@ -33,6 +33,6 @@ export default async function EvidencePage({ params }: { params: Promise<{ id: s
         </table>
       </div>
       {evidence.length === 0 && <p className="muted">{t('evi.nothingReceivedYet')}</p>}
-    </div>
+    </Repli>
   );
 }

@@ -4,6 +4,7 @@ import { travaux, NATURES, dateRapport, obstaclesAchevement } from '@/lib/servic
 import { ouvrirAction, conclureAction, sansObjetAction, rouvrirAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { Repli } from '@/app/repli';
 
 // L'ACHÈVEMENT (point 10).
 //
@@ -39,8 +40,7 @@ export default async function CompletionPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <div className="panel">
-        <h2>{libelle('comp.completion')}</h2>
+      <Repli cle="eng.id.completion.1" niveau={2} titre={libelle('comp.completion')}>
         <p>
           {libelle('comp.reportDate')} <strong>{fr(rapport)}</strong>
           {!rapport && (
@@ -53,7 +53,7 @@ export default async function CompletionPage({
             <button className="btn">{libelle('comp.openTheCompletionProcedures')}</button>
           </form>
         )}
-      </div>
+      </Repli>
 
       {t.map((x) => {
         const meta = NATURES.find((n) => n.code === x.nature)!;

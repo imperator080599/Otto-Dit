@@ -127,6 +127,19 @@ export async function redigerPapierDeProcedure(o: {
   if (!pi.fsli_code) {
     throw new Error('PROG-04 : cette procédure n’est rattachée à aucun poste — le papier d’un contrôle se rédige depuis le contrôle');
   }
+  /* QUI RÉDIGE (revue hostile n°7, constat 10). Le service prenait un
+     identifiant de procédure et un identifiant de personne, sans jamais
+     vérifier qu'ils appartiennent au même dossier : un membre d'un autre
+     cabinet pouvait dépasser le papier visé d'une mission qu'il ne voit pas.
+     La règle est celle des écrans (requireMember), tenue ici aussi — ce
+     service sera appelé par l'écran « Audit procedures » (1.4). */
+  const membre = await q01<{ n: string }>(
+    `select count(*)::text n from engagement_member
+     where engagement_id = $1 and user_id = $2 and exited_on is null`,
+    [pi.engagement_id, o.userId]);
+  if (Number(membre?.n ?? 0) === 0) {
+    throw new Error('PROG-05 : cette personne n’est pas membre du dossier — un papier de travail se rédige par l’équipe de la mission');
+  }
   const cat = await catalogueDeLaMission(pi.engagement_id);
   const p = procedureDuCatalogue(cat, pi.template_code);
   if (!p) throw new Error(`PROG-01 : la procédure « ${pi.template_code} » n’est pas au catalogue de la méthode`);
@@ -134,7 +147,20 @@ export async function redigerPapierDeProcedure(o: {
   const fs = await frameworkSet(pi.engagement_id);
   const pack = primaryPack(fs as never);
   const fr = pack.language === 'fr';
-  const gab = gabarit(cat, 'substantif');
+  /* LE GABARIT SUIT LE SENS DU TEST (revue hostile n°7, constat 8). Le papier
+     d'une revue analytique sortait avec « Testing : aucun élément tiré » et
+     « Contrôle de fiabilité : à réaliser après le testing » — les blocs d'un
+     contrôle substantif échantillonné, sur une procédure qui ne s'échantillonne
+     pas. La méthode est interrogée pour la nature du sens ; si elle n'a pas de
+     gabarit pour cette nature, on REPLIE sur « substantif » et on l'ÉCRIT (dans
+     le moteur, et dans les blocs qui ne s'appliquent pas) : un mauvais gabarit
+     qui sort en silence est exactement la faute que la règle 13 nomme. */
+  const natureVoulue = p.sens === 'analytique' ? 'analytique' : 'substantif';
+  const natureTenue = cat.papier.papiers[natureVoulue] ? natureVoulue : 'substantif';
+  const repliDeGabarit = natureTenue !== natureVoulue
+    ? `la méthode n’a pas de gabarit « ${natureVoulue} » : blocs du gabarit « substantif »`
+    : null;
+  const gab = gabarit(cat, natureTenue);
   const sensP = sensDeTest(cat, p.sens);
   const pieces = justificatifs(p, pi.fsli_code);
 
@@ -153,10 +179,22 @@ export async function redigerPapierDeProcedure(o: {
     code = `${prefixe}-${String(n).padStart(2, '0')}`;
   }
   const version = (prev[0]?.version ?? 0) + 1;
+  /* DÉPASSER UN PAPIER VISÉ EXIGE UN MOTIF ÉCRIT (revue hostile n°7,
+     constat 10). Une rédaction nouvelle PÉRIME les visas de la version
+     précédente — le réviseur et l'associée voient leur signature tomber. Sans
+     motif, l'inspecteur lit un visa périmé sans savoir pourquoi ; c'est la
+     même règle que la surcharge d'un niveau de risque (ADR-094). */
+  const dejaVise = await q01<{ n: string }>(
+    `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id
+     where w.procedure_id = $1 and w.status <> 'outdated'`, [pi.id]);
+  if (Number(dejaVise?.n ?? 0) > 0 && !o.motif?.trim()) {
+    throw new Error('PROG-06 : ce papier porte au moins un visa — une version nouvelle les périme, elle exige un motif écrit');
+  }
 
   const aRediger = fr ? '[à rédiger par le préparateur]' : '[to be written by the preparer]';
   const corps: Record<string, string> = {
-    objectif: `${p.objectif}\n\n${fr ? 'Contrôle' : 'Control'} : ${p.controle}`,
+    objectif: `${p.objectif}\n\n${fr ? 'Contrôle' : 'Control'} : ${p.controle}`
+      + (repliDeGabarit ? `\n\n${fr ? 'Format' : 'Format'} : ${repliDeGabarit}.` : ''),
     etendue: (fr
       ? `Population : ${p.population.libelle} — source : ${p.population.source} — période : ${p.population.periode} — filtre : ${p.population.filtre}.`
       : `Population: ${p.population.libelle} — source: ${p.population.source} — period: ${p.population.periode} — filter: ${p.population.filtre}.`)
@@ -166,10 +204,15 @@ export async function redigerPapierDeProcedure(o: {
     methode: `${sensP.libelle} — ${sensP.d}` + (p.echantillonnee
       ? (fr ? ' Procédure échantillonnée.' : ' Sampled procedure.')
       : (fr ? ' Sans tirage : sélection exhaustive au seuil.' : ' No draw: exhaustive selection above the threshold.')),
-    tableau_echantillon: fr ? 'Aucun élément tiré à ce stade.' : 'No item drawn at this stage.',
+    tableau_echantillon: p.echantillonnee
+      ? (fr ? 'Aucun élément tiré à ce stade.' : 'No item drawn at this stage.')
+      : (fr ? 'Sans objet : cette procédure ne s’échantillonne pas (méthode du cabinet).'
+        : 'Not applicable: this procedure is not sampled (firm methodology).'),
     exceptions: fr ? 'Aucune anomalie relevée à ce stade.' : 'No exception noted at this stage.',
     evaluation: fr ? 'Sans objet tant qu’aucune anomalie n’est relevée.' : 'Not applicable while no exception is noted.',
-    verification: fr ? 'À réaliser après le testing.' : 'To be performed after testing.',
+    verification: p.echantillonnee
+      ? (fr ? 'À réaliser après le testing.' : 'To be performed after testing.')
+      : (fr ? 'Sans objet : aucun élément tiré à re-exécuter.' : 'Not applicable: no drawn item to re-perform.'),
     conclusion: aRediger,
   };
   const sections: WpSection[] = gab.sections.map((s) => {
@@ -183,11 +226,20 @@ export async function redigerPapierDeProcedure(o: {
     return section;
   });
 
-  const basedOnHash = hashObject({ procedure: pi.id, catalogue: p.code, methode: cat.version });
+  /* L'EMPREINTE PORTE LE CONTENU (revue hostile n°7, constat 9). Elle ne
+     tenait que des identifiants : la v1 et la v2 du même papier avaient la
+     même, et un texte de méthode modifié à version constante passait
+     inaperçu. Elle hache désormais les blocs RÉELLEMENT écrits, la version, et
+     la nature de gabarit tenue. */
+  const basedOnHash = hashObject({
+    procedure: pi.id, catalogue: p.code, methode: cat.version,
+    gabarit: natureTenue, version, sections,
+  });
   const run = await q1<{ id: string }>(
     `insert into engine_run (tenant_id, engagement_id, engine, engine_version, pack_id, config_hash, params, finished_at)
      values ($1,$2,'workpaper_draft','v1',$3,$4,$5, now()) returning id::text`,
-    [ctx.tenant_id, pi.engagement_id, pack.id, hashObject(gab), JSON.stringify({ code, procedure: p.code, basedOnHash })]);
+    [ctx.tenant_id, pi.engagement_id, pack.id, hashObject(gab),
+      JSON.stringify({ code, procedure: p.code, basedOnHash, gabarit: natureTenue, repliDeGabarit })]);
   if (prev.length > 0) {
     await q(`update workpaper set status = 'outdated' where procedure_id = $1 and status <> 'outdated'`, [pi.id]);
   }

@@ -9,6 +9,7 @@ import { cloreAction } from './actions';
 import { FAMILLES } from '../familles';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { Repli } from '@/app/repli';
 
 // LA CLÔTURE ET L'ARCHIVE SCELLÉE — la fin de l'arc, enfin dans l'application.
 //
@@ -58,8 +59,7 @@ export default async function ClosePage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <div className="panel">
-        <h2>{t('close.closeAndSealedArchive')}</h2>
+      <Repli cle="close.closeAndSealedArchive" niveau={2} titre={t('close.closeAndSealedArchive')}>
 
         {scelle ? (
           <>
@@ -117,7 +117,7 @@ export default async function ClosePage({
             )}
           </>
         )}
-      </div>
+      </Repli>
 
       <div className="panel">
         <h3>{t('close.whatTheLockChanges')}</h3>

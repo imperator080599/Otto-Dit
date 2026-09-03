@@ -14,8 +14,9 @@ import { getDb, q1 } from '../../src/lib/db/client';
 
 /* `section_visit` : le journal de consultation s'écrit AU RENDU d'une page de
    poste ou de papier, hors de toute action — la sonde doit le taire aussi
-   (revue hostile de la soirée). `fsli_analytique` : la revue analytique (0130). */
-const TABLES = ['test_grid', 'test_cell', 'cell_disposition', 'test_line_conclusion', 'event_log', 'engine_run', 'ipe', 'ipe_rapport', 'review_note', 'section_visit', 'fsli_analytique'];
+   (revue hostile de la soirée). `fsli_analytique` : la revue analytique (0130). `ui_repli` : la mémoire des
+   replis (0132) — un rangement fait sous la sonde ne doit pas rester. */
+const TABLES = ['test_grid', 'test_cell', 'cell_disposition', 'test_line_conclusion', 'event_log', 'engine_run', 'ipe', 'ipe_rapport', 'review_note', 'section_visit', 'fsli_analytique', 'ui_repli'];
 
 async function compter(): Promise<Record<string, number>> {
   const out: Record<string, number> = {};

@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/core/auth';
 import { ask, runCatalogue, type AskResult } from '@/lib/services/query/ask';
 import { CATALOG } from '@/lib/services/query/catalog';
 import { tr, locale } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // ADR-017 — « Interroger ». The answer is a view of stored records with links, or an
 // explicit refusal. There is no prose path: nothing on this page is model-written.
@@ -39,8 +40,7 @@ export default async function AskPage({
 
   return (
     <div>
-      <div className="panel">
-        <h2>{t('commun.interroger')}</h2>
+      <Repli cle="commun.interroger" niveau={2} titre={t('commun.interroger')}>
         <p className="faint">
           {t('ask.explication')}
         </p>
@@ -53,7 +53,7 @@ export default async function AskPage({
           />
           <button className="btn">{t('ask.interroger')}</button>
         </form>
-      </div>
+      </Repli>
 
       {result?.status === 'answered' && (
         <div className="panel">
@@ -106,15 +106,13 @@ export default async function AskPage({
       )}
 
       {result?.status === 'refused' && (
-        <div className="panel">
-          <h2>{t('ask.questionNonTraduite')} <span className="badge red">{t('commun.refuse')}</span></h2>
+        <Repli cle="ask.questionNonTraduite" niveau={2} titre={<>{t('ask.questionNonTraduite')} <span className="badge red">{t('commun.refuse')}</span></>}>
           <p>{result.message}</p>
           <p className="faint mono" style={{ fontSize: 12 }}>{t('ask.motif')}: {result.reason}</p>
-        </div>
+        </Repli>
       )}
 
-      <div className="panel">
-        <h2>{t('ask.ceQuOttoSaitInterroger')} <span className="badge gray">{CATALOG.length}</span></h2>
+      <Repli cle="ask.ceQuOttoSaitInterroger" niveau={2} titre={<>{t('ask.ceQuOttoSaitInterroger')} <span className="badge gray">{CATALOG.length}</span></>}>
         <p className="faint">
           {t('ask.catalogueFerme')}
         </p>
@@ -128,7 +126,7 @@ export default async function AskPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Repli>
     </div>
   );
 }

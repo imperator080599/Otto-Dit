@@ -5,6 +5,7 @@ import { requestDetail, approveSend, pauseReminders, ensureReminders } from '@/l
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const ITEM_BADGE: Record<string, string> = { pending: 'gray', uploaded: 'blue', complete: 'green', na: 'gray' };
 
@@ -92,9 +93,8 @@ export default async function RequestDetailPage({
           </table>
         )}
       </div>
-      <div className="panel">
-        <h2>{t('col.provenance')}</h2>
-      </div>
+      <Repli cle="col.provenance" niveau={2} titre={t('col.provenance')}>
+      </Repli>
     </div>
   );
 }

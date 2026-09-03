@@ -6,6 +6,7 @@ import { chargerAction, pointerAction, documenterAction, expliquerAction } from 
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -51,8 +52,7 @@ export default async function TieOutPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <div className="panel">
-        <h2>{t('rail.pointage')}</h2>
+      <Repli cle="rail.pointage" niveau={2} titre={t('rail.pointage')}>
         <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
           <input type="hidden" name="engagement_id" value={id} />
           <button className="btn">{l.length === 0 ? t('fst.chargerPlaquette') : t('fst.repointer')}</button>
@@ -67,7 +67,7 @@ export default async function TieOutPage({
             ))}
           </p>
         )}
-      </div>
+      </Repli>
 
       {l.length > 0 && (
         <div className="panel">

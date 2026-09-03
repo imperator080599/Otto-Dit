@@ -24,6 +24,7 @@ import { visiter } from '@/lib/services/sections';
 import { modeSonde } from '@/lib/core/sonde';
 import { tr } from '@/lib/i18n';
 import { ipeAction, proposerIpeAction } from './ipe-actions';
+import { Repli } from '@/app/repli';
 
 const WP_BADGE: Record<string, string> = { draft: 'gray', in_review: 'blue', reviewed: 'amber', signed: 'green', outdated: 'red' };
 
@@ -539,8 +540,7 @@ export default async function WorkpaperDetail({
         </div>
       ))}
 
-      <div className="panel">
-        <h2>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></h2>
+      <Repli cle="wp.columnsAddedToTheTestingTable" niveau={2} titre={<>{t('wp.columnsAddedToTheTestingTable')} <span className="mod-flag">{t('wp.standardTemplateModified')}</span></>}>
         {colonnesAjoutees.map((c) => (
           <div className={`callout ${c.statut === 'proposee' ? 'warn' : c.statut === 'remplie' ? 'green' : ''}`} key={c.id}>
             <strong>{c.titre}</strong>{' '}
@@ -593,11 +593,10 @@ export default async function WorkpaperDetail({
             </form>
           </details>
         )}
-      </div>
+      </Repli>
 
       <div className="grid cols-2">
-        <div className="panel">
-          <h2>{t('wp.reviewNotesHumanOnly')}</h2>
+        <Repli cle="wp.reviewNotesHumanOnly" niveau={2} titre={t('wp.reviewNotesHumanOnly')}>
           {/* data-actions-item : les gestes PAR NOTE sont des actions d'item
               répétées — la mesure de densité (§3.D) les compte comme les
               gestes de ligne d'un tableau, pas comme des actions d'écran. */}
@@ -633,10 +632,9 @@ export default async function WorkpaperDetail({
               <button className="btn small">{t('wp.addNote')}</button>
             </div>
           </form>
-        </div>
+        </Repli>
 
-        <div className="panel">
-          <h2>{t('wp.signOffsDatedImmutable')}</h2>
+        <Repli cle="wp.signOffsDatedImmutable" niveau={2} titre={t('wp.signOffsDatedImmutable')}>
           <table className="data">
             <thead><tr><th>{t('wp.role')}</th><th>{t('wp.signedBy')}</th><th>{t('col.when')}</th></tr></thead>
             <tbody>
@@ -672,7 +670,7 @@ export default async function WorkpaperDetail({
               </tbody>
             </table>
           )}
-        </div>
+        </Repli>
       </div>
     </div>
   );

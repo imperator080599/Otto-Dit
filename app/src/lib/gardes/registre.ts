@@ -414,6 +414,19 @@ export const GARDES: Garde[] = [
     rejet: /ANA-03/,
     neutraliser: 'alter table fsli_analytique disable trigger fsli_analytique_append_only',
   },
+  {
+    nature: 'sql', code: 'G-22',
+    enonce: 'REPLI-01 — une clé de repli hors format est refusée : lettres, chiffres, « . _ : - », 120 caractères au plus.',
+    point: 'contrainte ui_repli_cle_valide (0132) ; le service memoriserRepli lit le même prédicat avant la base',
+    rayon: 'Une clé libre est un canal d’écriture arbitraire ouvert à tout compte connecté : n’importe quel texte, sans borne, mémorisé sous le nom de la personne et relu par chaque écran.',
+    stops_looking: 'Ne juge pas le SENS de la clé : une clé bien formée qui ne correspond à aucune section est mémorisée et jamais lue. Ne borne pas le NOMBRE de clés par personne.',
+    attaque: async (run, ctx) => {
+      await run(`insert into ui_repli (tenant_id, user_id, cle, ouvert) values ($1, $2, $3, true)`,
+        [ctx.tenantId, ctx.preparateur, 'clé avec espaces et <script>']);
+    },
+    rejet: /ui_repli_cle_valide/,
+    neutraliser: 'alter table ui_repli drop constraint ui_repli_cle_valide',
+  },
 
   /* ── Gardes de SERVICE : une passe, par le refus nommé ─────────────────── */
   {

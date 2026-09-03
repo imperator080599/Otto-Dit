@@ -506,3 +506,92 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
 @media (prefers-reduced-motion: reduce) {
   details.repli > summary .chevron, .ancres a { transition: none; }
 }
+
+/* ══ LA PASSE ESTHÉTIQUE (mandat de nuit n°2, 1.2 ; ADR-125) ══════════════════
+   Des jetons avant des règles : l'espace, l'élévation et le mouvement se
+   nomment une fois et se lisent partout. La couleur ne change pas — elle ne
+   marque que les problèmes (--amber, --red) ; ce qui bouge ici, c'est la
+   hiérarchie (tailles, graisses, interlettrage), les chiffres qui s'alignent
+   (tabular-nums sur toute cellule de tableau), l'ombre douce qui pose un
+   panneau, les états au survol, au focus et à la sélection, et un mouvement
+   de 120 à 200 ms qui ne porte QUE sur des changements d'état — jamais sur le
+   contenu, jamais sur la touche qui conclut. */
+:root {
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
+  --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);
+  --ombre-2: 0 4px 14px rgba(16, 24, 40, .09), 0 1px 2px rgba(16, 24, 40, .05);
+  --duree: 160ms;
+  --courbe: cubic-bezier(.2, .7, .3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ombre-1: 0 1px 2px rgba(0, 0, 0, .35), 0 1px 1px rgba(0, 0, 0, .25);
+    --ombre-2: 0 6px 18px rgba(0, 0, 0, .45), 0 1px 2px rgba(0, 0, 0, .3);
+  }
+}
+
+/* La hiérarchie typographique : un titre d'écran, un titre de section, un
+   titre de sous-section — trois tailles, trois graisses, et l'interlettrage
+   qui se resserre quand la taille monte. */
+h1 { font-size: 21px; letter-spacing: -.012em; line-height: 1.25; }
+h2 { font-size: 15px; letter-spacing: -.006em; line-height: 1.3; }
+h3 { font-size: 13.5px; line-height: 1.35; }
+.faint, .muted, .etat-bloc, .repli-resume { letter-spacing: .002em; }
+
+/* Les chiffres s'alignent en colonne, PARTOUT où ils sont en tableau. */
+table.data td, table.data th, .mono, .kpi .v, .visa-quand { font-variant-numeric: tabular-nums; }
+
+/* L'élévation douce : un panneau se POSE sur le fond, il n'y est pas cerné. */
+.panel, details.repli, .visa, .etape { box-shadow: var(--ombre-1); }
+.note-panneau, .bascule-liste, .atelier-detail { box-shadow: var(--ombre-2); }
+
+/* Les états. Le survol se lit, le focus se voit au clavier (jamais à la
+   souris), la sélection est de l'encre d'accent — aucune de ces couleurs ne
+   signale un problème, elles disent « ici ». */
+.btn { transition: background-color var(--duree) var(--courbe), border-color var(--duree) var(--courbe), color var(--duree) var(--courbe); }
+.btn:focus-visible, a:focus-visible, summary:focus-visible, .rail-bascule:focus-visible, .rail-tout:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+}
+input[type='text']:focus-visible, input[type='number']:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input[type='text'], input[type='number'], select, textarea { transition: border-color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe); }
+table.data tbody tr { transition: background-color var(--duree) var(--courbe); }
+table.data tbody tr:focus-within td { background: var(--row-hover); }
+table.data tbody tr[aria-selected='true'] td, table.data tbody tr.sel td { background: var(--accent-soft); }
+::selection { background: var(--accent-soft); color: var(--text); }
+a.rail-lien { transition: color var(--duree) var(--courbe), background-color var(--duree) var(--courbe); }
+details.repli > summary { transition: background-color var(--duree) var(--courbe); }
+details.repli > summary .chevron { transition: transform var(--duree) var(--courbe); }
+
+/* Le repli de NIVEAU 2 (une section de page, ex-.panel) : le titre est un h2,
+   l'espace intérieur est celui du panneau qu'il remplace. */
+details.repli.niveau-2 > summary { padding: 12px 18px; }
+details.repli.niveau-2 > summary h2 { margin: 0; }
+details.repli.niveau-2 > .repli-corps { padding: 0 18px 16px; }
+details.repli.niveau-2 { margin-bottom: 16px; }
+/* Un rangement que la base n'a pas retenu se lit à côté du titre — en couleur
+   d'attention, parce que c'en est un : l'écran et la mémoire divergent. */
+.repli-defaut { font-size: 11.5px; color: var(--amber); flex-basis: 100%; }
+.grid > details.repli { margin-bottom: 0; }
+
+/* Le squelette de chargement : la forme de la page, sans un mot. */
+.squelette { display: grid; gap: var(--e3); padding-top: var(--e2); }
+.squelette .sq {
+  border-radius: 6px; background: var(--track);
+  background-image: linear-gradient(90deg, var(--track) 0%, var(--gray-soft) 40%, var(--track) 80%);
+  background-size: 200% 100%; animation: chatoiement 1.4s linear infinite;
+}
+.squelette .sq.titre { height: 22px; width: 38%; }
+.squelette .sq.ligne { height: 12px; width: 60%; }
+.squelette .sq.ligne.courte { width: 28%; }
+.squelette .sq.bande { height: 36px; width: 100%; margin-top: var(--e2); }
+.squelette .sq.bloc { height: 180px; width: 100%; }
+.squelette .sq.bloc.bas { height: 120px; }
+@keyframes chatoiement { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Le mouvement s'arrête quand la personne le demande — tout, d'un coup. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .squelette .sq { background-image: none; }
+}

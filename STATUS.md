@@ -1868,3 +1868,52 @@ seul poste du périmètre gelé (règle 14). Rejouée : 16/16 dans les deux mode
 **Ce que je n'ai PAS fait** : la revue hostile de 1.1 — le premier sous-agent est mort en limite
 de débit avant d'écrire une ligne ; relancé, ses constats et leur sort (corrigé / constaté non
 corrigé, A.1) suivent dans le commit suivant. Rien de 1.2 à 1.5 à cet instant.
+
+## Nuit n°2 — 1.1 corrigé par la revue hostile, 1.2 la passe esthétique et le repli en base (2026-09-03)
+
+**Ce qui est cliquable maintenant et ne l'était pas à minuit** (ADR-125, ADR-126) :
+
+- **Cinquante-cinq sections de page se replient**, sur trente-quatre écrans, et **le repli est
+  retenu EN BASE, par personne** (migration 0132 `ui_repli`) : la même personne retrouve ses
+  rangements sur un autre poste de travail, et le SERVEUR les connaît au premier rendu — le rail
+  rangé naît étroit, aucune section ne s'ouvre pour se refermer après l'hydratation. La clé est
+  celle de la SECTION, pas de la page. **Un rangement que la base n'a pas retenu le dit** à côté
+  du titre. Refus **REPLI-01** (garde G-22, contrainte `ui_repli_cle_valide`) : une clé libre
+  serait un canal d'écriture arbitraire ouvert à tout compte connecté.
+- **La passe esthétique** : jetons d'espace, d'élévation et de mouvement nommés une fois ;
+  hiérarchie typographique à trois tailles ; chiffres tabulaires sur TOUTE cellule de tableau ;
+  survol, focus visible au clavier seulement, sélection à l'encre d'accent ; mouvement de 160 ms
+  qui ne porte que sur des changements d'état — jamais sur le contenu, jamais sur la touche qui
+  conclut ; `prefers-reduced-motion` coupe tout d'un bloc. **La couleur ne bouge pas** : elle ne
+  marque que les problèmes.
+- **1.1 corrigé** — douze constats de la revue hostile n°7, onze corrigés, un tenu pour acquis
+  et écrit (ADR-126). Le bloquant : une décision humaine de périmètre était **réécrite à chaque
+  déploiement** ; elle ne l'est plus, et un test la SORT du périmètre au nom de l'associée puis
+  rejoue l'enrichissement pour le prouver. Aussi : plus de geste humain fabriqué dans la chaîne
+  hachée à chaque build ; l'IPE des cinq papiers déclarée VRAIE contre la source de la méthode ;
+  l'antidatage d'une note DIT au journal ; un refus de service devenu une étape « NON » au lieu
+  d'un build cassé ; une version dépassée n'est plus une section de travail ; le gabarit suit le
+  sens du test et le repli est écrit ; l'empreinte distingue les versions ; **PROG-05** (rédiger
+  exige d'être de l'équipe) et **PROG-06** (dépasser un visa exige un motif).
+
+**Prouvé, et comment** (chaîne locale, base neuve, build de production, `scratchpad/chaine-n5.log`) :
+`tsc` 0 · `npm run langue` 0 hors catalogue · `npm run lectures` 0 perdue sur 1 625 chemins,
+84 écrans · `npm run gardes` **37** dont G-22 éprouvée en deux passes · `npm test` **701 tests,
+0 échec** (plancher 632) · `demo:enrichir` 10/10 étapes · `accept:epreuve` 3/3 · `accept --ecrire`
+**16/16** · `accept` (sonde) **16/16** · témoin « aucune écriture (12 tables identiques) » ·
+`npm run screens` 85 routes, 0 échec · `npm run clics` **189 étapes, 0 échec**, 188 stations
+figées vérifiées, 305 clics sur 41 gestes.
+
+**Le défaut que la nuit a coûté, et comment il a été trouvé.** Le squelette de chargement
+(`loading.tsx`) a fait passer le parcours cliqué de 0 à **vingt stations rouges**, et
+l'acceptation a lu « aucun refus » deux fois là où le produit refusait. Les stations rouges
+CHANGEAIENT d'une exécution à l'autre — de quoi appeler cela de l'intermittence et passer à
+autre chose. Bisection, une variable à la fois : squelette présent → 21 puis 20 échecs ;
+squelette retiré, tout le reste identique → **1 échec** (le #418 connu, sur `/testing`), puis
+**0** au tour suivant. Une frontière de suspension change le MOMENT où le contenu existe : le
+harnais lisait l'écran pendant que le squelette était à l'affiche. Le squelette est reporté
+(N2-4) : il ne revient qu'avec un harnais qui attend le CONTENU.
+
+**Ce que je n'ai PAS fait** : les onglets d'ancrage sur les 34 écrans neufs (N2-1 — une barre
+construite côté client rendrait un `<nav>` vide au premier rendu, la forme même du #418) ; le
+squelette (N2-4) ; les tranches 1.3, 1.4, 1.5 et tout l'étage 2.

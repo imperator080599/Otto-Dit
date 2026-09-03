@@ -5,6 +5,7 @@ import { dashboard } from '@/lib/services/dashboard';
 import { ensureReminders } from '@/lib/services/requests';
 import { frameworkSet } from '@/lib/services/fsli';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
 
@@ -40,8 +41,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
       </div>
 
       <div className="grid cols-2">
-        <div className="panel">
-          <h2>{t('dash.requestTracker')}</h2>
+        <Repli cle="dash.requestTracker" niveau={2} titre={t('dash.requestTracker')}>
           <table className="data">
             <thead><tr><th>#</th><th>{t('col.request')}</th><th>{t('col.status')}</th><th>{t('col.progress')}</th><th>{t('col.reminders')}</th></tr></thead>
             <tbody>
@@ -73,10 +73,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
             <Link href="/portal/demo-sophie-altiverre">{t('rail.portail')}</Link>{' '}
             <span className="mono">{entity.entity_id.slice(0, 8)}…</span>
           </p>
-        </div>
+        </Repli>
 
-        <div className="panel">
-          <h2>{t('col.workpapers')}</h2>
+        <Repli cle="col.workpapers" niveau={2} titre={t('col.workpapers')}>
           <table className="data">
             <thead><tr><th>{t('col.code')}</th><th>v</th><th>{t('col.status')}</th><th>{t('dash.lastSignOff')}</th></tr></thead>
             <tbody>
@@ -111,7 +110,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
             <span className="badge gray">{fs.accounting_map}</span>
             <span className="badge gray">{fs.language}</span>
           </div>
-        </div>
+        </Repli>
       </div>
     </div>
   );

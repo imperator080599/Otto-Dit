@@ -11,6 +11,7 @@ import { approveSend } from '@/lib/services/requests';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const RESULT_STYLE: Record<string, string> = { pass: 'green', fail: 'red', na: 'gray' };
 
@@ -129,8 +130,7 @@ export default async function ControlDetail({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <div className="panel">
-        <h2>{control.code} — {control.name}</h2>
+      <Repli cle="eng.id.rcm.cid.1" niveau={2} titre={<>{control.code} — {control.name}</>}>
         <p className="muted">{control.description}</p>
         <div className="row">
           <span className="badge gray">{control.frequency}</span>
@@ -140,7 +140,7 @@ export default async function ControlDetail({
           <span className={`badge ${control.di_status === 'effective' ? 'green' : 'red'}`}>{t('rcm.di')} {control.di_status}</span>
           <span className="faint">{t('rcmc.owner')} {control.owner_name}</span>
         </div>
-      </div>
+      </Repli>
 
       <div className="grid cols-2">
         <div className="panel">
@@ -178,8 +178,7 @@ export default async function ControlDetail({
           </div>
         </div>
 
-        <div className="panel">
-          <h2>Attribute grid</h2>
+        <Repli cle="eng.id.rcm.cid.2" niveau={2} titre={<>Attribute grid</>}>
           {grid.length === 0 ? <p className="muted">{t('rcmc.notTestedYet')}</p> : (
             <table className="data">
               <thead><tr><th>{t('col.instance')}</th>{attrCodes.map((a) => <th key={a}>{a}</th>)}</tr></thead>
@@ -200,7 +199,7 @@ export default async function ControlDetail({
               </tbody>
             </table>
           )}
-        </div>
+        </Repli>
       </div>
 
       <div className="panel">

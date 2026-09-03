@@ -6,6 +6,7 @@ import { repondreNoteAction, transitionNoteAction, executerNoteOttoAction } from
 import type { CompteRenduOtto } from '@/lib/services/notes/otto';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // LA VUE TRANSVERSE DES NOTES DE REVUE (ADR-097). Toutes les notes de la
 // mission, leurs ancres RÉSOLUES contre l'état actuel du dossier : une note
@@ -125,9 +126,8 @@ export default async function NotesPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <div className="panel">
-        <h2>{t('notes.titreVue')}</h2>
-      </div>
+      <Repli cle="notes.titreVue" niveau={2} titre={t('notes.titreVue')}>
+      </Repli>
       {ouvertes.length === 0 && closes.length === 0 && (
         <div className="panel"><p className="muted">{t('notes.aucuneAide')}</p></div>
       )}

@@ -191,6 +191,11 @@ export async function GET() {
       return `sections ${etats.join(' ')} · papiers CA ${papiers.map((p) => `${p.status}:${p.n}`).join(' ')}`
         + ` · ${notes?.n ?? 0} note(s) ouverte(s), la plus ancienne ${notes?.age ?? 0} j · lignes conclues ${lignes.total - lignes.nonConclues}/${lignes.total}`;
     }));
+    lectures.push(await essayer('replis mémorisés par personne (ui_repli, 0132)', async () => {
+      const { compterReplis } = await import('@/lib/services/replis');
+      const r = await compterReplis();
+      return `${r.replis} rangement(s) chez ${r.personnes} personne(s)`;
+    }));
     lectures.push(await essayer('échantillonnage (sélection tirée)', async () => {
       const { currentRevenueSample } = await import('@/lib/services/sampling');
       const s = await currentRevenueSample(id);

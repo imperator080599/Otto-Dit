@@ -5,6 +5,7 @@ import {
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { declarerCleAction, declarerDomaineAction, choisirCreneauAction, envoyerAction } from './actions';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // LES RÉUNIONS (ADR-101). Tout ce qui s'affiche ici est DÉTERMINISTE et
 // local ; la lecture d'agendas et l'envoi sont SIMULÉS, et l'écran le dit —
@@ -47,8 +48,7 @@ export default async function ReunionsPage({
         <strong>{t('reun.calendarReadingAndSendingSimulated')}</strong> {t('reun.adaptateurDemo')}
       </div>
 
-      <div className="panel">
-        <h2>{t('reun.theEngagementContacts')}</h2>
+      <Repli cle="reun.theEngagementContacts" niveau={2} titre={t('reun.theEngagementContacts')}>
         {/* LE PARAGRAPHE D'EXPLICATION SORT (règle générale de la revue n°1,
             rappelée par la revue n°2). Les contacts eux-mêmes DÉMÉNAGENT vers
             une section client à la création du dossier (P1) : ils restent ici
@@ -90,10 +90,9 @@ export default async function ReunionsPage({
             <button className="btn secondary small">{t('reun.declareByArea')}</button>
           </form>
         </div>
-      </div>
+      </Repli>
 
-      <div className="panel">
-        <h2>{t('reun.proposeSlots')} <span className="ai-flag">{t('reun.simulatedAvailabilityFreeBusyOnly')}</span></h2>
+      <Repli cle="reun.proposeSlots" niveau={2} titre={<>{t('reun.proposeSlots')} <span className="ai-flag">{t('reun.simulatedAvailabilityFreeBusyOnly')}</span></>}>
         <form method="get" className="row">
           <label className="row" style={{ gap: 4 }}>du <input name="de" placeholder="AAAA-MM-JJ" defaultValue={de ?? '2026-03-02'} style={{ width: 110 }} /></label>
           <label className="row" style={{ gap: 4 }}>au <input name="a" placeholder="AAAA-MM-JJ" defaultValue={a ?? '2026-03-06'} style={{ width: 110 }} /></label>
@@ -125,10 +124,9 @@ export default async function ReunionsPage({
             ))}
           </>
         )}
-      </div>
+      </Repli>
 
-      <div className="panel">
-        <h2>{t('reun.invitations')}</h2>
+      <Repli cle="reun.invitations" niveau={2} titre={t('reun.invitations')}>
         {invs.length === 0 ? <p className="muted">{t('reun.noInvitationThePathKeyContact')}</p>
           : invs.map((i) => (
             <div className={`callout ${i.statut === 'envoyee_simulee' ? 'green' : ''}`} key={i.id}>
@@ -155,7 +153,7 @@ export default async function ReunionsPage({
               </div>
             </div>
           ))}
-      </div>
+      </Repli>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from '@/lib/services/team';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { Repli } from '@/app/repli';
 
 // Équipe et indépendance. L'écran ne porte AUCUNE règle : il montre celles du
 // service, et il montre surtout ce qu'elles refusent. « Ce qui manque pour
@@ -168,8 +169,7 @@ export default async function TeamPage({
 
       {/* ── ancienneté et rotation : ce qui se compte ─────────────────── */}
       {anc.length > 0 && (
-        <div className="panel">
-          <h2>{t('team.tenureAndRotation')}</h2>
+        <Repli cle="team.tenureAndRotation" niveau={2} titre={t('team.tenureAndRotation')}>
           <table className="data">
             <thead>
               <tr><th>{t('col.member')}</th><th className="num">{t('team.consecutiveYears')}</th><th>{t('team.familiarity')}</th><th>{t('col.rotation')}</th></tr>
@@ -198,12 +198,11 @@ export default async function TeamPage({
               })}
             </tbody>
           </table>
-        </div>
+        </Repli>
       )}
 
       {/* ── ma déclaration ───────────────────────────────────────────── */}
-      <div className="panel">
-        <h2>{t('team.myIndependenceDeclaration')} {user.name}</h2>
+      <Repli cle="team.myIndependenceDeclaration" niveau={2} titre={<>{t('team.myIndependenceDeclaration')} {user.name}</>}>
         {!mine || mine.signed_at ? (
           <form action={openAction} className="row">
             <input
@@ -295,11 +294,10 @@ export default async function TeamPage({
             </table>
           </details>
         )}
-      </div>
+      </Repli>
 
       {/* ── l'équipe ─────────────────────────────────────────────────── */}
-      <div className="panel">
-        <h2>{t('team.engagementTeam')}</h2>
+      <Repli cle="team.engagementTeam" niveau={2} titre={t('team.engagementTeam')}>
         <table className="data">
           <thead>
             <tr><th>{t('col.person')}</th><th>{t('team.role')}</th><th>{t('col.signoff')}</th><th>{t('team.joined')}</th><th>{t('col.exit')}</th><th>{t('team.declaration')}</th><th /></tr>
@@ -348,11 +346,10 @@ export default async function TeamPage({
           <input type="text" name="entered_on" placeholder={t('team.joinedYyyyMmDd')} style={{ width: 130 }} />
           <button className="btn small">{t('mot.assign')}</button>
         </form>
-      </div>
+      </Repli>
 
       {/* ── services autres que la certification ─────────────────────── */}
-      <div className="panel">
-        <h2>{t('team.nonAuditServices')}</h2>
+      <Repli cle="team.nonAuditServices" niveau={2} titre={t('team.nonAuditServices')}>
         {/* LE DÉNOMINATEUR, LE PLAFOND ET SA SOURCE. Un ratio sans son
             dénominateur ni le motif de son plafond ne se relit pas — et ces
             trois lectures avaient disparu dans un balayage de prose. */}
@@ -409,7 +406,7 @@ export default async function TeamPage({
           <button className="btn small secondary">{t('mot.save')}</button>
         </form>
 
-      </div>
+      </Repli>
     </div>
   );
 }

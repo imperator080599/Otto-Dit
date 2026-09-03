@@ -9,6 +9,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // LES ESTIMATIONS COMPTABLES HORS LITIGE (point 11a, ADR-106). Le client
 // fournit son fichier de calcul ; l'écran : importer → rapprocher à la
@@ -76,15 +77,14 @@ export default async function EstimationsPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <div className="panel">
-        <h2>{t('rail.estimations')} <span className="badge gray">{estimations.length}</span></h2>
+      <Repli cle="rail.estimations" niveau={2} titre={<>{t('rail.estimations')} <span className="badge gray">{estimations.length}</span></>}>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <input name="titre" placeholder={t('est.titleEGAccruedRevenue2025')} style={{ minWidth: 220 }} />
           <input name="piece_ref" placeholder={t('est.referenceOfTheEntryConcernedE')} className="mono" style={{ minWidth: 200 }} />
           <input type="file" name="fichier" style={{ maxWidth: 230 }} />
           <button className="btn">{t('est.importTheCalculationFile')}</button>
         </form>
-      </div>
+      </Repli>
 
       {estimations.length > 1 && (
         <p className="row" style={{ gap: 6 }}>
@@ -99,8 +99,7 @@ export default async function EstimationsPage({
 
       {ouverte && (
         <>
-          <div className="panel">
-            <h2>{ouverte.titre} <span className="badge gray">{ouverte.statut}</span></h2>
+          <Repli cle="eng.id.estimations.2" niveau={2} titre={<>{ouverte.titre} <span className="badge gray">{ouverte.statut}</span></>}>
             <p className="faint">
               {t('est.fichier')} <span className="mono">{ouverte.sourceFilename}</span> {t('est.empreinte')}{' '}
               <span className="mono">{ouverte.sourceSha256.slice(0, 14)}…</span> ·{' '}
@@ -145,13 +144,12 @@ export default async function EstimationsPage({
                 {t('est.baseOfTheDrawnLinesEach')}
               </span>
             </form>
-          </div>
+          </Repli>
 
           {/* Pleine largeur, l'un sous l'autre : deux tableaux larges dans une
               grille à deux colonnes forcent la page à déborder (min-content). */}
           <div>
-            <div className="panel">
-              <h2>{t('est.theBaseLineByLine')} <span className="badge gray">{ouverte.lignes.length}</span></h2>
+            <Repli cle="est.theBaseLineByLine" niveau={2} titre={<>{t('est.theBaseLineByLine')} <span className="badge gray">{ouverte.lignes.length}</span></>}>
               <div className="table-scroll">
                 <table className="data">
                   <thead><tr>
@@ -179,9 +177,8 @@ export default async function EstimationsPage({
                   </tbody>
                 </table>
               </div>
-            </div>
-            <div className="panel">
-              <h2>{t('est.theRatesAndTheFormula')} <span className="badge gray">{ouverte.parametres.length}</span></h2>
+            </Repli>
+            <Repli cle="est.theRatesAndTheFormula" niveau={2} titre={<>{t('est.theRatesAndTheFormula')} <span className="badge gray">{ouverte.parametres.length}</span></>}>
               <p className="faint">{t('est.everyRateMustBeSupportedA')}</p>
               <div className="table-scroll">
                 <table className="data">
@@ -199,7 +196,7 @@ export default async function EstimationsPage({
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Repli>
           </div>
         </>
       )}

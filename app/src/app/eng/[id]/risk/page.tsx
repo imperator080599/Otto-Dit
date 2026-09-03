@@ -18,6 +18,7 @@ import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // Le risque par assertion, et CE QU'IL COMMANDE.
 //
@@ -48,9 +49,8 @@ export default async function RiskPage({
 
   if (!code) {
     return (
-      <div className="panel">
-        <h2>{t('risk.riskByAssertion')}</h2>
-      </div>
+      <Repli cle="risk.riskByAssertion" niveau={2} titre={t('risk.riskByAssertion')}>
+      </Repli>
     );
   }
 
@@ -258,8 +258,7 @@ export default async function RiskPage({
           Sans lui l'évaluation ne verrait que ce qui se compte : un changement
           de dirigeant, une pression sur le résultat, un litige non provisionné
           ne sont dans aucun grand livre. */}
-      <div className="panel">
-        <h2>{t('cf.nature.question_answer')}</h2>
+      <Repli cle="cf.nature.question_answer" niveau={2} titre={t('cf.nature.question_answer')}>
         {(obstaclesEntity.length > 0 || obstaclesSection.length > 0) && (
           <div className="callout warn">
             <strong>{t('risk.whatPreventsSigning')}</strong>
@@ -328,10 +327,9 @@ export default async function RiskPage({
             </table>
           </div>
         ))}
-      </div>
+      </Repli>
 
-      <div className="panel">
-        <h2>{t('risk.registerOfDeclaredFactors')} {reg.length}</h2>
+      <Repli cle="risk.registerOfDeclaredFactors" niveau={2} titre={<>{t('risk.registerOfDeclaredFactors')} {reg.length}</>}>
         <table className="data">
           <thead>
             <tr><th>{t('col.source')}</th><th>{t('col.nature')}</th><th>{t('risk.finding')}</th><th>{t('risk.targets')}</th><th>{t('risk.status')}</th><th /></tr>
@@ -369,11 +367,10 @@ export default async function RiskPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Repli>
 
       {/* ── CE QUE LE RISQUE COMMANDE ─────────────────────────────────── */}
-      <div className="panel">
-        <h2>{t('risk.whatThisRiskCommands')} {required.length} {t('risk.procedureSRequired')}</h2>
+      <Repli cle="risk.whatThisRiskCommands" niveau={2} titre={<>{t('risk.whatThisRiskCommands')} {required.length} {t('risk.procedureSRequired')}</>}>
         <table className="data">
           <thead>
             <tr>
@@ -431,7 +428,7 @@ export default async function RiskPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Repli>
 
       {excluded.length > 0 && (
         <div className="panel">

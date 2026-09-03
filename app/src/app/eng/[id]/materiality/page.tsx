@@ -13,6 +13,7 @@ import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 export default async function MaterialityPage({
   params, searchParams,
@@ -129,8 +130,7 @@ export default async function MaterialityPage({
           </>
         )}
       </div>
-      <div className="panel">
-        <h2>{t('mat.versions')}</h2>
+      <Repli cle="mat.versions" niveau={2} titre={t('mat.versions')}>
         <table className="data">
           <thead><tr><th>v</th><th>{t('mat.benchmark')}</th><th className="num">{t('mat.seuilDeSignification')}</th><th>{t('col.status')}</th></tr></thead>
           <tbody>
@@ -144,7 +144,7 @@ export default async function MaterialityPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Repli>
     </div>
   );
 }

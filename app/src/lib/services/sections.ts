@@ -99,14 +99,22 @@ export async function assurerSections(engagementId: string): Promise<void> {
        on conflict (engagement_id, kind, ref) do update set label = excluded.label`,
       [engagementId, p.code, p.name]);
   }
+  /* UNE VERSION DÉPASSÉE N'EST PAS UNE SECTION DE TRAVAIL (revue hostile n°7,
+     constat 7). Un papier refait laisse sa v1 en `outdated` : elle reste
+     lisible dans le dossier — rien n'est effacé — mais elle n'a plus de
+     travail à porter, et le tableau de bord montrait DEUX lignes du même nom
+     dans le même état. La section d'un papier dépassé n'est pas créée ; celle
+     qui existait est écartée de la lecture (`SANS_PAPIER_DEPASSE`).
+     Le libellé ne redouble plus le code : `title` le porte déjà. */
   const papiers = await q<{ id: string; code: string; title: string }>(
-    `select id::text, code, title from workpaper where engagement_id = $1`, [engagementId]);
+    `select id::text, code, title from workpaper where engagement_id = $1 and status <> 'outdated'`, [engagementId]);
   for (const w of papiers) {
+    const libelle = w.title.startsWith(w.code) ? w.title : `${w.code} — ${w.title}`;
     await q(
       `insert into section_state (engagement_id, kind, ref, label)
        values ($1, 'papier', $2, $3)
        on conflict (engagement_id, kind, ref) do update set label = excluded.label`,
-      [engagementId, w.id, `${w.code} — ${w.title}`]);
+      [engagementId, w.id, libelle]);
   }
 }
 
@@ -127,6 +135,13 @@ const DEPUIS = `
   left join app_user o on o.id = s.owner_id
   left join app_user h on h.id = s.holder_id`;
 
+/* Une section de PAPIER dépassé ne se lit plus (revue hostile n°7, constat 7) :
+   la ligne reste en base — on n'efface pas — mais l'écran ne montre pas deux
+   fois le même papier, dont une version morte. À poser dans le `where` de
+   toute lecture de sections. */
+const SANS_PAPIER_DEPASSE = `
+  (s.kind <> 'papier' or exists (select 1 from workpaper w0 where w0.id::text = s.ref and w0.status <> 'outdated'))`;
+
 export interface MesSections {
   detenues: Section[];
   attribuees: Section[];
@@ -141,13 +156,13 @@ export async function mesSections(userId: string): Promise<MesSections> {
   const membre = `s.engagement_id in (select engagement_id from engagement_member where user_id = $1)
     and e.tenant_id = (select tenant_id from app_user where id = $1)`;
   const detenues = await q<Section>(
-    `select ${CHAMPS} ${DEPUIS} where s.holder_id = $1 and ${membre} order by s.label`, [userId]);
+    `select ${CHAMPS} ${DEPUIS} where s.holder_id = $1 and ${membre} and ${SANS_PAPIER_DEPASSE} order by s.label`, [userId]);
   const attribuees = await q<Section>(
-    `select ${CHAMPS} ${DEPUIS} where s.owner_id = $1 and ${membre} order by s.label`, [userId]);
+    `select ${CHAMPS} ${DEPUIS} where s.owner_id = $1 and ${membre} and ${SANS_PAPIER_DEPASSE} order by s.label`, [userId]);
   const suivies = await q<Section>(
     `select ${CHAMPS} ${DEPUIS}
      join section_watch wt on wt.section_id = s.id and wt.user_id = $1
-     where ${membre} order by s.label`, [userId]);
+     where ${membre} and ${SANS_PAPIER_DEPASSE} order by s.label`, [userId]);
   /* LES RÉCENTES SE TRIENT EN SQL. Le tri en JS comparait `String(Date)` —
      « Wed Aug 26 … » — et rangeait les jours par leur NOM (revue hostile
      n°5) : la plus ancienne visite passait en tête. */
@@ -155,14 +170,14 @@ export async function mesSections(userId: string): Promise<MesSections> {
     `select ${CHAMPS} ${DEPUIS}
      join (select section_id, max(visited_at) vu from section_visit where user_id = $1 group by section_id) v
        on v.section_id = s.id
-     where ${membre}
+     where ${membre} and ${SANS_PAPIER_DEPASSE}
      order by v.vu desc, s.id limit 8`, [userId]);
   return { detenues, attribuees, suivies, recentes };
 }
 
 /** Toutes les sections d'un dossier, avec leur statut dérivé. */
 export async function sectionsDuDossier(engagementId: string): Promise<Section[]> {
-  return q<Section>(`select ${CHAMPS} ${DEPUIS} where s.engagement_id = $1 order by s.kind, s.label`,
+  return q<Section>(`select ${CHAMPS} ${DEPUIS} where s.engagement_id = $1 and ${SANS_PAPIER_DEPASSE} order by s.kind, s.label`,
     [engagementId]);
 }
 

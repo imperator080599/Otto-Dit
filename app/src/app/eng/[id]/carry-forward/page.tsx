@@ -5,6 +5,7 @@ import { proposerAction, deciderAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // LA REPRISE DU DOSSIER N-1 (point 2).
 //
@@ -40,8 +41,7 @@ export default async function CarryForwardPage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <div className="panel">
-        <h2>{t('famille.reprise.titre')}</h2>
+      <Repli cle="famille.reprise.titre" niveau={2} titre={t('famille.reprise.titre')}>
         {!prev ? (
           /* DIRE CE QU'ON A CHERCHÉ, pas seulement qu'on n'a rien trouvé. Le
              message annonçait « aucune mission sur l'exercice précédent pour
@@ -71,7 +71,7 @@ export default async function CarryForwardPage({
             )}
           </>
         )}
-      </div>
+      </Repli>
 
       {liste.length > 0 && (
         <div className="panel">

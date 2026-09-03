@@ -5,6 +5,7 @@ import { whyEvidenceExists, whatSupportsConclusion, whereFigureFrom } from '@/li
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // S9 — the three provenance questions, answered from stored links (P7). Pick an object on
 // the left; the answer chain renders on the right. ≤3 clicks from anywhere in the app.
@@ -44,15 +45,14 @@ export default async function ProvenancePage({
 
   return (
     <div>
-      <div className="panel">
-        <h2>{t('prov.provenanceTheThreeQuestionsP7')}</h2>
+      <Repli cle="prov.provenanceTheThreeQuestionsP7" niveau={2} titre={t('prov.provenanceTheThreeQuestionsP7')}>
         <div className="row">
           <Link className={`btn small ${question === 'why' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=why`}>{t('prov.whyDoesThisEvidenceExist')}</Link>
           <Link className={`btn small ${question === 'supports' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=supports`}>{t('prov.whatSupportsThisConclusion')}</Link>
           <Link className={`btn small ${question === 'figure' ? '' : 'secondary'}`} href={`/eng/${id}/provenance?q=figure`}>{t('prov.whereDidThisFigureComeFrom')}</Link>
         </div>
         <p className="faint mt">{t('prov.everyAnswerIsAStoredFact')}</p>
-      </div>
+      </Repli>
 
       <div className="grid cols-2">
         <div className="panel">
@@ -104,8 +104,7 @@ export default async function ProvenancePage({
           )}
         </div>
 
-        <div className="panel">
-          <h2>{t('col.answer')}</h2>
+        <Repli cle="col.answer" niveau={2} titre={t('col.answer')}>
           {why && (
             <ol style={{ paddingLeft: 18 }}>
               {why.map((n, i) => (
@@ -190,7 +189,7 @@ export default async function ProvenancePage({
             </>
           )}
           {!why && !supports && !figure && <p className="muted">{t('prov.selectAnObjectOnTheLeft')}</p>}
-        </div>
+        </Repli>
       </div>
     </div>
   );

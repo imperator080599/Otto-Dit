@@ -4645,3 +4645,102 @@ qui n'est pas « maintenant », et il est nommé ici. Prouvé : `enrichir.test.t
 quatre personnes, papiers et visa périmé, notes et ancres, processus et matrice, lignes conclues,
 AUCUNE famille d'obstacles nouvelle, et le cas connu mauvais de l'idempotence : un second passage
 ne crée rien), `programme` refuse hors méthode et hors périmètre.
+
+## ADR-125 — La mémoire d'un écran appartient à la personne, pas au navigateur (nuit n°2, 1.2)
+
+**Contexte.** Le rail rangé et les sections repliées vivaient dans `localStorage` : la même
+personne, sur un autre poste de travail, retrouvait tout ouvert ; deux personnes sur la même
+machine partageaient leurs rangements ; et le serveur ne les connaissait pas — une section
+mémorisée fermée s'ouvrait au premier rendu puis se refermait après l'hydratation.
+
+**Décision.** `ui_repli (tenant_id, user_id, cle, ouvert)` — migration 0132. La mémoire est
+lue par le layout racine, une fois par requête, et donnée aux composants ; chaque `<Repli>` la
+lit AU PREMIER RENDU. Le rail rangé pose sa classe de grille côté serveur. La clé est celle de
+la SECTION (« poste.papiers »), pas de la page : on range une nature de contenu.
+
+- **Ce que la table n'est pas** : du contenu du dossier. Aucune décision d'audit, aucune preuve.
+  Elle n'entre donc PAS dans `event_log` — exception DÉCLARÉE ici plutôt qu'oubliée — et son
+  verdict de verrou est « lecture » : un dossier scellé se range encore.
+- **REPLI-01** (contrainte `ui_repli_cle_valide`, garde G-20) : une clé libre serait un canal
+  d'écriture arbitraire ouvert à tout compte connecté. Lettres, chiffres, `. _ : -`, 120 au plus.
+  Le service lit le même prédicat AVANT la base, pour qu'on sache lequel des deux a parlé.
+- **Un rangement que la base n'a pas retenu le DIT**, à côté du titre : la section s'est repliée
+  à l'écran, elle rouvrira au prochain chargement (règle 13 — un silence lu comme un succès).
+- Seule l'astuce du raccourci `[` reste dans le navigateur : ce n'est pas un rangement, c'est
+  une bulle vue une fois.
+
+**Le squelette de chargement, écrit puis RETIRÉ le même soir — et ce qu'il a appris.**
+Une frontière de suspension (`loading.tsx`) change le MOMENT où le contenu d'un écran existe.
+Le parcours cliqué est passé de 0 à **20 stations rouges**, et l'acceptation a lu « aucun refus »
+deux fois là où le produit refusait bel et bien : le harnais interrogeait l'écran pendant que le
+squelette était à l'affiche. Bisection en trois exécutions, une variable à la fois : squelette
+présent → 21 puis 20 échecs (stations différentes à chaque fois, ce qui ressemblait à de
+l'intermittence) ; squelette retiré, tout le reste identique → **1 échec**, le #418 connu.
+Le squelette est reporté (docs/BACKLOG_REPORTE.md, N2-4) : il ne revient qu'avec un harnais qui
+attend le CONTENU. **Un harnais qui lit trop tôt ne mesure pas le produit, il mesure sa propre
+hâte** — et il l'annonce comme un défaut du produit (règle 13).
+
+**La passe esthétique qui va avec.** Des jetons nommés une fois (espace `--e1..--e6`, élévation
+`--ombre-1/2`, mouvement `--duree` 160 ms `--courbe` ease-out) ; hiérarchie typographique à trois
+tailles avec l'interlettrage qui se resserre ; chiffres tabulaires sur TOUTE cellule de tableau ;
+survol, focus visible au clavier seulement, sélection à l'encre d'accent ; squelette de
+chargement qui montre la FORME sans un mot ; `prefers-reduced-motion` coupe tout le mouvement
+d'un seul bloc. **La couleur ne bouge pas** : elle ne marque que les problèmes. Le mouvement ne
+porte que sur des changements d'état — jamais sur le contenu, jamais sur la touche qui conclut.
+**55 sections de page** deviennent repliables et mémorisées, sur 34 écrans, par transformation
+mécanique du motif `<div className="panel"><h2>…` (l'outil est dans le journal du commit).
+
+## ADR-126 — Ce que la revue hostile n°7 a cassé dans 1.1, et ce qui est corrigé
+
+Douze constats (1 bloquant, 6 importants, 5 mineurs). **Onze corrigés**, un tenu pour acquis
+et documenté. Chaque correction porte son cas connu mauvais dans `flows/enrichir.test.ts`
+(règle 17 : un détecteur qui n'a jamais échoué exprès n'a jamais été testé).
+
+1. **BLOQUANT — une décision humaine de périmètre était réécrite à chaque déploiement.**
+   L'associée sortait un poste du périmètre avec son motif ; le build suivant le remettait
+   « retenu ». Corrigé : l'enrichissement pose cette décision **une seule fois**, l'inscrit au
+   journal (`demo_scoping_seeded`), et ne repasse **jamais** dessus — quoi qu'il advienne
+   ensuite. Le test SORT le poste du périmètre au nom de l'associée, rejoue l'enrichissement, et
+   exige que la décision tienne.
+2. **La piste d'audit fabriquait un geste humain par déploiement** : `assessFsli` était rejoué,
+   écrivant un `risk.assessed` de Léa dans la chaîne hachée à chaque build. Corrigé : le risque
+   n'est évalué que si RIEN ne l'a été. Le compteur d'idempotence du test comptait neuf tables
+   et **pas `event_log`** — l'instrument ne pouvait pas voir le défaut ; il le compte désormais.
+3. **L'étape affirmait plus qu'elle ne vérifiait** : « un visé … un dont le visa est périmé »
+   était un intitulé figé sur un compte de lignes traitées. Un visa posé par une personne sur la
+   v2 faisait disparaître le visa périmé, et l'étape disait encore « ok ». Corrigé : l'étape
+   RELIT la vue du poste — la même que la page — et rapporte les états CONSTATÉS ; si la forme
+   n'est plus celle du monde, elle le dit et ne prétend pas la rétablir.
+4. **L'IPE était déclarée fausse** : cinq papiers portaient « utilisée : non » alors que leur
+   population EST le grand livre de la cliente — la même source que REV-01 déclare « oui ».
+   La famille d'obstacles « ipe » se taisait sur une réponse fausse, et l'associée visait.
+   Corrigé : la déclaration suit la `population.source` de la MÉTHODE et reprend le rapport déjà
+   documenté (0036) ; une source que le dossier ne porte pas donne « non », qui est alors juste.
+5. **L'antidatage des notes contredisait la piste d'audit en silence.** Corrigé : un événement
+   `review_note_backdated` nomme les deux dates et qui l'a fait (le semis, pas une personne), et
+   la date est REPOSÉE à chaque passage — sinon « la plus ancienne, 14 j » dérive de jour en jour.
+6. **Un refus de service cassait le déploiement** : toute exception remontait au `main().catch`
+   du script de reconstruction. Corrigé : chaque étape est conduite dans une enveloppe qui
+   transforme un refus en étape « NON » lisible dans le journal de build. Ce qui reste fatal :
+   une panne de base — elle n'est pas un refus.
+7. **Une version DÉPASSÉE devenait une section de travail** : le tableau de bord montrait deux
+   lignes du même papier, même libellé, même état. Corrigé dans `sections.ts` : pas de section
+   pour un papier `outdated`, et celles qui existaient sont écartées de la lecture (rien n'est
+   effacé). Le libellé ne redouble plus le code.
+8. **Le mauvais gabarit sortait en silence** : le papier d'une revue analytique portait
+   « Testing : aucun élément tiré » et « Contrôle de fiabilité : à réaliser après le testing ».
+   Corrigé : le gabarit suit le SENS du test ; la méthode n'ayant pas de gabarit « analytique »,
+   le repli sur « substantif » est ÉCRIT dans le papier et dans le moteur, et les blocs
+   d'échantillon disent qu'ils sont sans objet.
+9. **L'empreinte ne distinguait pas deux versions** : elle ne tenait que des identifiants.
+   Corrigé : elle hache les blocs réellement écrits, la version et la nature de gabarit.
+10. **Rédiger n'exigeait rien** : ni appartenance au dossier, ni motif pour dépasser un papier
+    VISÉ. Corrigé : **PROG-05** (l'équipe de la mission) et **PROG-06** (une version nouvelle
+    périme des visas : elle exige un motif écrit — la règle d'ADR-094).
+11. **Le semis vise au nom de personnes fictives** sur la base publique. Tenu pour acquis :
+    c'est la convention du monde de démonstration (`demo:seed` fait de même), les données sont
+    fictives, et le flux n'agit que sur les papiers **qu'il a créés** — jamais sur ceux d'autrui.
+    Dit ici plutôt que découvert.
+12. **Les documents affirmaient plus que le code ne tenait** (« idempotent », « rien n'est
+    remplacé »). STATUS.md et cet ADR portent désormais la formulation exacte : additif,
+    idempotent **y compris sur la piste d'audit**, et une décision humaine postérieure l'arrête.

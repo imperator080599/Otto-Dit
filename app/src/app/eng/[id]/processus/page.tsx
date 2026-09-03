@@ -11,6 +11,7 @@ import {
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // LE CONTRÔLE INTERNE ET LES PROCESSUS (point 2, ADR-108). La plateforme
 // héberge le processus en DONNÉES STRUCTURÉES et GÉNÈRE le diagramme — le
@@ -146,10 +147,9 @@ export default async function ProcessusPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <div className="panel">
-        <h2>{t('proc.internalControlAndProcesses')} {diff && diff.aStatuer.length > 0 && (
+      <Repli cle="proc.internalControlAndProcesses" niveau={2} titre={<>{t('proc.internalControlAndProcesses')} {diff && diff.aStatuer.length > 0 && (
           <span className="badge red">{diff.aStatuer.length} {t('proc.changeSToDecide')}</span>
-        )}</h2>
+        )}</>}>
         <form action={importAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           <select name="exercice" defaultValue="n">
             <option value="n">{t('proc.versionN')}</option>
@@ -166,11 +166,10 @@ export default async function ProcessusPage({
             ? t('proc.versionDecrite', { ex: NOM_EXERCICE[ex], fichier: versions[ex]!.filename, e: versions[ex]!.etapes.length, c: versions[ex]!.controles.length })
             : t('proc.versionNonDecrite', { ex: NOM_EXERCICE[ex] })).join(' · ')}
         </p>
-      </div>
+      </Repli>
 
       {montre && diagramme && (
-        <div className="panel">
-          <h2>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</h2>
+        <Repli cle="proc.diagramme" niveau={2} titre={<>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</>}>
             <div className="table-scroll">
             <svg width={diagramme.w} height={diagramme.h} viewBox={`0 0 ${diagramme.w} ${diagramme.h}`} role="img"
               aria-label={t('proc.diagramme', { nom: montre.nom })} style={{ maxWidth: 'none' }}>
@@ -223,12 +222,11 @@ export default async function ProcessusPage({
               </tbody>
             </table>
           </div>
-        </div>
+        </Repli>
       )}
 
       {diff && (
-        <div className="panel">
-          <h2>{t('proc.diff')}</h2>
+        <Repli cle="proc.diff" niveau={2} titre={t('proc.diff')}>
           {diff.changements.length === 0 && <p className="faint">{t('proc.aucunChangement')}</p>}
           {diff.changements.length > 0 && (
             <div className="table-scroll">
@@ -271,13 +269,12 @@ export default async function ProcessusPage({
               </table>
             </div>
           )}
-        </div>
+        </Repli>
       )}
 
-      <div className="panel">
-        <h2>{t('proc.interviews')} {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
+      <Repli cle="proc.interviews" niveau={2} titre={<>{t('proc.interviews')} {entretiens.some((i) => i.ecarts.some((e) => e.status === 'candidate')) && (
           <span className="badge red">{t('proc.ecartsAStatuer')}</span>
-        )}</h2>
+        )}</>}>
         {adaptateur === 'mock' ? (
           <div className="callout">
             {/* LA PROSE EXPLICATIVE SORT (règle générale) : le mode se DIT en
@@ -311,7 +308,7 @@ export default async function ProcessusPage({
           ))}
           <div><button className="btn">{t('proc.creerEntretien')}</button></div>
         </form>
-      </div>
+      </Repli>
 
       {entretiens.map((itv) => (
         <div className="panel" key={itv.id}>

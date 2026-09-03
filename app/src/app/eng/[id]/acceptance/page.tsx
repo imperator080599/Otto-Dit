@@ -7,6 +7,7 @@ import {
 import { ouvrirAction, repondreAction, deciderAction, jalonAction, jalonFaitAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { Repli } from '@/app/repli';
 
 // ACCEPTATION, MAINTIEN ET JALONS — le premier bout de l'arc (point 1).
 //
@@ -44,8 +45,7 @@ export default async function AcceptancePage({
     <div className="stack">
       <BandeauRefus erreur={erreur} />
 
-      <div className="panel">
-        <h2>{t('acc.acceptanceAndContinuance')}</h2>
+      <Repli cle="acc.acceptanceAndContinuance" niveau={2} titre={t('acc.acceptanceAndContinuance')}>
 
         {!a ? (
           <form action={ouvrirAction}>
@@ -137,7 +137,7 @@ export default async function AcceptancePage({
             )}
           </>
         )}
-      </div>
+      </Repli>
 
       {/* LES JALONS SORTENT DU FLUX D'ACCEPTATION (revue n°2 §3.4) — DEMOTÉS,
           pas supprimés. Les supprimer de l'écran laisserait un geste du métier

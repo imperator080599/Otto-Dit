@@ -11,6 +11,7 @@ import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { Repli } from '@/app/repli';
 
 // LES CIRCULARISATIONS (point 3, ADR-111) — banques et avocats.
 //
@@ -140,9 +141,8 @@ export default async function CircularisationsPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
-      <div className="panel">
-        <h2>{t('rail.circularisations')}</h2>
-      </div>
+      <Repli cle="rail.circularisations" niveau={2} titre={t('rail.circularisations')}>
+      </Repli>
 
       {sections.map((s) => (
         <div className="panel" key={s.cle}>

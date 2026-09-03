@@ -13,6 +13,7 @@ import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
 import { poserNoteAncreeAction } from '../notes/actions';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const STATUS_BADGE: Record<string, string> = {
   open: 'red', clarification_requested: 'amber', explained: 'blue', resolved: 'green', escalated: 'violet',
@@ -231,8 +232,7 @@ export default async function ExceptionsPage({
       </div>
 
       {misstatements.length > 0 && (
-        <div className="panel">
-          <h2>{t('exc.misstatementsIsa450ShapedLedger')}</h2>
+        <Repli cle="exc.misstatementsIsa450ShapedLedger" niveau={2} titre={t('exc.misstatementsIsa450ShapedLedger')}>
           <table className="data">
             <thead><tr><th>{t('col.kind')}</th><th className="num">{t('col.amount')}</th><th>{t('col.corrected')}</th><th>{t('col.status')}</th><th>{t('col.notes')}</th></tr></thead>
             <tbody>
@@ -247,7 +247,7 @@ export default async function ExceptionsPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </Repli>
       )}
     </div>
   );

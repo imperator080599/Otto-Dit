@@ -8,6 +8,7 @@ import {
 import { ImportForm } from './import-form';
 import { soumettreMethode, designerAction } from './actions';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 // LA MÉTHODE DU CABINET — l'écran qui rend la phrase démontrable.
 //
@@ -110,8 +111,7 @@ export default async function MethodologyPage({
         </table>
       </div>
 
-      <div className="panel">
-        <h2>{t('meth.whichEngagementWorksUnderWhichMethodolog')}</h2>
+      <Repli cle="meth.whichEngagementWorksUnderWhichMethodolog" niveau={2} titre={t('meth.whichEngagementWorksUnderWhichMethodolog')}>
         <table className="data">
           <thead><tr><th>{t('col.engagement')}</th><th>{t('meth.methodology')}</th><th>{t('meth.reAssign')}</th></tr></thead>
           <tbody>
@@ -134,10 +134,9 @@ export default async function MethodologyPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Repli>
 
-      <div className="panel">
-        <h2>{t('meth.loadAMethodology')}</h2>
+      <Repli cle="meth.loadAMethodology" niveau={2} titre={t('meth.loadAMethodology')}>
         {/* data-actions-item : cette bande CHOISIT un fichier parmi n — un lien
             par objet, comme les onglets de pièce de l'atelier. C'est une
             sélection d'objet, pas n actions d'écran (docs/DENSITE.md). */}
@@ -158,7 +157,7 @@ export default async function MethodologyPage({
         ) : (
           <p className="faint">{t('meth.chooseAFileOrTheWhole')}</p>
         )}
-      </div>
+      </Repli>
 
     </div>
   );

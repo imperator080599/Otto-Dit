@@ -8,6 +8,7 @@ import path from 'node:path';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import { Repli } from '@/app/repli';
 
 const DI_BADGE: Record<string, string> = { not_assessed: 'gray', effective: 'green', deficient: 'red' };
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
@@ -103,8 +104,7 @@ export default async function RcmPage({
       </div>
 
       {deficiencies.length > 0 && (
-        <div className="panel">
-          <h2>{t('rcm.deficiencyAggregation')}</h2>
+        <Repli cle="rcm.deficiencyAggregation" niveau={2} titre={t('rcm.deficiencyAggregation')}>
           <table className="data">
             <thead><tr><th>{t('proc.controle')}</th><th>{t('rcm.proposedRulesL3')}</th><th>{t('rcm.finalHuman')}</th><th>{t('col.status')}</th><th>{t('rcm.basisNarrative')}</th></tr></thead>
             <tbody>
@@ -119,7 +119,7 @@ export default async function RcmPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </Repli>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { q1 } from '@/lib/db/client';
 import { requireMember } from '@/lib/core/auth';
 import { missionsParClient } from '@/lib/services/bascule';
 import { railDuDossier } from '@/lib/services/rail';
+import { lireReplis } from '@/lib/services/replis';
 import { missionN1 } from '@/lib/services/engagement';
 import { tr } from '@/lib/i18n';
 import { basculerAction } from './bascule-actions';
@@ -43,6 +44,9 @@ export default async function EngagementLayout({
   /* LE RAIL D'ÉTAT (ADR-103) : calculé ici, contre l'état réel du dossier. */
   const t = await tr();
   const rail = await railDuDossier(id, eng.framework_set.assurance_packs, t);
+  /* Le rail rangé est connu du SERVEUR (1.2, 0132) : la grille naît étroite,
+     rien ne saute après l'hydratation. */
+  const railRange = (await lireReplis(user.id)).rail === false;
 
   return (
     <div className="shell shell-wide">
@@ -100,7 +104,7 @@ export default async function EngagementLayout({
           <Link href={`/eng/${id}/ask`} className="btn secondary small">{t('commun.interroger')}</Link>
         </div>
       </header>
-      <div className="dossier">
+      <div className={railRange ? 'dossier rail-replie' : 'dossier'}>
         <EngNav entrees={rail} tout={t('rail.tout')} reduire={t('rail.reduire')}
           libelles={{ replier: t('rail.replier'), deplier: t('rail.deplier'), astuce: t('rail.astuce'), astuceVue: t('rail.astuceVue') }} />
         <div className="dossier-corps">{children}</div>

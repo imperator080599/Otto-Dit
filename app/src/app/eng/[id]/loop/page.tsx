@@ -5,6 +5,7 @@ import { boucle, tours } from '@/lib/services/loop';
 import { boucleAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { Repli } from '@/app/repli';
 
 // LA BOUCLE, VISIBLE COMME UNE BOUCLE (point 7).
 //
@@ -122,8 +123,7 @@ export default async function LoopPage({
         )}
       </div>
 
-      <div className="panel">
-        <h2>{t('loop.theTurnsWhichRequestsCameOut')}</h2>
+      <Repli cle="loop.theTurnsWhichRequestsCameOut" niveau={2} titre={t('loop.theTurnsWhichRequestsCameOut')}>
         {t.length === 0 ? (
           <>
             <form action={boucleAction}>
@@ -161,7 +161,7 @@ export default async function LoopPage({
             </tbody>
           </table>
         )}
-      </div>
+      </Repli>
     </div>
   );
 }
