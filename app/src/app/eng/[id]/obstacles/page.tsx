@@ -42,7 +42,11 @@ export default async function ObstaclesPage({ params }: { params: Promise<{ id: 
       </div>
 
       {[...parFamille.entries()].map(([famille, libelles]) => (
-        <div className="panel warn" key={famille}>
+        /* LA FAMILLE EST NOMMÉE DANS LE DOM, et c'est une réponse à la règle 15 :
+           un harnais qui cherche un bout de phrase dans la page vérifie que ce
+           texte existe, jamais qu'une règle s'applique. Avec l'attribut, il
+           compte des obstacles d'une famille précise. */
+        <div className="panel warn" key={famille} data-famille={famille}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>
               {t(FAMILLES[famille].titre)}{' '}

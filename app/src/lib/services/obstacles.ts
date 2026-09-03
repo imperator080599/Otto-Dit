@@ -12,6 +12,7 @@ import { obstaclesProcessus } from './processus';
 import { obstaclesEntretiens } from './entretiens';
 import { motif, type Motif } from './motif';
 import { lignesNonConclues } from './testing/grille';
+import { sortiesNonStatuees } from './sampling';
 import { frameworkSet } from './fsli';
 import { primaryPack } from '@/lib/packs';
 
@@ -35,7 +36,7 @@ import { primaryPack } from '@/lib/packs';
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
-  | 'ipe';
+  | 'ipe' | 'tirage';
 
 export interface Obstacle {
   famille: Famille;
@@ -59,6 +60,7 @@ const OU: Record<Famille, string> = {
   achevement: 'completion',
   jalons: 'acceptance',
   circularisation: 'circularisations',
+  tirage: 'sampling',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -153,6 +155,26 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
     if (b.etapes.length === 0) continue;   // aucun échantillon : rien à reprocher ici
     ajoute('boucle', b.obstacles);
   }
+
+  /* 6 bis. CE QUI EST SORTI DU TIRAGE ET QUI PORTE DU TRAVAIL (ADR-133, étage
+     1.2). Un re-tirage — après un ré-import du grand livre définitif, c'est le
+     cas normal — laisse derrière lui des lignes sur lesquelles une personne ou
+     le client a déjà travaillé. Elles ne s'effacent pas : elles se STATUENT,
+     sans suite motivée ou remises au tirage. Tant que personne ne l'a écrit,
+     le dossier porte de la preuve dont la conclusion manque, et cela empêche
+     de signer.
+
+     CETTE FAMILLE BLOQUE, ET C'EST ASSUMÉ. La pratique du dépôt veut qu'une
+     famille neuve naisse en avertissement, pour ne pas rendre insignable la
+     démonstration. Ici, le fait bloquant N'EXISTE QUE SI un re-tirage a
+     réellement laissé du travail derrière lui : sur un dossier qui n'a pas
+     re-tiré, la liste est vide et la famille est muette. Elle ne peut donc pas
+     bloquer un dossier qui n'a rien à statuer — c'est ce que vérifient les
+     trois cas de faux positif de `retirage.test.ts`. */
+  const sorties = await sortiesNonStatuees(engagementId);
+  ajoute('tirage', sorties.map((l) => motif('obst.ligneSortieDuTirage', {
+    piece: l.piece, pieces: l.travail.pieces, ecarts: l.travail.ecarts, cellules: l.travail.cellules,
+  })));
 
   // 7. Le pointage des états financiers.
   ajoute('pointage', await obstaclesPointage(engagementId));

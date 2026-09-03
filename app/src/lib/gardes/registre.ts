@@ -548,6 +548,37 @@ export const GARDES: Garde[] = [
     rejet: /BLOB-01/,
   },
 
+  {
+    nature: 'sql', code: 'G-27',
+    enonce: 'Une ligne sortie du tirage ne se statue pas sans motif écrit, ni sans dire qui et quand.',
+    point: 'contrainte sample_item_sortie_statuee (0142) — les quatre colonnes vont ensemble, ou aucune',
+    rayon: 'La règle du re-tirage (ADR-133) repose sur une décision RELISIBLE. Une décision sans motif, ou sans auteur, laisse un inspecteur devant une ligne de travail abandonnée sans savoir par qui ni pourquoi — et le service TIRAGE-03 seul ne protège pas d’une écriture directe.',
+    stops_looking: 'Ne regarde pas le CONTENU du motif (une phrase vide de sens passe), ni si la décision est pertinente — elle vérifie qu’il y en a une, écrite, signée et datée. Le catalogue des décisions possibles est tenu par un `check` séparé, dont le refus n’est pas nommé TIRAGE-0x : c’est une dette écrite en R32.',
+    /* LA GARDE FABRIQUE SA PROPRE LIGNE. Le monde semé n'a pas d'échantillon
+       tiré (il naît des flux), et une attaque qui échoue faute de fixture
+       rendrait « refusée pour une AUTRE raison » — l'instrument dirait
+       « garde non prouvée » là où la garde n'a jamais été touchée. */
+    attaque: async (run) => {
+      const p = await run<{ id: string }>(
+        `insert into procedure_instance (engagement_id, pack_id, template_code, kind, title, params, status)
+         select id, 'nep-fr', 'GARDE-G27', 'substantive', 'Épreuve G-27', '{}', 'planned'
+           from engagement limit 1
+         returning id::text`);
+      const s = await run<{ id: string }>(
+        `insert into sample (engagement_id, procedure_id, method, seed, params, rationale, status,
+                             population_size, population_amount, population_hash)
+         select engagement_id, $1, 'attribute_frequency', 'g27', '{}', 'épreuve', 'proposed', 0, 0, 'g27'
+           from procedure_instance where id = $1
+         returning id::text`, [p.rows[0].id]);
+      const i = await run<{ id: string }>(
+        `insert into sample_item (sample_id, unit_kind, unit_id, selection_reason, amount)
+         values ($1, 'gl_entry', gen_random_uuid(), 'random', 1) returning id::text`, [s.rows[0].id]);
+      await run(`update sample_item set sortie_decision = 'sans_suite' where id = $1`, [i.rows[0].id]);
+    },
+    rejet: /sample_item_sortie_statuee/,
+    neutraliser: 'alter table sample_item drop constraint sample_item_sortie_statuee',
+  },
+
   /* ── Gardes DÉCLARÉES : la preuve vit ailleurs, ou n'existe pas ────────── */
   ...([
     ['acceptation', 'obst.missionNonAcceptee', null],
@@ -558,6 +589,7 @@ export const GARDES: Garde[] = [
     ['programme', 'obst.posteSansProcedure', null],
     ['boucle', 'obstacles de loop.ts (b.obstacles[].cle)', 'loop.test.ts'],
     ['pointage', 'obst.pointageEcart', 'tieout.test.ts'],
+    ['tirage', 'obst.ligneSortieDuTirage', 'services/retirage.test.ts'],
     ['evaluation', 'obst.evaluation', null],
     ['achevement', 'obst.achevementNonConclu', 'completion.test.ts'],
     ['circularisation', 'obst.circEcartNonExplique', 'circularisations.test.ts'],

@@ -123,5 +123,10 @@
     "prouvee": true,
     "raison": "refusée par la garde (une passe : pas de neutralisation pour une garde de service)",
     "quand": "2026-09-03T08:36:36.294Z"
+  },
+  "G-27": {
+    "prouvee": true,
+    "raison": "refusée par la garde, acceptée sans elle",
+    "quand": "2026-09-03T20:51:38.709Z"
   }
 }

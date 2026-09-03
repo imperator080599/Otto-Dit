@@ -971,6 +971,61 @@ export async function conduire(
     }
   });
 
+  /* ── 8 bis. CE QUE LE RE-TIRAGE A LAISSÉ DERRIÈRE LUI (ADR-133, étage 1.2).
+        Le parcours vient de ré-importer le grand livre DÉFINITIF puis de
+        re-tirer : les lignes déjà travaillées que le nouveau tirage ne reprend
+        pas ne s'effacent pas, elles se STATUENT. C'est ici qu'on le voit — et
+        c'est ici qu'on éprouve le refus du serveur, pas celui du navigateur :
+        le champ de motif n'est pas `required`, la règle est côté serveur
+        (ADR-091). */
+  await station('re-tirage : ce qui sort du tirage ne disparaît pas', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/sampling`);
+    /* PAS DE SUCCÈS MUET (revue hostile de la nuit, constat 9). La première
+       version se déclarait VERTE quand elle ne trouvait aucune sortie —
+       « rien à statuer », succès codé en dur, quel que soit l'état du produit.
+       Sur CE monde, le parcours vient de ré-importer le grand livre définitif
+       et de re-tirer : il DOIT y avoir des lignes sorties. Zéro n'est pas un
+       cas sain, c'est la règle qui a cessé de fonctionner. */
+    const sorties = await compte('[data-sortie]');
+    dire('re-tirage : les lignes sorties du tirage sont LISTÉES avec ce qu’elles portent',
+      sorties > 0, sorties > 0 ? `${sorties} ligne(s) sortie(s)`
+        : 'AUCUNE ligne sortie après un ré-import et un re-tirage — la règle ne s’applique plus');
+    if (sorties === 0) return;
+
+    /* LE REFUS, OBSERVÉ : statuer sans motif écrit. */
+    const f = p.locator('[data-sortie] form').first();
+    await soumettre(f.locator('button').first());
+    dire('refus : statuer une sortie SANS motif écrit est refusé par le serveur (TIRAGE-03)',
+      /TIRAGE-03/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+
+    /* …puis la décision écrite, et l'obstacle qui tombe. */
+    await aller(`${eng}/sampling`);
+    let statuees = 0;
+    for (let tour = 0; tour < 20; tour++) {
+      const g = p.locator('[data-sortie] form').first();
+      if (!(await g.count())) break;
+      await g.locator('input[name=motif]').fill(
+        'Écriture absente du grand livre définitif : la pièce reçue reste au dossier, '
+        + 'la ligne n’est plus au périmètre du tirage.');
+      await soumettre(g.locator('button').first());
+      if (refus(p)) break;
+      statuees++;
+      await aller(`${eng}/sampling`);
+    }
+    dire('re-tirage : chaque sortie est STATUÉE par écrit, et la décision dit qui et quand',
+      statuees > 0 && (await compte('[data-sortie-statuee]')) > 0,
+      `${statuees} ligne(s) statuée(s)`);
+    /* ON COMPTE LA FAMILLE DANS LE DOM, PAS UN BOUT DE PHRASE (règle 15 ;
+       revue hostile, constat 9). Chercher « sortie du tirage courant » dans le
+       texte répond à « ce texte existe-t-il ? » — la question était « cette
+       famille bloque-t-elle encore ? ». */
+    await aller(`${eng}/obstacles`);
+    dire('re-tirage : l’obstacle au visa tombe une fois tout statué',
+      (await compte('[data-famille="tirage"]')) === 0,
+      'plus aucun panneau de la famille « tirage » sur l’écran des obstacles');
+  });
+
   // ── 9. REQUÊTE : approuver et envoyer (L2 — une personne décide)
   await station('demande au client', async () => {
     await devenir(c.preparateur.id);

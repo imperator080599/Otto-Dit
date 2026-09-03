@@ -115,3 +115,66 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 - **R29 — le chemin `scripts` du garde de locataire, à câbler.** Semis, migrations et harnais
   tournent sous `postgres` : le câblage ne changerait rien tant que la CI « rôle de
   production » ne rejoue pas la suite sous `otto_app`.
+- **R30 — un dossier dont la sélection est superseded et qui n'a jamais re-tiré reste
+  signable** (trouvé en livrant l'étage 1.2, ADR-133). Le parcours de bout en bout importe le
+  grand livre définitif À LA FIN : le ré-import supersède la sélection (ADR-016), personne ne
+  re-tire, et le dossier se clôt. La famille « tirage » se TAIT dans ce cas — délibérément :
+  elle porte sur le re-tirage, pas sur le ré-import, et la faire parler ici rendrait insignable
+  une mission achevée. La vraie question est en amont : *un ré-import de fin de mission
+  doit-il invalider la sélection, ou constater qu'elle reste valable ?* Elle appartient à la
+  règle du ré-import, pas à celle du re-tirage, et elle se tranche avec un auditeur.
+- **R31 — « remettre une ligne au tirage »**, retiré la nuit même de l'étage 1.2. La première
+  version offrait cette décision à côté de « sans suite motivée » ; la revue hostile a emprunté le
+  chemin et mesuré qu'elle n'exécutait RIEN — la ligne ne revenait ni dans l'échantillon courant ni
+  à l'atelier, et l'obstacle tombait quand même. Un mot qui promet un geste qu'aucun code ne fait,
+  et qui ferme le seul verrou qui aurait rappelé la ligne. Le geste réel modifie une sélection
+  tirée, journalisée et parfois visée : il se conçoit avec un auditeur.
+- **R32 — le `check` du catalogue des décisions de sortie rend un refus NON NOMMÉ.** Poser
+  `sortie_decision = 'peut_etre'` (ce qu'un formulaire rejoué peut faire) remonte
+  `violates check constraint "sample_item_sortie_decision_check"` à l'utilisateur, là où la doctrine
+  du dépôt veut un TIRAGE-0x en français d'auditeur. Trouvé par la revue hostile en l'attaquant.
+- **R33 — cinq chemins de lecture ne remontent pas le lignage du re-tirage.** Trois le font
+  (atelier, grille de test, `/api/sante`). Ne le font pas : le papier de travail
+  (`workpapers/draft.ts` — mesuré : deux pièces à l'atelier, zéro au papier), la colonne ajoutée,
+  la re-exécution en aveugle (`verification.ts`), la provenance (`provenance.ts`, c'est P7), la
+  boucle (`loop.ts`), les notes adressées à OTTO, le catalogue de requêtes, et la génération de
+  demandes (`requests.ts`, qui redemande au client une pièce déjà reçue — mesuré : 18 demandes).
+  Il n'existe par ailleurs AUCUN lecteur avant→arrière : rien ne dit « cette ligne a été reprise
+  par celle-là ».
+- **R34 — le prédicat de « travail » de la famille « tirage » ne connaît que trois genres**
+  (pièce, écart, cellule). Deux artefacts HUMAINS portent aussi `sample_item_id` et sont ignorés :
+  `verification_check` (la re-exécution en aveugle par une seconde personne) et `wp_extra_cell` (la
+  colonne du cabinet, attestée). Mesuré par la revue hostile : une ligne portant un seul
+  `verification_check` sort du tirage sans un mot et sans obstacle.
+- **R35 — la lecture `/api/sante` du re-tirage ne distingue pas « 0 parce que rien à faire » de
+  « 0 parce que c'est cassé ».** Sur une instance qui n'a jamais ré-importé, elle affiche
+  « 0 reprise · 0 sortie » — exactement la sortie qu'aurait produite le défaut d'hier. Il lui manque
+  le dénominateur (nombre de ré-imports, d'échantillons superseded porteurs de travail).
+- **R36 — `sortiesNonStatuees` fait tourner la requête complète pour un simple compte**, et
+  `obstaclesAuVisa` l'appelle sur l'accueil du dossier, l'écran des obstacles, la clôture, et via
+  `travaux.ts` pour CHAQUE dossier d'une personne. Négligeable sur la démonstration ; pas gratuit
+  au-delà.
+- **R37 — après un re-tirage, aucune demande de pièces n'existe pour les lignes NEUVES, alors que
+  l'écran annonce qu'elle a été engendrée.** Mesuré à la fin de la nuit J3, sur base fraîche, après
+  que l'étage 1.2 eut ramené le parcours cliqué de neuf échecs à deux. Les deux qui restent ont
+  cette seule cause : cinq lignes introduites par le re-tirage n'ont jamais été demandées au client,
+  donc la boucle les compte « en attente de dépôt » et le dossier ne se clôt pas. La mesure :
+
+  ```sql
+  select r.seq_no, r.status, s.id, s.status, count(*),
+         count(*) filter (where si.repris_de is null) as sur_lignes_neuves
+    from request r join request_item ri on ri.request_id = r.id
+    join sample_item si on si.id = ri.sample_item_id
+    join sample s on s.id = si.sample_id
+   where r.engagement_id = :eng group by 1,2,3,4 order by 1;
+  ```
+  → R-001 (25 éléments) et R-002 (11) pendent à l'échantillon **superseded** ; l'échantillon
+  **courant** ne porte que deux demandes de CLARIFICATION, dont une en brouillon. **Aucune demande
+  de justificatifs n'a été créée pour lui**, alors que la station du sondage a rendu « la demande de
+  pièces naît DE la sélection — demande engendrée ».
+
+  Deux choses à trancher, et elles ne se devinent pas : (a) pourquoi l'action n'a rien créé alors
+  que l'écran ne rend aucun refus — un succès annoncé sans objet créé, règle 13 ; (b) ce que le
+  produit DOIT faire d'un re-tirage : engendrer automatiquement la demande des lignes neuves, ou
+  la proposer. C'est la matière de l'étage 4.1 du mandat (« création en lot depuis le programme »),
+  et cela se décide avec un auditeur, pas à deux heures du matin.

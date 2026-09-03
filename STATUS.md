@@ -167,7 +167,56 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
-## LE PARCOURS CLIQUÉ EST ROUGE, ET VOICI POURQUOI (2026-09-03, nuit J3)
+## Étage 1.2 — le re-tirage ne fait pas disparaître le travail humain (2026-09-03, nuit J3)
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Ré-importer le grand livre
+définitif, re-tirer, et retrouver sur les lignes du nouveau tirage les pièces que le client avait
+déjà déposées. Puis, sur l'écran du sondage, voir ce qui est SORTI du tirage en portant du travail,
+et le statuer par écrit — sans suite motivée, ou remise au tirage. Tant que ce n'est pas fait, le
+dossier ne peut pas être visé.
+
+**Comment c'est fait** (ADR-133, migration 0142). La ligne du nouveau tirage DÉSIGNE celle dont elle
+reprend le travail (`repris_de`, apparié par `natural_key` — la même relation que
+`gl_entry_supersession`). Rien n'est déplacé, rien n'est recopié, rien n'est supprimé : tout ce qui pend à
+une ligne d'échantillon serait à migrer à chaque tirage, et la piste d'audit y perdrait son lien
+avec le tirage d'origine. Combien exactement — la commande, plutôt que le chiffre de mémoire :
+`grep -c "references sample_item" supabase/migrations/*.sql` → **onze références**, dont une est le
+`repris_de` que cette tranche ajoute.
+
+**TROIS chemins de lecture remontent la chaîne, et pas un de plus** : l'atelier (pièces et écarts),
+la grille de test (donc cellules, deltas et ancres), le compteur de `/api/sante`. **Le papier de
+travail, la re-exécution en aveugle, la provenance, la boucle et la génération de demandes ne la
+remontent PAS** — dette R33, écrite parce que la revue hostile a mesuré deux fonctions de production
+rendant des réponses contraires sur le même objet.
+
+**La famille d'obstacles « tirage » naît BLOQUANTE**, contre la pratique du dépôt (une famille neuve
+naît en avertissement). Tenable parce que le fait bloquant n'existe que si un re-tirage a réellement
+laissé du travail derrière lui. **Quatre cas de faux positif** la tiennent, et le quatrième n'était
+pas prévu : c'est le parcours de bout en bout qui l'a trouvé — sans tirage COURANT, la règle se
+tait, sinon seize lignes travaillées rendaient insignable une mission achevée.
+
+**Ce que cela laisse ouvert, et qui est au backlog (R30)** : un dossier dont la sélection est
+superseded et qui n'a jamais re-tiré reste signable. C'est le comportement d'avant cette nuit ; le
+changer serait toucher à la règle du ré-import, pas à celle du re-tirage.
+
+**Lecture ajoutée à `/api/sante` le jour même** : « re-tirage : reprises et sorties statuées ».
+
+## LE PARCOURS CLIQUÉ : DE NEUF ÉCHECS À DEUX (2026-09-03, nuit J3)
+
+**État à la fin de la nuit**, base fraîche, build de production : **197 étapes, 2 échecs**, sonde
+d'hydratation **0 incident**, 193 stations figées vérifiées. Au début de la nuit : 9 échecs.
+
+Les deux qui restent sont le MÊME fait, mesuré et écrit en **R37** : cinq lignes introduites par le
+re-tirage n'ont jamais été demandées au client — la demande de justificatifs de l'échantillon
+courant n'existe pas, bien que l'écran ait annoncé l'avoir engendrée. La boucle les compte donc « en
+attente de dépôt », l'obstacle subsiste, et le dossier ne se clôt pas. Ce n'est pas l'étage 1.2 qui
+l'introduit : avant lui, ce sont DIX-SEPT lignes qui étaient en attente, dont douze dont les pièces
+étaient déjà au dossier.
+
+Ce qui suit reste écrit parce que c'est le diagnostic d'origine, et qu'il explique ce qui a été
+corrigé.
+
+## LE PARCOURS CLIQUÉ ÉTAIT ROUGE, ET VOICI POURQUOI (2026-09-03, nuit J3)
 
 **Fait, mesuré sur base fraîche** (`npm run db:reset && npm run demo:seed && npm run clics`) :
 192 étapes conduites, **9 échecs**, 5 stations figées jamais atteintes. La sonde

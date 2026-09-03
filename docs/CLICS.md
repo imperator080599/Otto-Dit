@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-03 · 41 gestes · **396 clics** au total.
+Parcours du 2026-09-03 · 42 gestes · **282 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -29,10 +29,11 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | périmètre sans programme | 4 |
 | risque par assertion | 12 |
 | sondage | 4 |
+| re-tirage : ce qui sort du tirage ne disparaît pas | 5 |
 | demande au client | 2 |
 | portail client | 31 |
-| testing : l’atelier | 8 |
-| atelier de test : la grille, les ancres, les refus, la conclusion | 142 |
+| testing : l’atelier | 2 |
+| atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
 | atelier : l’aller-retour écart ↔ synthèse | 3 |
 | atelier : la clarification en lot | 5 |
@@ -40,7 +41,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | portail : réponses aux clarifications | 5 |
 | testing : le second passage sur les pièces arrivées après coup | 2 |
 | estimation : le fichier de calcul de la cliente | 7 |
-| résolution des écarts | 14 |
+| résolution des écarts | 26 |
 | re-exécution et évaluation | 2 |
 | papier de travail et visas | 40 |
 | poste : l’anatomie — visas en haut, leadsheet N/N-1, revue analytique, sections repliées mémorisées | 6 |

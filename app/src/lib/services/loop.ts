@@ -1,4 +1,5 @@
 import { q, q01 } from '@/lib/db/client';
+import { LIGNEE } from './lignage';
 import { motif, type Motif } from './motif';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 
@@ -116,9 +117,17 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
   const sid = ech.id;
 
   const selectionnes = await compte(`select count(*) n from sample_item where sample_id = $1`, [sid]);
+  /* LES COMPTES DE LA BOUCLE SUIVENT LE LIGNAGE (ADR-133, étage 1.2 ; revue
+     hostile de la nuit, constat 6). Sans cela, après un ré-import du grand
+     livre définitif et un re-tirage, la boucle comptait dix-sept lignes « en
+     attente du client » dont les pièces étaient DÉJÀ au dossier et affichées
+     par l'atelier : un obstacle au visa fabriqué, et un écran qui pousse à
+     redemander au client ce qu'il a déjà envoyé. Mesuré : le dossier de
+     démonstration ne se clôturait pas. */
   const demandes = await compte(
-    `select count(distinct si.id) n from sample_item si
-     join request_item ri on ri.sample_item_id = si.id
+    `${LIGNEE}
+     select count(distinct si.id) n from sample_item si
+     join request_item ri on ri.sample_item_id in (select id from lignee where racine = si.id)
      where si.sample_id = $1`, [sid]);
   /* « LE CLIENT A RÉPONDU » — et répondre ne veut pas dire déposer un fichier.
      Trois manières de sortir de cette file, et les trois comptent :
@@ -133,8 +142,9 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
      faire alors qu'il est fait et documenté — et le dossier ne pourrait jamais
      se clore. */
   const deposes = await compte(
-    `select count(distinct si.id) n from sample_item si
-     join request_item ri on ri.sample_item_id = si.id
+    `${LIGNEE}
+     select count(distinct si.id) n from sample_item si
+     join request_item ri on ri.sample_item_id in (select id from lignee where racine = si.id)
      where si.sample_id = $1
        and (
          exists (select 1 from evidence e
@@ -142,8 +152,9 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
          or ${SORTI_AUTREMENT}
        )`, [sid]);
   const lus = await compte(
-    `select count(distinct si.id) n from sample_item si
-     join request_item ri on ri.sample_item_id = si.id
+    `${LIGNEE}
+     select count(distinct si.id) n from sample_item si
+     join request_item ri on ri.sample_item_id in (select id from lignee where racine = si.id)
      where si.sample_id = $1
        and (
          exists (select 1 from evidence e
@@ -152,9 +163,10 @@ export async function boucle(engagementId: string, fsliCode: string): Promise<Bo
          or ${SORTI_AUTREMENT}
        )`, [sid]);
   const rapproches = await compte(
-    `select count(distinct si.id) n from sample_item si
+    `${LIGNEE}
+     select count(distinct si.id) n from sample_item si
      left join match m on m.sample_item_id = si.id
-     left join request_item ri on ri.sample_item_id = si.id
+     left join request_item ri on ri.sample_item_id in (select id from lignee where racine = si.id)
      where si.sample_id = $1
        and (m.status in ('matched', 'exception') or ${SORTI_AUTREMENT})`, [sid]);
   const conformes = await compte(

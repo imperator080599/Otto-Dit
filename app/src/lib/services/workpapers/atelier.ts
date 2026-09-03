@@ -5,6 +5,7 @@ import { frameworkSet } from '@/lib/services/fsli';
 import { primaryPack } from '@/lib/packs';
 import { fmtEur } from '@/lib/kernel/canon';
 import { champsLigneEchantillon, type PieceDeLigne } from './draft';
+import { LIGNAGE } from '@/lib/services/lignage';
 
 // L'ATELIER DU CONTRÔLE SUR PIÈCES (point 10, ADR-104). Une seule assemblée
 // de données pour l'écran où l'auditeur passera son temps : chaque ligne de
@@ -92,9 +93,18 @@ export async function lignesAtelier(engagementId: string): Promise<{
   for (const it of sample.items) {
     /* Les plus récentes d'abord, par type — l'ordre du vouching. */
     const evidences = await q<PieceDeLigne & { sha256: string }>(
-      `select e.id, e.sha256, e.doc_type, e.filename from evidence e
+      /* LES PIÈCES DE LA LIGNE, ET DE CELLES DONT ELLE REPREND LE TRAVAIL
+         (ADR-133, étage 1.2). Un ré-import du grand livre définitif recrée
+         chaque écriture avec un nouvel identifiant ; la ligne du nouveau
+         tirage DÉSIGNE celle qu'elle reprend (`repris_de`), et c'est ici que
+         la désignation devient une lecture. Sans cette remontée, les pièces
+         déposées par le client avant le ré-import cessent d'exister pour
+         l'écran alors qu'elles portent sur la MÊME écriture — trente-trois
+         d'entre elles, mesurées sur le dossier de démonstration. */
+      `${LIGNAGE}
+       select e.id, e.sha256, e.doc_type, e.filename from evidence e
        join request_item ri on ri.id = e.request_item_id
-       where ri.sample_item_id = $1 and e.quarantined = false
+       where ri.sample_item_id in (select id from lignage) and e.quarantined = false
        order by e.doc_type, e.created_at desc`,
       [it.id],
     );
@@ -138,8 +148,15 @@ export async function lignesAtelier(engagementId: string): Promise<{
     const match = await q01<{ status: string; checks: { check: string; pass: boolean; expected: string; found: string; tolerance: string }[] }>(
       `select status, checks from match where sample_item_id = $1`, [it.id],
     );
+    /* LES ÉCARTS AUSSI SUIVENT LE LIGNAGE (revue hostile de la nuit, constat 4).
+       Un écart relevé avant le ré-import restait accroché à la ligne d'hier :
+       l'atelier n'en montrait aucun, et la ligne n'était pas non plus listée
+       comme « sortie » puisqu'elle est reprise — un objet dans un angle mort
+       double. */
     const exceptions = await q<{ id: string; taxonomy_code: string; status: string }>(
-      `select id::text id, taxonomy_code, status from exception where sample_item_id = $1`, [it.id],
+      `${LIGNAGE}
+       select id::text id, taxonomy_code, status from exception
+        where sample_item_id in (select id from lignage)`, [it.id],
     );
     const cle = await q01<{ natural_key: string }>(
       `select g.natural_key from gl_entry g where g.id = $1`, [it.unit_id],

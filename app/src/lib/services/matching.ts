@@ -1,4 +1,5 @@
 import { q, q01, q1 } from '@/lib/db/client';
+import { LIGNAGE } from './lignage';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { vouchRevenueLine, checksToExceptionCodes, findDuplicateInvoices } from '@/lib/kernel/matching';
@@ -63,7 +64,13 @@ async function loadItemContext(engagementId: string): Promise<ItemContext[]> {
       flags: glRow.flags ?? [],
     };
     const requestItems = await q<{ id: string; kind: string; description: string; client_note: string | null }>(
-      `select id, kind, description, client_note from request_item where sample_item_id = $1`,
+      /* LE VOUCHING SUIT LE LIGNAGE (ADR-133). Sans les demandes de la ligne
+         reprise, il ne sait ni qu'un bon de livraison était attendu ni ce que
+         le client a expliqué : il ne rapproche rien, et l'atelier n'affiche
+         aucune comparaison. */
+      `${LIGNAGE}
+       select id, kind, description, client_note from request_item
+        where sample_item_id in (select id from lignage)`,
       [it.id],
     );
     const ctx: ItemContext = {

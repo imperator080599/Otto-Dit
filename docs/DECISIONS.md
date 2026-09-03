@@ -5146,3 +5146,109 @@ travail humain :
    reprend pas garde son travail, apparaît « hors échantillon courant », et **bloque le visa tant
    qu'une personne ne l'a pas statuée par écrit**. Sans suite motivée, ou remise au tirage.
 3. **Rien n'est supprimé.** Ni par le tirage, ni par le ré-import.
+
+**CE QUI EST LIVRÉ (migration 0142, `sampling.ts`, `atelier.ts`, `obstacles.ts`, écran du sondage).**
+
+*La reprise.* `drawRevenueSample` apparie le nouveau tirage au précédent PAR `natural_key` et pose
+`repris_de` sur la ligne neuve. Ce rapprochement est la MÊME relation que `gl_entry_supersession` :
+cette table est construite à l'import en appariant l'ancien et le nouveau par cette clé (`oldByNk`,
+`imports.ts`) ; la lire par jointure donnerait le même résultat en manquant les écritures sans
+prédécesseur enregistré. Aucune donnée n'est déplacée ni recopiée : la ligne neuve DÉSIGNE, et les
+chemins de lecture remontent la chaîne (`LIGNAGE`, `services/lignage.ts`). L'ancienne ligne garde
+tout ce qu'elle porte.
+
+**TROIS CHEMINS DE LECTURE SUIVENT LA CHAÎNE, ET PAS UN DE PLUS — LA LISTE EST ICI.** Une première
+rédaction écrivait « les chemins de lecture suivent la chaîne » et « la piste se lit dans les deux
+sens » : les deux affirmaient plus que le code. La revue hostile de la nuit l'a mesuré en appelant
+deux fonctions de production sur le MÊME objet : `lignesAtelier` rendait deux pièces sur la ligne
+reprise, `draftRevenueWorkpaper` en rendait zéro. Deux réponses contraires, dont l'une rassure —
+pire que le défaut d'origine.
+
+- Suivent la chaîne : `workpapers/atelier.ts` (les pièces, et les écarts) ; `testing/grille.ts`
+  (`pieceLue`, donc les cellules, les deltas signés et les ancres) ; le compteur de `/api/sante`.
+- **Ne la suivent PAS, et le savent** : `workpapers/draft.ts` (le papier de travail),
+  `workpapers/colonne.ts`, `verification.ts` (la re-exécution en aveugle), `provenance.ts` (P7),
+  `notes/otto.ts`, `query/catalog.ts`, `loop.ts`, `requests.ts` (qui redemande donc au client une
+  pièce déjà reçue — mesuré : 18 demandes). C'est la dette R33.
+- **Il n'existe AUCUN lecteur avant→arrière** : rien ne dit jamais « cette ligne a été reprise par
+  celle-là ». Le seul sens lu est le remontant.
+
+*Ce que la revue hostile a corrigé la nuit même*, chacun mesuré par elle en empruntant le chemin :
+le tirage courant n'était pas filtré par procédure (un échantillon de test de contrôle rendait 13
+obstacles bloquants sur du travail atteignable) ; « remise au tirage » écrivait une décision et ne
+remettait rien au tirage ; une seconde décision écrasait la première en silence (TIRAGE-04 la
+refuse) ; TIRAGE-01 était déclaré et jamais implémenté ; la station cliquée se déclarait verte
+quand elle ne mesurait rien, et concluait par un `grep` de texte.
+
+*La sortie.* `lignesSortiesDuTirage` liste les lignes d'un tirage superseded qui portent du travail
+— une pièce reçue, un écart relevé, une cellule de grille remplie — et que la chaîne des reprises
+depuis le tirage COURANT n'atteint pas. La chaîne est récursive, et c'est nécessaire : après un
+second re-tirage, s'arrêter au premier maillon ferait ressurgir comme « sorties » des lignes
+parfaitement atteignables — un obstacle au visa fabriqué de toutes pièces.
+
+*Où cette règle s'arrête de regarder, écrit dans le code* : elle ne compte comme travail que ce qui
+vient d'une personne ou du client. Le calcul de la machine — un rapprochement, une extraction — se
+refait ; il n'est pas une perte.
+
+*La famille bloquante, et pourquoi elle l'est.* La pratique du dépôt veut qu'une famille neuve
+naisse en avertissement, pour ne pas rendre insignable la démonstration. Celle-ci bloque, et c'est
+tenable parce que le fait bloquant N'EXISTE QUE si un re-tirage a réellement laissé du travail
+derrière lui : sur un dossier qui n'a pas re-tiré, la liste est vide et la famille est muette. Trois
+cas de faux positif le tiennent (`retirage.test.ts`) : une ligne REPRISE n'est jamais dite sortie
+(sans quoi les douze reprises fabriqueraient douze obstacles) ; une ligne sortie SANS travail ne
+bloque rien ; une ligne statuée ne bloque plus mais reste visible avec son travail.
+
+*Les refus, empruntés et non cherchés* : TIRAGE-02 (statuer une ligne qui n'est pas sortie),
+TIRAGE-03 (statuer sans motif écrit) et TIRAGE-04 (récrire une décision déjà prise) sont éprouvés
+par le test ; TIRAGE-03 l'est aussi par le parcours cliqué, dont la station refuse désormais de se
+déclarer verte quand elle ne trouve rien à statuer. Le champ
+de motif n'est délibérément PAS `required` dans le navigateur : un formulaire que le navigateur
+refuse d'envoyer donne un harnais qui croit avoir éprouvé une règle du serveur (ADR-091).
+
+**LE #418, CAPTURÉ — ET CE QUE LA CAPTURE DIT.** Nuit du 3 au 4 septembre, parcours cliqué sur
+build de PRODUCTION, base fraîche : un incident, un seul, et il porte tout ce qu'il faut.
+
+```
+#418 (HTML) — station « (avant la première station) »
+  erreur sur   /eng/<id>/loop
+  document     /eng/<id>/reunions?de=2026-03-02&a=2026-03-06&duree=60
+               ← MAL ÉTIQUETÉE : l'erreur vient du document PRÉCÉDENT
+  flux complet · 64 083 octets · lang="en"
+  3 divergence(s) après normalisation, dont la troisième :
+    SERVEUR : <div><div class="callout warn"><strong>Calendar reading and sending: SIMULATED.</strong> …
+    CLIENT  : <div class="stack"><div class="panel"><h2>The loop — REVENUE</h2> …
+```
+
+**Le serveur et le client ne sont pas deux versions d'une page : ce sont DEUX PAGES.** Le HTML servi
+est celui des réunions ; le DOM relevé est celui de la boucle. La deuxième divergence le confirme du
+côté du rail (`rail-lien active` sur « réunions » côté serveur, inactif côté client). La première
+est le bruit connu (l'astuce du rail, rendue dans un `useEffect`).
+
+**L'HYPOTHÈSE QUE CETTE OBSERVATION APPUIE** : le #418 se produit quand une NAVIGATION CÔTÉ CLIENT
+commence avant que le document précédent ait fini de s'hydrater. React hydrate le document A ; un
+`<Link>` remplace l'arbre par celui de B ; ce que React s'attendait à retrouver dans le DOM n'y est
+plus, et il signale une incohérence de STRUCTURE — d'où `args[]=HTML`, et jamais `text`. Elle
+explique ce que rien n'expliquait :
+
+- **l'intermittence** : c'est une course, pas un défaut de rendu ;
+- **`args[]=HTML` aux trois occurrences connues** : deux pages différentes diffèrent en structure,
+  jamais en un seul nœud de texte ;
+- **l'absence de tout divergent statique** dans le dépôt (recensement des onze composants clients :
+  zéro `Math.random`, zéro `matchMedia`, zéro formatage sans locale figée) ;
+- **pourquoi elle s'est vue EN LIGNE et presque jamais en local** : sur le réseau, l'hydratation
+  dure plus longtemps, donc la fenêtre pour naviguer trop tôt est plus large ;
+- **pourquoi la page accusée changeait à chaque fois** (papier de travail, portail, boucle) : ce
+  n'est pas la page qui est en cause, c'est l'instant.
+
+**CE QUI MANQUE POUR EN FAIRE UN DIAGNOSTIC, ÉCRIT PLUTÔT QUE SOUS-ENTENDU** (règle 18). Une
+expérience dirigée : ouvrir une page, cliquer un lien du rail SANS attendre `load`, répéter, et
+compter les #418 — puis attendre l'hydratation avant de cliquer, et vérifier qu'ils disparaissent.
+Elle n'a pas été conduite cette nuit : chaque exécution du parcours prend un quart d'heure et la
+base est à écrivain unique. Tant qu'elle ne l'est pas, ceci reste **une hypothèse appuyée sur une
+observation**, et non une cause prouvée.
+
+**Ce que ce serait, si elle se confirme.** Pas un défaut de l'application mais une course entre
+l'hydratation et la navigation — bruyante (elle rougit le job `url` de la CI et s'inscrit dans
+`server_error`), rarement visible pour l'utilisateur. Le remède se choisirait alors entre : laisser
+passer une erreur récupérable en la reconnaissant pour ce qu'elle est, ou empêcher la navigation
+tant que l'hydratation n'est pas finie. Aucun des deux ne s'écrit avant que l'expérience ait parlé.

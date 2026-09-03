@@ -691,3 +691,24 @@ prédicat nommé, et chacune porte un cas connu mauvais prouvant qu'un écart r�
 reste dénoncé (une `action` qui diffère vraiment, un champ caché réel disparu, un attribut
 présent d'un seul côté). Sans cela, « écarter le bruit » aurait été indistinguable d'un
 aveuglement.
+
+**D-J3N-13 — je prends l'étage 1.2 AVANT l'étage 1.1, que le mandat classait premier.** Raison :
+le parcours cliqué est rouge, et la règle 10 du dépôt interdit une livraison sans lui. En suivant le
+journal d'événements plutôt qu'une explication plausible (règle 18), les neuf échecs se réduisent à
+un seul défaut, et ce défaut EST l'étage 1.2 — un re-tirage qui fait disparaître le travail humain.
+Livrer 1.1 d'abord aurait ajouté un écran sur une chaîne cassée. « Un étage terminé prime toujours
+sur deux étages commencés » : 1.2 termine ce qui bloque, 1.1 suit.
+
+**D-J3N-14 — la famille d'obstacles « tirage » naît BLOQUANTE, contre la pratique du dépôt.** La
+règle habituelle — une famille neuve naît en avertissement — protège la démonstration d'être
+insignable. Elle ne s'applique pas ici : le fait bloquant n'existe que si un re-tirage a laissé du
+travail derrière lui, donc un dossier qui n'a pas re-tiré n'est jamais bloqué par elle. Trois cas de
+faux positif l'établissent avant qu'elle ne bloque quoi que ce soit. Si cette lecture est fausse,
+c'est la démonstration elle-même qui le dira : le parcours cliqué la traverse.
+
+**D-J3N-15 — la reprise se fait par DÉSIGNATION, jamais par déplacement de données.** L'option
+évidente était de ré-attacher les `request_item` (et les huit autres tables filles) à la ligne
+neuve. Elle aurait été plus courte et fausse : neuf tables à migrer à chaque tirage, une piste
+d'audit qui perd le lien avec le tirage d'origine, et « les données produites ne sont jamais
+supprimées » réduit à une intention. La ligne neuve DÉSIGNE celle qu'elle reprend, et les chemins de
+lecture suivent la chaîne : une colonne, une jointure récursive, et rien qui bouge.

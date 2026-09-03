@@ -27,6 +27,7 @@ export const FAMILLES: Record<Famille, { titre: CleLibelle; pourquoi: CleLibelle
   programme: { titre: 'famille.programme.titre', pourquoi: 'famille.programme.pourquoi' },
   boucle: { titre: 'famille.boucle.titre', pourquoi: 'famille.boucle.pourquoi' },
   ipe: { titre: 'wp.ipe', pourquoi: 'famille.ipe.pourquoi' },
+  tirage: { titre: 'famille.tirage.titre', pourquoi: 'famille.tirage.pourquoi' },
   pointage: { titre: 'rail.pointage', pourquoi: 'famille.pointage.pourquoi' },
   evaluation: { titre: 'famille.evaluation.titre', pourquoi: 'famille.evaluation.pourquoi' },
   jalons: { titre: 'famille.jalons.titre', pourquoi: 'famille.jalons.pourquoi' },

@@ -114,7 +114,8 @@ export type ObjetFils =
   | 'carry_forward' | 'confirmation_party' | 'control' | 'deficiency' | 'deviation'
   | 'estimation' | 'evidence' | 'exception' | 'extraction' | 'independence_declaration'
   | 'ipe_rapport' | 'meeting_invitation' | 'process_interview' | 'reconciliation_item'
-  | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'transcript_gap'
+  | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'sample_item'
+  | 'transcript_gap'
   | 'workpaper' | 'wp_extra_column';
 
 /**
@@ -147,6 +148,8 @@ const RESOLUTION: Record<ObjetFils, string> = {
   sample: `select engagement_id::text e from sample where id = $1`,
   sample_evaluation: `select s.engagement_id::text e from sample_evaluation v
      join sample s on s.id = v.sample_id where v.id = $1`,
+  sample_item: `select s.engagement_id::text e from sample_item i
+     join sample s on s.id = i.sample_id where i.id = $1`,
   transcript_gap: `select i.engagement_id::text e from transcript_gap g
      join process_interview i on i.id = g.interview_id where g.id = $1`,
   workpaper: `select engagement_id::text e from workpaper where id = $1`,

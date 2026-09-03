@@ -1,4 +1,5 @@
 import { q, q01, q1, tx } from '@/lib/db/client';
+import { LIGNAGE } from '@/lib/services/lignage';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { readBlob } from '@/lib/core/storage';
@@ -359,9 +360,16 @@ export async function calculerCellule(o: {
 /** La pièce que le vouching utilise : la plus récente du type dont la lecture n'attend pas. */
 async function pieceLue(sampleItemId: string, types: string[]): Promise<PieceLue | null> {
   const evs = await q<{ id: string; storage_path: string; doc_type: string }>(
-    `select e.id::text, e.storage_path, e.doc_type from evidence e
+    /* LA GRILLE SUIT LE LIGNAGE (ADR-133 ; revue hostile de la nuit, constat 2).
+       Sans cela, après un ré-import du grand livre définitif, la pièce du
+       client était introuvable ICI alors que l'atelier l'affichait : toutes les
+       cellules sortaient « absente », donc aucun delta signé, aucune ancre,
+       aucune comparaison. Trois stations du parcours cliqué le disaient. */
+    `${LIGNAGE}
+     select e.id::text, e.storage_path, e.doc_type from evidence e
      join request_item ri on ri.id = e.request_item_id
-     where ri.sample_item_id = $1 and e.quarantined = false and e.doc_type = any($2)
+     where ri.sample_item_id in (select id from lignage)
+       and e.quarantined = false and e.doc_type = any($2)
      order by e.created_at desc`, [sampleItemId, types]);
   for (const ev of evs) {
     const x = await latestExtraction(ev.id);

@@ -776,6 +776,27 @@ export const LIBELLES = {
   'obst.circSansReponse': { en: 'Confirmations ({nature}): {nom} has not replied.', fr: 'Circularisation ({nature}) : {nom} n’a pas répondu.' },
   'obst.circEcartNonExplique': { en: 'Confirmations ({nature}): the difference at {nom} is not explained.', fr: 'Circularisation ({nature}) : l’écart de {nom} n’est pas expliqué.' },
   'obst.ipeQuestionNonPosee': { en: '{papier} — the question of information produced by the entity has not been asked', fr: '{papier} — la question de l’information produite par l’entité n’a pas été posée' },
+  'samp.sortiesTitre': { en: 'Out of the current selection, and still carrying work', fr: 'Sorties du tirage courant, et porteuses de travail' },
+  'samp.sortiesAide': {
+    en: 'A new draw does not drop work in silence. Each line below left the selection but carries documents, exceptions or filled cells. Write, for each one, why the work does not follow. Until then, the file cannot be signed off.',
+    fr: 'Un nouveau tirage ne fait pas disparaître le travail en silence. Chaque ligne ci-dessous est sortie du tirage mais porte des pièces, des écarts ou des cellules remplies. Écrivez, pour chacune, pourquoi le travail ne suit pas. Tant que ce n’est pas fait, le dossier ne peut pas être visé.',
+  },
+  'samp.sortiesTravail': { en: 'What it carries', fr: 'Ce qu’elle porte' },
+  'samp.sortiesDecision': { en: 'Decision', fr: 'Décision' },
+  'samp.sortiesPorte': { en: '{pieces} document(s) · {ecarts} exception(s) · {cellules} cell(s)', fr: '{pieces} pièce(s) · {ecarts} écart(s) · {cellules} cellule(s)' },
+  'samp.sortieSansSuite': { en: 'No further action, stated', fr: 'Sans suite, motivée' },
+  'samp.sortieMotif': { en: 'Reason — written, and re-readable', fr: 'Motif — écrit, et relisible' },
+  'samp.sortieStatuer': { en: 'Decide', fr: 'Statuer' },
+  'samp.sortieQui': { en: 'decided by {qui} on {quand}', fr: 'statuée par {qui} le {quand}' },
+  'famille.tirage.titre': { en: 'Selection re-drawn', fr: 'Tirage refait' },
+  'famille.tirage.pourquoi': {
+    en: 'A new draw leaves behind lines already worked on. Work is never dropped in silence: for each one, someone writes why it does not follow.',
+    fr: 'Un nouveau tirage laisse derrière lui des lignes déjà travaillées. Rien ne se perd en silence : pour chacune, une personne écrit pourquoi le travail ne suit pas.',
+  },
+  'obst.ligneSortieDuTirage': {
+    en: 'Line {piece} left the current selection but carries work ({pieces} document(s), {ecarts} exception(s), {cellules} cell(s)) — write why the work does not follow',
+    fr: 'La ligne {piece} est sortie du tirage courant mais porte du travail ({pieces} pièce(s), {ecarts} écart(s), {cellules} cellule(s)) — écrivez pourquoi le travail ne suit pas',
+  },
   'obst.jalonEnRetard': { en: 'Milestone overdue and not done: {libelle} ({date})', fr: 'Jalon échu et non fait : {libelle} ({date})' },
   'obst.evaluation': { en: '{quoi}', fr: '{quoi}' },
 

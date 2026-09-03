@@ -255,6 +255,22 @@ async function corpsDeLaSonde() {
       const x = await listExceptions(id);
       return `${x.length} écart(s) · ${x.filter((e) => e.status === 'open').length} ouvert(s)`;
     }));
+    /* LE RE-TIRAGE (ADR-133, étage 1.2 — livré ce jour, lu ce jour). Deux
+       chiffres, et le second est celui qui compte : combien de lignes du
+       tirage courant REPRENNENT le travail d'un tirage précédent, et combien
+       de lignes en sont sorties SANS être statuées. Une instance qui aurait
+       re-tiré en perdant les pièces du client rendrait « 0 reprise » là où le
+       journal montre un ré-import — et c'est exactement ce qui s'est passé
+       jusqu'à cette nuit, sans qu'aucun instrument ne puisse le dire. */
+    lectures.push(await essayer('re-tirage : reprises et sorties statuées', async () => {
+      const { lignesSortiesDuTirage } = await import('@/lib/services/sampling');
+      const r = await q01<{ n: string }>(
+        `select count(*) n from sample_item si join sample s on s.id = si.sample_id
+          where s.engagement_id = $1 and s.status = 'drawn' and si.repris_de is not null`, [id]);
+      const sorties = await lignesSortiesDuTirage(id);
+      return `${r?.n ?? 0} ligne(s) reprise(s) · ${sorties.length} sortie(s) porteuse(s) de travail, `
+        + `dont ${sorties.filter((l) => l.decision === null).length} à statuer`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

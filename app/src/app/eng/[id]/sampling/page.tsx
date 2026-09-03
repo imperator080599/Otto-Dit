@@ -1,7 +1,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireMember } from '@/lib/core/auth';
-import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
+import {
+  proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample,
+  lignesSortiesDuTirage, statuerSortie,
+} from '@/lib/services/sampling';
 import { generatePbcFromSample } from '@/lib/services/requests';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
@@ -22,6 +25,7 @@ export default async function SamplingPage({
   const { erreur } = await searchParams;
   await requireMember(id);
   const sample = await currentRevenueSample(id);
+  const sorties = await lignesSortiesDuTirage(id);
 
   async function proposeAction() {
     'use server';
@@ -60,6 +64,25 @@ export default async function SamplingPage({
       const { user } = await requireMember(id);
       await generatePbcFromSample(id, String(formData.get('sample_id')), user.id);
       redirect(`/eng/${id}/requests`);
+    });
+  }
+
+  async function statuerAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await statuerSortie({
+        sampleItemId: String(formData.get('ligne')),
+        decision: 'sans_suite',
+        /* LE MOTIF N'EST PAS `required` DANS LE NAVIGATEUR, ET C'EST VOULU
+           (ADR-091). Un champ que le navigateur refuse d'envoyer donne un
+           harnais qui croit avoir éprouvé une règle du serveur alors qu'il n'a
+           éprouvé que le navigateur. C'est le serveur qui refuse (TIRAGE-03),
+           et c'est son refus qu'on lit à l'écran. */
+        motif: String(formData.get('motif') ?? ''),
+        userId: user.id,
+      });
+      revalidatePath(`/eng/${id}/sampling`);
     });
   }
 
@@ -139,6 +162,56 @@ export default async function SamplingPage({
           </>
         )}
       </div>
+
+      {/* ── CE QUI EST SORTI DU TIRAGE, ET QUI NE DISPARAÎT PAS (ADR-133) ──
+          Un re-tirage — après le ré-import du grand livre définitif, c'est le
+          cas normal — laisse derrière lui des lignes déjà travaillées. Elles
+          sont ICI, avec ce qu'elles portent, jusqu'à ce qu'une personne écrive
+          ce qu'on en fait. */}
+      {sorties.length > 0 && (
+        <div className="panel" data-sorties-du-tirage>
+          <h3 style={{ marginTop: 0 }}>{t('samp.sortiesTitre')}</h3>
+          <p className="faint">{t('samp.sortiesAide')}</p>
+          <div className="table-scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>{t('col.piece')}</th><th className="num">{t('col.amount')}</th>
+                  <th>{t('samp.sortiesTravail')}</th><th>{t('samp.sortiesDecision')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorties.map((l) => (
+                  <tr key={l.id} data-sortie={l.id}>
+                    <td className="mono">{l.piece}</td>
+                    <td className="num">{fmtEur(numToCents(l.montant), 'fr')}</td>
+                    <td className="faint">
+                      {t('samp.sortiesPorte', {
+                        pieces: l.travail.pieces, ecarts: l.travail.ecarts, cellules: l.travail.cellules,
+                      })}
+                    </td>
+                    <td>
+                      {l.decision ? (
+                        <span data-sortie-statuee={l.decision.quoi}>
+                          <span className="badge green">{t('samp.sortieSansSuite')}</span>{' '}
+                          {l.decision.motif}
+                          <div className="faint">{t('samp.sortieQui', { qui: l.decision.qui, quand: l.decision.quand })}</div>
+                        </span>
+                      ) : (
+                        <form action={statuerAction} className="row">
+                          <input type="hidden" name="ligne" value={l.id} />
+                          <input type="text" name="motif" placeholder={t('samp.sortieMotif')} style={{ minWidth: 260 }} />
+                          <button className="btn small">{t('samp.sortieStatuer')}</button>
+                        </form>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
