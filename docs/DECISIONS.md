@@ -5001,3 +5001,148 @@ par `q()` ; les six `revoke` de 0140 font ce qu'ils annoncent ; `otto_lecteur_de
 `'use server'`, aucune action n'écrit sans passer par `requireMember`/`getSessionUser` ; et la
 refactorisation de `/api/sante` en `corpsDeLaSonde()` n'a changé ni le 404 hors démo, ni la forme
 du JSON, ni le 200/500.
+
+## ADR-132
+
+**Le #418 : ce que le bundle dit, ce que le mandat demandait, et pourquoi je ne l'ai pas écrit.**
+(Mandat du soir et de la nuit, étage 0.4.)
+
+**TROIS FAITS ÉTABLIS DANS LE BUNDLE SERVI** (`next 15.5.23`, `react-dom` compilé
+`19.2.0-canary-0bdb9206`), pas dans une documentation :
+
+1. **Le message porte déjà le discriminant, et personne ne le lisait.**
+   `throwOnHydrationMismatch` construit `…/errors/418?args[]=<HTML|text>&args[]=`. `text` = un
+   NŒUD DE TEXTE diffère (donnée, locale, nombre) ; `HTML` = la STRUCTURE diffère (type ou
+   nombre d'éléments), ce qui oriente vers un flux tronqué. **Les deux occurrences déjà
+   consignées dans ce dépôt portent `args[]=HTML`** — et le dépôt les glosait à l'envers, « un
+   contenu texte rendu différemment côté serveur et côté navigateur » (docs/BACKLOG_REPORTE.md,
+   corrigé). Toutes les hypothèses de la semaine ont donc été cherchées du mauvais côté :
+   locale, données, formatage. Ce fait n'a coûté aucune ligne de code — il était dans les
+   journaux.
+
+2. **Aucune frontière d'erreur ne verra jamais un #418.** Une incohérence d'hydratation est
+   *récupérable* : React la signale par `onRecoverableError` → `reportGlobalError` →
+   `window.reportError`, hors bande. `componentDidCatch` ne la voit pas. **Le mandat demandait
+   « une frontière d'erreur capturant le composant » : c'est le mauvais instrument, et l'écrire
+   aurait donné un détecteur MUET** — la règle 13 mot pour mot. Je ne l'ai donc pas écrit, et
+   c'est inscrit dans DECISIONS_AUTONOMES.md (D-J3N-09).
+
+3. **Les cartes de sources ne donneront pas le composant.** Le diff lisible (`describeDiff`)
+   n'existe que dans le build de DÉVELOPPEMENT de React. Une carte de sources dé-mangle une
+   pile ; elle ne fabrique pas une information que le build de production ne calcule pas.
+
+**CE QUI EST LIVRÉ À LA PLACE.** `scripts/clics/hydratation.ts` conserve, pour chaque document
+servi, le HTML EXACT de la réponse, et le compare au DOM **au moment même** où React signale
+l'incohérence — le texte serveur ne vient donc pas d'une seconde requête, qui serait un autre
+rendu, donc une autre preuve (règle 16). Il rend, par incident : le genre (`HTML`/`text`), la
+station, la page de l'erreur ET celle du document (si elles diffèrent, l'exception est **mal
+étiquetée**), si le flux s'est terminé, la locale servie, et la PREMIÈRE divergence textuelle.
+Le comparateur est pur (`src/lib/core/hydratation.ts`) et éprouvé contre cinq cas connus mauvais.
+
+**CE QUE L'INSTRUMENT NE VERRA PAS, dit ici** : le nom du COMPOSANT (le build de production ne
+le calcule pas) ; une divergence que React répare avant de la signaler ; et l'instance déployée,
+où Playwright ne tourne pas.
+
+**Recensement des divergences statiques du dépôt** (11 composants clients seulement, ce qui rend
+le balayage concluant) : zéro `Math.random`, zéro `crypto.*`, zéro `matchMedia`, zéro
+`suppressHydrationWarning`, zéro `dangerouslySetInnerHTML`, zéro `typeof window` au rendu ; les
+douze sites de formatage portent tous une locale FIGÉE et vivent dans des modules serveur ; le
+`localStorage` du rail est lu dans un `useEffect`, donc après l'hydratation. **Un seul divergent
+statique réel** : `src/app/global-error.tsx` lit `navigator.language` — corrigé, bien qu'il ne
+puisse pas être notre #418 (il ne rend que si le layout racine jette, ce qui produirait des 500).
+
+**CE QUE LA MESURE A ENSUITE APPRIS — ET CE QU'ELLE A APPRIS SUR L'INSTRUMENT LUI-MÊME.**
+Cinq cas connus mauvais ne suffisaient pas : c'est en le braquant sur des incidents RÉELS que le
+comparateur a montré ce qu'il ne savait pas voir. Chaque correction porte désormais son propre
+cas connu mauvais (règle 17) — `src/lib/core/hydratation.test.ts`, dix-huit cas.
+
+1. **Il ne rendait que la PREMIÈRE divergence, et la première était du bruit.** Sur les trois
+   incidents du poste de travail, elle désignait `<div class="rail-astuce">` — la bulle du
+   raccourci `[`, rendue dans un `useEffect` (`src/app/eng/[id]/nav.tsx`), donc absente du HTML
+   servi, présente dans le DOM relevé, et parfaitement saine. Elle arrive PLUS TÔT dans le corps
+   que le défaut volontairement injecté pour éprouver la sonde : **l'instrument nommait le bruit
+   et taisait ce qu'il existait pour attraper** (règle 13, mot pour mot). Il rend maintenant
+   TOUS les écarts, par reprise au plus court, et il DIT quand il n'a pas pu se resynchroniser.
+   Où il s'arrête, écrit dans son test : deux écarts séparés par moins de six jetons identiques
+   sont rendus comme UN — les deux valeurs y sont, mais le compte est de un.
+
+2. **Il écrasait `/\s+/`, qui en JavaScript comprend U+00A0 et U+202F.** Or
+   `Intl.NumberFormat('fr-FR')` sépare les milliers par l'une ou par l'autre SELON LA VERSION
+   D'ICU. C'est une divergence de nœud de texte possible sur CHAQUE montant en euros — la proie
+   la plus probable de cet instrument — et il l'aurait effacée avant de comparer. Les deux
+   espaces sont désormais rendus visibles et distincts. **Mesuré ici** : Node 22 (ICU 78.2) et
+   Chromium 141 rendent tous deux U+202F, donc cette famille est ÉLIMINÉE sur cette machine —
+   pas dans l'absolu, l'ICU de l'instance déployée n'étant pas mesurable d'ici.
+
+3. **Trois familles de bruit qu'il accusait, et qui masquaient tout ce qui suivait** : l'ordre
+   des attributs (le navigateur les re-sérialise dans l'ordre où ils ont été POSÉS, pas celui du
+   source) ; le formulaire d'action serveur (React sert `action=""`, `encType`, `method` et les
+   champs cachés `$ACTION_REF_n`, puis reprend la main et remplace `action` par un garde-fou
+   `javascript:throw…`) ; le doctype et l'ordre du `<head>`. Chacune est écartée par une règle
+   NOMMÉE, et chacune a son cas connu mauvais qui prouve qu'un écart RÉEL de la même forme
+   (une `action` qui diffère vraiment, un champ caché réel disparu, un attribut présent d'un
+   seul côté) reste dénoncé.
+
+**LA LIMITE STRUCTURELLE, écrite plutôt que découverte plus tard** : le DOM est relevé sur
+`pageerror`, donc APRÈS que les effets ont tourné. Un élément rendu dans un `useEffect` apparaît
+comme une divergence alors qu'il n'en est pas une, et une divergence que React a déjà réparée
+peut avoir disparu. Cet instrument situe et élimine ; il ne conclut pas seul.
+
+## ADR-133
+
+**Le re-tirage d'échantillon après un ré-import : ce que le produit faisait disparaître.**
+(Mandat du soir et de la nuit J3, étage 1.2 ; mesuré le 2026-09-03.)
+
+**LE FAIT, tiré du journal d'événements du dossier de démonstration sur base fraîche.** Ré-importer
+le grand livre DÉFINITIF (ADR-016) supersède toutes les lignes de `gl_entry` et les recrée avec de
+NOUVEAUX identifiants ; la correspondance ancienne → nouvelle est fidèlement écrite dans
+`gl_entry_supersession`. L'échantillon tiré passe en `superseded`, l'auditeur re-tire — et le
+nouveau tirage désigne **les mêmes écritures**, par des identifiants différents. Les demandes déjà
+envoyées, les pièces déposées par le client, le testing déjà fait pendent à l'ANCIENNE ligne.
+Aucun écran ne les atteint plus.
+
+**Les trois chiffres, et les requêtes qui les rendent** (dossier de démonstration, `npm run
+db:reset && npm run demo:seed && npm run clics`) :
+
+```sql
+-- 12 écritures communes aux deux tirages, 4 sorties, 5 entrées
+with a as (select g.natural_key k from sample_item si join gl_entry g on g.id = si.unit_id
+           where si.sample_id = :ancien),
+     b as (select g.natural_key k from sample_item si join gl_entry g on g.id = si.unit_id
+           where si.sample_id = :nouveau)
+select (select count(*) from a join b using (k)) communes,
+       (select count(*) from a where k not in (select k from b)) sorties,
+       (select count(*) from b where k not in (select k from a)) entrees;
+
+-- 33 pièces du client portant sur une écriture TOUJOURS échantillonnée,
+-- qu'aucun chemin de lecture n'atteint
+select count(distinct e.id) from evidence e
+  join request_item ri on ri.id = e.request_item_id
+  join sample_item si on si.id = ri.sample_item_id
+  join gl_entry ga on ga.id = si.unit_id
+ where si.sample_id = :ancien
+   and ga.natural_key in (select g.natural_key from sample_item s2
+                          join gl_entry g on g.id = s2.unit_id where s2.sample_id = :nouveau);
+
+-- 4 731 successions d'écritures enregistrées, et jamais lues par le tirage
+select count(*) from gl_entry_supersession;
+```
+
+**CE QUE CELA COÛTAIT, EN CLAIR.** Une mission où le grand livre définitif arrive après que le
+client a répondu — c'est-à-dire toutes — perdait de vue, sans un mot, les pièces déjà obtenues sur
+les lignes qui restaient au tirage. Le parcours cliqué le disait depuis le début, en sept échecs
+qui n'en faisaient qu'un : « pas de visionneuse », « pas de provenance », « pas de comparaison »,
+« aucune cellule ancrée », « aucun delta signé ». Sept symptômes lus comme sept petits défauts
+d'écran ; c'était un seul défaut de fond, et il fallait suivre le journal pour le voir.
+
+**LA RÈGLE, écrite avant le code.** Un re-tirage ne détruit ni n'invalide jamais en silence du
+travail humain :
+
+1. **REPRISE.** Une ligne du nouveau tirage qui désigne la MÊME écriture qu'une ligne du tirage
+   précédent — directement, ou par la chaîne `gl_entry_supersession` — reprend son travail. Rien
+   n'est déplacé ni recopié : la ligne DÉSIGNE celle qu'elle reprend (`repris_de`), et les chemins
+   de lecture suivent la chaîne. La provenance reste donc lisible dans les deux sens.
+2. **SORTIE.** Une ligne du tirage précédent qui portait du travail et que le nouveau tirage ne
+   reprend pas garde son travail, apparaît « hors échantillon courant », et **bloque le visa tant
+   qu'une personne ne l'a pas statuée par écrit**. Sans suite motivée, ou remise au tirage.
+3. **Rien n'est supprimé.** Ni par le tirage, ni par le ré-import.

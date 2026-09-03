@@ -671,3 +671,23 @@ instrument, et je ne l'écris pas.** Instruit dans le bundle servi : une erreur 
 *récupérable* — React la signale par `onRecoverableError` → `reportGlobalError` → `window.reportError`,
 hors bande. `componentDidCatch` ne la voit JAMAIS. Écrire la frontière aurait donné un détecteur
 muet (règle 13). L'instrument correct est un écouteur navigateur, et il est écrit à sa place.
+
+**D-J3N-10 — le comparateur rend TOUS les écarts, et non le premier.** Braqué sur les incidents
+réels, il nommait `rail-astuce` — une bulle rendue dans un `useEffect`, donc saine — et taisait
+le défaut injecté qui la suivait dans le corps. Un instrument qui s'arrête au premier bruit est
+un instrument muet qui parle. Coût assumé : deux écarts séparés par moins de six jetons
+identiques sont rendus comme un seul (les deux valeurs y figurent) ; la limite est écrite dans
+son test plutôt que laissée à découvrir.
+
+**D-J3N-11 — les espaces insécables ne sont plus écrasés.** `/\s+/` comprend U+00A0 et U+202F ;
+`Intl.NumberFormat('fr-FR')` choisit l'un ou l'autre selon la version d'ICU. Le comparateur
+effaçait donc, avant de comparer, la divergence la PLUS probable de toute l'application. Mesure
+faite ici : Node 22 (ICU 78.2) et Chromium 141 rendent tous deux U+202F — la famille est
+éliminée sur cette machine, pas dans l'absolu.
+
+**D-J3N-12 — l'ordre des attributs et le formulaire d'action serveur sont du bruit, et je
+l'écris comme une RÈGLE, pas comme un filtre.** Chacune de ces deux familles est écartée par un
+prédicat nommé, et chacune porte un cas connu mauvais prouvant qu'un écart réel de la même forme
+reste dénoncé (une `action` qui diffère vraiment, un champ caché réel disparu, un attribut
+présent d'un seul côté). Sans cela, « écarter le bruit » aurait été indistinguable d'un
+aveuglement.

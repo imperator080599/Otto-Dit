@@ -10,6 +10,7 @@ import { contexte } from './contexte';
 import { conduire, type Etape, type Geste } from './scenario';
 import { stationsDe, jamaisAtteintes, empreintes, type Fige } from '../../src/lib/parcours';
 import type { Station } from '../../src/lib/parcours';
+import { poserLaSonde } from './hydratation';
 
 // npm run clics [-- --dev] : CONDUIT le parcours dans un navigateur, sur un
 // build de production, et sort en échec sur la première règle qui ne tient pas.
@@ -106,6 +107,7 @@ async function main() {
   let etapes: Etape[] = [];
   let gestes: Geste[] = [];
   const durs: string[] = [];
+  let sonde: import('./hydratation').Sonde | null = null;
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
     const nav = await chromium.launch({ executablePath: NAVIGATEUR })
@@ -119,6 +121,10 @@ async function main() {
        reproduit alors le défaut qu'il cherche : une panne qu'on ne sait pas
        lire est une panne qu'on impute au mauvais changement. */
     const ou = () => page.url().replace(`http://localhost:${PORT}`, '') || '(page inconnue)';
+    /* LA SONDE D'HYDRATATION (fil n°7). Elle N'ENLÈVE RIEN : l'exception reste
+       comptée en dur ci-dessous. Elle ajoute ce qui manquait pour conclure —
+       le HTML SERVI et le DOM au moment de l'erreur, côte à côte. */
+    sonde = poserLaSonde(page, `http://localhost:${PORT}`, path.join(process.cwd(), '.hydratation'));
     page.on('pageerror', (e) => durs.push(`EXCEPTION sur ${ou()} : ${e.message}`));
     page.on('console', (m) => {
       if (m.type() === 'error' && !/Failed to load resource|DevTools/.test(m.text())) {
@@ -136,6 +142,7 @@ async function main() {
   }
 
   for (const e of etapes) console.log(`  ${e.ok ? 'ok  ' : 'ÉCHEC'}  ${e.nom}\n         ${e.detail}`);
+  if (sonde) for (const l of sonde.rapport()) console.log(l);
 
   /* LE HARNAIS NE DOIT PAS POUVOIR SE TAIRE. Zéro étape conduite est une panne
      du harnais, pas un parcours réussi. Un SEUIL ne suffit pas — il dit combien,

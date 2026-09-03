@@ -167,6 +167,47 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## LE PARCOURS CLIQUÉ EST ROUGE, ET VOICI POURQUOI (2026-09-03, nuit J3)
+
+**Fait, mesuré sur base fraîche** (`npm run db:reset && npm run demo:seed && npm run clics`) :
+192 étapes conduites, **9 échecs**, 5 stations figées jamais atteintes. La sonde
+d'hydratation, elle, ne relève **aucun** incident (étage 0.4).
+
+**Le diagnostic, tiré du journal d'événements — pas d'une explication plausible** (règle 18) :
+
+1. 19:16:04 — le monde de démonstration tire l'échantillon `07d3e33c` (16 lignes), la demande
+   part, le client répond : **45 pièces** déposées sur 15 lignes.
+2. 19:17:41 — le parcours importe le **FEC DÉFINITIF** et confirme l'invalidation (ADR-016).
+   `gl_entry` bascule en `superseded`, chaque écriture reçoit un **nouvel identifiant**, et la
+   correspondance ancienne → nouvelle est écrite dans `gl_entry_supersession` (4 731 lignes).
+   L'échantillon passe en `superseded`.
+3. 19:19:12 — le parcours re-tire : échantillon `4a9950ed` (17 lignes).
+4. **Les deux tirages désignent 12 fois LA MÊME ÉCRITURE** (même `natural_key`) — mais par des
+   identifiants de ligne différents, puisque le ré-import les a recréés.
+5. Résultat mesuré : **33 pièces déposées par le client portent sur une écriture TOUJOURS
+   échantillonnée, et aucun écran ne les atteint plus.** L'atelier lit l'échantillon courant,
+   dont les 17 lignes n'ont aucune pièce ; d'où l'absence de visionneuse, de provenance, de
+   comparaison, de cellule ancrée et de delta signé — sept échecs qui n'en font qu'un — plus
+   deux à la clôture, l'obstacle qui en découle.
+
+**Ce n'est pas un défaut du harnais.** Ré-importer le grand livre définitif après que le client
+a répondu est le geste normal d'une fin de mission. Le produit fait disparaître, sans le dire,
+le travail humain déjà fait sur des lignes qui sont ENCORE dans l'échantillon : « un objet créé
+qu'aucun chemin de lecture n'atteint » (règle 13) et, mot pour mot, ce que l'étage 1.2 du mandat
+interdit — « un recalcul ne détruit ni n'invalide jamais en silence du travail humain ».
+
+**Ce que je n'affirme pas** : que ce rouge date d'un commit précis. L'arbre mesuré ne diffère de
+`main` que par la sonde (un script) et `global-error.tsx` (qui ne rend que si le layout racine
+jette) : le rouge est donc celui de `main`, mais je n'ai pas rejoué le parcours sur un commit
+antérieur pour dater son apparition.
+
+**Commandes qui reproduisent la mesure** :
+```
+cd app && npm run db:reset && npm run demo:seed && npm run clics
+```
+puis, pour les trois chiffres cités (12 écritures communes, 33 pièces orphelines, 4 731
+successions), les requêtes sont dans docs/DECISIONS.md, ADR-133.
+
 ## Prouvé par exécution vs prouvé par test avec mocks
 
 Mise à jour après exécution réelle de la couche IA (2026-08-25, 51 appels, 1,27 $ sur le

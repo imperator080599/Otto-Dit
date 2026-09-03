@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { traduire, type Locale } from '@/lib/i18n/catalogue';
 
 // LA PANNE QUE `error.tsx` NE PEUT PAS ATTRAPER : celle du LAYOUT RACINE —
@@ -10,7 +11,19 @@ import { traduire, type Locale } from '@/lib/i18n/catalogue';
 // phrase s'écrit.
 
 export default function ErreurGlobale({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const l: Locale = typeof navigator !== 'undefined' && /^fr/i.test(navigator.language) ? 'fr' : 'en';
+  /* LA LANGUE SE CHOISIT APRÈS L'HYDRATATION, PAS PENDANT (ADR-132).
+     `typeof navigator !== 'undefined' ? … : 'en'` au rendu est une divergence
+     SERVEUR/CLIENT par construction : le serveur rend « en », un navigateur
+     français rend « fr », et tout le texte de cet écran change — y compris
+     l'attribut `lang` de `<html>`. C'était le SEUL divergent statique du dépôt,
+     trouvé en instruisant le #418 ; il ne pouvait pas être notre #418 (cet
+     écran ne rend que si le layout racine jette), mais un défaut qu'aucune
+     exécution n'atteint reste un défaut. Le premier rendu est donc le même des
+     deux côtés, et la langue du navigateur s'applique ensuite. */
+  const [l, setL] = useState<Locale>('en');
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && /^fr/i.test(navigator.language)) setL('fr');
+  }, []);
   const t = (cle: Parameters<typeof traduire>[1]) => traduire(l, cle);
   const digest = error.digest ?? null;
   return (
