@@ -34,6 +34,32 @@
 - **Le mode IA vivant** : non activé, comme le mandat l'interdisait.
 - `DATABASE_URL` non modifié. Aucune dépense engagée.
 
+## Les preuves, et le SHA sur lequel chacune a été obtenue
+
+| Mesure | Valeur | SHA | Commande qui la reproduit |
+|---|---|---|---|
+| Types | 0 erreur | `580f2cf` | `cd app && npx tsc --noEmit` |
+| Tests | **799 / 799** | `580f2cf` | `cd app && npm test` |
+| Registre des gardes | **43**, toutes attaquées | `580f2cf` | `cd app && npm run gardes` |
+| Plancher de tests | 793 collectés, plancher 632 | `580f2cf` | `cd app && npm run plancher` |
+| Langue | 0 chaîne hors catalogue, 0 libellé en dur | `580f2cf` | `cd app && npm run langue` |
+| Lectures d'écran | 0 perdue sur 1 627 chemins, 85 écrans | `580f2cf` | `cd app && npm run lectures` |
+| Parcours **cliqué** | **197 étapes, 2 échecs** (9 en début de nuit) | `580f2cf` | `cd app && npm run db:reset && npm run demo:seed && npm run clics` |
+| Sonde d'hydratation | **0 incident** sur ce passage ; **1 capturé** au passage précédent, analysé dans ADR-132 | `580f2cf` | idem (le rapport est en fin de sortie) |
+| Étanchéité, garde armé | 85 routes, 0 échec sous LOC-01 | `c36076f` | `cd app && npm run screens:garde` |
+| Reprises / sorties du re-tirage | 12 écritures communes · 33 pièces sauvées · 4 sorties statuées | `580f2cf` | requêtes dans ADR-133 |
+
+**Les deux échecs qui restent** sont un seul fait, écrit en **R37** : après le re-tirage, cinq
+lignes neuves n'ont jamais été demandées au client — la demande de justificatifs de l'échantillon
+courant n'existe pas, alors que l'écran a annoncé l'avoir engendrée. La boucle les compte « en
+attente de dépôt », l'obstacle subsiste, le dossier ne se clôt pas. Avant l'étage 1.2, c'étaient
+DIX-SEPT lignes, dont douze dont les pièces étaient déjà au dossier.
+
+**Ce que je n'ai PAS fait tourner cette nuit**, et qui fait partie de `npm run verify` :
+`npm run fumee`, `npm run densite`, `npm run visuel`, `npm run parcours:epreuve`,
+`npm run lectures:epreuve`, `npm run langue:epreuve`. Le temps est allé aux mesures et aux
+corrections ; ces six-là restent à passer avant de considérer la chaîne complète.
+
 ## La liste « NON PROUVÉ », transcrite intégralement (docs/SOIR.md §3), et ce qui a bougé
 
 > Transcription mot pour mot, suivie de son état ce matin. Aucune ligne n'est retirée.
