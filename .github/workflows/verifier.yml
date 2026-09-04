@@ -127,3 +127,38 @@ jobs:
           path: |
             acceptation.md
             captures/
+
+  # ── LE SHA POUSSÉ DOIT DEVENIR LE SHA SERVI ────────────────────────────────
+  #
+  # POURQUOI CE TRAVAIL EXISTE. Le 3 septembre, trois tranches ont été poussées
+  # sur `main` — suite verte, parcours cliqué vert — et les trois déploiements
+  # ont ÉCHOUÉ. Rien ne l'a dit : le travail `url` ci-dessus ne se déclenche que
+  # sur un déploiement RÉUSSI, donc un échec ne produit AUCUN signal. Le
+  # fondateur a ouvert l'URL vingt-quatre heures sans rien voir de neuf.
+  #
+  # Celui-ci ne fait confiance à aucun événement et ne demande rien à Vercel :
+  # il interroge `/api/sante` et attend que le SHA servi devienne celui qu'on
+  # vient de pousser. Passé le délai, il ROUGIT en nommant les deux SHA.
+  #
+  # OÙ IL S'ARRÊTE : il ne dit rien de la SANTÉ de ce qui est servi, seulement
+  # de son IDENTITÉ. Un déploiement qui réussit après le délai le laisse rouge,
+  # et c'est voulu.
+  deploye:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: le SHA poussé doit être servi dans les 15 minutes
+        run: npx tsx scripts/deploiement/atteint.ts "https://otto-dit.vercel.app" "${{ github.sha }}" --minutes=15
