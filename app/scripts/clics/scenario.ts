@@ -1093,18 +1093,25 @@ export async function conduire(
       t.match(/(seed|germe)[^\n]{0,40}/i)?.[0] ?? 'affichée');
 
     if (await compte(`button:has-text("${L('samp.generatePbcRequest')}")`)) {
-      /* R37 (docs/CHASSE.md §3) — INSTRUMENTATION, PAS UNE CORRECTION : on
-         imprime ce qu'on a longtemps deviné, avant de corriger quoi que ce
-         soit (règle 18). L'id soumis, capturé AVANT le clic — pour comparer
-         au sample réellement 'drawn' en base au même instant, sans supposer
-         qu'il est resté frais. */
-      const sampleIdSoumis = await p.locator('form:has(button:has-text("'
-        + L('samp.generatePbcRequest') + '")) input[name=sample_id]').getAttribute('value').catch(() => null);
+      /* PAS UN « AUCUN REFUS » SEUL (R37, docs/CHASSE.md §3) : `pbcAction`
+         redirige vers /requests même quand generatePbcFromSample n'écrit
+         rien — un signal Next avalé par `tx()` ANNULAIT l'insert derrière un
+         redirect() réussi, et cette station l'a laissé passer pendant des
+         semaines. On compte les demandes au TITRE que SEULE cette fonction
+         écrit (requests.ts:43) — le semeur en pose déjà une sur l'ancien
+         échantillon, donc « au moins une visible » serait un faux vert : il
+         en faut UNE DE PLUS après le clic. */
+      const titrePbc = /Justificatifs\s*—\s*contrôle du chiffre d.affaires|Supporting documents\s*—\s*revenue testing/i;
+      const compterDemandesPbc = () => p.locator('a[href*="/requests/"]', { hasText: titrePbc }).count();
+      await aller(`${eng}/requests`);
+      const avant = await compterDemandesPbc();
+      await aller(`${eng}/sampling`);
       await cliquer(`button:has-text("${L('samp.generatePbcRequest')}")`, 6000);
-      const urlApresClic = p.url();
+      const apres = await compterDemandesPbc();
       dire('sondage : la demande de pièces naît DE la sélection, pas d’une saisie',
-        !refus(p), (refus(p) ?? 'demande engendrée')
-          + ` [instrumentation R37 : sample_id soumis=${sampleIdSoumis}, url après clic=${urlApresClic}]`);
+        !refus(p) && apres > avant,
+        refus(p) ?? (apres > avant ? `demande engendrée (${avant} → ${apres})`
+          : `redirection réussie mais AUCUNE nouvelle demande (${avant} → ${apres}) — écriture avalée`));
     }
   });
 

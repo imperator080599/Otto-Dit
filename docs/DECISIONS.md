@@ -5308,3 +5308,68 @@ sur l'écran des obstacles, à part, nommé pour ce qu'il est, et jamais compté
 ni population ni taille (elles viennent de la méthode), et ne supprime pas une procédure planifiée —
 dépasser un papier visé exige un motif écrit (PROG-06), et retirer une procédure du programme n'est
 pas un geste que cette tranche offre.
+
+## ADR-135
+
+**`tx()` annulait une écriture derrière un `redirect()` réussi — le silence lu comme un succès,
+au niveau le plus bas du dépôt.** (R37, docs/CHASSE.md §3 ; docs/BACKLOG_REPORTE.md ; mesuré et
+corrigé le 2026-09-06.)
+
+**LE FAIT, mesuré par exécution, pas déduit.** La station « sondage » du parcours cliqué
+soumettait le BON `sample_id` (`status='drawn'`, l'échantillon re-tiré, pas celui du semeur) au
+bouton « Engendrer la demande au client », et atterrissait sur `/eng/{id}/requests` —
+**l'URL du SUCCÈS**, aucun `?erreur=`. Et pourtant : `event_log` (append-only, G-01) ne portait
+aucune seconde ligne `verb='request_generated'` ; aucune demande de justificatifs n'existait pour
+l'échantillon courant. `generatePbcFromSample` avait donc tourné jusqu'à son `redirect()` final
+SANS que son `insert into request` ne survive.
+
+**LA CAUSE, reproduite hors navigateur, en isolation** (`src/lib/db/tx-redirect.test.ts`).
+`redirect()` de Next SIGNALE en levant une exception qui porte un `digest` — `app/refus.ts` le
+sait depuis ADR-078 (`estUnSignalDeNext`, pour ne pas transformer une navigation réussie en
+refus affiché). `tx()` (`lib/db/client.ts`) ne le savait PAS : sur une transaction de tête
+(`db.transaction`) comme sur un point de reprise (`savepoint`), TOUTE exception qui traversait le
+callback de `fn()` était traitée comme un échec — rollback ou `rollback to savepoint`, sans
+distinction. `pbcAction` (`sampling/page.tsx`) écrit PUIS redirige vers une AUTRE page, DANS la
+même transaction (`executer()` → `withTenant()` → `tx()`) : le service s'exécute en entier, le
+`redirect()` réussit au niveau Next, et PGlite annule l'écriture ENTRE les deux, parce qu'une
+exception a traversé son callback — n'importe laquelle, sans égard pour ce qu'elle signale.
+
+**POURQUOI CE N'EST PAS UN DÉFAUT DE `pbcAction`.** Rediriger après une écriture, vers une page
+différente de celle qu'on réaffiche, est le patron le plus normal d'une action serveur qui vient
+de créer un objet consultable ailleurs. `pbcAction` a fait exactement ce que le reste du dépôt
+fait déjà ; c'est la brique commune à TOUT geste d'écriture (`tx()`, via `withTenant()`) qui ne
+distinguait pas un signal de contrôle de flux d'une vraie panne. **La classe, pas l'instance** —
+c'est pourquoi le correctif ne touche aucun site d'appel individuel.
+
+**LE CAS CONNU MAUVAIS, avant correction (règle 17)** : écrire une ligne réelle, puis lever un
+signal `NEXT_REDIRECT` fabriqué dans la MÊME transaction — la ligne disparaissait, sur les DEUX
+formes de `tx()`. Un troisième cas, témoin : une VRAIE erreur, elle, continue d'annuler ce
+qu'elle a écrit — le correctif ne désarme rien de ce qui devait rester annulé.
+
+**LE CORRECTIF.** `estUnSignalDeControleDeFlux` (le même prédicat qu'`estUnSignalDeNext`,
+déplacé dans `lib/db/client.ts` — `app/refus.ts` réexporte l'ancien nom pour ne rien casser).
+Sur un point de reprise : le signal libère le savepoint (au lieu de l'annuler) puis se relève.
+Sur la transaction de tête : le signal est intercepté DANS le callback de `db.transaction()` —
+pour que ce callback se termine normalement et que PGlite COMMETTE — puis relevé APRÈS que la
+transaction a été validée. **Aucun rejeu** : `fn()` ne s'exécute qu'une seule fois dans les deux
+cas ; une première version de ce correctif rejouait `fn()` une seconde fois pour forcer un commit,
+ce qui aurait doublé toute écriture non idempotente — corrigée avant d'être poussée.
+
+**CE QUE LA STATION ELLE-MÊME A DÛ APPRENDRE, séparément.** Le parcours cliqué disait « aucun
+refus » et concluait au succès — exactement le trou que ce bug traversait. La station ne compte
+plus une présence (le semeur pose déjà une demande au même titre, sur l'ancien échantillon —
+« au moins une visible » aurait été un faux vert) mais une AUGMENTATION : le nombre de demandes
+au titre que seule cette fonction écrit, avant le clic contre après.
+
+**LE RAYON, NOMMÉ, PAS FERMÉ.** Un seul autre site du dépôt combine `redirect()` posé dans le
+corps d'une action ET un chemin d'écriture (`poste/[code]/actions.ts`) ; il redirige vers la
+MÊME page et n'emprunte pas `executer()`/`withTenant()` de la même façon — vraisemblablement hors
+de portée de ce bug, mais ça n'a pas été confirmé par exécution, seulement par lecture. Un
+balayage exhaustif de tout `redirect(` posé à l'intérieur d'un `executer(...)` reste à faire.
+
+**OÙ CE CORRECTIF S'ARRÊTE, écrit avant qu'on le découvre.** Il ne protège que ce que `tx()` voit
+passer par son PROPRE callback : un service qui ouvre sa propre connexion hors de `tx()`, ou qui
+avale lui-même une exception avant qu'elle n'atteigne `tx()`, n'est pas couvert par ce correctif.
+Il ne dit rien non plus des signaux Next posés APRÈS qu'`executer()` a déjà quitté la portée de
+`tx()` (ses propres `redirect(chemin)` de fin de fonction, hors transaction depuis toujours) — ce
+n'est pas le cas qui a coûté R37, et ce correctif ne prétend pas les couvrir.
