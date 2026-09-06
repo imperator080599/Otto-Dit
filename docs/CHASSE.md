@@ -255,6 +255,34 @@ courant » et « rattachée à l'ancien échantillon » sont éliminées pour ce
 `request` avant/après la station, sans deviner) ; soit l'action a été cliquée et a réellement
 échoué ou n'a rien créé, ce que seule une exécution regardée (pas un `grep`) tranchera.
 
+**[2026-09-06] Mesuré en exécution regardée, sur base FRAÎCHE, après le correctif R41 —
+l'hypothèse « le harnais n'a pas cliqué CE bouton » est ÉLIMINÉE, et le fait initial est
+CONFIRMÉ, pas juste répété.** `npm run clics` (build de production, `.data` reconstruit par
+`db:reset` + `demo:seed`) : la station « sondage » rend bien « demande engendrée » sans aucun
+refus (`!refus(p)` vrai — l'URL finale ne porte pas `?erreur=`). Mais `event_log` (append-only,
+G-01) ne porte qu'**une seule** ligne `verb='request_generated'` sur tout le dossier — celle du
+SEMEUR, `seq=1`, à `09:11:17Z`, AVANT le re-tirage. Aucune seconde ligne n'apparaît au moment où
+la station clique le bouton. Confirmé sans la jointure (réserve levée) : `select seq_no, title
+from request` liste huit demandes ; une seule porte le titre que SEUL `generatePbcFromSample`
+écrit (`requests.ts:43`, « Justificatifs — contrôle du chiffre d'affaires (sélection) »), et
+c'est celle du semeur, sur l'échantillon SUPERSEDED. La demande couvrant l'échantillon COURANT
+(17 items) ne porte que des `request_item` de type `explanation` (clarifications nées du
+matching, pas du sondage) — zéro `document`.
+
+Donc : **le clic n'a pas atteint `generatePbcFromSample`**, malgré un bouton unique sur la page
+(pas d'ambiguïté `.first()` possible ici, contrairement à R41), une soumission observée, et
+aucun `?erreur=` sur l'URL finale. `executer()` (`app/refus.ts`) attrape TOUTE `Error` et la
+transforme en `?erreur=` — donc si `generatePbcFromSample` avait levé (ex. `sample_id` caduque,
+`status <> 'drawn'`), `refus(p)` l'aurait vu. Ce qui NE lève pas une erreur mais REDIRIGE quand
+même sans toucher au service, c'est `requireMember(id)` en tête de `pbcAction`
+(`sampling/page.tsx:61-68`) : son échec appelle `redirect('/')` directement (pas une
+`AcceptanceRuleError`), un signal Next re-lancé tel quel par `estUnSignalDeNext` — donc un
+`refus()` qui ne cherche que `?erreur=` ne le distinguerait PAS d'un succès qui redirige vers
+`/eng/{id}/requests`. **Hypothèse à éprouver ensuite (pas encore prouvée)** : imprimer `p.url()`
+immédiatement après ce clic précis (comme fait pour R41) sur un prochain passage, pour voir si
+la page finale est `/` (échec silencieux de `requireMember`) ou véritablement `/requests` avec
+une demande absente pour une autre raison. Cette session n'a pas eu le temps de le faire.
+
 Puis la question de produit, qui ne se devine pas : un re-tirage engendre-t-il automatiquement
 la demande des lignes neuves, ou la propose-t-il ? C'est l'étage 4.1 du mandat de nuit, et cela
 se décide avec un auditeur.

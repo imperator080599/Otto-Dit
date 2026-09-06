@@ -180,6 +180,15 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   produit DOIT faire d'un re-tirage : engendrer automatiquement la demande des lignes neuves, ou
   la proposer. C'est la matière de l'étage 4.1 du mandat (« création en lot depuis le programme »),
   et cela se décide avec un auditeur, pas à deux heures du matin.
+
+  **[2026-09-06] RECONFIRMÉ, PAS SEULEMENT RE-MESURÉ** : `npm run clics` sur base fraîche, après
+  correctif R41 (sans rapport avec ce fil). Question (a) avancée sans être close : `event_log`
+  (append-only) ne porte qu'UNE ligne `request_generated`, celle du semeur, avant le re-tirage —
+  le clic du bouton n'atteint donc jamais `generatePbcFromSample`, alors que la station ne
+  détecte aucun refus. Piste nommée, non prouvée (docs/CHASSE.md §3) : `requireMember` en tête de
+  `pbcAction` peut rediriger vers `/` sans lever d'erreur — un chemin qu'un `refus()` qui ne
+  cherche que `?erreur=` ne distingue pas d'un succès. Prochain geste : imprimer `p.url()` juste
+  après ce clic, pas deviner plus loin.
 - **R38 — un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme.**
   Mesuré par la revue hostile de l'étage 1.1 : après `confirmScoping(..., 'ns_confirmed', motif)`,
   le poste disparaît de l'écran du programme et le papier REV-01 reste en base, atteignable
@@ -195,20 +204,24 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   est planifié sur tout le dossier ? » — mais la divergence avec la règle écrite du fichier
   lui-même est réelle, et relevée par la revue hostile (constat 7). À trancher en même temps que
   l'épure (étage 2), qui reprend la question du rail.
-- **R40 — `requireMember` ne filtre pas `exited_on`, alors que `assertMembre` le fait.** Un membre
-  SORTI de la mission voit donc les écrans et leurs boutons, et sera refusé par le service au
-  moment du geste. Défaut préexistant à toutes les pages, relevé en passant par la revue hostile de
-  l'étage 1.1 — donc à corriger une fois, à un endroit.
-- **R41 — rédiger un papier depuis le programme crée une obligation que le parcours ne tient pas.**
-  Un papier neuf doit porter la question de l'information produite par l'entité (Groupe 1, 1.8) ;
-  sans réponse, le visa est bloqué — et le produit a raison. La station cliquée du programme rédige
-  REV-02 et laisse l'obstacle derrière elle : **c'est un défaut de la station, pas du produit**.
-  La tentative de réponse dans la station n'a pas abouti cette nuit et la branche a été rendue
-  BRUYANTE plutôt que corrigée à l'aveugle (règle 18 : deux itérations de vingt minutes ne font pas
-  un diagnostic). Deux sorties possibles, à trancher en regardant l'écran : soit la station répond à
-  la question sur le papier qu'elle vient de rédiger, soit la station IPE existante cesse de ne
-  traiter QUE le papier qu'elle a ouvert et couvre tous les papiers en attente — la seconde
-  corrigerait la cause plutôt que ce cas.
+- **R40 — CORRIGÉ le 2026-09-06 (SHA `8558cbd`).** `requireMember` ne filtrait pas `exited_on`,
+  alors que `assertMembre` le fait. Un membre SORTI de la mission voyait donc les écrans et leurs
+  boutons, refusé seulement plus tard, au geste, par le service. La lecture est isolée dans
+  `activeMembership()` (`app/src/lib/core/auth.ts`), avec le même filtre qu'`assertMembre`, et
+  éprouvée par le cas connu mauvais (règle 17) : `auth.test.ts` échoue sur le membre sorti sans
+  le filtre, passe avec.
+- **R41 — CORRIGÉ le 2026-09-06 (SHA `c187cae`), confirmé en navigateur.** Rédiger un papier
+  depuis le programme créait une obligation (la question de l'information produite par
+  l'entité) que le parcours cliqué ne tenait pas. DEUX causes, trouvées l'une après l'autre par
+  l'exécution, pas devinées : (1) la station ciblait `[data-planifiee] a[href*="/workpapers/"]`
+  `.last()`, qui désigne n'importe quel papier DÉJÀ rédigé du dossier entier (pas forcément celui
+  qu'on vient de rédiger) — corrigé en lisant le code de la ligne AVANT de soumettre puis en
+  scopant le lien à cette ligne précise, navigué par `href` via `aller()` plutôt que par
+  `.click()` ; (2) réutiliser un rapport IPE existant exige son arrêté (`date_document`), que la
+  station ne remplissait jamais — le refus réel observé au premier passage corrigé était « Dites
+  sur quel arrêté ce papier s'appuie », pas celui supposé au départ. Deux passages complets
+  `npm run clics` sur base fraîche confirment : 3 échecs → 2 (R37 seul reste) → la station IPE du
+  programme est verte.
 
 ## Reportés en écrivant le transfert sur disque (2026-09-05)
 
@@ -225,7 +238,20 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 
 ## Reporté en vérifiant le transfert par revue hostile (2026-09-06)
 
-- **R44 — `docs/SEMEUR_VS_CHEMIN.md` n'existe pas.** La règle 20 de CLAUDE.md et `docs/CHASSE.md`
-  s'y réfèrent comme à un objet déjà là (mandat du semeur §1) ; il n'est ni sur le disque ni dans
-  aucun commit. À engendrer par un script (objet · semeur crée ? · chemin humain existe ? ·
-  cliqué ?), pas à rédiger à la main (même défaut que celui qu'il doit détecter).
+- **R44 — PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (SHA à la pousse de cette tranche), PAS
+  FERMÉ.** `docs/SEMEUR_VS_CHEMIN.md` était absent ; il est désormais engendré par
+  `npm run semeur -- --figer` depuis `app/src/lib/semeur/registre.ts` (même patron que
+  `lib/gardes/registre.ts`), avec un garde de cohérence (`src/lib/semeur/coherence.ts`, testé sur
+  un cas connu mauvais) et une lecture `/api/sante`. **83 objets/gestes recensés · 16 DÉCOR ·
+  28 non prouvés (chemin humain existant, jamais cliqué) · 39 prouvés.** Une relecture
+  hostile (modèle le plus fort disponible) a trouvé et fait corriger neuf classes de défauts dans
+  la première passe (trois badges « prouvé » faux qui confondaient « visite la page » et « clique
+  le bouton », des citations pointant sur le mauvais objet ou un commentaire, un SHA d'en-tête
+  faux, un décor entier manqué — `ledger_is_provisional` —, trois blocs d'objets semés sautés en
+  bloc, aucune garde sur l'invariant du registre). **Ce qui reste dû, dit et pas caché** : les
+  citations `scenario.ts` se décalent à CHAQUE pousse qui touche ce fichier (deux fois dans les
+  vingt-quatre heures autour de cette tranche) et rien ne les revérifie automatiquement — une
+  session future doit soit ajouter cette garde, soit accepter de re-vérifier à la main avant de
+  citer ce document comme preuve. Les 16 décors ne sont PAS tous des manques à corriger : `note de
+  revue antidatée` et une partie de la sonde `/api/sante` sont des décors ASSUMÉS par ailleurs
+  (N2-3, ADR-126) — le document le dit ligne par ligne, ne pas les re-déclarer comme neufs.
