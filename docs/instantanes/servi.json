@@ -1,13 +1,23 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+  "sha": "9fa187c6e6abb2aeaf39b71964aee15c8a77d34a",
   "mesure": {
-    "quand": "2026-09-06T12:18:26Z",
-    "par": "CI, travail `deploye`, run 34032612106, job 101484851827, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:16:37Z→12:18:26Z) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé",
+    "quand": "2026-09-06T13:12:07Z",
+    "par": "CI, travail `deploye`, run 34035181666, job 101491826303, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 13:08:40Z→13:12:07Z) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "c23b4be1a6843844f9b008041d071ae52790722a",
+      "quand": "2026-09-06T12:30:08Z",
+      "par": "CI, travail `deploye`, run 34033120558, job 101486240730, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:27:08Z→12:30:08Z)"
+    },
+    {
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:18:26Z",
+      "par": "CI, travail `deploye`, run 34032612106, job 101484851827, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:16:37Z→12:18:26Z)"
+    },
     {
       "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
       "quand": "2026-09-04T00:13:06Z",
