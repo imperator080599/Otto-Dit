@@ -12,7 +12,7 @@
       "id": "R41",
       "etat": "CORRIGÉ le 2026-09-06 (SHA c187cae, confirmé en navigateur) — la station ciblait le mauvais lien par asymétrie `.first()`/`.last()` sur la vue programme, et le champ date de l'IPE réutilisé n'était pas rempli ; les deux corrigés",
       "depuis": "62b7064",
-      "note": "défaut de la STATION, pas du produit à l'origine ; voir docs/BACKLOG_REPORTE.md pour le détail. Parcours cliqué : 244 stations déclarées, 193 conduites, 0 échec (fa47b36)."
+      "note": "défaut de la STATION, pas du produit à l'origine ; voir docs/BACKLOG_REPORTE.md pour le détail. Parcours cliqué (fa47b36, confirmé par la chaîne verify complète du 2026-09-06) : 202 étapes conduites, 0 échec, 314 clics sur 43 gestes ; garde du parcours : 193 station(s) figée(s) vérifiée(s)."
     },
     {
       "id": "R37",
