@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "f1781a1b1fee3c06b2eabbb60a4a289f3dc99a5c",
+  "sha": "84edab530a98c2c681164f67ca6f8b31ef46b430",
   "mesure": {
-    "quand": "2026-09-06T18:46:04Z",
-    "par": "CI, travail `deploye`, run 34052542121, job 101538606286, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 18:42:13Z→18:46:04Z, 223 s) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé",
+    "quand": "2026-09-06T19:01:37Z",
+    "par": "CI, travail `deploye`, run 34053223158, job 101541270484, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 19:01:32Z→19:01:37Z, 5 s) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé. Commit documentation seule (docs/REGISTRE_IDEES.md) : pas de rebuild Vercel nécessaire, d'où la mesure quasi instantanée",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "f1781a1b1fee3c06b2eabbb60a4a289f3dc99a5c",
+      "quand": "2026-09-06T18:46:04Z",
+      "par": "CI, travail `deploye`, run 34052542121, job 101538606286, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 18:42:13Z→18:46:04Z, 223 s) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé"
+    },
     {
       "sha": "24a0319c1d2face641415494ac61aa7324bc51ff",
       "quand": "2026-09-06T15:01:22Z",
