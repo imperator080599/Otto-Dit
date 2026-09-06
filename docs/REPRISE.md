@@ -6,7 +6,7 @@
 > `verify`) et l'état de git et des processus au moment de l'engendrement. **Ne pas l'éditer à
 > la main : relancer la commande.** Un instantané n'est vrai qu'à sa date.
 >
-> Engendré le 2026-09-06T08:49:20.785Z.
+> Engendré le 2026-09-06T09:36:59.413Z.
 
 ## 1. Où en est le projet — en dix lignes (la seule partie écrite à la main ; elle ne porte aucun chiffre)
 
@@ -41,9 +41,9 @@
 
 ## 2. Le SHA poussé et le SHA servi
 
-- **HEAD** : `590c301` — « Le transfert sur disque : CLAUDE.md réécrit, docs/REPRISE.md engendré, docs/CHASSE.md »
-- **État de l'arbre** : arbre propre : le disque est HEAD · aucune branche amont connue
-- **SHA servi** : `5017239` sur https://otto-dit.vercel.app, mesuré le 2026-09-04T00:13:06Z (il y a 57 h) par CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **DIFFÈRE du HEAD** `590c301` : ce que l'URL sert n'est pas ce que le disque porte, ou la mesure est périmée ; relancer `npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15` (depuis la CI ou une machine qui joint l'URL — le bac à sable de l'agent ne la joint pas)
+- **HEAD** : `22972b8` — « R37 : mesure directe par event_log — le clic n'atteint jamais le service »
+- **État de l'arbre** : arbre propre : le disque est HEAD · HEAD = `origin/claude/otto-session-resume-zimig9` selon la dernière synchronisation locale (`git fetch` pour le confirmer)
+- **SHA servi** : `5017239` sur https://otto-dit.vercel.app, mesuré le 2026-09-04T00:13:06Z (il y a 57 h) par CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **DIFFÈRE du HEAD** `22972b8` : ce que l'URL sert n'est pas ce que le disque porte, ou la mesure est périmée ; relancer `npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15` (depuis la CI ou une machine qui joint l'URL — le bac à sable de l'agent ne la joint pas)
   Historique : `a06a7f1` le 2026-09-04T00:07:37Z (atteint.ts, run 33820470648, job 100861844608, première observation (« 0 s · servi a06a7f1 ») avant que 5017239 ne devienne servi à 00:13:06Z) · `e004053` le 2026-09-03, heure non mesurée (constat en prose du commit a06a7f1 (« /api/sante sert e004053, celui d'hier matin ») ; aucune lecture datée de /api/sante n'accompagne ce constat — ne pas le lire comme une mesure rejouable)
 
 ## 3. Les fils ouverts, avec leur identifiant et leur état
@@ -57,9 +57,9 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 | Fil | Énoncé | État | Depuis | Note |
 |---|---|---|---|---|
 | #418 | « Minified React error #418 ; args[]=HTML » — vu en ligne sur la tâche A-05 de l'acceptation, capturé une fois en local avec son HTML servi et son DOM | EN CHASSE — hypothèse H à éprouver, protocole écrit (docs/CHASSE.md §1) ; le protocole du 2026-09-05 s'est révélé reposer sur un prédicat faux (revue hostile du 2026-09-06) et est à refaire | fil n°7, août 2026 | dernière occurrence en ligne : run 33819974774 sur a06a7f1 ; absente douze minutes plus tard sur 5017239 (même code d'application, plus le script de garde de déploiement). Ne pas ré-éliminer E1–E8. Le run 33644396275 cité par erreur en F5 est VERT (aucun #418) : à retirer de la liste. |
-| R41 | rédiger un papier depuis le programme crée une obligation que le parcours ne tient pas. | EN CHASSE — hypothèses 1 et 2 éliminées par lecture (le sélecteur IPE se rend pour tout papier trouvé du dossier ; le vrai défaut est l'asymétrie `.first()`/`.last()` de la station sur les liens de la vue programme) ; hypothèse 3 reformulée (revue hostile du 2026-09-06, docs/CHASSE.md §2) | 62b7064 | défaut de la STATION, pas du produit ; la station rougit et nomme sa cause. [hors dépôt : mandat du fondateur] demande le cas connu mauvais d'abord — cohérent avec la règle 17 du dépôt. |
+| R41 | CORRIGÉ le 2026-09-06 (SHA `c187cae`), confirmé en navigateur. | EN CHASSE — hypothèses 1 et 2 éliminées par lecture (le sélecteur IPE se rend pour tout papier trouvé du dossier ; le vrai défaut est l'asymétrie `.first()`/`.last()` de la station sur les liens de la vue programme) ; hypothèse 3 reformulée (revue hostile du 2026-09-06, docs/CHASSE.md §2) | 62b7064 | défaut de la STATION, pas du produit ; la station rougit et nomme sa cause. [hors dépôt : mandat du fondateur] demande le cas connu mauvais d'abord — cohérent avec la règle 17 du dépôt. |
 | R37 | après un re-tirage, aucune demande de pièces n'existe pour les lignes NEUVES, alors que l'écran annonce qu'elle a été engendrée. | EN CHASSE — hypothèses 1 et 3 éliminées par lecture pour le geste de l'écran (le bouton ne cible que l'échantillon COURANT `drawn` ; aucun chemin ne peut le rattacher au superseded) ; reste l'hypothèse que le harnais n'a pas cliqué le bon bouton, et la mesure SQL du backlog est à compléter (elle exclut par construction les demandes sans `sample_item_id`) — docs/CHASSE.md §3 | 580f2cf | deux des trois échecs du dernier parcours cliqué consigné (62b7064 : R37 ×2, R41 ×1 — voir docs/instantanes/verify.json). [hors dépôt : mandat du fondateur] le nomme premier chantier. |
-| R40 | `requireMember` ne filtre pas `exited_on`, alors que `assertMembre` le fait. | ouvert — défaut mesuré par la revue hostile de 62b7064, à un seul endroit (`requireMember` doit filtrer `exited_on` comme `assertMembre`) | 62b7064 | défaut préexistant à toutes les pages ; un membre sorti voit les boutons et sera refusé au geste. |
+| R40 | CORRIGÉ le 2026-09-06 (SHA `8558cbd`). | ouvert — défaut mesuré par la revue hostile de 62b7064, à un seul endroit (`requireMember` doit filtrer `exited_on` comme `assertMembre`) | 62b7064 | défaut préexistant à toutes les pages ; un membre sorti voit les boutons et sera refusé au geste. |
 | R39 | le programme de travail vit dans le groupe TRANSVERSE du rail, alors que R-03/ADR-112 posent que l'axe de la navigation est le POSTE. | ouvert — à trancher avec l'épure (étage 2 du mandat de nuit) | 62b7064 |  |
 | R38 | un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme. | ouvert — à trancher avec un auditeur (une sortie de périmètre se STATUE-t-elle, comme une sortie du tirage ?) | 62b7064 | le libellé de l'écran a été corrigé ; le fond ne l'est pas. |
 | R36 | `sortiesNonStatuees` fait tourner la requête complète pour un simple compte | ouvert — coût de lecture, négligeable sur la démonstration | 580f2cf |  |
@@ -77,7 +77,7 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 | R24 | le câblage de `withTenant` | traité à l'étage 0 de la nuit J3 (D-J3N-07 : poseur enregistré ; `screens:garde` sous LOC-01 armé, voir le tableau verify) — l'entrée du backlog est ANTÉRIEURE et dit encore « tant qu'il manque » | e004053 | même réserve que R27 ; l'étape 3 de PLAN_RLS reste INTERDITE et non faite. |
 | R42 | l'ADR de l'empreinte des migrations n'est pas écrit. | ouvert — règle 1 : le code est là (a06a7f1), le document non | a06a7f1 | à écrire en premier dans la prochaine session de contenu, sous le numéro qui suit ADR-134. |
 | R43 | la section « Current state » de STATUS.md est périmée. | ouvert — documentation périmée, à corriger dans le même geste que la prochaine tranche datée | 2026-09-05 | trouvé en écrivant le transfert. |
-| R44 | `docs/SEMEUR_VS_CHEMIN.md` n'existe pas. | ouvert — à engendrer par un script (objet · semeur crée ? · chemin humain ? · cliqué ?), pas à rédiger à la main | 2026-09-06 | CLAUDE.md règle 20 et docs/CHASSE.md s'y référaient comme à un objet déjà là ; trouvé absent par la revue hostile du transfert. Mandat du semeur §1. |
+| R44 | PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (SHA à la pousse de cette tranche), PAS FERMÉ. | ouvert — à engendrer par un script (objet · semeur crée ? · chemin humain ? · cliqué ?), pas à rédiger à la main | 2026-09-06 | CLAUDE.md règle 20 et docs/CHASSE.md s'y référaient comme à un objet déjà là ; trouvé absent par la revue hostile du transfert. Mandat du semeur §1. |
 | N2-1 | Les onglets d'ancrage n'existent que sur la page de poste. | ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste | nuit 2 |  |
 | N2-2 | Le semis vise au nom de personnes fictives | tenu pour acquis (convention du monde de démonstration, données fictives) ; à revoir le jour de vrais comptes | nuit 2 |  |
 | N2-3 | `created_at` des notes semées est reposé à chaque passage. | assumé et dit (ADR-126) : une note semée ne vieillit jamais sur la démonstration publique | nuit 2 |  |
@@ -109,6 +109,7 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 | `npx tsc --noEmit` | 0 erreur | `5017239` (PAS le HEAD) | 2026-09-04T00:08:22Z | CI `local`, run 33820470648, job 100861844890, étape « types » |
 | `npx vitest run` | 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:00Z | CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) » |
 | `npm run gardes` | vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:01Z | CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve) |
+| `npm run semeur` | **AUCUNE EXÉCUTION CONSIGNÉE** | — | — | — |
 | `npm run plancher` | vert (plancher 632) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
 | `npm run langue` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
 | `npm run langue:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
@@ -129,6 +130,7 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 - `npx tsc --noEmit` — dernière exécution sur `5017239` le 2026-09-04T00:08:22Z : 0 erreur
 - `npx vitest run` — dernière exécution sur `5017239` le 2026-09-04T00:17:00Z : 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après)
 - `npm run gardes` — dernière exécution sur `5017239` le 2026-09-04T00:17:01Z : vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z)
+- `npm run semeur` — jamais consignée
 - `npm run plancher` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert (plancher 632)
 - `npm run langue` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
 - `npm run langue:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
