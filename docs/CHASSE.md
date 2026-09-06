@@ -78,6 +78,13 @@
   stations rouges** avant d'être retiré (N2-4). Le MOMENT où le contenu existe change ce qu'un
   harnais lit. Ce n'est pas la cause du #418 (il existait avant et après), mais c'est le même
   terrain : le temps.
+- **F9 — Une occurrence LOCALE de plus, sans hypothèse nouvelle** (2026-09-06, arbre non commité
+  entre les commits `5b1bbc3` et `68acb39`+correctif R37, `npm run clics`, base fraîche) : DEUX
+  `#418` sur un même passage, `/portal/demo-sophie-altiverre/<jeton>` et
+  `/eng/<id>/requests/<rid>`, aucune des deux sur une page touchée par le correctif R37 de cette
+  session. Le passage IMMÉDIATEMENT précédent (même arbre, même base fraîche, une différence de
+  code non liée à #418) portait 0 incident. Rejoue exactement F7 : intermittent, pas éliminé,
+  pas aggravé — pas re-creusé ici, hors mandat de cette tranche (R37 → verify → R38/R39).
 
 ### Hypothèses ÉLIMINÉES — et par quoi
 
