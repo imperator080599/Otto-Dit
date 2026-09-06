@@ -233,7 +233,28 @@ son SHA et sa source (règle 21).
 poussé = SHA servi (règle 27).
 
 **R38 et R39 — décisions autonomes documentées, pas d'arbitrage silencieux.** Voir
-`docs/DECISIONS_AUTONOMES.md`, section « Session du 6 septembre 2026 ».
+`docs/DECISIONS_AUTONOMES.md`, section « Session du 6 septembre 2026 » (DA-33, DA-34).
+
+**R38 — navigabilité corrigée (commit 5c6b6a6), le fond méthodologique reste ouvert.** Un poste
+sorti du périmètre grisait son lien au rail même s'il portait déjà une procédure ou un papier
+(REV-01) — la leadsheet elle-même les affichait sans filtre, seul le CHEMIN jusqu'à elle était
+mort. `rail.ts` garde désormais atteignable tout poste hors périmètre qui porte une
+`procedure_instance`, un poste jamais travaillé restant grisé comme avant. Cas connu mauvais
+prouvé par `git stash` (rouge sans le correctif, vert avec), suite complète 850/850. L'écran du
+programme n'est PAS touché. La vraie question — sortir un poste du périmètre après y avoir
+travaillé doit-il se STATUER, comme une ligne sortie du tirage (ADR-133) ? — reste entière,
+réservée à un auditeur (DA-34).
+
+**R39 — laissé ouvert, délibérément.** Le programme de travail reste au groupe transverse du
+rail malgré la divergence avec R-03/ADR-112 : c'est une question d'architecture que le backlog
+rattache lui-même à un chantier plus large et pas commencé (l'épure, étage 2), pas un défaut
+isolé à corriger en passant (DA-33).
+
+**Chaîne verify RE-confirmée COMPLÈTE sur 5c6b6a6** (verify-full-5.log) après le correctif R38 :
+vitest **850/850** (+1, rail.test.ts), le reste inchangé (gardes 43, semeur 83/16/28/39, plancher
+632, langue 0/0, lectures 0/1681, parcours 244/244, screens 87/0, fumee 51/0, densite 77 écrans/0,
+clics 202 étapes/0 échec, visuel 312 vues/0). **SHA servi re-confirmé** = `9fa187c` (CI `deploye`,
+run 34035181666, 13:08:40Z→13:12:07Z) — le code de 5c6b6a6 est en ligne.
 
 ## Étage 1.1 — le programme de travail : l'écran qui manquait (2026-09-03, nuit J3)
 
