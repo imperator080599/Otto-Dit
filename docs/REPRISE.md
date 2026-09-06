@@ -6,7 +6,7 @@
 > `verify`) et l'état de git et des processus au moment de l'engendrement. **Ne pas l'éditer à
 > la main : relancer la commande.** Un instantané n'est vrai qu'à sa date.
 >
-> Engendré le 2026-09-06T08:33:38.468Z.
+> Engendré le 2026-09-06T08:49:20.785Z.
 
 ## 1. Où en est le projet — en dix lignes (la seule partie écrite à la main ; elle ne porte aucun chiffre)
 
@@ -41,9 +41,9 @@
 
 ## 2. Le SHA poussé et le SHA servi
 
-- **HEAD** : `5017239` — « La garde qui rend « poussé mais pas déployé » impossible »
-- **État de l'arbre** : arbre MODIFIÉ (11 fichier(s), docs/REPRISE.md excepté — son changement à chaque engendrement ne compte pas) : le disque n'est PAS HEAD — ce qui suit vaut pour HEAD, pas pour les modifications en cours · HEAD = `origin/main` selon la dernière synchronisation locale (`git fetch` pour le confirmer)
-- **SHA servi** : `5017239` sur https://otto-dit.vercel.app, mesuré le 2026-09-04T00:13:06Z (il y a 56 h) par CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **ÉGAL au HEAD**
+- **HEAD** : `590c301` — « Le transfert sur disque : CLAUDE.md réécrit, docs/REPRISE.md engendré, docs/CHASSE.md »
+- **État de l'arbre** : arbre propre : le disque est HEAD · aucune branche amont connue
+- **SHA servi** : `5017239` sur https://otto-dit.vercel.app, mesuré le 2026-09-04T00:13:06Z (il y a 57 h) par CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **DIFFÈRE du HEAD** `590c301` : ce que l'URL sert n'est pas ce que le disque porte, ou la mesure est périmée ; relancer `npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15` (depuis la CI ou une machine qui joint l'URL — le bac à sable de l'agent ne la joint pas)
   Historique : `a06a7f1` le 2026-09-04T00:07:37Z (atteint.ts, run 33820470648, job 100861844608, première observation (« 0 s · servi a06a7f1 ») avant que 5017239 ne devienne servi à 00:13:06Z) · `e004053` le 2026-09-03, heure non mesurée (constat en prose du commit a06a7f1 (« /api/sante sert e004053, celui d'hier matin ») ; aucune lecture datée de /api/sante n'accompagne ce constat — ne pas le lire comme une mesure rejouable)
 
 ## 3. Les fils ouverts, avec leur identifiant et leur état
@@ -104,18 +104,18 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 
 | Commande | Dernière exécution consignée | SHA | Quand | Source |
 |---|---|---|---|---|
-| `npm run db:reset` | vert — `db:setup` sur une machine neuve, base vide, équivalent | `5017239` | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
-| `npm run demo:seed` | vert | `5017239` | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
-| `npx tsc --noEmit` | 0 erreur | `5017239` | 2026-09-04T00:08:22Z | CI `local`, run 33820470648, job 100861844890, étape « types » |
-| `npx vitest run` | 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après) | `5017239` | 2026-09-04T00:17:00Z | CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) » |
-| `npm run gardes` | vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z) | `5017239` | 2026-09-04T00:17:01Z | CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve) |
-| `npm run plancher` | vert (plancher 632) | `5017239` | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run langue` | vert | `5017239` | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run langue:epreuve` | vert | `5017239` | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run lectures` | vert | `5017239` | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, étape « lectures … et l'épreuve » |
-| `npm run lectures:epreuve` | vert | `5017239` | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run parcours` | vert | `5017239` | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, étape « parcours … et l'épreuve » |
-| `npm run parcours:epreuve` | vert | `5017239` | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, même étape |
+| `npm run db:reset` | vert — `db:setup` sur une machine neuve, base vide, équivalent | `5017239` (PAS le HEAD) | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
+| `npm run demo:seed` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
+| `npx tsc --noEmit` | 0 erreur | `5017239` (PAS le HEAD) | 2026-09-04T00:08:22Z | CI `local`, run 33820470648, job 100861844890, étape « types » |
+| `npx vitest run` | 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:00Z | CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) » |
+| `npm run gardes` | vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:01Z | CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve) |
+| `npm run plancher` | vert (plancher 632) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
+| `npm run langue` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
+| `npm run langue:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
+| `npm run lectures` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, étape « lectures … et l'épreuve » |
+| `npm run lectures:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, même étape |
+| `npm run parcours` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, étape « parcours … et l'épreuve » |
+| `npm run parcours:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, même étape |
 | `npm run screens` | **PAS EXÉCUTÉ TEL QUEL** — seule la variante `screens:garde` a tourné : 85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue | `c36076f` | 2026-09-03T18:29:18Z | local, session Claude, arbre de travail de la nuit J3 (docs/MATIN_J4.md, tableau des preuves) — DATE NON MESURÉE À L'ORIGINE : `quand` ici est l'horodatage du commit c36076f (borne basse ; la mesure elle-même a eu lieu entre ce commit et 21:46:15Z, commit c52ffb9, qui la cite déjà) |
 | `npm run fumee` | **PAS EXÉCUTÉ TEL QUEL** — seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` a tourné : vert, 7 passages, graine 33820856994 | `5017239` | 2026-09-04T00:18:01Z | CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée » |
 | `npm run densite` | **AUCUNE EXÉCUTION CONSIGNÉE** | — | — | — |
@@ -124,6 +124,18 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 
 **Non exécutées sur le HEAD** (à passer avant de dire « vert », règle 12) :
 
+- `npm run db:reset` — dernière exécution sur `5017239` le 2026-09-04T00:08:36Z : vert — `db:setup` sur une machine neuve, base vide, équivalent
+- `npm run demo:seed` — dernière exécution sur `5017239` le 2026-09-04T00:08:36Z : vert
+- `npx tsc --noEmit` — dernière exécution sur `5017239` le 2026-09-04T00:08:22Z : 0 erreur
+- `npx vitest run` — dernière exécution sur `5017239` le 2026-09-04T00:17:00Z : 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après)
+- `npm run gardes` — dernière exécution sur `5017239` le 2026-09-04T00:17:01Z : vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z)
+- `npm run plancher` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert (plancher 632)
+- `npm run langue` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
+- `npm run langue:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
+- `npm run lectures` — dernière exécution sur `5017239` le 2026-09-04T00:17:30Z : vert
+- `npm run lectures:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:30Z : vert
+- `npm run parcours` — dernière exécution sur `5017239` le 2026-09-04T00:17:31Z : vert
+- `npm run parcours:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:31Z : vert
 - `npm run screens` — jamais exécuté TEL QUEL ; seule la variante `screens:garde` l'a été, sur `c36076f` le 2026-09-03T18:29:18Z : 85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue
 - `npm run fumee` — jamais exécuté TEL QUEL ; seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` l'a été, sur `5017239` le 2026-09-04T00:18:01Z : vert, 7 passages, graine 33820856994
 - `npm run densite` — jamais consignée
@@ -135,9 +147,9 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 - `npm run fumee` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → toujours non exécutée TELLE QUELLE ; seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` a tourné, sur `5017239` le 2026-09-04T00:18:01Z : vert, 7 passages, graine 33820856994 — CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée »
 - `npm run densite` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → **toujours non exécutée**
 - `npm run visuel` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → **toujours non exécutée**
-- `npm run parcours:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239`, 2026-09-04T00:17:31Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
-- `npm run lectures:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239`, 2026-09-04T00:17:30Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
-- `npm run langue:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239`, 2026-09-04T00:17:29Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
+- `npm run parcours:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:31Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
+- `npm run lectures:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:30Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
+- `npm run langue:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:29Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
 
 **Autres mesures consignées, hors chaîne** :
 
