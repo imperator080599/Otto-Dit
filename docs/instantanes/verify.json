@@ -1,78 +1,638 @@
 {
   "_": "CHAQUE EXÉCUTION D'UNE COMMANDE DE `npm run verify` EST CONSIGNÉE ICI avec son SHA, sa date, son résultat et sa source (règles 12 et 21). `npm run reprise` compare la chaîne de package.json à ce registre : une commande sans exécution sur le HEAD est imprimée « non exécutée », jamais tue. `precedent` transcrit la liste « non exécuté » du rapport précédent, ligne par ligne, et le script dit ce qui a bougé (règle du compte rendu, CLAUDE.md §4). Un champ `variante` marque une exécution qui n'est PAS le maillon nu de la chaîne (par exemple `fumee` contre l'URL déployée plutôt qu'en local) : le script la garde alors dans « non exécutées » et l'affiche à côté (revue hostile du 2026-09-06, qui avait trouvé la variante levant le maillon nu en silence).",
   "executions": [
-    { "commande": "db:reset", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:32:48Z", "resultat": "vert", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1 : détail du compte) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 14:32:48 » ; HEAD déjà au SHA cité (commit a46f4f5 à 14:32:18Z) quand la chaîne a démarré" },
-    { "commande": "demo:seed", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:32:48Z", "resultat": "vert", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset" },
-    { "commande": "tsc", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:32:48Z", "resultat": "0 erreur (aucune sortie — succès silencieux)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset" },
-    { "commande": "vitest", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:32:48Z", "resultat": "852/852, 100 fichiers (+1 depuis 5c6b6a6 : la disambiguïsation par poste de derniereDemandeDetailDeCompte) — « Start at 14:32:48 » (imprimé par vitest lui-même)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1)" },
-    { "commande": "gardes", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape" },
-    { "commande": "semeur", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, cette tranche ne sème rien)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "plancher", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 852 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "langue", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "langue:epreuve", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 15/15 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "lectures", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "lectures:epreuve", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 6/6 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "parcours", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 246 station(s) déclarée(s) (+2 : la station « détail du compte »), 246 figée(s), 0 station perdue", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "parcours:epreuve", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 5/5 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "screens", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "fumee", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "densite", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper (sampling passe à 2 actions primaires, dans le seuil de 5)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes" },
-    { "commande": "clics", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "204 étapes conduites (+2) · 0 échec(s) · 316 clics comptés sur 44 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1)" },
-    { "commande": "visuel", "sha": "a46f4f552136b52759786909e4664c5702bfb7f1", "quand": "2026-09-06T14:56:19Z", "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION (le nouveau panneau du sampling ne déborde nulle part)", "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0" },
-    { "commande": "db:reset", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T11:52:09Z", "resultat": "vert", "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 11:52:09 » ; HEAD déjà au SHA cité (commit 0b1749f à 11:49:33Z) quand la chaîne a démarré" },
-    { "commande": "demo:seed", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T11:52:09Z", "resultat": "vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events »", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset" },
-    { "commande": "tsc", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T11:52:09Z", "resultat": "0 erreur (aucune sortie — succès silencieux)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset" },
-    { "commande": "vitest", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T11:52:09Z", "resultat": "849/849, 100 fichiers — « Start at 11:52:09 », durée 336.36s (imprimé par vitest lui-même)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log)" },
-    { "commande": "gardes", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : fin du journal (mtime du fichier), l'étape suit vitest sans interruption ; pas d'horodatage propre à cette étape" },
-    { "commande": "semeur", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "plancher", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 849 test(s) collecté(s) par vitest · plancher 632 · aucune forme éteinte ou isolée", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "langue", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "langue:epreuve", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 15/15 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "lectures", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "lectures:epreuve", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 6/6 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "parcours", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "parcours:epreuve", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 5/5 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "screens", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE, pas la variante screens:garde)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "fumee", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "densite", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total", "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes" },
-    { "commande": "clics", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production", "source": "local, session Claude, chaîne verify complète (verify-full-4.log) ; CONFIRME sans nouveau figeage docs/PARCOURS.json, gelé par un run antérieur du même après-midi (commit fa47b36, 2026-09-06T10:47:30Z, mêmes chiffres) — ce run-ci ne l'a pas re-figé" },
-    { "commande": "visuel", "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c", "quand": "2026-09-06T12:15:34Z", "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION", "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0" },
-    { "commande": "db:reset", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T12:42:49Z", "resultat": "vert", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 12:42:49 » ; HEAD au SHA cité (commit 5c6b6a6 à 12:42:23Z) quand la chaîne a démarré" },
-    { "commande": "demo:seed", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T12:42:49Z", "resultat": "vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events »", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset" },
-    { "commande": "tsc", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T12:42:49Z", "resultat": "0 erreur (aucune sortie — succès silencieux)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset" },
-    { "commande": "vitest", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T12:42:49Z", "resultat": "850/850, 100 fichiers (+1 test : R38, rail.test.ts) — « Start at 12:42:49 », durée 363.42s (imprimé par vitest lui-même)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38)" },
-    { "commande": "gardes", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape" },
-    { "commande": "semeur", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, R38 n'a touché aucun objet du semeur)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "plancher", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 850 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "langue", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "langue:epreuve", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 15/15 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "lectures", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "lectures:epreuve", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 6/6 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "parcours", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "parcours:epreuve", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 5/5 cas connus mauvais dénoncés", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "screens", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "fumee", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "densite", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes" },
-    { "commande": "clics", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) ; CONFIRME sans nouveau figeage docs/PARCOURS.json (mêmes chiffres que le run précédent)" },
-    { "commande": "visuel", "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc", "quand": "2026-09-06T13:06:42Z", "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION", "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0" },
-    { "commande": "tsc", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:08:22Z", "resultat": "0 erreur", "source": "CI `local`, run 33820470648, job 100861844890, étape « types »" },
-    { "commande": "db:reset", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:08:36Z", "resultat": "vert — `db:setup` sur une machine neuve, base vide, équivalent", "source": "CI `local`, run 33820470648, job 100861844890, étape « base locale semée »" },
-    { "commande": "demo:seed", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:08:36Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, étape « base locale semée »" },
-    { "commande": "vitest", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:00Z", "resultat": "811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après)", "source": "CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) »" },
-    { "commande": "gardes", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:01Z", "resultat": "vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z)", "source": "CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve)" },
-    { "commande": "plancher", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:29Z", "resultat": "vert (plancher 632)", "source": "CI `local`, run 33820470648, job 100861844890, même étape" },
-    { "commande": "langue", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:29Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, même étape" },
-    { "commande": "langue:epreuve", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:29Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, même étape" },
-    { "commande": "lectures", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:30Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, étape « lectures … et l'épreuve »" },
-    { "commande": "lectures:epreuve", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:30Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, même étape" },
-    { "commande": "parcours", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:31Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, étape « parcours … et l'épreuve »" },
-    { "commande": "parcours:epreuve", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:17:31Z", "resultat": "vert", "source": "CI `local`, run 33820470648, job 100861844890, même étape" },
-    { "commande": "fumee", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:18:01Z", "resultat": "vert, 7 passages, graine 33820856994", "source": "CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée »", "variante": "fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)" },
-    { "commande": "screens", "sha": "c36076f", "quand": "2026-09-03T18:29:18Z", "resultat": "85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue", "source": "local, session Claude, arbre de travail de la nuit J3 (docs/MATIN_J4.md, tableau des preuves) — DATE NON MESURÉE À L'ORIGINE : `quand` ici est l'horodatage du commit c36076f (borne basse ; la mesure elle-même a eu lieu entre ce commit et 21:46:15Z, commit c52ffb9, qui la cite déjà)", "variante": "screens:garde" },
-    { "commande": "clics", "sha": "62b7064", "quand": "2026-09-03T23:34:48Z", "resultat": "201 étapes / 3 échecs (R37 ×2, R41) / 0 incident d'hydratation — base fraîche, build de production", "source": "local, session Claude ; message du commit 62b7064 et docs/MATIN_J4.md" },
-    { "commande": "accept", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:21:44Z", "resultat": "17 tâches, 0 FAIL — acceptation cliquée contre l'URL déployée (hors chaîne `verify`)", "source": "CI `url`, run 33820856994, job 100863000631, étape « acceptation cliquée contre l'URL déployée »" },
-    { "commande": "accept", "sha": "a06a7f10a60dfbe3bbe42954d4af524069ed7e4c", "quand": "2026-09-04T00:06:55Z", "resultat": "17 tâches, 1 FAIL — A-05 : refus « papier visé » observé, PUIS #418 compté (docs/CHASSE.md §1, F5)", "source": "CI `url`, run 33819974774, job 100860332217" },
-    { "commande": "accept:epreuve", "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7", "quand": "2026-09-04T00:18:36Z", "resultat": "3 cas connus mauvais, 3 déclarés FAIL", "source": "CI `url`, run 33820856994, job 100863000631" }
+    {
+      "commande": "db:reset",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:32:48Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1 : détail du compte) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 14:32:48 » ; HEAD déjà au SHA cité (commit a46f4f5 à 14:32:18Z) quand la chaîne a démarré"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:32:48Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset"
+    },
+    {
+      "commande": "tsc",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:32:48Z",
+      "resultat": "0 erreur (aucune sortie — succès silencieux)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset"
+    },
+    {
+      "commande": "vitest",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:32:48Z",
+      "resultat": "852/852, 100 fichiers (+1 depuis 5c6b6a6 : la disambiguïsation par poste de derniereDemandeDetailDeCompte) — « Start at 14:32:48 » (imprimé par vitest lui-même)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1)"
+    },
+    {
+      "commande": "gardes",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, cette tranche ne sème rien)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "plancher",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 852 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "langue",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 246 station(s) déclarée(s) (+2 : la station « détail du compte »), 246 figée(s), 0 station perdue",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "screens",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "fumee",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "densite",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper (sampling passe à 2 actions primaires, dans le seuil de 5)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes"
+    },
+    {
+      "commande": "clics",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "204 étapes conduites (+2) · 0 échec(s) · 316 clics comptés sur 44 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1)"
+    },
+    {
+      "commande": "visuel",
+      "sha": "a46f4f552136b52759786909e4664c5702bfb7f1",
+      "quand": "2026-09-06T14:56:19Z",
+      "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION (le nouveau panneau du sampling ne déborde nulle part)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T11:52:09Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 11:52:09 » ; HEAD déjà au SHA cité (commit 0b1749f à 11:49:33Z) quand la chaîne a démarré"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T11:52:09Z",
+      "resultat": "vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events »",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset"
+    },
+    {
+      "commande": "tsc",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T11:52:09Z",
+      "resultat": "0 erreur (aucune sortie — succès silencieux)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset"
+    },
+    {
+      "commande": "vitest",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T11:52:09Z",
+      "resultat": "849/849, 100 fichiers — « Start at 11:52:09 », durée 336.36s (imprimé par vitest lui-même)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log)"
+    },
+    {
+      "commande": "gardes",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : fin du journal (mtime du fichier), l'étape suit vitest sans interruption ; pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "plancher",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 849 test(s) collecté(s) par vitest · plancher 632 · aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "langue",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "screens",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE, pas la variante screens:garde)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "fumee",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "densite",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes"
+    },
+    {
+      "commande": "clics",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log) ; CONFIRME sans nouveau figeage docs/PARCOURS.json, gelé par un run antérieur du même après-midi (commit fa47b36, 2026-09-06T10:47:30Z, mêmes chiffres) — ce run-ci ne l'a pas re-figé"
+    },
+    {
+      "commande": "visuel",
+      "sha": "0b1749fba167e0fe0b67a142a6852a4cce40637c",
+      "quand": "2026-09-06T12:15:34Z",
+      "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION",
+      "source": "local, session Claude, chaîne verify complète (verify-full-4.log) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T12:42:49Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 12:42:49 » ; HEAD au SHA cité (commit 5c6b6a6 à 12:42:23Z) quand la chaîne a démarré"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T12:42:49Z",
+      "resultat": "vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events »",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset"
+    },
+    {
+      "commande": "tsc",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T12:42:49Z",
+      "resultat": "0 erreur (aucune sortie — succès silencieux)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset"
+    },
+    {
+      "commande": "vitest",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T12:42:49Z",
+      "resultat": "850/850, 100 fichiers (+1 test : R38, rail.test.ts) — « Start at 12:42:49 », durée 363.42s (imprimé par vitest lui-même)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38)"
+    },
+    {
+      "commande": "gardes",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, R38 n'a touché aucun objet du semeur)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "plancher",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 850 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "langue",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "screens",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec (base locale, commande NUE)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "fumee",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "densite",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes"
+    },
+    {
+      "commande": "clics",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) ; CONFIRME sans nouveau figeage docs/PARCOURS.json (mêmes chiffres que le run précédent)"
+    },
+    {
+      "commande": "visuel",
+      "sha": "5c6b6a67769c8680055b3d77e4732627ab28b0dc",
+      "quand": "2026-09-06T13:06:42Z",
+      "resultat": "vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION",
+      "source": "local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0"
+    },
+    {
+      "commande": "tsc",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:08:22Z",
+      "resultat": "0 erreur",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « types »"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:08:36Z",
+      "resultat": "vert — `db:setup` sur une machine neuve, base vide, équivalent",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « base locale semée »"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:08:36Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « base locale semée »"
+    },
+    {
+      "commande": "vitest",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:00Z",
+      "resultat": "811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après)",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) »"
+    },
+    {
+      "commande": "gardes",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:01Z",
+      "resultat": "vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z)",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve)"
+    },
+    {
+      "commande": "plancher",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:29Z",
+      "resultat": "vert (plancher 632)",
+      "source": "CI `local`, run 33820470648, job 100861844890, même étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:29Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, même étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:29Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, même étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:30Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « lectures … et l'épreuve »"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:30Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, même étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:31Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, étape « parcours … et l'épreuve »"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:17:31Z",
+      "resultat": "vert",
+      "source": "CI `local`, run 33820470648, job 100861844890, même étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:18:01Z",
+      "resultat": "vert, 7 passages, graine 33820856994",
+      "source": "CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée »",
+      "variante": "fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)"
+    },
+    {
+      "commande": "screens",
+      "sha": "c36076f",
+      "quand": "2026-09-03T18:29:18Z",
+      "resultat": "85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue",
+      "source": "local, session Claude, arbre de travail de la nuit J3 (docs/MATIN_J4.md, tableau des preuves) — DATE NON MESURÉE À L'ORIGINE : `quand` ici est l'horodatage du commit c36076f (borne basse ; la mesure elle-même a eu lieu entre ce commit et 21:46:15Z, commit c52ffb9, qui la cite déjà)",
+      "variante": "screens:garde"
+    },
+    {
+      "commande": "clics",
+      "sha": "62b7064",
+      "quand": "2026-09-03T23:34:48Z",
+      "resultat": "201 étapes / 3 échecs (R37 ×2, R41) / 0 incident d'hydratation — base fraîche, build de production",
+      "source": "local, session Claude ; message du commit 62b7064 et docs/MATIN_J4.md"
+    },
+    {
+      "commande": "accept",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:21:44Z",
+      "resultat": "17 tâches, 0 FAIL — acceptation cliquée contre l'URL déployée (hors chaîne `verify`)",
+      "source": "CI `url`, run 33820856994, job 100863000631, étape « acceptation cliquée contre l'URL déployée »"
+    },
+    {
+      "commande": "accept",
+      "sha": "a06a7f10a60dfbe3bbe42954d4af524069ed7e4c",
+      "quand": "2026-09-04T00:06:55Z",
+      "resultat": "17 tâches, 1 FAIL — A-05 : refus « papier visé » observé, PUIS #418 compté (docs/CHASSE.md §1, F5)",
+      "source": "CI `url`, run 33819974774, job 100860332217"
+    },
+    {
+      "commande": "accept:epreuve",
+      "sha": "50172392d5e60a7a67ec1250a4ba3b294584e8f7",
+      "quand": "2026-09-04T00:18:36Z",
+      "resultat": "3 cas connus mauvais, 3 déclarés FAIL",
+      "source": "CI `url`, run 33820856994, job 100863000631"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:13:00Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : vitest imprime lui-même « Start at 18:13:00 »"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:13:00Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : vitest imprime lui-même « Start at 18:13:00 »"
+    },
+    {
+      "commande": "tsc",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:13:00Z",
+      "resultat": "0 erreur (aucune sortie — succès silencieux)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : vitest imprime lui-même « Start at 18:13:00 »"
+    },
+    {
+      "commande": "vitest",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:13:00Z",
+      "resultat": "856/856, 101 fichiers (+1 depuis a46f4f5 : account-detail.test.ts) — « Start at 18:13:00 » (imprimé par vitest lui-même)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées)"
+    },
+    {
+      "commande": "gardes",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé : le détail importé et son rapprochement naissent d'un geste RÉEL de l'auditeur/du client, jamais du semeur — hors registre)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "plancher",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 856 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 249 station(s) déclarée(s), 249 figée(s), 0 perdue (+3 depuis a46f4f5 : les deux stations du rapprochement et le refus POP-02, figées par --figer avant ce commit)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "screens",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "densite",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "clics",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 207 étapes conduites, 0 échec, 319 clics comptés sur 45 gestes, sonde d'hydratation : aucun incident, garde du parcours : 193 station(s) figée(s) vérifiée(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "visuel",
+      "sha": "0a95fb12f7272b0c8c1dcb6638019a0b5ee9f677",
+      "quand": "2026-09-06T18:37:12Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    }
   ],
   "precedent": {
     "source": "docs/REPRISE.md engendré le 2026-09-06T14:57:12Z (SHA a46f4f5, chaîne verify complète, verify-full-6.log, Lot 2 étape 1)",
