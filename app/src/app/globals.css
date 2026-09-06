@@ -241,6 +241,13 @@ a.etape:hover { text-decoration: none; background: var(--row-hover); }
    Chaque panneau devient donc son propre défileur. La page ne bouge plus. */
 @media (max-width: 760px) {
   .panel { overflow-x: auto; }
+  /* MÊME RÈGLE POUR UN TABLEAU DANS UN REPLI QUI N'EST PAS AUSSI DANS UN
+     `.panel` (`/eng/[id]/team`, table.data à 418px, débordait la PAGE de
+     59px — npm run visuel, masqué jusqu'ici par le débordement, bien plus
+     grand, de .bascule-liste, corrigé juste au-dessus). `details.repli` se
+     peint comme un panneau (même fond) mais n'hérite pas de sa règle : son
+     corps la reçoit ici, au même point de rupture. */
+  .repli-corps { overflow-x: auto; }
   /* LE BANDEAU SE REPLIE AU LIEU DE SE COUPER. À 390 px, sa hauteur fixe de
      48 px faisait déborder le nom du cabinet par-dessus le badge, et
      l'identité de l'utilisateur sortait de l'écran par la droite : on ne
