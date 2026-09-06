@@ -180,6 +180,17 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     Quand un plan chiffre un invariant (un compte de décors qui ne doit que baisser, un compte de
     preuves qui ne doit que monter — R44, mandat du semeur §1), l'écran de fin de lot affiche les
     deux chiffres côte à côte, engendrés, jamais tapés de mémoire.
+33. **Tout mandat du fondateur est commité VERBATIM dans `docs/MANDATS/` AVANT d'être exécuté**, et
+    le registre (BACKLOG_REPORTE.md, REGISTRE_IDEES.md, STATUS.md) CITE ce fichier — un numéro de
+    section, jamais une paraphrase, jamais un résumé de conversation. **Un mandat qui n'est pas
+    dans le dépôt n'existe pas** : il meurt à la première compaction de contexte, exactement comme
+    ce fichier le dit depuis toujours d'une règle qui ne vivrait que dans une conversation (voir
+    l'en-tête). C'est arrivé une fois, le 2026-09-06 : le plan d'autonomie complet du Lot 2 (Partie
+    B, sept étapes) n'avait jamais été commité — seulement discuté en session — et une compaction
+    l'a réduit à un résumé approximatif que la session suivante a correctement REFUSÉ de construire
+    dessus (règle 18 : une reconstruction n'est pas une citation). Le fichier verbatim est
+    `docs/MANDATS/2026-09-05_plan_autonomie.md`. Nommer le fichier `AAAA-MM-JJ_<titre-court>.md` à
+    la date de RÉCEPTION du mandat, pas à la date du commit qui le consigne s'il diffère.
 
 ## 2. Interdits — sans exception, quel que soit le mandat
 

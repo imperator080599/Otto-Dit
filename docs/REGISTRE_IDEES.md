@@ -290,27 +290,50 @@ Aucun des deux n'est commencé.*
 | I-1 | **Obligations du dossier** : les exigences normatives du cycle de mission (acceptation, lettre de mission, indépendance, stratégie, fraude, continuité, événements postérieurs, lettre d'affirmation, gouvernance, revue indépendante, assemblage, archivage) deviennent une DONNÉE DU PACK — pour chacune : ce qu'elle est, le jalon où elle est due, ce qui la satisfait, qui la signe, ce qu'elle bloque. La plateforme TIENT les obligations et bloque le visa ; elle N'ÉCRIT JAMAIS de texte réglementé qui quitte le cabinet — le cabinet apporte ses gabarits dans son pack, la plateforme pré-remplit les champs factuels, un humain finalise (L2). Tout contenu normatif précis est une ligne `verifie:false` jusqu'à lecture du texte primaire par le fondateur (règle 8). L'opinion n'est pas formée par la plateforme : elle affiche ce que le dossier SOUTIENT (anomalies non corrigées contre matérialité, limitations, continuité) comme proposition motivée, et bloque la signature tant que chaque condition n'est pas documentée. | planifié — après Lot 2 | Contenu de pack (règle 9), pas d'architecture nouvelle : une table d'obligations par pack (`methodology/*.json`), un jalon par obligation, un statut dérivé qui bloque le visa aux côtés des familles d'obstacles existantes. Recoupe H-1/H-2 (le cycle de vie du constat) sans les remplacer. |
 | I-2 | **N-1 contextuel** : sur chaque champ rédigé et chaque section de test — PAS les leadsheets — un bouton « Voir N-1 » affiche, en lecture seule depuis le dossier N-1 SCELLÉ, ce qui y était documenté. Trois règles : montrer, jamais pré-remplir — reprendre est un geste qui marque le champ « repris de N-1, non revu » et bloque le visa jusqu'à modification ou confirmation explicite ; tout champ de N identique octet pour octet à N-1 est signalé « identique à N-1 — confirmé ? » ; une fois N rédigé, le réviseur voit le DIFF, pas les deux textes. L'agent lit N-1 et les chiffres de N et PROPOSE une rédaction en citant ce qu'il garde et ce qu'il change (L2). L'écran « Prior-year carry-forward » disparaît au profit de ce mécanisme. | planifié — après Lot 2 | Remplace/absorbe l'écran `carry-forward` actuel (R-01/S-12 le visaient déjà pour suppression) ; s'accroche à l'archive scellée N-1 déjà existante (clôture + SHA-256, ADR-…) comme source de lecture seule ; le geste « repris de N-1, non revu » est une nouvelle famille d'obstacle au visa, sur le même modèle que les familles existantes (naît en avertissement sauf preuve contraire, règle 25). |
 
-## J. Lot 2, la suite (étapes 3 à 7) — RECONSTITUÉ, PAS VERBATIM (2026-09-06)
+## J. Lot 2, la suite (étapes 3 à 7) — citations du mandat verbatim (2026-09-06)
 
-*Le mandat original du fondateur pour le Lot 2 entier a été donné en session, avant l'étape 1 —
-et n'a JAMAIS été consigné mot pour mot dans docs/ (la faute exacte que règle 0 de CLAUDE.md
-nomme : « une règle qui ne vit que dans une conversation meurt avec elle »). Une compaction de
-contexte est survenue entre l'étape 2 et cette ligne ; ce qui suit vient du RÉSUMÉ produit par
-cette compaction, lui-même une reconstruction, pas une citation. Recherché avant d'écrire cette
-ligne : `docs/BACKLOG_REPORTE.md`, `docs/REGISTRE_IDEES.md`, `STATUS.md`, `app/src/lib/semeur/
-registre.ts` — AUCUN ne porte le texte d'origine mot pour mot. Les cinq décors que le résumé
-attribue au Lot 2 (« demandes client, tirage initial, population, taille, détail de compte ») ne
-correspondent pas terme à terme aux 16 lignes `DÉCOR` réelles de `registre.ts` (`docs/
-SEMEUR_VS_CHEMIN.md`) — la reconstruction est donc APPROXIMATIVE, pas fiable au mot près. **Ne
-pas construire une étape 3+ à partir de cette ligne seule** sans re-vérifier contre le code ce
-qu'elle prétend cibler ; si le texte d'origine du fondateur ressurgit (nouveau message, autre
-session), IL PRIME sur cette reconstruction et cette ligne se corrige en le citant.*
+*Le 2026-09-06, une compaction de contexte avait réduit le plan d'autonomie du Lot 2 à un résumé
+approximatif — la ligne précédente ici même le disait et refusait, à raison, de construire dessus
+(règle 18). Le fondateur a transmis le texte intégral le jour même ; il est désormais commité
+VERBATIM dans **`docs/MANDATS/2026-09-05_plan_autonomie.md`** (règle 33 de CLAUDE.md). Les lignes
+ci-dessous CITENT ce fichier par section — elles ne le paraphrasent plus.*
 
-| id | idée (telle que reconstruite) | état | réserve |
-|---|---|---|---|
-| J-1 | **Étape 3 — la population** : dérivée du détail rapproché (étape 2), jamais saisie à la main. | planifié — non commencé | `revenuePopulation()` (`population.ts`) est DÉJÀ dérivée (requête `gl_entry`, jamais stockée) et NE dépend PAS du nouveau `account_detail_import` (étape 2) — un sous-grand-livre client (créances/dettes/etc.), pas la population de transactions du test de détail. Le lien exact entre les deux reste À CONFIRMER avant tout code. |
-| J-2 | **Étape 4 — le tirage** : devient un geste humain cliquable (aujourd'hui, `sample`/`sample_item` existent mais leur déclenchement navigateur n'est pas confirmé prouvé) ; POP-01 (« pas de tirage sur une population non rapprochée ») s'y câble. | planifié — non commencé | Un gate `fsliRecoGate` (TB↔GL, `reconciliation.ts`) existe DÉJÀ et bloque `revenuePopulation` — POP-01 serait un second gate, sur le rapprochement de détail (étape 2), à côté du premier, pas un remplacement. |
-| J-3 | **Étape 5 — les pièces et leurs demandes**, par type de pièce, bouton en un clic. | planifié — non commencé | Chevauche potentiellement le décor `demande de listing formelle` (`part2.ts:37-40`, DÉCOR réel) et/ou `courrier entrant traité` (`part1.ts:135,160`, DÉCOR réel) — à vérifier lequel(s) avant de coder. |
-| J-4 | **Étape 6 — la grille, à deux niveaux d'en-tête.** | planifié — non commencé | Aucune correspondance identifiée dans `registre.ts` à ce stade ; portée non vérifiée. |
-| J-5 | **Étape 7 — la colonne ajoutée à la main** engendre sa demande, avec les refus REQ-01/REQ-02/COL-01. | planifié — non commencé | La « colonne ajoutée » existe déjà en partie (ADR-099, STATUS.md) ; ce qui change ici (« engendre sa demande ») n'est pas construit. Les codes de refus REQ-01/REQ-02/COL-01 ne sont câblés nulle part dans le dépôt actuel (recherché, absents). |
+| id | citation | état |
+|---|---|---|
+| J-1 | Mandat §B.2, Étape 3 — la population, dérivée du détail rapproché, jamais saisie. | planifié — non commencé |
+| J-2 | Mandat §B.2, Étape 4 — le tirage initial devient un geste humain cliquable ; §B.2 Étape 2, refus `POP-01`. | planifié — non commencé |
+| J-3 | Mandat §B.2, Étape 5 — les pièces et leurs demandes, par type de pièce, en un clic (par ligne et en lot). | planifié — non commencé |
+| J-4 | Mandat §B.2, Étape 6 — la grille à deux niveaux d'en-tête. | planifié — non commencé |
+| J-5 | Mandat §B.2, Étape 7 — la colonne ajoutée à la main engendre sa demande ; §B.4, les cinq refus `POP-01`/`POP-02`/`REQ-01`/`REQ-02`/`COL-01`. | planifié — non commencé |
+
+### Les « cinq décors » du mandat (§D.1, Lot 2) contre le registre RÉEL — le registre fait foi
+
+Le mandat (§D.1) écrit : *« Ce lot referme à lui seul cinq décors : demandes client, tirage
+initial, population, taille, détail de compte. »* Cette phrase est antérieure au registre
+(`app/src/lib/semeur/registre.ts`, R44, 2026-09-06) — le fondateur le dit lui-même (point 3 de son
+message du 2026-09-06) : **c'est une estimation, pas une mesure ; le registre prime.**
+
+Vérifié contre les 16 lignes `DÉCOR` réelles (`docs/SEMEUR_VS_CHEMIN.md`, chacune relue dans son
+code source, pas seulement par son libellé — règle 15) : **aucune des seize ne nomme ni ne recouvre
+« demandes client », « tirage initial », « population » ou « taille » au sens du mandat.** Les deux
+candidats les plus proches par le texte se sont révélés être AUTRE CHOSE à la lecture du code :
+`demande de listing formelle` (`part2.ts:37-40`) est `requestAndImportListing`, une demande de
+LISTING DE CONTRÔLE SOX (pack PCAOB, Lot 3/Partie C) — pas une demande de détail de compte revenue ;
+`extension à la population complète` (`part2.ts:115`) est `extendToFullPopulation`, l'extension
+d'un test d'attributs SOX après déviation (Lot 3, nature `tests_de_controles`) — pas la population
+de transactions du test de détail que Partie B nomme. Ni « détail de compte » (l'étape 1 du Lot 2,
+déjà livrée, commit `a46f4f5`) ni « rapprochement » (l'étape 2, commit `0a95fb1`) n'ont JAMAIS
+existé comme ligne `DÉCOR` : les deux ont été construites avec leur chemin humain et leur station
+cliquée dès le premier commit, sans jamais passer par un raccourci du semeur — il n'y avait donc
+rien à fermer pour elles, et le compte `83/16/28/39` est resté inchangé aux deux étapes,
+exactement comme mesuré et consigné dans `STATUS.md`.
+
+**Ce que « referme cinq décors » veut donc dire, en pratique mesurable** : PAS faire baisser un
+compte de 16 à 11 (aucune des seize lignes actuelles n'est visée par Partie B). Le vrai invariant,
+déjà tenu aux étapes 1 et 2 et à tenir identiquement aux étapes 3 à 7 : **ne jamais introduire de
+décor nouveau** — chaque objet neuf de Partie B (population dérivée, tirage cliqué, demande par
+pièce, colonne engendrant sa demande) naît avec son chemin humain et sa station cliquée dans le
+MÊME commit que le service, jamais semé en raccourci d'abord. Le compte à surveiller à la fin de
+chaque étape reste `83/16/28/39` — toute hausse du deuxième chiffre est un manquement à corriger
+avant de continuer (règle 32 de CLAUDE.md : un décor nouveau bloque le lot suivant).
 
