@@ -1093,9 +1093,18 @@ export async function conduire(
       t.match(/(seed|germe)[^\n]{0,40}/i)?.[0] ?? 'affichée');
 
     if (await compte(`button:has-text("${L('samp.generatePbcRequest')}")`)) {
+      /* R37 (docs/CHASSE.md §3) — INSTRUMENTATION, PAS UNE CORRECTION : on
+         imprime ce qu'on a longtemps deviné, avant de corriger quoi que ce
+         soit (règle 18). L'id soumis, capturé AVANT le clic — pour comparer
+         au sample réellement 'drawn' en base au même instant, sans supposer
+         qu'il est resté frais. */
+      const sampleIdSoumis = await p.locator('form:has(button:has-text("'
+        + L('samp.generatePbcRequest') + '")) input[name=sample_id]').getAttribute('value').catch(() => null);
       await cliquer(`button:has-text("${L('samp.generatePbcRequest')}")`, 6000);
+      const urlApresClic = p.url();
       dire('sondage : la demande de pièces naît DE la sélection, pas d’une saisie',
-        !refus(p), refus(p) ?? 'demande engendrée');
+        !refus(p), (refus(p) ?? 'demande engendrée')
+          + ` [instrumentation R37 : sample_id soumis=${sampleIdSoumis}, url après clic=${urlApresClic}]`);
     }
   });
 
