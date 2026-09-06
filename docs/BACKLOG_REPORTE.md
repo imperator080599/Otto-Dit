@@ -286,3 +286,28 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   citer ce document comme preuve. Les 16 décors ne sont PAS tous des manques à corriger : `note de
   revue antidatée` et une partie de la sonde `/api/sante` sont des décors ASSUMÉS par ailleurs
   (N2-3, ADR-126) — le document le dit ligne par ligne, ne pas les re-déclarer comme neufs.
+
+## Reporté en clôturant Lot 2, étape 2 : le rapprochement (2026-09-06)
+
+- **R45 — une SIXIÈME famille de bruit non filtrée dans `app/src/lib/core/hydratation.ts`,
+  PROUVÉE par exécution (règle 18), PAS CORRIGÉE ici.** `verify-full-9.log` (Lot 2, étape 2)
+  portait un incident #418 sur `/eng/<id>/workpapers/<wid>` avec `memePage=vrai`, flux complet,
+  et 16 « divergences » — toutes de la même forme : `style="flex:1"` (serveur) contre
+  `style="flex: 1 1 0%"` (client), `style="margin:4px 0"` contre `style="margin: 4px 0px"`. Rejoué
+  hors du parcours cliqué, sans navigateur du dépôt : `node -e` avec Playwright/Chromium
+  (`/opt/pw-browsers/chromium`), `el.style.flex = '1'` puis `el.style.margin = '4px 0'` suivis
+  d'une lecture d'`outerHTML`, rendent EXACTEMENT ces deux transformations — confirmé qu'un simple
+  `page.setContent` (attribut HTML brut, jamais touché par l'API JS `.style`) ne les produit PAS :
+  seule l'affectation programmatique (celle que React fait pour tout `style={{...}}`) déclenche la
+  RE-sérialisation CSSOM du navigateur. `normaliser()` (hydratation.ts:107-108, la fonction
+  `styles`) ne retire que les espaces autour de `:`/`;` dans le texte du style ; elle ne canonise
+  PAS les raccourcis CSS ni les unités implicites — donc CE bruit-là n'est PAS dans les cinq
+  familles déjà nommées par E5 (docs/CHASSE.md), et pas tenu par un cas connu mauvais dans
+  `hydratation.test.ts`. Une fois ce bruit écarté À LA MAIN, les 16 « divergences » de cet
+  incident deviennent ZÉRO — aucune divergence structurelle réelle derrière (consigné comme F11,
+  docs/CHASSE.md). **Pourquoi reporté plutôt que corrigé dans cette tranche** : hors mandat de
+  Lot 2 étape 2 (le rapprochement) ; le fil #418 (fil n°7) a son propre mandat, et rule 32 demande
+  de fermer l'étage courant avant d'en ouvrir un autre. À corriger avec son propre cas connu
+  mauvais (règle 17) le jour où le fil #418 reprend : soit canoniser `flex`/les longueurs à zéro
+  dans `styles()`, soit — plus robuste, plus large — passer les DEUX côtés par le même Chromium
+  avant de comparer (renoncerait à la contrainte « pure, sans navigateur » du fichier, à trancher).

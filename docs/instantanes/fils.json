@@ -135,6 +135,12 @@
       "note": "compte de départ figé par le fondateur (16/28/39) ; chaque lot doit faire baisser les décors et monter les prouvés. Cohérence vérifiée par app/src/lib/semeur/coherence.ts (2 cas connus mauvais + le registre réel)."
     },
     {
+      "id": "R45",
+      "etat": "ouvert — trouvé et PROUVÉ (règle 18, Chromium de Playwright), PAS CORRIGÉ : `app/src/lib/core/hydratation.ts` ne canonise pas les raccourcis CSS ni les unités implicites que le navigateur ajoute quand React affecte `style` programmatiquement (`flex:1` → `flex: 1 1 0%`, `margin:4px 0` → `margin: 4px 0px`) — une sixième famille de bruit non filtrée, absente de E5 et de hydratation.test.ts",
+      "depuis": "2026-09-06 (F11, docs/CHASSE.md §1)",
+      "note": "reporté hors mandat de Lot 2 étape 2 ; à corriger avec son propre cas connu mauvais le jour où le fil #418 reprend."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

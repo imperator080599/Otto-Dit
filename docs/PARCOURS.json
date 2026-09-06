@@ -277,6 +277,18 @@
       "gabarit": false
     },
     {
+      "nom": "rapprochement : importer le détail engendre une ligne RÉELLE, pas seulement une redirection",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure un écart non nul SANS explication est refusé par le serveur (POP-02)",
+      "gabarit": false
+    },
+    {
+      "nom": "rapprochement : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },

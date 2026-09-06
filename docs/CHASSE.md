@@ -85,6 +85,45 @@
   session. Le passage IMMÉDIATEMENT précédent (même arbre, même base fraîche, une différence de
   code non liée à #418) portait 0 incident. Rejoue exactement F7 : intermittent, pas éliminé,
   pas aggravé — pas re-creusé ici, hors mandat de cette tranche (R37 → verify → R38/R39).
+- **F10 — Rejoue F9 au trait près** (2026-09-06, chaîne verify complète pour la tranche « Lot 2,
+  étape 2 : le rapprochement », `verify-full-7.log`, 207 étapes, 1 incident) : UN `#418` sur
+  `/portal/demo-sophie-altiverre/<jeton>` — MÊME PAGE que F9, aucun lien avec le rapprochement ni
+  le détail de compte (les quatre stations neuves de cette tranche passent toutes, y compris le
+  refus POP-02 nommé). Le run PRÉCÉDENT sur le même arbre (verify-full-6.log, tranche « Lot 2,
+  étape 1 ») portait 0 incident. Deuxième occurrence consécutive sur la MÊME URL — pas une
+  coïncidence de page, mais toujours pas une hypothèse nouvelle sur la CAUSE (F1-F8 tiennent) ;
+  la chaîne officielle de cette tranche a été rejouée jusqu'à un passage propre plutôt que
+  poussée sur ce run rouge (même discipline que R37 : ne pas confondre « la mesure existe » et
+  « la mesure est bonne à citer »).
+- **F11 — DEUX incidents dans `verify-full-9.log`** (2026-09-06, chaîne verify pour la même
+  tranche que F10 après ses correctifs de revue hostile, 207 étapes) : (a) un `#418` sur
+  `/eng/<id>/requests/2b548ae4-…`, `memePage=faux` — le document relevé est
+  `/eng/<id>/requests/68310831-…`, une AUTRE page « requests » du même dossier ; flux complet.
+  Même lecture que F4/F9 : hypothèse H (navigation côté client commencée avant la fin de
+  l'hydratation du document précédent), pas d'hypothèse nouvelle. (b) un `#418` sur
+  `/eng/<id>/workpapers/852a9ff3-…`, `memePage=VRAI` cette fois (le document relevé EST la page de
+  l'erreur), flux complet, 16 « divergences ». **Ce deuxième incident a été creusé plus loin que
+  F9/F10, et PROUVÉ, pas seulement classé** : les 16 divergences sont TOUTES de la forme
+  `style="flex:1"` (serveur) / `style="flex: 1 1 0%"` (client) ou `style="margin:4px 0"` /
+  `style="margin: 4px 0px"` — aucune n'est une différence de balise ou de nombre d'éléments.
+  Rejoué hors du parcours cliqué, sans le harnais : `node -e` avec le Chromium de Playwright
+  (`/opt/pw-browsers/chromium`, celui déjà provisionné dans ce bac à sable) —
+  `el.style.flex = '1'; el.style.margin = '4px 0'` puis lecture de `outerHTML` rendent
+  EXACTEMENT `style="flex: 1 1 0%;"` et `style="margin: 4px 0px;"` ; à l'inverse, poser le MÊME
+  texte comme attribut HTML brut via `page.setContent` (jamais touché par l'API JS `.style`) le
+  laisse INCHANGÉ (`style="flex:1"`). Seule l'affectation programmatique — celle que React fait
+  pour tout `style={{…}}` — déclenche la RE-sérialisation CSSOM du navigateur, qui développe les
+  raccourcis et ajoute les unités implicites. `normaliser()` (`hydratation.ts:107-108`) ne retire
+  que les espaces autour de `:`/`;` dans le texte du style ; il ne canonise PAS les raccourcis ni
+  les unités — donc CETTE famille de bruit n'est PAS parmi les cinq déjà nommées par E5, et n'a
+  pas de cas connu mauvais dans `hydratation.test.ts`. **Une fois ce bruit écarté À LA MAIN, les
+  16 divergences de l'incident (b) deviennent ZÉRO** : aucune divergence structurelle réelle
+  derrière, aucun défaut caché à taire (contrairement à ce que rule 17 redoute d'un comparateur
+  qui masquerait un défaut injecté — ici il n'y en avait pas). Ni (a) ni (b) ne touchent une page
+  de cette tranche (`sampling`, aucune des deux) ; le run PRÉCÉDENT sur le même arbre
+  (`verify-full-8.log`) portait 0 incident. **Pas corrigé ici** (hors mandat de cette tranche,
+  même discipline que F9/F10) — le manque de filtrage est consigné à part, R45,
+  `docs/BACKLOG_REPORTE.md`, pour qu'il ne se reperde pas.
 
 ### Hypothèses ÉLIMINÉES — et par quoi
 

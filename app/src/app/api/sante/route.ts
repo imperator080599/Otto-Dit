@@ -316,6 +316,24 @@ async function corpsDeLaSonde() {
       if (rows.length === 0) return 'aucune demande de détail de compte encore créée';
       return `${rows.length} demande(s) de détail de compte, chacune rattachée à son poste`;
     }));
+    /* LE RAPPROCHEMENT (étape 2, plan d'autonomie §B — livré ce jour, lu ce
+       jour, règle 22). rapprocherDetailDeCompte (account-detail.ts) refuse
+       de marquer `rapprochee` sur un écart non nul sans explication (POP-02)
+       — la seule façon d'obtenir l'incohérence ci-dessous est de la même
+       manière que la lecture précédente : contourner le service. */
+    lectures.push(await essayer('détail du compte : rapprochement (plan d’autonomie, étape 2)', async () => {
+      const rows = await q<{ id: string; ecart_cents: string; rapprochee: boolean; ecart_explication: string | null }>(
+        `select id, ecart_cents::text, rapprochee, ecart_explication from account_detail_import`);
+      const sansExplication = rows.filter((r) => r.rapprochee && Number(r.ecart_cents) !== 0 && !r.ecart_explication?.trim());
+      if (sansExplication.length > 0) {
+        throw new Error(`${sansExplication.length} rapprochement(s) conclu(s) avec un écart NON NUL et AUCUNE explication — `
+          + 'rapprocherDetailDeCompte ne produit jamais ce cas (POP-02) : contourné, ou la colonne a été modifiée après coup');
+      }
+      if (rows.length === 0) return 'aucun détail de compte encore importé';
+      const conclus = rows.filter((r) => r.rapprochee).length;
+      const avecEcart = rows.filter((r) => Number(r.ecart_cents) !== 0).length;
+      return `${rows.length} import(s) · ${conclus} rapproché(s) · ${avecEcart} avec écart`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

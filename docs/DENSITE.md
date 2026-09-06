@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
 # Densité mesurée — 77 écrans (build de production, base semée)
 
-Mesure prise sur le commit `a46f4f5`, build `0ui2Pwmvu2PXhNkdC0Pwk`.
+Mesure prise sur le commit `a31022f + arbre de travail modifié (mesure prise avant le commit qui la publie)`, build `DIAg1x8tyQKAixUF_BMaO`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 
@@ -31,6 +31,8 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/dashboard (SOX)` | 3 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/provenance` | 3 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/provenance (SOX)` | 3 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
+| `/eng/[id]/sampling` | 3 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
+| `/eng/[id]/sampling (SOX)` | 3 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/testing` | 3 | 1 | 2 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/testing (SOX)` | 3 | 2 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/` | 2 | 1 | 0 | 11 | Engagements |
@@ -39,8 +41,6 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/processus` | 2 | 0 | 0 | 11 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/processus (SOX)` | 2 | 0 | 0 | 11 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/poste/[code]` | 2 | 0 | 11 | 1 | Altiverre FY2025 — Audit légal (NEP) |
-| `/eng/[id]/sampling` | 2 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
-| `/eng/[id]/sampling (SOX)` | 2 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/estimations` | 1 | 0 | 0 | 2 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/estimations (SOX)` | 1 | 0 | 0 | 2 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/ask` | 1 | 0 | 0 | 1 | Altiverre FY2025 — Audit légal (NEP) |

@@ -1093,6 +1093,41 @@ export async function conduire(
     }
   });
 
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 2 : LE RAPPROCHEMENT. Un fichier
+     importé avec un montant délibérément décalé (pas de solde exact à
+     deviner dans le navigateur) — l'écart se voit, se refuse SANS
+     explication (POP-02, le serveur, pas le navigateur : le champ n'est pas
+     `required`), puis se conclut une fois expliqué. */
+  await station('détail du compte : le rapprochement', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/sampling`);
+    if (await compte('[data-import-detail-fichier]')) {
+      const avant = await compte('[data-rapprochement-ligne]');
+      await p.locator('[data-import-detail-fichier]').setInputFiles({
+        name: 'detail-clics.csv', mimeType: 'text/csv',
+        buffer: Buffer.from('référence;libellé;montant\nCLIC-001;Ligne du parcours cliqué;999999,99', 'utf-8'),
+      });
+      await soumettre(p.locator(`button:has-text("${L('samp.rapprochementImporterFichier')}")`).first(), 2000);
+      const apres = await compte('[data-rapprochement-ligne]');
+      dire('rapprochement : importer le détail engendre une ligne RÉELLE, pas seulement une redirection',
+        !refus(p) && apres > avant,
+        refus(p) ?? (apres > avant ? `ligne engendrée (${avant} → ${apres})` : `AUCUNE nouvelle ligne (${avant} → ${apres}) — écriture avalée`));
+      if (apres > avant) {
+        const ligne = p.locator('[data-rapprochement-ligne]').first();
+        await soumettre(ligne.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('refus : conclure un écart non nul SANS explication est refusé par le serveur (POP-02)',
+          /POP-02/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+        await aller(`${eng}/sampling`);
+        const ligneApres = p.locator('[data-rapprochement-ligne]').first();
+        await ligneApres.locator('input[name=explication]').fill('Facture régularisée post-clôture, écart confirmé et documenté.');
+        await soumettre(ligneApres.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('rapprochement : expliqué par écrit, le rapprochement se conclut',
+          !refus(p) && (await compte('[data-rapprochement-conclu]')) > 0,
+          refus(p) ?? 'rapprochement conclu');
+      }
+    }
+  });
+
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);

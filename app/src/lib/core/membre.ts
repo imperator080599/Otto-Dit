@@ -111,6 +111,7 @@ export async function estMembre(engagementId: string, userId: string): Promise<b
 
 /** Les objets FILS par lesquels une écriture peut être désignée. */
 export type ObjetFils =
+  | 'account_detail_import'
   | 'carry_forward' | 'confirmation_party' | 'control' | 'deficiency' | 'deviation'
   | 'estimation' | 'evidence' | 'exception' | 'extraction' | 'independence_declaration'
   | 'ipe_rapport' | 'meeting_invitation' | 'process_interview' | 'reconciliation_item'
@@ -125,6 +126,7 @@ export type ObjetFils =
  * échantillon, une extraction par sa pièce) sont la partie qu'on oublie.
  */
 const RESOLUTION: Record<ObjetFils, string> = {
+  account_detail_import: `select engagement_id::text e from account_detail_import where id = $1`,
   carry_forward: `select engagement_id::text e from carry_forward where id = $1`,
   confirmation_party: `select c.engagement_id::text e from confirmation_party p
      join confirmation_campaign c on c.id = p.campaign_id where p.id = $1`,

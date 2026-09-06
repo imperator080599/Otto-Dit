@@ -167,6 +167,97 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 2 du plan d'autonomie, étapes 1 et 2 : le détail du compte, puis son rapprochement (2026-09-06)
+
+*Rattrapage règle 5 : ni le commit d'étape 1 (`a46f4f5`) ni ses deux commits de confirmation
+(`24a0319`, `a31022f`) n'avaient mis à jour STATUS.md — un manque, corrigé ici dans le même
+commit que l'étape 2, pas laissé pour plus tard.*
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas avant cette tranche.** Depuis l'écran
+de sondage, demander en un clic le détail du compte d'un poste — la demande client naît PRÉ-REMPLIE,
+comptes visés déjà listés — puis, quand le client répond par un fichier, l'IMPORTER : il entre comme
+pièce (empreinte, provenance, ADR-107) et se rapproche du grand livre AU CENTIME. Un écart non nul
+EXIGE une explication écrite avant que le rapprochement ne se conclue ; une fois conclu, il ne se
+réécrit plus en silence.
+
+### Étape 1 — le détail du compte (commit `a46f4f5`, confirmé `24a0319`/`a31022f`)
+
+Le bouton « Demander le détail du compte » dérive ses comptes visés du MÊME mécanisme qui statue le
+périmètre (`mapAccount` contre les règles du pack + les surcharges du dossier, via `fsliAccounts`,
+réutilisée telle quelle — pas un cycle en dur). Migration 0143 : `request` gagne
+`evidence_type_code` et `fsli_code` (nullable, sans FK — même précédent que
+`procedure_instance.fsli_code`). Un second passage sur l'écran offre le lien vers la demande plutôt
+qu'un second bouton. Sous-agent hostile (règle 24, deux voix par constat, règle 30) : quatre
+constats retenus et corrigés avant le commit, dont le refus « poste vide » jamais exercé par son
+propre test (il ne couvrait que l'autre garde, « poste inconnu »). **Chaîne verify complète sur
+`a46f4f5`** (`24a0319`) : vitest 852/852 (100 fichiers), gardes 43, semeur 83/16/28/39 (inchangé),
+plancher 632, langue 0/0 + épreuve 15/15, lectures 0 perdue/1681 + épreuve 6/6, parcours 246/246
+(+2) + épreuve 5/5, screens 87/0, fumee 51/0, densite 77 écrans/0, clics 204 étapes/0 échec (+2),
+visuel 312 vues/0 défaut. **SHA servi confirmé = `24a0319`** (CI `deploye`, run 34040786493,
+14:57:56Z→15:01:22Z, 3 min 26).
+
+### Étape 2 — le rapprochement
+
+Même mécanique que les balances auxiliaires (ADR-107) : le détail que le client fournit (CSV
+« référence ; libellé ; montant ») entre comme pièce puis se rapproche du grand livre — calculé,
+jamais stocké tel quel (`attenduGlPourPoste`, dérivé de `fsliAccounts`, comme le reste du dossier).
+Migration 0144 : `account_detail_import` (une ligne par import, verrou d'engagement + RLS — trouvé
+manquant PAR la chaîne verify elle-même, pas par la revue hostile, corrigé avant le commit) et
+`account_detail_row` (sans son propre verrou, même précédent que `aux_balance_row` : la protection
+vient du parent, la ligne n'a pas `engagement_id`). Deux refus nommés : **POP-02**, un écart non nul
+exige une explication d'au moins dix caractères (règle EXACTE de
+`circularisations.ts::expliquerEcart`, pas une liste de mots interdits — la revue hostile a prouvé
+par mutation qu'un motif comme « - » ou « n/a » passait une première version qui prétendait
+reprendre « même refus, mêmes mots » sans en reprendre la RÈGLE) ; **POP-03**, un rapprochement déjà
+conclu ne se réécrit pas en silence (règle 28 — prouvé par mutation qu'un second appel écrasait
+l'explication de la première personne sans refus).
+
+**Revue hostile en deux couches** : ma propre relecture, puis un atelier dédié (deux réviseurs
+indépendants + vérification adverse par constat, treize sous-agents) — six défauts réels et
+CONFIRMÉS, tous corrigés avant ce commit : POP-02 trop faible (ci-dessus), POP-03 absent (un
+rapprochement se réécrivait sans refus), le séparateur de milliers français (espace insécable
+U+00A0 / U+202F selon la version d'ICU — même famille que D-J3N-11) non lu par le parseur de
+montants, `ecart_explication` stockée `''` au lieu de `null` sur un écart nul, l'import
+ligne-mère + lignes hors transaction (un échec à mi-boucle laissait la ligne-mère affirmer un compte
+que la base ne portait pas — enveloppé dans `tx()`), et l'étanchéité inter-cabinets vérifiée APRÈS
+une lecture directe au lieu d'avant (`assertMembreDe` enregistré dans `membre.ts`, appelé en
+premier — trouvé par `etancheite-executee.test.ts`).
+
+**Trouvé en clôturant, pas dans le rapprochement lui-même** : `verify-full-9.log` portait deux
+nouvelles occurrences du #418 (fil n°7), sur des pages que cette tranche ne touche pas. La première
+rejoue l'hypothèse H telle quelle (F4/F9). La seconde a été creusée plus loin qu'un simple
+classement : ses 16 « divergences » se sont prouvées, par exécution directe dans le Chromium de ce
+bac à sable, être une SIXIÈME famille de bruit du comparateur d'hydratation — le navigateur
+re-sérialise `style="flex:1"` en `style="flex: 1 1 0%"` (et ajoute l'unité aux longueurs à zéro)
+quand React affecte `style` par programme, et `hydratation.ts` ne le canonise pas. Une fois ce bruit
+écarté à la main, l'incident ne porte plus aucune divergence réelle. Consigné **F11**
+(`docs/CHASSE.md`), reporté **R45** (`docs/BACKLOG_REPORTE.md`) — pas corrigé ici, hors mandat de
+cette tranche (même discipline que F9/F10 : ne pas rouvrir le fil #418 au milieu d'une autre
+tranche). Le garde du registre des fils (`scripts/reprise.test.ts`) a lui-même rougi une première
+fois sur ce nouveau R45 sans état dans `docs/instantanes/fils.json` — la garde a fait son travail,
+l'entrée manquante a été ajoutée.
+
+**Chaîne verify complète, propre, sur la tranche entière** (`verify-full-12.log`, après avoir figé
+les trois stations nouvelles du parcours) : vitest **856/856** (101 fichiers), gardes 43, semeur
+**83/16/28/39 (inchangé — le détail importé et son rapprochement sont créés par un geste RÉEL de
+l'auditeur/du client, jamais par le semeur : ils n'entrent pas dans ce registre)**, plancher 632,
+langue 0/0 + épreuve 15/15, lectures 0 perdue/1681 + épreuve 6/6, parcours **249/249, 0 perdue**
+(+3 : les deux stations du rapprochement, plus le refus POP-02) + épreuve 5/5, screens 87/0,
+fumee 51/0, densite 77 écrans/0, clics **207 étapes/0 échec** (+3), sonde d'hydratation **aucun
+incident**, visuel 312 vues/0 défaut.
+
+**Lectures ajoutées à `/api/sante` le jour même** : « détail du compte (plan d'autonomie, étape 1) »
+et « détail du compte : rapprochement (plan d'autonomie, étape 2) » — chacune vérifiée capable de
+ROUGIR sur l'état qu'elle surveille (règle 22), par une sonde jetable supprimée avant ce commit
+(règle 24).
+
+**Ce qui reste dû, dit et pas caché** : POP-01 (« on ne tire pas sur une population qui n'est pas
+rapprochée ») n'est pas câblé — le tirage du chiffre d'affaires actuel n'est pas touché ; il
+appartient au jour où l'étape 4 (le tirage) reconstruit ce geste. La population DÉRIVÉE (étape 3)
+n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la lire le jour venu,
+rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
+contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
+
 ## Lot 1 du plan d'autonomie : R37/R40/R41 corrigés, chaîne verify complète, SHA servi confirmé (2026-09-06)
 
 **Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Rédiger un papier de travail

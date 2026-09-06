@@ -7,6 +7,7 @@ import {
   lignesSortiesDuTirage, statuerSortie,
 } from '@/lib/services/sampling';
 import { generatePbcFromSample, demanderDetailDeCompte, derniereDemandeDetailDeCompte, numeroDemande } from '@/lib/services/requests';
+import { importerDetailDeCompte, rapprocherDetailDeCompte, detailsDeCompteDuDossier } from '@/lib/services/account-detail';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
@@ -32,12 +33,35 @@ export default async function SamplingPage({
      poste ('REVENUE') est donc encore posé ici, comme le reste de cet écran
      (currentRevenueSample, proposeRevenueSample...), pas généralisé. */
   const demandeDetail = await derniereDemandeDetailDeCompte(id, 'REVENUE');
+  const detailsImportes = await detailsDeCompteDuDossier(id, 'REVENUE');
 
   async function demanderDetailAction() {
     'use server';
     return executer(`/eng/${id}/sampling`, async () => {
       const { user } = await requireMember(id);
       await demanderDetailDeCompte(id, 'REVENUE', user.id);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
+  }
+
+  async function importerDetailAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      const fichier = formData.get('fichier') as File;
+      if (!fichier || !fichier.size) throw new Error('détail du compte : choisissez le fichier reçu du client');
+      await importerDetailDeCompte({
+        engagementId: id, fsliCode: 'REVENUE', filename: fichier.name,
+        contenu: new Uint8Array(await fichier.arrayBuffer()), userId: user.id,
+      });
+      revalidatePath(`/eng/${id}/sampling`);
+    });
+  }
+  async function rapprocherAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await rapprocherDetailDeCompte(String(formData.get('import_id')), user.id, String(formData.get('explication') ?? ''));
       revalidatePath(`/eng/${id}/sampling`);
     });
   }
@@ -122,6 +146,43 @@ export default async function SamplingPage({
             <button className="btn" data-demander-detail-de-compte>{t('samp.demanderDetailDeCompte')}</button>
           </form>
         )}
+      </div>
+
+      {/* ÉTAPE 2 (plan d'autonomie, Partie B) : LE RAPPROCHEMENT. Le détail
+          reçu se rapproche du solde de la balance générale, compte par
+          compte, au centime — et un écart, s'il existe, se rédige (POP-02,
+          « RAS » refusé par le serveur). */}
+      <div className="panel" data-rapprochement-detail>
+        <h2 style={{ marginTop: 0 }}>{t('samp.rapprochementTitre')}</h2>
+        <p className="muted">{t('samp.rapprochementAide')}</p>
+        {detailsImportes.map((d) => (
+          <div key={d.id} className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} data-rapprochement-ligne={d.id}>
+            <span>
+              {t('samp.rapprochementLigne', {
+                lignes: d.rowCount, total: fmtEur(d.totalCents, 'fr'), attendu: fmtEur(d.glAttenduCents, 'fr'),
+                ecart: fmtEur(d.ecartCents, 'fr'),
+              })}
+            </span>
+            {d.rapprochee ? (
+              <span data-rapprochement-conclu>
+                <span className="badge green">{t('samp.rapprochementConclu')}</span>
+                {d.ecartExplication && <span className="faint"> — {d.ecartExplication}</span>}
+              </span>
+            ) : (
+              <form action={rapprocherAction} className="row">
+                <input type="hidden" name="import_id" value={d.id} />
+                {d.ecartCents !== 0 && (
+                  <input type="text" name="explication" placeholder={t('samp.rapprochementEcartExplication')} style={{ minWidth: 260 }} />
+                )}
+                <button className="btn small" data-rapprocher={d.id}>{t('samp.rapprochementConclure')}</button>
+              </form>
+            )}
+          </div>
+        ))}
+        <form action={importerDetailAction} className="row">
+          <input type="file" name="fichier" style={{ maxWidth: 230 }} data-import-detail-fichier />
+          <button className="btn secondary small">{t('samp.rapprochementImporterFichier')}</button>
+        </form>
       </div>
 
       <div className="panel">
