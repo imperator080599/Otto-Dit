@@ -1065,6 +1065,34 @@ export async function conduire(
     }
   });
 
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 1 : la demande naît DU POSTE, avant tout
+     tirage. Même discipline que la station « sondage » plus bas (R37,
+     docs/CHASSE.md §3) : un avant/après compté sur les demandes RÉELLES, pas
+     seulement « aucun refus » — une redirection réussie n'est pas une preuve
+     d'écriture. */
+  await station('détail du compte', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/sampling`);
+    if (await compte('[data-demander-detail-de-compte]')) {
+      const titreDetail = /Détail du compte|Account detail/i;
+      const compterDemandesDetail = async () => {
+        await aller(`${eng}/requests`);
+        return p.locator('a[href*="/requests/"]', { hasText: titreDetail }).count();
+      };
+      const avant = await compterDemandesDetail();
+      await aller(`${eng}/sampling`);
+      await cliquer('[data-demander-detail-de-compte]', 6000);
+      const apres = await compterDemandesDetail();
+      dire('détail du compte : le bouton engendre une demande RÉELLE, pas seulement une redirection',
+        !refus(p) && apres > avant,
+        refus(p) ?? (apres > avant ? `demande engendrée (${avant} → ${apres})` : `AUCUNE nouvelle demande (${avant} → ${apres}) — écriture avalée`));
+      await aller(`${eng}/sampling`);
+      dire('détail du compte : un second passage OFFRE le lien vers la demande, pas un second bouton',
+        (await compte('[data-detail-de-compte-lien]')) > 0 && (await compte('[data-demander-detail-de-compte]')) === 0,
+        refus(p) ?? 'lien présent, bouton disparu');
+    }
+  });
+
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);

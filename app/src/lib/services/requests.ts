@@ -2,7 +2,8 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { now, DAY_MS } from '@/lib/core/clock';
 import { engagementCtx } from './imports';
-import { frameworkSet } from './fsli';
+import { frameworkSet, fsliAccounts } from './fsli';
+import { getAccountingMap } from '@/lib/packs';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S4 request engine: PBC generation from the sample (per-tested-unit items) + standing
@@ -15,6 +16,60 @@ export const numeroDemande = (seq: number | string): string => `R-${String(seq).
 export async function nextSeq(engagementId: string): Promise<number> {
   const r = await q1<{ n: string }>(`select coalesce(max(seq_no), 0) n from request where engagement_id = $1`, [engagementId]);
   return Number(r.n) + 1;
+}
+
+/** Le code d'evidence_type de l'étape 1 (plan d'autonomie, Partie B) — un seul
+ *  endroit, jamais un littéral répété (revue hostile du 2026-09-06). */
+export const EVIDENCE_TYPE_DETAIL_DE_COMPTE = 'detail_de_compte';
+
+/**
+ * Plan d'autonomie, Partie B, étape 1 : LA DEMANDE NAÎT DU POSTE, jamais
+ * d'une saisie. Les comptes visés viennent du même mécanisme qui statue le
+ * périmètre (mapAccount contre les règles du pack + les surcharges du
+ * dossier) — pas d'un cycle en dur comme generatePbcFromSample (701/709).
+ * Ne vérifie PAS que le compte a déjà une demande de détail en cours : un
+ * second clic crée une seconde demande (même défaut que redigerQuestions
+ * et generatePbcFromSample — non traité ici, non élargi à cette tranche).
+ */
+export async function demanderDetailDeCompte(engagementId: string, fsliCode: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'demanderDetailDeCompte');
+  const ctx = await engagementCtx(engagementId);
+  const fs = await frameworkSet(engagementId);
+  const fr = fs.language === 'fr';
+  const map = getAccountingMap(fs.accounting_map);
+  const def = map.fslis.find((f) => f.code === fsliCode);
+  if (!def) {
+    throw new Error(fr
+      ? `poste inconnu du pack comptable (${fs.accounting_map}) : ${fsliCode}`
+      : `unknown poste in the accounting-map pack (${fs.accounting_map}): ${fsliCode}`);
+  }
+  const comptes = await fsliAccounts(engagementId, fsliCode);
+  if (!comptes.length) {
+    throw new Error(fr
+      ? `détail du compte : aucun compte du poste « ${def.name.fr} » sur la balance courante — rien à demander`
+      : `account detail: no account of "${def.name.en}" on the current trial balance — nothing to request`);
+  }
+  const seq = await nextSeq(engagementId);
+  const liste = comptes.map((c) => `${c.number} ${c.label}`).join(', ');
+  const req = await q1<{ id: string }>(
+    `insert into request (engagement_id, seq_no, title, language, status, evidence_type_code, fsli_code)
+     values ($1,$2,$3,$4,'draft',$5,$6) returning id`,
+    [engagementId, seq,
+      fr ? `Détail du compte — ${def.name.fr}` : `Account detail — ${def.name.en}`,
+      fs.language, EVIDENCE_TYPE_DETAIL_DE_COMPTE, fsliCode],
+  );
+  await q(
+    `insert into request_item (request_id, kind, description) values ($1,'document',$2)`,
+    [req.id, fr
+      ? `Détail du compte à la clôture (${ctx.period_end}) pour ${liste} — total, mouvements et pièces justificatives selon le format habituel du client.`
+      : `Account detail as of period end (${ctx.period_end}) for ${liste} — total, movements, and supporting records in the client's usual format.`],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'detail_de_compte_demande', objectType: 'request', objectId: req.id,
+    payload: { fsliCode, comptes: comptes.map((c) => c.number) },
+  });
+  return req.id;
 }
 
 /** Generate the PBC request from a drawn sample (draft — auditor approves send, L2). */
@@ -185,6 +240,19 @@ export async function demandeClarificationLignes(
   return { requestId: request.id, items: lignes.length };
 }
 
+/** La dernière demande de détail de compte pour ce poste, si une existe déjà
+ *  — le bouton « Demander le détail du compte » devient un lien vers elle
+ *  plutôt que d'en recréer une seconde (plan d'autonomie, Partie B, étape 1 :
+ *  « un lien cliquable conduit à cette demande… pour l'ajuster »). */
+export async function derniereDemandeDetailDeCompte(engagementId: string, fsliCode: string) {
+  return q01<{ id: string; seq_no: number; status: string }>(
+    `select id, seq_no, status from request
+     where engagement_id = $1 and fsli_code = $2 and evidence_type_code = $3
+     order by seq_no desc limit 1`,
+    [engagementId, fsliCode, EVIDENCE_TYPE_DETAIL_DE_COMPTE],
+  );
+}
+
 export async function listRequests(engagementId: string) {
   return q<{ id: string; seq_no: number; title: string; status: string; due_date: string | null; sent_at: string | null; item_count: string; done_count: string; reminder_count: string }>(
     `select r.id, r.seq_no, r.title, r.status, r.due_date::text, r.sent_at::text,
@@ -197,8 +265,8 @@ export async function listRequests(engagementId: string) {
 }
 
 export async function requestDetail(requestId: string) {
-  const request = await q01<{ id: string; engagement_id: string; seq_no: number; title: string; status: string; due_date: string | null; sent_at: string | null; language: string }>(
-    `select id, engagement_id, seq_no, title, status, due_date::text, sent_at::text, language from request where id = $1`,
+  const request = await q01<{ id: string; engagement_id: string; seq_no: number; title: string; status: string; due_date: string | null; sent_at: string | null; language: string; evidence_type_code: string | null; fsli_code: string | null }>(
+    `select id, engagement_id, seq_no, title, status, due_date::text, sent_at::text, language, evidence_type_code, fsli_code from request where id = $1`,
     [requestId],
   );
   if (!request) return null;

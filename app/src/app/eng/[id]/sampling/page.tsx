@@ -1,11 +1,12 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import {
   proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample,
   lignesSortiesDuTirage, statuerSortie,
 } from '@/lib/services/sampling';
-import { generatePbcFromSample } from '@/lib/services/requests';
+import { generatePbcFromSample, demanderDetailDeCompte, derniereDemandeDetailDeCompte, numeroDemande } from '@/lib/services/requests';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
@@ -26,6 +27,20 @@ export default async function SamplingPage({
   await requireMember(id);
   const sample = await currentRevenueSample(id);
   const sorties = await lignesSortiesDuTirage(id);
+  /* Plan d'autonomie, Partie B, étape 1 : le seul cycle bâti bout en bout
+     reste le chiffre d'affaires (périmètre gelé, règle 14) — le code du
+     poste ('REVENUE') est donc encore posé ici, comme le reste de cet écran
+     (currentRevenueSample, proposeRevenueSample...), pas généralisé. */
+  const demandeDetail = await derniereDemandeDetailDeCompte(id, 'REVENUE');
+
+  async function demanderDetailAction() {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await demanderDetailDeCompte(id, 'REVENUE', user.id);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
+  }
 
   async function proposeAction() {
     'use server';
@@ -89,6 +104,26 @@ export default async function SamplingPage({
   return (
     <div>
       <BandeauRefus erreur={erreur} />
+
+      {/* ÉTAPE 1 DU CYCLE DE TESTING (plan d'autonomie, Partie B) : LA DEMANDE
+          NAÎT DU POSTE, avant tout tirage — le détail que le client fournit
+          derrière le solde, jamais une saisie de l'auditeur. */}
+      <div className="panel" data-detail-de-compte>
+        <h2 style={{ marginTop: 0 }}>{t('samp.detailDeCompteTitre')}</h2>
+        <p className="muted">{t('samp.detailDeCompteAide')}</p>
+        {demandeDetail ? (
+          <p>
+            <Link href={`/eng/${id}/requests/${demandeDetail.id}`} data-detail-de-compte-lien>
+              {t('samp.detailDeCompteDemandee', { numero: numeroDemande(demandeDetail.seq_no), statut: demandeDetail.status })}
+            </Link>
+          </p>
+        ) : (
+          <form action={demanderDetailAction}>
+            <button className="btn" data-demander-detail-de-compte>{t('samp.demanderDetailDeCompte')}</button>
+          </form>
+        )}
+      </div>
+
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('samp.revenueSamplingProposeL3ValidateDraw')}</h2>

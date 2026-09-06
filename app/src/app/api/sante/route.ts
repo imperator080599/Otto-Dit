@@ -299,6 +299,23 @@ async function corpsDeLaSonde() {
       return `${postes.length} poste(s) dont ${evalues} évalué(s) · ${commandees} commandée(s) · `
         + `${planifiees} planifiée(s) · ${hors} planifiée(s) hors commande`;
     }));
+    /* LE DÉTAIL DU COMPTE (étape 1, plan d'autonomie §B — livré ce jour, lu ce
+       jour, règle 22). demanderDetailDeCompte (requests.ts) pose toujours les
+       deux colonnes ensemble ; la seule façon d'obtenir l'une sans l'autre est
+       une écriture qui contourne le service — exactement ce que cette lecture
+       doit pouvoir attraper (pas un compte qui se contente d'exister). */
+    lectures.push(await essayer('détail du compte (plan d’autonomie, étape 1)', async () => {
+      const { EVIDENCE_TYPE_DETAIL_DE_COMPTE } = await import('@/lib/services/requests');
+      const rows = await q<{ id: string; fsli_code: string | null }>(
+        `select id, fsli_code from request where evidence_type_code = $1`, [EVIDENCE_TYPE_DETAIL_DE_COMPTE]);
+      const sansFsli = rows.filter((r) => !r.fsli_code);
+      if (sansFsli.length > 0) {
+        throw new Error(`${sansFsli.length} demande(s) « détail du compte » SANS poste (fsli_code) — `
+          + 'demanderDetailDeCompte ne produit jamais ce cas : la ligne a été écrite ailleurs, ou la colonne a été modifiée après coup');
+      }
+      if (rows.length === 0) return 'aucune demande de détail de compte encore créée';
+      return `${rows.length} demande(s) de détail de compte, chacune rattachée à son poste`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

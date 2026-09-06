@@ -10,7 +10,7 @@ import { rebuildFslis } from './fsli';
 import { propose, validate } from './materiality';
 import { revenuePopulation } from './population';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from './sampling';
-import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, listRequests } from './requests';
+import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, listRequests, demanderDetailDeCompte, derniereDemandeDetailDeCompte } from './requests';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from './evidence';
 import { portalRequests, portalItems, portalRequestGuard } from './portal';
 import { processInbound } from './inbound';
@@ -85,6 +85,41 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
     await approveSend(requestId, IDS.users.karim);
     const after = await requestDetail(requestId);
     expect(after!.request.status).toBe('sent');
+  });
+
+  /* Plan d'autonomie, Partie B, étape 1 : LA DEMANDE NAÎT DU POSTE. DEUX
+     refus distincts, chacun sa propre assertion — la revue hostile du
+     2026-09-06 a trouvé qu'une version antérieure de ce test ne couvrait
+     QUE le premier (poste inconnu du pack) et laissait le second
+     (poste réel, zéro compte sur la balance courante) totalement nu :
+     `if (false && !comptes.length)` passait ce test 8/8. Vérifié ici par
+     un code de poste RÉEL du pack PCG qui n'a aucun compte sur la TB de
+     démonstration NEP (TAXES_EXPENSE — mesuré, pas supposé). */
+  it('demande le détail du compte — comptes visés listés, refuse si le poste est vide', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'REVENUE', IDS.users.karim);
+    const detail = await requestDetail(requestId);
+    expect(detail!.request.status).toBe('draft');
+    expect(detail!.request.evidence_type_code).toBe('detail_de_compte');
+    expect(detail!.request.fsli_code).toBe('REVENUE');
+    expect(detail!.items.length).toBe(1);
+    expect(detail!.items[0].description).toMatch(/70[0-9]{4}/); // au moins un compte 70x cité
+    await expect(demanderDetailDeCompte(IDS.engNep, 'CODE_INCONNU_SANS_COMPTE', IDS.users.karim))
+      .rejects.toThrow(/poste inconnu/);
+    await expect(demanderDetailDeCompte(IDS.engNep, 'TAXES_EXPENSE', IDS.users.karim))
+      .rejects.toThrow(/aucun compte du poste/);
+  });
+
+  /* La dernière demande se cherche PAR POSTE — un second poste avec sa
+     propre demande ne doit pas se substituer au premier (latent tant qu'un
+     seul poste est en jeu, trouvé par mutation dans la revue hostile). */
+  it('la dernière demande de détail de compte se cherche PAR POSTE, pas globalement', async () => {
+    const revenueId = await demanderDetailDeCompte(IDS.engNep, 'REVENUE', IDS.users.karim);
+    const achatsId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    expect(achatsId).not.toBe(revenueId);
+    const derniereRevenue = await derniereDemandeDetailDeCompte(IDS.engNep, 'REVENUE');
+    const derniereAchats = await derniereDemandeDetailDeCompte(IDS.engNep, 'PURCHASES');
+    expect(derniereRevenue!.id).toBe(revenueId);
+    expect(derniereAchats!.id).toBe(achatsId);
   });
 
   it('portal: contact sees requests, uploads evidence, answers explanations, marks submitted', async () => {

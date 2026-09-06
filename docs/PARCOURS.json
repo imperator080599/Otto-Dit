@@ -269,6 +269,14 @@
       "gabarit": false
     },
     {
+      "nom": "détail du compte : le bouton engendre une demande RÉELLE, pas seulement une redirection",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte : un second passage OFFRE le lien vers la demande, pas un second bouton",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },
