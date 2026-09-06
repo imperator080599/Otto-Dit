@@ -979,6 +979,9 @@ export async function conduire(
     /* RÉDIGER LE PAPIER — depuis la même ligne, sans changer d'écran. */
     if (await compte('[data-rediger]')) {
       const g = p.locator('form:has([data-rediger])').first();
+      /* R41 (docs/CHASSE.md §2) : lire le CODE de la ligne AVANT de soumettre —
+         c'est lui qui permettra de retrouver la BONNE ligne après coup. */
+      const codeRedige = await g.locator('[data-rediger]').first().getAttribute('data-rediger');
       await soumettre(g.locator('button').first());
       await aller(`${eng}/programme`);
       dire('programme : le papier de la procédure se RÉDIGE depuis la ligne, et devient atteignable',
@@ -991,20 +994,36 @@ export async function conduire(
          bloqué, et c'est le produit qui a raison. La première version de cette
          station rédigeait le papier et laissait l'obstacle derrière elle : un
          harnais qui crée du travail et s'en va. On va donc au papier neuf et on
-         répond, comme le ferait le préparateur. */
-      const lienPapier = p.locator('[data-planifiee] a[href*="/workpapers/"]').last();
-      if (!(await lienPapier.count())) {
+         répond, comme le ferait le préparateur.
+
+         R41, hypothèses éliminées par lecture (docs/CHASSE.md §2) :
+         `[data-planifiee] a[href*="/workpapers/"]).last()` désigne N'IMPORTE
+         QUEL papier DÉJÀ rédigé du dossier ENTIER — l'attribut habille toute
+         ligne planifiée, y compris celles SEMÉES avant cette station — pas
+         forcément celui qu'on vient de rédiger. On scope donc à la LIGNE dont
+         on a lu le code juste avant de soumettre, et on y va par son `href`,
+         en `aller()` (silence réseau attendu), comme la station des visas le
+         fait déjà (ligne ~1889) — jamais par un `.click()` suivi d'une
+         attente dont la station 2. de CHASSE.md n'excluait pas totalement le
+         rôle. Si le symptôme persiste malgré ce ciblage précis, l'URL et le
+         HTML de la page atteinte sont imprimés au lieu d'être devinés
+         (règle 18 : une explication plausible n'est pas un diagnostic). */
+      const lienPapier = codeRedige
+        ? p.locator(`tr[data-ligne-programme="${codeRedige}"] a[href*="/workpapers/"]`).first()
+        : null;
+      const href = lienPapier ? await lienPapier.getAttribute('href').catch(() => null) : null;
+      if (!href) {
         /* PAS DE BRANCHE MUETTE : si le papier qu'on vient de rédiger n'est pas
            atteignable depuis sa ligne, l'assertion précédente ment. */
         dire('programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue',
-          false, 'le papier rédigé n’est pas atteignable depuis sa ligne');
+          false, `le papier rédigé n’est pas atteignable depuis sa ligne (code=${codeRedige ?? '?'})`);
       } else {
-        await lienPapier.click();
-        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await aller(base + href);
         const sel = p.locator('#ipe select[name=rapport_id]');
         if (!(await sel.count())) {
+          const html = await p.locator('body').innerHTML().then((h) => h.slice(0, 400)).catch(() => '(HTML illisible)');
           dire('programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue',
-            false, 'le formulaire IPE est absent du papier rédigé — obligation créée et non tenue');
+            false, `le formulaire IPE est absent du papier rédigé (code=${codeRedige}, url=${p.url()}) — début du corps : ${html}`);
         } else {
           const opts = await sel.locator('option').evaluateAll(
             (els) => els.map((e) => (e as HTMLOptionElement).label).filter((l) => l && !/^—|^$/.test(l)));

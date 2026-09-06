@@ -39,14 +39,21 @@ export interface Membership {
   can_sign: boolean;
 }
 
-/** Auditor-side guard: session user must be a member of the engagement (ADR-007). */
+/** La lecture qu'utilise `requireMember`, isolée pour être éprouvée sans `cookies()`/`redirect()`.
+ *  R40 : un membre SORTI (`exited_on` posé) n'a plus d'appartenance active — ne regarde pas
+ *  si la personne existe encore au dossier (team.ts la garde, elle n'est jamais supprimée). */
+export async function activeMembership(engagementId: string, userId: string): Promise<Membership | null> {
+  return q01<Membership>(
+    `select engagement_id, eng_role, can_sign from engagement_member
+     where engagement_id = $1 and user_id = $2 and exited_on is null`,
+    [engagementId, userId],
+  );
+}
+
+/** Auditor-side guard: session user must be an ACTIVE member of the engagement (ADR-007). */
 export async function requireMember(engagementId: string): Promise<{ user: SessionUser; membership: Membership }> {
   const user = await requireUser();
-  const membership = await q01<Membership>(
-    `select engagement_id, eng_role, can_sign from engagement_member
-     where engagement_id = $1 and user_id = $2`,
-    [engagementId, user.id],
-  );
+  const membership = await activeMembership(engagementId, user.id);
   if (!membership) redirect('/');
   return { user, membership };
 }
