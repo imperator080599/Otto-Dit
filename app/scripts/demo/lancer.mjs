@@ -287,7 +287,14 @@ try {
       sortie: res.sortie,
     });
   }
-  detail('20 migrations, cabinet et clientes fictives créés');
+  /* AUCUN CHIFFRE ÉCRIT À LA MAIN (règle 21) : la ligne du script parle pour
+     elle-même — trouvée fausse (« 20 migrations » alors que 45 étaient déjà
+     appliquées), retirée. */
+  const migrations = res.sortie.match(/migrations applied: ([^\n]*)/);
+  const compte = migrations ? migrations[1].split(',').filter((s) => s.trim()).length : null;
+  detail(compte !== null ? `${compte} migration(s) appliquée(s), cabinet et clientes fictives créés`
+    : /migrations: up to date/.test(res.sortie) ? 'migrations déjà à jour, cabinet et clientes fictives créés'
+    : 'base locale créée, cabinet et clientes fictives créés');
 }
 
 // ── 2. LE MONDE DE DÉMONSTRATION ─────────────────────────────────────────────

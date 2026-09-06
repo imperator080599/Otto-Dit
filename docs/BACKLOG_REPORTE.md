@@ -133,7 +133,9 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   `sortie_decision = 'peut_etre'` (ce qu'un formulaire rejoué peut faire) remonte
   `violates check constraint "sample_item_sortie_decision_check"` à l'utilisateur, là où la doctrine
   du dépôt veut un TIRAGE-0x en français d'auditeur. Trouvé par la revue hostile en l'attaquant.
-- **R33 — cinq chemins de lecture ne remontent pas le lignage du re-tirage.** Trois le font
+- **R33 — huit chemins de lecture ne remontent pas le lignage du re-tirage** (le titre disait
+  « cinq » ; la liste ci-dessous en énumère huit — erreur de compte trouvée en écrivant le
+  transfert du 2026-09-06, non corrigée ailleurs pour ne pas réécrire un historique). Trois le font
   (atelier, grille de test, `/api/sante`). Ne le font pas : le papier de travail
   (`workpapers/draft.ts` — mesuré : deux pièces à l'atelier, zéro au papier), la colonne ajoutée,
   la re-exécution en aveugle (`verification.ts`), la provenance (`provenance.ts`, c'est P7), la
@@ -207,3 +209,23 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   la question sur le papier qu'elle vient de rédiger, soit la station IPE existante cesse de ne
   traiter QUE le papier qu'elle a ouvert et couvre tous les papiers en attente — la seconde
   corrigerait la cause plutôt que ce cas.
+
+## Reportés en écrivant le transfert sur disque (2026-09-05)
+
+- **R42 — l'ADR de l'empreinte des migrations n'est pas écrit.** `migrate()` enregistre
+  l'empreinte de chaque migration et refuse de continuer si un fichier appliqué a changé
+  (commit `a06a7f1`, cinq cas dans `migrate.test.ts`) ; la règle 26 de CLAUDE.md le porte, mais
+  aucune ADR ne dit pourquoi cette forme et pas une autre (pourquoi ne jamais bénir en silence
+  une migration antérieure à la garde). Règle 1 : le code est là, le document non.
+- **R43 — la section « Current state » de STATUS.md est périmée.** Elle nomme la branche
+  `claude/otto-audit-platform-whs17z` (le travail est sur `main` depuis des semaines) et des
+  compteurs de l'étape C. Les tranches datées, au-dessous, sont justes ; c'est l'en-tête qui
+  ment. À réécrire dans le même geste que la prochaine tranche datée, en renvoyant à
+  `docs/REPRISE.md` pour tout ce qui se mesure.
+
+## Reporté en vérifiant le transfert par revue hostile (2026-09-06)
+
+- **R44 — `docs/SEMEUR_VS_CHEMIN.md` n'existe pas.** La règle 20 de CLAUDE.md et `docs/CHASSE.md`
+  s'y réfèrent comme à un objet déjà là (mandat du semeur §1) ; il n'est ni sur le disque ni dans
+  aucun commit. À engendrer par un script (objet · semeur crée ? · chemin humain existe ? ·
+  cliqué ?), pas à rédiger à la main (même défaut que celui qu'il doit détecter).

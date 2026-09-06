@@ -7,7 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', '../tests/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts', '../tests/**/*.test.ts'],
     testTimeout: 60000,
     hookTimeout: 60000,
     // The suite must run with zero network access (CLAUDE.md rule 4) — sauf en

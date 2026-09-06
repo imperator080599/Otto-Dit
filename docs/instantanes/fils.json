@@ -1,0 +1,174 @@
+{
+  "_": "L'ÉTAT DE CHAQUE FIL OUVERT, consigné à la main, joint par `npm run reprise` à l'énoncé que porte docs/BACKLOG_REPORTE.md. Tout R-nn à partir de R24 et tout N2-x du backlog DOIT avoir une entrée ici, sinon l'engendrement refuse (un fil sans état est un fil oublié, règle 23). Un fil absent du backlog (le #418, par exemple) porte son propre `titre`. `depuis` est le SHA ou la date où le fil est né ; `note` dit où l'on en est, sans chiffre qu'un script n'aurait pas produit. Les renvois à « OTTO_Mandat_Semeur.md »/« OTTO_Mandat_Soir_Nuit_J3.md » sont marqués [hors dépôt] : ces textes du fondateur ne sont pas versionnés ici (trouvé par la revue hostile du 2026-09-06) — une session neuve ne peut pas les lire, seulement les faits mesurés qui les accompagnent.",
+  "fils": [
+    {
+      "id": "#418",
+      "titre": "« Minified React error #418 ; args[]=HTML » — vu en ligne sur la tâche A-05 de l'acceptation, capturé une fois en local avec son HTML servi et son DOM",
+      "etat": "EN CHASSE — hypothèse H à éprouver, protocole écrit (docs/CHASSE.md §1) ; le protocole du 2026-09-05 s'est révélé reposer sur un prédicat faux (revue hostile du 2026-09-06) et est à refaire",
+      "depuis": "fil n°7, août 2026",
+      "note": "dernière occurrence en ligne : run 33819974774 sur a06a7f1 ; absente douze minutes plus tard sur 5017239 (même code d'application, plus le script de garde de déploiement). Ne pas ré-éliminer E1–E8. Le run 33644396275 cité par erreur en F5 est VERT (aucun #418) : à retirer de la liste."
+    },
+    {
+      "id": "R41",
+      "etat": "EN CHASSE — hypothèses 1 et 2 éliminées par lecture (le sélecteur IPE se rend pour tout papier trouvé du dossier ; le vrai défaut est l'asymétrie `.first()`/`.last()` de la station sur les liens de la vue programme) ; hypothèse 3 reformulée (revue hostile du 2026-09-06, docs/CHASSE.md §2)",
+      "depuis": "62b7064",
+      "note": "défaut de la STATION, pas du produit ; la station rougit et nomme sa cause. [hors dépôt : mandat du fondateur] demande le cas connu mauvais d'abord — cohérent avec la règle 17 du dépôt."
+    },
+    {
+      "id": "R37",
+      "etat": "EN CHASSE — hypothèses 1 et 3 éliminées par lecture pour le geste de l'écran (le bouton ne cible que l'échantillon COURANT `drawn` ; aucun chemin ne peut le rattacher au superseded) ; reste l'hypothèse que le harnais n'a pas cliqué le bon bouton, et la mesure SQL du backlog est à compléter (elle exclut par construction les demandes sans `sample_item_id`) — docs/CHASSE.md §3",
+      "depuis": "580f2cf",
+      "note": "deux des trois échecs du dernier parcours cliqué consigné (62b7064 : R37 ×2, R41 ×1 — voir docs/instantanes/verify.json). [hors dépôt : mandat du fondateur] le nomme premier chantier."
+    },
+    {
+      "id": "R40",
+      "etat": "ouvert — défaut mesuré par la revue hostile de 62b7064, à un seul endroit (`requireMember` doit filtrer `exited_on` comme `assertMembre`)",
+      "depuis": "62b7064",
+      "note": "défaut préexistant à toutes les pages ; un membre sorti voit les boutons et sera refusé au geste."
+    },
+    {
+      "id": "R39",
+      "etat": "ouvert — à trancher avec l'épure (étage 2 du mandat de nuit)",
+      "depuis": "62b7064",
+      "note": ""
+    },
+    {
+      "id": "R38",
+      "etat": "ouvert — à trancher avec un auditeur (une sortie de périmètre se STATUE-t-elle, comme une sortie du tirage ?)",
+      "depuis": "62b7064",
+      "note": "le libellé de l'écran a été corrigé ; le fond ne l'est pas."
+    },
+    {
+      "id": "R36",
+      "etat": "ouvert — coût de lecture, négligeable sur la démonstration",
+      "depuis": "580f2cf",
+      "note": ""
+    },
+    {
+      "id": "R35",
+      "etat": "ouvert — il manque le dénominateur ; en ligne la lecture rend « 0 reprise · 0 sortie », indistinguable d'un défaut",
+      "depuis": "580f2cf",
+      "note": "à lier à la règle 22 : une lecture de /api/sante doit pouvoir rougir sur son cas."
+    },
+    {
+      "id": "R34",
+      "etat": "ouvert — le prédicat de « travail » ignore `verification_check` et `wp_extra_cell`",
+      "depuis": "580f2cf",
+      "note": "mesuré par la revue hostile : une ligne portant une seule re-exécution en aveugle sort du tirage sans un mot."
+    },
+    {
+      "id": "R33",
+      "etat": "PARTIEL — trois chemins de lecture suivent le lignage (atelier, grille de test, /api/sante), huit ne le suivent pas (le titre du backlog disait « cinq » ; corrigé le 2026-09-06, la liste en énumère huit)",
+      "depuis": "580f2cf",
+      "note": "premier geste avant tout écran neuf : `workpapers/draft.ts` puis `provenance.ts` (docs/MATIN_J4.md, risque 2). Le fragment LIGNAGE est en un seul endroit."
+    },
+    {
+      "id": "R32",
+      "etat": "ouvert — un refus non nommé (contrainte `check` remontée brute) ; petit, à faire quand on touche `statuerSortie`",
+      "depuis": "580f2cf",
+      "note": ""
+    },
+    {
+      "id": "R31",
+      "etat": "ouvert — « remettre une ligne au tirage » se conçoit avec un auditeur (modifie une sélection tirée, journalisée, parfois visée)",
+      "depuis": "580f2cf",
+      "note": "l'option a été retirée de l'écran la nuit même."
+    },
+    {
+      "id": "R30",
+      "etat": "ouvert — question de la règle du RÉ-IMPORT (invalider ou constater la sélection), à trancher avec un auditeur",
+      "depuis": "580f2cf",
+      "note": "la famille « tirage » se tait délibérément dans ce cas."
+    },
+    {
+      "id": "R29",
+      "etat": "ouvert — la CI « rôle de production » ne rejoue pas la suite sous `otto_app`, donc câbler le chemin `scripts` ne mesurerait rien",
+      "depuis": "e004053",
+      "note": ""
+    },
+    {
+      "id": "R28",
+      "etat": "ouvert — risque théorique (`warp` n'est appelé que par le semis) ; clé par locataire le jour où un écran l'appelle",
+      "depuis": "e004053",
+      "note": ""
+    },
+    {
+      "id": "R27",
+      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-05 : `otto_portal_contact()` et `otto_portal_entity()` en `security definer`, registre `rls_definer_justifiee`, migration 0141) — l'entrée du backlog est ANTÉRIEURE et n'a pas été soldée par écrit",
+      "depuis": "e004053",
+      "note": "à vérifier en empruntant le chemin (portail sous garde armé) avant de la rayer ; ne pas la rayer sur la foi de cette ligne."
+    },
+    {
+      "id": "R26",
+      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-06 : `blob_store` isolé PAR CE QUI LE RÉFÉRENCE, migration 0141) — l'entrée du backlog est ANTÉRIEURE et n'a pas été soldée par écrit",
+      "depuis": "e004053",
+      "note": "même réserve que R27 ; conséquence assumée : une pièce que rien ne référence devient illisible."
+    },
+    {
+      "id": "R25",
+      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-01, D-J3N-03, D-J3N-04 : catalogue `engagementDe`, critère « prend un acteur », instrument qui EXÉCUTE) ; treize gestes sur la personne écrits comme exceptions — l'entrée du backlog est ANTÉRIEURE",
+      "depuis": "e004053",
+      "note": "même réserve que R27."
+    },
+    {
+      "id": "R24",
+      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-07 : poseur enregistré ; `screens:garde` sous LOC-01 armé, voir le tableau verify) — l'entrée du backlog est ANTÉRIEURE et dit encore « tant qu'il manque »",
+      "depuis": "e004053",
+      "note": "même réserve que R27 ; l'étape 3 de PLAN_RLS reste INTERDITE et non faite."
+    },
+    {
+      "id": "R42",
+      "etat": "ouvert — règle 1 : le code est là (a06a7f1), le document non",
+      "depuis": "a06a7f1",
+      "note": "à écrire en premier dans la prochaine session de contenu, sous le numéro qui suit ADR-134."
+    },
+    {
+      "id": "R43",
+      "etat": "ouvert — documentation périmée, à corriger dans le même geste que la prochaine tranche datée",
+      "depuis": "2026-09-05",
+      "note": "trouvé en écrivant le transfert."
+    },
+    {
+      "id": "R44",
+      "etat": "ouvert — à engendrer par un script (objet · semeur crée ? · chemin humain ? · cliqué ?), pas à rédiger à la main",
+      "depuis": "2026-09-06",
+      "note": "CLAUDE.md règle 20 et docs/CHASSE.md s'y référaient comme à un objet déjà là ; trouvé absent par la revue hostile du transfert. Mandat du semeur §1."
+    },
+    {
+      "id": "N2-1",
+      "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
+      "depuis": "nuit 2",
+      "note": ""
+    },
+    {
+      "id": "N2-2",
+      "etat": "tenu pour acquis (convention du monde de démonstration, données fictives) ; à revoir le jour de vrais comptes",
+      "depuis": "nuit 2",
+      "note": ""
+    },
+    {
+      "id": "N2-3",
+      "etat": "assumé et dit (ADR-126) : une note semée ne vieillit jamais sur la démonstration publique",
+      "depuis": "nuit 2",
+      "note": ""
+    },
+    {
+      "id": "N2-4",
+      "etat": "ouvert — squelette RETIRÉ ; à relivrer avec un harnais qui attend le CONTENU, pas la page",
+      "depuis": "nuit 2",
+      "note": "même terrain que l'hypothèse H du #418 (le moment où le contenu existe)."
+    },
+    {
+      "id": "N2-5",
+      "etat": "ouvert — classement table par table, hors périmètre gelé",
+      "depuis": "nuit 2",
+      "note": ""
+    },
+    {
+      "id": "N2-6",
+      "etat": "SOLDÉ le 2026-09-03 (e004053) — le produit avait raison ; reste l'observation J3-6 : l'ordre des lignes de la grille n'est pas stable",
+      "depuis": "nuit 2",
+      "note": ""
+    }
+  ]
+}

@@ -143,9 +143,17 @@ export function poserLaSonde(page: Page, base: string, dossier: string): Sonde {
         }
         l.push(`    ${i.fichierServeur}`);
       }
-      /* CE QUE LES TROIS CHAMPS TRANCHENT, écrit ici pour que la lecture ne
-         dépende pas d'un document annexe. */
-      l.push('  lecture : memePage=faux ⇒ artefact de harnais (flux du document précédent coupé par la navigation) ·');
+      /* CE QUE LES QUATRE CHAMPS TRANCHENT, écrit ici pour que la lecture ne
+         dépende pas d'un document annexe. La lecture memePage=faux avait un
+         seul énoncé jusqu'à ce qu'un incident RÉEL (docs/CHASSE.md §1, F4)
+         porte memePage=faux ET flux COMPLET — combinaison qu'elle ne
+         prévoyait pas, et qu'elle aurait lue comme « artefact de harnais »
+         alors que docs/DECISIONS.md (ADR-132) en fait la pièce maîtresse
+         de l'hypothèse H (une navigation commencée avant la fin de
+         l'hydratation du document précédent). Corrigé : la combinaison a
+         désormais sa propre lecture, distincte de l'artefact de coupure. */
+      l.push('  lecture : memePage=faux + flux COUPÉ ⇒ artefact de harnais probable (le document précédent a été quitté avant la fin de sa réponse) ·');
+      l.push('            memePage=faux + flux complet ⇒ le DOM relevé est déjà celui d’un AUTRE document alors que sa réponse était complète : navigation côté client commencée avant la fin de l’hydratation du document précédent (hypothèse H, docs/CHASSE.md §1) ·');
       l.push('            memePage=vrai + flux COUPÉ + HTML ⇒ flux tronqué sur la page même ·');
       l.push('            memePage=vrai + flux complet + text ⇒ vraie divergence de donnée, nommée ci-dessus ·');
       l.push('            memePage=vrai + flux complet + HTML ⇒ divergence de structure réelle.');
