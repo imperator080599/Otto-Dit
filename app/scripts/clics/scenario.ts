@@ -1031,6 +1031,15 @@ export async function conduire(
             await sel.selectOption({ label: opts[0] });
             await p.locator('#ipe input[name=utilisee][value=oui]').check();
             await p.locator('#ipe select[name=approprie]').selectOption('oui');
+            /* RÉUTILISER UN RAPPORT EXIGE SON ARRÊTÉ (ipe-actions.ts:34-44,
+               `utiliserRapport` refuse sans `date_document`, ipe.ts:337) — la
+               première version de cette station ne le remplissait jamais et
+               obtenait le refus « Dites sur quel arrêté ce papier s’appuie »
+               (observé, pas deviné). L’option choisie porte sa période dans
+               son libellé (page.tsx:328, « … période au AAAA-MM-JJ … ») : on
+               la relit plutôt que de la retaper. */
+            const dateArrete = opts[0].match(/\d{4}-\d{2}-\d{2}/)?.[0];
+            if (dateArrete) await p.locator('#ipe input[name=date_document]').fill(dateArrete);
             await soumettre(p.locator(`#ipe button:has-text("${L('wp.ipe.record')}")`).first(), 1500);
           } else {
             await p.locator('#ipe input[name=utilisee][value=non]').check();
