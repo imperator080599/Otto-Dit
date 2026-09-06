@@ -618,6 +618,79 @@ et ses obstacles. Rien qui traverse les dossiers.
 5. **Rien de l'existant ne disparaît** : `enregistrerIpe` (le peuplement, les tests d'avant) crée
    ou reprend le rapport du même nom et du même arrêté, puis le désigne — avec le refus qui va avec.
 
+## Session du 6 septembre 2026 — plan d'autonomie du fondateur (CLAUDE.md règle 32)
+
+*« Ne m'attends pas. » R37 corrigé et servi (0b1749f), chaîne verify complète, main avancé.
+Étape suivante du mandat : R38 et R39 « puis Lot 2 », en décision autonome plutôt qu'en
+attente — jamais Lot 2 pendant que R38/R39 restent des questions ouvertes non tranchées d'une
+manière ou d'une autre.*
+
+## DA-33 — R39 : le programme reste au TRANSVERSE, la question de l'axe reste ouverte
+
+**Question.** `docs/BACKLOG_REPORTE.md` relève que le programme de travail vit dans le groupe
+TRANSVERSE du rail alors que R-03/ADR-112 posent que l'axe de la navigation est le POSTE — et
+dit lui-même : « à trancher en même temps que l'épure (étage 2), qui reprend la question du
+rail. »
+**Options.** (a) Déplacer maintenant le programme sous le POSTE, pour faire disparaître le
+constat du backlog ; (b) laisser R39 ouvert, tel que le backlog le prescrit, et ne rien changer
+à la navigation.
+**Décision.** (b). Aucune ligne de code touchée.
+**Raison.** Ce n'est pas un défaut isolé à corriger en passant : R39 est un désaccord
+d'ARCHITECTURE entre le rail actuel et sa propre règle écrite (R-03/ADR-112), et le backlog le
+rattache explicitement à un chantier plus large et pas encore commencé (« l'épure », étage 2).
+Le déplacer maintenant, seul, hors de ce chantier, referait ce que la règle 9 de CLAUDE.md
+interdit par analogie — une bifurcation risquée décidée en passant plutôt qu'un geste de
+contenu — et toucherait des écrans, des tests figés (`docs/PARCOURS.json`, `docs/DENSITE.md`,
+`docs/LECTURES.json`) et la garde de langue sur une surface bien plus large que R38 ou les Lots
+1/2 du plan d'autonomie. Le plan du fondateur ordonne « R38 et R39, puis Lot 2 » — mais pour R39,
+la forme correcte de « traiter » ce fil est de confirmer par lecture qu'il reste exactement ce
+que le backlog dit qu'il est (pas pire, pas déjà résolu ailleurs), pas de trancher seul une
+question d'architecture que le backlog réserve explicitement à un auditeur/le fondateur au
+moment de l'épure.
+**Coût de retour.** Nul — rien n'a changé. Le fil reste "ouvert" dans `docs/instantanes/fils.json`,
+inchangé.
+
+## DA-34 — R38 : la navigabilité corrigée, la question du STATUER reste ouverte
+
+**Question.** `docs/BACKLOG_REPORTE.md` relève DEUX choses sous un seul identifiant : (a) un
+poste qui sort du périmètre après `confirmScoping(..., 'ns_confirmed', motif)` emporte ses
+procédures et ses papiers hors d'atteinte — mesuré : le rail (`rail.ts:158`) grise le poste
+(lien mort, sans `href` — `nav.tsx:135`) sur le seul critère `scoping`, alors que la leadsheet
+elle-même (`poste.ts:vuePoste`) affiche déjà REV-01 sans aucun filtre de périmètre ; (b) sortir
+un poste du périmètre après y avoir travaillé devrait-il se STATUER par écrit, comme une ligne
+sortie du tirage (ADR-133) ?
+**Recherche.** Un agent d'exploration a confirmé par lecture (pas par supposition) : `confirmScoping`
+ne touche ni `procedure_instance` ni `workpaper` — REV-01 reste en base intact. `horsCommande`
+(`programme.ts:333`) ne peut structurellement pas couvrir la sortie de périmètre : il n'itère que
+sur les postes DÉJÀ filtrés `in_scope`. Aucun autre chemin rendu (dashboard, rail, écran
+analytique) ne mène à un poste hors périmètre portant du travail, sauf par une note qui s'y trouve
+déjà rattachée.
+**Options pour (a).** (a1) Ne rien faire — le lien mort reste honnête (« il n'ouvre rien et il ne
+ment pas », le commentaire d'origine de rail.ts) ; (a2) réintégrer le poste dans l'écran du
+programme comme s'il était encore retenu ; (a3) rendre la leadsheet atteignable UNIQUEMENT pour
+un poste hors périmètre qui porte déjà une procédure, sans le remettre au programme.
+**Décision pour (a).** (a3), appliquée. `rail.ts` calcule maintenant `atteignable = retenu ||
+codesAvecTravail.has(def.code)` (une requête `distinct fsli_code from procedure_instance`,
+batchée comme le reste de `etatDossier`). Cas connu mauvais écrit et vérifié PAR EXÉCUTION (règle
+17) : `rail.test.ts`, un test qui échoue avant le correctif (`git stash` de `rail.ts` seul,
+observé rouge) et passe après, sur DEUX postes du même dossier — celui qui porte une procédure
+reste atteignable, celui qui n'en porte aucune reste grisé. `programme.ts` (l'écran du programme
+lui-même) N'EST PAS touché : le poste reste absent de cette liste, ce qui laisse (b) entière.
+**Options pour (b).** (b1) Décider seul qu'une sortie de périmètre après travail doit se STATUER
+(inventer un mécanisme, un écran, un refus) ; (b2) laisser (b) ouverte, exactement comme le
+backlog le demande (« se tranche avec un auditeur »).
+**Décision pour (b).** (b2). Aucune ligne de code pour (b).
+**Raison.** (a) est une correction de navigabilité pure : elle ne change ni le périmètre, ni le
+programme, ni aucune donnée de méthode — un travail déjà produit reste lisible, ce que rule 13
+(silence lu comme succès) et l'esprit de la règle 28 (rien de produit ne devient invisible en
+silence) demandent déjà. (b), à l'inverse, est une question de méthode d'audit : faut-il un geste
+de disposition écrite, avec quel refus, quelle norme la commande ? Rule 8 interdit d'écrire une
+règle de méthode de mémoire ; le backlog lui-même la renvoie à un auditeur, au même titre que R30
+et R31. Trancher (b) seul aurait été inventer une procédure — exactement ce que le périmètre gelé
+(règle 14) et A.2/C.2 du plan d'autonomie interdisent à un modèle d'exécution.
+**Coût de retour.** Faible pour (a) : `git revert` sur un seul fichier de service et son test,
+sans migration ni changement de schéma. Nul pour (b) : rien n'a été construit.
+
 ## Nuit du 3 au 4 septembre 2026 — étage 0 (la dette d'étanchéité)
 
 *Pleine autonomie : chaque décision est tranchée par la voie la plus défendable et inscrite ici.*

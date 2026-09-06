@@ -145,6 +145,21 @@ export async function railDuDossier(
   const lignes = await q<{ code: string; name: string; scoping: string; scoping_basis: string | null }>(
     `select code, name, scoping, scoping_basis from fsli where engagement_id = $1`, [engagementId]);
   const parCode = new Map(lignes.map((l) => [l.code, l]));
+  /* R38 : un poste qui SORT du périmètre après qu'on y a travaillé ne doit pas
+     emporter ses procédures et ses papiers hors d'atteinte. `retenu` seul
+     rendait la leadsheet inatteignable (lien mort, sans href — nav.tsx) alors
+     que la page elle-même les affiche déjà sans filtre de périmètre
+     (poste.ts:vuePoste). La question de fond — une sortie de périmètre
+     doit-elle se STATUER comme une sortie du tirage ? — reste ouverte (R38,
+     à trancher avec un auditeur) : ceci ne fait QUE restaurer l'accès à du
+     travail déjà produit, ça ne change ni le programme ni le périmètre. */
+  const codesAvecTravail = new Set(
+    (await q<{ fsli_code: string }>(
+      `select distinct fsli_code from procedure_instance
+       where engagement_id = $1 and fsli_code is not null`,
+      [engagementId],
+    )).map((r) => r.fsli_code),
+  );
   const langue = (fs.language === 'fr' ? 'fr' : 'en') as 'fr' | 'en';
   for (const etat of ['BS', 'IS'] as const) {
     g(etat === 'BS' ? 'rail.groupe.bilan' : 'rail.groupe.resultat');
@@ -156,10 +171,11 @@ export async function railDuDossier(
       const ligne = parCode.get(def.code);
       const nom = ligne?.name ?? def.name[langue] ?? def.name.en;
       const retenu = Boolean(ligne && (ligne.scoping === 'in_scope' || ligne.scoping === 'in_scope_qualitative'));
+      const atteignable = retenu || codesAvecTravail.has(def.code);
       const raison = !ligne
         ? t('rail.raison.aucunCompte')
         : t('rail.raison.horsPerimetre', { motif: ligne.scoping_basis?.trim() || t('rail.raison.horsPerimetreSansMotif') });
-      e(`poste/${encodeURIComponent(def.code)}`, nom, t('rail.quoi.poste'), retenu, raison);
+      e(`poste/${encodeURIComponent(def.code)}`, nom, t('rail.quoi.poste'), atteignable, raison);
     }
   }
 

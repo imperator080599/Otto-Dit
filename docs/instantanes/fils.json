@@ -28,15 +28,15 @@
     },
     {
       "id": "R39",
-      "etat": "ouvert — à trancher avec l'épure (étage 2 du mandat de nuit)",
+      "etat": "ouvert — à trancher avec l'épure (étage 2 du mandat de nuit) ; confirmé toujours ouvert le 2026-09-06, décision autonome DA-33 de ne pas le trancher seul (question d'architecture, hors périmètre d'un seul geste)",
       "depuis": "62b7064",
-      "note": ""
+      "note": "DA-33 : déplacer le programme vers l'axe POSTE maintenant, seul, toucherait une surface bien plus large (écrans, PARCOURS.json, DENSITE.md, LECTURES.json, garde de langue) que ce que R38/Lot 1/Lot 2 demandent."
     },
     {
       "id": "R38",
-      "etat": "ouvert — à trancher avec un auditeur (une sortie de périmètre se STATUE-t-elle, comme une sortie du tirage ?)",
+      "etat": "NAVIGABILITÉ CORRIGÉE le 2026-09-06 (DA-34) — un poste hors périmètre qui porte déjà une procédure reste atteignable au rail ; la question du STATUER reste ouverte, à trancher avec un auditeur",
       "depuis": "62b7064",
-      "note": "le libellé de l'écran a été corrigé ; le fond ne l'est pas."
+      "note": "le libellé de l'écran a été corrigé (étage 1.1) ; le lien mort du rail est corrigé (DA-34, rail.ts + rail.test.ts, cas connu mauvais vérifié par git stash) ; l'écran du programme reste inchangé et le fond méthodologique (STATUER une sortie de périmètre) reste entier."
     },
     {
       "id": "R36",

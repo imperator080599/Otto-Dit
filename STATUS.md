@@ -167,6 +167,74 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 1 du plan d'autonomie : R37/R40/R41 corrigés, chaîne verify complète, SHA servi confirmé (2026-09-06)
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Rédiger un papier de travail
+depuis le programme, réutiliser un rapport IPE existant, et voir la demande de pièces naître DE la
+sélection du tirage — les trois sans que le parcours cliqué rougisse. Un membre sorti d'une mission
+ne voit plus les écrans qu'il ne peut plus utiliser.
+
+**R37 — le vrai défaut n'était pas celui qu'on croyait.** L'hypothèse nommée (une redirection
+silencieuse de `requireMember` avalant le clic) a été RÉFUTÉE par exécution : l'URL après clic
+était bien celle du succès. Le vrai défaut vivait dans `tx()` (`src/lib/db/client.ts`) : un
+`redirect()` Next lancé APRÈS une écriture, à l'intérieur d'une transaction PGlite, faisait
+committer l'écriture puis avaler l'exception de contrôle de flux — sauf que le signal était mal
+distingué d'une vraie erreur ailleurs dans la pile, et le rollback qui suivait EFFAÇAIT l'écriture
+déjà commitée le temps que Next la voie. Corrigé au niveau de la CLASSE
+(`estUnSignalDeControleDeFlux`), pas de l'instance qui l'a révélé : tout appelant présent et futur
+de `tx()`/`withTenant()` est couvert. Preuve : `src/lib/db/tx-redirect.test.ts`, deux cas connus
+mauvais (transaction de premier niveau, savepoint imbriqué) qui échouaient avant le correctif et
+passent après ; suite complète 849/849 sans régression. ADR-135, docs/CHASSE.md §3. Dette nommée :
+un seul autre site combine `redirect()` et une écriture (`poste/[code]/actions.ts`) ; son
+innocuité n'est PAS confirmée par exécution, seulement présumée par lecture.
+
+**R40 — `requireMember` ne filtrait pas `exited_on`.** `assertMembre` le faisait, `requireMember`
+non : un membre sorti de la mission voyait encore les écrans et leurs boutons, refusé seulement
+plus tard, au geste. Isolé dans `activeMembership()` (`src/lib/core/auth.ts`), avec le même filtre ;
+cas connu mauvais dans `auth.test.ts` (passe avant `exitMember`, échoue après, repasse avec le
+correctif).
+
+**R41 — deux causes distinctes, trouvées l'une après l'autre par l'exécution, pas devinées.** (1)
+La station cliquée ciblait `.last()` sur les liens de papier de la vue programme — n'importe quel
+papier déjà rédigé du dossier, pas forcément celui qu'on vient de créer ; corrigé en lisant le code
+de la ligne avant de soumettre puis en scopant le lien à cette ligne précise. (2) Réutiliser un
+rapport IPE existant exige son arrêté (`date_document`), que la station ne remplissait jamais — le
+vrai refus observé était « Dites sur quel arrêté ce papier s'appuie », pas celui supposé au départ.
+
+**Deux défauts visuels trouvés et corrigés par la revue hostile de fin de tranche**, tous deux par
+exécution (sonde Playwright jetable, supprimée avant commit) : `.bascule-liste` débordait de -243
+à -316 px à 390 px (position fixe, largeur contrainte) ; `.repli-corps` n'avait pas la règle
+`overflow-x: auto` que `.panel` porte déjà, donc un tableau dans un `<Repli>` hors `.panel`
+poussait la PAGE plutôt que sa propre section — corrigé au même point de rupture (760px), ce qui a
+résolu 110 défauts sur 14 écrans en un seul geste (ils étaient MASQUÉS, pas causés, par le premier
+correctif : le plafond de 4 défauts par vue de la sonde visuelle était atteint par `.bascule-liste`
+avant que le reste de la page ne soit examiné).
+
+**R44 (mandat du semeur §1) — première version engendrée.** `docs/SEMEUR_VS_CHEMIN.md`
+(`npm run semeur`) répond, objet par objet sur les cinq fichiers du semeur : le semeur crée-t-il ?
+un chemin humain existe-t-il ? a-t-il été cliqué ? **Compte de départ, figé par le fondateur comme
+ligne de référence** : 83 objets — **16 DÉCOR**, 28 non prouvés, 39 prouvés. Le garde E1 interdit
+désormais tout décor nouveau ; chaque lot à venir doit faire baisser ce compte de décors et monter
+celui des prouvés. Cohérence du registre éprouvée par `src/lib/semeur/coherence.ts` (2 cas connus
+mauvais + le registre réel).
+
+**La chaîne `npm run verify` a tourné COMPLÈTE sur ce HEAD** (verify-full-4.log, session locale) :
+db:reset, demo:seed, tsc (0 erreur), vitest (**849/849**, 100 fichiers), gardes (43), semeur,
+plancher (632), langue + épreuve (15/15 cas connus dénoncés), lectures (0 perdue / 1681 chemins) +
+épreuve (6/6), parcours (244 déclarées, 0 perdue) + épreuve (5/5), screens (87 routes, 0 échec),
+fumee (51 routes, 0 échec), densite (77 écrans, 0 dépassement), **clics (202 étapes conduites, 0
+échec, 314 clics sur 43 gestes)**, **visuel (312 vues, 0 défaut)**. `docs/PARCOURS.json` figé sur
+ce parcours vert (fa47b36). `docs/instantanes/{verify,servi,fils}.json` portent chaque mesure avec
+son SHA et sa source (règle 21).
+
+**Main avancé, et le SHA servi mesuré, pas supposé** : `main` fast-forwardé jusqu'à `0b1749f`, puis
+`c23b4be` (régénération du compte rendu). Le travail CI `deploye` (run 34032612106, job
+101484851827) a confirmé `/api/sante` servant `0b1749f` en 1 min 49 s (12:16:37Z→12:18:26Z) — SHA
+poussé = SHA servi (règle 27).
+
+**R38 et R39 — décisions autonomes documentées, pas d'arbitrage silencieux.** Voir
+`docs/DECISIONS_AUTONOMES.md`, section « Session du 6 septembre 2026 ».
+
 ## Étage 1.1 — le programme de travail : l'écran qui manquait (2026-09-03, nuit J3)
 
 **Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Ouvrir « Programme de travail »

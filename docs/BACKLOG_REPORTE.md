@@ -213,15 +213,22 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   un seul autre site trouvé (`poste/[code]/actions.ts`), qui redirige vers la MÊME page et
   n'utilise pas `executer()`/`withTenant()` de la même façon ; il n'était vraisemblablement pas
   concerné, mais ça reste à confirmer, pas à supposer.
-- **R38 — un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme.**
+- **R38 — NAVIGABILITÉ CORRIGÉE le 2026-09-06 (DA-34) ; la question du STATUER reste ouverte.**
   Mesuré par la revue hostile de l'étage 1.1 : après `confirmScoping(..., 'ns_confirmed', motif)`,
-  le poste disparaît de l'écran du programme et le papier REV-01 reste en base, atteignable
-  seulement par `/eng/[id]/workpapers` — qui n'est pas au rail, et où l'on n'arrive que depuis la
-  leadsheet du poste (morte pour un poste hors périmètre) ou depuis une note. Le mécanisme
-  `horsCommande` couvre la baisse d'un niveau d'assertion et l'absence d'évaluation, pas la sortie
-  de périmètre ; le libellé de l'écran a été corrigé pour ne plus affirmer le contraire. La vraie
-  question — *sortir un poste du périmètre alors qu'on y a travaillé doit-il se STATUER, comme une
-  ligne sortie du tirage ?* — est la même que celle d'ADR-133, et se tranche avec un auditeur.
+  le poste disparaît de l'écran du programme (inchangé, voir plus bas) et le rail le grisait avec
+  un lien MORT (`nav.tsx` : un `<span>` sans `href` quand `atteignable` est faux) — alors que la
+  leadsheet elle-même (`poste.ts:vuePoste`) affichait déjà REV-01 sans aucun filtre de périmètre :
+  ce n'était pas la page qui était morte, c'était le SEUL chemin rendu jusqu'à elle. Corrigé dans
+  `rail.ts` : un poste hors périmètre reste atteignable dès qu'une `procedure_instance` existe déjà
+  pour son code (`codesAvecTravail`, une requête batchée) — un poste jamais travaillé reste grisé
+  comme avant. Cas connu mauvais dans `rail.test.ts` (échoue sans le correctif, vérifié par
+  `git stash` du seul `rail.ts`, passe avec). Le mécanisme `horsCommande` couvre la baisse d'un
+  niveau d'assertion et l'absence d'évaluation, pas la sortie de périmètre — confirmé par lecture,
+  structurellement hors de portée (il n'itère que sur les postes déjà `in_scope`). **L'écran du
+  programme reste inchangé : le poste reste absent de cette liste.** La vraie question — *sortir un
+  poste du périmètre alors qu'on y a travaillé doit-il se STATUER, comme une ligne sortie du
+  tirage ?* — est la même que celle d'ADR-133, reste ENTIÈRE, et se tranche avec un auditeur
+  (DA-34).
 - **R39 — le programme de travail vit dans le groupe TRANSVERSE du rail, alors que R-03/ADR-112
   posent que l'axe de la navigation est le POSTE.** Le programme est par nature un contenu de
   poste. Il a été placé au transverse parce qu'il se lit d'abord de bout en bout — « qu'est-ce qui

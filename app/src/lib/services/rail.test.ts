@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { initTestDb } from '@/lib/test/setup';
-import { q } from '@/lib/db/client';
+import { q, q1 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { repoRoot } from '@/lib/db/client';
@@ -150,6 +150,47 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
     const sox = await railDuDossier(IDS.engSox, ['pcaob-sox'], en);
     expect(sox.find((x) => x.label === en('rail.controleInterne'))!.atteignable).toBe(true);
     expect(sox.find((x) => x.label === en('rail.deviations'))).toBeTruthy();
+  });
+
+  /* R38 : un poste qui SORT du périmètre après qu'on y a travaillé ne doit pas
+     emporter ses procédures et son papier hors d'atteinte — la leadsheet
+     (poste.ts:vuePoste) les affiche déjà sans filtre de périmètre ; seul le
+     rail les rendait injoignables (lien mort, sans href). Cas connu mauvais :
+     AVANT le correctif (`retenu` seul décidait `atteignable`), ce test échoue
+     sur la première assertion — vérifié par git stash avant d'écrire le
+     correctif de rail.ts. Le poste SANS aucune procédure reste grisé : ce
+     n'est pas « tout poste hors périmètre redevient atteignable », seulement
+     celui qui porte du travail déjà produit. */
+  it('R38 : un poste hors périmètre qui porte déjà une procédure reste atteignable ; un poste vide reste grisé', async () => {
+    /* Le papier REV-01 (test précédent, même dossier IDS.engNep) a déjà créé un
+       procedure_instance avec fsli_code — pas besoin de le redrafter ici. */
+    const { code: codeAvecTravail } = await q1<{ code: string }>(
+      `select fsli.code from procedure_instance pi
+       join fsli on fsli.engagement_id = pi.engagement_id and fsli.code = pi.fsli_code
+       where pi.engagement_id = $1 and pi.fsli_code is not null limit 1`,
+      [IDS.engNep],
+    );
+    const { code: codeSansTravail } = await q1<{ code: string }>(
+      `select f.code from fsli f
+       where f.engagement_id = $1
+         and not exists (select 1 from procedure_instance pi where pi.engagement_id = f.engagement_id and pi.fsli_code = f.code)
+       order by f.code limit 1`,
+      [IDS.engNep],
+    );
+    const { confirmScoping } = await import('./fsli');
+    const fsliAvecTravail = await q1<{ id: string }>(`select id from fsli where engagement_id = $1 and code = $2`, [IDS.engNep, codeAvecTravail]);
+    const fsliSansTravail = await q1<{ id: string }>(`select id from fsli where engagement_id = $1 and code = $2`, [IDS.engNep, codeSansTravail]);
+    await confirmScoping(fsliAvecTravail.id, IDS.users.karim, 'ns_confirmed', 'test R38 : sorti du périmètre après travail');
+    await confirmScoping(fsliSansTravail.id, IDS.users.karim, 'ns_confirmed', 'test R38 : jamais travaillé');
+
+    const rail = await railDuDossier(IDS.engNep, ['nep-fr'], en);
+    const entreeAvecTravail = rail.find((x) => x.href.endsWith(`/poste/${encodeURIComponent(codeAvecTravail)}`));
+    const entreeSansTravail = rail.find((x) => x.href.endsWith(`/poste/${encodeURIComponent(codeSansTravail)}`));
+    expect(entreeAvecTravail, codeAvecTravail).toBeTruthy();
+    expect(entreeAvecTravail!.atteignable, `${codeAvecTravail} a une procédure mais est grisé`).toBe(true);
+    expect(entreeSansTravail, codeSansTravail).toBeTruthy();
+    expect(entreeSansTravail!.atteignable, `${codeSansTravail} n'a aucun travail et devrait rester grisé`).toBe(false);
+    expect(entreeSansTravail!.raison).toBeTruthy();
   });
 
   /**
