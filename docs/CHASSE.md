@@ -283,6 +283,43 @@ immédiatement après ce clic précis (comme fait pour R41) sur un prochain pass
 la page finale est `/` (échec silencieux de `requireMember`) ou véritablement `/requests` avec
 une demande absente pour une autre raison. Cette session n'a pas eu le temps de le faire.
 
+**[2026-09-06, suite immédiate] L'hypothèse `requireMember` est RÉFUTÉE ; la vraie cause est
+trouvée, reproduite en isolation, et corrigée — CLASSE, pas instance.** L'instrumentation
+prévue a tourné : `sample_id soumis=7ea9a475…` (le sample RÉ-TIRÉ, `status='drawn'`, confirmé
+par une requête directe — PAS celui du semeur) et `url après clic=…/eng/{id}/requests` —
+**exactement l'URL du succès**, pas `/`. `requireMember` n'a donc PAS échoué : `generatePbcFromSample`
+a bien tourné jusqu'au `redirect()` final. Et pourtant, aucune ligne `request_generated` n'est
+apparue, et l'insert n'a laissé aucune trace.
+
+**La cause, reproduite hors navigateur, en isolation (`src/lib/db/tx-redirect.test.ts`)** :
+`redirect()` de Next signale par une exception à `digest` (`estUnSignalDeNext`, déjà su et géré
+par `app/refus.ts` depuis le début — ADR-078 le documente). Ce que PERSONNE n'avait vu : `tx()`
+(`lib/db/client.ts`) ne le savait pas. Sur une transaction NEUVE (`db.transaction`) comme sur un
+point de reprise (savepoint), `tx()` traitait TOUTE exception qui traverse `fn()` comme un échec
+à annuler — y compris le signal du `redirect()` que `pbcAction` lève APRÈS avoir écrit, à
+l'intérieur de la MÊME transaction (`withTenant` → `tx`). Le service tournait en entier, le
+`redirect()` réussissait, et PGlite annulait l'écriture entre les deux, parce qu'une exception
+avait traversé son callback — n'importe laquelle. **C'est le silence lu comme un succès (règle
+13) au niveau le plus bas du dépôt : le geste métier n'était pas en cause, la brique qui porte
+TOUS les gestes métier l'était.**
+
+Cas connu mauvais AVANT correction (règle 17) : `tx-redirect.test.ts` écrit une ligne réelle,
+lève un signal `NEXT_REDIRECT` fabriqué dans la MÊME transaction, et vérifie que la ligne
+survit — échouait sur les deux formes de `tx()` (transaction de tête et point de reprise) avant
+le correctif ; un troisième cas témoin (une VRAIE erreur) confirme qu'elle continue d'annuler
+normalement. **Corrigé** : `tx()` distingue désormais un signal de contrôle de flux d'une vraie
+erreur (`estUnSignalDeControleDeFlux`, déplacée dans `lib/db/client.ts` — `app/refus.ts`
+réexporte `estUnSignalDeNext` pour ne rien casser) ; sur un signal, la transaction ou le point de
+reprise COMMET/LIBÈRE au lieu d'annuler, puis relève le signal une fois validé. Sur une vraie
+erreur, rien ne change.
+
+**Le rayon, pas encore mesuré exhaustivement** : toute action serveur qui écrit PUIS appelle
+`redirect()` vers une AUTRE route QUE `chemin` (le rechargement par défaut d'`executer()`, lui,
+est déjà hors transaction) partageait ce défaut. `pbcAction` (sampling) en est UN exemple mesuré ;
+un balayage des autres `redirect(` posés à l'intérieur d'un `executer(...)` reste à faire pour
+savoir combien d'autres gestes en souffraient en silence — dette nommée, pas cachée, pour la
+tranche qui suit celle-ci.
+
 Puis la question de produit, qui ne se devine pas : un re-tirage engendre-t-il automatiquement
 la demande des lignes neuves, ou la propose-t-il ? C'est l'étage 4.1 du mandat de nuit, et cela
 se décide avec un auditeur.

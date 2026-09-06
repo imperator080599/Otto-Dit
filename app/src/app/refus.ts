@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { conduire } from '@/lib/core/sonde';
 import { getSessionUser } from '@/lib/core/auth';
 import { withTenant } from '@/lib/db/tenant';
+import { estUnSignalDeControleDeFlux } from '@/lib/db/client';
 
 // UN REFUS S'AFFICHE — IL NE TOMBE PAS EN 500.
 //
@@ -26,12 +27,13 @@ import { withTenant } from '@/lib/db/tenant';
    lève donc un « NEXT_REDIRECT » qui n'est pas une erreur. Ne pas le laisser
    passer transforme une navigation réussie en refus affiché : le parcours
    cliqué a montré « refusé : NEXT_REDIRECT » à l'utilisateur.
-   C'est le défaut que ce fichier corrige, reproduit dans sa correction. */
-export function estUnSignalDeNext(e: unknown): boolean {
-  const d = (e as { digest?: unknown } | null)?.digest;
-  return typeof d === 'string'
-    && (d.startsWith('NEXT_REDIRECT') || d === 'NEXT_NOT_FOUND' || d.startsWith('NEXT_HTTP_ERROR_FALLBACK'));
-}
+   C'est le défaut que ce fichier corrige, reproduit dans sa correction.
+   LA DÉFINITION VIT DÉSORMAIS DANS lib/db/client.ts (R37, docs/CHASSE.md
+   §3) : `tx()` en a besoin au MÊME titre — une transaction qui annule un
+   signal de contrôle de flux comme une vraie erreur perd l'écriture que ce
+   fichier croyait avoir sauvée. Réexportée ici pour ne rien casser de ce qui
+   l'importait déjà sous ce nom. */
+export const estUnSignalDeNext = estUnSignalDeControleDeFlux;
 
 /** Le paramètre d'URL qui porte le refus — lu par BandeauRefus et par les harnais. */
 const CLE_REFUS = 'erreur';

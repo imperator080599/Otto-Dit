@@ -4,6 +4,20 @@ import fs from 'node:fs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { armerLeGarde, assertLocataire, contexteDeLocataire, gardeArme, locataireDeLaSession, sousLocataire, OUVERTURE_TRANSACTION } from './sans-locataire';
 
+/* `redirect()` et `notFound()` de Next SIGNALENT en levant une exception qui
+   porte un `digest` — ce n'est PAS une erreur (app/refus.ts le savait déjà
+   pour ne pas transformer une navigation réussie en refus affiché). `tx()`
+   ne le savait PAS : R37 (docs/CHASSE.md §3) — une action qui écrit PUIS
+   redirige vers une AUTRE page voyait son écriture ANNULÉE alors que
+   l'utilisateur atterrissait sur un écran de succès. Définie ICI, à la
+   racine, parce que `tx()` en a besoin ; `app/refus.ts` la réexporte pour
+   ne rien casser de ce qui l'importait déjà de là. */
+export function estUnSignalDeControleDeFlux(e: unknown): boolean {
+  const d = (e as { digest?: unknown } | null)?.digest;
+  return typeof d === 'string'
+    && (d.startsWith('NEXT_REDIRECT') || d === 'NEXT_NOT_FOUND' || d.startsWith('NEXT_HTTP_ERROR_FALLBACK'));
+}
+
 // LA BASE, DEUX PILOTES, UNE SURFACE (ADR-109, P0a du mandat).
 //
 // Local-first inchangé : sans DATABASE_URL, PGlite (postgres en wasm, fichier
@@ -334,17 +348,40 @@ export async function tx<T>(fn: (run: (sql: string, params?: unknown[]) => Promi
       await courante.query(`release savepoint ${point}`);
       return r;
     } catch (e) {
+      /* R37 : UN SIGNAL DE CONTRÔLE DE FLUX N'EST PAS UN ÉCHEC — ce que ce
+         point de reprise a écrit doit tenir, la navigation se joue ailleurs.
+         Le distinguer d'une VRAIE erreur (qui, elle, annule toujours) est le
+         seul geste de ce correctif ; rien d'autre ne change. */
+      if (estUnSignalDeControleDeFlux(e)) {
+        await courante.query(`release savepoint ${point}`);
+        throw e;
+      }
       await courante.query(`rollback to savepoint ${point}`).catch(() => undefined);
       throw e;
     }
   }
   const db = await getDb();
   let result!: T;
+  let signal: unknown;
+  /* MÊME GESTE, POUR LA TRANSACTION DE TÊTE : PGlite annule sur toute
+     exception qui TRAVERSE le callback de `db.transaction()` — un
+     `redirect()` en fait partie par défaut. Le signal est donc intercepté
+     ICI, DANS le callback, pour que celui-ci se termine normalement et que
+     PGlite COMMETTE ; il est relevé seulement APRÈS, une fois la transaction
+     validée. Aucun rejeu : `fn` ne s'exécute qu'une fois. Une vraie erreur,
+     elle, n'est PAS attrapée ici — elle traverse le callback et PGlite
+     annule comme avant. */
   await db.transaction(async (t) => {
     await transactionCourante.run(t, async () => {
-      result = await fn(async (sql, params = []) => (await t.query(sql, params)).rows);
+      try {
+        result = await fn(async (sql, params = []) => (await t.query(sql, params)).rows);
+      } catch (e) {
+        if (!estUnSignalDeControleDeFlux(e)) throw e;
+        signal = e;
+      }
     });
   });
+  if (signal !== undefined) throw signal;
   return result;
 }
 

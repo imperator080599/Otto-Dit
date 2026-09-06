@@ -156,8 +156,9 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   `obstaclesAuVisa` l'appelle sur l'accueil du dossier, l'écran des obstacles, la clôture, et via
   `travaux.ts` pour CHAQUE dossier d'une personne. Négligeable sur la démonstration ; pas gratuit
   au-delà.
-- **R37 — après un re-tirage, aucune demande de pièces n'existe pour les lignes NEUVES, alors que
-  l'écran annonce qu'elle a été engendrée.** Mesuré à la fin de la nuit J3, sur base fraîche, après
+- **R37 — CORRIGÉ le 2026-09-06 (test `src/lib/db/tx-redirect.test.ts`), CLASSE PAS INSTANCE.**
+  Après un re-tirage, aucune demande de pièces n'existait pour les lignes NEUVES, alors que
+  l'écran annonçait qu'elle avait été engendrée. Mesuré à la fin de la nuit J3, sur base fraîche, après
   que l'étage 1.2 eut ramené le parcours cliqué de neuf échecs à deux. Les deux qui restent ont
   cette seule cause : cinq lignes introduites par le re-tirage n'ont jamais été demandées au client,
   donc la boucle les compte « en attente de dépôt » et le dossier ne se clôt pas. La mesure :
@@ -189,6 +190,29 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   `pbcAction` peut rediriger vers `/` sans lever d'erreur — un chemin qu'un `refus()` qui ne
   cherche que `?erreur=` ne distingue pas d'un succès. Prochain geste : imprimer `p.url()` juste
   après ce clic, pas deviner plus loin.
+
+  **[2026-09-06, dans la même tranche] La piste `requireMember` est RÉFUTÉE par l'instrumentation
+  prévue** : `sample_id soumis` = l'échantillon RE-TIRÉ (`drawn`, pas celui du semeur), `url après
+  clic` = `/eng/{id}/requests` — l'URL du SUCCÈS. `generatePbcFromSample` a bien tourné jusqu'au
+  bout. **La vraie cause, trouvée et reproduite en isolation (hors navigateur)** : `tx()`
+  (`app/src/lib/db/client.ts`) ne distinguait pas un signal de contrôle de flux Next
+  (`redirect()`, exception à `digest`) d'une vraie erreur — sur les DEUX formes de transaction
+  (`db.transaction` de tête et point de reprise/savepoint), toute exception qui traversait le
+  callback annulait l'écriture. `pbcAction` écrit PUIS redirige, dans la MÊME transaction
+  (`withTenant` → `tx`) : le service tournait en entier, `redirect()` réussissait, et PGlite
+  annulait l'INSERT entre les deux — un silence lu comme un succès (règle 13) dans la brique qui
+  porte TOUS les gestes métier, pas dans le geste lui-même. Cas connu mauvais AVANT correction
+  (règle 17, `tx-redirect.test.ts`) : une ligne écrite puis un signal `NEXT_REDIRECT` fabriqué
+  dans la même transaction — la ligne disparaissait sur les deux formes de `tx()`, un troisième
+  cas témoin (une vraie erreur) confirme qu'elle continue d'annuler normalement. **Corrigé en
+  CLASSE** : `tx()` intercepte le signal, laisse la transaction/le point de reprise COMMETTRE/
+  LIBÉRER au lieu d'annuler, puis le relève une fois validé — aucune action serveur n'a été
+  touchée individuellement, la correction protège tout appelant de `tx()`/`withTenant()`
+  présent et futur. Dette nommée, pas cachée : le rayon exact (combien d'autres `redirect(`
+  posés à l'intérieur d'un `executer(...)` en souffraient) n'a pas été balayé exhaustivement —
+  un seul autre site trouvé (`poste/[code]/actions.ts`), qui redirige vers la MÊME page et
+  n'utilise pas `executer()`/`withTenant()` de la même façon ; il n'était vraisemblablement pas
+  concerné, mais ça reste à confirmer, pas à supposer.
 - **R38 — un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme.**
   Mesuré par la revue hostile de l'étage 1.1 : après `confirmScoping(..., 'ns_confirmed', motif)`,
   le poste disparaît de l'écran du programme et le papier REV-01 reste en base, atteignable
