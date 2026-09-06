@@ -298,6 +298,13 @@ approximatif — la ligne précédente ici même le disait et refusait, à raiso
 VERBATIM dans **`docs/MANDATS/2026-09-05_plan_autonomie.md`** (règle 33 de CLAUDE.md). Les lignes
 ci-dessous CITENT ce fichier par section — elles ne le paraphrasent plus.*
 
+*Le fondateur a ensuite transmis une seconde fois le même document, plus complet — commité verbatim
+dans **`docs/MANDATS/2026-09-05_plan_autonomie_complet.md`** (diff vérifié : une section « 0. Ajout
+du 6 septembre » en tête, absente du premier fichier, et le paragraphe Lot 1 du §D.1 plus détaillé
+sur R41 et la garde de déploiement — TOUT LE RESTE, Partie B comprise, est identique octet pour
+octet entre les deux fichiers). Les citations §B.2/§B.4 ci-dessous valent donc pour les DEUX
+fichiers ; rien à corriger.*
+
 | id | citation | état |
 |---|---|---|
 | J-1 | Mandat §B.2, Étape 3 — la population, dérivée du détail rapproché, jamais saisie. | planifié — non commencé |
