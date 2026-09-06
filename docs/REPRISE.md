@@ -6,7 +6,7 @@
 > `verify`) et l'état de git et des processus au moment de l'engendrement. **Ne pas l'éditer à
 > la main : relancer la commande.** Un instantané n'est vrai qu'à sa date.
 >
-> Engendré le 2026-09-06T13:14:13.750Z.
+> Engendré le 2026-09-06T14:57:20.339Z.
 
 ## 1. Où en est le projet — en dix lignes (la seule partie écrite à la main ; elle ne porte aucun chiffre)
 
@@ -41,9 +41,9 @@
 
 ## 2. Le SHA poussé et le SHA servi
 
-- **HEAD** : `9fa187c` — « Chaîne verify complète confirmée sur 5c6b6a6 (tranche R38) : EXIT_CODE=0 »
-- **État de l'arbre** : arbre MODIFIÉ (1 fichier(s), docs/REPRISE.md excepté — son changement à chaque engendrement ne compte pas) : le disque n'est PAS HEAD — ce qui suit vaut pour HEAD, pas pour les modifications en cours · HEAD = `origin/claude/otto-session-resume-zimig9` selon la dernière synchronisation locale (`git fetch` pour le confirmer)
-- **SHA servi** : `9fa187c` sur https://otto-dit.vercel.app, mesuré le 2026-09-06T13:12:07Z (il y a 0 h) par CI, travail `deploye`, run 34035181666, job 101491826303, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 13:08:40Z→13:12:07Z) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **ÉGAL au HEAD**
+- **HEAD** : `a46f4f5` — « Lot 2, étape 1 : le détail du compte — la demande naît DU POSTE »
+- **État de l'arbre** : arbre MODIFIÉ (2 fichier(s), docs/REPRISE.md excepté — son changement à chaque engendrement ne compte pas) : le disque n'est PAS HEAD — ce qui suit vaut pour HEAD, pas pour les modifications en cours · `origin/claude/otto-session-resume-zimig9` est à `a46c0db` selon la dernière synchronisation locale : HEAD N'EST PAS POUSSÉ, ou la synchronisation est périmée — `git fetch` tranche
+- **SHA servi** : `9fa187c` sur https://otto-dit.vercel.app, mesuré le 2026-09-06T13:12:07Z (il y a 2 h) par CI, travail `deploye`, run 34035181666, job 101491826303, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 13:08:40Z→13:12:07Z) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **DIFFÈRE du HEAD** `a46f4f5` : ce que l'URL sert n'est pas ce que le disque porte, ou la mesure est périmée ; relancer `npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15` (depuis la CI ou une machine qui joint l'URL — le bac à sable de l'agent ne la joint pas)
   Historique : `c23b4be` le 2026-09-06T12:30:08Z (CI, travail `deploye`, run 34033120558, job 101486240730, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:27:08Z→12:30:08Z)) · `0b1749f` le 2026-09-06T12:18:26Z (CI, travail `deploye`, run 34032612106, job 101484851827, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:16:37Z→12:18:26Z)) · `5017239` le 2026-09-04T00:13:06Z (CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé) · `a06a7f1` le 2026-09-04T00:07:37Z (atteint.ts, run 33820470648, job 100861844608, première observation (« 0 s · servi a06a7f1 ») avant que 5017239 ne devienne servi à 00:13:06Z) · `e004053` le 2026-09-03, heure non mesurée (constat en prose du commit a06a7f1 (« /api/sante sert e004053, celui d'hier matin ») ; aucune lecture datée de /api/sante n'accompagne ce constat — ne pas le lire comme une mesure rejouable)
 
 ## 3. Les fils ouverts, avec leur identifiant et leur état
@@ -89,7 +89,7 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 
 Mesuré à l'engendrement (`pgrep -af` sur next, vitest, tsx, playwright, chromium) :
 
-- `7627 next-server (v15.5.23)`
+- aucun processus de harnais en cours (next, vitest, tsx, playwright, chromium)
 
 Routines : NON MESURÉ par ce script (il ne lit que `pgrep`, jamais les routines planifiées) — 0
 routine listée le 2026-09-05, à la main, non rejoué depuis. Sur GitHub, sans qu'on les lance :
@@ -104,45 +104,28 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 
 | Commande | Dernière exécution consignée | SHA | Quand | Source |
 |---|---|---|---|---|
-| `npm run db:reset` | vert | `5c6b6a6` (PAS le HEAD) | 2026-09-06T12:42:49Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 12:42:49 » ; HEAD au SHA cité (commit 5c6b6a6 à 12:42:23Z) quand la chaîne a démarré |
-| `npm run demo:seed` | vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events » | `5c6b6a6` (PAS le HEAD) | 2026-09-06T12:42:49Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset |
-| `npx tsc --noEmit` | 0 erreur (aucune sortie — succès silencieux) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T12:42:49Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que db:reset |
-| `npx vitest run` | 850/850, 100 fichiers (+1 test : R38, rail.test.ts) — « Start at 12:42:49 », durée 363.42s (imprimé par vitest lui-même) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T12:42:49Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) |
-| `npm run gardes` | vert — docs/GUARDS.md à jour, 43 garde(s) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape |
-| `npm run semeur` | vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, R38 n'a touché aucun objet du semeur) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run plancher` | vert — 850 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run langue` | vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run langue:epreuve` | vert — 15/15 cas connus mauvais dénoncés | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run lectures` | vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run lectures:epreuve` | vert — 6/6 cas connus mauvais dénoncés | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run parcours` | vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run parcours:epreuve` | vert — 5/5 cas connus mauvais dénoncés | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run screens` | vert — 87 routes ouvertes, 0 échec (base locale, commande NUE) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run fumee` | vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne) | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run densite` | vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38), même borne haute que gardes |
-| `npm run clics` | 202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) ; CONFIRME sans nouveau figeage docs/PARCOURS.json (mêmes chiffres que le run précédent) |
-| `npm run visuel` | vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION | `5c6b6a6` (PAS le HEAD) | 2026-09-06T13:06:42Z | local, session Claude, chaîne verify complète (verify-full-5.log, tranche R38) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0 |
+| `npm run db:reset` | vert | `a46f4f5` | 2026-09-06T14:32:48Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1 : détail du compte) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 14:32:48 » ; HEAD déjà au SHA cité (commit a46f4f5 à 14:32:18Z) quand la chaîne a démarré |
+| `npm run demo:seed` | vert | `a46f4f5` | 2026-09-06T14:32:48Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset |
+| `npx tsc --noEmit` | 0 erreur (aucune sortie — succès silencieux) | `a46f4f5` | 2026-09-06T14:32:48Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que db:reset |
+| `npx vitest run` | 852/852, 100 fichiers (+1 depuis 5c6b6a6 : la disambiguïsation par poste de derniereDemandeDetailDeCompte) — « Start at 14:32:48 » (imprimé par vitest lui-même) | `a46f4f5` | 2026-09-06T14:32:48Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) |
+| `npm run gardes` | vert — docs/GUARDS.md à jour, 43 garde(s) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape |
+| `npm run semeur` | vert — docs/SEMEUR_VS_CHEMIN.md à jour (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, cette tranche ne sème rien) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run plancher` | vert — 852 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run langue` | vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run langue:epreuve` | vert — 15/15 cas connus mauvais dénoncés | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run lectures` | vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run lectures:epreuve` | vert — 6/6 cas connus mauvais dénoncés | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run parcours` | vert — 246 station(s) déclarée(s) (+2 : la station « détail du compte »), 246 figée(s), 0 station perdue | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run parcours:epreuve` | vert — 5/5 cas connus mauvais dénoncés | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run screens` | vert — 87 routes ouvertes, 0 échec (base locale, commande NUE) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run fumee` | vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run densite` | vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper (sampling passe à 2 actions primaires, dans le seuil de 5) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1), même borne haute que gardes |
+| `npm run clics` | 204 étapes conduites (+2) · 0 échec(s) · 316 clics comptés sur 44 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) |
+| `npm run visuel` | vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION (le nouveau panneau du sampling ne déborde nulle part) | `a46f4f5` | 2026-09-06T14:56:19Z | local, session Claude, chaîne verify complète (verify-full-6.log, Lot 2 étape 1) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0 |
 
 **Non exécutées sur le HEAD** (à passer avant de dire « vert », règle 12) :
 
-- `npm run db:reset` — dernière exécution sur `5c6b6a6` le 2026-09-06T12:42:49Z : vert
-- `npm run demo:seed` — dernière exécution sur `5c6b6a6` le 2026-09-06T12:42:49Z : vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events »
-- `npx tsc --noEmit` — dernière exécution sur `5c6b6a6` le 2026-09-06T12:42:49Z : 0 erreur (aucune sortie — succès silencieux)
-- `npx vitest run` — dernière exécution sur `5c6b6a6` le 2026-09-06T12:42:49Z : 850/850, 100 fichiers (+1 test : R38, rail.test.ts) — « Start at 12:42:49 », durée 363.42s (imprimé par vitest lui-même)
-- `npm run gardes` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — docs/GUARDS.md à jour, 43 garde(s)
-- `npm run semeur` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé, R38 n'a touché aucun objet du semeur)
-- `npm run plancher` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 850 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée
-- `npm run langue` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service
-- `npm run langue:epreuve` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 15/15 cas connus mauvais dénoncés
-- `npm run lectures` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans
-- `npm run lectures:epreuve` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 6/6 cas connus mauvais dénoncés
-- `npm run parcours` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue
-- `npm run parcours:epreuve` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 5/5 cas connus mauvais dénoncés
-- `npm run screens` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 87 routes ouvertes, 0 échec (base locale, commande NUE)
-- `npm run fumee` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne)
-- `npm run densite` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total
-- `npm run clics` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : 202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production
-- `npm run visuel` — dernière exécution sur `5c6b6a6` le 2026-09-06T13:06:42Z : vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION
+- (aucune : chaque maillon de la chaîne a une exécution consignée sur ce HEAD)
 
 **La liste « non exécuté » du rapport précédent, transcrite ligne par ligne, et ce qui a bougé** :
 
