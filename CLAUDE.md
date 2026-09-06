@@ -168,6 +168,18 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     force cette formulation honnête au lieu d'un horodatage inventé qui, lui, passerait la garde
     en silence — la garde attrape la FORME de l'aveu, pas encore le mensonge plausible qui
     resterait une date valide ; ce second pas reste à construire.
+32. **L'autonomie est permanente, jamais redemandée.** Une session qui travaille sous un plan
+    d'autonomie du fondateur (fourni en session ou déjà en cours) enchaîne les lots SANS attendre
+    de retour entre eux : la fin d'un lot produit l'écran engendré (règle 21, §4) et lance le lot
+    suivant dans le même souffle. Elle ne rend la main que sur un **interdit** (§2) ou un geste
+    qu'elle ne peut pas mesurer elle-même (le goût du fondateur, un geste irréversible — §2 encore,
+    ou la Partie A.2 du plan d'autonomie s'il est fourni). « J'attends ton plan » ne s'écrit plus
+    une fois le plan reçu — seul un constat, suivi de la suite déjà lancée. **Un étage TERMINÉ
+    prime sur deux COMMENCÉS** : jamais de lot suivant pendant que la chaîne `verify` est rouge ou
+    qu'un fil ouvert bloque le parcours cliqué — on ferme d'abord ce qui tient tout au rouge.
+    Quand un plan chiffre un invariant (un compte de décors qui ne doit que baisser, un compte de
+    preuves qui ne doit que monter — R44, mandat du semeur §1), l'écran de fin de lot affiche les
+    deux chiffres côte à côte, engendrés, jamais tapés de mémoire.
 
 ## 2. Interdits — sans exception, quel que soit le mandat
 
