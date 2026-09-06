@@ -6,7 +6,7 @@
 > `verify`) et l'état de git et des processus au moment de l'engendrement. **Ne pas l'éditer à
 > la main : relancer la commande.** Un instantané n'est vrai qu'à sa date.
 >
-> Engendré le 2026-09-06T09:36:59.413Z.
+> Engendré le 2026-09-06T12:24:49.665Z.
 
 ## 1. Où en est le projet — en dix lignes (la seule partie écrite à la main ; elle ne porte aucun chiffre)
 
@@ -41,10 +41,10 @@
 
 ## 2. Le SHA poussé et le SHA servi
 
-- **HEAD** : `22972b8` — « R37 : mesure directe par event_log — le clic n'atteint jamais le service »
-- **État de l'arbre** : arbre propre : le disque est HEAD · HEAD = `origin/claude/otto-session-resume-zimig9` selon la dernière synchronisation locale (`git fetch` pour le confirmer)
-- **SHA servi** : `5017239` sur https://otto-dit.vercel.app, mesuré le 2026-09-04T00:13:06Z (il y a 57 h) par CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **DIFFÈRE du HEAD** `22972b8` : ce que l'URL sert n'est pas ce que le disque porte, ou la mesure est périmée ; relancer `npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15` (depuis la CI ou une machine qui joint l'URL — le bac à sable de l'agent ne la joint pas)
-  Historique : `a06a7f1` le 2026-09-04T00:07:37Z (atteint.ts, run 33820470648, job 100861844608, première observation (« 0 s · servi a06a7f1 ») avant que 5017239 ne devienne servi à 00:13:06Z) · `e004053` le 2026-09-03, heure non mesurée (constat en prose du commit a06a7f1 (« /api/sante sert e004053, celui d'hier matin ») ; aucune lecture datée de /api/sante n'accompagne ce constat — ne pas le lire comme une mesure rejouable)
+- **HEAD** : `0b1749f` — « visuel : .repli-corps n'était pas contenu comme .panel — un tableau y déborde la page »
+- **État de l'arbre** : arbre MODIFIÉ (4 fichier(s), docs/REPRISE.md excepté — son changement à chaque engendrement ne compte pas) : le disque n'est PAS HEAD — ce qui suit vaut pour HEAD, pas pour les modifications en cours · HEAD = `origin/claude/otto-session-resume-zimig9` selon la dernière synchronisation locale (`git fetch` pour le confirmer)
+- **SHA servi** : `0b1749f` sur https://otto-dit.vercel.app, mesuré le 2026-09-06T12:18:26Z (il y a 0 h) par CI, travail `deploye`, run 34032612106, job 101484851827, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 12:16:37Z→12:18:26Z) — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé — **ÉGAL au HEAD**
+  Historique : `5017239` le 2026-09-04T00:13:06Z (CI, travail `deploye`, run 33820470648, job 100861844608 — scripts/deploiement/atteint.ts a vu l'instance servir le SHA poussé) · `a06a7f1` le 2026-09-04T00:07:37Z (atteint.ts, run 33820470648, job 100861844608, première observation (« 0 s · servi a06a7f1 ») avant que 5017239 ne devienne servi à 00:13:06Z) · `e004053` le 2026-09-03, heure non mesurée (constat en prose du commit a06a7f1 (« /api/sante sert e004053, celui d'hier matin ») ; aucune lecture datée de /api/sante n'accompagne ce constat — ne pas le lire comme une mesure rejouable)
 
 ## 3. Les fils ouverts, avec leur identifiant et leur état
 
@@ -57,9 +57,9 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 | Fil | Énoncé | État | Depuis | Note |
 |---|---|---|---|---|
 | #418 | « Minified React error #418 ; args[]=HTML » — vu en ligne sur la tâche A-05 de l'acceptation, capturé une fois en local avec son HTML servi et son DOM | EN CHASSE — hypothèse H à éprouver, protocole écrit (docs/CHASSE.md §1) ; le protocole du 2026-09-05 s'est révélé reposer sur un prédicat faux (revue hostile du 2026-09-06) et est à refaire | fil n°7, août 2026 | dernière occurrence en ligne : run 33819974774 sur a06a7f1 ; absente douze minutes plus tard sur 5017239 (même code d'application, plus le script de garde de déploiement). Ne pas ré-éliminer E1–E8. Le run 33644396275 cité par erreur en F5 est VERT (aucun #418) : à retirer de la liste. |
-| R41 | CORRIGÉ le 2026-09-06 (SHA `c187cae`), confirmé en navigateur. | EN CHASSE — hypothèses 1 et 2 éliminées par lecture (le sélecteur IPE se rend pour tout papier trouvé du dossier ; le vrai défaut est l'asymétrie `.first()`/`.last()` de la station sur les liens de la vue programme) ; hypothèse 3 reformulée (revue hostile du 2026-09-06, docs/CHASSE.md §2) | 62b7064 | défaut de la STATION, pas du produit ; la station rougit et nomme sa cause. [hors dépôt : mandat du fondateur] demande le cas connu mauvais d'abord — cohérent avec la règle 17 du dépôt. |
-| R37 | après un re-tirage, aucune demande de pièces n'existe pour les lignes NEUVES, alors que l'écran annonce qu'elle a été engendrée. | EN CHASSE — hypothèses 1 et 3 éliminées par lecture pour le geste de l'écran (le bouton ne cible que l'échantillon COURANT `drawn` ; aucun chemin ne peut le rattacher au superseded) ; reste l'hypothèse que le harnais n'a pas cliqué le bon bouton, et la mesure SQL du backlog est à compléter (elle exclut par construction les demandes sans `sample_item_id`) — docs/CHASSE.md §3 | 580f2cf | deux des trois échecs du dernier parcours cliqué consigné (62b7064 : R37 ×2, R41 ×1 — voir docs/instantanes/verify.json). [hors dépôt : mandat du fondateur] le nomme premier chantier. |
-| R40 | CORRIGÉ le 2026-09-06 (SHA `8558cbd`). | ouvert — défaut mesuré par la revue hostile de 62b7064, à un seul endroit (`requireMember` doit filtrer `exited_on` comme `assertMembre`) | 62b7064 | défaut préexistant à toutes les pages ; un membre sorti voit les boutons et sera refusé au geste. |
+| R41 | CORRIGÉ le 2026-09-06 (SHA `c187cae`), confirmé en navigateur. | CORRIGÉ le 2026-09-06 (SHA c187cae, confirmé en navigateur) — la station ciblait le mauvais lien par asymétrie `.first()`/`.last()` sur la vue programme, et le champ date de l'IPE réutilisé n'était pas rempli ; les deux corrigés | 62b7064 | défaut de la STATION, pas du produit à l'origine ; voir docs/BACKLOG_REPORTE.md pour le détail. Parcours cliqué : 244 stations déclarées, 193 conduites, 0 échec (fa47b36). |
+| R37 | CORRIGÉ le 2026-09-06 (test `src/lib/db/tx-redirect.test.ts`), CLASSE PAS INSTANCE. | CORRIGÉ le 2026-09-06 (test app/src/lib/db/tx-redirect.test.ts) — hypothèse `requireMember` RÉFUTÉE par exécution (l'URL après clic était l'URL de succès, pas `/`) ; vrai défaut trouvé : `tx()` laissait une écriture survivre au rollback quand la fonction lançait ensuite un `redirect()` Next (le signal de contrôle de flux, mal distingué d'une vraie erreur, faisait committer PUIS avaler l'exception) — corrigé au niveau de la CLASSE (`estUnSignalDeControleDeFlux` dans `src/lib/db/client.ts`), pas de l'instance. ADR-135, docs/CHASSE.md §3. | 580f2cf | un seul autre site combine `redirect()` et une écriture dans une action (`poste/[code]/actions.ts`) ; NON CONFIRMÉ par exécution comme affecté ou non — dette explicite (ADR-135). Parcours cliqué : 0 échec après correction (fa47b36). |
+| R40 | CORRIGÉ le 2026-09-06 (SHA `8558cbd`). | CORRIGÉ le 2026-09-06 (SHA 8558cbd) — `activeMembership()` isole désormais la requête avec `exited_on is null`, comme `assertMembre` ; test de régression app/src/lib/core/auth.test.ts (cas connu mauvais : passe avant, échoue après `exitMember`, repasse après le correctif) | 62b7064 | défaut préexistant à toutes les pages ; un membre sorti voyait les boutons et était refusé au geste. |
 | R39 | le programme de travail vit dans le groupe TRANSVERSE du rail, alors que R-03/ADR-112 posent que l'axe de la navigation est le POSTE. | ouvert — à trancher avec l'épure (étage 2 du mandat de nuit) | 62b7064 |  |
 | R38 | un poste qui SORT du périmètre emporte ses procédures et ses papiers hors du programme. | ouvert — à trancher avec un auditeur (une sortie de périmètre se STATUE-t-elle, comme une sortie du tirage ?) | 62b7064 | le libellé de l'écran a été corrigé ; le fond ne l'est pas. |
 | R36 | `sortiesNonStatuees` fait tourner la requête complète pour un simple compte | ouvert — coût de lecture, négligeable sur la démonstration | 580f2cf |  |
@@ -77,7 +77,7 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 | R24 | le câblage de `withTenant` | traité à l'étage 0 de la nuit J3 (D-J3N-07 : poseur enregistré ; `screens:garde` sous LOC-01 armé, voir le tableau verify) — l'entrée du backlog est ANTÉRIEURE et dit encore « tant qu'il manque » | e004053 | même réserve que R27 ; l'étape 3 de PLAN_RLS reste INTERDITE et non faite. |
 | R42 | l'ADR de l'empreinte des migrations n'est pas écrit. | ouvert — règle 1 : le code est là (a06a7f1), le document non | a06a7f1 | à écrire en premier dans la prochaine session de contenu, sous le numéro qui suit ADR-134. |
 | R43 | la section « Current state » de STATUS.md est périmée. | ouvert — documentation périmée, à corriger dans le même geste que la prochaine tranche datée | 2026-09-05 | trouvé en écrivant le transfert. |
-| R44 | PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (SHA à la pousse de cette tranche), PAS FERMÉ. | ouvert — à engendrer par un script (objet · semeur crée ? · chemin humain ? · cliqué ?), pas à rédiger à la main | 2026-09-06 | CLAUDE.md règle 20 et docs/CHASSE.md s'y référaient comme à un objet déjà là ; trouvé absent par la revue hostile du transfert. Mandat du semeur §1. |
+| R44 | PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (SHA à la pousse de cette tranche), PAS FERMÉ. | PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (`npm run semeur` → docs/SEMEUR_VS_CHEMIN.md, lecture /api/sante ajoutée) — 83 objets : 16 décors, 28 non prouvés, 39 prouvés. PAS FERMÉ : garde E1 interdit tout décor nouveau, le Lot 2 doit en refermer. | 2026-09-06 | compte de départ figé par le fondateur (16/28/39) ; chaque lot doit faire baisser les décors et monter les prouvés. Cohérence vérifiée par app/src/lib/semeur/coherence.ts (2 cas connus mauvais + le registre réel). |
 | N2-1 | Les onglets d'ancrage n'existent que sur la page de poste. | ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste | nuit 2 |  |
 | N2-2 | Le semis vise au nom de personnes fictives | tenu pour acquis (convention du monde de démonstration, données fictives) ; à revoir le jour de vrais comptes | nuit 2 |  |
 | N2-3 | `created_at` des notes semées est reposé à chaque passage. | assumé et dit (ADR-126) : une note semée ne vieillit jamais sur la démonstration publique | nuit 2 |  |
@@ -89,7 +89,7 @@ présente mais vide est le même manque qu'une entrée absente (règle 23).
 
 Mesuré à l'engendrement (`pgrep -af` sur next, vitest, tsx, playwright, chromium) :
 
-- aucun processus de harnais en cours (next, vitest, tsx, playwright, chromium)
+- `7627 next-server (v15.5.23)`
 
 Routines : NON MESURÉ par ce script (il ne lit que `pgrep`, jamais les routines planifiées) — 0
 routine listée le 2026-09-05, à la main, non rejoué depuis. Sur GitHub, sans qu'on les lance :
@@ -104,54 +104,32 @@ que le script le voie — vérifier `.github/workflows/*.yml` si un doute existe
 
 | Commande | Dernière exécution consignée | SHA | Quand | Source |
 |---|---|---|---|---|
-| `npm run db:reset` | vert — `db:setup` sur une machine neuve, base vide, équivalent | `5017239` (PAS le HEAD) | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
-| `npm run demo:seed` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:08:36Z | CI `local`, run 33820470648, job 100861844890, étape « base locale semée » |
-| `npx tsc --noEmit` | 0 erreur | `5017239` (PAS le HEAD) | 2026-09-04T00:08:22Z | CI `local`, run 33820470648, job 100861844890, étape « types » |
-| `npx vitest run` | 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:00Z | CI `local`, run 33820470648, job 100861844890, étape « tests (PGlite, zéro réseau) » |
-| `npm run gardes` | vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:01Z | CI `local`, run 33820470648, job 100861844890, étape « langue … et l'épreuve » (qui enchaîne gardes, plancher, langue, langue:epreuve) |
-| `npm run semeur` | **AUCUNE EXÉCUTION CONSIGNÉE** | — | — | — |
-| `npm run plancher` | vert (plancher 632) | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run langue` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run langue:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:29Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run lectures` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, étape « lectures … et l'épreuve » |
-| `npm run lectures:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:30Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run parcours` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, étape « parcours … et l'épreuve » |
-| `npm run parcours:epreuve` | vert | `5017239` (PAS le HEAD) | 2026-09-04T00:17:31Z | CI `local`, run 33820470648, job 100861844890, même étape |
-| `npm run screens` | **PAS EXÉCUTÉ TEL QUEL** — seule la variante `screens:garde` a tourné : 85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue | `c36076f` | 2026-09-03T18:29:18Z | local, session Claude, arbre de travail de la nuit J3 (docs/MATIN_J4.md, tableau des preuves) — DATE NON MESURÉE À L'ORIGINE : `quand` ici est l'horodatage du commit c36076f (borne basse ; la mesure elle-même a eu lieu entre ce commit et 21:46:15Z, commit c52ffb9, qui la cite déjà) |
-| `npm run fumee` | **PAS EXÉCUTÉ TEL QUEL** — seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` a tourné : vert, 7 passages, graine 33820856994 | `5017239` | 2026-09-04T00:18:01Z | CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée » |
-| `npm run densite` | **AUCUNE EXÉCUTION CONSIGNÉE** | — | — | — |
-| `npm run clics` | 201 étapes / 3 échecs (R37 ×2, R41) / 0 incident d'hydratation — base fraîche, build de production | `62b7064` (PAS le HEAD) | 2026-09-03T23:34:48Z | local, session Claude ; message du commit 62b7064 et docs/MATIN_J4.md |
-| `npm run visuel` | **AUCUNE EXÉCUTION CONSIGNÉE** | — | — | — |
+| `npm run db:reset` | vert | `0b1749f` | 2026-09-06T11:52:09Z | local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : vitest, l'étape suivante de la même chaîne ininterrompue, imprime elle-même « Start at 11:52:09 » ; HEAD déjà au SHA cité (commit 0b1749f à 11:49:33Z) quand la chaîne a démarré |
+| `npm run demo:seed` | vert — « demo state ready — 13 exceptions, 8 deviations, 3 workpapers, 285 events » | `0b1749f` | 2026-09-06T11:52:09Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset |
+| `npx tsc --noEmit` | 0 erreur (aucune sortie — succès silencieux) | `0b1749f` | 2026-09-06T11:52:09Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que db:reset |
+| `npx vitest run` | 849/849, 100 fichiers — « Start at 11:52:09 », durée 336.36s (imprimé par vitest lui-même) | `0b1749f` | 2026-09-06T11:52:09Z | local, session Claude, chaîne verify complète (verify-full-4.log) |
+| `npm run gardes` | vert — docs/GUARDS.md à jour, 43 garde(s) | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log) — borne haute : fin du journal (mtime du fichier), l'étape suit vitest sans interruption ; pas d'horodatage propre à cette étape |
+| `npm run semeur` | vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (83 objets : 16 décors, 28 non prouvés, 39 prouvés) | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run plancher` | vert — 849 test(s) collecté(s) par vitest · plancher 632 · aucune forme éteinte ou isolée | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run langue` | vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run langue:epreuve` | vert — 15/15 cas connus mauvais dénoncés | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run lectures` | vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run lectures:epreuve` | vert — 6/6 cas connus mauvais dénoncés | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run parcours` | vert — 244 station(s) déclarée(s), 244 figée(s), 0 station perdue | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run parcours:epreuve` | vert — 5/5 cas connus mauvais dénoncés | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run screens` | vert — 87 routes ouvertes, 0 échec (base locale, commande NUE, pas la variante screens:garde) | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run fumee` | vert — 51 route(s) ouvertes sur http://localhost:3392, 0 échec (contre `next dev` en local, le maillon nu de la chaîne) | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run densite` | vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper au total | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log), même borne haute que gardes |
+| `npm run clics` | 202 étapes conduites · 0 échec(s) · 314 clics comptés sur 43 gestes · garde du parcours : 193 station(s) figée(s) vérifiée(s) · sonde d'hydratation : aucun incident — base fraîche, build de production | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log) ; docs/PARCOURS.json figé sur ce run (commit fa47b36, 2026-09-06T10:47:30Z — antérieur de quelques minutes à cette confirmation finale, mêmes chiffres) |
+| `npm run visuel` | vert — 312 vues regardées (78 écrans × 4 vues), 0 défaut, build de PRODUCTION | `0b1749f` | 2026-09-06T12:15:34Z | local, session Claude, chaîne verify complète (verify-full-4.log) — mtime du journal, dernière ligne écrite avant EXIT_CODE=0 |
 
 **Non exécutées sur le HEAD** (à passer avant de dire « vert », règle 12) :
 
-- `npm run db:reset` — dernière exécution sur `5017239` le 2026-09-04T00:08:36Z : vert — `db:setup` sur une machine neuve, base vide, équivalent
-- `npm run demo:seed` — dernière exécution sur `5017239` le 2026-09-04T00:08:36Z : vert
-- `npx tsc --noEmit` — dernière exécution sur `5017239` le 2026-09-04T00:08:22Z : 0 erreur
-- `npx vitest run` — dernière exécution sur `5017239` le 2026-09-04T00:17:00Z : 811/811, 95 fichiers (job 100861844890, ligne 00:17:00.86Z) — scripts/deploiement/atteint.test.ts N'ÉTAIT PAS collecté à ce SHA (include de vitest.config.ts limité à src/** et ../tests/**, corrigé après)
-- `npm run gardes` — dernière exécution sur `5017239` le 2026-09-04T00:17:01Z : vert (43 gardes au registre — job 100861844890, ligne 00:17:01.27Z)
-- `npm run semeur` — jamais consignée
-- `npm run plancher` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert (plancher 632)
-- `npm run langue` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
-- `npm run langue:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:29Z : vert
-- `npm run lectures` — dernière exécution sur `5017239` le 2026-09-04T00:17:30Z : vert
-- `npm run lectures:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:30Z : vert
-- `npm run parcours` — dernière exécution sur `5017239` le 2026-09-04T00:17:31Z : vert
-- `npm run parcours:epreuve` — dernière exécution sur `5017239` le 2026-09-04T00:17:31Z : vert
-- `npm run screens` — jamais exécuté TEL QUEL ; seule la variante `screens:garde` l'a été, sur `c36076f` le 2026-09-03T18:29:18Z : 85 routes, 0 échec sous LOC-01 — variante `screens:garde` (garde de locataire ARMÉ), pas la commande nue
-- `npm run fumee` — jamais exécuté TEL QUEL ; seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` l'a été, sur `5017239` le 2026-09-04T00:18:01Z : vert, 7 passages, graine 33820856994
-- `npm run densite` — jamais consignée
-- `npm run clics` — dernière exécution sur `62b7064` le 2026-09-03T23:34:48Z : 201 étapes / 3 échecs (R37 ×2, R41) / 0 incident d'hydratation — base fraîche, build de production
-- `npm run visuel` — jamais consignée
+- (aucune : chaque maillon de la chaîne a une exécution consignée sur ce HEAD)
 
 **La liste « non exécuté » du rapport précédent, transcrite ligne par ligne, et ce qui a bougé** :
 
-- `npm run fumee` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → toujours non exécutée TELLE QUELLE ; seule la variante `fumee:url (scripts/fumee/run.ts contre l'URL déployée, pas contre `next dev` en local — pas le maillon nu de la chaîne)` a tourné, sur `5017239` le 2026-09-04T00:18:01Z : vert, 7 passages, graine 33820856994 — CI `url`, run 33820856994, job 100863000631, étape « balayage de fumée contre l'URL déployée »
-- `npm run densite` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → **toujours non exécutée**
-- `npm run visuel` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → **toujours non exécutée**
-- `npm run parcours:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:31Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
-- `npm run lectures:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:30Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
-- `npm run langue:epreuve` (docs/MATIN_J4.md, « Ce que je n'ai PAS fait tourner cette nuit ») → a tourné depuis : `5017239` (pas le HEAD), 2026-09-04T00:17:29Z, vert — CI `local`, run 33820470648, job 100861844890, même étape
+- (le rapport précédent n'en nommait aucune)
 
 **Autres mesures consignées, hors chaîne** :
 

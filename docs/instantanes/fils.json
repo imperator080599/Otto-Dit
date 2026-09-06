@@ -10,21 +10,21 @@
     },
     {
       "id": "R41",
-      "etat": "EN CHASSE — hypothèses 1 et 2 éliminées par lecture (le sélecteur IPE se rend pour tout papier trouvé du dossier ; le vrai défaut est l'asymétrie `.first()`/`.last()` de la station sur les liens de la vue programme) ; hypothèse 3 reformulée (revue hostile du 2026-09-06, docs/CHASSE.md §2)",
+      "etat": "CORRIGÉ le 2026-09-06 (SHA c187cae, confirmé en navigateur) — la station ciblait le mauvais lien par asymétrie `.first()`/`.last()` sur la vue programme, et le champ date de l'IPE réutilisé n'était pas rempli ; les deux corrigés",
       "depuis": "62b7064",
-      "note": "défaut de la STATION, pas du produit ; la station rougit et nomme sa cause. [hors dépôt : mandat du fondateur] demande le cas connu mauvais d'abord — cohérent avec la règle 17 du dépôt."
+      "note": "défaut de la STATION, pas du produit à l'origine ; voir docs/BACKLOG_REPORTE.md pour le détail. Parcours cliqué : 244 stations déclarées, 193 conduites, 0 échec (fa47b36)."
     },
     {
       "id": "R37",
-      "etat": "EN CHASSE — hypothèses 1 et 3 éliminées par lecture pour le geste de l'écran (le bouton ne cible que l'échantillon COURANT `drawn` ; aucun chemin ne peut le rattacher au superseded) ; reste l'hypothèse que le harnais n'a pas cliqué le bon bouton, et la mesure SQL du backlog est à compléter (elle exclut par construction les demandes sans `sample_item_id`) — docs/CHASSE.md §3",
+      "etat": "CORRIGÉ le 2026-09-06 (test app/src/lib/db/tx-redirect.test.ts) — hypothèse `requireMember` RÉFUTÉE par exécution (l'URL après clic était l'URL de succès, pas `/`) ; vrai défaut trouvé : `tx()` laissait une écriture survivre au rollback quand la fonction lançait ensuite un `redirect()` Next (le signal de contrôle de flux, mal distingué d'une vraie erreur, faisait committer PUIS avaler l'exception) — corrigé au niveau de la CLASSE (`estUnSignalDeControleDeFlux` dans `src/lib/db/client.ts`), pas de l'instance. ADR-135, docs/CHASSE.md §3.",
       "depuis": "580f2cf",
-      "note": "deux des trois échecs du dernier parcours cliqué consigné (62b7064 : R37 ×2, R41 ×1 — voir docs/instantanes/verify.json). [hors dépôt : mandat du fondateur] le nomme premier chantier."
+      "note": "un seul autre site combine `redirect()` et une écriture dans une action (`poste/[code]/actions.ts`) ; NON CONFIRMÉ par exécution comme affecté ou non — dette explicite (ADR-135). Parcours cliqué : 0 échec après correction (fa47b36)."
     },
     {
       "id": "R40",
-      "etat": "ouvert — défaut mesuré par la revue hostile de 62b7064, à un seul endroit (`requireMember` doit filtrer `exited_on` comme `assertMembre`)",
+      "etat": "CORRIGÉ le 2026-09-06 (SHA 8558cbd) — `activeMembership()` isole désormais la requête avec `exited_on is null`, comme `assertMembre` ; test de régression app/src/lib/core/auth.test.ts (cas connu mauvais : passe avant, échoue après `exitMember`, repasse après le correctif)",
       "depuis": "62b7064",
-      "note": "défaut préexistant à toutes les pages ; un membre sorti voit les boutons et sera refusé au geste."
+      "note": "défaut préexistant à toutes les pages ; un membre sorti voyait les boutons et était refusé au geste."
     },
     {
       "id": "R39",
@@ -130,9 +130,9 @@
     },
     {
       "id": "R44",
-      "etat": "ouvert — à engendrer par un script (objet · semeur crée ? · chemin humain ? · cliqué ?), pas à rédiger à la main",
+      "etat": "PREMIÈRE VERSION ENGENDRÉE le 2026-09-06 (`npm run semeur` → docs/SEMEUR_VS_CHEMIN.md, lecture /api/sante ajoutée) — 83 objets : 16 décors, 28 non prouvés, 39 prouvés. PAS FERMÉ : garde E1 interdit tout décor nouveau, le Lot 2 doit en refermer.",
       "depuis": "2026-09-06",
-      "note": "CLAUDE.md règle 20 et docs/CHASSE.md s'y référaient comme à un objet déjà là ; trouvé absent par la revue hostile du transfert. Mandat du semeur §1."
+      "note": "compte de départ figé par le fondateur (16/28/39) ; chaque lot doit faire baisser les décors et monter les prouvés. Cohérence vérifiée par app/src/lib/semeur/coherence.ts (2 cas connus mauvais + le registre réel)."
     },
     {
       "id": "N2-1",
