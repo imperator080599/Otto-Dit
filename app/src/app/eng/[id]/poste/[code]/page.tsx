@@ -267,7 +267,12 @@ export default async function PostePage({
               </table>
             )}
             {b.href && (
-              <p className="row" style={{ marginBottom: 0 }}>
+              /* UN GESTE PAR ÉTAPE, PAS UNE COMMANDE GLOBALE (mesure de densité,
+                 mandat §3.D) : cinq étapes possibles, chacune son lien « Ouvrir »
+                 — le geste appartient à L'ÉTAPE (l'objet de cette ligne du poste),
+                 comme une action de ligne de tableau. `data-actions-item` le dit
+                 au lieu de le laisser compter comme cinq commandes primaires. */
+              <p className="row" style={{ marginBottom: 0 }} data-actions-item>
                 <Link href={b.href} className="btn secondary small" data-ouvrir={cle}>{t('poste.ouvrir')} — {t(b.titre)}</Link>
               </p>
             )}

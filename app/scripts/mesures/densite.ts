@@ -68,6 +68,9 @@ const ITEMS_DECLARES: Record<string, string> = {
   '/eng/[id]/workpapers/[wid]': 'les gestes PAR NOTE de revue (traiter, clore) — un groupe par note',
   '/eng/[id]/testing': 'les onglets de pièce de l\'atelier — choisir une pièce parmi n, comme des onglets',
   '/methodology': 'la bande de sélection du fichier de méthode — un lien par fichier attendu',
+  '/eng/[id]/poste/[code]': 'le lien « Ouvrir » PAR ÉTAPE (processus, contrôle interne, risques, '
+    + 'échantillon, testing) — un groupe par étape, le geste appartient à l\'étape, comme un lien '
+    + 'de ligne de tableau',
 };
 
 function lancer(args: string[]): ChildProcess {
