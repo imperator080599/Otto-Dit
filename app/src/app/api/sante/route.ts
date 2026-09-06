@@ -431,6 +431,25 @@ async function corpsDeLaSonde() {
     return dits.join(' · ') + ' — refus VÉRIFIÉS ici, pas déclarés';
   }));
 
+  lectures.push(await essayer('registre du décor (R44 : le semeur et le chemin)', async () => {
+    /* CETTE LECTURE ROUGIT SUR SON CAS SURVEILLÉ, PAS SEULEMENT SUR UNE
+       EXCEPTION IMPRÉVUE (règle 22) : le cas qu'elle sait reconnaître est un
+       registre INCOHÉRENT — une ligne `etat=prouve` sans citation de clic, ou
+       `etat=decor` avec un chemin humain renseigné (constat E1, relecture
+       hostile du 2026-09-06 : rien ne gardait cet invariant avant). */
+    const { SECTIONS } = await import('@/lib/semeur/registre');
+    const { violationsDeCoherence } = await import('@/lib/semeur/coherence');
+    const incoherences = violationsDeCoherence(SECTIONS);
+    if (incoherences.length > 0) {
+      throw new Error(`${incoherences.length} incohérence(s) dans le registre : ${incoherences[0]}`);
+    }
+    const tous = SECTIONS.flatMap((s) => s.objets);
+    const decors = tous.filter((o) => o.etat === 'decor').length;
+    const nonProuves = tous.filter((o) => o.etat === 'non_prouve').length;
+    const prouves = tous.filter((o) => o.etat === 'prouve').length;
+    return `${tous.length} objet(s) recensés · ${decors} décor(s) · ${nonProuves} non prouvé(s) · ${prouves} prouvé(s)`;
+  }));
+
   const version = versionServie();
   const cassees = lectures.filter((l) => !l.ok);
   const vides = lectures.filter((l) => l.vide);
