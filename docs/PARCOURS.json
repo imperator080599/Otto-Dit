@@ -249,6 +249,26 @@
       "gabarit": false
     },
     {
+      "nom": "programme : chaque poste retenu porte ce que le risque lui commande",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : le papier de la procédure se RÉDIGE depuis la ligne, et devient atteignable",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },
@@ -266,6 +286,22 @@
     },
     {
       "nom": "sondage : la demande de pièces naît DE la sélection, pas d’une saisie",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : les lignes sorties du tirage sont LISTÉES avec ce qu’elles portent",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : statuer une sortie SANS motif écrit est refusé par le serveur (TIRAGE-03)",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : chaque sortie est STATUÉE par écrit, et la décision dit qui et quand",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : l’obstacle au visa tombe une fois tout statué",
       "gabarit": false
     },
     {
