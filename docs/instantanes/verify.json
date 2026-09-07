@@ -1010,10 +1010,136 @@
       "quand": "2026-09-07T03:48:06Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — base réinitialisée, migrations appliquées",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — monde de démonstration reconstruit (13 exceptions, 8 deviations, 3 workpapers, 289 events)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "tsc",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — aucune erreur de type",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "vitest",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 104 fichier(s) de test, 867 test(s) passés (867)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "gardes",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "plancher",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 867 test(s) collecté(s) par vitest, plancher 632, aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 0 chaîne d'écran hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — tous les cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 0 lecture perdue sur 1716 chemins figés dans 86 écrans (refigé après un déplacement mécanique de Cellule['etat'])",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 0 station perdue (258 déclarées, 3 nouvelles figées pour Étape 6)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "screens",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "densite",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "clics",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 216 étapes conduites, 0 échec, 335 clics comptés sur 46 gestes, sonde d'hydratation : aucun incident, garde du parcours : 193 station(s) figée(s) vérifiée(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "visuel",
+      "sha": "36eec82c1215008babe5dfe84ef010c536ee3f5f",
+      "quand": "2026-09-07T05:18:39Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
     }
   ],
   "precedent": {
-    "source": "docs/REPRISE.md à engendrer sur le SHA df38d85d6cf1f51377ef3115b7b1fd909906bffb (npm run reprise, après ce commit)",
+    "source": "docs/REPRISE.md à engendrer sur le SHA 36eec82c1215008babe5dfe84ef010c536ee3f5f (npm run reprise, après ce commit)",
     "nonExecutees": []
   }
 }
