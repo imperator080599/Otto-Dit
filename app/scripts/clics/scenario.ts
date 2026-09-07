@@ -945,9 +945,15 @@ export async function conduire(
     await devenir(c.preparateur.id);
     await aller(`${eng}/programme`);
     const postes = await compte('[data-poste-programme]');
+    /* Scopé à `[data-commandees]` depuis Lot 3, tranche 2, même raison que la
+       station suivante : `[data-ligne-programme]` non scopé additionnerait
+       les `<li>` du panneau « hors commande » à un compte que le message
+       nomme explicitement « commandée(s) » — un artefact qui affirmerait
+       plus que ce qu'il vérifie (règle 13/16), même si ce prédicat-ci
+       (`> 0`) ne change pas de verdict avec le compte inflaté. */
     dire('programme : chaque poste retenu porte ce que le risque lui commande',
-      postes > 0 && (await compte('[data-ligne-programme]')) > 0,
-      `${postes} poste(s), ${await compte('[data-ligne-programme]')} procédure(s) commandée(s)`);
+      postes > 0 && (await compte('[data-commandees] [data-ligne-programme]')) > 0,
+      `${postes} poste(s), ${await compte('[data-commandees] [data-ligne-programme]')} procédure(s) commandée(s)`);
 
     /* PLANIFIER — le geste qui n'existait nulle part.
        CE QUE LA REVUE HOSTILE A CASSÉ DANS LA PREMIÈRE VERSION DE CETTE STATION
@@ -968,10 +974,17 @@ export async function conduire(
        est de toute façon typée par une union à 8 valeurs et contrainte en
        base par un `check` — la chaîne vide n'est atteignable par AUCUN des
        deux). CE QU'IL NE VÉRIFIE PAS : que le LIBELLÉ affiché soit le BON
-       — seulement qu'un libellé existe. */
+       — seulement qu'un libellé existe.
+       SCOPÉ À `[data-commandees]` depuis Lot 3, tranche 2 (trouvé par cette
+       même chaîne verify, pas par relecture — règle 15) : tranche 2 pose
+       aussi `[data-ligne-programme]` sur les `<li>` du panneau « hors
+       commande » (pour y couvrir l'atelier, cf. plus bas), donc un compte
+       NON scopé additionnait ces `<li>` — qui ne portent jamais `data-nature`
+       — au dénominateur d'une station de tranche 1 qui n'a rien à voir avec
+       eux, la faisant rougir à tort (« 6 sur 7 » au lieu de « 6 sur 6 »). */
     dire('programme : chaque procédure commandée affiche sa nature, avant même d’être planifiée',
-      (await compte('[data-nature]')) === (await compte('[data-ligne-programme]')),
-      `${await compte('[data-nature]')} ligne(s) avec une nature affichée sur ${await compte('[data-ligne-programme]')} commandée(s)`);
+      (await compte('[data-nature]')) === (await compte('[data-commandees] [data-ligne-programme]')),
+      `${await compte('[data-nature]')} ligne(s) avec une nature affichée sur ${await compte('[data-commandees] [data-ligne-programme]')} commandée(s)`);
 
     const dejaPlanifiees = await compte('[data-planifiee]');
     const aPlanifier = await compte('[data-planifier]');
@@ -984,25 +997,37 @@ export async function conduire(
         !refus(p) && apres > dejaPlanifiees,
         refus(p) ?? `${dejaPlanifiees} → ${apres} procédure(s) planifiée(s)`);
 
-      /* ET SON ATELIER — un lien RÉEL (sondage_pieces sur REVENUE) ou un
-         AVEU honnête (les sept autres natures, encore sans atelier) :
-         jamais ni l'un ni l'autre en silence (règle 13), et jamais les DEUX
-         à la fois (un ternaire dans page.tsx les rend mutuellement
-         exclusifs aujourd'hui — cette assertion vérifie la CHOSE, pas
-         seulement qu'elle continue de dépendre du même code). Compté PAR
-         LIGNE (`[data-ligne-programme]`), jamais par une SOMME globale
-         (revue hostile du 2026-09-07) : une première version comparait
-         `nAtelier + nAbsent >= total` — vrai sur TOUT chemin atteignable
-         puisque les deux compteurs sont posés par le MÊME `if` que le
-         total qu'ils devaient couvrir, donc une garde qui ne pouvait
-         structurellement jamais s'éteindre (règle 17). Scopé À LA TABLE
-         DES COMMANDÉES (`[data-commandees]`) : le panneau « procédures hors
-         commande » ne porte pas ce couple d'attributs, cette tranche n'y
-         touche pas (règle 8). */
+      /* ET SON ATELIER — un lien RÉEL (sondage_pieces et recalcul_parametre
+         sur REVENUE) ou un AVEU honnête (les six autres natures, encore
+         sans atelier) : jamais ni l'un ni l'autre en silence (règle 13), et
+         jamais les DEUX à la fois (un ternaire dans page.tsx les rend
+         mutuellement exclusifs aujourd'hui — cette assertion vérifie la
+         CHOSE, pas seulement qu'elle continue de dépendre du même code).
+         Compté PAR LIGNE (`[data-ligne-programme]`), jamais par une SOMME
+         globale (revue hostile du 2026-09-07) : une première version
+         comparait `nAtelier + nAbsent >= total` — vrai sur TOUT chemin
+         atteignable puisque les deux compteurs sont posés par le MÊME `if`
+         que le total qu'ils devaient couvrir, donc une garde qui ne pouvait
+         structurellement jamais s'éteindre (règle 17).
+         DEUX conteneurs, PAS UN SEUL (Lot 3, tranche 2, corrigé après un
+         premier passage qui ne couvrait que `[data-commandees]` — trouvé en
+         conduisant l'écran dans un navigateur, règle 10) : une procédure
+         déjà planifiée que le risque ne commande PLUS reste dans le
+         panneau « hors commande » (`[data-hors-commande]`), pas dans le
+         tableau des commandées — RECALC, la seule procédure
+         `recalcul_parametre` du monde semé, y vit précisément. Son travail
+         n'est pas défait parce que le risque a changé d'avis : son atelier
+         doit rester ouvrable, et cette assertion doit donc le couvrir aussi
+         — sinon la garde mesure à côté du seul cas réel qu'elle existe pour
+         attraper (même famille que le middleware « inerte », ADR-088/089). */
       if (!refus(p)) {
-        const trous = await compte('[data-commandees] tr[data-ligne-programme]:has([data-planifiee]):not(:has([data-atelier])):not(:has([data-atelier-absent]))');
-        const doubles = await compte('[data-commandees] tr[data-ligne-programme]:has([data-atelier]):has([data-atelier-absent])');
-        dire('programme : une ligne planifiée montre un atelier RÉEL ou un aveu honnête « pas construit encore » — jamais rien du tout, jamais les deux',
+        const trous = await compte(
+          '[data-commandees] tr[data-ligne-programme]:has([data-planifiee]):not(:has([data-atelier])):not(:has([data-atelier-absent])), '
+          + '[data-hors-commande] li[data-ligne-programme]:not(:has([data-atelier])):not(:has([data-atelier-absent]))');
+        const doubles = await compte(
+          '[data-commandees] tr[data-ligne-programme]:has([data-atelier]):has([data-atelier-absent]), '
+          + '[data-hors-commande] li[data-ligne-programme]:has([data-atelier]):has([data-atelier-absent])');
+        dire('programme : une ligne planifiée (commandée ou hors commande) montre un atelier RÉEL ou un aveu honnête « pas construit encore » — jamais rien du tout, jamais les deux',
           trous === 0 && doubles === 0,
           `${trous} ligne(s) planifiée(s) sans lien NI aveu, ${doubles} ligne(s) avec les deux à la fois`);
       }

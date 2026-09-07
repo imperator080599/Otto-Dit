@@ -189,6 +189,18 @@
       "note": "le correctif livré (travail CI alias-suit-production, sur horaire, .github/workflows/verifier.yml) détecte une RÉCURRENCE de ce défaut — il n'explique pas l'occurrence du 2026-09-07 elle-même. Se referme le jour où le tableau de bord Vercel (Domains → historique de l'alias) est consulté, ou qu'une session dispose d'un outil Vercel donnant ce journal."
     },
     {
+      "id": "R54",
+      "etat": "ouvert — quatorze des seize procédures recalcul_parametre du catalogue portent un cycle (IMMO_COR, IMMO_INC, STOCKS, CLIENTS, PERSONNEL, SOCIAL, DETTES_FI, PROV) qui ne correspond à AUCUN fsli.code réel du plan de comptes (PPE, INVENTORY, TRADE_RECEIVABLES, PAYROLL, TAX_SOCIAL_PAYABLES, FINANCIAL_DEBT, PROVISIONS…) — proceduresDuCycle (methodology/catalogue.ts) filtre par égalité stricte : ces quatorze procédures ne sont REQUISES, LISTÉES ni PLANIFIABLES sur aucun poste réel, indépendamment de tout atelier. Seules RECALC et ESTIM (cycle '*') échappent au défaut. CONFIRM (confirmation_externe) porte le même vocabulaire pour son propre postes — même famille, non vérifiée procédure par procédure. Trouvé par la revue de recherche du Lot 3, tranche 2, 2026-09-07",
+      "depuis": "2026-09-07 (Lot 3, tranche 2 : atelier recalcul_parametre)",
+      "note": "non corrigé : fermer ce défaut élargirait la tranche au-delà de son mandat (règle 8) et touche une question de contenu de méthode, pas la mécanique d'un atelier. Se referme vraisemblablement au Lot 5 (postes), qui construit ces procédures poste par poste et devra alors poser la correspondance cycle ↔ fsli comme donnée de méthode."
+    },
+    {
+      "id": "R55",
+      "etat": "ouvert — npm run verify (et donc clics/screens/fumee/densite/visuel exécutés depuis ce bac à sable) ne lance jamais demo:enrichir — seuls npm run demo et deploy:reconstruire.ts (le build Vercel) enchaînent seed+enrichir. Tout contenu semé UNIQUEMENT par enrichirMondeDemo() (dont RECALC, la seule procédure recalcul_parametre réellement instanciée) est ABSENT pendant npm run verify, alors qu'il est présent en production — la base fraîche locale et la base de production diffèrent par construction, silencieusement, exactement l'avertissement de la règle 11. Trouvé en construisant l'atelier recalcul_parametre (Lot 3, tranche 2), 2026-09-07",
+      "depuis": "2026-09-07 (Lot 3, tranche 2 : atelier recalcul_parametre)",
+      "note": "non corrigé : ajouter demo:enrichir à verify ferait bouger le contenu de chaque écran balayé, chaque compte /api/sante, chaque station figée (PARCOURS.json, lectures figées) — un ricochet dans tout le dépôt, hors du mandat d'une seule tranche (règle 8). Contourné pour cette tranche par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-recalcul-lecture.test.ts) et une vérification manuelle au clic (règle 10), pas par la chaîne automatisée. Se referme le jour où une tranche accepte explicitement ce ricochet, ou qu'un mandat le demande."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

@@ -404,6 +404,138 @@ construction NORMAL mesuré tout au long de cette session (100-220 s) — le gar
 chaque push tombant près d'un sondage horaire, pour rien, et une fausse alerte ignorée une fois
 cesse d'être regardée (règle 13). Corrigé à `--minutes=5` dans le même commit que ce constat.
 
+## Lot 3, tranche 2 : l'atelier recalcul_parametre (2026-09-07)
+
+*Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 240) : « les ateliers de
+`recalcul_parametre`, `confirmation_externe`, `rapprochement` ». Cette tranche ne fait que la
+première — la chose plus petite (règle 8).*
+
+**Décision de conception, mesurée avant d'être prise.** Recherche préalable (voir R54 plus bas) :
+16 procédures du catalogue portent `nature=recalcul_parametre`, mais 14 portent un `cycle`
+(`IMMO_COR`, `PERSONNEL`, `PROV`…) qui ne correspond à AUCUN `fsli.code` réel — structurellement
+non planifiables, indépendamment de tout atelier. Seule `RECALC` (poste REVENUE, `cycle: '*'`)
+est réellement instanciée dans ce dépôt. Un atelier NEUF aurait dupliqué un mécanisme qui existe
+déjà et fait exactement ce que Partie C.1 décrit pour cette nature : **les estimations comptables
+hors litige** (ADR-106a, `estimations.ts`, `/eng/[id]/estimations`) — fichier de calcul du
+client importé comme pièce, rapproché au grand livre, recalculé au centime, base sondée par le
+même moteur de tirage, justificatifs de CHAQUE paramètre (et de la formule) demandés en
+brouillon. `atelierDeLaNature('recalcul_parametre', 'REVENUE', base)` pointe donc vers
+`${base}/estimations` — un lien vers un atelier RÉEL, testé, provenant déjà (ADR-106a), pas un
+raccourci.
+
+**Trouvé en conduisant l'écran dans un navigateur (règle 10), pas supposé.** RECALC n'est PAS
+dans le tableau « commandées » de `/programme` — elle vit dans le panneau « hors commande »
+(REV-05 : planifiée, mais le risque actuel ne la commande plus). `atelierDeLaNature` n'était
+appelée QUE dans le rendu des commandées (Lot 3, tranche 1) : sans un second appel dans le rendu
+« hors commande », le lien livré cette tranche n'aurait jamais été atteignable au clic —
+découvert par une capture d'écran réelle (`npm run demo:enrichir` lancé à la main, cookie de
+session posé, clic sur le lien RECALC), pas par lecture de code. `programme/page.tsx` gagne donc
+CE second appel, avec le même `data-atelier`/`data-atelier-absent`, et la station clics
+« programme de travail » est corrigée pour couvrir LES DEUX conteneurs (`[data-commandees]` ET
+`[data-hors-commande]`), pas un seul — la première version de la correction aurait laissé la
+garde mesurer à côté du seul cas réel qu'elle existe pour attraper.
+
+**Lecture ajoutée à `/api/sante` le jour même** : « atelier recalcul_parametre disponible » —
+pour chaque procédure `recalcul_parametre` RÉELLEMENT planifiée en base, vérifie que
+`atelierDeLaNature` résout un atelier pour SON poste précis. Fonction pure, sans état propre —
+mais règle 22 ne fait pas d'exception aux fonctions pures : le risque n'est pas dans la fonction,
+c'est qu'une procédure planifiée sur REVENUE se retrouve un jour sans atelier (régression du
+dispatch pour le seul poste câblé à ce jour). **Réfutation hostile avant livraison** (règle 24) a
+trouvé un défaut dans la première version de cette lecture : elle faisait rougir /api/sante ENTIER
+(HTTP 500) pour N'IMPORTE QUEL poste `recalcul_parametre` sans atelier — y compris un poste hors
+REVENUE (TRADE_RECEIVABLES), un état ATTENDU et déjà consigné (R54/R55 : RECALC est plannable sur
+n'importe quel poste dès aujourd'hui via une bascule de risque ordinaire), pas une régression. La
+même faute que R53 nomme ailleurs : une garde qui rougit sur un état sanctionné plutôt que sur une
+régression réelle. Corrigé : le rouge (throw) ne se déclenche plus QUE si le poste absent
+d'atelier est REVENUE ; un gap hors REVENUE est rapporté honnêtement dans le détail, sans bloquer.
+Cas connu mauvais (`atelier-recalcul-lecture.test.ts`, trois tests) : (1) RECALC sur REVENUE avec
+atelier réel passe ; (2) RECALC sur TRADE_RECEIVABLES (hors REVENUE, sans atelier construit) reste
+VERTE, le détail le dit « attendu » ; (3) REVENUE planifié pendant qu'un mock ciblé du seul point
+d'appel de `atelierDeLaNature` dans route.ts lui fait renvoyer `null` pour REVENUE fait rougir
+/api/sante entier — la régression que cette lecture existe pour attraper, prouvée en la
+provoquant, pas en la supposant.
+
+**Deux défauts trouvés en cours de route, enregistrés, non corrigés (hors mandat de cette
+tranche, règle 8) :**
+- **R54** — 14 des 16 procédures `recalcul_parametre` du catalogue portent un `cycle` qui ne
+  correspond à AUCUN `fsli.code` réel du plan de comptes — non planifiables sur un poste réel,
+  indépendamment de tout atelier. Seules `RECALC` et `ESTIM` (`cycle: '*'`) échappent au défaut —
+  RECALC est la seule des deux réellement INSTANCIÉE dans ce dépôt aujourd'hui, ESTIM reste
+  plannable en principe mais n'a jamais été semée. `CONFIRM` (confirmation_externe) porte le même
+  vocabulaire pour
+  son propre `postes` — même famille, non vérifiée procédure par procédure.
+- **R55** — `npm run verify` (donc `clics`/`screens`/`fumee`/`densite`/`visuel` depuis ce bac à
+  sable) n'appelle JAMAIS `demo:enrichir` — seuls `npm run demo` et `deploy:reconstruire.ts` (le
+  build Vercel) le font. RECALC, la SEULE instance réelle de cette nature, est donc ABSENTE
+  pendant `npm run verify` alors qu'elle existe en production — exactement l'avertissement de la
+  règle 11 (« une base fraîche et la base de production ne sont pas la même exécution »),
+  silencieux jusqu'à cette tranche. Contourné ici par des cas connus mauvais à insertion directe
+  (indépendants d'enrichir) et par UNE vérification manuelle au clic — pas par la chaîne
+  automatisée, dit explicitement, pas caché.
+
+**Chaîne verify complète, propre, arbre GELÉ pendant l'exécution — quatrième passage, les trois
+premiers ont chacun trouvé et fait corriger quelque chose de réel, aucun n'a été poussé** (règle
+21, rien n'est caché) :
+- Passage 1 (`verify-lot3-tranche2.log`) : `tests/screens.test.ts` en échec sur un timeout de
+  navigation (`/eng/[id]/testing`, 30000ms) — 884/885 tests. Rejoué SEUL sur le même arbre gelé,
+  sans rien d'autre en cours : vert (390s). Cas connu isolé, non expliqué plus loin (règle 18 :
+  hypothèse « surcharge du passage complet », pas un diagnostic) — pas de collision
+  PGlite/serveur-dev possible ici, aucun autre processus ne tournait.
+- Passage 2 (`verify-lot3-tranche2-run2.log`) : vitest 885/885 propre, puis `npm run parcours` en
+  échec ATTENDU — la station de l'atelier hors-commande a changé de libellé cette tranche
+  (« une ligne planifiée » → « une ligne planifiée (commandée ou hors commande) »), donc
+  « disparue » du gel précédent. Refigé : `npm run parcours -- --figer` ; diff de
+  `docs/PARCOURS.json` vérifié à UNE seule ligne (le renommage voulu, rien d'autre).
+- Passage 3 (`verify-lot3-tranche2-run3.log`) : vitest 885/885 et parcours propres, mais le
+  parcours cliqué a fait rougir une station de la tranche 1 (« chaque procédure commandée affiche
+  sa nature ») — « 6 ligne(s) avec une nature affichée sur 7 commandée(s) ». Défaut RÉEL,
+  introduit par CETTE tranche : `[data-ligne-programme]` est désormais aussi posé sur les `<li>`
+  du panneau « hors commande » (pour y router l'atelier), et cette station de tranche 1 comptait
+  `[data-ligne-programme]` SANS le scoper à `[data-commandees]` — elle additionnait donc une ligne
+  hors-commande (qui ne porte jamais `data-nature`) au dénominateur d'une station qui n'a rien à
+  voir avec elle. Corrigé (`scripts/clics/scenario.ts`, deux stations scopées à
+  `[data-commandees] [data-ligne-programme]`) — trouvé PAR la chaîne verify elle-même, pas par
+  relecture (règle 15).
+- Passage 4 (`verify-lot3-tranche2-run4.log`), propre de bout en bout, SHA 12b214a + tranche
+  non commitée : vitest **885/885** (109/109 fichiers), gardes 43, plancher 885/632, langue
+  0 hors catalogue · 0 en dur · 39 différés · 45 exclues · 14 refus documentés, langue:épreuve
+  15/15, lectures 0 perdue sur 1716 chemins figés dans 86 écrans, lectures:épreuve 6/6, parcours
+  269/269 déclarées et figées · 0 perdue, parcours:épreuve 5/5, screens 87 routes · 0 échec, fumee
+  51 routes · 0 échec, densite 77 écrans mesurés · 0 au-delà de 5 actions primaires, clics
+  226 étapes conduites · 0 échec (346 clics sur 47 gestes), visuel exécuté sans échec.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30, sur le diff complet issu du
+passage 4) : le détecteur de régression (throw REVENUE-only) et les deux stations de sélecteur
+CSS corrigées ont été PROUVÉS, pas relus — chaque réfutateur a, indépendamment, mutation-testé
+`route.ts` (inversé la condition REVENUE, confirmé que le test dédié rougit, puis restauré
+l'état exact) et re-dérivé les sélecteurs CSS depuis `page.tsx` sans se fier au diff. Un défaut
+RÉEL convergent, trouvé indépendamment par les deux voix (règle 30, confirmé par réfutation) :
+dans le cas MIXTE (une régression REVENUE et un gap hors REVENUE dans le même dossier), le
+message jeté ne nommait QUE la régression REVENUE — le gap hors REVENUE, que l'en-tête de la
+lecture affirme pourtant rapporter « honnêtement », disparaissait du message tant que
+`horsRevenue` n'était calculé qu'APRÈS le `throw`. Un second défaut mineur, trouvé par un seul
+réfutateur (règle 30, jugé seul, non réfuté par le second) : la phrase « REVENUE toujours avec
+un atelier réel » s'affichait même quand AUCUNE ligne REVENUE n'existait dans le dossier —
+affirmant vérifié ce qui ne l'était pas (règle 13). **Corrigés** (`route.ts` : `horsRevenue`
+calculé avant le `throw` et concaténé au message dans les deux issues ; la phrase REVENUE
+gardée derrière `rows.some(r => r.fsli_code === 'REVENUE')`) et FIGÉS par un quatrième test
+dédié au cas mixte (`atelier-recalcul-lecture.test.ts`, réutilise le même mock ciblé que le cas
+connu mauvais) — 4/4 tests verts, `npx tsc --noEmit` propre. Aucun défaut trouvé sur le reste du
+diff (sélecteurs CSS, `atelierDeLaNature`, le gating `l.planifiee` côté `page.tsx`, les nombres
+de ce document eux-mêmes — tous recroisés contre `docs/PARCOURS.json`, `docs/LECTURES.json`,
+`docs/DENSITE.md`, `methodology/procedures.json` par au moins un réfutateur).
+
+**Passage 5 (`verify-lot3-tranche2-run5.log`), sur l'arbre APRÈS le correctif de la revue
+hostile — propre de bout en bout, c'est le passage qui compte pour le SHA poussé (règle 12)** :
+vitest **886/886** (109/109 fichiers — un test de plus que le passage 4, le cas mixte ajouté par
+le correctif), gardes 43, plancher 886/632, langue 0 hors catalogue · 0 en dur · 39 différés ·
+45 exclues · 14 refus documentés, langue:épreuve 15/15, lectures 0 perdue sur 1716 chemins figés
+dans 86 écrans, lectures:épreuve 6/6, parcours 269/269 déclarées et figées · 0 perdue,
+parcours:épreuve 5/5, screens 87 routes · 0 échec, fumee 51 routes · 0 échec, densite 77 écrans
+mesurés · 0 au-delà de 5 actions primaires, clics 226 étapes conduites · 0 échec (346 clics sur
+47 gestes), visuel exécuté sans échec. Tous les autres nombres identiques au passage 4 — aucune
+régression introduite par le correctif de la revue hostile.
+
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du

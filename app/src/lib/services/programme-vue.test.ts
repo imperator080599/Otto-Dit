@@ -215,16 +215,19 @@ describe('le programme de travail', () => {
     expect(v2.version).toBe(2);
   });
 
-  it("Lot 3, tranche 1 — atelierDeLaNature : sondage_pieces sur REVENUE a un atelier réel ; ailleurs, aucun (règle 13 — jamais un lien menteur)", () => {
+  it("Lot 3, tranches 1-2 — atelierDeLaNature : sondage_pieces et recalcul_parametre sur REVENUE ont un atelier réel ; ailleurs, aucun (règle 13 — jamais un lien menteur)", () => {
     expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x')).toBe('/eng/x/testing');
-    /* Le MÊME atelier ne se prête pas à un AUTRE poste : `testing/page.tsx`
-       est encore câblé sur REV-SUBST/REVENUE (Lot 2), un lien depuis un
-       autre poste y ouvrirait sur les données du chiffre d'affaires. */
+    expect(atelierDeLaNature('recalcul_parametre', 'REVENUE', '/eng/x')).toBe('/eng/x/estimations');
+    /* Ni l'un ni l'autre atelier ne se prête à un AUTRE poste : `testing`
+       reste câblé sur REV-SUBST/REVENUE (Lot 2), `estimations` rapproche sur
+       les comptes 70x (`montantComptabilise`) — un lien depuis un autre
+       poste y ouvrirait sur des écritures qui ne sont pas les siennes. */
     expect(atelierDeLaNature('sondage_pieces', 'AUTRE-POSTE', '/eng/x')).toBeNull();
-    /* Aucun atelier construit encore pour les sept autres natures (tranches
+    expect(atelierDeLaNature('recalcul_parametre', 'AUTRE-POSTE', '/eng/x')).toBeNull();
+    /* Aucun atelier construit encore pour les six autres natures (tranches
        suivantes du Lot 3 / Lot 5) — même sur REVENUE. */
     expect(atelierDeLaNature('rapprochement', 'REVENUE', '/eng/x')).toBeNull();
-    expect(atelierDeLaNature('recalcul_parametre', 'REVENUE', '/eng/x')).toBeNull();
+    expect(atelierDeLaNature('confirmation_externe', 'REVENUE', '/eng/x')).toBeNull();
   });
 
   it('Lot 3, tranche 1 — la nature d’une procédure planifiée vient du catalogue, pas devinée', async () => {

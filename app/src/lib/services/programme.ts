@@ -340,25 +340,48 @@ export interface LigneProgramme {
 }
 
 /**
- * Lot 3, tranche 1 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
- * nature de test, l'atelier qui l'exécute. Aujourd'hui une seule case, HONNÊTE :
- * `sondage_pieces` sur le poste REVENUE, parce que c'est le SEUL atelier qui
- * existe vraiment (Lot 2, le cycle de testing du chiffre d'affaires) et qu'il
- * est encore câblé sur ce poste précis (`REV-SUBST`, `testing/grille.ts`),
- * pas générique sur n'importe quel `fsliCode`. Un lien vers `/testing` pour
- * un AUTRE poste ouvrirait sur les données du chiffre d'affaires — un lien
- * MENSONGER, pire qu'un lien mort (règle 13). `null` se lit à l'écran comme
- * « aucun atelier construit pour cette nature encore » — jamais comme un
- * geste caché.
+ * Lot 3, tranches 1-2 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
+ * nature de test, l'atelier qui l'exécute. Deux cases, HONNÊTES, toutes deux
+ * bornées au poste REVENUE : `sondage_pieces` (Lot 2, le cycle de testing du
+ * chiffre d'affaires, `REV-SUBST`/`testing/grille.ts`) et `recalcul_parametre`
+ * (les estimations comptables hors litige, ADR-106a, `estimations.ts` —
+ * fichier de calcul du client, rapproché au grand livre, recalculé au
+ * centime, base sondée, justificatifs de CHAQUE paramètre demandés en
+ * brouillon : exactement la forme que Partie C.1 décrit pour cette nature).
+ * NI L'UNE NI L'AUTRE N'EST GÉNÉRIQUE sur `fsliCode` : `montantComptabilise`
+ * (estimations.ts) rapproche sur les comptes 70x, pas sur le plan de compte
+ * d'un autre poste — un lien vers `/estimations` pour un AUTRE poste ouvrirait
+ * un atelier qui ne saurait pas rapprocher SES écritures à lui. Deux
+ * procédures du catalogue portent `cycle: '*'` et atteignent donc cette
+ * case sur REVENUE : RECALC (la seule réellement instanciée dans le monde
+ * semé aujourd'hui) et ESTIM. Les 14 AUTRES procédures `recalcul_parametre`
+ * du catalogue portent un `cycle` (`IMMO_COR`, `PERSONNEL`, `PROV`…) qui ne
+ * correspond à AUCUN `fsli.code` réel du plan de comptes (`PPE`, `PAYROLL`,
+ * `PROVISIONS`…) — un défaut PRÉEXISTANT, distinct de cette fonction, qui les
+ * rend de toute façon non planifiables sur un poste réel (voir R54,
+ * docs/BACKLOG_REPORTE.md). RECALC vit aujourd'hui
+ * dans « hors commande » (le risque actuel ne la commande plus, mais elle a
+ * été planifiée — programme/page.tsx), pas dans « commandées » : l'appelant
+ * doit donc offrir l'atelier dans LES DEUX rendus dès qu'une ligne porte
+ * `planifiee`, pas seulement dans le tableau des procédures commandées —
+ * trouvé en construisant cette tranche (règle 10, un écran conduit dans un
+ * navigateur avant d'être annoncé) : sans ce second appel, l'atelier livré
+ * n'aurait jamais été atteignable au clic dans le monde semé.
+ * `/estimations` est aussi un atelier PAR DOSSIER,
+ * pas filtré par ligne de programme ni par procédure — comme `/testing` déjà,
+ * le lien ouvre l'espace de travail entier, jamais une vue pré-découpée par
+ * `procedure_instance`. `null` se lit à l'écran comme « aucun atelier
+ * construit pour cette nature encore » — jamais comme un geste caché.
  *
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
- * atelier — `recalcul_parametre`, `confirmation_externe`, `rapprochement`
- * (tranches suivantes du Lot 3) et la généralisation de `sondage_pieces` à
- * un poste autre que REVENUE (Lot 5) entrent chacun ICI quand ils existent,
- * jamais ailleurs — un second endroit qui devine l'atelier diverge un jour.
+ * atelier — `confirmation_externe`, `rapprochement` (tranches suivantes du
+ * Lot 3) et la généralisation de ces deux cases à un poste autre que REVENUE
+ * (Lot 5, une fois R54 fermé) entrent chacun ICI quand ils existent, jamais
+ * ailleurs — un second endroit qui devine l'atelier diverge un jour.
  */
 export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
   if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
+  if (nature === 'recalcul_parametre' && fsliCode === 'REVENUE') return `${base}/estimations`;
   return null;
 }
 

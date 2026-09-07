@@ -452,3 +452,40 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   RÉCURRENCE — il n'explique pas l'occurrence du 2026-09-07. Trouvé et signalé par le fondateur,
   Lot 3, tranche 1 (clôture). Se referme le jour où le tableau de bord Vercel (Domains → historique
   de l'alias) est consulté, ou qu'une session dispose d'un outil Vercel donnant ce journal.
+- **R54 — quatorze des seize procédures `recalcul_parametre` du catalogue portent un `cycle`
+  (`IMMO_COR`, `IMMO_INC`, `STOCKS`, `CLIENTS`, `PERSONNEL`, `SOCIAL`, `DETTES_FI`, `PROV`) qui ne
+  correspond à AUCUN `fsli.code` réel du plan de comptes** (`PPE`, `INVENTORY`, `TRADE_RECEIVABLES`,
+  `PAYROLL`, `TAX_SOCIAL_PAYABLES`, `FINANCIAL_DEBT`, `PROVISIONS`… — `app/src/lib/packs/coa/pcg.ts`
+  et les packs qui le réutilisent). `proceduresDuCycle` (`methodology/catalogue.ts`) filtre par
+  égalité stricte de chaîne : ces quatorze procédures ne sont donc REQUISES, LISTÉES ni PLANIFIABLES
+  sur aucun poste réel du dossier — indépendamment de tout atelier. Seules `RECALC` et `ESTIM`
+  (`cycle: '*'`, sans restriction de poste) échappent au défaut. `CONFIRM` (`confirmation_externe`)
+  porte le même vocabulaire de cycle pour son propre `postes` — même défaut, même famille, pas
+  vérifié procédure par procédure. Trouvé par la revue de recherche du Lot 3, tranche 2 (atelier
+  `recalcul_parametre`), 2026-09-07 — signalé, pas corrigé : fermer ce défaut élargirait la tranche
+  au-delà de son mandat (règle 8) et touche une question de contenu de méthode (docs/DECISIONS.md),
+  pas la mécanique d'un atelier. Se referme le jour où une tranche pose la correspondance
+  cycle ↔ fsli comme donnée de méthode plutôt que comme deux vocabulaires qui coïncident par
+  hasard — vraisemblablement le Lot 5 (postes), qui construit précisément ces procédures poste par
+  poste.
+- **R55 — `npm run verify` (et donc `npm run clics`, `screens`, `fumee`, `densite`, `visuel`
+  exécutés depuis ce bac à sable) ne lance JAMAIS `demo:enrichir`** (`db:reset && demo:seed && …`,
+  package.json) — seul `npm run demo` (la commande interactive, `scripts/demo/lancer.mjs`) et
+  `deploy:reconstruire.ts` (le build Vercel réseau) enchaînent les deux. Conséquence mesurée :
+  tout contenu semé UNIQUEMENT par `enrichirMondeDemo()` (`lib/flows/enrichir.ts`) — dont RECALC,
+  la seule procédure `recalcul_parametre` réellement instanciée dans ce dépôt (Lot 3, tranche 2)
+  — est ABSENT pendant `npm run verify`, alors qu'il est PRÉSENT en production (le déploiement
+  réel enrichit toujours). C'est très exactement l'avertissement de la règle 11 : « une base
+  FRAÎCHE et la base de production ne sont pas la même exécution » — ici la base fraîche locale
+  ET la base de production DIFFÈRENT par construction, silencieusement, à chaque `npm run verify`.
+  Trouvé en construisant l'atelier `recalcul_parametre` (Lot 3, tranche 2, 2026-09-07) : la
+  station clics générique du programme de travail ne pouvait pas prouver l'atelier de RECALC pour
+  cette raison — contournée par des cas connus mauvais à insertion directe (règle 17,
+  `programme-vue.test.ts`, `atelier-recalcul-lecture.test.ts`) et par UNE vérification manuelle,
+  au clic, dans un navigateur (règle 10 : `npm run demo:enrichir` lancé à la main, capture
+  d'écran citée dans STATUS.md), PAS par la chaîne automatisée. Non corrigé : ajouter
+  `demo:enrichir` à `verify` ferait bouger le contenu de CHAQUE écran balayé, CHAQUE compte cité
+  par une lecture `/api/sante`, et CHAQUE station figée (`docs/PARCOURS.json`,
+  `docs/instantanes/lectures.json`) — un ricochet dans tout le dépôt, hors du mandat d'une seule
+  tranche (règle 8). Se referme le jour où une tranche accepte explicitement ce ricochet, ou
+  qu'un mandat le demande.

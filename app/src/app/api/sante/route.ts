@@ -474,6 +474,75 @@ async function corpsDeLaSonde() {
         ? `${cataloguees} procédure(s) instanciée(s) d’un template catalogué, toutes cohérentes avec la nature actuelle du catalogue`
         : 'aucune procédure instanciée d’un template catalogué encore';
     }));
+    /* LOT 3, TRANCHE 2 (mandat, Partie C.1 — livrée ce jour, lue ce jour,
+       règle 22). `atelierDeLaNature` (programme.ts) est une fonction PURE,
+       sans état — sa propre couverture de test (programme-vue.test.ts)
+       suffirait presque à elle seule. Mais règle 22 ne fait pas d'exception
+       aux fonctions pures, et le risque réel n'est pas dans la fonction :
+       c'est qu'une procédure PLANIFIÉE (`procedure_instance`, un geste réel
+       de l'auditeur) sur le poste REVENUE se retrouve un jour SANS atelier —
+       une régression de `atelierDeLaNature` qui perd un cas déjà câblé pour
+       CE poste précis. Cette lecture interroge la BASE, pas le code.
+       R54/R55 (docs/BACKLOG_REPORTE.md) le disent déjà : RECALC et ESTIM sont
+       plannables sur N'IMPORTE QUEL poste dès aujourd'hui via une bascule de
+       risque ordinaire, pas seulement REVENUE — et `atelierDeLaNature` ne
+       construit un atelier réel QUE pour REVENUE (le seul câblé à ce jour,
+       Lot 3 tranche 2). Une procédure `recalcul_parametre` planifiée sur un
+       poste hors REVENUE (TRADE_RECEIVABLES, etc.) est donc un état ATTENDU
+       et déjà consigné, pas une régression : cette lecture ne fait ROUGIR le
+       endpoint entier QUE si le poste absent d'atelier est REVENUE (le seul
+       cas qui trahirait une vraie perte de câblage). Un gap hors REVENUE est
+       rapporté HONNÊTEMENT dans le détail (compte + poste), jamais tu, mais
+       ne bloque pas /api/sante — sans quoi cette lecture reproduirait
+       exactement R53 (une garde qui rougit sur un état sanctionné et
+       attendu plutôt que sur une régression réelle).
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien des
+       procédures `recalcul_parametre` du catalogue qui ne sont pas encore
+       planifiables du tout (R54 — quatorze des seize procédures portent un
+       `cycle` qui ne correspond à aucun `fsli.code` réel) : une procédure
+       qui ne peut jamais être planifiée n'apparaît jamais dans la requête,
+       donc jamais dans ce rapport. Elle ne dit rien non plus d'un atelier
+       construit pour un poste hors REVENUE : le jour où `atelierDeLaNature`
+       gagne un second poste câblé, cette lecture continuera de ne rougir que
+       sur REVENUE tant que le code n'est pas mis à jour pour l'inclure.
+       RÉFUTATION HOSTILE (deux réfutateurs indépendants, avant livraison) :
+       une première version de ce message THROW, dans le cas mixte (une
+       régression REVENUE ET un gap hors REVENUE en même temps), taisait le
+       gap hors REVENUE — le `throw` sortait avant que `horsRevenue` soit
+       même lu. Contredisait sa propre en-tête (« rapporté HONNÊTEMENT »).
+       Corrigé : le gap hors REVENUE, s'il existe, est concaténé au message
+       — jeté ou rendu, il apparaît toujours. De même, la phrase « REVENUE
+       toujours avec un atelier réel » n'apparaît plus que si la requête a
+       RÉELLEMENT vu au moins une ligne REVENUE (`revenuVerifie`) : elle
+       affirmait auparavant un fait jamais vérifié quand aucune ligne
+       REVENUE n'existait dans ce dossier (règle 13). */
+    lectures.push(await essayer('atelier recalcul_parametre disponible (Lot 3, tranche 2)', async () => {
+      const { atelierDeLaNature } = await import('@/lib/services/programme');
+      const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
+        `select template_code, fsli_code, count(*) n from procedure_instance
+         where engagement_id = $1 and nature = 'recalcul_parametre' group by template_code, fsli_code`,
+        [id]);
+      if (rows.length === 0) return 'aucune procédure recalcul_parametre planifiée encore';
+      const sansAtelier = rows.filter((r) => !atelierDeLaNature('recalcul_parametre', r.fsli_code ?? '', '/base'));
+      const regression = sansAtelier.filter((r) => r.fsli_code === 'REVENUE');
+      const horsRevenue = sansAtelier.filter((r) => r.fsli_code !== 'REVENUE');
+      const detailHorsRevenue = horsRevenue.length > 0
+        ? ` ; ${horsRevenue.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsRevenue.length} template/poste `
+          + 'distinct(s)) hors REVENUE sans atelier construit — attendu, R54/R55 : '
+          + horsRevenue.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+        : '';
+      if (regression.length > 0) {
+        const instances = regression.reduce((s, r) => s + Number(r.n), 0);
+        throw new Error(`${instances} instance(s) (${regression.length} template(s)) recalcul_parametre `
+          + 'planifiée(s) sur REVENUE SANS atelier réel — régression probable de atelierDeLaNature : '
+          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
+          + detailHorsRevenue);
+      }
+      const n = rows.reduce((s, r) => s + Number(r.n), 0);
+      const revenuVerifie = rows.some((r) => r.fsli_code === 'REVENUE');
+      const noteRevenue = revenuVerifie ? ', REVENUE toujours avec un atelier réel' : '';
+      return `${n} procédure(s) recalcul_parametre planifiée(s)${noteRevenue}${detailHorsRevenue}`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

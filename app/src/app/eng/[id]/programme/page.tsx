@@ -99,7 +99,7 @@ export default async function ProgrammePage({
               <p className="faint" style={{ margin: '4px 0 0' }}>{t('prog.horsCommandeAide')}</p>
               <ul style={{ margin: '6px 0 0' }}>
                 {poste.horsCommande.map((l) => (
-                  <li key={l.code}>
+                  <li key={l.code} data-ligne-programme={l.code}>
                     <span className="mono">{l.code}</span> — {l.libelle}{' '}
                     <span className="faint">
                       {t('prog.horsCommandeRaison', { niveau: l.niveau ?? '—', minimum: l.minimum })}
@@ -107,6 +107,23 @@ export default async function ProgrammePage({
                     {l.planifiee?.papier && (
                       <> · <Link href={`/eng/${id}/workpapers/${l.planifiee.papier.id}`}>{l.planifiee.papier.code}</Link></>
                     )}
+                    {/* LOT 3, TRANCHE 2 — le travail sur cette procédure n'est
+                        pas défait parce que le risque ne la commande plus : son
+                        instance existe, son atelier reste ouvrable, exactement
+                        comme dans « commandées » (même fonction, même règle 13 —
+                        jamais un lien mort ni un aveu tu). Trouvé en construisant
+                        cette tranche : RECALC, la seule procédure recalcul_parametre
+                        du monde semé, vit ICI (« hors commande », REV-05), jamais
+                        dans « commandées » — sans cette ligne, l'atelier livré
+                        cette tranche n'aurait jamais été atteignable au clic. */}
+                    {l.planifiee && (() => {
+                      const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`);
+                      return href ? (
+                        <> · <Link href={href} data-atelier={l.code}>{t('prog.allerAtelier')}</Link></>
+                      ) : (
+                        <> · <span className="faint" data-atelier-absent={l.code}>{t('prog.atelierAbsent')}</span></>
+                      );
+                    })()}
                   </li>
                 ))}
               </ul>
