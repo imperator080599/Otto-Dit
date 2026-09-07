@@ -201,6 +201,12 @@
       "note": "non corrigé : ajouter demo:enrichir à verify ferait bouger le contenu de chaque écran balayé, chaque compte /api/sante, chaque station figée (PARCOURS.json, lectures figées) — un ricochet dans tout le dépôt, hors du mandat d'une seule tranche (règle 8). Contourné pour cette tranche par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-recalcul-lecture.test.ts) et une vérification manuelle au clic (règle 10), pas par la chaîne automatisée. Se referme le jour où une tranche accepte explicitement ce ricochet, ou qu'un mandat le demande."
     },
     {
+      "id": "R56",
+      "etat": "ouvert — les six procédures confirmation_externe non-* du catalogue (FOURN-CIRC, STOCKS-TIERS, CLIENTS-CIRC, DETTES_FI-CIRC, PROV-LITIGES, TRESO-CIRC) portent un cycle qui ne correspond à AUCUN fsli.code réel — même mécanisme que R54, pas un second défaut ; la septième, CONFIRM, est pire : CONFIRM (cycle '*') porte EN PLUS un postes NON NUL (CLIENTS, TRESO, FOURN, PROV, encore du vocabulaire de cycle) qui ne couvre pas CASH, le poste que atelierDeLaNature câble (Lot 3, tranche 3) — planifierProcedure refuse PROG-02 de planifier CONFIRM sur CASH ou sur aucun poste réel. Aucune bascule de risque ordinaire ne peut produire cet état, contrairement à RECALC (postes nul, R54/R55). Aucune instance confirmation_externe n'existe dans le monde semé, ni bootstrapNep() ni enrichirMondeDemo() ; enrichir.ts:209-211 liste même CONFIRM en premier dans son choix sur TRADE_RECEIVABLES mais retombe toujours et silencieusement sur RA. Trouvé par la revue de recherche du Lot 3, tranche 3, 2026-09-07",
+      "depuis": "2026-09-07 (Lot 3, tranche 3 : atelier confirmation_externe)",
+      "note": "non corrigé : même discipline que R54 (règle 8, règle 14 — contenu de méthode, pas mécanique d'atelier). Contourné entièrement par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-confirmation-lecture.test.ts) — aucune vérification manuelle au clic possible ici (contrairement à R55/RECALC), puisqu'aucun geste réel, nulle part dans ce dépôt, ne produit une ligne confirmation_externe. Se referme avec R54, vraisemblablement au Lot 5."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

@@ -404,6 +404,102 @@ construction NORMAL mesuré tout au long de cette session (100-220 s) — le gar
 chaque push tombant près d'un sondage horaire, pour rien, et une fausse alerte ignorée une fois
 cesse d'être regardée (règle 13). Corrigé à `--minutes=5` dans le même commit que ce constat.
 
+## Lot 3, tranche 3 : l'atelier confirmation_externe (2026-09-07)
+
+*Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1 ligne 240 ; Partie C.3 point 1 :
+« Trésorerie — confirmation_externe + rapprochement. Le plus démonstratif après le CA, et les
+circularisations existent déjà. ») ; permission de nuit du fondateur, §2 : « continue sans
+attendre… Lot 3 tranche 3 (confirmation_externe…) ». La chose plus petite (règle 8) : `atelierDeLaNature`
+gagne une troisième case, `confirmation_externe`+`CASH` → `/circularisations` (déjà construit,
+Trésorerie/C.3.1) — aucun contenu de procédure neuf, aucun poste neuf ouvert.*
+
+**Recherche d'abord** (`app/src/lib/services/circularisations.ts`, déjà construit) : le service
+importe un listing de tiers, mesure la complétude contre le grand livre, simule l'envoi, dépose la
+réponse, dérive le rapprochement — exactement la forme que Partie C.1 décrit pour
+`confirmation_externe` (« listing des tiers / réponse du tiers »). `POSTE.banque = 'CASH'` y est
+déjà une ligne dédiée, jamais un préfixe français en dur (le fichier le dit lui-même). Contrairement
+à `estimations.ts`, la page ne prend AUCUN paramètre par l'URL — un seul écran, deux natures
+(`banque`, `avocat`), seule `banque`/`CASH` correspond à `confirmation_externe` sur ce poste ;
+`avocat`/`PROVISIONS` entre au Lot 5 avec le poste Provisions (C.3 point 6), pas cette tranche.
+
+**`programme/page.tsx` et `scripts/clics/scenario.ts` étaient DÉJÀ génériques** (tranche 2 les a
+construits ainsi) : `atelierDeLaNature(l.nature, poste.code, …)` s'appelle déjà dans les deux
+rendus (commandées et hors-commande), et l'assertion clics couvre déjà les deux conteneurs sans
+connaître la nature. **Aucune modification d'écran ni de scénario cliqué dans cette tranche** —
+seule `programme.ts` (la fonction + son commentaire) change côté produit.
+
+**Un défaut plus sévère que R54, trouvé en recherchant (règle 15, pas un grep — un chemin
+réellement emprunté) : R56.** `CONFIRM`, la seule procédure `confirmation_externe` à `cycle: '*'`,
+porte un `postes` NON NUL (`CLIENTS`, `TRESO`, `FOURN`, `PROV` — du vocabulaire de cycle, pas de
+`fsli.code`) qui ne couvre PAS `CASH`. Contrairement à RECALC (R54 : `postes` nul, donc plannable
+sur N'IMPORTE QUEL poste réel), `planifierProcedure` REFUSE (PROG-02) de planifier `CONFIRM` sur
+CASH — ou sur AUCUN poste réel du dossier. Conséquence mesurée : **aucune instance
+`confirmation_externe` n'existe dans le monde semé, ni par `bootstrapNep()` ni par
+`enrichirMondeDemo()`** (vérifié : `lib/flows/enrichir.ts` ne plante que sur REVENUE et
+TRADE_RECEIVABLES) — contrairement à RECALC (R55 : présent, seulement caché de `verify`), ici il
+n'y a RIEN à rendre visible par AUCUN moyen, ni au clic ni en production. R56 enregistré
+(docs/BACKLOG_REPORTE.md, docs/instantanes/fils.json), non corrigé — même discipline que R54
+(règle 8/14, contenu de méthode, pas mécanique d'atelier).
+
+**Ce qui a changé :**
+- `programme.ts::atelierDeLaNature` — troisième case, `confirmation_externe`+`CASH` →
+  `/circularisations` ; commentaire réécrit pour nommer R56 et la limite (aucune instance
+  cliquable, preuve par cas connu mauvais seulement).
+- `programme-vue.test.ts` — le cas `confirmation_externe`/REVENUE (attendu null) devient
+  `confirmation_externe`/CASH (attendu `/circularisations`) ; ajoute PROVISIONS (Lot 5) et
+  AUTRE-POSTE comme cas null.
+- `/api/sante` — nouvelle lecture « atelier confirmation_externe disponible », JUMELLE de celle de
+  la tranche 2 (CASH au lieu de REVENUE), avec le correctif du cas mixte de la revue hostile
+  précédente appliqué DÈS LA PREMIÈRE VERSION (le gap hors-CASH calculé avant le `throw`, jamais
+  après) — pas redécouvert une seconde fois.
+- `atelier-confirmation-lecture.test.ts` (nouveau) — quatre tests, TOUS à insertion directe en
+  base (R56 : aucune voie normale n'atteint cet état) : vide, CASH-avec-atelier +
+  hors-CASH-honnête, cas connu mauvais (régression CASH simulée par mock ciblé), cas mixte
+  (régression + gap hors-CASH simultanés). 4/4 verts, `npx tsc --noEmit` propre.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30). La partie la plus à risque —
+la lecture jumelle a-t-elle bien REPORTÉ le correctif du cas mixte trouvé sur `recalcul_parametre`,
+au lieu de le redécouvrir — est PROUVÉE, pas relue : les deux réfutateurs ont, indépendamment,
+mutation-testé `route.ts` (invalidé le détecteur CASH, confirmé que les tests dédiés rougissent,
+restauré l'état exact) et l'un d'eux a exécuté `planifierProcedure({fsliCode:'CASH', code:'CONFIRM'})`
+contre une base fraîchement semée pour vérifier PAR L'EXÉCUTION (pas la lecture) que PROG-02 refuse
+bien — la prémisse entière de R56 et du choix « insertion directe ». Deux constats réels,
+convergents ou complémentaires :
+- **Terminologie inexacte, trois occurrences** (`route.ts`, commentaire ; `BACKLOG_REPORTE.md` et
+  `fils.json`, R56) : le texte disait que les SIX procédures `confirmation_externe` non-`*`
+  portaient un `postes` qui ne correspond à aucun `fsli.code` — en réalité seule `CONFIRM` a un
+  champ `postes` ; les six autres sont exclues par leur `cycle`, exactement le mécanisme de R54.
+  Aucun impact fonctionnel (le code ne lit jamais ce commentaire), mais une session future cherchant
+  à fermer R56 aurait cherché un champ qui n'existe pas sur les six. **Corrigé** dans les trois
+  fichiers.
+- **Branche négative non prouvée** (trouvé par mutation, PAS par lecture) : aucun test, ici ni sur
+  la lecture jumelle déjà EN PRODUCTION (tranche 2), ne construit l'état « des lignes existent,
+  AUCUNE sur le poste câblé » — retirer la garde `cashVerifie`/`revenuVerifie` de `route.ts`
+  laissait les suites toutes vertes. Un détecteur jamais mis en échec exprès n'a jamais été testé
+  (règle 17). **Corrigé dans les DEUX fichiers** — `atelier-confirmation-lecture.test.ts` ET,
+  rétroactivement, `atelier-recalcul-lecture.test.ts` (tranche 2, déjà mergée) gagnent chacun un
+  test dédié : uniquement une ligne hors-poste, zéro ligne sur le poste câblé, la phrase
+  « … toujours avec un atelier réel » doit être ABSENTE. 19/19 tests verts (les 4 nouveaux + 5 sur
+  la lecture jumelle + 9 programme-vue + 1 confirmation vide), `npx tsc --noEmit` propre.
+- Un nit de clarté (`programme.ts`, docstring) — PROVISIONS EST un `fsli.code` réel
+  (`pcg.ts:25`) ; seule sa procédure `confirmation_externe` n'y est pas câblée. La phrase pouvait
+  se lire comme si le code lui-même manquait. **Corrigé.**
+
+**Chaîne verify complète, propre, arbre GELÉ pendant l'exécution — premier passage, propre de
+bout en bout** (`verify-lot3-tranche3-run1.log`) : vitest **892/892** (110/110 fichiers — six
+tests de plus que la fin de tranche 2 : les cinq de `atelier-confirmation-lecture.test.ts` et la
+branche négative ajoutée à `atelier-recalcul-lecture.test.ts`), gardes 43, plancher 892/632,
+langue 0 hors catalogue · 0 en dur · 39 différés · 45 exclues · 14 refus documentés,
+langue:épreuve 15/15, lectures 0 perdue sur 1716 chemins figés dans 86 écrans, lectures:épreuve
+6/6, parcours 269/269 déclarées et figées · 0 perdue (aucun renommage de station cette tranche —
+`page.tsx`/`scenario.ts` inchangés), parcours:épreuve 5/5, screens 87 routes · 0 échec, fumee 51
+routes · 0 échec, densite 77 écrans mesurés · 0 au-delà de 5 actions primaires, clics 226 étapes
+conduites · 0 échec (346 clics sur 47 gestes, identique à tranche 2 — aucune station clics
+nouvelle, R56 empêche toute preuve au clic), visuel exécuté sans échec. Aucun passage
+intermédiaire nécessaire cette fois (contrairement à la tranche 2, quatre passages) : la tranche
+ne touche aucun écran ni scénario cliqué, donc aucune des deux classes de défaut qui avaient
+rougi trois passages sur cinq n'avait de prise ici.
+
 ## Lot 3, tranche 2 : l'atelier recalcul_parametre (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 240) : « les ateliers de

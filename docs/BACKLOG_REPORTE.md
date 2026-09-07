@@ -502,3 +502,27 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   `docs/instantanes/lectures.json`) — un ricochet dans tout le dépôt, hors du mandat d'une seule
   tranche (règle 8). Se referme le jour où une tranche accepte explicitement ce ricochet, ou
   qu'un mandat le demande.
+- **R56 — les SIX procédures `confirmation_externe` non-`*` du catalogue (`FOURN-CIRC`,
+  `STOCKS-TIERS`, `CLIENTS-CIRC`, `DETTES_FI-CIRC`, `PROV-LITIGES`, `TRESO-CIRC`) portent un
+  `cycle` qui ne correspond à AUCUN `fsli.code` réel — MÊME défaut que R54, pas un second : la
+  septième, `CONFIRM`, est PIRE.** Les six premières ne portent AUCUN `postes` (seule `CONFIRM` en
+  a un) — exactement le mécanisme de R54 (`FOURN`, `STOCKS`, `CLIENTS`, `DETTES_FI`, `PROV`,
+  `TRESO` sont du vocabulaire de cycle, pas de `fsli.code`). `CONFIRM` (`cycle: '*'`, la seule
+  procédure `confirmation_externe` sans restriction de cycle) porte EN PLUS un `postes` NON NUL
+  (`CLIENTS`, `TRESO`, `FOURN`, `PROV` — encore du vocabulaire de cycle) qui ne couvre PAS `CASH`,
+  le poste que `atelierDeLaNature` câble (Lot 3, tranche 3) : `planifierProcedure` REFUSE (PROG-02)
+  de planifier `CONFIRM` sur `CASH`, ou sur AUCUN poste réel du dossier — contrairement à RECALC
+  (`postes` NUL, R54 : planifiable sur n'importe quel poste réel via une bascule de risque
+  ordinaire), rien de sanctionné ne peut produire cet état pour `CONFIRM`. **Aucune instance
+  `confirmation_externe` n'existe donc dans le monde semé**, ni par `bootstrapNep()` ni par
+  `enrichirMondeDemo()` — vérifié en exécutant `planifierProcedure({fsliCode:'CASH', code:'CONFIRM'})`
+  contre une base fraîchement semée (rejette PROG-02) ; `enrichir.ts:209-211` liste même `CONFIRM`
+  EN PREMIER dans `['CONFIRM','RA','DETAIL'].find(...)` sur TRADE_RECEIVABLES, mais `postes`
+  l'exclut aussi de CLIENTS/TRADE_RECEIVABLES — la ligne retombe donc TOUJOURS et SILENCIEUSEMENT
+  sur `RA`, un exemple concret de ce que R56 décrit en abstrait. Contrairement à R55 (RECALC
+  présent mais absent de `verify`), ici il n'y a RIEN à rendre visible par aucun moyen — la preuve
+  de l'atelier vient exclusivement d'un cas connu mauvais à insertion directe
+  (`atelier-confirmation-lecture.test.ts`). Trouvé par la revue de recherche du Lot 3, tranche 3
+  (atelier `confirmation_externe`), 2026-09-07 — signalé, pas corrigé, même discipline que R54
+  (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se referme avec R54,
+  vraisemblablement au Lot 5.

@@ -340,48 +340,70 @@ export interface LigneProgramme {
 }
 
 /**
- * Lot 3, tranches 1-2 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
- * nature de test, l'atelier qui l'exécute. Deux cases, HONNÊTES, toutes deux
- * bornées au poste REVENUE : `sondage_pieces` (Lot 2, le cycle de testing du
+ * Lot 3, tranches 1-3 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
+ * nature de test, l'atelier qui l'exécute. Trois cases, HONNÊTES, chacune
+ * bornée à UN SEUL poste : `sondage_pieces` (Lot 2, le cycle de testing du
  * chiffre d'affaires, `REV-SUBST`/`testing/grille.ts`) et `recalcul_parametre`
  * (les estimations comptables hors litige, ADR-106a, `estimations.ts` —
  * fichier de calcul du client, rapproché au grand livre, recalculé au
  * centime, base sondée, justificatifs de CHAQUE paramètre demandés en
- * brouillon : exactement la forme que Partie C.1 décrit pour cette nature).
- * NI L'UNE NI L'AUTRE N'EST GÉNÉRIQUE sur `fsliCode` : `montantComptabilise`
- * (estimations.ts) rapproche sur les comptes 70x, pas sur le plan de compte
- * d'un autre poste — un lien vers `/estimations` pour un AUTRE poste ouvrirait
- * un atelier qui ne saurait pas rapprocher SES écritures à lui. Deux
- * procédures du catalogue portent `cycle: '*'` et atteignent donc cette
- * case sur REVENUE : RECALC (la seule réellement instanciée dans le monde
- * semé aujourd'hui) et ESTIM. Les 14 AUTRES procédures `recalcul_parametre`
- * du catalogue portent un `cycle` (`IMMO_COR`, `PERSONNEL`, `PROV`…) qui ne
- * correspond à AUCUN `fsli.code` réel du plan de comptes (`PPE`, `PAYROLL`,
- * `PROVISIONS`…) — un défaut PRÉEXISTANT, distinct de cette fonction, qui les
- * rend de toute façon non planifiables sur un poste réel (voir R54,
- * docs/BACKLOG_REPORTE.md). RECALC vit aujourd'hui
- * dans « hors commande » (le risque actuel ne la commande plus, mais elle a
- * été planifiée — programme/page.tsx), pas dans « commandées » : l'appelant
- * doit donc offrir l'atelier dans LES DEUX rendus dès qu'une ligne porte
- * `planifiee`, pas seulement dans le tableau des procédures commandées —
- * trouvé en construisant cette tranche (règle 10, un écran conduit dans un
- * navigateur avant d'être annoncé) : sans ce second appel, l'atelier livré
- * n'aurait jamais été atteignable au clic dans le monde semé.
- * `/estimations` est aussi un atelier PAR DOSSIER,
- * pas filtré par ligne de programme ni par procédure — comme `/testing` déjà,
- * le lien ouvre l'espace de travail entier, jamais une vue pré-découpée par
- * `procedure_instance`. `null` se lit à l'écran comme « aucun atelier
- * construit pour cette nature encore » — jamais comme un geste caché.
+ * brouillon : exactement la forme que Partie C.1 décrit pour cette nature)
+ * sur REVENUE ; `confirmation_externe` (les circularisations, `TRESO-CIRC`
+ * dans le catalogue, `circularisations.ts` — listing des tiers importé,
+ * complétude contre le grand livre, envoi simulé, réponse déposée,
+ * rapprochement dérivé : la forme exacte que Partie C.1 décrit pour cette
+ * nature, « listing des tiers / réponse du tiers ») sur CASH, la seule des
+ * deux natures que `circularisations.ts` CONSTRUIT aujourd'hui : la seconde,
+ * `POSTE.avocat = 'PROVISIONS'` (Partie C.3 point 6), existe déjà dans
+ * `circularisations.ts` — `PROVISIONS` est un `fsli.code` réel, pas absent —
+ * mais aucun `procedure_instance` `confirmation_externe` n'est câblé dessus
+ * ici : ce câblage entre au Lot 5, avec le poste Provisions lui-même, pas
+ * cette tranche (règle 8).
+ * AUCUNE DES TROIS N'EST GÉNÉRIQUE sur `fsliCode` : `montantComptabilise`
+ * (estimations.ts) rapproche sur les comptes 70x, `circularisations.ts` sur
+ * `POSTE.banque = 'CASH'` (ligne dédiée, jamais un préfixe français en dur)
+ * — un lien vers l'un de ces ateliers pour un AUTRE poste ouvrirait un
+ * atelier qui ne saurait pas rapprocher SES écritures à lui. Deux
+ * procédures `recalcul_parametre` du catalogue portent `cycle: '*'` et
+ * atteignent donc leur case sur REVENUE : RECALC (la seule réellement
+ * instanciée dans le monde semé aujourd'hui) et ESTIM. Les 14 AUTRES
+ * procédures `recalcul_parametre`, et les SIX procédures
+ * `confirmation_externe` non-`*` du catalogue (`CONFIRM` porte `cycle: '*'`
+ * mais un `postes` non nul qui ne couvre PAS `CASH` — R56,
+ * docs/BACKLOG_REPORTE.md, un défaut PIRE que R54 : ces procédures ne sont
+ * pas seulement non planifiables sur un poste réel, `planifierProcedure`
+ * REFUSE (PROG-02) de les planifier sur AUCUN poste existant, y compris
+ * CASH — un défaut PRÉEXISTANT, distinct de cette fonction. RECALC vit
+ * aujourd'hui dans « hors commande » (le risque actuel ne la commande
+ * plus, mais elle a été planifiée — programme/page.tsx), pas dans
+ * « commandées » : l'appelant doit donc offrir l'atelier dans LES DEUX
+ * rendus dès qu'une ligne porte `planifiee`, pas seulement dans le tableau
+ * des procédures commandées — trouvé en construisant la tranche 2 (règle
+ * 10, un écran conduit dans un navigateur avant d'être annoncé) : sans ce
+ * second appel, l'atelier livré n'aurait jamais été atteignable au clic
+ * dans le monde semé. AUCUNE instance `confirmation_externe` n'existe dans
+ * le monde semé à ce jour (R56) : cette case reste donc non cliquée par
+ * `npm run clics`, prouvée seulement par un cas connu mauvais à insertion
+ * directe (`atelier-confirmation-lecture.test.ts`), exactement comme
+ * `/api/sante` le documente dans sa propre lecture.
+ * `/estimations` et `/circularisations` sont chacun un atelier PAR DOSSIER,
+ * pas filtré par ligne de programme ni par procédure — comme `/testing`
+ * déjà, le lien ouvre l'espace de travail entier, jamais une vue
+ * pré-découpée par `procedure_instance`. `null` se lit à l'écran comme
+ * « aucun atelier construit pour cette nature encore » — jamais comme un
+ * geste caché.
  *
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
- * atelier — `confirmation_externe`, `rapprochement` (tranches suivantes du
- * Lot 3) et la généralisation de ces deux cases à un poste autre que REVENUE
- * (Lot 5, une fois R54 fermé) entrent chacun ICI quand ils existent, jamais
- * ailleurs — un second endroit qui devine l'atelier diverge un jour.
+ * atelier — `rapprochement` (tranche suivante du Lot 3), `confirmation_externe`
+ * sur PROVISIONS (avocats, Lot 5) et la généralisation de ces cases à un
+ * poste autre que celui déjà câblé (Lot 5, une fois R54/R56 fermés) entrent
+ * chacun ICI quand ils existent, jamais ailleurs — un second endroit qui
+ * devine l'atelier diverge un jour.
  */
 export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
   if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
   if (nature === 'recalcul_parametre' && fsliCode === 'REVENUE') return `${base}/estimations`;
+  if (nature === 'confirmation_externe' && fsliCode === 'CASH') return `${base}/circularisations`;
   return null;
 }
 

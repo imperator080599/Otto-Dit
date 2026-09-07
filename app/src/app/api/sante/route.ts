@@ -543,6 +543,58 @@ async function corpsDeLaSonde() {
       const noteRevenue = revenuVerifie ? ', REVENUE toujours avec un atelier réel' : '';
       return `${n} procédure(s) recalcul_parametre planifiée(s)${noteRevenue}${detailHorsRevenue}`;
     }));
+    /* LOT 3, TRANCHE 3 (mandat, Partie C.1 — livrée ce jour, lue ce jour,
+       règle 22). JUMELLE de la lecture recalcul_parametre ci-dessus, CASH au
+       lieu de REVENUE — même raisonnement, même structure, mêmes limites
+       (règle 19) : elle rougit l'endpoint entier QUE si une procédure
+       `confirmation_externe` est planifiée sur CASH (le seul poste câblé,
+       `atelierDeLaNature` → `/circularisations`) SANS atelier — une
+       régression probable. Un gap sur un AUTRE poste est un état ATTENDU
+       (R56, docs/BACKLOG_REPORTE.md : SIX des sept procédures
+       `confirmation_externe` du catalogue portent un `cycle` (même défaut
+       que R54, pas un `postes` — seule `CONFIRM` porte un `postes`) qui ne
+       correspond à AUCUN `fsli.code` réel — pire que R54/RECALC, ces
+       procédures ne sont PLANIFIABLES SUR AUCUN poste, CASH compris ;
+       `CONFIRM` seule, `postes` non nul mais SANS `CASH`, échapperait à ce
+       rouge si elle était un jour plannable ailleurs), rapporté HONNÊTEMENT
+       dans le détail, jamais tu, jamais bloquant — même correctif que la
+       revue hostile a déjà imposé à la lecture jumelle (le gap hors-poste
+       est calculé AVANT le `throw`, jamais après).
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien des
+       procédures `confirmation_externe` non plannables du tout (R56) —
+       absentes de la requête, donc absentes de ce rapport. AUCUNE instance
+       `confirmation_externe` n'existe dans le monde semé à ce jour (R56) :
+       cette lecture reste donc VERTE-VIDE en local et en production tant que
+       rien ne la plante — sa preuve vient d'un cas connu mauvais à
+       insertion directe (`atelier-confirmation-lecture.test.ts`), pas d'un
+       geste réel de l'auditeur, exactement comme cette phrase le dit. */
+    lectures.push(await essayer('atelier confirmation_externe disponible (Lot 3, tranche 3)', async () => {
+      const { atelierDeLaNature } = await import('@/lib/services/programme');
+      const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
+        `select template_code, fsli_code, count(*) n from procedure_instance
+         where engagement_id = $1 and nature = 'confirmation_externe' group by template_code, fsli_code`,
+        [id]);
+      if (rows.length === 0) return 'aucune procédure confirmation_externe planifiée encore';
+      const sansAtelier = rows.filter((r) => !atelierDeLaNature('confirmation_externe', r.fsli_code ?? '', '/base'));
+      const regression = sansAtelier.filter((r) => r.fsli_code === 'CASH');
+      const horsCash = sansAtelier.filter((r) => r.fsli_code !== 'CASH');
+      const detailHorsCash = horsCash.length > 0
+        ? ` ; ${horsCash.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsCash.length} template/poste `
+          + 'distinct(s)) hors CASH sans atelier construit — attendu, R56 : '
+          + horsCash.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+        : '';
+      if (regression.length > 0) {
+        const instances = regression.reduce((s, r) => s + Number(r.n), 0);
+        throw new Error(`${instances} instance(s) (${regression.length} template(s)) confirmation_externe `
+          + 'planifiée(s) sur CASH SANS atelier réel — régression probable de atelierDeLaNature : '
+          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
+          + detailHorsCash);
+      }
+      const n = rows.reduce((s, r) => s + Number(r.n), 0);
+      const cashVerifie = rows.some((r) => r.fsli_code === 'CASH');
+      const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
+      return `${n} procédure(s) confirmation_externe planifiée(s)${noteCash}${detailHorsCash}`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

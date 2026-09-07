@@ -84,6 +84,38 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
     await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'REVENUE' and nature = 'recalcul_parametre'`, [IDS.engNep]);
   });
 
+  it('branche négative (revue hostile de la tranche 3, réfutateur B — trouvée ici en la corrigeant à son tour) : SANS aucune ligne REVENUE, la phrase « REVENUE toujours avec un atelier réel » n’apparaît PAS', async () => {
+    /* CE QUE LA MUTATION-PREUVE DE LA REVUE HOSTILE DE LA TRANCHE 3 A TROUVÉ,
+       ICI, dans la lecture JUMELLE de celle-ci : aucun des tests de ce
+       fichier ne construit l'état « des lignes recalcul_parametre existent,
+       AUCUNE sur REVENUE » — chaque scénario passe soit par une ligne
+       REVENUE seule, soit par REVENUE+hors-REVENUE ensemble. Retirer la
+       garde `revenuVerifie` de route.ts laissait donc ces tests tous verts :
+       la garde n'avait jamais été prouvée sur sa branche négative (règle 17
+       — « un détecteur qui n'a jamais échoué exprès n'a jamais été testé »).
+       Ce test construit précisément cet état — la même correction que la
+       tranche 3 a d'abord posée sur sa propre lecture jumelle, reportée ici
+       sur celle-ci pour fermer le même trou (règle 21 : rien ne reste
+       découvert une fois trouvé). */
+    await q(
+      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
+       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_RECEIVABLES', 'sonde branche négative — aucune ligne REVENUE', 'recalcul_parametre')`,
+      [IDS.engNep],
+    );
+    try {
+      const res = await GET();
+      const body = await res.json();
+      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('atelier recalcul_parametre'));
+      expect(lecture.ok).toBe(true);
+      expect(res.status).toBe(200);
+      expect(lecture.detail).toContain('TRADE_RECEIVABLES');
+      expect(lecture.detail).toContain('attendu');
+      expect(lecture.detail).not.toContain('REVENUE toujours avec un atelier réel');
+    } finally {
+      await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'TRADE_RECEIVABLES' and nature = 'recalcul_parametre'`, [IDS.engNep]);
+    }
+  });
+
   it('cas connu mauvais (règle 17) : REVENUE planifié SANS que atelierDeLaNature sache en construire un fait rougir /api/sante entier — régression, pas un état attendu', async () => {
     vi.resetModules();
     vi.doMock('@/lib/services/programme', async () => {
