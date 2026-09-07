@@ -162,6 +162,20 @@
   propre — `sonde d'hydratation : aucun incident` (`verify-full-21.log`) — plutôt que poussée sur
   ce run rouge (même discipline que R37, F9-F12).
 
+- **F14 — Nouvelle occurrence en ligne, CI `url`, tâche A-05, rejoue F5 au trait près** (job
+  `101850633537`, run `34156946324`, 2026-09-07T19:55:44Z, SHA `9661317` — Lot 3, tranche 2, push
+  sur `claude/otto-session-resume-zimig9`, préview `https://otto-6n1mbdu4f-imperator080599.vercel.app`) :
+  « papier visé — refusé : … » suivi de `Minified React error #418; args[]=HTML` — MÊME tâche
+  (A-05, IPE) que F5 établit comme LE reproducteur en ligne, même forme (`args[]=HTML`, F1). Page
+  non touchée par cette tranche (Lot 3, tranche 2 ne touche que programme.ts, la page programme et
+  /api/sante — rien sous ipe/ ni workpapers/). 16/17 tâches de la même run PASS, dont A-06
+  (atelier) immédiatement après A-05 sur la MÊME session cliquée — cohérent avec F5-F13 : un
+  incident isolé, pas un serveur qui serait tombé. **Pas creusé plus loin ici** (hors mandat de
+  cette tranche, même discipline que F9-F13) ; le `deploye` de production n'a pas tourné sur ce
+  SHA (branche non-main, job `deploye` correctement SKIPPED) donc ce FAIL ne bloque ni le SHA
+  servi de production ni la fusion vers `main` décidée par le mandat de la nuit — mais il est
+  consigné ici plutôt que tu (règle 21).
+
 ### Hypothèses ÉLIMINÉES — et par quoi
 
 | # | Hypothèse | Éliminée par | Portée de l'élimination |
