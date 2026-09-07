@@ -884,10 +884,136 @@
       "quand": "2026-09-07T02:20:35Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-full-21.log, R47 — passage propre après les correctifs de la revue hostile ; verify-full-20.log avait rougi une fois sur clics, #418 hors tranche, non lié aux fichiers de cette tranche, F13 docs/CHASSE.md) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — base réinitialisée, migrations appliquées",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — monde de démonstration reconstruit (13 exceptions, 8 deviations, 3 workpapers, 289 events)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "tsc",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — aucune erreur de type",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "vitest",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 104 fichier(s) de test, 867 test(s) passés (867)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "gardes",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "plancher",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 867 test(s) collecté(s) par vitest, plancher 632, aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 0 chaîne d'écran hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — tous les cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 0 station perdue (255 déclarées, 5 nouvelles figées pour Étape 5)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "screens",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "densite",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "clics",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 213 étapes conduites, 0 échec, 335 clics comptés sur 46 gestes, sonde d'hydratation : aucun incident, garde du parcours : 193 station(s) figée(s) vérifiée(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "visuel",
+      "sha": "df38d85d6cf1f51377ef3115b7b1fd909906bffb",
+      "quand": "2026-09-07T03:48:06Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-full-23.log, Lot 2 étape 5 — les pièces, et leurs demandes ; passage propre APRÈS le correctif de la revue hostile (tx() sur demanderPieceLigne/demanderPiecesEnLot) ; verify-full-22.log, la tentative précédente sur le code avant correctif, a été tuée avant sa fin plutôt que menée à terme, pour éviter une double mesure) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
     }
   ],
   "precedent": {
-    "source": "docs/REPRISE.md à engendrer sur le SHA 9120af23cbe59b3c81cdb3d5eaef720e4c855775 (npm run reprise, après ce commit)",
+    "source": "docs/REPRISE.md à engendrer sur le SHA df38d85d6cf1f51377ef3115b7b1fd909906bffb (npm run reprise, après ce commit)",
     "nonExecutees": []
   }
 }
