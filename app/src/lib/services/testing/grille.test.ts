@@ -27,7 +27,7 @@ const PERIODE = { debut: '2025-01-01', fin: '2025-12-31' };
 function colonne(code: string, extra: Partial<ColonneGrille> = {}): ColonneGrille {
   return {
     code, libelle: code, type: 'montant', document: 'invoice', reference: code, tolerance: 'x', toleranceSource: 'test',
-    identite: code === 'tiers' || code === 'num_piece', ...extra,
+    identite: code === 'tiers' || code === 'num_piece', origine: 'pack', ...extra,
   };
 }
 

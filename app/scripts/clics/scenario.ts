@@ -1624,6 +1624,146 @@ export async function conduire(
       (await compte('[data-avertissement-lignes]')) === 1 && /unsupported_sample_items/.test(await texte()), 'avertissement affiché');
   });
 
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 7 : LA COLONNE AJOUTÉE À LA MAIN. Un
+     titre libre interprété DÉTERMINISTIQUEMENT contre le catalogue fermé de
+     l'échelle d'extraction (COL-01, workpapers/colonne.ts) ; un clic ajoute
+     ET calcule (`ajouterColonneAction`, un seul aller-retour) ; la pièce qui
+     fonde la colonne se demande ICI, par ligne ou en lot, avec le MÊME
+     mécanisme typé que l'étape 5 (REQ-02, « le plus important » selon le
+     mandat, rend impossible de conclure sur une preuve jamais demandée).
+     CE QUE CETTE STATION NE FAIT PAS (règle 19) : elle ne clique pas la
+     conclusion d'une ligne pour observer REQ-02 refuser puis céder — ce
+     chemin, précis (une ligne dont TOUTES les cellules du pack sont déjà
+     conformes ou disposées, isolée d'une manière que la page ne permet pas
+     de repérer sans lire la base), est déjà prouvé, mutation à l'appui
+     (règle 17), par colonne-ajoutee.test.ts (service) et
+     etape7-lecture.test.ts (/api/sante) — cette station-ci prouve que les
+     AFFORDANCES DE L'ÉCRAN (le formulaire, les boutons Demander) sont
+     réellement cliquables, ce que ces deux suites ne peuvent pas voir. */
+  await station('étape 7 : la colonne ajoutée à la main', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/testing`);
+    dire('étape 7 : le formulaire d’ajout de colonne est visible dès que la grille existe',
+      (await compte('[data-ajouter-colonne-titre]')) > 0 && (await compte('[data-ajouter-colonne]')) > 0,
+      refus(p) ?? 'formulaire visible');
+
+    /* AJOUTER UNE COLONNE CALCULE AUSSI LA GRILLE (`ajouterColonneAction`,
+       un seul aller-retour) — la MÊME opération lourde (chaque pièce relue,
+       chaque ancre recherchée sur 16 lignes) que le bouton « calculer la
+       grille » de la station « atelier de test » ci-dessus, qui se relit par
+       une navigation FRAÎCHE plutôt qu'un délai fixe après le POST, pour la
+       même raison écrite là-bas : une relecture trop tôt lit un tableau
+       vide, pas une absence de résultat. SEULEMENT sur un SUCCÈS, pourtant :
+       `aller()` vise l'URL PROPRE, qui effacerait `?erreur=` avant que
+       `refus(p)` n'ait pu le lire — un refus, lui, n'a rien recalculé, la
+       page qui le porte est déjà la bonne. */
+    const ajouterColonne = async (titre: string) => {
+      await p.locator('[data-ajouter-colonne-titre]').fill(titre);
+      await Promise.all([
+        p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 30000 }).catch(() => undefined),
+        p.locator('[data-ajouter-colonne]').click(),
+      ]);
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(400);
+      if (!refus(p)) await aller(`${eng}/testing`);
+    };
+    const nBadges = () => compte(`[data-grille-vue] th:has-text("${L('atl.grilleVue.colonneAjoutee')}")`);
+
+    // COL-01, titre AMBIGU : deux entrées du catalogue touchées, jamais résolu au hasard.
+    await ajouterColonne('date facture livraison');
+    dire('refus : un titre qui pourrait viser plusieurs données du catalogue est REFUSÉ (COL-01)',
+      /COL-01/.test(refus(p) ?? '') && /plusieurs/.test(refus(p) ?? ''),
+      refus(p) ?? 'aucun refus — colonne ajoutée sans lever le doute');
+    await aller(`${eng}/testing`);
+
+    // COL-01, titre SANS correspondance dans le catalogue.
+    await ajouterColonne('quelque chose sans rapport avec une pièce');
+    dire('refus : un titre qui ne touche aucune donnée du catalogue est REFUSÉ (COL-01)',
+      /COL-01/.test(refus(p) ?? '') && /ne dit pas/.test(refus(p) ?? ''),
+      refus(p) ?? 'aucun refus — colonne ajoutée sans donnée identifiée');
+    await aller(`${eng}/testing`);
+
+    // SUCCÈS : un titre net ajoute la colonne, marquée « ajoutée », et calcule — en un seul clic.
+    const avant1 = await nBadges();
+    await ajouterColonne('numéro de facture');
+    dire('étape 7 : un titre net ajoute la colonne (badge « ajoutée ») ET calcule la grille, en un seul clic',
+      !refus(p) && (await nBadges()) === avant1 + 1,
+      refus(p) ?? `${await nBadges()} badge(s) « ajoutée » (${avant1} → attendu ${avant1 + 1})`);
+
+    // COL-01, DOUBLON : le même titre une seconde fois ne fabrique pas une seconde colonne.
+    await ajouterColonne('numéro de facture');
+    dire('refus : ajouter deux fois la même donnée est un DOUBLON refusé (COL-01)',
+      /COL-01/.test(refus(p) ?? '') && /doublon/.test(refus(p) ?? ''),
+      refus(p) ?? 'aucun refus — doublon accepté');
+    await aller(`${eng}/testing`);
+
+    // UNE SECONDE colonne AJOUTÉE, du même type de pièce (facture) — pour
+    // observer qu'une SEULE demande couvre les DEUX (REQ-02 est par PIÈCE,
+    // jamais par colonne : grille.ts::conclureLigne, requests.ts).
+    const avant2 = await nBadges();
+    await ajouterColonne('nom du fournisseur');
+    dire('étape 7 : une seconde colonne ajoutée (autre donnée, même pièce) s’ajoute à la première, jamais ne la remplace',
+      !refus(p) && (await nBadges()) === avant2 + 1,
+      refus(p) ?? `${await nBadges()} badge(s) « ajoutée » (${avant2} → attendu ${avant2 + 1})`);
+
+    /* LA PIÈCE, DEMANDÉE ICI — le MÊME mécanisme typé que l'étape 5
+       (piecesDemandeesParLigne). Une ligne au hasard peut ne pas porter de
+       facture (écriture manuelle) : demanderPieceLigne la refuse, comme à
+       l'étape 5 — on essaie donc ligne après ligne, jusqu'à ce qu'une
+       demande RÉUSSISSE (même précédent que la station étape 5 ci-dessus,
+       et que pieces-lignes.test.ts). */
+    let ligneCouverte = -1;
+    let idLigneCouverte = '';
+    for (let i = 0; i < 10 && ligneCouverte < 0; i++) {
+      const ligne = p.locator('[data-grille-vue] [data-grille-ligne]').nth(i);
+      if (!(await ligne.count())) break;
+      const bouton = ligne.locator('[data-demander-piece-ajoutee^="invoice-"]').first();
+      if (!(await bouton.count())) continue; // déjà couverte, ou aucune colonne facture sur cette ligne
+      idLigneCouverte = (await ligne.getAttribute('data-grille-ligne')) ?? '';
+      await Promise.all([
+        p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 30000 }).catch(() => undefined),
+        bouton.click(),
+      ]);
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(400);
+      /* LE REFUS EST LU AVANT TOUTE NAVIGATION (il voyage dans l'URL) ; LA
+         NAVIGATION, ELLE, EST TOUJOURS FRAÎCHE — même précaution que
+         `ajouterColonne` ci-dessus, trouvée ici en conduisant cette station
+         une première fois : le lot suivant lisait un compte inchangé alors
+         que la demande avait bien été posée, la page n'ayant pas fini de se
+         réafficher après un délai fixe seul. */
+      const echec = refus(p);
+      await aller(`${eng}/testing`);
+      if (!echec) { ligneCouverte = i; break; }
+      idLigneCouverte = '';
+    }
+    const liensSurLaLigne = idLigneCouverte
+      ? await compte(`[data-grille-ligne="${idLigneCouverte}"] [data-piece-ajoutee^="invoice-"] a`)
+      : 0;
+    dire('étape 7, par ligne : demander la pièce d’UNE colonne ajoutée couvre les DEUX colonnes ajoutées de ce type sur la ligne (REQ-02 par pièce, jamais par colonne)',
+      ligneCouverte >= 0 && liensSurLaLigne === 2,
+      ligneCouverte >= 0 ? `ligne couverte, ${liensSurLaLigne} lien(s) (2 attendus)` : 'aucune ligne éligible trouvée (10 essais)');
+
+    // EN LOT : couvre toutes les lignes RESTANTES qui attendent encore la pièce d'une colonne ajoutée.
+    if (await compte('[data-demander-factures-ajoutees-lot]')) {
+      const avantLot = await compte('[data-grille-vue] [data-demander-piece-ajoutee^="invoice-"]');
+      await Promise.all([
+        p.waitForResponse((r) => r.request().method() === 'POST', { timeout: 30000 }).catch(() => undefined),
+        p.locator('[data-demander-factures-ajoutees-lot]').first().click(),
+      ]);
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(400);
+      const echecLot = refus(p); // lu AVANT la navigation fraîche (même précaution que ci-dessus)
+      await aller(`${eng}/testing`);
+      const apresLot = await compte('[data-grille-vue] [data-demander-piece-ajoutee^="invoice-"]');
+      dire('étape 7, en lot : un clic couvre toutes les lignes qui attendaient encore la pièce d’une colonne ajoutée',
+        !echecLot && apresLot < avantLot,
+        echecLot ?? (apresLot < avantLot ? `${avantLot - apresLot} bouton(s) remplacé(s) par un lien (${avantLot} → ${apresLot})` : `aucun bouton remplacé (${avantLot} → ${apresLot})`));
+    } else {
+      dire('étape 7, en lot : bouton absent alors que deux colonnes ajoutées de type facture existent', false, 'bouton en lot absent');
+    }
+  });
+
   // ── 11bis. L'ÉCART VA À LA SYNTHÈSE EN UN CLIC, ET LA SYNTHÈSE RAMÈNE À LA LIGNE.
   /* ── LE CLAVIER, ÉPROUVÉ. ADR-104 promet « ↑/↓ et Entrée atteste » depuis
      deux tranches, et AUCUN harnais n'avait jamais pressé une touche : un

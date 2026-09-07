@@ -405,6 +405,44 @@ async function corpsDeLaSonde() {
         [eng.id]);
       return total && Number(total.n) > 0 ? `${total.n} demande(s) typée(s) (facture/BL), toutes avec au moins un élément` : 'aucune demande typée encore créée';
     }));
+    /* ÉTAPE 7 (plan d'autonomie, Partie B — livré ce jour, lu ce jour, règle
+       22). REQ-02 (grille.ts::conclureLigne) refuse TOUJOURS de conclure une
+       ligne dont une colonne AJOUTÉE (`origine: 'ajoutee_par'`) exige une
+       pièce jamais demandée par le mécanisme typé (piecesDemandeesParLigne).
+       La seule façon d'obtenir, ci-dessous, une ligne CONCLUE dont la grille
+       (au moment de la conclusion, `test_grid.columns`) porte une colonne
+       ajoutée sans demande couvrante est de contourner ce refus — un appel
+       direct en base, une conclusion antérieure à REQ-02, ou une régression
+       qui le retire. `test_line_conclusion.grid_id` fige la version de
+       grille SOUS laquelle la ligne a été conclue (§0.3 : une version
+       postérieure ne l'efface pas) — c'est CETTE version-là qu'on relit ici,
+       jamais la grille courante, qui pourrait avoir gagné ou perdu des
+       colonnes depuis. CE QUE CETTE LECTURE NE FAIT PAS (règle 19) : elle ne
+       vérifie rien des colonnes `origine: 'pack'` — REQ-02 lui-même ne les
+       regarde pas (R49, le paquet PBC existant les couvre déjà). */
+    lectures.push(await essayer('étape 7 : aucune ligne conclue sans pièce demandée pour ses colonnes ajoutées (REQ-02)', async () => {
+      const orphelines = await q<{ sample_item_id: string; document: string; libelle: string }>(
+        `select distinct tlc.sample_item_id::text, (c.col->>'document') as document, (c.col->>'libelle') as libelle
+         from test_line_conclusion tlc
+         join test_grid g on g.id = tlc.grid_id
+         cross join lateral jsonb_array_elements(g.columns) as c(col)
+         where tlc.engagement_id = $1 and (c.col->>'origine') = 'ajoutee_par'
+           and not exists (
+             select 1 from request r join request_item ri on ri.request_id = r.id
+             where r.engagement_id = $1 and r.evidence_type_code = (c.col->>'document')
+               and ri.sample_item_id = tlc.sample_item_id)`,
+        [eng.id]);
+      if (orphelines.length > 0) {
+        throw new Error(`${orphelines.length} ligne(s) conclue(s) porte(nt) une colonne ajoutée dont la pièce (`
+          + `${orphelines.map((o) => `${o.document} — ${o.libelle}`).join(', ')}) n’a jamais été demandée — `
+          + 'REQ-02 ne produit jamais ce cas : contourné, ou le refus a été retiré par régression');
+      }
+      const colonnesAjoutees = await q01<{ n: string }>(
+        `select count(*) n from test_column where engagement_id = $1 and procedure_code = 'REV-SUBST'`, [eng.id]);
+      return Number(colonnesAjoutees?.n ?? 0) > 0
+        ? `${colonnesAjoutees!.n} colonne(s) ajoutée(s) — aucune ligne conclue sans sa pièce demandée`
+        : 'aucune colonne ajoutée encore créée';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

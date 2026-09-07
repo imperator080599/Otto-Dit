@@ -258,6 +258,128 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Lot 2, étape 7 : la colonne ajoutée à la main (2026-09-07)
+
+*Suite du plan d'autonomie (mandat, instruction 4 : « enchaîne Étape 3 → 7 sans t'arrêter »),
+directement après l'étape 6 (ci-dessous) — dernière étape de la Partie B.* Partie B, §B.2,
+étape 7 : « L'auditeur ajoute une colonne, choisit la donnée et le type de pièce qui la porte. Si
+ce type n'a pas encore de demande sur cet échantillon, la plateforme propose de la créer, en un
+clic, par ligne ou en lot. C'est exactement le cas que le fondateur a décrit, et c'est le test
+d'acceptation de toute cette partie. » §B.4 nomme `REQ-02` (« conclure une ligne dont une colonne
+exige une pièce qui n'a jamais été demandée ») « le plus important » des refus de la Partie B, et
+`COL-01` (« ajouter une colonne sans dire de quelle pièce vient la donnée »).
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas avant cette tranche.** Sur la grille
+de test (étape 6), un formulaire — un champ libre, un bouton — ajoute une colonne. Le titre est
+interprété DÉTERMINISTIQUEMENT contre le même catalogue fermé que la colonne ajoutée au papier de
+travail (ADR-099, `workpapers/colonne.ts::CHAMPS_LISIBLES`) : la donnée ET son type de pièce
+viennent de la MÊME entrée, jamais deux choix qui pourraient diverger. Un clic ajoute la colonne
+ET calcule la grille (`ajouterColonneAction`, un seul aller-retour). Sous chaque cellule d'une
+colonne ajoutée, un bouton « Demander » (par ligne) ou un bouton en lot demande la pièce qui la
+fonde, avec le MÊME mécanisme typé que l'étape 5 (`piecesDemandeesParLigne`) — une facture
+demandée pour UNE colonne ajoutée couvre TOUTES les colonnes ajoutées de ce type sur cette ligne,
+puisque REQ-02 raisonne par PIÈCE, jamais par colonne. Une ligne ne se conclut plus si une colonne
+ajoutée exige une pièce jamais formellement demandée — même quand la pièce existe déjà par un
+autre chemin (le paquet PBC antérieur à l'étape 5) : « exister » et « avoir été demandée par ce
+mécanisme » sont deux choses différentes, et REQ-02 ne regarde que la seconde.
+
+**Le modèle de données : `test_column`, ancré sur `engagement_id`, PAS sur `grid_id`.** Le mandat
+(§B.3) nomme `grid_id` — mais `test_grid` est REMPLACÉ à chaque figeage (jamais muté, ADR
+existant) : une colonne ajoutée qui viserait un `grid_id` précis disparaîtrait à la version
+suivante. `test_column` (migration 0145) s'ancre donc sur `(engagement_id, procedure_code)` — la
+même identité durable que `colonnesCommandees` lit déjà pour composer la grille du pack ;
+`figerGrille` compose désormais PACK + AJOUTÉES à chaque figeage et verse le tout dans une
+version neuve, avec le même mécanisme d'invalidation des conclusions qui existait déjà pour un
+changement de pack (règle 15 : le code fait foi, pas le nom du mandat).
+
+**Ce que cette tranche ne fait pas, par construction (règle 19).** Aucune colonne ajoutée ne
+compare un attendu chiffré contre le grand livre — seule la PRÉSENCE de la donnée dans la pièce
+reçue est vérifiée (`calculerCellule::default`) ; inventer un attendu pour un champ arbitraire
+serait une comparaison FABRIQUÉE. Aucun geste de suppression d'une colonne ajoutée. REQ-02 ne
+regarde que les colonnes `origine === 'ajoutee_par'`, jamais celles du pack (déjà couvertes par
+le paquet PBC existant, R49).
+
+**La revue hostile (deux réviseurs indépendants, en parallèle, chacun sans voir l'autre) — et ce
+qu'elle a changé, pas seulement trouvé.** Convergence sur deux points, chacun trouvé
+indépendamment par les deux : (1) une colonne ajoutée `delivery_note` rendait REQ-02
+insatisfaisable pour toute ligne hors compte 701, bien plus large que le cas `invoice`/écriture
+manuelle déjà connu (R51) — et un réviseur a montré un défaut DISTINCT et plus grave derrière ce
+même symptôme : `calculerGrille` sautait la CELLULE elle-même (rien du tout, ni « absente » ni
+« sans ancre ») pour une colonne ajoutée `delivery_note` sur toute ligne sans BL déjà demandé à
+l'ancien format PBC — un manque SILENCIEUX (règle 13), pas seulement une conclusion bloquée.
+**Corrigé** : le saut `!requiertBl` (`calculerGrille`) ne gate plus que les colonnes
+`origine === 'pack'` ; preuve par cas connu mauvais dans `colonne-ajoutee.test.ts` (9/16 lignes
+sans cellule avant, 16/16 après). R51 (`docs/BACKLOG_REPORTE.md`) reste ouverte pour le fond
+(REQ-02 demeure, par conception, insatisfaisable sur une ligne structurellement inéligible — pour
+les deux types de pièce désormais, pas seulement `invoice`) mais son texte est corrigé pour ne
+plus sous-déclarer sa portée. (2) le TOCTOU du pré-contrôle COL-01 (`ajouterColonneGrille`) :
+deux ajouts simultanés de la même donnée pouvaient tous deux passer le `SELECT` avant qu'un des
+deux n'écrive — la contrainte `unique` (migration 0145) empêchait la vraie duplication, mais
+l'INSERT perdant levait une erreur Postgres brute (nom de contrainte) au lieu du message COL-01
+promis. **Corrigé** : l'INSERT est entouré d'un `catch` qui rattrape le SQLSTATE `23505` et rend
+le même message que le pré-contrôle.
+
+**Un troisième constat, trouvé par un seul réviseur mais vérifié et corrigé** : une fuite entre
+cabinets, pré-existante (étape 5) mais fraîchement atteignable par le nouveau bouton « en lot »
+de cette tranche. `demanderPiecesEnLot` recevait `engagementId` de l'appelant (un champ de route,
+sûr) et vérifiait l'appartenance du SEUL appelant à CET engagement — mais ne vérifiait JAMAIS que
+`sampleId` (un champ CACHÉ du formulaire, donc modifiable) appartenait au même dossier. Sous le
+rôle applicatif qui contourne la RLS (l'étape 3 de PLAN_RLS n'étant pas exécutée), un membre
+légitime du cabinet A pouvait poser l'id d'un tirage du cabinet B et lire ses lignes (montants,
+tiers, références de pièce). **Corrigé** : `demanderPiecesEnLot` ne reçoit plus `engagementId` en
+paramètre — il le remonte, avec l'étanchéité, depuis `sampleId` lui-même
+(`assertMembreDe('sample', ...)`, même précédent que `demanderPieceLigne`), et les deux appelants
+(sampling et testing) sont mis à jour. Preuve par cas connu mauvais (`pieces-lignes.test.ts`,
+« ETANCH-LOT ») : un tirage semé sur un AUTRE dossier, sans karim dans son équipe, est refusé
+(`ETANCH-03`) plutôt que lu. Un quatrième constat (ordre non déterministe de `colonnesAjoutees`
+sur une égalité d'horodatage, pouvant périmer des conclusions pour rien) et un cinquième
+(`evidence_type_code` sans contrainte de domaine en base) ont aussi été corrigés — respectivement
+un tri secondaire par `id`, et une contrainte `check` ajoutée à la migration 0145 (jamais poussée
+avant ce jour : l'éditer n'enfreint pas la règle 26). Un dernier point soulevé (l'affichage
+« Demander » pourrait rester périmé juste après un re-tirage) a été vérifié et écarté : les lignes
+de la grille viennent de `lignesAtelier`, qui rend déjà une liste VIDE dans cet état — aucune
+ligne ne peut afficher un bouton obsolète, parce qu'aucune ligne ne s'affiche du tout tant que le
+nouveau tirage n'est pas repris.
+
+**Un défaut d'auteur, trouvé par la chaîne verify elle-même, pas par un réviseur.** Le premier
+correctif ETANCH-LOT ci-dessus portait, dans son commentaire, le mot français « engagement » hors
+guillemets de code — le lexique de l'écran (`docs/LEXIQUE.md`, `lexique.test.ts`) le bannit
+partout où il pourrait fuiter vers un libellé (« dossier » ou « mission » sont les mots reçus). Le
+garde ne distingue un commentaire d'un texte d'écran que par sa PREMIÈRE ligne ; les lignes de
+continuation d'un commentaire multi-lignes sans préfixe `*` restent lues comme du texte — un
+symptôme, pas un bogue à corriger dans le garde (hors périmètre de cette tranche) : reformulé en
+« le dossier RÉEL » plutôt que « l'engagement RÉEL ».
+
+**Conduit dans un navigateur avant d'être annoncé (règle 10) : d'abord une session Playwright
+manuelle sur `npm run dev`, puis la station officielle du parcours cliqué.** La session manuelle
+a servi à METTRE AU POINT les sélecteurs et le rythme des attentes (deux défauts de harnais
+trouvés et corrigés avant d'écrire la station : `calculerGrille`/`ajouterColonneAction` recalculent
+la grille en entier — un délai fixe après le POST lisait parfois un tableau encore vide ; corrigé
+en relisant par une navigation fraîche APRÈS avoir capturé le refus éventuel, jamais avant, sous
+peine d'effacer `?erreur=`) avant que la station officielle (« étape 7 : la colonne ajoutée à la
+main », 8 assertions conduites sur 9 déclarées — les deux branches d'un même `if`/`else`) ne les
+exerce pour de vrai : refus COL-01 (titre ambigu, sans correspondance, doublon), ajout réussi
+(badge « ajoutée », deux colonnes successives), demande par ligne (couvre les deux colonnes
+ajoutées de ce type), demande en lot.
+
+**La chaîne `verify` (règle 21), propre de bout en bout, base fraîche, sur le SHA de cette
+tranche** (`verify-etape7-3.log`, borne haute — mtime du journal, 2026-09-07T07:53:20Z, aucun
+horodatage propre à cette étape) : vitest 875/875 (106 fichiers, +8 depuis étape 6 : COL-01 ×3,
+REQ-02, la cellule delivery_note, ETANCH-LOT, et les deux lectures étape 7 de `/api/sante`),
+gardes 43, plancher 632, langue 0/0, lectures 0 perdue/1716 (86 écrans), parcours 0 perdue (267
+déclarées, 267 figées — les 9 neuves de cette tranche figées après un premier passage vert),
+screens 87/0, fumee 51/0, densité 77/0 (108 champs à taper), clics 224/0 (346 clics sur 47
+gestes), visuel 312/0. **Deux passages antérieurs de cette même tranche ont rougi et n'ont pas été
+menés à terme** — tués dès le premier échec constaté (même discipline que les tranches
+précédentes) : un premier passage a rougi sur le défaut lexique décrit ci-dessus (`vitest`), un
+second (implicite, la revue hostile elle-même tournant AVANT tout `npm run verify`) a précédé les
+cinq correctifs listés plus haut — aucun des deux n'a atteint `clics`/`visuel`.
+
+**Ce que cette tranche referme.** La Partie B du mandate (`docs/MANDATS/2026-09-05_plan_autonomie.md`)
+est désormais structurellement complète : les sept étapes (POP-01/POP-02, REQ-01, REQ-02, COL-01)
+existent toutes, chacune avec son refus observé au clic. La Partie C (les autres postes, les
+natures de test) est la suite explicitement nommée par le mandat — non commencée, non scopée ici.
+
 ## Lot 2, étape 6 : la grille, à deux niveaux d'en-tête (2026-09-07)
 
 *Suite du plan d'autonomie (mandat, instruction 4), directement après l'étape 5 (ci-dessous).*

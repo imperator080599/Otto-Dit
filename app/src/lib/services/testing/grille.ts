@@ -17,6 +17,8 @@ import { fieldsToInvoice, type ExtractedField } from '../extraction/fields';
 import { elementsDePage, rectangleDe, type Rect } from './ancres';
 import { assertMembre } from '@/lib/core/membre';
 import type { EtatCellule } from './etat-cellule';
+import { CHAMPS_LISIBLES, interpreterTitre } from '../workpapers/colonne';
+import { piecesDemandeesParLigne } from '../requests';
 
 // L'ATELIER DE TEST — LA GRILLE (mandat du jour, W1).
 //
@@ -56,6 +58,10 @@ export interface ColonneGrille {
   /** Un attribut d'identité : sa divergence rend la preuve non recevable. */
   identite: boolean;
   regle?: string;
+  /** ÉTAPE 7 : 'pack' (colonnesCommandees) ou 'ajoutee_par' (colonnesAjoutees,
+   *  test_column) — REQ-02 (conclureLigne) ne regarde que les secondes : les
+   *  premières sont déjà couvertes par le paquet PBC existant (R49). */
+  origine: 'pack' | 'ajoutee_par';
 }
 
 export interface Grille {
@@ -102,6 +108,74 @@ export interface ConclusionLigne {
   version: number;
 }
 
+/** ÉTAPE 7 — LA COLONNE AJOUTÉE À LA MAIN. Le titre libre est interprété
+ *  DÉTERMINISTIQUEMENT contre le même catalogue fermé que la colonne
+ *  ajoutée au papier de travail (ADR-099, workpapers/colonne.ts,
+ *  CHAMPS_LISIBLES) — jamais un texte deviné : la donnée ET son type de
+ *  pièce viennent du MÊME catalogue, donc de la MÊME entrée, jamais deux
+ *  choix qui pourraient diverger.
+ *
+ *  COL-01 : refuse une colonne « sans dire de quelle pièce vient la
+ *  donnée » — c'est-à-dire un titre qui ne touche AUCUNE entrée du
+ *  catalogue, ou qui en touche PLUSIEURS (le doute n'est jamais résolu au
+ *  hasard ; corriger le titre, pas deviner). Un champ déjà posé par un
+ *  AJOUT PRÉCÉDENT (`test_column`) refuse aussi, plutôt que de fabriquer
+ *  une seconde colonne pour la même donnée.
+ *
+ *  CE QUE CETTE GARDE NE VÉRIFIE PAS (règle 19) : qu'un champ ajouté
+ *  fasse doublon avec une colonne du PACK. Les codes du pack
+ *  (montant_ht, date_piece…) et ceux du catalogue `CHAMPS_LISIBLES`
+ *  (totalNetCents, invoiceDate…) sont deux nomenclatures distinctes,
+ *  sans table de correspondance déclarée entre les deux — en fabriquer
+ *  une pour ce seul contrôle serait une correspondance INVENTÉE, pas une
+ *  donnée du référentiel (règle 8/14). Un auditeur peut donc ajouter une
+ *  colonne qui relève, sous un autre nom, la même donnée qu'une colonne
+ *  du pack ; ce n'est pas corrigé ici, volontairement — enregistré R50. */
+export async function ajouterColonneGrille(engagementId: string, titre: string, userId: string): Promise<string> {
+  await assertMembre(engagementId, userId, 'ajouterColonneGrille');
+  const { interpretation, doute } = interpreterTitre(titre);
+  if (!interpretation) {
+    throw new Error(doute.length > 1
+      ? `COL-01 : « ${titre} » pourrait viser plusieurs données (${doute.map((d) => d.libelle).join(' — ')}) — précisez le titre.`
+      : `COL-01 : « ${titre} » ne dit pas de quelle pièce vient la donnée — aucune entrée du catalogue ne correspond.`);
+  }
+  const champ = CHAMPS_LISIBLES.find((c) => c.champ === interpretation.champ)!;
+  const ctx = await engagementCtx(engagementId);
+  const existe = await q01<{ id: string }>(
+    `select id from test_column where engagement_id = $1 and procedure_code = 'REV-SUBST' and field_code = $2`,
+    [engagementId, champ.champ]);
+  if (existe) throw new Error(`COL-01 : « ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
+  /* LA VÉRIFICATION CI-DESSUS N'EMPÊCHE PAS LA COURSE (revue hostile du
+     2026-09-07, convergée par deux réviseurs indépendants) : deux ajouts
+     simultanés de la même donnée peuvent tous deux passer le SELECT avant
+     que l'un des deux n'écrive. `unique (engagement_id, procedure_code,
+     field_code)` (migration 0145) empêche la vraie duplication en base,
+     mais l'INSERT perdant lève alors une erreur Postgres BRUTE — un nom de
+     contrainte à l'écran, pas le message COL-01 promis. On la rattrape ICI,
+     par son code SQLSTATE (23505, unique_violation), et on la rend au même
+     mot que le pré-contrôle. CE QUE CE `catch` NE FAIT PAS : il ne
+     distingue pas UNE autre violation d'unicité qui viendrait d'ailleurs
+     dans ce fichier — il n'y en a qu'une sur `test_column`, donc aucune ne
+     s'y confond aujourd'hui. */
+  let col: { id: string };
+  try {
+    col = await q1<{ id: string }>(
+      `insert into test_column (engagement_id, procedure_code, evidence_type_code, field_code, libelle, tolerance, origine, ajoutee_par_user_id)
+       values ($1, 'REV-SUBST', $2, $3, $4, $5, 'ajoutee_par', $6) returning id`,
+      [engagementId, champ.docType, champ.champ, champ.libelle, 'présente dans la pièce reçue', userId]);
+  } catch (e) {
+    const code = (e as { code?: string } | null)?.code;
+    if (code === '23505') throw new Error(`COL-01 : « ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
+    throw e;
+  }
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'colonne_grille_ajoutee', objectType: 'test_column', objectId: col.id,
+    payload: { titre, champ: champ.champ, evidenceTypeCode: champ.docType },
+  });
+  return col.id;
+}
+
 /* ── La grille figée ─────────────────────────────────────────────────────── */
 
 /** Le document d'un justificatif, d'après son libellé dans la méthode. */
@@ -143,11 +217,44 @@ export async function colonnesCommandees(engagementId: string): Promise<{ packId
       colonnes.push({
         code: c.code, libelle: c.libelle, type: c.type, document, reference: c.reference,
         tolerance: t.tolerance, toleranceSource: t.source, identite: IDENTITE.has(c.code), regle: c.regle,
+        origine: 'pack',
       });
     }
   }
   if (colonnes.length === 0) throw new Error('La procédure DETAIL ne décrit aucun champ de justificatif pour le cycle CA : aucune grille ne se fige.');
   return { packId: pack.id, colonnes };
+}
+
+/** ÉTAPE 7 : LES COLONNES AJOUTÉES À LA MAIN — `origine: 'ajoutee_par'`
+ *  (jamais `'pack'`, réservé aux colonnes de `colonnesCommandees`
+ *  ci-dessus). `code` est posé DIRECTEMENT au nom du champ relevé
+ *  (`test_column.field_code`, le même catalogue que
+ *  workpapers/colonne.ts::CHAMPS_LISIBLES) — voir calculerCellule, qui sait
+ *  lire ce cas (`CHAMP[c.code] ?? c.code`). Aucun `reference`/`regle`
+ *  chiffré : une colonne ajoutée ne compare jamais un attendu chiffré
+ *  contre le grand livre (règle 19, cf. calculerCellule::default). */
+async function colonnesAjoutees(engagementId: string): Promise<ColonneGrille[]> {
+  /* `order by ajoutee_le, id` — le second critère est le désaccord, pas
+     l'affichage (revue hostile du 2026-09-07) : deux colonnes ajoutées dans
+     le même appel `tx()` peuvent partager le même horodatage, et cet ordre
+     nourrit `hashObject` (figerGrille, ci-dessous) — un ordre non
+     déterministe y ferait naître une version de grille NOUVELLE d'un appel
+     à l'autre sans qu'aucune colonne n'ait changé, périmant des conclusions
+     pour rien (règle 28). `id` (uuid aléatoire) ne rejoue jamais deux fois
+     le même ordre, mais il est STABLE d'un appel à l'autre pour les MÊMES
+     lignes, ce qui suffit ici. */
+  const rows = await q<{ evidence_type_code: string; field_code: string; libelle: string; tolerance: string }>(
+    `select evidence_type_code, field_code, libelle, tolerance from test_column
+     where engagement_id = $1 and procedure_code = 'REV-SUBST' order by ajoutee_le, id`,
+    [engagementId],
+  );
+  return rows.map((r) => ({
+    code: r.field_code, libelle: r.libelle, type: 'text',
+    document: r.evidence_type_code as ColonneGrille['document'],
+    reference: 'colonne ajoutée par un auditeur (étape 7)', tolerance: r.tolerance,
+    toleranceSource: 'présence dans la pièce reçue, jamais un attendu chiffré (règle 19)', identite: false,
+    origine: 'ajoutee_par',
+  }));
 }
 
 interface GrilleRow { id: string; version: number; pack_id: string; columns: ColonneGrille[]; columns_hash: string; frozen_at: string }
@@ -171,7 +278,12 @@ export async function grilleDuDossier(engagementId: string): Promise<Grille | nu
  */
 export async function figerGrille(engagementId: string, userId: string | null): Promise<Grille> {
   await assertMembre(engagementId, userId, 'figerGrille');
-  const { packId, colonnes } = await colonnesCommandees(engagementId);
+  const { packId, colonnes: colonnesPack } = await colonnesCommandees(engagementId);
+  /* ÉTAPE 7 : les colonnes ajoutées à la main entrent dans l'empreinte, donc
+     en ajouter une fait toujours naître une version neuve — même mécanisme
+     d'invalidation des conclusions qu'un changement de pack (ci-dessous),
+     qui existait déjà avant cette tranche. */
+  const colonnes = [...colonnesPack, ...(await colonnesAjoutees(engagementId))];
   const empreinte = hashObject(colonnes);
   const courante = await grilleDuDossier(engagementId);
   if (courante && courante.empreinte === empreinte) return courante;
@@ -275,12 +387,20 @@ export async function calculerCellule(o: {
   elements: (p: PieceLue, page: number) => Promise<{ str: string; x: number; y: number; w: number; h: number }[]>;
 }): Promise<CelluleCalculee> {
   const { colonne: c, gl, piece } = o;
+  /* `CHAMP[c.code] ?? c.code` (étape 7) : une colonne du PACK a un code court
+     (montant_ht) distinct du nom relevé (totalNetCents), d'où la table. Une
+     colonne AJOUTÉE (origine 'ajoutee_par', grille.ts::colonnesAjoutees) a
+     son `code` posé DIRECTEMENT au nom relevé (buyerName…) — le même
+     catalogue que colonne.ts::CHAMPS_LISIBLES — donc `CHAMP` ne la connaît
+     jamais, et c'est voulu : le repli est la clé elle-même, pas une entrée
+     à ajouter à `CHAMP` à chaque colonne ajoutée. */
+  const champRelevé = CHAMP[c.code] ?? c.code;
   const base: CelluleCalculee = {
     colonne: c, attendu: null, trouve: null, delta: null, unite: null, etat: 'absent',
-    evidenceId: piece?.evidenceId ?? null, extractionId: piece?.extractionId ?? null, page: null, rect: null, champ: CHAMP[c.code] ?? null,
+    evidenceId: piece?.evidenceId ?? null, extractionId: piece?.extractionId ?? null, page: null, rect: null, champ: champRelevé,
   };
-  const valeur = piece ? piece.fields.find((f) => f.name === CHAMP[c.code])?.value : undefined;
-  const pageChamp = piece ? (piece.fields.find((f) => f.name === CHAMP[c.code])?.page ?? 1) : 1;
+  const valeur = piece ? piece.fields.find((f) => f.name === champRelevé)?.value : undefined;
+  const pageChamp = piece ? (piece.fields.find((f) => f.name === champRelevé)?.page ?? 1) : 1;
 
   /* L'ancre d'abord : elle décide si un « conforme » est possible. */
   let rect: Rect | null = null;
@@ -425,7 +545,17 @@ export async function calculerGrille(engagementId: string, userId: string | null
     const qteFacturee = inv?.lines?.reduce((s, l) => s + (l.qty ?? 0), 0);
 
     for (const colonne of grille.colonnes) {
-      if (colonne.document === 'delivery_note' && !requiertBl) continue;
+      /* `requiertBl` NE GATE QUE LES COLONNES DU PACK (revue hostile du
+         2026-09-07, convergée par deux réviseurs indépendants) : sans
+         `colonne.origine === 'pack'`, une colonne AJOUTÉE de type
+         delivery_note n'obtenait AUCUNE cellule (ni « absente », ni « sans
+         ancre » — rien du tout) sur toute ligne sans BL déjà demandé à
+         l'ancien format PBC (la quasi-totalité de l'échantillon) : un
+         manque SILENCIEUX (règle 13), indiscernable d'un calcul pas encore
+         fait. Une colonne ajoutée ne connaît que la présence de sa donnée
+         (règle 19, migration 0145) — jamais cette éligibilité-là, qui
+         n'a de sens que pour le pack. */
+      if (colonne.origine === 'pack' && colonne.document === 'delivery_note' && !requiertBl) continue;
       const cell = await calculerCellule({
         colonne,
         gl: { montantCents, dateEcriture: gl.piece_date ?? it.entry_date, pieceRef: it.piece_ref ?? it.entry_no, tiers: it.aux_label },
@@ -630,6 +760,29 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
   const ouverte = mes.find((c) => c.etat !== 'conforme' && !c.disposition);
   if (ouverte) {
     throw new Error(`TEST-04 : la ligne ne se conclut pas — la cellule « ${ouverte.libelle} » est ${ouverte.etat.replace('_', ' ')}${ouverte.delta ? ` (delta ${ouverte.delta})` : ''} sans disposition écrite${ouverte.dispositionPerimee ? ' (la disposition existante portait sur une autre valeur)' : ''}.`);
+  }
+  /* REQ-02 : une colonne AJOUTÉE ne se conclut pas sans qu'on ait au moins
+     DEMANDÉ la pièce qui la fonde (piecesDemandeesParLigne, étape 5) — même
+     quand une disposition écrite couvre déjà la cellule « absente » (TEST-04
+     ne le voit pas : un motif écrit suffit, quel qu'il soit). Ne regarde QUE
+     les colonnes 'ajoutee_par' : les colonnes du pack sont déjà couvertes par
+     le paquet PBC existant (generatePbcFromSample, R49) — les y soumettre
+     romprait ce paquet sans bénéfice et sort de ce mandat.
+     CE QUE REQ-02 NE VÉRIFIE PAS (règle 19) : le STATUT de la demande — une
+     demande 'draft' jamais réellement envoyée compte comme une demande ;
+     seule son EXISTENCE est vérifiée. Envoyer la demande reste un geste
+     humain hors du périmètre de cette règle. */
+  const ajoutees = grille.colonnes.filter((c) => c.origine === 'ajoutee_par');
+  if (ajoutees.length > 0) {
+    const sampleRow = await q1<{ sample_id: string }>(`select sample_id from sample_item where id = $1`, [sampleItemId]);
+    const types = [...new Set(ajoutees.map((c) => c.document))];
+    for (const type of types) {
+      const demandees = await piecesDemandeesParLigne(engagementId, sampleRow.sample_id, type);
+      if (!demandees.has(sampleItemId)) {
+        const libelles = ajoutees.filter((c) => c.document === type).map((c) => c.libelle).join(', ');
+        throw new Error(`REQ-02 : la ligne ne se conclut pas — la pièce « ${type} » n’a jamais été demandée pour la colonne ajoutée « ${libelles} » (utilisez le bouton Demander).`);
+      }
+    }
   }
   const ctx = await engagementCtx(engagementId);
   await q(

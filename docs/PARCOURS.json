@@ -469,6 +469,42 @@
       "gabarit": false
     },
     {
+      "nom": "étape 7 : le formulaire d’ajout de colonne est visible dès que la grille existe",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : un titre qui pourrait viser plusieurs données du catalogue est REFUSÉ (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : un titre qui ne touche aucune donnée du catalogue est REFUSÉ (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7 : un titre net ajoute la colonne (badge « ajoutée ») ET calcule la grille, en un seul clic",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : ajouter deux fois la même donnée est un DOUBLON refusé (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7 : une seconde colonne ajoutée (autre donnée, même pièce) s’ajoute à la première, jamais ne la remplace",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7, par ligne : demander la pièce d’UNE colonne ajoutée couvre les DEUX colonnes ajoutées de ce type sur la ligne (REQ-02 par pièce, jamais par colonne)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7, en lot : un clic couvre toutes les lignes qui attendaient encore la pièce d’une colonne ajoutée",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7, en lot : bouton absent alors que deux colonnes ajoutées de type facture existent",
+      "gabarit": false
+    },
+    {
       "nom": "atelier clavier : au moins deux lignes à parcourir",
       "gabarit": false
     },

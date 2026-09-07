@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-07 · 46 gestes · **335 clics** au total.
+Parcours du 2026-09-07 · 47 gestes · **346 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -38,13 +38,14 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | portail client | 67 |
 | testing : l’atelier | 2 |
 | atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
+| étape 7 : la colonne ajoutée à la main | 8 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
 | atelier : l’aller-retour écart ↔ synthèse | 3 |
 | atelier : la clarification en lot | 5 |
 | la boucle : émettre les clarifications | 0 |
 | portail : réponses aux clarifications | 5 |
-| testing : le second passage sur les pièces arrivées après coup | 2 |
-| estimation : le fichier de calcul de la cliente | 7 |
+| testing : le second passage sur les pièces arrivées après coup | 3 |
+| estimation : le fichier de calcul de la cliente | 9 |
 | résolution des écarts | 26 |
 | re-exécution et évaluation | 2 |
 | papier de travail et visas | 40 |

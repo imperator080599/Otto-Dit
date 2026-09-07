@@ -165,6 +165,18 @@
       "note": "non corrigé : réconcilier les deux mécanismes élargirait Étape 5 à une réécriture de generatePbcFromSample, hors mandat. Se referme quand Étape 6/7 (REQ-02, la grille) obligent à unifier les deux chemins."
     },
     {
+      "id": "R50",
+      "etat": "ouvert — COL-01 (ajouterColonneGrille, grille.ts) ne détecte un doublon qu'entre une colonne AJOUTÉE et un ajout précédent, jamais entre une colonne ajoutée et une colonne du PACK : les codes du pack (montant_ht, date_piece…) et ceux de CHAMPS_LISIBLES (totalNetCents, invoiceDate…) sont deux nomenclatures distinctes sans correspondance déclarée",
+      "depuis": "2026-09-07 (Lot 2, étape 7 : la colonne ajoutée à la main)",
+      "note": "non corrigé : fabriquer une correspondance pack ↔ CHAMPS_LISIBLES pour ce seul contrôle serait une donnée INVENTÉE (règle 8/14), pas une donnée du référentiel."
+    },
+    {
+      "id": "R51",
+      "etat": "ouvert — une colonne AJOUTÉE, invoice OU delivery_note, rend REQ-02 insatisfaisable pour toute ligne où cette pièce n'est structurellement jamais applicable (demanderPieceLigne/demanderPiecesEnLot refusent toujours pour une telle ligne). Un défaut DISTINCT découvert dans le même mouvement (revue hostile du 2026-09-07, deux réviseurs convergents) EST corrigé : calculerGrille sautait purement la cellule (rien, ni absente ni sans ancre — manque silencieux) d'une colonne ajoutée delivery_note sur toute ligne sans BL déjà demandé à l'ancien format PBC ; le saut !requiertBl est désormais scopé aux colonnes origine==='pack' uniquement, preuve par cas connu mauvais dans colonne-ajoutee.test.ts. Ce correctif ferme le manque silencieux, pas R51 elle-même",
+      "depuis": "2026-09-07 (Lot 2, étape 7, conception de la station du parcours cliqué ; élargie et le manque silencieux corrigé le même jour par la revue hostile)",
+      "note": "non corrigé (R51 elle-même) : un traitement complet élargirait Étape 7 (sauter la cellule d'une colonne ajoutée pour les lignes non éligibles à son type, symétriquement à ce que delivery_note fait déjà côté pack), hors mandat de cette tranche."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

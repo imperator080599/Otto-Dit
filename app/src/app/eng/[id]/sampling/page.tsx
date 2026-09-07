@@ -129,7 +129,7 @@ export default async function SamplingPage({
     'use server';
     return executer(`/eng/${id}/sampling`, async () => {
       const { user } = await requireMember(id);
-      await demanderPiecesEnLot(id, String(formData.get('sample_id')), String(formData.get('evidence_type_code')), user.id);
+      await demanderPiecesEnLot(String(formData.get('sample_id')), String(formData.get('evidence_type_code')), user.id);
       revalidatePath(`/eng/${id}/sampling`);
     });
   }

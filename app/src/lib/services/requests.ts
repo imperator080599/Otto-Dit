@@ -306,9 +306,22 @@ export async function demanderPieceLigne(
  *  déjà suivie par ce mécanisme. Refuse plutôt que de poser une demande
  *  vide — une demande sans aucun élément serait un décor (règle 20). */
 export async function demanderPiecesEnLot(
-  engagementId: string, sampleId: string, evidenceTypeCode: string, userId: string,
+  sampleId: string, evidenceTypeCode: string, userId: string,
 ): Promise<string> {
-  await assertMembre(engagementId, userId, 'demanderPiecesEnLot'); // étanchéité avant tout (même motif que demanderPieceLigne, ci-dessus)
+  /* L'ÉTANCHÉITÉ SE VÉRIFIE SUR L'OBJET DÉSIGNÉ, PAS SUR UN ENGAGEMENT_ID
+     REÇU DU FORMULAIRE (revue hostile du 2026-09-07, indépendamment
+     convergée par deux réviseurs) : une version antérieure recevait
+     `engagementId` en paramètre — posé par l'appelant, donc un champ caché
+     de formulaire — et vérifiait l'appartenance du SEUL appelant à CET
+     engagementId, sans jamais vérifier que `sampleId` (lui aussi un champ
+     caché) appartenait bien à ce même dossier. Sous le rôle applicatif qui
+     contourne la RLS (ADR-115, étape 3 de PLAN_RLS non exécutée), un membre
+     légitime du cabinet A pouvait poser l'id d'un tirage du cabinet B dans
+     ce champ et lire ses lignes (montants, tiers, références de pièce) —
+     une fuite entre cabinets. `assertMembreDe('sample', ...)` remonte le
+     dossier RÉEL du tirage et vérifie l'appartenance sur CELUI-là, même
+     précédent que `demanderPieceLigne` ci-dessus. */
+  const engagementId = await assertMembreDe('sample', sampleId, userId, 'demanderPiecesEnLot');
   assertTypeDePieceConnu(evidenceTypeCode);
   const lignes = await lignesClasseesDuTirage(sampleId);
   const dejaSuivies = await piecesDemandeesParLigne(engagementId, sampleId, evidenceTypeCode);

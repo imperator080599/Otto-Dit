@@ -18,8 +18,13 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
 import { Atelier } from './atelier';
 import { attesterAction, clarifierLotAction, conclureAction, disposerAction } from './actions-atelier';
-import { calculerGrille, cellulesDuDossier, lignesNonConclues } from '@/lib/services/testing/grille';
+import { ajouterColonneGrille, calculerGrille, cellulesDuDossier, lignesNonConclues } from '@/lib/services/testing/grille';
 import { ETAT_CELLULE } from '@/lib/services/testing/etat-cellule';
+import { currentRevenueSample } from '@/lib/services/sampling';
+import {
+  demanderPieceLigne, demanderPiecesEnLot, piecesDemandeesParLigne,
+  EVIDENCE_TYPE_INVOICE, EVIDENCE_TYPE_DELIVERY_NOTE,
+} from '@/lib/services/requests';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
 
@@ -41,6 +46,18 @@ export default async function TestingPage({
      avertissement, drapeau de pack à off). */
   const { grille, cellules, conclusions } = await cellulesDuDossier(id);
   const nonConclues = grille ? await lignesNonConclues(id) : { total: 0, nonConclues: 0, perimees: 0, perimeesParGrille: 0 };
+  /* ÉTAPE 7 (plan d'autonomie, Partie B) : LA COLONNE AJOUTÉE À LA MAIN. Les
+     pièces qu'une colonne ajoutée exige se demandent PAR LE MÊME MÉCANISME
+     TYPÉ que l'étape 5 (piecesDemandeesParLigne, requests.ts) — par type de
+     pièce, jamais par colonne : une facture demandée couvre TOUTES les
+     colonnes ajoutées qui lisent une facture sur cette ligne (REQ-02,
+     grille.ts::conclureLigne). */
+  const sample = await currentRevenueSample(id);
+  const typesAjoutes = grille ? [...new Set(grille.colonnes.filter((c) => c.origine === 'ajoutee_par').map((c) => c.document))] : [];
+  const demandeesParType = new Map<string, Map<string, { requestId: string; seqNo: number; status: string }>>();
+  if (sample && sample.status === 'drawn') {
+    for (const type of typesAjoutes) demandeesParType.set(type, await piecesDemandeesParLigne(id, sample.id, type));
+  }
   /* LE COMPTEUR SUIT L'ÉCHANTILLON, pas le dossier entier : une extraction en
      attente sur une pièce dont la ligne a QUITTÉ le tirage (re-tirage après
      grand livre définitif) n'est l'obligation de personne — un badge qui
@@ -86,6 +103,34 @@ export default async function TestingPage({
     return executer(`/eng/${id}/testing`, async () => {
       const { user } = await requireMember(id);
       await calculerGrille(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
+  }
+  async function ajouterColonneAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await ajouterColonneGrille(id, String(formData.get('titre') ?? ''), user.id);
+      /* UN SEUL CLIC (mandat) : ajouter la colonne ET recalculer la grille —
+         sinon la colonne ajoutée reste invisible tant que quelqu'un ne pense
+         pas à cliquer « Calculer la grille » séparément. */
+      await calculerGrille(id, user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
+  }
+  async function demanderPieceAjouteeAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await demanderPieceLigne(String(formData.get('sample_item_id')), String(formData.get('evidence_type_code')), user.id);
+      revalidatePath(`/eng/${id}/testing`);
+    });
+  }
+  async function demanderPiecesAjouteesEnLotAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/testing`, async () => {
+      const { user } = await requireMember(id);
+      await demanderPiecesEnLot(String(formData.get('sample_id')), String(formData.get('evidence_type_code')), user.id);
       revalidatePath(`/eng/${id}/testing`);
     });
   }
@@ -231,10 +276,46 @@ export default async function TestingPage({
           périmètre gelé (règle 14 : « aucun contenu de procédure nouveau »).
           La grille rendue ici est donc celle du pack RÉEL (7 colonnes : 4
           facture, 3 bon de livraison), pas celle de l'illustration — le
-          code fait foi (règle 15), pas l'exemple d'un mandat. */}
+          code fait foi (règle 15), pas l'exemple d'un mandat.
+
+          ÉTAPE 7 : l'auditeur ajoute une colonne À LA MAIN, un titre libre
+          interprété contre le catalogue fermé de l'échelle d'extraction
+          (COL-01, grille.ts::ajouterColonneGrille) — un clic qui ajoute ET
+          calcule (`ajouterColonneAction`, ci-dessus). Ses cellules n'ont
+          jamais d'ancre (MOTIF_ANCRE ne connaît que les codes du pack) :
+          « sans ancre » quand la donnée est présente y est donc l'état
+          normal, jamais un défaut d'extraction — une disposition écrite la
+          couvre comme n'importe quelle cellule non conforme (TEST-04,
+          inchangé). Et la pièce qui la fonde se demande ICI, par ligne ou en
+          lot, avec le MÊME mécanisme que l'étape 5 (REQ-02 la réclame avant
+          toute conclusion). */}
       {grille && grille.colonnes.length > 0 && (
         <div className="panel" data-grille-vue>
           <h2 style={{ marginTop: 0 }}>{t('atl.grilleVue.titre')}</h2>
+          <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <form action={ajouterColonneAction} className="row">
+              <input type="text" name="titre" placeholder={t('atl.grilleVue.ajouterPlaceholder')} style={{ minWidth: 260 }} required data-ajouter-colonne-titre />
+              <button className="btn secondary small" data-ajouter-colonne>{t('atl.grilleVue.ajouterBouton')}</button>
+            </form>
+            {sample && sample.status === 'drawn' && typesAjoutes.length > 0 && (
+              <span className="row" style={{ gap: 8 }}>
+                {typesAjoutes.includes(EVIDENCE_TYPE_INVOICE) && (
+                  <form action={demanderPiecesAjouteesEnLotAction}>
+                    <input type="hidden" name="sample_id" value={sample.id} />
+                    <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_INVOICE} />
+                    <button className="btn secondary small" data-demander-factures-ajoutees-lot>{t('samp.demanderFacturesLot')}</button>
+                  </form>
+                )}
+                {typesAjoutes.includes(EVIDENCE_TYPE_DELIVERY_NOTE) && (
+                  <form action={demanderPiecesAjouteesEnLotAction}>
+                    <input type="hidden" name="sample_id" value={sample.id} />
+                    <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_DELIVERY_NOTE} />
+                    <button className="btn secondary small" data-demander-bl-ajoutees-lot>{t('samp.demanderBlLot')}</button>
+                  </form>
+                )}
+              </span>
+            )}
+          </div>
           <div className="table-scroll">
             <table className="data">
               <thead>
@@ -265,7 +346,12 @@ export default async function TestingPage({
                   })()}
                 </tr>
                 <tr>
-                  {grille.colonnes.map((c) => <th key={c.code} title={`${c.reference} · ${c.tolerance}`}>{c.libelle}</th>)}
+                  {grille.colonnes.map((c) => (
+                    <th key={c.code} title={`${c.reference} · ${c.tolerance}`}>
+                      {c.libelle}
+                      {c.origine === 'ajoutee_par' && <span className="badge gray" style={{ marginLeft: 4 }}>{t('atl.grilleVue.colonneAjoutee')}</span>}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -276,6 +362,12 @@ export default async function TestingPage({
                       <td className="mono">{l.piece}<div className="faint">{l.montantGl}</div></td>
                       {grille.colonnes.map((col) => {
                         const cel = parColonne.get(col.code);
+                        /* ÉTAPE 7 : sous la cellule d'une colonne AJOUTÉE, le
+                           lien vers la demande si elle existe déjà, sinon le
+                           bouton pour la créer — même geste qu'à l'étape 5
+                           (par TYPE de pièce, pas par colonne : REQ-02 le
+                           vérifie de la même façon). */
+                        const demandee = col.origine === 'ajoutee_par' ? demandeesParType.get(col.document)?.get(l.sampleItemId) : undefined;
                         return (
                           <td key={col.code} data-grille-cellule={col.code}>
                             {cel ? (
@@ -284,6 +376,21 @@ export default async function TestingPage({
                                 {cel.trouveAffiche}
                               </>
                             ) : '—'}
+                            {col.origine === 'ajoutee_par' && (
+                              <div className="faint" data-piece-ajoutee={`${col.document}-${l.sampleItemId}`}>
+                                {demandee ? (
+                                  <Link href={`/eng/${id}/requests/${demandee.requestId}`}>{t('samp.pieceDemandee')}</Link>
+                                ) : (
+                                  <form action={demanderPieceAjouteeAction}>
+                                    <input type="hidden" name="sample_item_id" value={l.sampleItemId} />
+                                    <input type="hidden" name="evidence_type_code" value={col.document} />
+                                    <button className="btn small" data-demander-piece-ajoutee={`${col.document}-${l.sampleItemId}`}>
+                                      {col.document === 'invoice' ? t('samp.demanderFactureLigne') : t('samp.demanderBlLigne')}
+                                    </button>
+                                  </form>
+                                )}
+                              </div>
+                            )}
                           </td>
                         );
                       })}

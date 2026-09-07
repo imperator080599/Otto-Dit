@@ -394,3 +394,38 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   réécriture de `generatePbcFromSample`, hors mandat. Se referme le jour où Étape 6/7 (la grille à
   deux niveaux, REQ-02) obligent à unifier les deux mécanismes pour que la grille sache, pour
   CHAQUE cellule, quelle demande — quel que soit son origine — la couvre.
+- **R50 — COL-01 (`ajouterColonneGrille`, grille.ts) ne détecte pas un doublon entre une colonne
+  AJOUTÉE et une colonne du PACK, seulement entre deux ajouts.** Les codes du pack
+  (`montant_ht`, `date_piece`…) et ceux du catalogue `CHAMPS_LISIBLES` (`totalNetCents`,
+  `invoiceDate`…) sont deux nomenclatures distinctes, sans table de correspondance déclarée
+  entre les deux — en fabriquer une pour ce seul contrôle serait une correspondance INVENTÉE, pas
+  une donnée du référentiel (règle 8/14). Un auditeur peut donc ajouter une colonne qui relève,
+  sous un autre nom, la même donnée qu'une colonne déjà présente dans le pack (ex. « numéro de
+  facture » ajouté alors que `num_piece` la lit déjà). Non corrigé volontairement — documenté dans
+  le code (`ajouterColonneGrille`, en-tête). Se referme le jour où le pack et
+  `CHAMPS_LISIBLES` partagent une nomenclature commune, ou qu'une tranche pose explicitement
+  cette correspondance comme donnée de méthode.
+- **R51 — une colonne AJOUTÉE, quel que soit son type de pièce (`invoice` OU `delivery_note`),
+  rend REQ-02 insatisfaisable pour toute ligne où cette pièce n'est structurellement jamais
+  applicable.** `demanderPieceLigne`/`demanderPiecesEnLot` (requests.ts, `pieceApplicable`)
+  refusent TOUJOURS de créer une demande pour une ligne inéligible — une facture sur une écriture
+  manuelle ou un avoir, un bon de livraison sur toute ligne hors compte 701 — quel que soit le
+  type. Une ligne de ce genre porte donc une cellule disposable (« absente » ou « sans ancre »)
+  pour la colonne ajoutée, mais REQ-02 continuera de refuser sa conclusion pour toujours : la
+  pièce qu'il réclame ne pourra jamais être demandée par ce mécanisme. Découvert pour `invoice`
+  en concevant la station du parcours cliqué « étape 7 » (règle 15) ; la revue hostile du
+  2026-09-07 (deux réviseurs indépendants, convergents) a montré que le cas `delivery_note` est
+  en réalité le PLUS LARGE des deux — il touche potentiellement toute ligne 706/709 du tirage,
+  pas seulement les écritures manuelles. **Un défaut DISTINCT et plus grave, découvert dans le
+  même mouvement, a été CORRIGÉ ce jour, pas seulement documenté** : `calculerGrille` sautait
+  purement et simplement la CELLULE (rien du tout, ni « absente » ni « sans ancre » — un manque
+  SILENCIEUX, règle 13) d'une colonne ajoutée `delivery_note` sur toute ligne sans BL déjà
+  demandé à l'ancien format PBC — corrigé en scopant le saut `!requiertBl` aux colonnes
+  `origine === 'pack'` uniquement (grille.ts, `calculerGrille`), preuve par cas connu mauvais
+  (règle 17) dans `colonne-ajoutee.test.ts`. Ce correctif ferme le « manque silencieux » ; il ne
+  ferme PAS R51 elle-même — REQ-02 reste, par conception, insatisfaisable sur les lignes
+  structurellement inéligibles, pour les deux types de pièce. Non corrigé ici — un traitement
+  complet demanderait de faire sauter la cellule d'une colonne ajoutée pour les lignes non
+  éligibles À SON TYPE (comme `delivery_note` le fait déjà côté pack), ce qui élargirait Étape 7
+  au-delà du mandat. Se referme le jour où une tranche traite l'applicabilité d'une colonne
+  ajoutée par ligne, pas seulement par type de pièce.
