@@ -500,6 +500,13 @@ intermédiaire nécessaire cette fois (contrairement à la tranche 2, quatre pas
 ne touche aucun écran ni scénario cliqué, donc aucune des deux classes de défaut qui avaient
 rougi trois passages sur cinq n'avait de prise ici.
 
+**Fusionné dans `main`, SHA servi CONFIRMÉ = `961028d`** (mandat de nuit, §1). Commit unique
+`961028d` (contenu, revue hostile et verify déjà réunis) fusionné par fast-forward
+(`3488742..961028d`, aucune divergence). CI `deploye`, run `34161547633`, job `101864243914` :
+`/api/sante` sur `https://otto-dit.vercel.app` sert `961028d` — le SHA poussé — en 203 s
+(21:01:09Z→21:04:39Z), huit lectures rapprochées avant la bascule disent toutes « servi 3488742 »
+(0 s à 178 s).
+
 ## Lot 3, tranche 2 : l'atelier recalcul_parametre (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 240) : « les ateliers de
