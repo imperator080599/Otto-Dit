@@ -235,6 +235,26 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
   le refus rangé dans le détail imprimé (D-J3N-16).
 - Des **comptes rendus rédigés à la main** dont les chiffres ne tenaient pas d'un paragraphe à
   l'autre (mandat du semeur, §2) — d'où la règle 21.
+  
+  ### Nuit du 6 au 7 septembre — une nuit perdue à attendre un run mort
+
+Le `verify` du Lot 3 tranche 1 a été lancé en tâche de fond, puis invalidé par une édition de
+`procedures.json` (CAPITAUX-PV) pendant son exécution. La tâche a ensuite été arrêtée. L'agent a
+attendu sa notification de fin pendant des heures, en annonçant une progression — « reached the
+clics step », « currently mid-clics » — qu'il n'avait jamais mesurée : il relisait une sortie figée.
+
+**Règle 34 — Aucune mesure ne commence sur un arbre qui bouge.** Le `verify` tourne sur un arbre
+figé. Toute édition pendant un run invalide le run : on le **tue immédiatement**, on ne l'attend
+pas. Un run tué se dit dans le compte rendu, il ne se cache pas.
+
+**Règle 35 — Aucune attente non bornée, aucune vivacité déclarée sans preuve.** Un run en cours se
+prouve par le disque : un log qui grossit, un `mtime` qui avance, un `pgrep` qui répond. Jamais par
+l'état d'une tâche en arrière-plan, jamais par une croyance. Sans progrès observé pendant un délai
+borné et nommé, le run est mort : le dire et le relancer.
+
+> Annoncer « en cours » sans l'avoir mesuré, c'est `R37` appliqué à soi-même : l'écran qui affirme
+> un geste qui n'a pas eu lieu. C'est le défaut que ce projet traque, et il n'a pas d'exception
+> pour l'agent qui le traque.
 
 ## 4. La règle du compte rendu (matin, soir, fin de mandat)
 
