@@ -1262,10 +1262,136 @@
       "quand": "2026-09-07T07:53:20Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — base réinitialisée, migrations appliquées (0146 incluse)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — monde de démonstration reconstruit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "tsc",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — aucune erreur de type",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "vitest",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 107 fichier(s) de test, 879 test(s) passés (879)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "gardes",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "semeur",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre (inchangé — nature n'y entre pas)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "plancher",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 879 test(s) collecté(s) par vitest, plancher 632, aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "langue",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 0 chaîne d'écran hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — tous les cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "lectures",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 0 lecture perdue sur 1716 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "parcours",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 0 station perdue (269 déclarées, 267 figées avant la tranche, 2 nouvelles figées après ce passage vert par parcours:figer)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "screens",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "fumee",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "densite",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "clics",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 226 étapes conduites, 0 échec, 346 clics comptés sur 47 gestes (inchangé — les 2 nouvelles stations sont des assertions sur une station existante, aucun geste neuf), docs/CLICS.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "visuel",
+      "sha": "3521f068c974a10f88f11ab9b6bb28a6d10531ae",
+      "quand": "2026-09-07T10:47:54Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
     }
   ],
   "precedent": {
-    "source": "docs/REPRISE.md à engendrer sur le SHA 02ef7e48d6c25d57b8c9e09c95e50a9852cb502f (npm run reprise, après ce commit)",
+    "source": "docs/REPRISE.md à engendrer sur le SHA 3521f068c974a10f88f11ab9b6bb28a6d10531ae (npm run reprise, après ce commit)",
     "nonExecutees": []
   }
 }
