@@ -1,7 +1,7 @@
 # LA CHAÎNE, SUR UNE MACHINE QUI N'EST PAS LA MIENNE — et LE BOUT DE LA CHAÎNE
 # EST L'URL (DA-16, Groupe 0 du mandat de nuit).
 #
-# Deux travaux, deux déclencheurs :
+# Trois travaux, quatre déclencheurs :
 #  · `local`  — à chaque pousse : types, tests (dont le balayage des écrans
 #    en développement, qui OUVRE chaque route dans Chromium), et les trois
 #    gardes statiques (langue, lectures, parcours) avec leurs épreuves. Le
@@ -11,6 +11,16 @@
 #    l'inventaire contre l'URL DÉPLOYÉE et exige 200, un titre, un contenu et
 #    aucune page d'erreur. Le rapport est publié en artefact et dans le
 #    résumé du travail. Zéro route ouverte est un échec, pas un succès.
+#  · `deploye` — à chaque pousse sur `main` : le SHA poussé doit devenir le
+#    SHA servi par l'alias PUBLIC dans les quinze minutes.
+#  · `alias-suit-production` — SUR HORAIRE, indépendamment de toute pousse
+#    (incident du 2026-09-07, ADR à venir) : `deploye` ne prouve QUE l'instant
+#    qui suit un push — un alias qui se fait REPOINTER vers un déploiement
+#    ANCIEN ensuite (rollback, réassignation manuelle ou automatique côté
+#    Vercel) n'a plus aucun harnais pour le voir tant que personne ne pousse.
+#    Ce travail rejoue la même mesure (`atteint.ts`, le même octet servi, pas
+#    un statut Vercel) contre `main` tel qu'il est AU MOMENT du sondage, pas
+#    au moment du dernier push.
 name: vérifier
 
 on:
@@ -18,6 +28,9 @@ on:
     branches: [main]
   pull_request:
   deployment_status:
+  schedule:
+    # Toutes les 30 min — voir `alias-suit-production` ci-dessous.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       url:
@@ -162,3 +175,57 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
       - name: le SHA poussé doit être servi dans les 15 minutes
         run: npx tsx scripts/deploiement/atteint.ts "https://otto-dit.vercel.app" "${{ github.sha }}" --minutes=15
+
+  # ── L'ALIAS PUBLIC SUIT-IL TOUJOURS `main` ? ────────────────────────────────
+  #
+  # POURQUOI CE TRAVAIL EXISTE. Le 7 septembre, `deploye` ci-dessus a confirmé
+  # `otto-dit.vercel.app` servant le SHA poussé (12:32:37Z). Le fondateur a
+  # mesuré, plus tard le même jour, ce même alias servant un SHA introuvable
+  # dans git, daté de la veille — `deploye` avait raison au moment où il a
+  # regardé, et personne ne regardait plus après. Ni un push ni un déploiement
+  # RÉUSSI n'avaient eu lieu entre les deux mesures : rien dans ce fichier ne
+  # se redéclenche sans l'un des deux. Un alias qui se fait repointer vers un
+  # déploiement ancien — rollback, réassignation manuelle ou automatique côté
+  # Vercel — n'a donc plus AUCUN harnais pour le voir tant que personne ne
+  # pousse. C'est un guard qui mesurait à côté du défaut qu'il existe pour
+  # attraper (même famille que le middleware « inerte », ADR-088/089) :
+  # `deploye` prouve un INSTANT, jamais une DURÉE.
+  #
+  # Ce travail rejoue la MÊME mesure que `deploye` (`atteint.ts`, l'octet
+  # réellement servi par `/api/sante` — jamais un statut Vercel, jamais une
+  # confiance dans un événement `deployment_status`), mais SUR HORAIRE et
+  # contre `main` TEL QU'IL EST au moment du sondage — pas au moment du
+  # dernier push. `--minutes=1` : quelques lectures rapprochées pour amortir
+  # un blip réseau isolé, jamais quinze minutes d'attente — ce travail ne
+  # bloque aucun déploiement, il surveille un état qui devrait déjà être
+  # atteint.
+  #
+  # OÙ IL S'ARRÊTE : il ne dit rien de la SANTÉ de ce qui est servi (comme
+  # `deploye`), et il ne dit RIEN sur les alias autres que le domaine public
+  # nommé ici — un alias de prévisualisation ou de branche qui dériverait ne
+  # serait pas vu. Il ne dit pas non plus POURQUOI l'alias a dérivé — la
+  # cause se cherche dans le tableau de bord Vercel (Domains → cet alias →
+  # historique), pas ici.
+  alias-suit-production:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: l'alias public sert-il toujours le HEAD actuel de main
+        run: |
+          ACTUEL="$(git rev-parse HEAD)"
+          npx tsx scripts/deploiement/atteint.ts "https://otto-dit.vercel.app" "$ACTUEL" --minutes=1

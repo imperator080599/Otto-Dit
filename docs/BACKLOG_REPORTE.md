@@ -441,3 +441,14 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   ne bloque aucun test (`catalogue.test.ts` passe). Se referme le jour où une neuvième valeur de
   nature est posée comme donnée de méthode, avec sa propre justification écrite — jamais ajoutée
   en passant pour ce seul cas.
+- **R53 — l'alias public `otto-dit.vercel.app` s'est fait repointer vers un déploiement ANCIEN
+  (SHA introuvable dans `git log`, daté du 2026-09-06 18:40:45), après avoir été confirmé servant
+  le bon SHA quelques heures plus tôt (CI `deploye`, 12:32:37Z). LA CAUSE DU REPOINTAGE N'EST PAS
+  DIAGNOSTIQUÉE** — rollback manuel, réassignation dans le tableau de bord Vercel, promotion
+  différée d'un ancien déploiement (un webhook `deployment_status` très en retard) sont trois
+  hypothèses également plausibles, aucune vérifiée (règle 18 : rester une hypothèse tant que non
+  éprouvée). Aucun outil de cette session ne lit le journal d'activité Vercel (rollback/promotion)
+  pour trancher. Le correctif livré (`alias-suit-production`, travail CI sur horaire) détecte une
+  RÉCURRENCE — il n'explique pas l'occurrence du 2026-09-07. Trouvé et signalé par le fondateur,
+  Lot 3, tranche 1 (clôture). Se referme le jour où le tableau de bord Vercel (Domains → historique
+  de l'alias) est consulté, ou qu'une session dispose d'un outil Vercel donnant ce journal.

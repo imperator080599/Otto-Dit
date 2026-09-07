@@ -183,6 +183,12 @@
       "note": "non corrigé : aucune des sept autres valeurs ne convient mieux (recalcul_parametre, confirmation_externe, sondage_pieces, rapprochement, test_exhaustif, tests_de_controles, revue_analytique_substantive sont toutes un moins bon ajustement encore). ENTRETIEN reste classifiable et n'a bloqué aucun test (catalogue.test.ts passe). Se referme le jour où une neuvième valeur de nature est posée comme donnée de méthode, avec sa propre justification, pas ajoutée en passant pour ce seul cas."
     },
     {
+      "id": "R53",
+      "etat": "ouvert — l'alias public otto-dit.vercel.app s'est fait repointer vers un déploiement ANCIEN (SHA introuvable dans git log, daté du 2026-09-06 18:40:45), après avoir été confirmé servant le bon SHA quelques heures plus tôt (CI deploye, 12:32:37Z). LA CAUSE DU REPOINTAGE N'EST PAS DIAGNOSTIQUÉE — rollback manuel, réassignation dans le tableau de bord Vercel, promotion différée d'un ancien déploiement (webhook deployment_status très en retard) sont trois hypothèses également plausibles, aucune vérifiée (règle 18). Aucun outil de cette session ne lit le journal d'activité Vercel pour trancher. Trouvé et signalé par le fondateur, Lot 3, tranche 1 (clôture)",
+      "depuis": "2026-09-07 (Lot 3, tranche 1, clôture)",
+      "note": "le correctif livré (travail CI alias-suit-production, sur horaire, .github/workflows/verifier.yml) détecte une RÉCURRENCE de ce défaut — il n'explique pas l'occurrence du 2026-09-07 elle-même. Se referme le jour où le tableau de bord Vercel (Domains → historique de l'alias) est consulté, ou qu'une session dispose d'un outil Vercel donnant ce journal."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

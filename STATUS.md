@@ -369,6 +369,34 @@ Cas connu mauvais ajouté au même fichier de test : une ligne RA insérée avec
 du script. `npx tsc --noEmit` propre, `npx vitest run` **882/882** (108 fichiers, +1 test), `npm
 run gardes` (43, inchangé), `npm run plancher` (882 collectés, plancher 632).
 
+**Un TROISIÈME défaut, dans une famille différente, signalé par le fondateur — l'alias public
+n'est PAS l'alias mesuré en continu.** `abb6b33` (le commit de clôture ci-dessus) a été confirmé
+servi par `otto-dit.vercel.app` à 12:32:37Z (CI `deploye`, run 34121489568). Le fondateur a mesuré,
+plus tard le même jour, ce même alias servant `ebf34ee…` — un SHA introuvable dans `git log`,
+daté du 2026-09-06 18:40:45. Aucun push ni déploiement RÉUSSI n'a eu lieu entre les deux mesures :
+rien dans `.github/workflows/verifier.yml` ne se redéclenche sans l'un des deux. `deploye` avait
+raison au moment où il regardait — il ne regarde plus jamais après. Confirmé authoritativement (API
+Vercel, `get_deployment` sur le nom d'hôte, pas une lecture HTTP passant par un cache) : l'alias
+sert de nouveau `abb6b33` au moment de ce constat, depuis un déploiement créé à 16:22Z (le
+fondateur a dû le repointer manuellement, un `deploy:reconstruire` normal ne recrée pas de
+déploiement sans push). La cause du repointage vers l'ancien SHA reste NON DIAGNOSTIQUÉE — aucun
+outil de cette session ne lit le journal d'activité Vercel (rollback, réassignation manuelle,
+promotion différée d'un ancien déploiement) ; c'est un fil ouvert, pas une hypothèse retenue
+(règle 18).
+
+**Correctif : la même mesure, mais qui ne dépend plus d'un push.** Nouveau travail CI
+`alias-suit-production` (`.github/workflows/verifier.yml`), sur horaire (`schedule`, toutes les
+30 min) et sur déclenchement manuel — indépendant de `push`/`deployment_status`. Il rejoue
+EXACTEMENT la mesure de `deploye` (`scripts/deploiement/atteint.ts`, l'octet réellement servi par
+`/api/sante`, jamais un statut Vercel) contre `main` TEL QU'IL EST au moment du sondage
+(`git rev-parse HEAD` après un `checkout` frais), pas au moment du dernier push — `--minutes=1`
+(quelques lectures rapprochées contre un blip réseau isolé, jamais quinze minutes : ce travail ne
+bloque rien, il surveille un état qui devrait déjà être atteint). Aucun code nouveau dans
+`atteint.ts` — la mesure elle-même était déjà correcte et déjà éprouvée (règle 17) ; tout ce que ce
+travail change est QUAND elle s'exécute. Où il s'arrête, dit dans son en-tête : il ne dit rien de
+la santé de ce qui est servi, rien des autres alias (prévisualisation, branches), rien de la cause
+d'une dérive — seulement qu'elle existe.
+
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du
