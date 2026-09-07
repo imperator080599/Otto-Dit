@@ -1136,10 +1136,136 @@
       "quand": "2026-09-07T05:18:39Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-full-27.log, Lot 2 étape 6 — la grille, à deux niveaux d'en-tête ; troisième passage de cette tranche, propre : verify-full-24 avait rougi sur un import qui emportait la base côté client (ETAT_CELLULE consolidé dans grille.ts par erreur, corrigé via etat-cellule.ts), verify-full-25 (recompté ici comme 26 dans les journaux locaux) a confirmé le correctif et rougi une seconde fois sur lectures (comptage mécanique, refigé), verify-full-27 est le premier passage propre après les deux correctifs) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — base réinitialisée, migrations appliquées (0145 incluse)",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — monde de démonstration reconstruit (13 exceptions, 8 deviations, 3 workpapers, 289 events)",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "tsc",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — aucune erreur de type",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "vitest",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 106 fichier(s) de test, 875 test(s) passés (875)",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "gardes",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "plancher",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 875 test(s) collecté(s) par vitest, plancher 632, aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 0 chaîne d'écran hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — tous les cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 0 lecture perdue sur 1716 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 0 station perdue (267 déclarées, 267 figées — les 9 nouvelles de cette tranche figées après le premier passage vert)",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "screens",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "densite",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "clics",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 224 étapes conduites, 0 échec, 346 clics comptés sur 47 gestes, docs/CLICS.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "visuel",
+      "sha": "02ef7e48d6c25d57b8c9e09c95e50a9852cb502f",
+      "quand": "2026-09-07T07:53:20Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-etape7-3.log, Lot 2 étape 7 — la colonne ajoutée à la main ; troisième passage de cette tranche, propre : un premier passage (verify-etape7-1.log, sur le contenu avant revue hostile) était déjà vert mais précédait la revue ; verify-etape7-2.log (après les cinq correctifs de la revue hostile, deux réviseurs indépendants convergents) a rougi sur vitest seul — src/lib/lexique.test.ts, un mot français « engagement » hors guillemets de code dans un commentaire de requests.ts, corrigé (« le dossier RÉEL » plutôt que « l'engagement RÉEL ») ; verify-etape7-3.log est le premier passage propre après ce correctif, tué avant lui n'ayant jamais atteint clics/visuel) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
     }
   ],
   "precedent": {
-    "source": "docs/REPRISE.md à engendrer sur le SHA 36eec82c1215008babe5dfe84ef010c536ee3f5f (npm run reprise, après ce commit)",
+    "source": "docs/REPRISE.md à engendrer sur le SHA 02ef7e48d6c25d57b8c9e09c95e50a9852cb502f (npm run reprise, après ce commit)",
     "nonExecutees": []
   }
 }
