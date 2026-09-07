@@ -116,4 +116,60 @@ describe('incident 2026-09-07 : une méthode publiée périmée par évolution d
     expect(ancienneTelleQuelle!.content['procedures.json'].procedures.find((p) => p.code === 'RAPPRO')?.nature)
       .toBeUndefined();
   });
+
+  // SECOND INCIDENT, un cran plus bas, mesuré APRÈS le correctif ci-dessus :
+  // sur la démo réseau réparée, /api/sante a rougi une AUTRE lecture, la
+  // sienne (« nature du test cohérente avec le catalogue », Lot 3 tranche 1
+  // elle-même) — exactement comme la règle 22 l'exige. Cause : migration
+  // 0146 (`alter table procedure_instance add column nature … default
+  // 'sondage_pieces'`) a donné cette valeur à TOUTES les lignes déjà en
+  // base, y compris celles dont le catalogue attend une AUTRE nature (RA,
+  // RECALC, SEQ, mesurés en production). Défaut structurel de tout
+  // `add column not null default` sur une table déjà peuplée — pas une
+  // faute de frappe, pas réédité dans 0146 (règle 26) : réaligné à chaque
+  // déploiement, dans deploy:reconstruire.ts, par le bloc qui suit celui
+  // testé ci-dessus.
+  it('une procédure instanciée dont la nature ne suit pas la migration de backfill (défaut de colonne) est réalignée sur le catalogue — cas connu mauvais', async () => {
+    // Étape 1 : reproduire le défaut de backfill — une ligne RA (catalogue :
+    // revue_analytique_substantive) portant encore la valeur DEFAULT de la
+    // colonne, comme le ferait `alter table … add column … default
+    // 'sondage_pieces'` sur une ligne créée avant la migration 0146.
+    await q(
+      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
+       values ($1, 'nep-fr', 'RA', 'analytical', 'REVENUE', 'sonde backfill — nature par défaut', 'sondage_pieces')`,
+      [IDS.engNep],
+    );
+    const avant = await q01<{ nature: string }>(
+      `select nature from procedure_instance where engagement_id = $1 and template_code = 'RA'`, [IDS.engNep],
+    );
+    expect(avant!.nature).toBe('sondage_pieces');
+
+    // Étape 2 : LA MÊME séquence que deploy:reconstruire.ts (extraite ici,
+    // même raison qu'au test précédent).
+    const cat = await catalogueDeLaMission(IDS.engNep);
+    expect(cat.procedures.find((p) => p.code === 'RA')?.nature).toBe('revue_analytique_substantive');
+    const parCode = new Map(cat.procedures.map((p) => [p.code, p.nature]));
+    const rows = await q<{ template_code: string; nature: string }>(
+      `select distinct template_code, nature from procedure_instance where engagement_id = $1`, [IDS.engNep],
+    );
+    let realignees = 0;
+    for (const r of rows) {
+      const attendue = parCode.get(r.template_code);
+      if (attendue && attendue !== r.nature) {
+        await q(
+          `update procedure_instance set nature = $1 where engagement_id = $2 and template_code = $3 and nature = $4`,
+          [attendue, IDS.engNep, r.template_code, r.nature],
+        );
+        realignees++;
+      }
+    }
+    expect(realignees).toBeGreaterThan(0);
+
+    // Étape 3 : la ligne RA porte désormais la nature du catalogue — plus
+    // celle du défaut de colonne.
+    const apres = await q01<{ nature: string }>(
+      `select nature from procedure_instance where engagement_id = $1 and template_code = 'RA'`, [IDS.engNep],
+    );
+    expect(apres!.nature).toBe('revue_analytique_substantive');
+  });
 });

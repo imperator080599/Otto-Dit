@@ -131,6 +131,50 @@ async function main() {
       }
     }
 
+    /* MÊME INCIDENT, UN CRAN PLUS BAS : LES DONNÉES BACKFILLÉES PAR LA
+       MIGRATION 0146 (2026-09-07, mesuré sur /api/sante APRÈS le correctif
+       ci-dessus — la lecture « nature du test cohérente avec le catalogue »
+       a rougi EN PRODUCTION, exactement comme la règle 22 l'exige).
+       `alter table procedure_instance add column nature … default
+       'sondage_pieces'` a donné cette valeur à TOUTES les lignes déjà en
+       base, y compris celles dont le template catalogué a une AUTRE nature
+       (RA, RECALC, SEQ mesurés divergents) — un défaut structurel de tout
+       `add column … not null default` sur une table déjà peuplée, pas une
+       erreur de frappe. On ne réédite jamais 0146 (règle 26) : on
+       RÉ-ALIGNE les lignes existantes sur le catalogue actuel, ici, à
+       chaque déploiement — la même lecture qui a détecté le défaut sert de
+       preuve que ce bloc le corrige. */
+    {
+      const { catalogueDeLaMission } = await import('../../src/lib/methodology/depot');
+      const engagements = await db.query<{ id: string }>(
+        `select id from engagement where methodology_id is not null`,
+      );
+      for (const eng of engagements.rows) {
+        let cat;
+        try {
+          cat = await catalogueDeLaMission(eng.id);
+        } catch {
+          continue; // déjà signalé par le bloc précédent s'il y avait un souci ; rien à réaligner sans catalogue.
+        }
+        const parCode = new Map(cat.procedures.map((p) => [p.code, p.nature]));
+        const rows = await db.query<{ template_code: string; nature: string }>(
+          `select distinct template_code, nature from procedure_instance where engagement_id = $1`,
+          [eng.id],
+        );
+        for (const r of rows.rows) {
+          const attendue = parCode.get(r.template_code);
+          if (attendue && attendue !== r.nature) {
+            const maj = await db.query<{ id: string }>(
+              `update procedure_instance set nature = $1 where engagement_id = $2 and template_code = $3 and nature = $4 returning id`,
+              [attendue, eng.id, r.template_code, r.nature],
+            );
+            console.log(`nature réalignée sur le catalogue : ${r.template_code} `
+              + `« ${r.nature} » → « ${attendue} » (${maj.rows.length} ligne(s), mission ${eng.id})`);
+          }
+        }
+      }
+    }
+
     await enrichir();
   } else {
     await db.exec('drop schema if exists public cascade; create schema public; grant all on schema public to public;');

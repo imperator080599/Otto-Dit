@@ -341,6 +341,34 @@ d'incident** (règle 21, nommées, pas tues) : `langue`, `lectures`, `parcours`,
 `densite`, `clics`, `visuel` — ce correctif ne touche aucun écran ni aucune route ; la chaîne
 complète suit dès que le déploiement est confirmé reparti, avant toute reprise de Lot 3.
 
+**Le déploiement `daf18e0` (le correctif ci-dessus) est allé READY** (mesuré via l'outil Vercel de
+la session : `list_deployments`, les deux déploiements — Production et Preview — READY). `npm run
+reprise`-style, mesuré en direct sur `/api/sante` (`web_fetch_vercel_url`, le bac à sable ne
+pouvant `curl` `*.vercel.app`) : `sha`/`shaExecution`/`identiteCoherente` tous cohérents sur
+`daf18e0`, et **« instantané du monde de démonstration » repasse au vert** (« pris le 2026-09-07
+11:33:48 ») — confirmant que le correctif ci-dessus laisse désormais le script atteindre le bloc
+de figeage qu'il n'atteignait jamais avant. La règle 22 a fait exactement ce qu'elle promet.
+
+**Mais un SECOND défaut, un cran plus bas, s'est révélé au même instant — rougi par la propre
+lecture de cette tranche** : « nature du test cohérente avec le catalogue (Lot 3, tranche 1) »,
+`ok:false`, « 3 template(s) dont la nature en base diverge du catalogue actuel : RA (base :
+« sondage_pieces », catalogue : « revue_analytique_substantive »), RECALC (base :
+« sondage_pieces », catalogue : « recalcul_parametre »), SEQ (base : « sondage_pieces »,
+catalogue : « test_exhaustif ») ». Cause : la migration 0146 (`alter table procedure_instance add
+column nature … not null default 'sondage_pieces'`) a donné cette valeur à TOUTES les lignes déjà
+en base au moment de son application — y compris celles dont le template catalogué porte une
+AUTRE nature. Un défaut STRUCTUREL de tout `add column … not null default` sur une table déjà
+peuplée (pas une erreur de saisie dans 0146, et 0146 n'est PAS réédité, règle 26).
+
+**Second correctif, même commit, même principe** : `deploy:reconstruire.ts` gagne un second bloc,
+juste après la republication de méthode, qui recharge le catalogue de chaque mission et RÉALIGNE
+toute ligne `procedure_instance` dont la `nature` diverge — sur la base des MÊMES données que la
+lecture `/api/sante` compare (`catalogueDeLaMission`, `template_code`), pas une seconde source.
+Cas connu mauvais ajouté au même fichier de test : une ligne RA insérée avec la nature par défaut
+« sondage_pieces », prouvée réalignée sur « revue_analytique_substantive » par la séquence exacte
+du script. `npx tsc --noEmit` propre, `npx vitest run` **882/882** (108 fichiers, +1 test), `npm
+run gardes` (43, inchangé), `npm run plancher` (882 collectés, plancher 632).
+
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du
