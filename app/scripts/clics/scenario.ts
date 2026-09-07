@@ -1482,6 +1482,20 @@ export async function conduire(
     dire('grille : l’en-tête dit la version, le nombre de colonnes, le pack et l’empreinte',
       /v1 · \d+ colonnes|v1 · \d+ columns/.test(await texte()), 'en-tête de grille lu');
 
+    /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 6 : LA GRILLE, À DEUX NIVEAUX
+       D'EN-TÊTE — la même grille que ci-dessus, pivotée en tableau lignes ×
+       colonnes, groupée par type de pièce. Rien de nouveau à calculer : la
+       vue apparaît dès que la grille l'est (aucun clic de plus). */
+    const nVue = await compte('[data-grille-vue]');
+    dire('étape 6 : la grille à deux niveaux d’en-tête est visible dès que la grille est calculée',
+      nVue > 0, refus(p) ?? (nVue > 0 ? 'section présente' : 'section absente'));
+    const nGroupes = await compte('[data-grille-groupe]');
+    dire('étape 6 : le premier niveau d’en-tête groupe les colonnes par TYPE de pièce (facture, bon de livraison)',
+      nGroupes === 2, `${nGroupes} groupe(s) — 2 attendus (invoice, delivery_note)`);
+    const nLignesGrille = await compte('[data-grille-ligne]');
+    dire('étape 6 : une ligne du tableau par ligne d’échantillon dont la grille porte des cellules',
+      nLignesGrille > 0, `${nLignesGrille} ligne(s) de grille rendue(s)`);
+
     /* UNE LIGNE QUI PORTE DES CELLULES COMPARÉES ET ANCRÉES — pas la première
        venue : la première ligne de la liste peut être SANS pièce (toutes ses
        cellules « absentes », aucun delta, aucune ancre), et un contrôle qui

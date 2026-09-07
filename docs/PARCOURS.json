@@ -405,6 +405,18 @@
       "gabarit": false
     },
     {
+      "nom": "étape 6 : la grille à deux niveaux d’en-tête est visible dès que la grille est calculée",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 6 : le premier niveau d’en-tête groupe les colonnes par TYPE de pièce (facture, bon de livraison)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 6 : une ligne du tableau par ligne d’échantillon dont la grille porte des cellules",
+      "gabarit": false
+    },
+    {
       "nom": "grille : une ligne montre sa bande de cellules à droite, sous la pièce — avec un delta signé et une ancre",
       "gabarit": false
     },

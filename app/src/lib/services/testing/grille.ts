@@ -16,6 +16,7 @@ import { latestExtraction } from '../extraction/ladder';
 import { fieldsToInvoice, type ExtractedField } from '../extraction/fields';
 import { elementsDePage, rectangleDe, type Rect } from './ancres';
 import { assertMembre } from '@/lib/core/membre';
+import type { EtatCellule } from './etat-cellule';
 
 // L'ATELIER DE TEST — LA GRILLE (mandat du jour, W1).
 //
@@ -32,7 +33,14 @@ import { assertMembre } from '@/lib/core/membre';
 // écrit) et la CONCLUSION d'une ligne (touche V) — et les deux sont refusées
 // quand il manque ce qui les fonde (TEST-01 à TEST-04, tenus en base).
 
-export type EtatCellule = 'conforme' | 'hors_tolerance' | 'non_recevable' | 'absent' | 'sans_ancre';
+/* EtatCellule ET ETAT_CELLULE (la marque à l'écran) vivent dans
+   ./etat-cellule.ts, PAS ici : ce fichier importe lib/db/client, et un
+   composant 'use client' (atelier.tsx) qui importerait une VALEUR depuis ICI
+   emporterait toute la base dans le navigateur avec elle — trouvé par
+   client-serveur.test.ts, revue hostile du 2026-09-07 (même famille de
+   défaut que GROUPES/rail.ts, 2026-09-01). `import type` (ci-dessus) s'efface
+   à la compilation : il ne pose aucune de ces deux contraintes ici, où le
+   type ne sert qu'à annoter du code serveur. */
 export type UniteDelta = 'cents' | 'days' | 'units' | 'identite';
 
 export interface ColonneGrille {

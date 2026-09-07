@@ -258,6 +258,85 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Lot 2, étape 6 : la grille, à deux niveaux d'en-tête (2026-09-07)
+
+*Suite du plan d'autonomie (mandat, instruction 4), directement après l'étape 5 (ci-dessous).*
+Partie B, §B.2, étape 6 : « La grille, à deux niveaux d'en-tête. Le premier niveau est le type de
+pièce ; le second, les données à y trouver. Chaque colonne sait de quelle pièce elle provient. »
+
+**Ce qu'un auditeur peut voir maintenant, et ne pouvait pas avant cette tranche.** Sur l'écran de
+testing, dès que la grille est calculée (bouton existant, ou « Run vouching L0 »), un nouveau
+tableau montre TOUTES les lignes de l'échantillon × TOUTES les colonnes de la grille, avec un
+en-tête à deux niveaux : la première rangée groupe les colonnes par type de pièce (« Invoice »,
+« Delivery note », `colSpan`) ; la seconde liste les champs. Rien n'est recalculé : la même
+`cellulesDuDossier` déjà lue pour la bande de cellules par ligne (atelier.tsx) est simplement
+PIVOTÉE en tableau — zéro changement au service `grille.ts` (diff nul sur ses fonctions).
+
+**Le mandat illustre Étape 6 avec des colonnes que le pack ne porte pas — non ajoutées, à
+dessein.** Le mockup montre facture « n°, date, client, montant HT, TVA » et bon de livraison
+« n°, date, quantité, signature ». Le pack RÉEL (`methodology/procedures.json`) ne porte que 4
+colonnes facture (montant HT, date, client, numéro — pas de TVA) et 3 bon de livraison (quantité,
+date, signature — pas de numéro). Les ajouter serait du CONTENU DE PROCÉDURE NEUF, interdit par le
+périmètre gelé (règle 14 : « aucun cycle au-delà du chiffre d'affaires, aucun contenu de procédure
+nouveau »). La grille rendue est donc celle du pack réel (7 colonnes), pas celle de l'illustration
+— le code fait foi (règle 15), pas l'exemple d'un mandat.
+
+**La revue hostile (workflow, deux réviseurs indépendants), avant le push — et ce qu'elle a
+DÉCLENCHÉ, pas seulement trouvé.** Aucun défaut bloquant dans le code neuf lui-même ; deux
+signalements mineurs convergents sur un point de style : la table `ETAT_CELLULE` (couleur/marque
+d'une cellule) était dupliquée entre `atelier.tsx` et la nouvelle vue, avec une justification
+affichée (« l'un est 'use client', pas l'autre ») qu'un réviseur a jugée « techniquement faible ».
+**J'ai suivi ce jugement et consolidé la table dans `grille.ts`** — et la chaîne verify a
+IMMÉDIATEMENT rougi, deux fois : `tests/screens.test.ts` (le serveur tombe à `/eng/[id]/testing`)
+et `client-serveur.test.ts` (« aucun composant client n'emporte la base dans le navigateur »).
+`grille.ts` importe `lib/db/client` ; `atelier.tsx` est `'use client'` ; un import de VALEUR
+(pas de type) depuis `grille.ts` emporte tout son graphe — y compris la base — dans le bundle
+navigateur. **Le réviseur avait tort sur le jugement technique, raison pour laquelle la
+duplication existait** ; c'est EXACTEMENT le défaut déjà vécu une fois, le 2026-09-01, avec
+`GROUPES`/`rail.ts` — le garde qui l'avait attrapé cette fois-là l'a rattrapé cette fois-ci aussi.
+**Corrigé proprement, pas en annulant le correctif** : `ETAT_CELLULE`/`EtatCellule` vivent
+maintenant dans un fichier neuf et minuscule, `etat-cellule.ts`, qui n'importe RIEN de serveur —
+`atelier.tsx` et `testing/page.tsx` l'importent tous les deux directement, `grille.ts` n'utilise
+plus qu'un `import type` (qui s'efface à la compilation, donc sans risque). La duplication a bien
+disparu ; le risque que le réviseur avait sous-estimé, non.
+
+**`npm run lectures` a rougi une fois de plus, légitimement — expliqué et refigé.** Retirer la
+définition inline de `atelier.tsx` a fait disparaître une occurrence de `Cellule['etat']` (notation
+`['etat']`, comptée par le garde) : « eng/[id]/testing/atelier.tsx → etat : 9 → 8 ». Mécanique, pas
+un vrai recul de lecture — `EtatCellule`/`ETAT_CELLULE` sont désormais lus depuis un autre fichier,
+comptés là où ils vivent. Refigé (`npm run lectures:figer`) : 1681 → 1716 chemins de champ (+35,
+la grille neuve en lit beaucoup — `col.code`, `col.libelle`, `cel.trouveAffiche`, `l.piece`,
+`l.montantGl`… autant de lectures RÉELLES, jamais vues avant cette tranche).
+
+**Conduit dans un navigateur avant d'être annoncé (règle 10) : le parcours cliqué officiel, pas un
+script manuel.** Une première tentative de vérification manuelle (script Playwright ad hoc,
+cliquant « Calculer la grille » puis « Run extraction ladder » hors de l'ordre du parcours réel) a
+buté sur « pièce absente du magasin » — un faux négatif du SCRIPT, pas du produit : la revue
+hostile a confirmé, en lisant `extractAll`, que re-lancer l'extraction sur un monde déjà extrait
+est idempotent et sûr, et que la vraie cause était l'ordre inhabituel du script manuel, pas un
+défaut de cette tranche. Abandonné au profit de la station officielle du parcours cliqué (« atelier
+de test : la grille, les ancres, les refus, la conclusion »), qui calcule déjà la grille dans le
+BON ordre — 3 assertions neuves ajoutées juste après : la section apparaît dès que la grille est
+calculée, l'en-tête groupe en exactement 2 niveaux (facture, bon de livraison), et au moins une
+ligne du tableau est rendue. Une des trois portait elle-même un défaut d'auteur mineur (un message
+de détail qui disait « section absente » même quand la section était PRÉSENTE, une chaîne de repli
+copiée sans l'adapter) — corrigé avant le commit.
+
+**La chaîne `verify` (règle 21), propre de bout en bout, base fraîche, APRÈS le correctif de la
+revue hostile ET son propre défaut (`verify-full-27.log`)** : vitest 867/867 (104 fichiers),
+gardes 43, plancher 632, langue 0/0, lectures 0 perdue/1716 (refigé), parcours 0 perdue (258
+déclarées, 3 nouvelles figées), screens 87/0, fumee 51/0, densité 77/0, clics 216/0 (sonde
+d'hydratation : aucun incident), visuel 312/0. Deux passages précédents (verify-full-24,
+verify-full-25) ont rougi sur exactement les deux défauts décrits ci-dessus et n'ont pas été menés
+à terme — tués dès le premier échec constaté plutôt que laissés finir sur un résultat déjà
+invalidé, même discipline que R47/étape 5.
+
+**Ce que cette tranche ne fait pas (règle 19).** Elle n'ajoute pas de colonnes au pack (TVA,
+numéro de bon de livraison — hors périmètre, règle 14) ; elle ne rend pas la grille interactive
+(cliquer une cellule pour ouvrir la ligne dans l'atelier reste à faire, pas demandé par le
+mandat) ; elle ne construit pas Étape 7 (la colonne ajoutée à la main, REQ-02, COL-01 —
+prochaine tranche).
+
 ## Lot 2, étape 5 : les pièces, et leurs demandes (2026-09-07)
 
 *Suite du plan d'autonomie (mandat, instruction 4 : « enchaîne Étape 3 → 7 sans t'arrêter ») —

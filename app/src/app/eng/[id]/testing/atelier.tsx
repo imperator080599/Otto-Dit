@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { LigneAtelier } from '@/lib/services/workpapers/atelier';
 import type { Grille, Cellule, ConclusionLigne } from '@/lib/services/testing/grille';
+import { ETAT_CELLULE } from '@/lib/services/testing/etat-cellule';
 import { useT } from '@/lib/i18n/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 
@@ -23,16 +24,6 @@ import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 const BADGE: Record<LigneAtelier['statut'], string> = {
   a_traiter: 'gray', a_verifier: 'amber', ecart: 'red', complete: 'green',
-};
-
-/* LA COULEUR N'EST JAMAIS SEULE (mandat du jour, règle permanente 10) : chaque
-   état de cellule porte son mot et sa marque, la couleur vient en plus. */
-const ETAT_CELLULE: Record<Cellule['etat'], { badge: string; marque: string }> = {
-  conforme: { badge: 'green', marque: '✓' },
-  hors_tolerance: { badge: 'red', marque: '✗' },
-  non_recevable: { badge: 'red', marque: '⊘' },
-  absent: { badge: 'amber', marque: '?' },
-  sans_ancre: { badge: 'amber', marque: '⌖' },
 };
 
 const CHAMPS_CONNUS = [

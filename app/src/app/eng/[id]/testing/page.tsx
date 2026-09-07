@@ -19,6 +19,7 @@ import { colonnes as colonnesGabarit } from '@/lib/methodology/catalogue';
 import { Atelier } from './atelier';
 import { attesterAction, clarifierLotAction, conclureAction, disposerAction } from './actions-atelier';
 import { calculerGrille, cellulesDuDossier, lignesNonConclues } from '@/lib/services/testing/grille';
+import { ETAT_CELLULE } from '@/lib/services/testing/etat-cellule';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
 
@@ -213,6 +214,87 @@ export default async function TestingPage({
           disposer={disposerAction}
         />
       </Repli>
+
+      {/* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 6 : LA GRILLE, À DEUX NIVEAUX
+          D'EN-TÊTE — le premier niveau est le TYPE DE PIÈCE (facture, bon de
+          livraison), le second les DONNÉES à y trouver ; chaque colonne sait
+          de quelle pièce elle provient (`ColonneGrille.document`, déjà posé
+          par colonnesCommandees, jamais nouveau ici). Rien n'est recalculé :
+          `cellules` (cellulesDuDossier, ci-dessus) porte déjà, pour CHAQUE
+          ligne, une cellule par colonne — cette vue ne fait que la PIVOTER
+          en tableau, lignes × colonnes, au lieu de la ligne unique que
+          l'atelier montre.
+          CE QUE CETTE TRANCHE NE FAIT PAS (règle 19) : le mandat illustre
+          Étape 6 avec des colonnes que le pack ne porte pas aujourd'hui (une
+          TVA sur la facture, un numéro sur le bon de livraison) — les
+          AJOUTER serait du contenu de procédure neuf, interdit par le
+          périmètre gelé (règle 14 : « aucun contenu de procédure nouveau »).
+          La grille rendue ici est donc celle du pack RÉEL (7 colonnes : 4
+          facture, 3 bon de livraison), pas celle de l'illustration — le
+          code fait foi (règle 15), pas l'exemple d'un mandat. */}
+      {grille && grille.colonnes.length > 0 && (
+        <div className="panel" data-grille-vue>
+          <h2 style={{ marginTop: 0 }}>{t('atl.grilleVue.titre')}</h2>
+          <div className="table-scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th rowSpan={2}>{t('atl.grilleVue.colLigne')}</th>
+                  {(() => {
+                    /* GROUPE PAR ADJACENCE, PAS PAR IDENTITÉ DE `document`
+                       (règle 19) : `colonnesCommandees` (grille.ts) pose
+                       aujourd'hui toutes les colonnes FACTURE puis toutes
+                       les BON DE LIVRAISON, jamais entrelacées (un seul
+                       passage sur `justificatifs_par_cycle.CA`, deux
+                       entrées) — vérifié, pas supposé. Si un jour un
+                       troisième type de pièce s'intercalait entre les deux,
+                       cette boucle rendrait TROIS groupes ou plus au lieu de
+                       fusionner les occurrences non adjacentes du même
+                       type : elle ne le détecterait pas. */
+                    const groupes: { document: string; n: number }[] = [];
+                    for (const c of grille.colonnes) {
+                      const dernier = groupes[groupes.length - 1];
+                      if (dernier && dernier.document === c.document) dernier.n += 1;
+                      else groupes.push({ document: c.document, n: 1 });
+                    }
+                    return groupes.map((g, i) => (
+                      <th key={`${g.document}-${i}`} colSpan={g.n} data-grille-groupe={g.document}>
+                        {g.document === 'invoice' ? t('samp.demanderFactureLigne') : t('samp.demanderBlLigne')}
+                      </th>
+                    ));
+                  })()}
+                </tr>
+                <tr>
+                  {grille.colonnes.map((c) => <th key={c.code} title={`${c.reference} · ${c.tolerance}`}>{c.libelle}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {lignes.filter((l) => cellules[l.sampleItemId]?.length).map((l) => {
+                  const parColonne = new Map(cellules[l.sampleItemId].map((c) => [c.colonne, c]));
+                  return (
+                    <tr key={l.sampleItemId} data-grille-ligne={l.sampleItemId}>
+                      <td className="mono">{l.piece}<div className="faint">{l.montantGl}</div></td>
+                      {grille.colonnes.map((col) => {
+                        const cel = parColonne.get(col.code);
+                        return (
+                          <td key={col.code} data-grille-cellule={col.code}>
+                            {cel ? (
+                              <>
+                                <span className={`badge ${ETAT_CELLULE[cel.etat].badge}`}>{ETAT_CELLULE[cel.etat].marque}</span>{' '}
+                                {cel.trouveAffiche}
+                              </>
+                            ) : '—'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid cols-2">
         <div className="panel">

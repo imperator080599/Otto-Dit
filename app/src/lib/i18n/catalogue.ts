@@ -321,6 +321,8 @@ export const LIBELLES = {
   'atl.grille.absente': { en: 'No grid computed yet: the cells appear once the grid is computed.', fr: 'Aucune grille calculée : les cellules apparaissent une fois la grille calculée.' },
   'atl.grille.calculer': { en: 'Compute the grid', fr: 'Calculer la grille' },
   'atl.grille.empreinte': { en: 'fingerprint {h}', fr: 'empreinte {h}' },
+  'atl.grilleVue.titre': { en: 'Test grid — every line, every column', fr: 'Grille de test — toutes les lignes, toutes les colonnes' },
+  'atl.grilleVue.colLigne': { en: 'Line', fr: 'Ligne' },
   'atl.cel.titre': { en: 'Cells of this line — deterministic comparison, signed delta, anchored on the document', fr: 'Cellules de cette ligne — comparaison déterministe, delta signé, ancrées sur la pièce' },
   'atl.cel.colAttribut': { en: 'Attribute', fr: 'Attribut' },
   'atl.cel.colAttendu': { en: 'Expected', fr: 'Attendu' },
