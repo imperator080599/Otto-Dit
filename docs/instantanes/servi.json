@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "f786fec372c24d61ed71dfa47228cf82c07d10b2",
+  "sha": "30a0c1bffd328d9b16fb496509aafc5de1b41108",
   "mesure": {
-    "quand": "2026-09-07T02:27:12Z",
-    "par": "CI, travail `deploye`, run 34076143427, job 101602527544, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 02:24:09Z→02:27:12Z, 175 s ; 151 s de « servi (aucun) · HTTP 500 » pendant la reconstruction Vercel, puis f786fec servi et vert). Précédé de DEUX fenêtres de 15 min ÉCHOUÉES (R47, STATUS.md) : 60e1dfe (run 34068792649, job non consulté isolément, 00:07:46Z→00:22:47Z, HTTP 500 persistant après ~180-200 s) et 1b59dd9 (run 34068829404, job 101591899544 non détaillé ici, 00:23:05Z→00:37:58Z, même motif) — la lecture POP-01 y trouvait un sample de production réel, antérieur à sa propre garde (R47) ; corrigé par 9120af2/f786fec, jamais en modifiant la donnée de production",
+    "quand": "2026-09-07T03:53:26Z",
+    "par": "CI, travail `deploye`, run 34080976209, job 101616043328, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 03:50:21Z→03:53:26Z, 178 s ; le SHA précédent, a1d27f2, servait encore aux 27-153 premières secondes, puis 30a0c1b à 178 s). Lot 2, étape 5 : les pièces, et leurs demandes.",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "f786fec372c24d61ed71dfa47228cf82c07d10b2",
+      "quand": "2026-09-07T02:27:12Z",
+      "par": "CI, travail `deploye`, run 34076143427, job 101602527544, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 02:24:09Z→02:27:12Z, 175 s ; 151 s de « servi (aucun) · HTTP 500 » pendant la reconstruction Vercel, puis f786fec servi et vert). Précédé de DEUX fenêtres de 15 min ÉCHOUÉES (R47, STATUS.md) : 60e1dfe (run 34068792649, job non consulté isolément, 00:07:46Z→00:22:47Z, HTTP 500 persistant après ~180-200 s) et 1b59dd9 (run 34068829404, job 101591899544 non détaillé ici, 00:23:05Z→00:37:58Z, même motif) — la lecture POP-01 y trouvait un sample de production réel, antérieur à sa propre garde (R47) ; corrigé par 9120af2/f786fec, jamais en modifiant la donnée de production. Le commit suivant (a1d27f2, SHA servi confirmé = f786fec) a aussi été observé servi (même job que 30a0c1b ci-dessus, aux 27-153 premières secondes de sa fenêtre) mais n'a pas reçu sa propre entrée dédiée — même précédent que a46c0db plus bas : la mesure suivante le contient et le couvre."
+    },
     {
       "sha": "506f2c8ebdda424af796d7dd1a32281ce8e1208c",
       "quand": "2026-09-06T20:40:03Z",
