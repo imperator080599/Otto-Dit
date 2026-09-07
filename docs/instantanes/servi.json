@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "506f2c8ebdda424af796d7dd1a32281ce8e1208c",
+  "sha": "f786fec372c24d61ed71dfa47228cf82c07d10b2",
   "mesure": {
-    "quand": "2026-09-06T20:40:03Z",
-    "par": "CI, travail `deploye`, run 34058515912, job 101554721430, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:36:37Z→20:40:03Z, 206 s)",
+    "quand": "2026-09-07T02:27:12Z",
+    "par": "CI, travail `deploye`, run 34076143427, job 101602527544, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 02:24:09Z→02:27:12Z, 175 s ; 151 s de « servi (aucun) · HTTP 500 » pendant la reconstruction Vercel, puis f786fec servi et vert). Précédé de DEUX fenêtres de 15 min ÉCHOUÉES (R47, STATUS.md) : 60e1dfe (run 34068792649, job non consulté isolément, 00:07:46Z→00:22:47Z, HTTP 500 persistant après ~180-200 s) et 1b59dd9 (run 34068829404, job 101591899544 non détaillé ici, 00:23:05Z→00:37:58Z, même motif) — la lecture POP-01 y trouvait un sample de production réel, antérieur à sa propre garde (R47) ; corrigé par 9120af2/f786fec, jamais en modifiant la donnée de production",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "506f2c8ebdda424af796d7dd1a32281ce8e1208c",
+      "quand": "2026-09-06T20:40:03Z",
+      "par": "CI, travail `deploye`, run 34058515912, job 101554721430, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:36:37Z→20:40:03Z, 206 s)"
+    },
     {
       "sha": "84edab530a98c2c681164f67ca6f8b31ef46b430",
       "quand": "2026-09-06T19:01:37Z",
