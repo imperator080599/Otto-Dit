@@ -452,6 +452,19 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   RÉCURRENCE — il n'explique pas l'occurrence du 2026-09-07. Trouvé et signalé par le fondateur,
   Lot 3, tranche 1 (clôture). Se referme le jour où le tableau de bord Vercel (Domains → historique
   de l'alias) est consulté, ou qu'une session dispose d'un outil Vercel donnant ce journal.
+  **2026-09-07T20:09Z, contrôle avant fusion de Lot 3 tranche 2 :** le fondateur signale une
+  lecture HTTP fraîche montrant `otto-dit.vercel.app` sur `ebf34ee` et l'alias git-main sur
+  `abb6b33`, tout en notant lui-même qu'elle passe par une couche de résumé susceptible de mettre
+  en cache. Réglé par l'instrument, pas sur parole : `get_deployment` (Vercel, immunisé au cache
+  HTTP) sur les DEUX noms d'hôte renvoie la MÊME chose — `dpl_8LaYKVSb2fKA9NKHtrjoMo4DNepK`, SHA
+  `12b214a` (le HEAD réel à cet instant), `aliasError: null`, `target: production`. Confirmé une
+  seconde fois, indépendamment, par le job `deploye` lui-même quelques minutes plus tard (run
+  `34158120425`, job `101854070409`) : ses six lectures rapprochées avant la bascule disent toutes
+  « servi 12b214a » (0 s à 129 s), puis « servi 5c97892 » à 154 s — l'alias suivait bien le HEAD
+  réel une fraction de seconde avant que ce push ne le fasse avancer. **Aucune récidive cette
+  nuit** : la lecture du fondateur était en aval d'un cache périmé, pas une preuve d'un nouveau
+  repointage. La CAUSE de l'occurrence du 2026-09-06 reste non diagnostiquée — ce contrôle ne
+  referme pas R53, il écarte seulement une fausse alerte de récidive.
 - **R54 — quatorze des seize procédures `recalcul_parametre` du catalogue portent un `cycle`
   (`IMMO_COR`, `IMMO_INC`, `STOCKS`, `CLIENTS`, `PERSONNEL`, `SOCIAL`, `DETTES_FI`, `PROV`) qui ne
   correspond à AUCUN `fsli.code` réel du plan de comptes** (`PPE`, `INVENTORY`, `TRADE_RECEIVABLES`,

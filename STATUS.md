@@ -536,6 +536,24 @@ mesurés · 0 au-delà de 5 actions primaires, clics 226 étapes conduites · 0 
 47 gestes), visuel exécuté sans échec. Tous les autres nombres identiques au passage 4 — aucune
 régression introduite par le correctif de la revue hostile.
 
+**Fusionné dans `main`, SHA servi CONFIRMÉ = `5c97892`** (mandat du fondateur, permission
+« pour la nuit », §1 : fusionner tranche par tranche derrière un verify propre gelé, clore par un
+SHA servi mesuré). Deux commits sur `claude/otto-session-resume-zimig9` — `9661317` (contenu +
+verify) puis `5c97892` (docs/CHASSE.md, F14 : une nouvelle occurrence #418 en ligne, CI `url`,
+tâche A-05 — même reproducteur que F5, page non touchée par cette tranche, consignée pas creusée)
+— fusionnés par fast-forward dans `main` (`12b214a..5c97892`, aucun commit de fusion nécessaire,
+aucune divergence). CI `deploye`, run `34158120425`, job `101854070409` : `/api/sante` sur
+`https://otto-dit.vercel.app` sert `5c97892` — le SHA poussé — en 154 s (20:06:43Z→20:09:24Z),
+six lectures rapprochées avant la bascule disent toutes « servi 12b214a » (0 s à 129 s). Cette
+même mesure règle au passage l'observation du fondateur (§3 du mandat de nuit) : une lecture
+HTTP fraîche, juste avant la fusion, montrait `otto-dit.vercel.app` sur `ebf34ee` et l'alias
+git-main sur `abb6b33` — le fondateur l'a lui-même qualifiée d'observation, pas de fait, passant
+par une couche susceptible de mettre en cache. Réglé PAR L'INSTRUMENT : `get_deployment` sur les
+deux noms d'hôte renvoyait, à cet instant, la MÊME chose — `dpl_8LaYKVSb2fKA9NKHtrjoMo4DNepK`,
+SHA `12b214a` (le HEAD réel), `aliasError: null` — et les six lectures `deploye` ci-dessus le
+confirment indépendamment. **Aucune récidive de R53 cette nuit** ; la cause de l'occurrence du
+2026-09-06 reste non diagnostiquée (docs/BACKLOG_REPORTE.md, addendum daté).
+
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du
