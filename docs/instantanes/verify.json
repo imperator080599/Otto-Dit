@@ -632,6 +632,132 @@
       "quand": "2026-09-06T18:37:12Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-full-12.log, Lot 2 étape 2 : le rapprochement — la troisième et dernière passe de cette tranche, après verify-full-10.log rougi sur l'état R45 manquant dans fils.json et verify-full-11.log vert mais avec trois stations du parcours pas encore figées) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-06T23:40:45Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : vitest imprime lui-même « Start at 23:40:45 »"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-06T23:40:45Z",
+      "resultat": "vert",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : vitest imprime lui-même « Start at 23:40:45 »"
+    },
+    {
+      "commande": "tsc",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-06T23:40:45Z",
+      "resultat": "0 erreur (aucune sortie — succès silencieux)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : vitest imprime lui-même « Start at 23:40:45 »"
+    },
+    {
+      "commande": "vitest",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-06T23:40:45Z",
+      "resultat": "858/858, 101 fichiers (+1 depuis 60e1dfe^ : le cas connu mauvais POP-01 périmé, s3s4.test.ts) — « Start at 23:40:45 » (imprimé par vitest lui-même)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche))"
+    },
+    {
+      "commande": "gardes",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "semeur",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour (83 objets : 16 décors, 28 non prouvés, 39 prouvés — inchangé : cette tranche n'introduit aucun décor)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "plancher",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 858 test(s) collecté(s) · plancher 632 · aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 0 chaîne hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 0 lecture perdue sur 1681 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 250 station(s) déclarée(s), 250 figée(s), 0 perdue",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "screens",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "fumee",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "densite",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "clics",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 208 étapes conduites, 0 échec, 319 clics comptés sur 45 gestes, sonde d'hydratation : aucun incident, garde du parcours : 193 station(s) figée(s) vérifiée(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
+    },
+    {
+      "commande": "visuel",
+      "sha": "60e1dfed4fd7562bb1a5be7afa1217455e771522",
+      "quand": "2026-09-07T00:05:27Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-full-19.log, Lot 2 étapes 3-4 : la population dérivée, POP-01 — troisième passage propre de cette tranche : verify-full-13 avait rougi sur une station renommée à figer, verify-full-14/15/16 sur fumee avant/pendant le correctif du portail (build de production périmé, puis contenu insuffisant), verify-full-17 était propre AVANT la revue hostile, verify-full-18 a rejoué F12 (#418 hors tranche)) — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape"
     }
   ],
   "precedent": {
