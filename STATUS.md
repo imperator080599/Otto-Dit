@@ -258,6 +258,89 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Incident : cinq déploiements en ERROR — une méthode publiée périmée par évolution du schéma (2026-09-07)
+
+*Signalé par le fondateur, qui a mesuré ce que ce bac à sable ne pouvait pas voir seul (§7 :
+aucun accès direct à `*.vercel.app`) : cinq déploiements Vercel en `ERROR`, ~25 s chacun contre
+~100-200 s pour tout build vert précédent — premier commit touché : `3521f06` (« Lot 3, tranche 1
+: la nature du test »), puis `f8e1207`, `6637883`, en Production ET Preview. Le dernier
+déploiement VERT restait `02b5037` (« Update CLAUDE.md », poussé par le fondateur en direct
+pendant la session).*
+
+**Mesuré, pas théorisé (le journal de build de `dpl_DKFbMaPBVCPyqHfHVSH67p869ymD`, commit
+`3521f06`, via l'outil Vercel de la session) :**
+```
+10:51:03  base : le pooler … a RÉPONDU et ne connaît pas ce locataire. Nouvelle tentative…
+10:51:05  CATALOGUE INVALIDE :
+10:51:05    procédure RAPPRO : champ « nature » manquant
+            … (56 procédures, toutes)
+10:51:05  Error: Command "cd app && npm run deploy:reconstruire && npx next build" exited with 1
+```
+Le fichier commité, vérifié par `git show 3521f06:methodology/procedures.json`, porte bien
+`nature` sur ses 56 procédures — 0 manquant. Le crash ne vient donc PAS du fichier poussé.
+
+**Cause réelle** : `catalogueDeLaMission`/`catalogueParId` (`depot.ts`) ne lisent JAMAIS
+`methodology/procedures.json` du dépôt à l'exécution — ils lisent le contenu JSONB PUBLIÉ dans
+`firm_methodology.content`, et le REVALIDENT à chaque chargement, par conception (« le produit
+évolue » — le commentaire du fichier le disait déjà). Le monde de démonstration réseau a été semé
+un jour ancien, avant que `nature` existe : sa ligne `firm_methodology` (id fixe
+`IDS.methodology`, posée par `bootstrapNep`) porte encore l'ANCIEN contenu. `deploy:reconstruire`,
+sur une base DÉJÀ SEMÉE (la branche normale de tout déploiement depuis le semis initial), ne
+republie jamais la méthode — il ne fait que `migrate()` (SQL) puis `enrichirMondeDemo()`, et
+c'est CE DERNIER qui charge le catalogue et fait tomber tout le build en ajoutant `nature` comme
+champ REQUIS à `methodology/schema.json`. Un changement de schéma, sans aucun changement de
+données, a suffi à rendre invalide une méthode déjà publiée — jamais testé localement, parce que
+`npm run db:reset` part TOUJOURS d'une base vide (la branche « monde reconstruit », qui republie
+la méthode fraîche) : la branche « déjà semé » de `deploy:reconstruire` n'était exercée par AUCUN
+harnais, seulement par un vrai déploiement Vercel sur la base réseau existante.
+
+Un second symptôme, lisible directement sur `/api/sante` (outil Vercel `web_fetch_vercel_url`,
+le bac à sable ne pouvant `curl` `*.vercel.app`) : le déploiement `02b5037`, resté servi (Vercel
+ne bascule jamais l'alias sur un build en erreur), répondait HTTP 500 — mais avec `sha` et
+`shaExecution` COHÉRENTS, tous deux `02b5037` (`identiteCoherente: true` : pas de défaut F1 ici,
+la mesure du SHA servi n'a jamais menti). Le 500 venait d'une lecture RÉELLEMENT rouge :
+« instantané du monde de démonstration » — « instantané périmé : table « procedure_instance » :
+colonnes différentes depuis l'instantané ». La migration 0146 (`procedure_instance.nature`) AVAIT
+été appliquée par le `migrate()` du build cassé, avant qu'il ne tombe sur le catalogue — la base
+réseau portait donc la nouvelle colonne, mais le figeage du monde (`instantanerLeMonde`, plus loin
+dans le même script, jamais atteint) n'avait pas pu se reprendre. La lecture a fait exactement ce
+qu'elle doit faire (règle 22) : rougir sur un vrai décalage, pas un décor.
+
+**Le poller CI (`scripts/deploiement/atteint.ts`) mesurait la bonne URL** (l'alias de production,
+confirmé en interrogeant `https://otto-dit.vercel.app/api/sante` directement) : ce n'est pas
+l'hypothèse (a) du fondateur (une URL de déploiement plutôt que l'alias) qui tenait. C'est un
+mélange de (b) restreint à un seul rouage : la mesure du SHA lui-même n'a jamais menti, mais la
+lecture « instantané » a HTTP-500 la mesure entière — le poller journalise alors "servi (aucun)"
+faute de SHA lisible sur une réponse non-200, ce qui est correct pour son but (« le SHA poussé
+sert-il un 200 ? ») mais masque, dans son propre journal, qu'un SHA ÉTAIT bien servi, juste en
+échec de santé.
+
+**Le correctif, MINIMAL, dans `deploy:reconstruire.ts`** (branche « déjà semé » uniquement — la
+branche « monde reconstruit » republie déjà la méthode fraîche, donc jamais concernée) : après
+`migrate()`, chaque ligne de `firm_methodology` est rechargée via `catalogueParId` ; celle qui lève
+est REPUBLIÉE (`publierMethodologie`, une ligne NEUVE — jamais une édition, même principe que les
+migrations, règle 26) avec le contenu ACTUEL du dépôt, et chaque mission qui la désignait est
+REDÉSIGNÉE (`designerMethodologie`) vers la nouvelle ligne — les MÊMES fonctions que l'écran,
+aucun second chemin. Ce mécanisme ne touche QUE la base marquée `OTTO_DEMO_PUBLIC` (la garde en
+tête du script le vérifie déjà pour tout le fichier) : une méthode de cabinet réel resterait
+gouvernée par l'immutabilité stricte que ce même fichier documente depuis toujours.
+
+**Cas connu mauvais, règle 17** (`scripts/deploy/reconstruire-methodologie-perimee.test.ts`,
+nouveau) : reproduit l'incident EXACT en base fraîche — une méthode publiée dont le contenu
+`procedures.json` perd `nature` sur chaque procédure — et prouve (1) que `catalogueParId` lève
+bien « CATALOGUE INVALIDE … champ « nature » manquant » dessus, PUIS (2) que la même séquence que
+le correctif répare : republication, redésignation, le catalogue charge de nouveau, ET la ligne
+périmée reste intacte (jamais éditée). C'est « la lecture qui aurait attrapé ça » que le mandat
+demandait : rien, localement, n'exerçait jusqu'ici la branche « déjà semé » de
+`deploy:reconstruire` — ce test le fait maintenant, sans réseau (PGlite).
+
+**Vérifié avant ce commit** : `npx tsc --noEmit` propre, `npx vitest run` **881/881** (108
+fichiers, +2 : le nouveau fichier de test), `npm run gardes` (43 gardes, inchangé), `npm run
+plancher` (881 collectés, plancher 632, rien d'éteint). **Non exécutées ici, par urgence
+d'incident** (règle 21, nommées, pas tues) : `langue`, `lectures`, `parcours`, `screens`, `fumee`,
+`densite`, `clics`, `visuel` — ce correctif ne touche aucun écran ni aucune route ; la chaîne
+complète suit dès que le déploiement est confirmé reparti, avant toute reprise de Lot 3.
+
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du

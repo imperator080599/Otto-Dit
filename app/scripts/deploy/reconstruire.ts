@@ -70,6 +70,67 @@ async function main() {
     const appliquees = await migrate();
     console.log(`monde déjà semé — conservé (OTTO_RECONSTRUIRE=1 pour raser) ; `
       + `migrations nouvelles : ${appliquees.length ? appliquees.join(', ') : 'aucune'}`);
+
+    /* MÉTHODE PUBLIÉE PÉRIMÉE PAR ÉVOLUTION DU SCHÉMA (incident du
+       2026-09-07, Lot 3 tranche 1 — le premier déploiement à ajouter un
+       champ REQUIS à methodology/schema.json). `catalogueParId` (depot.ts)
+       REVALIDE au chargement, par conception : « un prédicat retiré du
+       moteur rendrait invalide une méthode publiée hier ». Sur une base déjà
+       semée, `migrate()` rejoue les migrations SQL mais ne touche jamais le
+       contenu JSONB de `firm_methodology` — une méthode publiée lors d'un
+       semis ancien reste figée jusqu'ici, et un schéma qui gagne un champ
+       requis la rend invalide au premier chargement, PAS au moment où le
+       schéma change : le premier écran (ou ici, `enrichir()`) qui charge le
+       catalogue fait tomber tout le déploiement. Ceci NE touche que la base
+       marquée OTTO_DEMO_PUBLIC (le garde en tête de fichier l'a déjà vérifié
+       pour tout ce script) : jamais une méthode de cabinet réel, qui reste
+       gouvernée par la règle « republier crée une ligne, jamais une
+       édition » — appliquée ici aussi, à l'identique. Une méthode qui ne
+       valide plus est republiée à neuf pour son cabinet, et chaque mission
+       qui la désignait est redésignée vers la nouvelle ligne, par les MÊMES
+       fonctions que l'écran (`publierMethodologie`, `designerMethodologie`)
+       — pas un second chemin. Un échec ici ARRÊTE le déploiement : servir un
+       dossier sur une méthode qui ne valide plus serait pire que ne pas
+       déployer. */
+    {
+      const { catalogueParId, publierMethodologie, contenuDuDepot, designerMethodologie } =
+        await import('../../src/lib/methodology/depot');
+      const lignes = await db.query<{ id: string; tenant_id: string; label: string }>(
+        `select id, tenant_id, label from firm_methodology`,
+      );
+      for (const ligne of lignes.rows) {
+        try {
+          await catalogueParId(ligne.id);
+        } catch (e) {
+          const raison = (e instanceof Error ? e.message : String(e)).split('\n')[0];
+          console.log(`méthodologie « ${ligne.label} » (${ligne.id}) périmée par évolution du `
+            + `schéma — republication : ${raison}`);
+          const auteur = await db.query<{ id: string }>(
+            `select id from app_user where tenant_id = $1 order by id limit 1`, [ligne.tenant_id],
+          );
+          if (!auteur.rows.length) {
+            throw new Error(`méthodologie ${ligne.id} périmée mais aucun utilisateur dans son `
+              + `cabinet (${ligne.tenant_id}) pour la republier — déploiement arrêté`);
+          }
+          const fraiche = await publierMethodologie({
+            tenantId: ligne.tenant_id,
+            label: `${ligne.label} (republiée automatiquement — schéma évolué, ${new Date().toISOString().slice(0, 10)})`,
+            contenu: await contenuDuDepot(),
+            actorUserId: auteur.rows[0].id,
+          });
+          const engs = await db.query<{ id: string }>(
+            `select id from engagement where methodology_id = $1`, [ligne.id],
+          );
+          for (const eng of engs.rows) {
+            await designerMethodologie({
+              engagementId: eng.id, methodologyId: fraiche.id, actorUserId: auteur.rows[0].id,
+            });
+          }
+          console.log(`  → republiée sous ${fraiche.id}, ${engs.rows.length} mission(s) redésignée(s)`);
+        }
+      }
+    }
+
     await enrichir();
   } else {
     await db.exec('drop schema if exists public cascade; create schema public; grant all on schema public to public;');
