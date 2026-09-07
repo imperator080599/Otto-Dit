@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "30a0c1bffd328d9b16fb496509aafc5de1b41108",
+  "sha": "7c903ca919d6fd3068fb3950e8caac4310920835",
   "mesure": {
-    "quand": "2026-09-07T03:53:26Z",
-    "par": "CI, travail `deploye`, run 34080976209, job 101616043328, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 03:50:21Z→03:53:26Z, 178 s ; le SHA précédent, a1d27f2, servait encore aux 27-153 premières secondes, puis 30a0c1b à 178 s). Lot 2, étape 5 : les pièces, et leurs demandes.",
+    "quand": "2026-09-07T05:24:28Z",
+    "par": "CI, travail `deploye`, run 34086474811, job 101631371652, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 05:21:22Z→05:24:28Z, 179 s ; le SHA précédent, 7ebf61b (SHA servi confirmé = 30a0c1b, étape 5), servait encore aux 28-154 premières secondes). Lot 2, étape 6 : la grille, à deux niveaux d'en-tête.",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "30a0c1bffd328d9b16fb496509aafc5de1b41108",
+      "quand": "2026-09-07T03:53:26Z",
+      "par": "CI, travail `deploye`, run 34080976209, job 101616043328, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 03:50:21Z→03:53:26Z, 178 s ; le SHA précédent, a1d27f2, servait encore aux 27-153 premières secondes). Lot 2, étape 5 : les pièces, et leurs demandes. Le commit suivant (7ebf61b, SHA servi confirmé = 30a0c1b) a aussi été observé servi (même job que 7c903ca ci-dessus) mais n'a pas reçu sa propre entrée dédiée — même précédent que a46c0db plus bas."
+    },
     {
       "sha": "f786fec372c24d61ed71dfa47228cf82c07d10b2",
       "quand": "2026-09-07T02:27:12Z",
