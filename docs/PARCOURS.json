@@ -253,7 +253,15 @@
       "gabarit": false
     },
     {
+      "nom": "programme : chaque procédure commandée affiche sa nature, avant même d’être planifiée",
+      "gabarit": false
+    },
+    {
       "nom": "programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : une ligne planifiée montre un atelier RÉEL ou un aveu honnête « pas construit encore » — jamais rien du tout, jamais les deux",
       "gabarit": false
     },
     {

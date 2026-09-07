@@ -196,8 +196,14 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   const draw = attributeDraw(instances.map((i) => i.label), size, seed, popHash);
 
   const procedure = await q1<{ id: string }>(
-    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, control_id, title, status)
-     values ($1,$2,$3,'control_test',$4,$5,'in_progress') returning id`,
+    /* nature = 'tests_de_controles' EXPLICITE (Lot 3, tranche 1) : `OE-${code}`
+       est un template SOX, hors catalogue ISA methodology/procedures.json —
+       même motif que sampling.ts::ensureRevenueProcedure ci-dessus (règle 13,
+       pas de repli silencieux sur le défaut de colonne). Un test attributif
+       sur des occurrences de contrôle EST la définition même de cette
+       nature (mandat, table C.1). */
+    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, control_id, title, status, nature)
+     values ($1,$2,$3,'control_test',$4,$5,'in_progress','tests_de_controles') returning id`,
     [c.engagement_id, pack.id, `OE-${c.code}`, controlId, `Operating effectiveness — ${c.code} ${c.name}`],
   );
   const run = await q1<{ id: string }>(

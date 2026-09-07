@@ -32,8 +32,13 @@ export async function ensureRevenueProcedure(engagementId: string): Promise<stri
   if (existing) return existing.id;
   const fs = await frameworkSet(engagementId);
   const row = await q1<{ id: string }>(
-    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, status)
-     values ($1, $2, 'REV-SUBST', 'substantive', 'REVENUE', $3, 'in_progress') returning id`,
+    /* nature = 'sondage_pieces' EXPLICITE (Lot 3, tranche 1) : REV-SUBST est
+       hors catalogue (méthodologie/procedures.json ne le connaît pas), donc
+       aucun `p.nature` à lire — poser la valeur ici plutôt que de s'appuyer
+       en silence sur le défaut de la colonne (règle 13), qui se trouve être
+       le même mais ne le restera pas forcément. */
+    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, status, nature)
+     values ($1, $2, 'REV-SUBST', 'substantive', 'REVENUE', $3, 'in_progress', 'sondage_pieces') returning id`,
     [engagementId, fs.assurance_packs[0], fs.language === 'fr' ? 'Contrôle substantif du chiffre d’affaires' : 'Revenue substantive testing'],
   );
   return row.id;

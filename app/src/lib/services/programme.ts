@@ -9,6 +9,7 @@ import {
   proceduresDuCycle, procedure as procedureDuCatalogue, gabarit, referencePapier, sens as sensDeTest,
   justificatifs, executable,
 } from '@/lib/methodology/catalogue';
+import type { NatureDeTest } from '@/lib/methodology/types';
 import type { WpSection } from './workpapers/draft';
 import { assertMembre } from '@/lib/core/membre';
 import { requiredProcedures, excludedProcedures, risksFor } from './risk';
@@ -42,14 +43,21 @@ export interface ProcedurePlanifiee {
   status: string;
   assertion: string | null;
   echantillonnee: boolean;
+  /** Lot 3, tranche 1 (mandat, Partie C.1) — la FORME de l'atelier qui exécute
+   *  cette procédure. Lue sur la LIGNE (`procedure_instance.nature`), jamais
+   *  re-dérivée du catalogue par `template_code` : REV-SUBST (sampling.ts)
+   *  n'existe pas dans methodology/procedures.json, une re-dérivation le
+   *  laisserait sans nature alors que la colonne, elle, la porte toujours
+   *  (posée explicitement à l'écriture, règle 13). */
+  nature: NatureDeTest;
   papier: { id: string; code: string; status: string; version: number } | null;
 }
 
 /** Les procédures planifiées sur un poste, avec leur papier vivant (dernière version non dépassée). */
 export async function proceduresPlanifiees(engagementId: string, fsliCode: string): Promise<ProcedurePlanifiee[]> {
   const cat = await catalogueDeLaMission(engagementId);
-  const rows = await q<{ id: string; template_code: string; fsli_code: string; title: string; kind: string; status: string; wid: string | null; wcode: string | null; wstatus: string | null; wversion: number | null }>(
-    `select p.id::text, p.template_code, p.fsli_code, p.title, p.kind, p.status,
+  const rows = await q<{ id: string; template_code: string; fsli_code: string; title: string; kind: string; status: string; nature: NatureDeTest; wid: string | null; wcode: string | null; wstatus: string | null; wversion: number | null }>(
+    `select p.id::text, p.template_code, p.fsli_code, p.title, p.kind, p.status, p.nature,
             w.id::text wid, w.code wcode, w.status wstatus, w.version wversion
      from procedure_instance p
      left join lateral (
@@ -62,7 +70,7 @@ export async function proceduresPlanifiees(engagementId: string, fsliCode: strin
     const p = procedureDuCatalogue(cat, r.template_code);
     return {
       id: r.id, code: r.template_code, fsliCode: r.fsli_code, titre: r.title, kind: r.kind, status: r.status,
-      assertion: p?.assertion ?? null, echantillonnee: p?.echantillonnee ?? true,
+      assertion: p?.assertion ?? null, echantillonnee: p?.echantillonnee ?? true, nature: r.nature,
       papier: r.wid ? { id: r.wid, code: r.wcode!, status: r.wstatus!, version: Number(r.wversion) } : null,
     };
   });
@@ -98,10 +106,11 @@ export async function planifierProcedure(o: {
   const fs = await frameworkSet(o.engagementId);
   const pack = primaryPack(fs as never);
   const r = await q1<{ id: string }>(
-    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, params, status)
-     values ($1, $2, $3, $4, $5, $6, $7, 'planned') returning id::text`,
+    `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, params, status, nature)
+     values ($1, $2, $3, $4, $5, $6, $7, 'planned', $8) returning id::text`,
     [o.engagementId, pack.id, o.code, p.sens === 'analytique' ? 'analytical' : 'substantive', o.fsliCode, p.libelle,
-      JSON.stringify({ catalogue: p.code, assertion: p.assertion, echantillonnee: p.echantillonnee, methode: cat.version })]);
+      JSON.stringify({ catalogue: p.code, assertion: p.assertion, echantillonnee: p.echantillonnee, methode: cat.version }),
+      p.nature]);
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: o.engagementId, actorKind: 'user', actorId: o.userId,
     verb: 'procedure_planned', objectType: 'procedure_instance', objectId: r.id,
@@ -322,6 +331,35 @@ export interface LigneProgramme {
     /** Un papier visé : une version nouvelle exige un motif écrit (PROG-06). */
     vise: boolean;
   } | null;
+  /** Lot 3, tranche 1 (mandat, Partie C.1) — la forme de l'atelier qui exécute
+   *  cette procédure. Connue dès le CATALOGUE (`r.procedure.nature`,
+   *  `e.nature`) : contrairement à `planifiee`, elle existe même AVANT que la
+   *  procédure ne soit planifiée — un auditeur voit ce qu'il commande avant
+   *  de le commander. */
+  nature: NatureDeTest;
+}
+
+/**
+ * Lot 3, tranche 1 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
+ * nature de test, l'atelier qui l'exécute. Aujourd'hui une seule case, HONNÊTE :
+ * `sondage_pieces` sur le poste REVENUE, parce que c'est le SEUL atelier qui
+ * existe vraiment (Lot 2, le cycle de testing du chiffre d'affaires) et qu'il
+ * est encore câblé sur ce poste précis (`REV-SUBST`, `testing/grille.ts`),
+ * pas générique sur n'importe quel `fsliCode`. Un lien vers `/testing` pour
+ * un AUTRE poste ouvrirait sur les données du chiffre d'affaires — un lien
+ * MENSONGER, pire qu'un lien mort (règle 13). `null` se lit à l'écran comme
+ * « aucun atelier construit pour cette nature encore » — jamais comme un
+ * geste caché.
+ *
+ * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
+ * atelier — `recalcul_parametre`, `confirmation_externe`, `rapprochement`
+ * (tranches suivantes du Lot 3) et la généralisation de `sondage_pieces` à
+ * un poste autre que REVENUE (Lot 5) entrent chacun ICI quand ils existent,
+ * jamais ailleurs — un second endroit qui devine l'atelier diverge un jour.
+ */
+export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
+  if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
+  return null;
 }
 
 export interface PosteProgramme {
@@ -375,6 +413,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
         horsCommande: planifiees.map((x) => ({
           code: x.code, libelle: x.titre, assertion: x.assertion ?? '—',
           niveau: null, minimum: '—', pourquoi: '', taille: null, tailleDit: null,
+          nature: x.nature,
           planifiee: {
             id: x.id, statut: x.status, vise: vises.has(x.id),
             papier: x.papier
@@ -405,6 +444,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
       taille: r.sampleSize,
       tailleDit: r.sampleSize !== null || r.taille.origine === 'sans_objet'
         ? null : (r.taille.obstacle ?? null),
+      nature: r.procedure.nature,
       planifiee: vue(parCode.get(r.procedure.code)),
     }));
     const requisesCodes = new Set(requises.map((r) => r.procedure.code));
@@ -416,7 +456,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
         return {
           code: x.code, libelle: x.titre, assertion: x.assertion ?? e?.assertion ?? '—',
           niveau: e?.level ?? null, minimum: e?.requires ?? '—',
-          pourquoi: '', taille: null, tailleDit: null, planifiee: vue(x),
+          pourquoi: '', taille: null, tailleDit: null, nature: x.nature, planifiee: vue(x),
         };
       });
     out.push({
@@ -426,7 +466,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
       horsCommande,
       ecartees: ecartees.filter((e) => !parCode.has(e.code)).map((e) => ({
         code: e.code, libelle: e.libelle, assertion: e.assertion,
-        niveau: e.level, minimum: e.requires, pourquoi: '', taille: null, tailleDit: null,
+        niveau: e.level, minimum: e.requires, pourquoi: '', taille: null, tailleDit: null, nature: e.nature,
         planifiee: null,
       })),
     });

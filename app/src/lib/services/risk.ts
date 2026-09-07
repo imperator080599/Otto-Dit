@@ -23,7 +23,7 @@ import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { assertAccepte } from './acceptance';
 import { proceduresDuCycle, rangNiveau } from '@/lib/methodology/catalogue';
-import type { Catalogue, Procedure } from '@/lib/methodology/types';
+import type { Catalogue, Procedure, NatureDeTest } from '@/lib/methodology/types';
 import { engagementContext } from './team';
 import { declaredFactorsFor } from './questionnaire';
 import { numToCents } from '@/lib/util/num';
@@ -658,7 +658,7 @@ export function formuleDeTaille(cat: Catalogue, level: Level): { nom: string; li
 export async function excludedProcedures(
   engagementId: string,
   fsliCode: string,
-): Promise<{ code: string; libelle: string; assertion: string; level: Level | null; requires: string }[]> {
+): Promise<{ code: string; libelle: string; assertion: string; level: Level | null; requires: string; nature: NatureDeTest }[]> {
   const cat = await catalogueDeLaMission(engagementId);
   const risks = await risksFor(engagementId, fsliCode);
   const byAssertion = new Map(risks.map((r) => [r.assertion, r]));
@@ -670,7 +670,7 @@ export async function excludedProcedures(
     .map((p) => ({
       code: p.code, libelle: p.libelle, assertion: p.assertion,
       level: byAssertion.get(p.assertion)?.level ?? null,
-      requires: p.risque_minimum,
+      requires: p.risque_minimum, nature: p.nature,
     }))
     .sort((a, b) => a.code.localeCompare(b.code));
 }

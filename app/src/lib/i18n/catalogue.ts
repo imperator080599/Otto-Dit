@@ -825,6 +825,21 @@ export const LIBELLES = {
   },
   'prog.horsCommandeRaison': { en: '(level reached: {niveau} — minimum required: {minimum})', fr: '(niveau atteint : {niveau} — minimum exigé : {minimum})' },
   'prog.ecarteesTitre': { en: '{n} procedure(s) ruled out, and why', fr: '{n} procédure(s) écartée(s), et pourquoi' },
+  /* LOT 3, TRANCHE 1 (mandat, Partie C.1) — les huit natures, et le lien vers
+     leur atelier quand il existe. `prog.atelierAbsent` est un aveu, pas une
+     erreur : il se lit tant que la tranche qui construit cet atelier n'est
+     pas arrivée. */
+  'prog.nature.sondage_pieces': { en: 'Piece sampling', fr: 'Sondage sur pièces' },
+  'prog.nature.recalcul_parametre': { en: 'Independent recalculation', fr: 'Recalcul indépendant' },
+  'prog.nature.confirmation_externe': { en: 'External confirmation', fr: 'Confirmation externe' },
+  'prog.nature.revue_analytique_substantive': { en: 'Substantive analytical review', fr: 'Revue analytique substantive' },
+  'prog.nature.test_exhaustif': { en: 'Exhaustive rule test', fr: 'Test exhaustif' },
+  'prog.nature.tests_de_controles': { en: 'Control testing', fr: 'Tests de contrôles' },
+  'prog.nature.rapprochement': { en: 'Reconciliation (two sources)', fr: 'Rapprochement (deux sources)' },
+  'prog.nature.observation_documentee': { en: 'Documented observation', fr: 'Observation documentée' },
+  'prog.natureColonne': { en: 'Nature', fr: 'Nature' },
+  'prog.allerAtelier': { en: 'Open the workshop', fr: 'Ouvrir l’atelier' },
+  'prog.atelierAbsent': { en: 'no workshop built yet for this test’s nature', fr: 'aucun atelier construit encore pour cette nature de test' },
   'rail.programme': { en: 'Audit procedures', fr: 'Programme de travail' },
   'rail.quoi.programme': { en: 'What the risk commands, planned procedure by procedure.', fr: 'Ce que le risque commande, procédure par procédure planifiée.' },
   'rail.raison.apresRisque': { en: 'as soon as a risk is assessed on a line item', fr: 'dès qu’un risque est évalué sur un poste' },

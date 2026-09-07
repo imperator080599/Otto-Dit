@@ -31,6 +31,7 @@
         "objectif",
         "assertion",
         "sens",
+        "nature",
         "unite",
         "population",
         "justificatifs",
@@ -71,6 +72,19 @@
             "observation",
             "analytique",
             "inspection"
+          ]
+        },
+        "nature": {
+          "description": "La FORME de l'atelier (mandat, Partie C.1) — un axe différent de `sens` : RAPPRO porte sens=recalcul, nature=rapprochement.",
+          "enum": [
+            "sondage_pieces",
+            "recalcul_parametre",
+            "confirmation_externe",
+            "revue_analytique_substantive",
+            "test_exhaustif",
+            "tests_de_controles",
+            "rapprochement",
+            "observation_documentee"
           ]
         },
         "unite": {

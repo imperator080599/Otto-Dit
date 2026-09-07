@@ -958,6 +958,21 @@ export async function conduire(
        calculé puis jeté », règle 13, dans l'instrument même qui existe pour
        attraper ce défaut. Le verdict est désormais : aucun refus ET le compte a
        AUGMENTÉ. */
+    /* LOT 3, TRANCHE 1 (mandat, Partie C.1) — LA NATURE se lit sur CHAQUE
+       ligne commandée, AVANT même d'être planifiée : elle vient du
+       catalogue (`r.procedure.nature`), pas de l'instance.
+       CE QUE CE COMPTE VÉRIFIE (règle 19, revue hostile du 2026-09-07) :
+       que l'attribut `data-nature` existe sur CHAQUE ligne — React omet un
+       attribut posé à `null`/`undefined`, donc une `nature` manquante
+       ferait BAISSER ce compte, pas le remplir d'une chaîne vide (`nature`
+       est de toute façon typée par une union à 8 valeurs et contrainte en
+       base par un `check` — la chaîne vide n'est atteignable par AUCUN des
+       deux). CE QU'IL NE VÉRIFIE PAS : que le LIBELLÉ affiché soit le BON
+       — seulement qu'un libellé existe. */
+    dire('programme : chaque procédure commandée affiche sa nature, avant même d’être planifiée',
+      (await compte('[data-nature]')) === (await compte('[data-ligne-programme]')),
+      `${await compte('[data-nature]')} ligne(s) avec une nature affichée sur ${await compte('[data-ligne-programme]')} commandée(s)`);
+
     const dejaPlanifiees = await compte('[data-planifiee]');
     const aPlanifier = await compte('[data-planifier]');
     if (aPlanifier > 0) {
@@ -968,6 +983,29 @@ export async function conduire(
       dire('programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée',
         !refus(p) && apres > dejaPlanifiees,
         refus(p) ?? `${dejaPlanifiees} → ${apres} procédure(s) planifiée(s)`);
+
+      /* ET SON ATELIER — un lien RÉEL (sondage_pieces sur REVENUE) ou un
+         AVEU honnête (les sept autres natures, encore sans atelier) :
+         jamais ni l'un ni l'autre en silence (règle 13), et jamais les DEUX
+         à la fois (un ternaire dans page.tsx les rend mutuellement
+         exclusifs aujourd'hui — cette assertion vérifie la CHOSE, pas
+         seulement qu'elle continue de dépendre du même code). Compté PAR
+         LIGNE (`[data-ligne-programme]`), jamais par une SOMME globale
+         (revue hostile du 2026-09-07) : une première version comparait
+         `nAtelier + nAbsent >= total` — vrai sur TOUT chemin atteignable
+         puisque les deux compteurs sont posés par le MÊME `if` que le
+         total qu'ils devaient couvrir, donc une garde qui ne pouvait
+         structurellement jamais s'éteindre (règle 17). Scopé À LA TABLE
+         DES COMMANDÉES (`[data-commandees]`) : le panneau « procédures hors
+         commande » ne porte pas ce couple d'attributs, cette tranche n'y
+         touche pas (règle 8). */
+      if (!refus(p)) {
+        const trous = await compte('[data-commandees] tr[data-ligne-programme]:has([data-planifiee]):not(:has([data-atelier])):not(:has([data-atelier-absent]))');
+        const doubles = await compte('[data-commandees] tr[data-ligne-programme]:has([data-atelier]):has([data-atelier-absent])');
+        dire('programme : une ligne planifiée montre un atelier RÉEL ou un aveu honnête « pas construit encore » — jamais rien du tout, jamais les deux',
+          trous === 0 && doubles === 0,
+          `${trous} ligne(s) planifiée(s) sans lien NI aveu, ${doubles} ligne(s) avec les deux à la fois`);
+      }
     } else {
       /* PAS DE SUCCÈS MUET : sur ce monde, le risque est évalué et la méthode
          commande plus de procédures que le semeur n'en planifie. N'avoir rien à

@@ -9,7 +9,7 @@ import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconci
 import { rebuildFslis, proposeScoping } from './fsli';
 import { propose, validate } from './materiality';
 import { assessFsli, risksFor, overrideLevel, requiredProcedures } from './risk';
-import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure } from './programme';
+import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, atelierDeLaNature } from './programme';
 import { signWorkpaper } from './workpapers/lifecycle';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 
@@ -213,5 +213,26 @@ describe('le programme de travail', () => {
       motif: 'La méthode a changé de version : le papier est repris sur le gabarit courant.',
     });
     expect(v2.version).toBe(2);
+  });
+
+  it("Lot 3, tranche 1 — atelierDeLaNature : sondage_pieces sur REVENUE a un atelier réel ; ailleurs, aucun (règle 13 — jamais un lien menteur)", () => {
+    expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x')).toBe('/eng/x/testing');
+    /* Le MÊME atelier ne se prête pas à un AUTRE poste : `testing/page.tsx`
+       est encore câblé sur REV-SUBST/REVENUE (Lot 2), un lien depuis un
+       autre poste y ouvrirait sur les données du chiffre d'affaires. */
+    expect(atelierDeLaNature('sondage_pieces', 'AUTRE-POSTE', '/eng/x')).toBeNull();
+    /* Aucun atelier construit encore pour les sept autres natures (tranches
+       suivantes du Lot 3 / Lot 5) — même sur REVENUE. */
+    expect(atelierDeLaNature('rapprochement', 'REVENUE', '/eng/x')).toBeNull();
+    expect(atelierDeLaNature('recalcul_parametre', 'REVENUE', '/eng/x')).toBeNull();
+  });
+
+  it('Lot 3, tranche 1 — la nature d’une procédure planifiée vient du catalogue, pas devinée', async () => {
+    const cat = await catalogueDeLaMission(IDS.engNep);
+    const poste = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    const planifiee = poste.commandees.find((l) => l.planifiee !== null)!;
+    expect(planifiee, 'aucune procédure planifiée à ce point du fichier : la fixture ne prouve rien').toBeDefined();
+    const attendu = cat.procedures.find((p) => p.code === planifiee.code)!.nature;
+    expect(planifiee.nature).toBe(attendu);
   });
 });

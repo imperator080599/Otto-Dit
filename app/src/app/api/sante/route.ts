@@ -443,6 +443,37 @@ async function corpsDeLaSonde() {
         ? `${colonnesAjoutees!.n} colonne(s) ajoutée(s) — aucune ligne conclue sans sa pièce demandée`
         : 'aucune colonne ajoutée encore créée';
     }));
+    /* LOT 3, TRANCHE 1 (mandat, Partie C.1 — livrée ce jour, lue ce jour,
+       règle 22). `procedure_instance.nature` est posée EXPLICITEMENT à
+       l'écriture (programme.ts, sampling.ts, sox.ts) — jamais laissée au
+       défaut de colonne en silence (règle 13). Si elle DIVERGE du catalogue
+       ACTUEL pour un `template_code` catalogué, c'est que le catalogue a
+       changé de classification depuis l'écriture (une tranche a corrigé une
+       nature, mais les lignes déjà en base n'ont pas suivi) ou qu'un point
+       d'écriture s'est mis à ignorer sa propre valeur — les deux sont un
+       DÉCALAGE SILENCIEUX, pas une erreur qui se serait déjà vue ailleurs.
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : les templates HORS
+       catalogue (REV-SUBST, `OE-*` de sox.ts) — `parCode` ne les connaît
+       pas, ils sont donc silencieusement exclus de la comparaison, pas
+       déclarés cohérents ; leur propre justesse tient au commentaire du
+       point d'écriture, pas à cette lecture. */
+    lectures.push(await essayer('nature du test cohérente avec le catalogue (Lot 3, tranche 1)', async () => {
+      const { catalogueDeLaMission } = await import('@/lib/methodology/depot');
+      const cat = await catalogueDeLaMission(id);
+      const parCode = new Map(cat.procedures.map((p) => [p.code, p.nature]));
+      const rows = await q<{ template_code: string; nature: string; n: string }>(
+        `select template_code, nature, count(*) n from procedure_instance where engagement_id = $1 group by template_code, nature`,
+        [id]);
+      const divergentes = rows.filter((r) => parCode.has(r.template_code) && parCode.get(r.template_code) !== r.nature);
+      if (divergentes.length > 0) {
+        throw new Error(`${divergentes.length} template(s) dont la nature en base diverge du catalogue actuel : `
+          + divergentes.map((d) => `${d.template_code} (base : « ${d.nature} », catalogue : « ${parCode.get(d.template_code)} »)`).join(', '));
+      }
+      const cataloguees = rows.filter((r) => parCode.has(r.template_code)).reduce((s, r) => s + Number(r.n), 0);
+      return cataloguees > 0
+        ? `${cataloguees} procédure(s) instanciée(s) d’un template catalogué, toutes cohérentes avec la nature actuelle du catalogue`
+        : 'aucune procédure instanciée d’un template catalogué encore';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

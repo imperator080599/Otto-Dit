@@ -177,6 +177,12 @@
       "note": "non corrigé (R51 elle-même) : un traitement complet élargirait Étape 7 (sauter la cellule d'une colonne ajoutée pour les lignes non éligibles à son type, symétriquement à ce que delivery_note fait déjà côté pack), hors mandat de cette tranche."
     },
     {
+      "id": "R52",
+      "etat": "ouvert — ENTRETIEN (methodology/procedures.json) est classé nature=observation_documentee, mais c'est l'ajustement le plus faible des huit valeurs pour cette procédure : un entretien avec le client est d'abord un ENTRETIEN (au sens du module docs/14_ENTRETIENS_CONSENTEMENT.md), pas une observation documentée au sens où STOCKS-INV l'est (assister et documenter un inventaire physique). Retenu faute de neuvième valeur dans l'union fermée NatureDeTest — élargir l'union pour un seul cas serait une catégorie inventée pour une procédure (règle 8/14), pas une donnée de méthode. Trouvé par la revue hostile du 2026-09-07 (réviseur n°1) pendant Lot 3, tranche 1",
+      "depuis": "2026-09-07 (Lot 3, tranche 1 : la nature du test)",
+      "note": "non corrigé : aucune des sept autres valeurs ne convient mieux (recalcul_parametre, confirmation_externe, sondage_pieces, rapprochement, test_exhaustif, tests_de_controles, revue_analytique_substantive sont toutes un moins bon ajustement encore). ENTRETIEN reste classifiable et n'a bloqué aucun test (catalogue.test.ts passe). Se referme le jour où une neuvième valeur de nature est posée comme donnée de méthode, avec sa propre justification, pas ajoutée en passant pour ce seul cas."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

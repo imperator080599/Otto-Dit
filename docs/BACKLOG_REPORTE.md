@@ -429,3 +429,15 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   éligibles À SON TYPE (comme `delivery_note` le fait déjà côté pack), ce qui élargirait Étape 7
   au-delà du mandat. Se referme le jour où une tranche traite l'applicabilité d'une colonne
   ajoutée par ligne, pas seulement par type de pièce.
+- **R52 — ENTRETIEN (`methodology/procedures.json`) est classé `nature=observation_documentee`,
+  l'ajustement le plus faible des huit valeurs de `NatureDeTest` pour cette procédure.** Un
+  entretien avec le client relève d'abord du module ENTRETIEN
+  (`docs/14_ENTRETIENS_CONSENTEMENT.md`), pas d'une observation documentée au sens où STOCKS-INV
+  l'est (assister et documenter un inventaire physique). Retenu faute de neuvième valeur dans
+  l'union fermée `NatureDeTest` (`app/src/lib/methodology/types.ts`) — en ajouter une pour un
+  seul cas serait une catégorie INVENTÉE pour une procédure (règle 8/14), pas une donnée de
+  méthode. Trouvé par la revue hostile du 2026-09-07 (réviseur n°1), Lot 3, tranche 1. Non
+  corrigé : aucune des sept autres valeurs ne convient mieux ; ENTRETIEN reste classifiable et
+  ne bloque aucun test (`catalogue.test.ts` passe). Se referme le jour où une neuvième valeur de
+  nature est posée comme donnée de méthode, avec sa propre justification écrite — jamais ajoutée
+  en passant pour ce seul cas.

@@ -258,6 +258,69 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Lot 3, tranche 1 : la nature du test (2026-09-07)
+
+*Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1, ligne 148) : « La nature du
+test est une donnée du pack. La page de poste rend l'atelier de la nature. » Lot 3 (ligne 240) :
+« `nature` sur `procedure_instance`, et les ateliers de `recalcul_parametre`,
+`confirmation_externe`, `rapprochement`. » Cette tranche ne fait que la première moitié de la
+première phrase — la chose plus petite (règle 8) : le champ et sa cohérence, aucun atelier neuf.*
+
+**Ce qu'un auditeur voit maintenant.** Le tableau du programme de travail porte une colonne
+« Nature » sur chaque ligne commandée — visible AVANT planification, puisque la nature est une
+donnée du pack, pas de l'instanciation. Pour la seule combinaison outillée aujourd'hui
+(`sondage_pieces` + poste `REVENUE`), un lien mène à l'atelier réel (`/testing`) ; pour toutes les
+autres, la ligne affiche un aveu honnête — « atelier pas construit encore » — jamais un lien mort
+ni un silence (règle 13).
+
+**Mécanique.** `methodology/procedures.json` (version 1.4.0) : les 56 procédures gagnent
+`nature` (8 valeurs fermées : `sondage_pieces` 17, `recalcul_parametre` 16, `rapprochement` 9,
+`confirmation_externe` 7, `test_exhaustif` 4, `observation_documentee` 2, `revue_analytique_substantive`
+1, `tests_de_controles` 0), validé par le schéma et par `catalogueDeLaMission()` (cas connu
+mauvais, règle 17 : un champ retiré fait lever "CATALOGUE INVALIDE"). Migration 0146 :
+`procedure_instance.nature` (contrainte CHECK sur les 8 valeurs). Trois sites d'écriture, tous
+posent `nature` depuis leur propre source, jamais redérivée : `programme.ts::planifierProcedure`
+(catalogue), `sampling.ts::ensureRevenueProcedure` (`sondage_pieces` en dur, procédure hors
+catalogue), `sox.ts` (`tests_de_controles` en dur, idem). `atelierDeLaNature(nature, fsliCode,
+base)` est le seul point de dispatch — il ne rend non-null QUE pour `sondage_pieces` + `REVENUE`,
+pour ne jamais mentir sur un atelier qui n'existe pas (règle 13).
+
+**Lecture ajoutée à `/api/sante` le jour même** : « nature du test cohérente avec le catalogue »
+— compare, procédure par procédure, la `nature` en base à celle du catalogue pour le même
+`template_code`, rougit sur tout décalage. Cas connu mauvais (règle 17,
+`nature-lecture.test.ts`) : une ligne RAPPRO écrite en base avec `sondage_pieces` fait rougir la
+lecture (HTTP 500, détail nommant RAPPRO et rapprochement), la correction la fait repasser au
+vert.
+
+**Revue hostile (deux réviseurs indépendants, convergents), deux constats corrigés avant
+commit** : CAPITAUX-PV était classée `tests_de_controles`, alors que sa forme (justificatifs
+exacts, comme DETAIL) est un `sondage_pieces` — corrigé et reconfirmé par `catalogue.test.ts`
+(12/12). La station de parcours cliqué vérifiant « une ligne planifiée montre un atelier réel OU
+un aveu honnête » utilisait un compteur agrégé (`nAtelier + nAbsent >= apresCommandees`)
+mathématiquement incapable d'échouer, les deux compteurs et le total étant gardés par la même
+condition — remplacé par des sélecteurs `:has()` par ligne (`trous`, `doubles`), preuve par cas
+connu mauvais : renommer l'attribut `data-atelier` en `data-atelier-MUTATION` fait échouer la
+station avec le bon message (« 1 ligne planifiée sans lien NI aveu »), restauré ensuite.
+
+**Un troisième constat, non corrigé, enregistré R52** : ENTRETIEN est classée
+`observation_documentee`, l'ajustement le plus faible des huit valeurs pour cette procédure —
+aucune des sept autres ne convient mieux, et l'union `NatureDeTest` est fermée (règle 8/14) : en
+ouvrir une neuvième pour un seul cas serait une catégorie inventée, pas une donnée de méthode.
+Voir `docs/BACKLOG_REPORTE.md` (R52) et `docs/instantanes/fils.json`. R50 et R51 (Lot 2, étape 7)
+restent ouverts, inchangés par cette tranche.
+
+**Chaîne verify complète, propre, sur la tranche entière, arbre GELÉ pendant l'exécution**
+(`verify-lot3-frozen.log`) : vitest **879/879** (107 fichiers), gardes 43, semeur (inchangé —
+`nature` n'entre pas dans son registre), plancher 632, langue 0/0 + épreuve, lectures 0
+perdue/1716 chemins (86 écrans), parcours **269 déclarées · 267 figées avant cette tranche · 2
+nouvelles, figées par `parcours:figer` après le run** (0 perdue) + épreuve 5/5, screens 87/0,
+fumee 51/0 (51 routes), densite 77 écrans/0, clics **226 étapes/0 échec** (346 clics, 47 gestes),
+visuel 312 vues/0 défaut.
+
+**Ce qui reste dû** : les ateliers `recalcul_parametre`, `confirmation_externe`, `rapprochement`
+(Lot 3, tranches 2-4) ne sont pas construits — `atelierDeLaNature` continue de rendre l'aveu
+honnête pour toutes les lignes qui en relèvent, jamais un lien mort.
+
 ## Lot 2, étape 7 : la colonne ajoutée à la main (2026-09-07)
 
 *Suite du plan d'autonomie (mandat, instruction 4 : « enchaîne Étape 3 → 7 sans t'arrêter »),

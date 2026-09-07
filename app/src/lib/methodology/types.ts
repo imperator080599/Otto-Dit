@@ -40,6 +40,24 @@ export type SensDeTest =
   | 'piece_vers_gl'   // de la pièce vers le grand livre : exhaustivité
   | 'recalcul' | 'confirmation' | 'observation' | 'analytique' | 'inspection';
 
+/**
+ * La NATURE du test (mandat du fondateur, Partie C.1, plan d'autonomie) —
+ * un axe DIFFÉRENT de `SensDeTest` : le sens décrit la DIRECTION de la
+ * preuve (réalité vs exhaustivité), la nature décrit la FORME de l'atelier
+ * qui la produit (ce qu'il demande, ce qu'il affiche, ce qui y constitue un
+ * écart). `RAPPRO` en est la preuve : `sens: 'recalcul'`,
+ * `nature: 'rapprochement'` — les deux axes divergent légitimement.
+ *
+ * Un produit fixe, pas une méthode de cabinet (contrairement à `Assertion`
+ * ou `NiveauRisque`, qui vivent en JSON parce qu'ils varient par cabinet) :
+ * ces huit valeurs sont la mécanique elle-même, donc une union TypeScript
+ * fermée, pas une chaîne validée contre un fichier de méthode.
+ */
+export type NatureDeTest =
+  | 'sondage_pieces' | 'recalcul_parametre' | 'confirmation_externe'
+  | 'revue_analytique_substantive' | 'test_exhaustif' | 'tests_de_controles'
+  | 'rapprochement' | 'observation_documentee';
+
 export type TypeChamp = 'montant' | 'date' | 'texte' | 'nombre' | 'bool';
 /**
  * Un niveau de risque est une CHAÎNE, pas une union figée.
@@ -96,6 +114,7 @@ export interface Procedure {
   objectif: string;
   assertion: Assertion;
   sens: SensDeTest;
+  nature: NatureDeTest;
   unite: string;
   population: Population;
   justificatifs: Justificatif[];

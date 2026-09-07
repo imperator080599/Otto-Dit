@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure } from '@/lib/services/programme';
+import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, atelierDeLaNature } from '@/lib/services/programme';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { Repli } from '@/app/repli';
@@ -127,6 +127,7 @@ export default async function ProgrammePage({
                   <tr>
                     <th>{t('risk.procedure')}</th><th>{t('col.assertion')}</th>
                     <th>{t('risk.requiredBecause')}</th><th className="num">{t('col.size')}</th>
+                    <th>{t('prog.natureColonne')}</th>
                     <th>{t('prog.etat')}</th>
                   </tr>
                 </thead>
@@ -139,6 +140,21 @@ export default async function ProgrammePage({
                       <td className="num">
                         {l.taille !== null ? <strong>{l.taille}</strong>
                           : <span className="faint">{l.tailleDit ?? '—'}</span>}
+                      </td>
+                      <td data-nature={l.nature}>
+                        <span className="faint">{t(`prog.nature.${l.nature}`)}</span>
+                        {/* L'ATELIER NE SE PROPOSE QU'UNE FOIS LA PROCÉDURE PLANIFIÉE
+                            (Lot 3, tranche 1) : il agit sur une INSTANCE
+                            (`procedure_instance`), jamais sur l'entrée abstraite du
+                            catalogue — avant planification, il n'y a rien à ouvrir. */}
+                        {l.planifiee && (() => {
+                          const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`);
+                          return href ? (
+                            <div><Link href={href} data-atelier={l.code}>{t('prog.allerAtelier')}</Link></div>
+                          ) : (
+                            <div className="faint" data-atelier-absent={l.code}>{t('prog.atelierAbsent')}</div>
+                          );
+                        })()}
                       </td>
                       <td>
                         {l.planifiee === null ? (
@@ -177,7 +193,7 @@ export default async function ProgrammePage({
                     </tr>
                   ))}
                   {poste.commandees.length === 0 && (
-                    <tr><td colSpan={5} className="faint">{t('prog.aucuneCommandee')}</td></tr>
+                    <tr><td colSpan={6} className="faint">{t('prog.aucuneCommandee')}</td></tr>
                   )}
                 </tbody>
               </table>
