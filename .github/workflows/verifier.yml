@@ -195,10 +195,16 @@ jobs:
   # réellement servi par `/api/sante` — jamais un statut Vercel, jamais une
   # confiance dans un événement `deployment_status`), mais SUR HORAIRE et
   # contre `main` TEL QU'IL EST au moment du sondage — pas au moment du
-  # dernier push. `--minutes=1` : quelques lectures rapprochées pour amortir
-  # un blip réseau isolé, jamais quinze minutes d'attente — ce travail ne
-  # bloque aucun déploiement, il surveille un état qui devrait déjà être
-  # atteint.
+  # dernier push. `--minutes=5`, pas quinze : assez pour absorber une
+  # construction Vercel normale (100-220 s mesurés dans ce dépôt) SANS
+  # attendre un vrai déploiement en cours comme `deploye` le fait — ce
+  # travail surveille un état qui devrait déjà être atteint, pas un push
+  # tout juste parti. UN FAUX ROUGE DÉJÀ MESURÉ (2026-09-07, premier essai
+  # avec `--minutes=1`, déclenché à la main 31 s après un push) : la
+  # construction n'avait simplement pas eu le temps de finir — l'alias
+  # servait encore le commit PRÉCÉDENT, pas un ancien. Une marge trop
+  # courte transforme la latence normale en fausse alerte, et une fausse
+  # alerte ignorée une fois cesse d'être regardée (règle 13).
   #
   # OÙ IL S'ARRÊTE : il ne dit rien de la SANTÉ de ce qui est servi (comme
   # `deploye`), et il ne dit RIEN sur les alias autres que le domaine public
@@ -228,4 +234,4 @@ jobs:
       - name: l'alias public sert-il toujours le HEAD actuel de main
         run: |
           ACTUEL="$(git rev-parse HEAD)"
-          npx tsx scripts/deploiement/atteint.ts "https://otto-dit.vercel.app" "$ACTUEL" --minutes=1
+          npx tsx scripts/deploiement/atteint.ts "https://otto-dit.vercel.app" "$ACTUEL" --minutes=5

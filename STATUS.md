@@ -389,13 +389,20 @@ promotion différée d'un ancien déploiement) ; c'est un fil ouvert, pas une hy
 30 min) et sur déclenchement manuel — indépendant de `push`/`deployment_status`. Il rejoue
 EXACTEMENT la mesure de `deploye` (`scripts/deploiement/atteint.ts`, l'octet réellement servi par
 `/api/sante`, jamais un statut Vercel) contre `main` TEL QU'IL EST au moment du sondage
-(`git rev-parse HEAD` après un `checkout` frais), pas au moment du dernier push — `--minutes=1`
-(quelques lectures rapprochées contre un blip réseau isolé, jamais quinze minutes : ce travail ne
-bloque rien, il surveille un état qui devrait déjà être atteint). Aucun code nouveau dans
-`atteint.ts` — la mesure elle-même était déjà correcte et déjà éprouvée (règle 17) ; tout ce que ce
-travail change est QUAND elle s'exécute. Où il s'arrête, dit dans son en-tête : il ne dit rien de
-la santé de ce qui est servi, rien des autres alias (prévisualisation, branches), rien de la cause
-d'une dérive — seulement qu'elle existe.
+(`git rev-parse HEAD` après un `checkout` frais), pas au moment du dernier push. Aucun code nouveau
+dans `atteint.ts` — la mesure elle-même était déjà correcte et déjà éprouvée (règle 17) ; tout ce
+que ce travail change est QUAND elle s'exécute. Où il s'arrête, dit dans son en-tête : il ne dit
+rien de la santé de ce qui est servi, rien des autres alias (prévisualisation, branches), rien de
+la cause d'une dérive — seulement qu'elle existe.
+
+**Éprouvé en le déclenchant à la main (`workflow_dispatch`, run 34144771494) — et il a d'abord
+rougi pour une MAUVAISE raison.** Premier essai avec `--minutes=1`, lancé 31 s après le push de ce
+correctif lui-même : « ÉCHEC — l'instance sert ENCORE abb6b33 au lieu de 8ceb6a1 » — le déploiement
+Vercel du push n'avait simplement pas eu le temps de finir (confirmé quelques minutes plus tard :
+`/api/sante` servait bien 8ceb6a1). Une marge d'une minute est plus courte que le temps de
+construction NORMAL mesuré tout au long de cette session (100-220 s) — le garde aurait rougi à
+chaque push tombant près d'un sondage horaire, pour rien, et une fausse alerte ignorée une fois
+cesse d'être regardée (règle 13). Corrigé à `--minutes=5` dans le même commit que ce constat.
 
 ## Lot 3, tranche 1 : la nature du test (2026-09-07)
 
