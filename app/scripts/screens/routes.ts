@@ -85,8 +85,15 @@ export async function parametres(): Promise<Record<string, string>> {
     id: engId,
     // /eng/[id]/rcm/[cid] — un contrôle du dossier SOX
     cid: await un(`select id::text v from control order by code limit 1`),
-    // /eng/[id]/requests/[rid]
-    rid: await un(`select id::text v from request where engagement_id = '${engId}' order by seq_no limit 1`),
+    /* /eng/[id]/requests/[rid] ET /portal/[token]/[rid] PARTAGENT ce `rid` — le
+       second exige une demande visible au PORTAIL (statut envoyé), sinon il
+       balaye le refus « demande introuvable » au lieu de l'écran substantiel.
+       Trouvé par la revue hostile du 2026-09-06 : depuis que le semeur crée le
+       détail de compte AVANT la demande PBC (POP-01), `order by seq_no limit 1`
+       seul ramenait la demande de détail — jamais envoyée, jamais visible au
+       client — et le balayage ne couvrait plus la vraie page du portail. */
+    rid: await un(`select id::text v from request where engagement_id = '${engId}'
+                   order by (status = 'draft') asc, seq_no limit 1`),
     // /eng/[id]/poste/[code] — l'espace de travail d'un poste RETENU (ADR-112).
     // Un poste hors périmètre rendrait une page vraie mais vide : on balaye
     // celui sur lequel le dossier travaille.

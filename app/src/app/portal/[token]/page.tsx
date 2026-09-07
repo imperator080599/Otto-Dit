@@ -20,7 +20,15 @@ function langueDuPortail(reqs: { language?: string | null }[]): 'fr' | 'en' {
 async function PortalHomeCorps({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const session = await portalSession(token);
-  if (!session) return <div className="shell"><div className="panel">{deuxLangues('portal.lienInvalide')}</div></div>;
+  // même famille que /portal/[token]/[rid] : un refus SANS <h1> ni contenu n'est pas un écran (règle 13).
+  if (!session) {
+    return (
+      <div className="shell"><div className="panel">
+        <h1>{deuxLangues('portal.lienInvalide')}</h1>
+        <p className="muted">{deuxLangues('portal.lienInvalideAide')}</p>
+      </div></div>
+    );
+  }
   const requests = await portalRequests(session.contact.entity_id);
   const byEng = new Map<string, typeof requests>();
   for (const r of requests) byEng.set(r.engagement_name, [...(byEng.get(r.engagement_name) ?? []), r]);

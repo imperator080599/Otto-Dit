@@ -15,6 +15,7 @@ import { lignesAtelier } from './workpapers/atelier';
 import { lignesSortiesDuTirage, sortiesNonStatuees, statuerSortie } from './sampling';
 import { obstaclesAuVisa } from './obstacles';
 import { boucle } from './loop';
+import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 
 const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 
@@ -60,6 +61,7 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
     await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
 
     /* 1. LE TIRAGE SUR LE GRAND LIVRE PROVISOIRE, la demande, et la pièce du client. */
+    await reconcilierDetailRevenueSemeur(IDS.engNep); // POP-01 : rapprochement requis avant propose
     ancien = await proposeRevenueSample(IDS.engNep, IDS.users.karim);
     await validateSampleParams(ancien, IDS.users.lea);
     await drawRevenueSample(ancien, IDS.users.lea);

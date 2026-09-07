@@ -334,6 +334,29 @@ async function corpsDeLaSonde() {
       const avecEcart = rows.filter((r) => Number(r.ecart_cents) !== 0).length;
       return `${rows.length} import(s) · ${conclus} rapproché(s) · ${avecEcart} avec écart`;
     }));
+    /* POP-01 (étape 3-4, plan d'autonomie §B — livré ce jour, lu ce jour,
+       règle 22). proposeRevenueSample (sampling.ts) refuse de créer une
+       ligne `sample` pour le chiffre d'affaires sans un détail de compte
+       RAPPROCHÉ pour REVENUE (populationDuDetailRapproche, account-detail.ts).
+       La seule façon d'obtenir l'incohérence ci-dessous est, comme les deux
+       lectures précédentes, de contourner le service — un futur appel direct
+       en base, ou une régression qui retire le contrôle sans y penser. */
+    lectures.push(await essayer('POP-01 : aucun tirage sans rapprochement (étapes 3-4)', async () => {
+      const rows = await q<{ id: string; engagement_id: string }>(
+        `select s.id, s.engagement_id from sample s
+         join procedure_instance pi on pi.id = s.procedure_id
+         where pi.fsli_code = 'REVENUE'
+           and not exists (
+             select 1 from account_detail_import a
+             where a.engagement_id = s.engagement_id and a.fsli_code = 'REVENUE' and a.rapprochee = true
+           )`);
+      if (rows.length > 0) {
+        throw new Error(`${rows.length} sample(s) « chiffre d’affaires » SANS AUCUN détail de compte rapproché — `
+          + 'proposeRevenueSample ne produit jamais ce cas (POP-01) : contourné, ou la garde a été retirée par régression');
+      }
+      const total = await q01<{ n: string }>(`select count(*) n from sample s join procedure_instance pi on pi.id = s.procedure_id where pi.fsli_code = 'REVENUE'`);
+      return total && Number(total.n) > 0 ? `${total.n} sample(s) « chiffre d’affaires », tous rapprochés avant tirage` : 'aucun tirage encore proposé';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

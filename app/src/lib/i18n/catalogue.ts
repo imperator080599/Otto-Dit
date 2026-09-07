@@ -174,6 +174,10 @@ export const LIBELLES = {
   'portal.fichiersTransmis': { en: 'file(s) submitted', fr: 'fichier(s) transmis' },
   'req.requestNotFound': { en: 'Request not found.', fr: 'Demande introuvable.' },
   'portal.lienInvalide': { en: 'Invalid or expired link.', fr: 'Lien invalide ou expiré.' },
+  'portal.lienInvalideAide': {
+    en: 'Ask your contact at the audit firm to send you a new link.',
+    fr: 'Demandez à votre contact au cabinet d’audit de vous renvoyer un lien.',
+  },
   'portal.demandeCloturee': { en: 'Request closed.', fr: 'Demande clôturée.' },
   'commun.exerciceN': { en: 'year N ({d})', fr: 'exercice N ({d})' },
   'commun.exerciceN1': { en: 'year N-1 ({d})', fr: 'exercice N-1 ({d})' },

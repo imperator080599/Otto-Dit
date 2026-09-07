@@ -311,3 +311,22 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   mauvais (règle 17) le jour où le fil #418 reprend : soit canoniser `flex`/les longueurs à zéro
   dans `styles()`, soit — plus robuste, plus large — passer les DEUX côtés par le même Chromium
   avant de comparer (renoncerait à la contrainte « pure, sans navigateur » du fichier, à trancher).
+
+## Reporté en clôturant Lot 2, étapes 3-4 : la population dérivée, POP-01 (2026-09-06)
+
+- **R46 — le bouton « Demander le détail du compte » n'est plus cliqué nulle part**, trouvé par la
+  revue hostile (workflow, 2 réviseurs + vérification adverse). Depuis que
+  `reconcilierDetailRevenueSemeur` (part1.ts) sème la demande ET le rapprochement du chiffre
+  d'affaires AVANT que le parcours cliqué ne visite `/eng/[id]/sampling` (POP-01 l'exige : sans
+  rapprochement, le tirage semé lui-même serait refusé), le bouton `data-demander-detail-de-compte`
+  n'existe plus au premier chargement — la station « détail du compte » du parcours vérifie
+  désormais l'état SEMÉ (lien, rapprochement conclu), pas la création. `demanderDetailDeCompte`
+  reste PROUVÉ par exécution directe et par mutation dans `s3s4.test.ts` (poste vide, poste
+  inconnu, disambiguïsation par poste) — ce n'est pas un décor (la fonction n'a jamais été un
+  objet suivi par `registre.ts`/R44, dont le compte 83/16/28/39 reste inchangé par cette tranche,
+  mesuré) — mais le GESTE DE CLIC lui-même, pour ce bouton précis sur ce poste précis, n'a plus de
+  chemin atteignable dans le monde de démonstration par défaut : REVENUE est la seule FSLI que
+  l'écran de sondage sert, et elle est toujours pré-rapprochée dès le semis. Non corrigé ici (D.0-8
+  du mandat : « en cas de doute, faire la chose plus petite » — étendre l'écran à un second poste
+  non semé serait élargir la tranche). Se referme naturellement le jour où une étape ultérieure du
+  Lot 2 (ou un poste du Lot 5) offre ce même bouton sur une FSLI que le semeur ne pré-rapproche pas.

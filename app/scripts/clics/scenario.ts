@@ -1065,35 +1065,47 @@ export async function conduire(
     }
   });
 
-  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 1 : la demande naît DU POSTE, avant tout
-     tirage. Même discipline que la station « sondage » plus bas (R37,
-     docs/CHASSE.md §3) : un avant/après compté sur les demandes RÉELLES, pas
-     seulement « aucun refus » — une redirection réussie n'est pas une preuve
-     d'écriture. */
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPES 1 ET 3-4 : la demande naît DU POSTE,
+     avant tout tirage — et POP-01 (sampling.ts) exige désormais qu'elle soit
+     RAPPROCHÉE avant qu'un tirage puisse être proposé. Depuis le câblage de
+     POP-01 (2026-09-06), le SEMEUR reconcilie déjà le détail REVENUE avant
+     de tirer l'échantillon (`reconcilierDetailRevenueSemeur`, part1.ts,
+     mêmes fonctions que le chemin humain, pas un raccourci — règle 20) :
+     à la première visite du parcours cliqué, le bouton a donc déjà disparu.
+     Cette station vérifie l'état SEMÉ, pas la création : le lien mène à une
+     demande RÉELLE, et le rapprochement affiché est bien celui du semeur —
+     un objet qu'on peut nommer, pas une supposition sur ce que la page rend. */
   await station('détail du compte', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);
-    if (await compte('[data-demander-detail-de-compte]')) {
-      const titreDetail = /Détail du compte|Account detail/i;
-      const compterDemandesDetail = async () => {
-        await aller(`${eng}/requests`);
-        return p.locator('a[href*="/requests/"]', { hasText: titreDetail }).count();
-      };
-      const avant = await compterDemandesDetail();
-      await aller(`${eng}/sampling`);
-      await cliquer('[data-demander-detail-de-compte]', 6000);
-      const apres = await compterDemandesDetail();
-      dire('détail du compte : le bouton engendre une demande RÉELLE, pas seulement une redirection',
-        !refus(p) && apres > avant,
-        refus(p) ?? (apres > avant ? `demande engendrée (${avant} → ${apres})` : `AUCUNE nouvelle demande (${avant} → ${apres}) — écriture avalée`));
-      await aller(`${eng}/sampling`);
-      dire('détail du compte : un second passage OFFRE le lien vers la demande, pas un second bouton',
-        (await compte('[data-detail-de-compte-lien]')) > 0 && (await compte('[data-demander-detail-de-compte]')) === 0,
-        refus(p) ?? 'lien présent, bouton disparu');
-    }
+    dire('détail du compte : semé déjà rapproché — le lien remplace le bouton dès la première visite',
+      (await compte('[data-detail-de-compte-lien]')) > 0 && (await compte('[data-demander-detail-de-compte]')) === 0,
+      refus(p) ?? 'lien attendu, bouton absent');
+    const href = await p.locator('[data-detail-de-compte-lien]').first().getAttribute('href');
+    // `cliquer()`, pas un `.click()` + `waitForLoadState` maison : une navigation
+    // CLIENT (<Link>) ne déclenche ni `load` ni toujours un `networkidle` net, et
+    // sans la grâce fixe de `cliquer()`, `p.url()` se lit avant que la transition
+    // n'ait fini — trouvé ici même (« arrivée sur .../sampling », faux négatif).
+    await cliquer('[data-detail-de-compte-lien]', 3000);
+    dire('détail du compte : le lien mène à une demande RÉELLE (page /requests/<id>, pas une redirection décorative)',
+      !refus(p) && p.url().includes(String(href)),
+      refus(p) ?? `arrivée sur ${p.url()}`);
+    await aller(`${eng}/sampling`);
+    const ligneSemee = p.locator('[data-rapprochement-ligne]').first();
+    dire('détail du compte : le rapprochement semé (3 lignes, POP-01) est visible CONCLU, pas en attente',
+      (await ligneSemee.locator('[data-rapprochement-conclu]').count()) > 0,
+      refus(p) ?? 'ligne semée non conclue — POP-01 n’aurait pas dû laisser tirer');
   });
 
-  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 2 : LE RAPPROCHEMENT. Un fichier
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 2 : LE RAPPROCHEMENT. Depuis que le
+     semeur rapproche déjà UN import REVENUE (POP-01, station précédente),
+     cette station importe un SECOND fichier — la ligne la plus RÉCENTE
+     (`detailsDeCompteDuDossier` trie par `created_at desc`) est donc
+     TOUJOURS celle qu'on vient d'importer, jamais la ligne semée. Le
+     `data-rapprochement-conclu` final est vérifié SUR CETTE LIGNE
+     précisément (`ligneApres`), pas sur la page entière : la ligne semée
+     porte déjà ce marqueur, un `compte()` global aurait rendu la preuve
+     vraie même si CETTE conclusion avait échoué en silence. Un fichier
      importé avec un montant délibérément décalé (pas de solde exact à
      deviner dans le navigateur) — l'écart se voit, se refuse SANS
      explication (POP-02, le serveur, pas le navigateur : le champ n'est pas
@@ -1122,7 +1134,7 @@ export async function conduire(
         await ligneApres.locator('input[name=explication]').fill('Facture régularisée post-clôture, écart confirmé et documenté.');
         await soumettre(ligneApres.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
         dire('rapprochement : expliqué par écrit, le rapprochement se conclut',
-          !refus(p) && (await compte('[data-rapprochement-conclu]')) > 0,
+          !refus(p) && (await p.locator('[data-rapprochement-ligne]').first().locator('[data-rapprochement-conclu]').count()) > 0,
           refus(p) ?? 'rapprochement conclu');
       }
     }

@@ -8,10 +8,21 @@ import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { validatedThresholds } from './materiality';
 import { revenuePopulation } from './population';
+import { populationDuDetailRapproche } from './account-detail';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // S3 sampling flows: propose (L3, pack defaults + rationale) → validate (human, may edit)
 // → draw (L0, kernel, engine_run recorded). Deterministic given (population, seed, params).
+//
+// POP-01 (plan d'autonomie, Partie B, étape 2/4) : vérifié UNE SEULE FOIS, à
+// `propose` — pas à `draw`. `rapprochee` (account-detail.ts) ne repasse
+// jamais à faux une fois vrai (aucun geste de « dé-rapprochement » n'existe
+// dans ce dépôt, POP-03 l'interdit même en substance), donc un rapprochement
+// déjà vu à `propose` reste vrai à `draw` — re-vérifier au tirage n'ajoute
+// aucune garantie, seulement une requête. Si un chemin de « rouvrir un
+// rapprochement » apparaît un jour, cette hypothèse cesse d'être vraie et
+// `draw` devra re-vérifier aussi (règle 19 : cette limite est nommée ici
+// pour qu'elle ne se découvre pas par un incident).
 
 export async function ensureRevenueProcedure(engagementId: string): Promise<string> {
   const existing = await q01<{ id: string }>(
@@ -39,6 +50,21 @@ export async function proposeRevenueSample(engagementId: string, userId: string)
   const pop = await revenuePopulation(engagementId);
   if (!pop.gate.ok) {
     throw new Error(`population gate: open reconciliation differences on ${pop.gate.blocking.join(', ')} — document or resolve first`);
+  }
+  /* POP-01 : le solde balance/GL peut être propre (pop.gate.ok ci-dessus) sans
+     que le DÉTAIL sous-jacent (ce que le client fournit derrière ce solde,
+     étapes 1-2) n'ait jamais été rapproché — ce sont deux affirmations
+     différentes. `populationDuDetailRapproche` lit `account_detail_import`
+     (account-detail.ts) : `null` veut dire aucun rapprochement conclu pour
+     ce poste, et c'est exactement le cas que ce refus existe pour attraper
+     (mandat, Partie B §B.2 étape 2 : « la population n'est ouverte au tirage
+     qu'une fois le rapprochement conclu »). */
+  const detailRapproche = await populationDuDetailRapproche(engagementId, 'REVENUE');
+  if (!detailRapproche) {
+    throw new Error(
+      "POP-01 : on ne tire pas un échantillon sur une population qui n'est pas rapprochée — "
+      + 'le détail du compte doit être demandé, importé puis rapproché avant de proposer un tirage.',
+    );
   }
   const procedureId = await ensureRevenueProcedure(engagementId);
   const coverageCapCents = Math.round(thresholds.perfCents * sub.coverageCapPctOfPM);

@@ -8,7 +8,8 @@ import { rebuildFslis, proposeScoping, confirmScoping, listFslis } from '@/lib/s
 import { propose, validate } from '@/lib/services/materiality';
 import { assessFsli } from '@/lib/services/risk';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
-import { generatePbcFromSample, approveSend, requestDetail } from '@/lib/services/requests';
+import { generatePbcFromSample, approveSend, requestDetail, demanderDetailDeCompte } from '@/lib/services/requests';
+import { importerDetailDeCompte, rapprocherDetailDeCompte, attenduGlPourPoste } from '@/lib/services/account-detail';
 import { ingestEvidence, answerExplanation, markAllSubmitted, attachEvidenceToItem } from '@/lib/services/evidence';
 import {
   importerListing,
@@ -93,7 +94,46 @@ export async function bootstrapNep(): Promise<void> {
   await assessFsli(IDS.engNep, 'REVENUE', IDS.users.lea);
 }
 
+/** Une décomposition déterministe de `totalCents` en N lignes dont la somme
+ *  vaut EXACTEMENT `totalCents` — jamais des montants tapés de mémoire, ni un
+ *  arrondi qui laisserait un écart résiduel. Les trois premières parts sont
+ *  calculées, la dernière absorbe le reste (toujours positif si `totalCents`
+ *  l'est, ce qui est le cas ici : un solde de chiffre d'affaires). */
+function decouperEnLignes(totalCents: number, parts: number[]): number[] {
+  const lignes = parts.slice(0, -1).map((p) => Math.round(totalCents * p));
+  lignes.push(totalCents - lignes.reduce((s, c) => s + c, 0));
+  return lignes;
+}
+
+/** PLAN D'AUTONOMIE, PARTIE B, ÉTAPES 1-2 : LE DÉTAIL DU COMPTE, PUIS SON
+ *  RAPPROCHEMENT — semés par les MÊMES fonctions que le chemin humain
+ *  (demanderDetailDeCompte, importerDetailDeCompte, rapprocherDetailDeCompte),
+ *  jamais par une écriture directe en base : ce ne sont donc PAS des décors
+ *  (règle 20) — exactement le même principe qu'`approveSend` ou
+ *  `ingestEvidence` ailleurs dans ce fichier. Nécessaire depuis que POP-01
+ *  (sampling.ts) refuse `proposeRevenueSample` sans rapprochement conclu :
+ *  semer un tirage sans rapprocher d'abord romprait sa propre garde neuve.
+ *  EXPORTÉE : les bootstraps locaux de s3s4.test.ts, s5s6.test.ts et
+ *  retirage.test.ts appellent `proposeRevenueSample` sans passer par
+ *  `samplingAndRequest` — ils doivent l'appeler aussi, sous peine du même
+ *  refus POP-01 que celui que cette fonction existe pour satisfaire. */
+export async function reconcilierDetailRevenueSemeur(engagementId: string): Promise<void> {
+  const attendu = await attenduGlPourPoste(engagementId, 'REVENUE');
+  const [l1, l2, l3] = decouperEnLignes(attendu, [0.5, 0.3, 0.2]);
+  const csv = 'référence;libellé;montant\n'
+    + `CA-SEMEUR-001;Chiffre d'affaires — ventes de marchandises;${(l1 / 100).toFixed(2)}\n`
+    + `CA-SEMEUR-002;Chiffre d'affaires — prestations de services;${(l2 / 100).toFixed(2)}\n`
+    + `CA-SEMEUR-003;Chiffre d'affaires — autres ventes et avoirs;${(l3 / 100).toFixed(2)}`;
+  await demanderDetailDeCompte(engagementId, 'REVENUE', IDS.users.karim);
+  const importId = await importerDetailDeCompte({
+    engagementId, fsliCode: 'REVENUE', filename: 'detail-ca-semeur.csv',
+    contenu: new TextEncoder().encode(csv), userId: IDS.users.karim,
+  });
+  await rapprocherDetailDeCompte(importId, IDS.users.lea); // écart nul : aucune explication requise
+}
+
 export async function samplingAndRequest(): Promise<string> {
+  await reconcilierDetailRevenueSemeur(IDS.engNep);
   const sampleId = await proposeRevenueSample(IDS.engNep, IDS.users.karim);
   await validateSampleParams(sampleId, IDS.users.lea);
   await drawRevenueSample(sampleId, IDS.users.lea);

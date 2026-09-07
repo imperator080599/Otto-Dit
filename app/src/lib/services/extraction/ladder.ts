@@ -163,13 +163,24 @@ async function logExtract(tenantId: string, engagementId: string, evidenceId: st
   });
 }
 
-/** Run the ladder over all unextracted evidence of an engagement. */
+/** Run the ladder over all unextracted evidence of an engagement.
+ *
+ *  EXCLUT le détail de compte importé (`account_detail_import.evidence_id`,
+ *  plan d'autonomie Partie B étape 2, account-detail.ts) — trouvé en
+ *  câblant POP-01 (2026-09-06) : sans cette exclusion, le CSV du
+ *  rapprochement rentrait dans l'échelle d'extraction comme n'importe quelle
+ *  pièce déposée et se retrouvait « en attente de vérification OCR »,
+ *  alors que ses champs sont déjà lus par un parseur déterministe
+ *  (`importerDetailDeCompte`) — l'extraire une seconde fois ne serait pas
+ *  une preuve de plus, ce serait la même donnée comptée deux fois sous deux
+ *  mécanismes différents. */
 export async function extractAll(engagementId: string, userId: string | null): Promise<{ processed: number; pendingVerify: number }> {
   await assertMembre(engagementId, userId, 'extraire toutes les pièces');
   const rows = await q<{ id: string }>(
     `select e.id from evidence e
      where e.engagement_id = $1 and e.quarantined = false
        and not exists (select 1 from extraction x where x.evidence_id = e.id and x.status in ('complete','verified','pending_verify'))
+       and not exists (select 1 from account_detail_import a where a.evidence_id = e.id)
      order by e.created_at`,
     [engagementId],
   );

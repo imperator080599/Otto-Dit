@@ -124,6 +124,24 @@
   (`verify-full-8.log`) portait 0 incident. **Pas corrigé ici** (hors mandat de cette tranche,
   même discipline que F9/F10) — le manque de filtrage est consigné à part, R45,
   `docs/BACKLOG_REPORTE.md`, pour qu'il ne se reperde pas.
+- **F12 — UN incident dans `verify-full-18.log`** (2026-09-06, chaîne verify pour la tranche « Lot
+  2, étapes 3-4 : la population dérivée, POP-01 », après les correctifs de la revue hostile,
+  208 étapes) : un `#418` sur `/eng/<id>/risk` — `memePage=VRAI`, flux complet, 14 divergences,
+  page NON touchée par cette tranche. **Deux composantes distinctes, pas une seule** : (a) au
+  jeton 1168, `style="margin-top:0"` (serveur) / `style="margin-top: 0px"` (client) — EXACTEMENT
+  la famille F11 (re-sérialisation CSSOM), déjà nommée, déjà non filtrée, déjà reportée R45 ; pas
+  une hypothèse nouvelle. (b) aux jetons 279 à 526, la table risque-par-assertion (5 lignes :
+  evaluation/exhaustivite/presentation/realite/separation) montre un DÉCALAGE cohérent d'une ligne
+  entre serveur et client — le premier jeton en écart (279) porte `SERVEUR : (rien)` contre
+  `CLIENT : <span class="badge amber">moyen</span>…` : le client affiche une ligne ENTIÈRE que le
+  serveur ne rend pas du tout à cet endroit, et tout ce qui suit se lit décalé d'un cran, jusqu'à
+  ce que le comparateur re-synchronise. **Pas creusé plus loin ici** (hors mandat de cette
+  tranche, même discipline que F9/F10/F11) : la lecture la plus proche des faits déjà établis est
+  l'hypothèse H (le DOM relevé reflète un état après une mutation côté client — ici, un niveau de
+  risque affiné par une station antérieure — que le flux serveur capturé ne portait pas encore),
+  mais ce n'est PAS prouvé, seulement compatible. Le run PRÉCÉDENT sur le même arbre
+  (`verify-full-17.log`) portait 0 incident. La chaîne officielle de cette tranche a été rejouée
+  jusqu'à un passage propre plutôt que poussée sur ce run rouge (même discipline que R37, F9, F10).
 
 ### Hypothèses ÉLIMINÉES — et par quoi
 

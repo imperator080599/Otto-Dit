@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { initTestDb } from '@/lib/test/setup';
-import { dispositions } from '@/lib/flows/part1';
+import { dispositions, reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from './imports';
@@ -89,6 +89,7 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     }
     await rebuildFslis(IDS.engNep, IDS.users.karim);
     await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
+    await reconcilierDetailRevenueSemeur(IDS.engNep); // POP-01 : rapprochement requis avant propose
     const sampleId = await proposeRevenueSample(IDS.engNep, IDS.users.karim);
     await validateSampleParams(sampleId, IDS.users.lea);
     await drawRevenueSample(sampleId, IDS.users.lea);

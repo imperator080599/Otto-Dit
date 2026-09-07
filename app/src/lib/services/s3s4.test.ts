@@ -11,6 +11,8 @@ import { propose, validate } from './materiality';
 import { revenuePopulation } from './population';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from './sampling';
 import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, listRequests, demanderDetailDeCompte, derniereDemandeDetailDeCompte } from './requests';
+import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
+import { populationDuDetailRapproche, attenduGlPourPoste } from './account-detail';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from './evidence';
 import { portalRequests, portalItems, portalRequestGuard } from './portal';
 import { processInbound } from './inbound';
@@ -56,7 +58,49 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
     expect(pop.rows.some((r) => r.flags.includes('credit_note_pattern'))).toBe(true);
   });
 
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPES 3-4 : LA POPULATION DÉRIVÉE, ET POP-01.
+     CAS CONNU MAUVAIS (règle 17) : à ce point du fichier, la balance/GL est
+     propre (Gate 2, ci-dessus) mais AUCUN détail de compte n'a encore été
+     rapproché — exactement l'état que POP-01 existe pour refuser. */
+  it('POP-01 : aucun tirage sans un détail de compte rapproché ; la population dérivée le reflète', async () => {
+    expect(await populationDuDetailRapproche(IDS.engNep, 'REVENUE')).toBeNull();
+    await expect(proposeRevenueSample(IDS.engNep, IDS.users.karim)).rejects.toThrow(/POP-01/);
+
+    await reconcilierDetailRevenueSemeur(IDS.engNep);
+    const pop = await populationDuDetailRapproche(IDS.engNep, 'REVENUE');
+    expect(pop).not.toBeNull();
+    expect(pop!.rowCount).toBe(3); // les trois lignes déterministes du semeur
+    expect(pop!.empreinte).toMatch(/^[0-9a-f]{64}$/); // sha256 de la PIÈCE — jamais recalculée ici
+    const attendu = await attenduGlPourPoste(IDS.engNep, 'REVENUE');
+    expect(pop!.totalCents).toBe(attendu); // dérivé, jamais saisi : le total EST celui du rapprochement
+
+    // dorénavant rapproché : le tirage n'est plus refusé par POP-01. Le sample « proposed »
+    // laissé ici est automatiquement SUPERSEDED par le prochain propose (sampling.ts:57) —
+    // rien à nettoyer à la main.
+    await proposeRevenueSample(IDS.engNep, IDS.users.karim);
+  });
+
+  /* CAS CONNU MAUVAIS (règle 17) — trouvé par la revue hostile du 2026-09-06 :
+     `rapprochee` ne repasse jamais à faux (POP-03), mais rien n'empêchait le
+     grand livre de bouger SOUS un rapprochement déjà conclu (importTb n'a
+     aucune garde d'invalidation, contrairement à importFec). Simulé ici
+     directement sur la ligne stockée — sans réimporter toute la balance —
+     pour isoler la règle de péremption elle-même de la question, distincte
+     et non résolue ici, de savoir si importTb DEVRAIT avoir une garde. */
+  it('POP-01 : un rapprochement conclu mais PÉRIMÉ (le GL a bougé depuis) ne rouvre pas le tirage', async () => {
+    const pop = await populationDuDetailRapproche(IDS.engNep, 'REVENUE');
+    expect(pop).not.toBeNull(); // rapproché par le test précédent
+    await q(`update account_detail_import set gl_attendu_cents = gl_attendu_cents + 100 where id = $1`, [pop!.importId]);
+    expect(await populationDuDetailRapproche(IDS.engNep, 'REVENUE')).toBeNull();
+    await expect(proposeRevenueSample(IDS.engNep, IDS.users.karim)).rejects.toThrow(/POP-01/);
+    // remise en cohérence : sans quoi CE test polluerait les tests suivants du fichier
+    await q(`update account_detail_import set gl_attendu_cents = gl_attendu_cents - 100 where id = $1`, [pop!.importId]);
+    expect(await populationDuDetailRapproche(IDS.engNep, 'REVENUE')).not.toBeNull();
+  });
+
   it('proposes, validates and draws the sample — reproducing the pinned manifest draw', async () => {
+    // le détail de compte est déjà rapproché depuis le test POP-01 ci-dessus (irréversible,
+    // POP-03) — repasser par reconcilierDetailRevenueSemeur créerait un second import inutile.
     const sampleId = await proposeRevenueSample(IDS.engNep, IDS.users.karim);
     await validateSampleParams(sampleId, IDS.users.lea);
     const { items } = await drawRevenueSample(sampleId, IDS.users.lea);
@@ -175,7 +219,12 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
   it('reminders materialize on the cadence under the demo clock and are pausable', async () => {
     await resetClock();
     const requests = await listRequests(IDS.engNep);
-    const rid = requests[0].id;
+    // requests[0] would now be the détail-de-compte request (POP-01 seed, draft, no due
+    // date) — the PBC request under test is the one `approveSend` stamped `sent_at` on.
+    // NOT `status === 'sent'`: the portal test above (markAllSubmitted) already moved it
+    // to 'partially_submitted' by the time this test runs — `sent_at`, set once, never
+    // cleared, is the durable marker; `status` is not.
+    const rid = requests.find((r) => r.sent_at !== null)!.id;
     await ensureReminders(IDS.engNep);
     let detail = await requestDetail(rid);
     expect(detail!.reminders.filter((r) => r.status === 'sent').length).toBe(0);

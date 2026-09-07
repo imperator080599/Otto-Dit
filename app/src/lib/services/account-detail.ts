@@ -6,16 +6,19 @@ import { fsliAccounts } from './fsli';
 import { derniereDemandeDetailDeCompte } from './requests';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
-// Plan d'autonomie, Partie B, étape 2 : LE RAPPROCHEMENT. Même mécanique que
+// Plan d'autonomie, Partie B, étapes 2 ET 3 : LE RAPPROCHEMENT, puis LA
+// POPULATION dérivée de ce rapprochement. Même mécanique que
 // aux_balance_file/row (migration 0026, balances-aux.ts) — un fichier CSV du
 // client entre COMME PIÈCE (ingestEvidence, empreinte, provenance), ses
 // lignes sont parsées et conservées, et le TOTAL se rapproche du grand livre
-// au centime. CE QUE CE SERVICE NE FAIT PAS (règle 19) : il ne tire aucun
-// échantillon (étape 4), ne dérive aucune population persistée (étape 3 —
-// nombre de lignes/total/empreinte se lisent directement sur cette table,
-// rien n'est dupliqué), et ne bloque AUCUN tirage existant (POP-01 n'est pas
-// câblé ici — le tirage du chiffre d'affaires actuel, sample/sample_item,
-// n'est pas touché).
+// au centime. `populationDuDetailRapproche` (étape 3) ne dérive RIEN de
+// nouveau : nombre de lignes, total et empreinte se lisent directement sur
+// cette table et sur `evidence.sha256` — rien n'est dupliqué ni stocké deux
+// fois. CE QUE CE SERVICE NE FAIT TOUJOURS PAS (règle 19) : il ne tire
+// aucun échantillon lui-même — POP-01 (le refus « on ne tire pas sur une
+// population non rapprochée ») est câblé dans `sampling.ts`
+// (`proposeRevenueSample`), qui APPELLE `populationDuDetailRapproche`
+// d'ici ; ce fichier expose la lecture, il ne bloque rien lui-même.
 
 function versCents(brut: string, ligne: number, colonne: string): number {
   /* `\s` (pas `/[  ]/g`, DEUX espaces ASCII littéraux — le défaut copié de
@@ -34,10 +37,23 @@ function versCents(brut: string, ligne: number, colonne: string): number {
 /** Ce que le grand livre porte pour ce poste — DÉRIVÉ, jamais stocké tel
  *  quel (même principe que attenduGl dans balances-aux.ts). Réutilise
  *  fsliAccounts (le même mécanisme qui a listé les comptes visés à
- *  l'étape 1, requests.ts) plutôt qu'un préfixe de compte en dur. */
+ *  l'étape 1, requests.ts) plutôt qu'un préfixe de compte en dur.
+ *
+ *  EN VALEUR ABSOLUE — trouvé par la revue hostile du 2026-09-06, en
+ *  clôturant l'étape 3 : `account.balance` est débit MOINS crédit, et un
+ *  compte 70x (chiffre d'affaires) est créditeur par nature — son solde
+ *  est donc NÉGATIF dans cette convention. Le semeur (part1.ts,
+ *  reconcilierDetailRevenueSemeur) prenait cette valeur brute pour
+ *  fabriquer un détail de compte : un « chiffre d'affaires » affiché en
+ *  négatif à l'écran, mesuré une fois à -5 631 895,30 €. Même convention
+ *  que `population.ts:66` (`Math.abs(creditCents - debitCents)`) pour
+ *  exactement la même famille de montant — l'un des deux avait déjà
+ *  raison, l'autre non. Une vraie anomalie (un compte de produits
+ *  débiteur) resterait invisible ici : ce n'est pas le rôle de cette
+ *  fonction de la signaler, celui de `reconciliation.ts`/`fsliRecoGate`. */
 export async function attenduGlPourPoste(engagementId: string, fsliCode: string): Promise<number> {
   const comptes = await fsliAccounts(engagementId, fsliCode);
-  return comptes.reduce((s, c) => s + c.balanceCents, 0);
+  return Math.abs(comptes.reduce((s, c) => s + c.balanceCents, 0));
 }
 
 export interface DetailImporte {
@@ -190,4 +206,55 @@ export async function detailsDeCompteDuDossier(engagementId: string, fsliCode?: 
     rowCount: r.row_count, totalCents: Number(r.total_cents), glAttenduCents: Number(r.gl_attendu_cents),
     ecartCents: Number(r.ecart_cents), ecartExplication: r.ecart_explication, rapprochee: r.rapprochee,
   }));
+}
+
+export interface PopulationRapprochee {
+  importId: string; fsliCode: string; rowCount: number; totalCents: number;
+  empreinte: string; rapprocheeLe: string;
+}
+
+/** Plan d'autonomie, Partie B, étape 3 : LA POPULATION. « Dérivée du détail
+ *  rapproché… jamais saisie » (mandat §B.2) — rien de nouveau n'est stocké :
+ *  compte de lignes et total viennent de `account_detail_import` (posés à
+ *  l'import, étape 1/2), l'empreinte est celle de la PIÈCE elle-même
+ *  (`evidence.sha256`, déjà calculée par `ingestEvidence` — pas une seconde
+ *  fonction de hachage à maintenir). `null` : aucun détail rapproché pour ce
+ *  poste, OU un rapprochement conclu mais PÉRIMÉ — c'est exactement l'état
+ *  que POP-01 (sampling.ts) refuse. Le plus RÉCENT rapprochement conclu
+ *  fait foi si plusieurs imports se sont succédé (même règle que
+ *  `derniereDemandeDetailDeCompte`, requests.ts).
+ *
+ *  LA FRAÎCHEUR EST VÉRIFIÉE, PAS SUPPOSÉE — trouvé par la revue hostile du
+ *  2026-09-06, en clôturant l'étape 4 : `rapprochee` ne repasse jamais à
+ *  faux (POP-03), mais RIEN n'empêchait un ré-import de balance postérieur
+ *  (`importTb`, sans garde d'invalidation contrairement à `importFec`) de
+ *  faire bouger `attenduGlPourPoste` SOUS un rapprochement déjà conclu —
+ *  POP-01 aurait laissé tirer sur un rapprochement qui ne correspond plus
+ *  au grand livre courant. Le `gl_attendu_cents` figé à l'import est donc
+ *  comparé ICI à une relecture FRAÎCHE de `attenduGlPourPoste` : un écart
+ *  entre les deux rend `null`, exactement comme s'il n'y avait jamais eu de
+ *  rapprochement — l'auditeur doit importer et rapprocher le détail à
+ *  nouveau contre le grand livre qui a changé sous lui. CE QUE ÇA NE FAIT
+ *  PAS (règle 19) : réparer `importTb`, qui reste sans garde d'invalidation
+ *  — cette fonction ne fait que refuser de mentir sur l'état du tirage,
+ *  elle ne rend pas le ré-import de balance plus sûr pour autant. */
+export async function populationDuDetailRapproche(engagementId: string, fsliCode: string): Promise<PopulationRapprochee | null> {
+  const row = await q01<{
+    id: string; row_count: number; total_cents: string; empreinte: string; rapprochee_at: string;
+    gl_attendu_cents: string;
+  }>(
+    `select i.id, i.row_count, i.total_cents::text, e.sha256 as empreinte, i.rapprochee_at::text,
+            i.gl_attendu_cents::text
+     from account_detail_import i join evidence e on e.id = i.evidence_id
+     where i.engagement_id = $1 and i.fsli_code = $2 and i.rapprochee = true
+     order by i.rapprochee_at desc limit 1`,
+    [engagementId, fsliCode],
+  );
+  if (!row) return null;
+  const attenduFrais = await attenduGlPourPoste(engagementId, fsliCode);
+  if (attenduFrais !== Number(row.gl_attendu_cents)) return null; // périmé : le GL a bougé depuis le rapprochement
+  return {
+    importId: row.id, fsliCode, rowCount: row.row_count, totalCents: Number(row.total_cents),
+    empreinte: row.empreinte, rapprocheeLe: row.rapprochee_at,
+  };
 }

@@ -18,14 +18,44 @@ async function PortalRequestPageCorps({
 }) {
   const { token, rid } = await params;
   const { erreur } = await searchParams;
+  /* CHAQUE REFUS PORTE UN <h1> ET UN GESTE — trouvé en clôturant l'étape 4 du
+     plan d'autonomie (2026-09-06) : depuis que le semeur crée le détail de
+     compte AVANT la demande PBC (POP-01), la première demande listée par
+     /eng/[id]/requests n'est plus systématiquement celle que le portail sert
+     — et `npm run fumee` a exercé pour la première fois ce refus, resté SANS
+     titre ET quasi vide (197 caractères, sous le plancher de 200 de la
+     sonde). Ce n'est pas un défaut neuf : c'est exactement la même famille
+     qu'un refus rendu en page 500 (règle 13, commentaire ci-dessous) — un
+     écran sans en-tête ni contenu n'est pas un écran, que son code HTTP soit
+     200 ou 500. Le lien de retour n'est pas qu'un supplément de texte : un
+     client qui reçoit ce refus doit pouvoir AGIR, pas seulement le lire. */
   const session = await portalSession(token);
-  if (!session) return <div className="shell"><div className="panel">{deuxLangues('portal.lienInvalide')}</div></div>;
+  if (!session) {
+    return (
+      <div className="shell"><div className="panel">
+        <h1>{deuxLangues('portal.lienInvalide')}</h1>
+        <p className="muted">{deuxLangues('portal.lienInvalideAide')}</p>
+      </div></div>
+    );
+  }
   if (!(await portalRequestGuard(rid, session.contact.entity_id))) {
-    return <div className="shell"><div className="panel">{deuxLangues('req.requestNotFound')}</div></div>;
+    return (
+      <div className="shell"><div className="panel">
+        <h1>{deuxLangues('req.requestNotFound')}</h1>
+        <p><Link href={`/portal/${token}`}>{deuxLangues('portal.retour')}</Link></p>
+      </div></div>
+    );
   }
   const requests = await portalRequests(session.contact.entity_id);
   const request = requests.find((r) => r.id === rid);
-  if (!request) return <div className="shell"><div className="panel">{deuxLangues('portal.demandeCloturee')}</div></div>;
+  if (!request) {
+    return (
+      <div className="shell"><div className="panel">
+        <h1>{deuxLangues('portal.demandeCloturee')}</h1>
+        <p><Link href={`/portal/${token}`}>{deuxLangues('portal.retour')}</Link></p>
+      </div></div>
+    );
+  }
   const lang = (request.language === 'fr' ? 'fr' : 'en') as 'fr' | 'en';
   const t = (cle: CleLibelle, vars?: Record<string, string | number>) => traduire(lang, cle, vars);
   const items = await portalItems(rid);

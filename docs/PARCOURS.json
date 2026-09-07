@@ -269,11 +269,15 @@
       "gabarit": false
     },
     {
-      "nom": "détail du compte : le bouton engendre une demande RÉELLE, pas seulement une redirection",
+      "nom": "détail du compte : semé déjà rapproché — le lien remplace le bouton dès la première visite",
       "gabarit": false
     },
     {
-      "nom": "détail du compte : un second passage OFFRE le lien vers la demande, pas un second bouton",
+      "nom": "détail du compte : le lien mène à une demande RÉELLE (page /requests/<id>, pas une redirection décorative)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte : le rapprochement semé (3 lignes, POP-01) est visible CONCLU, pas en attente",
       "gabarit": false
     },
     {

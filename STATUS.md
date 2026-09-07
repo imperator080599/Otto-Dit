@@ -258,6 +258,100 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Lot 2, étapes 3-4 : la population dérivée, et POP-01 (2026-09-07)
+
+*Le mandat complet (Partie B en sept étapes) a été retrouvé perdu à la compaction, puis retransmis
+par le fondateur et commité verbatim (règle 33 de CLAUDE.md, `docs/MANDATS/`), avant cette tranche —
+voir `docs/REGISTRE_IDEES.md` §J pour la citation exacte. Le tirage (étape 4) était déjà un geste
+humain cliquable AVANT cette tranche (`sampling/page.tsx`, boutons propose/valider/tirer) : le
+mandat le disait « pas cliquable aujourd'hui » en écrivant le plan, avant le lot 2 — le code dit
+le contraire, mesuré, et c'est le code qui fait foi (règle 15).*
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas avant cette tranche.** Le tirage du
+chiffre d'affaires REFUSE désormais tant que le détail du compte n'a pas été rapproché
+(`POP-01`) — et la population elle-même se lit, dérivée du rapprochement, jamais saisie deux fois
+(nombre de lignes, total, empreinte de la pièce).
+
+**Étape 3 — la population dérivée.** `populationDuDetailRapproche(engagementId, fsliCode)`
+(`account-detail.ts`) : aucune table neuve, aucune migration — nombre de lignes et total se lisent
+directement sur `account_detail_import` (étapes 1-2), l'empreinte est celle de la PIÈCE elle-même
+(`evidence.sha256`, déjà calculée par `ingestEvidence`). `null` quand rien n'est rapproché pour ce
+poste — l'état que POP-01 refuse.
+
+**Étape 4 — POP-01.** `proposeRevenueSample` (`sampling.ts`) refuse avec `POP-01` si
+`populationDuDetailRapproche(engagementId, 'REVENUE')` rend `null`. Vérifié UNE SEULE FOIS, à la
+proposition — jamais au tirage : `rapprochee` ne repasse jamais à faux (POP-03), donc un
+rapprochement vu à la proposition reste vrai au tirage ; la limite est nommée dans le code (règle
+19) pour le jour où un chemin de « rouvrir un rapprochement » existerait.
+
+**Le semeur reconcilie AVANT de tirer, avec les mêmes fonctions que le chemin humain**
+(`reconcilierDetailRevenueSemeur`, part1.ts — demanderDetailDeCompte, importerDetailDeCompte,
+rapprocherDetailDeCompte, jamais une écriture directe : pas un décor, règle 20), sans quoi le
+monde de démonstration romprait sa propre garde neuve. Nécessite d'ajuster trois bootstraps de
+test qui tiraient directement sans passer par `part1.ts` (s3s4/s5s6/retirage.test.ts) et la
+station cliquée « détail du compte », dont le bouton de création n'a plus de premier-chargement à
+elle depuis que le semeur pré-crée et rapproche la demande — la station vérifie désormais l'état
+SEMÉ (lien, rapprochement conclu), pas la création. Ce geste-là (le clic sur le bouton lui-même)
+n'a donc plus de chemin cliqué dans le monde par défaut — **R46**, enregistré, pas corrigé
+(étendre l'écran à un second poste non semé aurait élargi la tranche).
+
+**Revue hostile (workflow, deux réviseurs indépendants + vérification adverse par constat)** : six
+constats bruts, quatre défauts réels distincts après dédoublonnage, tous corrigés avant ce
+commit :
+- **POP-01 était périmable en silence** : rien ne revérifiait qu'un rapprochement concluait
+  toujours contre le grand livre COURANT — un ré-import de balance (`importTb`, sans garde
+  d'invalidation contrairement à `importFec`) pouvait faire bouger le solde attendu SOUS un
+  rapprochement déjà conclu, sans que POP-01 le remarque. Corrigé : `populationDuDetailRapproche`
+  compare désormais le `gl_attendu_cents` figé à l'import à une relecture FRAÎCHE de
+  `attenduGlPourPoste` ; un écart rend `null`, exactement comme si rien n'avait été rapproché.
+  Prouvé par mutation.
+- **Le chiffre d'affaires semé s'affichait NÉGATIF** (`attenduGlPourPoste` rendait le solde brut
+  débit-moins-crédit d'un compte créditeur par nature, mesuré une fois à -5 631 895,30 €) — corrigé
+  en valeur absolue, même convention que `population.ts` pour le même type de montant.
+- **Le `[rid]` partagé par `screens`/`fumee`/`densite` résolvait la demande de détail** (jamais
+  envoyée, jamais visible au portail) plutôt qu'une demande réelle, dégradant silencieusement la
+  couverture de `/portal/[token]/[rid]` à son repli de refus au lieu de l'écran substantiel —
+  corrigé en préférant une demande non-brouillon.
+- (Le cinquième/sixième constat était le même, R46 ci-dessus, compté deux fois par les deux
+  réviseurs.)
+
+**Trouvé en clôturant, pas dans le code de cette tranche** : `npm run fumee` (production, `next
+start`) est tombé deux fois sur `/portal/[token]/[rid]` — d'abord « 200 sans en-tête » puis « 200
+quasi vide » — un défaut PRÉEXISTANT (les trois refus du portail n'avaient jamais de `<h1>` ni de
+contenu substantiel), invisible jusqu'ici parce que le `[rid]` partagé tombait toujours sur une
+demande visible au portail avant que cette tranche ne change l'ordre de création des demandes.
+Corrigé aux DEUX endroits (`/portal/[token]` et `/portal/[token]/[rid]`) : chaque refus porte
+désormais un `<h1>` et un geste (lien de retour, ou l'invite à redemander un lien). Deux occurrences
+consécutives de standalone `npm run fumee` ont d'abord semblé confirmer le correctif à tort : le
+harnais construit sur `next start`, un build de PRODUCTION, et sans `npx next build` entre-temps il
+sert un bundle PÉRIMÉ — la leçon écrite ici pour ne pas la refaire.
+
+**#418 rejoué une fois de plus** (fil n°7, docs/CHASSE.md, F12) : un incident sur `/eng/[id]/risk`
+(page non touchée par cette tranche), dont une composante rejoue F11 (bruit CSS déjà nommé, non
+filtré, R45) et l'autre — un décalage d'une ligne dans la table risque-par-assertion — est
+NOUVELLE mais pas creusée (hors mandat, même discipline que F9/F10/F11). Le run précédent sur le
+même arbre portait 0 incident ; la chaîne officielle de cette tranche a été rejouée jusqu'à un
+passage propre.
+
+**Chaîne verify complète et propre sur cette tranche** (`verify-full-19.log`, troisième passage
+propre — verify-full-13 avait rougi sur une renomination de station à figer, verify-full-14/15/16
+sur `fumee` avant et pendant le correctif du portail, verify-full-17 était propre AVANT la revue
+hostile, verify-full-18 a rejoué F12) : vitest **858/858** (101 fichiers, +1), gardes 43, semeur
+**83/16/28/39 (inchangé — aucun décor introduit)**, plancher 632, langue 0/0 + épreuve 15/15,
+lectures 0 perdue/1681 + épreuve 6/6, parcours **250/250, 0 perdue** + épreuve 5/5, screens 87/0,
+fumee 51/0, densite 77 écrans/0, clics **208 étapes/0 échec**, sonde d'hydratation **aucun
+incident**, visuel 312 vues/0 défaut.
+
+**Lecture ajoutée à `/api/sante` le jour même** : « POP-01 : aucun tirage sans rapprochement
+(étapes 3-4) » — vérifiée capable de ROUGIR sur l'état qu'elle surveille (règle 22), par une sonde
+jetable supprimée avant ce commit (règle 24).
+
+**Ce qui reste dû, dit et pas caché** : le bouton de création du détail de compte n'a plus de
+chemin cliqué dans le monde par défaut (R46, ci-dessus). Les étapes 5-7 du mandat (pièces et leurs
+demandes en un clic, grille à deux niveaux d'en-tête, colonne ajoutée qui engendre sa demande, les
+refus REQ-01/REQ-02/COL-01) ne sont pas commencées. Les deux ajouts du fondateur (obligations du
+dossier, N-1 contextuel) restent enregistrés, pas commencés.
+
 ## Lot 1 du plan d'autonomie : R37/R40/R41 corrigés, chaîne verify complète, SHA servi confirmé (2026-09-06)
 
 **Ce qu'un auditeur peut faire maintenant, et ne pouvait pas hier.** Rédiger un papier de travail

@@ -141,6 +141,12 @@
       "note": "reporté hors mandat de Lot 2 étape 2 ; à corriger avec son propre cas connu mauvais le jour où le fil #418 reprend."
     },
     {
+      "id": "R46",
+      "etat": "ouvert — trouvé par la revue hostile (workflow, Lot 2 étapes 3-4) : le bouton « Demander le détail du compte » n'a plus de chemin cliqué dans le monde de démonstration par défaut, depuis que le semeur rapproche déjà REVENUE avant que le parcours ne visite l'écran de sondage (POP-01 l'exige)",
+      "depuis": "2026-09-06 (Lot 2, étapes 3-4)",
+      "note": "demanderDetailDeCompte reste prouvé par exécution directe et mutation (s3s4.test.ts) ; PAS un décor (jamais suivi par registre.ts/R44, compte 83/16/28/39 inchangé). Non corrigé : étendre l'écran à un second poste non semé élargirait la tranche (D.0-8 du mandat)."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
