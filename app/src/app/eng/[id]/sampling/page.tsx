@@ -6,7 +6,11 @@ import {
   proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample,
   lignesSortiesDuTirage, statuerSortie,
 } from '@/lib/services/sampling';
-import { generatePbcFromSample, demanderDetailDeCompte, derniereDemandeDetailDeCompte, numeroDemande } from '@/lib/services/requests';
+import {
+  generatePbcFromSample, demanderDetailDeCompte, derniereDemandeDetailDeCompte, numeroDemande,
+  demanderPieceLigne, demanderPiecesEnLot, piecesDemandeesParLigne,
+  EVIDENCE_TYPE_INVOICE, EVIDENCE_TYPE_DELIVERY_NOTE,
+} from '@/lib/services/requests';
 import { importerDetailDeCompte, rapprocherDetailDeCompte, detailsDeCompteDuDossier } from '@/lib/services/account-detail';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
@@ -34,6 +38,13 @@ export default async function SamplingPage({
      (currentRevenueSample, proposeRevenueSample...), pas généralisé. */
   const demandeDetail = await derniereDemandeDetailDeCompte(id, 'REVENUE');
   const detailsImportes = await detailsDeCompteDuDossier(id, 'REVENUE');
+  /* ÉTAPE 5 (plan d'autonomie, Partie B) : les pièces, et leurs demandes —
+     un bouton par TYPE de pièce, par ligne et en lot. Ces deux tables ne
+     savent RIEN du paquet PBC existant (`generatePbcFromSample`, bouton
+     « Generate PBC request » plus bas) : elles suivent leur propre demande,
+     séparément, comme le service le documente (requests.ts). */
+  const facturesSuivies = (sample && sample.status === 'drawn') ? await piecesDemandeesParLigne(id, sample.id, EVIDENCE_TYPE_INVOICE) : new Map();
+  const blSuivis = (sample && sample.status === 'drawn') ? await piecesDemandeesParLigne(id, sample.id, EVIDENCE_TYPE_DELIVERY_NOTE) : new Map();
 
   async function demanderDetailAction() {
     'use server';
@@ -103,6 +114,23 @@ export default async function SamplingPage({
       const { user } = await requireMember(id);
       await generatePbcFromSample(id, String(formData.get('sample_id')), user.id);
       redirect(`/eng/${id}/requests`);
+    });
+  }
+
+  async function demanderPieceLigneAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await demanderPieceLigne(String(formData.get('sample_item_id')), String(formData.get('evidence_type_code')), user.id);
+      revalidatePath(`/eng/${id}/sampling`);
+    });
+  }
+  async function demanderPiecesEnLotAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/sampling`, async () => {
+      const { user } = await requireMember(id);
+      await demanderPiecesEnLot(id, String(formData.get('sample_id')), String(formData.get('evidence_type_code')), user.id);
+      revalidatePath(`/eng/${id}/sampling`);
     });
   }
 
@@ -225,31 +253,72 @@ export default async function SamplingPage({
             )}
             {sample.status === 'drawn' && (
               <>
-                <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <h3>Selected items ({sample.items.length}{t('samp.coverage')} {fmtEur(numToCents(sample.coverage_amount ?? '0'), 'fr')}</h3>
-                  <form action={pbcAction}>
-                    <input type="hidden" name="sample_id" value={sample.id} />
-                    <button className="btn">{t('samp.generatePbcRequest')}</button>
-                  </form>
+                  <div className="row" style={{ gap: 8 }}>
+                    {/* ÉTAPE 5 (plan d'autonomie, Partie B) : un bouton en un clic PAR
+                        TYPE de pièce, EN LOT pour tout l'échantillon — complémentaire
+                        au paquet PBC ci-dessous, jamais un remplacement (requests.ts). */}
+                    <form action={demanderPiecesEnLotAction}>
+                      <input type="hidden" name="sample_id" value={sample.id} />
+                      <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_INVOICE} />
+                      <button className="btn secondary small" data-demander-factures-lot>{t('samp.demanderFacturesLot')}</button>
+                    </form>
+                    <form action={demanderPiecesEnLotAction}>
+                      <input type="hidden" name="sample_id" value={sample.id} />
+                      <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_DELIVERY_NOTE} />
+                      <button className="btn secondary small" data-demander-bl-lot>{t('samp.demanderBlLot')}</button>
+                    </form>
+                    <form action={pbcAction}>
+                      <input type="hidden" name="sample_id" value={sample.id} />
+                      <button className="btn">{t('samp.generatePbcRequest')}</button>
+                    </form>
+                  </div>
                 </div>
                 <div className="table-scroll">
                   <table className="data">
                     <thead>
-                      <tr><th>{t('samp.reason')}</th><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th></tr>
+                      <tr><th>{t('samp.reason')}</th><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th><th>{t('samp.demanderFactureLigne')}</th><th>{t('samp.demanderBlLigne')}</th></tr>
                     </thead>
                     <tbody>
-                      {sample.items.map((it) => (
-                        <tr key={it.id}>
-                          <td><span className={`badge ${REASON_BADGE[it.selection_reason]}`}>{it.selection_reason}</span></td>
-                          <td className="mono">{it.entry_no}</td>
-                          <td>{it.entry_date}</td>
-                          <td className="mono">{it.account_no}</td>
-                          <td className="mono">{it.piece_ref}</td>
-                          <td>{it.aux_label}</td>
-                          <td className="num">{fmtEur(numToCents(it.amount), 'fr')}</td>
-                          <td>{(it.flags ?? []).map((f) => <span key={f} className="badge amber" style={{ marginRight: 3 }}>{f}</span>)}</td>
-                        </tr>
-                      ))}
+                      {sample.items.map((it) => {
+                        const facture = facturesSuivies.get(it.id);
+                        const bl = blSuivis.get(it.id);
+                        return (
+                          <tr key={it.id}>
+                            <td><span className={`badge ${REASON_BADGE[it.selection_reason]}`}>{it.selection_reason}</span></td>
+                            <td className="mono">{it.entry_no}</td>
+                            <td>{it.entry_date}</td>
+                            <td className="mono">{it.account_no}</td>
+                            <td className="mono">{it.piece_ref}</td>
+                            <td>{it.aux_label}</td>
+                            <td className="num">{fmtEur(numToCents(it.amount), 'fr')}</td>
+                            <td>{(it.flags ?? []).map((f) => <span key={f} className="badge amber" style={{ marginRight: 3 }}>{f}</span>)}</td>
+                            <td data-piece-ligne={`invoice-${it.id}`}>
+                              {facture ? (
+                                <Link href={`/eng/${id}/requests/${facture.requestId}`}>{numeroDemande(facture.seqNo)} {t('samp.pieceDemandee')}</Link>
+                              ) : (
+                                <form action={demanderPieceLigneAction}>
+                                  <input type="hidden" name="sample_item_id" value={it.id} />
+                                  <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_INVOICE} />
+                                  <button className="btn small" data-demander-piece-ligne={`invoice-${it.id}`}>{t('samp.demanderFactureLigne')}</button>
+                                </form>
+                              )}
+                            </td>
+                            <td data-piece-ligne={`delivery_note-${it.id}`}>
+                              {bl ? (
+                                <Link href={`/eng/${id}/requests/${bl.requestId}`}>{numeroDemande(bl.seqNo)} {t('samp.pieceDemandee')}</Link>
+                              ) : (
+                                <form action={demanderPieceLigneAction}>
+                                  <input type="hidden" name="sample_item_id" value={it.id} />
+                                  <input type="hidden" name="evidence_type_code" value={EVIDENCE_TYPE_DELIVERY_NOTE} />
+                                  <button className="btn small" data-demander-piece-ligne={`delivery_note-${it.id}`}>{t('samp.demanderBlLigne')}</button>
+                                </form>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

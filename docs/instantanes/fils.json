@@ -153,6 +153,18 @@
       "note": "prouvé par cas connu mauvais (règle 17) en local, base fraîche : un orphelin à id différent reste ok:false/HTTP 500 (« hors R47 ») après le correctif ; le même orphelin à l'id exact 5d1df8b7-... rend ok:true/HTTP 200."
     },
     {
+      "id": "R48",
+      "etat": "ouvert — REQ-01 (mandat §B.4) n'est câblé qu'à moitié : assertTypeDePieceConnu refuse une demande sans type de pièce reconnu (éprouvé), mais aucune infrastructure de destinataire/contact n'existe sur `request` dans ce dépôt — l'autre moitié de REQ-01 (« ni destinataire ») ne peut pas être posée sans une tranche à part entière (table, migration, formulaire)",
+      "depuis": "2026-09-07 (Lot 2, étape 5 : les pièces, et leurs demandes)",
+      "note": "non corrigé : D.0-8 du mandat (la chose plus petite) ; élargir cette tranche à un vrai champ destinataire par demande sortirait du périmètre d'Étape 5."
+    },
+    {
+      "id": "R49",
+      "etat": "ouvert — les demandes du paquet standard (generatePbcFromSample) et celles des nouveaux boutons Étape 5 (demanderPieceLigne/demanderPiecesEnLot) ne se recoupent pas : le paquet ne pose jamais evidence_type_code, les nouvelles fonctions ne lisent QUE ce champ pour savoir « déjà demandé » — un clic sur un bouton Étape 5 après le paquet standard crée une seconde demande réelle (jamais un décor : prouvé au clic, station « étape 5 » du parcours cliqué) pour une pièce déjà couverte ailleurs",
+      "depuis": "2026-09-07 (Lot 2, étape 5)",
+      "note": "non corrigé : réconcilier les deux mécanismes élargirait Étape 5 à une réécriture de generatePbcFromSample, hors mandat. Se referme quand Étape 6/7 (REQ-02, la grille) obligent à unifier les deux chemins."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

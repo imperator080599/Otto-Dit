@@ -313,6 +313,26 @@
       "gabarit": false
     },
     {
+      "nom": "étape 5 : un bouton par type de pièce est visible, par ligne ET en lot",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : une écriture manuelle ne porte pas de facture (demanderPieceLigne)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 5, par ligne : une facture demandée sur un avoir engendre une demande RÉELLE, et le lien la remplace",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 5, en lot : une demande couvre toutes les lignes qui attendaient un bon de livraison",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : relancer le lot sur des lignes déjà toutes couvertes est refusé, pas un décor (règle 20)",
+      "gabarit": false
+    },
+    {
       "nom": "re-tirage : les lignes sorties du tirage sont LISTÉES avec ce qu’elles portent",
       "gabarit": false
     },

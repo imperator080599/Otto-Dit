@@ -1190,6 +1190,61 @@ export async function conduire(
     }
   });
 
+  /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 5 : LES PIÈCES, ET LEURS DEMANDES — un
+     bouton en un clic PAR TYPE de pièce, par ligne ET en lot, complémentaire
+     au paquet PBC (station précédente), jamais un remplacement (requests.ts).
+     Les lignes ciblées le sont par un FLAG métier stable du monde semé
+     (`manual_journal`, `credit_note_pattern`), jamais par un index de
+     rangée — l'ordre du tableau n'est pas un contrat. */
+  await station('étape 5 : les pièces, une par une et en lot', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/sampling`);
+    dire('étape 5 : un bouton par type de pièce est visible, par ligne ET en lot',
+      (await compte('[data-demander-factures-lot]')) > 0
+      && (await compte('[data-demander-bl-lot]')) > 0
+      && (await compte('[data-demander-piece-ligne]')) > 0,
+      refus(p) ?? 'boutons visibles');
+
+    // PAR LIGNE, REFUS : une écriture manuelle ne porte aucune pièce (même
+    // classification que generatePbcFromSample) — le serveur refuse, pas le
+    // navigateur (ADR-091, même discipline que POP-02 plus haut).
+    const ligneManuelle = p.locator('tr', { hasText: 'manual_journal' }).first();
+    if (await ligneManuelle.count()) {
+      await soumettre(ligneManuelle.locator('button[data-demander-piece-ligne^="invoice-"]').first());
+      dire('refus : une écriture manuelle ne porte pas de facture (demanderPieceLigne)',
+        !!refus(p), refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+      await aller(`${eng}/sampling`);
+    }
+
+    // PAR LIGNE, SUCCÈS : un avoir (credit_note_pattern) porte bien une pièce
+    // « facture » (l'avoir lui-même) — jamais un bon de livraison.
+    const ligneAvoir = p.locator('tr', { hasText: 'credit_note_pattern' }).first();
+    if (await ligneAvoir.count() && await ligneAvoir.locator('button[data-demander-piece-ligne^="invoice-"]').count()) {
+      await soumettre(ligneAvoir.locator('button[data-demander-piece-ligne^="invoice-"]').first());
+      dire('étape 5, par ligne : une facture demandée sur un avoir engendre une demande RÉELLE, et le lien la remplace',
+        !refus(p) && (await p.locator('tr', { hasText: 'credit_note_pattern' }).first().locator('a[href*="/requests/"]').count()) > 0,
+        refus(p) ?? 'lien vers la demande visible');
+    }
+
+    // EN LOT : une seule demande couvre toutes les lignes qui attendent
+    // encore un bon de livraison — comptée, pas supposée (même discipline
+    // que le paquet PBC, station précédente : R37, docs/CHASSE.md §3).
+    if (await compte('[data-demander-bl-lot]')) {
+      const avantBl = await compte('button[data-demander-piece-ligne^="delivery_note-"]');
+      await soumettre(p.locator('[data-demander-bl-lot]').first());
+      const apresBl = await compte('button[data-demander-piece-ligne^="delivery_note-"]');
+      dire('étape 5, en lot : une demande couvre toutes les lignes qui attendaient un bon de livraison',
+        !refus(p) && apresBl < avantBl,
+        refus(p) ?? (apresBl < avantBl ? `${avantBl - apresBl} ligne(s) couverte(s) en un clic (${avantBl} → ${apresBl})` : `AUCUNE ligne couverte (${avantBl} → ${apresBl}) — écriture avalée`));
+
+      // CAS CONNU MAUVAIS (règle 17) : relancer le lot maintenant que tout est
+      // couvert ne doit PAS poser une demande vide — REFUSÉ, jamais un décor.
+      await soumettre(p.locator('[data-demander-bl-lot]').first());
+      dire('refus : relancer le lot sur des lignes déjà toutes couvertes est refusé, pas un décor (règle 20)',
+        !!refus(p), refus(p) ?? 'aucun refus — une demande vide aurait été posée');
+    }
+  });
+
   /* ── 8 bis. CE QUE LE RE-TIRAGE A LAISSÉ DERRIÈRE LUI (ADR-133, étage 1.2).
         Le parcours vient de ré-importer le grand livre DÉFINITIF puis de
         re-tirer : les lignes déjà travaillées que le nouveau tirage ne reprend

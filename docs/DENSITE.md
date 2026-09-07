@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
 # Densité mesurée — 77 écrans (build de production, base semée)
 
-Mesure prise sur le commit `1b59dd9 + arbre de travail modifié (mesure prise avant le commit qui la publie)`, build `rIikZgtAYn8diDI84AzM3`.
+Mesure prise sur le commit `a1d27f2 + arbre de travail modifié (mesure prise avant le commit qui la publie)`, build `VmoFZZOurxwcX4jNFT8UJ`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 
@@ -23,6 +23,7 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/events` | 4 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/events (SOX)` | 4 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/obstacles (SOX)` | 4 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
+| `/eng/[id]/sampling` | 4 | 0 | 32 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/workpapers/[wid]` | 3 | 3 | 136 | 14 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/team` | 3 | 0 | 3 | 9 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/team (SOX)` | 3 | 0 | 3 | 9 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
@@ -40,7 +41,6 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/processus` | 2 | 0 | 0 | 11 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/processus (SOX)` | 2 | 0 | 0 | 11 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/poste/[code]` | 2 | 0 | 11 | 1 | Altiverre FY2025 — Audit légal (NEP) |
-| `/eng/[id]/sampling` | 2 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/estimations` | 1 | 0 | 0 | 2 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/estimations (SOX)` | 1 | 0 | 0 | 2 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/ask` | 1 | 0 | 0 | 1 | Altiverre FY2025 — Audit légal (NEP) |

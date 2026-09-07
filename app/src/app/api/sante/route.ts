@@ -381,6 +381,30 @@ async function corpsDeLaSonde() {
         ? `${n} sample(s) « chiffre d’affaires », tous rapprochés avant tirage`
         : `${n} sample(s) « chiffre d’affaires » — ${n - connus} rapproché(s) avant tirage, ${connus} legacy R47 non rapproché(s) (antérieur à POP-01)`;
     }));
+    /* ÉTAPE 5 (plan d'autonomie, Partie B — livré ce jour, lu ce jour, règle
+       22). `demanderPiecesEnLot` (requests.ts) refuse toujours de créer une
+       demande SANS AUCUN élément (règle 20 : une demande vide serait un
+       décor). La seule façon d'obtenir une demande typée et vide ci-dessous
+       est de contourner ce refus — un appel direct en base, ou une
+       régression qui le retire. CE QUE CETTE LECTURE NE FAIT PAS (règle
+       19) : elle ne vérifie rien du paquet PBC (`generatePbcFromSample`),
+       qui ne porte jamais `evidence_type_code` et n'entre pas dans son
+       calcul. */
+    lectures.push(await essayer('étape 5 : aucune demande typée sans pièce (demanderPiecesEnLot)', async () => {
+      const vides = await q<{ id: string; seq_no: number }>(
+        `select r.id, r.seq_no from request r
+         where r.engagement_id = $1 and r.evidence_type_code in ('invoice','delivery_note')
+           and not exists (select 1 from request_item ri where ri.request_id = r.id)`,
+        [eng.id]);
+      if (vides.length > 0) {
+        throw new Error(`${vides.length} demande(s) typée(s) SANS AUCUN élément — demanderPiecesEnLot ne produit jamais ce cas : `
+          + 'contournée, ou le refus a été retiré par régression');
+      }
+      const total = await q01<{ n: string }>(
+        `select count(*) n from request where engagement_id = $1 and evidence_type_code in ('invoice','delivery_note')`,
+        [eng.id]);
+      return total && Number(total.n) > 0 ? `${total.n} demande(s) typée(s) (facture/BL), toutes avec au moins un élément` : 'aucune demande typée encore créée';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

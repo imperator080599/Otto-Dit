@@ -258,6 +258,103 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## Lot 2, étape 5 : les pièces, et leurs demandes (2026-09-07)
+
+*Suite du plan d'autonomie (mandat, instruction 4 : « enchaîne Étape 3 → 7 sans t'arrêter ») —
+directement après la confirmation du SHA servi de POP-01 (R47, ci-dessous, résolue avant cette
+tranche). Partie B, §B.2, étape 5 : « Pour chaque type de pièce que la procédure exige… un bouton
+en un clic crée la demande correspondante — par ligne d'échantillon, et en lot pour tout
+l'échantillon. Chaque pièce demandée porte un lien vers sa demande. »*
+
+**Ce qu'un auditeur peut faire maintenant, et ne pouvait pas avant cette tranche.** Sur l'écran de
+sondage, chaque ligne tirée porte désormais deux boutons — « Invoice » et « Delivery note » — qui
+demandent la pièce correspondante EN UN CLIC, pour cette ligne précise ; deux boutons en haut de
+tableau font le même geste EN LOT pour tout l'échantillon. Une pièce déjà demandée par ce mécanisme
+affiche un LIEN vers sa demande (numéro, statut) à la place du bouton.
+
+**Ce qui existait déjà, et n'a pas été touché.** Le paquet PBC (`generatePbcFromSample`, bouton
+« Generate PBC request ») reste inchangé — un seul clic, toutes les pièces de tout l'échantillon,
+jamais typé par pièce. Les nouvelles fonctions sont ADDITIVES, pas un remplacement (R49 ci-dessous
+documente pourquoi les deux peuvent se recouper).
+
+**Le modèle de données : rien de neuf.** `request.evidence_type_code` (migration 0143, jusqu'ici
+seulement utilisé par `detail_de_compte`) et `request_item.sample_item_id` (déjà là depuis
+0002_testing.sql) suffisent : une demande PAR LIGNE porte un seul `request_item` ; une demande EN
+LOT en porte plusieurs, chacun lié à sa ligne. `piecesDemandeesParLigne` lit ces deux champs pour
+savoir quoi rendre — bouton ou lien — sans rien stocker de plus.
+
+**La classification des pièces, dupliquée à dessein.** Quelle ligne porte une facture, laquelle
+porte aussi un bon de livraison (comptes 701xxx, jamais un avoir), laquelle n'en porte aucune (une
+écriture manuelle, journal OD) : la MÊME règle que `generatePbcFromSample` (même fichier,
+juste au-dessus), recopiée plutôt que partagée — limite nommée dans le code (règle 19) : un futur
+changement de l'une doit changer l'autre à la main, non gardé par un test commun.
+
+**REQ-01, à moitié câblé.** `assertTypeDePieceConnu` refuse toute demande sans type de pièce
+reconnu — la moitié « type de pièce » du refus, éprouvée par mutation (le guard retiré, le test
+rougit ; remis, il repasse). L'autre moitié du mandat, « ni destinataire », n'a AUCUNE
+infrastructure pour s'appuyer dessus dans ce dépôt — enregistrée R48, non corrigée (hors périmètre
+d'une garde ajoutée en marge d'Étape 5).
+
+**L'étanchéité, trouvée manquante puis corrigée AVANT le premier push (règle 24).** La chaîne
+verify complète a rougi une fois : `etancheite-executee.test.ts` a trouvé que les deux nouvelles
+fonctions vérifiaient REQ-01 AVANT l'appartenance au cabinet (`assertMembreDe`/`assertMembre`) — un
+acteur d'un autre cabinet aurait donc lu un message métier avant le refus d'étanchéité. Corrigé :
+l'étanchéité se vérifie toujours EN PREMIER, même règle que `rapprocherDetailDeCompte`
+(account-detail.ts). Toute la suite (867 tests) repasse après le correctif.
+
+**La lecture ajoutée à `/api/sante` le jour même (règle 22).** « étape 5 : aucune demande typée
+sans pièce » — `demanderPiecesEnLot` refuse toujours de poser une demande vide (règle 20 : une
+demande sans élément serait un décor) ; la lecture rougit si une telle demande existe quand même
+(contournement direct). Prouvée capable de rougir (règle 17) : `etape5-lecture.test.ts` insère une
+demande typée vide par une écriture SQL directe et confirme `ok:false`/HTTP 500 ; sans l'insertion,
+`ok:true`.
+
+**Conduit dans un navigateur avant d'être annoncé (règle 10), deux fois.** D'abord un script
+Playwright manuel (build de production, base semée, cookie `otto_user`) : le bouton « Invoice »
+sur la ligne manuelle refuse (`?erreur=demanderPieceLigne…`), le même bouton sur une ligne normale
+réussit, le bouton « Request all delivery notes (batch) » convertit 9 boutons en liens
+« R-00x requested → » d'un coup — captures dans `/tmp/…/etape5-*.png`. Ensuite, DANS le parcours
+cliqué officiel (`scripts/clics/scenario.ts`), une station neuve à cinq assertions : boutons
+visibles, refus sur une écriture manuelle (ciblée par son flag `manual_journal`, jamais un index de
+ligne), succès sur un avoir (`credit_note_pattern`), succès en lot avec un compte AVANT/APRÈS
+(jamais un « aucun refus » seul — R37, docs/CHASSE.md §3), et le cas connu mauvais du lot relancé
+sur des lignes déjà toutes couvertes (REFUSÉ, pas une demande vide). `npm run parcours -- --figer`
+après un passage vert : 255 stations déclarées, 5 nouvelles figées, 0 perdue.
+
+**Ce que cette tranche ne fait pas (règle 19).** Elle ne réconcilie pas le paquet PBC et les
+nouveaux boutons (R49) ; elle ne construit ni REQ-02 ni la grille à deux niveaux (Étapes 6-7,
+prochaine tranche) ; elle ne pose pas de destinataire par demande (R48).
+
+**La revue hostile (workflow, deux réviseurs indépendants — règle 30, c'est du CODE), avant le
+push.** Angles d'attaque différents ; deux constats RÉELS convergents (aucun autre — NULL-handling
+SQL, coercion du pilote, portée `/api/sante`, table du tableau, liaison de paramètres : tout
+vérifié et écarté par les deux) :
+1. **Aucune transaction sur « demande + ses éléments »** — trouvé dans `demanderPiecesEnLot`
+   (boucle d'insertions séparées, comme un défaut déjà corrigé une fois dans ce dépôt,
+   `importerDetailDeCompte`, account-detail.ts) ET, en y regardant après coup, dans
+   `demanderPieceLigne` aussi (deux insertions séparées). Un échec à mi-chemin y aurait laissé une
+   demande RÉELLE mais SANS AUCUN élément — exactement le cas que la nouvelle lecture « étape 5 »
+   de `/api/sante` existe pour ATTRAPER (mieux vaut l'empêcher que la détecter). **Corrigé avant le
+   commit** : les deux fonctions utilisent désormais `tx()`, même précédent qu'account-detail.ts.
+2. **`demanderPieceLigne` ne vérifie pas que la ligne appartient encore à l'échantillon COURANT**
+   — un re-tirage (ADR-133) peut faire passer un `sample` en `superseded` sans que la fonction s'en
+   aperçoive ; aucun chemin d'aujourd'hui n'expose ce cas (les boutons ne rendent que pour
+   `currentRevenueSample`, jamais pour le panneau des lignes sorties), mais la limite n'était pas
+   NOMMÉE (règle 19). **Corrigé avant le commit, par la documentation, pas par un refus neuf** :
+   bloquer aurait supposé qu'une pièce sur une ligne sortie est toujours sans objet, ce qu'ADR-133
+   ne dit pas (le travail déjà porté par une ligne sortie reste visible et se statue) — trancher
+   cette question métier est hors périmètre d'Étape 5 ; la limite est écrite dans le code, en tête
+   de fonction.
+
+**La chaîne `verify` (règle 21), propre de bout en bout, base fraîche, APRÈS le correctif de la
+revue hostile** (`verify-full-23.log`) : vitest 867/867 (104 fichiers, +3 depuis R47 : 2 pour
+`pieces-lignes.test.ts`, 1 pour la lecture `étape5-lecture.test.ts`, comptés en tests pas en
+fichiers puisque chacun ajoute plusieurs `it()`) · gardes 43 · plancher 632 · langue 0/0 · lectures
+0 perdue/1681 · parcours 0 station perdue · screens 87/0 · fumee 51/0 · densité 77/0 · clics 213/0
+(sonde d'hydratation : aucun incident — 213 = 208 avant Étape 5 + 5 nouvelles assertions de la
+station « étape 5 ») · visuel 312/0. `npm run parcours -- --figer` : 255 stations déclarées, 5
+nouvelles figées, 0 perdue.
+
 ## R47 — l'incident de déploiement de POP-01, et pourquoi il ne se corrige pas en base (2026-09-07)
 
 *Suite immédiate de la tranche ci-dessous : « toujours le SHA servi confirmé » (mandat, instruction

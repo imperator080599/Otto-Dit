@@ -1,4 +1,4 @@
-import { q, q01, q1 } from '@/lib/db/client';
+import { q, q01, q1, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { now, DAY_MS } from '@/lib/core/clock';
 import { engagementCtx } from './imports';
@@ -139,6 +139,219 @@ export async function generatePbcFromSample(engagementId: string, sampleId: stri
     payload: { seq, items: items.length, requestedBy: userId },
   });
   return request.id;
+}
+
+/* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 5 — LES PIÈCES, ET LEURS DEMANDES. Un
+   bouton en un clic par TYPE de pièce (facture, bon de livraison), par
+   ligne d'échantillon ET en lot pour tout l'échantillon — complémentaire à
+   `generatePbcFromSample` (qui reste inchangé : un seul paquet, toutes les
+   pièces, jamais typé) plutôt qu'une réécriture. Les deux vocabulaires ne
+   se recoupent PAS : un item créé par `generatePbcFromSample` ne porte pas
+   `request.evidence_type_code`, donc ces fonctions ne le voient jamais
+   comme « déjà demandé » — cliquer ici après le paquet standard crée une
+   pièce RÉELLE, séparément suivie, jamais un double invisible (règle 20 :
+   le geste n'est pas un décor). CE QUE CE MODULE NE FAIT PAS (règle 19) :
+   il ne réconcilie pas les deux chemins de demande entre eux (R48,
+   BACKLOG_REPORTE.md) ; REQ-02 (conclure une ligne dont une colonne exige
+   une pièce jamais demandée) appartient à la grille de test, étapes 6-7,
+   pas à ce fichier. */
+
+export const EVIDENCE_TYPE_INVOICE = 'invoice';
+export const EVIDENCE_TYPE_DELIVERY_NOTE = 'delivery_note';
+const EVIDENCE_TYPES_CONNUS = new Set([EVIDENCE_TYPE_INVOICE, EVIDENCE_TYPE_DELIVERY_NOTE]);
+
+interface LigneClassee {
+  id: string; amount: string; entryNo: string; entryDate: string;
+  pieceRef: string | null; auxLabel: string | null;
+  isCreditNote: boolean; isManualJe: boolean; isGoods: boolean;
+}
+
+/** MÊME CLASSIFICATION que `generatePbcFromSample` ci-dessus (isCreditNote,
+ *  isManualJe, isGoods) — dupliquée plutôt que partagée pour garder ce
+ *  correctif localisé à cette tranche ; un futur changement de l'une doit
+ *  changer l'autre à la main, non gardé par un test commun (limite nommée,
+ *  règle 19). */
+async function lignesClasseesDuTirage(sampleId: string): Promise<LigneClassee[]> {
+  const rows = await q<{
+    id: string; amount: string; entry_no: string; entry_date: string; journal_code: string;
+    account_no: string; piece_ref: string | null; aux_label: string | null;
+  }>(
+    `select si.id, si.amount::text, g.entry_no, g.entry_date::text, g.journal_code,
+            g.account_no, g.piece_ref, g.aux_label
+     from sample_item si join gl_entry g on g.id = si.unit_id where si.sample_id = $1`,
+    [sampleId],
+  );
+  return rows.map((it) => ({
+    id: it.id, amount: it.amount, entryNo: it.entry_no, entryDate: it.entry_date,
+    pieceRef: it.piece_ref, auxLabel: it.aux_label,
+    isCreditNote: Boolean(it.piece_ref?.toUpperCase().startsWith('AV')) || it.account_no.startsWith('709'),
+    isManualJe: it.journal_code === 'OD',
+    isGoods: it.account_no.startsWith('701'),
+  }));
+}
+
+function pieceApplicable(evidenceTypeCode: string, l: LigneClassee): boolean {
+  if (l.isManualJe) return false; // une écriture manuelle porte une explication, jamais une pièce (generatePbcFromSample)
+  if (evidenceTypeCode === EVIDENCE_TYPE_INVOICE) return true;
+  if (evidenceTypeCode === EVIDENCE_TYPE_DELIVERY_NOTE) return l.isGoods && !l.isCreditNote;
+  return false;
+}
+
+function descriptionDeLaPiece(evidenceTypeCode: string, l: LigneClassee, fr: boolean): string {
+  if (evidenceTypeCode === EVIDENCE_TYPE_INVOICE) {
+    return fr
+      ? `${l.isCreditNote ? 'Avoir' : 'Facture de vente'} ${l.pieceRef ?? l.entryNo} — ${l.auxLabel ?? ''} (${l.amount} €)`
+      : `${l.isCreditNote ? 'Credit note' : 'Sales invoice'} ${l.pieceRef ?? l.entryNo} — ${l.auxLabel ?? ''} (${l.amount} €)`;
+  }
+  return fr
+    ? `Bon de livraison associé à la facture ${l.pieceRef ?? l.entryNo}`
+    : `Delivery note for invoice ${l.pieceRef ?? l.entryNo}`;
+}
+
+/** REQ-01 (partiel) — refuse une demande sans type de pièce reconnu. CE QUE
+ *  CETTE GARDE NE VÉRIFIE PAS (règle 19) : l'autre moitié de REQ-01 du
+ *  mandat, « ni destinataire » — `request` ne porte aucun champ
+ *  destinataire dans ce dépôt, sur aucun chemin, aujourd'hui ; le poser
+ *  est hors périmètre de cette tranche (R48, BACKLOG_REPORTE.md). */
+function assertTypeDePieceConnu(evidenceTypeCode: string): void {
+  if (!EVIDENCE_TYPES_CONNUS.has(evidenceTypeCode)) {
+    throw new Error(`REQ-01 : type de pièce inconnu ou absent (« ${evidenceTypeCode} ») — une demande porte toujours un type de pièce reconnu.`);
+  }
+}
+
+/** Les pièces déjà demandées PAR CE MÉCANISME (evidence_type_code posé sur
+ *  la demande), pour dessiner le lien plutôt que le bouton — jamais les
+ *  demandes du paquet `generatePbcFromSample`, qui ne portent pas ce
+ *  champ (voir l'en-tête du module). */
+export async function piecesDemandeesParLigne(
+  engagementId: string, sampleId: string, evidenceTypeCode: string,
+): Promise<Map<string, { requestId: string; seqNo: number; status: string }>> {
+  const rows = await q<{ sample_item_id: string; request_id: string; seq_no: number; status: string }>(
+    `select ri.sample_item_id, r.id as request_id, r.seq_no, r.status
+     from request_item ri join request r on r.id = ri.request_id
+     join sample_item si on si.id = ri.sample_item_id
+     where r.engagement_id = $1 and si.sample_id = $2 and r.evidence_type_code = $3`,
+    [engagementId, sampleId, evidenceTypeCode],
+  );
+  return new Map(rows.map((r) => [r.sample_item_id, { requestId: r.request_id, seqNo: r.seq_no, status: r.status }]));
+}
+
+/** Étape 5, geste PAR LIGNE : une demande, une pièce, un type — le bouton en
+ *  un clic sur une ligne précise de l'échantillon.
+ *
+ *  CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19, trouvé par la revue
+ *  hostile du 2026-09-07) : que `sampleItemId` appartient encore à
+ *  l'échantillon COURANT — un re-tirage (ADR-133) peut faire passer un
+ *  sample en `superseded` sans que cette fonction s'en aperçoive. AUCUN
+ *  chemin d'aujourd'hui n'expose ce cas : le tableau n'affiche ces boutons
+ *  QUE pour `currentRevenueSample` (sampling.ts, filtre `status <>
+ *  'superseded'`), jamais pour le panneau « ce qui sort du tirage »
+ *  (`lignesSortiesDuTirage`). Non corrigé volontairement : bloquer ici
+ *  supposerait qu'une pièce sur une ligne sortie est TOUJOURS sans objet,
+ *  ce que ADR-133 ne dit pas (le travail déjà porté par une ligne sortie
+ *  reste visible et se statue, il ne s'efface pas) — une vraie garde
+ *  demanderait de trancher cette question métier d'abord, hors périmètre
+ *  d'Étape 5. */
+export async function demanderPieceLigne(
+  sampleItemId: string, evidenceTypeCode: string, userId: string,
+): Promise<string> {
+  /* L'ÉTANCHÉITÉ SE VÉRIFIE AVANT TOUTE AUTRE LECTURE (même règle que
+     rapprocherDetailDeCompte, account-detail.ts) — trouvé par
+     etancheite-executee.test.ts : REQ-01 passait AVANT ETANCH-04/01 dans
+     une version précédente de cette fonction, ce qui aurait laissé un
+     acteur d'un autre cabinet lire un message métier avant le refus
+     d'étanchéité. */
+  const engagementId = await assertMembreDe('sample_item', sampleItemId, userId, 'demanderPieceLigne');
+  assertTypeDePieceConnu(evidenceTypeCode);
+  const sampleRow = await q1<{ sample_id: string }>(`select sample_id from sample_item where id = $1`, [sampleItemId]);
+  const lignes = await lignesClasseesDuTirage(sampleRow.sample_id);
+  const ligne = lignes.find((l) => l.id === sampleItemId);
+  if (!ligne) throw new Error('demanderPieceLigne : ligne d’échantillon introuvable');
+  if (!pieceApplicable(evidenceTypeCode, ligne)) {
+    throw new Error(`demanderPieceLigne : cette ligne ne porte pas de « ${evidenceTypeCode} » (écriture manuelle, avoir, ou type sans objet ici)`);
+  }
+  const ctx = await engagementCtx(engagementId);
+  const fs = await frameworkSet(engagementId);
+  const fr = fs.language === 'fr';
+  const seq = await nextSeq(engagementId);
+  /* LA DEMANDE ET SON ÉLÉMENT, DANS LA MÊME TRANSACTION (revue hostile du
+     2026-09-07 — même précédent que importerDetailDeCompte, account-detail.ts) :
+     un échec entre les deux insertions laisserait une demande typée SANS
+     AUCUN élément, exactement le cas que la lecture « étape 5 » de
+     /api/sante existe pour attraper — mieux vaut l'empêcher que le détecter. */
+  const reqId = await tx(async (run) => {
+    const [req] = (await run(
+      `insert into request (engagement_id, seq_no, title, language, status, evidence_type_code)
+       values ($1,$2,$3,$4,'draft',$5) returning id`,
+      [engagementId, seq,
+        fr ? `Pièce — ${ligne.entryNo}` : `Supporting document — ${ligne.entryNo}`,
+        fs.language, evidenceTypeCode],
+    )) as { id: string }[];
+    await run(
+      `insert into request_item (request_id, kind, description, sample_item_id) values ($1,'document',$2,$3)`,
+      [req.id, descriptionDeLaPiece(evidenceTypeCode, ligne, fr), sampleItemId],
+    );
+    return req.id;
+  });
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'piece_demandee', objectType: 'request', objectId: reqId,
+    payload: { evidenceTypeCode, sampleItemId },
+  });
+  return reqId;
+}
+
+/** Étape 5, geste EN LOT : une seule demande, une ligne par unité de
+ *  l'échantillon à laquelle ce type de pièce s'applique et qui n'est pas
+ *  déjà suivie par ce mécanisme. Refuse plutôt que de poser une demande
+ *  vide — une demande sans aucun élément serait un décor (règle 20). */
+export async function demanderPiecesEnLot(
+  engagementId: string, sampleId: string, evidenceTypeCode: string, userId: string,
+): Promise<string> {
+  await assertMembre(engagementId, userId, 'demanderPiecesEnLot'); // étanchéité avant tout (même motif que demanderPieceLigne, ci-dessus)
+  assertTypeDePieceConnu(evidenceTypeCode);
+  const lignes = await lignesClasseesDuTirage(sampleId);
+  const dejaSuivies = await piecesDemandeesParLigne(engagementId, sampleId, evidenceTypeCode);
+  const aTraiter = lignes.filter((l) => pieceApplicable(evidenceTypeCode, l) && !dejaSuivies.has(l.id));
+  if (!aTraiter.length) {
+    throw new Error(`demanderPiecesEnLot : aucune ligne de l’échantillon n’attend une « ${evidenceTypeCode} » — rien à demander`);
+  }
+  const ctx = await engagementCtx(engagementId);
+  const fs = await frameworkSet(engagementId);
+  const fr = fs.language === 'fr';
+  const seq = await nextSeq(engagementId);
+  const titre = evidenceTypeCode === EVIDENCE_TYPE_INVOICE
+    ? (fr ? 'Factures — sélection (lot)' : 'Invoices — selection (batch)')
+    : (fr ? 'Bons de livraison — sélection (lot)' : 'Delivery notes — selection (batch)');
+  /* LA DEMANDE ET TOUS SES ÉLÉMENTS, DANS LA MÊME TRANSACTION (revue hostile
+     du 2026-09-07) : la boucle insérait un `request_item` à la fois, hors
+     transaction — un échec à mi-boucle laissait une demande RÉELLE mais
+     PARTIELLE (certaines lignes couvertes, d'autres non, sans que rien ne
+     le distingue d'une demande complète). Un rejeu du lot après un échec
+     aurait re-couvert le reste correctement (`piecesDemandeesParLigne` lit
+     l'état réel), donc ce n'était pas un compte qui MENT — mais une
+     transaction l'empêche d'exister du tout, même précédent que
+     importerDetailDeCompte (account-detail.ts). */
+  const reqId = await tx(async (run) => {
+    const [req] = (await run(
+      `insert into request (engagement_id, seq_no, title, language, status, evidence_type_code)
+       values ($1,$2,$3,$4,'draft',$5) returning id`,
+      [engagementId, seq, titre, fs.language, evidenceTypeCode],
+    )) as { id: string }[];
+    for (const l of aTraiter) {
+      await run(
+        `insert into request_item (request_id, kind, description, sample_item_id) values ($1,'document',$2,$3)`,
+        [req.id, descriptionDeLaPiece(evidenceTypeCode, l, fr), l.id],
+      );
+    }
+    return req.id;
+  });
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'pieces_demandees_en_lot', objectType: 'request', objectId: reqId,
+    payload: { evidenceTypeCode, lignes: aTraiter.length },
+  });
+  return reqId;
 }
 
 export async function approveSend(requestId: string, userId: string): Promise<void> {

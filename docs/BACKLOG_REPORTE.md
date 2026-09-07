@@ -365,3 +365,32 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   fraîche, avant de pousser. Se referme si un jour ce sample précis est légitimement rapproché par
   un geste humain réel dans le dossier (alors la ligne quitte la liste) ou si l'engagement NEP
   FY2025 est ré-semé en entier (interdit hors mandat, §2).
+
+## Reporté en clôturant Lot 2, étape 5 : les pièces, et leurs demandes (2026-09-07)
+
+- **R48 — REQ-01 (mandat, §B.4) n'est câblé qu'à moitié : « sans type de pièce » l'est, « sans
+  destinataire » ne l'est pas.** `assertTypeDePieceConnu` (requests.ts) refuse toute demande dont
+  le type de pièce n'est ni `invoice` ni `delivery_note` — la moitié « type de pièce » du refus est
+  donc réelle, éprouvée (REQ-01 dans `pieces-lignes.test.ts`). L'autre moitié, « ni destinataire »,
+  n'a AUCUNE infrastructure pour s'appuyer dessus : `request` (0002_testing.sql) ne porte, et n'a
+  jamais porté, le moindre champ destinataire/contact — aucune des sept fonctions de ce fichier qui
+  créent une demande (`demanderDetailDeCompte`, `generatePbcFromSample`, `demandeClarificationLignes`,
+  `demanderPieceLigne`, `demanderPiecesEnLot`…) n'en connaît un ; l'envoi au client se fait via le
+  portail par jeton (`client_contact.portal_token`), résolu au niveau du DOSSIER, jamais de la
+  demande elle-même. Poser un vrai destinataire par demande — table, migration, formulaire, refus —
+  est une tranche à part entière, hors périmètre d'une garde ajoutée en marge d'Étape 5. Non
+  corrigé ici (D.0-8 du mandat : la chose plus petite). Se referme le jour où une tranche pose
+  réellement un destinataire par demande dans ce dépôt.
+- **R49 — les deux vocabulaires de demande de pièce (le paquet `generatePbcFromSample`, et les
+  nouveaux boutons `demanderPieceLigne`/`demanderPiecesEnLot`) ne se recoupent pas, et peuvent
+  produire des demandes redondantes sur la même pièce.** Le paquet PBC existant ne pose jamais
+  `request.evidence_type_code` ; les nouvelles fonctions d'Étape 5 le posent toujours et lisent
+  UNIQUEMENT ce champ pour savoir « déjà demandé ». Dans le monde semé, `samplingAndRequest`
+  (part1.ts) appelle déjà le paquet PBC avant que le parcours ne visite `/eng/[id]/sampling` : les
+  nouveaux boutons y sont donc TOUJOURS cliquables (jamais des décors, prouvés au clic — parcours
+  cliqué, station « étape 5 »), mais un clic y crée une SECONDE demande pour une pièce déjà
+  couverte par le paquet standard. Décision documentée dans requests.ts (en-tête du bloc Étape 5) :
+  pas de réconciliation entre les deux chemins dans cette tranche — élargirait Étape 5 à une
+  réécriture de `generatePbcFromSample`, hors mandat. Se referme le jour où Étape 6/7 (la grille à
+  deux niveaux, REQ-02) obligent à unifier les deux mécanismes pour que la grille sache, pour
+  CHAQUE cellule, quelle demande — quel que soit son origine — la couvre.
