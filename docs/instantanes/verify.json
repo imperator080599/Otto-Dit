@@ -1388,10 +1388,136 @@
       "quand": "2026-09-07T10:47:54Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-lot3-frozen.log, Lot 3 tranche 1 — la nature du test), arbre GELÉ pendant toute l'exécution (aucune édition entre le lancement et la fin) — seul passage de cette tranche, propre du premier coup ; la revue hostile (CAPITAUX-PV, la station clics) avait déjà été appliquée et son résultat reconfirmé AVANT ce lancement, pas pendant — borne haute : mtime du journal (fin de chaîne), pas d'horodatage propre à cette étape. Le commit qui suit (f8e1207) fusionne en plus un commit de documentation du fondateur (CLAUDE.md seul, 02b5037) : n'exécute rien, ne rouvre pas cette mesure."
+    },
+    {
+      "commande": "db:reset",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — base réinitialisée, migrations appliquées (0146 incluse)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — monde de démonstration reconstruit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "tsc",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — aucune erreur de type",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "vitest",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 108 fichier(s) de test, 882 test(s) passés (882)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "gardes",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — docs/GUARDS.md à jour, 43 garde(s)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "semeur",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — docs/SEMEUR_VS_CHEMIN.md à jour avec le registre",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "plancher",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 882 test(s) collecté(s) par vitest, plancher 632, aucune forme éteinte ou isolée",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "langue",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 0 chaîne d'écran hors catalogue, 0 libellé en dur dans un service",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 15/15 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "lectures",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 0 lecture perdue sur 1716 chemins figés dans 86 écrans",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 6/6 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "parcours",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 0 station perdue (269 déclarées, 269 figées)",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 5/5 cas connus mauvais dénoncés",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "screens",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 87 routes ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "fumee",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 51 route(s) ouvertes, 0 échec",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "densite",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 77 écrans mesurés, 0 au-delà de 5 actions primaires, 108 champs à taper, docs/DENSITE.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "clics",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 226 étapes conduites, 0 échec, 346 clics comptés sur 47 gestes, docs/CLICS.md écrit",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "visuel",
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T12:20:31Z",
+      "resultat": "vert — 312 vues regardées, 0 défaut",
+      "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
     }
   ],
   "precedent": {
-    "source": "docs/REPRISE.md à engendrer sur le SHA 3521f068c974a10f88f11ab9b6bb28a6d10531ae (npm run reprise, après ce commit)",
+    "source": "docs/REPRISE.md à engendrer sur le SHA 2de6d846fd55fe9bc241c4055a7db06fa912cb90 (npm run reprise, après ce commit)",
     "nonExecutees": []
   }
 }
