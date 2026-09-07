@@ -142,6 +142,25 @@
   mais ce n'est PAS prouvé, seulement compatible. Le run PRÉCÉDENT sur le même arbre
   (`verify-full-17.log`) portait 0 incident. La chaîne officielle de cette tranche a été rejouée
   jusqu'à un passage propre plutôt que poussée sur ce run rouge (même discipline que R37, F9, F10).
+- **F13 — UN incident dans `verify-full-20.log`** (2026-09-07, chaîne verify pour R47, avant les
+  correctifs de la revue hostile, 208 étapes) : un `#418` sur
+  `/portal/demo-sophie-altiverre/7f2e547e-…` — flux complet, 17 109 octets, `lang="en"`, 7
+  divergences, page NON touchée par cette tranche (ni account-detail.ts ni sampling.ts ni
+  route.ts ne rendent une page portail). Le harnais lui-même signale l'étiquetage comme
+  SUSPECT : « erreur vient du document PRÉCÉDENT » — la station où l'incident est capturé
+  (`(avant la première station)`) n'est PAS la page où le DOM a été relevé, ce qui correspond
+  exactement au cas nommé dans la propre lecture du harnais : « memePage=faux + flux complet ⇒
+  le DOM relevé est déjà celui d'un AUTRE document alors que sa réponse était complète » —
+  hypothèse H (docs/CHASSE.md §1), pas prouvée, seulement compatible. Les 7 divergences (deux
+  `item_id` cachés qui diffèrent, deux libellés d'écriture différents, deux lignes présentes d'un
+  côté et absentes de l'autre) sont TOUTES de la forme « le DOM appartient à une autre ligne du
+  même tableau de pièces », cohérent avec un DOM en transition entre deux documents plutôt qu'une
+  vraie divergence serveur/client sur LE MÊME document. **Pas creusé plus loin ici** (hors mandat
+  de cette tranche, même discipline que F9-F12). Le run PRÉCÉDENT sur le même arbre
+  (`verify-full-19.log`, tranche Lot 2 étapes 3-4) portait 0 incident. La chaîne officielle de
+  cette tranche a été rejouée (base fraîche, `npm run clics && npm run visuel`) jusqu'à un passage
+  propre — `sonde d'hydratation : aucun incident` (`verify-full-21.log`) — plutôt que poussée sur
+  ce run rouge (même discipline que R37, F9-F12).
 
 ### Hypothèses ÉLIMINÉES — et par quoi
 

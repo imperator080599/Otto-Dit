@@ -338,10 +338,23 @@ async function corpsDeLaSonde() {
        règle 22). proposeRevenueSample (sampling.ts) refuse de créer une
        ligne `sample` pour le chiffre d'affaires sans un détail de compte
        RAPPROCHÉ pour REVENUE (populationDuDetailRapproche, account-detail.ts).
-       La seule façon d'obtenir l'incohérence ci-dessous est, comme les deux
-       lectures précédentes, de contourner le service — un futur appel direct
-       en base, ou une régression qui retire le contrôle sans y penser. */
+       La seule façon d'obtenir l'incohérence ci-dessous, POUR UN NOUVEAU
+       tirage, est de contourner le service — un futur appel direct en base,
+       ou une régression qui retire le contrôle sans y penser.
+       CE QUE CETTE LECTURE NE FAIT PAS (règle 19) : elle ne rougit pas sur
+       R47 — un seul échantillon RÉEL (tiré, drawn, le 2026-09-01 par
+       `npm run demo:seed`, AVANT que POP-01 n'existe), dont la grille de
+       test et les demandes déjà envoyées dépendent en aval. Le rapprocher
+       après coup fabriquerait une pièce et un rapprochement que personne
+       n'a faits, à une date inventée — exactement ce que la règle 31
+       interdit ; le supprimer détruirait du contenu de dossier réel (règle
+       28). R47 (docs/BACKLOG_REPORTE.md) le nomme par son id, daté, une
+       fois : tout AUTRE échantillon hors de cette liste reste une régression
+       CASSÉE, jamais un « déjà vu ». */
     lectures.push(await essayer('POP-01 : aucun tirage sans rapprochement (étapes 3-4)', async () => {
+      const LEGACY_AVANT_POP01 = [
+        '5d1df8b7-4ba8-4d55-8f8d-1f2d45de6710', // R47 : NEP FY2025, tiré 2026-09-01, avant POP-01 (60e1dfe, 2026-09-07)
+      ];
       const rows = await q<{ id: string; engagement_id: string }>(
         `select s.id, s.engagement_id from sample s
          join procedure_instance pi on pi.id = s.procedure_id
@@ -350,12 +363,23 @@ async function corpsDeLaSonde() {
              select 1 from account_detail_import a
              where a.engagement_id = s.engagement_id and a.fsli_code = 'REVENUE' and a.rapprochee = true
            )`);
-      if (rows.length > 0) {
-        throw new Error(`${rows.length} sample(s) « chiffre d’affaires » SANS AUCUN détail de compte rapproché — `
+      const nouveaux = rows.filter((r) => !LEGACY_AVANT_POP01.includes(r.id));
+      const connus = rows.length - nouveaux.length;
+      if (nouveaux.length > 0) {
+        throw new Error(`${nouveaux.length} sample(s) « chiffre d’affaires » SANS AUCUN détail de compte rapproché, hors R47 — `
           + 'proposeRevenueSample ne produit jamais ce cas (POP-01) : contourné, ou la garde a été retirée par régression');
       }
       const total = await q01<{ n: string }>(`select count(*) n from sample s join procedure_instance pi on pi.id = s.procedure_id where pi.fsli_code = 'REVENUE'`);
-      return total && Number(total.n) > 0 ? `${total.n} sample(s) « chiffre d’affaires », tous rapprochés avant tirage` : 'aucun tirage encore proposé';
+      if (!total || Number(total.n) === 0) return 'aucun tirage encore proposé';
+      const n = Number(total.n);
+      /* « tous rapprochés » ne s'affirme QUE si c'est vrai — trouvé par la
+         revue hostile (workflow, 2 réviseurs indépendants) : la version
+         précédente écrivait « tous rapprochés avant tirage » PUIS admettait,
+         dans la même phrase, qu'un des N ne l'était pas (le legacy R47) —
+         une affirmation qui se contredisait elle-même (règle 13). */
+      return connus === 0
+        ? `${n} sample(s) « chiffre d’affaires », tous rapprochés avant tirage`
+        : `${n} sample(s) « chiffre d’affaires » — ${n - connus} rapproché(s) avant tirage, ${connus} legacy R47 non rapproché(s) (antérieur à POP-01)`;
     }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);

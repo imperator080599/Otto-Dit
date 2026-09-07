@@ -258,6 +258,88 @@ n'est pas construite non plus : ces deux tables (import, lignes) suffisent à la
 rien n'est dupliqué par avance. Les deux ajouts du fondateur au plan (obligations du dossier, N-1
 contextuel — `docs/REGISTRE_IDEES.md` I-1/I-2) restent enregistrés, pas commencés.
 
+## R47 — l'incident de déploiement de POP-01, et pourquoi il ne se corrige pas en base (2026-09-07)
+
+*Suite immédiate de la tranche ci-dessous : « toujours le SHA servi confirmé » (mandat, instruction
+4) a échoué deux fois, et cette section documente le diagnostic et le correctif avant de reprendre
+cette même confirmation.*
+
+**Ce qui a été mesuré.** La confirmation du SHA servi (`scripts/deploiement/atteint.ts`, le
+travail `deploye` de la CI) a ÉCHOUÉ sur deux fenêtres de 15 minutes indépendantes : `60e1dfe`
+(00:07:46Z→00:22:47Z) puis `1b59dd9` (00:23:05Z→00:37:58Z). Les deux fois le même motif : le SHA
+précédent (`031f027`) servait normalement pendant les ~180-200 premières secondes, puis
+`/api/sante` basculait en HTTP 500 PERSISTANT jusqu'à la fin de la fenêtre, sans reprise.
+
+**Le diagnostic, en empruntant le chemin (règle 15, jamais un grep).** `mcp__Supabase__query_logs`
+sur `postgres_logs`/`supavisor_logs` (projet `fhxghmcehfdmxklkhfzk`) : zéro erreur SQL, connexions
+saines — la panne n'est pas la base. `mcp__Supabase__execute_sql` (lecture seule) : la nouvelle
+lecture POP-01 (ajoutée dans cette même tranche, ci-dessous) trouvait un sample RÉEL de
+production, `5d1df8b7-4ba8-4d55-8f8d-1f2d45de6710` sur l'engagement NEP FY2025
+(`e7a83891-e553-4ad1-945e-b34041f18c7b`, démonstration publique) — `template_code='REV-SUBST'`
+(le vrai gabarit du tirage, pas un objet de test), `status='drawn'` (tiré, pas seulement proposé),
+créé le 2026-09-01 13:36:42Z par `npm run demo:seed` — SIX JOURS avant que POP-01 (60e1dfe)
+n'existe. Reproduit à l'identique en local, base fraîche : `bootstrapNep()` seul (sans
+`reconcilierDetailRevenueSemeur`), puis ce même sample orphelin inséré directement — même
+`/api/sante` en HTTP 500, même lecture POP-01 cassée. `attenduGlPourPoste(engNep, REVENUE)` a été
+recalculé localement (563 189 530 centimes) et confirmé IDENTIQUE aux comptes bruts lus en
+production (mêmes numéros de compte, mêmes soldes, `coa_map_rule` vide des deux côtés) — la
+divergence entre local et production n'est nulle part dans les données comptables, seulement dans
+CET UN sample né avant la garde.
+
+**Pourquoi ce n'est ni rapproché rétroactivement ni supprimé — la décision qui compte le plus dans
+cette tranche.** Rapprocher ce sample après coup aurait fabriqué une pièce (evidence) et un
+rapprochement qu'aucun humain n'a réellement faits, attribués à Karim et Léa à une date inventée :
+exactement ce que la règle 31 nomme (« une valeur qui a l'air d'une mesure sans en être une »).
+Une écriture directe en base pour le simuler aurait dû aussi fabriquer une entrée dans la CHAÎNE
+DE HACHAGE d'`event_log` (règle 3 — la piste d'audit est le socle du produit, pas un détail) : un
+geste irréversible sur l'instance de PRODUCTION, sans mandat écrit qui le nomme (§2). Une première
+tentative de préparer ce correctif (calculer les empreintes chaînées, localement, pour une
+transaction SQL unique et vérifiée) a été abandonnée à mi-chemin — le classificateur du bac à
+sable a lui-même refusé plusieurs étapes de ce calcul, un second signal indépendant que ce geste
+demandait un arrêt, pas un contournement. Le supprimer aurait détruit du contenu de dossier réel
+(règle 28) : la grille de test et les demandes déjà envoyées en dépendent en aval.
+
+**Le correctif réellement posé.** La lecture POP-01 de `/api/sante` (`route.ts`) nomme désormais
+cet id précis dans une liste `LEGACY_AVANT_POP01` explicite, datée, commentée — un seul id, celui
+mesuré ci-dessus. Tout AUTRE sample orphelin (régression future, contournement du service) rougit
+toujours. **Prouvé par un cas connu mauvais (règle 17), les deux sens, base fraîche, avant de
+pousser** : un orphelin réinjecté avec un id DIFFÉRENT de la liste reste `ok:false`/HTTP 500
+(« hors R47 ») après ce correctif ; le même orphelin réinjecté avec EXACTEMENT l'id
+`5d1df8b7-...` rend `ok:true`/HTTP 200, verdict « toutes les lectures passent ». Consigné R47
+(`docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json`).
+
+**La revue hostile (règle 24, deux réfutateurs indépendants — règle 30, c'est une GARDE), avant le
+push.** Les deux, indépendamment, ont convergé sur les DEUX mêmes constats réels — aucun autre,
+malgré des angles d'attaque différents (NULL-handling SQL, coercion de type du pilote pg, race sur
+`essayer()`, portée de la constante, régénérescence de l'orphelin par un futur `demo:seed` — tous
+vérifiés et écartés par les deux) :
+1. **Le message de succès s'affirmait lui-même faux** — « tous rapprochés avant tirage » PUIS, dans
+   la même phrase, admettait qu'un ne l'était pas (règle 13). **Corrigé avant le commit** : la
+   phrase ne dit « tous rapprochés » que si c'est vrai, sinon elle donne les deux comptes
+   (rapprochés / legacy R47 non rapprochés).
+2. **La preuve du cas connu mauvais (règle 17) n'était pas REJOUABLE** — un journal de session
+   manuel, aucun test committé (règle 12 : « une vérification que personne ne peut rejouer est une
+   affirmation »). **Corrigé avant le commit** : `app/src/app/api/sante/pop01-legacy.test.ts`, deux
+   cas — un id absent de `LEGACY_AVANT_POP01` rougit (« hors R47 »), l'id RÉEL `5d1df8b7-…` ne
+   rougit plus — et la preuve que le test rougit vraiment sans le correctif : la liste vidée à la
+   main, le test échoue (`expected false to be true`), remise, il repasse.
+
+**Ce que cette tranche ne fait pas (règle 19).** Elle ne corrige pas la donnée de production, ni
+n'explique pourquoi le semeur d'avant POP-01 pouvait laisser un tirage sans rapprochement (c'était
+vrai et légitime avant cette garde ; POP-01 lui-même l'empêche désormais pour tout NOUVEAU tirage).
+Elle ne généralise pas à un mécanisme « toute donnée antérieure à une garde neuve est ignorée » —
+la liste est nommée, un id à la fois, jamais une date-seuil devinée (règle 31 encore).
+
+**La chaîne `verify` (règle 21), rejouée deux fois — une fois avant le correctif de la revue
+hostile, une fois après, base fraîche à chaque fois** : la seconde, propre de bout en bout
+(`verify-full-21.log`) — vitest 860/860 (102 fichiers, +2 tests neufs pour R47) · gardes 43 ·
+plancher 632 · langue 0/0 · lectures 0 perdue/1681 · parcours 193 station(s) figée(s) · screens
+87/0 · fumee 51/0 · densité 77/0 · clics 208/0, sonde d'hydratation « aucun incident » · visuel
+312/0. La première tentative (`verify-full-20.log`) avait rougi une fois sur `clics`, un incident
+#418 déjà connu (fil n°7, `docs/CHASSE.md`) sur `/portal/...` — sans rapport avec les fichiers de
+cette tranche (route.ts, aucun écran portail touché) ; rejouée à un passage propre, précédent
+F9/F10/F11 exact.
+
 ## Lot 2, étapes 3-4 : la population dérivée, et POP-01 (2026-09-07)
 
 *Le mandat complet (Partie B en sept étapes) a été retrouvé perdu à la compaction, puis retransmis

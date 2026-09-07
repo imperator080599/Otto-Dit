@@ -330,3 +330,38 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   du mandat : « en cas de doute, faire la chose plus petite » — étendre l'écran à un second poste
   non semé serait élargir la tranche). Se referme naturellement le jour où une étape ultérieure du
   Lot 2 (ou un poste du Lot 5) offre ce même bouton sur une FSLI que le semeur ne pré-rapproche pas.
+
+## Reporté en confirmant le SHA servi de POP-01, incident de déploiement (2026-09-07)
+
+- **R47 — un échantillon « chiffre d'affaires » de PRODUCTION, réel, antérieur à POP-01, cassait
+  `/api/sante` en HTTP 500 permanent.** En confirmant le SHA servi de `60e1dfe`/`1b59dd9` (POP-01,
+  R46 ci-dessus), le travail `deploye` de la CI a échoué DEUX fois sur des fenêtres de 15 minutes
+  indépendantes (`60e1dfe` 00:07:46Z→00:22:47Z, `1b59dd9` 00:23:05Z→00:37:58Z) : le SHA précédent
+  (`031f027`) servait normalement les ~180-200 premières secondes de chaque fenêtre, puis
+  `/api/sante` basculait en HTTP 500 PERSISTANT jusqu'à la fin de la fenêtre — aucune reprise.
+  Diagnostiqué avec `mcp__Supabase__query_logs` (aucune erreur SQL, connexions saines) et
+  `mcp__Supabase__execute_sql` (lecture seule) : la nouvelle lecture POP-01 (elle-même, R46
+  ci-dessus) trouvait un sample RÉEL en production — `5d1df8b7-4ba8-4d55-8f8d-1f2d45de6710`,
+  engagement `e7a83891-e553-4ad1-945e-b34041f18c7b` (NEP FY2025, démonstration publique),
+  `template_code='REV-SUBST'`, `status='drawn'`, tiré le 2026-09-01 13:36:42Z par
+  `npm run demo:seed` — SIX JOURS avant que POP-01 (60e1dfe, 2026-09-07) n'existe. Reproduit
+  localement à l'identique (`bootstrapNep()` seul, sans `reconcilierDetailRevenueSemeur`, puis un
+  sample orphelin inséré directement) : même HTTP 500, même lecture POP-01 cassée.
+  **Pourquoi ce n'est ni corrigé par un rapprochement rétroactif ni par une suppression** :
+  rapprocher ce sample après coup fabriquerait une pièce (evidence) et un rapprochement qu'aucun
+  humain n'a réellement faits, attribués à Karim/Léa à une date inventée — exactement ce que la
+  règle 31 interdit (« une valeur qui a l'air d'une mesure sans en être une »), et une écriture
+  directe en base pour le simuler aurait dû fabriquer aussi une entrée de la CHAÎNE DE HACHAGE
+  event_log (règle 3) — un geste irréversible sur l'instance de production, écarté sans mandat
+  écrit qui le nomme (§2, et règle 32 : « un geste qu'elle ne peut pas mesurer elle-même... un
+  geste irréversible »). Le supprimer détruirait du contenu de dossier réel dont la grille de test
+  et les demandes déjà envoyées dépendent en aval (règle 28). **Ce qui EST corrigé** : la lecture
+  POP-01 de `/api/sante` (route.ts) nomme désormais cet id précis, daté, dans une liste
+  `LEGACY_AVANT_POP01` explicite — SEUL cet id précis passe désormais sans rougir ; tout AUTRE
+  échantillon orphelin (regression future, contournement du service) rougit toujours, prouvé par
+  un cas connu mauvais (règle 17) : un orphelin réinjecté avec un id DIFFÉRENT continue de rendre
+  `ok:false`/HTTP 500 (« hors R47 ») après ce correctif, et le même orphelin réinjecté avec
+  EXACTEMENT l'id `5d1df8b7-...` rend `ok:true`/HTTP 200 — les deux mesurés localement, base
+  fraîche, avant de pousser. Se referme si un jour ce sample précis est légitimement rapproché par
+  un geste humain réel dans le dossier (alors la ligne quitte la liste) ou si l'engagement NEP
+  FY2025 est ré-semé en entier (interdit hors mandat, §2).
