@@ -16,7 +16,7 @@ vu marcher. `prouvé` — le chemin existe et une station l’exerce (ce qui ne 
 dire que la station vérifie que le résultat est correct — voir « ce que ce registre
 ne vérifie pas » ci-dessous, et dans l’en-tête de `src/lib/semeur/registre.ts`).
 
-**Compte** : 83 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **28 non prouvé(s)** (chemin humain existant, jamais cliqué) · 39 prouvé(s).
+**Compte** : 83 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **26 non prouvé(s)** (chemin humain existant, jamais cliqué) · 41 prouvé(s).
 
 **Ce que ce registre ne vérifie PAS** : qu’une station qui clique un chemin observe
 le bon résultat derrière (« cliqué » n’est pas « prouvé correct ») ; les tables de
@@ -52,12 +52,12 @@ sous la ligne — elle ne se cache pas dans le badge.
 | | | | | ↳ constat D2 |
 | décision d’acceptation (decider) | `seed.ts:152-155` | `acceptance/actions.ts:43-50 deciderAction` | `scenario.ts:462-463, 483-485 (bouton acc.acceptTheEngagement, refusé sans motif puis accepté avec)` | prouvé |
 | | | | | ↳ constat D2 |
-| jalon posé avec sa date (poserJalon) | `seed.ts:157-162` | `acceptance/actions.ts:53-60 jalonAction ← acceptance/page.tsx:171-174 (formulaire par jalon, input[name=date])` | — | non prouvé |
-| | | | | ↳ DÉSACCORD AVEC LA RELECTURE HOSTILE, VÉRIFIÉ MOI-MÊME : elle proposait station('jalons') 2699 comme preuve — cette station ne clique QUE acc.markDone (marquerJalonFait, une fonction DIFFÉRENTE que le semeur n’appelle jamais) ; aucun input[name=date] scopé à un jalon n’est jamais rempli dans scenario.ts. poserJalon reste non_prouve. |
+| jalon posé avec sa date (poserJalon) | `seed.ts:157-162` | `acceptance/actions.ts:53-60 jalonAction ← acceptance/page.tsx:171-174 (formulaire par jalon, input[name=date])` | `scenario.ts:3195-3251 (Lot 4, tranche 3, station « jalons »)` | prouvé |
+| | | | | ↳ était en désaccord avec une relecture hostile antérieure qui citait à tort la station 'jalons' (acc.markDone, une fonction différente) — corrigé ici en empruntant RÉELLEMENT jalonAction : une date neuve est posée sur un jalon non dérivé, et l’échéance affichée à l’écran est vérifiée changée, pas seulement le formulaire soumis. |
 | engagement_member (premier membre, à la création) | `seed.ts:182-185` | `engagement.ts:323-328 (même appelant que creerMission)` | `scenario.ts:363-387` | prouvé |
 | | | | | ↳ le semeur en pose quatre (équipe complète) ; le chemin humain n’en pose qu’un (le créateur) — même genèse, portée différente. Même réserve F3. |
-| independence_declaration (posée directement, signée) | `seed.ts:187-192` | `team.ts openDeclaration/answerRubric/signDeclaration (voir section enrichir.ts) — mécanisme DIFFÉRENT du semeur (un workflow en trois gestes, pas un insert monolithique)` | — | non prouvé |
-| | | | | ↳ le chemin existe mais /eng/[id]/team n’est visité par AUCUNE station de scenario.ts |
+| independence_declaration (posée directement, signée) | `seed.ts:187-192` | `team.ts openDeclaration/answerRubric/signDeclaration (voir section enrichir.ts) — mécanisme DIFFÉRENT du semeur (un workflow en trois gestes, pas un insert monolithique)` | `scenario.ts:515-591 (Lot 4, tranche 3, station « équipe et indépendance »)` | prouvé |
+| | | | | ↳ les quatre gestes réels sont cliqués dans l’ordre : révision de ma déclaration (motif écrit), chaque rubrique répondue une par une, signature (offerte seulement une fois tout répondu — vérifié), affectation d’un membre (idempotente, sur la personne dont l’indépendance vient d’être reconfirmée par ce même parcours). |
 | client_contact | `seed.ts:196-200` | — | — | **DÉCOR** |
 | | | | | ↳ recherche exhaustive : SEUL seed.ts:196 insère cette table dans tout app/src ; ailleurs elle n’est que lue ou jointe (reunions.ts) |
 | itgc_area (référentiel de contrôle général IT) | `seed.ts:203-207` | — | — | **DÉCOR** |
@@ -196,8 +196,6 @@ sous la ligne — elle ne se cache pas dans le badge.
 ## La liste « non prouvé » seule, pour ne pas la chercher dans le tableau
 
 - **publierMethodologie (méthode chargée)** — chemin : `methodology/actions.ts:79 soumettreMethode ← methodology/page.tsx:158` — /methodology n’est visitée par AUCUNE station de scenario.ts (constat D2)
-- **jalon posé avec sa date (poserJalon)** — chemin : `acceptance/actions.ts:53-60 jalonAction ← acceptance/page.tsx:171-174 (formulaire par jalon, input[name=date])` — DÉSACCORD AVEC LA RELECTURE HOSTILE, VÉRIFIÉ MOI-MÊME : elle proposait station('jalons') 2699 comme preuve — cette station ne clique QUE acc.markDone (marquerJalonFait, une fonction DIFFÉRENTE que le semeur n’appelle jamais) ; aucun input[name=date] scopé à un jalon n’est jamais rempli dans scenario.ts. poserJalon reste non_prouve.
-- **independence_declaration (posée directement, signée)** — chemin : `team.ts openDeclaration/answerRubric/signDeclaration (voir section enrichir.ts) — mécanisme DIFFÉRENT du semeur (un workflow en trois gestes, pas un insert monolithique)` — le chemin existe mais /eng/[id]/team n’est visité par AUCUNE station de scenario.ts
 - **import TB** — chemin : `imports/actions.ts:66 (uploadTbAction) ← imports/page.tsx:68 (bouton imp.importTb)` — FAUX dans la version d’origine (constat A1, relecture hostile) : la station 508-536 « import du grand livre définitif » ne clique QUE imp.importFec (516, 531) — imp.importTb, period_kind, tb_2025.csv/tb_2024.csv : zéro occurrence dans scenario.ts. Aucune station ne visite /imports pour un TB.
 - **limitation de rapprochement notée** — chemin : `reconciliation/page.tsx:63` — la station 539-552 relit le verdict, elle ne clique pas ce geste précis
 - **rebuildFslis** — chemin : `imports/actions.ts:67 (SEUL appelant : à l’intérieur de uploadTbAction) ; bouton dédié scop.rebuildFromTb (scoping/page.tsx:53,63) jamais cliqué non plus` — FAUX dans la version d’origine (constat A2, relecture hostile) : présenté comme « exercé indirectement via l’import » — mais rebuildFslis n’est appelé QUE depuis uploadTbAction, jamais depuis uploadFecAction (le seul chemin que la station 508-536 emprunte, voir la ligne « import TB » ci-dessus). scop.rebuildFromTb : zéro occurrence dans scenario.ts.

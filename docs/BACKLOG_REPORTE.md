@@ -568,3 +568,35 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   (atelier `rapprochement`, dernière tranche du Lot 3), 2026-09-07 — signalé, pas corrigé, même
   discipline que R54/R56 (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se
   referme avec R54/R56, vraisemblablement au Lot 5.
+
+- **R58 — `tests/screens.test.ts` a fait tomber le serveur, intermittent, trois fois sur cinq
+  passages complets de `npm run verify` pendant le Lot 4, tranche 3 (2026-09-08).** Symptôme
+  distinct du #418 (`docs/CHASSE.md`) : pas une erreur d'hydratation React interceptée par
+  `pageerror`, mais « le serveur est tombé après N route(s) » — le processus lui-même meurt en
+  cours de balayage, à une route DIFFÉRENTE à chaque occurrence (`/eng/[id]/loop` (SOX) à la
+  route 69, `/eng/[id]/workpapers` (SOX) à la route 86, `/eng/[id]/testing` à la route 46).
+  AUCUNE trace dans le diff de cette tranche (`scripts/clics/scenario.ts`,
+  `src/lib/semeur/registre.ts`, aucun des deux n'est importé par le runtime applicatif) ne peut
+  expliquer ce symptôme — hypothèse écartée par lecture, pas supposée. Deux ré-exécutions
+  ISOLÉES du même test (`npx vitest run ../tests/screens.test.ts`, seul) ont TOUJOURS réussi
+  (2/2) ; c'est uniquement à l'intérieur de la chaîne complète (`db:reset && demo:seed && tsc
+  && vitest run && …`, 907 tests, ~450 s) que le crash apparaît, sans point de déclenchement fixe.
+  Trouvé, en creusant : un processus PARASITE, une boucle d'attente active SANS `sleep`
+  (`until … ; do :; done`), orpheline d'un sous-agent de revue hostile de la tranche 2, tournait
+  DEPUIS TROIS HEURES en arrière-plan au moment des trois échecs (confirmé : son propre fichier
+  cible portait déjà, depuis longtemps, le contenu que sa condition de sortie attendait — une
+  boucle cassée, pas simplement lente). Tuée (`kill -9`), le passage suivant de `npx vitest run`
+  seul est passé 907/907, puis la chaîne complète 907/907 également — **corrélation mesurée,
+  causalité NON prouvée** (règle 18 : un seul essai propre après le nettoyage ne suffit pas à
+  l'établir ; CLAUDE.md documente déjà, pour le #418, cinq hypothèses plausibles qui se sont
+  révélées fausses). Découverte annexe, réelle et corrigée dans le même geste : la forme
+  opérative de la règle 35 (`… | tee fichier ; echo "EXIT=$?"`) ne rend PAS le code de sortie de
+  la commande réelle sans `set -o pipefail` — `$?` reflète celui de `tee` (quasi toujours 0),
+  masquant un `npm run verify` réellement rouge ; prouvé en local
+  (`bash -c 'exit 42' | tee f ; echo $?` rend `0` sans `pipefail`, `42` avec) et corrigé dans
+  CLAUDE.md, règle 35. Ce constat NE bloque PAS cette tranche : le cinquième passage complet,
+  après nettoyage, est intégralement vert (907/907, 232 étapes clics · 0 échec, 312 vues · 0
+  défaut) — cité dans STATUS.md avec son heure et sa durée mesurées. Non corrigé : le lien de
+  cause à effet entre la boucle orpheline et le crash reste une hypothèse forte, non une preuve ;
+  si le symptôme récidive sur un arbre propre (aucun processus parasite mesuré), rouvrir
+  l'enquête dans `docs/CHASSE.md` plutôt que de re-tenter la même explication.

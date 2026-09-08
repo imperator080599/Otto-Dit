@@ -167,6 +167,105 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 4, tranche 3 : la création de dossier de bout en bout, jusqu'ici décor (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (Lot 4, Partie D.6,
+« les écrans qui manquent : re-tirage avec sa règle, déplanification, **création de dossier de
+bout en bout** »). Contrairement aux deux tranches précédentes, AUCUN code métier n'est modifié
+ici : les deux gestes réels existaient déjà, testés en unitaire, mais qu'aucune station de
+`scripts/clics/scenario.ts` n'avait jamais empruntés — même famille que R56/R57 du Lot 3.*
+
+**Recherche d'abord** (agent dédié) : `docs/instantanes/registre.ts` (le fichier source qui
+engendre `SEMEUR_VS_CHEMIN.md`) portait déjà deux décors précisément identifiés — `poserJalon`
+(poser la date d'un jalon d'acceptation, `acceptance/actions.ts:53-60`) et
+`independence_declaration` posée par le workflow humain réel (`/eng/[id]/team`, six formulaires,
+`team.ts`) — tous deux `non_prouve` : le chemin existe, personne ne le clique. Ni
+`BACKLOG_REPORTE.md` ni `fils.json` ne portaient de fil sur ce sujet — un manque neuf, consigné
+ici pour la première fois.
+
+**Ce qui a changé, uniquement le harnais et le registre de preuve :**
+- `scenario.ts`, station EXISTANTE `jalons` — un bloc nouveau AVANT la boucle `markDone` : pose
+  une date NEUVE (le lendemain de l'échéance actuelle) sur le premier jalon non dérivé via
+  `jalonAction`, vérifie que la colonne « échéance » affiche vraiment la nouvelle date.
+- `scenario.ts`, station NEUVE `équipe et indépendance` — insérée juste après `acceptation du
+  dossier neuf` (avant l'import du grand livre définitif) : révise MA déclaration (Claire,
+  l'associée, identité active à ce point du parcours) avec un motif écrit, répond à CHAQUE
+  rubrique une par une (même idiome que la boucle du questionnaire résiduel), signe, puis
+  RÉAFFECTE Claire elle-même — le geste réel d'`assignMember`, idempotent.
+- `semeur/registre.ts` — les deux entrées passent de `non_prouve` à `prouve`, citant les lignes
+  réelles de `scenario.ts`.
+
+**Deux défauts RÉELS trouvés et corrigés en construisant la station, ni l'un ni l'autre dans le
+produit** (règle 18 : chacun prouvé station par station, pas supposé) :
+1. Le `<details>` contenant le tableau des jalons se referme au rechargement de la page
+   (`revalidatePath`+`redirect`, pas d'état persisté) — le premier essai lisait `innerText()`
+   SANS le rouvrir : la date était bien posée en base, seulement invisible, faux échec.
+   Diagnostiqué avec une sonde jetable (supprimée) qui a prouvé, en base fraîche, que la mise à
+   jour fonctionnait réellement. Corrigé en rouvrant le repli avant de lire.
+2. Le formulaire d'affectation soumis avec ses valeurs PAR DÉFAUT (`eng_role="staff"`, case
+   `can_sign` décochée) avait RÉÉCRIT Claire — l'associée réelle, `partner`/`can_sign=true`
+   (`seed.ts:171`) — en simple staff sans droit de visa (`assignMember` fait un UPDATE
+   inconditionnel de ces deux champs, `team.ts:422-427`) : six stations plus loin dans le MÊME
+   parcours cassaient en cascade (ordre des visas, clôture des notes par un non-auteur, ordre
+   des copies de réunion). Corrigé en sélectionnant explicitement son vrai rôle et en cochant sa
+   vraie permission — un vrai no-op fonctionnel, pas une corruption silencieuse.
+
+**Vérifié au clic réel, deux passages complets** (`db:reset && demo:seed` entre chacun) : le
+premier a révélé le défaut 1 (station jalons ÉCHEC) ; corrigé, le second a révélé le défaut 2
+(6 échecs en cascade) ; corrigé, le troisième : **232 étapes conduites · 0 échec · 362 clics sur
+48 gestes**, aucune station figée manquante. Les 5 stations neuves figées (`npm run clics --
+figer`, base réamorcée) : 231 stations désormais figées.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30) — convergents, aucun défaut
+fonctionnel trouvé, seulement des citations de lignes périmées dans `registre.ts` (le code avait
+légèrement bougé entre la rédaction et la revue) :
+- **Voix 1** — 6 constats, dont la confirmation par lecture du SQL que `entered_on` (laissé vide
+  dans le formulaire d'affectation) ne risquait AUCUNE écrasement (`coalesce($4, entered_on)`,
+  contrairement à `eng_role`/`can_sign` qui n'ont pas ce garde) ; la méthode ne porte que 8
+  rubriques, la boucle à 30 tours a une marge large. **Verdict : SHIP WITH MINOR FIXES.**
+- **Voix 2** — son premier passage s'est arrêté avant de rendre un rapport (tour interrompu en
+  attendant son propre `npm run clics`, relancé et terminé proprement sur demande) ; confirmé par
+  lecture que `eng`/`engNeuf` ne sont jamais confondus, qu'`openDeclaration` ne copie jamais les
+  réponses précédentes (`answers jsonb not null default '{}'::jsonb`, migration
+  0011_team_independence.sql), et que le garde `total > 0` protège bien contre le cas limite d'un
+  compte lu avant stabilisation de la page. **Verdict : SHIP WITH MINOR FIXES.**
+
+**Corrigé** : les deux citations de `registre.ts` (`3190-3218` → `3195-3251` pour la station
+jalons ; `515-580` → `515-591` pour la station équipe), recalculées en relisant le fichier réel
+après tous les correctifs. tsc revérifié propre.
+
+**R58 enregistré — un flake intermittent croisé en chemin, distinct de cette tranche.** Trois des
+cinq passages complets de `npm run verify` ont vu `tests/screens.test.ts` faire tomber le
+serveur, à une route DIFFÉRENTE à chaque fois (`/eng/[id]/loop` (SOX) route 69,
+`/eng/[id]/workpapers` (SOX) route 86, `/eng/[id]/testing` route 46) — symptôme distinct du #418
+(le processus meurt, ce n'est pas une erreur d'hydratation). Rien dans le diff de cette tranche
+ne peut l'expliquer (aucun des deux fichiers touchés n'est importé par le runtime). Deux
+ré-exécutions ISOLÉES du même test ont toujours réussi. En creusant : un processus PARASITE
+tournait depuis TROIS HEURES en arrière-plan — une boucle d'attente active sans `sleep`,
+orpheline d'un sous-agent de revue hostile de la tranche 2 (son propre fichier cible portait
+déjà, depuis longtemps, le contenu que sa condition de sortie attendait : une boucle cassée, pas
+lente). Tuée, le passage suivant est passé 907/907. **Corrélation mesurée, causalité NON
+prouvée** (règle 18) — R58 le dit tel quel, sans surclasser une hypothèse forte en diagnostic.
+Découverte annexe et réelle, corrigée dans le même geste : la forme opérative de la règle 35
+(CLAUDE.md) manquait `set -o pipefail` — `EXIT=$?` après `| tee` reflétait `tee`, pas
+`npm run verify`, masquant un rouge réel (prouvé en local : `bash -c 'exit 42' | tee f; echo $?`
+rend `0` sans `pipefail`, `42` avec). Corrigé dans CLAUDE.md.
+
+**Chaîne verify complète, arbre gelé, cinquième passage — le premier propre après le nettoyage**
+(règle 34/35 forme opérative CORRIGÉE, `set -o pipefail` + `timeout 3600`,
+`verify-lot4-tranche3-attempt5.log`) : tsc propre, vitest **907/907** (112/112 fichiers, 456.06 s),
+gardes 43, plancher 907 collectés · 632 · aucune forme éteinte/isolée, langue 0 hors catalogue ·
+0 en dur · 39 différés · 45 exclues · 14 refus documentés, langue:épreuve 15/15, lectures 0
+perdue sur 1716 chemins figés dans 86 écrans, lectures:épreuve 6/6, parcours **276 déclarées ·
+276 figées · 0 perdue** (+5 par rapport à la fin de tranche 2), parcours:épreuve 5/5, screens 87
+routes · 0 échec, fumee 51 routes · 0 échec, densite 77 écrans · 0 dépassement · 108 champs,
+clics **232 étapes · 0 échec · 362 clics sur 48 gestes** (231 stations figées vérifiées),
+visuel 312 vues · 0 défaut.
+
+**Deux décors de plus deviennent des chemins prouvés.** Suite du Lot 4 : tranche 4, les six
+vérifications D.6 (épreuve de l'épure, mécanisée), chacune née en avertissement avec sa propre
+fixture de faux positif (règle 25).
+
 ## Lot 4, tranche 2 : R34 (le prédicat de travail) et R30 partiel (l'avertissement de re-tirage) (2026-09-08)
 
 *Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (Lot 4, Partie D.6,

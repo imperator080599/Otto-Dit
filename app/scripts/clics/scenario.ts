@@ -504,6 +504,92 @@ export async function conduire(
       'aucun champ de saisie sur le jalon dérivé');
   });
 
+  /* ── ÉQUIPE ET INDÉPENDANCE (Lot 4, tranche 3 — mandat, « création de
+     dossier de bout en bout ») : L'ÉCRAN N'AVAIT JAMAIS ÉTÉ CLIQUÉ. Le semeur
+     pose quatre membres et une déclaration déjà SIGNÉE d'un coup (seed.ts) —
+     aucun geste humain ne le fait. `openDeclaration`, `answerRubric`,
+     `signDeclaration`, `assignMember` existaient, testés en unitaire
+     (`team.test.ts`), jamais empruntés par ce parcours. Identité active :
+     Claire (associé), inchangée depuis l'acceptation — cohérent, l'associé
+     confirme sa propre indépendance après avoir accepté la mission. */
+  await station('équipe et indépendance', async () => {
+    await aller(`${eng}/team`);
+
+    /* MA DÉCLARATION EST DÉJÀ SIGNÉE (semeur) : le seul geste possible est
+       une RÉVISION, motif écrit obligatoire (TeamRuleError sinon). */
+    const formeReviser = p.locator('form:has(input[name=reason])').first();
+    if (await formeReviser.count()) {
+      await formeReviser.locator('input[name=reason]').fill('Reconfirmation annuelle, aucun changement de situation.');
+      await formeReviser.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(900);
+    }
+    dire('équipe : ma déclaration d’indépendance se RÉVISE depuis l’écran, avec un motif écrit',
+      !refus(p) && (await compte('form:has(select[name=answer])')) > 0,
+      refus(p) ?? 'révision ouverte, rubriques à répondre');
+
+    /* CHAQUE RUBRIQUE SE RÉPOND, une par une (même idiome que le
+       questionnaire résiduel, station « risque par assertion »). La révision
+       repart TOUJOURS de zéro (aucune reprise des réponses précédentes,
+       `openDeclaration` ne les copie pas) : aucune n'est présélectionnée. */
+    const total = await compte('form:has(select[name=answer])');
+    for (let tour = 0; tour < 30; tour++) {
+      const vides = await p.locator('form:has(select[name=answer])').evaluateAll(
+        (els) => els.map((e, i) => ({ i, v: (e.querySelector('select[name=answer]') as HTMLSelectElement)?.value }))
+          .filter((x) => !x.v).map((x) => x.i));
+      if (!vides.length) break;
+      const f = p.locator('form:has(select[name=answer])').nth(vides[0]);
+      await f.locator('select[name=answer]').selectOption('non');
+      await f.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(700);
+    }
+    const reste = await p.locator('form:has(select[name=answer])').evaluateAll(
+      (els) => els.filter((e) => !(e.querySelector('select[name=answer]') as HTMLSelectElement)?.value).length);
+    dire('équipe : chaque rubrique d’indépendance se répond, une par une',
+      total > 0 && reste === 0, `${total} rubrique(s), ${reste} sans réponse`);
+
+    /* SIGNER : n'est offert qu'une fois `missing` vide (page.tsx) — donc CE
+       bouton n'existe que si la boucle ci-dessus a vraiment tout répondu. */
+    const boutonSigner = p.locator(`button:has-text("${L('team.signMyDeclaration')}")`).first();
+    const offertAvantSignature = await boutonSigner.count();
+    if (offertAvantSignature) {
+      await boutonSigner.click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(900);
+    }
+    dire('équipe : la déclaration se SIGNE depuis l’écran, une fois toutes les rubriques répondues',
+      offertAvantSignature > 0 && !refus(p) && (await compte(`button:has-text("${L('team.signMyDeclaration')}")`)) === 0,
+      refus(p) ?? (offertAvantSignature ? 'signée' : 'le bouton de signature n’a jamais été offert'));
+
+    /* AFFECTER : réaffecter Claire elle-même (déjà membre, déclaration tout
+       juste signée ci-dessus) — le geste réel d'`assignMember`, idempotent
+       (UPDATE si déjà membre), sans dépendre d'une AUTRE personne dont
+       l'indépendance n'aurait jamais été confirmée par ce parcours.
+       RÔLE ET VISA EXPLICITES, PAS LES DÉFAUTS DU FORMULAIRE (defaultValue
+       "staff", case "peut viser" décochée) : un premier passage les avait
+       laissés tels quels et avait donc RÉÉCRIT Claire — l'associée — en
+       « staff » sans droit de visa, cassant la hiérarchie de revue pour
+       toutes les stations suivantes (visas, clôture des notes, réunions).
+       `assignMember` fait un UPDATE inconditionnel des trois champs qu'on
+       lui donne (`team.ts:422-427`) : on lui redonne donc EXACTEMENT son
+       rôle réel (`seed.ts:171`, partner) pour que le geste soit un vrai
+       no-op fonctionnel, pas une corruption silencieuse. */
+    const formeAffecter = p.locator('form:has(select[name=user_id])').first();
+    const offertAffecter = await formeAffecter.count();
+    if (offertAffecter) {
+      await formeAffecter.locator('select[name=user_id]').selectOption({ value: c.associe.id });
+      await formeAffecter.locator('select[name=eng_role]').selectOption('partner');
+      await formeAffecter.locator('input[name=can_sign]').check();
+      await formeAffecter.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(900);
+    }
+    dire('équipe : un membre s’AFFECTE depuis l’écran (rôle, visa, date d’entrée)',
+      offertAffecter > 0 && !refus(p),
+      refus(p) ?? (offertAffecter ? 'affectation enregistrée' : 'le formulaire d’affectation n’a jamais été offert'));
+  });
+
   // ── 3. IMPORT DU FEC DÉFINITIF (ADR-016 : un ré-import se confirme)
   await station('import du grand livre définitif', async () => {
     await devenir(c.preparateur.id);
@@ -3105,12 +3191,52 @@ export async function conduire(
       'plus aucune nature à conclure');
   });
 
-  // ── 21. JALONS : poser, puis MARQUER FAIT (le geste qui n'avait pas d'écran)
+  // ── 21. JALONS : poser LA DATE, poser, puis MARQUER FAIT (le geste qui n'avait pas d'écran)
   await station('jalons', async () => {
     await aller(`${eng}/acceptance`);
     /* LES JALONS SONT DANS UN REPLI depuis la revue n°2 (ils sortent du flux
        d'acceptation sans disparaître). Le geste de l'utilisateur est donc :
        déplier, puis marquer. */
+
+    /* LE GESTE QUI N'AVAIT JAMAIS ÉTÉ EMPRUNTÉ (Lot 4, tranche 3) : `jalonAction`
+       pose la date d'un jalon (`input[name=date]`) — chaque jalon du monde
+       semé porte déjà une échéance, donc jusqu'ici seul `markDone` était
+       cliqué, jamais ce formulaire. On repose une date NEUVE (le lendemain de
+       l'échéance actuelle) sur le premier jalon NON dérivé et on vérifie que
+       la colonne « échéance » affiche vraiment la nouvelle date — pas
+       seulement que le formulaire existe. */
+    const formeDate = p.locator('form:has(input[name=date])').first();
+    if (await formeDate.count()) {
+      await deplier(formeDate);
+      const champDate = formeDate.locator('input[name=date]');
+      const avant = await champDate.inputValue();
+      const d = new Date(avant);
+      const neuve = isNaN(d.getTime())
+        ? '2026-12-31'
+        : new Date(d.getTime() + 86400000).toISOString().slice(0, 10);
+      const [aa, mm, jj] = neuve.split('-');
+      await champDate.fill(neuve);
+      await formeDate.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(800);
+      /* LE REPLI SE REFERME au rechargement (`<details>` sans état persisté :
+         `revalidatePath`+`redirect` réaffichent la page fraîche, fermée par
+         défaut) — son contenu masqué n'entre pas dans `innerText()`. Trouvé
+         en diagnostiquant un premier ÉCHEC (sonde jetable, supprimée) : la
+         date était bien posée en base, seulement invisible tant que le
+         repli restait fermé — pas un défaut du produit, un défaut de CETTE
+         station. On rouvre avant de lire. */
+      const repliApres = p.locator(`details:has(summary:has-text("${L('acc.engagementMilestones')}"))`).first();
+      if (await repliApres.count()) await deplier(repliApres.locator('table').first());
+      const corps = await p.locator('body').innerText();
+      dire('jalons : la date d’un jalon se pose depuis l’écran (jalonAction), et l’échéance affichée change',
+        !refus(p) && corps.includes(`${jj}/${mm}/${aa}`),
+        refus(p) ?? `échéance « ${jj}/${mm}/${aa} » introuvable après l’avoir posée (était « ${avant} »)`);
+    } else {
+      dire('jalons : la date d’un jalon se pose depuis l’écran (jalonAction), et l’échéance affichée change',
+        false, 'AUCUN jalon non dérivé sur ce dossier — le formulaire de date n’est pas offert');
+    }
+
     for (let tour = 0; tour < 12; tour++) {
       const f = p.locator(`form:has(button:has-text("${L('acc.markDone')}"))`).first();
       if (!(await f.count())) break;

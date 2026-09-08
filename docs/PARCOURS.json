@@ -105,6 +105,22 @@
       "gabarit": false
     },
     {
+      "nom": "équipe : ma déclaration d’indépendance se RÉVISE depuis l’écran, avec un motif écrit",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : chaque rubrique d’indépendance se répond, une par une",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : la déclaration se SIGNE depuis l’écran, une fois toutes les rubriques répondues",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : un membre s’AFFECTE depuis l’écran (rôle, visa, date d’entrée)",
+      "gabarit": false
+    },
+    {
       "nom": "import : ré-importer le grand livre SANS confirmer l’invalidation est refusé",
       "gabarit": false
     },
@@ -1029,6 +1045,10 @@
       "gabarit": false
     },
     {
+      "nom": "jalons : la date d’un jalon se pose depuis l’écran (jalonAction), et l’échéance affichée change",
+      "gabarit": false
+    },
+    {
       "nom": "jalons : chaque jalon se marque FAIT depuis l’écran",
       "gabarit": false
     },
@@ -1164,6 +1184,22 @@
     },
     {
       "nom": "jalons : le jalon dérivé n’est pas saisissable, et la raison est écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : ma déclaration d’indépendance se RÉVISE depuis l’écran, avec un motif écrit",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : chaque rubrique d’indépendance se répond, une par une",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : la déclaration se SIGNE depuis l’écran, une fois toutes les rubriques répondues",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : un membre s’AFFECTE depuis l’écran (rôle, visa, date d’entrée)",
       "gabarit": false
     },
     {
@@ -1956,6 +1992,10 @@
     },
     {
       "nom": "achèvement : les cinq natures sont conclues",
+      "gabarit": false
+    },
+    {
+      "nom": "jalons : la date d’un jalon se pose depuis l’écran (jalonAction), et l’échéance affichée change",
       "gabarit": false
     },
     {

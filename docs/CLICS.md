@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-08 · 47 gestes · **348 clics** au total.
+Parcours du 2026-09-08 · 48 gestes · **362 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -21,6 +21,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1 | 3 |
 | tableau de bord : ce qui attend l’associé, hors rail, et le clic direct | 2 |
 | acceptation du dossier neuf | 9 |
+| équipe et indépendance | 12 |
 | import du grand livre définitif | 3 |
 | rapprochement balance / grand livre | 1 |
 | balances auxiliaires : concentration, apparus, vieillissement | 7 |
@@ -57,7 +58,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | pointage des états financiers | 4 |
 | circularisation des banques : complétude, envoi, écart, explication | 8 |
 | achèvement | 7 |
-| jalons | 7 |
+| jalons | 9 |
 | obstacles au visa | 0 |
 | mes travaux : le point d’origine, et les clics comptés | 3 |
 | clôture et archive scellée | 1 |

@@ -270,6 +270,7 @@ se lance désormais sous un `timeout` EXPLICITE, le budget écrit dans le messag
 commande, jamais seulement dans la tête de l'agent :
 
 ```
+set -o pipefail
 timeout 3600 npm run verify 2>&1 | tee /tmp/verify-<tranche>.log ; echo "EXIT=$?"
 ```
 
@@ -280,6 +281,18 @@ session — un `timeout` de 3600 s laisse la marge normale sans laisser tourner 
 rien), jamais une estimation inventée. Ceci ne remplace pas la lecture du disque (log qui
 grossit, `mtime`) pendant l'attente — les deux se combinent : le shell garantit une fin, la
 lecture du disque dit si le run est VIVANT avant cette fin.
+
+**`set -o pipefail` N'EST PAS DÉCORATIF, RÉCIDIVE DU 2026-09-08 (Lot 4, tranche 3).** La forme
+ci-dessus, TELLE QU'ÉCRITE SANS `pipefail`, rend `$?` INUTILISABLE : dans un pipe `cmd | tee
+fichier`, bash rend par défaut le code de sortie du DERNIER maillon (`tee`, qui réussit presque
+toujours), pas celui de `cmd`. Un `npm run verify` réellement rouge (un test vitest en échec,
+mesuré ce jour-là : `Test Files 1 failed | 111 passed`) a rendu **`EXIT=0`** avec la forme d'origine
+— prouvé en local : `bash -c 'exit 42' | tee f ; echo $?` rend `0` sans `pipefail`, `42` avec.
+Seule la lecture du CONTENU du log (compter « failed », lire le nombre de tests) avait évité que
+ce rouge passe pour un vert cette fois — la garde `EXIT=` elle-même ne gardait rien. `set -o
+pipefail` (une ligne, avant le `timeout`) restaure un `$?` qui reflète vraiment `npm run verify`,
+pas `tee`. Ne jamais retirer cette ligne, et ne jamais faire confiance à un `EXIT=` qui ne l'a
+pas précédée.
 
 ## 4. La règle du compte rendu (matin, soir, fin de mandat)
 

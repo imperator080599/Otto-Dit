@@ -213,6 +213,12 @@
       "note": "non corrigé : même discipline que R54/R56 (règle 8, règle 14 — contenu de méthode, pas mécanique d'atelier). Contourné entièrement par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-rapprochement-lecture.test.ts) — aucune vérification manuelle au clic possible, faute d'un chemin de démonstration seedé, bien que la voie réelle (planifierProcedure) accepterait RAPPRO sur CASH si elle était exercée. Se referme avec R54/R56, vraisemblablement au Lot 5."
     },
     {
+      "id": "R58",
+      "etat": "ouvert — corrélation mesurée, causalité NON prouvée (règle 18) : tests/screens.test.ts a fait tomber le serveur trois fois sur cinq passages complets de npm run verify pendant le Lot 4, tranche 3 (2026-09-08), à une route différente à chaque fois (loop SOX route 69, workpapers SOX route 86, testing route 46). Symptôme distinct du #418 (pas une erreur d'hydratation, le processus meurt). Un processus parasite (boucle d'attente active sans sleep, orpheline d'un sous-agent de revue hostile de la tranche 2, trois heures d'accumulation CPU) tournait au moment des trois échecs ; tué, le passage suivant (isolé puis chaîne complète) est passé 907/907. Un seul essai propre ne suffit pas à établir la causalité.",
+      "depuis": "2026-09-08 (Lot 4, tranche 3)",
+      "note": "non corrigé : hypothèse forte (processus parasite), non prouvée. Découverte annexe corrigée dans le même geste : la forme opérative de la règle 35 (CLAUDE.md) manquait `set -o pipefail`, rendant `EXIT=$?` après `| tee` inutilisable (reflète tee, pas la commande réelle) — prouvé en local, corrigé. Si le symptôme récidive sur un arbre mesuré propre (aucun processus parasite), rouvrir l'enquête dans docs/CHASSE.md plutôt que de re-tenter la même explication."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
