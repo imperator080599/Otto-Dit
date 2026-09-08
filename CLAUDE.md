@@ -256,6 +256,31 @@ borné et nommé, le run est mort : le dire et le relancer.
 > un geste qui n'a pas eu lieu. C'est le défaut que ce projet traque, et il n'a pas d'exception
 > pour l'agent qui le traque.
 
+**Récidive, nuit du 7 au 8 septembre — la règle 35 nommée, puis pas appliquée.** Le `verify` de
+Lot 3 tranche 4 a été lancé en tâche de fond SANS qu'aucun budget ne soit nommé au lancement.
+Il s'est arrêté à « build… » (le propre build de production de `clics/run.ts`, avant la
+première station) et n'a plus grossi pendant **9 h 05** avant d'être repéré — par le fondateur,
+pas par l'agent. La règle 35 dit vrai depuis la nuit du 6 au 7 : elle n'a simplement jamais été
+appliquée, faute d'un budget écrit au moment du lancement pour la déclencher.
+
+**Forme opérative de la règle 35 — le budget est TENU PAR LE SHELL, jamais par le jugement de
+l'agent.** Un rappel qu'on doit se faire à soi-même est plus faible qu'une commande que le shell
+fait respirer. Tout run long (`verify`, `clics`, `screens`, tout ce qui dépasse quelques minutes)
+se lance désormais sous un `timeout` EXPLICITE, le budget écrit dans le message qui lance la
+commande, jamais seulement dans la tête de l'agent :
+
+```
+timeout 3600 npm run verify 2>&1 | tee /tmp/verify-<tranche>.log ; echo "EXIT=$?"
+```
+
+Un `EXIT=124` dit que `timeout` a tué le run — mort par le budget, pas par un vrai résultat ; à
+distinguer d'un `EXIT` de la commande elle-même. Choisir le budget sur une mesure déjà connue de
+ce dépôt (`npm run verify` complet : environ 60 minutes mesurées à plusieurs reprises cette
+session — un `timeout` de 3600 s laisse la marge normale sans laisser tourner neuf heures pour
+rien), jamais une estimation inventée. Ceci ne remplace pas la lecture du disque (log qui
+grossit, `mtime`) pendant l'attente — les deux se combinent : le shell garantit une fin, la
+lecture du disque dit si le run est VIVANT avant cette fin.
+
 ## 4. La règle du compte rendu (matin, soir, fin de mandat)
 
 - **Ne jamais conclure au-delà du document** : le rapport dit ce qui a été mesuré, sur quel SHA,
