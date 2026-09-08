@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "b37989ab7a22f11b43c575d1da8518a16c3df42c",
+  "sha": "f2968d3dcadfc7b97f639b916bb93ddaed5e3e78",
   "mesure": {
-    "quand": "2026-09-08T14:13:02Z",
-    "par": "CI, travail `deploye`, run 34236433361, job 102095227383, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 14:09:33Z→14:13:02Z, 202 s — eee7ade servi de 53 s à 177 s, puis b37989a à 202 s). Lot 4, tranche 3 : la création de dossier de bout en bout. Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation.",
+    "quand": "2026-09-08T15:29:45Z",
+    "par": "CI, travail `deploye`, run 34244723884, job 102123658729, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 15:26:28Z→15:29:45Z, 179 s — 58a99e4 servi de 0 s à 154 s, puis f2968d3 à 179 s). Lot 4, tranche 4a : D.6 points 1 et 3 (l'épreuve de l'épure). Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation.",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "b37989ab7a22f11b43c575d1da8518a16c3df42c",
+      "quand": "2026-09-08T14:13:02Z",
+      "par": "CI, travail `deploye`, run 34236433361, job 102095227383, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 14:09:33Z→14:13:02Z, 202 s — eee7ade servi de 53 s à 177 s, puis b37989a à 202 s). Lot 4, tranche 3 : la création de dossier de bout en bout. Le commit suivant (58a99e4, SHA servi confirmé = b37989a, docs seules) a aussi été observé servi (même job que f2968d3 ci-dessus, de 0 s à 154 s de sa fenêtre) mais n'a pas reçu sa propre entrée dédiée — même précédent que f7dfee1/eee7ade."
+    },
     {
       "sha": "f7dfee153cb187db734a1529e7ad54a75c2fa130",
       "quand": "2026-09-08T11:06:41Z",
