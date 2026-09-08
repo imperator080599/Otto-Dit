@@ -1,13 +1,33 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+  "sha": "8af38ab8c0fa37b3cea6fe1d7f6d1b32f627999b",
   "mesure": {
-    "quand": "2026-09-07T11:51:33Z",
-    "par": "CI, travail `deploye`, run 34118461946, job 101730889633, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 11:48:57Z→11:51:33Z, 156 s). Lot 3, tranche 1 : la nature du test — incident de production entre-temps (3521f06 : premier commit de la tranche, CATALOGUE INVALIDE au build, méthode publiée périmée par évolution du schéma ; f8e1207 et 6637883 en ont hérité, cinq déploiements ERROR au total, Production et Preview, signalé par le fondateur — mesuré ici via l'outil Vercel de la session, jamais par `curl` (§7) : dpl_DKFbMaPBVCPyqHfHVSH67p869ymD, journal de build complet). daf18e0 (hotfix 1, republication automatique de la méthode périmée) a rendu le build à nouveau vert (déploiement READY confirmé) mais /api/sante restait HTTP 500 sur une lecture RÉELLEMENT rouge (« nature du test cohérente avec le catalogue » — la migration 0146 avait backfillé `nature='sondage_pieces'` sur toute ligne procedure_instance préexistante, y compris celles dont le catalogue attend une autre nature). 2de6d84 (hotfix 2, réalignement automatique) est le premier SHA de cette tranche à rendre /api/sante HTTP 200, toutes lectures vertes — confirmé en direct (outil Vercel) avant cette mesure CI.",
+    "quand": "2026-09-08T07:23:36Z",
+    "par": "CI, travail `deploye`, run 34198761606, job 101973416384, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 07:23:28Z→07:23:36Z, 0 s — l'instance servait déjà 8af38ab au premier sondage, commit documentation seule après fcbedf7, pas de rebuild nécessaire). Lot 3, tranche 4 : SHA servi confirmé = fcbedf7 — LOT 3 COMPLET (commit de pure confirmation, contenu applicatif identique à fcbedf7).",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "fcbedf7855b0cb9e02776af270fc6ed3496acfb1",
+      "quand": "2026-09-08T07:17:46Z",
+      "par": "CI, travail `deploye`, run 34198346930, job 101971106290, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 07:14:41Z→07:17:46Z, 177 s). Lot 3, tranche 4 : l'atelier rapprochement — LOT 3 COMPLET (les quatre tranches, Partie C.1 du mandat, toutes en production). Ce fichier était resté à 2de6d84 (tranche 1) pendant les tranches 2, 3 et 4 : chacune a été mesurée servie EN DIRECT (commit de confirmation, run/job CI cités) mais aucune n'avait mis à jour cet instantané — trouvé le 2026-09-08 en lançant `npm run reprise` (« servi 2de6d84 ≠ HEAD »), vérifié comme un instantané périmé, pas une récidive de R53, avant d'être corrigé ici."
+    },
+    {
+      "sha": "961028d9657626e2ba7407ef4b58fb28106cc339",
+      "quand": "2026-09-07T21:04:39Z",
+      "par": "CI, travail `deploye`, run 34161547633, job 101864243914, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 21:01:09Z→21:04:39Z, 203 s). Lot 3, tranche 3 : l'atelier confirmation_externe."
+    },
+    {
+      "sha": "5c97892f2e4e87f291955cb74c1c8097f2ffe116",
+      "quand": "2026-09-07T20:09:24Z",
+      "par": "CI, travail `deploye`, run 34158120425, job 101854070409, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:06:43Z→20:09:24Z, 154 s). Lot 3, tranche 2 : l'atelier recalcul_parametre — commit CHASSE.md (F14), contenu identique à 9661317 pour l'application."
+    },
+    {
+      "sha": "2de6d846fd55fe9bc241c4055a7db06fa912cb90",
+      "quand": "2026-09-07T11:51:33Z",
+      "par": "CI, travail `deploye`, run 34118461946, job 101730889633, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 11:48:57Z→11:51:33Z, 156 s). Lot 3, tranche 1 : la nature du test — incident de production entre-temps (3521f06 : premier commit de la tranche, CATALOGUE INVALIDE au build, méthode publiée périmée par évolution du schéma ; f8e1207 et 6637883 en ont hérité, cinq déploiements ERROR au total, Production et Preview, signalé par le fondateur — mesuré ici via l'outil Vercel de la session, jamais par `curl` (§7) : dpl_DKFbMaPBVCPyqHfHVSH67p869ymD, journal de build complet). daf18e0 (hotfix 1, republication automatique de la méthode périmée) a rendu le build à nouveau vert (déploiement READY confirmé) mais /api/sante restait HTTP 500 sur une lecture RÉELLEMENT rouge (« nature du test cohérente avec le catalogue » — la migration 0146 avait backfillé `nature='sondage_pieces'` sur toute ligne procedure_instance préexistante, y compris celles dont le catalogue attend une autre nature). 2de6d84 (hotfix 2, réalignement automatique) est le premier SHA de cette tranche à rendre /api/sante HTTP 200, toutes lectures vertes — confirmé en direct (outil Vercel) avant cette mesure CI."
+    },
     {
       "sha": "1552bc527dfab6fdc5a102737ea4c376585dec45",
       "quand": "2026-09-07T08:11:52Z",
