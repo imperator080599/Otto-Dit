@@ -8,6 +8,8 @@ import { bootstrapSox, runControlCycle, runPart2 } from '@/lib/flows/part2';
 import {
   listControls, listDeviations, listDeficiencies, attributeGrid, drawAttributeSample, setDiStatus, resolveDeviation,
   attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, listerTachesControle,
+  documenterFacteurDesign, declarerIuc, lierRisqueControle, delierRisqueControle, risquesLiesAuControle,
+  documenterIucPreuve, iucDuControle,
 } from './sox';
 import { ingestEvidence } from './evidence';
 import { getWorkpaper } from './workpapers/lifecycle';
@@ -65,6 +67,17 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     await documenterProcedureTache(taskId, IDS.users.karim, 'observation', 'Reviewer observed performing the review live.');
     const taches = await listerTachesControle(notAssessed.id);
     expect(taches[0].procedures.map((p) => p.procedure).sort()).toEqual(['inquiry', 'observation']);
+
+    // CTRL-02/CTRL-03 (mandat contrôle interne, §2.3/§2.4, tranche 2) : mêmes conditions que
+    // CTRL-01 ci-dessus — sans les quatre facteurs et une déclaration IUC, la conclusion refuse.
+    await expect(setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.'))
+      .rejects.toThrow(/CTRL-02.*reponse_risque, autorite_competence, frequence_constance, seuil_investigation/);
+    for (const f of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+      await documenterFacteurDesign(notAssessed.id, IDS.users.karim, f, `Conclusion pour ${f}.`);
+    }
+    await expect(setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.'))
+      .rejects.toThrow(/CTRL-03.*aucune déclaration IUC/);
+    await declarerIuc(notAssessed.id, IDS.users.karim, false);
     await setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.');
     const after = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-03')!;
     expect(after.di_status).toBe('effective');
@@ -117,6 +130,124 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     });
     await expect(attacherWalkthrough(control.id, IDS.users.karim, autreDossier.evidenceId))
       .rejects.toThrow(/n’appartient pas à ce dossier/);
+  });
+
+  /** Une tâche minimale, au-delà de l'inquiry — le préalable commun à CTRL-02/CTRL-03. */
+  async function tacheMinimale(controlId: string, filename: string): Promise<void> {
+    const { evidenceId } = await ingestEvidence({
+      engagementId: IDS.engSox, filename, mime: 'text/plain',
+      bytes: new TextEncoder().encode('synthetic walkthrough transcript'), source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
+    });
+    await attacherWalkthrough(controlId, IDS.users.karim, evidenceId);
+    const taskId = await ajouterTacheControle(controlId, IDS.users.karim, 'tâche de sonde');
+    await documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'inspection de sonde');
+  }
+
+  it('CTRL-02 : le facteur « réponse au risque » exige un lien réel vers un risque, pas seulement sa conclusion écrite', async () => {
+    const control = (await listControls(IDS.engSox)).find((c) => c.code === 'C-TR-01')!;
+    await tacheMinimale(control.id, 'walkthrough-C-TR-01.txt');
+
+    // CAS CONNU MAUVAIS #1 (règle 17) : aucun des quatre facteurs — nommés tous les quatre.
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-02.*reponse_risque, autorite_competence, frequence_constance, seuil_investigation/);
+
+    // Les trois facteurs SANS lien de risque documentés — le quatrième (réponse au risque)
+    // manque encore, nommé seul.
+    for (const f of ['autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+      await documenterFacteurDesign(control.id, IDS.users.karim, f, `Conclusion pour ${f}.`);
+    }
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-02.*— reponse_risque\./);
+
+    // CAS CONNU MAUVAIS #2 (règle 17) : la conclusion du facteur « réponse au risque » est
+    // écrite, mais AUCUN risque réel n'est lié (importRcm en lie pourtant un automatiquement —
+    // retiré ici pour provoquer le cas) : le facteur SEUL ne suffit pas, sans texte libre.
+    await documenterFacteurDesign(control.id, IDS.users.karim, 'reponse_risque', 'Répond au risque de paiement non autorisé.');
+    const risquesAutoLies = await risquesLiesAuControle(control.id);
+    expect(risquesAutoLies.length).toBeGreaterThan(0); // importRcm en a lié un vrai (0150)
+    for (const r of risquesAutoLies) await delierRisqueControle(control.id, IDS.users.karim, r.id);
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-02.*réponse au risque.*ne pointe aucun risque réel/);
+
+    // Un risque d'un AUTRE dossier ne peut pas être lié (étanchéité, comme les pièces).
+    const risqueNep = await q1<{ id: string }>(
+      `insert into risk (engagement_id, assertion, level, description) values ($1,'existence','high','x') returning id`,
+      [IDS.engNep],
+    );
+    await expect(lierRisqueControle(control.id, IDS.users.karim, risqueNep.id)).rejects.toThrow(/n’appartient pas à ce dossier/);
+
+    // Défaut retiré : un vrai risque du dossier est lié, la conclusion passe.
+    const risqueSox = await q1<{ id: string }>(
+      `insert into risk (engagement_id, assertion, level, description) values ($1,'existence','high','Unauthorized disbursements.') returning id`,
+      [IDS.engSox],
+    );
+    await lierRisqueControle(control.id, IDS.users.karim, risqueSox.id);
+    await declarerIuc(control.id, IDS.users.karim, false);
+    await setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.');
+    const after = (await listControls(IDS.engSox)).find((c) => c.code === 'C-TR-01')!;
+    expect(after.di_status).toBe('effective');
+  });
+
+  it('CTRL-03 : une IUC déclarée utilisée exige exactitude ET exhaustivité, chacune nommée si elle manque', async () => {
+    const control = (await listControls(IDS.engSox)).find((c) => c.code === 'C-ITGC-01')!;
+    await tacheMinimale(control.id, 'walkthrough-C-ITGC-01.txt');
+    for (const f of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+      await documenterFacteurDesign(control.id, IDS.users.karim, f, `Conclusion pour ${f}.`);
+    }
+
+    // documenterIucPreuve refuse tant qu'aucune déclaration n'existe.
+    await expect(documenterIucPreuve(control.id, IDS.users.karim, 'exactitude', 'note'))
+      .rejects.toThrow(/CTRL-03.*déclarez d’abord/);
+
+    // CAS CONNU MAUVAIS (règle 17) : aucune déclaration IUC du tout — nommé distinctement
+    // d'une IUC déclarée utilisée à qui il manquerait un volet.
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-03.*aucune déclaration IUC/);
+
+    // Déclarée NON utilisée : aucune preuve requise, et en documenter une est refusé (rien à
+    // corroborer).
+    await declarerIuc(control.id, IDS.users.karim, false);
+    await expect(documenterIucPreuve(control.id, IDS.users.karim, 'exactitude', 'note'))
+      .rejects.toThrow(/CTRL-03.*sans IUC utilisée/);
+
+    // Redéclarée utilisée : les deux volets manquent, nommés tous les deux.
+    await declarerIuc(control.id, IDS.users.karim, true, 'Rapport ERP des accès utilisateurs.');
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-03.*exactitude ni exhaustivite/);
+
+    // Un seul volet documenté : l'autre manque encore, nommé seul.
+    await documenterIucPreuve(control.id, IDS.users.karim, 'exactitude', 'Rapport rapproché au référentiel des accès RH.');
+    await expect(setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.'))
+      .rejects.toThrow(/CTRL-03.*sans exhaustivite documentée/);
+
+    // Défaut retiré : les deux volets documentés, la conclusion passe.
+    await documenterIucPreuve(control.id, IDS.users.karim, 'exhaustivite', 'Recensement complet des comptes actifs recoupé avec le rapport.');
+    const iuc = await iucDuControle(control.id);
+    expect(iuc!.preuves.map((p) => p.volet).sort()).toEqual(['exactitude', 'exhaustivite']);
+    await setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.');
+    const after = (await listControls(IDS.engSox)).find((c) => c.code === 'C-ITGC-01')!;
+    expect(after.di_status).toBe('effective');
+  });
+
+  it('documenterFacteurDesign/documenterIucPreuve : un intrus avec une valeur INVALIDE reçoit le refus ETANCH, jamais CTRL-02/CTRL-03', async () => {
+    /* CAS CONNU MAUVAIS (règle 17), trouvé par la revue hostile du 2026-09-08 (voix 2) :
+       la première version validait `factor`/`volet` AVANT `assertMembreDe` — un acteur d'un
+       AUTRE cabinet envoyant une valeur invalide recevait le refus CTRL-02/CTRL-03 (« pas un
+       facteur/volet reconnu ») plutôt que le refus d'étanchéité, ce qui apprend à l'intrus que
+       l'objet EXISTE (même doctrine qu'ETANCH-01 avant ETANCH-03, ADR-069/ADR-082). Le premier
+       correctif (un type TypeScript inline plutôt qu'un alias nommé) faisait passer le test
+       d'étanchéité auto-généré SANS fermer le trou — le harnais fabrique alors une valeur
+       VALIDE et n'exerce plus jamais la combinaison valeur-invalide + acteur-étranger (règle 13 :
+       le silence lu comme un succès). Ce test-ci envoie une valeur DÉLIBÉRÉMENT invalide,
+       exactement ce que le harnais auto-généré ne fait plus. */
+    const cabinet = await q1<{ id: string }>(`insert into tenant (name) values ('Cabinet Étranger (sonde étanchéité)') returning id::text`);
+    const intrus = (await q1<{ id: string }>(
+      `insert into app_user (tenant_id, name, email, firm_role) values ($1, 'Sonde Intrus', 'intrus@sonde.test', 'partner') returning id::text`,
+      [cabinet.id])).id;
+    const control = (await listControls(IDS.engSox))[0];
+    await expect(documenterFacteurDesign(control.id, intrus, 'facteur-bidon' as never, 'x')).rejects.toThrow(/ETANCH/);
+    await expect(documenterIucPreuve(control.id, intrus, 'volet-bidon' as never, 'x')).rejects.toThrow(/ETANCH/);
   });
 
   it('runs the monthly bank-rec control end-to-end and surfaces every seeded deviation', async () => {

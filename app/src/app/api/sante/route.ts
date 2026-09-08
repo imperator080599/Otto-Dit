@@ -783,6 +783,60 @@ async function corpsDeLaSonde() {
     return `${concludedControls.length} contrôle(s) conclu(s) · ${taches} tâche(s), toutes documentées au-delà de l’inquiry`;
   }));
 
+  /* CTRL-02 (mandat contrôle interne, §2.4, tranche 2) : « conclure un D&I dont l'un des
+     quatre facteurs de design n'a pas de conclusion écrite. » Même discipline que CTRL-01 :
+     lue GLOBALEMENT, part des CONTRÔLES conclus (pas des facteurs — le même piège que la
+     première version de CTRL-01, un contrôle sans AUCUN facteur ne rejoindrait rien s'il
+     fallait partir de `control_design_factor`). Le facteur « réponse au risque » exige EN
+     PLUS un lien réel vers `risk` (§2.4.1 : « jamais du texte libre seul ») — vérifié
+     séparément, nommé distinctement d'un facteur simplement absent. */
+  lectures.push(await essayer('CTRL-02 : aucun contrôle conclu sans ses quatre facteurs de design', async () => {
+    const concludedControls = await q<{ id: string; code: string }>(
+      `select id, code from control where di_status <> 'not_assessed'`,
+    );
+    if (concludedControls.length === 0) return 'aucun contrôle conclu pour l’instant';
+    const violations: string[] = [];
+    const REQUIS = ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'];
+    for (const c of concludedControls) {
+      const facteurs = await q<{ factor: string }>(`select factor from control_design_factor where control_id = $1`, [c.id]);
+      const manquants = REQUIS.filter((f) => !facteurs.some((x) => x.factor === f));
+      if (manquants.length > 0) violations.push(`${c.code} : facteur(s) manquant(s) — ${manquants.join(', ')}`);
+      const lien = await q01(`select 1 from control_risk where control_id = $1`, [c.id]);
+      if (!lien) violations.push(`${c.code} : réponse au risque sans lien vers un risque réel`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-02 : ${violations.join(' ; ')}`);
+    }
+    return `${concludedControls.length} contrôle(s) conclu(s) · quatre facteurs documentés, réponse au risque liée à un objet réel`;
+  }));
+
+  /* CTRL-03 (mandat contrôle interne, §2.3, tranche 2) : « déclarer une IUC utilisée sans
+     documenter à la fois son exactitude ET son exhaustivité. Le refus nomme laquelle des deux
+     manque. » Un contrôle conclu sans AUCUNE déclaration IUC (ni oui ni non) est sa propre
+     violation, distincte d'une IUC déclarée utilisée à qui il manque un volet — même
+     discipline de nommage que CTRL-01/CTRL-02. */
+  lectures.push(await essayer('CTRL-03 : aucune IUC utilisée sans exactitude et exhaustivité documentées', async () => {
+    const concludedControls = await q<{ id: string; code: string }>(
+      `select id, code from control where di_status <> 'not_assessed'`,
+    );
+    if (concludedControls.length === 0) return 'aucun contrôle conclu pour l’instant';
+    const violations: string[] = [];
+    let iucUtilisees = 0;
+    for (const c of concludedControls) {
+      const iuc = await q01<{ id: string; utilisee: boolean }>(`select id, utilisee from control_iuc where control_id = $1`, [c.id]);
+      if (!iuc) { violations.push(`${c.code} : aucune déclaration IUC`); continue; }
+      if (!iuc.utilisee) continue;
+      iucUtilisees++;
+      const preuves = await q<{ volet: string }>(`select volet from control_iuc_preuve where iuc_id = $1`, [iuc.id]);
+      const manquants = (['exactitude', 'exhaustivite'] as const).filter((v) => !preuves.some((p) => p.volet === v));
+      if (manquants.length > 0) violations.push(`${c.code} : IUC utilisée sans ${manquants.join(' ni ')}`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-03 : ${violations.join(' ; ')}`);
+    }
+    return `${concludedControls.length} contrôle(s) conclu(s) · ${iucUtilisees} IUC déclarée(s) utilisée(s), toutes documentées (exactitude + exhaustivité)`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

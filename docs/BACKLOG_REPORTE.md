@@ -682,3 +682,14 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   à un clic. Non bloquant pour 0149 (son SQL ne touche pas ce chemin) ; corrigé le jour où
   `draftOeWorkpaper`/son bouton sont gardés sur `di_status === 'effective'`, ou où le texte de
   section devient conditionnel.
+
+- **R65 — aucun chemin ne permet de RÉVISER `risk.level` après sa création automatique par
+  `importRcm`.** Trouvé par la revue hostile du 2026-09-08 (voix 1), lot contrôle interne,
+  tranche 2 (§2.3/§2.4, migration 0150) : `importRcm` dérive `level` de `is_key` (`high`/
+  `medium`) au moment de l'import — un signal réel du CSV, pas une constante inventée (jugé
+  non-violation de la règle 8) — mais aucune fonction de service ne permet à un humain de
+  corriger ce niveau après coup si son jugement diffère. Le mandat (§2.4.1) exige un LIEN réel
+  vers un risque, pas un niveau éditable — ce n'est donc pas un manque au mandat, mais une
+  limite réelle de l'écran : un auditeur qui juge le niveau `high` au lieu de `medium` ne peut
+  pas le dire au produit. Non bloquant pour cette tranche. Corrigé le jour où un écran de
+  gestion des risques (hors périmètre de CTRL-02) expose `risk.level` en édition.

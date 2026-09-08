@@ -81,9 +81,16 @@ describe('CTRL-01 : la lecture /api/sante', () => {
   });
 
   it('un contrôle conclu par le vrai chemin gardé (walkthrough → tâche → procédure → setDiStatus) reste vert', async () => {
-    const { attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus } = await import('@/lib/services/sox');
+    const {
+      attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus,
+      documenterFacteurDesign, lierRisqueControle, declarerIuc,
+    } = await import('@/lib/services/sox');
     const { ingestEvidence } = await import('@/lib/services/evidence');
     const controlId = await poserControle('not_assessed', 'SONDE-CTRL01-C');
+    const risque = await q1<{ id: string }>(
+      `insert into risk (engagement_id, assertion, level, description) values ($1,'existence','high','x') returning id::text`,
+      [IDS.engNep],
+    );
     try {
       const { evidenceId } = await ingestEvidence({
         engagementId: IDS.engNep, filename: 'walkthrough-sonde.txt', mime: 'text/plain',
@@ -93,6 +100,13 @@ describe('CTRL-01 : la lecture /api/sante', () => {
       await attacherWalkthrough(controlId, IDS.users.karim, evidenceId);
       const taskId = await ajouterTacheControle(controlId, IDS.users.karim, 'tâche réelle');
       await documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'inspection réelle');
+      // CTRL-02/CTRL-03 (mandat contrôle interne, §2.3/§2.4, tranche 2) : mêmes préalables que
+      // CTRL-01 ci-dessus, désormais gardés par le même setDiStatus.
+      for (const f of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+        await documenterFacteurDesign(controlId, IDS.users.karim, f, `Conclusion pour ${f}.`);
+      }
+      await lierRisqueControle(controlId, IDS.users.karim, risque.id);
+      await declarerIuc(controlId, IDS.users.karim, false);
       await setDiStatus(controlId, IDS.users.karim, 'effective', 'conclusion de sonde');
 
       const res = await GET();
@@ -102,8 +116,12 @@ describe('CTRL-01 : la lecture /api/sante', () => {
       expect(res.status).toBe(200);
       expect(lecture.detail).toContain('contrôle(s) conclu(s)');
     } finally {
+      await q(`delete from control_iuc where control_id = $1`, [controlId]);
+      await q(`delete from control_risk where control_id = $1`, [controlId]);
+      await q(`delete from control_design_factor where control_id = $1`, [controlId]);
       await q(`delete from control_task_procedure where task_id in (select id from control_task where control_id = $1)`, [controlId]);
       await q(`delete from control_task where control_id = $1`, [controlId]);
+      await q(`delete from risk where id = $1`, [risque.id]);
       await q(`delete from control where id = $1`, [controlId]);
     }
   });
@@ -151,9 +169,16 @@ describe('CTRL-01 : la lecture /api/sante', () => {
     // prédicat — seule sa moitié déclenchante (contrôle SANS tâche) était couverte.
     // Celui-ci ferme ce trou : un contrôle conclu par le vrai chemin gardé (walkthrough
     // → tâche → procédure non-inquiry → setDiStatus) doit rester INTACT après 0149.
-    const { attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus } = await import('@/lib/services/sox');
+    const {
+      attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus,
+      documenterFacteurDesign, lierRisqueControle, declarerIuc,
+    } = await import('@/lib/services/sox');
     const { ingestEvidence } = await import('@/lib/services/evidence');
     const controlId = await poserControle('not_assessed', 'SONDE-0149-PROTEGE');
+    const risque = await q1<{ id: string }>(
+      `insert into risk (engagement_id, assertion, level, description) values ($1,'existence','high','x') returning id::text`,
+      [IDS.engNep],
+    );
     try {
       const { evidenceId } = await ingestEvidence({
         engagementId: IDS.engNep, filename: 'walkthrough-protege.txt', mime: 'text/plain',
@@ -163,6 +188,11 @@ describe('CTRL-01 : la lecture /api/sante', () => {
       await attacherWalkthrough(controlId, IDS.users.karim, evidenceId);
       const taskId = await ajouterTacheControle(controlId, IDS.users.karim, 'tâche réelle protégée');
       await documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'inspection réelle');
+      for (const f of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+        await documenterFacteurDesign(controlId, IDS.users.karim, f, `Conclusion pour ${f}.`);
+      }
+      await lierRisqueControle(controlId, IDS.users.karim, risque.id);
+      await declarerIuc(controlId, IDS.users.karim, false);
       await setDiStatus(controlId, IDS.users.karim, 'effective', 'conclusion réelle, à protéger');
 
       const sql = fs.readFileSync(path.join(repoRoot(), 'supabase', 'migrations', '0149_ctrl01_correction_di_status.sql'), 'utf8');
@@ -173,8 +203,12 @@ describe('CTRL-01 : la lecture /api/sante', () => {
       expect(c.di_status).toBe('effective');
       expect(c.di_conclusion).toBe('conclusion réelle, à protéger');
     } finally {
+      await q(`delete from control_iuc where control_id = $1`, [controlId]);
+      await q(`delete from control_risk where control_id = $1`, [controlId]);
+      await q(`delete from control_design_factor where control_id = $1`, [controlId]);
       await q(`delete from control_task_procedure where task_id in (select id from control_task where control_id = $1)`, [controlId]);
       await q(`delete from control_task where control_id = $1`, [controlId]);
+      await q(`delete from risk where id = $1`, [risque.id]);
       await q(`delete from control where id = $1`, [controlId]);
     }
   });

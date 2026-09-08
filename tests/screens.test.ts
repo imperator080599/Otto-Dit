@@ -162,7 +162,16 @@ describe('tous les écrans rendent', () => {
     try {
       verdicts = await balayer(BASE, pretes, await auditeur());
     } catch (e) {
-      if (e instanceof ServeurTombe) throw new Error(e.message);
+      /* Même défaut que la garde du beforeAll (ligne 125-130) : « il est tombé » sans le
+         journal oblige à tout refaire à la main pour apprendre ce que le processus avait déjà
+         dit — trouvé le 2026-09-08 (R58, troisième occurrence) en cherchant PRÉCISÉMENT cette
+         cause et en découvrant que rien ne la portait. */
+      if (e instanceof ServeurTombe) {
+        throw new Error(
+          `${e.message}\n`
+          + journal.join('').split('\n').filter(Boolean).slice(-40).join('\n'),
+        );
+      }
       throw e;
     }
     expect(verdicts.length).toBe(pretes.length);

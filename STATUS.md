@@ -8,6 +8,97 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 2 : les IUC et les facteurs de design, CTRL-02/CTRL-03 (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §2.3, §2.4, §7.2. Recherche
+préalable (agent dédié) : trois tables représentent « le risque » — `risk` (0001, un risque
+identifié, engagement-scopé), `fsli_assertion_risk` (0012, un NIVEAU CALCULÉ qui commande
+l'étendue substantive ISA/NEP, pas lui-même « un risque »), `rcm_row.risk_desc` (0002, EXACTEMENT
+le décor que ce mandat interdit — texte libre, aucune FK). Aucune FK réelle vers `risk` n'existait
+avant cette tranche dans tout le dépôt — confirmé par recherche exhaustive.*
+
+**Ce qui a changé.** Migration `0150_ctrl02_ctrl03_facteurs_iuc.sql` : quatre tables neuves —
+`control_risk` (jointure control↔risk réelle, CTRL-02 §2.4.1), `control_design_factor` (un des
+quatre facteurs par ligne, vocabulaire fermé), `control_iuc` (la déclaration « IUC utilisée ? »,
+une par contrôle), `control_iuc_preuve` (exactitude/exhaustivité, une ligne par volet) — RLS
+forcée, garde de verrou, verdict écrit pour les quatre. `sox.ts` : `lierRisqueControle`/
+`delierRisqueControle`, `documenterFacteurDesign`, `declarerIuc`, `documenterIucPreuve` ;
+**CTRL-02**/**CTRL-03** gardés dans le MÊME `setDiStatus` que CTRL-01 — quatre facteurs conclus
+ET un lien de risque réel avant de conclure le D&I ; une déclaration IUC, et si utilisée, les
+deux volets documentés. `importRcm` crée désormais un vrai `risk` par assertion du RCM et le lie
+via `control_risk` pour CHAQUE contrôle importé — c'est CE lien, jamais `rcm_row.risk_desc`, que
+le facteur « réponse au risque » doit citer pour ne pas être un décor. Écran `rcm/[cid]` : section
+« Facteurs de design et IUC » (lier un risque, documenter les quatre facteurs, déclarer l'IUC,
+documenter les deux preuves) — vérifiée CLIQUÉE, contre un build de PRODUCTION (jamais `next dev`,
+observé réellement instable ici : Fast Refresh avortant des requêtes en vol), par les deux voix de
+la revue hostile indépendamment : 4/4 facteurs et 2/2 preuves confirmés persistés par une
+navigation FRAÎCHE, pas seulement l'état DOM en page. Lectures `/api/sante` **CTRL-02**/**CTRL-03**
+globales, symétriques à CTRL-01. `part2.ts` : les deux contrôles cyclés (C-BR-01, C-REV-01)
+documentent les quatre facteurs et déclarent IUC non utilisée — honnête, vérifié contre
+`dataset/sox/rcm.csv` (`nature=manual` pour les deux).
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 30 amendée : modèle de données, RLS/
+multi-tenant, code de refus neuf) — verdicts convergents : voix 1 SHIP WITH MINOR FIXES (RLS/FK/
+gates/vacuité/registre tous vérifiés, y compris une requête EN DIRECT sur la production confirmant
+0 contrôle conclu donc aucune bombe à retardement au déploiement) ; voix 2 **DO NOT SHIP AS-IS**
+sur un constat CONFIRMÉ, pas seulement plausible : **la première version de `documenterFacteurDesign`
+laissait fuir, par la FORME du refus, qu'un objet existe à un acteur d'un AUTRE cabinet** — un
+appel à valeur invalide recevait le refus CTRL-02 (« pas un facteur reconnu ») avant que
+`assertMembreDe` (la garde d'étanchéité) ne tourne, au lieu du refus ETANCH. Le premier correctif
+(un type TypeScript inline plutôt qu'un alias nommé, pour faire passer le harnais auto-généré
+d'étanchéité) avait fait passer le TEST sans fermer le VRAI trou — le harnais fabrique alors une
+valeur toujours VALIDE et n'exerce plus jamais la combinaison valeur-invalide + acteur-étranger
+(règle 13 : le silence lu comme un succès ; règle 15 : chercher un mot n'est pas vérifier un
+chemin). **Corrigé pour de vrai** : `assertMembreDe` tourne désormais EN PREMIER dans
+`documenterFacteurDesign` ET `documenterIucPreuve` (et, en prévention, dans le
+`documenterProcedureTache` de la tranche 1, qui portait le même défaut, jamais exploité mais
+jamais fermé) — prouvé par un cas connu mauvais RÉEL (règle 17) : mutation de la ligne, `intrus`
+d'un autre cabinet reçoit bien le refus CTRL-02/CTRL-03 au lieu du refus ETANCH, confirmé, puis
+migration byte-pour-byte identique après retrait de la mutation (sha256). Ce cas connu mauvais est
+désormais un test permanent dans `s8.test.ts`, pas seulement une sonde jetée. Deux autres constats
+réels de voix 2, corrigés dans la même passe : `risk.source = 'manual'` mentait sur la provenance
+d'un risque SYNTHÉTISÉ par l'import (règle 3) — `source = 'rcm_import'` (nouvelle valeur de
+contrainte, nom de contrainte auto-généré RECHERCHÉ dans `pg_constraint`, jamais supposé) ; la
+création de `risk` était une course vérification-puis-écriture (aucune contrainte d'unicité) —
+`unique(engagement_id, assertion, description)` ajoutée, `importRcm` réécrit en upsert atomique
+(`insert ... on conflict ... returning`). Provenance manquante sur trois upserts neufs
+(`documenterFacteurDesign`, `declarerIuc`, `documenterIucPreuve` — la révision écrasait l'ancienne
+valeur sans trace, contrairement au patron déjà posé par `documenterProcedureTache` en tranche 1) :
+les trois capturent désormais l'ancienne valeur dans `event_log` sous une clé `remplace` avant
+d'écraser, règle 3.
+
+**Verify complet, TROIS passages sur arbre figé** (`set -o pipefail; timeout 3600 npm run verify`,
+règle 35). Premier (`/tmp/verify-ctrl02-03-final.log`, sur l'arbre APRÈS les corrections de la
+revue hostile) : **1 échec réel**, le `#418` déjà connu (`docs/CHASSE.md` §1), sur `/portal/...`
+qu'aucun fichier de cette tranche ne touche — consigné **F16**, pas re-creusé (même discipline que
+F9-F15). Deuxième (`/tmp/verify-ctrl02-03-final2.log`, MÊME arbre, aucune édition entre les deux
+sauf la consignation F16 en documentation) : **1 échec réel D'UNE AUTRE NATURE** — `docs/CHASSE.md`
+**R58** (le serveur du balayage des écrans tombe, intermittent, déjà vu trois fois avant celle-ci,
+même route `/eng/[id]/testing`) — sa QUATRIÈME occurrence, la PREMIÈRE avec le journal du serveur
+réellement capturé (le correctif de `tests/screens.test.ts` ci-dessous, dans la même tranche) :
+mort SILENCIEUSE, aucune exception, juste après une réponse LENTE (18,4 s) — nouvelle donnée pour
+l'enquête, consignée dans R58, pas une explication. `free -m` mesuré après coup : 13,7 Go libres,
+0 swap, aucun processus parasite. Chaîne rejouée sur le MÊME arbre une seconde fois (aucune édition
+sauf la consignation R58). Troisième passage (`/tmp/verify-ctrl02-03-final3.log`) : intégralement
+vert — **947/947 tests** (116 fichiers), **43 gardes**, langue **0 chaîne hors catalogue · 15
+messages de refus**, **0 lecture perdue sur 1716 chemins figés**, **276/276 stations déclarées/
+figées**, screens **87 + 51 routes · 0 échec**, clics **232 étapes · 0 échec · 362 clics**, visuel
+**312 vues · 0 défaut**, sonde d'hydratation **0 incident**, 15/15+6/6+5/5 cas connus mauvais
+dénoncés. R44 : **89 objets · 16 décor (inchangé) · 32 non prouvé(s) (+3) · 41 prouvé(s)
+(inchangé)** — trois objets neufs (lien de risque, facteurs de design, déclaration IUC), chemin
+humain réel, domaine SOX entier toujours hors du parcours cliqué (note déjà connue) ; aucun décor
+résolu, aucun nouveau décor créé.
+
+**Fichier `tests/screens.test.ts` corrigé dans la même tranche** (bundlé parce que nécessaire pour
+diagnostiquer le run rouge de cette tranche elle-même) : le chemin `ServeurTombe` jetait
+`e.message` seul, sans le journal stdout/stderr du serveur déjà capturé — contrairement à DEUX
+autres chemins d'échec du même fichier qui le font. Corrigé — c'est ce correctif qui a rendu la
+nouvelle donnée R58 ci-dessus mesurable pour la première fois.
+
+**R65 consigné, non bloquant** : aucun chemin ne permet de réviser `risk.level` après sa création
+automatique par `importRcm` — pas un manque au mandat (§2.4.1 exige un lien, pas un niveau
+éditable), une limite réelle de l'écran.
+
 ## Lot contrôle interne, tranche 1 : le walkthrough et ses tâches, CTRL-01 (2026-09-08)
 
 *Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §2 et §7.1. Recherche préalable

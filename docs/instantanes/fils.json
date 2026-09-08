@@ -255,6 +255,12 @@
       "note": "non bloquant pour 0149 (son SQL ne touche pas ce chemin). Corrigé le jour où draftOeWorkpaper/son bouton sont gardés sur di_status === 'effective', ou où le texte de section devient conditionnel."
     },
     {
+      "id": "R65",
+      "etat": "ouvert — aucun chemin ne permet de réviser risk.level après sa création automatique par importRcm (dérivé de is_key, high/medium) : un auditeur qui juge le niveau différemment ne peut pas le corriger. Pas un manque au mandat (§2.4.1 exige un lien réel, pas un niveau éditable), une limite réelle de l'écran.",
+      "depuis": "2026-09-08 (lot contrôle interne, tranche 2 — migration 0150 ; revue hostile voix 1)",
+      "note": "non bloquant. Corrigé le jour où un écran de gestion des risques (hors périmètre de CTRL-02) expose risk.level en édition."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

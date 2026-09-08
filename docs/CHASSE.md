@@ -188,6 +188,23 @@
   tranche a été REJOUÉE sur le MÊME arbre (aucune édition entre les deux passages, règle 34) —
   voir STATUS.md pour le résultat du passage propre, cité avec son heure et sa durée mesurées —
   plutôt que poussée sur ce run rouge (même discipline que R37, F9-F14).
+- **F16 — UN incident dans `/tmp/verify-ctrl02-03-final.log`** (2026-09-08, chaîne verify complète
+  pour le lot contrôle interne, tranche 2 — « les IUC et les facteurs de design », CTRL-02/
+  CTRL-03, migration 0150 — 232 étapes) : `EXCEPTION sur
+  /portal/demo-sophie-altiverre/9c9c4438... : Minified React error #418; args[]=HTML`, sonde
+  d'hydratation « station (avant la première station) », 4 divergences après normalisation entre
+  le flux SERVEUR et le flux CLIENT (numéros de demande/facture/item_id différents — signature H
+  déjà connue, docs/CHASSE.md §1 : navigation côté client commencée avant la fin de
+  l'hydratation du document précédent). Page `/portal/[token]/[rid]` NON touchée par cette
+  tranche — vérifié par lecture des imports : le diff ne touche que `sox.ts`, `part2.ts`,
+  `rcm/[cid]/page.tsx`, `/api/sante/route.ts`, `i18n/catalogue.ts`, `registre.ts`,
+  `tests/screens.test.ts`, la migration `0150` et des fichiers de test — aucun d'eux n'est
+  importé par `portal/[token]/[rid]/page.tsx` (le domaine SOX/contrôle interne et le domaine
+  portail client sont disjoints). Même forme que F5/F14/F15 (`args[]=HTML`, F1). **Pas creusé
+  plus loin ici** (hors mandat de cette tranche, même discipline que F9-F15). La chaîne
+  officielle de cette tranche a été REJOUÉE sur le MÊME arbre (aucune édition entre les deux
+  passages, règle 34) — voir STATUS.md pour le résultat du passage propre, cité avec son heure
+  et sa durée mesurées — plutôt que poussée sur ce run rouge (même discipline que R37, F9-F15).
 
 ### Hypothèses ÉLIMINÉES — et par quoi
 
@@ -511,6 +528,29 @@ se décide avec un auditeur.
    testing) n'ont rien de commun dans leur CODE, mais peut-être dans leur PLACE dans l'ordre du
    balayage (fin de liste ? après un nombre similaire de routes ouvertes ?) — à vérifier en
    comparant les index numériques des trois occurrences.
+
+### Quatrième occurrence (2026-09-08 soir, lot contrôle interne tranche 2) — la première avec le journal du serveur
+
+Le correctif du journal `ServeurTombe` (voir `tests/screens.test.ts`, cette même tranche — le
+défaut d'instrument nommé plus haut, « le journal n'était jamais surfacé sur CE chemin précis »)
+a capturé pour la première fois ce que le serveur avait dit AVANT de mourir. `le serveur est tombé
+après 46 route(s), à « /eng/[id]/testing »` — encore la MÊME route déjà vue en panne trois fois.
+**Le journal ne contient AUCUNE exception, AUCUNE trace, AUCUN message d'arrêt** : la dernière
+ligne utile est `GET /eng/.../testing 200 in 18435ms` (une réponse LENTE — 18,4 s, largement au-dessus
+des autres routes du même balayage) suivie d'un avertissement webpack déjà bénin ailleurs
+(`Critical dependency: the request of a dependency is an expression`, `methodology/catalogue.ts`),
+puis plus rien. Une mort SILENCIEUSE — sans exception JS capturée — est cohérente avec
+l'hypothèse 1 déjà posée (pression mémoire, un `SIGKILL` de l'OOM killer ne laisse aucune trace
+dans le process tué) plutôt qu'avec l'hypothèse 2 (une exception non catchée se serait vue dans
+CE journal, maintenant qu'il est réellement capturé). `free -m` MESURÉ juste après l'échec :
+13,7 Go libres sur 16 Go, 0 Ko de swap utilisé, AUCUN processus `next`/`node`/`tsx` parasite —
+donc pas de pression mémoire RÉMANENTE au moment de la mesure (le pic, s'il a eu lieu, est déjà
+retombé ; ce chiffre ne dit rien du moment du crash lui-même, seulement de l'état APRÈS — même
+limite déjà nommée par l'hypothèse 1). Nouvelle piste, non éprouvée : la lenteur de la réponse
+`/testing` (18,4 s) juste avant l'arrêt pourrait être le SYMPTÔME du même pic de charge qui tue
+le serveur, pas sa cause — à corréler la prochaine fois avec un `vmstat 1` lancé AVANT le
+`beforeAll` du balayage (pas seulement après coup). Chaîne rejouée sur le MÊME arbre (aucune
+édition entre les deux passages, règle 34) — résultat cité dans STATUS.md.
 
 ### Ce que cette récidive NE change PAS
 

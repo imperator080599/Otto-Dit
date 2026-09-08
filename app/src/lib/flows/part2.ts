@@ -9,6 +9,7 @@ import {
   importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls,
   proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation,
   attacherWalkthrough, ajouterTacheControle, documenterProcedureTache,
+  documenterFacteurDesign, declarerIuc,
 } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
@@ -118,6 +119,24 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
     await attacherWalkthrough(control.id, IDS.users.karim, evidenceId);
     const taskId = await ajouterTacheControle(control.id, IDS.users.karim, `Performance of ${controlCode} as observed in the walkthrough`, '00:00');
     await documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'Prior-period evidence of performance inspected during the walkthrough.');
+    /* CTRL-02/CTRL-03 (mandat contrôle interne, 2026-09-08, §2.3, §2.4) : mêmes conditions
+       qu'au commentaire ci-dessus — le MINIMUM que `setDiStatus` exige désormais, jamais un
+       jugement d'auditeur inventé au-delà. Le lien de risque (« réponse au risque ») existe
+       déjà : `importRcm` (`bootstrapSox`, appelé avant ce cycle) crée un vrai `risk` par
+       assertion du RCM et le lie via `control_risk` — cette tranche ne fait qu'écrire la
+       conclusion des quatre facteurs et déclarer l'IUC, jamais inventer le lien lui-même. Les
+       deux contrôles cyclés ici (C-BR-01, C-REV-01) sont MANUELS d'après le RCM — aucune IUC
+       n'entre dans leur exécution, donc `utilisee: false` est la réponse honnête, pas une
+       case cochée par défaut. */
+    await documenterFacteurDesign(control.id, IDS.users.karim, 'reponse_risque',
+      `Le contrôle répond directement au(x) risque(s) lié(s) issu(s) du RCM pour ${controlCode} (voir la section Risques du contrôle).`);
+    await documenterFacteurDesign(control.id, IDS.users.karim, 'autorite_competence',
+      'Le control owner exerce cette fonction depuis l’ouverture de l’exercice et dispose de l’autorité hiérarchique nécessaire pour l’exécuter et en documenter le résultat.');
+    await documenterFacteurDesign(control.id, IDS.users.karim, 'frequence_constance',
+      `Contrôle exécuté à la fréquence prévue par le RCM (${controlCode}), sans interruption observée sur l’exercice.`);
+    await documenterFacteurDesign(control.id, IDS.users.karim, 'seuil_investigation',
+      'Seuil et critères d’investigation documentés dans la procédure du contrôle observée au walkthrough — au-delà du seuil, le control owner engage une investigation formelle.');
+    await declarerIuc(control.id, IDS.users.karim, false, 'Contrôle manuel — aucune information produite par l’entité (IUC) n’entre dans son exécution.');
     await setDiStatus(control.id, IDS.users.karim, 'effective', 'Walkthrough performed; design and implementation assessed as effective (demo).');
   }
   await requestAndImportListing(controlCode);

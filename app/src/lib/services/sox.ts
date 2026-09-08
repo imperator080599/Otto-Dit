@@ -94,10 +94,38 @@ export async function importRcm(engagementId: string, csv: string, userId: strin
         itgcRow?.id ?? null, get('owner'),
       ],
     );
+    const assertionsList = (get('assertions') || '').split('|').filter(Boolean);
     await q(
       `insert into rcm_row (engagement_id, control_id, risk_desc, assertions, coso_component) values ($1,$2,$3,$4,$5)`,
-      [engagementId, control.id, get('risk_desc'), (get('assertions') || '').split('|').filter(Boolean), get('coso_component')],
+      [engagementId, control.id, get('risk_desc'), assertionsList, get('coso_component')],
     );
+    /* CTRL-02 (mandat contrôle interne, §2.4.1) : « ce facteur porte un lien vers les objets
+       risque réels, jamais du texte libre seul ». `risk_desc` ci-dessus reste le texte du
+       listing RCM (`rcm_row`, convention déjà en place, 0002) — mais chaque contrôle importé
+       reçoit AUSSI un vrai risque en base (`risk`, 0001) par assertion listée, lié par
+       `control_risk` (0150) : c'est CE lien, jamais le texte de `rcm_row`, que le facteur
+       « réponse au risque » doit citer pour ne pas être un décor. Le niveau est dérivé du seul
+       signal réellement présent dans le CSV (`is_key`) — pas une constante inventée : un
+       contrôle clé répond à un risque tenu pour `high`, sinon `medium`.
+       `source = 'rcm_import'` (règle 3 : ceci n'est PAS 'manual' — aucun humain n'a saisi ce
+       risque, il est synthétisé depuis le CSV) et l'écriture est un upsert ATOMIQUE sur
+       `unique(engagement_id, assertion, description)` (0150) — trouvé par la revue hostile du
+       2026-09-08 (voix 2) : la forme précédente (SELECT puis INSERT) était une course
+       vérification-puis-écriture, deux appels concurrents pouvant créer deux lignes `risk`
+       identiques en silence. */
+    for (const assertion of assertionsList) {
+      const risque = await q1<{ id: string }>(
+        `insert into risk (engagement_id, assertion, level, description, source) values ($1,$2,$3,$4,'rcm_import')
+         on conflict (engagement_id, assertion, description) do update set assertion = excluded.assertion
+         returning id`,
+        [engagementId, assertion, get('is_key') === 'yes' ? 'high' : 'medium', get('risk_desc')],
+      );
+      await q(
+        `insert into control_risk (engagement_id, control_id, risk_id) values ($1,$2,$3)
+         on conflict (control_id, risk_id) do nothing`,
+        [engagementId, control.id, risque.id],
+      );
+    }
     for (const a of ATTRIBUTES_BY_CONTROL[get('code')] ?? DEFAULT_ATTRIBUTES) {
       await q(
         `insert into attribute_def (control_id, code, description, required) values ($1,$2,$3,$4)`,
@@ -233,12 +261,18 @@ const PROCEDURES_DOCUMENTABLES = ['inspection', 'observation', 'reperformance'] 
 export async function documenterProcedureTache(
   taskId: string, userId: string, procedure: 'inspection' | 'observation' | 'reperformance', notes: string, evidenceId?: string,
 ): Promise<void> {
+  /* ISOLATION D'ABORD, TOUJOURS (revue hostile du 2026-09-08, voix 2, tranche 2 du lot
+     contrôle interne) : l'ordre inverse (valider la valeur AVANT `assertMembreDe`) fait fuir,
+     par la FORME du refus, qu'un objet existe même à un acteur d'un autre dossier — un appel à
+     valeur invalide reçoit le refus CTRL-01 (« pas une procédure documentable ») au lieu du
+     refus d'étanchéité, ce qui distingue « objet à moi, payload invalide » de « objet pas à
+     moi ». `assertMembreDe` tourne donc EN PREMIER, avant toute validation de valeur. */
+  const engagementId = await assertMembreDe('control_task', taskId, userId, 'documenter une procédure de tâche');
   if (!PROCEDURES_DOCUMENTABLES.includes(procedure)) {
     throw new Error(`CTRL-01 : « ${procedure} » n’est pas une procédure documentable ici — inspection, observation ou `
       + 'ré-exécution seulement (l’inquiry est posée automatiquement, une seule fois, à la création de la tâche).');
   }
   if (!notes.trim()) throw new Error('la procédure a besoin d’une note — ce qui a été inspecté, observé ou ré-exécuté, et ce qui en ressort');
-  const engagementId = await assertMembreDe('control_task', taskId, userId, 'documenter une procédure de tâche');
   const ctx = await engagementCtx(engagementId);
   if (evidenceId) {
     const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
@@ -265,6 +299,202 @@ export async function documenterProcedureTache(
   });
 }
 
+// ---------- S8y: les IUC et les facteurs de design (mandat contrôle interne, 2026-09-08, §2.3, §2.4) ----------
+
+const FACTEURS_DESIGN = ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const;
+type FacteurDesign = (typeof FACTEURS_DESIGN)[number];
+
+export interface RisqueDuDossier { id: string; fsli_code: string | null; assertion: string; level: string; description: string }
+
+/** Les risques du dossier (`risk`, 0001), pour choisir lesquels un contrôle adresse (§2.4.1)
+ *  — jamais du texte libre : le facteur « réponse au risque » exige un lien vers un objet
+ *  RÉEL de cette liste, pas une nouvelle saisie. Pas `fsli_assertion_risk` (0012) : ce dernier
+ *  est un NIVEAU CALCULÉ qui commande le programme substantif ISA/NEP, un axe orthogonal —
+ *  voir l'en-tête de la migration 0150. */
+export async function risquesDuDossier(engagementId: string): Promise<RisqueDuDossier[]> {
+  return q<RisqueDuDossier>(
+    `select id, fsli_code, assertion, level, description from risk where engagement_id = $1 order by fsli_code, assertion`,
+    [engagementId],
+  );
+}
+
+export async function risquesLiesAuControle(controlId: string): Promise<RisqueDuDossier[]> {
+  return q<RisqueDuDossier>(
+    `select r.id, r.fsli_code, r.assertion, r.level, r.description from control_risk cr
+     join risk r on r.id = cr.risk_id where cr.control_id = $1 order by r.fsli_code, r.assertion`,
+    [controlId],
+  );
+}
+
+/** §2.4.1 : « ce facteur porte un lien vers les objets risque réels, jamais du texte libre
+ *  seul ». Le lien lui-même, séparé de sa conclusion écrite (`documenterFacteurDesign`) — un
+ *  contrôle peut répondre à plusieurs risques, posés l'un après l'autre. */
+export async function lierRisqueControle(controlId: string, userId: string, riskId: string): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'lier un risque à un contrôle');
+  const r = await q01<{ engagement_id: string }>(`select engagement_id from risk where id = $1`, [riskId]);
+  if (!r || r.engagement_id !== engagementId) throw new Error('ce risque n’appartient pas à ce dossier');
+  const ctx = await engagementCtx(engagementId);
+  await q(
+    `insert into control_risk (engagement_id, control_id, risk_id, created_by) values ($1,$2,$3,$4)
+     on conflict (control_id, risk_id) do nothing`,
+    [engagementId, controlId, riskId, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_risk_linked', objectType: 'control', objectId: controlId, payload: { riskId },
+  });
+}
+
+export async function delierRisqueControle(controlId: string, userId: string, riskId: string): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'délier un risque d’un contrôle');
+  const ctx = await engagementCtx(engagementId);
+  await q(`delete from control_risk where control_id = $1 and risk_id = $2`, [controlId, riskId]);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_risk_unlinked', objectType: 'control', objectId: controlId, payload: { riskId },
+  });
+}
+
+export interface FacteurDesignDocumente { factor: FacteurDesign; conclusion: string; created_by: string | null; created_at: string }
+
+export async function facteursDesignDuControle(controlId: string): Promise<FacteurDesignDocumente[]> {
+  return q<FacteurDesignDocumente>(
+    `select factor, conclusion, created_by, created_at::text from control_design_factor where control_id = $1`,
+    [controlId],
+  );
+}
+
+/** CTRL-02 (§2.4) : chacun des quatre facteurs exige sa propre conclusion écrite avant de
+ *  conclure le D&I — gardé à l'écriture (upsert, un facteur = une ligne), REVÉRIFIÉ à la
+ *  conclusion (`setDiStatus`) parce que rien n'empêche structurellement un facteur écrit
+ *  aujourd'hui d'être seul quand un autre manque encore — la garde ne suppose jamais qu'un
+ *  chemin d'écriture partielle n'existe pas (règle 17). ISOLATION D'ABORD (revue hostile du
+ *  2026-09-08, voix 2) : un premier passage validait `factor` avant `assertMembreDe` — un type
+ *  TypeScript inline (au lieu d'un alias nommé) faisait passer le test d'étanchéité auto-généré
+ *  SANS fermer le vrai trou (le harnais fabrique alors une valeur VALIDE et n'exerce plus jamais
+ *  la combinaison valeur-invalide + acteur-étranger) : un appel à valeur invalide révélait la
+ *  forme du refus CTRL-02 plutôt que le refus d'étanchéité, apprenant à un acteur d'un autre
+ *  dossier que l'objet existe. `assertMembreDe` tourne donc EN PREMIER, avant toute validation
+ *  de valeur — la garde d'étanchéité ne doit jamais dépendre de la FORME du type du paramètre.
+ *  Révision : l'ANCIENNE conclusion est conservée dans `event_log` avant d'être remplacée
+ *  (règle 3, même patron que `documenterProcedureTache`). */
+export async function documenterFacteurDesign(
+  controlId: string, userId: string,
+  factor: 'reponse_risque' | 'autorite_competence' | 'frequence_constance' | 'seuil_investigation',
+  conclusion: string,
+): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'documenter un facteur de design');
+  if (!FACTEURS_DESIGN.includes(factor)) {
+    throw new Error(`CTRL-02 : « ${factor} » n’est pas un facteur de design reconnu — réponse au risque, autorité et `
+      + 'compétence, fréquence et constance, ou seuil et critères d’investigation seulement.');
+  }
+  if (!conclusion.trim()) throw new Error('le facteur a besoin d’une conclusion écrite — le jugement de l’auditeur, pas seulement les faits bruts');
+  const ctx = await engagementCtx(engagementId);
+  const precedent = await q01<{ conclusion: string; created_by: string | null }>(
+    `select conclusion, created_by from control_design_factor where control_id = $1 and factor = $2`,
+    [controlId, factor],
+  );
+  await q(
+    `insert into control_design_factor (engagement_id, control_id, factor, conclusion, created_by)
+     values ($1,$2,$3,$4,$5)
+     on conflict (control_id, factor) do update set conclusion = $4, created_by = $5, created_at = now()`,
+    [engagementId, controlId, factor, conclusion.trim(), userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_design_factor_documented', objectType: 'control', objectId: controlId,
+    payload: {
+      factor, conclusion: conclusion.trim().slice(0, 500),
+      remplace: precedent ? { conclusion: precedent.conclusion.slice(0, 500), par: precedent.created_by } : null,
+    },
+  });
+}
+
+export interface IucDuControle { id: string; utilisee: boolean; description: string | null; preuves: { volet: string; conclusion: string; evidence_id: string | null }[] }
+
+export async function iucDuControle(controlId: string): Promise<IucDuControle | null> {
+  const iuc = await q01<{ id: string; utilisee: boolean; description: string | null }>(
+    `select id, utilisee, description from control_iuc where control_id = $1`,
+    [controlId],
+  );
+  if (!iuc) return null;
+  const preuves = await q<{ volet: string; conclusion: string; evidence_id: string | null }>(
+    `select volet, conclusion, evidence_id from control_iuc_preuve where iuc_id = $1 order by volet`,
+    [iuc.id],
+  );
+  return { ...iuc, preuves };
+}
+
+/** §2.3 : « une IUC est-elle utilisée ? » — une déclaration PAR CONTRÔLE, pas par tâche.
+ *  Redéclarer 'non' après 'oui' n'efface PAS les preuves déjà écrites (elles restent au
+ *  dossier, règle 28) — seule la déclaration change ; CTRL-03 ne les exige plus tant que
+ *  `utilisee` est redevenu faux, mais elles restent lisibles au dossier. Révision : l'ANCIENNE
+ *  déclaration est conservée dans `event_log` avant d'être remplacée (règle 3). */
+export async function declarerIuc(controlId: string, userId: string, utilisee: boolean, description?: string): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'déclarer l’usage d’une IUC');
+  const ctx = await engagementCtx(engagementId);
+  const precedent = await q01<{ utilisee: boolean; description: string | null; created_by: string | null }>(
+    `select utilisee, description, created_by from control_iuc where control_id = $1`,
+    [controlId],
+  );
+  await q(
+    `insert into control_iuc (engagement_id, control_id, utilisee, description, created_by)
+     values ($1,$2,$3,$4,$5)
+     on conflict (control_id) do update set utilisee = $3, description = $4, created_by = $5, created_at = now()`,
+    [engagementId, controlId, utilisee, description?.trim() || null, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_iuc_declared', objectType: 'control', objectId: controlId,
+    payload: {
+      utilisee, description: description ?? null,
+      remplace: precedent ? { utilisee: precedent.utilisee, description: precedent.description, par: precedent.created_by } : null,
+    },
+  });
+}
+
+/** CTRL-03 (§2.3) : une IUC déclarée utilisée exige exactitude ET exhaustivité, chacune sa
+ *  propre preuve — deux volets, jamais fusionnés (une seule note qui dit « exact et complet »
+ *  ne nomme ni l'un ni l'autre si on l'interroge après coup, exactement ce que le mandat
+ *  demande d'éviter : « le refus nomme laquelle des deux manque »). ISOLATION D'ABORD — même
+ *  raison et même correction que `documenterFacteurDesign` ci-dessus (revue hostile du
+ *  2026-09-08, voix 2) : `assertMembreDe` tourne avant toute validation de `volet`. Révision :
+ *  l'ANCIENNE preuve est conservée dans `event_log` avant d'être remplacée (règle 3). */
+export async function documenterIucPreuve(controlId: string, userId: string, volet: 'exactitude' | 'exhaustivite', conclusion: string, evidenceId?: string): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'documenter une preuve IUC');
+  if (volet !== 'exactitude' && volet !== 'exhaustivite') {
+    throw new Error(`CTRL-03 : « ${volet} » n’est pas un volet reconnu — exactitude ou exhaustivité seulement.`);
+  }
+  if (!conclusion.trim()) throw new Error('la preuve a besoin d’une conclusion écrite');
+  const iuc = await q01<{ id: string; utilisee: boolean }>(`select id, utilisee from control_iuc where control_id = $1`, [controlId]);
+  if (!iuc) throw new Error('CTRL-03 : déclarez d’abord si une IUC est utilisée avant d’en documenter la preuve.');
+  if (!iuc.utilisee) throw new Error('CTRL-03 : ce contrôle est déclaré sans IUC utilisée — aucune preuve n’est requise ni attendue.');
+  if (evidenceId) {
+    const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
+    if (ev.engagement_id !== engagementId) throw new Error('cette pièce n’appartient pas à ce dossier');
+    if (ev.quarantined) throw new Error('une pièce en quarantaine ne peut pas corroborer une preuve IUC');
+  }
+  const precedent = await q01<{ conclusion: string; evidence_id: string | null; created_by: string | null }>(
+    `select conclusion, evidence_id, created_by from control_iuc_preuve where iuc_id = $1 and volet = $2`,
+    [iuc.id, volet],
+  );
+  const ctx = await engagementCtx(engagementId);
+  await q(
+    `insert into control_iuc_preuve (engagement_id, iuc_id, volet, conclusion, evidence_id, created_by)
+     values ($1,$2,$3,$4,$5,$6)
+     on conflict (iuc_id, volet) do update set conclusion = $4, evidence_id = $5, created_by = $6, created_at = now()`,
+    [engagementId, iuc.id, volet, conclusion.trim(), evidenceId ?? null, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_iuc_preuve_documented', objectType: 'control', objectId: controlId,
+    payload: {
+      volet, conclusion: conclusion.trim().slice(0, 500), hasEvidence: Boolean(evidenceId),
+      remplace: precedent ? { conclusion: precedent.conclusion.slice(0, 500), evidenceId: precedent.evidence_id, par: precedent.created_by } : null,
+    },
+  });
+}
+
 export async function setDiStatus(controlId: string, userId: string, status: 'effective' | 'deficient', conclusion: string): Promise<void> {
   await assertMembreDe('control', controlId, userId, 'statuer la conception d’un contrôle');
   if (!conclusion.trim()) throw new Error('D&I conclusion required');
@@ -286,6 +516,26 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
         `CTRL-01 : la tâche « ${t.description} » n’est documentée que par l’inquiry — au moins une inspection, `
         + 'observation ou ré-exécution est requise avant de conclure.',
       );
+    }
+  }
+  const facteurs = await q<{ factor: string }>(`select factor from control_design_factor where control_id = $1`, [controlId]);
+  const facteursManquants = FACTEURS_DESIGN.filter((f) => !facteurs.some((x) => x.factor === f));
+  if (facteursManquants.length > 0) {
+    throw new Error(`CTRL-02 : facteur(s) de design sans conclusion écrite — ${facteursManquants.join(', ')}.`);
+  }
+  const lienRisque = await q01(`select 1 from control_risk where control_id = $1`, [controlId]);
+  if (!lienRisque) {
+    throw new Error('CTRL-02 : le facteur « réponse au risque » ne pointe aucun risque réel — un contrôle qui ne pointe aucun risque existant est un décor.');
+  }
+  const iuc = await q01<{ id: string; utilisee: boolean }>(`select id, utilisee from control_iuc where control_id = $1`, [controlId]);
+  if (!iuc) {
+    throw new Error('CTRL-03 : aucune déclaration IUC — indiquez si le contrôle utilise une information produite par l’entité avant de conclure.');
+  }
+  if (iuc.utilisee) {
+    const preuves = await q<{ volet: string }>(`select volet from control_iuc_preuve where iuc_id = $1`, [iuc.id]);
+    const voletsManquants = (['exactitude', 'exhaustivite'] as const).filter((v) => !preuves.some((p) => p.volet === v));
+    if (voletsManquants.length > 0) {
+      throw new Error(`CTRL-03 : IUC déclarée utilisée sans ${voletsManquants.join(' ni ')} documentée(s).`);
     }
   }
   const ctx = await engagementCtx(c.engagement_id);

@@ -8,6 +8,8 @@ import {
   listControls, importInstances, drawAttributeSample, runAttributeTesting, attributeGrid, listDeviations,
   resolveDeviation, proposeDeficiency, decideDeficiency, listDeficiencies,
   attacherWalkthrough, listerTachesControle, ajouterTacheControle, documenterProcedureTache,
+  risquesDuDossier, risquesLiesAuControle, lierRisqueControle, delierRisqueControle,
+  facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -56,6 +58,64 @@ export default async function ControlDetail({
     [id, `OE-${control.code}`],
   );
   const taches = await listerTachesControle(cid);
+  const risquesDossier = await risquesDuDossier(id);
+  const risquesLies = await risquesLiesAuControle(cid);
+  const facteurs = await facteursDesignDuControle(cid);
+  const iuc = await iucDuControle(cid);
+  const FACTEURS = [
+    { cle: 'reponse_risque' as const, libelle: t('rcmc.facteurReponseRisque') },
+    { cle: 'autorite_competence' as const, libelle: t('rcmc.facteurAutoriteCompetence') },
+    { cle: 'frequence_constance' as const, libelle: t('rcmc.facteurFrequenceConstance') },
+    { cle: 'seuil_investigation' as const, libelle: t('rcmc.facteurSeuilInvestigation') },
+  ];
+
+  async function lierRisqueAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await lierRisqueControle(cid, user.id, String(formData.get('risk_id')));
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function delierRisqueAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await delierRisqueControle(cid, user.id, String(formData.get('risk_id')));
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function documenterFacteurAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await documenterFacteurDesign(
+        cid, user.id,
+        String(formData.get('factor')) as 'reponse_risque' | 'autorite_competence' | 'frequence_constance' | 'seuil_investigation',
+        String(formData.get('conclusion') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function declarerIucAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await declarerIuc(cid, user.id, formData.get('utilisee') === 'oui', String(formData.get('description') ?? '') || undefined);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function documenterIucPreuveAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await documenterIucPreuve(
+        cid, user.id, String(formData.get('volet')) as 'exactitude' | 'exhaustivite',
+        String(formData.get('conclusion') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
 
   async function attacherWalkthroughAction(formData: FormData) {
     'use server';
@@ -243,6 +303,113 @@ export default async function ControlDetail({
               <input type="text" name="video_timestamp" placeholder={t('rcmc.reperVideo')} style={{ width: 100 }} />
               <button className="btn small">{t('rcmc.ajouterTache')}</button>
             </form>
+          </>
+        )}
+      </Repli>
+
+      <Repli cle="eng.id.rcm.cid.design" niveau={2} titre={t('rcmc.facteursEtIuc')} id="design">
+        <h3>{t('rcmc.risquesLies')}</h3>
+        <div className="row" style={{ flexWrap: 'wrap', gap: 4 }} data-risques-lies>
+          {risquesLies.length === 0 && <span className="faint">{t('rcmc.aucunRisqueLie')}</span>}
+          {risquesLies.map((r) => (
+            <span key={r.id} className="badge amber" title={r.description}>
+              {r.fsli_code ?? '—'} · {r.assertion} · {r.level}
+              <form action={delierRisqueAction} style={{ display: 'inline' }}>
+                <input type="hidden" name="risk_id" value={r.id} />
+                <button className="btn tiny" type="submit" aria-label={t('rcmc.delierRisque')}>×</button>
+              </form>
+            </span>
+          ))}
+        </div>
+        {risquesDossier.filter((r) => !risquesLies.some((l) => l.id === r.id)).length > 0 && (
+          <form action={lierRisqueAction} className="row mt" data-lier-risque>
+            <select name="risk_id" required defaultValue="">
+              <option value="" disabled>{t('rcmc.choisirRisque')}</option>
+              {risquesDossier.filter((r) => !risquesLies.some((l) => l.id === r.id)).map((r) => (
+                <option key={r.id} value={r.id}>{r.fsli_code ?? '—'} · {r.assertion} · {r.level} — {r.description.slice(0, 60)}</option>
+              ))}
+            </select>
+            <button className="btn small secondary">{t('rcmc.lierRisque')}</button>
+          </form>
+        )}
+
+        <h3 className="mt">{t('rcmc.facteursDesign')}</h3>
+        <table className="data" data-facteurs-design>
+          <tbody>
+            {FACTEURS.map((f) => {
+              const doc = facteurs.find((x) => x.factor === f.cle);
+              return (
+                <tr key={f.cle} data-facteur={f.cle}>
+                  <td style={{ width: 220 }}>{f.libelle}</td>
+                  <td>{doc ? <span data-facteur-conclusion>{doc.conclusion}</span> : <span className="badge amber">{t('rcmc.facteurManquant')}</span>}</td>
+                  <td>
+                    <details>
+                      <summary className="repli-action">{doc ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
+                      <form action={documenterFacteurAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 420 }}>
+                        <input type="hidden" name="factor" value={f.cle} />
+                        <textarea name="conclusion" rows={2} required defaultValue={doc?.conclusion ?? ''} />
+                        <button className="btn small secondary">{t('rcmc.enregistrerConclusion')}</button>
+                      </form>
+                    </details>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        <h3 className="mt">{t('rcmc.iuc')}</h3>
+        {!iuc ? (
+          <form action={declarerIucAction} className="row" data-declarer-iuc>
+            <select name="utilisee" defaultValue="non" required>
+              <option value="non">{t('rcmc.iucNonUtilisee')}</option>
+              <option value="oui">{t('rcmc.iucUtilisee')}</option>
+            </select>
+            <input type="text" name="description" placeholder={t('rcmc.iucDescription')} style={{ width: 280 }} />
+            <button className="btn small">{t('rcmc.declarer')}</button>
+          </form>
+        ) : (
+          <>
+            <p className="row" data-iuc-declaree>
+              <span className={`badge ${iuc.utilisee ? 'blue' : 'gray'}`}>{iuc.utilisee ? t('rcmc.iucUtilisee') : t('rcmc.iucNonUtilisee')}</span>
+              {iuc.description && <span className="faint">{iuc.description}</span>}
+              <details>
+                <summary className="repli-action">{t('rcmc.reviser')}</summary>
+                <form action={declarerIucAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                  <select name="utilisee" defaultValue={iuc.utilisee ? 'oui' : 'non'} required>
+                    <option value="non">{t('rcmc.iucNonUtilisee')}</option>
+                    <option value="oui">{t('rcmc.iucUtilisee')}</option>
+                  </select>
+                  <input type="text" name="description" defaultValue={iuc.description ?? ''} placeholder={t('rcmc.iucDescription')} />
+                  <button className="btn small secondary">{t('rcmc.declarer')}</button>
+                </form>
+              </details>
+            </p>
+            {iuc.utilisee && (
+              <table className="data" data-iuc-preuves>
+                <tbody>
+                  {(['exactitude', 'exhaustivite'] as const).map((volet) => {
+                    const preuve = iuc.preuves.find((p) => p.volet === volet);
+                    return (
+                      <tr key={volet} data-volet={volet}>
+                        <td style={{ width: 160 }}>{volet === 'exactitude' ? t('rcmc.exactitude') : t('rcmc.exhaustivite')}</td>
+                        <td>{preuve ? <span data-preuve-conclusion>{preuve.conclusion}</span> : <span className="badge amber">{t('rcmc.preuveManquante')}</span>}</td>
+                        <td>
+                          <details>
+                            <summary className="repli-action">{preuve ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
+                            <form action={documenterIucPreuveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                              <input type="hidden" name="volet" value={volet} />
+                              <textarea name="conclusion" rows={2} required defaultValue={preuve?.conclusion ?? ''} />
+                              <button className="btn small secondary">{t('rcmc.enregistrerConclusion')}</button>
+                            </form>
+                          </details>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </>
         )}
       </Repli>
