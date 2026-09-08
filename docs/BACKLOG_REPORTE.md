@@ -663,3 +663,22 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   scénario réaliste. Non bloquant pour l'expédition (revue hostile, voix 2 : « worth a backlog
   item, not silent acceptance »). Corrigé le jour où la classe entière (`nextSeq`-style) est
   traitée, pas isolément sur `control_task`.
+
+- **R64 — `draftOeWorkpaper` (et son bouton dans `/rcm/[cid]`) n'est pas gardé par `di_status`,
+  devenu atteignable pour de vrai par 0149.** Trouvé par la revue hostile du 2026-09-08 (voix 2),
+  migration `0149_ctrl01_correction_di_status.sql` : avant cette migration, `di_status` ne
+  régressait jamais sur un contrôle déjà testé (OE) — après, C-BR-01/C-REV-01 repassent à
+  `not_assessed` alors que leur test d'efficacité et leurs papiers signés restent intacts au
+  dossier (par construction, règle 28 — voir `docs/DECISIONS.md`/STATUS.md de la tranche). Rien
+  n'est détruit ni caché, mais un clic sur « Nouveau brouillon de papier OE » (le bouton s'affiche
+  dès que `grid.length > 0`, indépendamment de `di_status` — `rcm/[cid]/page.tsx:324`) produit
+  désormais un document qui s'auto-contredit : sa section « Design & implementation » écrit
+  littéralement « NOT_ASSESSED — n/a. OE testing proceeds only on an effective D&I assessment »
+  au-dessus d'une grille d'attributs et de déviations réellement testées (`oe-draft.ts:105`) — et
+  ce redraft bascule automatiquement TOUTE version antérieure, y compris une `'signed'`, à
+  `'outdated'` (`oe-draft.ts:169-171`, comportement de cycle de vie déjà existant, pas nouveau,
+  mais jamais atteignable sur ce chemin avant aujourd'hui). Rien de silencieusement perdu (la
+  version antérieure reste lisible par version, règle 28 tenue), mais un piège d'expérience réel
+  à un clic. Non bloquant pour 0149 (son SQL ne touche pas ce chemin) ; corrigé le jour où
+  `draftOeWorkpaper`/son bouton sont gardés sur `di_status === 'effective'`, ou où le texte de
+  section devient conditionnel.

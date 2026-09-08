@@ -340,6 +340,18 @@ pipefail` (une ligne, avant le `timeout`) restaure un `$?` qui reflète vraiment
 pas `tee`. Ne jamais retirer cette ligne, et ne jamais faire confiance à un `EXIT=` qui ne l'a
 pas précédée.
 
+**Une attente sur la CI GitHub n'a NI processus local NI notification de fin — même défaut que la
+règle 35, une couche plus loin (2026-09-08, lot contrôle interne).** Le `deploye`/`vérifier` de
+GitHub Actions tourne SUR GITHUB, pas dans le bac à sable : programmer un réveil différé et
+attendre « je confirmerai une fois la CI terminée » ferme le tour sans RIEN d'armé — aucun
+processus dont la mort avertit, aucune tâche de fond dont la fin notifie. Un tour qui se termine
+ainsi peut rester silencieux indéfiniment, exactement le défaut que la règle 35 nomme pour un run
+local. **La forme correcte** : soit un réveil planifié qui, à son réveil, RELIT l'état de la CI par
+l'API (jamais une croyance que « ça a dû finir ») et en relance un autre si ce n'est pas fini ; soit
+un sondage BORNÉ dans le même tour (`gh run watch <run-id>` ou l'équivalent par l'outil GitHub de la
+session, sous un délai explicite). Ne jamais fermer un tour sur une attente CI sans l'une des deux
+formes armée.
+
 ## 4. La règle du compte rendu (matin, soir, fin de mandat)
 
 - **Ne jamais conclure au-delà du document** : le rapport dit ce qui a été mesuré, sur quel SHA,

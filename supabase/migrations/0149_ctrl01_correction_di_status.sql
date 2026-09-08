@@ -1,0 +1,62 @@
+-- 0149 — CTRL-01 : CORRIGER LES CONTRÔLES DÉJÀ CONCLUS SANS AUCUNE TÂCHE.
+--
+-- TROUVÉ EN CONFIRMANT LE SHA SERVI DE 0148 (2026-09-08, quelques minutes après
+-- le déploiement) : /api/sante — donc la production — rougissait sur SA PROPRE
+-- lecture CTRL-01, ajoutée par 0148. Douze tâches... non, DOUZE VIOLATIONS
+-- (une par contrôle sur les deux dossiers SOX de la démonstration publique) :
+-- chaque contrôle dont `di_status <> 'not_assessed'` n'avait AUCUNE ligne
+-- `control_task` — exactement le défaut que `importRcm` produisait via sa
+-- colonne CSV `di_status`, corrigé dans le CODE par 0148/sox.ts (`importRcm`
+-- pose désormais toujours `not_assessed`), mais qui ne pouvait RIEN pour les
+-- lignes DÉJÀ ÉCRITES en production par l'ancien code, avant ce déploiement.
+--
+-- POURQUOI CE N'EST PAS UN RE-SEMIS (interdit permanent, §2 de CLAUDE.md).
+-- Re-semer signifierait vider un dossier et reconstruire tout son contenu.
+-- Cette migration ne touche qu'UN CHAMP (`di_status`/`di_conclusion`) sur des
+-- lignes `control` DÉJÀ EXISTANTES, dont AUCUNE autre donnée (occurrences,
+-- échantillon, tests d'attributs, déviations, déficience, papier signé) n'est
+-- modifiée ni supprimée. C'est une correction de donnée ciblée, de la même
+-- famille que d'autres migrations de ce dépôt qui ajustent une colonne
+-- existante sur des lignes déjà semées (0146, 0147) — jamais une
+-- reconstruction.
+--
+-- POURQUOI CE N'EST PAS UNE FABRICATION NON PLUS. La tentation aurait été
+-- d'insérer ICI, en SQL, une tâche + une procédure « inspection » pour
+-- C-BR-01/C-REV-01 (qui ont un test d'efficacité complet en aval — papier
+-- signé, déviations conclues) pour les garder « effective » sans rougir.
+-- REFUSÉ : une ligne `control_task_procedure` posée par une migration n'est
+-- documentée par PERSONNE — c'est un décor au sens de la règle 20, la même
+-- famille de défaut que celle que 0148 corrige. La vérité honnête est que
+-- SIX contrôles sur les deux dossiers SOX n'ont jamais eu de walkthrough
+-- documenté par tâche — leur conclusion D&I était prématurée, quel que soit
+-- ce qui a été testé en aval sous cette conclusion. `di_status` REDEVIENT
+-- `not_assessed` pour les six ; un futur passage réel (un humain qui clique,
+-- ou un re-semis futur du monde de démonstration passant par le code corrigé
+-- de 0148) les documentera pour de vrai.
+--
+-- CE QUE CETTE MIGRATION NE FAIT PAS (règle 19) : elle ne touche AUCUNE ligne
+-- `control` dont une tâche existe déjà (le prédicat `not exists` protège tout
+-- travail réel déjà posé, y compris par un futur passage AVANT que cette
+-- migration n'atteigne une base donnée — rejouable, idempotente). Elle ne
+-- touche pas `control_test`/`attribute_result`/`deviation`/`deficiency`/
+-- `workpaper` : ces objets restent au dossier, visibles, jamais supprimés
+-- (règle 28) — seule la CONCLUSION D&I qui les précédait redevient honnête.
+
+-- VÉRIFIÉ CONTRE LA DONNÉE RÉELLE (mcp__Supabase__execute_sql, 2026-09-08) : les deux
+-- engagements SOX portant les douze violations sont `status = 'fieldwork'`, aucun `locked`
+-- ni `archived` — `assert_engagement_unlocked()` (0003) ne les bloque donc pas. Aucun job
+-- planifié ne verrouille un dossier (cherché : seul `retention.ts` pose `status='locked'`,
+-- déclenché par un geste humain explicite, jamais un cron/schedule). Volontairement, cette
+-- migration NE POSE PAS `set_config('otto.post_lock_amendment', 'on', true)` en garde
+-- défensive : ce mécanisme exige, par conception (docs/06_SECURITY_COMPLIANCE.md §5), une
+-- ligne event_log avec auteur/date/motif écrite par la couche service — l'invoquer depuis une
+-- migration SANS cette ligne serait un amendement post-verrou SILENCIEUX, exactement le
+-- défaut que la règle 3 interdit. Si un jour cette migration est rejouée sur une base où l'un
+-- des deux dossiers est verrouillé, elle échouera bruyamment (exception, déploi arrêté) —
+-- c'est le comportement correct : mieux vaut un déploi qui échoue au grand jour qu'un
+-- contournement silencieux du verrou de documentation.
+
+update control
+   set di_status = 'not_assessed', di_conclusion = null
+ where di_status <> 'not_assessed'
+   and not exists (select 1 from control_task ct where ct.control_id = control.id);

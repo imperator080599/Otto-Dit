@@ -249,6 +249,12 @@
       "note": "non bloquant pour l'expédition. Corrigé le jour où la classe entière (nextSeq-style) est traitée."
     },
     {
+      "id": "R64",
+      "etat": "ouvert — draftOeWorkpaper (et son bouton dans /rcm/[cid]) n'est pas gardé par di_status, devenu atteignable pour de vrai par la migration 0149 : un redraft sur C-BR-01/C-REV-01 produit un papier qui s'auto-contredit (section D&I « NOT_ASSESSED » au-dessus d'attributs/déviations réellement testés) et bascule toute version antérieure, y compris signée, à outdated. Rien de détruit ni caché (règle 28 tenue, version antérieure lisible), un piège d'UX réel à un clic.",
+      "depuis": "2026-09-08 (lot contrôle interne, tranche 1 correctif — migration 0149 ; revue hostile voix 2)",
+      "note": "non bloquant pour 0149 (son SQL ne touche pas ce chemin). Corrigé le jour où draftOeWorkpaper/son bouton sont gardés sur di_status === 'effective', ou où le texte de section devient conditionnel."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
