@@ -1,13 +1,17 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "f2968d3dcadfc7b97f639b916bb93ddaed5e3e78",
+  "sha": "2c3a00fcc1e0f7ea0f88c2c61a46de7378e62144",
   "mesure": {
-    "quand": "2026-09-08T15:29:45Z",
-    "par": "CI, travail `deploye`, run 34244723884, job 102123658729, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 15:26:28Z→15:29:45Z, 179 s — 58a99e4 servi de 0 s à 154 s, puis f2968d3 à 179 s). Lot 4, tranche 4a : D.6 points 1 et 3 (l'épreuve de l'épure). Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation.",
-    "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
+    "quand": "2026-09-08T20:26:12Z",
+    "par": "CI, travail `deploye`, run 34274373455, job 102223630517, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:22:17Z→20:26:12Z, 217 s — 1e1c569 servi de 0 s à 181 s, puis 2c3a00f à 217 s). Confirmé indépendamment en direct (mcp__Vercel__web_fetch_vercel_url sur /api/sante, 20:41:44Z) : HTTP 200, identiteCoherente=true, CTRL-01 \"ok\":true,\"vide\":true — \"aucun contrôle conclu pour l'instant\" (0149 a ramené les douze violations à not_assessed, honnêtement rendu VIDE, pas confondu avec un passage). Lot contrôle interne, tranche 1 correctif : migration 0149 (CTRL-01 en production). NOTE : 1e1c569 (le commit de contenu précédent) N'A JAMAIS reçu sa propre confirmation servie — son propre run `deploye` (34267345746) a ÉCHOUÉ pour de vrai (fenêtre de 15 min épuisée, HTTP 500 continu, 19:10:19Z→19:25:37Z) : c'est cet échec réel, mesuré en direct sur la production via mcp__Supabase__execute_sql et mcp__Vercel__web_fetch_vercel_url, qui a mené à 0149. Pas un oubli d'instantané (contraste avec fcbedf7 ci-dessous) — un SHA qui n'a jamais été honnêtement servi n'a pas d'entrée."
   },
   "historique": [
+    {
+      "sha": "f2968d3dcadfc7b97f639b916bb93ddaed5e3e78",
+      "quand": "2026-09-08T15:29:45Z",
+      "par": "CI, travail `deploye`, run 34244723884, job 102123658729, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 15:26:28Z→15:29:45Z, 179 s — 58a99e4 servi de 0 s à 154 s, puis f2968d3 à 179 s). Lot 4, tranche 4a : D.6 points 1 et 3 (l'épreuve de l'épure). Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation."
+    },
     {
       "sha": "b37989ab7a22f11b43c575d1da8518a16c3df42c",
       "quand": "2026-09-08T14:13:02Z",

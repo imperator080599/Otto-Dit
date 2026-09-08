@@ -92,6 +92,70 @@ ajoutés avec un chemin humain réel mais aucune station de clics ne les exerce 
 SOX/contrôle interne entier est hors du parcours cliqué, note déjà présente dans le registre) ;
 aucun décor résolu, aucun nouveau décor créé.
 
+## Lot contrôle interne, tranche 1 correctif : migration 0149, CTRL-01 en production (2026-09-08, SHA servi 2c3a00f)
+
+**Ce qui a été trouvé.** La confirmation du SHA servi de `1e1c569` (tranche 1 ci-dessus) a
+d'abord été instruite sur un message qui affirmait la tranche « proprement en ligne » sans mesure
+— vérifié indépendamment plutôt qu'exécuté tel quel (règle 13) : le job CI `deploye` (run
+34267345746) avait RÉELLEMENT échoué (fenêtre de 15 min épuisée, HTTP 500 continu,
+19:10:19Z→19:25:37Z), pas un artefact de build lent. Un fetch direct de `/api/sante` en
+production (`mcp__Vercel__web_fetch_vercel_url`, 19:29:45Z) a confirmé le 500 réel : la propre
+lecture **CTRL-01** livrée par `1e1c569` rougissait sur **six contrôles par dossier SOX** (douze
+au total, les deux dossiers de la démo publique) — `di_status` posé directement par l'ancien
+`importRcm`, corrigé par le CODE de `1e1c569` mais jamais rattrapé sur les lignes DÉJÀ écrites en
+production par l'ancien code, avant ce déploiement. `mcp__Supabase__execute_sql` a confirmé le
+motif exact sur la donnée réelle plutôt que de le supposer depuis le code.
+
+**Ce qui a changé.** Migration `0149_ctrl01_correction_di_status.sql` : un seul `UPDATE` sur
+`control` (`di_status`/`di_conclusion` → `not_assessed`/`null`), scopé par `WHERE di_status <>
+'not_assessed' AND NOT EXISTS (control_task ...)`. Ni re-semis (aucune autre table touchée, rien
+reconstruit — `control_test`/`sample`/`attribute_result`/`deviation`/`deficiency`/`workpaper`
+intacts, règle 28), ni fabrication compensatoire (aucune `control_task_procedure` posée par la
+migration — ç'aurait été le décor, règle 20, que `0148` corrige dans l'autre sens). Amendement
+CLAUDE.md ajouté au voisinage de la règle 35 (dicté par l'instruction qui a déclenché cette
+tranche) : une attente CI n'a ni processus local ni notification de fin — même défaut que la
+règle 35, une couche plus loin ; forme correcte, un réveil qui RELIT l'état par l'API ou un
+sondage borné dans le même tour.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 30 amendée : donnée de production, code
+de refus) — **SHIP WITH MINOR FIXES** des deux voix, convergentes sur le point central (H4/V2-1) :
+resetter `di_status` est le bon choix, fabriquer une tâche compensatoire aurait été la vraie
+faute — les deux voix ont tracé indépendamment tous les chemins downstream (`drawAttributeSample`,
+`draftOeWorkpaper`, les workpapers déjà signés) et confirmé qu'aucune preuve OE réelle
+(`control_test`, `sample`, `deviation`, un papier signé) n'est détruite ni cachée. Convergence
+aussi sur la garde de verrou (H1/V2-3) : mesurée en direct sur la donnée de production, les deux
+dossiers SOX sont `fieldwork`, pas verrouillés ; la migration ne contourne PAS
+`assert_engagement_unlocked` (pas de `set_config`), et échoue bruyamment plutôt que d'écraser en
+silence si un dossier visé l'était — testé (`ctrl01-lecture.test.ts`). Corrections appliquées :
+**H2** (voix 1) — trou réel : aucun test n'exerçait la moitié PROTECTRICE du prédicat (un contrôle
+avec une vraie tâche documentée doit rester intact) ; ajouté, prouvé contre la mutation exacte de
+la voix 1 (retrait du `NOT EXISTS`, vu échouer), migration restaurée octet pour octet (sha256
+identique avant/après). **V2-2** (voix 2) — trou réel mais non bloquant : `draftOeWorkpaper`
+(et son bouton dans `/rcm/[cid]`) n'est pas gardé par `di_status`, désormais atteignable pour de
+vrai sur C-BR-01/C-REV-01 (un redraft produirait un papier auto-contradictoire, sans rien
+détruire — la version antérieure signée reste lisible, règle 28) — consigné **R64**
+(`BACKLOG_REPORTE.md`, `fils.json`), pas silencieusement laissé de côté.
+
+**Verify complet, UN passage propre** (`set -o pipefail; timeout 3600 npm run verify`, sur
+l'arbre exact devenu `2c3a00f` — `/tmp/verify-ctrl-interne-0149.log`) : **935/935 tests** (115
+fichiers), **43 gardes**, **935 tests collectés · plancher 632**, langue **0 chaîne hors
+catalogue · 15 messages de refus documentés**, **0 lecture perdue sur 1716 chemins figés**,
+**276/276 stations déclarées/figées**, screens **87 + 51 routes · 0 échec**, clics **232 étapes ·
+0 échec · 362 clics**, visuel **312 vues · 0 défaut**, sonde d'hydratation **0 incident** (pas de
+récidive du #418 cette fois), langue/lectures/parcours-épreuve **15/15 + 6/6 + 5/5** cas connus
+mauvais dénoncés.
+
+**SHA servi, confirmé DEUX FOIS** (`docs/instantanes/servi.json`) : CI `deploye`, run
+34274373455, job 102223630517, étape « le SHA poussé doit être servi dans les 15 minutes »
+(succès, 20:22:17Z→20:26:12Z, 217 s — 1e1c569 encore servi de 0 s à 181 s, puis 2c3a00f à 217 s) ;
+confirmé INDÉPENDAMMENT en direct (`mcp__Vercel__web_fetch_vercel_url` sur `/api/sante`,
+20:41:44Z) : HTTP 200, `identiteCoherente:true`, lecture **CTRL-01** `"ok":true,"vide":true` —
+« aucun contrôle conclu pour l'instant » (les douze violations ramenées à `not_assessed` par
+`0149`, honnêtement rendu VIDE, pas confondu avec un passage — une lecture vide n'est pas une
+lecture qui passe, docs/PLAN_RLS.md). `1e1c569` lui-même n'a jamais reçu de confirmation servie —
+son propre run `deploye` a échoué pour de vrai ; pas un instantané périmé (contraste avec
+`fcbedf7`), un SHA qui n'a jamais été honnêtement servi.
+
 ## Lot 4 — CLOS (2026-09-08, SHA servi f2968d3)
 
 Quatre tranches en production : déplanification (tranche 1), R34/R30 partiel (tranche 2), création
