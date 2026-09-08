@@ -53,7 +53,11 @@ export interface ProcedurePlanifiee {
   papier: { id: string; code: string; status: string; version: number } | null;
 }
 
-/** Les procédures planifiées sur un poste, avec leur papier vivant (dernière version non dépassée). */
+/** Les procédures planifiées sur un poste, avec leur papier vivant (dernière version non dépassée).
+ *  Lot 4, tranche 1 : une procédure DÉPLANIFIÉE (`deplanned_at` non nul) n'est
+ *  plus une procédure planifiée — elle est exclue ici, et redevient
+ *  planifiable (`planifierProcedure`). Elle reste lisible via
+ *  `proceduresDeplanifiees`, jamais effacée (règle 28). */
 export async function proceduresPlanifiees(engagementId: string, fsliCode: string): Promise<ProcedurePlanifiee[]> {
   const cat = await catalogueDeLaMission(engagementId);
   const rows = await q<{ id: string; template_code: string; fsli_code: string; title: string; kind: string; status: string; nature: NatureDeTest; wid: string | null; wcode: string | null; wstatus: string | null; wversion: number | null }>(
@@ -63,7 +67,7 @@ export async function proceduresPlanifiees(engagementId: string, fsliCode: strin
      left join lateral (
        select w.id, w.code, w.status, w.version from workpaper w
        where w.procedure_id = p.id order by (w.status = 'outdated'), w.version desc limit 1) w on true
-     where p.engagement_id = $1 and p.fsli_code = $2
+     where p.engagement_id = $1 and p.fsli_code = $2 and p.deplanned_at is null
      order by p.created_at`,
     [engagementId, fsliCode]);
   return rows.map((r) => {
@@ -98,8 +102,12 @@ export async function planifierProcedure(o: {
   if (!poste) {
     throw new Error(`PROG-03 : le poste « ${o.fsliCode} » n’est pas retenu au périmètre — on ne planifie pas de travaux sur un poste qu’on ne travaille pas`);
   }
+  /* LOT 4, TRANCHE 1 : une ligne DÉPLANIFIÉE n'est plus « déjà existante » —
+     replanifier la même procédure sur ce poste crée une ligne NEUVE,
+     jamais une réanimation de l'ancienne (voir `deplanifierProcedure`). */
   const existante = await q01<{ id: string }>(
-    `select id::text from procedure_instance where engagement_id = $1 and fsli_code = $2 and template_code = $3`,
+    `select id::text from procedure_instance
+     where engagement_id = $1 and fsli_code = $2 and template_code = $3 and deplanned_at is null`,
     [o.engagementId, o.fsliCode, o.code]);
   if (existante) return { id: existante.id, creee: false };
   const ctx = await engagementCtx(o.engagementId);
@@ -290,6 +298,95 @@ export async function redigerPapierDeProcedure(o: {
   return { id: row.id, code, version };
 }
 
+export interface ProcedureDeplanifiee {
+  id: string; code: string; fsliCode: string; titre: string; nature: NatureDeTest;
+  papier: { id: string; code: string } | null;
+  quand: string; qui: string; motif: string | null;
+}
+
+/** Les procédures DÉPLANIFIÉES d'un poste — le travail humain qui reste
+ *  visible après une déplanification (règle 28), jamais effacé. */
+export async function proceduresDeplanifiees(engagementId: string, fsliCode: string): Promise<ProcedureDeplanifiee[]> {
+  /* LEFT JOIN sur app_user, jamais INNER (revue hostile, voix 2, constat G1) :
+     un `deplanned_by` incohérent (nul alors que `deplanned_at` est posé — l'état
+     que le cas connu mauvais de /api/sante fabrique exprès) ne doit PAS rendre
+     la ligne invisible ICI EN PLUS d'être invisible dans `proceduresPlanifiees`
+     — elle resterait alors atteignable par AUCUN écran, seulement par le 500
+     global de /api/sante (règle 13 : un objet qu'aucun chemin de lecture
+     n'atteint). Le seul point d'écriture réel (`deplanifierProcedure`) ne
+     produit jamais cet état ; cette garde ne couvre que l'écriture directe. */
+  const rows = await q<{ id: string; template_code: string; fsli_code: string; title: string; nature: NatureDeTest; quand: string; qui: string | null; motif: string | null; wid: string | null; wcode: string | null }>(
+    `select p.id::text, p.template_code, p.fsli_code, p.title, p.nature,
+            p.deplanned_at::text quand, u.name qui, p.deplanned_motif motif,
+            w.id::text wid, w.code wcode
+     from procedure_instance p
+     left join app_user u on u.id = p.deplanned_by
+     left join lateral (
+       select w.id, w.code from workpaper w
+       where w.procedure_id = p.id order by (w.status = 'outdated'), w.version desc limit 1) w on true
+     where p.engagement_id = $1 and p.fsli_code = $2 and p.deplanned_at is not null
+     order by p.deplanned_at desc`,
+    [engagementId, fsliCode]);
+  return rows.map((r) => ({
+    id: r.id, code: r.template_code, fsliCode: r.fsli_code, titre: r.title, nature: r.nature,
+    papier: r.wid ? { id: r.wid, code: r.wcode! } : null,
+    quand: (r.quand ?? '').slice(0, 10), qui: r.qui ?? '(compte inconnu — deplanned_by incohérent)', motif: r.motif,
+  }));
+}
+
+/**
+ * Lot 4, tranche 1 (mandat, Partie D.1 — « les écrans qui manquent … la
+ * déplanification d'une procédure »). DÉPLANIFIER : l'auditeur annule une
+ * planification qui ne devait pas être — sans jamais l'effacer (règle 28).
+ * La ligne reste, marquée, atteignable par `proceduresDeplanifiees` ; son
+ * papier, ses visas, ses pièces restent tous à leur place. Le POSTE, lui,
+ * redevient planifiable pour la même procédure (`planifierProcedure` exclut
+ * les lignes déplanifiées de son test d'idempotence) — une NOUVELLE ligne
+ * naît si l'auditeur replanifie, jamais une réanimation de l'ancienne :
+ * l'ancienne reste un témoin honnête (même discipline que le re-tirage,
+ * ADR-133 — un recalcul ne détruit ni n'invalide jamais en silence).
+ * REFUS :
+ *   PROG-07  le papier porte au moins un visa — même garde que PROG-06,
+ *            une déplanification périme un visa aussi sûrement qu'une
+ *            nouvelle version, et l'exige donc pour la même raison.
+ *   PROG-08  déjà déplanifiée — on ne récrit pas une décision en silence
+ *            (même garde que TIRAGE-04).
+ */
+export async function deplanifierProcedure(o: {
+  procedureId: string; userId: string; motif?: string;
+}): Promise<{ id: string }> {
+  const pi = await q01<{ id: string; engagement_id: string; template_code: string; deplanned_at: string | null }>(
+    `select id::text, engagement_id::text, template_code, deplanned_at::text deplanned_at
+     from procedure_instance where id = $1`,
+    [o.procedureId]);
+  if (!pi) throw new Error('PROG-01 : procédure inconnue');
+  await assertMembre(pi.engagement_id, o.userId, 'déplanifier une procédure');
+  if (pi.deplanned_at) {
+    const deja = await q01<{ qui: string; quand: string }>(
+      `select u.name qui, p.deplanned_at::text quand from procedure_instance p
+       join app_user u on u.id = p.deplanned_by where p.id = $1`,
+      [o.procedureId]);
+    throw new Error(`PROG-08 : cette procédure est déjà déplanifiée, par ${deja?.qui ?? '(inconnu)'} `
+      + `le ${(deja?.quand ?? '').slice(0, 10)} — on ne récrit pas une décision en silence`);
+  }
+  const dejaVise = await q01<{ n: string }>(
+    `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id
+     where w.procedure_id = $1 and w.status <> 'outdated'`, [o.procedureId]);
+  if (Number(dejaVise?.n ?? 0) > 0 && !o.motif?.trim()) {
+    throw new Error('PROG-07 : ce papier porte au moins un visa — le déplanifier exige un motif écrit');
+  }
+  await q(
+    `update procedure_instance set deplanned_at = now(), deplanned_by = $2, deplanned_motif = $3 where id = $1`,
+    [o.procedureId, o.userId, o.motif?.trim() || null]);
+  const ctx = await engagementCtx(pi.engagement_id);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: pi.engagement_id, actorKind: 'user', actorId: o.userId,
+    verb: 'procedure_deplanned', objectType: 'procedure_instance', objectId: o.procedureId,
+    payload: { code: pi.template_code, motif: o.motif?.trim() || null },
+  });
+  return { id: o.procedureId };
+}
+
 
 /* ═══ LE PROGRAMME DE TRAVAIL DU DOSSIER, VU D'UN ÉCRAN ═══════════════════ */
 
@@ -433,6 +530,9 @@ export interface PosteProgramme {
   commandees: LigneProgramme[];
   horsCommande: LigneProgramme[];
   ecartees: LigneProgramme[];
+  /** Lot 4, tranche 1 — les procédures DÉPLANIFIÉES : un travail humain qui
+   *  reste visible après une décision d'auditeur, jamais effacé (règle 28). */
+  deplanifiees: ProcedureDeplanifiee[];
 }
 
 /** Le programme de travail de TOUS les postes retenus, dans l'ordre du dossier. */
@@ -462,7 +562,10 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
        postes sur quinze qui n'affichent qu'une phrase. On demande donc d'abord
        le risque — deux requêtes — et on ne va plus loin que s'il existe. */
     const risques = await risksFor(engagementId, poste.code);
-    const planifiees = await proceduresPlanifiees(engagementId, poste.code);
+    const [planifiees, deplanifiees] = await Promise.all([
+      proceduresPlanifiees(engagementId, poste.code),
+      proceduresDeplanifiees(engagementId, poste.code),
+    ]);
     if (risques.length === 0) {
       /* ET POURTANT ON REND CE QUI EST PLANIFIÉ DESSOUS (constat 3). La
          première version enfermait les trois listes dans « le risque est
@@ -472,7 +575,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
          comptait. Mesuré par la revue : CAS-01, papier existant, invisible. */
       out.push({
         code: poste.code, nom: poste.name, risqueEvalue: false,
-        commandees: [], ecartees: [],
+        commandees: [], ecartees: [], deplanifiees,
         horsCommande: planifiees.map((x) => ({
           code: x.code, libelle: x.titre, assertion: x.assertion ?? '—',
           niveau: null, minimum: '—', pourquoi: '', taille: null, tailleDit: null,
@@ -527,6 +630,7 @@ export async function programmeDuDossier(engagementId: string): Promise<PostePro
       risqueEvalue: risques.length > 0,
       commandees,
       horsCommande,
+      deplanifiees,
       ecartees: ecartees.filter((e) => !parCode.has(e.code)).map((e) => ({
         code: e.code, libelle: e.libelle, assertion: e.assertion,
         niveau: e.level, minimum: e.requires, pourquoi: '', taille: null, tailleDit: null, nature: e.nature,

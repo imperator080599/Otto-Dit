@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-08 · 47 gestes · **346 clics** au total.
+Parcours du 2026-09-08 · 47 gestes · **348 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -28,7 +28,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | matérialité | 0 |
 | périmètre sans programme | 4 |
 | risque par assertion | 12 |
-| programme de travail | 4 |
+| programme de travail | 6 |
 | détail du compte | 1 |
 | détail du compte : le rapprochement | 3 |
 | sondage | 4 |

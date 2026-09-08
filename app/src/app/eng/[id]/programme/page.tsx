@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
-import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, atelierDeLaNature } from '@/lib/services/programme';
+import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, deplanifierProcedure, atelierDeLaNature } from '@/lib/services/programme';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { Repli } from '@/app/repli';
@@ -69,6 +69,22 @@ export default async function ProgrammePage({
     });
   }
 
+  async function deplanifierAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/programme`, async () => {
+      const { user } = await requireMember(id);
+      await deplanifierProcedure({
+        procedureId: String(formData.get('procedure')),
+        userId: user.id,
+        /* Même choix que `redigerAction` ci-dessus (ADR-091) : le motif
+           n'est pas `required` côté navigateur — PROG-07 est un refus du
+           SERVEUR, éprouvé comme tel. */
+        motif: String(formData.get('motif') ?? ''),
+      });
+      revalidatePath(`/eng/${id}/programme`);
+    });
+  }
+
   return (
     <div className="stack">
       <BandeauRefus erreur={erreur} />
@@ -124,6 +140,30 @@ export default async function ProgrammePage({
                         <> · <span className="faint" data-atelier-absent={l.code}>{t('prog.atelierAbsent')}</span></>
                       );
                     })()}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* LOT 4, TRANCHE 1 — comme hors-commande ci-dessus, une procédure
+              DÉPLANIFIÉE se voit toujours, évaluée ou non (même raisonnement) :
+              une décision d'auditeur n'est ni liée au risque ni effacée. */}
+          {poste.deplanifiees.length > 0 && (
+            <div className="callout muted" data-deplanifiees>
+              <strong>{t('prog.deplanifieesTitre', { n: poste.deplanifiees.length })}</strong>
+              <p className="faint" style={{ margin: '4px 0 0' }}>{t('prog.deplanifieesAide')}</p>
+              <ul style={{ margin: '6px 0 0' }}>
+                {poste.deplanifiees.map((l) => (
+                  <li key={l.id} data-ligne-deplanifiee={l.code}>
+                    <span className="mono">{l.code}</span> — {l.titre}{' '}
+                    <span className="faint">{t('prog.deplanifieeRaison', { qui: l.qui, quand: l.quand })}</span>
+                    {l.motif && (
+                      <> · <span className="faint">{t('prog.deplanifieeMotif', { motif: l.motif })}</span></>
+                    )}
+                    {l.papier && (
+                      <> · <Link href={`/eng/${id}/workpapers/${l.papier.id}`}>{l.papier.code}</Link></>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -204,6 +244,21 @@ export default async function ProgrammePage({
                                 </button>
                               </form>
                             )}
+                            {/* LOT 4, TRANCHE 1 — DÉPLANIFIER : le contre-geste qui
+                                n'existait pas. Le motif ne se propose que si le
+                                papier est visé (PROG-07, même garde que PROG-06) —
+                                une ligne fraîche, jamais visée, se déplanifie sans
+                                motif, exactement comme une nouvelle version se
+                                rédige sans motif tant que rien n'est visé. */}
+                            <form action={deplanifierAction} className="row" style={{ marginTop: 4 }}>
+                              <input type="hidden" name="procedure" value={l.planifiee.id} />
+                              {l.planifiee.vise && (
+                                <input type="text" name="motif" placeholder={t('prog.motifVisa')} style={{ minWidth: 220 }} />
+                              )}
+                              <button className="btn small" data-deplanifier={l.code}>
+                                {t('prog.deplanifier')}
+                              </button>
+                            </form>
                           </span>
                         )}
                       </td>

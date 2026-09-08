@@ -265,6 +265,10 @@
       "gabarit": false
     },
     {
+      "nom": "programme : une procédure se DÉPLANIFIE en un clic, et le travail reste visible dessous",
+      "gabarit": false
+    },
+    {
       "nom": "programme : le papier de la procédure se RÉDIGE depuis la ligne, et devient atteignable",
       "gabarit": false
     },
@@ -274,6 +278,10 @@
     },
     {
       "nom": "refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : déplanifier un papier VISÉ sans motif écrit est refusé par le serveur (PROG-07)",
       "gabarit": false
     },
     {
@@ -1275,6 +1283,58 @@
       "gabarit": false
     },
     {
+      "nom": "programme : chaque poste retenu porte ce que le risque lui commande",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : chaque procédure commandée affiche sa nature, avant même d’être planifiée",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : une procédure se PLANIFIE en un clic, et l’écran la montre planifiée",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : une ligne planifiée (commandée ou hors commande) montre un atelier RÉEL ou un aveu honnête « pas construit encore » — jamais rien du tout, jamais les deux",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : une procédure se DÉPLANIFIE en un clic, et le travail reste visible dessous",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : le papier de la procédure se RÉDIGE depuis la ligne, et devient atteignable",
+      "gabarit": false
+    },
+    {
+      "nom": "programme : le papier neuf porte la question de l’information produite par l’entité, et elle est répondue",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte : semé déjà rapproché — le lien remplace le bouton dès la première visite",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte : le lien mène à une demande RÉELLE (page /requests/<id>, pas une redirection décorative)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte : le rapprochement semé (3 lignes, POP-01) est visible CONCLU, pas en attente",
+      "gabarit": false
+    },
+    {
+      "nom": "rapprochement : importer le détail engendre une ligne RÉELLE, pas seulement une redirection",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure un écart non nul SANS explication est refusé par le serveur (POP-02)",
+      "gabarit": false
+    },
+    {
+      "nom": "rapprochement : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },
@@ -1292,6 +1352,42 @@
     },
     {
       "nom": "sondage : la demande de pièces naît DE la sélection, pas d’une saisie",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 5 : un bouton par type de pièce est visible, par ligne ET en lot",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : une écriture manuelle ne porte pas de facture (demanderPieceLigne)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 5, par ligne : une facture demandée sur un avoir engendre une demande RÉELLE, et le lien la remplace",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 5, en lot : une demande couvre toutes les lignes qui attendaient un bon de livraison",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : relancer le lot sur des lignes déjà toutes couvertes est refusé, pas un décor (règle 20)",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : les lignes sorties du tirage sont LISTÉES avec ce qu’elles portent",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : statuer une sortie SANS motif écrit est refusé par le serveur (TIRAGE-03)",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : chaque sortie est STATUÉE par écrit, et la décision dit qui et quand",
+      "gabarit": false
+    },
+    {
+      "nom": "re-tirage : l’obstacle au visa tombe une fois tout statué",
       "gabarit": false
     },
     {
@@ -1347,6 +1443,18 @@
       "gabarit": false
     },
     {
+      "nom": "étape 6 : la grille à deux niveaux d’en-tête est visible dès que la grille est calculée",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 6 : le premier niveau d’en-tête groupe les colonnes par TYPE de pièce (facture, bon de livraison)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 6 : une ligne du tableau par ligne d’échantillon dont la grille porte des cellules",
+      "gabarit": false
+    },
+    {
       "nom": "grille : une ligne montre sa bande de cellules à droite, sous la pièce — avec un delta signé et une ancre",
       "gabarit": false
     },
@@ -1384,6 +1492,38 @@
     },
     {
       "nom": "avertissement : les lignes non conclues sont dites, en avertissement — ce pack ne bloque pas le visa pour autant",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7 : le formulaire d’ajout de colonne est visible dès que la grille existe",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : un titre qui pourrait viser plusieurs données du catalogue est REFUSÉ (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : un titre qui ne touche aucune donnée du catalogue est REFUSÉ (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7 : un titre net ajoute la colonne (badge « ajoutée ») ET calcule la grille, en un seul clic",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : ajouter deux fois la même donnée est un DOUBLON refusé (COL-01)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7 : une seconde colonne ajoutée (autre donnée, même pièce) s’ajoute à la première, jamais ne la remplace",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7, par ligne : demander la pièce d’UNE colonne ajoutée couvre les DEUX colonnes ajoutées de ce type sur la ligne (REQ-02 par pièce, jamais par colonne)",
+      "gabarit": false
+    },
+    {
+      "nom": "étape 7, en lot : un clic couvre toutes les lignes qui attendaient encore la pièce d’une colonne ajoutée",
       "gabarit": false
     },
     {
@@ -1865,10 +2005,13 @@
     "risque : aucun formulaire de questionnaire à l’écran",
     "risque : une réponse au questionnaire ne s’enregistre pas",
     "risque : la réponse au questionnaire est REFUSÉE",
+    "refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)",
+    "refus : déplanifier un papier VISÉ sans motif écrit est refusé par le serveur (PROG-07)",
     "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
     "ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)",
     "refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)",
     "refus : aucune ligne avec une cellule non conforme à disposer — les refus TEST-03/TEST-04 n’ont pas pu être observés ici",
+    "étape 7, en lot : bouton absent alors que deux colonnes ajoutées de type facture existent",
     "atelier clavier : au moins deux lignes à parcourir",
     "atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne",
     "atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer",

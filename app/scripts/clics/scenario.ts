@@ -1041,6 +1041,37 @@ export async function conduire(
         false, 'AUCUNE procédure à planifier sur ce dossier — l’écran n’offre plus le geste');
     }
 
+    /* DÉPLANIFIER — le contre-geste qui n'existait nulle part (Lot 4,
+       tranche 1). On plante ICI une ligne FRAÎCHE, dédiée à cette seule
+       démonstration, plutôt que de réutiliser celle que « rédiger » ou le
+       refus PROG-06/PROG-07 emploient plus loin dans cette même station :
+       une collision romprait leurs assertions sans que ce soit la faute de
+       la déplanification. */
+    const encoreAPlanifier = await compte('[data-planifier]');
+    if (encoreAPlanifier > 0) {
+      const f2 = p.locator('form:has([data-planifier])').first();
+      const codeDeplan = await f2.locator('[data-planifier]').first().getAttribute('data-planifier');
+      await soumettre(f2.locator('button').first());
+      await aller(`${eng}/programme`);
+
+      const ligneFraiche = codeDeplan
+        ? p.locator(`[data-commandees] tr[data-ligne-programme="${codeDeplan}"] form:has([data-deplanifier])`)
+        : null;
+      if (ligneFraiche && await ligneFraiche.count()) {
+        await soumettre(ligneFraiche.locator('button').first());
+        await aller(`${eng}/programme`);
+        dire('programme : une procédure se DÉPLANIFIE en un clic, et le travail reste visible dessous',
+          !refus(p) && (await compte(`[data-ligne-deplanifiee="${codeDeplan}"]`)) > 0,
+          refus(p) ?? `ligne ${codeDeplan} déplanifiée, visible dans le panneau dédié`);
+      } else {
+        dire('programme : une procédure se DÉPLANIFIE en un clic, et le travail reste visible dessous',
+          false, `ligne ${codeDeplan ?? '?'} planifiée mais son bouton « déplanifier » est introuvable`);
+      }
+    } else {
+      dire('programme : une procédure se DÉPLANIFIE en un clic, et le travail reste visible dessous',
+        false, 'AUCUNE procédure à planifier pour démontrer la déplanification sur ce dossier — l’écran n’offre plus le geste');
+    }
+
     /* RÉDIGER LE PAPIER — depuis la même ligne, sans changer d'écran. */
     if (await compte('[data-rediger]')) {
       const g = p.locator('form:has([data-rediger])').first();
@@ -1125,6 +1156,20 @@ export async function conduire(
       await soumettre(visees.first().locator('button').first());
       dire('refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)',
         /PROG-06/.test(refus(p) ?? ''),
+        refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+      await aller(`${eng}/programme`);
+    }
+
+    /* LE REFUS PROG-07, EMPRUNTÉ AUSSI (Lot 4, tranche 1) : même ligne visée
+       que PROG-06 ci-dessus — le même geste, une garde différente. On
+       s'arrête à la preuve du refus, JAMAIS en soumettant un motif : compléter
+       la déplanification effacerait la ligne que ce parcours entier utilise
+       plus loin (rédaction, visas). */
+    const visesADeplanifier = p.locator('form:has(input[name=motif]):has([data-deplanifier])');
+    if (await visesADeplanifier.count()) {
+      await soumettre(visesADeplanifier.first().locator('button').first());
+      dire('refus : déplanifier un papier VISÉ sans motif écrit est refusé par le serveur (PROG-07)',
+        /PROG-07/.test(refus(p) ?? ''),
         refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
       await aller(`${eng}/programme`);
     }

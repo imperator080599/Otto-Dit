@@ -840,6 +840,18 @@ export const LIBELLES = {
   'prog.natureColonne': { en: 'Nature', fr: 'Nature' },
   'prog.allerAtelier': { en: 'Open the workshop', fr: 'Ouvrir l’atelier' },
   'prog.atelierAbsent': { en: 'no workshop built yet for this test’s nature', fr: 'aucun atelier construit encore pour cette nature de test' },
+  /* LOT 4, TRANCHE 1 (mandat, Partie D.1 — « les écrans qui manquent … la
+     déplanification d'une procédure »). Le motif réutilise `prog.motifVisa` :
+     même geste (une action qui périme un visa exige un motif écrit),
+     même champ, pas de doublon de libellé. */
+  'prog.deplanifier': { en: 'Un-plan it', fr: 'Déplanifier' },
+  'prog.deplanifieesTitre': { en: '{n} procedure(s) un-planned — the work stays visible', fr: '{n} procédure(s) déplanifiée(s) — le travail reste visible' },
+  'prog.deplanifieesAide': {
+    en: 'A human decision reversed a planning — never the risk. What was drafted underneath is not erased: its workpaper, its sign-offs, its evidence stay reachable here.',
+    fr: 'Une décision humaine a annulé une planification — jamais le risque. Ce qui était rédigé dessous n’est pas effacé : son papier, ses visas, ses pièces restent atteignables ici.',
+  },
+  'prog.deplanifieeRaison': { en: 'un-planned by {qui} on {quand}', fr: 'déplanifiée par {qui} le {quand}' },
+  'prog.deplanifieeMotif': { en: 'Reason: {motif}', fr: 'Motif : {motif}' },
   'rail.programme': { en: 'Audit procedures', fr: 'Programme de travail' },
   'rail.quoi.programme': { en: 'What the risk commands, planned procedure by procedure.', fr: 'Ce que le risque commande, procédure par procédure planifiée.' },
   'rail.raison.apresRisque': { en: 'as soon as a risk is assessed on a line item', fr: 'dès qu’un risque est évalué sur un poste' },

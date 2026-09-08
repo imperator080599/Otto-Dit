@@ -9,7 +9,7 @@ import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconci
 import { rebuildFslis, proposeScoping } from './fsli';
 import { propose, validate } from './materiality';
 import { assessFsli, risksFor, overrideLevel, requiredProcedures } from './risk';
-import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, atelierDeLaNature } from './programme';
+import { programmeDuDossier, planifierProcedure, redigerPapierDeProcedure, deplanifierProcedure, atelierDeLaNature } from './programme';
 import { signWorkpaper } from './workpapers/lifecycle';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 
@@ -249,5 +249,79 @@ describe('le programme de travail', () => {
     expect(planifiee, 'aucune procédure planifiée à ce point du fichier : la fixture ne prouve rien').toBeDefined();
     const attendu = cat.procedures.find((p) => p.code === planifiee.code)!.nature;
     expect(planifiee.nature).toBe(attendu);
+  });
+
+  it('Lot 4, tranche 1 — déplanifier une procédure NON visée : le travail reste visible (règle 28), la ligne redevient planifiable, et REPLANIFIER crée une ligne NEUVE, jamais une réanimation', async () => {
+    const poste = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    const cible = poste.commandees.find((l) => l.planifiee === null)!;
+    expect(cible, 'aucune ligne non planifiée à ce point du fichier : la fixture ne prouve rien').toBeDefined();
+    const { id: procedureId } = await planifierProcedure({
+      engagementId: IDS.engNep, fsliCode: POSTE, code: cible.code, userId: IDS.users.karim,
+    });
+
+    await deplanifierProcedure({
+      procedureId, userId: IDS.users.karim,
+      motif: 'Doublon avec une autre procédure déjà planifiée — planification par erreur.',
+    });
+
+    const apres = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    expect(apres.commandees.find((l) => l.code === cible.code)!.planifiee,
+      'la ligne ne redevient pas planifiable après déplanification').toBeNull();
+    const ligneDeplanifiee = apres.deplanifiees.find((d) => d.id === procedureId);
+    expect(ligneDeplanifiee, 'la déplanification a disparu au lieu de rester visible (règle 28)').toBeDefined();
+    expect(ligneDeplanifiee!.qui).toBe('Karim Benali');
+    expect(ligneDeplanifiee!.motif).toContain('Doublon');
+
+    /* REPLANIFIER LA MÊME PROCÉDURE : une ligne NEUVE, jamais une réanimation
+       de l'ancienne (voir le commentaire de deplanifierProcedure). Une
+       réanimation silencieuse effacerait le motif/qui/quand déjà écrits. */
+    const replan = await planifierProcedure({
+      engagementId: IDS.engNep, fsliCode: POSTE, code: cible.code, userId: IDS.users.karim,
+    });
+    expect(replan.creee, 'la voie réelle réanime la ligne déplanifiée au lieu d’en créer une neuve').toBe(true);
+    expect(replan.id).not.toBe(procedureId);
+
+    const final = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    expect(final.commandees.find((l) => l.code === cible.code)!.planifiee!.id).toBe(replan.id);
+    expect(final.deplanifiees.some((d) => d.id === procedureId),
+      'l’ancienne ligne déplanifiée disparaît après la replanification : le témoin n’est plus honnête').toBe(true);
+  });
+
+  it('REFUS PROG-07 — déplanifier un papier VISÉ sans motif écrit est refusé ; avec motif, la déplanification passe', async () => {
+    const poste = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    const cible = poste.commandees.find((l) => l.planifiee === null)!;
+    expect(cible, 'aucune ligne non planifiée à ce point du fichier : la fixture ne prouve rien').toBeDefined();
+    const { id: procedureId } = await planifierProcedure({
+      engagementId: IDS.engNep, fsliCode: POSTE, code: cible.code, userId: IDS.users.karim,
+    });
+    const papier = await redigerPapierDeProcedure({ procedureId, userId: IDS.users.karim });
+    await signWorkpaper(papier.id, IDS.users.karim, 'preparer_validator');
+
+    const avecVisa = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!
+      .commandees.find((l) => l.code === cible.code)!;
+    expect(avecVisa.planifiee!.vise, 'le papier n’est pas annoncé visé : le cas ne se joue pas').toBe(true);
+
+    await expect(deplanifierProcedure({ procedureId, userId: IDS.users.karim }))
+      .rejects.toThrow(/PROG-07/);
+
+    await deplanifierProcedure({
+      procedureId, userId: IDS.users.karim,
+      motif: 'Le poste a été réévalué : cette procédure double celle déjà conduite ailleurs.',
+    });
+    const apres = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    expect(apres.deplanifiees.some((d) => d.id === procedureId)).toBe(true);
+  });
+
+  it('REFUS PROG-08 — déplanifier une procédure DÉJÀ déplanifiée est refusé, en nommant qui et quand', async () => {
+    const poste = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;
+    const cible = poste.commandees.find((l) => l.planifiee === null)!;
+    expect(cible, 'aucune ligne non planifiée à ce point du fichier : la fixture ne prouve rien').toBeDefined();
+    const { id: procedureId } = await planifierProcedure({
+      engagementId: IDS.engNep, fsliCode: POSTE, code: cible.code, userId: IDS.users.karim,
+    });
+    await deplanifierProcedure({ procedureId, userId: IDS.users.karim, motif: 'Première déplanification.' });
+
+    await expect(deplanifierProcedure({ procedureId, userId: IDS.users.lea, motif: 'Seconde tentative.' }))
+      .rejects.toThrow(/PROG-08.*Karim Benali/s);
   });
 });

@@ -646,6 +646,38 @@ async function corpsDeLaSonde() {
       const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
       return `${n} procédure(s) rapprochement planifiée(s)${noteCash}${detailHorsCash}`;
     }));
+    /* LOT 4, TRANCHE 1 (mandat, Partie D.1 — « les écrans qui manquent … la
+       déplanification d'une procédure », livrée ce jour, lue ce jour, règle
+       22). `deplanned_at`/`deplanned_by`/`deplanned_motif` (migration 0147)
+       sont posés ENSEMBLE par le SEUL point d'écriture, `deplanifierProcedure`
+       — `deplanned_at` et `deplanned_by` toujours les deux ou ni l'un ni
+       l'autre. Cette lecture n'interroge PAS ce point d'écriture (il est
+       couvert par ses propres tests, programme-vue.test.ts) : elle interroge
+       la BASE, comme ses deux jumelles d'atelier — le risque qu'un futur code
+       (une migration de données, un correctif direct, un second point
+       d'écriture qui divergerait) pose l'un sans l'autre, en silence.
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien de
+       `deplanned_motif`, volontairement NULLABLE même quand la déplanification
+       a réussi (PROG-07 ne l'exige que si le papier était visé) — un motif
+       absent sur une ligne jamais visée est un état ATTENDU, pas un défaut. */
+    lectures.push(await essayer('déplanification cohérente (Lot 4, tranche 1)', async () => {
+      const incoherentes = await q01<{ n: string }>(
+        `select count(*) n from procedure_instance
+         where engagement_id = $1 and (deplanned_at is not null) <> (deplanned_by is not null)`,
+        [id]);
+      const nIncoherentes = Number(incoherentes?.n ?? 0);
+      if (nIncoherentes > 0) {
+        throw new Error(`${nIncoherentes} procédure(s) déplanifiée(s) incohéremment — deplanned_at et `
+          + 'deplanned_by devraient toujours être posés ENSEMBLE, jamais l’un sans l’autre');
+      }
+      const total = await q01<{ n: string }>(
+        `select count(*) n from procedure_instance where engagement_id = $1 and deplanned_at is not null`,
+        [id]);
+      const n = Number(total?.n ?? 0);
+      return n > 0
+        ? `${n} procédure(s) déplanifiée(s), toutes cohérentes (qui et quand posés ensemble)`
+        : 'aucune procédure déplanifiée encore';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

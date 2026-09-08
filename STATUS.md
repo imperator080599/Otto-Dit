@@ -167,6 +167,100 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 4, tranche 1 : la déplanification d'une procédure (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (« Lot 4 — L'épure
+(Partie D.6) et les écrans qui manquent : re-tirage avec sa règle, **déplanification d'une
+procédure**, création de dossier de bout en bout. ») ; `docs/MANDATS/2026-09-07_permission_de_nuit.md`,
+point 2 (« Continue through the plan without waiting for me… then Lot 4. »). Première tranche du
+Lot 4 : un auditeur peut désormais annuler la planification d'une procédure — ce n'est plus
+seulement le risque qui décide, c'est un humain — SANS jamais effacer le travail déjà fait
+(règle 28) : la ligne reste visible, avec qui/quand/motif, son papier, ses visas, ses pièces,
+toujours atteignables. Aucun contenu de procédure neuf, aucun poste neuf (règle 8/14).*
+
+**Ce qui a changé :**
+- `supabase/migrations/0147_deplanification.sql` (nouvelle) — trois colonnes nullables sur
+  `procedure_instance` (`deplanned_at`, `deplanned_by`, `deplanned_motif`), délibérément SANS
+  contrainte CHECK forçant « les deux ou aucun » — la garde de cohérence vit dans la lecture
+  `/api/sante` (règle 17 : un instrument testé contre un cas connu mauvais, pas une contrainte
+  qui empêcherait même le cas de se produire pour l'éprouver).
+- `programme.ts` — `deplanifierProcedure({procedureId, userId, motif?})` : refuse **PROG-07**
+  (papier visé sans motif écrit — même garde `dejaVise` que PROG-06, caractère pour caractère) et
+  **PROG-08** (déjà déplanifiée — nomme qui et quand, même idiome que TIRAGE-04 dans
+  `sampling.ts`). `proceduresDeplanifiees(engagementId, fsliCode)` (nouvelle). `proceduresPlanifiees`
+  exclut désormais les lignes déplanifiées ; `planifierProcedure` fait de même dans son test
+  d'idempotence — REPLANIFIER crée une ligne NEUVE, jamais une réanimation de l'ancienne :
+  l'ancienne reste un témoin honnête (même discipline que le re-tirage, ADR-133).
+- `/api/sante` — nouvelle lecture « déplanification cohérente (Lot 4, tranche 1) » : compte les
+  lignes où `deplanned_at`/`deplanned_by` sont posés l'un sans l'autre et LÈVE (HTTP 500 sur toute
+  la route) si ce compte est non nul ; sinon rend le compte de lignes déplanifiées, ou « aucune
+  procédure déplanifiée encore ». Nomme sa propre limite (règle 19) : elle ne dit rien de
+  `deplanned_motif`, nullable même en succès (PROG-07 ne l'exige que si le papier était visé).
+- `programme/page.tsx` — bouton « Déplanifier » par ligne planifiée (motif visible seulement si
+  la ligne est visée, jamais `required` côté navigateur — PROG-07 est un refus SERVEUR, ADR-091),
+  et un panneau listant les lignes déplanifiées (qui, quand, motif, lien vers le papier).
+- `catalogue.ts` — 5 clés `prog.deplanifier*` ; réutilise `prog.motifVisa` pour le champ motif
+  plutôt que d'en dupliquer un.
+- `programme-vue.test.ts` — 3 tests neufs (bonheur : ligne redevient planifiable, replanifier crée
+  une ligne neuve ; PROG-07 avec/sans motif ; PROG-08 nommant qui/quand).
+- `deplanification-lecture.test.ts` (nouveau) — 3 tests dont un CAS CONNU MAUVAIS (règle 17) :
+  écriture directe en base de `deplanned_at` sans `deplanned_by`, confirmé faire rougir
+  `/api/sante` en HTTP 500, puis confirmé revert au vert après nettoyage.
+- `scripts/clics/scenario.ts` — un geste de déplanification (plante une ligne FRAÎCHE dédiée pour
+  éviter une collision d'état avec « rédiger »/PROG-06 plus loin dans la même station) et un
+  refus PROG-07 EMPRUNTÉ (même idiome opportuniste que PROG-06 : s'il n'y a aucune ligne visée à
+  ce moment précis du parcours, la station n'enregistre aucune assertion, ni ok ni échec — un
+  comportement PRÉEXISTANT que PROG-07 imite délibérément, pas un défaut nouveau).
+
+**Un faux départ, corrigé avant toute mesure retenue** : le premier `npm run clics` de la tranche
+a tourné sur une base PGlite non réamorcée depuis une activité antérieure de la session (`app/.data`
+laissé par un travail précédent) — 66 échecs en cascade (« engagement is locked »), y compris un
+HTTP 500 sur `/programme`. Hypothèse (règle 18) : base périmée, pas régression du code neuf.
+PROUVÉE en réamorçant (`npm run db:reset && npm run demo:seed`) et en rejouant : **227 étapes
+conduites · 0 échec · 348 clics**, aucune station figée manquante, l'HTTP 500 disparu. CLAUDE.md
+documente déjà ce piège (§6) ; il n'avait simplement pas été respecté au premier lancement — geste
+de l'agent, pas du produit.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30), chacun exécutant réellement le
+code et mutant adversairement :
+- **Voix 1** — 12 constats (R1-01 à R1-12), tous confirmés par exécution : tsc propre ; 47/47
+  tests élargis verts (aucune régression sur Lot 1-3) ; TROIS mutations adversariales (filtre
+  `deplanned_at is null` retiré, garde `/api/sante` `<>`→`=`, PROG-08 inversé) chacune détectée
+  par les tests puis revertée exactement (`git diff` byte-identique) ; PROG-07/PROG-08 confirmés
+  alignés caractère pour caractère avec PROG-06/TIRAGE-04 ; aucune sur-affirmation trouvée.
+  **Verdict : SHIP AS-IS.**
+- **Voix 2** — conventions du fichier (assertMembre/engagementCtx/logEvent identiques aux
+  fonctions voisines), UI (FormData, `null` gardés, route `/workpapers/[wid]` vérifiée réelle),
+  cas connu mauvais rejoué et sa garde mutée-puis-restaurée (`md5sum` identique), un test mué
+  pour prouver qu'il détecte vraiment sa propre garde et pas une autre. **Constat G1** (mineur,
+  non bloquant) : `proceduresDeplanifiees` joignait `app_user` en INNER — un état incohérent
+  (`deplanned_by` nul) aurait disparu de CETTE liste EN PLUS de `proceduresPlanifiees`, invisible
+  sur tout écran alors que `/api/sante` le voit (règle 13/19). **Corrigé** : LEFT JOIN + repli
+  écrit (« compte inconnu — deplanned_by incohérent ») ; tsc et les 30 tests ciblés revérifiés
+  verts après correctif. **Constat G2** : un rougissement isolé de PROG-08 observé une fois,
+  non reproduit sur 4 relances immédiates ni sur la relance finale — signalé sans diagnostic
+  (règle 18), à surveiller, jamais traité comme un défaut prouvé. **Verdict : SHIP WITH MINOR
+  FIXES** — appliqué.
+
+**Chaîne verify complète, DEUX passages propres sur arbre gelé** (règle 34/35 forme opérative,
+`timeout 3600` explicite) : le premier (`verify-lot4-tranche1-final.log`, après le correctif G1)
+— tsc propre, vitest **903/903** (112/112 fichiers, 447.18 s), gardes 43, plancher 903 collectés
+· 632 · aucune forme éteinte/isolée, langue 0 hors catalogue · 0 en dur · 39 différés · 45
+exclues · 14 refus documentés, langue:épreuve 15/15, lectures 0 perdue sur 1716 chemins figés
+dans 86 écrans, lectures:épreuve 6/6, parcours **271 déclarées · 271 figées · 0 perdue**,
+parcours:épreuve 5/5, screens 87 routes · 0 échec, fumee 51 routes · 0 échec, densite 77 écrans ·
+0 dépassement · 108 champs, clics **227 étapes · 0 échec · 348 clics sur 47 gestes** (garde du
+parcours : 226 stations figées VÉRIFIÉES), visuel 312 vues · 0 défaut. Les 2 nouvelles stations
+clics ont été figées (`npm run clics -- --figer`, sur base fraîchement réamorcée) entre les deux
+passages complets — un premier essai de figeage a été perdu à un redémarrage de conteneur en
+cours d'exécution (règle 34 : un run interrompu se dit, ne se cache pas ; aucun fichier n'a été
+laissé dans un état partiel — vérifié, `docs/PARCOURS.json` intact) et rejoué proprement depuis
+un réamorçage complet.
+
+**Suite** : Lot 4 tranche 2 (re-tirage avec sa règle — R30), tranche 3 (création de dossier de
+bout en bout), tranche 4 (les six vérifications D.6, chacune née en avertissement avec sa
+fixture de faux positif, règle 25).
+
 ## Lot 2 du plan d'autonomie, étapes 1 et 2 : le détail du compte, puis son rapprochement (2026-09-06)
 
 *Rattrapage règle 5 : ni le commit d'étape 1 (`a46f4f5`) ni ses deux commits de confirmation
