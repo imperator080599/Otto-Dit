@@ -8,6 +8,17 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot 4 — CLOS (2026-09-08, SHA servi f2968d3)
+
+Quatre tranches en production : déplanification (tranche 1), R34/R30 partiel (tranche 2), création
+de dossier de bout en bout (tranche 3), D.6 points 1 et 3 de l'épreuve de l'épure (tranche 4a).
+Les quatre autres points de D.6 (rail par défaut, compteur qui mène quelque part, aucun état vide
+muet, parcours découverte chronométré) ne sont PAS traités — reportés, pas oubliés (règle 23) :
+**R59, R60, R61, R62** (`docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json`). Clôture décidée
+sur la base du mandat du 2026-09-08, §0, qui nomme explicitement les huit tranches déjà livrées du
+Lot 4 comme ayant « fermé de la dette et affiné l'épure » et demande d'orienter la suite vers la
+CAPACITÉ neuve. Le lot suivant (§0 du nouveau mandat) commence ci-dessous.
+
 ## Reprendre ce dossier sans moi — l'essentiel en une page
 
 **Ce qu'est OTTO.** Une plateforme d'audit AI-native : noyau agnostique du référentiel, packs de

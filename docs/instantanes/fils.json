@@ -219,6 +219,30 @@
       "note": "non corrigé : hypothèse forte (processus parasite), non prouvée. Découverte annexe corrigée dans le même geste : la forme opérative de la règle 35 (CLAUDE.md) manquait `set -o pipefail`, rendant `EXIT=$?` après `| tee` inutilisable (reflète tee, pas la commande réelle) — prouvé en local, corrigé. Si le symptôme récidive sur un arbre mesuré propre (aucun processus parasite), rouvrir l'enquête dans docs/CHASSE.md plutôt que de re-tenter la même explication."
     },
     {
+      "id": "R59",
+      "etat": "reporté — D.6 point 2 (le rail n'ouvre par défaut que les groupes portant du travail) non traité : entre en tension avec ADR-103 (le rail grisé-avec-raison déjà en place dans nav.tsx) et recoupe le fil déjà déféré R39/DA-33. Nécessite un plafond honnête qui laisse le déplié-par-défaut intact, ou un arbitrage explicite du fondateur — décidé de ne pas deviner.",
+      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
+      "note": "Lot 4 clos sans ce point (mandat contrôle interne du 2026-09-08, §0 : orienter vers la capacité, pas le polissage). Reporté au Lot 4a suivant ou à un mandat qui le nomme."
+    },
+    {
+      "id": "R60",
+      "etat": "reporté — D.6 point 4 (tout compteur affiché mène quelque part) non traité : aucune fixture de faux positif écrite, aucun inventaire des compteurs affichés fait.",
+      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+    },
+    {
+      "id": "R61",
+      "etat": "reporté — D.6 point 5 (aucun état vide muet) non traité : le cas layout.tsx:59 (portail client) identifié comme premier candidat de fixture (règle 25), jamais construit.",
+      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+    },
+    {
+      "id": "R62",
+      "etat": "reporté — D.6 point 6 (parcours « découverte » chronométré avec plafond verdict) non traité : distinct du compteur descriptif déjà mesuré par npm run clics (362 clics/48 gestes).",
+      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

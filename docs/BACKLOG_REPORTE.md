@@ -600,3 +600,36 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   cause à effet entre la boucle orpheline et le crash reste une hypothèse forte, non une preuve ;
   si le symptôme récidive sur un arbre propre (aucun processus parasite mesuré), rouvrir
   l'enquête dans `docs/CHASSE.md` plutôt que de re-tenter la même explication.
+
+- **R59 — D.6 point 2 (le rail par défaut) reste NON traité.** Mandat
+  `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, §D.6 : « Le rail n'ouvre par défaut que les
+  groupes portant du travail sur ce dossier ; un test compte les destinations visibles au premier
+  rendu et échoue au-delà d'un plafond. » Recherche de la tranche 4a (2026-09-08) : ce point entre
+  directement en tension avec une décision déjà prise et documentée dans `nav.tsx` (le rail montre
+  l'état du dossier — « le reste est GRISÉ avec sa raison en une ligne derrière "tout afficher",
+  jamais masqué sans explication », ADR-103) et recoupe le fil déjà déféré R39/DA-33 (« hors
+  périmètre d'un seul geste »). Ni implémenté ni tranché : nécessite soit un plafond honnête qui
+  laisse le comportement déplié-par-défaut intact, soit un arbitrage explicite du fondateur —
+  décidé de ne pas deviner. Reporté au Lot 4a suivant ou à un mandat qui le nomme.
+- **R60 — D.6 point 4 (tout compteur mène quelque part) reste NON traité.** Même mandat, §D.6 :
+  « Tout compteur affiché conduit quelque part : un test échoue sur un compteur sans lien. » Aucune
+  fixture de faux positif écrite (règle 25 : une famille bloquante neuve naît en avertissement sauf
+  démonstration du contraire) ; aucun inventaire des compteurs affichés dans l'application n'a été
+  fait. Travail non commencé.
+- **R61 — D.6 point 5 (aucun état vide muet) reste NON traité.** Même mandat, §D.6 : « toute section
+  vide porte une phrase qui dit quoi faire et le geste proposé. » Le cas `layout.tsx:59` (portail
+  client) identifié en recherche comme premier candidat de fixture de faux positif (règle 25),
+  jamais construit. Travail non commencé.
+- **R62 — D.6 point 6 (parcours « découverte » chronométré, avec plafond) reste NON traité.** Même
+  mandat, §D.6 : « sans lire le rail, atteindre ses travaux, comprendre ce qui empêche de signer,
+  conclure une ligne d'échantillon. Chaque étape mesure le nombre de clics et échoue au-delà du
+  plafond fixé. » Distinct du compteur de clics DESCRIPTIF déjà mesuré par `npm run clics`
+  (362 clics sur 48 gestes) : celui-ci demande un VERDICT qui échoue au-delà d'un seuil, jamais
+  construit. Travail non commencé.
+
+**Ces quatre points ferment le Lot 4 tel que défini par `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`,
+§D.6 — délibérément non achevés ici : le mandat du 8 septembre 2026
+(`docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §0) nomme explicitement les huit tranches
+déjà livrées du Lot 4 comme ayant « fermé de la dette et affiné l'épure » et demande d'orienter la
+suite vers la CAPACITÉ neuve plutôt que le polissage — Lot 4 est donc considéré clos avec ce qui est
+en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement abandonnés (règle 23).**
