@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "8af38ab8c0fa37b3cea6fe1d7f6d1b32f627999b",
+  "sha": "e6089e1a7295eaf3014e83b6c5e4d39fa8b5d3b2",
   "mesure": {
-    "quand": "2026-09-08T07:23:36Z",
-    "par": "CI, travail `deploye`, run 34198761606, job 101973416384, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 07:23:28Z→07:23:36Z, 0 s — l'instance servait déjà 8af38ab au premier sondage, commit documentation seule après fcbedf7, pas de rebuild nécessaire). Lot 3, tranche 4 : SHA servi confirmé = fcbedf7 — LOT 3 COMPLET (commit de pure confirmation, contenu applicatif identique à fcbedf7).",
+    "quand": "2026-09-08T09:47:00Z",
+    "par": "CI, travail `deploye`, run 34211585902, job 102013608009, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 09:43:53Z→09:47:00Z, 180 s — 0 s HTTP 500 pendant la reconstruction, puis 05b9171 servi de 28 s à 155 s, puis e6089e1 à 180 s). Lot 4, tranche 1 : la déplanification d'une procédure. Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation, pour ne pas répéter la staleness du 2026-09-08 matin (voir l'entrée 8af38ab ci-dessous).",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "8af38ab8c0fa37b3cea6fe1d7f6d1b32f627999b",
+      "quand": "2026-09-08T07:23:36Z",
+      "par": "CI, travail `deploye`, run 34198761606, job 101973416384, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 07:23:28Z→07:23:36Z, 0 s — l'instance servait déjà 8af38ab au premier sondage, commit documentation seule après fcbedf7, pas de rebuild nécessaire). Lot 3, tranche 4 : SHA servi confirmé = fcbedf7 — LOT 3 COMPLET (commit de pure confirmation, contenu applicatif identique à fcbedf7)."
+    },
     {
       "sha": "fcbedf7855b0cb9e02776af270fc6ed3496acfb1",
       "quand": "2026-09-08T07:17:46Z",
