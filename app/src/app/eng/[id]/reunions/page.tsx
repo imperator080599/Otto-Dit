@@ -3,6 +3,7 @@ import {
   contactsDeLaMission, contactsDisponibles, proposerCreneaux, invitations,
 } from '@/lib/services/reunions';
 import { BandeauRefus } from '@/app/bandeau-refus';
+import { separerCode } from '@/app/refus';
 import { declarerCleAction, declarerDomaineAction, choisirCreneauAction, envoyerAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
@@ -101,7 +102,20 @@ export default async function ReunionsPage({
           <label className="row" style={{ gap: 4 }}>{t('reun.durationMin')} <input name="duree" defaultValue={duree ?? '60'} style={{ width: 60 }} /></label>
           <button className="btn secondary small">{t('reun.findTheCommonSlots')}</button>
         </form>
-        {refusCreneaux && <div className="callout danger mt">{refusCreneaux}</div>}
+        {refusCreneaux && (() => {
+          /* D.6 point 1 (mandat, épreuve de l'épure) : cette lecture ne
+             passe pas par BandeauRefus (elle n'est pas un refus d'ACTION
+             posté via `?erreur=` — « rien n'a été enregistré » serait faux
+             ici, aucune écriture n'était tentée), donc elle réordonne
+             elle-même phrase puis code, en petit. */
+          const { code, phrase } = separerCode(refusCreneaux);
+          return (
+            <div className="callout danger mt">
+              {phrase}
+              {code && <span className="faint mono"> ({code})</span>}
+            </div>
+          );
+        })()}
         {proposition && (
           <>
             {/* QUI A ÉTÉ LU, PAR QUEL ADAPTATEUR, ET COMBIEN DE CRÉNEAUX EN SORTENT.

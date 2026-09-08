@@ -48,6 +48,20 @@ export interface BlocPoste {
   href: string | null;
 }
 
+/* D.6 point 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre par
+   défaut que les sections portant du contenu. » `a_faire` (rien commencé) et
+   `sans_objet` (rien à voir — l'écart ou la demande n'existe pas) sont les
+   deux façons d'être VIDE ; `en_cours` et `fait` portent du contenu. NE
+   VÉRIFIE PAS le contenu réel de la section (une liste vide malgré un état
+   `en_cours` resterait ouverte) : c'est une lecture de l'ÉTAT DÉRIVÉ, pas un
+   second passage sur les lignes. Et ne s'applique QU'AU PREMIER RENDU, sans
+   préférence mémorisée pour cette personne — un repli explicitement rouvert
+   ou refermé reste tel quel (`Repli`, `repli.tsx`) : cette fonction ne
+   choisit jamais contre un geste humain déjà écrit. */
+export function blocPorteContenu(etat: EtatBloc): boolean {
+  return etat !== 'a_faire' && etat !== 'sans_objet';
+}
+
 /**
  * UNE LIGNE DE LEADSHEET : N, N-1, variation — et ses RÉFÉRENCES CROISÉES
  * (revue n°2 §3.2).

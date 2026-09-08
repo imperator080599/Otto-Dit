@@ -38,6 +38,29 @@ export const estUnSignalDeNext = estUnSignalDeControleDeFlux;
 /** Le paramètre d'URL qui porte le refus — lu par BandeauRefus et par les harnais. */
 const CLE_REFUS = 'erreur';
 
+/* D.6 point 1 (mandat, épreuve de l'épure) : « Aucun identifiant technique en
+   première position d'un message vu par un auditeur. Le refus dit la chose en
+   français ; le code vient après, en petit. » Chaque service écrit encore
+   « CODE : phrase » (des dizaines de sites d'appel, non réécrits — règle 8) ;
+   c'est donc CET ENDROIT UNIQUE, utilisé par BandeauRefus pour l'affichage,
+   qui réordonne. NE VÉRIFIE PAS que le code existe au catalogue des erreurs
+   ni qu'il est bien formé au sens métier : reconnaît une FORME
+   (« MAJUSCULES[-MAJUSCULES...] : ») en tête de chaîne, rien de plus — un
+   motif qui commencerait par un mot entièrement capitalisé suivi de « : »
+   sans être un code technique serait, lui aussi, réordonné.
+
+   `erreur` EST TYPÉ `string`, MAIS UNE URL AVEC `?erreur=` RÉPÉTÉ NE L'EST
+   PAS TOUJOURS EN VRAI (revue hostile, F3) : Next rend alors un tableau à
+   l'exécution malgré le typage — exactement le genre de refus qui, sans
+   garde, tombait en page 500 avant que ce fichier existe (règle 13). D'où
+   la vérification `typeof` avant tout `.match`, à la frontière de l'URL. */
+export function separerCode(erreur: string): { code: string | null; phrase: string } {
+  if (typeof erreur !== 'string') return { code: null, phrase: String(erreur) };
+  const m = erreur.match(/^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*)\s*:\s*(.+)$/s);
+  if (!m) return { code: null, phrase: erreur };
+  return { code: m[1], phrase: m[2] };
+}
+
 export async function executer(chemin: string, fn: () => Promise<unknown>): Promise<never> {
   let erreur = '';
   try {

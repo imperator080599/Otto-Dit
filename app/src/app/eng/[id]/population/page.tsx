@@ -2,6 +2,7 @@ import { requireMember } from '@/lib/core/auth';
 import { revenuePopulation } from '@/lib/services/population';
 import { fmtEur } from '@/lib/kernel/canon';
 import { tr } from '@/lib/i18n';
+import { separerCode } from '@/app/refus';
 
 export default async function PopulationPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ view?: string }> }) {
   const { id } = await params;
@@ -16,7 +17,16 @@ export default async function PopulationPage({ params, searchParams }: { params:
     error = String(e instanceof Error ? e.message : e);
   }
   if (error || !pop) {
-    return <div className="panel"><div className="callout danger">{error ?? t('pop.populationUnavailable')}</div></div>;
+    /* D.6 point 1 (mandat, épreuve de l'épure) : cet échec est un échec de
+       CHARGEMENT de page, pas un refus d'action posté via `?erreur=` — donc
+       pas de BandeauRefus (« rien n'a été enregistré » n'aurait aucun sens
+       ici), mais la même règle phrase-avant-code s'applique. */
+    const { code, phrase } = separerCode(error ?? t('pop.populationUnavailable'));
+    return (
+      <div className="panel">
+        <div className="callout danger">{phrase}{code && <span className="faint mono"> ({code})</span>}</div>
+      </div>
+    );
   }
   const flagged = pop.rows.filter((r) => r.flags.length > 0);
   const shown = view === 'all' ? pop.rows.slice(0, 200) : flagged;

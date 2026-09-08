@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
-import { vuePoste, type EtatBloc, type BlocPoste } from '@/lib/services/poste';
+import { vuePoste, blocPorteContenu, type EtatBloc, type BlocPoste } from '@/lib/services/poste';
 import { visiter } from '@/lib/services/sections';
 import { modeSonde } from '@/lib/core/sonde';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
@@ -141,7 +141,7 @@ export default async function PostePage({
         sections={v.blocs.map((b) => ({ id: b.cle, titre: t(b.titre), repere: REPERE[b.etat], etat: `${t(`poste.etat.${b.etat}` as CleLibelle)} — ${resume(b)}` }))} />
 
       {/* 2.2 — LA LEADSHEET N / N-1. */}
-      <Repli cle="poste.leadsheet" id="leadsheet" titre={t('poste.leadsheet')} etat={etat(bloc('leadsheet'))} resume={resume(bloc('leadsheet'))}>
+      <Repli cle="poste.leadsheet" id="leadsheet" titre={t('poste.leadsheet')} etat={etat(bloc('leadsheet'))} resume={resume(bloc('leadsheet'))} porteContenu={blocPorteContenu(bloc('leadsheet').etat)}>
         <div className="table-scroll">
           <table className="data leadsheet" data-leadsheet>
             <thead>
@@ -251,7 +251,7 @@ export default async function PostePage({
       {(['processus', 'controle-interne', 'risques', 'echantillon', 'testing'] as const).map((cle) => {
         const b = bloc(cle);
         return (
-          <Repli key={cle} cle={`poste.${cle}`} id={cle} titre={t(b.titre)} etat={etat(b)} resume={resume(b)}>
+          <Repli key={cle} cle={`poste.${cle}`} id={cle} titre={t(b.titre)} etat={etat(b)} resume={resume(b)} porteContenu={blocPorteContenu(b.etat)}>
             {cle === 'risques' && v.risques.length > 0 && (
               <table className="data" data-risques-du-poste>
                 <thead><tr><th>{t('poste.risque.assertion')}</th><th>{t('poste.risque.niveau')}</th><th>{t('poste.risque.retenu')}</th></tr></thead>
@@ -281,7 +281,7 @@ export default async function PostePage({
       })}
 
       {/* 2.3 — LES PAPIERS DU POSTE : référence, état de visa, date, lien. */}
-      <Repli cle="poste.papiers" id="papiers" titre={t('col.workpapers')} etat={etat(bloc('papiers'))} resume={resume(bloc('papiers'))}>
+      <Repli cle="poste.papiers" id="papiers" titre={t('col.workpapers')} etat={etat(bloc('papiers'))} resume={resume(bloc('papiers'))} porteContenu={blocPorteContenu(bloc('papiers').etat)}>
         {v.papiers.length === 0 ? (
           <p className="faint" style={{ margin: 0 }}>{t('poste.papier.aucun')} <Link href={`${base}/workpapers`}>{t('poste.xref')}</Link></p>
         ) : (
@@ -307,7 +307,7 @@ export default async function PostePage({
       </Repli>
 
       {/* 2.3 — LES ÉCARTS DU POSTE, avec le papier qui les porte. */}
-      <Repli cle="poste.ecarts" id="ecarts" titre={t('poste.section.ecarts')} etat={etat(bloc('ecarts'))} resume={resume(bloc('ecarts'))}>
+      <Repli cle="poste.ecarts" id="ecarts" titre={t('poste.section.ecarts')} etat={etat(bloc('ecarts'))} resume={resume(bloc('ecarts'))} porteContenu={blocPorteContenu(bloc('ecarts').etat)}>
         {v.ecarts.liste.length === 0 ? (
           <p className="faint" style={{ margin: 0 }}>{t('poste.ecart.aucun')}</p>
         ) : (
@@ -343,7 +343,7 @@ export default async function PostePage({
       </Repli>
 
       {/* 2.3 — LES DEMANDES AU CLIENT DU POSTE. */}
-      <Repli cle="poste.demandes" id="demandes" titre={t('rail.demandes')} etat={etat(bloc('demandes'))} resume={resume(bloc('demandes'))}>
+      <Repli cle="poste.demandes" id="demandes" titre={t('rail.demandes')} etat={etat(bloc('demandes'))} resume={resume(bloc('demandes'))} porteContenu={blocPorteContenu(bloc('demandes').etat)}>
         {v.demandes.length === 0 ? (
           <p className="faint" style={{ margin: 0 }}>{t('poste.demande.aucune')} <Link href={`${base}/requests`}>{t('rail.demandes')}</Link></p>
         ) : (

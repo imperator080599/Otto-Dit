@@ -23,6 +23,12 @@ import { useT } from '@/lib/i18n/client';
 // section s'est repliée à l'écran, mais elle rouvrira au prochain chargement.
 // Le mouvement ne porte que sur le chevron (120–200 ms) ; le contenu apparaît
 // et disparaît sans animation — rien ne ralentit un geste.
+//
+// `porteContenu` (D.6 point 3, épreuve de l'épure) : SEUL le premier rendu,
+// SANS préférence mémorisée pour cette personne, écoute ce paramètre — dès
+// qu'un geste humain a été mémorisé pour cette clé (`memoire.lire` renvoie
+// autre chose que `null`), il gagne toujours. Omis, le défaut reste OUVERT
+// (règle 10 du repli mémorisé : un écran neuf ne cache rien).
 
 export interface EtatRepli {
   /** Le repère de forme — la couleur n'est jamais seule. */
@@ -30,7 +36,7 @@ export interface EtatRepli {
   libelle: string;
 }
 
-export function Repli({ cle, id, titre, etat, resume, niveau = 3, children }: {
+export function Repli({ cle, id, titre, etat, resume, niveau = 3, porteContenu, children }: {
   /** La clé de mémoire — stable, indépendante de la langue. */
   cle: string;
   /** L'ancre de la section (`#id`), celle que la navigation par ancres vise. */
@@ -40,11 +46,13 @@ export function Repli({ cle, id, titre, etat, resume, niveau = 3, children }: {
   resume?: ReactNode;
   /** 2 pour une section de page (h2), 3 pour une sous-section (h3). */
   niveau?: 2 | 3;
+  /** Le défaut de PREMIER RENDU quand rien n'est mémorisé. Omis = ouvert. */
+  porteContenu?: boolean;
   children: ReactNode;
 }) {
   const t = useT();
   const memoire = useReplis();
-  const [ouvert, setOuvert] = useState<boolean>(() => memoire.lire(cle) ?? true);
+  const [ouvert, setOuvert] = useState<boolean>(() => memoire.lire(cle) ?? porteContenu ?? true);
   const [defaut, setDefaut] = useState<string | null>(null);
   const ancre = id ?? cle.replace(/[^A-Za-z0-9_-]+/g, '-');
   const Titre = niveau === 2 ? 'h2' : 'h3';

@@ -167,6 +167,73 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 4, tranche 4a : D.6 points 1 et 3, l'épreuve de l'épure (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, §D.6 « L'épreuve de l'épure,
+mécanisée » — six vérifications qui contournent le goût du fondateur (« épuré, qu'un auditeur
+lambda comprenne ») faute de test automatique pour un goût. Cette tranche livre les deux
+premières : **point 1** (« Aucun identifiant technique en première position d'un message vu par
+un auditeur ») et **point 3** (« Une page de poste n'ouvre par défaut que les sections portant du
+contenu »). Les quatre autres (rail par défaut, compteur qui mène quelque part, aucun état vide
+muet, parcours découverte chronométré) restent à faire — tranches suivantes, D.8.*
+
+**Point 1 — le code après la phrase.** `separerCode` (`app/refus.ts`), fonction pure : reconnaît
+une FORME (`MAJUSCULES[-MAJUSCULES...] :` en tête) sans vérifier le catalogue ni la forme métier
+(dit en tête de fichier, règle 19). `BandeauRefus` — le composant partagé par 34 écrans — l'utilise
+pour afficher la phrase D'ABORD, le code ensuite en petit (`<span class="faint mono">`). Choix
+délibéré (règle 8) : réordonner à l'affichage, dans UN SEUL endroit partagé, plutôt que réécrire
+les dizaines de sites `throw new Error('CODE : ...')` à travers le dépôt. `refus(p)` du parcours
+cliqué lit `?erreur=` dans l'URL, jamais le DOM rendu — confirmé par lecture, donc ce changement
+d'affichage est invisible aux dizaines de stations qui testent un code par regex.
+
+**Point 3 — les sections vides repliées.** `blocPorteContenu(etat)` (`poste.ts`), fonction pure sur
+les quatre `EtatBloc` possibles : `a_faire`/`sans_objet` (vide) → repliée par défaut ;
+`en_cours`/`fait` (du contenu) → ouverte. `Repli` (`app/repli.tsx`) reçoit un nouveau prop optionnel
+`porteContenu`, qui ne joue QUE si rien n'est mémorisé pour cette personne — un repli déjà
+ouvert/fermé à la main par un auditeur n'est jamais reforcé (règle 28 : jamais contre un geste
+humain déjà écrit). Câblé sur les 8 `<Repli>` de la page de poste liés à un bloc. Vérifié en direct
+sur un poste RICHE (REVENUE) et deux postes presque vides (OTHER_INCOME, FINANCIAL_RESULT, PROVISIONS)
+via le HTML servi (`<details ... open>` présent/absent) — confirmé cohérent avec `etat`.
+
+**Revue hostile, DEUX réfutateurs indépendants sur le point 1** (règle 24/30, code) — deux
+mutations adverses chacun, toutes revenues bit-à-bit identiques après restauration (`git diff`
+vide) :
+- **Voix 1** — SHIP AS-IS. Recherche exhaustive de tous les `throw new Error('CODE : ...')` du
+  dépôt : un seul faux positif possible (`IMPOSSIBLE :`, un mot français tout capitales), déjà
+  couvert par un cas de test. Confirmé : aucun `dangerouslySetInnerHTML`, `refus(p)` invisible au
+  changement, `tsc --noEmit` propre.
+- **Voix 2** — SHIP WITH MINOR FIXES, deux constats réels, tous deux corrigés dans cette tranche :
+  **F2** — `population/page.tsx` et `reunions/page.tsx` affichaient une erreur brute, hors
+  `BandeauRefus` (aucune violation active aujourd'hui, tous les messages actuels sont en français
+  minuscule, mais rien ne gardait ces deux chemins contre un futur `CODE : ...`) — corrigé en
+  appliquant `separerCode` directement dans leur propre rendu (pas `BandeauRefus` lui-même : ces
+  échecs ne sont pas des refus d'action postés via `?erreur=`, « rien n'a été enregistré » y serait
+  faux). **F3** — `separerCode` suppose `erreur: string`, mais un `?erreur=` RÉPÉTÉ dans l'URL fait
+  rendre un tableau par Next malgré le typage : `.match` plantait alors en **500** — exactement la
+  classe de défaut que `refus.ts` existe pour éliminer (règle 13). Corrigé par une garde `typeof`
+  en tête de fonction, testée (`refus.test.ts`).
+
+**Tests neufs** : `refus.test.ts` (12 cas, dont F3 et un cas URL/heure avec `:` interne) ;
+`poste.test.ts` étendu (`blocPorteContenu` sur ses 4 états, plus un recoupement contre la donnée
+réelle — comptes présents ⇔ leadsheet plein) ; `api/sante/poste-defaut-lecture.test.ts` (lecture
+verte sur données réelles, puis cas connu mauvais par mock de module — `blocPorteContenu` forcé à
+toujours mentir — qui fait rougir la lecture, restauré, revérifié vert).
+
+**`/api/sante`** (règle 22) : nouvelle lecture « sections vides repliées par défaut (D.6 point 3,
+Lot 4 tranche 4) » — pour chaque poste du dossier, vérifie que le bloc leadsheet est plein
+exactement quand il a des comptes ; rougit sur un désaccord (ne peut être provoqué que par une
+régression du code, pas par une donnée — documenté en tête, règle 19, même famille que R30).
+
+**Verify complet sur arbre figé** (`set -o pipefail; timeout 3600 npm run verify`, forme opérative
+règle 35 corrigée) : **926/926 tests** (114 fichiers, 449 s), **43 gardes**, **926 tests collectés
+· plancher 632**, langue **0 chaîne hors catalogue · 15/15 cas connus mauvais dénoncés**,
+**0 lecture perdue sur 1716 chemins figés**, **276/276 stations déclarées/figées**, screens
+**87 + 51 routes · 0 échec**, densité **77 écrans · 0 au-delà de 5 actions**, clics
+**232 étapes · 0 échec · 362 clics**, **231 stations figées vérifiées**, visuel **312 vues · 0
+défaut**. `EXIT=0`, `pipefail` actif. R44 (`docs/SEMEUR_VS_CHEMIN.md`) inchangé à **83 objets · 16
+DÉCOR · 26 non prouvé · 41 prouvé** — attendu : cette tranche affine l'affichage de chemins déjà
+prouvés, elle n'en sème ni n'en prouve aucun nouveau.
+
 ## Lot 4, tranche 3 : la création de dossier de bout en bout, jusqu'ici décor (2026-09-08)
 
 *Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (Lot 4, Partie D.6,

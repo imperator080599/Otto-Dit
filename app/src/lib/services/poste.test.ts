@@ -4,7 +4,7 @@ import { q } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { signWorkpaper } from './workpapers/lifecycle';
-import { vuePoste, destinationsDuPoste } from './poste';
+import { vuePoste, destinationsDuPoste, blocPorteContenu, type EtatBloc } from './poste';
 
 // L'ANATOMIE DE LA PAGE DE POSTE (mandat de la soirée, §2), lue par son service.
 //
@@ -81,5 +81,34 @@ describe('vuePoste — l’anatomie du poste', () => {
     expect(perime.visas[1].etat).toBe('perime');
     /* Un papier dépassé ne porte plus les écarts : le lien vers le papier vivant disparaît, il n'est pas inventé. */
     expect(perime.ecarts.liste.every((x) => x.papier === null)).toBe(true);
+  });
+});
+
+// D.6 point 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre par
+// défaut que les sections portant du contenu. » `blocPorteContenu` est la
+// seule chose qui décide — pure, sans base — donc c'est elle qu'on éprouve
+// exhaustivement sur les quatre états possibles (le type n'en admet pas
+// d'autres), RÈGLE 17 : les deux cas VIDES (`a_faire`, `sans_objet`) sont le
+// cas connu mauvais à ne jamais laisser passer pour « porte du contenu ».
+describe('blocPorteContenu', () => {
+  it.each<[EtatBloc, boolean]>([
+    ['a_faire', false],
+    ['sans_objet', false],
+    ['en_cours', true],
+    ['fait', true],
+  ])('%s → porteContenu=%s', (etat, attendu) => {
+    expect(blocPorteContenu(etat)).toBe(attendu);
+  });
+
+  it('les blocs réels d’un poste avec travail confirment la lecture — au moins un vide, au moins un plein', async () => {
+    const v = (await vuePoste(IDS.engNep, POSTE))!;
+    const vides = v.blocs.filter((b) => !blocPorteContenu(b.etat));
+    const pleins = v.blocs.filter((b) => blocPorteContenu(b.etat));
+    expect(vides.length).toBeGreaterThan(0);
+    expect(pleins.length).toBeGreaterThan(0);
+    /* La leadsheet a des comptes sur ce poste : son bloc est réputé plein, et
+       ça se vérifie contre la donnée brute, pas seulement contre son état. */
+    const leadsheet = v.blocs.find((b) => b.cle === 'leadsheet')!;
+    expect(blocPorteContenu(leadsheet.etat)).toBe(v.comptes.length > 0);
   });
 });

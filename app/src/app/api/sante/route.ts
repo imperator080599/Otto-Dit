@@ -710,6 +710,37 @@ async function corpsDeLaSonde() {
           + '(avertissement, jamais bloquant)'
         : 'aucune sélection remplacée sans re-tirage ne porte de travail';
     }));
+    /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
+       par défaut que les sections portant du contenu. » `blocPorteContenu`
+       est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états
+       possibles par un test unitaire (règle 17) ; elle ne peut donc pas
+       rougir sur une donnée réelle du dossier — le trou qu'elle attraperait
+       serait une régression de la fonction elle-même. CE QUE CETTE LECTURE
+       VÉRIFIE VRAIMENT (règle 19) : que le bloc `leadsheet`, pour CHAQUE
+       poste du dossier, est réputé plein exactement quand il a des comptes —
+       un recoupement contre la donnée brute, pas un second appel à la même
+       fonction. */
+    lectures.push(await essayer('sections vides repliées par défaut (D.6 point 3, Lot 4 tranche 4)', async () => {
+      const { vuePoste, blocPorteContenu } = await import('@/lib/services/poste');
+      const postes = await q<{ code: string }>(`select code from fsli where engagement_id = $1 order by code`, [id]);
+      if (postes.length === 0) return 'aucun poste sur ce dossier';
+      let incoherents = 0;
+      let vides = 0;
+      let pleins = 0;
+      for (const p of postes) {
+        const v = await vuePoste(id, p.code);
+        if (!v) continue;
+        const attendu = v.comptes.length > 0;
+        const leadsheet = v.blocs.find((b) => b.cle === 'leadsheet');
+        if (!leadsheet || blocPorteContenu(leadsheet.etat) !== attendu) { incoherents += 1; continue; }
+        for (const b of v.blocs) (blocPorteContenu(b.etat) ? pleins += 1 : vides += 1);
+      }
+      if (incoherents > 0) {
+        throw new Error(`${incoherents} poste(s) où le bloc leadsheet ne correspond pas à la présence `
+          + 'de comptes — blocPorteContenu ne suit plus l’état dérivé');
+      }
+      return `${postes.length} poste(s) · ${pleins} bloc(s) plein(s) · ${vides} bloc(s) vide(s) replié(s) par défaut`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';
