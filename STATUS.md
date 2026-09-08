@@ -167,6 +167,101 @@ est de la méthode et ce qui est du code).
   captures produites (ADR-094). Les trois entrent dans `npm run verify`.
   Un écran qui rend n'est pas un écran qui marche : ADR-076, ADR-078 et ADR-088 disent pourquoi.
 
+## Lot 4, tranche 2 : R34 (le prédicat de travail) et R30 partiel (l'avertissement de re-tirage) (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (Lot 4, Partie D.6,
+« re-tirage avec sa règle ») ; `docs/MANDATS/2026-09-07_permission_de_nuit.md`, point 2. Deux
+fils fermés dans `docs/BACKLOG_REPORTE.md`/`docs/instantanes/fils.json` : **R34** (le prédicat
+de « travail » de `lignesSortiesDuTirage` ignorait `verification_check` et `wp_extra_cell`) et
+**R30 PARTIEL** (le silence d'un dossier ré-importé jamais re-tiré, désormais un avertissement —
+la RÈGLE elle-même, forcer ou non un re-tirage, reste ouverte pour le fondateur).*
+
+**Recherche d'abord** (agent dédié, `sampling.ts`/`obstacles.ts`/ADR-016 lus en entier) :
+R30 offrait trois options — (a) un avertissement non bloquant, réversible, sans nouvelle
+sémantique métier ; (b) un choix binaire explicite au moment du ré-import, tranchant la méthode ;
+(c) bloquer systématiquement, contredisant le parcours de démonstration existant. Seule (a) est
+livrable par une session seule : (b) répond à une vraie question d'audit (« le rapprochement
+re-exécuté suffit-il ? », `docs/DECISIONS.md:3278-3287`) que le registre nomme trois fois
+« à trancher avec un auditeur » — même gabarit que R39/DA-33. **Cette tranche ne livre que (a)
+et R34 ; R30 reste ouverte, explicitement, pour la question de méthode.**
+
+**Ce qui a changé :**
+- `sampling.ts::lignesSortiesDuTirage` — deux `exists()` de plus (`verification_check`,
+  `wp_extra_cell`), `LigneSortie.travail` gagne `verifs`/`extras`. Un test « portait déjà
+  souvent une pièce » a montré qu'aucune ligne « sans travail » n'existe naturellement dans la
+  fixture de `retirage.test.ts` : les deux cas connus mauvais de R34 PLANTENT une ligne
+  synthétique (comme « un AUTRE tirage courant » le fait déjà pour une autre garde).
+  `verification_check` s'est révélée être une table **APPEND-ONLY** (déclencheur SQL,
+  0003_infra.sql, même discipline que `event_log` — règle 3) : la découvrir en pratique a fait
+  échouer trois tests en cascade (transaction PGlite avortée par un `DELETE` refusé) avant
+  d'être comprise et contournée — le test correspondant ne nettoie rien, il est placé EN DERNIER
+  dans le fichier pour ne fausser aucun compte mesuré plus haut.
+- `sampling.ts::lignesSuperseesSansRetirage` (nouvelle) — le miroir non bloquant de
+  `lignesSortiesDuTirage` : les procédures SANS tirage courant dont la dernière sélection
+  `superseded` porte du travail, jamais bloquant, jamais une décision sur R30.
+- `obstacles.ts::avertissementsAuVisa` — gagne un second cas (famille `tirage`, motif
+  `obst.ligneSuperseeSansRetirage`), affiché sur l'écran EXISTANT `/eng/[id]/obstacles`
+  (panneau « avertissements », déjà clické — aucun écran neuf, rule 8).
+- `/api/sante` — nouvelle lecture « travail non re-tiré après ré-import (R30, Lot 4 tranche 2) » :
+  vérifie qu'aucune ligne n'est comptée à la fois comme obstacle bloquant ET avertissement
+  (invariant garanti PAR CONSTRUCTION du scoping procédure, pas par une donnée — nommé
+  explicitement, règle 19), puis rend le compte d'avertissements.
+- `catalogue.ts` — nouvelle clé `obst.ligneSuperseeSansRetirage` ; `samp.sortiesPorte` et
+  `obst.ligneSortieDuTirage` étendues avec `{verifs}`/`{extras}`.
+- `sampling/page.tsx` — l'appel existant à `samp.sortiesPorte` passe les deux variables neuves.
+- `retirage.test.ts` — 4 tests neufs : 2 cas connus mauvais R34 (verification_check,
+  wp_extra_cell), 1 test R30 (bascule temporaire + `avertissementsAuVisa` + `obstaclesAuVisa` +
+  appel RÉEL à `GET()` de `/api/sante`), 1 FAUX POSITIF (tirage courant existant → silence).
+
+**Vérifié au clic réel, un écran EXISTANT, pas neuf** (règle 10) : script jetable (supprimé)
+plantant une procédure/sample/sample_item synthétiques sur le dossier servi par `npm run dev`,
+cookie `otto_user` posé directement (comme `clics` le fait), capture Playwright de
+`/eng/<id>/obstacles` — le nouvel avertissement rend avec le bon texte interpolé (« Line
+FF2025-0001 carries work (0 document(s), 1 exception(s), 0 cell(s), 0 check(s), 0 added
+column(s)) on a superseded selection that was never re-drawn… ») dans le panneau « Not
+blocking, but worth seeing », lien « Go and clear it » fonctionnel, absent du compte
+d'obstacles bloquants en haut d'écran.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30), chacun exécutant réellement le
+code et mutant adversairement — **convergents sur le même constat réel** :
+- **Voix 1** — 10 constats confirmés par exécution (mutuelle exclusivité du scoping vérifiée par
+  lecture, tsc propre, 3 mutations adversariales dont deux détectées et revertées exactement).
+  **MUT-02** : la clause `si.id not in (select repris_de from sample_item…)` de
+  `lignesSuperseesSansRetirage` n'était couverte par AUCUN test — 19/19 restaient verts après
+  l'avoir retirée. **Verdict : SHIP WITH MINOR FIXES.**
+- **Voix 2** — même constat sous un angle différent (A : la sous-requête `repris_de` n'était pas
+  scopée par dossier — risque théorique avec des UUID v4, mais un vrai défaut de défense en
+  profondeur) plus B : le test R30 n'éprouve la garde de recoupement de `/api/sante` que dans un
+  état où sa clause est vacueusement satisfaite — la mutation ne rougit RÉELLEMENT que dans
+  l'état NORMAL (nouveau=drawn), jamais exercé par un test avant cette revue. Un flake à un seul
+  échantillon signalé (règle 18 : vu une fois, non reproduit sur 10 relances, non expliqué, non
+  traité comme un défaut prouvé). **Verdict : SHIP WITH MINOR FIXES.**
+
+**Corrigé, les trois** : (1) la sous-requête `repris_de` scopée par `engagement_id` ; (2) le test
+R30 étendu pour prouver que la ligne d'`ancien` REPRISE par `nouveau` n'apparaît PAS parmi les
+avertissements — **auto-vérifié après coup** : mutation adversariale de la clause corrigée
+(retrait de l'exclusion), confirmé que CETTE assertion précise échoue (`l'exclusion repris_de ne
+fait rien…`), revert exact confirmé (diff avant/après byte-identique) ; (3) le test FAUX POSITIF
+étend son appel pour invoquer RÉELLEMENT `GET()` dans l'état normal, exerçant enfin la garde de
+recoupement là où elle a quelque chose à refuser. tsc et les 19 tests de `retirage.test.ts`
+revérifiés verts après chaque correctif, puis 146/146 sur les onze fichiers touchant
+`obstacles.ts`/`sampling.ts` ensemble — aucune régression.
+
+**Chaîne verify complète, arbre gelé** (règle 34/35 forme opérative, `timeout 3600` explicite,
+`verify-lot4-tranche2.log`) : tsc propre, vitest **907/907** (112/112 fichiers, 526.16 s — quatre
+tests de plus que la fin de tranche 1), gardes 43, plancher 907 collectés · 632 · aucune forme
+éteinte/isolée, langue 0 hors catalogue · 0 en dur · 39 différés · 45 exclues · 14 refus
+documentés, langue:épreuve 15/15, lectures 0 perdue sur 1716 chemins figés dans 86 écrans,
+lectures:épreuve 6/6, parcours 271 déclarées · 271 figées · 0 perdue (aucune station clics
+neuve cette tranche — l'avertissement R30 vit sur un écran déjà clické), parcours:épreuve 5/5,
+screens 87 routes · 0 échec, fumee 51 routes · 0 échec, densite 77 écrans · 0 dépassement ·
+108 champs, clics 227 étapes · 0 échec · 348 clics sur 47 gestes (226 stations figées
+vérifiées), visuel 312 vues · 0 défaut.
+
+**R34 fermé.** R30 reste OUVERT pour le fondateur (la règle de méthode, pas le silence). Suite
+du Lot 4 : tranche 3 (création de dossier de bout en bout), tranche 4 (les six vérifications
+D.6, chacune née en avertissement avec sa fixture de faux positif, règle 25).
+
 ## Lot 4, tranche 1 : la déplanification d'une procédure (2026-09-08)
 
 *Mandat : `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, ligne 261-262 (« Lot 4 — L'épure

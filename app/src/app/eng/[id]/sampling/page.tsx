@@ -353,6 +353,7 @@ export default async function SamplingPage({
                     <td className="faint">
                       {t('samp.sortiesPorte', {
                         pieces: l.travail.pieces, ecarts: l.travail.ecarts, cellules: l.travail.cellules,
+                        verifs: l.travail.verifs, extras: l.travail.extras,
                       })}
                     </td>
                     <td>

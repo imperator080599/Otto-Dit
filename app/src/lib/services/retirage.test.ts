@@ -12,8 +12,8 @@ import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentR
 import { generatePbcFromSample, approveSend } from './requests';
 import { ingestEvidence } from './evidence';
 import { lignesAtelier } from './workpapers/atelier';
-import { lignesSortiesDuTirage, sortiesNonStatuees, statuerSortie } from './sampling';
-import { obstaclesAuVisa } from './obstacles';
+import { lignesSortiesDuTirage, lignesSuperseesSansRetirage, sortiesNonStatuees, statuerSortie } from './sampling';
+import { obstaclesAuVisa, avertissementsAuVisa } from './obstacles';
 import { boucle } from './loop';
 import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 
@@ -205,6 +205,101 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
       .toBeGreaterThan(0);
   });
 
+  it('R30, option retenue (Lot 4, tranche 2) — sans tirage courant, le travail accroché à la sélection remplacée est un AVERTISSEMENT, jamais un obstacle', async () => {
+    /* Exactement l'état que le test précédent nomme « la règle se tait » —
+       mais cette fois on prouve ce que le silence de `lignesSortiesDuTirage`
+       cachait vraiment : `lignesSuperseesSansRetirage` (R30, option a) le
+       rend visible SANS bloquer, à côté, jamais à la place. */
+    await q(`update sample set status = 'superseded' where id = $1`, [nouveau]);
+    try {
+      const superseedees = await lignesSuperseesSansRetirage(IDS.engNep);
+      expect(superseedees.length,
+        'aucune ligne remontée : la fixture ne prouve rien, ou R30 (option a) est non corrigée')
+        .toBeGreaterThan(0);
+      expect(superseedees.every((l) => l.travail.pieces + l.travail.ecarts + l.travail.cellules
+        + l.travail.verifs + l.travail.extras > 0),
+        'une ligne SANS travail est remontée : la règle ferait du bruit').toBe(true);
+
+      /* REVUE HOSTILE (les deux voix, constat convergent) : l'exclusion
+         `repris_de` n'était couverte par AUCUN test — ni le FAUX POSITIF
+         (déjà exclu par le scoping procédure), ni cette assertion avant
+         elle (seulement `length > 0`). On prouve ici, précisément, qu'une
+         ligne de `ancien` REPRISE par `nouveau` (donc son travail reste
+         atteignable ailleurs) n'apparaît PAS parmi les lignes remontées,
+         même pendant cette fenêtre où `ancien` ET `nouveau` sont tous deux
+         `superseded`. */
+      const ligneAncienneReprise = await q1<{ id: string }>(
+        `select si.id::text id from sample_item si join gl_entry g on g.id = si.unit_id
+          where si.sample_id = $1 and g.natural_key = $2`, [ancien, clefAvecPiece]);
+      expect(superseedees.some((l) => l.id === ligneAncienneReprise.id),
+        'l’exclusion `repris_de` ne fait rien : une ligne reprise, dont le travail reste atteignable '
+        + 'ailleurs, est comptée deux fois').toBe(false);
+
+      const avert = await avertissementsAuVisa(IDS.engNep);
+      expect(avert.filter((o) => o.famille === 'tirage').length,
+        'le travail non re-tiré n’atteint pas l’écran des avertissements').toBeGreaterThan(0);
+
+      const obst = await obstaclesAuVisa(IDS.engNep);
+      expect(obst.filter((o) => o.famille === 'tirage').length,
+        'R30 (option a) devenue un OBSTACLE — c’est la question de méthode que R30 laisse ouverte, '
+        + 'pas cette tranche').toBe(0);
+
+      /* La même chose, par la lecture RÉELLE de /api/sante — le chemin que
+         règle 22 exige, pas seulement les fonctions de service. */
+      const avantEnv = process.env.OTTO_DEMO_PUBLIC;
+      process.env.OTTO_DEMO_PUBLIC = '1';
+      try {
+        const { GET } = await import('@/app/api/sante/route');
+        const res = await GET();
+        const body = await res.json();
+        const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('travail non re-tiré'));
+        expect(lecture, 'la lecture /api/sante n’existe pas').toBeDefined();
+        expect(lecture.ok, 'la lecture /api/sante rougit sur un avertissement — jamais un obstacle').toBe(true);
+        expect(lecture.detail).toContain('sélection remplacée jamais re-tirée');
+      } finally {
+        process.env.OTTO_DEMO_PUBLIC = avantEnv;
+      }
+    } finally {
+      await q(`update sample set status = 'drawn' where id = $1`, [nouveau]);
+    }
+    expect((await lignesSortiesDuTirage(IDS.engNep)).length,
+      'la fixture n’a pas été rendue à son état — les tests suivants mesureraient autre chose')
+      .toBeGreaterThan(0);
+  });
+
+  it('FAUX POSITIF — un tirage courant existant : `lignesSuperseesSansRetirage` se tait, même avec un ancien superseded qui porte du travail', async () => {
+    /* Le cas normal de ce fichier entier : `nouveau` EST le tirage courant.
+       Le travail de `ancien` (superseded) est repris ou déjà couvert par
+       `lignesSortiesDuTirage` — `lignesSuperseesSansRetirage` ne doit RIEN
+       en dire de plus, sous peine de compter deux fois le même travail dans
+       deux avertissements différents. */
+    const superseedees = await lignesSuperseesSansRetirage(IDS.engNep);
+    expect(superseedees, 'du travail sur une procédure qui A un tirage courant remonte quand même')
+      .toEqual([]);
+
+    /* REVUE HOSTILE (voix 2, constat B) : le test R30 plus haut n'éprouve la
+       garde de RECOUPEMENT de `/api/sante` (obstacle ET avertissement à la
+       fois) que pendant la fenêtre où `nouveau` est superseded — un état où
+       la clause de scoping y est vacueusement satisfaite. C'est ICI, dans
+       l'état NORMAL de ce fichier entier (nouveau=drawn), que la garde a
+       vraiment quelque chose à refuser si le scoping se casse — donc c'est
+       ICI qu'on l'appelle réellement, pas seulement via les fonctions de
+       service. */
+    const avantEnv = process.env.OTTO_DEMO_PUBLIC;
+    process.env.OTTO_DEMO_PUBLIC = '1';
+    try {
+      const { GET } = await import('@/app/api/sante/route');
+      const res = await GET();
+      const body = await res.json();
+      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('travail non re-tiré'));
+      expect(lecture, 'la lecture /api/sante n’existe pas').toBeDefined();
+      expect(lecture.ok, 'la garde de recoupement rougit alors qu’aucun recoupement réel n’existe').toBe(true);
+      expect(lecture.detail).toContain('aucune sélection remplacée');
+    } finally {
+      process.env.OTTO_DEMO_PUBLIC = avantEnv;
+    }
+  });
+
   it('la famille « tirage » BLOQUE le visa tant que la ligne n’est pas statuée', async () => {
     const avant = await obstaclesAuVisa(IDS.engNep);
     expect(avant.filter((o) => o.famille === 'tirage').length,
@@ -342,5 +437,93 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
     expect(avecPiece, 'aucune ligne reprise ne porte de pièce : le test ne prouve rien').toBeGreaterThan(0);
     expect(depot!.franchi, 'les pièces des lignes reprises ne franchissent pas l’étape du dépôt')
       .toBeGreaterThanOrEqual(avecPiece);
+  });
+
+  /* ─── R34 (Lot 4, tranche 2) — DEUX cas connus mauvais, EN DERNIER dans ce
+     fichier : chacun plante une ligne synthétique qui reste dans la base pour
+     le reste de l'exécution (voir chaque test), donc placée après tout ce qui
+     mesure des comptes précis plus haut. */
+
+  it('R34, CAS CONNU MAUVAIS — une ligne dont le SEUL travail est une vérification en aveugle (verification_check) est désormais comptée', async () => {
+    /* Avant ce correctif, le prédicat de « travail » ne connaissait que
+       pieces/ecarts/cellules — une ligne sortie du tirage ne portant qu'une
+       re-exécution en aveugle sortait du tirage SANS UN MOT (aucun obstacle,
+       aucune ligne listée), exactement le manque que R34 nommait. Dans cette
+       fixture, toute ligne de l'ancien tirage porte déjà une pièce (le client
+       répond à tout, en amont) : aucune ligne « sans travail » n'existe
+       naturellement pour isoler le cas. On en PLANTE une, synthétique, sur un
+       `gl_entry` réel du dossier — comme « un AUTRE tirage courant » le fait
+       plus haut pour une autre garde. PAS DE NETTOYAGE EN FIN DE TEST :
+       `verification_check` est APPEND-ONLY (déclencheur `verification_check_
+       append_only`, 0003_infra.sql — la même discipline que `event_log`,
+       règle 3), et `sample_item` ne peut donc plus être effacée non plus (la
+       clé étrangère la retient) — la ligne synthétique reste, pour de vrai,
+       exactement comme le ferait une vraie vérification. C'est pourquoi ce
+       test est le DERNIER de ce describe : rien après lui ne mesure un compte
+       qu'il pourrait fausser. */
+    const gl = await q1<{ id: string }>(
+      `select unit_id::text id from sample_item where sample_id = $1 limit 1`, [ancien]);
+    const proc = await q1<{ id: string }>(`select procedure_id::text id from sample where id = $1`, [ancien]);
+    const candidat = await q1<{ id: string }>(
+      `insert into sample_item (sample_id, unit_kind, unit_id, selection_reason, amount, status)
+       values ($1, 'gl_entry', $2, 'random', 0, 'pending') returning id::text id`,
+      [ancien, gl.id]);
+
+    const avant = await lignesSortiesDuTirage(IDS.engNep);
+    expect(avant.some((l) => l.id === candidat.id),
+      'la ligne plantée porte déjà du travail avant toute vérification — le test ne prouverait rien de neuf')
+      .toBe(false);
+
+    await q(
+      `insert into verification_check (engagement_id, procedure_id, sample_item_id, verifier_id, result)
+       values ($1, $2, $3, $4, 'agree')`,
+      [IDS.engNep, proc.id, candidat.id, IDS.users.lea]);
+
+    const apres = await lignesSortiesDuTirage(IDS.engNep);
+    const ligne = apres.find((l) => l.id === candidat.id);
+    expect(ligne, 'R34 non corrigé : la ligne porte une vérification et reste absente, sans un mot').toBeDefined();
+    expect(ligne!.travail.verifs).toBe(1);
+  });
+
+  it('R34, CAS CONNU MAUVAIS — une ligne dont le SEUL travail est une colonne ajoutée remplie (wp_extra_cell) est désormais comptée', async () => {
+    /* Même défaut, seconde table nommée par R34. `wp_extra_cell` n'est PAS
+       append-only : celle-ci se nettoie en fin de test. */
+    const gl = await q1<{ id: string }>(
+      `select unit_id::text id from sample_item where sample_id = $1 limit 1`, [ancien]);
+    const candidat = await q1<{ id: string }>(
+      `insert into sample_item (sample_id, unit_kind, unit_id, selection_reason, amount, status)
+       values ($1, 'gl_entry', $2, 'random', 0, 'pending') returning id::text id`,
+      [ancien, gl.id]);
+    const col = await q1<{ id: string }>(
+      `insert into wp_extra_column (engagement_id, workpaper_code, titre, justification, created_by)
+       values ($1, 'EPREUVE-R34', 'R34 — colonne d’épreuve', 'Colonne d’épreuve pour le cas connu mauvais R34.', $2)
+       returning id::text id`,
+      [IDS.engNep, IDS.users.karim]);
+
+    try {
+      const avant = await lignesSortiesDuTirage(IDS.engNep);
+      expect(avant.some((l) => l.id === candidat.id),
+        'la ligne plantée porte déjà du travail avant toute cellule ajoutée — le test ne prouverait rien de neuf')
+        .toBe(false);
+
+      /* `outcome='introuvable'` : la contrainte `wp_extra_cell_outcome_coherent`
+         exige `valeur`+`evidence_id` non nuls pour `trouvee` — introuvable
+         reste un genre de travail réel (une recherche a eu lieu, sans pièce à
+         charge), donc un candidat légitime pour ce cas connu mauvais. */
+      await q(
+        `insert into wp_extra_cell (column_id, engagement_id, sample_item_id, outcome)
+         values ($1, $2, $3, 'introuvable')`,
+        [col.id, IDS.engNep, candidat.id]);
+
+      const apres = await lignesSortiesDuTirage(IDS.engNep);
+      const ligne = apres.find((l) => l.id === candidat.id);
+      expect(ligne, 'R34 non corrigé : la ligne porte une colonne ajoutée remplie et reste absente, sans un mot')
+        .toBeDefined();
+      expect(ligne!.travail.extras).toBe(1);
+    } finally {
+      await q(`delete from wp_extra_cell where sample_item_id = $1`, [candidat.id]);
+      await q(`delete from wp_extra_column where id = $1`, [col.id]);
+      await q(`delete from sample_item where id = $1`, [candidat.id]);
+    }
   });
 });

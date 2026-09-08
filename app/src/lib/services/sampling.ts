@@ -275,7 +275,12 @@ export interface LigneSortie {
   piece: string;
   naturalKey: string;
   montant: string;
-  travail: { pieces: number; ecarts: number; cellules: number };
+  /* Lot 4, tranche 2 (R34) : `verifs` (re-exécution en aveugle,
+     `verification_check`) et `extras` (colonne ajoutée à la main, remplie,
+     `wp_extra_cell`) rejoignent `pieces`/`ecarts`/`cellules` — le même
+     principe (toute trace d'une personne ou du client compte, quel que soit
+     l'issue), pas une nature neuve. */
+  travail: { pieces: number; ecarts: number; cellules: number; verifs: number; extras: number };
   decision: { quoi: 'sans_suite'; motif: string; qui: string; quand: string } | null;
 }
 
@@ -342,7 +347,9 @@ export async function lignesSortiesDuTirage(engagementId: string): Promise<Ligne
             (select count(*) from request_item ri join evidence e on e.request_item_id = ri.id
               where ri.sample_item_id = si.id and e.quarantined = false)::text pieces,
             (select count(*) from exception x where x.sample_item_id = si.id)::text ecarts,
-            (select count(*) from test_cell c where c.sample_item_id = si.id)::text cellules
+            (select count(*) from test_cell c where c.sample_item_id = si.id)::text cellules,
+            (select count(*) from verification_check v where v.sample_item_id = si.id)::text verifs,
+            (select count(*) from wp_extra_cell w where w.sample_item_id = si.id)::text extras
        from sample_item si
        join sample s on s.id = si.sample_id
        join gl_entry g on g.id = si.unit_id
@@ -352,7 +359,9 @@ export async function lignesSortiesDuTirage(engagementId: string): Promise<Ligne
         and (exists (select 1 from request_item ri join evidence e on e.request_item_id = ri.id
                       where ri.sample_item_id = si.id and e.quarantined = false)
              or exists (select 1 from exception x where x.sample_item_id = si.id)
-             or exists (select 1 from test_cell c where c.sample_item_id = si.id))
+             or exists (select 1 from test_cell c where c.sample_item_id = si.id)
+             or exists (select 1 from verification_check v where v.sample_item_id = si.id)
+             or exists (select 1 from wp_extra_cell w where w.sample_item_id = si.id))
         and s.procedure_id in (select procedure_id from sample where id = any($2::uuid[]))
       order by si.amount desc`,
     [engagementId, courants.map((c) => c.id)],
@@ -360,7 +369,10 @@ export async function lignesSortiesDuTirage(engagementId: string): Promise<Ligne
     const x = r as unknown as Record<string, string | null>;
     return {
       id: r.id, piece: r.piece ?? r.naturalKey, naturalKey: r.naturalKey, montant: r.montant,
-      travail: { pieces: Number(r.pieces), ecarts: Number(r.ecarts), cellules: Number(r.cellules) },
+      travail: {
+        pieces: Number(r.pieces), ecarts: Number(r.ecarts), cellules: Number(r.cellules),
+        verifs: Number((x.verifs as string | null) ?? 0), extras: Number((x.extras as string | null) ?? 0),
+      },
       decision: x.sortie_decision
         ? {
             quoi: x.sortie_decision as 'sans_suite',
@@ -369,6 +381,67 @@ export async function lignesSortiesDuTirage(engagementId: string): Promise<Ligne
         : null,
     };
   }));
+}
+
+/**
+ * Lot 4, tranche 2 (R30, option retenue seule — un AVERTISSEMENT, jamais un
+ * obstacle, jamais une réponse à la question de méthode). `lignesSortiesDuTirage`
+ * se tait, DÉLIBÉRÉMENT, quand aucun tirage courant n'existe pour une
+ * procédure (point 2 de son en-tête) — le cas normal d'un ré-import de fin
+ * de mission (ADR-016) qui n'est jamais suivi d'un re-tirage. Ce silence
+ * évite un obstacle fabriqué sur un dossier achevé, mais il a un coût que
+ * personne ne voyait : du travail humain (pièce reçue, écart, cellule,
+ * vérification, colonne ajoutée) peut rester accroché à une sélection
+ * `superseded` sans qu'AUCUN écran ne le dise. Cette fonction le DIT, sans
+ * bloquer et sans trancher SI un re-tirage devrait être exigé (R30 reste
+ * ouverte pour le fondateur — `docs/BACKLOG_REPORTE.md`) : elle rend visible
+ * ce qui restait invisible, à charge pour un humain de re-tirer ou de
+ * statuer que le rapprochement re-exécuté suffit (DECISIONS.md:3278-3287).
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : elle ne suit pas la
+ * chaîne des reprises comme `lignesSortiesDuTirage` (il n'existe, par
+ * définition, aucun tirage courant pour l'amorcer) — une ligne compte ici
+ * dès qu'aucune AUTRE ligne encore présente ne la reprend. L'exclusion
+ * `repris_de` est scopée par DOSSIER (revue hostile, les deux voix,
+ * constat convergent) — un risque théorique avec des UUID v4, mais une
+ * défense en profondeur cohérente avec le reste de la requête.
+ */
+export async function lignesSuperseesSansRetirage(engagementId: string): Promise<LigneSortie[]> {
+  return q<LigneSortie & { pieces: string; ecarts: string; cellules: string }>(
+    `select si.id::text, g.piece_ref piece, g.natural_key "naturalKey", si.amount::text montant,
+            null::text sortie_decision, null::text sortie_motif, null::text sortie_le, null::text sortie_qui,
+            (select count(*) from request_item ri join evidence e on e.request_item_id = ri.id
+              where ri.sample_item_id = si.id and e.quarantined = false)::text pieces,
+            (select count(*) from exception x where x.sample_item_id = si.id)::text ecarts,
+            (select count(*) from test_cell c where c.sample_item_id = si.id)::text cellules,
+            (select count(*) from verification_check v where v.sample_item_id = si.id)::text verifs,
+            (select count(*) from wp_extra_cell w where w.sample_item_id = si.id)::text extras
+       from sample_item si
+       join sample s on s.id = si.sample_id
+       join gl_entry g on g.id = si.unit_id
+      where s.engagement_id = $1 and s.status = 'superseded'
+        and s.procedure_id not in (
+          select distinct procedure_id from sample where engagement_id = $1 and status = 'drawn')
+        and si.id not in (
+          select si2.repris_de from sample_item si2 join sample s2 on s2.id = si2.sample_id
+           where s2.engagement_id = $1 and si2.repris_de is not null)
+        and (exists (select 1 from request_item ri join evidence e on e.request_item_id = ri.id
+                      where ri.sample_item_id = si.id and e.quarantined = false)
+             or exists (select 1 from exception x where x.sample_item_id = si.id)
+             or exists (select 1 from test_cell c where c.sample_item_id = si.id)
+             or exists (select 1 from verification_check v where v.sample_item_id = si.id)
+             or exists (select 1 from wp_extra_cell w where w.sample_item_id = si.id))
+      order by si.amount desc`,
+    [engagementId],
+  ).then((rows) => rows.map((r) => ({
+    id: r.id, piece: r.piece ?? r.naturalKey, naturalKey: r.naturalKey, montant: r.montant,
+    travail: {
+      pieces: Number(r.pieces), ecarts: Number(r.ecarts), cellules: Number(r.cellules),
+      verifs: Number((r as unknown as Record<string, string>).verifs ?? 0),
+      extras: Number((r as unknown as Record<string, string>).extras ?? 0),
+    },
+    decision: null,
+  })));
 }
 
 /** Ce qui reste à statuer — ce que l'obstacle au visa compte. */

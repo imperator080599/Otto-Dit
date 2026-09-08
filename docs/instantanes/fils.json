@@ -52,9 +52,9 @@
     },
     {
       "id": "R34",
-      "etat": "ouvert — le prédicat de « travail » ignore `verification_check` et `wp_extra_cell`",
+      "etat": "CORRIGÉ le 2026-09-08 (Lot 4, tranche 2) — `lignesSortiesDuTirage` compte désormais `verification_check` et `wp_extra_cell` ; deux cas connus mauvais (règle 17) dans `retirage.test.ts`, une ligne synthétique dont le seul travail est l'un ou l'autre est désormais listée",
       "depuis": "580f2cf",
-      "note": "mesuré par la revue hostile : une ligne portant une seule re-exécution en aveugle sort du tirage sans un mot."
+      "note": "mesuré par la revue hostile : une ligne portant une seule re-exécution en aveugle sortait du tirage sans un mot. `verification_check` s'est révélée append-only (déclencheur SQL) — le test correspondant ne nettoie pas sa ligne synthétique, placé en dernier dans le fichier."
     },
     {
       "id": "R33",
@@ -76,9 +76,9 @@
     },
     {
       "id": "R30",
-      "etat": "ouvert — question de la règle du RÉ-IMPORT (invalider ou constater la sélection), à trancher avec un auditeur",
+      "etat": "PARTIEL le 2026-09-08 (Lot 4, tranche 2) — le SILENCE est corrigé (nouvel avertissement non bloquant, `lignesSuperseesSansRetirage`/`avertissementsAuVisa`, vérifié au clic réel), la RÈGLE de méthode (invalider ou constater la sélection) reste ouverte, à trancher avec un auditeur",
       "depuis": "580f2cf",
-      "note": "la famille « tirage » se tait délibérément dans ce cas."
+      "note": "trois options de recherche : (a) avertissement non bloquant [retenue, livrée], (b) choix binaire explicite au ré-import [tranche la méthode, hors mandat d'une session seule], (c) blocage systématique [contredit le parcours de démonstration existant]. La famille « tirage » ne se tait plus en silence total : elle reste muette côté OBSTACLE (délibéré), mais parle désormais côté AVERTISSEMENT."
     },
     {
       "id": "R29",

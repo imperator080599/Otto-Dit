@@ -678,6 +678,38 @@ async function corpsDeLaSonde() {
         ? `${n} procédure(s) déplanifiée(s), toutes cohérentes (qui et quand posés ensemble)`
         : 'aucune procédure déplanifiée encore';
     }));
+    /* LOT 4, TRANCHE 2 (R30, option retenue — mandat, Partie D.6) : du
+       travail accroché à une sélection remplacée qu'aucun re-tirage n'a
+       suivie doit se DIRE (`lignesSuperseesSansRetirage`, avertissement,
+       jamais un obstacle — la question de méthode reste ouverte, R30). Cette
+       lecture vérifie aussi que ce même travail n'apparaît JAMAIS en même
+       temps dans la liste BLOQUANTE (`lignesSortiesDuTirage`) — les deux
+       fonctions sont scopées par procédure de façon mutuellement exclusive
+       (l'une exige un tirage courant, l'autre son absence), donc ce
+       recoupement est normalement IMPOSSIBLE à produire par la donnée : un
+       recoupement ne peut venir que d'une régression du SCOPING lui-même
+       (une clause `procedure_id` retirée par erreur), pas d'un état réel du
+       dossier. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : sans donnée
+       capable de la faire rougir sur ce second point, l'épreuve réelle de
+       cette garde est la mutation en revue hostile (règle 24/30), pas un cas
+       connu mauvais posé ici — seul le compte lui-même (premier point) peut
+       rougir sur un vrai état du dossier. */
+    lectures.push(await essayer('travail non re-tiré après ré-import (R30, Lot 4 tranche 2)', async () => {
+      const { lignesSortiesDuTirage, lignesSuperseesSansRetirage } = await import('@/lib/services/sampling');
+      const [obstacles, avertissements] = await Promise.all([
+        lignesSortiesDuTirage(id), lignesSuperseesSansRetirage(id),
+      ]);
+      const idsObstacles = new Set(obstacles.map((l) => l.id));
+      const recoupement = avertissements.filter((l) => idsObstacles.has(l.id));
+      if (recoupement.length > 0) {
+        throw new Error(`${recoupement.length} ligne(s) comptée(s) à la fois comme obstacle bloquant et `
+          + 'comme avertissement de tirage — le scoping par procédure a un trou');
+      }
+      return avertissements.length > 0
+        ? `${avertissements.length} ligne(s) de sélection remplacée jamais re-tirée, portant du travail `
+          + '(avertissement, jamais bloquant)'
+        : 'aucune sélection remplacée sans re-tirage ne porte de travail';
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

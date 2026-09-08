@@ -123,6 +123,12 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   une mission achevée. La vraie question est en amont : *un ré-import de fin de mission
   doit-il invalider la sélection, ou constater qu'elle reste valable ?* Elle appartient à la
   règle du ré-import, pas à celle du re-tirage, et elle se tranche avec un auditeur.
+  **PARTIEL, 2026-09-08 (Lot 4, tranche 2)** : le SILENCE est corrigé — `lignesSuperseesSansRetirage`
+  rend désormais visible, en AVERTISSEMENT non bloquant (jamais un obstacle), le travail accroché
+  à une sélection superseded sans re-tirage ; vérifié au clic réel sur `/eng/[id]/obstacles`
+  (panneau « avertissements », écran existant). La RÈGLE elle-même — invalider ou constater —
+  reste ENTIÈREMENT OUVERTE : trois options de recherche envisagées, une seule (l'avertissement)
+  livrable sans mandat du fondateur sur la méthode.
 - **R31 — « remettre une ligne au tirage »**, retiré la nuit même de l'étage 1.2. La première
   version offrait cette décision à côté de « sans suite motivée » ; la revue hostile a emprunté le
   chemin et mesuré qu'elle n'exécutait RIEN — la ligne ne revenait ni dans l'échantillon courant ni
@@ -148,6 +154,12 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   `verification_check` (la re-exécution en aveugle par une seconde personne) et `wp_extra_cell` (la
   colonne du cabinet, attestée). Mesuré par la revue hostile : une ligne portant un seul
   `verification_check` sort du tirage sans un mot et sans obstacle.
+  **CORRIGÉ, 2026-09-08 (Lot 4, tranche 2)** : `lignesSortiesDuTirage` compte désormais les deux
+  genres ; deux cas connus mauvais (règle 17, `retirage.test.ts`) — une ligne synthétique dont le
+  SEUL travail est l'un ou l'autre est désormais listée et compte pour le compte du travail
+  affiché. `verification_check` s'est révélée append-only (déclencheur SQL, même discipline que
+  `event_log`) : le test correspondant ne nettoie jamais sa ligne synthétique, placé en dernier
+  dans le fichier pour ne fausser aucun compte mesuré par un test antérieur.
 - **R35 — la lecture `/api/sante` du re-tirage ne distingue pas « 0 parce que rien à faire » de
   « 0 parce que c'est cassé ».** Sur une instance qui n'a jamais ré-importé, elle affiche
   « 0 reprise · 0 sortie » — exactement la sortie qu'aurait produite le défaut d'hier. Il lui manque

@@ -12,7 +12,7 @@ import { obstaclesProcessus } from './processus';
 import { obstaclesEntretiens } from './entretiens';
 import { motif, type Motif } from './motif';
 import { lignesNonConclues } from './testing/grille';
-import { sortiesNonStatuees } from './sampling';
+import { sortiesNonStatuees, lignesSuperseesSansRetirage } from './sampling';
 import { frameworkSet } from './fsli';
 import { primaryPack } from '@/lib/packs';
 
@@ -174,6 +174,7 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
   const sorties = await sortiesNonStatuees(engagementId);
   ajoute('tirage', sorties.map((l) => motif('obst.ligneSortieDuTirage', {
     piece: l.piece, pieces: l.travail.pieces, ecarts: l.travail.ecarts, cellules: l.travail.cellules,
+    verifs: l.travail.verifs, extras: l.travail.extras,
   })));
 
   // 7. Le pointage des états financiers.
@@ -237,8 +238,23 @@ export async function obstaclesLignes(engagementId: string): Promise<Motif[]> {
  * déclarait bloquant — dit à l'écran, jamais compté comme obstacle.
  */
 export async function avertissementsAuVisa(engagementId: string): Promise<Obstacle[]> {
-  if (await familleLignesBloquante(engagementId)) return [];
-  return (await obstaclesLignes(engagementId)).map((m) => ({ famille: 'programme' as const, motif: m, ou: OU.programme }));
+  const out: Obstacle[] = [];
+  if (!(await familleLignesBloquante(engagementId))) {
+    out.push(...(await obstaclesLignes(engagementId)).map((m) => ({ famille: 'programme' as const, motif: m, ou: OU.programme })));
+  }
+  /* Lot 4, tranche 2 (R30, option retenue) : du travail accroché à une
+     sélection superseded qu'aucun re-tirage n'a suivie — jamais un obstacle
+     (la question de méthode reste ouverte, R30), toujours dit. */
+  const superseedees = await lignesSuperseesSansRetirage(engagementId);
+  out.push(...superseedees.map((l) => ({
+    famille: 'tirage' as const,
+    motif: motif('obst.ligneSuperseeSansRetirage', {
+      piece: l.piece, pieces: l.travail.pieces, ecarts: l.travail.ecarts, cellules: l.travail.cellules,
+      verifs: l.travail.verifs, extras: l.travail.extras,
+    }),
+    ou: OU.tirage,
+  })));
+  return out;
 }
 
 /** Le compte par famille, pour l'afficher sans relire la liste. */

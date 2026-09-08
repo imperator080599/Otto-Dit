@@ -792,7 +792,10 @@ export const LIBELLES = {
   },
   'samp.sortiesTravail': { en: 'What it carries', fr: 'Ce qu’elle porte' },
   'samp.sortiesDecision': { en: 'Decision', fr: 'Décision' },
-  'samp.sortiesPorte': { en: '{pieces} document(s) · {ecarts} exception(s) · {cellules} cell(s)', fr: '{pieces} pièce(s) · {ecarts} écart(s) · {cellules} cellule(s)' },
+  'samp.sortiesPorte': {
+    en: '{pieces} document(s) · {ecarts} exception(s) · {cellules} cell(s) · {verifs} check(s) · {extras} added column(s)',
+    fr: '{pieces} pièce(s) · {ecarts} écart(s) · {cellules} cellule(s) · {verifs} vérification(s) · {extras} colonne(s) ajoutée(s)',
+  },
   'samp.sortieSansSuite': { en: 'No further action, stated', fr: 'Sans suite, motivée' },
   'samp.sortieMotif': { en: 'Reason — written, and re-readable', fr: 'Motif — écrit, et relisible' },
   'samp.sortieStatuer': { en: 'Decide', fr: 'Statuer' },
@@ -861,8 +864,12 @@ export const LIBELLES = {
     fr: 'Un nouveau tirage laisse derrière lui des lignes déjà travaillées. Rien ne se perd en silence : pour chacune, une personne écrit pourquoi le travail ne suit pas.',
   },
   'obst.ligneSortieDuTirage': {
-    en: 'Line {piece} left the current selection but carries work ({pieces} document(s), {ecarts} exception(s), {cellules} cell(s)) — write why the work does not follow',
-    fr: 'La ligne {piece} est sortie du tirage courant mais porte du travail ({pieces} pièce(s), {ecarts} écart(s), {cellules} cellule(s)) — écrivez pourquoi le travail ne suit pas',
+    en: 'Line {piece} left the current selection but carries work ({pieces} document(s), {ecarts} exception(s), {cellules} cell(s), {verifs} check(s), {extras} added column(s)) — write why the work does not follow',
+    fr: 'La ligne {piece} est sortie du tirage courant mais porte du travail ({pieces} pièce(s), {ecarts} écart(s), {cellules} cellule(s), {verifs} vérification(s), {extras} colonne(s) ajoutée(s)) — écrivez pourquoi le travail ne suit pas',
+  },
+  'obst.ligneSuperseeSansRetirage': {
+    en: 'Line {piece} carries work ({pieces} document(s), {ecarts} exception(s), {cellules} cell(s), {verifs} check(s), {extras} added column(s)) on a superseded selection that was never re-drawn — re-draw it, or record that the re-run reconciliation is enough',
+    fr: 'La ligne {piece} porte du travail ({pieces} pièce(s), {ecarts} écart(s), {cellules} cellule(s), {verifs} vérification(s), {extras} colonne(s) ajoutée(s)) sur une sélection remplacée jamais re-tirée — re-tirez, ou constatez que le rapprochement re-exécuté suffit',
   },
   'obst.jalonEnRetard': { en: 'Milestone overdue and not done: {libelle} ({date})', fr: 'Jalon échu et non fait : {libelle} ({date})' },
   'obst.evaluation': { en: '{quoi}', fr: '{quoi}' },
