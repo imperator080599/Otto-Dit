@@ -2,6 +2,12 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+**Mandat actif** : `docs/MANDATS/2026-09-08_mandat_controle_interne.md` — un nouveau lot (§0 : le
+contrôle interne D&I/OE, le suivi de mission), à exécuter après la clôture du Lot 4 en cours et
+avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de construction : §7.
+Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
+la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
+
 ## Reprendre ce dossier sans moi — l'essentiel en une page
 
 **Ce qu'est OTTO.** Une plateforme d'audit AI-native : noyau agnostique du référentiel, packs de

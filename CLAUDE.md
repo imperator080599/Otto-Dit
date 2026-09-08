@@ -155,6 +155,15 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     de réfutateurs vide (tous morts sur une limite, un timeout, une panne) n'est ni un « rien à
     signaler » ni un « tout confirmé » : c'est une vérification qui n'a pas eu lieu, et qui se dit
     telle.
+
+    **Amendement du 8 septembre 2026 (mandat contrôle interne, cadence) — remplace le compte de
+    réfutateurs ci-dessus, laisse le reste de la règle 30 intact.** Deux réfutateurs indépendants
+    sont requis SEULEMENT quand la tranche touche le modèle de données, la sécurité, le
+    multi-tenant, ou un code de refus. Sinon, UN SEUL réfutateur suffit. Le verify complet ne
+    tourne qu'à l'expédition (jamais en cours de construction), toujours sous un `timeout`
+    explicite dont le budget est nommé dans le message qui lance la commande (règle 35, forme
+    opérative) ; entre-temps, des suites CIBLÉES (le fichier de test concerné, la station de clics
+    concernée) suffisent à valider chaque pas.
 31. **Une valeur qui a l'air d'une mesure sans en être une est un défaut à part entière** — la
     famille retrouvée dans docs/instantanes/*.json le 2026-09-06 : des horodatages ISO inventés à
     l'heure ronde (« 22:00:00Z », « 21:00:00Z ») pour des mesures dont l'heure réelle n'avait
