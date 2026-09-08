@@ -5,7 +5,11 @@ import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb } from '@/lib/services/imports';
 import { rebuildFslis } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
-import { importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls, proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation } from '@/lib/services/sox';
+import {
+  importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls,
+  proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation,
+  attacherWalkthrough, ajouterTacheControle, documenterProcedureTache,
+} from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -96,6 +100,24 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
     [IDS.engSox, controlCode],
   );
   if (control.di_status === 'not_assessed') {
+    /* CTRL-01 (mandat contrôle interne, 2026-09-08) : conclure exige au moins une tâche
+       documentée par une procédure autre que l'inquiry — semé ici en MINIMUM nécessaire pour
+       que le monde de démonstration reste cohérent avec la règle, pas comme une conclusion
+       d'auditeur que le semeur se substituerait à prendre (le statut 'effective' lui-même
+       reste, comme avant, une affirmation du monde semé — non_prouve tant que personne ne l'a
+       cliqué, registre.ts:171). Transcription synthétique, jamais une vidéo réelle. */
+    const { evidenceId } = await ingestEvidence({
+      engagementId: IDS.engSox,
+      filename: `walkthrough-${controlCode}.txt`,
+      mime: 'text/plain',
+      bytes: new TextEncoder().encode(`Walkthrough transcript — ${controlCode} (synthetic demo placeholder, no real recording).`),
+      source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim },
+      audience: 'internal',
+    });
+    await attacherWalkthrough(control.id, IDS.users.karim, evidenceId);
+    const taskId = await ajouterTacheControle(control.id, IDS.users.karim, `Performance of ${controlCode} as observed in the walkthrough`, '00:00');
+    await documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'Prior-period evidence of performance inspected during the walkthrough.');
     await setDiStatus(control.id, IDS.users.karim, 'effective', 'Walkthrough performed; design and implementation assessed as effective (demo).');
   }
   await requestAndImportListing(controlCode);

@@ -214,9 +214,9 @@
     },
     {
       "id": "R58",
-      "etat": "ouvert — corrélation mesurée, causalité NON prouvée (règle 18) : tests/screens.test.ts a fait tomber le serveur trois fois sur cinq passages complets de npm run verify pendant le Lot 4, tranche 3 (2026-09-08), à une route différente à chaque fois (loop SOX route 69, workpapers SOX route 86, testing route 46). Symptôme distinct du #418 (pas une erreur d'hydratation, le processus meurt). Un processus parasite (boucle d'attente active sans sleep, orpheline d'un sous-agent de revue hostile de la tranche 2, trois heures d'accumulation CPU) tournait au moment des trois échecs ; tué, le passage suivant (isolé puis chaîne complète) est passé 907/907. Un seul essai propre ne suffit pas à établir la causalité.",
-      "depuis": "2026-09-08 (Lot 4, tranche 3)",
-      "note": "non corrigé : hypothèse forte (processus parasite), non prouvée. Découverte annexe corrigée dans le même geste : la forme opérative de la règle 35 (CLAUDE.md) manquait `set -o pipefail`, rendant `EXIT=$?` après `| tee` inutilisable (reflète tee, pas la commande réelle) — prouvé en local, corrigé. Si le symptôme récidive sur un arbre mesuré propre (aucun processus parasite), rouvrir l'enquête dans docs/CHASSE.md plutôt que de re-tenter la même explication."
+      "etat": "ouvert — RÉCIDIVE du 2026-09-08 soir sur un arbre MESURÉ PROPRE (lot contrôle interne, tranche 1) : npx vitest run (927 tests) tombé de nouveau à /eng/[id]/testing (même route qu'une occurrence précédente), aucun processus parasite mesuré (ps aux --sort=-%cpu/--sort=-%mem juste après). L'hypothèse « processus parasite » de la première observation (Lot 4 tranche 3) est donc RÉFUTÉE comme explication UNIQUE — au moins cette occurrence a une autre cause. Isolé (npx vitest run ../tests/screens.test.ts seul), 0 incident, 399,62 s — troisième confirmation que le crash n'apparaît que dans la chaîne complète. Enquête rouverte dans docs/CHASSE.md §5.",
+      "depuis": "2026-09-08 (Lot 4, tranche 3 ; récidive lot contrôle interne, tranche 1)",
+      "note": "non corrigé : cause encore inconnue, hypothèses à éprouver listées dans docs/CHASSE.md §5 (pression mémoire/CPU cumulée, le serveur Next lui-même, un ordre de test). Le passage suivant sur le même arbre est repassé propre (voir STATUS.md) : la livraison n'a pas été bloquée. Découverte annexe de la première observation, déjà corrigée : la forme opérative de la règle 35 (CLAUDE.md) manquait `set -o pipefail`."
     },
     {
       "id": "R59",
@@ -241,6 +241,12 @@
       "etat": "reporté — D.6 point 6 (parcours « découverte » chronométré avec plafond verdict) non traité : distinct du compteur descriptif déjà mesuré par npm run clics (362 clics/48 gestes).",
       "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
       "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+    },
+    {
+      "id": "R63",
+      "etat": "ouvert — course sur control_task.seq_no sous double appel concurrent d'ajouterTacheControle : erreur Postgres brute (duplicate key), pas de corruption (la contrainte unique tient), pas un refus nommé en français. Même patron déjà présent ailleurs (requests.ts::nextSeq), non corrigé là non plus — défaut de classe, pas une régression propre à cette tranche.",
+      "depuis": "2026-09-08 (lot contrôle interne, tranche 1 ; revue hostile voix 2)",
+      "note": "non bloquant pour l'expédition. Corrigé le jour où la classe entière (nextSeq-style) est traitée."
     },
     {
       "id": "N2-1",

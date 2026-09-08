@@ -5373,3 +5373,38 @@ avale lui-même une exception avant qu'elle n'atteigne `tx()`, n'est pas couvert
 Il ne dit rien non plus des signaux Next posés APRÈS qu'`executer()` a déjà quitté la portée de
 `tx()` (ses propres `redirect(chemin)` de fin de fonction, hors transaction depuis toujours) — ce
 n'est pas le cas qui a coûté R37, et ce correctif ne prétend pas les couvrir.
+
+## ADR-136
+
+**Le walkthrough vidéo du contrôle interne s'ancre sur `control`, pas sur la table `walkthrough`
+de 0002 — celle-ci reste morte, ni supprimée ni réutilisée.** (Mandat contrôle interne,
+`docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §2 ; Lot suivant, tranche 1 ; migration
+`0148_controle_interne_taches.sql`.)
+
+**CE QUI EXISTAIT.** `walkthrough` (0002_testing.sql:217-224) : `id, process_id, status
+('not_started'|'in_progress'|'complete'), performed_by, performed_at, notes`. Créée dès la
+première migration ICFR/SOX, jamais câblée à un service ni à un écran — confirmée MORTE en code
+par la recherche du 2026-09-08 (seule mention hors SQL : RLS activée par 0029, un commentaire
+libre dans `part2.ts`/`registre.ts:171`). Un cas exact du « décor sans chemin » de la règle 20.
+
+**POURQUOI ELLE N'EST PAS RÉUTILISÉE TELLE QUELLE.** Elle est ancrée sur `process_id` — un
+PROCESSUS peut porter PLUSIEURS contrôles (`rcm_row`, `control` référencent tous deux
+`process_id` séparément). Le mandat documente le walkthrough PAR CONTRÔLE : « une section de
+contrôle interne où l'on documente le design et l'implémentation D'UN CONTRÔLE à partir d'un
+walkthrough filmé » (§1). Réutiliser `walkthrough` aurait exigé soit un contrôle unique par
+processus (faux dans les données déjà semées — `Order to Cash` porte C-REV-01 à 04), soit une
+table de jonction control↔walkthrough — plus de mécanique que le besoin réel : UN enregistrement
+par contrôle, remplaçable, jamais historisé en plusieurs lignes.
+
+**LA DÉCISION.** `control.di_walkthrough_evidence_id` (nullable, `references evidence(id)`) — un
+lien direct, correctement ancré, minimal. `walkthrough` (0002) n'est ni supprimée ni migrée : une
+migration ne touche jamais une migration appliquée (règle 26), et la supprimer serait un DROP sur
+une table dont la RLS est déjà posée par 0029 — un risque sans bénéfice pour une table qui ne
+coûte rien à laisser inerte. Si un jour un vrai besoin de walkthrough MULTI-CONTRÔLES apparaît
+(un seul entretien couvrant plusieurs contrôles d'un même processus), cette table redevient un
+candidat naturel — l'arbitrage se referait alors, pas en la réanimant en silence.
+
+**CE QUE CETTE DÉCISION NE TRANCHE PAS.** Elle ne dit rien de l'agent qui analysera la vidéo
+(Partie 4 du mandat, après le Lot 8) ni de la donnée personnelle qu'une vidéo réelle porterait
+(les deux décisions du fondateur nommées au mandat, §4, non prises ici — le monde de
+démonstration reste synthétique, aucune vidéo réelle).

@@ -16,7 +16,7 @@ vu marcher. `prouvé` — le chemin existe et une station l’exerce (ce qui ne 
 dire que la station vérifie que le résultat est correct — voir « ce que ce registre
 ne vérifie pas » ci-dessous, et dans l’en-tête de `src/lib/semeur/registre.ts`).
 
-**Compte** : 83 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **26 non prouvé(s)** (chemin humain existant, jamais cliqué) · 41 prouvé(s).
+**Compte** : 86 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **29 non prouvé(s)** (chemin humain existant, jamais cliqué) · 41 prouvé(s).
 
 **Ce que ce registre ne vérifie PAS** : qu’une station qui clique un chemin observe
 le bon résultat derrière (« cliqué » n’est pas « prouvé correct ») ; les tables de
@@ -119,21 +119,25 @@ sous la ligne — elle ne se cache pas dans le badge.
 | rebuildFslis (SOX) | `part2.ts:23` | `scoping/page.tsx:53` | — | non prouvé |
 | matérialité proposée/validée (SOX) | `part2.ts:24` | `materiality/page.tsx:42,57` | — | non prouvé |
 | RCM du cycle importé (importRcm) | `part2.ts:25` | `rcm/page.tsx:34,59 (bouton rcm.importRcmClientListing)` | — | non prouvé |
-| statut du walkthrough DI (setDiStatus) | `part2.ts:99` | `rcm/page.tsx:42` | — | non prouvé |
+| statut du walkthrough DI (setDiStatus) | `part2.ts:121` | `rcm/page.tsx:42` | — | non prouvé |
+| enregistrement vidéo du walkthrough attaché (attacherWalkthrough) | `part2.ts:118 (mandat contrôle interne, 2026-09-08)` | `rcm/[cid]/page.tsx (attacherWalkthroughAction)` | — | non prouvé |
+| | | | | ↳ domaine SOX entier hors du parcours cliqué (note ci-dessus, ligne 166-167) — même état que le reste de cette section, pas une régression neuve |
+| tâche du walkthrough documentée (ajouterTacheControle) | `part2.ts:119` | `rcm/[cid]/page.tsx (ajouterTacheAction)` | — | non prouvé |
+| procédure de tâche documentée hors inquiry — CTRL-01 (documenterProcedureTache) | `part2.ts:120` | `rcm/[cid]/page.tsx (documenterProcedureAction)` | — | non prouvé |
 | demande de listing formelle (insert request/request_item ad hoc) | `part2.ts:37-40` | — | — | **DÉCOR** |
 | | | | | ↳ le chemin cliquable (rcm/[cid]/page.tsx importInstancesAction) importe le CSV directement, sans créer de request formelle au préalable — un geste DIFFÉRENT de celui du semeur, pas un équivalent |
 | demande envoyée + pièce reçue (approveSend, ingestEvidence — listing) | `part2.ts:43,47-54` | `requests/[rid]/page.tsx:33 ; rcm/[cid]/page.tsx (dépôt)` | — | non prouvé |
-| occurrences importées (importInstances) | `part2.ts:55` | `rcm/[cid]/page.tsx:59,150` | — | non prouvé |
-| pièce d’exécution de contrôle déposée (uploadControlEvidence) | `part2.ts:68 (appelée depuis 104, 121)` | `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)` | — | non prouvé |
-| échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction) | `part2.ts:102-103,120` | `rcm/[cid]/page.tsx:69-70,155 (un seul bouton, un seul geste)` | — | non prouvé |
+| occurrences importées (importInstances) | `part2.ts:55` | `rcm/[cid]/page.tsx:100,255` | — | non prouvé |
+| pièce d’exécution de contrôle déposée (uploadControlEvidence) | `part2.ts:72 (appelée depuis 126, 143)` | `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)` | — | non prouvé |
+| échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction) | `part2.ts:124-125` | `rcm/[cid]/page.tsx:115-116,257 (un seul bouton, un seul geste)` | — | non prouvé |
 | | | | | ↳ CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne. |
-| extraction du contrôle exécuté (extractAll/verifyExtraction, SOX) | `part2.ts:105-107,122-124` | `testing/page.tsx:67 (même service, dossier SOX)` | — | non prouvé |
-| test d’efficacité exécuté (runAttributeTesting) | `part2.ts:109,126` | `rcm/[cid]/page.tsx:80` | — | non prouvé |
-| extension à la population complète (extendToFullPopulation) | `part2.ts:115` | — | — | **DÉCOR** |
-| | | | | ↳ aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:483) |
-| déficience proposée (proposeDeficiency) | `part2.ts:139` | `rcm/[cid]/page.tsx:101,215` | — | non prouvé |
-| déficience décidée (decideDeficiency) | `part2.ts:146` | `rcm/[cid]/page.tsx:113` | — | non prouvé |
-| papier OE rédigé (draftOeWorkpaper) | `part2.ts:148` | `rcm/[cid]/page.tsx:125,219` | — | non prouvé |
+| extraction du contrôle exécuté (extractAll/verifyExtraction, SOX) | `part2.ts:127,129,144,146` | `testing/page.tsx:67 (même service, dossier SOX)` | — | non prouvé |
+| test d’efficacité exécuté (runAttributeTesting) | `part2.ts:131,148` | `rcm/[cid]/page.tsx:120` | — | non prouvé |
+| extension à la population complète (extendToFullPopulation) | `part2.ts:137` | — | — | **DÉCOR** |
+| | | | | ↳ aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:645) |
+| déficience proposée (proposeDeficiency) | `part2.ts:161` | `rcm/[cid]/page.tsx:143,315` | — | non prouvé |
+| déficience décidée (decideDeficiency) | `part2.ts:168` | `rcm/[cid]/page.tsx:155` | — | non prouvé |
+| papier OE rédigé (draftOeWorkpaper) | `part2.ts:170` | `rcm/[cid]/page.tsx:167,324` | — | non prouvé |
 
 ## `src/lib/flows/enrichir.ts` — Le monde enrichi — ce qui donne au dossier l’air d’avoir été travaillé
 
@@ -189,7 +193,7 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **pièce triée sur une ligne (attachEvidenceToItem)** (`part1.ts:142`) — aucun appelant dans app/src/app trouvé
 - **limitation d’étendue enregistrée (recordScopeLimitation)** (`part1.ts:325,339`) — CORRIGÉ (constat B2, relecture hostile) : ces deux lignes étaient AUSSI citées comme preuve de la ligne « écart escaladé / résolu » ci-dessus — un même geste du semeur ne peut pas être à la fois décor et prouvé. recordScopeLimitation est une fonction PROPRE (matching.ts:508) ; revérifié : aucun bouton dans exceptions/page.tsx pour ce geste précis. La réserve « à revérifier » de la version d’origine est LEVÉE — le décor est confirmé, pas une hypothèse.
 - **demande de listing formelle (insert request/request_item ad hoc)** (`part2.ts:37-40`) — le chemin cliquable (rcm/[cid]/page.tsx importInstancesAction) importe le CSV directement, sans créer de request formelle au préalable — un geste DIFFÉRENT de celui du semeur, pas un équivalent
-- **extension à la population complète (extendToFullPopulation)** (`part2.ts:115`) — aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:483)
+- **extension à la population complète (extendToFullPopulation)** (`part2.ts:137`) — aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:645)
 - **section attribuée à un porteur (attribuerA)** (`enrichir.ts:279`) — CONFIRMÉ EXACT par la relecture hostile : la fonction attribuerAction (sections-actions.ts:32) EXISTE mais app/eng/[id]/page.tsx:14 n’importe que envoyerAction et suivreAction — un geste du métier sans écran (règle 13), pas seulement un chemin non cliqué.
 - **note antidatée (update review_note set created_at)** (`enrichir.ts:349`) — PAR NATURE sans chemin humain — un antidatage ne se clique pas. Déjà assumé et dit (N2-3, ADR-126, docs/BACKLOG_REPORTE.md) : la démonstration publique compte sur cette fabrication ; ce n’est pas un manque à combler, c’est un décor DÉLIBÉRÉ et déjà écrit comme tel ailleurs.
 
@@ -207,15 +211,18 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **matérialité proposée/validée (SOX)** — chemin : `materiality/page.tsx:42,57`
 - **RCM du cycle importé (importRcm)** — chemin : `rcm/page.tsx:34,59 (bouton rcm.importRcmClientListing)`
 - **statut du walkthrough DI (setDiStatus)** — chemin : `rcm/page.tsx:42`
+- **enregistrement vidéo du walkthrough attaché (attacherWalkthrough)** — chemin : `rcm/[cid]/page.tsx (attacherWalkthroughAction)` — domaine SOX entier hors du parcours cliqué (note ci-dessus, ligne 166-167) — même état que le reste de cette section, pas une régression neuve
+- **tâche du walkthrough documentée (ajouterTacheControle)** — chemin : `rcm/[cid]/page.tsx (ajouterTacheAction)`
+- **procédure de tâche documentée hors inquiry — CTRL-01 (documenterProcedureTache)** — chemin : `rcm/[cid]/page.tsx (documenterProcedureAction)`
 - **demande envoyée + pièce reçue (approveSend, ingestEvidence — listing)** — chemin : `requests/[rid]/page.tsx:33 ; rcm/[cid]/page.tsx (dépôt)`
-- **occurrences importées (importInstances)** — chemin : `rcm/[cid]/page.tsx:59,150`
+- **occurrences importées (importInstances)** — chemin : `rcm/[cid]/page.tsx:100,255`
 - **pièce d’exécution de contrôle déposée (uploadControlEvidence)** — chemin : `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)`
-- **échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction)** — chemin : `rcm/[cid]/page.tsx:69-70,155 (un seul bouton, un seul geste)` — CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne.
+- **échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction)** — chemin : `rcm/[cid]/page.tsx:115-116,257 (un seul bouton, un seul geste)` — CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne.
 - **extraction du contrôle exécuté (extractAll/verifyExtraction, SOX)** — chemin : `testing/page.tsx:67 (même service, dossier SOX)`
-- **test d’efficacité exécuté (runAttributeTesting)** — chemin : `rcm/[cid]/page.tsx:80`
-- **déficience proposée (proposeDeficiency)** — chemin : `rcm/[cid]/page.tsx:101,215`
-- **déficience décidée (decideDeficiency)** — chemin : `rcm/[cid]/page.tsx:113`
-- **papier OE rédigé (draftOeWorkpaper)** — chemin : `rcm/[cid]/page.tsx:125,219`
+- **test d’efficacité exécuté (runAttributeTesting)** — chemin : `rcm/[cid]/page.tsx:120`
+- **déficience proposée (proposeDeficiency)** — chemin : `rcm/[cid]/page.tsx:143,315`
+- **déficience décidée (decideDeficiency)** — chemin : `rcm/[cid]/page.tsx:155`
+- **papier OE rédigé (draftOeWorkpaper)** — chemin : `rcm/[cid]/page.tsx:167,324`
 - **équipe : déclaration, signature, affectation (Hugo)** — chemin : `team/page.tsx:95 (openAction), :102 (answerAction), :115 (signAction), :122 (assignAction) — boutons :216,255,274,349` — /eng/[id]/team n’apparaît dans AUCUN aller() de scenario.ts
 - **risque évalué (assessFsli, 2e poste)** — chemin : `risk/page.tsx:85-91 (assessAction, bouton risk.reAssess)` — CORRIGÉ (constat A3/A4, relecture hostile) : compté comme prouvé à tort dans la version d’origine, en confondant avec le clic de risk.arbitrate (scenario.ts:860,871) qui appelle overrideLevel — UN AUTRE SERVICE. « risk.reAssess » : zéro occurrence dans scenario.ts. part1.ts:88 le confirme dans son propre commentaire : « assessFsli n’était appelé que par le dossier N-1 ».
 - **section envoyée à quelqu’un (envoyerA)** — chemin : `app/eng/[id]/page.tsx:98-110 (envoyerAction)`

@@ -176,6 +176,19 @@
   servi de production ni la fusion vers `main` décidée par le mandat de la nuit — mais il est
   consigné ici plutôt que tu (règle 21).
 
+- **F15 — UN incident dans `/tmp/verify-ctrl01-t1.log`** (2026-09-08, chaîne verify complète pour
+  le lot contrôle interne, tranche 1 — « le walkthrough et ses tâches, CTRL-01 » — 232 étapes) :
+  `EXCEPTION sur /eng/e7a83891.../workpapers/e99bd484... : Minified React error #418;
+  args[]=HTML`. Page NON touchée par cette tranche — vérifié par lecture des imports : le diff ne
+  touche que `sox.ts`, `membre.ts`, `part2.ts`, `rcm/[cid]/page.tsx`, `/api/sante/route.ts`,
+  `i18n/catalogue.ts` et la migration `0148` — aucun d'eux n'est importé par
+  `workpapers/[wid]/page.tsx` (le domaine SOX/contrôle interne et le domaine papiers de travail
+  NEP/revenue sont disjoints). Même forme que F5/F14 (`args[]=HTML`, F1). **Pas creusé plus loin
+  ici** (hors mandat de cette tranche, même discipline que F9-F14). La chaîne officielle de cette
+  tranche a été REJOUÉE sur le MÊME arbre (aucune édition entre les deux passages, règle 34) —
+  voir STATUS.md pour le résultat du passage propre, cité avec son heure et sa durée mesurées —
+  plutôt que poussée sur ce run rouge (même discipline que R37, F9-F14).
+
 ### Hypothèses ÉLIMINÉES — et par quoi
 
 | # | Hypothèse | Éliminée par | Portée de l'élimination |
@@ -450,3 +463,59 @@ se décide avec un auditeur.
   accompagnent (règle 17 pour R41, premier chantier pour R37) restent vérifiables sans eux.
 - **R33 titrait « cinq chemins »** et en énumère huit dans le corps du texte — corrigé dans
   `docs/BACKLOG_REPORTE.md` et `fils.json` (2026-09-06).
+
+## 5. R58 — le serveur du balayage des écrans tombe, intermittent, JAMAIS reproduit isolé
+
+### Ce qui est ÉTABLI
+
+- **Première observation (Lot 4, tranche 3, 2026-09-08 après-midi).** `tests/screens.test.ts` a
+  fait tomber le serveur trois fois sur cinq passages complets de `npm run verify`, à une route
+  DIFFÉRENTE chaque fois (`/eng/[id]/loop` (SOX) route 69, `/eng/[id]/workpapers` (SOX) route 86,
+  `/eng/[id]/testing` route 46). Un processus parasite (boucle d'attente sans `sleep`, orpheline
+  d'un sous-agent de revue hostile, trois heures d'accumulation CPU) tournait au moment des trois
+  échecs ; tué, le passage suivant (isolé puis chaîne complète) est passé propre. Hypothèse posée
+  alors : corrélation mesurée, causalité NON prouvée (règle 18).
+- **Récidive (Lot contrôle interne, tranche 1, 2026-09-08 soir), sur un arbre MESURÉ PROPRE.**
+  `npx vitest run` (chaîne complète, 927 tests) a fait tomber le serveur à la route
+  `/eng/[id]/testing` — LA MÊME route déjà vue en panne la première fois. `ps aux
+  --sort=-%cpu`/`--sort=-%mem` juste après l'échec : **aucun processus parasite** (pas de boucle
+  orpheline, pas de sous-agent, aucun processus autre que le shell de la session et les processus
+  d'infrastructure attendus). L'hypothèse « processus parasite » de la première observation ne
+  peut donc PAS expliquer cette seconde occurrence — au moins un des deux cas a une autre cause,
+  ou une cause commune non encore identifiée qui n'est pas le processus parasite.
+- **Isolé, `npx vitest run ../tests/screens.test.ts` seul : PASSE (927 → en fait 1 test, 1 fichier
+  isolé), 399,62 s, aucun crash.** Troisième observation consécutive de ce même fait : le crash
+  n'a JAMAIS été reproduit hors de la chaîne complète (~450-900 s, ~114 fichiers de test). Ce
+  n'est PAS encore une explication (règle 18) — seulement la description exacte, station par
+  station, de ce qui a été mesuré et de ce qui ne l'a pas été.
+- **La route qui tombe n'a AUCUN rapport mesuré avec le diff en cours au moment de chaque
+  occurrence.** Lot 4 tranche 3 touchait `scenario.ts`/`registre.ts` (jamais importés par le
+  runtime applicatif) ; le lot contrôle interne touchait `sox.ts`/`membre.ts`/`part2.ts`/l'écran
+  `rcm/[cid]` — `/eng/[id]/testing` (REVENUE) n'importe RIEN de ce fichier (vérifié par lecture
+  des imports de `testing/page.tsx`, aucune mention de `sox`, `membre`, `control`).
+
+### Hypothèses NON éliminées, à éprouver la prochaine fois que ça arrive
+
+1. **Pression mémoire/CPU cumulée sur ~450-900 s de chaîne, PGlite compris**, indépendante de tout
+   processus parasite spécifique — le sandbox a des ressources bornées, et 114 fichiers de test
+   plus un build de production plus un serveur Next plus Playwright en tandem sur une longue
+   durée pourrait suffire seul. À éprouver : capturer `free -m`/`vmstat 1` en continu PENDANT une
+   chaîne complète, corréler le pic mémoire avec l'instant du crash (pas seulement la route où le
+   balayage s'est arrêté — le crash a pu survenir plus tôt et n'être détecté qu'à la route
+   suivante).
+2. **Le serveur Next lui-même, pas un processus tiers** — capturer STDOUT/STDERR du process
+   `next start`/`next-server` PENDANT le balayage (actuellement non conservé au delà de l'échec)
+   pour voir s'il journalise une raison (OOM killer, exception non catchée, un timeout interne)
+   avant de mourir.
+3. **Un ordre de test spécifique** — les trois routes vues en panne (loop SOX, workpapers SOX,
+   testing) n'ont rien de commun dans leur CODE, mais peut-être dans leur PLACE dans l'ordre du
+   balayage (fin de liste ? après un nombre similaire de routes ouvertes ?) — à vérifier en
+   comparant les index numériques des trois occurrences.
+
+### Ce que cette récidive NE change PAS
+
+Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
+a été refait et est passé propre — donc la LIVRAISON n'a jamais été bloquée sur un rouge non
+diagnostiqué (règle 32 : jamais expédier pendant que la chaîne verify est rouge sans en connaître
+la cause). Mais l'INSTRUMENT (règle 35) mérite mieux qu'une ré-exécution silencieuse : la
+prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas après.

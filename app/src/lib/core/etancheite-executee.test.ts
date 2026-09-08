@@ -168,6 +168,9 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
     const dev = await q1<{ id: string }>(
       `insert into deviation (engagement_id, control_id, attribute_code, taxonomy_code, description)
        values ($1, $2, 'A1', 'evidence_missing', 'déviation d’épreuve (fictive)') returning id::text`, [E, ctrl.id]);
+    const tache = await q1<{ id: string }>(
+      `insert into control_task (engagement_id, control_id, seq_no, description)
+       values ($1, $2, 1, 'Tâche d’épreuve (fictive)') returning id::text`, [E, ctrl.id]);
     const defi = await q1<{ id: string }>(
       `insert into deficiency (engagement_id, control_id, severity_proposed, narrative)
        values ($1, $2, 'deficiency', 'déficience d’épreuve (fictive)') returning id::text`, [E, ctrl.id]);
@@ -215,7 +218,7 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
     Object.assign(F, {
       noteEpreuve: noteEpreuve,
       engagementId: E, versEngagementId: E, depuisEngagementId: E, tenantId: IDS.tenant,
-      workpaperId: paperId.id, controlId: ctrl.id, deviationId: dev.id, deficiencyId: defi.id,
+      workpaperId: paperId.id, controlId: ctrl.id, taskId: tache.id, deviationId: dev.id, deficiencyId: defi.id,
       interviewId: itv.id, gapId: gap.id, rapportId: rapport.id, columnId: col.id,
       estimationId: estim.id,
       partyId: await unDe('confirmation_party'),

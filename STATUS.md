@@ -8,6 +8,90 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 1 : le walkthrough et ses tâches, CTRL-01 (2026-09-08)
+
+*Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §2 et §7.1. Recherche préalable
+(agent dédié, parallèle sur 5 axes) : `control`/`control_instance`/`attribute_def`/
+`attribute_result` (0002_testing.sql) existent déjà et sont le bon point d'ancrage — étendre, pas
+dupliquer ; `walkthrough` (0002) existe aussi mais MORTE en code, mal ancrée sur `process_id` (un
+processus porte plusieurs contrôles), jamais câblée à un service ni un écran — ADR-136 documente
+pourquoi elle reste inerte plutôt que réutilisée. Aucun patron de FK réelle vers un risque
+n'existait dans le dépôt pour CTRL-02 (tranche suivante) ; le patron `verifie:false` pour un
+paramètre de pack livré vide (CTRL-07, tranche OE) est confirmé dans `methodology/independance.json`.*
+
+**Ce qui a changé.** Migration `0148_controle_interne_taches.sql` : `control.di_walkthrough_
+evidence_id` (lien direct vers la pièce vidéo) ; deux tables neuves, `control_task` (une tâche =
+une ligne, §2.1.2) et `control_task_procedure` (procédure documentée par tâche, vocabulaire fermé
+`inquiry`/`inspection`/`observation`/`reperformance`) — RLS, `FORCE ROW LEVEL SECURITY`, garde de
+verrou (`assert_engagement_unlocked`) et verdict écrit pour les deux tables, `engagement_id`
+dénormalisé sur `control_task_procedure` (nécessaire : la garde lit `NEW.engagement_id`
+littéralement, et cette table s'écrit dans une transaction SÉPARÉE de son parent). `sox.ts` :
+`attacherWalkthrough`, `ajouterTacheControle` (pose l'inquiry systématique, une fois, citant la
+vidéo), `documenterProcedureTache` ; **CTRL-01** gardé dans `setDiStatus` — aucune tâche, ou une
+tâche à la seule inquiry, refuse la conclusion du D&I, en nommant la tâche. Écran : `rcm/[cid]`
+gagne une section walkthrough (joindre l'enregistrement, ajouter des tâches, documenter une
+procédure par tâche, badge « CTRL-01 manquant » tant qu'une tâche n'a que l'inquiry). Lecture
+`/api/sante` globale (tous les dossiers) : rougit sur tout contrôle CONCLU sans tâche, ou avec une
+tâche à la seule inquiry.
+
+**Défaut de modélisation trouvé ET corrigé dans la même tranche, pas laissé pour plus tard**
+(revue hostile, voix 1, disqualifiant tel quel) : `importRcm` lisait `di_status` directement du
+CSV du listing CLIENT — un jugement de l'AUDITEUR qui n'a jamais sa source chez le client. Six
+contrôles sur sept démarraient donc « effective » sans jamais passer par `setDiStatus`, donc sans
+aucune tâche — exactement la violation de CTRL-01 que la lecture `/api/sante` existe pour
+attraper, et sa PREMIÈRE version (jointure partant des tâches) ne pouvait pas voir un contrôle
+conclu à ZÉRO tâche. Corrigé : `dataset/sox/rcm.csv` perd sa colonne `di_status` ; `importRcm`
+pose toujours `not_assessed` ; la lecture `/api/sante` part désormais des CONTRÔLES conclus, pas
+des tâches, et compte l'absence de tâche comme sa propre violation. Le monde semé est maintenant
+honnête : 2 contrôles conclus par le vrai chemin gardé (C-BR-01, C-REV-01, walkthrough+tâche+
+procédure réels dans `part2.ts`), 5 `not_assessed` — vérifié en direct (`/rcm` après
+`db:reset && demo:seed`, badges comptés dans le HTML servi).
+
+**Deux autres constats CONFIRMÉS PAR LES DEUX VOIX** (règle 30 : convergent, donc « confirmé par
+réfutation ») : `documenterProcedureTache` n'avait AUCUNE garde d'exécution contre
+`procedure='inquiry'` — le type TypeScript exclut cette valeur, mais un `FormData` posté à la main
+n'est pas contraint par le `<select>` du formulaire, et l'upsert écrasait silencieusement la ligne
+d'inquiry systématique (sa note, sa citation de la vidéo). Corrigé : garde à l'exécution, testée
+avec le même appel qui l'a trouvée (`documenterProcedureTache(taskId, user, 'inquiry' as any, ...)`
+refuse désormais, `CTRL-01 : ... n'est pas une procédure documentable`). `attacherWalkthrough` et
+`documenterProcedureTache` acceptaient une pièce en QUARANTAINE (seule fonction du fichier à ne
+pas suivre ce patron déjà répété dix fois ailleurs) — corrigé, testé.
+
+**Autres corrections, mécaniques** : `docs/DECISIONS.md` ne portait pas l'arbitrage que la
+migration prétendait y avoir consigné (ADR-136, ajouté) ; six citations `part2.ts:` PRÉEXISTANTES
+et trois neuves dans `semeur/registre.ts` avaient dérivé de ±19-22 lignes à cause de l'insertion —
+recalculées par `grep -n`, pas supposées ; l'instrument d'étanchéité exécutée n'avait pas de
+fixture réelle pour `taskId` (preuve ETANCH-04 seulement, plus faible que ETANCH-01/03) — une
+ligne `control_task` réelle ajoutée à son montage. `set -o pipefail` actif tout du long (règle 35).
+
+**R63 consigné, non bloquant** : course sur `control_task.seq_no` sous double appel concurrent —
+erreur Postgres brute, aucune corruption (contrainte unique tient), même patron non corrigé
+ailleurs (`requests.ts::nextSeq`). **Amendement CLAUDE.md règle 14** ajouté le même jour
+(« pack SOX gelé » précisé, pas levé) ; objection de la voix 1 sur le chevauchement de vocabulaire
+avec `methodology/procedures.json` répondue dans le même amendement, marquée **jugée seule, non
+réfutée** (règle 30) — à corriger si un second regard ou le fondateur la trouve fausse.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 30 amendée : modèle de données + RLS/
+multi-tenant + code de refus neuf, donc deux voix) — voix 2 : SHIP WITH MINOR FIXES (9 constats,
+tous corrigés ou consignés R63) ; voix 1 : DO NOT SHIP AS-IS sur F1 (le défaut de modélisation
+ci-dessus) — corrigé, testé (cas connu mauvais A et B, `ctrl01-lecture.test.ts`), revérifié par
+moi-même station par station (navigateur réel, `/rcm` et `/rcm/[cid]`) avant expédition.
+
+**Verify complet sur arbre figé, DEUX passages** (`set -o pipefail; timeout 3600 npm run verify`,
+règle 35) — le premier (`/tmp/verify-ctrl01-t1.log`) a montré **1 échec réel** : le `#418` déjà
+connu (`docs/CHASSE.md` §1), sur une page `/workpapers/` qu'aucun fichier de cette tranche ne
+touche ni n'importe — consigné **F15** dans `docs/CHASSE.md`, pas re-creusé (même discipline que
+F9-F14), rejoué sur le MÊME arbre (aucune édition entre les deux passages, règle 34). Le second
+(`/tmp/verify-ctrl01-t2.log`) est intégralement vert : **932/932 tests** (115 fichiers, 459,72 s),
+**43 gardes**, **932 tests collectés · plancher 632**, langue **0 chaîne hors catalogue · 15
+message(s) de refus documentés**, **0 lecture perdue sur 1716 chemins figés**, **276/276 stations
+déclarées/figées**, screens **87 + 51 routes · 0 échec**, clics **232 étapes · 0 échec · 362
+clics**, visuel **312 vues · 0 défaut**. R44 (`docs/SEMEUR_VS_CHEMIN.md`) : **86 objets · 16 DÉCOR
+(inchangé) · 29 non prouvé(s) (+3) · 41 prouvé(s) (inchangé)** — attendu : trois objets neufs
+ajoutés avec un chemin humain réel mais aucune station de clics ne les exerce encore (le domaine
+SOX/contrôle interne entier est hors du parcours cliqué, note déjà présente dans le registre) ;
+aucun décor résolu, aucun nouveau décor créé.
+
 ## Lot 4 — CLOS (2026-09-08, SHA servi f2968d3)
 
 Quatre tranches en production : déplanification (tranche 1), R34/R30 partiel (tranche 2), création

@@ -78,13 +78,20 @@ export async function importRcm(engagementId: string, csv: string, userId: strin
     const itgcRow = itgc ? await q01<{ id: string }>(`select id from itgc_area where code = $1`, [itgc]) : null;
     const existing = await q01<{ id: string }>(`select id from control where engagement_id = $1 and code = $2`, [engagementId, get('code')]);
     if (existing) continue;
+    /* CTRL-01 (mandat contrôle interne, 2026-09-08) : le D&I d'un contrôle est un JUGEMENT DE
+       L'AUDITEUR — il ne vient JAMAIS du listing RCM du client (`di_status` a longtemps été une
+       colonne de ce CSV, lue directement ici ; trouvé par la revue hostile du 2026-09-08 comme
+       un défaut de modélisation, pas seulement un décor : un contrôle « effective » sans aucune
+       tâche documentée, jamais passé par `setDiStatus`, est exactement le cas que CTRL-01 existe
+       pour refuser). Chaque contrôle importé démarre donc `not_assessed`, quel que soit le
+       contenu du listing — seul `setDiStatus` (gardé par CTRL-01) peut le faire avancer. */
     const control = await q1<{ id: string }>(
-      `insert into control (engagement_id, process_id, code, name, description, frequency, nature, effect, is_key, itgc_area_id, owner_name, di_status)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning id`,
+      `insert into control (engagement_id, process_id, code, name, description, frequency, nature, effect, is_key, itgc_area_id, owner_name)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
       [
         engagementId, processIds.get(processName), get('code'), get('name'), get('description'),
         get('frequency'), get('nature'), get('effect'), get('is_key') === 'yes',
-        itgcRow?.id ?? null, get('owner'), get('di_status'),
+        itgcRow?.id ?? null, get('owner'),
       ],
     );
     await q(
@@ -112,9 +119,10 @@ export async function listControls(engagementId: string) {
     effect: string; is_key: boolean; owner_name: string | null; di_status: string; process_name: string;
     itgc_code: string | null; risk_desc: string | null; coso_component: string | null;
     instance_count: string; deviation_count: string; test_status: string | null; test_conclusion: string | null;
+    di_walkthrough_evidence_id: string | null;
   }>(
     `select c.id, c.code, c.name, c.description, c.frequency, c.nature, c.effect, c.is_key,
-            c.owner_name, c.di_status, p.name process_name, i.code itgc_code,
+            c.owner_name, c.di_status, c.di_walkthrough_evidence_id, p.name process_name, i.code itgc_code,
             r.risk_desc, r.coso_component,
             (select count(*) from control_instance ci where ci.control_id = c.id) instance_count,
             (select count(*) from deviation d where d.control_id = c.id) deviation_count,
@@ -129,10 +137,157 @@ export async function listControls(engagementId: string) {
   );
 }
 
+// ---------- S8x: le walkthrough et ses tâches (mandat contrôle interne, 2026-09-08, §2) ----------
+
+/** L'enregistrement vidéo du walkthrough — cette pièce EST l'Inquiry (§2.1.1). Ancré
+ *  directement sur `control` (pas sur la table `walkthrough` de 0002, morte et mal ancrée
+ *  sur `process_id` — voir 0148). Un contrôle réenregistré remplace le lien : la PIÈCE reste
+ *  au dossier (jamais supprimée), seul le lien change — les tâches déjà créées gardent leur
+ *  citation de l'ancienne pièce dans leur ligne d'inquiry, elles ne sont jamais réécrites en
+ *  silence. */
+export async function attacherWalkthrough(controlId: string, userId: string, evidenceId: string): Promise<void> {
+  await assertMembreDe('control', controlId, userId, 'attacher un enregistrement de walkthrough');
+  const c = await q1<{ engagement_id: string; code: string }>(`select engagement_id, code from control where id = $1`, [controlId]);
+  const ctx = await engagementCtx(c.engagement_id);
+  const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
+  if (ev.engagement_id !== c.engagement_id) throw new Error('cette pièce n’appartient pas à ce dossier');
+  if (ev.quarantined) throw new Error('une pièce en quarantaine ne peut pas servir d’enregistrement de walkthrough');
+  await q(`update control set di_walkthrough_evidence_id = $2 where id = $1`, [controlId, evidenceId]);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'walkthrough_attached', objectType: 'control', objectId: controlId, payload: { code: c.code, evidenceId },
+  });
+}
+
+export interface TacheControle {
+  id: string; seq_no: number; description: string; video_timestamp: string | null;
+  procedures: { procedure: string; notes: string; evidence_id: string | null }[];
+}
+
+export async function listerTachesControle(controlId: string): Promise<TacheControle[]> {
+  const taches = await q<{ id: string; seq_no: number; description: string; video_timestamp: string | null }>(
+    `select id, seq_no, description, video_timestamp from control_task where control_id = $1 order by seq_no`,
+    [controlId],
+  );
+  const out: TacheControle[] = [];
+  for (const t of taches) {
+    const procedures = await q<{ procedure: string; notes: string; evidence_id: string | null }>(
+      `select procedure, notes, evidence_id from control_task_procedure where task_id = $1 order by procedure`,
+      [t.id],
+    );
+    out.push({ ...t, procedures });
+  }
+  return out;
+}
+
+/** Une tâche = une ligne (§2.1.2), établie à partir de la vidéo ET de la documentation du
+ *  client. Exige la vidéo déjà attachée (§2.1 : l'ordre est vidéo PUIS liste des tâches) — pas
+ *  un code CTRL-nn, le mandat n'en nomme aucun pour cette précondition, donc aucun n'est
+ *  inventé ici (règle 18). L'inquiry est SYSTÉMATIQUE (§2.2) : posée ici-même, une seule fois,
+ *  citant la vidéo — c'est ce qui rend CTRL-01 lisible comme un simple compte de lignes. */
+export async function ajouterTacheControle(
+  controlId: string, userId: string, description: string, videoTimestamp?: string,
+): Promise<string> {
+  await assertMembreDe('control', controlId, userId, 'documenter une tâche du walkthrough');
+  if (!description.trim()) throw new Error('la tâche a besoin d’une description — ce que le control owner a réellement fait');
+  const c = await q1<{ engagement_id: string; code: string; di_walkthrough_evidence_id: string | null }>(
+    `select engagement_id, code, di_walkthrough_evidence_id from control where id = $1`,
+    [controlId],
+  );
+  if (!c.di_walkthrough_evidence_id) {
+    throw new Error('le walkthrough n’a pas encore d’enregistrement vidéo attaché — attachez-le avant d’en tirer des tâches');
+  }
+  const ctx = await engagementCtx(c.engagement_id);
+  const seq = await q1<{ n: string }>(`select coalesce(max(seq_no),0) n from control_task where control_id = $1`, [controlId]);
+  const task = await q1<{ id: string }>(
+    `insert into control_task (engagement_id, control_id, seq_no, description, video_timestamp, created_by)
+     values ($1,$2,$3,$4,$5,$6) returning id`,
+    [c.engagement_id, controlId, Number(seq.n) + 1, description.trim(), videoTimestamp?.trim() || null, userId],
+  );
+  await q(
+    `insert into control_task_procedure (engagement_id, task_id, procedure, notes, evidence_id, created_by)
+     values ($1,$2,'inquiry',$3,$4,$5)`,
+    [c.engagement_id, task.id, 'Entretien — le walkthrough enregistré (§2.1.1, mandat contrôle interne).', c.di_walkthrough_evidence_id, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'control_task_added', objectType: 'control', objectId: controlId,
+    payload: { code: c.code, taskId: task.id, description: description.trim() },
+  });
+  return task.id;
+}
+
+const PROCEDURES_DOCUMENTABLES = ['inspection', 'observation', 'reperformance'] as const;
+
+/** CTRL-01 (§2.2) : « l'inquiry seule ne conclut rien. » Cette fonction documente le SEUL
+ *  moyen prévu de satisfaire la règle — inspection, observation, ré-exécution — JAMAIS
+ *  'inquiry', déjà posée une fois pour toutes par `ajouterTacheControle` et qui cite la vidéo
+ *  du walkthrough : la garde ci-dessous est RUNTIME, pas seulement le type TypeScript (revue
+ *  hostile du 2026-09-08, les deux voix, constat convergent — un `FormData` posté à la main
+ *  n'est pas contraint par le `<select>` du formulaire). Un second appel sur la même (tâche,
+ *  procédure) ÉDITE la ligne (upsert) : deux inspections de la même tâche sont une correction,
+ *  pas deux preuves — mais l'ANCIENNE note et pièce sont conservées dans `event_log` avant
+ *  d'être remplacées (règle 3 : la provenance ne se rattrape pas après coup). CE QUE CETTE
+ *  FONCTION NE FAIT PAS (règle 19) : elle ne conserve pas d'historique EN BASE des versions
+ *  précédentes — seul `event_log` les porte, pas de table de révisions dédiée. */
+export async function documenterProcedureTache(
+  taskId: string, userId: string, procedure: 'inspection' | 'observation' | 'reperformance', notes: string, evidenceId?: string,
+): Promise<void> {
+  if (!PROCEDURES_DOCUMENTABLES.includes(procedure)) {
+    throw new Error(`CTRL-01 : « ${procedure} » n’est pas une procédure documentable ici — inspection, observation ou `
+      + 'ré-exécution seulement (l’inquiry est posée automatiquement, une seule fois, à la création de la tâche).');
+  }
+  if (!notes.trim()) throw new Error('la procédure a besoin d’une note — ce qui a été inspecté, observé ou ré-exécuté, et ce qui en ressort');
+  const engagementId = await assertMembreDe('control_task', taskId, userId, 'documenter une procédure de tâche');
+  const ctx = await engagementCtx(engagementId);
+  if (evidenceId) {
+    const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
+    if (ev.engagement_id !== engagementId) throw new Error('cette pièce n’appartient pas à ce dossier');
+    if (ev.quarantined) throw new Error('une pièce en quarantaine ne peut pas corroborer une procédure documentée');
+  }
+  const precedente = await q01<{ notes: string; evidence_id: string | null; created_by: string | null }>(
+    `select notes, evidence_id, created_by from control_task_procedure where task_id = $1 and procedure = $2`,
+    [taskId, procedure],
+  );
+  await q(
+    `insert into control_task_procedure (engagement_id, task_id, procedure, notes, evidence_id, created_by)
+     values ($1,$2,$3,$4,$5,$6)
+     on conflict (task_id, procedure) do update set notes = $4, evidence_id = $5, created_by = $6, created_at = now()`,
+    [engagementId, taskId, procedure, notes.trim(), evidenceId ?? null, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_task_procedure_documented', objectType: 'control_task', objectId: taskId,
+    payload: {
+      procedure, notes: notes.trim().slice(0, 500), hasEvidence: Boolean(evidenceId),
+      remplace: precedente ? { notes: precedente.notes.slice(0, 500), evidenceId: precedente.evidence_id, par: precedente.created_by } : null,
+    },
+  });
+}
+
 export async function setDiStatus(controlId: string, userId: string, status: 'effective' | 'deficient', conclusion: string): Promise<void> {
   await assertMembreDe('control', controlId, userId, 'statuer la conception d’un contrôle');
   if (!conclusion.trim()) throw new Error('D&I conclusion required');
   const c = await q1<{ engagement_id: string; code: string }>(`select engagement_id, code from control where id = $1`, [controlId]);
+  const taches = await q<{ id: string; description: string }>(
+    `select id, description from control_task where control_id = $1 order by seq_no`,
+    [controlId],
+  );
+  if (taches.length === 0) {
+    throw new Error('CTRL-01 : aucune tâche documentée — établissez la liste des tâches à partir du walkthrough avant de conclure le design et l’implémentation.');
+  }
+  for (const t of taches) {
+    const preuve = await q01(
+      `select 1 from control_task_procedure where task_id = $1 and procedure <> 'inquiry'`,
+      [t.id],
+    );
+    if (!preuve) {
+      throw new Error(
+        `CTRL-01 : la tâche « ${t.description} » n’est documentée que par l’inquiry — au moins une inspection, `
+        + 'observation ou ré-exécution est requise avant de conclure.',
+      );
+    }
+  }
   const ctx = await engagementCtx(c.engagement_id);
   await q(`update control set di_status = $2, di_conclusion = $3 where id = $1`, [controlId, status, conclusion]);
   await logEvent({

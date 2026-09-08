@@ -747,6 +747,42 @@ async function corpsDeLaSonde() {
     }));
   }
 
+  /* CTRL-01 (mandat contrôle interne, 2026-09-08, Lot suivant tranche 1) : « l'inquiry seule ne
+     conclut rien ». Lue GLOBALEMENT (tous les dossiers, pas seulement `id`) : l'invariant doit
+     tenir pour tout contrôle CONCLU, où qu'il soit — `setDiStatus` le garde à l'écriture ; cette
+     lecture ne peut rougir que si une écriture a CONTOURNÉ ce garde (un SQL direct, une
+     régression de la garde elle-même) — elle ne vérifie PAS que la garde fonctionne pour un
+     contrôle qui n'a encore rien conclu (aucun cas à rougir tant que rien n'est conclu).
+     CORRIGÉ (revue hostile du 2026-09-08, voix 1) : la première version partait des TÂCHES
+     (`join control_task`), donc un contrôle CONCLU sans AUCUNE tâche — exactement le défaut que
+     `importRcm` produisait avant sa propre correction ce jour-là, en import direct du `di_status`
+     du listing client — ne rejoignait jamais rien et passait pour vert. Elle part maintenant des
+     CONTRÔLES conclus, et compte l'absence de tâche comme sa PROPRE violation, distincte de
+     « une tâche à la seule inquiry ». */
+  lectures.push(await essayer('CTRL-01 : aucun contrôle conclu sans procédure au-delà de l’inquiry', async () => {
+    const concludedControls = await q<{ id: string; code: string }>(
+      `select id, code from control where di_status <> 'not_assessed'`,
+    );
+    if (concludedControls.length === 0) return 'aucun contrôle conclu pour l’instant';
+    const violations: string[] = [];
+    let taches = 0;
+    for (const c of concludedControls) {
+      const taskRows = await q<{ id: string; description: string }>(
+        `select id, description from control_task where control_id = $1 order by seq_no`, [c.id],
+      );
+      if (taskRows.length === 0) { violations.push(`${c.code} : conclu sans aucune tâche documentée`); continue; }
+      taches += taskRows.length;
+      for (const t of taskRows) {
+        const preuve = await q01(`select 1 from control_task_procedure where task_id = $1 and procedure <> 'inquiry'`, [t.id]);
+        if (!preuve) violations.push(`${c.code} — ${t.description} : inquiry seule`);
+      }
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-01 : ${violations.join(' ; ')}`);
+    }
+    return `${concludedControls.length} contrôle(s) conclu(s) · ${taches} tâche(s), toutes documentées au-delà de l’inquiry`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

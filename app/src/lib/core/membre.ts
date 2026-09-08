@@ -112,7 +112,7 @@ export async function estMembre(engagementId: string, userId: string): Promise<b
 /** Les objets FILS par lesquels une écriture peut être désignée. */
 export type ObjetFils =
   | 'account_detail_import'
-  | 'carry_forward' | 'confirmation_party' | 'control' | 'deficiency' | 'deviation'
+  | 'carry_forward' | 'confirmation_party' | 'control' | 'control_task' | 'deficiency' | 'deviation'
   | 'estimation' | 'evidence' | 'exception' | 'extraction' | 'independence_declaration'
   | 'ipe_rapport' | 'meeting_invitation' | 'process_interview' | 'reconciliation_item'
   | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'sample_item'
@@ -131,6 +131,7 @@ const RESOLUTION: Record<ObjetFils, string> = {
   confirmation_party: `select c.engagement_id::text e from confirmation_party p
      join confirmation_campaign c on c.id = p.campaign_id where p.id = $1`,
   control: `select engagement_id::text e from control where id = $1`,
+  control_task: `select engagement_id::text e from control_task where id = $1`,
   deficiency: `select engagement_id::text e from deficiency where id = $1`,
   deviation: `select engagement_id::text e from deviation where id = $1`,
   estimation: `select engagement_id::text e from estimation where id = $1`,

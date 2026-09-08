@@ -601,6 +601,21 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   si le symptôme récidive sur un arbre propre (aucun processus parasite mesuré), rouvrir
   l'enquête dans `docs/CHASSE.md` plutôt que de re-tenter la même explication.
 
+  **Récidive du 2026-09-08 soir (lot contrôle interne, tranche 1), sur un arbre MESURÉ PROPRE**
+  (`ps aux --sort=-%cpu`/`--sort=-%mem` immédiatement après l'échec : aucun processus parasite,
+  aucune boucle orpheline) : `npx vitest run` (927 tests) est de nouveau tombé à
+  `/eng/[id]/testing` — LA MÊME route qu'une des trois occurrences précédentes — sans rapport
+  mesuré avec le diff en cours (`sox.ts`/`membre.ts`/`part2.ts`/`rcm/[cid]`, rien d'importé par
+  `testing/page.tsx`). L'hypothèse « processus parasite » de la première observation est donc
+  RÉFUTÉE comme explication UNIQUE (règle 18) — au moins cette seconde occurrence a une autre
+  cause, encore inconnue. Isolé, `npx vitest run ../tests/screens.test.ts` seul PASSE (399,62 s,
+  0 incident) — troisième confirmation que le crash n'apparaît QUE dans la chaîne complète.
+  Enquête rouverte dans `docs/CHASSE.md` §5 (hypothèses non éliminées : pression mémoire/CPU
+  cumulée, le serveur Next lui-même plutôt qu'un tiers, un ordre de test) — pas re-close ici. Le
+  passage suivant sur le même arbre est repassé propre (voir STATUS.md) : la livraison n'a pas
+  été bloquée, seul l'instrument reste à construire (capturer `vmstat`/stdout serveur PENDANT la
+  prochaine occurrence, avant de relancer).
+
 - **R59 — D.6 point 2 (le rail par défaut) reste NON traité.** Mandat
   `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, §D.6 : « Le rail n'ouvre par défaut que les
   groupes portant du travail sur ce dossier ; un test compte les destinations visibles au premier
@@ -633,3 +648,18 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 déjà livrées du Lot 4 comme ayant « fermé de la dette et affiné l'épure » et demande d'orienter la
 suite vers la CAPACITÉ neuve plutôt que le polissage — Lot 4 est donc considéré clos avec ce qui est
 en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement abandonnés (règle 23).**
+
+- **R63 — course sur `control_task.seq_no` sous double appel concurrent d'`ajouterTacheControle`,
+  erreur Postgres brute plutôt qu'un refus en français.** Trouvé par la revue hostile du
+  2026-09-08 (voix 2), lot contrôle interne tranche 1 : `Promise.allSettled([ajouterTacheControle
+  (c,u,'A'), ajouterTacheControle(c,u,'B')])` sur le même contrôle — un appel réussit, l'autre est
+  rejeté par `duplicate key value violates unique constraint
+  "control_task_control_id_seq_no_key"` (le calcul `select coalesce(max(seq_no),0)+1` n'est pas
+  protégé contre une écriture concurrente). La contrainte `unique(control_id, seq_no)` empêche
+  toute corruption réelle (aucun doublon, aucune perte silencieuse) — seul le message est brut,
+  pas un refus nommé. MÊME PATRON déjà présent ailleurs dans le dépôt (`requests.ts::nextSeq`),
+  non corrigé là non plus : pas une régression propre à cette tranche, un défaut de classe. Deux
+  auditeurs qui cliquent « ajouter une tâche » au même instant sur le même contrôle est un
+  scénario réaliste. Non bloquant pour l'expédition (revue hostile, voix 2 : « worth a backlog
+  item, not silent acceptance »). Corrigé le jour où la classe entière (`nextSeq`-style) est
+  traitée, pas isolément sur `control_task`.

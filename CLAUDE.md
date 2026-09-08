@@ -78,6 +78,43 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     **n'affirme jamais plus que ce que tu vérifies** — ni dans un écran, ni dans un document.
 14. **Périmètre gelé** : aucun cycle au-delà du chiffre d'affaires, aucun contenu de procédure
     nouveau, pack SOX gelé. La mécanique est le produit ; les procédures sont du contenu.
+
+    **Amendement du 8 septembre 2026 (mandat contrôle interne) — précise « pack SOX gelé », ne
+    lève pas le reste.** Le mandat `docs/MANDATS/2026-09-08_mandat_controle_interne.md` demande
+    explicitement de la MÉCANIQUE neuve dans le domaine SOX/ICFR déjà existant (`control`,
+    `control_task`, IUC, facteurs de design, OE) — le même domaine que cette règle gelait. Lu à
+    la lettre, « pack SOX gelé » et un mandat daté du même jour qui construit dedans se
+    contredisent ; §0 de CLAUDE.md dit qu'un mandat ne prime jamais sur une règle permanente,
+    donc cette contradiction ne se résout pas en silence (règle 13). Résolution, écrite plutôt
+    que devinée : la dernière phrase de la règle 14 elle-même distingue MÉCANIQUE (le produit,
+    jamais gelé) de PROCÉDURES (contenu de méthode, gelé) — le vocabulaire fermé du mandat
+    (inquiry/inspection/observation/reperformance, quatre facteurs, IUC) est dicté verbatim par
+    le fondateur lui-même dans un fichier commité, donc ce n'est ni un contenu de procédure
+    INVENTÉ par une session ni une extension du catalogue `methodology/procedures.json` — c'est
+    de la mécanique, au sens de cette règle. **Ce qui RESTE gelé, sans exception** : aucun
+    nouveau cycle au-delà du chiffre d'affaires, aucune nouvelle procédure ajoutée à
+    `methodology/procedures.json` ou à un catalogue de méthode équivalent, aucune constante ou
+    table d'échantillonnage écrite de mémoire (règle 8 — toujours `verifie:false` tant que le
+    cabinet ne l'a pas fournie, mandat §3.2/CTRL-07).
+
+    **Objection soulevée par la revue hostile du même jour (voix 1), non réfutée par une seconde
+    voix — « jugé seul » (règle 30, documentation).** `methodology/procedures.json` catalogue
+    DÉJÀ « observation » et « inspection » comme du CONTENU de pack (`libelle`, `d`, définition,
+    `assertions_servies`, en-tête du fichier : « CONTENU, non code »), pour le cycle NEP/ISA
+    substantif. Les mêmes deux mots reviennent dans le vocabulaire fermé de ce mandat. Réponse
+    écrite ici, pas laissée en tension : ce sont DEUX TAXONOMIES DISTINCTES, de deux référentiels
+    différents, qui partagent un mot de la langue courante de l'audit sans partager un catalogue —
+    la famille `procedures.json` sert à choisir QUELLE procédure appliquer à QUEL poste pour QUELLE
+    assertion FS, dans le programme substantif (ISA 500) ; le quatuor inquiry/inspection/
+    observation/reperformance du mandat sert à documenter QUELLE MÉTHODE a produit une preuve de
+    D&I/OE sur UN CONTRÔLE INTERNE (PCAOB AS 2201/COSO) — un axe orthogonal, qui ne choisit rien
+    dans `procedures.json` et n'a pas de `assertions_servies`. Les sept types d'ASSERTION
+    (`fsli_assertion_risk`, migration 0012) sont le précédent le plus proche : un vocabulaire fermé
+    de la discipline elle-même, en `check` SQL, jamais dans `methodology/*.json`, et personne n'a
+    jamais lu ça comme « du contenu de procédure ». **Cette réponse n'a pas été éprouvée par un
+    second réfuteur indépendant** (la voix qui l'a soulevée ne peut pas aussi la juger) — si une
+    session future ou le fondateur la trouve fausse, elle se corrige ici, dans ce fichier, jamais
+    en silence ailleurs.
 15. **Chercher un mot n'est pas vérifier un chemin.** Un `grep` répond à « ce texte existe-t-il ? »,
     jamais à « cette règle s'applique-t-elle ? ». La seconde ne se répond qu'en empruntant le
     chemin : un test qui l'exerce, ou un clic (ADR-094). **Un balayage de texte n'est pas une

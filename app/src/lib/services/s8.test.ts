@@ -5,7 +5,11 @@ import { initTestDb } from '@/lib/test/setup';
 import { q, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { bootstrapSox, runControlCycle, runPart2 } from '@/lib/flows/part2';
-import { listControls, listDeviations, listDeficiencies, attributeGrid, drawAttributeSample, setDiStatus, resolveDeviation } from './sox';
+import {
+  listControls, listDeviations, listDeficiencies, attributeGrid, drawAttributeSample, setDiStatus, resolveDeviation,
+  attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, listerTachesControle,
+} from './sox';
+import { ingestEvidence } from './evidence';
 import { getWorkpaper } from './workpapers/lifecycle';
 import { renderWorkpaperPdf } from './workpapers/render';
 import type { WpSection } from './workpapers/draft';
@@ -31,12 +35,88 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
   });
 
   it('D&I gate blocks OE testing on a not-assessed control', async () => {
-    const notAssessed = (await listControls(IDS.engSox)).find((c) => c.di_status === 'not_assessed')!;
-    expect(notAssessed.code).toBe('C-REV-03');
+    /* Les SEPT contrôles démarrent `not_assessed` depuis la correction CTRL-01 du
+       2026-09-08 (importRcm ne lit plus di_status du listing client — un jugement de
+       l'auditeur ne vient jamais du client) : C-REV-03 est choisi PAR CODE, pas « le
+       premier non évalué », pour rester indépendant de l'ordre de la liste. */
+    const notAssessed = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-03')!;
+    expect(notAssessed.di_status).toBe('not_assessed');
     await expect(drawAttributeSample(notAssessed.id, IDS.users.lea)).rejects.toThrow(/D&I gate/);
+
+    // CTRL-01 (mandat contrôle interne, 2026-09-08) : sans tâche documentée, aucune conclusion.
+    await expect(setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.'))
+      .rejects.toThrow(/CTRL-01/);
+
+    // CAS CONNU MAUVAIS (règle 17) : une tâche documentée par la SEULE inquiry ne suffit pas
+    // — la garde doit ÉCHOUER ici avant qu'on retire le défaut.
+    const { evidenceId } = await ingestEvidence({
+      engagementId: IDS.engSox, filename: 'walkthrough-C-REV-03.txt', mime: 'text/plain',
+      bytes: new TextEncoder().encode('synthetic walkthrough transcript'), source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
+    });
+    await attacherWalkthrough(notAssessed.id, IDS.users.karim, evidenceId);
+    const taskId = await ajouterTacheControle(notAssessed.id, IDS.users.karim, 'Credit memo review as observed', '01:23');
+    const tachesInquiryOnly = await listerTachesControle(notAssessed.id);
+    expect(tachesInquiryOnly[0].procedures).toEqual([{ procedure: 'inquiry', notes: expect.any(String), evidence_id: evidenceId }]);
+    await expect(setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.'))
+      .rejects.toThrow(/CTRL-01.*Credit memo review as observed/);
+
+    // Défaut retiré : une procédure autre que l'inquiry est documentée, la conclusion passe.
+    await documenterProcedureTache(taskId, IDS.users.karim, 'observation', 'Reviewer observed performing the review live.');
+    const taches = await listerTachesControle(notAssessed.id);
+    expect(taches[0].procedures.map((p) => p.procedure).sort()).toEqual(['inquiry', 'observation']);
     await setDiStatus(notAssessed.id, IDS.users.karim, 'effective', 'Walkthrough performed — design effective.');
     const after = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-03')!;
     expect(after.di_status).toBe('effective');
+  });
+
+  it('documenterProcedureTache refuses "inquiry" at runtime — it never overwrites the systematic inquiry row', async () => {
+    /* CAS CONNU MAUVAIS (règle 17), trouvé PAR DEUX voix indépendantes de la revue hostile du
+       2026-09-08 (confirmé par réfutation, règle 30) : le type TypeScript de `procedure` exclut
+       'inquiry', mais rien ne l'empêchait à l'exécution — un `FormData` posté à la main (le
+       formulaire HTML n'est pas une contrainte serveur) écrasait silencieusement la ligne
+       d'inquiry systématique, effaçant sa citation de la vidéo du walkthrough. */
+    const control = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-04')!;
+    const { evidenceId } = await ingestEvidence({
+      engagementId: IDS.engSox, filename: 'walkthrough-C-REV-04.txt', mime: 'text/plain',
+      bytes: new TextEncoder().encode('synthetic walkthrough transcript'), source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
+    });
+    await attacherWalkthrough(control.id, IDS.users.karim, evidenceId);
+    const taskId = await ajouterTacheControle(control.id, IDS.users.karim, 'Price master change reviewed');
+    const avant = (await listerTachesControle(control.id))[0].procedures.find((p) => p.procedure === 'inquiry')!;
+
+    await expect(documenterProcedureTache(
+      taskId, IDS.users.karim, 'inquiry' as unknown as 'inspection', 'ATTAQUANT : notes réécrites',
+    )).rejects.toThrow(/CTRL-01.*procédure documentable/);
+
+    const apres = (await listerTachesControle(control.id))[0].procedures.find((p) => p.procedure === 'inquiry')!;
+    expect(apres).toEqual(avant);
+
+    // Une pièce en quarantaine ne peut ni servir de walkthrough ni corroborer une procédure.
+    const { evidenceId: pieceQuarantaine } = await ingestEvidence({
+      engagementId: IDS.engSox, filename: 'suspecte.txt', mime: 'text/plain',
+      bytes: new TextEncoder().encode('x'), source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
+    });
+    await q(`update evidence set quarantined = true where id = $1`, [pieceQuarantaine]);
+    await expect(attacherWalkthrough(control.id, IDS.users.karim, pieceQuarantaine)).rejects.toThrow(/quarantaine/);
+    await expect(documenterProcedureTache(taskId, IDS.users.karim, 'inspection', 'note', pieceQuarantaine)).rejects.toThrow(/quarantaine/);
+  });
+
+  it('attacherWalkthrough refuses a task before the video is attached, and a mismatched-dossier evidence', async () => {
+    const control = await q1<{ id: string; engagement_id: string }>(
+      `select id, engagement_id from control where engagement_id = $1 and code = 'C-BR-01'`, [IDS.engSox],
+    );
+    await expect(ajouterTacheControle(control.id, IDS.users.karim, 'reconciliation prepared'))
+      .rejects.toThrow(/enregistrement vidéo/);
+    const autreDossier = await ingestEvidence({
+      engagementId: IDS.engNep, filename: 'ailleurs.txt', mime: 'text/plain',
+      bytes: new TextEncoder().encode('x'), source: 'auditor',
+      uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
+    });
+    await expect(attacherWalkthrough(control.id, IDS.users.karim, autreDossier.evidenceId))
+      .rejects.toThrow(/n’appartient pas à ce dossier/);
   });
 
   it('runs the monthly bank-rec control end-to-end and surfaces every seeded deviation', async () => {

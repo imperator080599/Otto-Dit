@@ -4,10 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { requireMember } from '@/lib/core/auth';
 import { q, q1, repoRoot } from '@/lib/db/client';
-import { listControls, importInstances, drawAttributeSample, runAttributeTesting, attributeGrid, listDeviations, resolveDeviation, proposeDeficiency, decideDeficiency, listDeficiencies } from '@/lib/services/sox';
+import {
+  listControls, importInstances, drawAttributeSample, runAttributeTesting, attributeGrid, listDeviations,
+  resolveDeviation, proposeDeficiency, decideDeficiency, listDeficiencies,
+  attacherWalkthrough, listerTachesControle, ajouterTacheControle, documenterProcedureTache,
+} from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { approveSend } from '@/lib/services/requests';
+import { ingestEvidence } from '@/lib/services/evidence';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
@@ -50,6 +55,47 @@ export default async function ControlDetail({
     `select id, code, status, version from workpaper where engagement_id = $1 and code = $2 order by version desc limit 1`,
     [id, `OE-${control.code}`],
   );
+  const taches = await listerTachesControle(cid);
+
+  async function attacherWalkthroughAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      const fichier = formData.get('fichier') as File | null;
+      if (!fichier || !fichier.size) {
+        throw new Error('joignez l’enregistrement du walkthrough (vidéo — donnée synthétique en démonstration).');
+      }
+      const octets = new Uint8Array(await fichier.arrayBuffer());
+      const { evidenceId } = await ingestEvidence({
+        engagementId: id, filename: fichier.name, mime: fichier.type || 'application/octet-stream',
+        bytes: octets, source: 'auditor', uploadedBy: { kind: 'app_user', id: user.id }, audience: 'internal',
+      });
+      await attacherWalkthrough(cid, user.id, evidenceId);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function ajouterTacheAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await ajouterTacheControle(
+        cid, user.id, String(formData.get('description') ?? ''), String(formData.get('video_timestamp') ?? '') || undefined,
+      );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function documenterProcedureAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await documenterProcedureTache(
+        String(formData.get('task_id')), user.id,
+        String(formData.get('procedure')) as 'inspection' | 'observation' | 'reperformance',
+        String(formData.get('notes') ?? ''),
+      );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
 
   async function importInstancesAction() {
     'use server';
@@ -140,6 +186,65 @@ export default async function ControlDetail({
           <span className={`badge ${control.di_status === 'effective' ? 'green' : 'red'}`}>{t('rcm.di')} {control.di_status}</span>
           <span className="faint">{t('rcmc.owner')} {control.owner_name}</span>
         </div>
+      </Repli>
+
+      <Repli cle="eng.id.rcm.cid.walkthrough" niveau={2} titre={t('rcmc.walkthrough')} id="walkthrough">
+        {!control.di_walkthrough_evidence_id ? (
+          <form action={attacherWalkthroughAction} className="row" data-attacher-walkthrough>
+            <input type="file" name="fichier" required />
+            <button className="btn small">{t('rcmc.attacherWalkthrough')}</button>
+          </form>
+        ) : (
+          <>
+            <p className="faint" data-walkthrough-attache>{t('rcmc.walkthroughAttache')}</p>
+            <table className="data" data-taches-controle>
+              <thead>
+                <tr><th>#</th><th>{t('rcmc.tache')}</th><th>{t('rcmc.reperVideo')}</th><th>{t('rcmc.procedures')}</th><th>{t('commun.actions')}</th></tr>
+              </thead>
+              <tbody>
+                {taches.map((tache) => {
+                  const documentee = tache.procedures.some((p) => p.procedure !== 'inquiry');
+                  return (
+                    <tr key={tache.id} data-tache={tache.seq_no}>
+                      <td className="mono">{tache.seq_no}</td>
+                      <td>{tache.description}</td>
+                      <td className="mono faint">{tache.video_timestamp ?? '—'}</td>
+                      <td>
+                        {tache.procedures.map((p) => (
+                          <span key={p.procedure} className={`badge ${p.procedure === 'inquiry' ? 'gray' : 'blue'}`} title={p.notes} style={{ marginRight: 4 }}>
+                            {p.procedure}
+                          </span>
+                        ))}
+                        {!documentee && <span className="badge amber" data-ctrl-01-manquant>{t('rcmc.ctrl01Manquant')}</span>}
+                      </td>
+                      <td>
+                        <details>
+                          <summary className="repli-action">{t('commun.actions')}</summary>
+                          <form action={documenterProcedureAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 360 }} data-documenter-procedure>
+                            <input type="hidden" name="task_id" value={tache.id} />
+                            <select name="procedure" defaultValue="inspection">
+                              <option value="inspection">{t('rcmc.procInspection')}</option>
+                              <option value="observation">{t('rcmc.procObservation')}</option>
+                              <option value="reperformance">{t('rcmc.procReperformance')}</option>
+                            </select>
+                            <textarea name="notes" rows={2} required placeholder={t('rcmc.procNotes')} />
+                            <button className="btn small secondary">{t('rcmc.procDocumenter')}</button>
+                          </form>
+                        </details>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {taches.length === 0 && <tr><td colSpan={5} className="faint">{t('rcmc.aucuneTache')}</td></tr>}
+              </tbody>
+            </table>
+            <form action={ajouterTacheAction} className="row mt" data-ajouter-tache>
+              <input type="text" name="description" placeholder={t('rcmc.tacheDescription')} style={{ width: 320 }} required />
+              <input type="text" name="video_timestamp" placeholder={t('rcmc.reperVideo')} style={{ width: 100 }} />
+              <button className="btn small">{t('rcmc.ajouterTache')}</button>
+            </form>
+          </>
+        )}
       </Repli>
 
       <div className="grid cols-2">
