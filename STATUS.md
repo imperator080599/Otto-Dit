@@ -404,12 +404,107 @@ construction NORMAL mesuré tout au long de cette session (100-220 s) — le gar
 chaque push tombant près d'un sondage horaire, pour rien, et une fausse alerte ignorée une fois
 cesse d'être regardée (règle 13). Corrigé à `--minutes=5` dans le même commit que ce constat.
 
+## Lot 3, tranche 4 : l'atelier rapprochement — LOT 3 COMPLET (2026-09-07)
+
+*Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1 ligne 240 ; Partie C.3 point 1 :
+« Trésorerie — confirmation_externe + rapprochement. Le plus démonstratif après le CA, et les
+circularisations existent déjà. ») ; `docs/MANDATS/2026-09-07_permission_de_nuit.md`, point 2 :
+« Lot 3 tranche 3 (confirmation_externe, then rapprochement) ». Dernière tranche du Lot 3 : `atelierDeLaNature`
+gagne une quatrième case, `rapprochement`+`CASH` → `/circularisations` — LA MÊME URL que la
+tranche 3, puisque `circularisations.ts` rend les DEUX natures sur un seul écran (campagne de
+confirmation, puis rapprochement dérivé du solde confirmé contre le grand livre, juste en
+dessous). Aucun contenu de procédure neuf, aucun poste neuf ouvert (règle 8).*
+
+**Recherche d'abord** : trois candidats pour l'atelier `rapprochement`, un seul retenu.
+`app/src/lib/services/reconciliation.ts` (TB↔GL, dossier entier, jamais keyed sur un `fsli.code`)
+et `account-detail.ts` (Lot 2, détail de compte rapproché, générique mais câblé aujourd'hui
+seulement via REVENUE) ont tous deux été écartés : ni l'un ni l'autre n'est « deux sources / les
+deux états » sur un poste précis, la forme que Partie C.1 décrit. Le bon candidat vivait déjà
+dans `circularisations.ts` (§5, `rapprochement(engagementId, kind)`, ~ligne 292) : pour
+`kind='banque'`, il compare le solde comptable au `montant_confirme` reçu du tiers et calcule
+l'écart — exactement la forme mandatée, et déjà câblé sur `CASH`.
+
+**R57 enregistré** (docs/BACKLOG_REPORTE.md, docs/instantanes/fils.json) : sur les neuf
+procédures `rapprochement` du catalogue, deux portent `cycle: '*'` (`RAPPRO`, `ANNEXE` — cette
+dernière hors du champ de cette fonction) et sept portent un `cycle` qui ne correspond à aucun
+`fsli.code` réel — même mécanisme que R54/R56. Fait notable, vérifié : `RAPPRO` N'EST PAS bloqué
+comme `CONFIRM` (R56) — `planifierProcedure` ACCEPTERAIT `RAPPRO` sur `CASH` aujourd'hui, par une
+bascule de risque ordinaire, exactement comme RECALC (R54). Mais RIEN, ni `bootstrapNep()` ni
+`enrichirMondeDemo()`, ne le planifie dans le monde semé — une situation INTERMÉDIAIRE entre
+RECALC (planifiable et seedé, seulement absent de `npm run verify`, R55) et CONFIRM (bloqué
+structurellement, R56) : planifiable, mais jamais exercé par aucun chemin de ce dépôt
+aujourd'hui. La preuve reste donc, comme pour R56, entièrement par cas connu mauvais.
+
+**Ce qui a changé :**
+- `programme.ts::atelierDeLaNature` — quatrième case, `rapprochement`+`CASH` → `/circularisations` ;
+  docstring réécrite pour couvrir les quatre cases et déclarer le Lot 3 (Partie C.1) COMPLET.
+- `programme-vue.test.ts` — le cas `rapprochement`/CASH (attendu `/circularisations`) ajouté ;
+  cas null pour les quatre autres natures du Lot 5 sur un poste déjà câblé, en prime.
+- `/api/sante` — nouvelle lecture « atelier rapprochement disponible », JUMELLE des deux
+  précédentes (CASH), avec le correctif du cas mixte ET la branche négative (`cashVerifie`)
+  appliqués DÈS LA PREMIÈRE VERSION — deux corrections que les revues hostiles des tranches 2 et
+  3 ont dû ajouter après coup, posées ici d'emblée.
+- `atelier-rapprochement-lecture.test.ts` (nouveau) — cinq tests, TOUS à insertion directe en
+  base (R57 : aucun chemin seedé, même si la voie réelle accepterait l'état) : vide,
+  CASH-avec-atelier + hors-CASH-honnête, branche négative (aucune ligne CASH), cas connu mauvais
+  (régression simulée), cas mixte (régression + gap hors-CASH). 24/24 verts, les quatre fichiers
+  (recalcul, confirmation, rapprochement, programme-vue) exécutés ENSEMBLE dans le même run —
+  aucune fuite d'état entre les trois lectures jumelles (revue hostile, point D). `npx tsc
+  --noEmit` propre. Une imprécision arithmétique auto-corrigée avant toute revue hostile
+  (« huit » procédures mismatch au lieu de sept — RAPPRO ET ANNEXE portent `cycle: '*'`, pas
+  seulement RAPPRO) — recompté par script Python contre `procedures.json`, corrigé dans
+  `programme.ts`, `route.ts` et le registre avant de les figer.
+
+**Revue hostile, DEUX réfutateurs indépendants** (règle 24/30). La prémisse centrale — RAPPRO
+échappe-t-il vraiment au blocage structurel de R56 ? — a été PROUVÉE par exécution réelle, deux
+fois indépendamment : `planifierProcedure({fsliCode:'CASH', code:'RAPPRO'})` contre une base
+seedée par `bootstrapNep()` seul lève en réalité **PROG-03** (« CASH n'est pas retenu au
+périmètre »), pas un succès immédiat — les deux réfutateurs l'ont mesuré, pas supposé. Mais les
+DEUX ont aussi vérifié que cette nuance était déjà correctement portée dans TOUS les textes sauf
+un : `programme.ts`, `route.ts`, `BACKLOG_REPORTE.md` et `fils.json` disent tous « par une
+bascule de risque ordinaire », jamais « planifiable sans condition » — seul le nouveau fichier de
+test affirmait « rien ne le REFUSE structurellement » sans nommer PROG-03. **Corrigé** (en-tête
+de `atelier-rapprochement-lecture.test.ts`, nomme désormais PROG-03 et la confirmation de
+périmètre requise). Un second constat, réel et distinct : `scripts/clics/scenario.ts:1000-1001`
+portait un commentaire NON MIS À JOUR depuis la tranche 2 (« sondage_pieces et recalcul_parametre
+sur REVENUE… les six autres natures ») — avec les quatre natures maintenant câblées
+(sondage_pieces, recalcul_parametre, confirmation_externe, rapprochement), il en restait
+QUATRE, pas six. **Corrigé.** Un constat de gouvernance, le plus sérieux des trois : `STATUS.md`
+citait « permission de nuit du fondateur, §2 » — un mandat RÉEL (reçu en session le 2026-09-07,
+déjà exécuté pour fusionner les tranches 2 et 3 vers `main`) mais **jamais commité verbatim**
+dans `docs/MANDATS/` avant d'être invoqué, une violation directe de la règle 33 (« un mandat qui
+n'est pas dans le dépôt n'existe pas ») — exactement la faute que cette même règle raconte pour
+le plan d'autonomie du 2026-09-05. **Corrigé** : `docs/MANDATS/2026-09-07_permission_de_nuit.md`
+commité verbatim ; les DEUX citations de `STATUS.md` (celle-ci et celle, déjà poussée sur `main`,
+de la tranche 3) réécrites pour nommer le fichier réel plutôt qu'un numéro de section inventé de
+mémoire. Rien d'autre trouvé : le lien d'atelier, la lecture `/api/sante` et sa garde
+d'honnêteté (prouvée par mutation par les deux réfutateurs), et chaque nombre cité dans
+`BACKLOG_REPORTE.md`/`fils.json`/`STATUS.md` ont tenu à l'exécution.
+
+**Chaîne verify complète, propre, arbre GELÉ pendant l'exécution — deuxième passage, propre de
+bout en bout** (`verify-lot3-tranche4-run2.log`, sous `timeout 3600` explicite, règle 35 forme
+opérative — voir CLAUDE.md) : vitest **897/897** (111/111 fichiers — cinq tests de plus que la
+fin de tranche 3 : `atelier-rapprochement-lecture.test.ts`), gardes 43, plancher 897/632, langue
+0 hors catalogue · 0 en dur · 39 différés · 45 exclues · 14 refus documentés, langue:épreuve
+15/15, lectures 0 perdue sur 1716 chemins figés dans 86 écrans, lectures:épreuve 6/6, parcours
+269/269 déclarées et figées · 0 perdue, parcours:épreuve 5/5, screens 87 routes · 0 échec, fumee
+51 routes · 0 échec, densite 77 écrans mesurés · 0 au-delà de 5 actions primaires, clics 226
+étapes conduites · 0 échec (346 clics sur 47 gestes), visuel 312 vues · 0 défaut. **Premier
+passage tué après 9h05 sans progrès** (`verify-lot3-tranche4-run1.log`, arrêté à `clics/run.ts`
+avant sa première station, lancé sans budget nommé — voir CLAUDE.md, l'incident qui a produit la
+forme opérative de la règle 35) ; le second, sous `timeout 3600`, a terminé en 423.96s
+(vitest) + le reste de la chaîne, largement dans la marge.
+
 ## Lot 3, tranche 3 : l'atelier confirmation_externe (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1 ligne 240 ; Partie C.3 point 1 :
 « Trésorerie — confirmation_externe + rapprochement. Le plus démonstratif après le CA, et les
-circularisations existent déjà. ») ; permission de nuit du fondateur, §2 : « continue sans
-attendre… Lot 3 tranche 3 (confirmation_externe…) ». La chose plus petite (règle 8) : `atelierDeLaNature`
+circularisations existent déjà. ») ; `docs/MANDATS/2026-09-07_permission_de_nuit.md`, point 2 :
+« Continue through the plan without waiting for me: Lot 3 tranche 3 (confirmation_externe…) »
+— **corrigé après coup** (revue hostile, tranche 4) : ce mandat n'avait pas encore été commité
+verbatim au moment où cette phrase a été écrite, une violation de la règle 33 trouvée et fermée
+par cette même revue ; il l'est désormais, et cette citation le nomme correctement. La chose plus
+petite (règle 8) : `atelierDeLaNature`
 gagne une troisième case, `confirmation_externe`+`CASH` → `/circularisations` (déjà construit,
 Trésorerie/C.3.1) — aucun contenu de procédure neuf, aucun poste neuf ouvert.*
 

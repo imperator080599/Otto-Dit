@@ -340,52 +340,64 @@ export interface LigneProgramme {
 }
 
 /**
- * Lot 3, tranches 1-3 (mandat, Partie C.1) — LE SEUL ENDROIT qui sait, pour une
- * nature de test, l'atelier qui l'exécute. Trois cases, HONNÊTES, chacune
- * bornée à UN SEUL poste : `sondage_pieces` (Lot 2, le cycle de testing du
- * chiffre d'affaires, `REV-SUBST`/`testing/grille.ts`) et `recalcul_parametre`
- * (les estimations comptables hors litige, ADR-106a, `estimations.ts` —
- * fichier de calcul du client, rapproché au grand livre, recalculé au
- * centime, base sondée, justificatifs de CHAQUE paramètre demandés en
- * brouillon : exactement la forme que Partie C.1 décrit pour cette nature)
- * sur REVENUE ; `confirmation_externe` (les circularisations, `TRESO-CIRC`
- * dans le catalogue, `circularisations.ts` — listing des tiers importé,
- * complétude contre le grand livre, envoi simulé, réponse déposée,
- * rapprochement dérivé : la forme exacte que Partie C.1 décrit pour cette
- * nature, « listing des tiers / réponse du tiers ») sur CASH, la seule des
- * deux natures que `circularisations.ts` CONSTRUIT aujourd'hui : la seconde,
- * `POSTE.avocat = 'PROVISIONS'` (Partie C.3 point 6), existe déjà dans
- * `circularisations.ts` — `PROVISIONS` est un `fsli.code` réel, pas absent —
- * mais aucun `procedure_instance` `confirmation_externe` n'est câblé dessus
- * ici : ce câblage entre au Lot 5, avec le poste Provisions lui-même, pas
- * cette tranche (règle 8).
- * AUCUNE DES TROIS N'EST GÉNÉRIQUE sur `fsliCode` : `montantComptabilise`
+ * Lot 3, tranches 1-4 — LOT COMPLET (mandat, Partie C.1) — LE SEUL ENDROIT qui
+ * sait, pour une nature de test, l'atelier qui l'exécute. Quatre cases,
+ * HONNÊTES, chacune bornée à UN SEUL poste : `sondage_pieces` (Lot 2, le
+ * cycle de testing du chiffre d'affaires, `REV-SUBST`/`testing/grille.ts`) et
+ * `recalcul_parametre` (les estimations comptables hors litige, ADR-106a,
+ * `estimations.ts` — fichier de calcul du client, rapproché au grand livre,
+ * recalculé au centime, base sondée, justificatifs de CHAQUE paramètre
+ * demandés en brouillon : exactement la forme que Partie C.1 décrit pour
+ * cette nature) sur REVENUE ; `confirmation_externe` ET `rapprochement`
+ * (les circularisations, `TRESO-CIRC`/`RAPPRO` dans le catalogue,
+ * `circularisations.ts` — listing des tiers importé, complétude contre le
+ * grand livre, envoi simulé, réponse déposée, PUIS rapprochement dérivé,
+ * `rapprochement()` ligne ~292 : solde comptable contre `montant_confirme`,
+ * écart calculé et jamais tu — les DEUX natures que Partie C.1 décrit pour
+ * la Trésorerie, Partie C.3 point 1 : « confirmation_externe + rapprochement.
+ * Le plus démonstratif après le CA, et les circularisations existent déjà »)
+ * sur CASH, TOUTES DEUX rendues sur le MÊME écran (`circularisations/page.tsx`
+ * — campagne de confirmation puis rapprochement dérivé, l'un sous l'autre) :
+ * même URL, deux entrées de ce dispatch, parce que c'est UN SEUL atelier qui
+ * exécute les deux étapes d'un même contrôle de trésorerie. La seconde
+ * nature que `circularisations.ts` construit, `POSTE.avocat = 'PROVISIONS'`
+ * (Partie C.3 point 6) — `PROVISIONS` est un `fsli.code` réel, pas absent —
+ * n'a aucun `procedure_instance` câblé dessus ici : ce câblage entre au Lot
+ * 5, avec le poste Provisions lui-même, pas ces tranches (règle 8).
+ * AUCUNE DES QUATRE CASES N'EST GÉNÉRIQUE sur `fsliCode` : `montantComptabilise`
  * (estimations.ts) rapproche sur les comptes 70x, `circularisations.ts` sur
  * `POSTE.banque = 'CASH'` (ligne dédiée, jamais un préfixe français en dur)
  * — un lien vers l'un de ces ateliers pour un AUTRE poste ouvrirait un
- * atelier qui ne saurait pas rapprocher SES écritures à lui. Deux
- * procédures `recalcul_parametre` du catalogue portent `cycle: '*'` et
- * atteignent donc leur case sur REVENUE : RECALC (la seule réellement
- * instanciée dans le monde semé aujourd'hui) et ESTIM. Les 14 AUTRES
- * procédures `recalcul_parametre`, et les SIX procédures
- * `confirmation_externe` non-`*` du catalogue (`CONFIRM` porte `cycle: '*'`
- * mais un `postes` non nul qui ne couvre PAS `CASH` — R56,
- * docs/BACKLOG_REPORTE.md, un défaut PIRE que R54 : ces procédures ne sont
- * pas seulement non planifiables sur un poste réel, `planifierProcedure`
- * REFUSE (PROG-02) de les planifier sur AUCUN poste existant, y compris
- * CASH — un défaut PRÉEXISTANT, distinct de cette fonction. RECALC vit
- * aujourd'hui dans « hors commande » (le risque actuel ne la commande
- * plus, mais elle a été planifiée — programme/page.tsx), pas dans
+ * atelier qui ne saurait pas rapprocher SES écritures à lui.
+ * CHAQUE NATURE CÂBLÉE A SA PROCÉDURE-ÉCHAPPATOIRE (`cycle: '*'`) et son
+ * lot de procédures bloquées par un `cycle`/`postes` qui ne correspond à
+ * AUCUN `fsli.code` réel — TROIS FOIS LE MÊME DÉFAUT, TROIS SÉVÉRITÉS
+ * DIFFÉRENTES, toutes PRÉEXISTANTES et distinctes de cette fonction :
+ * `recalcul_parametre` — RECALC/ESTIM échappent (R54, 14 autres bloquées,
+ * planifiables nulle part) ; `confirmation_externe` — AUCUNE n'échappe
+ * vraiment (R56, `CONFIRM` porte en plus un `postes` qui exclut CASH —
+ * `planifierProcedure` REFUSE PROG-02 sur TOUT poste, y compris CASH, le
+ * pire des trois) ; `rapprochement` — sur les NEUF procédures du catalogue,
+ * DEUX portent `cycle: '*'` (RAPPRO et ANNEXE, `ANNEXE` hors du champ de
+ * cette fonction — pas câblée) : RAPPRO échappe donc comme RECALC/ESTIM,
+ * `planifierProcedure` ACCEPTE `RAPPRO` sur CASH aujourd'hui, par une
+ * bascule de risque ordinaire. Les SEPT restantes portent un `cycle` qui ne
+ * correspond à aucun `fsli.code` réel — R57, docs/BACKLOG_REPORTE.md.
+ * RAPPRO est donc PLANIFIABLE, mais RIEN ne le
+ * plante — ni `bootstrapNep()` ni `enrichirMondeDemo()` — dans le monde
+ * semé à ce jour : contrairement à RECALC (planifiable ET seedé, juste
+ * absent de `npm run verify`, R55), RAPPRO est planifiable mais jamais
+ * seedé nulle part — sa preuve d'atelier vient donc, comme celle de
+ * `confirmation_externe`, exclusivement d'un cas connu mauvais à insertion
+ * directe (`atelier-rapprochement-lecture.test.ts`), pas d'un clic réel.
+ * RECALC vit aujourd'hui dans « hors commande » (le risque actuel ne la
+ * commande plus, mais elle a été planifiée — programme/page.tsx), pas dans
  * « commandées » : l'appelant doit donc offrir l'atelier dans LES DEUX
  * rendus dès qu'une ligne porte `planifiee`, pas seulement dans le tableau
  * des procédures commandées — trouvé en construisant la tranche 2 (règle
  * 10, un écran conduit dans un navigateur avant d'être annoncé) : sans ce
  * second appel, l'atelier livré n'aurait jamais été atteignable au clic
- * dans le monde semé. AUCUNE instance `confirmation_externe` n'existe dans
- * le monde semé à ce jour (R56) : cette case reste donc non cliquée par
- * `npm run clics`, prouvée seulement par un cas connu mauvais à insertion
- * directe (`atelier-confirmation-lecture.test.ts`), exactement comme
- * `/api/sante` le documente dans sa propre lecture.
+ * dans le monde semé.
  * `/estimations` et `/circularisations` sont chacun un atelier PAR DOSSIER,
  * pas filtré par ligne de programme ni par procédure — comme `/testing`
  * déjà, le lien ouvre l'espace de travail entier, jamais une vue
@@ -394,16 +406,22 @@ export interface LigneProgramme {
  * geste caché.
  *
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
- * atelier — `rapprochement` (tranche suivante du Lot 3), `confirmation_externe`
- * sur PROVISIONS (avocats, Lot 5) et la généralisation de ces cases à un
- * poste autre que celui déjà câblé (Lot 5, une fois R54/R56 fermés) entrent
- * chacun ICI quand ils existent, jamais ailleurs — un second endroit qui
- * devine l'atelier diverge un jour.
+ * atelier — `confirmation_externe` sur PROVISIONS (avocats, Lot 5) et la
+ * généralisation des quatre cases câblées à un poste autre que celui déjà
+ * câblé (Lot 5, une fois R54/R56/R57 fermés) entrent ICI quand ils existent,
+ * jamais ailleurs — un second endroit qui devine l'atelier diverge un jour.
+ * Lot 3 (Partie C.1) est COMPLET avec cette quatrième case : les quatre
+ * natures qu'il mandatait (`sondage_pieces`, `recalcul_parametre`,
+ * `confirmation_externe`, `rapprochement`) ont chacune un atelier réel sur
+ * au moins un poste. Les QUATRE autres natures (`revue_analytique_substantive`,
+ * `test_exhaustif`, `tests_de_controles`, `observation_documentee`) et la
+ * généralisation à d'autres postes entrent au Lot 5.
  */
 export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
   if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
   if (nature === 'recalcul_parametre' && fsliCode === 'REVENUE') return `${base}/estimations`;
   if (nature === 'confirmation_externe' && fsliCode === 'CASH') return `${base}/circularisations`;
+  if (nature === 'rapprochement' && fsliCode === 'CASH') return `${base}/circularisations`;
   return null;
 }
 

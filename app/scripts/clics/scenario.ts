@@ -998,8 +998,10 @@ export async function conduire(
         refus(p) ?? `${dejaPlanifiees} → ${apres} procédure(s) planifiée(s)`);
 
       /* ET SON ATELIER — un lien RÉEL (sondage_pieces et recalcul_parametre
-         sur REVENUE) ou un AVEU honnête (les six autres natures, encore
-         sans atelier) : jamais ni l'un ni l'autre en silence (règle 13), et
+         sur REVENUE ; confirmation_externe et rapprochement sur CASH — Lot 3
+         complet, tranches 1-4) ou un AVEU honnête (les quatre autres
+         natures du Lot 5, encore sans atelier) : jamais ni l'un ni l'autre
+         en silence (règle 13), et
          jamais les DEUX à la fois (un ternaire dans page.tsx les rend
          mutuellement exclusifs aujourd'hui — cette assertion vérifie la
          CHOSE, pas seulement qu'elle continue de dépendre du même code).

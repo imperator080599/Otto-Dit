@@ -595,6 +595,57 @@ async function corpsDeLaSonde() {
       const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
       return `${n} procédure(s) confirmation_externe planifiée(s)${noteCash}${detailHorsCash}`;
     }));
+    /* LOT 3, TRANCHE 4 — LOT 3 COMPLET (mandat, Partie C.1 — livrée ce jour,
+       lue ce jour, règle 22). JUMELLE des deux lectures ci-dessus, même
+       raisonnement, même structure : elle rougit l'endpoint entier QUE si
+       une procédure `rapprochement` est planifiée sur CASH (le seul poste
+       câblé, `atelierDeLaNature` → `/circularisations`) SANS atelier — une
+       régression probable. Un gap hors CASH est un état ATTENDU (R57,
+       docs/BACKLOG_REPORTE.md : SEPT des neuf procédures `rapprochement` du
+       catalogue — les deux autres, RAPPRO et ANNEXE, portent `cycle: '*'` —
+       portent un `cycle` qui ne correspond à AUCUN `fsli.code` réel — même
+       mécanisme que R54/R56), rapporté HONNÊTEMENT, jamais tu,
+       jamais bloquant — le gap hors-poste est calculé AVANT le `throw`, la
+       phrase « CASH toujours… » gardée derrière une vérification réelle,
+       dès la première version (le même correctif que la revue hostile a
+       imposé une fois puis une seconde, appliqué ici d'emblée).
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : contrairement à
+       `confirmation_externe` (R56, où AUCUNE procédure n'échappe au
+       blocage), `RAPPRO` (`cycle: '*'`) EST planifiable sur CASH par une
+       bascule de risque ordinaire dès aujourd'hui — mais RIEN, ni
+       `bootstrapNep()` ni `enrichirMondeDemo()`, ne le fait dans le monde
+       semé (R57) : cette lecture reste donc VERTE-VIDE en local et en
+       production tant que rien ne la plante réellement, exactement comme sa
+       jumelle CASH. Sa preuve vient d'un cas connu mauvais à insertion
+       directe (`atelier-rapprochement-lecture.test.ts`), pas d'un geste
+       réel de l'auditeur. */
+    lectures.push(await essayer('atelier rapprochement disponible (Lot 3, tranche 4)', async () => {
+      const { atelierDeLaNature } = await import('@/lib/services/programme');
+      const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
+        `select template_code, fsli_code, count(*) n from procedure_instance
+         where engagement_id = $1 and nature = 'rapprochement' group by template_code, fsli_code`,
+        [id]);
+      if (rows.length === 0) return 'aucune procédure rapprochement planifiée encore';
+      const sansAtelier = rows.filter((r) => !atelierDeLaNature('rapprochement', r.fsli_code ?? '', '/base'));
+      const regression = sansAtelier.filter((r) => r.fsli_code === 'CASH');
+      const horsCash = sansAtelier.filter((r) => r.fsli_code !== 'CASH');
+      const detailHorsCash = horsCash.length > 0
+        ? ` ; ${horsCash.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsCash.length} template/poste `
+          + 'distinct(s)) hors CASH sans atelier construit — attendu, R57 : '
+          + horsCash.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+        : '';
+      if (regression.length > 0) {
+        const instances = regression.reduce((s, r) => s + Number(r.n), 0);
+        throw new Error(`${instances} instance(s) (${regression.length} template(s)) rapprochement `
+          + 'planifiée(s) sur CASH SANS atelier réel — régression probable de atelierDeLaNature : '
+          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
+          + detailHorsCash);
+      }
+      const n = rows.reduce((s, r) => s + Number(r.n), 0);
+      const cashVerifie = rows.some((r) => r.fsli_code === 'CASH');
+      const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
+      return `${n} procédure(s) rapprochement planifiée(s)${noteCash}${detailHorsCash}`;
+    }));
     lectures.push(await essayer('magasin de pièces (blob_store)', async () => {
       const r = await q01<{ n: string }>(`select count(*) n from blob_store`);
       return r ? `${r.n} objet(s)` : 'vide';

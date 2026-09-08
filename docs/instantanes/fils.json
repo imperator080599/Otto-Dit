@@ -207,6 +207,12 @@
       "note": "non corrigé : même discipline que R54 (règle 8, règle 14 — contenu de méthode, pas mécanique d'atelier). Contourné entièrement par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-confirmation-lecture.test.ts) — aucune vérification manuelle au clic possible ici (contrairement à R55/RECALC), puisqu'aucun geste réel, nulle part dans ce dépôt, ne produit une ligne confirmation_externe. Se referme avec R54, vraisemblablement au Lot 5."
     },
     {
+      "id": "R57",
+      "etat": "ouvert — sept des neuf procédures rapprochement du catalogue (IMMO_COR-TAB, IMMO_INC-TAB, CLIENTS-AGE, PERSONNEL-DSN, CAPITAUX-VAR, TRESO-RAPPRO, FISCAL-TVA) portent un cycle qui ne correspond à AUCUN fsli.code réel — même mécanisme que R54/R56. Les deux autres (RAPPRO, ANNEXE) portent cycle '*' ; ANNEXE est hors du champ d'atelierDeLaNature, non câblée. RAPPRO, sans postes restreint, EST planifiable sur CASH par une bascule de risque ordinaire dès aujourd'hui — contrairement à CONFIRM (R56), rien ne le bloque structurellement. Pourtant aucune instance rapprochement n'existe dans le monde semé : ni bootstrapNep() ni enrichirMondeDemo() ne planifient jamais RAPPRO. Situation intermédiaire entre RECALC (planifiable ET seedé, R54/R55) et CONFIRM (bloqué structurellement, R56) : planifiable mais jamais exercé par aucun chemin de ce dépôt. Trouvé par la revue de recherche du Lot 3, tranche 4 (dernière du Lot 3), 2026-09-07",
+      "depuis": "2026-09-07 (Lot 3, tranche 4 : atelier rapprochement)",
+      "note": "non corrigé : même discipline que R54/R56 (règle 8, règle 14 — contenu de méthode, pas mécanique d'atelier). Contourné entièrement par des cas connus mauvais à insertion directe (programme-vue.test.ts, atelier-rapprochement-lecture.test.ts) — aucune vérification manuelle au clic possible, faute d'un chemin de démonstration seedé, bien que la voie réelle (planifierProcedure) accepterait RAPPRO sur CASH si elle était exercée. Se referme avec R54/R56, vraisemblablement au Lot 5."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

@@ -465,6 +465,16 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   nuit** : la lecture du fondateur était en aval d'un cache périmé, pas une preuve d'un nouveau
   repointage. La CAUSE de l'occurrence du 2026-09-06 reste non diagnostiquée — ce contrôle ne
   referme pas R53, il écarte seulement une fausse alerte de récidive.
+  **2026-09-08T06:43Z, deuxième mesure du fondateur, encore par son propre instrument :**
+  `otto-dit.vercel.app` sert `6a6b137`, le HEAD réel à cet instant — l'alias suit toujours
+  correctement, une seconde nuit de suite. Correction au passage, du fondateur, sur un défaut de
+  MESURE distinct de R53 (règle 31 — une valeur qui ressemble à une mesure sans en être une) :
+  le champ d'horodatage de `/api/sante` N'EST PAS un tampon de build — il est resté figé à
+  `2026-09-07 11:33:48` à travers TROIS SHA servis différents. Personne, dans ce dépôt, ne doit
+  plus le citer comme preuve de fraîcheur — ni dans une lecture, ni dans un compte rendu. Ce que
+  ce champ mesure réellement (l'heure d'une opération antérieure au déploiement — un import, une
+  génération de contenu — plutôt que l'heure du build ou de la bascule d'alias) reste à établir ;
+  ce n'est pas creusé ici, hors mandat de cette nuit.
 - **R54 — quatorze des seize procédures `recalcul_parametre` du catalogue portent un `cycle`
   (`IMMO_COR`, `IMMO_INC`, `STOCKS`, `CLIENTS`, `PERSONNEL`, `SOCIAL`, `DETTES_FI`, `PROV`) qui ne
   correspond à AUCUN `fsli.code` réel du plan de comptes** (`PPE`, `INVENTORY`, `TRADE_RECEIVABLES`,
@@ -526,3 +536,23 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   (atelier `confirmation_externe`), 2026-09-07 — signalé, pas corrigé, même discipline que R54
   (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se referme avec R54,
   vraisemblablement au Lot 5.
+- **R57 — SEPT des NEUF procédures `rapprochement` du catalogue (`IMMO_COR-TAB`,
+  `IMMO_INC-TAB`, `CLIENTS-AGE`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `TRESO-RAPPRO`, `FISCAL-TVA`)
+  portent un `cycle` qui ne correspond à AUCUN `fsli.code` réel — MÊME mécanisme que R54/R56,
+  mais la procédure-échappatoire, `RAPPRO`, N'EST PAS bloquée comme `CONFIRM` (R56).** Les DEUX
+  procédures `cycle: '*'` du groupe sont `RAPPRO` et `ANNEXE` (`ANNEXE` hors du champ
+  d'`atelierDeLaNature`, non câblée). `RAPPRO`, sans `postes` restreint, est PLANIFIABLE sur
+  `CASH` — ou tout autre poste réel — par une bascule de risque ordinaire dès aujourd'hui,
+  exactement comme RECALC/ESTIM (R54), et contrairement à `CONFIRM` (R56, bloqué sur TOUT poste
+  par un `postes` qui exclut CASH). **Pourtant, aucune instance `rapprochement` n'existe dans le
+  monde semé** : ni `bootstrapNep()` ni `enrichirMondeDemo()` ne planifient jamais `RAPPRO` (vérifié,
+  `app/src/lib/flows/enrichir.ts` et `part1.ts`/`part2.ts` ne le mentionnent nulle part) — RAPPRO
+  est donc dans une situation INTERMÉDIAIRE entre RECALC (planifiable ET seedé, seulement absent
+  de `npm run verify`, R55) et CONFIRM (structurellement bloqué, R56) : planifiable, mais jamais
+  exercé par aucun chemin de ce dépôt. La preuve de l'atelier vient donc, comme pour R56,
+  exclusivement d'un cas connu mauvais à insertion directe (`atelier-rapprochement-lecture.test.ts`),
+  pas d'un geste réel de l'auditeur — sans que cela reflète un blocage structurel comme R56, juste
+  l'absence d'un chemin de démonstration. Trouvé par la revue de recherche du Lot 3, tranche 4
+  (atelier `rapprochement`, dernière tranche du Lot 3), 2026-09-07 — signalé, pas corrigé, même
+  discipline que R54/R56 (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se
+  referme avec R54/R56, vraisemblablement au Lot 5.
