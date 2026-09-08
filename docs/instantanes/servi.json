@@ -1,13 +1,18 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "e6089e1a7295eaf3014e83b6c5e4d39fa8b5d3b2",
+  "sha": "f7dfee153cb187db734a1529e7ad54a75c2fa130",
   "mesure": {
-    "quand": "2026-09-08T09:47:00Z",
-    "par": "CI, travail `deploye`, run 34211585902, job 102013608009, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 09:43:53Z→09:47:00Z, 180 s — 0 s HTTP 500 pendant la reconstruction, puis 05b9171 servi de 28 s à 155 s, puis e6089e1 à 180 s). Lot 4, tranche 1 : la déplanification d'une procédure. Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation, pour ne pas répéter la staleness du 2026-09-08 matin (voir l'entrée 8af38ab ci-dessous).",
+    "quand": "2026-09-08T11:06:41Z",
+    "par": "CI, travail `deploye`, run 34218612969, job 102036199221, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 11:03:09Z→11:06:41Z, 204 s — c29e982 servi jusqu'à 180 s, puis f7dfee1). Lot 4, tranche 2 : R34 (prédicat de travail) et R30 partiel (avertissement). Mise à jour de cet instantané FAITE DANS LE MÊME GESTE que la confirmation.",
     "commande": "npx tsx scripts/deploiement/atteint.ts https://otto-dit.vercel.app <sha> --minutes=15"
   },
   "historique": [
+    {
+      "sha": "e6089e1a7295eaf3014e83b6c5e4d39fa8b5d3b2",
+      "quand": "2026-09-08T09:47:00Z",
+      "par": "CI, travail `deploye`, run 34211585902, job 102013608009, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 09:43:53Z→09:47:00Z, 180 s — 0 s HTTP 500 pendant la reconstruction, puis 05b9171 servi de 28 s à 155 s, puis e6089e1 à 180 s). Lot 4, tranche 1 : la déplanification d'une procédure. Le commit suivant (c29e982, SHA servi confirmé = e6089e1, docs seules) a aussi été observé servi (même job que f7dfee1 ci-dessus, jusqu'à 180 s de sa fenêtre) mais n'a pas reçu sa propre entrée dédiée — même précédent que 1552bc5/02ef7e4."
+    },
     {
       "sha": "8af38ab8c0fa37b3cea6fe1d7f6d1b32f627999b",
       "quand": "2026-09-08T07:23:36Z",
