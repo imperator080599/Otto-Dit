@@ -495,6 +495,16 @@ avant sa première station, lancé sans budget nommé — voir CLAUDE.md, l'inci
 forme opérative de la règle 35) ; le second, sous `timeout 3600`, a terminé en 423.96s
 (vitest) + le reste de la chaîne, largement dans la marge.
 
+**Fusionné dans `main`, SHA servi CONFIRMÉ = `fcbedf7` — LOT 3 COMPLET** (mandat de nuit,
+`docs/MANDATS/2026-09-07_permission_de_nuit.md`, point 1). Commit unique `fcbedf7` fusionné par
+fast-forward (`0e05549..fcbedf7`, aucune divergence — précédé d'une fusion séparée, `0e05549`, le
+correctif de la règle 35 lui-même, déjà confirmé servi avant ce push). CI `deploye`, run
+`34198346930`, job `101971106290` : `/api/sante` sur `https://otto-dit.vercel.app` sert
+`fcbedf7` — le SHA poussé — en 177 s (07:14:41Z→07:17:46Z), six lectures rapprochées avant la
+bascule disent toutes « servi 0e05549 » (0 s à 152 s). Les quatre tranches du Lot 3 (Partie C.1
+du mandat) sont maintenant toutes en production : `sondage_pieces`/REVENUE (Lot 2),
+`recalcul_parametre`/REVENUE, `confirmation_externe`/CASH, `rapprochement`/CASH.
+
 ## Lot 3, tranche 3 : l'atelier confirmation_externe (2026-09-07)
 
 *Mandat (`docs/MANDATS/2026-09-05_plan_autonomie.md`, Partie C.1 ligne 240 ; Partie C.3 point 1 :
