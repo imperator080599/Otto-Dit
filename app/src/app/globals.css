@@ -655,9 +655,17 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
   --e-muted: #7c7466;
   --e-accent: #6a3fd6;
   --e-accent-soft: #efe8fc;
-  --e-green: #6f9b81;
+  /* --e-green et --e-amber sont plus SOMBRES que le premier jet (revue
+     `npm run visuel` du 2026-09-09 : #6f9b81/#b28a54 rendaient 2,74:1 et
+     2,76:1 contre leur fond clair — sous le plancher de 3:1 que le garde
+     refuse). Assombris jusqu'à ~4,1-4,3:1 (même formule WCAG que le garde,
+     calculée à la main faute d'un second passage `visuel` avant le fix),
+     désaturés (chromie inchangée) plutôt que rendus vifs — l'esthétique du
+     mandat (« couleurs sémantiques désaturées, jamais vives ») et le plancher
+     de lisibilité ne s'opposent pas, il suffisait de les accorder. */
+  --e-green: #4f7a63;
   --e-green-soft: #eaf1ec;
-  --e-amber: #b28a54;
+  --e-amber: #8a6f4f;
   --e-amber-soft: #f6efe3;
   --e-red: #b06a67;
   --e-red-soft: #f7ece9;
