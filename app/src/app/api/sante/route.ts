@@ -932,6 +932,41 @@ async function corpsDeLaSonde() {
     return `${controles.length} contrôle(s) à population dérivée · ${total} occurrence(s), toutes recalculables à l’identique`;
   }));
 
+  /* CTRL-05 (mandat contrôle interne, §3.1, tranche 5) : « atteindre le tirage d'OE d'un
+     contrôle as_needed sans qu'une demande client de la population des occurrences existe. »
+     `as_needed` = les fréquences HORS `FREQUENCES_DERIVABLES` (`adhoc`, `many_daily`). Lue
+     GLOBALEMENT, même discipline que CTRL-01/02/03/07 : un tirage sur une fréquence non
+     dérivable SANS `request.control_id` correspondant est la violation — cette lecture ne peut
+     rougir que si le garde de `drawAttributeSample` a été contourné (un SQL direct, une
+     régression du garde), jamais parce qu'aucun tirage n'a encore eu lieu. CE QUE CETTE LECTURE
+     NE VÉRIFIE PAS (règle 19) : elle ne dit rien du statut de la demande (`draft` compte comme
+     `sent` — le mandat dit « existe », pas « envoyée », même lecture que le garde lui-même) ni du
+     lien entre le fichier reçu et la demande qui l'a réclamée (aucun mécanisme ne l'établit
+     encore). */
+  lectures.push(await essayer('CTRL-05 : aucun tirage OE sur une fréquence non dérivable sans demande client de la population', async () => {
+    const { FREQUENCES_DERIVABLES } = await import('@/lib/services/sox');
+    const samples = await q<{ id: string; control_id: string; control_code: string; frequency: string }>(
+      `select s.id, p.control_id, c.code control_code, c.frequency
+       from sample s join procedure_instance p on p.id = s.procedure_id join control c on c.id = p.control_id
+       where s.method = 'attribute_frequency'`,
+    );
+    if (samples.length === 0) return 'aucun tirage OE pour l’instant';
+    const violations: string[] = [];
+    let concernes = 0;
+    for (const s of samples) {
+      if ((FREQUENCES_DERIVABLES as readonly string[]).includes(s.frequency)) continue;
+      concernes++;
+      const demande = await q01(`select 1 from request where control_id = $1`, [s.control_id]);
+      if (!demande) violations.push(`${s.control_code} (tirage ${s.id}, fréquence « ${s.frequency} ») : aucune demande client de la population`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-05 : ${violations.join(' ; ')}`);
+    }
+    return concernes === 0
+      ? `${samples.length} tirage(s) OE, tous à fréquence dérivable — CTRL-05 hors périmètre pour l’instant`
+      : `${concernes} tirage(s) OE sur fréquence non dérivable, tous couverts par une demande client`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

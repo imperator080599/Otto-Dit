@@ -13,6 +13,7 @@ import { validatedThresholds } from './materiality';
 import { latestExtraction } from './extraction/ladder';
 import type { ExtractedField } from './extraction/fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { derniereDemandePopulationControle } from './requests';
 
 // S8 — SOX OE cycle on the SAME engines (request, evidence, extraction, sampling,
 // exception/deviation, documentation) under the PCAOB/COSO pack. UI held to the four
@@ -706,6 +707,26 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   );
   if (c.di_status !== 'effective') {
     throw new Error(`D&I gate: control ${c.code} is '${c.di_status}' — operating-effectiveness testing requires an effective design & implementation assessment first`);
+  }
+  /* CTRL-05 (mandat §3.1) : « atteindre le tirage d'OE d'un contrôle as_needed sans qu'une
+     demande client de la population des occurrences existe. » `as_needed` = les fréquences hors
+     `FREQUENCES_DERIVABLES` (`adhoc`, `many_daily` — voir la note de cette constante) : leur
+     population ne se dérive jamais, elle se DEMANDE. Vérifie l'EXISTENCE d'une demande
+     (`request.control_id`), pas son statut : le mandat dit « existe », pas « envoyée » — même
+     discipline que `derniereDemandeDetailDeCompte` (requests.ts), qui ne vérifie pas non plus le
+     statut. CE QUE CE GARDE NE FAIT PAS (règle 19) : il ne vérifie PAS que le listing importé
+     correspond à CETTE demande précise — `importInstances` reste un import direct, aucun lien
+     entre le fichier reçu et la demande qui l'a réclamé (même trou que la Partie B pour le
+     détail de compte, non élargi ici). */
+  if (!FREQUENCES_DERIVABLES.includes(c.frequency)) {
+    const demande = await derniereDemandePopulationControle(controlId);
+    if (!demande) {
+      throw new Error(
+        `CTRL-05 : aucune demande client de la population n’existe pour ${c.code} (fréquence `
+        + `« ${c.frequency} » — sa population se demande, elle ne se dérive pas, mandat §3.1). `
+        + 'Demandez la population avant de tirer un échantillon.',
+      );
+    }
   }
   const ctx = await engagementCtx(c.engagement_id);
   const fs = await frameworkSet(c.engagement_id);

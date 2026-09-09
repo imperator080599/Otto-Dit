@@ -1590,6 +1590,8 @@ export const LIBELLES = {
   'rcmc.deriverPopulation': { en: 'Derive population (frequency × period)', fr: 'Dériver la population (fréquence × période)' },
   'rcmc.source': { en: 'source', fr: 'origine' },
   'rcmc.sourceDerived': { en: 'derived', fr: 'dérivée' },
+  'rcmc.demanderPopulation': { en: 'Request population (CTRL-05)', fr: 'Demander la population (CTRL-05)' },
+  'rcmc.demandePopulationEnvoyee': { en: 'Population requested —', fr: 'Population demandée —' },
   'rcmc.notTestedYet': { en: 'Not tested yet.', fr: 'Pas encore testé.' },
   'rcmc.occurred': { en: 'Occurred', fr: 'Survenue' },
   'rcmc.performer': { en: 'Performer', fr: 'Exécutant' },

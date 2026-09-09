@@ -14,7 +14,7 @@ import {
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
-import { approveSend } from '@/lib/services/requests';
+import { approveSend, demanderPopulationControle, derniereDemandePopulationControle, numeroDemande } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -36,6 +36,8 @@ export default async function ControlDetail({
   const control = (await listControls(id)).find((c) => c.id === cid);
   if (!control) return <div className="panel">{t('rcmc.controlNotFound')}</div>;
   const tailleOe = await tailleEchantillonOePourControle(cid);
+  const estDerivable = (FREQUENCES_DERIVABLES as readonly string[]).includes(control.frequency);
+  const demandePopulation = estDerivable ? null : await derniereDemandePopulationControle(cid);
   const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null; source: string; sampled: boolean; evidence_count: string }>(
     `select ci.id, ci.label, ci.occurred_on::text, ci.performer_name, ci.source,
             exists(select 1 from sample_item si join sample s on s.id = si.sample_id
@@ -173,6 +175,14 @@ export default async function ControlDetail({
     return executer(`/eng/${id}/rcm/${cid}`, async () => {
       const { user } = await requireMember(id);
       await deriverPopulationControle(cid, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function demanderPopulationAction() {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await demanderPopulationControle(cid, user.id);
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -429,8 +439,10 @@ export default async function ControlDetail({
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>Instance population ({instances.length})</h2>
             <span className="row">
-              {instances.length === 0 && ((FREQUENCES_DERIVABLES as readonly string[]).includes(control.frequency) ? (
+              {instances.length === 0 && (estDerivable ? (
                 <form action={deriverPopulationAction}><button className="btn small secondary">{t('rcmc.deriverPopulation')}</button></form>
+              ) : !demandePopulation ? (
+                <form action={demanderPopulationAction}><button className="btn small secondary">{t('rcmc.demanderPopulation')}</button></form>
               ) : (
                 <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>
               ))}
@@ -455,6 +467,11 @@ export default async function ControlDetail({
           </div>
           {instances.length > 0 && !instances.some((i) => i.sampled) && !tailleOe.verifie && (
             <p className="muted small">{t('rcmc.ctrl07Avertissement')}</p>
+          )}
+          {instances.length === 0 && demandePopulation && (
+            <p className="muted small">
+              {t('rcmc.demandePopulationEnvoyee')} <Link href={`/eng/${id}/requests/${demandePopulation.id}`}>{numeroDemande(demandePopulation.seq_no)}</Link>
+            </p>
           )}
           <div className="table-scroll" style={{ maxHeight: 320 }}>
             <table className="data">

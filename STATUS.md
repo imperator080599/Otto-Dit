@@ -8,6 +8,58 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 5 : CTRL-05, la demande client de la population (2026-09-09)
+
+*Mandat, §3.1 : « atteindre le tirage d'OE d'un contrôle as_needed sans qu'une demande client de
+la population des occurrences existe. Cette demande RÉUTILISE le mécanisme de la Partie B :
+`client_request` typée, destinataire déduit, lien cliquable vers l'espace de demandes. Aucun
+chemin neuf, aucun formulaire parallèle. » `as_needed` = les fréquences hors
+`FREQUENCES_DERIVABLES` (tranche 4) — `adhoc`/`many_daily`, aucun autre concept n'existe. Il
+n'existe aucune table `client_request` littérale dans ce schéma : `request`/`request_item` SONT ce
+mécanisme (confirmé par grep exhaustif).*
+
+**Ce qui a changé.** Migration `0152_ctrl05_demande_population.sql` : `request.control_id` (FK
+PLEINE vers `control`, à la différence de `request.fsli_code`/0143 — `control` n'est jamais
+supprimé ni recréé en masse par `importRcm`, contrairement à `fsli`/`rebuildFslis`, une FK est
+donc sûre ici ; corrige plutôt que répète le trou déjà nommé pour `procedure_instance.control_id`,
+R66). `requests.ts` : `demanderPopulationControle` (crée une VRAIE `request`+`request_item`,
+`kind='listing'`, même forme que `requestAndImportListing`/`demanderDetailDeCompte`) et
+`derniereDemandePopulationControle` (retrouve la dernière demande d'un contrôle, même rôle que
+`derniereDemandeDetailDeCompte`). `sox.ts` : `drawAttributeSample` refuse désormais, pour toute
+fréquence HORS `FREQUENCES_DERIVABLES`, tant qu'aucune `request.control_id` ne pointe vers le
+contrôle — vérifie l'EXISTENCE, pas le statut (le mandat dit « existe », pas « envoyée » ; même
+discipline que `derniereDemandeDetailDeCompte`, qui ne vérifie pas non plus le statut). Écran
+`rcm/[cid]` : pour une fréquence non dérivable sans population, le bouton « importer le listing
+client » est désormais précédé d'un bouton « demander la population » — une fois la demande
+posée, son numéro (`R-00X`) s'affiche, lien cliquable vers l'espace de demandes, ET le bouton
+« importer » apparaît. Lecture `/api/sante` **CTRL-05** : même patron que CTRL-01/02/03/07,
+globale, nomme le tirage et la fréquence en violation.
+
+**Ce qui n'a PAS changé, délibérément (règle 19).** `importInstances`/`importInstancesAction`
+restent des imports DIRECTS, non liés formellement à la demande qui les a réclamés — même trou
+que la Partie B pour le détail de compte (aucun lien entre le fichier reçu et la demande),
+non élargi ici. Le monde de démonstration (C-BR-01 monthly, C-REV-01 weekly) est INCHANGÉ : les
+deux sont des fréquences dérivables, CTRL-05 ne les concerne pas.
+
+**Preuve cliquée, build de PRODUCTION**, navigation FRAÎCHE à chaque étape : contrôle de sonde
+`adhoc`, 0 occurrence → bouton « Request population » (jamais « Import client listing ») → clic →
+demande posée, visible (« Population requested — R-00X », lien cliquable), le bouton « Request
+population » disparaît et « Import client listing » apparaît à sa place.
+
+**Tests neufs** : `demanderPopulationControle`/`derniereDemandePopulationControle` (7 tests,
+service) : crée une vraie demande retrouvable ensuite ; refuse le tirage sans demande en nommant
+CTRL-05 et la fréquence (règle 17) ; une demande débloque le tirage (règle 17, moitié
+protectrice) ; une demande d'un AUTRE contrôle ne compte pas (comparaison sur `control_id` exact) ;
+étanchéité ETANCH pour un intrus ; une fréquence dérivable n'est jamais bloquée par CTRL-05.
+Lecture `/api/sante` (5 tests) : vide sans tirage, rouge sur un tirage sans demande (règle 17),
+vert avec une demande réelle, vert sur une fréquence dérivable même SANS demande (hors périmètre),
+vert sur le vrai chemin gardé de bout en bout. Régression : `ctrl01/02-03/07-lecture`,
+`population-derivee(-lecture)`, `s8`, `etancheite-executee`, `i18n`, `semeur/coherence` tous verts
+(106 tests).
+
+**Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché + nouveau
+code de refus), verify complet et expédition — détail à suivre dans ce même compte.**
+
 ## Lot contrôle interne, tranche 4 : la population dérivée (mandat §3.1) (2026-09-09)
 
 *Mandat, §3.1, tableau : pour une fréquence RÉGULIÈRE — **annuelle, mensuelle, hebdomadaire,

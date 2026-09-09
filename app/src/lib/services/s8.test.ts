@@ -247,6 +247,11 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
       `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing'), ($1,'INV-2',null,null,'listing')`,
       [control.id],
     );
+    // CTRL-05 (mandat §3.1, tranche 5) : many_daily n'est pas dérivable — sans une demande
+    // client de la population, le tirage refuserait avant même d'atteindre le garde CTRL-07 que
+    // ce test exerce. Posée ici pour isoler les deux gardes l'un de l'autre.
+    const { demanderPopulationControle } = await import('./requests');
+    await demanderPopulationControle(control.id, IDS.users.karim);
 
     // Cas connu mauvais : aucune taille explicite (donc pas de dérogation) → CTRL-07 refuse,
     // en nommant la fréquence et le chemin de secours (ADR-010).

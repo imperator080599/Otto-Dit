@@ -72,6 +72,50 @@ export async function demanderDetailDeCompte(engagementId: string, fsliCode: str
   return req.id;
 }
 
+/**
+ * Mandat contrôle interne, §3.1/CTRL-05 : la population d'un contrôle `adhoc`/`many_daily` (le
+ * mandat dit « as_needed » — aucune autre valeur de `Frequency` ne porte ce concept) se DEMANDE
+ * au client, jamais dérivée (`FREQUENCES_DERIVABLES`, sox.ts). RÉUTILISE le mécanisme de la
+ * Partie B tel quel — `request`/`request_item`, `kind='listing'`, même forme que
+ * `requestAndImportListing` (part2.ts) — aucun chemin neuf, aucun formulaire parallèle.
+ * Ne vérifie PAS qu'une demande existe déjà (même défaut de classe que `demanderDetailDeCompte`
+ * ci-dessus, R63 — non élargi à cette tranche) : un second clic crée une seconde demande.
+ */
+export async function demanderPopulationControle(controlId: string, userId: string): Promise<string> {
+  await assertMembreDe('control', controlId, userId, 'demander la population d’un contrôle');
+  const c = await q1<{ engagement_id: string; code: string; name: string }>(
+    `select engagement_id, code, name from control where id = $1`,
+    [controlId],
+  );
+  const ctx = await engagementCtx(c.engagement_id);
+  const seq = await nextSeq(c.engagement_id);
+  const req = await q1<{ id: string }>(
+    `insert into request (engagement_id, seq_no, title, language, status, control_id)
+     values ($1,$2,$3,'en','draft',$4) returning id`,
+    [c.engagement_id, seq, `Control population listing — ${c.code} ${c.name}`, controlId],
+  );
+  await q(
+    `insert into request_item (request_id, kind, description) values ($1,'listing',$2)`,
+    [req.id, `Complete listing of all ${c.code} control instances performed during the period (date, performer).`],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'control_population_requested', objectType: 'request', objectId: req.id,
+    payload: { code: c.code, controlId },
+  });
+  return req.id;
+}
+
+/** La dernière demande de population pour ce contrôle, si une existe déjà — même rôle que
+ *  `derniereDemandeDetailDeCompte` ci-dessus : un lien vers elle plutôt que d'en recréer une
+ *  seconde, et le garde CTRL-05 (sox.ts, `drawAttributeSample`) s'appuie sur SA présence. */
+export async function derniereDemandePopulationControle(controlId: string) {
+  return q01<{ id: string; seq_no: number; status: string }>(
+    `select id, seq_no, status from request where control_id = $1 order by seq_no desc limit 1`,
+    [controlId],
+  );
+}
+
 /** Generate the PBC request from a drawn sample (draft — auditor approves send, L2). */
 export async function generatePbcFromSample(engagementId: string, sampleId: string, userId: string): Promise<string> {
   await assertMembre(engagementId, userId, 'generatePbcFromSample');
