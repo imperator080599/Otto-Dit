@@ -51,7 +51,13 @@ export default async function SuiviPage({ params }: { params: Promise<{ id: stri
   for (const o of obstacles) parFamille.set(o.famille, (parFamille.get(o.famille) ?? 0) + 1);
 
   const demandes = await requestsEnAttente(id);
-  const demandePlusAgee = demandes[demandes.length - 1];
+  /* La PLUS ANCIENNE, pas la plus récente : `requestsEnAttente` trie par
+     `sent_at asc` (requests.ts) — l'index 0 est donc la plus ancienne, celle
+     dont l'âge est le plus grand. `[length - 1]` rendait l'inverse (revue
+     hostile, 2026-09-09) : la carte affichait l'âge de la demande la PLUS
+     RÉCENTE sous le libellé « la plus ancienne », l'exact contraire de ce que
+     ce panneau existe pour montrer. */
+  const demandePlusAgee = demandes[0];
 
   const deviations = (await listDeviations(id)).filter((d) => d.status !== 'resolved');
 
