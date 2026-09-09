@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
-# Densité mesurée — 77 écrans (build de production, base semée)
+# Densité mesurée — 79 écrans (build de production, base semée)
 
-Mesure prise sur le commit `723b613`, build `K2u87IlXpmpT-xqOJWIhO`.
+Mesure prise sur le commit `c1f76f7`, build `mzyPqH47bgy2oD4r16t0_`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 
@@ -92,6 +92,8 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/requests` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/requests (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/risk (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
+| `/eng/[id]/suivi` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
+| `/eng/[id]/suivi (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/workpapers (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/portal/[token]` | 0 | 0 | 7 | 0 | Bonjour Sophie Marchand |
 | `/travaux` | 0 | 0 | 0 | 0 | My work |

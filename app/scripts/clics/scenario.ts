@@ -3264,8 +3264,13 @@ export async function conduire(
     dire('suivi : les quatre panneaux du mandat sont posés',
       cartes >= 4, `${cartes} carte(s) .epure-carte`);
     /* LA CARTE « OBSTACLES » MÈNE À /obstacles — pas un lien mort, pas une
-       ancre qui ne bouge rien. */
-    const lienObstacles = p.locator(`a[href="${eng}/obstacles"].epure-carte`);
+       ancre qui ne bouge rien. `href` EST RELATIF DANS LE DOM (Next `<Link>`
+       rend `/eng/id/obstacles`, jamais l'origine complète) : un `=` contre
+       `${eng}/obstacles` (qui PORTE l'origine) ne matche donc JAMAIS — cas
+       connu mauvais mesuré une première fois (« lien absent », verify du
+       2026-09-09) avant ce correctif. `$=` (suffixe), même convention que
+       les autres stations du fichier (ex. `a[href$="/carry-forward"]`). */
+    const lienObstacles = p.locator(`a[href$="/obstacles"].epure-carte`);
     if (!(await lienObstacles.count())) {
       dire('suivi : la carte obstacles a un lien réel vers /obstacles', false, 'lien absent');
     } else {
