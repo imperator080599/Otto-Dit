@@ -136,9 +136,29 @@ export async function proposeScoping(engagementId: string, userId: string): Prom
  * PREMIER IMPORT QUI FRANCHIT LE SEUIL GAGNE (`unique (engagement_id, fsli_code)`, migration
  * 0156) : un ré-import ultérieur ne pose pas une seconde ligne. Le drapeau, une fois posé, ne se
  * retire JAMAIS (règle 28) — il reste le dossier permanent « ce jour-là, ce poste a basculé »,
- * même si un humain confirme ensuite le poste en scope. CE QUE CETTE FONCTION NE FAIT PAS (règle
- * 19) : elle n'ouvre pas la section ni ne crée la demande de détail (§2.2/§2.3, tranches
- * suivantes) — un drapeau posé ici n'est encore qu'un CONSTAT, pas un geste sur le dossier.
+ * même si un humain confirme ensuite le poste en scope.
+ *
+ * §2.2 (mandat 2026-09-09) : LE MÊME IMPORT OUVRE AUSSI LA SECTION. Un poste `ns_confirmed`
+ * (D9) n'entre JAMAIS dans `postesRetenus` (rail.ts : `scoping in ('in_scope',
+ * 'in_scope_qualitative')` seulement) — donc `assurerSections` (sections.ts) ne lui crée jamais
+ * de `section_state`, et son dossier (leadsheet, revue analytique, et tout le reste de
+ * `/poste/[code]`) reste invisible du tableau de bord, du suivi et du kanban, même après la
+ * bascule. Même insertion que `assurerSections` (même table, même `on conflict`), posée ici
+ * indépendamment de `scoping` — cette fonction n'écrit JAMAIS `fsli.scoping` lui-même (D9 reste
+ * entier : la décision humaine ne bouge pas), elle rend seulement le dossier du poste ATTEIGNABLE.
+ * §2.3 (mandat 2026-09-09) : LE MÊME IMPORT CRÉE AUSSI LA DEMANDE DE DÉTAIL, mais SEULEMENT pour
+ * les comptes du poste dont le solde absolu dépasse le CTT (`materiality.ctt_amount`, PAS le
+ * seuil de performance qui a servi à détecter la bascule elle-même — deux seuils distincts,
+ * `materiality.ts`). `requests.ts::demanderDetailAuDessusDuCtt` est une fonction DISTINCTE de
+ * `demanderDetailDeCompte` (Partie B, étape 1, déjà testée, déjà utilisée par `/sampling` sur TOUT
+ * le poste) — ce comportement existant ne change pas ici. Importée dynamiquement (comme
+ * `obstacles.ts`/`matching.ts` le font déjà ailleurs dans ce dépôt) : `requests.ts` importe déjà
+ * `frameworkSet`/`fsliAccounts` DEPUIS ce fichier, un import statique en sens inverse créerait un
+ * cycle. Si aucun compte ne dépasse le CTT, aucune demande n'est créée — ce n'est pas une erreur
+ * (un poste peut devenir matériel par somme de petits comptes, chacun sous le CTT).
+ * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle n'implémente aucun refus (MAT-01/02/03,
+ * tranche suivante) — un poste devenu matériel sans section ouverte ou sans demande de détail ne
+ * bloque encore rien au visa.
  */
 export async function detecterBasculesMaterialite(
   engagementId: string, importFileId: string, userId: string | null,
@@ -153,15 +173,16 @@ export async function detecterBasculesMaterialite(
      `proposeScoping`/`confirmScoping` juste au-dessus. */
   await assertMembre(engagementId, userId, 'détecter les bascules de matérialité');
   const ctx = await engagementCtx(engagementId);
-  const mat = await q01<{ perf_amount: string }>(
-    `select perf_amount::text from materiality where engagement_id = $1 and status = 'validated'
-     order by version desc limit 1`,
+  const mat = await q01<{ perf_amount: string; ctt_amount: string }>(
+    `select perf_amount::text, ctt_amount::text from materiality
+     where engagement_id = $1 and status = 'validated' order by version desc limit 1`,
     [engagementId],
   );
   if (!mat) return []; // aucune matérialité validée pour l'instant : rien à comparer, pas une erreur
   const seuil = numToCents(mat.perf_amount);
-  const candidats = await q<{ code: string; balance: string; scoping: string }>(
-    `select code, balance::text, scoping from fsli
+  const ctt = numToCents(mat.ctt_amount);
+  const candidats = await q<{ code: string; name: string; balance: string; scoping: string }>(
+    `select code, name, balance::text, scoping from fsli
      where engagement_id = $1 and scoping in ('unscoped', 'ns_proposed', 'ns_confirmed')`,
     [engagementId],
   );
@@ -184,6 +205,19 @@ export async function detecterBasculesMaterialite(
     );
     if (!pose) continue; // déjà flaggé par un import antérieur — premier gagne
     bascules.push({ fsliCode: f.code });
+    /* §2.2 : MÊME insertion que `assurerSections` pour un poste (sections.ts) — la section devient
+       ATTEIGNABLE (tableau de bord, suivi, kanban) sans jamais toucher `fsli.scoping`. */
+    await q(
+      `insert into section_state (engagement_id, kind, ref, label)
+       values ($1, 'poste', $2, $3)
+       on conflict (engagement_id, kind, ref) do update set label = excluded.label`,
+      [engagementId, f.code, f.name],
+    );
+    /* §2.3 : import dynamique — voir le commentaire d'en-tête de cette fonction (cycle
+       fsli.ts ↔ requests.ts). `userId` propagé tel quel : `demanderDetailAuDessusDuCtt` porte sa
+       propre garde `assertMembre`, no-op sur `null` (le cas système, `bootstrapNep`). */
+    const { demanderDetailAuDessusDuCtt } = await import('./requests');
+    await demanderDetailAuDessusDuCtt(engagementId, f.code, ctt, userId);
     await logEvent({
       tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
       verb: 'materialite_basculee', objectType: 'fsli', objectId: f.code,

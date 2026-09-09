@@ -22,6 +22,15 @@ export async function nextSeq(engagementId: string): Promise<number> {
  *  endroit, jamais un littéral répété (revue hostile du 2026-09-06). */
 export const EVIDENCE_TYPE_DETAIL_DE_COMPTE = 'detail_de_compte';
 
+/** DISTINCT du code ci-dessus (mandat 2026-09-09, §2.3) — pas une variante, une PORTÉE
+ *  différente : `EVIDENCE_TYPE_DETAIL_DE_COMPTE` demande TOUT le poste (Partie B, étape 1,
+ *  `demanderDetailDeCompte`) ; celui-ci ne demande que les comptes AU-DESSUS DU CTT
+ *  (`demanderDetailAuDessusDuCtt`, ci-dessous). Un même code aurait fait apparaître une demande
+ *  CTT comme LA demande « détail du compte » du poste dans `derniereDemandeDetailDeCompte`
+ *  (utilisée par `/sampling` pour éviter une seconde demande) — deux objets différents,
+ *  deux codes différents. */
+export const EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT = 'detail_de_compte_ctt';
+
 /**
  * Plan d'autonomie, Partie B, étape 1 : LA DEMANDE NAÎT DU POSTE, jamais
  * d'une saisie. Les comptes visés viennent du même mécanisme qui statue le
@@ -68,6 +77,74 @@ export async function demanderDetailDeCompte(engagementId: string, fsliCode: str
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
     verb: 'detail_de_compte_demande', objectType: 'request', objectId: req.id,
     payload: { fsliCode, comptes: comptes.map((c) => c.number) },
+  });
+  return req.id;
+}
+
+/**
+ * Mandat 2026-09-09, §2.3 : LA DEMANDE DE DÉTAIL AU-DESSUS DU CTT — déclenchée par la MÊME
+ * DÉTECTION que le drapeau de bascule (§2.1, `fsli.ts::detecterBasculesMaterialite`) et
+ * l'ouverture de section (§2.2), jamais un geste séparé (mandat §2.5, épreuve 3 : « le même
+ * import »). RÉUTILISE le mécanisme de demandes de la Partie B TEL QUEL — même table `request`/
+ * `request_item`, même forme que `demanderDetailDeCompte` juste au-dessus. AUCUN CHEMIN NEUF :
+ * seul le FILTRE change (les comptes du poste dont le solde absolu dépasse le CTT, pas tout le
+ * poste). N'APPELLE PAS `demanderDetailDeCompte` et n'en modifie pas le comportement : celui-ci
+ * sert Partie B, étape 1, sur TOUT le poste — un appelant DÉJÀ testé (s3s4.test.ts, suivi.test.ts)
+ * dont le contrat ne doit pas changer pour ce mandat-ci.
+ *
+ * Idempotence : PAS de garde locale ici — l'appelant unique (`detecterBasculesMaterialite`)
+ * n'appelle cette fonction QUE pour une bascule NOUVELLEMENT posée (`on conflict do nothing` sur
+ * `fsli_materiality_bascule` déjà filtré en amont) ; un ré-import ne rappelle donc jamais cette
+ * fonction pour le même poste, et une seconde demande n'est jamais créée par ce chemin.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : que le CTT reçu (`cttCents`) est bien celui de
+ * la matérialité VALIDÉE courante — c'est la responsabilité de l'appelant, qui le lit dans la même
+ * requête que le seuil de performance (une seule source, pas deux lectures qui pourraient
+ * diverger si la matérialité était revalidée entre-temps).
+ */
+export async function demanderDetailAuDessusDuCtt(
+  engagementId: string, fsliCode: string, cttCents: number, userId: string | null,
+): Promise<string | null> {
+  await assertMembre(engagementId, userId, 'demanderDetailAuDessusDuCtt');
+  const ctx = await engagementCtx(engagementId);
+  const fs = await frameworkSet(engagementId);
+  const fr = fs.language === 'fr';
+  const map = getAccountingMap(fs.accounting_map);
+  const def = map.fslis.find((f) => f.code === fsliCode);
+  if (!def) {
+    /* Ne devrait jamais arriver : `fsliCode` vient d'une ligne `fsli` déjà validée par le même
+       pack (même garde que `demanderDetailDeCompte` ci-dessus) — lève plutôt que d'avaler une
+       incohérence de données (règle 13). */
+    throw new Error(fr
+      ? `poste inconnu du pack comptable (${fs.accounting_map}) : ${fsliCode}`
+      : `unknown poste in the accounting-map pack (${fs.accounting_map}): ${fsliCode}`);
+  }
+  const comptes = (await fsliAccounts(engagementId, fsliCode))
+    .filter((c) => Math.abs(c.balanceCents) >= cttCents);
+  if (!comptes.length) return null; // rien au-dessus du CTT — pas une erreur, rien à demander
+  const seq = await nextSeq(engagementId);
+  const liste = comptes.map((c) => `${c.number} ${c.label}`).join(', ');
+  const req = await q1<{ id: string }>(
+    `insert into request (engagement_id, seq_no, title, language, status, evidence_type_code, fsli_code)
+     values ($1,$2,$3,$4,'draft',$5,$6) returning id`,
+    [engagementId, seq,
+      fr ? `Détail du compte (au-dessus du CTT) — ${def.name.fr}` : `Account detail (above CTT) — ${def.name.en}`,
+      fs.language, EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT, fsliCode],
+  );
+  await q(
+    `insert into request_item (request_id, kind, description) values ($1,'document',$2)`,
+    [req.id, fr
+      ? `Détail du compte à la clôture (${ctx.period_end}) pour ${liste} — comptes au-dessus du `
+        + `seuil de signification négligeable (CTT), suite à la bascule de matérialité du poste `
+        + `« ${def.name.fr} ». Total, mouvements et pièces justificatives selon le format habituel du client.`
+      : `Account detail as of period end (${ctx.period_end}) for ${liste} — accounts above the `
+        + `clearly-trivial threshold (CTT), following the materiality bascule of "${def.name.en}". `
+        + 'Total, movements, and supporting records in the client\'s usual format.'],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
+    verb: 'detail_de_compte_demande_ctt', objectType: 'request', objectId: req.id,
+    payload: { fsliCode, comptes: comptes.map((c) => c.number), cttCents },
   });
   return req.id;
 }

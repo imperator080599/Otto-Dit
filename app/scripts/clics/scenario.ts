@@ -875,6 +875,24 @@ export async function conduire(
       p.url());
   });
 
+  /* §2.3 (mandat 2026-09-09) : « la demande de détail… visible dans l'espace de demandes, atteinte
+     par un clic » (§2.5, épreuve 3). AUCUN écran neuf : `/requests` (Partie B) montre déjà cette
+     demande — « CTT » figure dans le titre dans les DEUX langues (fr « au-dessus du CTT », en
+     « above CTT »), un sélecteur qui ne dépend pas de la langue servie. */
+  await station('bascule de matérialité : la demande de détail au-dessus du CTT est visible et cliquable', async () => {
+    await aller(`${eng}/requests`);
+    const lignes = await compte('a[href*="/requests/"]:has-text("CTT")');
+    dire('CTT : au moins une demande de détail au-dessus du CTT est listée',
+      lignes > 0, `${lignes} ligne(s)`);
+    if (lignes === 0) return;
+    const lien = p.locator('a[href*="/requests/"]:has-text("CTT")').first();
+    const cible = await lien.getAttribute('href').catch(() => null);
+    if (!cible) { dire('CTT : la ligne mène quelque part', false, 'aucun lien'); return; }
+    await cliquer('a[href*="/requests/"]:has-text("CTT")');
+    dire('CTT : le lien ouvre bien la page de la demande',
+      p.url().endsWith(cible.split('/').pop()!), p.url());
+  });
+
   // ── 6. PÉRIMÈTRE : la dixième famille d'obstacles, démontrée AU CLIC
   await station('périmètre sans programme', async () => {
     await aller(`${eng}/scoping`);

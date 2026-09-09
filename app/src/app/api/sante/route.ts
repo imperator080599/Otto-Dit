@@ -1152,6 +1152,64 @@ async function corpsDeLaSonde() {
     return `${total.n} bascule(s) posée(s) · ${sansProcedure?.n ?? 0} sans aucune procédure au dossier`;
   }));
 
+  /* LA SECTION DE LA BASCULE, ATTEIGNABLE (mandat 2026-09-09, §2.2 — livré ce jour, lu ce jour,
+     règle 22). Un poste `ns_confirmed` (D9) n'entre jamais dans `postesRetenus` (rail.ts) — sans
+     ce geste, `assurerSections` ne lui ouvre JAMAIS de `section_state`, et le drapeau posé par
+     §2.1 resterait un CONSTAT que rien ne peut atteindre depuis le tableau de bord, le suivi ou le
+     kanban (règle 13 : un objet créé qu'aucun chemin de lecture n'atteint). Cette lecture rougit
+     si UNE SEULE bascule n'a pas sa section — la lecture PEUT rater une section ouverte par un
+     AUTRE chemin dont le `label` diffère du nom courant du FSLI (elle ne compare que l'existence
+     de la ligne, jamais son contenu — règle 19). */
+  lectures.push(await essayer('bascule de matérialité : la section du poste est ouverte (§2.2)', async () => {
+    const sansSection = await q<{ fsli_code: string; engagement_id: string }>(
+      `select b.fsli_code, b.engagement_id::text from fsli_materiality_bascule b
+       where not exists (
+         select 1 from section_state s
+         where s.engagement_id = b.engagement_id and s.kind = 'poste' and s.ref = b.fsli_code)`,
+    );
+    if (sansSection.length > 0) {
+      throw new Error(`${sansSection.length} bascule(s) sans section ouverte `
+        + `(${sansSection.map((r) => r.fsli_code).join(', ')}) — detecterBasculesMaterialite `
+        + 'a posé le drapeau sans ouvrir la section (§2.2 régressé), ou la section a été retirée par ailleurs');
+    }
+    const total = await q01<{ n: string }>(`select count(*) n from fsli_materiality_bascule`);
+    if (!total || Number(total.n) === 0) return 'aucune bascule pour l’instant';
+    return `${total.n} bascule(s), toutes avec leur section ouverte`;
+  }));
+
+  /* LA DEMANDE DE DÉTAIL AU-DESSUS DU CTT (mandat 2026-09-09, §2.3 — livré ce jour, lu ce jour,
+     règle 22). `EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT` est un code DISTINCT de
+     `EVIDENCE_TYPE_DETAIL_DE_COMPTE` (Partie B, tout le poste) — le SEUL chemin qui pose ce code
+     est `requests.ts::demanderDetailAuDessusDuCtt`, appelé UNIQUEMENT par
+     `fsli.ts::detecterBasculesMaterialite` pour une bascule NOUVELLEMENT posée. Cette lecture
+     vérifie donc l'exact inverse : AUCUNE demande sous ce code ne doit exister sans une bascule
+     RÉELLE derrière (même engagement, même poste) — un ORPHELIN ne peut survenir que par un appel
+     direct à `demanderDetailAuDessusDuCtt` hors du chemin gardé, ou une bascule supprimée après
+     coup (ce que règle 28 interdit déjà ailleurs). CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) :
+     qu'une bascule DEVRAIT avoir cette demande (un poste peut basculer sans qu'aucun compte ne
+     dépasse le CTT — `materialite-bascule.test.ts` couvre ce cas précisément, pas ici) ; ni que
+     la liste des comptes dans la demande reflète fidèlement le CTT courant. */
+  lectures.push(await essayer('demande de détail au-dessus du CTT : aucune sans bascule réelle (§2.3)', async () => {
+    const { EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT } = await import('@/lib/services/requests');
+    const orphelines = await q<{ id: string; fsli_code: string | null }>(
+      `select r.id::text, r.fsli_code from request r
+       where r.evidence_type_code = $1
+         and not exists (
+           select 1 from fsli_materiality_bascule b
+           where b.engagement_id = r.engagement_id and b.fsli_code = r.fsli_code)`,
+      [EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT],
+    );
+    if (orphelines.length > 0) {
+      throw new Error(`${orphelines.length} demande(s) de détail « au-dessus du CTT » SANS bascule `
+        + `derrière (${orphelines.map((r) => `${r.id}:${r.fsli_code ?? '?'}`).join(', ')}) — `
+        + 'demanderDetailAuDessusDuCtt a été appelée hors du chemin gardé (detecterBasculesMaterialite), '
+        + 'ou la bascule correspondante a été supprimée après coup');
+    }
+    const total = await q01<{ n: string }>(`select count(*) n from request where evidence_type_code = $1`, [EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT]);
+    if (!total || Number(total.n) === 0) return 'aucune demande CTT pour l’instant';
+    return `${total.n} demande(s) de détail au-dessus du CTT, toutes rattachées à une bascule réelle`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que
