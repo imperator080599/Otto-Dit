@@ -133,17 +133,17 @@ sous la ligne — elle ne se cache pas dans le badge.
 | demande de listing formelle (insert request/request_item ad hoc) | `part2.ts:42-50` | — | — | **DÉCOR** |
 | | | | | ↳ le chemin cliquable (rcm/[cid]/page.tsx importInstancesAction) importe le CSV directement, sans créer de request formelle au préalable — un geste DIFFÉRENT de celui du semeur, pas un équivalent |
 | demande envoyée + pièce reçue (approveSend, ingestEvidence — listing) | `part2.ts:51,55-63` | `requests/[rid]/page.tsx:33 ; rcm/[cid]/page.tsx (dépôt)` | — | non prouvé |
-| occurrences importées (importInstances) | `part2.ts:64` | `rcm/[cid]/page.tsx:100,255` | — | non prouvé |
-| pièce d’exécution de contrôle déposée (uploadControlEvidence) | `part2.ts:73 (appelée depuis 145, 162)` | `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)` | — | non prouvé |
-| échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction) | `part2.ts:143-144` | `rcm/[cid]/page.tsx:115-116,257 (un seul bouton, un seul geste)` | — | non prouvé |
-| | | | | ↳ CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne. |
-| extraction du contrôle exécuté (extractAll/verifyExtraction, SOX) | `part2.ts:146,148,163,165` | `testing/page.tsx:67 (même service, dossier SOX)` | — | non prouvé |
-| test d’efficacité exécuté (runAttributeTesting) | `part2.ts:150,167` | `rcm/[cid]/page.tsx:120` | — | non prouvé |
-| extension à la population complète (extendToFullPopulation) | `part2.ts:156` | — | — | **DÉCOR** |
-| | | | | ↳ aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:850) |
-| déficience proposée (proposeDeficiency) | `part2.ts:180` | `rcm/[cid]/page.tsx:143,315` | — | non prouvé |
-| déficience décidée (decideDeficiency) | `part2.ts:187` | `rcm/[cid]/page.tsx:155` | — | non prouvé |
-| papier OE rédigé (draftOeWorkpaper) | `part2.ts:189` | `rcm/[cid]/page.tsx:167,324` | — | non prouvé |
+| occurrences importées (importInstances) | `part2.ts:64` | `rcm/[cid]/page.tsx:162,424` | — | non prouvé |
+| pièce d’exécution de contrôle déposée (uploadControlEvidence) | `part2.ts:73 (appelée depuis 155, 172)` | `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)` | — | non prouvé |
+| échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction) | `part2.ts:150-154` | `rcm/[cid]/page.tsx:171,426 (un seul bouton, un seul geste)` | — | non prouvé |
+| | | | | ↳ CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne. Lignes recomputées après CTRL-07 (tranche 3, §3.2) : le tirage de démonstration passe désormais par la dérogation écrite ADR-010 (part2.ts:143-153), un choix humain documenté, pas un défaut de pack tu — même geste, même objet. |
+| extraction du contrôle exécuté (extractAll/verifyExtraction, SOX) | `part2.ts:156,158,173,175` | `testing/page.tsx:67 (même service, dossier SOX)` | — | non prouvé |
+| test d’efficacité exécuté (runAttributeTesting) | `part2.ts:160,177` | `rcm/[cid]/page.tsx:188,440` | — | non prouvé |
+| extension à la population complète (extendToFullPopulation) | `part2.ts:166` | — | — | **DÉCOR** |
+| | | | | ↳ aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:929) |
+| déficience proposée (proposeDeficiency) | `part2.ts:190` | `rcm/[cid]/page.tsx:209,494` | — | non prouvé |
+| déficience décidée (decideDeficiency) | `part2.ts:197` | `rcm/[cid]/page.tsx:221,557` | — | non prouvé |
+| papier OE rédigé (draftOeWorkpaper) | `part2.ts:199` | `rcm/[cid]/page.tsx:233,503` | — | non prouvé |
 
 ## `src/lib/flows/enrichir.ts` — Le monde enrichi — ce qui donne au dossier l’air d’avoir été travaillé
 
@@ -199,7 +199,7 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **pièce triée sur une ligne (attachEvidenceToItem)** (`part1.ts:142`) — aucun appelant dans app/src/app trouvé
 - **limitation d’étendue enregistrée (recordScopeLimitation)** (`part1.ts:325,339`) — CORRIGÉ (constat B2, relecture hostile) : ces deux lignes étaient AUSSI citées comme preuve de la ligne « écart escaladé / résolu » ci-dessus — un même geste du semeur ne peut pas être à la fois décor et prouvé. recordScopeLimitation est une fonction PROPRE (matching.ts:508) ; revérifié : aucun bouton dans exceptions/page.tsx pour ce geste précis. La réserve « à revérifier » de la version d’origine est LEVÉE — le décor est confirmé, pas une hypothèse.
 - **demande de listing formelle (insert request/request_item ad hoc)** (`part2.ts:42-50`) — le chemin cliquable (rcm/[cid]/page.tsx importInstancesAction) importe le CSV directement, sans créer de request formelle au préalable — un geste DIFFÉRENT de celui du semeur, pas un équivalent
-- **extension à la population complète (extendToFullPopulation)** (`part2.ts:156`) — aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:850)
+- **extension à la population complète (extendToFullPopulation)** (`part2.ts:166`) — aucun appelant nulle part hors part2.ts et sa propre définition (sox.ts:929)
 - **section attribuée à un porteur (attribuerA)** (`enrichir.ts:279`) — CONFIRMÉ EXACT par la relecture hostile : la fonction attribuerAction (sections-actions.ts:32) EXISTE mais app/eng/[id]/page.tsx:14 n’importe que envoyerAction et suivreAction — un geste du métier sans écran (règle 13), pas seulement un chemin non cliqué.
 - **note antidatée (update review_note set created_at)** (`enrichir.ts:349`) — PAR NATURE sans chemin humain — un antidatage ne se clique pas. Déjà assumé et dit (N2-3, ADR-126, docs/BACKLOG_REPORTE.md) : la démonstration publique compte sur cette fabrication ; ce n’est pas un manque à combler, c’est un décor DÉLIBÉRÉ et déjà écrit comme tel ailleurs.
 
@@ -224,14 +224,14 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **facteur de design documenté, les quatre — CTRL-02 (documenterFacteurDesign)** — chemin : `rcm/[cid]/page.tsx (documenterFacteurAction)` — domaine SOX entier hors du parcours cliqué (note ci-dessus) — même état que le reste de cette section, pas une régression neuve
 - **IUC déclarée (utilisée ou non) — CTRL-03 (declarerIuc)** — chemin : `rcm/[cid]/page.tsx (declarerIucAction)` — les deux contrôles cyclés (C-BR-01, C-REV-01) déclarent utilisee=false (manuels d’après le RCM) — documenterIucPreuve (les preuves d’exactitude/exhaustivité) n’est donc appelé par AUCUN fichier du semeur, hors du périmètre de ce registre (règle du fichier, ligne 28) ; vérifié cliqué à la main, en direct, sur un build de production (script jetable, supprimé) — 4/4 facteurs et 2/2 preuves confirmés persistés par une navigation fraîche.
 - **demande envoyée + pièce reçue (approveSend, ingestEvidence — listing)** — chemin : `requests/[rid]/page.tsx:33 ; rcm/[cid]/page.tsx (dépôt)`
-- **occurrences importées (importInstances)** — chemin : `rcm/[cid]/page.tsx:100,255`
+- **occurrences importées (importInstances)** — chemin : `rcm/[cid]/page.tsx:162,424`
 - **pièce d’exécution de contrôle déposée (uploadControlEvidence)** — chemin : `rcm/[cid]/page.tsx (dépôt sur demande d’échantillon)`
-- **échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction)** — chemin : `rcm/[cid]/page.tsx:115-116,257 (un seul bouton, un seul geste)` — CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne.
+- **échantillon d’attributs tiré ET demande de preuves envoyée (drawAttributeSample + approveSend, DEUX instructions du MÊME drawAction)** — chemin : `rcm/[cid]/page.tsx:171,426 (un seul bouton, un seul geste)` — CORRIGÉ (constat D5, relecture hostile) : la version d’origine comptait ces deux instructions comme deux OBJETS distincts alors que c’est un seul geste humain (un clic) qui les produit toutes les deux — fusionnées ici, le compte total en est réduit d’une ligne. Lignes recomputées après CTRL-07 (tranche 3, §3.2) : le tirage de démonstration passe désormais par la dérogation écrite ADR-010 (part2.ts:143-153), un choix humain documenté, pas un défaut de pack tu — même geste, même objet.
 - **extraction du contrôle exécuté (extractAll/verifyExtraction, SOX)** — chemin : `testing/page.tsx:67 (même service, dossier SOX)`
-- **test d’efficacité exécuté (runAttributeTesting)** — chemin : `rcm/[cid]/page.tsx:120`
-- **déficience proposée (proposeDeficiency)** — chemin : `rcm/[cid]/page.tsx:143,315`
-- **déficience décidée (decideDeficiency)** — chemin : `rcm/[cid]/page.tsx:155`
-- **papier OE rédigé (draftOeWorkpaper)** — chemin : `rcm/[cid]/page.tsx:167,324`
+- **test d’efficacité exécuté (runAttributeTesting)** — chemin : `rcm/[cid]/page.tsx:188,440`
+- **déficience proposée (proposeDeficiency)** — chemin : `rcm/[cid]/page.tsx:209,494`
+- **déficience décidée (decideDeficiency)** — chemin : `rcm/[cid]/page.tsx:221,557`
+- **papier OE rédigé (draftOeWorkpaper)** — chemin : `rcm/[cid]/page.tsx:233,503`
 - **équipe : déclaration, signature, affectation (Hugo)** — chemin : `team/page.tsx:95 (openAction), :102 (answerAction), :115 (signAction), :122 (assignAction) — boutons :216,255,274,349` — /eng/[id]/team n’apparaît dans AUCUN aller() de scenario.ts
 - **risque évalué (assessFsli, 2e poste)** — chemin : `risk/page.tsx:85-91 (assessAction, bouton risk.reAssess)` — CORRIGÉ (constat A3/A4, relecture hostile) : compté comme prouvé à tort dans la version d’origine, en confondant avec le clic de risk.arbitrate (scenario.ts:860,871) qui appelle overrideLevel — UN AUTRE SERVICE. « risk.reAssess » : zéro occurrence dans scenario.ts. part1.ts:88 le confirme dans son propre commentaire : « assessFsli n’était appelé que par le dossier N-1 ».
 - **section envoyée à quelqu’un (envoyerA)** — chemin : `app/eng/[id]/page.tsx:98-110 (envoyerAction)`
