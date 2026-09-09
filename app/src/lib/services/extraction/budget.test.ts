@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { IDS } from '@/lib/seed';
+import { q } from '@/lib/db/client';
 import { recordAiRun } from '@/lib/core/airuns';
-import { plafondUsd, depenseCumuleeUsd, gardeBudget, messageArretBudget } from './budget';
+import {
+  plafondUsd, depenseCumuleeUsd, gardeBudget, messageArretBudget,
+  gardeBudgetEnBase, assertBudgetActifEnBase, _reinitialiserGardeBudgetEnBasePourSonde,
+} from './budget';
 
 // LA GARDE DE BUDGET (ADR-105) — la règle qui empêche le mode « IA réelle »
 // de dépenser un dollar de plus que le plafond. On TENTE le dépassement : une
@@ -52,5 +56,65 @@ describe('garde de budget du mode IA réelle (ADR-105)', () => {
     /* Un petit plafond garde ses décimales — 0,001 $ affiché « 0.00 $ »
        mentirait (trouvé en conduisant l'arrêt réel au plafond). */
     expect(messageArretBudget(0.0452, 0.001)).toContain('0.0010');
+  });
+});
+
+// MANDAT DU 9 SEPTEMBRE, §4/LOT 8 — LA GARDE DE BUDGET EN BASE (app_state), DISTINCTE DE LA
+// GARDE CI-DESSUS (OTTO_BUDGET_USD, le cumul d'une session déjà en mode IA vivante). Celle-ci
+// répond à une question antérieure : ce déploiement a-t-il seulement le droit de tenter une
+// lecture payante ? Fermée par défaut, deux fois — testé pour de vrai (règle 17), pas affirmé.
+describe('garde de budget EN BASE (mandat §4/Lot 8) — fermée par défaut', () => {
+  beforeAll(async () => {
+    await initTestDb();
+  }, 120000);
+
+  afterEach(async () => {
+    await _reinitialiserGardeBudgetEnBasePourSonde();
+  });
+
+  it('absente : gardeBudgetEnBase rend actif:false, et assertBudgetActifEnBase refuse IA-BUDGET-01', async () => {
+    const g = await gardeBudgetEnBase();
+    expect(g).toEqual({ actif: false, plafondUsd: null, activePar: null, activeLe: null });
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
+  it('CAS CONNU MAUVAIS (règle 17) : activée SANS plafond positif refuse — jamais lue « à moitié activée »', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: null, activePar: IDS.users.claire, activeLe: new Date().toISOString() })],
+    );
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+
+    await q(`update app_state set value = $1 where key = 'ia_vivante_budget'`,
+      [JSON.stringify({ actif: true, plafondUsd: 0, activePar: IDS.users.claire, activeLe: new Date().toISOString() })]);
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
+  it('CAS CONNU MAUVAIS (règle 17) : activée SANS provenance (qui/quand) refuse — une activation anonyme n’est pas tracée (règle 3)', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: null, activeLe: null })],
+    );
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
+  it('CAS CONNU MAUVAIS (règle 17) : un état mal typé (plafondUsd en chaîne) est lu comme ABSENT, jamais deviné', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: '5', activePar: IDS.users.claire, activeLe: new Date().toISOString() })],
+    );
+    const g = await gardeBudgetEnBase();
+    expect(g.plafondUsd).toBeNull();
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
+  it('défaut retiré : un état COMPLET (actif, plafond positif, provenance qui/quand) passe — jamais posé par un chemin applicatif, seulement par cette sonde', async () => {
+    const quand = new Date().toISOString();
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: IDS.users.claire, activeLe: quand })],
+    );
+    const g = await assertBudgetActifEnBase();
+    expect(g).toEqual({ actif: true, plafondUsd: 5, activePar: IDS.users.claire, activeLe: quand });
   });
 });

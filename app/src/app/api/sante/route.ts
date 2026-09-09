@@ -1165,6 +1165,31 @@ async function corpsDeLaSonde() {
     return `${concludedControls.length} contrôle(s) conclu(s) · ${avecVideo} avec vidéo attachée, aucune supprimée sans remplacement`;
   }));
 
+  /* IA-BUDGET-01 (mandat du 9 septembre, §4/Lot 8 ; CLAUDE.md, interdits) : « la garde de budget
+     EN BASE d'abord... chemin fermé par défaut. » `assertBudgetActifEnBase` (budget.ts) referme
+     déjà sur tout état ABSENT ou INCOMPLET — cette lecture vérifie que /api/sante peut ROUGIR sur
+     l'incomplétude elle-même (règle 22), pas seulement l'absence : une ligne `app_state` posée
+     `actif:true` mais sans plafond positif, ou sans provenance (qui/quand) complète, est un état
+     qu'aucun chemin de ce dépôt n'écrit — SEULE une écriture SQL directe pourrait la produire —
+     mais « aucun chemin ne l'écrit » n'est pas une preuve, règle 15 : un balayage de texte n'est
+     pas une garde. Cette lecture emprunte le VRAI chemin de lecture (`gardeBudgetEnBase`), avec
+     son propre cas connu mauvais (`ia-budget-lecture.test.ts`). CE QUE CETTE LECTURE NE VÉRIFIE
+     PAS (règle 19) : elle ne dit RIEN de `getOcrAdapter()` — celui-ci coupe déjà tout déploiement
+     public vers le rejeu INDÉPENDAMMENT de cette garde (adapters.ts, `demoPublique()`), et cette
+     lecture ne le revérifie pas ici. */
+  lectures.push(await essayer('IA-BUDGET-01 : la garde de budget en base ne reste jamais activée à moitié', async () => {
+    const { gardeBudgetEnBase } = await import('@/lib/services/extraction/budget');
+    const g = await gardeBudgetEnBase();
+    if (g.actif && (g.plafondUsd === null || g.plafondUsd <= 0)) {
+      throw new Error(`garde activée (actif:true) sans plafond positif — état incomplet, jamais lu comme « à moitié activé » (plafondUsd=${g.plafondUsd})`);
+    }
+    if (g.actif && (!g.activePar || !g.activeLe)) {
+      throw new Error(`garde activée sans provenance complète (qui/quand) — activePar=${g.activePar ?? 'absent'} · activeLe=${g.activeLe ?? 'absent'}`);
+    }
+    if (!g.actif) return 'fermée — aucune garde de budget active en base (défaut, mandat §4)';
+    return `ACTIVE — plafond ${g.plafondUsd} $, posée par ${g.activePar} le ${g.activeLe}`;
+  }));
+
   /* SUIVI DE MISSION (mandat contrôle interne, §5, §7.4 — livré ce jour, lu ce
      jour, règle 22). `requestsEnAttente` (requests.ts) ne compte que les
      demandes ENVOYÉES : `approveSend` pose `status = 'sent'` et `sent_at`
