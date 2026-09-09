@@ -1,12 +1,17 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "2c3a00fcc1e0f7ea0f88c2c61a46de7378e62144",
+  "sha": "0e8774fc270fa5d2d172b603acd3daf0da9b8cc2",
   "mesure": {
-    "quand": "2026-09-08T20:26:12Z",
-    "par": "CI, travail `deploye`, run 34274373455, job 102223630517, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:22:17Z→20:26:12Z, 217 s — 1e1c569 servi de 0 s à 181 s, puis 2c3a00f à 217 s). Confirmé indépendamment en direct (mcp__Vercel__web_fetch_vercel_url sur /api/sante, 20:41:44Z) : HTTP 200, identiteCoherente=true, CTRL-01 \"ok\":true,\"vide\":true — \"aucun contrôle conclu pour l'instant\" (0149 a ramené les douze violations à not_assessed, honnêtement rendu VIDE, pas confondu avec un passage). Lot contrôle interne, tranche 1 correctif : migration 0149 (CTRL-01 en production). NOTE : 1e1c569 (le commit de contenu précédent) N'A JAMAIS reçu sa propre confirmation servie — son propre run `deploye` (34267345746) a ÉCHOUÉ pour de vrai (fenêtre de 15 min épuisée, HTTP 500 continu, 19:10:19Z→19:25:37Z) : c'est cet échec réel, mesuré en direct sur la production via mcp__Supabase__execute_sql et mcp__Vercel__web_fetch_vercel_url, qui a mené à 0149. Pas un oubli d'instantané (contraste avec fcbedf7 ci-dessous) — un SHA qui n'a jamais été honnêtement servi n'a pas d'entrée."
+    "quand": "2026-09-08T23:47:58Z",
+    "par": "CI, travail `deploye`, run 34291893064, job 102280019049, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 23:43:28Z→23:47:58Z, 252 s — 0 s HTTP 500 pendant la reconstruction, puis a0083d3 servi de 38 s à 216 s, puis 0e8774f à 252 s). Confirmé indépendamment en direct (mcp__Vercel__web_fetch_vercel_url sur /api/sante, 2026-09-09T00:02:39Z) : HTTP 200, identiteCoherente=true, CTRL-01/CTRL-02/CTRL-03 \"ok\":true,\"vide\":true — aucun contrôle conclu pour l'instant (honnêtement rendu VIDE, pas confondu avec un passage) ; registre R44 89 objet(s) · 16 décor(s) · 32 non prouvé(s) · 41 prouvé(s), identique à la mesure locale. Lot contrôle interne, tranche 2 : les IUC et les facteurs de design, CTRL-02/CTRL-03 (migration 0150)."
   },
   "historique": [
+    {
+      "sha": "2c3a00fcc1e0f7ea0f88c2c61a46de7378e62144",
+      "quand": "2026-09-08T20:26:12Z",
+      "par": "CI, travail `deploye`, run 34274373455, job 102223630517, étape « le SHA poussé doit être servi dans les 15 minutes » (conclusion success, 20:22:17Z→20:26:12Z, 217 s — 1e1c569 servi de 0 s à 181 s, puis 2c3a00f à 217 s). Confirmé indépendamment en direct (mcp__Vercel__web_fetch_vercel_url sur /api/sante, 20:41:44Z) : HTTP 200, identiteCoherente=true, CTRL-01 \"ok\":true,\"vide\":true — \"aucun contrôle conclu pour l'instant\" (0149 a ramené les douze violations à not_assessed, honnêtement rendu VIDE, pas confondu avec un passage). Lot contrôle interne, tranche 1 correctif : migration 0149 (CTRL-01 en production). NOTE : 1e1c569 (le commit de contenu précédent) N'A JAMAIS reçu sa propre confirmation servie — son propre run `deploye` (34267345746) a ÉCHOUÉ pour de vrai (fenêtre de 15 min épuisée, HTTP 500 continu, 19:10:19Z→19:25:37Z) : c'est cet échec réel, mesuré en direct sur la production via mcp__Supabase__execute_sql et mcp__Vercel__web_fetch_vercel_url, qui a mené à 0149. Pas un oubli d'instantané (contraste avec fcbedf7 ci-dessous) — un SHA qui n'a jamais été honnêtement servi n'a pas d'entrée."
+    },
     {
       "sha": "f2968d3dcadfc7b97f639b916bb93ddaed5e3e78",
       "quand": "2026-09-08T15:29:45Z",
