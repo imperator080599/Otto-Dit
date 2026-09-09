@@ -586,7 +586,7 @@ export async function importInstances(controlId: string, csv: string, userId: st
  *  `many_daily` implique un nombre d'occurrences par jour qu'aucune fréquence ni période ne peut
  *  donner sans une constante inventée (règle 8), donc ce n'est pas une omission mais un refus
  *  honnête de deviner. Ces deux fréquences restent sur le chemin de demande client
- *  (`importInstances`, CTRL-05 à venir). */
+ *  (`importInstances`, gardé par CTRL-05, tranche 5). */
 export const FREQUENCES_DERIVABLES: readonly Frequency[] = ['annual', 'monthly', 'weekly', 'daily'];
 
 function iso(d: Date): string { return d.toISOString().slice(0, 10); }
@@ -675,6 +675,79 @@ export async function deriverPopulationControle(controlId: string, userId: strin
   return occurrences.length;
 }
 
+export interface PopulationOeRapprochee {
+  reconciliationId: string; controlId: string; rowCount: number; conclusion: string;
+  rapprocheePar: string; rapprocheeLe: string;
+}
+
+/** CTRL-04 (mandat contrôle interne, §3.1) : « tirer sur une population d'occurrences non
+ *  rapprochée. Miroir exact de POP-01 » (populationDuDetailRapproche, account-detail.ts). `null` :
+ *  aucun rapprochement conclu pour ce contrôle, OU un rapprochement conclu mais PÉRIMÉ (la
+ *  population a changé depuis — un nouvel import client, une dérivation qui aurait ajouté des
+ *  lignes). Le plus RÉCENT rapprochement conclu fait foi si plusieurs se sont succédé (même règle
+ *  que `populationDuDetailRapproche`/`derniereDemandeDetailDeCompte`).
+ *
+ *  LA FRAÎCHEUR EST VÉRIFIÉE, PAS SUPPOSÉE, même discipline que `populationDuDetailRapproche` :
+ *  `row_count` figé à la conclusion du rapprochement est comparé ICI à un compte FRAIS de
+ *  `control_instance`, jamais supposé à jour. CE QUE ÇA NE FAIT PAS (règle 19) : contrairement à
+ *  POP-01 (qui compare contre le grand livre, une source indépendante), rien ici ne compare la
+ *  population à une seconde source externe — il n'en existe pas pour un nombre d'occurrences de
+ *  contrôle. La fraîcheur porte uniquement sur « la population a-t-elle changé depuis la
+ *  conclusion », jamais sur « la population est-elle EXACTE » : ce jugement reste celui de
+ *  l'auditeur, écrit dans `conclusion`. */
+export async function populationControleRapprochee(controlId: string): Promise<PopulationOeRapprochee | null> {
+  const row = await q01<{
+    id: string; row_count: number; conclusion: string; rapprochee_by: string; rapprochee_at: string;
+  }>(
+    `select id, row_count, conclusion, rapprochee_by::text, rapprochee_at::text
+     from control_population_reconciliation where control_id = $1 order by rapprochee_at desc limit 1`,
+    [controlId],
+  );
+  if (!row) return null;
+  const frais = await q1<{ n: string }>(`select count(*)::text as n from control_instance where control_id = $1`, [controlId]);
+  if (Number(frais.n) !== row.row_count) return null; // périmé : la population a bougé depuis le rapprochement
+  return {
+    reconciliationId: row.id, controlId, rowCount: row.row_count, conclusion: row.conclusion,
+    rapprocheePar: row.rapprochee_by, rapprocheeLe: row.rapprochee_at,
+  };
+}
+
+/** Conclut le rapprochement de la population d'OE — CTRL-04. Un rapprochement déjà conclu et
+ *  FRAIS (population inchangée depuis) ne se réécrit pas en silence — même famille que POP-03
+ *  (account-detail.ts) : « une décision se revoit, elle ne s'écrase pas ». Une population VIDE ne
+ *  se rapproche pas — il n'y a rien à conclure ; dérivez-la ou importez le listing client
+ *  d'abord. Conclusion écrite exigée (≥ 10 caractères), même discipline que les autres
+ *  « conclure » de ce dossier (achèvement, facteurs de design) — une case cochée sans texte ne dit
+ *  rien à qui relit le dossier dans trois ans. */
+export async function rapprocherPopulationControle(controlId: string, userId: string, conclusion: string): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'rapprocher la population d’un contrôle');
+  const c = await q1<{ code: string }>(`select code from control where id = $1`, [controlId]);
+  const motif = conclusion.trim();
+  if (motif.length < 10) {
+    throw new Error('CTRL-04 : une conclusion de rapprochement se rédige — une case cochée sans texte ne dit rien à qui relit le dossier.');
+  }
+  const rowCount = await q1<{ n: string }>(`select count(*)::text as n from control_instance where control_id = $1`, [controlId]);
+  const n = Number(rowCount.n);
+  if (n === 0) {
+    throw new Error(`CTRL-04 : ${c.code} n’a aucune population d’occurrences — dérivez-la ou importez le listing client avant de la rapprocher.`);
+  }
+  const existant = await populationControleRapprochee(controlId);
+  if (existant) {
+    throw new Error('CTRL-04 : ce rapprochement est déjà conclu, sur la même population — une décision se revoit, elle ne s’écrase pas.');
+  }
+  const ctx = await engagementCtx(engagementId);
+  const row = await q1<{ id: string }>(
+    `insert into control_population_reconciliation (control_id, row_count, conclusion, rapprochee_by)
+     values ($1,$2,$3,$4) returning id`,
+    [controlId, n, motif, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_population_reconciled', objectType: 'control_population_reconciliation', objectId: row.id,
+    payload: { code: c.code, rowCount: n },
+  });
+}
+
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
 /** CTRL-07 (mandat contrôle interne, §3.2) : la taille sort d'une table du CABINET, jamais
@@ -727,6 +800,18 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
         + 'Demandez la population avant de tirer un échantillon.',
       );
     }
+  }
+  /* CTRL-04 (mandat §3.1) : « tirer sur une population d'occurrences non rapprochée. Miroir exact
+     de POP-01. » Vérifié APRÈS CTRL-05 (existence de la demande, la population elle-même) et AVANT
+     CTRL-07 (la taille) — l'ordre logique du mandat : la population existe (CTRL-05), la
+     population est rapprochée (CTRL-04), puis on peut chiffrer combien en tirer (CTRL-07). */
+  const rapprochee = await populationControleRapprochee(controlId);
+  if (!rapprochee) {
+    throw new Error(
+      `CTRL-04 : on ne tire pas sur une population d’occurrences non rapprochée pour ${c.code} `
+      + '(mandat §3.1, miroir de POP-01) — concluez le rapprochement de la population avant de '
+      + 'tirer un échantillon.',
+    );
   }
   const ctx = await engagementCtx(c.engagement_id);
   const fs = await frameworkSet(c.engagement_id);

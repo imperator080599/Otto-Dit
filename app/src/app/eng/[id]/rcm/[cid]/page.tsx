@@ -11,6 +11,7 @@ import {
   risquesDuDossier, risquesLiesAuControle, lierRisqueControle, delierRisqueControle,
   facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
   tailleEchantillonOePourControle, deriverPopulationControle, FREQUENCES_DERIVABLES,
+  populationControleRapprochee, rapprocherPopulationControle,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -47,6 +48,7 @@ export default async function ControlDetail({
      from control_instance ci where ci.control_id = $1 order by ci.occurred_on nulls last, ci.label`,
     [cid],
   );
+  const rapprochee = instances.length > 0 ? await populationControleRapprochee(cid) : null;
   const grid = await attributeGrid(cid);
   const attrCodes = [...new Set(grid.map((g) => g.attribute_code))].sort();
   const gridLabels = [...new Set(grid.map((g) => g.label))].sort();
@@ -183,6 +185,14 @@ export default async function ControlDetail({
     return executer(`/eng/${id}/rcm/${cid}`, async () => {
       const { user } = await requireMember(id);
       await demanderPopulationControle(cid, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function rapprocherPopulationAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await rapprocherPopulationControle(cid, user.id, String(formData.get('conclusion') ?? ''));
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -446,7 +456,13 @@ export default async function ControlDetail({
               ) : (
                 <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>
               ))}
-              {instances.length > 0 && !instances.some((i) => i.sampled) && (
+              {instances.length > 0 && !instances.some((i) => i.sampled) && !rapprochee && (
+                <form action={rapprocherPopulationAction} className="row" data-rapprocher-population>
+                  <textarea name="conclusion" rows={2} required placeholder={t('rcmc.ctrl04ConclusionPlaceholder')} style={{ width: 260 }} />
+                  <button className="btn small secondary">{t('rcmc.rapprocherPopulation')}</button>
+                </form>
+              )}
+              {instances.length > 0 && !instances.some((i) => i.sampled) && rapprochee && (
                 <form action={drawAction} className="row">
                   <input
                     type="number" name="size" required={!tailleOe.verifie}
@@ -465,8 +481,14 @@ export default async function ControlDetail({
               )}
             </span>
           </div>
-          {instances.length > 0 && !instances.some((i) => i.sampled) && !tailleOe.verifie && (
+          {instances.length > 0 && !instances.some((i) => i.sampled) && !rapprochee && (
+            <p className="muted small" data-ctrl04-non-rapprochee>{t('rcmc.ctrl04NonRapprochee')}</p>
+          )}
+          {instances.length > 0 && !instances.some((i) => i.sampled) && rapprochee && !tailleOe.verifie && (
             <p className="muted small">{t('rcmc.ctrl07Avertissement')}</p>
+          )}
+          {instances.length > 0 && rapprochee && (
+            <p className="muted small" data-population-rapprochee>{t('rcmc.populationRapprochee')}</p>
           )}
           {instances.length === 0 && demandePopulation && (
             <p className="muted small">

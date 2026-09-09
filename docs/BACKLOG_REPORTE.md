@@ -746,3 +746,21 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   déclencheur). Corrigé le jour où `demanderDetailDeCompte` ET `demanderPopulationControle` sont
   tous deux enveloppés dans `tx()`, dans la même tranche — pour ne pas répéter le trou une
   troisième fois dans une fonction sœur future.
+
+- **R69 — `LEGACY_AVANT_CTRL04` (`app/src/app/api/sante/route.ts`) est une exemption permanente,
+  et doit porter un identifiant de registre avec sa condition de retrait — même famille que R67,
+  la même leçon appliquée AVANT le déploiement cette fois (pas après un `deploye` rouge).** Trois
+  `sample` réels (`1a158f98-869b-4cee-a655-2262a9d847b0` C-BR-01, `ce59a5f8-5640-4f36-b296-0e82e3b788fd`
+  C-BR-01, `6763a111-fd8b-4bb5-9deb-b47150ec1660` C-REV-01, tous tirés 2026-09-01 par
+  `npm run demo:seed`) sont nommés, datés, dans la lecture CTRL-04 pour ne pas la faire rougir —
+  trouvés en INTERROGEANT LA PRODUCTION DIRECTEMENT (`mcp__Supabase__execute_sql`) avant
+  l'expédition de cette tranche, précisément pour éviter de répéter l'échec de déploiement du
+  2026-09-09 (fbe7afe/CTRL-07, R67), qui n'avait été découvert QU'APRÈS coup. **Pourquoi c'est
+  PERMANENT, à la différence de R47/`LEGACY_AVANT_POP01`** : même raisonnement que R67 — écrire
+  aujourd'hui une conclusion de rapprochement pour un tirage du 2026-09-01 fabriquerait une pièce
+  datée après coup (règle 31). **Condition de retrait, unique et nommée** : ces trois lignes ne se
+  retirent QUE si les trois `sample` précis (ces id exacts) disparaissent de la base — re-semis
+  complet d'`engSox` sous mandat écrit (§2), ou archivage futur par un geste produit qui n'existe
+  pas encore. Un QUATRIÈME id qui y apparaîtrait sans un événement nommé ici serait lui-même une
+  régression à signaler. Non bloquant : la garde CTRL-04 fonctionne correctement pour tout nouveau
+  tirage (prouvé par tests, tranche 6).

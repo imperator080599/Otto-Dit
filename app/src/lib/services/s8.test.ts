@@ -252,6 +252,10 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     // ce test exerce. Posée ici pour isoler les deux gardes l'un de l'autre.
     const { demanderPopulationControle } = await import('./requests');
     await demanderPopulationControle(control.id, IDS.users.karim);
+    // CTRL-04 (mandat §3.1, tranche 6) : la population doit aussi être RAPPROCHÉE avant tout
+    // tirage — posé ici pour la même raison que CTRL-05 ci-dessus, isoler ce test sur CTRL-07 seul.
+    const { rapprocherPopulationControle } = await import('./sox');
+    await rapprocherPopulationControle(control.id, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-07.');
 
     // Cas connu mauvais : aucune taille explicite (donc pas de dérogation) → CTRL-07 refuse,
     // en nommant la fréquence et le chemin de secours (ADR-010).

@@ -9,7 +9,7 @@ import {
   importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls,
   proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation,
   attacherWalkthrough, ajouterTacheControle, documenterProcedureTache,
-  documenterFacteurDesign, declarerIuc,
+  documenterFacteurDesign, declarerIuc, rapprocherPopulationControle,
 } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
@@ -140,6 +140,16 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
     await setDiStatus(control.id, IDS.users.karim, 'effective', 'Walkthrough performed; design and implementation assessed as effective (demo).');
   }
   await requestAndImportListing(controlCode);
+  /* CTRL-04 (mandat contrôle interne, §3.1, tranche 6) : « tirer sur une population d'occurrences
+     non rapprochée » est refusé — le monde de démonstration conclut donc le rapprochement, au
+     nom du préparateur, avant de tirer, exactement comme un auditeur réel le ferait après avoir
+     reçu et revu le listing client importé ci-dessus. Conclusion synthétique, jamais une
+     affirmation qu'un humain aurait faite : le semeur DIT ce qu'il fait, il ne prétend pas
+     l'avoir revue au sens professionnel du terme. */
+  await rapprocherPopulationControle(
+    control.id, IDS.users.karim,
+    `Listing client importé pour ${controlCode} (voir la demande ci-dessus) — population revue et retenue pour le tirage (démonstration synthétique).`,
+  );
   /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3) : la table d'échantillonnage OE du pack
      est livrée VIDE (`pcaob-sox.ts`) — aucune taille n'y est plus « vérifiée ». Le tirage de
      démonstration passe donc par le chemin d'ADR-010 (saisie explicite + justification écrite),

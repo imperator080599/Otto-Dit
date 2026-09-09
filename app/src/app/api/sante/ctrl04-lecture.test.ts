@@ -5,38 +5,43 @@ import { bootstrapNep } from '@/lib/flows/part1';
 import { q, q1 } from '@/lib/db/client';
 import { GET } from './route';
 
-// LOT CONTRÔLE INTERNE, TRANCHE 5 — LA LECTURE « CTRL-05 » DE /api/sante.
+// LOT CONTRÔLE INTERNE, TRANCHE 6 — LA LECTURE « CTRL-04 » DE /api/sante.
 //
-// CTRL-05 (mandat §3.1) : un tirage OE sur une fréquence non dérivable (adhoc/many_daily) sans
-// demande client de la population est la violation. Cette lecture ne peut rougir que si le garde
-// de `drawAttributeSample` a été contourné (un SQL direct, une régression du garde) — même
-// discipline que CTRL-01/02/03/07 (mêmes fichiers de sonde).
+// CTRL-04 (mandat §3.1) : « tirer sur une population d'occurrences non rapprochée. Miroir exact
+// de POP-01. » Cette lecture ne peut rougir que si le garde de `drawAttributeSample` a été
+// contourné (un SQL direct, une régression du garde) — même discipline que CTRL-01/02/03/05/07
+// (mêmes fichiers de sonde).
 
 // di_status = 'not_assessed' délibérément : CTRL-01/02/03 (mêmes lectures GLOBALES) ne portent
-// que sur les contrôles CONCLUS ('effective'/'ineffective'), et cette sonde teste CTRL-05 seule.
-async function poserControleAdhoc(code: string): Promise<string> {
-  return (await q1<{ id: string }>(
+// que sur les contrôles CONCLUS ('effective'/'ineffective'), et cette sonde teste CTRL-04 seule.
+async function poserControleAvecPopulation(code: string): Promise<string> {
+  const controlId = (await q1<{ id: string }>(
     `insert into control (engagement_id, code, name, description, frequency, nature, effect, di_status)
-     values ($1, $2, 'Contrôle de sonde CTRL-05', 'fictif', 'adhoc', 'manual', 'preventive', 'not_assessed')
+     values ($1, $2, 'Contrôle de sonde CTRL-04', 'fictif', 'monthly', 'manual', 'preventive', 'not_assessed')
      returning id::text`,
     [IDS.engNep, code])).id;
+  await q(
+    `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing')`,
+    [controlId],
+  );
+  return controlId;
 }
 
 async function poserTirageDirect(controlId: string, code: string): Promise<{ procedureId: string; sampleId: string }> {
   const procedure = (await q1<{ id: string }>(
     `insert into procedure_instance (engagement_id, pack_id, template_code, kind, control_id, title, status, nature)
-     values ($1,'pcaob-sox',$2,'control_test',$3,'sonde CTRL-05','in_progress','tests_de_controles') returning id::text`,
+     values ($1,'pcaob-sox',$2,'control_test',$3,'sonde CTRL-04','in_progress','tests_de_controles') returning id::text`,
     [IDS.engNep, `OE-${code}`, controlId],
   )).id;
   const sample = (await q1<{ id: string }>(
     `insert into sample (engagement_id, procedure_id, method, params, seed, population_hash, population_size, rationale, status)
-     values ($1,$2,'attribute_frequency',$3,'sonde-seed','sonde-hash',1,'sonde CTRL-05','drawn') returning id::text`,
-    [IDS.engNep, procedure, JSON.stringify({ size: 1, frequency: 'adhoc', override: 'sonde' })],
+     values ($1,$2,'attribute_frequency',$3,'sonde-seed','sonde-hash',1,'sonde CTRL-04','drawn') returning id::text`,
+    [IDS.engNep, procedure, JSON.stringify({ size: 1, override: 'sonde' })],
   )).id;
   return { procedureId: procedure, sampleId: sample };
 }
 
-describe('CTRL-05 : la lecture /api/sante', () => {
+describe('CTRL-04 : la lecture /api/sante', () => {
   const AVANT = process.env.OTTO_DEMO_PUBLIC;
   beforeAll(async () => {
     process.env.OTTO_DEMO_PUBLIC = '1';
@@ -48,100 +53,60 @@ describe('CTRL-05 : la lecture /api/sante', () => {
   it('sans aucun tirage OE : la lecture passe, vide', async () => {
     const res = await GET();
     const body = await res.json();
-    const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-05'));
+    const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-04'));
     expect(lecture.ok).toBe(true);
     expect(lecture.detail).toContain('aucun tirage OE');
   });
 
-  it('cas connu mauvais (règle 17) : un tirage sur une fréquence non dérivable SANS demande client fait rougir /api/sante entier', async () => {
-    const controlId = await poserControleAdhoc('SONDE-CTRL05LEC-A');
-    const { procedureId, sampleId } = await poserTirageDirect(controlId, 'SONDE-CTRL05LEC-A');
+  it('cas connu mauvais (règle 17) : un tirage SANS aucun rapprochement fait rougir /api/sante entier', async () => {
+    const controlId = await poserControleAvecPopulation('SONDE-CTRL04LEC-A');
+    const { procedureId, sampleId } = await poserTirageDirect(controlId, 'SONDE-CTRL04LEC-A');
     try {
       const rouge = await GET();
       const bodyRouge = await rouge.json();
-      const lectureRouge = bodyRouge.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-05'));
+      const lectureRouge = bodyRouge.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-04'));
       expect(lectureRouge.ok).toBe(false);
-      expect(lectureRouge.detail).toContain('SONDE-CTRL05LEC-A');
-      expect(lectureRouge.detail).toContain('aucune demande client de la population');
+      expect(lectureRouge.detail).toContain('SONDE-CTRL04LEC-A');
+      expect(lectureRouge.detail).toContain('sans aucun rapprochement de population');
       expect(rouge.status).toBe(500);
     } finally {
       await q(`delete from sample where id = $1`, [sampleId]);
       await q(`delete from procedure_instance where id = $1`, [procedureId]);
+      await q(`delete from control_instance where control_id = $1`, [controlId]);
       await q(`delete from control where id = $1`, [controlId]);
     }
   });
 
-  it('cas connu mauvais, moitié protectrice (règle 17) : une demande client existante ne fait pas rougir', async () => {
-    const { demanderPopulationControle } = await import('@/lib/services/requests');
+  it('cas connu mauvais, moitié protectrice (règle 17) : un rapprochement conclu ne fait pas rougir', async () => {
     const { rapprocherPopulationControle } = await import('@/lib/services/sox');
-    const controlId = await poserControleAdhoc('SONDE-CTRL05LEC-B');
-    await demanderPopulationControle(controlId, IDS.users.karim);
-    // CTRL-04 est une lecture GLOBALE (tranche 6) : sans population rapprochée, ce tirage de
-    // sonde ferait aussi rougir CTRL-04, pour une raison étrangère à ce que ce test isole.
-    await q(
-      `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing')`,
-      [controlId],
-    );
+    const controlId = await poserControleAvecPopulation('SONDE-CTRL04LEC-B');
     await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde revue et complète.');
-    const { procedureId, sampleId } = await poserTirageDirect(controlId, 'SONDE-CTRL05LEC-B');
+    const { procedureId, sampleId } = await poserTirageDirect(controlId, 'SONDE-CTRL04LEC-B');
     try {
       const res = await GET();
       const body = await res.json();
-      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-05'));
+      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-04'));
       expect(lecture.ok).toBe(true);
       expect(res.status).toBe(200);
-      expect(lecture.detail).toContain('tirage(s) OE sur fréquence non dérivable');
+      expect(lecture.detail).toContain('tirage(s) OE, tous sur une population rapprochée');
     } finally {
       await q(`delete from sample where id = $1`, [sampleId]);
       await q(`delete from procedure_instance where id = $1`, [procedureId]);
-      await q(`delete from request_item where request_id in (select id from request where control_id = $1)`, [controlId]);
-      await q(`delete from request where control_id = $1`, [controlId]);
       await q(`delete from control_population_reconciliation where control_id = $1`, [controlId]);
       await q(`delete from control_instance where control_id = $1`, [controlId]);
       await q(`delete from control where id = $1`, [controlId]);
     }
   });
 
-  it('un tirage sur une fréquence DÉRIVABLE (monthly) reste hors périmètre de CTRL-05, même sans aucune demande', async () => {
-    const controlId = (await q1<{ id: string }>(
-      `insert into control (engagement_id, code, name, description, frequency, nature, effect, di_status)
-       values ($1, 'SONDE-CTRL05LEC-C', 'Contrôle de sonde', 'fictif', 'monthly', 'manual', 'preventive', 'not_assessed')
-       returning id::text`,
-      [IDS.engNep])).id;
-    const procedure = (await q1<{ id: string }>(
-      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, control_id, title, status, nature)
-       values ($1,'pcaob-sox','OE-SONDE-CTRL05LEC-C','control_test',$2,'sonde CTRL-05','in_progress','tests_de_controles') returning id::text`,
-      [IDS.engNep, controlId],
-    )).id;
-    const sample = (await q1<{ id: string }>(
-      `insert into sample (engagement_id, procedure_id, method, params, seed, population_hash, population_size, rationale, status)
-       values ($1,$2,'attribute_frequency',$3,'sonde-seed','sonde-hash',1,'sonde CTRL-05','drawn') returning id::text`,
-      [IDS.engNep, procedure, JSON.stringify({ size: 1, frequency: 'monthly', override: 'sonde' })],
-    )).id;
-    try {
-      const res = await GET();
-      const body = await res.json();
-      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-05'));
-      expect(lecture.ok).toBe(true);
-      expect(lecture.detail).toContain('CTRL-05 hors périmètre');
-    } finally {
-      await q(`delete from sample where id = $1`, [sample]);
-      await q(`delete from procedure_instance where id = $1`, [procedure]);
-      await q(`delete from control where id = $1`, [controlId]);
-    }
-  });
-
-  it('le vrai chemin gardé (demanderPopulationControle puis drawAttributeSample) reste vert', async () => {
+  it('le vrai chemin gardé (rapprocherPopulationControle puis drawAttributeSample) reste vert', async () => {
     const {
       attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus,
       documenterFacteurDesign, lierRisqueControle, declarerIuc, drawAttributeSample,
       rapprocherPopulationControle,
     } = await import('@/lib/services/sox');
-    const { demanderPopulationControle } = await import('@/lib/services/requests');
-    const { ingestEvidence } = await import('@/lib/services/evidence');
     const controlId = (await q1<{ id: string }>(
       `insert into control (engagement_id, code, name, description, frequency, nature, effect, di_status)
-       values ($1, 'SONDE-CTRL05LEC-D', 'Contrôle de sonde', 'fictif', 'adhoc', 'manual', 'preventive', 'not_assessed')
+       values ($1, 'SONDE-CTRL04LEC-C', 'Contrôle de sonde', 'fictif', 'monthly', 'manual', 'preventive', 'not_assessed')
        returning id::text`,
       [IDS.engNep])).id;
     const risque = await q1<{ id: string }>(
@@ -149,8 +114,9 @@ describe('CTRL-05 : la lecture /api/sante', () => {
       [IDS.engNep],
     );
     try {
+      const { ingestEvidence } = await import('@/lib/services/evidence');
       const { evidenceId } = await ingestEvidence({
-        engagementId: IDS.engNep, filename: 'walkthrough-ctrl05.txt', mime: 'text/plain',
+        engagementId: IDS.engNep, filename: 'walkthrough-ctrl04.txt', mime: 'text/plain',
         bytes: new TextEncoder().encode('x'), source: 'auditor',
         uploadedBy: { kind: 'app_user', id: IDS.users.karim }, audience: 'internal',
       });
@@ -163,24 +129,22 @@ describe('CTRL-05 : la lecture /api/sante', () => {
       await lierRisqueControle(controlId, IDS.users.karim, risque.id);
       await declarerIuc(controlId, IDS.users.karim, false);
       await setDiStatus(controlId, IDS.users.karim, 'effective', 'conclusion de sonde');
-      await demanderPopulationControle(controlId, IDS.users.karim);
       await q(
         `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing')`,
         [controlId],
       );
-      // CTRL-04 (tranche 6) : la population doit être rapprochée avant tout tirage.
-      await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-05.');
+      await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde revue et complète.');
       await drawAttributeSample(controlId, IDS.users.karim, 1, 'Table du cabinet non fournie (sonde) — taille justifiée.');
 
       const res = await GET();
       const body = await res.json();
-      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-05'));
+      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-04'));
       expect(lecture.ok).toBe(true);
       expect(res.status).toBe(200);
     } finally {
       await q(`delete from sample_item where sample_id in (select id from sample where procedure_id in (select id from procedure_instance where control_id = $1))`, [controlId]);
-      await q(`delete from request_item where request_id in (select id from request where procedure_id in (select id from procedure_instance where control_id = $1) or control_id = $1)`, [controlId]);
-      await q(`delete from request where procedure_id in (select id from procedure_instance where control_id = $1) or control_id = $1`, [controlId]);
+      await q(`delete from request_item where request_id in (select id from request where procedure_id in (select id from procedure_instance where control_id = $1))`, [controlId]);
+      await q(`delete from request where procedure_id in (select id from procedure_instance where control_id = $1)`, [controlId]);
       await q(`delete from control_test where control_id = $1`, [controlId]);
       await q(`delete from sample where procedure_id in (select id from procedure_instance where control_id = $1)`, [controlId]);
       await q(`delete from procedure_instance where control_id = $1`, [controlId]);

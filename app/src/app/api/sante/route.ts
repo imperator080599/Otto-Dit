@@ -967,6 +967,44 @@ async function corpsDeLaSonde() {
       : `${concernes} tirage(s) OE sur fréquence non dérivable, tous couverts par une demande client`;
   }));
 
+  /* CTRL-04 (mandat contrôle interne, §3.1, tranche 6) : « tirer sur une population d'occurrences
+     non rapprochée. Miroir exact de POP-01. » Lue GLOBALEMENT, même discipline que CTRL-05/07 : un
+     tirage OE SANS AUCUN rapprochement jamais conclu pour son contrôle est la violation — cette
+     lecture ne peut rougir que si le garde de `drawAttributeSample` a été contourné (un SQL
+     direct, une régression du garde), jamais parce qu'aucun tirage n'a encore eu lieu.
+     LEGACY_AVANT_CTRL04 (R69, BACKLOG_REPORTE.md) : trois tirages réels, tirés le 2026-09-01 par
+     `npm run demo:seed`, AVANT que `control_population_reconciliation` n'existe — nommés ici DÈS
+     CE COMMIT pour ne pas répéter l'échec de déploiement du 2026-09-09 (fbe7afe/CTRL-07, R67), qui
+     avait rendu `deploye` rouge pour de vrai faute d'avoir anticipé exactement ce cas. CE QUE
+     CETTE LECTURE NE VÉRIFIE PAS (règle 19) : la FRAÎCHEUR du rapprochement — contrairement au
+     garde lui-même (`populationControleRapprochee`, sox.ts), qui refuse un NOUVEAU tirage si la
+     population a changé depuis ; un tirage déjà fait reste vert ici même si sa population a
+     grossi depuis, exactement comme POP-01 ne revérifie jamais la fraîcheur des tirages passés. */
+  lectures.push(await essayer('CTRL-04 : aucun tirage OE sur une population non rapprochée (miroir POP-01)', async () => {
+    const LEGACY_AVANT_CTRL04 = [
+      '1a158f98-869b-4cee-a655-2262a9d847b0', // C-BR-01, tiré 2026-09-01, avant CTRL-04 (2026-09-09)
+      'ce59a5f8-5640-4f36-b296-0e82e3b788fd', // C-BR-01, tiré 2026-09-01, avant CTRL-04 (2026-09-09)
+      '6763a111-fd8b-4bb5-9deb-b47150ec1660', // C-REV-01, tiré 2026-09-01, avant CTRL-04 (2026-09-09)
+    ];
+    const rows = await q<{ id: string; control_id: string; control_code: string }>(
+      `select s.id, p.control_id, c.code control_code
+       from sample s join procedure_instance p on p.id = s.procedure_id join control c on c.id = p.control_id
+       where s.method = 'attribute_frequency'
+         and not exists (select 1 from control_population_reconciliation r where r.control_id = p.control_id)`,
+    );
+    const total = await q01<{ n: string }>(`select count(*) n from sample s join procedure_instance p on p.id = s.procedure_id where s.method = 'attribute_frequency'`);
+    if (!total || Number(total.n) === 0) return 'aucun tirage OE pour l’instant';
+    const nouveaux = rows.filter((r) => !LEGACY_AVANT_CTRL04.includes(r.id));
+    if (nouveaux.length > 0) {
+      throw new Error(`${nouveaux.length} violation(s) de CTRL-04, hors legacy : ${nouveaux.map((r) => `${r.control_code} (tirage ${r.id}) sans aucun rapprochement de population`).join(' ; ')}`);
+    }
+    const n = Number(total.n);
+    const legacy = rows.length;
+    return legacy === 0
+      ? `${n} tirage(s) OE, tous sur une population rapprochée avant tirage`
+      : `${n} tirage(s) OE — ${n - legacy} rapproché(s) avant tirage, ${legacy} legacy (antérieur(s) à CTRL-04, 2026-09-01)`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

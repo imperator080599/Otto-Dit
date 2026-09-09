@@ -3,7 +3,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { IDS } from '@/lib/seed';
 import { bootstrapNep } from '@/lib/flows/part1';
 import { q, q1 } from '@/lib/db/client';
-import { drawAttributeSample } from './sox';
+import { drawAttributeSample, rapprocherPopulationControle } from './sox';
 import { demanderPopulationControle, derniereDemandePopulationControle } from './requests';
 
 // LOT CONTRÔLE INTERNE, §3.1 (mandat), TRANCHE 5 — CTRL-05.
@@ -67,6 +67,9 @@ describe('CTRL-05 : demande client de la population (service)', () => {
       [controlId],
     );
     await demanderPopulationControle(controlId, IDS.users.karim);
+    // CTRL-04 (tranche 6) : la population doit aussi être rapprochée — posé ici pour isoler
+    // ce test sur CTRL-05 seul, même patron que s8.test.ts pour CTRL-07.
+    await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-05.');
     const draw = await drawAttributeSample(controlId, IDS.users.lea, 1, 'Table du cabinet non fournie (sonde) — taille justifiée.');
     expect(draw.selected.length).toBe(1);
   });
@@ -105,6 +108,9 @@ describe('CTRL-05 : demande client de la population (service)', () => {
       `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing')`,
       [controlId],
     );
+    // CTRL-04 (tranche 6) posé pour isoler ce test sur CTRL-05 seul (sinon CTRL-04 refuserait
+    // avant même d'atteindre le garde CTRL-07 attendu ici).
+    await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-05.');
     // Aucune demande n'est créée : si CTRL-05 s'appliquait à tort ici, ceci rejetterait CTRL-05
     // au lieu de la garde ADR-010 attendue (aucune taille, aucune dérogation).
     await expect(drawAttributeSample(controlId, IDS.users.lea))

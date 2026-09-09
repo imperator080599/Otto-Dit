@@ -77,7 +77,15 @@ describe('CTRL-07 : la lecture /api/sante', () => {
   });
 
   it('cas connu mauvais, moitié protectrice (règle 17) : un tirage AVEC justification écrite ne fait pas rougir, même sur une fréquence non vérifiée', async () => {
+    const { rapprocherPopulationControle } = await import('@/lib/services/sox');
     const controlId = await poserControle('SONDE-CTRL07-B');
+    // CTRL-04 est une lecture GLOBALE (tranche 6) : sans population rapprochée, ce tirage de
+    // sonde ferait aussi rougir CTRL-04, pour une raison étrangère à ce que ce test isole.
+    await q(
+      `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing')`,
+      [controlId],
+    );
+    await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde revue et complète.');
     const { procedureId, sampleId } = await poserTirageDirect(
       controlId, 'SONDE-CTRL07-B', 'Table du cabinet non fournie — taille interimaire retenue et justifiée (sonde).',
     );
@@ -91,6 +99,8 @@ describe('CTRL-07 : la lecture /api/sante', () => {
     } finally {
       await q(`delete from sample where id = $1`, [sampleId]);
       await q(`delete from procedure_instance where id = $1`, [procedureId]);
+      await q(`delete from control_population_reconciliation where control_id = $1`, [controlId]);
+      await q(`delete from control_instance where control_id = $1`, [controlId]);
       await q(`delete from control where id = $1`, [controlId]);
     }
   });
@@ -136,6 +146,7 @@ describe('CTRL-07 : la lecture /api/sante', () => {
     const {
       attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus,
       documenterFacteurDesign, lierRisqueControle, declarerIuc, drawAttributeSample, importInstances,
+      rapprocherPopulationControle,
     } = await import('@/lib/services/sox');
     const { ingestEvidence } = await import('@/lib/services/evidence');
     const controlId = (await q1<{ id: string }>(
@@ -163,6 +174,8 @@ describe('CTRL-07 : la lecture /api/sante', () => {
       await declarerIuc(controlId, IDS.users.karim, false);
       await setDiStatus(controlId, IDS.users.karim, 'effective', 'conclusion de sonde');
       await importInstances(controlId, 'label;occurred_on;performer_name\nA1;2026-01-05;Alice\nA2;2026-01-12;Alice\nA3;2026-01-19;Bob\n', IDS.users.karim);
+      // CTRL-04 (tranche 6) : la population doit être rapprochée avant tout tirage.
+      await rapprocherPopulationControle(controlId, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-07.');
       await drawAttributeSample(controlId, IDS.users.karim, 2, 'Table du cabinet non fournie (CTRL-07) — taille de sonde justifiée.');
 
       const res = await GET();
@@ -183,6 +196,7 @@ describe('CTRL-07 : la lecture /api/sante', () => {
       await q(`delete from control_design_factor where control_id = $1`, [controlId]);
       await q(`delete from control_task_procedure where task_id in (select id from control_task where control_id = $1)`, [controlId]);
       await q(`delete from control_task where control_id = $1`, [controlId]);
+      await q(`delete from control_population_reconciliation where control_id = $1`, [controlId]);
       await q(`delete from risk where id = $1`, [risque.id]);
       await q(`delete from control where id = $1`, [controlId]);
     }

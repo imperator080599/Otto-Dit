@@ -279,6 +279,12 @@
       "note": "non bloquant : le chemin normal ne l'expose jamais (l'écran ne permet aucune demande sans son request_item). Corrigé le jour où demanderDetailDeCompte ET demanderPopulationControle sont tous deux enveloppés dans tx(), dans la même tranche."
     },
     {
+      "id": "R69",
+      "etat": "ouvert, PERMANENT PAR NATURE — LEGACY_AVANT_CTRL04 (route.ts) nomme trois id de sample réels (C-BR-01 x2, C-REV-01, tirés 2026-09-01, avant CTRL-04) pour ne pas faire rougir la lecture CTRL-04. Trouvés en interrogeant la production directement (mcp__Supabase__execute_sql) AVANT l'expédition, pour éviter de répéter l'échec de déploiement du 2026-09-09 (fbe7afe/CTRL-07, R67) découvert seulement après coup. Même raisonnement que R67 : aucun geste légitime ne peut retrofournir une conclusion de rapprochement datée 2026-09-01 sans fabriquer une pièce a posteriori (règle 31).",
+      "depuis": "2026-09-09 (lot contrôle interne, tranche 6 — CTRL-04)",
+      "note": "condition de retrait UNIQUE et nommée : les trois entrées ne se retirent que si les trois sample précis (ces id exacts) disparaissent de la base — re-semis complet d'engSox sous mandat écrit (§2) ou archivage futur par un geste produit qui n'existe pas encore. Un QUATRIÈME id sans événement nommé ici serait une régression."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

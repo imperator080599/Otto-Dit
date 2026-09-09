@@ -8,6 +8,54 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 6 : CTRL-04, le rapprochement de la population d'OE (2026-09-09)
+
+*Mandat, §3.1 : « tirer sur une population d'occurrences non rapprochée. Miroir exact de POP-01. »
+Contrairement à CTRL-05 (qui ne porte que sur `as_needed`), CTRL-04 s'applique à TOUTE population
+d'OE, dérivée ou demandée — une population dérivée est déjà auto-cohérente avec sa fréquence
+(lecture « population dérivée », tranche 4), mais CTRL-04 exige EN PLUS la conclusion écrite de
+l'auditeur, un jugement professionnel distinct d'un calcul qui tombe juste.*
+
+**Ce qui a changé.** Migration `0153_ctrl04_population_rapprochee.sql` : nouvelle table
+`control_population_reconciliation` (`control_id` FK pleine, `row_count`, `conclusion`,
+`rapprochee_by`, `rapprochee_at`) — une ligne par rapprochement CONCLU, jamais réécrite (même
+famille que POP-03). `sox.ts` : `rapprocherPopulationControle` (conclusion écrite ≥ 10
+caractères exigée, refuse sur une population vide, refuse un second rapprochement sur la MÊME
+population fraîche) et `populationControleRapprochee` (lecture ; `null` si aucun rapprochement
+conclu OU si la population a changé depuis — fraîcheur vérifiée en comparant `row_count` à un
+compte FRAIS de `control_instance`, jamais supposée, même discipline que
+`populationDuDetailRapproche`/account-detail.ts). `drawAttributeSample` refuse désormais tant
+qu'aucun rapprochement FRAIS n'existe, vérifié APRÈS CTRL-05 (la population existe) et AVANT
+CTRL-07 (la taille) — l'ordre logique du mandat. Écran `rcm/[cid]` : une fois une population
+présente et non encore tirée, un formulaire « Rapprocher la population (CTRL-04) » (conclusion
+textuelle) précède le formulaire de tirage — celui-ci n'apparaît qu'une fois le rapprochement
+conclu. Lecture `/api/sante` **CTRL-04** : même patron GLOBAL que CTRL-01/02/03/05/07.
+
+**Legacy anticipé AVANT expédition (R69, contrairement à R67/CTRL-07 trouvé APRÈS un `deploye`
+rouge).** Trois `sample` réels de production (`1a158f98-...` et `ce59a5f8-...` C-BR-01,
+`6763a111-...` C-REV-01, tous tirés 2026-09-01) ont été trouvés en INTERROGEANT LA PRODUCTION
+DIRECTEMENT (`mcp__Supabase__execute_sql`) avant d'écrire la lecture, et nommés dans
+`LEGACY_AVANT_CTRL04` dès ce commit — pour ne pas répéter l'échec de déploiement du 2026-09-09
+(fbe7afe/CTRL-07). Le monde de démonstration lui-même (`part2.ts::runControlCycle`) a aussi été
+mis à jour pour conclure le rapprochement avant chaque tirage — sinon `npm run demo:seed`
+échouerait sur toute base FRAÎCHE, legacy ou pas.
+
+**Tests neufs** : `ctrl04-population-rapprochee.test.ts` (9 tests, service) — rapprochement
+retrouvé après conclusion ; refuse le tirage sans rapprochement en nommant CTRL-04 (règle 17) ;
+un rapprochement débloque le tirage (moitié protectrice) ; la fraîcheur se revérifie — une
+population qui grossit APRÈS le rapprochement le rend PÉRIMÉ et le tirage suivant refuse à
+nouveau ; POP-03 (un rapprochement déjà conclu, fraîche, ne se réécrit pas) ; population vide
+refusée ; conclusion trop courte refusée ; étanchéité ETANCH. Lecture `/api/sante`
+(`ctrl04-lecture.test.ts`, 4 tests) : vide sans tirage, rouge sur un tirage sans rapprochement
+(règle 17), vert avec un rapprochement réel, vert sur le vrai chemin gardé de bout en bout.
+Tests existants adaptés pour isoler leur propre garde de CTRL-04 (même patron que CTRL-05 l'a
+fait pour CTRL-07) : `s8.test.ts`, `ctrl05-population-demandee.test.ts`, `ctrl05-lecture.test.ts`,
+`ctrl07-lecture.test.ts`. `npm run demo:seed`, `db:reset`, `tsc --noEmit`, `parcours`,
+`lectures`/`lectures:epreuve`, `langue`, `gardes` tous verts sur cet arbre.
+
+**Point de contrôle : verify complet et revue hostile lancés sur cet arbre figé — détail à
+suivre dans ce même compte.**
+
 ## Lot contrôle interne, tranche 5 : CTRL-05, la demande client de la population (2026-09-09)
 
 *Mandat, §3.1 : « atteindre le tirage d'OE d'un contrôle as_needed sans qu'une demande client de
