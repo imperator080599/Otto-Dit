@@ -262,6 +262,27 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     dessus (règle 18 : une reconstruction n'est pas une citation). Le fichier verbatim est
     `docs/MANDATS/2026-09-05_plan_autonomie.md`. Nommer le fichier `AAAA-MM-JJ_<titre-court>.md` à
     la date de RÉCEPTION du mandat, pas à la date du commit qui le consigne s'il diffère.
+36. **On ne termine JAMAIS un tour dont le seul geste restant est d'attendre.** Le défaut n'est pas
+    LA FAÇON d'attendre — c'est le fait qu'attendre termine le tour. « J'attends N minutes, puis je
+    confirme » est TOUJOURS un tour qui se termine, et un réveil programmé ne réveille pas de façon
+    fiable : ce défaut précis a immobilisé la session CINQ FOIS le 2026-09-09 (déploiements
+    CTRL-05, CTRL-04, l'incident 0153/0154, CTRL-06 — le fondateur a dû relancer la session à
+    chaque fois). Deux gestes le remplacent, dans cet ordre de préférence :
+
+    1. **ENCHAÎNER, par défaut.** Après un merge sur `main`, n'attendre RIEN. Démarrer la tranche
+       suivante immédiatement — recherche, conception, migration — et écrire le commit « SHA servi
+       confirmé » de la tranche précédente EN TÊTE du tour suivant, quand la réponse est instantanée
+       (une requête directe, jamais une attente). La mesure est tout aussi réelle et tout aussi
+       attachée à son SHA ; elle atterrit seulement un pas plus tard. Rien de la discipline ne
+       s'affaiblit — règle 27 (SHA poussé = SHA servi) reste tenue, juste pas dans le MÊME tour que
+       le push.
+    2. **ATTENDRE DANS LE TOUR, seulement quand la tranche suivante ne peut vraiment pas commencer
+       avant la confirmation du déploiement.** Alors attendre DANS UN SEUL appel d'outil, jamais à
+       travers une frontière de tour : `sleep 270 && <requête de l'état du déploiement>`. 270 s
+       couvre toute construction déjà mesurée dans ce dépôt (150–220 s). Un seul appel, aucune
+       frontière de tour, aucun point de contrôle programmé, aucune relance.
+
+    Dans le doute, ENCHAÎNER (option 1) — c'est le défaut, pas l'exception.
 
 ## 2. Interdits — sans exception, quel que soit le mandat
 
