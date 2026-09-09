@@ -76,9 +76,34 @@ aucune procédure, rouge avec inquiry seule (nommant la manque exacte), vert ave
 sur le vrai chemin gardé de bout en bout. Régression : suite complète 125 fichiers, **1011/1011
 tests**, EXIT=0. `npm run langue`/`gardes`/`lectures` verts sur cet arbre.
 
-**Point de contrôle : revue hostile deux voix (règle 30 : modèle de données touché, nouvelle
-migration) et verify complet à suivre dans ce même compte — leçon de l'incident 0153/0154 déjà
-appliquée : RLS et garde de verrou posés dans 0155 dès l'écriture, jamais en correctif séparé.**
+**Revue hostile, deux voix (règle 30), en worktree isolé, scopes séparés (voix 1 : migration
+0155 + garde `sox.ts` ; voix 2 : `route.ts`/`page.tsx`/`part2.ts`/`catalogue.ts`/tests).** Les
+deux : SHIP WITH MINOR FIXES, aucun défaut fonctionnel. Voix 1 a CONFIRMÉ par mutation, sur
+chaque point : la migration 0155 suit le patron RLS/verrou de 0148/0144 (`rls-couverture.test.ts`/
+`gardes.test.ts` verts, 43/43) — la leçon de l'incident 0153/0154 tient dès l'écriture ; le garde
+CTRL-06/CTRL-01 fire bien AVANT toute lecture de `control_test` ; l'étanchéité passe en premier ;
+R70 exact contre la production. Elle a aussi trouvé que le commentaire au-dessus de la
+comparaison de dates affirmait un diagnostic FAUX (règle 18 : une explication plausible n'est pas
+un diagnostic) — le VRAI risque qu'elle a reproduit par mutation (retirer le cast `::text`)
+est une coercion JS silencieuse qui aurait rendu le garde muet pour toujours (règle 17). Voix 2 a
+CONFIRMÉ par mutation que la lecture CTRL-06 rougit réellement, que l'écran n'a pas de blocage
+poule-œuf (le tableau OE apparaît dès le tirage, avant que le bouton de test soit nécessaire), que
+`part2.ts` produit bien des dates D&I/OE distinctes en base (vérifié par requête directe, pas
+supposé), et a trouvé un vrai défaut d'étiquette : `page.tsx` affichait « CTRL-02 » sur le badge
+manquant d'une procédure OE relevant en réalité de CTRL-01.
+
+**Correctifs appliqués (`723b613`)** : le commentaire de garde réécrit pour dire le vrai risque ;
+nouvelle clé i18n `rcmc.oeAutreProcManquante` (CTRL-01) remplaçant la réutilisation erronée de
+`rcmc.facteurManquant` (CTRL-02). Aucun changement de comportement — les deux fonctionnaient déjà
+correctement, seuls un commentaire et une étiquette affichée étaient faux.
+
+**`npm run verify` frais sur l'arbre corrigé** : 125 fichiers, **1011/1011 tests**, 43 gardes, 87
+routes 0 échec, 232 étapes/362 clics/231 stations, 312 vues 0 défaut, **EXIT=0**.
+
+**§7.3 du mandat contrôle interne est maintenant COMPLET** : CTRL-01 à CTRL-07, les huit tranches,
+toutes en production après ce point de contrôle. Prochaine étape, ordre fixé par le second mandat
+du fondateur : §7.4 (suivi de mission — tableau de bord d'abord, kanban ensuite), puis §1/§2/§3 du
+mandat des réponses.
 
 ## Incident de production : migration 0153 rééditée à tort, corrigée par 0154 (2026-09-09)
 
