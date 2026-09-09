@@ -146,7 +146,12 @@ export interface AssurancePack {
     /** `unsupported_sample_items` : des lignes de l'échantillon non conclues bloquent-elles le visa ? */
     unsupportedSampleItemsBlocking?: boolean;
   };
-  attributeSampleSizes?: Record<Frequency, number>;
+  /* CTRL-07 (mandat contrôle interne, §3.2) : « aucune valeur n'y est écrite de mémoire, ni
+     recopiée d'une méthodologie propriétaire — la table interne d'un cabinet est confidentielle
+     et n'appartient pas à ce produit. » `Partial<...>` (jamais `Record<...>` complet) EST la
+     forme de « table VIDE » : une fréquence ABSENTE de cet objet est une fréquence non vérifiée,
+     pas une fréquence à 0 — `pcaob-sox.ts` la livre `{}` sciemment. */
+  attributeSampleSizes?: Partial<Record<Frequency, number>>;
   attributeSampleBasis?: string;
   attributeSeedDefault?: string;
   exceptionTaxonomy: TaxonomyEntry[];

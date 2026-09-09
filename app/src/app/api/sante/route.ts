@@ -837,6 +837,35 @@ async function corpsDeLaSonde() {
     return `${concludedControls.length} contrôle(s) conclu(s) · ${iucUtilisees} IUC déclarée(s) utilisée(s), toutes documentées (exactitude + exhaustivité)`;
   }));
 
+  /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3) : « aucune taille n'est écrite de
+     mémoire ». Le pack livre sa table VIDE (`pcaob-sox.ts`) — tout tirage OE passe donc par le
+     chemin de dérogation écrite (ADR-010) tant que le cabinet n'a pas fourni la sienne. Lue
+     GLOBALEMENT, même discipline que CTRL-01/02/03 : un tirage SANS justification écrite ET
+     dont la fréquence n'a toujours PAS de taille vérifiée dans le pack au moment de la lecture
+     est la violation — cette lecture ne peut rougir que si le garde de `drawAttributeSample` a
+     été contourné (un SQL direct, une régression du garde), pas si aucun tirage n'a encore eu
+     lieu. */
+  lectures.push(await essayer('CTRL-07 : aucun tirage OE sans taille vérifiée ni justification écrite', async () => {
+    const { tailleEchantillonOePourControle } = await import('@/lib/services/sox');
+    const samples = await q<{ id: string; params: unknown; control_id: string; control_code: string }>(
+      `select s.id, s.params, p.control_id, c.code control_code
+       from sample s join procedure_instance p on p.id = s.procedure_id join control c on c.id = p.control_id
+       where s.method = 'attribute_frequency'`,
+    );
+    if (samples.length === 0) return 'aucun tirage OE pour l’instant';
+    const violations: string[] = [];
+    for (const s of samples) {
+      const params = (typeof s.params === 'string' ? JSON.parse(s.params) : s.params) as { override?: string | null };
+      if (params.override && String(params.override).trim()) continue;
+      const table = await tailleEchantillonOePourControle(s.control_id);
+      if (!table.verifie) violations.push(`${s.control_code} (tirage ${s.id}) : ni justification écrite, ni taille vérifiée`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-07 : ${violations.join(' ; ')}`);
+    }
+    return `${samples.length} tirage(s) OE, tous couverts par une justification écrite ou une taille vérifiée`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

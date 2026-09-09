@@ -96,8 +96,8 @@ export async function uploadControlEvidence(requestId: string): Promise<void> {
 }
 
 export async function runControlCycle(controlCode: string): Promise<{ controlId: string; workpaperId: string; deviations: number }> {
-  const control = await q1<{ id: string; di_status: string }>(
-    `select id, di_status from control where engagement_id = $1 and code = $2`,
+  const control = await q1<{ id: string; di_status: string; frequency: string }>(
+    `select id, di_status, frequency from control where engagement_id = $1 and code = $2`,
     [IDS.engSox, controlCode],
   );
   if (control.di_status === 'not_assessed') {
@@ -140,7 +140,17 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
     await setDiStatus(control.id, IDS.users.karim, 'effective', 'Walkthrough performed; design and implementation assessed as effective (demo).');
   }
   await requestAndImportListing(controlCode);
-  const draw = await drawAttributeSample(control.id, IDS.users.lea);
+  /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3) : la table d'échantillonnage OE du pack
+     est livrée VIDE (`pcaob-sox.ts`) — aucune taille n'y est plus « vérifiée ». Le tirage de
+     démonstration passe donc par le chemin d'ADR-010 (saisie explicite + justification écrite),
+     déjà existant, jamais un nouveau contournement : ce sont les MÊMES tailles qu'avant (3 pour
+     un contrôle mensuel, 5 pour un hebdomadaire), mais honnêtement étiquetées comme un choix
+     humain documenté, pas un défaut de pack tu. */
+  const tailleParFrequence: Record<string, number> = { monthly: 3, weekly: 5, quarterly: 2, annual: 1, daily: 25, many_daily: 25, adhoc: 10 };
+  const draw = await drawAttributeSample(
+    control.id, IDS.users.lea, tailleParFrequence[control.frequency],
+    `Table d'échantillonnage du cabinet non encore fournie (CTRL-07) — taille intérimaire de ${tailleParFrequence[control.frequency]} retenue pour un contrôle ${control.frequency}, en attendant que le cabinet livre sa propre table.`,
+  );
   await approveSend(draw.requestId, IDS.users.karim);
   await uploadControlEvidence(draw.requestId);
   await extractAll(IDS.engSox, IDS.users.karim);

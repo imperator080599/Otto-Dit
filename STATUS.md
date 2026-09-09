@@ -8,6 +8,51 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 3 : CTRL-07, la table d'échantillonnage OE vidée (2026-09-09)
+
+*Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §3.2, §7.3. Recherche préalable
+(agent dédié) : le §3/§7.3 couvre quatre points (CTRL-04/05/06/07) ; cette tranche scope
+DÉLIBÉRÉMENT à CTRL-07 seul — le plus autonome, une violation de la règle 8 déjà repérée avant
+même le mandat (une table de tailles d'échantillon « common practice derived from AICPA Audit
+Sampling guidance », écrite de mémoire, jamais fournie par un cabinet réel) — CTRL-04/05/06 restent
+à faire, chacun sa propre tranche (petites tranches verticales, règle 5).*
+
+**Ce qui a changé.** `pcaob-sox.ts` : `attributeSampleSizes` vidée à `{}` (`Partial<Record<...>>`,
+jamais `Record<...>` complet — une fréquence ABSENTE est une fréquence non vérifiée, pas une
+fréquence à 0). `sox.ts` : nouvelle fonction `tailleEchantillonOe` (même lecture pack+fréquence
+que le refus réel) et `tailleEchantillonOePourControle` (même lecture, côté écran, pour ne jamais
+afficher un champ que le service refusera ensuite — règle 13) ; `drawAttributeSample` refuse
+désormais (message nommant « CTRL-07 », la fréquence, et le chemin de secours ADR-010) tout tirage
+sans dérogation ET sans taille vérifiée — la garde ADR-010 existante (dérogation sans justification
+écrite refusée) reste inchangée, en AMONT. Écran `rcm/[cid]` : le placeholder mensonger « size
+(pack default) » (il n'existe plus de défaut) remplacé par un texte honnête + `required`
+conditionnel + avertissement visible tant qu'aucune taille n'est vérifiée pour la fréquence du
+contrôle — vérifié CLIQUÉ contre un build de PRODUCTION (jamais `next dev`), navigation FRAÎCHE
+après soumission : formulaire de tirage disparu, formulaire « Extract & test attributes » apparu.
+`part2.ts` (`runControlCycle`, le monde de démonstration) : tirage par dérogation écrite explicite,
+MÊMES tailles numériques qu'avant (3/mensuel, 5/hebdo, etc.) mais désormais un choix humain
+documenté, jamais un défaut de pack tu — `npm run demo:seed` rejoué de bout en bout avec succès sur
+ce chemin. Lecture `/api/sante` **CTRL-07** globale : tout tirage OE existant sans justification
+écrite ET sans taille vérifiée pour sa fréquence est une violation — symétrique à CTRL-01/02/03.
+`semeur/registre.ts` : citations `part2.ts`/`sox.ts`/`page.tsx` recalculées (décalages introduits
+par cette tranche et la précédente, jamais supposées — `sox.ts:850` avait déjà dérivé vers 929).
+
+**Tests neufs** : `s8.test.ts` — cas connu mauvais (règle 17) sur `drawAttributeSample` (C-REV-02,
+fréquence `many_daily`, jamais vérifiée) : refuse sans dérogation, refuse une taille sans
+justification (garde ADR-010 inchangée), aboutit avec les deux ; test unitaire de
+`tailleEchantillonOe` (fréquence présente/absente/table vide). `ctrl07-lecture.test.ts` — la
+lecture `/api/sante` : vide sans tirage, rougit sur un tirage posé directement sans justification
+(bypass du garde), reste verte avec justification, reste verte par le vrai chemin gardé.
+
+**Verify et revue hostile — EN COURS au moment de ce commit, pas encore mesurés.** `tsc --noEmit`
+propre, tests ciblés (`s8.test.ts` 16/16, `ctrl07-lecture.test.ts` 4/4, `etancheite-executee.test.ts`
+2/2, `i18n` 6/6) verts — mesurés. `set -o pipefail; timeout 3600 npm run verify` lancé en arrière-
+plan sur l'arbre figé (PID pinné, `/tmp/verify-ctrl07.log`) ; DEUX réfutateurs indépendants lancés
+en parallèle (règle 30 amendée : cette tranche introduit un code de refus neuf, CTRL-07). Ce commit
+est un POINT DE CONTRÔLE volontaire (arbre gelé, aucune édition en cours) — la suite (corrections
+éventuelles, verify complet mesuré, verdicts des deux voix, SHA servi confirmé) suit dans un ou
+plusieurs commits séparés, jamais un amend (règle : toujours un commit neuf).
+
 ## Lot contrôle interne, tranche 2 : les IUC et les facteurs de design, CTRL-02/CTRL-03 (2026-09-08)
 
 *Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §2.3, §2.4, §7.2. Recherche

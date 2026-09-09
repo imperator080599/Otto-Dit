@@ -1,9 +1,15 @@
 import type { AssurancePack } from './types';
 import { basisNote } from '@/lib/kernel/retention';
 
-// PCAOB AS / SOX 404(b) + COSO 2013 pack — English ICFR content. Sample sizes are common
-// practice derived from AICPA Audit Sampling guidance — NOT a PCAOB/SEC requirement
-// (ADR-010, 10_D13_RESEARCH §D); overridable per engagement with justification.
+// PCAOB AS / SOX 404(b) + COSO 2013 pack — English ICFR content.
+//
+// CTRL-07 (mandat contrôle interne, 2026-09-08, §3.2) : `attributeSampleSizes` était rempli de
+// tailles « common practice derived from AICPA Audit Sampling guidance » — exactement ce que le
+// mandat interdit : « aucune valeur n'y est écrite de mémoire, ni recopiée d'une méthodologie
+// propriétaire, quelle qu'elle soit — la table interne d'un cabinet est confidentielle et
+// n'appartient pas à ce produit. » Livré VIDE : aucune fréquence n'a de taille vérifiée tant que
+// le cabinet ne l'a pas fournie ; `drawAttributeSample` (sox.ts) refuse (CTRL-07) sauf saisie
+// explicite avec justification écrite (ADR-010, chemin déjà existant, inchangé).
 
 export const pcaobSox: AssurancePack = {
   id: 'pcaob-sox',
@@ -27,18 +33,10 @@ export const pcaobSox: AssurancePack = {
     cttPctDefault: 0.05,
     tePctDefault: 0.75,
   },
-  attributeSampleSizes: {
-    many_daily: 25,
-    daily: 25,
-    weekly: 5,
-    monthly: 3,
-    quarterly: 2,
-    annual: 1,
-    adhoc: 10,
-  },
+  attributeSampleSizes: {},
   attributeSeedDefault: 'otto-demo-sox-1',
   attributeSampleBasis:
-    'Common-practice frequency table derived from AICPA Audit Sampling guidance (see docs/10_D13_RESEARCH §D). Firm-methodology convention, not a PCAOB/SEC requirement; overridable with justification.',
+    'Firm sampling table (CTRL-07) — shipped empty. No size is verified until the firm supplies its own table; every draw today runs on an explicit, justified override (ADR-010).',
   exceptionTaxonomy: [
     { code: 'reconciliation_diff', label: { fr: 'Écart de rapprochement', en: 'Reconciliation difference' } },
     { code: 'verification_disagreement', label: { fr: 'Désaccord de re-exécution', en: 'Verification spot-check disagreement' } },

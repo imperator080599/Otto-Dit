@@ -230,6 +230,52 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     expect(after.di_status).toBe('effective');
   });
 
+  it('CTRL-07 : un tirage sans dérogation refuse tant que la table du cabinet est vide, et la dérogation écrite (ADR-010) le débloque', async () => {
+    /* CAS CONNU MAUVAIS (règle 17) : la table `attributeSampleSizes` du pack PCAOB/SOX est
+       livrée VIDE (`pcaob-sox.ts`, mandat §3.2) — aucune fréquence n'y a de taille « vérifiée ».
+       `drawAttributeSample` doit REFUSER tant qu'aucune dérogation écrite n'est fournie, et
+       accepter dès qu'elle l'est (ADR-010, chemin déjà existant, inchangé). */
+    const control = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-02')!;
+    expect(control.frequency).toBe('many_daily');
+    await tacheMinimale(control.id, 'walkthrough-C-REV-02.txt');
+    for (const f of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation'] as const) {
+      await documenterFacteurDesign(control.id, IDS.users.karim, f, `Conclusion pour ${f}.`);
+    }
+    await declarerIuc(control.id, IDS.users.karim, false);
+    await setDiStatus(control.id, IDS.users.karim, 'effective', 'D&I effective.');
+    await q(
+      `insert into control_instance (control_id, label, occurred_on, performer_name, source) values ($1,'INV-1',null,null,'listing'), ($1,'INV-2',null,null,'listing')`,
+      [control.id],
+    );
+
+    // Cas connu mauvais : aucune taille explicite (donc pas de dérogation) → CTRL-07 refuse,
+    // en nommant la fréquence et le chemin de secours (ADR-010).
+    await expect(drawAttributeSample(control.id, IDS.users.lea))
+      .rejects.toThrow(/CTRL-07.*many_daily.*ADR-010/);
+
+    // Une taille explicite SANS justification écrite reste refusée par la garde existante
+    // (ADR-010, inchangée) — CTRL-07 n'affaiblit pas cette exigence.
+    await expect(drawAttributeSample(control.id, IDS.users.lea, 2))
+      .rejects.toThrow(/written justification/);
+
+    // Défaut retiré : taille + justification écrite → le tirage aboutit.
+    const draw = await drawAttributeSample(
+      control.id, IDS.users.lea, 2,
+      'Table du cabinet non encore fournie (CTRL-07) — taille intérimaire de 2, en attendant.',
+    );
+    expect(draw.selected.length).toBe(2);
+  });
+
+  it('tailleEchantillonOe : une fréquence présente dans le pack est vérifiée, une fréquence absente ne l’est pas', async () => {
+    const { tailleEchantillonOe } = await import('./sox');
+    const verifiee = tailleEchantillonOe({ attributeSampleSizes: { monthly: 3 } }, 'monthly');
+    expect(verifiee).toEqual({ valeur: 3, verifie: true });
+    const nonVerifiee = tailleEchantillonOe({ attributeSampleSizes: { monthly: 3 } }, 'weekly');
+    expect(nonVerifiee).toEqual({ valeur: null, verifie: false });
+    const tableVide = tailleEchantillonOe({}, 'monthly');
+    expect(tableVide).toEqual({ valeur: null, verifie: false });
+  });
+
   it('documenterFacteurDesign/documenterIucPreuve : un intrus avec une valeur INVALIDE reçoit le refus ETANCH, jamais CTRL-02/CTRL-03', async () => {
     /* CAS CONNU MAUVAIS (règle 17), trouvé par la revue hostile du 2026-09-08 (voix 2) :
        la première version validait `factor`/`volet` AVANT `assertMembreDe` — un acteur d'un

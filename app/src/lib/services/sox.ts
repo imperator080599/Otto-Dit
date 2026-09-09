@@ -575,6 +575,28 @@ export async function importInstances(controlId: string, csv: string, userId: st
 
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
+/** CTRL-07 (mandat contrôle interne, §3.2) : la taille sort d'une table du CABINET, jamais
+ *  d'une valeur écrite de mémoire. La table livrée est VIDE (`pcaob-sox.ts`) — cette fonction dit
+ *  pourquoi, dans la même forme que l'écran doit l'afficher, pour que le service et l'écran ne
+ *  divergent jamais sur ce qu'ils considèrent « vérifié ». */
+export function tailleEchantillonOe(pack: { attributeSampleSizes?: Partial<Record<Frequency, number>> }, frequency: Frequency): { valeur: number; verifie: true } | { valeur: null; verifie: false } {
+  const valeur = pack.attributeSampleSizes?.[frequency];
+  return valeur === undefined ? { valeur: null, verifie: false } : { valeur, verifie: true };
+}
+
+/** Même lecture que `drawAttributeSample`, pour un écran qui doit savoir AVANT de soumettre si
+ *  la taille sera vérifiée ou non — le formulaire ne doit jamais afficher une valeur que le
+ *  service refusera ensuite (règle 13). */
+export async function tailleEchantillonOePourControle(controlId: string): Promise<ReturnType<typeof tailleEchantillonOe>> {
+  const c = await q1<{ engagement_id: string; frequency: Frequency }>(
+    `select engagement_id, frequency from control where id = $1`,
+    [controlId],
+  );
+  const fs = await frameworkSet(c.engagement_id);
+  const pack = primaryPack(fs as never);
+  return tailleEchantillonOe(pack, c.frequency);
+}
+
 export async function drawAttributeSample(controlId: string, userId: string, overrideSize?: number, overrideJustification?: string): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
   await assertMembreDe('control', controlId, userId, 'tirer un échantillon d’attributs');
   const c = await q1<{ id: string; engagement_id: string; code: string; name: string; frequency: Frequency; di_status: string }>(
@@ -590,7 +612,20 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   if (overrideSize !== undefined && !overrideJustification?.trim()) {
     throw new Error('overriding the pack sample size requires a written justification (ADR-010)');
   }
-  const size = overrideSize ?? pack.attributeSampleSizes![c.frequency];
+  let size: number;
+  if (overrideSize !== undefined) {
+    size = overrideSize;
+  } else {
+    const table = tailleEchantillonOe(pack, c.frequency);
+    if (!table.verifie) {
+      throw new Error(
+        `CTRL-07 : aucune taille d’échantillon vérifiée pour la fréquence « ${c.frequency} » — `
+        + 'paramètre non vérifié, à fixer par le cabinet (mandat §3.2). Saisissez une taille avec '
+        + 'sa justification écrite en attendant (ADR-010).',
+      );
+    }
+    size = table.valeur;
+  }
   const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null }>(
     `select id, label, occurred_on::text, performer_name from control_instance where control_id = $1 order by label`,
     [controlId],

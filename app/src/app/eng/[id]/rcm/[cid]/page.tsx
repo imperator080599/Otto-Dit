@@ -10,6 +10,7 @@ import {
   attacherWalkthrough, listerTachesControle, ajouterTacheControle, documenterProcedureTache,
   risquesDuDossier, risquesLiesAuControle, lierRisqueControle, delierRisqueControle,
   facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
+  tailleEchantillonOePourControle,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -34,6 +35,7 @@ export default async function ControlDetail({
   await requireMember(id);
   const control = (await listControls(id)).find((c) => c.id === cid);
   if (!control) return <div className="panel">{t('rcmc.controlNotFound')}</div>;
+  const tailleOe = await tailleEchantillonOePourControle(cid);
   const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null; sampled: boolean; evidence_count: string }>(
     `select ci.id, ci.label, ci.occurred_on::text, ci.performer_name,
             exists(select 1 from sample_item si join sample s on s.id = si.sample_id
@@ -422,8 +424,15 @@ export default async function ControlDetail({
               {instances.length === 0 && <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>}
               {instances.length > 0 && !instances.some((i) => i.sampled) && (
                 <form action={drawAction} className="row">
-                  <input type="number" name="size" placeholder={t('rcmc.sizePackDefault')} style={{ width: 120 }} />
-                  <input type="text" name="justification" placeholder={t('rcmc.overrideJustification')} style={{ width: 150 }} />
+                  <input
+                    type="number" name="size" required={!tailleOe.verifie}
+                    placeholder={tailleOe.verifie ? String(tailleOe.valeur) : t('rcmc.sizeNonVerifiee')}
+                    style={{ width: 120 }}
+                  />
+                  <input
+                    type="text" name="justification" required={!tailleOe.verifie}
+                    placeholder={t('rcmc.overrideJustification')} style={{ width: 150 }}
+                  />
                   <button className="btn small">{t('rcm.drawAndRequestEvidence')}</button>
                 </form>
               )}
@@ -432,6 +441,9 @@ export default async function ControlDetail({
               )}
             </span>
           </div>
+          {instances.length > 0 && !instances.some((i) => i.sampled) && !tailleOe.verifie && (
+            <p className="muted small">{t('rcmc.ctrl07Avertissement')}</p>
+          )}
           <div className="table-scroll" style={{ maxHeight: 320 }}>
             <table className="data">
               <thead><tr><th>{t('col.instance')}</th><th>{t('rcmc.occurred')}</th><th>{t('rcmc.performer')}</th><th>{t('rcmc.sampled')}</th><th>{t('col.evidence')}</th></tr></thead>
