@@ -12,8 +12,9 @@ la tranche touche le modèle de données, la sécurité, le multi-tenant ou un c
 
 *Mandat, §3.1 : pour une fréquence RÉGULIÈRE (annuelle, trimestrielle, mensuelle, hebdomadaire,
 quotidienne), la population d'occurrences OE se DÉRIVE de la fréquence et de la période — le
-système la calcule, sans demande client. `as_needed` reste sur le chemin de demande client
-(`CTRL-05`, tranche suivante). Recherche préalable (agent dédié) : `importInstances`/
+système la calcule, sans demande client. `adhoc` (le mandat dit « as_needed » ; le code n'a que
+`adhoc`, la seule valeur réelle du type `Frequency` — aucun concept distinct n'existe) reste sur le
+chemin de demande client (`CTRL-05`, tranche suivante). Recherche préalable (agent dédié) : `importInstances`/
 `requestAndImportListing` ne dérivaient rien pour AUCUNE fréquence — tout contrôle passait par le
 client, y compris les fréquences régulières ; `control_instance` ne portait aucune trace de
 provenance dérivée ; POP-01/`populationDuDetailRapproche` (account-detail.ts) a servi de patron

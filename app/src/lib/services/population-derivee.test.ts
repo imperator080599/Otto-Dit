@@ -23,6 +23,23 @@ describe('occurrencesDeLaPeriode (pure)', () => {
     expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30', '2025-09-30', '2025-12-31']);
   });
 
+  it('cas connu mauvais (règle 17, revue hostile voix 1) : trimestrielle sur une période de PLUS de 12 mois ne tronque plus silencieusement au-delà de 4 trimestres', () => {
+    // Un exercice allongé de 15 mois (premier exercice réel, creerExercice n'impose que debut<fin)
+    // — la version d'origine bornait la boucle à 4 itérations et perdait janvier-mars 2026 sans
+    // aucune erreur. Cinq trimestres complets doivent maintenant sortir.
+    const occ = occurrencesDeLaPeriode('quarterly', '2025-01-01', '2026-03-31');
+    expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30', '2025-09-30', '2025-12-31', '2026-03-31']);
+  });
+
+  it('cas connu mauvais (règle 17, revue hostile voix 1) : un trimestre final PARTIEL est EXCLU, jamais tronqué — même règle que mensuelle', () => {
+    // La version d'origine tronquait le dernier trimestre à la fin de période au lieu de
+    // l'exclure — asymétrique avec mensuelle/hebdomadaire/quotidienne, qui rejettent toutes un
+    // cycle final incomplet. Sur une période qui s'arrête au milieu du 3e trimestre (15 août),
+    // seuls les deux premiers trimestres COMPLETS sortent.
+    const occ = occurrencesDeLaPeriode('quarterly', '2025-01-01', '2025-08-15');
+    expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30']);
+  });
+
   it('mensuelle : douze occurrences sur un exercice complet, y compris un février de 28 jours', () => {
     const occ = occurrencesDeLaPeriode('monthly', '2025-01-01', '2025-12-31');
     expect(occ.length).toBe(12);

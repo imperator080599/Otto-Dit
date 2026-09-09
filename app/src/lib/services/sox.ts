@@ -587,7 +587,18 @@ function iso(d: Date): string { return d.toISOString().slice(0, 10); }
 
 /** Pure, testable sans base : les dates d'occurrence d'une fréquence régulière sur une période
  *  [debut, fin] incluse. Toujours en UTC (règle : jamais de dérive de fuseau sur une date de
- *  calendrier). Exportée pour ses propres tests unitaires (règle 17). */
+ *  calendrier). Exportée pour ses propres tests unitaires (règle 17).
+ *
+ *  UN CYCLE FINAL PARTIEL (la période ne se termine pas exactement à la fin d'un cycle complet
+ *  de la fréquence) N'EST JAMAIS INCLUS, POUR AUCUNE FRÉQUENCE — un contrôle « mensuel » sur une
+ *  période qui s'arrête le 15 n'a pas eu 15 jours de mois, il n'a pas eu ce mois-là. `quarterly`
+ *  suit la MÊME règle que `monthly`/`weekly`/`daily` (corrigé le 2026-09-09, revue hostile voix 1
+ *  du lot contrôle interne, tranche 4 : la version d'origine bornait le trimestre en DUR à 4
+ *  itérations ET tronquait le dernier trimestre à la fin de période au lieu de l'exclure — sur
+ *  une période de PLUS de 12 mois (un premier exercice allongé, cas réel : `creerExercice`,
+ *  engagement.ts, n'impose que `debut < fin`), les mois au-delà du 4e trimestre disparaissaient
+ *  SANS AUCUNE erreur, silencieusement). Toutes les fréquences bouclent maintenant `for(;;)`
+ *  jusqu'à dépasser `fin`, jamais un nombre d'itérations fixé d'avance. */
 export function occurrencesDeLaPeriode(frequency: Frequency, debut: string, fin: string): { label: string; occurredOn: string }[] {
   const d0 = new Date(`${debut}T00:00:00Z`);
   const d1 = new Date(`${fin}T00:00:00Z`);
@@ -595,11 +606,10 @@ export function occurrencesDeLaPeriode(frequency: Frequency, debut: string, fin:
   if (frequency === 'annual') {
     occ.push({ label: `Exercice clos le ${iso(d1)}`, occurredOn: iso(d1) });
   } else if (frequency === 'quarterly') {
-    for (let q = 1; q <= 4; q++) {
+    for (let q = 1; ; q++) {
       const d = new Date(d0); d.setUTCMonth(d.getUTCMonth() + 3 * q); d.setUTCDate(d.getUTCDate() - 1);
-      const borne = d > d1 ? d1 : d;
-      occ.push({ label: `Trimestre ${q}, clos le ${iso(borne)}`, occurredOn: iso(borne) });
-      if (d >= d1) break;
+      if (d > d1) break;
+      occ.push({ label: `Trimestre ${q}, clos le ${iso(d)}`, occurredOn: iso(d) });
     }
   } else if (frequency === 'monthly') {
     for (let m = 1; ; m++) {
