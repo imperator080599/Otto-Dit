@@ -902,6 +902,98 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   return { sampleId: sample.id, requestId: request.id, selected: draw.selected };
 }
 
+export interface ProcedureOe { procedure: string; notes: string; evidenceId: string | null; performedAt: string }
+
+/** Les procédures d'efficacité opérationnelle (OE) déjà documentées pour un contrôle — même rôle
+ *  que `listerTachesControle` pour le D&I, mais SANS décomposition en tâches (mandat contrôle
+ *  interne §3.3 : le cycle OE est un tirage, une conclusion — pas une liste de tâches vidéo). */
+export async function proceduresOeDuControle(controlId: string): Promise<ProcedureOe[]> {
+  return (await q<{ procedure: string; notes: string; evidence_id: string | null; performed_at: string }>(
+    `select procedure, notes, evidence_id, performed_at::text from control_oe_procedure where control_id = $1 order by procedure`,
+    [controlId],
+  )).map((r) => ({ procedure: r.procedure, notes: r.notes, evidenceId: r.evidence_id, performedAt: r.performed_at }));
+}
+
+const PROCEDURES_OE = ['inquiry', 'inspection', 'observation', 'reperformance'] as const;
+
+/** CTRL-06 (mandat contrôle interne, §3.3, tranche 7) : « L'inquiry de l'OE est une inquiry
+ *  NEUVE. Elle ne réutilise jamais celle du D&I : son objet est précisément de s'assurer que rien
+ *  n'a changé depuis l'occurrence documentée au D&I. Elle porte sa propre date, postérieure.
+ *  Réutiliser l'enregistrement du D&I est refusé. » DEUX vérifications, l'une contre L'AUTRE
+ *  preuve (jamais contre elle-même) : la pièce citée ne doit pas être
+ *  `di_walkthrough_evidence_id` (même pièce = même inquiry, quel que soit le texte autour), et
+ *  `performedAt` doit être STRICTEMENT postérieur à la plus RÉCENTE inquiry D&I documentée pour
+ *  ce contrôle (`control_task_procedure`, procedure='inquiry') — « sa propre date » comparée à
+ *  une date RÉELLE, jamais supposée antérieure par construction.
+ *
+ *  CE QUE ÇA NE VÉRIFIE PAS (règle 19) : une pièce DIFFÉRENTE mais dont le contenu serait
+ *  identique au walkthrough (deux fichiers, même enregistrement) passerait cette garde — elle
+ *  compare des identifiants, jamais un contenu. Elle ne vérifie pas non plus, pour les trois
+ *  autres procédures (inspection/observation/reperformance), que leur pièce diffère de celle du
+ *  D&I — le mandat ne le demande QUE pour l'inquiry, dont l'objet même (« rien n'a changé depuis
+ *  ») rendrait une pièce réutilisée absurde ; une inspection ou une ré-exécution peut légitimement
+ *  s'appuyer sur la même pièce que le D&I (le même document de contrôle, relu). */
+export async function documenterProcedureOe(
+  controlId: string, userId: string, procedure: 'inquiry' | 'inspection' | 'observation' | 'reperformance',
+  notes: string, evidenceId?: string, performedAt?: string,
+): Promise<void> {
+  const engagementId = await assertMembreDe('control', controlId, userId, 'documenter une procédure d’efficacité opérationnelle (OE)');
+  if (!PROCEDURES_OE.includes(procedure)) {
+    throw new Error(`« ${procedure} » n’est pas une procédure OE documentable — inquiry, inspection, observation ou ré-exécution seulement.`);
+  }
+  if (!notes.trim()) throw new Error('la procédure a besoin d’une note — ce qui a été mené, et ce qui en ressort');
+  const quand = performedAt?.trim() || new Date().toISOString().slice(0, 10);
+  if (Number.isNaN(Date.parse(quand))) throw new Error('la date de la procédure OE n’est pas une date valide');
+  const ctx = await engagementCtx(engagementId);
+  if (evidenceId) {
+    const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
+    if (ev.engagement_id !== engagementId) throw new Error('cette pièce n’appartient pas à ce dossier');
+    if (ev.quarantined) throw new Error('une pièce en quarantaine ne peut pas corroborer une procédure documentée');
+  }
+  if (procedure === 'inquiry') {
+    const c = await q1<{ code: string; di_walkthrough_evidence_id: string | null }>(
+      `select code, di_walkthrough_evidence_id from control where id = $1`, [controlId],
+    );
+    if (!evidenceId) {
+      throw new Error('CTRL-06 : l’inquiry de l’OE a besoin de sa PROPRE pièce — jamais l’enregistrement du D&I réutilisé sans preuve neuve.');
+    }
+    if (c.di_walkthrough_evidence_id && evidenceId === c.di_walkthrough_evidence_id) {
+      throw new Error(`CTRL-06 : cette pièce est celle du walkthrough D&I de ${c.code} — l’inquiry de l’OE en a besoin d’une NEUVE, elle ne se réutilise jamais.`);
+    }
+    /* Comparaison en DATE CALENDAIRE, pas en horodatage exact — trouvé au moment d'écrire cette
+       garde : l'inquiry D&I se pose à la création de la tâche (`created_at`, un horodatage
+       COMPLET) alors que l'inquiry OE ne porte qu'une DATE (formulaire `<input type="date">`,
+       ou le défaut `quand` du jour, ci-dessus) ; comparer une date-seule (minuit UTC) à un
+       horodatage du même jour aurait rendu tout « aujourd'hui » plus TÔT que l'inquiry D&I posée
+       dans l'après-midi du même jour — une inquiry réellement postérieure, dans le même mandat,
+       aurait été refusée à tort. « Sa propre date, postérieure » se lit donc comme un jour
+       calendaire strictement plus récent, jamais un instant précis. */
+    const derniereInquiryDi = await q01<{ quand: string }>(
+      `select max(ctp.created_at)::date::text quand from control_task_procedure ctp
+       join control_task ct on ct.id = ctp.task_id
+       where ct.control_id = $1 and ctp.procedure = 'inquiry'`,
+      [controlId],
+    );
+    if (derniereInquiryDi?.quand && quand.slice(0, 10) <= derniereInquiryDi.quand) {
+      throw new Error(
+        `CTRL-06 : la date de l’inquiry OE (${quand.slice(0, 10)}) doit être POSTÉRIEURE à la dernière inquiry D&I `
+        + `(${derniereInquiryDi.quand}) de ${c.code} — elle atteste que rien n’a changé DEPUIS.`,
+      );
+    }
+  }
+  await q(
+    `insert into control_oe_procedure (engagement_id, control_id, procedure, notes, evidence_id, performed_at, created_by)
+     values ($1,$2,$3,$4,$5,$6,$7)
+     on conflict (control_id, procedure) do update set notes = $4, evidence_id = $5, performed_at = $6, created_by = $7, created_at = now()`,
+    [engagementId, controlId, procedure, notes.trim(), evidenceId ?? null, quand, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_oe_procedure_documented', objectType: 'control', objectId: controlId,
+    payload: { procedure, notes: notes.trim().slice(0, 500), hasEvidence: Boolean(evidenceId), performedAt: quand },
+  });
+}
+
 function monthEndPlus(label: string, days: number): string {
   const m = Number(label.slice(5, 7));
   const d = new Date(Date.UTC(2025, m, 0));
@@ -929,6 +1021,17 @@ export async function runAttributeTesting(controlId: string, userId: string): Pr
     `select id, engagement_id, code from control where id = $1`,
     [controlId],
   );
+  /* CTRL-06 + « CTRL-01 s'applique identiquement » (mandat §3.3) : le test d'attributs ne se
+     conclut pas sans les procédures OE — même discipline que CTRL-01 pour le D&I
+     (`setDiStatus`), vérifiée ICI plutôt qu'à `drawAttributeSample` : le tirage lui-même ne
+     prouve rien sur les OCCURRENCES sélectionnées, seule la CONCLUSION du test le fait. */
+  const oe = await proceduresOeDuControle(controlId);
+  if (!oe.some((p) => p.procedure === 'inquiry')) {
+    throw new Error(`CTRL-06 : ${c.code} — aucune inquiry OE (neuve, distincte du D&I) n’est documentée — documentez-la avant de conclure le test d’attributs.`);
+  }
+  if (!oe.some((p) => p.procedure !== 'inquiry')) {
+    throw new Error(`CTRL-01 : ${c.code} — l’OE ne peut pas se conclure sur la seule inquiry — au moins une inspection, observation ou ré-exécution est requise (mandat §3.3, même règle qu'au D&I).`);
+  }
   const ctx = await engagementCtx(c.engagement_id);
   const test = await q1<{ id: string; sample_id: string }>(
     `select id, sample_id from control_test where control_id = $1 order by created_at desc, id desc limit 1`,

@@ -285,6 +285,12 @@
       "note": "condition de retrait UNIQUE et nommée : les trois entrées ne se retirent que si les trois sample précis (ces id exacts) disparaissent de la base — re-semis complet d'engSox sous mandat écrit (§2) ou archivage futur par un geste produit qui n'existe pas encore. Un QUATRIÈME id sans événement nommé ici serait une régression."
     },
     {
+      "id": "R70",
+      "etat": "ouvert, PERMANENT PAR NATURE — LEGACY_AVANT_CTRL06 (route.ts) nomme deux id de control réels (C-BR-01, C-REV-01, testés en OE 2026-09-01, avant CTRL-06) pour ne pas faire rougir la lecture CTRL-06. Trouvés en interrogeant la production directement (mcp__Supabase__execute_sql) AVANT l'expédition, même méthode que R69. Même raisonnement que R67/R69 : aucun geste légitime ne peut retrofournir une inquiry OE datée postérieure à un test conclu le 2026-09-01 sans fabriquer une pièce a posteriori (règle 31).",
+      "depuis": "2026-09-09 (lot contrôle interne, tranche 7 — CTRL-06)",
+      "note": "condition de retrait UNIQUE et nommée : les deux entrées ne se retirent que si les deux control précis (ces id exacts) disparaissent de la base — re-semis complet d'engSox sous mandat écrit (§2) ou archivage futur par un geste produit qui n'existe pas encore. Un TROISIÈME id sans événement nommé ici serait une régression."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

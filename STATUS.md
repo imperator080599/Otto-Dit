@@ -8,8 +8,77 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 `docs/MANDATS/2026-09-09_mandat_reponses_fondateur.md` — complète le mandat du 8 septembre (les
-cinq réponses attendues) : ordre de priorité fixé par le fondateur — cet incident d'abord, puis
-§1 (table d'échantillonnage sourcée), §2 (R30/MAT-01-03), §3 (vidéo, dépôt manuel).
+cinq réponses attendues). Ordre RÉVISÉ par le fondateur (message du 2026-09-09, après résolution
+de l'incident 0153/0154) : finir le lot contrôle interne (§7.3 restant, puis §7.4) D'ABORD, puis
+§1 (table d'échantillonnage sourcée), §2 (R30/MAT-01-03), §3 (vidéo, dépôt manuel). §5 amendé le
+même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 rouverts — tout
+écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
+
+## Lot contrôle interne, tranche 7 : CTRL-06, l'inquiry OE neuve (2026-09-09)
+
+*Mandat, §3.3 : « On fait la même chose que pour le D&I. L'inquiry est de nouveau systématique —
+mais : L'inquiry de l'OE est une inquiry NEUVE. Elle ne réutilise jamais celle du D&I : son objet
+est précisément de s'assurer que rien n'a changé depuis l'occurrence documentée au D&I. Elle porte
+sa propre date, postérieure. Réutiliser l'enregistrement du D&I est refusé. Et, comme au D&I, au
+moins une procédure parmi inspection, observation, reperformance (CTRL-01 s'applique
+identiquement). » Dernier point du §7.3 du mandat contrôle interne (CTRL-04/05/06/07, tous
+livrés).*
+
+**Ce qui a changé.** Migration `0155_ctrl06_inquiry_oe.sql` : nouvelle table
+`control_oe_procedure` — MÊME FORME que `control_task_procedure` (0148), pas une invention neuve :
+le D&I documente ses procédures PAR TÂCHE, l'OE n'a pas de décomposition en tâches dans ce mandat
+(un cycle OE = un tirage, une conclusion), donc l'ancrage est le CONTRÔLE lui-même.
+`engagement_id` dénormalisé dès la création (leçon de l'incident 0153/0154 tirée immédiatement :
+garde de verrou + RLS posés dans LA MÊME migration, jamais en correctif après coup). `sox.ts` :
+`documenterProcedureOe` (les quatre procédures, dont l'inquiry avec ses deux gardes CTRL-06 —
+pièce distincte du walkthrough D&I, date STRICTEMENT postérieure EN JOUR CALENDAIRE à la dernière
+inquiry D&I) et `proceduresOeDuControle`. `runAttributeTesting` refuse désormais de conclure sans
+inquiry OE (CTRL-06) ni procédure au-delà (CTRL-01, même règle reprise pour l'OE) — vérifié TOUT
+AU DÉBUT de la fonction, avant toute lecture de `control_test`/`sample`. Écran `rcm/[cid]` :
+tableau des quatre procédures OE (inquiry/inspection/observation/reperformance), formulaire de
+documentation par ligne (date exigée pour l'inquiry), bouton « extraire et tester » masqué tant
+que les deux conditions ne sont pas réunies (même discipline UI que CTRL-04/05 : jamais un bouton
+qui soumettrait pour se faire refuser). Lecture `/api/sante` **CTRL-06** : même patron que
+CTRL-01/04/05/07, globale, sur tout contrôle dont le `control_test` a conclu.
+
+**Correction de conception trouvée en écrivant le garde lui-même (pas par une revue extérieure) :**
+comparer la date d'inquiry OE (`<input type="date">`, granularité JOUR) à l'horodatage COMPLET de
+l'inquiry D&I (`created_at`) aurait rendu tout « aujourd'hui » plus tôt que l'inquiry D&I posée
+dans l'après-midi du même jour — une inquiry réellement postérieure, dans le même mandat, aurait
+été refusée à tort. Corrigé avant tout test écrit : comparaison en DATE CALENDAIRE des deux côtés.
+
+**Ce qui n'a PAS changé, délibérément (règle 19).** Aucune décomposition en tâches pour l'OE
+(contrairement au D&I) — le mandat n'en demande pas. L'ordre RELATIF entre inquiry et les autres
+procédures OE n'est pas vérifié (seulement l'ordre inquiry-OE vs inquiry-D&I). La fraîcheur d'une
+inquiry OE face à un RE-test sur une population différente n'est pas vérifiée (même limite
+assumée que CTRL-04 sur les tirages déjà faits).
+
+**Monde de démonstration.** `part2.ts` mène sa propre inquiry OE (pièce neuve, jamais le
+walkthrough D&I) et documente une inspection, à une date fixée au lendemain calendaire du jour du
+semis — la seule affirmation honnête d'un jour distinct sans dater dans le passé. Testé de bout en
+bout par `npm run demo:seed` (C-BR-01 : 4 déviations avec extension à la population complète,
+C-REV-01 : 0 déviation — les deux chemins de `runAttributeTesting`, avec et sans extension,
+passent le garde une seule fois documenté).
+
+**R70 — `LEGACY_AVANT_CTRL06`, même famille que R67/R69.** Deux contrôles réels (C-BR-01,
+C-REV-01, testés en OE le 2026-09-01, avant `control_oe_procedure`) vérifiés en production
+(`mcp__Supabase__execute_sql`) AVANT l'expédition — même méthode que R69, pour ne pas répéter
+l'incident 0153. Permanent, même raisonnement que R67/R69 (règle 31). Détail complet :
+`docs/BACKLOG_REPORTE.md`.
+
+**Tests** : `ctrl06-inquiry-oe.test.ts` (10 tests, service) : liste vide, refus sans pièce propre,
+refus sur réutilisation de la pièce D&I (règle 17), refus sur date non postérieure (règle 17, le
+même jour calendaire), acceptation avec pièce neuve + date postérieure (règle 17, moitié
+protectrice), refus de `runAttributeTesting` sans inquiry (CTRL-06), refus avec inquiry SEULE
+(CTRL-01), passage du garde avec les deux (règle 17, moitié protectrice), refus runtime d'une
+valeur de procédure invalide, étanchéité ETANCH. Lecture `/api/sante` (5 tests) : vide, rouge sans
+aucune procédure, rouge avec inquiry seule (nommant la manque exacte), vert avec les deux, vert
+sur le vrai chemin gardé de bout en bout. Régression : suite complète 125 fichiers, **1011/1011
+tests**, EXIT=0. `npm run langue`/`gardes`/`lectures` verts sur cet arbre.
+
+**Point de contrôle : revue hostile deux voix (règle 30 : modèle de données touché, nouvelle
+migration) et verify complet à suivre dans ce même compte — leçon de l'incident 0153/0154 déjà
+appliquée : RLS et garde de verrou posés dans 0155 dès l'écriture, jamais en correctif séparé.**
 
 ## Incident de production : migration 0153 rééditée à tort, corrigée par 0154 (2026-09-09)
 

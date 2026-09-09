@@ -775,3 +775,18 @@ design : chacun reste une tranche à construire.**
   pas encore. Un QUATRIÈME id qui y apparaîtrait sans un événement nommé ici serait lui-même une
   régression à signaler. Non bloquant : la garde CTRL-04 fonctionne correctement pour tout nouveau
   tirage (prouvé par tests, tranche 6).
+
+- **R70 — `LEGACY_AVANT_CTRL06` (`app/src/app/api/sante/route.ts`) est une exemption permanente,
+  même famille que R67/R69, même méthode (interrogée en production AVANT l'expédition).** Deux
+  `control` réels (`3a2e91c7-a534-4f02-b41f-8ede2b63c986` C-BR-01, `33b27929-883d-446a-acbb-0ac05ca2115c`
+  C-REV-01, testés en OE le 2026-09-01 par `npm run demo:seed`, trois lignes `control_test`
+  `status='complete'` au total) sont nommés, datés, dans la lecture CTRL-06 pour ne pas la faire
+  rougir — trouvés par `mcp__Supabase__execute_sql` avant l'expédition de la tranche 7. **Pourquoi
+  c'est PERMANENT** : même raisonnement que R67/R69 — écrire aujourd'hui une inquiry OE datée
+  postérieure à un test conclu le 2026-09-01 fabriquerait une pièce et une date après coup (règle
+  31). **Condition de retrait, unique et nommée** : ces deux lignes ne se retirent QUE si les deux
+  `control` précis (ces id exacts) disparaissent de la base — re-semis complet d'`engSox` sous
+  mandat écrit (§2), ou archivage futur par un geste produit qui n'existe pas encore. Un
+  TROISIÈME id sans événement nommé ici serait une régression à signaler. Non bloquant : la garde
+  CTRL-06 (`runAttributeTesting`) fonctionne correctement pour tout nouveau test (prouvé par
+  tests, tranche 7).

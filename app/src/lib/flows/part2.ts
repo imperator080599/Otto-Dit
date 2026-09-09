@@ -9,7 +9,7 @@ import {
   importRcm, setDiStatus, importInstances, drawAttributeSample, runAttributeTesting, listControls,
   proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation,
   attacherWalkthrough, ajouterTacheControle, documenterProcedureTache,
-  documenterFacteurDesign, declarerIuc, rapprocherPopulationControle,
+  documenterFacteurDesign, declarerIuc, rapprocherPopulationControle, documenterProcedureOe,
 } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
@@ -163,6 +163,34 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
   );
   await approveSend(draw.requestId, IDS.users.karim);
   await uploadControlEvidence(draw.requestId);
+  /* CTRL-06 (mandat contrôle interne, §3.3, tranche 7) : « L'inquiry de l'OE est une inquiry
+     NEUVE... au moins une procédure parmi inspection, observation, reperformance. » Le monde de
+     démonstration mène donc sa propre inquiry OE — une pièce NEUVE, jamais le walkthrough D&I —
+     et documente une inspection, avant de conclure le test d'attributs. Date fixée au lendemain
+     (calendaire) du jour du semis : l'inquiry D&I se pose le même jour que ce cycle (§2.2,
+     `ajouterTacheControle`), et CTRL-06 exige une date STRICTEMENT postérieure — « demain »
+     est la plus proche affirmation honnête d'un jour distinct, sans inventer une date antérieure
+     au semis lui-même. */
+  const { evidenceId: oeInquiryEvidenceId } = await ingestEvidence({
+    engagementId: IDS.engSox,
+    filename: `oe-inquiry-${controlCode}.txt`,
+    mime: 'text/plain',
+    bytes: new TextEncoder().encode(`OE inquiry transcript — ${controlCode} (synthetic demo placeholder, distinct from the D&I walkthrough).`),
+    source: 'auditor',
+    uploadedBy: { kind: 'app_user', id: IDS.users.karim },
+    audience: 'internal',
+  });
+  const demain = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  await documenterProcedureOe(
+    control.id, IDS.users.karim, 'inquiry',
+    `Entretien avec le control owner de ${controlCode} : rien n'a changé dans l'exécution du contrôle depuis le walkthrough D&I (démonstration synthétique).`,
+    oeInquiryEvidenceId, demain,
+  );
+  await documenterProcedureOe(
+    control.id, IDS.users.karim, 'inspection',
+    `Inspection des pièces du cycle OE de ${controlCode} — voir les demandes ci-dessus (démonstration synthétique).`,
+    undefined, demain,
+  );
   await extractAll(IDS.engSox, IDS.users.karim);
   for (const p of await pendingVerifications(IDS.engSox)) {
     await verifyExtraction(p.id, IDS.users.karim);

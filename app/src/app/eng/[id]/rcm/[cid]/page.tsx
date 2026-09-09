@@ -12,6 +12,7 @@ import {
   facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
   tailleEchantillonOePourControle, deriverPopulationControle, FREQUENCES_DERIVABLES,
   populationControleRapprochee, rapprocherPopulationControle,
+  proceduresOeDuControle, documenterProcedureOe,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -64,6 +65,9 @@ export default async function ControlDetail({
     [id, `OE-${control.code}`],
   );
   const taches = await listerTachesControle(cid);
+  const oeProcedures = await proceduresOeDuControle(cid);
+  const oeInquiryFaite = oeProcedures.some((p) => p.procedure === 'inquiry');
+  const oeAutreFaite = oeProcedures.some((p) => p.procedure !== 'inquiry');
   const risquesDossier = await risquesDuDossier(id);
   const risquesLies = await risquesLiesAuControle(cid);
   const facteurs = await facteursDesignDuControle(cid);
@@ -204,6 +208,19 @@ export default async function ControlDetail({
       const justification = String(formData.get('justification') ?? '');
       const res = await drawAttributeSample(cid, user.id, sizeRaw ? Number(sizeRaw) : undefined, justification || undefined);
       await approveSend(res.requestId, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function documenterProcedureOeAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      const procedure = String(formData.get('procedure')) as 'inquiry' | 'inspection' | 'observation' | 'reperformance';
+      await documenterProcedureOe(
+        cid, user.id, procedure, String(formData.get('notes') ?? ''),
+        String(formData.get('evidence_id') ?? '') || undefined,
+        String(formData.get('performed_at') ?? '') || undefined,
+      );
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -476,7 +493,7 @@ export default async function ControlDetail({
                   <button className="btn small">{t('rcm.drawAndRequestEvidence')}</button>
                 </form>
               )}
-              {instances.some((i) => i.sampled) && grid.length === 0 && (
+              {instances.some((i) => i.sampled) && grid.length === 0 && oeInquiryFaite && oeAutreFaite && (
                 <form action={testAction}><button className="btn small">{t('rcm.extractAndTestAttributes')}</button></form>
               )}
             </span>
@@ -512,6 +529,47 @@ export default async function ControlDetail({
               </tbody>
             </table>
           </div>
+          {instances.some((i) => i.sampled) && (
+            <div className="mt" data-oe-procedures>
+              <h3>{t('rcmc.oeProcedures')}</h3>
+              <table className="data">
+                <tbody>
+                  {(['inquiry', 'inspection', 'observation', 'reperformance'] as const).map((p) => {
+                    const doc = oeProcedures.find((x) => x.procedure === p);
+                    return (
+                      <tr key={p} data-oe-procedure={p}>
+                        <td style={{ width: 140 }}>{p}</td>
+                        <td>
+                          {doc
+                            ? <span data-oe-procedure-conclusion>{doc.notes} <span className="faint">({doc.performedAt.slice(0, 10)})</span></span>
+                            : <span className="badge amber">{p === 'inquiry' ? t('rcmc.oeInquiryManquante') : t('rcmc.facteurManquant')}</span>}
+                        </td>
+                        <td>
+                          <details>
+                            <summary className="repli-action">{doc ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
+                            <form action={documenterProcedureOeAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                              <input type="hidden" name="procedure" value={p} />
+                              {p === 'inquiry' && (
+                                <input type="date" name="performed_at" defaultValue={doc?.performedAt.slice(0, 10) ?? ''} required />
+                              )}
+                              <textarea name="notes" rows={2} required defaultValue={doc?.notes ?? ''} placeholder={p === 'inquiry' ? t('rcmc.oeInquiryPlaceholder') : t('rcmc.procNotes')} />
+                              <select name="evidence_id" required={p === 'inquiry'} defaultValue={doc?.evidenceId ?? ''}>
+                                <option value="">{t('rcm.documentThatShowsItRequired')}</option>
+                                {corroborations.map((c) => (
+                                  <option key={c.id} value={c.id}>{c.filename}</option>
+                                ))}
+                              </select>
+                              <button className="btn small secondary">{t('rcmc.enregistrerConclusion')}</button>
+                            </form>
+                          </details>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <Repli cle="eng.id.rcm.cid.2" niveau={2} titre={<>Attribute grid</>}>

@@ -1012,6 +1012,48 @@ async function corpsDeLaSonde() {
       : `${n} tirage(s) OE — ${n - legacy} couvert(s) par un rapprochement de population, ${legacy} legacy (antérieur(s) à CTRL-04, 2026-09-01)`;
   }));
 
+  /* CTRL-06 (mandat contrôle interne, §3.3, tranche 7) : « L'inquiry de l'OE est une inquiry
+     NEUVE... au moins une procédure parmi inspection, observation, reperformance (CTRL-01
+     s'applique identiquement). » Lue GLOBALEMENT, même discipline que CTRL-01/04/05/07 : pour
+     tout contrôle dont le test d'attributs a CONCLU (`control_test.status = 'complete'`), les
+     deux exigences se vérifient ensemble — cette lecture ne peut rougir que si le garde de
+     `runAttributeTesting` a été contourné. LEGACY_AVANT_CTRL06 (même famille que R67/R69) : deux
+     contrôles réels (C-BR-01, C-REV-01), testés le 2026-09-01, AVANT que `control_oe_procedure`
+     n'existe — vérifiés en interrogeant la production directement avant l'expédition, même
+     discipline que R69 (éviter de répéter l'échec du déploiement du 2026-09-09). CE QUE CETTE
+     LECTURE NE VÉRIFIE PAS (règle 19) : l'ORDRE des deux procédures OE entre elles (une
+     inspection documentée avant l'inquiry passe aussi bien qu'après — le garde lui-même
+     (`documenterProcedureOe`) ne l'exige que pour l'inquiry CONTRE le D&I, jamais entre les
+     procédures OE elles-mêmes) ; ni la fraîcheur (un contrôle re-testé sur une population
+     différente sans nouvelle inquiry resterait vert ici tant que la première existe). */
+  lectures.push(await essayer('CTRL-06 : aucun test OE conclu sans inquiry neuve ni procédure au-delà de l’inquiry', async () => {
+    const LEGACY_AVANT_CTRL06 = [
+      '3a2e91c7-a534-4f02-b41f-8ede2b63c986', // C-BR-01, testé 2026-09-01, avant CTRL-06 (2026-09-09)
+      '33b27929-883d-446a-acbb-0ac05ca2115c', // C-REV-01, testé 2026-09-01, avant CTRL-06 (2026-09-09)
+    ];
+    const controls = await q<{ id: string; code: string }>(
+      `select distinct c.id, c.code from control_test ct join control c on c.id = ct.control_id where ct.status = 'complete'`,
+    );
+    if (controls.length === 0) return 'aucun test OE conclu pour l’instant';
+    const violations: string[] = [];
+    let legacy = 0;
+    for (const c of controls) {
+      const procs = await q<{ procedure: string }>(`select procedure from control_oe_procedure where control_id = $1`, [c.id]);
+      const inquiry = procs.some((p) => p.procedure === 'inquiry');
+      const autre = procs.some((p) => p.procedure !== 'inquiry');
+      if (inquiry && autre) continue;
+      if (LEGACY_AVANT_CTRL06.includes(c.id)) { legacy++; continue; }
+      const manque = [!inquiry && 'inquiry neuve', !autre && 'procédure au-delà de l’inquiry'].filter(Boolean).join(' et ');
+      violations.push(`${c.code} : test OE conclu sans ${manque}`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de CTRL-06 : ${violations.join(' ; ')}`);
+    }
+    return legacy === 0
+      ? `${controls.length} contrôle(s) testé(s) en OE, tous avec inquiry neuve et procédure au-delà`
+      : `${controls.length} contrôle(s) testé(s) en OE — ${controls.length - legacy} couvert(s), ${legacy} legacy (antérieur(s) à CTRL-06, 2026-09-01)`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que
