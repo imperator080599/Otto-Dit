@@ -14,9 +14,69 @@ de l'incident 0153/0154) : finir le lot contrôle interne (§7.3 restant, puis �
 même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 rouverts — tout
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
 **§7.4 est maintenant COMPLET** (tableau de bord et kanban, tranches ci-dessous) : §0 du mandat du
-8 septembre est donc entièrement livré. Prochain : §1/§2/§3 du mandat du 9 septembre (table
-d'échantillonnage sourcée — bloquée par une restriction réseau du bac à sable, voir plus bas —,
-R30/MAT-01-03, vidéo).
+8 septembre est donc entièrement livré. §1 (table d'échantillonnage sourcée) reste **bloqué** par
+une restriction réseau du bac à sable (voir plus bas). **§2.1 (bascule de matérialité) est
+maintenant livré** (tranche ci-dessous) — prochain : §2.2 (ouverture de section automatique),
+§2.3 (demande de détail au-delà du CTT), les codes de refus MAT-01/02/03, puis §3 (vidéo).
+
+## Lot mandat 9 septembre, §2.1 : la bascule de matérialité (2026-09-09)
+
+*Mandat §2.1 : un poste devenu matériel après un nouvel import (le solde franchit la matérialité
+de travail) doit se signaler — « voir si on a loupé du testing », en particulier pour un poste
+qu'un humain a déjà confirmé non matériel (`fsli.confirmed_by`), que `proposeScoping` (D9) ne
+recorrigera plus jamais de lui-même.*
+
+**Ce qui a changé.** `supabase/migrations/0156_mat01_bascule_materialite.sql` — table
+`fsli_materiality_bascule` (`engagement_id, fsli_code, import_file_id, scoping_avant, solde,
+seuil_performance, detectee_le`), `unique(engagement_id, fsli_code)` : le premier import qui fait
+franchir le seuil pose la ligne, un ré-import ne la rejoue ni ne la duplique jamais (règle 28 —
+comme R47/R67/R69/R70). `detecterBasculesMaterialite(engagementId, importFileId, userId)`
+(`fsli.ts`) compare le solde COURANT de chaque poste non matériel (`unscoped`/`ns_proposed`/
+`ns_confirmed`) à la matérialité de travail VALIDÉE courante — jamais un diff du champ `scoping`
+lui-même, qui ne bouge plus pour un poste `ns_confirmed` (D9). Appelée depuis
+`uploadTbAction` (imports courants seulement) et depuis `bootstrapNep` (monde de démonstration,
+confirmé empiriquement : ~8 bascules réelles — PAYROLL 2,6 M€, PPE 1,05 M€, PURCHASES 1,79 M€,
+TRADE_RECEIVABLES…). Écran : nouveau panneau sur `/eng/[id]/materiality` (langage EXISTANT, pas
+`.epure` — un ajout à un écran déjà en place, jamais repeint rétroactivement), toujours visible
+quand non vide, un lien par poste vers `/eng/[id]/poste/[code]`. Lecture `/api/sante` le jour même
+(règle 22) : aucune bascule ne doit provenir d'un import de comparatif N-1 (jointure
+`fsli_materiality_bascule → import_file → tb_snapshot`, lève si `period_kind = 'prior'`). Station
+clics ajoutée (`scenario.ts`) : la ligne cliquée mène au poste réel.
+
+**Revue hostile, deux voix indépendantes** (rule 30 : tranche touchant le modèle de données) —
+convergence sur un constat, une seule voix sur un second :
+- **Convergent** : `q1(...).catch(() => null)` sur l'insertion `on conflict do nothing` confondait
+  « déjà posée » et « vraie erreur SQL » — corrigé en `q01` (rend `null` sur zéro ligne SANS lever,
+  une vraie erreur continue de se propager).
+- **Voix 1 seule** : le cas connu mauvais « poste système sous le seuil » dépendait d'un état
+  accidentel du monde de démonstration que `bootstrapNep` ne produit plus depuis cette tranche
+  elle-même (chaque poste hors CA y est désormais confirmé) — le test se déclarait « rien à
+  éprouver » à chaque exécution, sans jamais exercer la protection qu'il prétendait garder (règle
+  17). Corrigé : fixture construite explicitement (poste de sonde inséré sous le seuil, jamais
+  confirmé), qui échoue vraiment sans le correctif et passe avec.
+- Non bloquants pour les deux voix, laissés en l'état : lecture `/api/sante` sans compte détaillé
+  par poste (précédent kanban) ; verdict `'garde'` plutôt que `'journal'` sur le geste de verrou ;
+  pas de clé étrangère croisée `import_file_id`/`engagement_id`.
+
+**Verify complet, arbre déjà silencieux** (targeted d'abord — 5/5 vert — puis la chaîne complète,
+conforme à la nouvelle discipline de séquencement) : `timeout 3600 npm run verify … ; echo
+"EXIT=$?"`, EXIT=0 — 130/130 fichiers, 1025/1025 tests, clics 239/0, visuel 328/0.
+
+**SHA servi confirmé** — `dabe2af820e8a8906e7106bd1fc13361b9580019`, déploiement
+`otto-6lh7cl46i-imperator080599.vercel.app` (aperçu, branche
+`claude/otto-session-resume-zimig9`), mesuré par `/api/sante` : HTTP 200, `sha` et
+`shaExecution` identiques, `identiteCoherente:true`, lecture « bascule de matérialité » elle-même
+`ok:true` (VIDE sur ce déploiement — base non semée — sans lever, ce qui est le comportement
+attendu, pas une preuve empruntée à la base locale : les ~8 bascules du monde de démonstration
+sont mesurées LOCALEMENT, citées ci-dessus, jamais confondues avec cette mesure de production).
+
+**Note de processus (correction du fondateur, même jour)** : chaque `verify` de cette tranche a
+bien été lancé avec `timeout 3600` intégré littéralement dans la commande shell (jamais seulement
+dans le libellé de la tâche) ; mesuré directement (`ps aux`, `mtime` du journal) sur demande du
+fondateur après un signalement de run qui semblait bloqué — aucun processus vivant retrouvé, le
+journal cité par le fondateur avait cessé de grossir ~2 h 50 avant la mesure, cohérent avec une
+fin propre plutôt qu'un blocage. Adopté pour la suite : régler d'abord les vérifications ciblées,
+réserver la chaîne complète d'une heure à un arbre qui a déjà cessé de produire des constats.
 
 ## Lot contrôle interne, tranche 9 : §7.4, le kanban des écarts — §7.4 COMPLET (2026-09-09)
 
