@@ -183,7 +183,10 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     encore servi ». L'édition corrigeait toute base FRAÎCHE (`db:reset` part de zéro) mais RIEN à
     la base réseau, qui gardait la table dans sa forme d'origine EN PERMANENCE — `migrate()`
     aurait dû refuser (empreinte différente) au déploiement suivant, ce qui explique à lui seul
-    pourquoi les cinq déploiements suivants sont TOUS restés en ERROR. Corrigé par
+    pourquoi les quatre commits suivants (`a9e88ef`, `3659901`, `7395e55`, `409e1b7` — sept
+    événements de déploiement en tout, `main` et la branche de travail chacun comptés) sont TOUS
+    restés en ERROR (revue hostile du 2026-09-09, voix 2 : « cinq » comptait des COMMITS, pas des
+    ÉVÉNEMENTS de déploiement — deux commits ont chacun produit deux déploiements ERROR). Corrigé par
     `0154_control_population_reconciliation_engagement_id.sql` (ALTER en avant, jamais une
     réédition de 0153) — 0153 elle-même est revenue OCTET POUR OCTET à son contenu d'origine
     (empreinte vérifiée identique à celle de `_migrations` sur la base réseau, par une requête

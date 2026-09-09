@@ -61,6 +61,27 @@ N'IMPORTE QUELLE base qui en porte une, jamais seulement « servie en production
 compte est une requête directe sur `_migrations`, jamais une inférence depuis le statut d'un
 déploiement.
 
+**Revue hostile, deux voix (règle 30 : modèle de données + RLS/multi-tenant), en worktree isolé,
+scopes séparés (voix 1 : correction SQL/DB ; voix 2 : interaction `migrate()`/régression/rule 26).**
+Les deux : SHIP AS-IS, aucun défaut bloquant. Chacune a REFAIT indépendamment la simulation
+`migrate()` (pas relu celle de l'autre), et chacune a trouvé, en interrogeant la base réseau EN
+DIRECT pendant sa propre revue, que **`0154` s'était déjà appliquée avec succès** via le build
+d'aperçu déclenché par `682fc46` — confirmé : `engagement_id` NOT NULL, RLS activée et FORCÉE,
+trigger de verrou présent, `_migrations` porte les deux empreintes attendues, run CI « vérifier »
+(34340452680) vert avec acceptation cliquée réelle contre l'URL déployée. Voix 1 a en plus rejoué
+la preuve manquante règle 17 (cas connu mauvais : rééditer 0153 sur une base à l'état réseau simulé
+déclenche bien `MigrationEditee`) — l'implémentation ne l'avait pas fait elle-même. Voix 2 a
+confirmé le même contrefactuel par les VRAIS journaux de build Vercel des six déploiements après
+l'édition fautive (le message `MigrationEditee` y apparaît mot pour mot), et a trouvé l'imprécision
+« cinq déploiements » (en réalité quatre commits, sept événements de déploiement — corrigé dans
+CLAUDE.md règle 26). Aucun autre défaut.
+
+**`npm run verify` frais, sur arbre gelé après le correctif de libellé ci-dessus** (un premier essai
+tué en cours — un processus `next dev` orphelin d'un worktree d'agent de revue déjà terminé
+saturait le CPU/la mémoire et affamait le propre serveur du run ; règle 35, tué et relancé sur
+système nettoyé) : 123 fichiers, **996/996 tests**, 43 gardes, 87 routes 0 échec, 232 étapes/362
+clics/231 stations, 312 vues 0 défaut, **EXIT=0**.
+
 **Suite immédiate** : pousser ce correctif sur `main`, confirmer que `deploye` réussit enfin (le
 premier passage RÉEL sur cette tranche), puis SHA servi confirmé. Priorité fixée par le second
 mandat du fondateur : cet incident d'abord, avant §1 (table d'échantillonnage), §2 (R30), §3
