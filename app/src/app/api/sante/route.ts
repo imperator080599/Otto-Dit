@@ -710,6 +710,53 @@ async function corpsDeLaSonde() {
           + '(avertissement, jamais bloquant)'
         : 'aucune sélection remplacée sans re-tirage ne porte de travail';
     }));
+    /* MAT-01/MAT-02 (mandat 2026-09-09, §2.4 — livré ce jour, lu ce jour, règle 22). Cette lecture
+       tourne les DEUX obstacles au visa (bascule sans section ouverte ; bascule avec un compte
+       au-dessus du CTT sans demande) à travers le MÊME chemin que `/obstacles`
+       (`obstaclesMaterialite`, obstacles.ts) — jamais une requête refaite à côté, qui pourrait
+       diverger. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que le chemin normal
+       (`detecterBasculesMaterialite`, §2.2/§2.3) résout effectivement chaque bascule — c'est
+       `materialite-bascule.test.ts` qui le fait, avec ses cas connus mauvais construits en
+       fixture ; ici on lit seulement l'état RÉEL du dossier de démonstration. */
+    lectures.push(await essayer('MAT-01/MAT-02 : les obstacles de la bascule de matérialité', async () => {
+      const { obstaclesMaterialite } = await import('@/lib/services/obstacles');
+      const obstacles = await obstaclesMaterialite(id);
+      if (!obstacles.length) return 'aucun obstacle de bascule de matérialité';
+      const mat01 = obstacles.filter((o) => o.cle === 'obst.basculeSansSection').length;
+      const mat02 = obstacles.filter((o) => o.cle === 'obst.basculeSansDemandeCtt').length;
+      return `${obstacles.length} obstacle(s) · MAT-01 (section manquante) : ${mat01} · MAT-02 (demande CTT manquante) : ${mat02}`;
+    }));
+    /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
+       visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
+       `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection
+       remplacée est marquée `superseded` (UPDATE), jamais supprimée ; un papier invalidé passe
+       `outdated` (UPDATE), jamais supprimé ; aucune table (`sample`, `sample_item`, `workpaper`,
+       `signoff`) ne référence `fsli.id` par clé étrangère, donc le `delete from fsli` de
+       `rebuildFslis` ne peut rien entraîner en cascade. La SEULE colonne polymorphe SANS clé
+       étrangère déclarée est `sample_item.unit_id` (quand `unit_kind = 'gl_entry'`, elle vise
+       `gl_entry.id` sans contrainte SQL pour le garantir) — c'est le seul endroit où un ORPHELIN
+       pourrait apparaître sans qu'une contrainte de base ne le refuse d'abord. Cette lecture le
+       vérifie directement. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : qu'un ré-import réel
+       ne PRODUIT jamais cet orphelin — c'est `retirage.test.ts` qui le prouve en rejouant un vrai
+       ré-import et en comptant les lignes avant/après ; ici on lit seulement l'état actuel. */
+    lectures.push(await essayer('MAT-03 : aucun tirage ne pointe une écriture disparue (règle 28)', async () => {
+      const orphelins = await q<{ id: string }>(
+        `select si.id::text from sample_item si
+         join sample s on s.id = si.sample_id
+         where s.engagement_id = $1 and si.unit_kind = 'gl_entry'
+           and not exists (select 1 from gl_entry g where g.id = si.unit_id)`,
+        [id],
+      );
+      if (orphelins.length > 0) {
+        throw new Error(`${orphelins.length} ligne(s) de tirage pointent une écriture de grand livre disparue `
+          + `(${orphelins.map((r) => r.id).join(', ')}) — un ré-import a détruit du travail, MAT-03 violé`);
+      }
+      const total = await q01<{ n: string }>(
+        `select count(*) n from sample_item si join sample s on s.id = si.sample_id where s.engagement_id = $1 and si.unit_kind = 'gl_entry'`,
+        [id],
+      );
+      return `${total?.n ?? 0} ligne(s) de tirage sur écriture de grand livre, aucune orpheline`;
+    }));
     /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
        par défaut que les sections portant du contenu. » `blocPorteContenu`
        est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états

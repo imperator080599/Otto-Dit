@@ -776,6 +776,8 @@ export const LIBELLES = {
   'obst.processusChangementsNonStatues': { en: 'Process {cycle}: {n} year-on-year change(s) not decided', fr: 'Processus {cycle} : {n} changement(s) N/N-1 non statué(s)' },
   'obst.entretienEcartsCandidats': { en: 'Interview of {date}: {n} candidate gap(s) not decided', fr: 'Entretien du {date} : {n} écart(s) candidat(s) non statué(s)' },
   'obst.posteSansProcedure': { en: '{code} — {nom}: in scope, no procedure planned', fr: '{code} — {nom} : retenu au périmètre, aucune procédure planifiée' },
+  'obst.basculeSansSection': { en: '{code} — {nom}: materiality bascule flagged, but its section was never opened (MAT-01)', fr: '{code} — {nom} : bascule de matérialité signalée, mais sa section n’a jamais été ouverte (MAT-01)' },
+  'obst.basculeSansDemandeCtt': { en: '{code} — {nom}: {n} account(s) above CTT, no detail request exists (MAT-02)', fr: '{code} — {nom} : {n} compte(s) au-dessus du CTT, aucune demande de détail n’existe (MAT-02)' },
   'obst.pointageNonPointee': { en: 'Financial statements: {ref} “{libelle}” — not tied out', fr: 'États financiers : {ref} « {libelle} » — non pointée' },
   'obst.pointageEcart': { en: 'Financial statements: {ref} “{libelle}” — difference of {ecart} € unexplained', fr: 'États financiers : {ref} « {libelle} » — écart de {ecart} € non expliqué' },
   'obst.achevementNonOuvert': { en: 'Completion: the completion procedures have not been opened.', fr: 'Achèvement : les travaux d’achèvement n’ont pas été ouverts.' },
@@ -858,6 +860,11 @@ export const LIBELLES = {
   'rail.programme': { en: 'Audit procedures', fr: 'Programme de travail' },
   'rail.quoi.programme': { en: 'What the risk commands, planned procedure by procedure.', fr: 'Ce que le risque commande, procédure par procédure planifiée.' },
   'rail.raison.apresRisque': { en: 'as soon as a risk is assessed on a line item', fr: 'dès qu’un risque est évalué sur un poste' },
+  'famille.materialite.titre': { en: 'Materiality bascule', fr: 'Bascule de matérialité' },
+  'famille.materialite.pourquoi': {
+    en: 'A line item that became material this way must have its section reachable and, above CTT, its accounts requested.',
+    fr: 'Un poste devenu matériel de cette façon doit avoir sa section atteignable et, au-dessus du CTT, ses comptes demandés.',
+  },
   'famille.tirage.titre': { en: 'Selection re-drawn', fr: 'Tirage refait' },
   'famille.tirage.pourquoi': {
     en: 'A new draw leaves behind lines already worked on. Work is never dropped in silence: for each one, someone writes why it does not follow.',

@@ -38,6 +38,9 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
   let nouveau: string;  // celui du grand livre définitif
   let clefsRepondues: string[] = [];
   let clefAvecPiece = '';
+  /* MAT-03 (mandat 2026-09-09, §2.4) : comptes AVANT le ré-import du FEC définitif, pour prouver
+     — pas supposer — qu'aucune ligne de `sample_item`/`workpaper`/`signoff` ne disparaît. */
+  let avantReimport: { sampleItems: number; workpapers: number; signoffs: number };
 
   beforeAll(async () => {
     await initTestDb();
@@ -85,6 +88,19 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
     }
     clefsRepondues = items.map((x) => x.nk);
 
+    /* MAT-03 : la mesure AVANT, pas une supposition — comptée juste avant le geste qui pourrait
+       détruire, sur le même dossier, avant que rien d'autre ne bouge. */
+    avantReimport = {
+      sampleItems: Number((await q1<{ n: string }>(
+        `select count(*) n from sample_item si join sample s on s.id = si.sample_id where s.engagement_id = $1`,
+        [IDS.engNep]))!.n),
+      workpapers: Number((await q1<{ n: string }>(
+        `select count(*) n from workpaper where engagement_id = $1`, [IDS.engNep]))!.n),
+      signoffs: Number((await q1<{ n: string }>(
+        `select count(*) n from signoff so join workpaper w on w.id = so.workpaper_id where w.engagement_id = $1`,
+        [IDS.engNep]))!.n),
+    };
+
     /* 2. LE FEC DÉFINITIF, invalidation confirmée (ADR-016) : chaque écriture est recréée
           avec un NOUVEL identifiant, et l'échantillon passe en `superseded`. */
     await importFec({
@@ -107,6 +123,36 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
       [nouveau, clefsRepondues]);
     clefAvecPiece = commune?.nk ?? '';
   }, 180000);
+
+  it('MAT-03 : le ré-import du FEC définitif ne détruit AUCUNE ligne de tirage, papier ou visa', async () => {
+    /* Comparé à la mesure prise juste avant le ré-import (`avantReimport`, ci-dessus) — jamais une
+       valeur supposée. Un `<` signalerait une VRAIE destruction (règle 28) ; un `superseded` ou un
+       `outdated` sont des UPDATE, jamais une disparition de ligne — le compte ne peut donc que
+       monter ou rester stable, jamais descendre. */
+    const apres = {
+      sampleItems: Number((await q1<{ n: string }>(
+        `select count(*) n from sample_item si join sample s on s.id = si.sample_id where s.engagement_id = $1`,
+        [IDS.engNep]))!.n),
+      workpapers: Number((await q1<{ n: string }>(
+        `select count(*) n from workpaper where engagement_id = $1`, [IDS.engNep]))!.n),
+      signoffs: Number((await q1<{ n: string }>(
+        `select count(*) n from signoff so join workpaper w on w.id = so.workpaper_id where w.engagement_id = $1`,
+        [IDS.engNep]))!.n),
+    };
+    expect(apres.sampleItems, 'aucune ligne de tirage ne doit disparaître').toBeGreaterThanOrEqual(avantReimport.sampleItems);
+    expect(apres.workpapers, 'aucun papier ne doit disparaître').toBeGreaterThanOrEqual(avantReimport.workpapers);
+    expect(apres.signoffs, 'aucun visa ne doit disparaître').toBeGreaterThanOrEqual(avantReimport.signoffs);
+    /* La colonne polymorphe SANS clé étrangère (`sample_item.unit_id`, quand `unit_kind =
+       'gl_entry'`) est le seul endroit où un orphelin pourrait apparaître sans qu'une contrainte
+       de base ne le refuse — même lecture que `/api/sante` (« MAT-03 »), rejouée ici après un VRAI
+       ré-import plutôt que sur un état statique. */
+    const orphelins = await q<{ id: string }>(
+      `select si.id::text from sample_item si join sample s on s.id = si.sample_id
+       where s.engagement_id = $1 and si.unit_kind = 'gl_entry'
+         and not exists (select 1 from gl_entry g where g.id = si.unit_id)`,
+      [IDS.engNep]);
+    expect(orphelins, 'aucune ligne de tirage ne doit pointer une écriture disparue').toEqual([]);
+  });
 
   it('LE CAS CONNU MAUVAIS : les deux tirages désignent les mêmes écritures par des identifiants différents', async () => {
     const r = await q1<{ communes: string; memeid: string }>(

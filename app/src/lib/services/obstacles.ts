@@ -1,4 +1,4 @@
-import { q } from '@/lib/db/client';
+import { q, q01 } from '@/lib/db/client';
 import { independenceObstacles } from './team';
 import { questionnaireObstacles } from './questionnaire';
 import { obstaclesReprise } from './carryforward';
@@ -13,7 +13,9 @@ import { obstaclesEntretiens } from './entretiens';
 import { motif, type Motif } from './motif';
 import { lignesNonConclues } from './testing/grille';
 import { sortiesNonStatuees, lignesSuperseesSansRetirage } from './sampling';
-import { frameworkSet } from './fsli';
+import { frameworkSet, fsliAccounts } from './fsli';
+import { EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT } from './requests';
+import { numToCents } from '@/lib/util/num';
 import { primaryPack } from '@/lib/packs';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
@@ -36,7 +38,7 @@ import { primaryPack } from '@/lib/packs';
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
-  | 'ipe' | 'tirage';
+  | 'ipe' | 'tirage' | 'materialite';
 
 export interface Obstacle {
   famille: Famille;
@@ -61,6 +63,7 @@ const OU: Record<Famille, string> = {
   jalons: 'acceptance',
   circularisation: 'circularisations',
   tirage: 'sampling',
+  materialite: 'materiality',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -177,6 +180,9 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
     verifs: l.travail.verifs, extras: l.travail.extras,
   })));
 
+  /* 6 ter. LA BASCULE DE MATÉRIALITÉ NON RÉSOLUE (mandat 2026-09-09, §2.4 — MAT-01/MAT-02). */
+  ajoute('materialite', await obstaclesMaterialite(engagementId));
+
   // 7. Le pointage des états financiers.
   ajoute('pointage', await obstaclesPointage(engagementId));
 
@@ -230,6 +236,79 @@ export async function obstaclesLignes(engagementId: string): Promise<Motif[]> {
   const out: Motif[] = [];
   if (l.nonConclues > 0) out.push(motif('obst.lignesNonConclues', { n: l.nonConclues, total: l.total }));
   if (l.perimees > 0) out.push(motif('obst.lignesConclusionPerimee', { n: l.perimees }));
+  return out;
+}
+
+/**
+ * MAT-01/MAT-02 (mandat 2026-09-09, §2.4) : les bascules de matérialité (§2.1) qui restent NON
+ * RÉSOLUES — même filtre que `fsli.ts::basculesMaterialite` (`scoping` toujours non matériel ;
+ * une fois qu'un humain confirme le poste au périmètre, le programme normal prend le relais et
+ * ces obstacles spécifiques s'effacent d'eux-mêmes, sans qu'on retire la ligne permanente de
+ * `fsli_materiality_bascule`, règle 28).
+ *
+ * MAT-01 — une bascule SANS section ouverte. DÉFENSE EN PROFONDEUR : sous le chemin normal,
+ * `detecterBasculesMaterialite` (fsli.ts, §2.2) pose la section dans LA MÊME transaction logique
+ * que le drapeau — cette branche ne devrait donc jamais s'exercer en pratique. Elle existe pour
+ * la même raison que CTRL-01/02/03 revérifient au visa ce qu'un chemin amont garantit déjà :
+ * un appel futur au drapeau hors de ce chemin, ou une suppression manuelle de la section, ne
+ * doit pas rester invisible.
+ *
+ * MAT-02 — une bascule dont AU MOINS UN compte dépasse le CTT COURANT, sans qu'aucune demande
+ * `EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT` n'existe pour ce poste. Recalculé contre la matérialité
+ * VALIDÉE courante (pas celle capturée au moment de la bascule, `fsli_materiality_bascule.
+ * seuil_performance`) : un CTT revalidé depuis peut faire apparaître ou disparaître l'obstacle,
+ * et c'est voulu — le visa regarde l'état ACTUEL du dossier, pas l'instant de la détection.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : que la demande CTT existante liste
+ * effectivement les BONS comptes (couvert par `materialite-bascule.test.ts`, pas ici) — MAT-02 ne
+ * regarde que l'EXISTENCE d'une demande, jamais son contenu.
+ */
+export async function obstaclesMaterialite(engagementId: string): Promise<Motif[]> {
+  const out: Motif[] = [];
+  const bascules = await q<{ fsli_code: string; fsli_name: string | null }>(
+    `select b.fsli_code, f.name fsli_name from fsli_materiality_bascule b
+     left join fsli f on f.engagement_id = b.engagement_id and f.code = b.fsli_code
+     where b.engagement_id = $1 and (f.scoping is null or f.scoping in ('unscoped', 'ns_proposed', 'ns_confirmed'))`,
+    [engagementId],
+  );
+  if (!bascules.length) return out;
+
+  // MAT-01 : la section devrait TOUJOURS exister (§2.2) — vérifié quand même, jamais supposé.
+  const sansSection = await q<{ fsli_code: string }>(
+    `select b.fsli_code from fsli_materiality_bascule b
+     where b.engagement_id = $1
+       and not exists (
+         select 1 from section_state s
+         where s.engagement_id = b.engagement_id and s.kind = 'poste' and s.ref = b.fsli_code)`,
+    [engagementId],
+  );
+  const sansSectionCodes = new Set(sansSection.map((r) => r.fsli_code));
+  for (const b of bascules) {
+    if (sansSectionCodes.has(b.fsli_code)) {
+      out.push(motif('obst.basculeSansSection', { code: b.fsli_code, nom: b.fsli_name ?? b.fsli_code }));
+    }
+  }
+
+  // MAT-02 : recalculé contre le CTT VALIDÉ courant (pas celui figé sur la ligne de bascule).
+  const mat = await q01<{ ctt_amount: string }>(
+    `select ctt_amount::text from materiality where engagement_id = $1 and status = 'validated'
+     order by version desc limit 1`,
+    [engagementId],
+  );
+  if (mat) {
+    const cttCents = numToCents(mat.ctt_amount);
+    for (const b of bascules) {
+      const aDemande = await q01(
+        `select 1 from request where engagement_id = $1 and fsli_code = $2 and evidence_type_code = $3`,
+        [engagementId, b.fsli_code, EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT],
+      );
+      if (aDemande) continue;
+      const comptes = (await fsliAccounts(engagementId, b.fsli_code)).filter((c) => Math.abs(c.balanceCents) >= cttCents);
+      if (comptes.length > 0) {
+        out.push(motif('obst.basculeSansDemandeCtt', { code: b.fsli_code, nom: b.fsli_name ?? b.fsli_code, n: comptes.length }));
+      }
+    }
+  }
   return out;
 }
 
