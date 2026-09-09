@@ -139,14 +139,41 @@ validation tracée.
 
 ---
 
-## 5. L'épure : le verdict est différé, à la demande du fondateur
+## 5. L'épure : direction de design donnée par le fondateur (amendement du 2026-09-09)
 
-**Décision du fondateur :** *« pour le design, j'attends le rendu finalisé, je ferai mes remarques
-après. »*
+Le §5 initial différait le verdict esthétique. Le fondateur donne maintenant la direction ;
+R59-R62 sont rouverts dans ce cadre.
 
-Conséquence, pour que personne n'attende personne : **R59 à R62 restent reportés**, l'agent ne les
-rouvre pas et ne réclame pas d'arbitrage esthétique. L'épreuve mécanique de D.6 continue de
-s'appliquer à tout écran neuf — elle, elle ne se différe pas.
+Référence assumée : le langage visuel d'Optro.ai — inspiration, jamais copie.
+
+**Ce qui est repris :** fond neutre chaud (ivoire, pas blanc pur) ; cartes blanches, rayon
+généreux, ombre quasi nulle, filets d'un pixel ; densité aérée (hauteur de ligne large, pas de
+zébrures) ; UN seul accent saturé (violet) réservé aux états et aux actions ; couleurs sémantiques
+désaturées (rouge/ambre/vert doux), jamais vives ; forte hiérarchie typographique — titres larges
+et légers, micro-libellés minuscules en CAPITALES ; monospace en capitales pour les codes
+techniques ; rail d'icônes fin à gauche, sous-navigation par onglets à soulignement discret ;
+grands chiffres légers pour les compteurs.
+
+**Ce que cela sert :** le monospace en petites capitales donne enfin sa forme au D.6 point 1 — la
+phrase en français d'abord, le code de refus ensuite, en petit.
+
+**Ce qui est interdit :** le logo, le nom, le wordmark et les écrans d'Optro ; toute reprise ou
+imitation des graphiques Forrester Wave et Gartner Magic Quadrant — documents d'analystes tiers,
+protégés, dont l'un porte une interdiction explicite de reproduction — et a fortiori tout écran qui
+y placerait OTTO, ce qui fabriquerait une caution qui n'existe pas.
+
+**Placement, tranché par le fondateur : (c) puis (a).** À partir de maintenant, TOUT écran neuf
+naît directement dans ce langage — aucune exception, aucune dette de style créée. La repasse
+rétroactive sur les écrans existants est un LOT DÉDIÉ, placé en file et déclenché par le fondateur
+avant la présentation ; l'agent n'en invente ni la date ni le déclencheur, et ne l'ouvre pas de
+lui-même.
+
+Premier geste concret : engendrer le jeton de design (couleurs, échelle typographique, rayons,
+ombres, espacements) comme une source unique, avant le premier écran neuf — pour que la repasse
+future soit un changement de jetons et non une réécriture d'écrans.
+
+Les épreuves mécaniques de D.6 continuent de s'appliquer inchangées : aucun code technique en tête
+de message, aucun état vide muet, tout compteur mène quelque part.
 
 ---
 

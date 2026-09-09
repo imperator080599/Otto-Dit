@@ -222,25 +222,25 @@
       "id": "R59",
       "etat": "reporté — D.6 point 2 (le rail n'ouvre par défaut que les groupes portant du travail) non traité : entre en tension avec ADR-103 (le rail grisé-avec-raison déjà en place dans nav.tsx) et recoupe le fil déjà déféré R39/DA-33. Nécessite un plafond honnête qui laisse le déplié-par-défaut intact, ou un arbitrage explicite du fondateur — décidé de ne pas deviner.",
       "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
-      "note": "Lot 4 clos sans ce point (mandat contrôle interne du 2026-09-08, §0 : orienter vers la capacité, pas le polissage). Reporté au Lot 4a suivant ou à un mandat qui le nomme."
+      "note": "Lot 4 clos sans ce point (mandat contrôle interne du 2026-09-08, §0 : orienter vers la capacité, pas le polissage). Reporté au Lot 4a suivant ou à un mandat qui le nomme. ROUVERT le 2026-09-09 (mandat_reponses_fondateur.md §5, amendement) — direction de design donnée, mais la tension ADR-103 elle-même reste NON résolue par le §5 (qui porte sur le langage visuel, pas le repli du rail) : reste en l'état jusqu'à un arbitrage explicite."
     },
     {
       "id": "R60",
       "etat": "reporté — D.6 point 4 (tout compteur affiché mène quelque part) non traité : aucune fixture de faux positif écrite, aucun inventaire des compteurs affichés fait.",
       "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
-      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé. ROUVERT le 2026-09-09 (mandat_reponses_fondateur.md §5) — direction de design donnée ; travail à construire dans le nouveau langage (jeton de design d'abord)."
     },
     {
       "id": "R61",
       "etat": "reporté — D.6 point 5 (aucun état vide muet) non traité : le cas layout.tsx:59 (portail client) identifié comme premier candidat de fixture (règle 25), jamais construit.",
       "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
-      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé. ROUVERT le 2026-09-09 (mandat_reponses_fondateur.md §5) — direction de design donnée ; travail à construire dans le nouveau langage (jeton de design d'abord)."
     },
     {
       "id": "R62",
       "etat": "reporté — D.6 point 6 (parcours « découverte » chronométré avec plafond verdict) non traité : distinct du compteur descriptif déjà mesuré par npm run clics (362 clics/48 gestes).",
       "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
-      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé."
+      "note": "Lot 4 clos sans ce point (même raison que R59). Travail non commencé. ROUVERT le 2026-09-09 (mandat_reponses_fondateur.md §5) — direction de design donnée ; travail à construire dans le nouveau langage (jeton de design d'abord)."
     },
     {
       "id": "R63",

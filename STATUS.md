@@ -82,10 +82,19 @@ saturait le CPU/la mémoire et affamait le propre serveur du run ; règle 35, tu
 système nettoyé) : 123 fichiers, **996/996 tests**, 43 gardes, 87 routes 0 échec, 232 étapes/362
 clics/231 stations, 312 vues 0 défaut, **EXIT=0**.
 
-**Suite immédiate** : pousser ce correctif sur `main`, confirmer que `deploye` réussit enfin (le
-premier passage RÉEL sur cette tranche), puis SHA servi confirmé. Priorité fixée par le second
-mandat du fondateur : cet incident d'abord, avant §1 (table d'échantillonnage), §2 (R30), §3
-(vidéo).
+**Résolu — SHA servi confirmé = `ad94372`.** Le fondateur a résolu le déploiement directement
+(plus fiable que d'attendre une notification CI, quatre fois coûteux ce jour-là — CLAUDE.md §7,
+« aucune attente non bornée ») et instruit de mesurer plutôt que d'attendre. Confirmé en direct
+(`mcp__Vercel__web_fetch_vercel_url`, 2026-09-09T12:20:00Z) : HTTP 200, `identiteCoherente=true`,
+« toutes les lectures passent » — **CTRL-04** `ok:true`, detail « 3 tirage(s) OE — 0 couvert(s)
+par un rapprochement de population, 3 legacy (antérieur(s) à CTRL-04, 2026-09-01) » (les trois
+legacy attendus, R69, aucun nouveau). R44 : 89/16/32/41, inchangé. `docs/instantanes/servi.json`
+et `docs/REPRISE.md` régénérés dans le même geste (« servi ad94372 = HEAD »).
+
+**Priorité fixée par le second mandat du fondateur, maintenant que cet incident est clos** : §1
+(table d'échantillonnage cherchée/sourcée) puis §2 (R30 — drapeau de bascule de matérialité,
+MAT-01/02/03) puis §3 (vidéo, dépôt manuel). Reprise ensuite du lot contrôle interne (§7.3
+restant : CTRL-06 ; puis §7.4, suivi de mission) sous la même permission et cadence.
 
 ## Lot contrôle interne, tranche 6 : CTRL-04, le rapprochement de la population d'OE (2026-09-09)
 

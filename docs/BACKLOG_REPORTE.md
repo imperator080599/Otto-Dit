@@ -649,6 +649,17 @@ déjà livrées du Lot 4 comme ayant « fermé de la dette et affiné l'épure �
 suite vers la CAPACITÉ neuve plutôt que le polissage — Lot 4 est donc considéré clos avec ce qui est
 en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement abandonnés (règle 23).**
 
+**R59-R62 ROUVERTS (`docs/MANDATS/2026-09-09_mandat_reponses_fondateur.md`, §5, amendement du
+2026-09-09) — le fondateur donne maintenant la direction de design (langage inspiré d'Optro.ai,
+détail au §5) au lieu de différer le verdict esthétique. Ce que l'amendement change concrètement
+pour ces quatre points : R59 (le rail par défaut) reste en tension avec ADR-103 — CETTE tension-là
+n'est PAS résolue par le §5, qui porte sur le langage visuel (couleurs, typographie, densité), pas
+sur la logique de repli du rail ; R59 reste donc en l'état, à rouvrir séparément si le fondateur
+tranche ADR-103. R60, R61, R62 restent du travail non commencé, maintenant DÉBLOQUÉ pour être
+construit dans le nouveau langage dès qu'il est engendré (le jeton de design, premier geste
+concret du §5) — mais aucun des quatre n'est automatiquement résolu par la seule direction de
+design : chacun reste une tranche à construire.**
+
 - **R63 — course sur `control_task.seq_no` sous double appel concurrent d'`ajouterTacheControle`,
   erreur Postgres brute plutôt qu'un refus en français.** Trouvé par la revue hostile du
   2026-09-08 (voix 2), lot contrôle interne tranche 1 : `Promise.allSettled([ajouterTacheControle
