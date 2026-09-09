@@ -82,8 +82,11 @@ régression). Confirmé, PAS supposé (règle 18) : `screens.test.ts` rejoué SE
 verify … ; echo "EXIT=$?"`, **EXIT=0** — 135/135 fichiers, 1041/1041 tests, écrans 91+53/0
 échec, clics 241/0 (379 clics, 231 stations vérifiées), visuel 328/0.
 
-**SHA servi** : à confirmer après le push (commit `c61a5f1`), par `/api/sante` sur le déploiement
-d'aperçu de cette branche — voir l'entrée qui suit.
+**SHA servi confirmé = `a6ec6fb`** (mesuré en direct, `mcp__Vercel__web_fetch_vercel_url`, jamais une
+attente de CI, règle 36) : HTTP 200, `identiteCoherente:true`, toutes les lectures passent — les deux
+lectures MAT-01/MAT-02 et MAT-03 comprises, `ok:true`, VIDE sur la donnée de démonstration actuelle
+(aucune bascule n'y existe encore, donc rien à signaler — pas de faux positif). §2 du mandat du
+9 septembre est maintenant COMPLET et servi. Prochain : §3 (vidéo de walkthrough).
 
 ## Lot mandat 9 septembre, §2.2/§2.3 : section ouverte et demande de détail CTT (2026-09-09)
 
