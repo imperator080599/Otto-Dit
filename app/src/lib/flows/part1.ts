@@ -4,7 +4,7 @@ import { repoRoot, q, q1, q01 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from '@/lib/services/imports';
 import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/services/reconciliation';
-import { rebuildFslis, proposeScoping, confirmScoping, listFslis } from '@/lib/services/fsli';
+import { rebuildFslis, proposeScoping, confirmScoping, listFslis, detecterBasculesMaterialite } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
 import { assessFsli } from '@/lib/services/risk';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
@@ -36,7 +36,7 @@ interface ManifestT { substantiveAnomalies: { id: string; taxonomy: string[]; un
 
 export async function bootstrapNep(): Promise<void> {
   const tb = fs.readFileSync(ds('tb_2025.csv'), 'utf8');
-  await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2025.csv', content: tb, mapping: detectTbMapping(tb.split('\n')[0]), periodKind: 'current' });
+  const { importFileId: tbCourantId } = await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2025.csv', content: tb, mapping: detectTbMapping(tb.split('\n')[0]), periodKind: 'current' });
   const tbPrior = fs.readFileSync(ds('tb_2024.csv'), 'utf8');
   await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2024.csv', content: tbPrior, mapping: detectTbMapping(tbPrior.split('\n')[0]), periodKind: 'prior' });
   await importFec({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: '999888777FEC20251231.txt', bytes: fs.readFileSync(ds('999888777FEC20251231.txt')) });
@@ -84,6 +84,15 @@ export async function bootstrapNep(): Promise<void> {
         ? undefined                                  // le moteur l'a proposé : son motif suffit
         : MOTIF_DEMO);
   }
+
+  /* LA BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1) — le monde de démonstration en porte
+     une RÉELLE, sans qu'il faille en fabriquer une : plusieurs postes ci-dessus (la paie, 2,6 M€)
+     sont confirmés `ns_confirmed` pour la convention du jeu synthétique (MOTIF_DEMO) alors que
+     leur solde dépasse déjà largement la matérialité de travail. C'est exactement le cas que le
+     drapeau existe pour nommer — détecté ici par le MÊME chemin que `uploadTbAction`
+     (imports/actions.ts), sur le VRAI `import_file_id` du TB déjà importé, jamais une ligne
+     fabriquée à part. */
+  await detecterBasculesMaterialite(IDS.engNep, tbCourantId, IDS.users.lea);
 
   /* LE RISQUE PAR ASSERTION, ÉVALUÉ — l'écran était VIDE dans la démonstration.
      `assessFsli` n'était appelé que par le dossier N-1 : sur le dossier

@@ -1121,6 +1121,37 @@ async function corpsDeLaSonde() {
     return `${total.n} écart(s) · ${dansColonnes.n} en colonne(s) · ${limites.n} en scope_limitation (sans écran, R71)`;
   }));
 
+  /* LA BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1 — migration 0156, livré ce jour, lu ce
+     jour, règle 22). Le garde vit dans `uploadTbAction` (imports/actions.ts) : la détection ne
+     tourne QUE sur un import de l'exercice COURANT (`periodKind === 'current'`) — un comparatif
+     N-1 ne dit rien du périmètre de la mission auditée. Cette lecture vérifie l'exact inverse de
+     ce que ce garde doit garantir : AUCUNE ligne `fsli_materiality_bascule` ne doit remonter à un
+     `tb_snapshot` de période `'prior'`. Elle ne peut donc rougir que si ce garde a été contourné —
+     un appel direct à `detecterBasculesMaterialite` hors du chemin gardé, ou une régression qui
+     retire la condition `periodKind === 'current'`. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle
+     19) : que la bascule elle-même reflète fidèlement un VRAI franchissement de seuil (couvert
+     par `materialite-bascule.test.ts`, cas connu mauvais + protecteur, pas ici). */
+  lectures.push(await essayer('bascule de matérialité : aucune ne provient d’un import de comparatif (N-1)', async () => {
+    const surComparatif = await q<{ fsli_code: string; filename: string }>(
+      `select b.fsli_code, i.filename from fsli_materiality_bascule b
+       join import_file i on i.id = b.import_file_id
+       join tb_snapshot s on s.import_file_id = b.import_file_id
+       where s.period_kind = 'prior'`,
+    );
+    if (surComparatif.length > 0) {
+      throw new Error(`${surComparatif.length} bascule(s) de matérialité posée(s) sur un import de comparatif N-1 `
+        + `(${surComparatif.map((r) => `${r.fsli_code}:${r.filename}`).join(', ')}) — `
+        + 'uploadTbAction ne détecte les bascules que sur periodKind==="current" : contourné, ou le garde a été retiré par régression');
+    }
+    const total = await q01<{ n: string }>(`select count(*) n from fsli_materiality_bascule`);
+    if (!total || Number(total.n) === 0) return 'aucune bascule pour l’instant';
+    const sansProcedure = await q01<{ n: string }>(
+      `select count(*) n from fsli_materiality_bascule b
+       where not exists (select 1 from procedure_instance p where p.engagement_id = b.engagement_id and p.fsli_code = b.fsli_code)`,
+    );
+    return `${total.n} bascule(s) posée(s) · ${sansProcedure?.n ?? 0} sans aucune procédure au dossier`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

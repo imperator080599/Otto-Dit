@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
 import { importTb, importFec, detectTbMapping, type CaptureIpe } from '@/lib/services/imports';
 import { lireDateFr } from '@/lib/services/engagement';
-import { rebuildFslis } from '@/lib/services/fsli';
+import { rebuildFslis, detecterBasculesMaterialite } from '@/lib/services/fsli';
 
 // LES ACTIONS D'IMPORT, DANS LEUR PROPRE MODULE — et avec leurs refus RENDUS.
 //
@@ -63,8 +63,14 @@ export async function uploadTbAction(formData: FormData): Promise<never> {
   return executer(id, async () => {
     const content = Buffer.from(await file.arrayBuffer()).toString('utf8');
     const mapping = detectTbMapping(content.split(/\r?\n/)[0] ?? '');
-    await importTb({ engagementId: id, userId: user.id, filename: file.name, content, mapping, periodKind, ipe: captureIpe(formData) });
+    const { importFileId } = await importTb({ engagementId: id, userId: user.id, filename: file.name, content, mapping, periodKind, ipe: captureIpe(formData) });
     await rebuildFslis(id, user.id).catch(() => undefined);
+    /* LA BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1) SE DÉTECTE SUR L'EXERCICE COURANT
+       SEULEMENT — un import de comparatif N-1 (`periodKind === 'prior'`) ne dit rien du périmètre
+       de la mission auditée cette année. */
+    if (periodKind === 'current') {
+      await detecterBasculesMaterialite(id, importFileId, user.id).catch(() => undefined);
+    }
   });
 }
 

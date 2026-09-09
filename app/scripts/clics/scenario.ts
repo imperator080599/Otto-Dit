@@ -854,6 +854,27 @@ export async function conduire(
       t.match(/[\d \s]{4,}€/)?.[0]?.trim() ?? 'affichée');
   });
 
+  // ── 5b. LA BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1) — le monde de
+  // démonstration en porte plusieurs (payroll, PPE, achats… confirmés
+  // ns_confirmed pour la convention du jeu synthétique, tous au-dessus de la
+  // matérialité de travail dès le premier import, `detecterBasculesMaterialite`
+  // appelé depuis `bootstrapNep`). Une carte de la liste doit mener à un
+  // poste RÉEL — même discipline que le kanban (mandat §6 point 8).
+  await station('bascule de matérialité : un poste devenu matériel mène au poste réel', async () => {
+    await aller(`${eng}/materiality`);
+    const lignes = await compte('[data-bascules] table.data tbody tr');
+    dire('bascule : au moins un poste devenu matériel est listé',
+      lignes > 0, `${lignes} ligne(s)`);
+    if (lignes === 0) return;
+    const lien = p.locator('[data-bascules] table.data tbody tr a').first();
+    const cible = await lien.getAttribute('href').catch(() => null);
+    if (!cible) { dire('bascule : la ligne mène quelque part', false, 'aucun lien'); return; }
+    await cliquer('[data-bascules] table.data tbody tr a');
+    dire('bascule : le lien ouvre bien la page du poste',
+      p.url().includes('/poste/') && p.url().endsWith(cible.split('/').pop()!),
+      p.url());
+  });
+
   // ── 6. PÉRIMÈTRE : la dixième famille d'obstacles, démontrée AU CLIC
   await station('périmètre sans programme', async () => {
     await aller(`${eng}/scoping`);

@@ -1786,6 +1786,14 @@ export const LIBELLES = {
   'kanban.redigerEnLot': { en: 'Draft the clarification request ({n})', fr: 'Rédiger la demande de clarification ({n})' },
   'kanban.enAttenteDepuis': { en: 'awaiting the client, {n} day(s)', fr: 'en attente du client depuis {n} jour(s)' },
   'kanban.resoudreOuEscalader': { en: 'resolve or escalate →', fr: 'résoudre ou escalader →' },
+  // ── La bascule de matérialité (mandat 2026-09-09, §2.1) ───────────────────
+  'mat.basculeTitre': { en: 'Line items newly material', fr: 'Postes devenus matériels' },
+  'mat.basculeAide': { en: 'Confirmed non-material, but the current balance now exceeds performance materiality — see if testing was missed.', fr: 'Confirmés non matériels, mais le solde courant dépasse désormais la matérialité de travail — voir si du testing a été loupé.' },
+  'mat.solde': { en: 'Balance', fr: 'Solde' },
+  'mat.basculeImport': { en: 'Caused by', fr: 'Causé par' },
+  'mat.basculeProcedures': { en: 'Procedures on file', fr: 'Procédures au dossier' },
+  'mat.basculeAucuneProcedure': { en: 'none — nothing was ever planned', fr: 'aucune — rien n’a jamais été planifié' },
+  'mat.basculeNProcedures': { en: '{n} already planned', fr: '{n} déjà planifiée(s)' },
 } satisfies Record<string, Entree>;
 
 export type CleLibelle = keyof typeof LIBELLES;

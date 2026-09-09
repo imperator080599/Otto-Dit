@@ -121,6 +121,83 @@ export async function proposeScoping(engagementId: string, userId: string): Prom
   });
 }
 
+/**
+ * LE DRAPEAU DE BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1 — migration 0156).
+ *
+ * « Voir si on a loupé du testing » : le cas qui compte n'est PAS celui que `proposeScoping`
+ * corrige déjà tout seul (un FSLI système, jamais confirmé, dont le solde franchit le seuil — il
+ * passe `in_scope` de lui-même au prochain appel). Le cas qui compte est celui qu'un HUMAIN a
+ * confirmé non matériel une année, et dont le solde dépasse la matérialité de performance CETTE
+ * année après un nouvel import — `proposeScoping` ne le touchera JAMAIS (D9, `confirmed_by`
+ * posé). Cette fonction compare donc le SOLDE COURANT à la matérialité VALIDÉE pour TOUT FSLI dont
+ * le `scoping` reste non matériel, système ou humain confondus — jamais seulement ceux que
+ * `proposeScoping` vient de faire basculer.
+ *
+ * PREMIER IMPORT QUI FRANCHIT LE SEUIL GAGNE (`unique (engagement_id, fsli_code)`, migration
+ * 0156) : un ré-import ultérieur ne pose pas une seconde ligne. Le drapeau, une fois posé, ne se
+ * retire JAMAIS (règle 28) — il reste le dossier permanent « ce jour-là, ce poste a basculé »,
+ * même si un humain confirme ensuite le poste en scope. CE QUE CETTE FONCTION NE FAIT PAS (règle
+ * 19) : elle n'ouvre pas la section ni ne crée la demande de détail (§2.2/§2.3, tranches
+ * suivantes) — un drapeau posé ici n'est encore qu'un CONSTAT, pas un geste sur le dossier.
+ */
+export async function detecterBasculesMaterialite(
+  engagementId: string, importFileId: string, userId: string | null,
+): Promise<{ fsliCode: string }[]> {
+  const ctx = await engagementCtx(engagementId);
+  const mat = await q01<{ perf_amount: string }>(
+    `select perf_amount::text from materiality where engagement_id = $1 and status = 'validated'
+     order by version desc limit 1`,
+    [engagementId],
+  );
+  if (!mat) return []; // aucune matérialité validée pour l'instant : rien à comparer, pas une erreur
+  const seuil = numToCents(mat.perf_amount);
+  const candidats = await q<{ code: string; balance: string; scoping: string }>(
+    `select code, balance::text, scoping from fsli
+     where engagement_id = $1 and scoping in ('unscoped', 'ns_proposed', 'ns_confirmed')`,
+    [engagementId],
+  );
+  const bascules: { fsliCode: string }[] = [];
+  for (const f of candidats) {
+    if (Math.abs(numToCents(f.balance)) < seuil) continue;
+    const pose = await q1<{ id: string | null }>(
+      `insert into fsli_materiality_bascule
+         (engagement_id, fsli_code, import_file_id, scoping_avant, solde, seuil_performance)
+       values ($1,$2,$3,$4,$5,$6)
+       on conflict (engagement_id, fsli_code) do nothing
+       returning id`,
+      [engagementId, f.code, importFileId, f.scoping, f.balance, mat.perf_amount],
+    ).catch(() => null);
+    if (!pose?.id) continue; // déjà flaggé par un import antérieur — premier gagne
+    bascules.push({ fsliCode: f.code });
+    await logEvent({
+      tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
+      verb: 'materialite_basculee', objectType: 'fsli', objectId: f.code,
+      payload: { fsliCode: f.code, scopingAvant: f.scoping, solde: f.balance, seuilPerformance: mat.perf_amount, importFileId },
+    });
+  }
+  return bascules;
+}
+
+/** Les bascules non résolues du dossier — celles dont le FSLI reste non matériel dans le champ
+ *  `scoping` (un humain a pu confirmer entre-temps ; alors l'obstacle qu'elles portaient n'a plus
+ *  lieu d'être compté, même si la ligne historique reste, elle, permanente — règle 28). */
+export async function basculesMaterialite(engagementId: string) {
+  return q<{
+    fsliCode: string; fsliName: string | null; importFilename: string; detecteeLe: string;
+    solde: string; seuilPerformance: string; procedureCount: string;
+  }>(
+    `select b.fsli_code "fsliCode", f.name "fsliName", i.filename "importFilename", b.detectee_le::text "detecteeLe",
+            b.solde::text, b.seuil_performance::text "seuilPerformance",
+            (select count(*)::text from procedure_instance p where p.engagement_id = b.engagement_id and p.fsli_code = b.fsli_code) "procedureCount"
+     from fsli_materiality_bascule b
+     left join fsli f on f.engagement_id = b.engagement_id and f.code = b.fsli_code
+     join import_file i on i.id = b.import_file_id
+     where b.engagement_id = $1 and (f.scoping is null or f.scoping in ('unscoped', 'ns_proposed', 'ns_confirmed'))
+     order by b.detectee_le`,
+    [engagementId],
+  );
+}
+
 export async function confirmScoping(
   fsliId: string,
   userId: string,

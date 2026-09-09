@@ -1,7 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import { requireMember } from '@/lib/core/auth';
+import Link from 'next/link';
 import { propose, validate, currentMateriality, materialityVersions } from '@/lib/services/materiality';
-import { proposeScoping } from '@/lib/services/fsli';
+import { proposeScoping, basculesMaterialite } from '@/lib/services/fsli';
 import { primaryPack, motDuPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
 import { fmtEur } from '@/lib/kernel/canon';
@@ -32,6 +33,7 @@ export default async function MaterialityPage({
   const moi = { id: membreCourant.user.id, peutClore: ['manager', 'partner'].includes(membreCourant.membership.eng_role) };
   const current = await currentMateriality(id);
   const versions = await materialityVersions(id);
+  const bascules = await basculesMaterialite(id);
   const fs = await frameworkSet(id);
   const pack = primaryPack(fs as never);
 
@@ -150,6 +152,45 @@ export default async function MaterialityPage({
           </tbody>
         </table>
       </Repli>
+
+      {/* LE DRAPEAU DE BASCULE DE MATÉRIALITÉ (mandat 2026-09-09, §2.1) : « voir si on a loupé
+          du testing ». Toujours visible, jamais replié par défaut, quand il y en a — un poste
+          devenu matériel sans procédure planifiée n'est pas un détail secondaire. Chaque ligne
+          nomme le poste, l'import qui a causé la bascule, et si des procédures existent déjà
+          pour ce poste (§2.2/§2.3 — ouverture de section et demande de détail — suivent dans une
+          tranche séparée : ce panneau ne fait que MONTRER le constat, pas encore agir dessus). */}
+      {bascules.length > 0 && (
+        <div className="panel" data-bascules style={{ gridColumn: '1 / -1' }}>
+          <h2 style={{ marginTop: 0 }}>
+            {t('mat.basculeTitre')} <span className="badge amber">{bascules.length}</span>
+          </h2>
+          <p className="faint">{t('mat.basculeAide')}</p>
+          <table className="data">
+            <thead>
+              <tr>
+                <th>{t('col.area')}</th><th className="num">{t('mat.solde')}</th>
+                <th className="num">{t('mat.seuilDeTravail')}</th><th>{t('mat.basculeImport')}</th>
+                <th>{t('mat.basculeProcedures')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bascules.map((b) => (
+                <tr key={b.fsliCode}>
+                  <td><Link href={`/eng/${id}/poste/${encodeURIComponent(b.fsliCode)}`}>{b.fsliName ?? b.fsliCode}</Link></td>
+                  <td className="num">{fmtEur(numToCents(b.solde), 'fr')}</td>
+                  <td className="num">{fmtEur(numToCents(b.seuilPerformance), 'fr')}</td>
+                  <td className="faint">{b.importFilename} · {b.detecteeLe.slice(0, 10)}</td>
+                  <td>
+                    {Number(b.procedureCount) === 0
+                      ? <span className="badge red">{t('mat.basculeAucuneProcedure')}</span>
+                      : <span className="badge gray">{t('mat.basculeNProcedures', { n: b.procedureCount })}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
