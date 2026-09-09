@@ -15,9 +15,75 @@ même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
 **§7.4 est maintenant COMPLET** (tableau de bord et kanban, tranches ci-dessous) : §0 du mandat du
 8 septembre est donc entièrement livré. §1 (table d'échantillonnage sourcée) reste **bloqué** par
-une restriction réseau du bac à sable (voir plus bas). **§2.1/§2.2/§2.3 (bascule de matérialité,
-ouverture de section, demande de détail CTT) sont maintenant livrés** (tranches ci-dessous) —
-prochain : les codes de refus MAT-01/02/03, puis §3 (vidéo).
+une restriction réseau du bac à sable (voir plus bas). **§2 est maintenant COMPLET** (§2.1/§2.2/§2.3
+— bascule, section, demande CTT — et §2.4, les codes de refus MAT-01/02/03, tranches ci-dessous) —
+prochain : §3 (vidéo, dépôt manuel).
+
+## Lot mandat 9 septembre, §2.4 : les codes de refus MAT-01/02/03 (2026-09-09)
+
+*Mandat §2.4 : MAT-01 — « viser un dossier où un FSLI est devenu matériel sans que sa section soit
+ouverte. » MAT-02 — « conclure un FSLI devenu matériel sans qu'une demande de détail existe pour
+ses comptes au-dessus du CTT. » MAT-03 — « un ré-import qui effacerait un tirage, un papier ou un
+visa existant. Le rapprochement se refait ; le travail, jamais. »*
+
+**Ce qui a changé.** MAT-01/MAT-02 : nouvelle famille `materialite` dans `obstaclesAuVisa`
+(obstacles.ts), lue depuis `obstaclesMaterialite(engagementId)` — même filtre que
+`basculesMaterialite` (une bascule résolue par le programme normal, `scoping='in_scope'`, cesse
+d'être comptée, même si la ligne historique reste permanente, règle 28). MAT-01 vérifie qu'une
+`section_state` existe pour chaque bascule non résolue ; MAT-02 recalcule contre le CTT VALIDÉ
+COURANT (pas celui figé au moment de la détection) si un compte du poste le dépasse toujours sans
+qu'une demande `EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT` n'existe.
+
+MAT-03 : recherche préalable (agent dédié, pas devinée) — ni `importTb`, ni `rebuildFslis`, ni
+`importFec` ne détruisent jamais tirage/papier/visa (`superseded`/`outdated` sont des UPDATE,
+aucune table ne référence `fsli.id` par clé étrangère). Deux preuves : un test comportemental
+(`retirage.test.ts`) qui rejoue un VRAI ré-import et compare les comptes avant/après (jamais en
+baisse, avec un papier RÉEL visé dans la fixture après la revue hostile — voir plus bas) ; une
+lecture `/api/sante` sur l'état courant, avec son cas connu mauvais.
+
+**Revue hostile, deux voix indépendantes** (règle 30 : tranche = code de refus) — les deux voix
+ont convergé sur le MÊME défaut architectural par deux angles différents, et chacune a trouvé un
+constat bloquant propre :
+- **Convergent** : la demande CTT n'était retentable qu'à l'INSTANT de la détection (gardée par le
+  même `on conflict do nothing` que le drapeau) — un poste déjà basculé dont la première tentative
+  échouait, ou dont le CTT baissait ensuite, restait bloqué SANS AUCUN REMÈDE. Corrigé :
+  `detecterBasculesMaterialite` réévalue désormais la demande CTT à CHAQUE import pour TOUT poste
+  portant déjà un drapeau, neuf ou ancien — idempotent (vérifie l'absence de demande avant de
+  tenter).
+- **Voix 2 seule** : le drapeau et la section se posaient par deux écritures séparées, non
+  atomiques — un échec du second aurait laissé un drapeau SANS section, exactement le trou que
+  MAT-01 existe pour attraper, avalé sans trace par le `.catch(() => undefined)` du seul site
+  d'appel. Corrigé : les deux insertions vivent dans UNE transaction (`tx()`) ; un échec est
+  consigné dans `event_log` et n'avorte que ce poste-là.
+- **Voix 2 seule** : la nouvelle lecture `/api/sante` MAT-01/MAT-02 ne pouvait jamais rougir
+  elle-même (règle 22) — purement informative. Corrigée : elle reste informative sur le simple
+  compte (un obstacle ouvert n'est pas une panne), mais rougit désormais sur le signal qui EST
+  une panne — un échec journalisé (`materialite_bascule_echec`/`detail_de_compte_ctt_echec`)
+  jamais guéri par la retentative, avec son propre cas connu mauvais.
+- **Voix 1 seule** : deux des trois assertions MAT-03 de `retirage.test.ts` (papiers, visas)
+  étaient vacuement 0-avant/0-après — la fixture ne créait jamais de papier ni de visa (règle 17).
+  Corrigé : un papier réel, visé (`preparer_validator`), est créé avant la mesure « avant ».
+- **Voix 1 seule** : la famille `materialite` manquait au registre de gardes déclarées
+  (`scripts/gardes.ts`, `docs/GUARDS.md`) — corrigé, 43 → 44 gardes.
+- **Reportés, jugements non mécaniques** (règle 23, R72/R73 dans `docs/BACKLOG_REPORTE.md` et
+  `docs/instantanes/fils.json`) — le correctif ci-dessus réduit sans éliminer : R72 (voix 2, un
+  seul réfutateur) — MAT-01/MAT-02 bloquent le visa du DOSSIER, alors que le mandat dit « conclure
+  UN FSLI » pour MAT-02, et aucune primitive « conclure ce FSLI » distincte n'existe
+  (`signWorkpaper` ne consulte jamais l'état des bascules). R73 (les deux voix, constat
+  convergent) — une matérialité revalidée SANS import ultérieur ne redéclenche pas la retentative
+  CTT, qui vit dans `detecterBasculesMaterialite`, jamais dans `materiality.ts::validate`.
+
+**Verify complet, arbre déjà silencieux, DEUX passages** (targeted d'abord — tous verts — puis la
+chaîne complète). Le premier passage complet a rougi UNE fois, sur `tests/screens.test.ts` :
+« le serveur est tombé après 84 route(s) », après 32 s sur une seule route juste avant — un
+symptôme déjà nommé plus tôt dans cette même session (contention de ressources, pas une
+régression). Confirmé, PAS supposé (règle 18) : `screens.test.ts` rejoué SEUL, propre, 1/1 en
+342 s. Second passage COMPLET, sur l'arbre inchangé : `set -o pipefail && timeout 3600 npm run
+verify … ; echo "EXIT=$?"`, **EXIT=0** — 135/135 fichiers, 1041/1041 tests, écrans 91+53/0
+échec, clics 241/0 (379 clics, 231 stations vérifiées), visuel 328/0.
+
+**SHA servi** : à confirmer après le push (commit `c61a5f1`), par `/api/sante` sur le déploiement
+d'aperçu de cette branche — voir l'entrée qui suit.
 
 ## Lot mandat 9 septembre, §2.2/§2.3 : section ouverte et demande de détail CTT (2026-09-09)
 
