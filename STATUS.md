@@ -53,8 +53,33 @@ fait pour CTRL-07) : `s8.test.ts`, `ctrl05-population-demandee.test.ts`, `ctrl05
 `ctrl07-lecture.test.ts`. `npm run demo:seed`, `db:reset`, `tsc --noEmit`, `parcours`,
 `lectures`/`lectures:epreuve`, `langue`, `gardes` tous verts sur cet arbre.
 
-**Point de contrôle : verify complet et revue hostile lancés sur cet arbre figé — détail à
-suivre dans ce même compte.**
+**Revue hostile, deux voix (règle 30 : modèle de données + code de refus), fichiers non
+chevauchants, en worktree isolé (n'a pas contaminé le `verify` en cours — voix 1 : `sox.ts` +
+migration 0153 ; voix 2 : `route.ts`/`page.tsx`/`part2.ts`/`catalogue.ts`/tests).** Voix 1 : SHIP
+AS-IS — huit constats tous CONFIRMÉ, dont cinq par mutation règle 17 (les trois refus de
+`rapprocherPopulationControle`, la fraîcheur de `populationControleRapprochee`, l'ordre du garde
+dans `drawAttributeSample`), plus une requête PRODUCTION indépendante confirmant
+`LEGACY_AVANT_CTRL04` exact (trois id, ni plus ni moins). Deux remarques mineures notées « jugé
+seul, non réfuté », pré-existantes ailleurs dans le dépôt (non aggravées par cette tranche) :
+`logEvent` non transactionnel après l'insert, et une fenêtre de concurrence sur le refus
+« déjà conclu » — même forme que POP-03, non nouvelle. Voix 2 : SHIP WITH MINOR FIXES — sept
+constats CONFIRMÉ (dont deux par mutation règle 17 : le garde lui-même et la lecture CTRL-04),
+la liste legacy reconfirmée indépendamment, les quatre tests adaptés isolent bien leur propre
+garde (33/33), et un HUITIÈME constat, neuf, CONFIRMÉ PAR REPRODUCTION : le message de succès de
+la lecture CTRL-04 affirmait un ORDRE (« rapprochée avant tirage ») que la requête SQL ne vérifie
+pas (`not exists`, jamais une comparaison de dates) — reproduit en insérant un tirage direct PUIS
+un rapprochement après coup, la lecture restait verte à tort. **Corrigé dans le même point de
+contrôle** (commit qui suit) : le message ne prétend plus un ordre, et le commentaire « ce que
+cette lecture ne vérifie pas » nomme désormais les deux limites (fraîcheur ET ordre). Un point non
+prouvé, nommé (règle 19) : l'écran `rcm/[cid]` n'a pas été cliqué dans un navigateur pour CETTE
+revue (le garde de fond, `drawAttributeSample`, est prouvé par mutation ; la conclusion écrite du
+semeur dans `part2.ts` a été jugée honnête par lecture, non cliquée séparément — le clic complet
+du parcours `rcm/[cid]` reste celui de `npm run clics`, ci-dessous).
+
+**Correctif appliqué (`3659901`) avant la mesure finale**, suivi d'un `verify` FRAIS (le
+précédent, en cours pendant la revue, a été tué dès l'édition de `route.ts` — règle 34, jamais
+attendu) : 123 fichiers, **996/996 tests**, 43 gardes, 87 routes 0 échec, 232 étapes/362
+clics/231 stations, 312 vues 0 défaut, **EXIT=0**.
 
 ## Lot contrôle interne, tranche 5 : CTRL-05, la demande client de la population (2026-09-09)
 
