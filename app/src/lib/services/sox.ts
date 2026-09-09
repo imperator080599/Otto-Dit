@@ -737,9 +737,9 @@ export async function rapprocherPopulationControle(controlId: string, userId: st
   }
   const ctx = await engagementCtx(engagementId);
   const row = await q1<{ id: string }>(
-    `insert into control_population_reconciliation (control_id, row_count, conclusion, rapprochee_by)
-     values ($1,$2,$3,$4) returning id`,
-    [controlId, n, motif, userId],
+    `insert into control_population_reconciliation (engagement_id, control_id, row_count, conclusion, rapprochee_by)
+     values ($1,$2,$3,$4,$5) returning id`,
+    [engagementId, controlId, n, motif, userId],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
