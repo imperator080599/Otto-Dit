@@ -95,8 +95,15 @@ idempotence confirmée empiriquement, pas seulement par lecture du SQL). Régres
 
 **Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché) — les DEUX
 constats bloquants (troncature `quarterly` >12 mois, `quarterly` hors périmètre du mandat) ont été
-corrigés avant expédition, détaillés ci-dessus. Verify complet et expédition, sur l'arbre corrigé —
-détail à suivre dans ce même compte.**
+corrigés avant expédition, détaillés ci-dessus.**
+
+**Verify complet, sur l'arbre CORRIGÉ (aucun réviseur actif pendant ce passage) — `EXIT=0`.**
+**971/971 tests** (119 fichiers), **43 gardes**, `docs/SEMEUR_VS_CHEMIN.md` à jour avec le
+registre, langue **0 chaîne hors catalogue · 15/15 cas connus mauvais**, lectures **6/6 cas connus
+mauvais**, parcours **5/5 cas connus mauvais**, screens **87 routes · 0 échec**, densité **77
+écrans · 0 au-delà de 5 actions**, clics **232 étapes · 0 échec · 362 clics · 231 stations
+figées**, sonde d'hydratation **aucun incident**, visuel **312 vues · 0 défaut**. Aucune commande
+de `verify` non exécutée sur cette tranche.
 
 ## Lot contrôle interne, tranche 3 correctif : CTRL-07 en production, deux tirages legacy (2026-09-09)
 
