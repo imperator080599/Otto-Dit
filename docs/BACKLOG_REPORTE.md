@@ -708,3 +708,24 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   direct, comme le font seulement les fichiers de sonde de la revue hostile. Non bloquant pour
   cette tranche. Corrigé le jour où un chemin de suppression de contrôle apparaît, ou en ajoutant
   la contrainte manquante par sa propre migration (jamais en éditant 0001, règle 26).
+
+- **R67 — `LEGACY_AVANT_CTRL07` (`app/src/app/api/sante/route.ts`) est une exemption permanente,
+  et doit porter un identifiant de registre avec sa condition de retrait — sinon un carve-out géré
+  honnêtement devient un décor en silence (règle 13).** Deux id de `sample` réels
+  (`1a158f98-869b-4cee-a655-2262a9d847b0` C-BR-01, `6763a111-fd8b-4bb5-9deb-b47150ec1660`
+  C-REV-01, tirés 2026-09-01, avant CTRL-07) sont nommés, datés, dans la lecture CTRL-07 pour ne
+  pas la faire rougir — trouvé le jour même de l'expédition de la tranche 3 (`deploye` a rougi
+  pour de vrai sur `fbe7afe`), corrigé par `28f8c45`. **Pourquoi c'est PERMANENT, à la différence
+  de R47/`LEGACY_AVANT_POP01`** : R47 se referme si le sample est un jour légitimement RAPPROCHÉ
+  par un geste humain réel — un vrai geste de rapprochement reste possible après coup. Ici, aucun
+  geste équivalent n'existe : écrire aujourd'hui une justification pour un tirage d'attributs du
+  2026-09-01 fabriquerait une pièce datée après coup, exactement ce que la règle 31 interdit — il
+  n'y a donc PAS de « geste légitime » qui referme ces deux lignes une par une, contrairement à
+  R47. **Condition de retrait, unique et nommée** : ces deux lignes ne se retirent QUE si les deux
+  `sample` précis (ces id exacts) disparaissent de la base — parce que le dossier SOX (`engSox`)
+  est un jour légitimement RE-SEMÉ EN ENTIER (interdit hors mandat écrit, §2, même garde que R47)
+  ou parce que ces deux `control_test`/`sample` sont un jour explicitly clôturés/archivés par un
+  geste produit qui n'existe pas encore. Tant qu'aucun des deux n'arrive, `LEGACY_AVANT_CTRL07`
+  reste à DEUX entrées, jamais plus — un TROISIÈME id qui y apparaîtrait sans un événement nommé
+  ici serait lui-même une régression à signaler. Non bloquant : la garde CTRL-07 fonctionne
+  correctement pour tout nouveau tirage (prouvé par tests, tranche 3 correctif).

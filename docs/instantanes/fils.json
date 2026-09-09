@@ -267,6 +267,12 @@
       "note": "non bloquant. Corrigé le jour où un chemin de suppression de contrôle apparaît, ou en ajoutant la contrainte manquante par sa propre migration (jamais en éditant 0001, règle 26)."
     },
     {
+      "id": "R67",
+      "etat": "ouvert, PERMANENT PAR NATURE — LEGACY_AVANT_CTRL07 (route.ts) nomme deux id de sample réels (C-BR-01, C-REV-01, tirés 2026-09-01, avant CTRL-07) pour ne pas faire rougir la lecture CTRL-07. À la différence de R47/LEGACY_AVANT_POP01 (qui se referme si le sample est un jour légitimement rapproché), aucun geste légitime ne peut retrofournir une justification écrite datée 2026-09-01 sans fabriquer une pièce a posteriori (règle 31) — il n'y a donc pas de fermeture ligne par ligne possible ici.",
+      "depuis": "2026-09-09 (lot contrôle interne, tranche 3 correctif — CTRL-07)",
+      "note": "condition de retrait UNIQUE et nommée : les deux entrées ne se retirent que si les deux sample précis (ces id exacts) disparaissent de la base — parce que engSox est un jour légitimement re-semé en entier (interdit hors mandat écrit, §2) ou clôturé/archivé par un geste produit qui n'existe pas encore. Tant qu'aucun des deux n'arrive, la liste reste à DEUX entrées ; un TROISIÈME id qui y apparaîtrait sans un événement nommé ici serait une régression."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
