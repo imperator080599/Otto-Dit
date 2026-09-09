@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-09 · 51 gestes · **364 clics** au total.
+Parcours du 2026-09-09 · 52 gestes · **379 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -28,6 +28,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | contrôle interne : processus, différence statuée, entretien | 19 |
 | matérialité | 0 |
 | bascule de matérialité : un poste devenu matériel mène au poste réel | 1 |
+| bascule de matérialité : la demande de détail au-dessus du CTT est visible et cliquable | 1 |
 | périmètre sans programme | 4 |
 | risque par assertion | 12 |
 | programme de travail | 6 |
@@ -36,7 +37,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | sondage | 4 |
 | étape 5 : les pièces, une par une et en lot | 4 |
 | re-tirage : ce qui sort du tirage ne disparaît pas | 5 |
-| demande au client | 6 |
+| demande au client | 20 |
 | portail client | 67 |
 | testing : l’atelier | 2 |
 | atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
