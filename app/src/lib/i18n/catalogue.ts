@@ -1595,6 +1595,7 @@ export const LIBELLES = {
   'rcmc.rapprocherPopulation': { en: 'Reconcile population (CTRL-04)', fr: 'Rapprocher la population (CTRL-04)' },
   'rcmc.oeProcedures': { en: 'OE procedures', fr: 'Procédures OE' },
   'rcmc.oeInquiryManquante': { en: 'new OE inquiry missing (CTRL-06)', fr: 'inquiry OE neuve manquante (CTRL-06)' },
+  'rcmc.oeAutreProcManquante': { en: 'OE procedure missing (CTRL-01)', fr: 'procédure OE manquante (CTRL-01)' },
   'rcmc.oeInquiryPlaceholder': { en: 'OE inquiry — a NEW piece of evidence, never the D&I walkthrough (CTRL-06)', fr: 'inquiry OE — une pièce NEUVE, jamais le walkthrough du D&I (CTRL-06)' },
   'rcmc.ctrl04ConclusionPlaceholder': { en: 'reconciliation conclusion — why this population is complete', fr: 'conclusion du rapprochement — pourquoi cette population est complète' },
   'rcmc.ctrl04NonRapprochee': { en: 'This population is not reconciled yet (CTRL-04) — conclude the reconciliation before drawing a sample.', fr: 'Cette population n’est pas encore rapprochée (CTRL-04) — concluez le rapprochement avant de tirer un échantillon.' },

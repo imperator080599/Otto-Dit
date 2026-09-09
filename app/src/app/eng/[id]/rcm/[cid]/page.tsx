@@ -542,7 +542,7 @@ export default async function ControlDetail({
                         <td>
                           {doc
                             ? <span data-oe-procedure-conclusion>{doc.notes} <span className="faint">({doc.performedAt.slice(0, 10)})</span></span>
-                            : <span className="badge amber">{p === 'inquiry' ? t('rcmc.oeInquiryManquante') : t('rcmc.facteurManquant')}</span>}
+                            : <span className="badge amber">{p === 'inquiry' ? t('rcmc.oeInquiryManquante') : t('rcmc.oeAutreProcManquante')}</span>}
                         </td>
                         <td>
                           <details>

@@ -960,14 +960,20 @@ export async function documenterProcedureOe(
     if (c.di_walkthrough_evidence_id && evidenceId === c.di_walkthrough_evidence_id) {
       throw new Error(`CTRL-06 : cette pièce est celle du walkthrough D&I de ${c.code} — l’inquiry de l’OE en a besoin d’une NEUVE, elle ne se réutilise jamais.`);
     }
-    /* Comparaison en DATE CALENDAIRE, pas en horodatage exact — trouvé au moment d'écrire cette
-       garde : l'inquiry D&I se pose à la création de la tâche (`created_at`, un horodatage
-       COMPLET) alors que l'inquiry OE ne porte qu'une DATE (formulaire `<input type="date">`,
-       ou le défaut `quand` du jour, ci-dessus) ; comparer une date-seule (minuit UTC) à un
-       horodatage du même jour aurait rendu tout « aujourd'hui » plus TÔT que l'inquiry D&I posée
-       dans l'après-midi du même jour — une inquiry réellement postérieure, dans le même mandat,
-       aurait été refusée à tort. « Sa propre date, postérieure » se lit donc comme un jour
-       calendaire strictement plus récent, jamais un instant précis. */
+    /* « Sa propre date, postérieure » (mandat) se lit en JOUR CALENDAIRE, jamais en instant
+       précis — cohérent avec la saisie elle-même (formulaire `<input type="date">`, `quand`
+       ci-dessus n'est jamais qu'une date). D'où `::date` des deux côtés de la comparaison.
+       CORRECTIF (revue hostile du 2026-09-09, voix 1) : le commentaire précédent affirmait que
+       CE choix évitait un refus à tort d'une inquiry « réellement postérieure le même jour » —
+       FAUX, vérifié par mutation : ce code refuse TOUJOURS deux procédures posées le même jour
+       calendaire, `::date` ou pas, et aucun chemin de ce dépôt n'accepte une inquiry OE le même
+       jour que l'inquiry D&I. C'est une explication plausible présentée comme un diagnostic
+       (règle 18) — le VRAI risque, que voix 1 a reproduit en retirant le cast : sans `::text`,
+       PGlite rend un objet `Date` JS pour `max(...)`, et `chaîne <= Date` déclenche la coercion
+       numérique de JS (`ToNumber` d'une chaîne ISO → `NaN`) — la comparaison devient TOUJOURS
+       fausse, et le garde ne refuse plus JAMAIS rien (règle 17 : un garde qui ne refuse jamais
+       n'est pas un garde). Le `::text` protège contre CE défaut-là ; `::date` ne fait que fixer
+       la granularité de la comparaison à la journée, comme la saisie elle-même l'exige. */
     const derniereInquiryDi = await q01<{ quand: string }>(
       `select max(ctp.created_at)::date::text quand from control_task_procedure ctp
        join control_task ct on ct.id = ctp.task_id
