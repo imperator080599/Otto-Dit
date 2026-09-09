@@ -3,14 +3,19 @@ import { initTestDb } from '@/lib/test/setup';
 import { IDS } from '@/lib/seed';
 import { bootstrapNep } from '@/lib/flows/part1';
 import { q, q1 } from '@/lib/db/client';
+import { logEvent } from '@/lib/core/events';
 import { GET } from './route';
 
 // MAT-01/MAT-02 (mandat 2026-09-09, §2.4) — LA LECTURE /api/sante.
 //
 // La lecture rejoue `obstaclesMaterialite` (obstacles.ts) sur l'état RÉEL du dossier — le même
-// chemin que `/obstacles`. Cette suite prouve les deux sens : le monde de démonstration, où toutes
-// les bascules sont résolues par le chemin gardé, ne rougit pas ; et une bascule posée en SQL
-// direct, hors du chemin gardé, SANS section, fait rougir /api/sante entier (règle 17).
+// chemin que `/obstacles`. Cette suite prouve TROIS choses (revue hostile, voix 2, constat 2 —
+// un obstacle ouvert n'est PAS une panne, mais un ÉCHEC JOURNALISÉ jamais guéri EN EST une) :
+// le monde de démonstration, où toutes les bascules sont résolues par le chemin gardé, ne rougit
+// pas ; une bascule posée en SQL direct, hors du chemin gardé, SANS section, apparaît dans le
+// compte (informatif, pas une levée de CETTE lecture — c'est la lecture §2.2, déjà gardée, qui
+// rougit sur ce cas précis) ; et une bascule dont `detecterBasculesMaterialite` a JOURNALISÉ un
+// échec, jamais guéri depuis, fait rougir CETTE lecture elle-même (règle 17).
 
 function trouver(body: { lectures: unknown[] }) {
   const lectures = body.lectures as { nom: string; ok: boolean; detail: string }[];
@@ -64,6 +69,47 @@ describe('MAT-01/MAT-02 : la lecture /api/sante', () => {
         .find((l) => l.nom.includes('la section du poste est ouverte'));
       expect(lectureSection?.ok, 'la lecture §2.2 doit être celle qui rougit ici, pas celle-ci').toBe(false);
     } finally {
+      await q(`delete from fsli_materiality_bascule where engagement_id = $1 and fsli_code = $2`, [IDS.engNep, code]);
+      await q(`delete from import_file where id = $1`, [fichier.id]);
+    }
+  });
+
+  it('cas connu mauvais (règle 17) : un échec JOURNALISÉ jamais guéri fait rougir CETTE lecture elle-même', async () => {
+    /* Le drapeau reste SANS section (comme le test précédent) — mais cette fois avec un
+       événement `materialite_bascule_echec` journalisé pour le MÊME poste, comme si
+       `detecterBasculesMaterialite` avait vraiment tenté et échoué (fsli.ts). C'est ce
+       journal, jamais présent dans le test précédent, qui doit faire rougir CETTE lecture. */
+    const code = 'SONDE-LECTURE-MAT01-ECHEC';
+    const fichier = (await q1<{ id: string }>(
+      `insert into import_file (engagement_id, kind, filename, sha256, status, row_count)
+       values ($1, 'tb', 'sonde-lecture-mat01-echec.csv', 'sonde-sha-lecture-mat01-echec', 'validated', 1) returning id::text`,
+      [IDS.engNep],
+    ));
+    await q(
+      `insert into fsli_materiality_bascule (engagement_id, fsli_code, import_file_id, scoping_avant, solde, seuil_performance)
+       values ($1, $2, $3, 'ns_confirmed', 100000, 27000)`,
+      [IDS.engNep, code, fichier.id],
+    );
+    const tenant = (await q1<{ tenant_id: string }>(
+      `select tenant_id::text from engagement where id = $1`, [IDS.engNep],
+    ));
+    await logEvent({
+      tenantId: tenant.tenant_id, engagementId: IDS.engNep, actorKind: 'system', actorId: null,
+      verb: 'materialite_bascule_echec', objectType: 'fsli', objectId: code,
+      payload: { fsliCode: code, erreur: 'sonde : échec simulé, jamais guéri' },
+    });
+    try {
+      const rouge = await GET();
+      const bodyRouge = await rouge.json();
+      const lectureRouge = trouver(bodyRouge);
+      expect(lectureRouge.ok).toBe(false);
+      expect(lectureRouge.detail).toContain(code);
+      expect(rouge.status).toBe(500);
+    } finally {
+      /* `event_log` est APPEND-ONLY (rule 3, provenance) — l'événement journalisé n'est jamais
+         retiré, comme n'importe quelle trace réelle. Sans obstacle correspondant (le drapeau est
+         retiré ci-dessous), l'entrée reste inerte pour toute lecture future : `nonGueris` exige
+         un obstacle ET un événement, jamais l'un sans l'autre. */
       await q(`delete from fsli_materiality_bascule where engagement_id = $1 and fsli_code = $2`, [IDS.engNep, code]);
       await q(`delete from import_file where id = $1`, [fichier.id]);
     }

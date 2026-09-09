@@ -714,13 +714,38 @@ async function corpsDeLaSonde() {
        tourne les DEUX obstacles au visa (bascule sans section ouverte ; bascule avec un compte
        au-dessus du CTT sans demande) à travers le MÊME chemin que `/obstacles`
        (`obstaclesMaterialite`, obstacles.ts) — jamais une requête refaite à côté, qui pourrait
-       diverger. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que le chemin normal
-       (`detecterBasculesMaterialite`, §2.2/§2.3) résout effectivement chaque bascule — c'est
+       diverger.
+       REVUE HOSTILE (voix 2, constat 2) : un obstacle ouvert n'est PAS, en soi, une panne — c'est
+       le travail normal d'un dossier en cours (comme les autres familles de `obstaclesAuVisa`,
+       jamais lues comme des pannes ailleurs dans ce fichier). Cette lecture reste donc
+       INFORMATIVE sur le simple compte. Mais elle PEUT rougir (règle 22) sur le cas qui EST une
+       panne : un poste dont `detecterBasculesMaterialite` a déjà JOURNALISÉ un échec
+       (`materialite_bascule_echec` ou `detail_de_compte_ctt_echec`, fsli.ts) et dont l'obstacle
+       correspondant tient TOUJOURS — la retentative automatique (fsli.ts, revue hostile) n'a
+       donc pas encore réussi à guérir un vrai échec, distinct d'un obstacle simplement pas
+       encore traité par un humain. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que le
+       chemin normal résout la MAJORITÉ des bascules sans jamais journaliser d'échec — c'est
        `materialite-bascule.test.ts` qui le fait, avec ses cas connus mauvais construits en
        fixture ; ici on lit seulement l'état RÉEL du dossier de démonstration. */
     lectures.push(await essayer('MAT-01/MAT-02 : les obstacles de la bascule de matérialité', async () => {
       const { obstaclesMaterialite } = await import('@/lib/services/obstacles');
       const obstacles = await obstaclesMaterialite(id);
+      const echecsJournalises = await q<{ object_id: string; verb: string }>(
+        `select distinct object_id, verb from event_log
+         where engagement_id = $1 and verb in ('materialite_bascule_echec', 'detail_de_compte_ctt_echec')`,
+        [id],
+      );
+      const codesEnEchec = new Set(echecsJournalises.map((e) => `${e.verb}:${e.object_id}`));
+      const nonGueris = obstacles.filter((o) => {
+        const code = String(o.vars?.code ?? '');
+        return (o.cle === 'obst.basculeSansSection' && codesEnEchec.has(`materialite_bascule_echec:${code}`))
+          || (o.cle === 'obst.basculeSansDemandeCtt' && codesEnEchec.has(`detail_de_compte_ctt_echec:${code}`));
+      });
+      if (nonGueris.length > 0) {
+        throw new Error(`${nonGueris.length} bascule(s) avec un échec journalisé JAMAIS guéri par une retentative `
+          + `(${nonGueris.map((o) => o.vars?.code).join(', ')}) — la boucle de retentative de detecterBasculesMaterialite `
+          + 'a régressé, ou un import qui l’aurait retentée n’a jamais eu lieu depuis');
+      }
       if (!obstacles.length) return 'aucun obstacle de bascule de matérialité';
       const mat01 = obstacles.filter((o) => o.cle === 'obst.basculeSansSection').length;
       const mat02 = obstacles.filter((o) => o.cle === 'obst.basculeSansDemandeCtt').length;
@@ -735,10 +760,18 @@ async function corpsDeLaSonde() {
        `rebuildFslis` ne peut rien entraîner en cascade. La SEULE colonne polymorphe SANS clé
        étrangère déclarée est `sample_item.unit_id` (quand `unit_kind = 'gl_entry'`, elle vise
        `gl_entry.id` sans contrainte SQL pour le garantir) — c'est le seul endroit où un ORPHELIN
-       pourrait apparaître sans qu'une contrainte de base ne le refuse d'abord. Cette lecture le
-       vérifie directement. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : qu'un ré-import réel
-       ne PRODUIT jamais cet orphelin — c'est `retirage.test.ts` qui le prouve en rejouant un vrai
-       ré-import et en comptant les lignes avant/après ; ici on lit seulement l'état actuel. */
+       pourrait apparaître sans qu'une contrainte de base ne le refuse d'abord.
+       SECONDE COLONNE POLYMORPHE SANS CLÉ ÉTRANGÈRE, VÉRIFIÉE PAR LA REVUE HOSTILE (voix 2) MAIS
+       NON RETENUE : `procedure_instance.fsli_code` (texte, pas de FK). Un `fsli.code` qui
+       disparaîtrait du catalogue du pack entre deux `rebuildFslis` orphelinerait ces lignes —
+       mais `map.fslis` (le catalogue statique du pack) ne change jamais pour un dossier donné
+       (`engagement.framework_set.accounting_map` n'a qu'un seul point d'écriture, à la création,
+       aucun chemin de modification trouvé), donc ce second chemin n'est PAS actuellement
+       atteignable. Non gardé ici pour cette raison — gardé s'il redevenait atteignable un jour.
+       Cette lecture le vérifie directement. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : qu'un
+       ré-import réel ne PRODUIT jamais cet orphelin — c'est `retirage.test.ts` qui le prouve en
+       rejouant un vrai ré-import et en comptant les lignes avant/après ; ici on lit seulement
+       l'état actuel. */
     lectures.push(await essayer('MAT-03 : aucun tirage ne pointe une écriture disparue (règle 28)', async () => {
       const orphelins = await q<{ id: string }>(
         `select si.id::text from sample_item si

@@ -809,3 +809,45 @@ design : chacun reste une tranche à construire.**
   jamais un compte qui les PERD — 0 aujourd'hui (aucune ligne `scope_limitation` en base, aucun
   écran ne pouvant en écrire). **Condition de retrait** : un écran (ou un ajout de colonne au
   kanban existant) appelle `recordScopeLimitation` depuis un geste humain cliqué.
+
+## Reporté en livrant les codes de refus MAT-01/02/03, mandat §2.4 (2026-09-09)
+
+- **R72 — MAT-01 et MAT-02 bloquent tous deux le VISA DU DOSSIER entier
+  (`obstaclesAuVisa`/`obstaclesMaterialite`, obstacles.ts), alors que le mandat emploie deux verbes
+  distincts : MAT-01 « viser un dossier », MAT-02 « conclure UN FSLI ».** Trouvé par la revue
+  hostile du mandat §2.4 (voix 2, constat 3), non réfuté par une seconde voix (règle 30 :
+  jugement, pas mécanique — un seul réfutateur l'a soulevé). Aucune primitive « conclure CE
+  FSLI-ci » distincte du visa du dossier n'existe dans ce dépôt : `completion.ts::conclure` est
+  à l'échelle du DOSSIER entier (les cinq natures d'achèvement) ; `workpapers/lifecycle.ts::
+  signWorkpaper` est le vrai mécanisme de visa PAR PAPIER, mais ne consulte JAMAIS l'état des
+  bascules — un préparateur/reviewer/associé peut donc signer TOUS les papiers d'un poste
+  matériellement basculé (visa complet, `status='signed'`) pendant que le trou MAT-02 persiste,
+  sans qu'aucun signal n'atteigne cette personne-là : le trou ne remonte qu'au visa du DOSSIER
+  entier, potentiellement bien plus tard. **Pourquoi non résolu dans cette tranche** : brancher
+  MAT-02 sur `signWorkpaper` exigerait de savoir quel(s) FSLI un papier sert
+  (`procedure_instance.fsli_code`, un join direct existe) ET de décider CE QUE « conclure un FSLI »
+  signifie structurellement dans ce produit — une question de conception, pas une correction
+  mécanique, hors du périmètre de cette tranche. **Condition de retrait** : soit le fondateur
+  confirme que le visa du dossier EST la bonne granularité (le mandat se lit alors comme un
+  raccourci de langage, pas une exigence de granularité), soit MAT-02 est rebranché sur
+  `signWorkpaper` avec sa propre revue hostile (deux voix : ceci touche un code de refus).
+
+- **R73 — MAT-02 se recalcule contre le CTT VALIDÉ COURANT, jamais contre celui figé au moment de
+  la bascule — un choix délibéré (« le visa regarde l'état ACTUEL du dossier »), mais qui laisse
+  un trou résiduel après le correctif de retentative de cette même tranche.** Trouvé par les DEUX
+  voix indépendamment (constat convergent, règle 30) : la demande CTT se retente désormais à
+  CHAQUE import pour tout poste portant déjà un drapeau (fsli.ts::detecterBasculesMaterialite,
+  corrigé dans cette tranche après la revue hostile) — ce qui guérit le cas « premier essai
+  échoué » et le cas « CTT baissé depuis, de nouveaux comptes qualifient ». Il NE guérit PAS le
+  cas où la matérialité est REVALIDÉE (`materiality.ts::validate`) SANS qu'aucun import ultérieur
+  n'ait lieu ensuite : la réévaluation vit entièrement dans `detecterBasculesMaterialite`, jamais
+  déclenchée depuis `validate` elle-même. Un trou réel (un compte qui aurait dû être demandé et ne
+  l'a jamais été) peut donc rester invisible tant qu'aucun nouvel import ne survient — silence lu
+  comme un succès (règle 13), non couvert par un test (aucun appel à `validate(` dans
+  `materialite-bascule.test.ts` ni `obstacles-materialite.test.ts`). **Pourquoi non résolu dans
+  cette tranche** : déclencher la réévaluation CTT depuis `materiality.ts::validate` exige d'y
+  importer `detecterBasculesMaterialite` (ou son extrait CTT) — un couplage supplémentaire entre
+  deux modules qui n'en avaient aucun, à concevoir avec autant de soin que le correctif déjà fait
+  ici, pas à improviser en fin de tranche. **Condition de retrait** : `materiality.ts::validate`
+  (ou un appelant qui l'entoure) redéclenche la retentative CTT pour toute bascule non résolue de
+  l'engagement, avec son propre test couvrant la transition « CTT baisse sans import ».

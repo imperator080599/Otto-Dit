@@ -1,4 +1,4 @@
-import { q, q01, q1 } from '@/lib/db/client';
+import { q, q01, q1, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { getAccountingMap } from '@/lib/packs';
 import { mapAccount } from '@/lib/kernel/fsli-map';
@@ -156,9 +156,27 @@ export async function proposeScoping(engagementId: string, userId: string): Prom
  * `frameworkSet`/`fsliAccounts` DEPUIS ce fichier, un import statique en sens inverse créerait un
  * cycle. Si aucun compte n’atteint le CTT, aucune demande n'est créée — ce n'est pas une erreur
  * (un poste peut devenir matériel par somme de petits comptes, chacun sous le CTT).
- * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle n'implémente aucun refus (MAT-01/02/03,
- * tranche suivante) — un poste devenu matériel sans section ouverte ou sans demande de détail ne
- * bloque encore rien au visa.
+ *
+ * REVUE HOSTILE DU MANDAT §2.4 (deux voix indépendantes, constats convergents) : la demande CTT
+ * était gardée par le MÊME `on conflict do nothing` que le drapeau lui-même — posée une seule
+ * fois, à l'INSTANT de la détection. Un poste déjà flaggé dont le CTT baisse ensuite (matérialité
+ * revalidée) ou dont la première tentative avait échoué (poste retiré puis remis au catalogue du
+ * pack, incident réseau) restait alors bloqué SANS AUCUN REMÈDE — MAT-02 se serait levé pour
+ * toujours, tant qu'aucun AUTRE poste ne franchit le seuil sur un import ultérieur. Corrigé :
+ * TOUT poste qui porte DÉJÀ un drapeau permanent (règle 28), neuf ou ancien, est réévalué à
+ * CHAQUE import — `demanderDetailAuDessusDuCtt` n'est tentée que si aucune demande CTT n'existe
+ * encore pour lui, donc un ré-import ne duplique jamais une demande déjà posée. CE QUE CE
+ * CORRECTIF NE RÉSOUT PAS ENTIÈREMENT (règle 19, R73 dans BACKLOG_REPORTE.md) : une matérialité
+ * revalidée SANS import qui l'accompagne ne redéclenche rien tant qu'aucun import ultérieur n'a
+ * lieu — la réévaluation vit dans CETTE fonction, pas dans `materiality.ts::validate`.
+ *
+ * §2.2/§2.4 (MAT-01) : le drapeau et la section sont posés dans LA MÊME TRANSACTION (`tx()`) —
+ * revue hostile, voix 2 : deux `q()` séparés auraient pu laisser le drapeau posé SANS section si
+ * le second échouait, exactement le trou que MAT-01 existe pour attraper. Un échec de LA
+ * TRANSACTION (donc ni drapeau ni section) est consigné et n'avorte que ce poste-là, jamais les
+ * candidats restants de la boucle (même discipline que la demande CTT ci-dessous).
+ * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle n'implémente aucun refus elle-même —
+ * MAT-01/02 vivent dans `obstacles.ts::obstaclesMaterialite`, qui LIT cet état, ne le pose pas.
  */
 export async function detecterBasculesMaterialite(
   engagementId: string, importFileId: string, userId: string | null,
@@ -186,45 +204,71 @@ export async function detecterBasculesMaterialite(
      where engagement_id = $1 and scoping in ('unscoped', 'ns_proposed', 'ns_confirmed')`,
     [engagementId],
   );
+  const { demanderDetailAuDessusDuCtt, EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT } = await import('./requests');
   const bascules: { fsliCode: string }[] = [];
   for (const f of candidats) {
-    if (Math.abs(numToCents(f.balance)) < seuil) continue;
-    /* `q01`, PAS `q1` (revue hostile, deux voix indépendantes, même constat) : `q1` lève une
-       erreur GÉNÉRIQUE sur zéro ligne — indiscernable entre « conflit, déjà flaggé » (le cas
-       normal ici) et une VRAIE panne SQL sur cet insert précis (FK cassée, etc.). Un `.catch(() =>
-       null)` derrière `q1` aurait avalé les deux de la même façon : un refus calculé puis jeté
-       (règle 13). `q01` rend `null` UNIQUEMENT sur zéro ligne, sans jamais lever — une vraie
-       erreur continue de se propager normalement, sans catch à ajouter ici. */
-    const pose = await q01<{ id: string }>(
-      `insert into fsli_materiality_bascule
-         (engagement_id, fsli_code, import_file_id, scoping_avant, solde, seuil_performance)
-       values ($1,$2,$3,$4,$5,$6)
-       on conflict (engagement_id, fsli_code) do nothing
-       returning id`,
-      [engagementId, f.code, importFileId, f.scoping, f.balance, mat.perf_amount],
+    let poseMaintenant = false;
+    if (Math.abs(numToCents(f.balance)) >= seuil) {
+      try {
+        /* `tx()` : le drapeau ET la section se posent ensemble, ou aucun des deux (MAT-01,
+           voir le commentaire d'en-tête). `run()` rend les lignes directement, pas via `q()`. */
+        poseMaintenant = await tx(async (run) => {
+          const rows = (await run(
+            `insert into fsli_materiality_bascule
+               (engagement_id, fsli_code, import_file_id, scoping_avant, solde, seuil_performance)
+             values ($1,$2,$3,$4,$5,$6)
+             on conflict (engagement_id, fsli_code) do nothing
+             returning id`,
+            [engagementId, f.code, importFileId, f.scoping, f.balance, mat.perf_amount],
+          )) as { id: string }[];
+          if (rows.length > 0) {
+            await run(
+              `insert into section_state (engagement_id, kind, ref, label)
+               values ($1, 'poste', $2, $3)
+               on conflict (engagement_id, kind, ref) do update set label = excluded.label`,
+              [engagementId, f.code, f.name],
+            );
+          }
+          return rows.length > 0;
+        });
+      } catch (e) {
+        await logEvent({
+          tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
+          verb: 'materialite_bascule_echec', objectType: 'fsli', objectId: f.code,
+          payload: { fsliCode: f.code, erreur: e instanceof Error ? e.message : String(e) },
+        });
+        continue; // ni drapeau ni section posés sur CE poste — les autres candidats continuent
+      }
+      if (poseMaintenant) {
+        bascules.push({ fsliCode: f.code });
+        await logEvent({
+          tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
+          verb: 'materialite_basculee', objectType: 'fsli', objectId: f.code,
+          payload: { fsliCode: f.code, scopingAvant: f.scoping, solde: f.balance, seuilPerformance: mat.perf_amount, importFileId },
+        });
+      }
+    }
+    /* LA DEMANDE CTT SE RÉÉVALUE POUR TOUT DRAPEAU EXISTANT, neuf ou ancien (voir le commentaire
+       d'en-tête) — jamais seulement pour celui qu'on vient de poser CETTE fois-ci. */
+    const aUnDrapeau = poseMaintenant || Boolean(await q01(
+      `select 1 from fsli_materiality_bascule where engagement_id = $1 and fsli_code = $2`,
+      [engagementId, f.code],
+    ));
+    if (!aUnDrapeau) continue;
+    const dejaDemande = await q01(
+      `select 1 from request where engagement_id = $1 and fsli_code = $2 and evidence_type_code = $3`,
+      [engagementId, f.code, EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT],
     );
-    if (!pose) continue; // déjà flaggé par un import antérieur — premier gagne
-    bascules.push({ fsliCode: f.code });
-    /* §2.2 : MÊME insertion que `assurerSections` pour un poste (sections.ts) — la section devient
-       ATTEIGNABLE (tableau de bord, suivi, kanban) sans jamais toucher `fsli.scoping`. */
-    await q(
-      `insert into section_state (engagement_id, kind, ref, label)
-       values ($1, 'poste', $2, $3)
-       on conflict (engagement_id, kind, ref) do update set label = excluded.label`,
-      [engagementId, f.code, f.name],
-    );
-    /* §2.3 : import dynamique — voir le commentaire d'en-tête de cette fonction (cycle
-       fsli.ts ↔ requests.ts). `userId` propagé tel quel : `demanderDetailAuDessusDuCtt` porte sa
-       propre garde `assertMembre`, no-op sur `null` (le cas système, `bootstrapNep`).
-       TRY/CATCH TROUVÉ PAR LA REVUE HOSTILE (constat 1) : sans lui, la seule levée prévue de
+    if (dejaDemande) continue;
+    /* TRY/CATCH (revue hostile, constat 1) : sans lui, la seule levée prévue de
        `demanderDetailAuDessusDuCtt` (poste absent du catalogue du pack — ne devrait jamais
        arriver) aurait fait sortir CETTE fonction en erreur, avortant l'évaluation de TOUS les
        candidats restants de la boucle en silence — alors que le drapeau et la section de CE
-       poste, eux, sont déjà bien posés ci-dessus et doivent le rester (règle 28). Consignée dans
+       poste, eux, sont déjà bien posés et doivent le rester (règle 28). Consignée dans
        `event_log`, jamais avalée sans trace (règle 13) : une vraie panne reste visible et
-       rejouable, seulement plus loin que ce poste-là. */
+       rejouable — et, depuis ce correctif, RETENTÉE au prochain import (voir le commentaire
+       d'en-tête), pas seulement consignée une fois pour toutes. */
     try {
-      const { demanderDetailAuDessusDuCtt } = await import('./requests');
       await demanderDetailAuDessusDuCtt(engagementId, f.code, ctt, userId);
     } catch (e) {
       await logEvent({
@@ -233,11 +277,6 @@ export async function detecterBasculesMaterialite(
         payload: { fsliCode: f.code, erreur: e instanceof Error ? e.message : String(e) },
       });
     }
-    await logEvent({
-      tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
-      verb: 'materialite_basculee', objectType: 'fsli', objectId: f.code,
-      payload: { fsliCode: f.code, scopingAvant: f.scoping, solde: f.balance, seuilPerformance: mat.perf_amount, importFileId },
-    });
   }
   return bascules;
 }

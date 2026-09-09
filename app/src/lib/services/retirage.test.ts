@@ -11,6 +11,8 @@ import { propose, validate } from './materiality';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from './sampling';
 import { generatePbcFromSample, approveSend } from './requests';
 import { ingestEvidence } from './evidence';
+import { draftRevenueWorkpaper } from './workpapers/draft';
+import { signWorkpaper } from './workpapers/lifecycle';
 import { lignesAtelier } from './workpapers/atelier';
 import { lignesSortiesDuTirage, lignesSuperseesSansRetirage, sortiesNonStatuees, statuerSortie } from './sampling';
 import { obstaclesAuVisa, avertissementsAuVisa } from './obstacles';
@@ -87,6 +89,14 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
       });
     }
     clefsRepondues = items.map((x) => x.nk);
+
+    /* MAT-03 (revue hostile, voix 1, constat 2) : un papier RÉEL, VISÉ, doit exister avant la
+       mesure — sinon les assertions "aucun papier/visa ne disparaît" seraient triviales (0 avant,
+       0 après, toujours vraies, rien de réellement éprouvé — règle 17). Un seul visa
+       (preparer_validator) suffit : ce test ne rejoue pas le cycle de visa complet, seulement sa
+       survie au ré-import. */
+    const wpAvant = await draftRevenueWorkpaper(IDS.engNep, IDS.users.karim);
+    await signWorkpaper(wpAvant, IDS.users.karim, 'preparer_validator');
 
     /* MAT-03 : la mesure AVANT, pas une supposition — comptée juste avant le geste qui pourrait
        détruire, sur le même dossier, avant que rien d'autre ne bouge. */

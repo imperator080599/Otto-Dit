@@ -297,6 +297,18 @@
       "note": "condition de retrait : un écran (ou une colonne kanban de plus) appelle recordScopeLimitation depuis un geste humain cliqué. La lecture /api/sante « kanban des écarts » compte les scope_limitation à part (0 aujourd'hui) pour qu'ils ne se perdent jamais silencieusement dans le total."
     },
     {
+      "id": "R72",
+      "etat": "ouvert, jugement (règle 30, un seul réfutateur, non réfuté par une seconde voix) — MAT-01 et MAT-02 bloquent tous deux le VISA DU DOSSIER entier (obstaclesMaterialite, obstacles.ts), alors que le mandat §2.4 emploie deux verbes distincts : MAT-01 « viser un dossier », MAT-02 « conclure un FSLI ». Aucune primitive « conclure ce FSLI » distincte du visa dossier n'existe (completion.ts est à l'échelle du dossier entier ; signWorkpaper, le vrai visa PAR PAPIER, ne consulte jamais l'état des bascules) — un papier d'un poste basculé peut donc être entièrement signé sans qu'aucun signal n'atteigne le signataire, le trou ne remontant qu'au visa du dossier entier.",
+      "depuis": "2026-09-09 (mandat §2.4 — MAT-01/02/03)",
+      "note": "condition de retrait : le fondateur confirme que le visa du dossier est la bonne granularité, ou MAT-02 est rebranché sur signWorkpaper avec sa propre revue hostile (deux voix, code de refus)."
+    },
+    {
+      "id": "R73",
+      "etat": "ouvert — MAT-02 se recalcule contre le CTT VALIDÉ COURANT (choix délibéré). Le correctif de cette même tranche (retentative de la demande CTT à chaque import, fsli.ts::detecterBasculesMaterialite) guérit le cas « premier essai échoué » et « CTT baissé depuis » — mais PAS le cas où la matérialité est revalidée (materiality.ts::validate) SANS import ultérieur : la réévaluation vit entièrement dans detecterBasculesMaterialite, jamais déclenchée depuis validate. Trouvé par les deux voix indépendamment (constat convergent).",
+      "depuis": "2026-09-09 (mandat §2.4 — MAT-01/02/03)",
+      "note": "condition de retrait : materiality.ts::validate (ou son appelant) redéclenche la retentative CTT pour toute bascule non résolue, avec son propre test couvrant la transition « CTT baisse sans import »."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
