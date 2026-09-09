@@ -1,4 +1,4 @@
-import { q, q01, q1 } from '@/lib/db/client';
+import { q, q01, q1, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { controlPopulationHash } from '@/lib/kernel/canon';
@@ -186,6 +186,95 @@ export async function attacherWalkthrough(controlId: string, userId: string, evi
     tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
     verb: 'walkthrough_attached', objectType: 'control', objectId: controlId, payload: { code: c.code, evidenceId },
   });
+}
+
+/** VID-01 (mandat du 9 septembre, §3) : « un bouton pour supprimer... la suppression est toujours
+ *  tracée — qui, quand, pourquoi — et jamais silencieuse. » Ne détruit JAMAIS la ligne `evidence`
+ *  (règle 28) — la MARQUE (`deleted_at`/`deleted_by`/`deleted_reason`, 0157), symétrique de
+ *  `quarantined`/`quarantine_reason` (evidence.ts) : `control.di_walkthrough_evidence_id` continue
+ *  de pointer dessus, la pièce reste interrogeable (qui, quand, pourquoi supprimée) au lieu de
+ *  disparaître de l'historique. Un ré-attachement ultérieur (`attacherWalkthrough`) fait pointer le
+ *  lien vers une pièce NEUVE, non supprimée — c'est ce remplacement, jamais une table de preuve
+ *  séparée, que VID-01 (`setDiStatus` ci-dessous, et la lecture `/api/sante`) lit comme « une autre
+ *  preuve d'inquiry ».
+ *
+ *  S'exerce à tout moment, y compris dossier CLÔTURÉ (§3.2 : la purge d'archivage vise justement
+ *  l'après-signature) — passe alors par le couloir d'amendement post-verrou (0003 §9.4) : la RAISON
+ *  écrite ici EST la justification qu'il exige, posée dans la MÊME transaction (`tx()`) pour que le
+ *  réglage de session reste local à cette écriture, jamais partagé avec une autre connexion du
+ *  pool réseau. CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne vérifie PAS que la vidéo est
+ *  déjà éligible à la purge (`compteurConservationVideo`) — le bouton manuel reste disponible à
+ *  tout moment, comme le dépôt manuel (§3, « reste toujours possible, en secours ») ; seule la
+ *  purge AUTOMATIQUE, hors périmètre de cette tranche, s'appuierait sur l'éligibilité. */
+export async function supprimerVideoWalkthrough(controlId: string, userId: string, raison: string): Promise<void> {
+  await assertMembreDe('control', controlId, userId, 'supprimer l’enregistrement de walkthrough');
+  if (!raison.trim()) throw new Error('la suppression a besoin d’un motif écrit — jamais silencieuse (mandat §3.2)');
+  const c = await q1<{ engagement_id: string; code: string; di_walkthrough_evidence_id: string | null }>(
+    `select engagement_id, code, di_walkthrough_evidence_id from control where id = $1`,
+    [controlId],
+  );
+  if (!c.di_walkthrough_evidence_id) throw new Error('aucun enregistrement de walkthrough à supprimer');
+  const ev = await q1<{ deleted_at: string | null }>(`select deleted_at::text from evidence where id = $1`, [c.di_walkthrough_evidence_id]);
+  if (ev.deleted_at) throw new Error('cet enregistrement est déjà supprimé');
+  const ctx = await engagementCtx(c.engagement_id);
+  await tx(async (run) => {
+    await run(`select set_config('otto.post_lock_amendment', 'on', true)`);
+    await run(
+      `update evidence set deleted_at = now(), deleted_by = $2, deleted_reason = $3 where id = $1`,
+      [c.di_walkthrough_evidence_id, userId, raison.trim()],
+    );
+  });
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'walkthrough_deleted', objectType: 'control', objectId: controlId,
+    payload: { code: c.code, evidenceId: c.di_walkthrough_evidence_id, raison: raison.trim() },
+  });
+}
+
+export interface CompteurConservationVideo {
+  rapportSigne: boolean;
+  notesClosesToutes: boolean;
+  eligible: boolean;
+  depuis: string | null;
+  duree: { valeur: number; verifie: true } | { valeur: null; verifie: false };
+  joursRestants: number | null;
+  purgeable: boolean;
+}
+
+/** VID-01 / §3.2 : « X est un paramètre de pack, verifie:false, affiché "à fixer par le cabinet".
+ *  Le compte à rebours ne démarre que lorsque les deux conditions sont réunies : rapport signé ET
+ *  notes de revue closes. » Même discipline de lecture que `tailleEchantillonOe` (CTRL-07,
+ *  ci-dessous) : `verifie:false` tant que le cabinet n'a rien fourni, jamais un nombre de jours
+ *  choisi de mémoire. CE QUE CE COMPTEUR NE FAIT PAS (règle 19) : il ne PURGE rien — §3.1 point 2
+ *  (le dépôt automatique et sa purge) reste un chantier séparé, derrière la même porte que le
+ *  Lot 8 ; ici, un AFFICHAGE informatif seul, que le bouton de suppression manuel n'attend pas. */
+export async function compteurConservationVideo(engagementId: string): Promise<CompteurConservationVideo> {
+  const eng = await q1<{ report_date: string | null }>(`select report_date::text from engagement where id = $1`, [engagementId]);
+  const notes = await q1<{ non_closes: string; derniere_cloture: string | null }>(
+    `select count(*) filter (where status <> 'closed') non_closes, max(closed_at)::text derniere_cloture
+     from review_note where engagement_id = $1`,
+    [engagementId],
+  );
+  const rapportSigne = eng.report_date !== null;
+  const notesClosesToutes = Number(notes.non_closes) === 0;
+  const eligible = rapportSigne && notesClosesToutes;
+  const depuis = eligible
+    ? [eng.report_date, notes.derniere_cloture].filter((d): d is string => d !== null).sort().pop() ?? null
+    : null;
+  const fs = await frameworkSet(engagementId);
+  const pack = primaryPack(fs as never) as { videoRetentionDays?: number };
+  const duree = pack.videoRetentionDays === undefined
+    ? ({ valeur: null, verifie: false } as const)
+    : ({ valeur: pack.videoRetentionDays, verifie: true } as const);
+  let joursRestants: number | null = null;
+  if (eligible && duree.verifie && depuis) {
+    const finMs = new Date(depuis).getTime() + duree.valeur * 86400000;
+    joursRestants = Math.ceil((finMs - Date.now()) / 86400000);
+  }
+  return {
+    rapportSigne, notesClosesToutes, eligible, depuis, duree, joursRestants,
+    purgeable: joursRestants !== null && joursRestants <= 0,
+  };
 }
 
 export interface TacheControle {
@@ -499,7 +588,24 @@ export async function documenterIucPreuve(controlId: string, userId: string, vol
 export async function setDiStatus(controlId: string, userId: string, status: 'effective' | 'deficient', conclusion: string): Promise<void> {
   await assertMembreDe('control', controlId, userId, 'statuer la conception d’un contrôle');
   if (!conclusion.trim()) throw new Error('D&I conclusion required');
-  const c = await q1<{ engagement_id: string; code: string }>(`select engagement_id, code from control where id = $1`, [controlId]);
+  const c = await q1<{ engagement_id: string; code: string; di_walkthrough_evidence_id: string | null }>(
+    `select engagement_id, code, di_walkthrough_evidence_id from control where id = $1`,
+    [controlId],
+  );
+  /* VID-01 (mandat du 9 septembre, §3) : « conclure... un D&I dont la vidéo d'inquiry a été
+     supprimée, sans qu'une autre preuve d'inquiry la remplace. » `di_walkthrough_evidence_id`
+     pointe TOUJOURS sur la dernière pièce attachée (`attacherWalkthrough` remplace le lien, ne
+     l'efface jamais) — un ré-attachement après suppression pointe déjà sur une pièce NEUVE, non
+     supprimée : c'est LUI, la « autre preuve », sans registre séparé à consulter. */
+  if (c.di_walkthrough_evidence_id) {
+    const ev = await q1<{ deleted_at: string | null }>(`select deleted_at::text from evidence where id = $1`, [c.di_walkthrough_evidence_id]);
+    if (ev.deleted_at) {
+      throw new Error(
+        'VID-01 : la vidéo d’inquiry du walkthrough a été supprimée, sans qu’une autre preuve d’inquiry '
+        + 'la remplace — attachez un nouvel enregistrement avant de conclure le design et l’implémentation.',
+      );
+    }
+  }
   const taches = await q<{ id: string; description: string }>(
     `select id, description from control_task where control_id = $1 order by seq_no`,
     [controlId],

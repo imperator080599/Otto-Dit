@@ -1134,6 +1134,37 @@ async function corpsDeLaSonde() {
       : `${controls.length} contrôle(s) testé(s) en OE — ${controls.length - legacy} couvert(s), ${legacy} legacy (antérieur(s) à CTRL-06, 2026-09-01)`;
   }));
 
+  /* VID-01 (mandat du 9 septembre, §3) : « conclure ou maintenir conclu un D&I dont la vidéo
+     d'inquiry a été supprimée, sans qu'une autre preuve d'inquiry la remplace. » `setDiStatus`
+     (sox.ts) garde ce refus À LA CONCLUSION ; cette lecture couvre le second cas du mandat —
+     « maintenir conclu » — un contrôle DÉJÀ conclu dont la vidéo est supprimée APRÈS coup (le
+     bouton de suppression, §3.1, reste disponible à tout moment, y compris sur un contrôle déjà
+     conclu). Lue GLOBALEMENT, même discipline que CTRL-01..06 : part des contrôles CONCLUS, ne
+     peut rougir que si une suppression a laissé un D&I conclu sans preuve d'inquiry vivante — le
+     garde de `setDiStatus` empêche déjà l'ÉCRITURE d'une NOUVELLE conclusion dans cet état ;
+     cette lecture attrape ce qu'aucune écriture ne revoit ensuite. CE QUE CETTE LECTURE NE
+     VÉRIFIE PAS (règle 19) : elle ne juge PAS un contrôle SANS AUCUN walkthrough jamais attaché
+     — VID-01, au sens strict du mandat, ne parle que d'une vidéo qui A EXISTÉ et a été
+     supprimée, jamais de son absence d'origine (un trou distinct, non nommé par ce mandat). */
+  lectures.push(await essayer('VID-01 : aucun D&I conclu ne garde une vidéo d’inquiry supprimée sans remplacement', async () => {
+    const concludedControls = await q<{ id: string; code: string; di_walkthrough_evidence_id: string | null }>(
+      `select id, code, di_walkthrough_evidence_id from control where di_status <> 'not_assessed'`,
+    );
+    if (concludedControls.length === 0) return 'aucun contrôle conclu pour l’instant';
+    const violations: string[] = [];
+    let avecVideo = 0;
+    for (const c of concludedControls) {
+      if (!c.di_walkthrough_evidence_id) continue;
+      avecVideo++;
+      const ev = await q01<{ deleted_at: string | null }>(`select deleted_at::text from evidence where id = $1`, [c.di_walkthrough_evidence_id]);
+      if (ev?.deleted_at) violations.push(`${c.code} : vidéo d’inquiry supprimée le ${ev.deleted_at.slice(0, 10)}, jamais remplacée`);
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) de VID-01 : ${violations.join(' ; ')}`);
+    }
+    return `${concludedControls.length} contrôle(s) conclu(s) · ${avecVideo} avec vidéo attachée, aucune supprimée sans remplacement`;
+  }));
+
   /* SUIVI DE MISSION (mandat contrôle interne, §5, §7.4 — livré ce jour, lu ce
      jour, règle 22). `requestsEnAttente` (requests.ts) ne compte que les
      demandes ENVOYÉES : `approveSend` pose `status = 'sent'` et `sent_at`

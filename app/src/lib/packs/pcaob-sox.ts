@@ -37,6 +37,9 @@ export const pcaobSox: AssurancePack = {
   attributeSeedDefault: 'otto-demo-sox-1',
   attributeSampleBasis:
     'Firm sampling table (CTRL-07) — shipped empty. No size is verified until the firm supplies its own table; every draw today runs on an explicit, justified override (ADR-010).',
+  // VID-01 (mandat du 9 septembre, §3.2) : `videoRetentionDays` reste NON POSÉ — aucune durée de
+  // conservation n'est écrite de mémoire. Le compteur (sox.ts, compteurConservationVideo) l'affiche
+  // « à fixer par le cabinet » tant que le champ est absent.
   exceptionTaxonomy: [
     { code: 'reconciliation_diff', label: { fr: 'Écart de rapprochement', en: 'Reconciliation difference' } },
     { code: 'verification_disagreement', label: { fr: 'Désaccord de re-exécution', en: 'Verification spot-check disagreement' } },

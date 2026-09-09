@@ -7,7 +7,8 @@ import { q, q1, repoRoot } from '@/lib/db/client';
 import {
   listControls, importInstances, drawAttributeSample, runAttributeTesting, attributeGrid, listDeviations,
   resolveDeviation, proposeDeficiency, decideDeficiency, listDeficiencies,
-  attacherWalkthrough, listerTachesControle, ajouterTacheControle, documenterProcedureTache,
+  attacherWalkthrough, supprimerVideoWalkthrough, compteurConservationVideo,
+  listerTachesControle, ajouterTacheControle, documenterProcedureTache,
   risquesDuDossier, risquesLiesAuControle, lierRisqueControle, delierRisqueControle,
   facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
   tailleEchantillonOePourControle, deriverPopulationControle, FREQUENCES_DERIVABLES,
@@ -37,6 +38,21 @@ export default async function ControlDetail({
   await requireMember(id);
   const control = (await listControls(id)).find((c) => c.id === cid);
   if (!control) return <div className="panel">{t('rcmc.controlNotFound')}</div>;
+  const videoWalkthrough = control.di_walkthrough_evidence_id
+    ? await q1<{
+      filename: string; uploaded_at: string; uploaded_by_name: string | null;
+      deleted_at: string | null; deleted_by_name: string | null; deleted_reason: string | null;
+    }>(
+      `select e.filename, e.created_at::text uploaded_at, u.name uploaded_by_name,
+              e.deleted_at::text deleted_at, d.name deleted_by_name, e.deleted_reason
+       from evidence e
+       left join app_user u on u.id = e.uploaded_by_id
+       left join app_user d on d.id = e.deleted_by
+       where e.id = $1`,
+      [control.di_walkthrough_evidence_id],
+    )
+    : null;
+  const compteurConservation = await compteurConservationVideo(id);
   const tailleOe = await tailleEchantillonOePourControle(cid);
   const estDerivable = (FREQUENCES_DERIVABLES as readonly string[]).includes(control.frequency);
   const demandePopulation = estDerivable ? null : await derniereDemandePopulationControle(cid);
@@ -141,6 +157,14 @@ export default async function ControlDetail({
         bytes: octets, source: 'auditor', uploadedBy: { kind: 'app_user', id: user.id }, audience: 'internal',
       });
       await attacherWalkthrough(cid, user.id, evidenceId);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function supprimerVideoWalkthroughAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await supprimerVideoWalkthrough(cid, user.id, String(formData.get('raison') ?? ''));
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -296,15 +320,49 @@ export default async function ControlDetail({
       </Repli>
 
       <Repli cle="eng.id.rcm.cid.walkthrough" niveau={2} titre={t('rcmc.walkthrough')} id="walkthrough">
-        {!control.di_walkthrough_evidence_id ? (
-          <form action={attacherWalkthroughAction} className="row" data-attacher-walkthrough>
-            <input type="file" name="fichier" required />
-            <button className="btn small">{t('rcmc.attacherWalkthrough')}</button>
-          </form>
+        {!control.di_walkthrough_evidence_id || videoWalkthrough?.deleted_at ? (
+          <>
+            {videoWalkthrough?.deleted_at && (
+              <p className="callout warn" data-walkthrough-supprime>
+                {t('rcmc.walkthroughSupprime', {
+                  quand: videoWalkthrough.deleted_at.slice(0, 10),
+                  qui: videoWalkthrough.deleted_by_name ?? '—',
+                  motif: videoWalkthrough.deleted_reason ?? '',
+                })}
+              </p>
+            )}
+            <form action={attacherWalkthroughAction} className="row" data-attacher-walkthrough>
+              <input type="file" name="fichier" required />
+              <button className="btn small">{t('rcmc.attacherWalkthrough')}</button>
+            </form>
+          </>
         ) : (
           <>
-            <p className="faint" data-walkthrough-attache>{t('rcmc.walkthroughAttache')}</p>
-            <table className="data" data-taches-controle>
+            <p className="faint" data-walkthrough-attache>
+              {t('rcmc.walkthroughAttache')}{' '}
+              <span className="faint">
+                {t('rcmc.walkthroughProvenance', {
+                  fichier: videoWalkthrough?.filename ?? '',
+                  qui: videoWalkthrough?.uploaded_by_name ?? '—',
+                  quand: (videoWalkthrough?.uploaded_at ?? '').slice(0, 10),
+                })}
+              </span>
+            </p>
+            <p className="faint small" data-compteur-conservation-video>
+              {compteurConservation.eligible
+                ? (compteurConservation.duree.verifie
+                  ? t('rcmc.conservationJoursRestants', { n: compteurConservation.joursRestants ?? 0 })
+                  : t('rcmc.conservationNonVerifiee'))
+                : t('rcmc.conservationNonEligible')}
+            </p>
+            <details data-supprimer-walkthrough>
+              <summary className="repli-action">{t('rcmc.supprimerWalkthrough')}</summary>
+              <form action={supprimerVideoWalkthroughAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                <textarea name="raison" rows={2} required placeholder={t('rcmc.supprimerWalkthroughMotif')} />
+                <button className="btn small secondary">{t('rcmc.supprimerWalkthroughConfirmer')}</button>
+              </form>
+            </details>
+            <table className="data mt" data-taches-controle>
               <thead>
                 <tr><th>#</th><th>{t('rcmc.tache')}</th><th>{t('rcmc.reperVideo')}</th><th>{t('rcmc.procedures')}</th><th>{t('commun.actions')}</th></tr>
               </thead>

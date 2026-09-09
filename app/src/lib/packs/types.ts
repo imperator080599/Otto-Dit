@@ -154,6 +154,11 @@ export interface AssurancePack {
   attributeSampleSizes?: Partial<Record<Frequency, number>>;
   attributeSampleBasis?: string;
   attributeSeedDefault?: string;
+  /* VID-01 (mandat du 9 septembre, §3.2) : « X est un paramètre de pack, verifie:false, affiché
+     "à fixer par le cabinet". Aucune durée n'est inventée. » Même forme que `attributeSampleSizes`
+     juste au-dessus (CTRL-07) : `undefined` EST la forme de « non vérifié » — jamais un nombre de
+     jours choisi de mémoire. `pcaob-sox.ts` la livre non posée sciemment. */
+  videoRetentionDays?: number;
   exceptionTaxonomy: TaxonomyEntry[];
   deviationTaxonomy?: TaxonomyEntry[];
   deficiencyLadder?: DeficiencyLadderConfig;
