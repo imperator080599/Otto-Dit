@@ -3270,12 +3270,17 @@ export async function conduire(
        connu mauvais mesuré une première fois (« lien absent », verify du
        2026-09-09) avant ce correctif. `$=` (suffixe), même convention que
        les autres stations du fichier (ex. `a[href$="/carry-forward"]`). */
-    const lienObstacles = p.locator(`a[href$="/obstacles"].epure-carte`);
-    if (!(await lienObstacles.count())) {
+    const selObstacles = `a[href$="/obstacles"].epure-carte`;
+    if (!(await p.locator(selObstacles).count())) {
       dire('suivi : la carte obstacles a un lien réel vers /obstacles', false, 'lien absent');
     } else {
-      await lienObstacles.click();
-      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      /* `cliquer()` (pas un clic à la main) : le réseau ne se calme pas
+         toujours à temps sur une transition client Next — c'est `cliquer()`
+         qui porte la grâce fixe après le silence réseau (voir sa définition).
+         Un clic suivi d'un simple `waitForLoadState` a lu l'URL AVANT la
+         navigation réelle — cas connu mauvais mesuré (« /suivi » encore
+         affiché après le clic, verify du 2026-09-09) avant ce correctif. */
+      await cliquer(selObstacles);
       dire('suivi : cliquer la carte obstacles ouvre /obstacles',
         p.url().endsWith('/obstacles'), p.url());
       await aller(`${eng}/suivi`);
