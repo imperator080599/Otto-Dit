@@ -13,6 +13,101 @@ de l'incident 0153/0154) : finir le lot contrôle interne (§7.3 restant, puis �
 §1 (table d'échantillonnage sourcée), §2 (R30/MAT-01-03), §3 (vidéo, dépôt manuel). §5 amendé le
 même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 rouverts — tout
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
+Jeton engendré et premier écran livré (tranche ci-dessous, §7.4 première moitié) : suite du lot
+contrôle interne, kanban (§7.4 seconde moitié) ensuite, puis §1/§2/§3 du mandat du 9 septembre.
+
+## Lot contrôle interne, tranche 8 : §7.4, le suivi de mission — tableau de bord (2026-09-09)
+
+*Mandat §5/§7.4 : « Tableau de bord : avancement par poste, ce qui bloque le visa, l'âge des
+demandes en attente, les écarts non conclus. Tout compteur mène quelque part. Rien de neuf en base
+tant qu'une vue suffit. » Construction en deux moitiés (§7) : « tableau de bord d'abord (vue pure),
+kanban ensuite » — cette tranche livre la première moitié. Premier écran dans le nouveau langage de
+design (mandat du 2026-09-09, §5, direction Optro.ai) : le geste concret que ce même amendement
+demande AVANT tout écran neuf — engendrer le jeton de design comme source unique — est fait ici.*
+
+**Ce qui a changé.** `/eng/[id]/suivi` (nouveau, route distincte de `/eng/[id]` — assignations,
+« my work » — et de `/eng/[id]/dashboard` — traceur de demandes, dépense IA) : une VUE PURE, aucune
+table neuve. Quatre panneaux, chacun un compteur qui MÈNE quelque part (D.6) : avancement par poste
+(`sectionsDuDossier` filtré `kind='poste'`, chaque ligne vers sa page de poste), ce qui bloque le
+visa (`obstaclesAuVisa`, chaque famille vers son `ou` réel), demandes en attente du client
+(`requestsEnAttente`, neuf — `requests.ts` — l'âge se compte depuis `sent_at`, jamais
+`created_at` : `approveSend` pose les deux ENSEMBLE, dans la même instruction, jamais l'un sans
+l'autre), écarts non conclus (`listDeviations`, `control_id` ajouté — additif, aucun appelant
+existant cassé — pour que chaque écart mène à son contrôle réel sur `/rcm/[cid]`).
+
+**Le langage de design (§5 du mandat du 9 septembre).** `globals.css` porte désormais un bloc
+`.epure` — une SOURCE DE JETONS séparée de `:root`, jamais un `:root` réécrit : tout écran EXISTANT
+garde son encre à l'octet près (vérifié par `npm run visuel`, qui scanne les 79 écrans anciens en
+plus du neuf — aucun n'a bougé). La repasse rétroactive sur les écrans existants reste un lot
+séparé, en file, que seul le fondateur déclenche (§5 : placement « (c) puis (a) ») — cette tranche
+ne l'ouvre pas. Fond ivoire, cartes blanches à rayon généreux et ombre quasi nulle, un seul accent
+violet saturé, couleurs sémantiques désaturées, grands chiffres légers pour les compteurs, mono en
+capitales pour les codes techniques (D.6 point 1 : la phrase d'abord, le code de refus ensuite, en
+petit) — le rail et le bandeau, chrome PARTAGÉ par tout écran ancien compris, restent inchangés :
+`.epure` ne s'applique qu'au contenu propre de `/suivi`.
+
+**Lecture `/api/sante` ajoutée le jour même** (règle 22, avec son fichier de sonde —
+`suivi-lecture.test.ts`, même forme que CTRL-0x) : aucune demande au statut « envoyée » sans date
+d'envoi — `approveSend` ne peut structurellement pas produire ce cas, donc la lecture ne peut
+rougir que si ce chemin a été contourné (SQL direct, régression). Cas connu mauvais posé et vérifié
+(règle 17) : rouge sur le contournement, vert sur le chemin gardé.
+
+**Verify complet, en UN SEUL run continu, sur le tree du commit `3c5b3f8`** (`cd app && npm run
+verify`, sous `timeout 3600`, `set -o pipefail` en tête) : tsc propre · 1019/1019 tests vitest ·
+43/43 gardes à jour · langue 0 chaîne hors catalogue, 0 doublon sémantique · lectures et parcours
+(231 stations figées) verts · screens et fumée propres · densité 0 dépassement (`/eng/[id]/suivi` à
+0 action primaire, loin du plafond de 5) · **clics 235/235 étapes, 0 échec, 363 clics sur 49
+gestes** · **visuel 320/320 vues, 0 défaut**. `EXIT=0` mesuré (pas seulement celui du dernier
+maillon d'un pipe — `pipefail` posé avant `timeout`, leçon de la règle 34/35).
+
+**Ce que la première mesure a trouvé, et qui a été corrigé avant d'expédier** (trois runs
+complets ont tourné avant celui-ci ; rien n'a été tu) :
+1. `rail.test.ts` — l'entrée neuve du rail (« Engagement tracking », toujours atteignable comme la
+   vue d'ensemble) manquait à l'ensemble EXHAUSTIF que le test énumère. Assertion mise à jour.
+2. `langue.test.ts` — doublon sémantique : `suivi.rienNeBloque` répétait mot pour mot `obst.aucun`.
+   Le concept existait déjà ; la page réutilise `obst.aucun`, la clé dupliquée retirée.
+3. `tests/screens.test.ts` — un timeout sur `/team`, SANS rapport avec ce diff : reproduit propre en
+   isolation, root-causé à une contention (un agent de recherche tournait en fond pendant le
+   balayage réel des écrans — même famille que la leçon « deux vitest en parallèle », CLAUDE.md §7).
+4. Station clics « suivi » (la mienne) : sélecteur CSS comparant une URL absolue à un attribut DOM
+   relatif (`a[href="…"]` ne matche jamais un `<Link>` Next) — corrigé en suffixe (`$=`), même
+   convention que le reste du fichier.
+5. Même station : un clic suivi d'un `waitForLoadState` fait à la main lisait l'URL avant la fin de
+   la transition client — remplacé par l'helper `cliquer()` déjà éprouvé par tout le fichier.
+6. `npm run visuel` : deux couleurs `.epure` (ambre, vert) sous le plancher de contraste de 3:1
+   (2,76:1 et 2,74:1 mesurés/calculés) — assombries jusqu'à ~4,2:1, désaturées plutôt que vives
+   (l'esthétique du mandat et le plancher de lisibilité ne s'opposaient pas).
+
+**La revue hostile (1 voix — tranche sans modèle de données, sécurité, multi-tenant ni code de
+refus, amendement de cadence)** a trouvé deux constats de plus, tous deux corrigés :
+7. BLOQUANT — `demandes[demandes.length - 1]` prenait la demande la plus RÉCENTE sous le libellé
+   « la plus ancienne » (`requestsEnAttente` trie `sent_at asc` : l'index 0 est le plus ancien).
+   Ni le test de service ni la station clics ne pouvaient l'attraper (aucun des deux ne lit le
+   texte de l'âge affiché) — silence lu comme un succès (règle 13). Corrigé : `demandes[0]`.
+8. NON BLOQUANT, corrigé quand même — la lecture `/api/sante` neuve n'avait pas encore son fichier
+   de sonde (règle 17). `suivi-lecture.test.ts` ajouté, cas connu mauvais + protecteur + chemin
+   gardé réel, tous vérifiés (voir « Lecture /api/sante » ci-dessus).
+
+Tous deux corrigés, reconfirmés par le verify complet cité plus haut (le run qui a produit les
+chiffres 1019/235/320 ci-dessus est le run qui suit CES DEUX correctifs, pas un run antérieur).
+
+**Périmètre gelé tenu** : aucune table neuve, aucun cycle au-delà du chiffre d'affaires, aucune
+procédure de méthode ajoutée. **§7.4 du mandat contrôle interne est maintenant à mi-chemin** : le
+tableau de bord est livré ; le kanban (seconde moitié) suit, sur ce même arbre, sans interruption.
+
+**SHA poussé** : `3c5b3f8` sur `claude/otto-session-resume-zimig9`, mesuré (pas supposé). **SHA
+servi confirmé = `3c5b3f8`** — cette branche déploie un APERÇU à chaque push (Vercel, sans mandat
+requis pour un aperçu — l'interdit ne porte que sur `main`/production), mesuré en direct
+(`mcp__Vercel__list_deployments` puis `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dode0vn6b-imperator080599.vercel.app/api/sante`, jamais une attente de CI, règle 36) :
+`HTTP 200 · sha=3c5b3f832a9c6d0ef8db6dffe5be0513466d9113 · identiteCoherente=true`. Toutes les
+lectures passent, la lecture « suivi de mission » neuve comprise (`ok:true · 2 demande(s) en
+attente (âge max 33 j) · 0 écart(s) non conclu(s) · 2 poste(s) suivi(s)`). **Ce n'est PAS un
+déploiement de PRODUCTION** (`target: null`, pas `"production"` — les seuls déploiements
+`target: "production"` de ce projet sont ceux de `main`) : rien de ce lot n'atteint le fondateur
+avant qu'une pull request soit ouverte et mergée, ce que le mandat ne demande pas encore pour ce
+lot. « Servi » ici veut dire : cet aperçu, à cette URL, sert ce SHA exact et répond vert — pas
+« en ligne pour le fondateur ».
 
 ## Lot contrôle interne, tranche 7 : CTRL-06, l'inquiry OE neuve (2026-09-09)
 
