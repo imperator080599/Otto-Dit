@@ -143,6 +143,15 @@ export async function proposeScoping(engagementId: string, userId: string): Prom
 export async function detecterBasculesMaterialite(
   engagementId: string, importFileId: string, userId: string | null,
 ): Promise<{ fsliCode: string }[]> {
+  /* GARDE D'ÉTANCHÉITÉ (ETANCH-01/03) — trouvée MANQUANTE par le verify complet du
+     2026-09-09 (`couverture-etancheite.test.ts`, `etancheite-executee.test.ts`), pas devinée :
+     appeler cette fonction depuis `uploadTbAction` la protège déjà indirectement (`importTb`,
+     `rebuildFslis` gardent AVANT elle sur la même requête) — mais chaque fonction de service
+     prenant un ACTEUR se garde ELLE-MÊME, en défense en profondeur, jamais seulement par le
+     contexte de son appelant. `assertMembre` ne fait rien si `userId` est `null` (le cas système,
+     `detecterBasculesMaterialite(id, fichier, null)`), exactement le même contrat que
+     `proposeScoping`/`confirmScoping` juste au-dessus. */
+  await assertMembre(engagementId, userId, 'détecter les bascules de matérialité');
   const ctx = await engagementCtx(engagementId);
   const mat = await q01<{ perf_amount: string }>(
     `select perf_amount::text from materiality where engagement_id = $1 and status = 'validated'
