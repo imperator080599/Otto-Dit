@@ -88,7 +88,7 @@ describe('CTRL-04 : la lecture /api/sante', () => {
       const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-04'));
       expect(lecture.ok).toBe(true);
       expect(res.status).toBe(200);
-      expect(lecture.detail).toContain('tirage(s) OE, tous sur une population rapprochée');
+      expect(lecture.detail).toContain('tirage(s) OE, tous couverts par un rapprochement de population');
     } finally {
       await q(`delete from sample where id = $1`, [sampleId]);
       await q(`delete from procedure_instance where id = $1`, [procedureId]);

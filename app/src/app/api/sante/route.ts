@@ -976,10 +976,17 @@ async function corpsDeLaSonde() {
      `npm run demo:seed`, AVANT que `control_population_reconciliation` n'existe — nommés ici DÈS
      CE COMMIT pour ne pas répéter l'échec de déploiement du 2026-09-09 (fbe7afe/CTRL-07, R67), qui
      avait rendu `deploye` rouge pour de vrai faute d'avoir anticipé exactement ce cas. CE QUE
-     CETTE LECTURE NE VÉRIFIE PAS (règle 19) : la FRAÎCHEUR du rapprochement — contrairement au
-     garde lui-même (`populationControleRapprochee`, sox.ts), qui refuse un NOUVEAU tirage si la
-     population a changé depuis ; un tirage déjà fait reste vert ici même si sa population a
-     grossi depuis, exactement comme POP-01 ne revérifie jamais la fraîcheur des tirages passés. */
+     CETTE LECTURE NE VÉRIFIE PAS (règle 19), DEUX CHOSES : la FRAÎCHEUR du rapprochement —
+     contrairement au garde lui-même (`populationControleRapprochee`, sox.ts), qui refuse un
+     NOUVEAU tirage si la population a changé depuis ; un tirage déjà fait reste vert ici même si
+     sa population a grossi depuis, exactement comme POP-01 ne revérifie jamais la fraîcheur des
+     tirages passés. ET l'ORDRE : `not exists (...)` ne vérifie que l'EXISTENCE d'un rapprochement
+     pour le contrôle, jamais que sa date (`rapprochee_at`) précède celle du tirage — un
+     rapprochement conclu APRÈS coup (un contournement du garde suivi d'une régularisation)
+     satisferait cette lecture identiquement à un rapprochement réellement antérieur. Trouvé par
+     la revue hostile du 2026-09-09 (voix 2, tranche 6) : le message de succès l'affirmait
+     («…rapprochée avant tirage ») sans le vérifier — corrigé pour ne plus l'affirmer (règle 13,
+     corollaire : n'affirme jamais plus que ce que tu vérifies). */
   lectures.push(await essayer('CTRL-04 : aucun tirage OE sur une population non rapprochée (miroir POP-01)', async () => {
     const LEGACY_AVANT_CTRL04 = [
       '1a158f98-869b-4cee-a655-2262a9d847b0', // C-BR-01, tiré 2026-09-01, avant CTRL-04 (2026-09-09)
@@ -1001,8 +1008,8 @@ async function corpsDeLaSonde() {
     const n = Number(total.n);
     const legacy = rows.length;
     return legacy === 0
-      ? `${n} tirage(s) OE, tous sur une population rapprochée avant tirage`
-      : `${n} tirage(s) OE — ${n - legacy} rapproché(s) avant tirage, ${legacy} legacy (antérieur(s) à CTRL-04, 2026-09-01)`;
+      ? `${n} tirage(s) OE, tous couverts par un rapprochement de population`
+      : `${n} tirage(s) OE — ${n - legacy} couvert(s) par un rapprochement de population, ${legacy} legacy (antérieur(s) à CTRL-04, 2026-09-01)`;
   }));
 
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
