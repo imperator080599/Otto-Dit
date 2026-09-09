@@ -77,7 +77,23 @@ au pas `semeur` — `docs/SEMEUR_VS_CHEMIN.md` avait divergé du `registre.ts` r
 sur l'arbre corrigé, puis TUÉ avant sa fin (règle 34) parce que ce commit lui-même (l'ajout de R66
 au registre, ci-dessus) a édité `docs/BACKLOG_REPORTE.md`/`docs/instantanes/fils.json` PENDANT son
 exécution — aucune mesure ne commence sur un arbre qui bouge, on ne l'attend pas, on le tue et on
-le dit. Un TROISIÈME passage, sur cet arbre désormais figé, suit ce commit.
+le dit. Un TROISIÈME passage, sur l'arbre désormais figé par ce commit, a lui-même échoué —
+`EADDRINUSE :3299` — pas un défaut de cette tranche : un `next-server` (v15.5.23) laissé vivant par
+mon propre `kill -9` du DEUXIÈME run, qui n'avait tué que le lanceur `next dev`, pas le processus
+détaché qu'il avait engendré (le piège documenté §7 de ce fichier : « sans `detached`/le GROUPE de
+processus, `kill` ne tue que le lanceur »). Mesuré (`lsof -i :3299`, `ps aux`), tué proprement,
+`free -m` confirmé propre (14,3 Go libres, 0 swap, aucun parasite) avant de relancer — un nettoyage
+d'environnement, pas une édition du code, donc pas une nouvelle invalidation règle 34.
+
+**Verify complet, QUATRIÈME passage (`/tmp/verify-ctrl07-4.log`), intégralement VERT — `EXIT=0`.**
+**953/953 tests** (117 fichiers), **43 gardes**, `docs/SEMEUR_VS_CHEMIN.md` à jour avec le registre
+(89 objets · 16 décor, inchangé), langue **0 chaîne hors catalogue · 15 messages de refus · 15/15
+cas connus mauvais dénoncés**, lectures **0 lecture perdue sur 1716 chemins figés · 6/6 cas connus
+mauvais**, parcours **5/5 cas connus mauvais**, screens **87 + 51 routes · 0 échec**, fumée **0
+échec** (`/api/sante` répond 200 dans ce balayage aussi), densité **77 écrans · 0 au-delà de 5
+actions**, clics **232 étapes · 0 échec · 362 clics sur 48 gestes · 231 stations figées vérifiées**,
+sonde d'hydratation **aucun incident**, visuel **312 vues · 0 défaut**. Aucune commande de `verify`
+non exécutée sur cette tranche.
 
 ## Lot contrôle interne, tranche 2 : les IUC et les facteurs de design, CTRL-02/CTRL-03 (2026-09-08)
 
