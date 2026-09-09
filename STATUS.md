@@ -15,9 +15,86 @@ même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
 **§7.4 est maintenant COMPLET** (tableau de bord et kanban, tranches ci-dessous) : §0 du mandat du
 8 septembre est donc entièrement livré. §1 (table d'échantillonnage sourcée) reste **bloqué** par
-une restriction réseau du bac à sable (voir plus bas). **§2.1 (bascule de matérialité) est
-maintenant livré** (tranche ci-dessous) — prochain : §2.2 (ouverture de section automatique),
-§2.3 (demande de détail au-delà du CTT), les codes de refus MAT-01/02/03, puis §3 (vidéo).
+une restriction réseau du bac à sable (voir plus bas). **§2.1/§2.2/§2.3 (bascule de matérialité,
+ouverture de section, demande de détail CTT) sont maintenant livrés** (tranches ci-dessous) —
+prochain : les codes de refus MAT-01/02/03, puis §3 (vidéo).
+
+## Lot mandat 9 septembre, §2.2/§2.3 : section ouverte et demande de détail CTT (2026-09-09)
+
+*Mandat §2.2 : « si un import rend un FSLI matériel, sa section de documentation est engendrée
+automatiquement. » Mandat §2.3 : « une demande de détail est créée sur les comptes au-dessus du
+CTT », en réutilisant le mécanisme de demandes de la Partie B, aucun chemin neuf. Épreuves §2.5 :
+un import qui fait basculer un compte ouvre la section ET crée la demande, « le même import ».*
+
+**Ce qui a changé.** La MÊME détection qui pose le drapeau (§2.1, `detecterBasculesMaterialite`)
+fait désormais deux choses de plus pour chaque bascule NOUVELLEMENT posée :
+- **§2.2** — insère un `section_state` (kind='poste'), même forme que `assurerSections`
+  (sections.ts). NÉCESSAIRE parce qu'un poste `ns_confirmed` (D9) n'entre JAMAIS dans
+  `postesRetenus` (rail.ts : `scoping in ('in_scope','in_scope_qualitative')` seulement) — sans ce
+  geste, `assurerSections` ne lui aurait jamais ouvert de section, et le drapeau serait resté
+  invisible du tableau de bord, du suivi et du kanban. `fsli.scoping` n'est JAMAIS touché (D9
+  intact) : ce geste rend seulement le dossier du poste (leadsheet, revue analytique, et tout le
+  reste de `/poste/[code]`) ATTEIGNABLE.
+- **§2.3** — `requests.ts::demanderDetailAuDessusDuCtt` (nouvelle fonction, DISTINCTE de
+  `demanderDetailDeCompte`/Partie B dont le comportement ne change pas) crée une demande filtrée
+  aux comptes du poste dont le solde absolu atteint ou dépasse le CTT (`materiality.ctt_amount`,
+  pas le seuil de performance qui a servi à détecter la bascule). Nouveau `evidence_type_code`
+  distinct (`detail_de_compte_ctt`) pour ne jamais se confondre, dans
+  `derniereDemandeDetailDeCompte`, avec la demande Partie B sur tout le poste. Si aucun compte ne
+  dépasse le CTT, aucune demande n'est créée — pas une erreur (un poste peut devenir matériel par
+  somme de petits comptes, chacun sous le CTT ; couvert par un test dédié). Import DYNAMIQUE
+  fsli.ts → requests.ts (même patron que `obstacles.ts`/`matching.ts` ailleurs dans ce dépôt) :
+  `requests.ts` importe déjà `frameworkSet`/`fsliAccounts` DEPUIS `fsli.ts`, un import statique en
+  sens inverse aurait créé un cycle.
+
+Deux lectures `/api/sante` le jour même (règle 22) : la section de chaque bascule est ouverte ; et
+aucune demande CTT n'existe sans une bascule réelle derrière (un contrôle d'orphelin — PAS un
+contrôle que la bascule DEVRAIT avoir une demande, ce qui n'est vrai que si un compte dépasse le
+CTT, règle 19). Chacune a son cas connu mauvais (règle 17), et chaque test positif vérifie
+désormais le compte RÉEL contre la base (pas seulement `ok:true`, qui serait aussi satisfait par
+« zéro » — corrigé après la revue hostile, voir plus bas). Station clics ajoutée : la demande CTT
+est visible sur `/requests` (aucun écran neuf, épreuve §2.5) et cliquable.
+
+**Trouvé en construisant les tests, pas deviné (règle 18).** `addMappingOverride` (fsli.ts)
+termine par un `rebuildFslis`, qui réinitialise `scoping` à `unscoped` pour tout FSLI SANS
+`confirmed_by` — `REVENUE`, `in_scope` mais jamais confirmé par un humain dans `bootstrapNep`
+(la seule variable du jeu synthétique), redevenait alors un candidat et basculait lui aussi sur
+le même import de sonde, provoquant une violation de clé étrangère au nettoyage du test. Les
+fixtures posent donc leur `coa_map_rule` en SQL direct plutôt que via `addMappingOverride`.
+
+**Revue hostile, un réfutateur** (règle 30, cadence : ni modèle de données neuf, ni code de refus
+dans cette tranche) — trois constats, tous corrigés :
+1. Sans try/catch autour de `demanderDetailAuDessusDuCtt`, sa seule levée prévue (poste absent du
+   catalogue du pack — ne devrait jamais arriver) aurait avorté l'évaluation de TOUS les candidats
+   restants de la boucle en silence, alors que le drapeau et la section du poste courant restent
+   posés et doivent le rester (règle 28). Corrigé : try/catch local, consigné dans `event_log`
+   (verbe `detail_de_compte_ctt_echec`), jamais avalé sans trace (règle 13).
+2. Les deux tests positifs des lectures `/api/sante` ne vérifiaient que `ok === true`, satisfait
+   identiquement par « aucune bascule/demande pour l'instant » — un monde de démonstration régressé
+   à zéro n'aurait rien fait rougir. Corrigé : chaque test compare désormais le `detail` exact au
+   compte réel mesuré contre la base.
+3. Le commentaire disait « dépasse le CTT », le code compare par `>=` — wording resserré, aucun
+   changement de comportement.
+Le réfutateur a confirmé, en lisant lui-même `rebuildFslis`/`addMappingOverride`, que le diagnostic
+ci-dessus (§ « trouvé en construisant ») était correct, pas une erreur de diagnostic.
+
+**Deux tentatives de `clics` ratées avant la mesure valide, toutes deux nommées plutôt que
+cachées.** La première a été tuée par un `timeout 900` jamais mesuré (règle 35 : un budget
+inventé, pas une mesure connue de ce dépôt) avant sa fin. La seconde a tourné sur la base déjà
+jouée par la première (le dossier de démonstration déjà clos par la première tentative) — 63
+stations ont rougi pour rien, exactement le défaut documenté CLAUDE.md §6 (« sur une base déjà
+jouée, des stations rougissent pour rien »). Aucune des deux n'a été prise pour une mesure valide.
+Base re-semée (`db:reset && demo:seed`), troisième tentative propre : **241 étapes, 0 échec(s),
+379 clics sur 52 gestes, 231 stations figées toutes vérifiées, aucune jamais atteinte.**
+
+**Verify complet, arbre déjà silencieux** (targeted d'abord — typecheck, tests ciblés, langue,
+lectures, gardes tous verts — puis la chaîne complète, une seule fois, sur l'arbre qui avait cessé
+de produire des constats) : `set -o pipefail && timeout 3600 npm run verify … ; echo "EXIT=$?"`,
+**EXIT=0** — 132/132 fichiers, 1031/1031 tests, écrans 91+53/0 échec, clics 241/0 (379 clics),
+visuel 328/0.
+
+**SHA servi** : à confirmer après le push (commit `fa22993`), par `/api/sante` sur le déploiement
+d'aperçu de cette branche — voir l'entrée qui suit.
 
 ## Lot mandat 9 septembre, §2.1 : la bascule de matérialité (2026-09-09)
 
