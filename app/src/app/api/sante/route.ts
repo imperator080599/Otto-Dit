@@ -853,7 +853,13 @@ async function corpsDeLaSonde() {
      qu'on ne détruit ni ne réécrit après coup (règle 28), et inventer une justification a
      posteriori serait exactement le mensonge que la règle 31 interdit. Nommés ici, datés,
      MÊME PATRON que R47/POP-01 quelques lectures plus haut dans ce fichier : tout AUTRE tirage
-     hors cette liste reste une régression réelle, jamais un « déjà vu ». */
+     hors cette liste reste une régression réelle, jamais un « déjà vu ».
+     R67 (docs/BACKLOG_REPORTE.md, docs/instantanes/fils.json) : cette liste est PERMANENTE, à la
+     différence de LEGACY_AVANT_POP01 — aucun geste légitime ne peut fournir après coup une
+     justification datée 2026-09-01 sans fabriquer une pièce (règle 31), donc pas de fermeture
+     ligne par ligne possible. Sa condition de retrait UNIQUE : les deux id disparaissent de la
+     base (engSox re-semé en entier sous mandat écrit, ou clôturé/archivé par un geste qui
+     n'existe pas encore) — jamais un troisième id sans un événement nommé dans R67. */
   lectures.push(await essayer('CTRL-07 : aucun tirage OE sans taille vérifiée ni justification écrite', async () => {
     const LEGACY_AVANT_CTRL07 = [
       '1a158f98-869b-4cee-a655-2262a9d847b0', // C-BR-01, tiré 2026-09-01, avant CTRL-07 (2026-09-09)
@@ -882,6 +888,48 @@ async function corpsDeLaSonde() {
     return legacy === 0
       ? `${samples.length} tirage(s) OE, tous couverts par une justification écrite ou une taille vérifiée`
       : `${samples.length} tirage(s) OE — ${samples.length - legacy} couvert(s), ${legacy} legacy (antérieur(s) à CTRL-07, 2026-09-01)`;
+  }));
+
+  /* POPULATION DÉRIVÉE (mandat contrôle interne, §3.1, tranche 4) : pour une fréquence RÉGULIÈRE,
+     `deriverPopulationControle` (sox.ts) calcule les occurrences de `frequency` sur la période et
+     les écrit `source='derived'`. Cette lecture ne recrée rien — elle RECALCULE, pour chaque
+     contrôle qui porte au moins une ligne dérivée, ce que `occurrencesDeLaPeriode` produirait
+     FRAÎCHEMENT aujourd'hui, et compare au contenu réel de `control_instance` : même discipline
+     de fraîcheur que `populationDuDetailRapproche` (account-detail.ts) pour POP-01 — un calcul
+     qui aurait dérivé, puis un changement de code (ou une ligne éditée à la main) qui romprait le
+     lien, doit rougir plutôt que rester silencieusement périmé. CE QUE CETTE LECTURE NE VÉRIFIE
+     PAS (règle 19) : elle ne dit rien des populations `listing`/`evidence` (hors périmètre — ce
+     sont CTRL-04/CTRL-05, tranches à venir), et elle ne rougit sur AUCUN contrôle qui n'a encore
+     rien dérivé (aucun cas à rougir tant que rien n'est dérivé). */
+  lectures.push(await essayer('population dérivée : cohérente avec la fréquence et la période au moment de la lecture', async () => {
+    const { occurrencesDeLaPeriode } = await import('@/lib/services/sox');
+    type Frequence = Parameters<typeof occurrencesDeLaPeriode>[0];
+    const controles = await q<{ id: string; code: string; frequency: Frequence; period_start: string; period_end: string }>(
+      `select distinct c.id, c.code, c.frequency, p.start_date::text period_start, p.end_date::text period_end
+       from control_instance ci join control c on c.id = ci.control_id
+       join engagement e on e.id = c.engagement_id join period p on p.id = e.period_id
+       where ci.source = 'derived'`,
+    );
+    if (controles.length === 0) return 'aucune population dérivée pour l’instant';
+    const violations: string[] = [];
+    let total = 0;
+    for (const c of controles) {
+      const attendues = occurrencesDeLaPeriode(c.frequency, c.period_start, c.period_end);
+      const reelles = await q<{ label: string; occurred_on: string }>(
+        `select label, occurred_on::text from control_instance where control_id = $1 and source = 'derived' order by occurred_on`,
+        [c.id],
+      );
+      total += reelles.length;
+      const memeForme = attendues.length === reelles.length
+        && attendues.every((a, i) => a.occurredOn === reelles[i].occurred_on && a.label === reelles[i].label);
+      if (!memeForme) {
+        violations.push(`${c.code} : ${reelles.length} ligne(s) en base, ${attendues.length} attendue(s) en recalculant fraîchement — divergentes`);
+      }
+    }
+    if (violations.length > 0) {
+      throw new Error(`${violations.length} violation(s) : ${violations.join(' ; ')}`);
+    }
+    return `${controles.length} contrôle(s) à population dérivée · ${total} occurrence(s), toutes recalculables à l’identique`;
   }));
 
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────

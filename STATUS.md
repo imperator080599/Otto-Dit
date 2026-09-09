@@ -8,6 +8,70 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 4 : la population dérivée (mandat §3.1) (2026-09-09)
+
+*Mandat, §3.1 : pour une fréquence RÉGULIÈRE (annuelle, trimestrielle, mensuelle, hebdomadaire,
+quotidienne), la population d'occurrences OE se DÉRIVE de la fréquence et de la période — le
+système la calcule, sans demande client. `as_needed` reste sur le chemin de demande client
+(`CTRL-05`, tranche suivante). Recherche préalable (agent dédié) : `importInstances`/
+`requestAndImportListing` ne dérivaient rien pour AUCUNE fréquence — tout contrôle passait par le
+client, y compris les fréquences régulières ; `control_instance` ne portait aucune trace de
+provenance dérivée ; POP-01/`populationDuDetailRapproche` (account-detail.ts) a servi de patron
+pour la discipline de fraîcheur, pas de code réutilisé directement (tables différentes, contrôle
+vs FSLI).*
+
+**Ce qui a changé.** Migration `0151_population_derivee.sql` : `control_instance.source` gagne la
+valeur `'derived'` (même patron que 0150 sur `risk.source` — nom de contrainte auto-générée jamais
+supposé, recherché dans `pg_constraint`). `sox.ts` : `FREQUENCES_DERIVABLES` (`annual, quarterly,
+monthly, weekly, daily` — **`adhoc` et `many_daily` en sont délibérément absents**, règle 19 : le
+mandat ne nomme que les quatre premières au §3.1, et `many_daily` impliquerait une constante «
+occurrences par jour » qu'aucune fréquence ni période ne peut fournir sans l'écrire de mémoire,
+règle 8) ; `occurrencesDeLaPeriode` (fonction PURE, testable sans base) calcule les dates
+d'occurrence UTC pour chaque fréquence régulière ; `deriverPopulationControle` les écrit en
+`control_instance`, gardé par `assertMembreDe`, refuse une fréquence non dérivable (nommant
+CTRL-05) et refuse une population déjà présente (dérivation à usage unique, jamais un doublon).
+Écran `rcm/[cid]` : le bouton « importer le listing client » est remplacé par « dériver la
+population » pour les fréquences régulières (le mandat ne prévoit pas de round-trip client là où
+rien ne le justifie) ; une colonne `source` affiche « dérivée » sur chaque ligne ; le tri de la
+liste passe de `label` (lexicographique — cassait l'ordre chronologique : « Mois 10 » avant « Mois
+2 ») à `occurred_on`. Lecture `/api/sante` **population dérivée** : recalcule fraîchement, pour
+tout contrôle portant au moins une ligne `derived`, ce que `occurrencesDeLaPeriode` produirait
+aujourd'hui, et rougit sur toute divergence — même discipline de fraîcheur que POP-01.
+
+**Ce qui n'a PAS changé, délibérément (règle 19).** Le monde de démonstration (`part2.ts`,
+`runControlCycle` pour C-BR-01/C-REV-01) N'A PAS été basculé sur le dériveur : ces deux cycles
+dépendent d'un CSV et de fichiers de preuve CURATÉS (`instances_C-BR-01.csv`, `bankrec_2025-01.pdf`
+etc.) construits pour produire des scénarios de déviation précis (« C-BR-01 : 4 deviation(s) »,
+mesuré et cité dans ce fichier depuis plusieurs tranches) — un dériveur produit des labels («
+Mois 1, clos le 2025-01-31 ») qui ne correspondraient à AUCUN fichier de preuve existant, ce qui
+aurait fait passer chaque occurrence pour une déviation « preuve manquante » et détruit un
+scénario de démonstration réel sans qu'aucune règle ne l'exige (rule 28, en esprit — casser du
+contenu curaté n'est pas mieux que casser du contenu produit). Vérifié en lisant
+`uploadControlEvidence` (part2.ts) avant de toucher quoi que ce soit, pas supposé. Rien n'est donc
+ajouté à `semeur/registre.ts` : aucun nouvel objet n'est créé par le semeur dans cette tranche — le
+dériveur n'est atteignable que par un geste humain (le bouton), jamais par `demo-seed`.
+
+**Preuve cliquée, build de PRODUCTION** (jamais `next dev`), navigation FRAÎCHE après le clic :
+contrôle de sonde mensuel, 0 occurrence → clic « Derive population » → 12 lignes, chronologiques
+(Mois 1 … Mois 12), toutes `source=derived`, le bouton disparaît (population non vide) — mesuré
+directement dans le panneau (pas un `grep` sur toute la page, règle 15 : une autre table partageait
+la même classe CSS et aurait faussé un comptage global).
+
+**Tests neufs** : `occurrencesDeLaPeriode` — 8 tests purs (annuelle/trimestrielle/mensuelle/
+hebdomadaire/quotidienne sur un exercice complet 2025, année BISSEXTILE 2024 — 29 février, pas 28 —,
+une période COURTE qui ne déborde jamais après sa fin, `FREQUENCES_DERIVABLES` n'inclut ni `adhoc`
+ni `many_daily`). `deriverPopulationControle` (service, 5 tests) : dérive 12 lignes pour un contrôle
+mensuel ; refuse `adhoc` et `many_daily` en nommant la fréquence (règle 17, rien n'est écrit malgré
+le refus) ; refuse une seconde dérivation sur une population déjà `listing` (règle 17, rien
+n'est ajouté) ; étanchéité ETANCH pour un intrus d'un autre cabinet. Lecture `/api/sante` (4
+tests) : vide sans dérivation, verte sur le vrai chemin gardé, rouge sur une ligne dérivée éditée
+à la main (règle 17), verte quand la seule population existante est `listing` — pas lue par erreur.
+Régression : `ctrl01/02-03/07-lecture`, `s8`, `etancheite-executee`, `i18n`, `semeur/coherence`
+tous verts (81 tests).
+
+**Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché), verify
+complet et expédition — détail à suivre dans ce même compte.**
+
 ## Lot contrôle interne, tranche 3 correctif : CTRL-07 en production, deux tirages legacy (2026-09-09)
 
 **`deploye` a rougi pour de vrai sur `fbe7afe` — pas une panne d'infrastructure.** Mesuré en

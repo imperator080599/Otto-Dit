@@ -10,7 +10,7 @@ import {
   attacherWalkthrough, listerTachesControle, ajouterTacheControle, documenterProcedureTache,
   risquesDuDossier, risquesLiesAuControle, lierRisqueControle, delierRisqueControle,
   facteursDesignDuControle, documenterFacteurDesign, iucDuControle, declarerIuc, documenterIucPreuve,
-  tailleEchantillonOePourControle,
+  tailleEchantillonOePourControle, deriverPopulationControle, FREQUENCES_DERIVABLES,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
@@ -36,13 +36,13 @@ export default async function ControlDetail({
   const control = (await listControls(id)).find((c) => c.id === cid);
   if (!control) return <div className="panel">{t('rcmc.controlNotFound')}</div>;
   const tailleOe = await tailleEchantillonOePourControle(cid);
-  const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null; sampled: boolean; evidence_count: string }>(
-    `select ci.id, ci.label, ci.occurred_on::text, ci.performer_name,
+  const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null; source: string; sampled: boolean; evidence_count: string }>(
+    `select ci.id, ci.label, ci.occurred_on::text, ci.performer_name, ci.source,
             exists(select 1 from sample_item si join sample s on s.id = si.sample_id
                    join control_test ct on ct.sample_id = s.id
                    where si.unit_id = ci.id and ct.control_id = $1) sampled,
             (select count(*) from evidence e join request_item ri on ri.id = e.request_item_id where ri.control_instance_id = ci.id) evidence_count
-     from control_instance ci where ci.control_id = $1 order by ci.label`,
+     from control_instance ci where ci.control_id = $1 order by ci.occurred_on nulls last, ci.label`,
     [cid],
   );
   const grid = await attributeGrid(cid);
@@ -165,6 +165,14 @@ export default async function ControlDetail({
       const { user } = await requireMember(id);
       const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', `instances_${control!.code}.csv`), 'utf8');
       await importInstances(cid, csv, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function deriverPopulationAction() {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await deriverPopulationControle(cid, user.id);
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -421,7 +429,11 @@ export default async function ControlDetail({
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <h2>Instance population ({instances.length})</h2>
             <span className="row">
-              {instances.length === 0 && <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>}
+              {instances.length === 0 && ((FREQUENCES_DERIVABLES as readonly string[]).includes(control.frequency) ? (
+                <form action={deriverPopulationAction}><button className="btn small secondary">{t('rcmc.deriverPopulation')}</button></form>
+              ) : (
+                <form action={importInstancesAction}><button className="btn small secondary">{t('rcmc.importClientListing')}</button></form>
+              ))}
               {instances.length > 0 && !instances.some((i) => i.sampled) && (
                 <form action={drawAction} className="row">
                   <input
@@ -446,13 +458,14 @@ export default async function ControlDetail({
           )}
           <div className="table-scroll" style={{ maxHeight: 320 }}>
             <table className="data">
-              <thead><tr><th>{t('col.instance')}</th><th>{t('rcmc.occurred')}</th><th>{t('rcmc.performer')}</th><th>{t('rcmc.sampled')}</th><th>{t('col.evidence')}</th></tr></thead>
+              <thead><tr><th>{t('col.instance')}</th><th>{t('rcmc.occurred')}</th><th>{t('rcmc.performer')}</th><th>{t('rcmc.source')}</th><th>{t('rcmc.sampled')}</th><th>{t('col.evidence')}</th></tr></thead>
               <tbody>
                 {instances.map((i) => (
                   <tr key={i.id}>
                     <td className="mono">{i.label}</td>
                     <td>{i.occurred_on}</td>
                     <td>{i.performer_name}</td>
+                    <td>{i.source === 'derived' ? <span className="badge">{t('rcmc.sourceDerived')}</span> : i.source}</td>
                     <td>{i.sampled ? <span className="badge blue">{t('rcmc.selected')}</span> : <span className="faint">—</span>}</td>
                     <td className="num">{i.evidence_count}</td>
                   </tr>

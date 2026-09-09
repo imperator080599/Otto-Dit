@@ -573,6 +573,92 @@ export async function importInstances(controlId: string, csv: string, userId: st
   return n;
 }
 
+/** Mandat contrôle interne, §3.1 : les fréquences RÉGULIÈRES dérivent leur population de la
+ *  fréquence et de la période — le système la calcule. `adhoc`/`many_daily` en sont exclus
+ *  DÉLIBÉRÉMENT (règle 19, où cette règle cesse de regarder) : le mandat ne nomme que
+ *  « annuelle, mensuelle, hebdomadaire, quotidienne » (§3.1, le tableau) ; `many_daily` implique
+ *  un nombre d'occurrences par jour qu'aucune fréquence ni période ne peut donner sans une
+ *  constante inventée (règle 8 — jamais une valeur écrite de mémoire), donc ce n'est pas une
+ *  omission mais un refus honnête de deviner. Ces deux fréquences restent sur le chemin de
+ *  demande client (`importInstances`, CTRL-05 à venir). */
+export const FREQUENCES_DERIVABLES: readonly Frequency[] = ['annual', 'quarterly', 'monthly', 'weekly', 'daily'];
+
+function iso(d: Date): string { return d.toISOString().slice(0, 10); }
+
+/** Pure, testable sans base : les dates d'occurrence d'une fréquence régulière sur une période
+ *  [debut, fin] incluse. Toujours en UTC (règle : jamais de dérive de fuseau sur une date de
+ *  calendrier). Exportée pour ses propres tests unitaires (règle 17). */
+export function occurrencesDeLaPeriode(frequency: Frequency, debut: string, fin: string): { label: string; occurredOn: string }[] {
+  const d0 = new Date(`${debut}T00:00:00Z`);
+  const d1 = new Date(`${fin}T00:00:00Z`);
+  const occ: { label: string; occurredOn: string }[] = [];
+  if (frequency === 'annual') {
+    occ.push({ label: `Exercice clos le ${iso(d1)}`, occurredOn: iso(d1) });
+  } else if (frequency === 'quarterly') {
+    for (let q = 1; q <= 4; q++) {
+      const d = new Date(d0); d.setUTCMonth(d.getUTCMonth() + 3 * q); d.setUTCDate(d.getUTCDate() - 1);
+      const borne = d > d1 ? d1 : d;
+      occ.push({ label: `Trimestre ${q}, clos le ${iso(borne)}`, occurredOn: iso(borne) });
+      if (d >= d1) break;
+    }
+  } else if (frequency === 'monthly') {
+    for (let m = 1; ; m++) {
+      const d = new Date(d0); d.setUTCMonth(d.getUTCMonth() + m); d.setUTCDate(d.getUTCDate() - 1);
+      if (d > d1) break;
+      occ.push({ label: `Mois ${m}, clos le ${iso(d)}`, occurredOn: iso(d) });
+    }
+  } else if (frequency === 'weekly') {
+    for (let s = 1; ; s++) {
+      const d = new Date(d0); d.setUTCDate(d.getUTCDate() + 7 * s - 1);
+      if (d > d1) break;
+      occ.push({ label: `Semaine ${s}, close le ${iso(d)}`, occurredOn: iso(d) });
+    }
+  } else if (frequency === 'daily') {
+    let i = 1;
+    for (const d = new Date(d0); d <= d1; d.setUTCDate(d.getUTCDate() + 1), i++) {
+      occ.push({ label: `Jour ${i} (${iso(d)})`, occurredOn: iso(d) });
+    }
+  }
+  return occ;
+}
+
+export async function deriverPopulationControle(controlId: string, userId: string): Promise<number> {
+  await assertMembreDe('control', controlId, userId, 'dériver la population d’un contrôle');
+  const c = await q1<{ engagement_id: string; code: string; frequency: Frequency }>(
+    `select engagement_id, code, frequency from control where id = $1`,
+    [controlId],
+  );
+  if (!FREQUENCES_DERIVABLES.includes(c.frequency)) {
+    throw new Error(
+      `population non dérivable pour la fréquence « ${c.frequency} » (mandat §3.1) — elle se `
+      + 'demande au client, pas au système : importez le listing client pour ce contrôle.',
+    );
+  }
+  const existe = await q01(`select 1 from control_instance where control_id = $1`, [controlId]);
+  if (existe) {
+    throw new Error('population déjà présente pour ce contrôle — la dérivation ne s’exécute qu’une fois, sur une population vide');
+  }
+  const periode = await q1<{ start_date: string; end_date: string }>(
+    `select p.start_date::text as start_date, p.end_date::text as end_date
+     from engagement e join period p on p.id = e.period_id where e.id = $1`,
+    [c.engagement_id],
+  );
+  const occurrences = occurrencesDeLaPeriode(c.frequency, periode.start_date, periode.end_date);
+  for (const o of occurrences) {
+    await q(
+      `insert into control_instance (control_id, label, occurred_on, source) values ($1,$2,$3,'derived')`,
+      [controlId, o.label, o.occurredOn],
+    );
+  }
+  const ctx = await engagementCtx(c.engagement_id);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'control_population_derived', objectType: 'control', objectId: controlId,
+    payload: { code: c.code, frequency: c.frequency, instances: occurrences.length, period: periode },
+  });
+  return occurrences.length;
+}
+
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
 /** CTRL-07 (mandat contrôle interne, §3.2) : la taille sort d'une table du CABINET, jamais
