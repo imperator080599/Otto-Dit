@@ -628,3 +628,99 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
 /* Le refus de mémorisation du RAIL (revue hostile n°8, constat 2) : il se lit
    sous le rail, comme celui d'une section se lit à côté de son titre. */
 .rail-defaut { font-size: 11px; color: var(--amber); padding: 2px 8px; margin: 0; line-height: 1.35; }
+
+/* ── L'ÉPURE — la source de jetons du langage visuel donné par le fondateur
+   (mandat 2026-09-09, §5). Référence assumée : le langage visuel d'Optro.ai —
+   inspiration, jamais copie ; aucun logo, nom, wordmark ni écran d'Optro
+   reproduit ici, aucun graphique Forrester Wave ni Gartner Magic Quadrant.
+
+   SOURCE UNIQUE, séparée de `:root` — c'est le « premier geste concret » que
+   le mandat demande avant le premier écran neuf : la repasse rétroactive
+   future changera CES valeurs (ou les copiera dans `:root`), elle ne
+   réécrira aucun écran construit avec elles. `:root` n'est PAS touché : tout
+   écran EXISTANT garde son encre — la repasse est un LOT SÉPARÉ, en file,
+   déclenché par le fondateur, jamais ouvert de soi-même (§5, placement
+   « (c) puis (a) »).
+
+   CE QUE CE BLOC NE COUVRE PAS : le rail et le bandeau partagés (nav.tsx,
+   layout.tsx) — chrome commun à TOUT écran, anciens compris ; les repeindre
+   reviendrait à repeindre les écrans anciens par la bande, précisément ce que
+   le placement (c) puis (a) interdit avant le lot dédié. Un écran qui pose
+   `.epure` ne pose la classe QUE sur son propre contenu, jamais sur le rail. */
+.epure {
+  --e-bg: #f7f3ec;
+  --e-panel: #ffffff;
+  --e-border: #e8e1d3;
+  --e-text: #211d17;
+  --e-muted: #7c7466;
+  --e-accent: #6a3fd6;
+  --e-accent-soft: #efe8fc;
+  --e-green: #6f9b81;
+  --e-green-soft: #eaf1ec;
+  --e-amber: #b28a54;
+  --e-amber-soft: #f6efe3;
+  --e-red: #b06a67;
+  --e-red-soft: #f7ece9;
+  --e-radius: 16px;
+  --e-shadow: 0 1px 2px rgba(40, 32, 20, .04);
+
+  background: var(--e-bg);
+  color: var(--e-text);
+  border-radius: var(--e-radius);
+  padding: var(--e5);
+}
+@media (prefers-color-scheme: dark) {
+  .epure {
+    --e-bg: #1b1712;
+    --e-panel: #24201a;
+    --e-border: #3a3327;
+    --e-text: #f1ece2;
+    --e-muted: #b3a996;
+    --e-accent: #b79bf2;
+    --e-accent-soft: #2c2440;
+    --e-green: #92c1a4;
+    --e-green-soft: #1c2822;
+    --e-amber: #d9b47c;
+    --e-amber-soft: #2e2716;
+    --e-red: #d99b96;
+    --e-red-soft: #2f1f1d;
+  }
+}
+
+.epure-titre { font-size: 26px; font-weight: 300; letter-spacing: -.01em; margin: 0 0 var(--e2); color: var(--e-text); }
+.epure-soustitre { font-size: 13px; color: var(--e-muted); margin: 0 0 var(--e4); }
+.epure-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--e-muted); }
+/* LE MONOSPACE EN CAPITALES DONNE SA FORME AU D.6 POINT 1 (§5) : la phrase en
+   français d'abord, le code de refus ensuite, en petit — jamais l'inverse. */
+.epure-mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; color: var(--e-muted); }
+
+.epure-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--e4); margin-bottom: var(--e5); }
+
+.epure-carte {
+  background: var(--e-panel); border: 1px solid var(--e-border); border-radius: var(--e-radius);
+  box-shadow: var(--e-shadow); padding: var(--e4);
+}
+.epure-carte + .epure-carte { margin-top: var(--e4); }
+
+.epure-chiffre { font-size: 40px; font-weight: 300; line-height: 1; color: var(--e-text); font-variant-numeric: tabular-nums; }
+.epure-chiffre.bloquant { color: var(--e-red); }
+.epure-chiffre.ok { color: var(--e-green); }
+
+.epure-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+}
+.epure-badge.gris { background: var(--e-border); color: var(--e-muted); }
+.epure-badge.violet { background: var(--e-accent-soft); color: var(--e-accent); }
+.epure-badge.vert { background: var(--e-green-soft); color: var(--e-green); }
+.epure-badge.ambre { background: var(--e-amber-soft); color: var(--e-amber); }
+.epure-badge.rouge { background: var(--e-red-soft); color: var(--e-red); }
+
+.epure-liste-item {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--e3);
+  padding: var(--e2) 0; border-bottom: 1px solid var(--e-border); font-size: 13px;
+}
+.epure-liste-item:last-child { border-bottom: none; }
+.epure-liste-item a { color: var(--e-text); text-decoration: none; }
+.epure-liste-item a:hover { color: var(--e-accent); }
+.epure-liste-vide { color: var(--e-muted); font-size: 13px; padding: var(--e2) 0; }

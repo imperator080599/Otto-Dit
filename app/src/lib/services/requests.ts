@@ -534,6 +534,34 @@ export async function listRequests(engagementId: string) {
   );
 }
 
+/**
+ * Les demandes EN ATTENTE, avec leur ÂGE — la matière du tableau de bord
+ * (mandat contrôle interne, §5 : « l'âge des demandes en attente »).
+ *
+ * EN ATTENTE veut dire ENVOYÉE et pas encore reçue en entier : `sent` ou
+ * `partially_submitted` (le client a commencé, pas fini), et `reopened`
+ * (une pièce refusée, redemandée). `draft` n'a jamais été envoyée — rien
+ * n'attend personne — et `submitted`/`accepted` sont closes. L'âge se compte
+ * depuis `sent_at`, jamais `created_at` : une demande rédigée un mois avant
+ * son envoi n'attend le client que depuis l'envoi.
+ */
+export async function requestsEnAttente(engagementId: string): Promise<{
+  id: string; seqNo: number; title: string; status: string; sentAt: string; ageJours: number;
+}[]> {
+  const t = await now();
+  const rows = await q<{ id: string; seq_no: number; title: string; status: string; sent_at: string }>(
+    `select id, seq_no, title, status, sent_at::text from request
+     where engagement_id = $1 and status in ('sent', 'partially_submitted', 'reopened')
+       and sent_at is not null
+     order by sent_at asc`,
+    [engagementId],
+  );
+  return rows.map((r) => ({
+    id: r.id, seqNo: r.seq_no, title: r.title, status: r.status, sentAt: r.sent_at,
+    ageJours: Math.floor((t.getTime() - new Date(r.sent_at).getTime()) / DAY_MS),
+  }));
+}
+
 export async function requestDetail(requestId: string) {
   const request = await q01<{ id: string; engagement_id: string; seq_no: number; title: string; status: string; due_date: string | null; sent_at: string | null; language: string; evidence_type_code: string | null; fsli_code: string | null }>(
     `select id, engagement_id, seq_no, title, status, due_date::text, sent_at::text, language, evidence_type_code, fsli_code from request where id = $1`,

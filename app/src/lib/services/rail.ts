@@ -114,6 +114,9 @@ export async function railDuDossier(
 
   g('rail.groupe.dossier');
   e('', t('rail.vue'), t('rail.quoi.vue'), true);
+  /* LE SUIVI DE MISSION (mandat contrôle interne, §5, §7.4) : une VUE, tout
+     comme la vue d'ensemble — toujours atteignable, rien n'y est stocké. */
+  e('suivi', t('suivi.titre'), t('suivi.sousTitre'), true);
   e('acceptance', t('rail.acceptation'), t('rail.quoi.acceptation'), true);
   e('team', t('rail.equipe'), t('rail.quoi.equipe'), true);
   e('reunions', t('rail.reunions'), t('rail.quoi.reunions'), true);

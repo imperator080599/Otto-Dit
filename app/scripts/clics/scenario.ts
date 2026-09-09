@@ -3250,6 +3250,35 @@ export async function conduire(
       'aucun jalon posé non fait');
   });
 
+  // ── 21b. LE SUIVI DE MISSION (mandat contrôle interne, §5, §7.4) — le
+  // tableau de bord, VUE PURE : avancement par poste, ce qui bloque le visa,
+  // l'âge des demandes en attente, les écarts non conclus. Premier écran dans
+  // le nouveau langage (mandat du 2026-09-09, §5, classe `.epure`) : la
+  // station clique une carte KPI et vérifie qu'elle mène quelque part — pas
+  // seulement qu'un chiffre s'affiche (le compteur qui ne mène nulle part est
+  // exactement le défaut D.6 nomme).
+  await station('suivi de mission : le tableau de bord mène quelque part', async () => {
+    await aller(`${eng}/suivi`);
+    const t = await texte();
+    const cartes = await compte('.epure-carte');
+    dire('suivi : les quatre panneaux du mandat sont posés',
+      cartes >= 4, `${cartes} carte(s) .epure-carte`);
+    /* LA CARTE « OBSTACLES » MÈNE À /obstacles — pas un lien mort, pas une
+       ancre qui ne bouge rien. */
+    const lienObstacles = p.locator(`a[href="${eng}/obstacles"].epure-carte`);
+    if (!(await lienObstacles.count())) {
+      dire('suivi : la carte obstacles a un lien réel vers /obstacles', false, 'lien absent');
+    } else {
+      await lienObstacles.click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      dire('suivi : cliquer la carte obstacles ouvre /obstacles',
+        p.url().endsWith('/obstacles'), p.url());
+      await aller(`${eng}/suivi`);
+    }
+    dire('suivi : la page s’affiche dans le nouveau langage (classe .epure)',
+      (await compte('.epure')) > 0, t.slice(0, 60));
+  });
+
   // ── 22. OBSTACLES AU VISA
   let restants = 0;
   await station('obstacles au visa', async () => {

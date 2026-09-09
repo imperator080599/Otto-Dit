@@ -1180,8 +1180,8 @@ export async function attributeGrid(controlId: string) {
 }
 
 export async function listDeviations(engagementId: string) {
-  return q<{ id: string; control_code: string; instance_label: string | null; attribute_code: string; taxonomy_code: string; status: string; description: string; resolution: string | null }>(
-    `select d.id, c.code control_code, ci.label instance_label, d.attribute_code, d.taxonomy_code, d.status, d.description, d.resolution
+  return q<{ id: string; control_id: string; control_code: string; instance_label: string | null; attribute_code: string; taxonomy_code: string; status: string; description: string; resolution: string | null }>(
+    `select d.id, c.id::text control_id, c.code control_code, ci.label instance_label, d.attribute_code, d.taxonomy_code, d.status, d.description, d.resolution
      from deviation d
      join control c on c.id = d.control_id
      left join sample_item si on si.id = d.sample_item_id

@@ -1054,6 +1054,43 @@ async function corpsDeLaSonde() {
       : `${controls.length} contrôle(s) testé(s) en OE — ${controls.length - legacy} couvert(s), ${legacy} legacy (antérieur(s) à CTRL-06, 2026-09-01)`;
   }));
 
+  /* SUIVI DE MISSION (mandat contrôle interne, §5, §7.4 — livré ce jour, lu ce
+     jour, règle 22). `requestsEnAttente` (requests.ts) ne compte que les
+     demandes ENVOYÉES : `approveSend` pose `status = 'sent'` et `sent_at`
+     ENSEMBLE, dans la MÊME instruction — aucun chemin du produit ne peut
+     poser l'un sans l'autre. Une demande dont le statut dit « envoyée » sans
+     `sent_at` ne serait donc PAS un cas légitime : elle disparaîtrait de
+     l'attente en silence (filtrée par `sent_at is not null`), sous-comptant
+     exactement le panneau que cette tranche ajoute — la lecture rougit sur ce
+     cas précis plutôt que de le taire. CE QUE CETTE LECTURE NE VÉRIFIE PAS
+     (règle 19) : l'âge calculé lui-même (une horloge de démonstration décalée
+     resterait invisible ici), ni `control_id` sur `listDeviations` (garanti
+     par la jointure INTERNE avec `control`, qui ne peut pas rendre de ligne
+     orpheline). */
+  lectures.push(await essayer('suivi de mission : aucune demande « envoyée » sans date d’envoi', async () => {
+    const orphelines = await q<{ id: string; seq_no: number; status: string }>(
+      `select id, seq_no, status from request
+       where status in ('sent', 'partially_submitted', 'reopened') and sent_at is null`,
+    );
+    if (orphelines.length > 0) {
+      throw new Error(`${orphelines.length} demande(s) au statut « envoyée » SANS date d’envoi `
+        + `(${orphelines.map((r) => `R-${String(r.seq_no).padStart(3, '0')}:${r.status}`).join(', ')}) — `
+        + 'approveSend pose toujours les deux ensemble : contourné, ou la colonne a été modifiée après coup');
+    }
+    if (eng) {
+      const { requestsEnAttente } = await import('@/lib/services/requests');
+      const { listDeviations } = await import('@/lib/services/sox');
+      const { sectionsDuDossier } = await import('@/lib/services/sections');
+      const en_attente = await requestsEnAttente(eng.id);
+      const ecarts = (await listDeviations(eng.id)).filter((d) => d.status !== 'resolved');
+      const postes = (await sectionsDuDossier(eng.id)).filter((s) => s.kind === 'poste');
+      return `${en_attente.length} demande(s) en attente (âge max `
+        + `${en_attente.length ? Math.max(...en_attente.map((r) => r.ageJours)) : 0} j) · `
+        + `${ecarts.length} écart(s) non conclu(s) · ${postes.length} poste(s) suivi(s)`;
+    }
+    return 'aucune anomalie · aucune mission à détailler';
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

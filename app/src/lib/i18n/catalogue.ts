@@ -1757,6 +1757,24 @@ export const LIBELLES = {
   'rail.quoi.analytique': { en: 'N against N-1 for every line item of the pack, and the analytical review written on each.', fr: 'N contre N-1 pour chaque poste du pack, et la revue analytique rédigée sur chacun.' },
   'notes.openThePoste': { en: 'open the line item', fr: 'ouvrir le poste' },
   // ── Commun ─────────────────────────────────────────────────────────────
+  // ── Le suivi de mission (mandat contrôle interne, §5, §7.4) ───────────────
+  'suivi.titre': { en: 'Engagement tracking', fr: 'Suivi de mission' },
+  'suivi.sousTitre': { en: 'What is left before sign-off, in one screen.', fr: 'Ce qui reste avant le visa, en un écran.' },
+  'suivi.avancement': { en: 'Progress', fr: 'Avancement' },
+  'suivi.avancementParPoste': { en: 'Progress by line item', fr: 'Avancement par poste' },
+  'suivi.postesAcheves': { en: '{n}/{total} line items completed', fr: '{n}/{total} postes achevés' },
+  'suivi.aucunPoste': { en: 'No line item in scope yet.', fr: 'Aucun poste retenu au périmètre pour l’instant.' },
+  'suivi.rienNeBloque': { en: 'Nothing blocks sign-off.', fr: 'Rien n’empêche le visa.' },
+  'suivi.familles': { en: '{n} famil(y/ies)', fr: '{n} famille(s)' },
+  'suivi.demandesEnAttente': { en: 'Requests awaiting the client', fr: 'Demandes en attente du client' },
+  'suivi.aucuneDemandeEnAttente': { en: 'No request is awaiting the client.', fr: 'Aucune demande n’attend le client.' },
+  'suivi.plusAgee': { en: 'oldest: {n} day(s)', fr: 'la plus ancienne : {n} jour(s)' },
+  'suivi.aucune': { en: 'none', fr: 'aucune' },
+  'suivi.jours': { en: '{n} d.', fr: '{n} j.' },
+  'suivi.ecartsNonConclus': { en: 'Unresolved deviations', fr: 'Écarts non conclus' },
+  'suivi.aucunEcart': { en: 'No unresolved deviation.', fr: 'Aucun écart non conclu.' },
+  'suivi.aucun': { en: 'none', fr: 'aucun' },
+  'suivi.aVoirPlusBas': { en: 'see below', fr: 'à voir plus bas' },
 } satisfies Record<string, Entree>;
 
 export type CleLibelle = keyof typeof LIBELLES;
