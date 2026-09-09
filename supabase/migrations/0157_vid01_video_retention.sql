@@ -19,6 +19,15 @@
 -- `deleted_at`/`deleted_by`/`deleted_reason` : LES TROIS OU AUCUNE (même patron que
 -- `engagement_lock_verdict.confirmed_by`/`confirmed_at`, 0042) — une suppression sans motif écrit
 -- n'est pas permise, la contrainte le tient EN BASE, pas seulement dans le service.
+--
+-- CE QUE CETTE CONTRAINTE NE TIENT PAS (règle 19, revue hostile, deux voix indépendantes,
+-- constat convergent) : `btrim(deleted_reason) <> ''` ne retire que l'espace ASCII — un motif
+-- fait uniquement de tabulations, de sauts de ligne ou d'espace insécable (U+00A0, ADR-132 :
+-- déjà le défaut le plus probable de ce dépôt) la satisferait. Non atteignable par le SEUL
+-- chemin qui écrit aujourd'hui (`supprimerVideoWalkthrough` appelle `raison.trim()` en
+-- JavaScript, qui retire tout l'espace Unicode AVANT d'écrire) — mais un futur écrivain SQL
+-- direct ne serait pas arrêté par la base seule. Non corrigé ici (proportion, règle 30) :
+-- documenté plutôt que deviné silencieux.
 alter table evidence add column deleted_at timestamptz;
 alter table evidence add column deleted_by uuid references app_user(id);
 alter table evidence add column deleted_reason text;

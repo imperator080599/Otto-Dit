@@ -320,6 +320,14 @@ export default async function ControlDetail({
       </Repli>
 
       <Repli cle="eng.id.rcm.cid.walkthrough" niveau={2} titre={t('rcmc.walkthrough')} id="walkthrough">
+        {/* CORRIGÉ (revue hostile, voix 2) : la table des tâches et son formulaire d'ajout
+            vivaient DANS cette branche « attaché et non supprimé » — supprimer la vidéo les
+            rendait invisibles alors que `control_task`/`control_task_procedure` restent intacts
+            en base (règle 13 : un objet créé qu'aucun chemin de lecture n'atteint). Les deux
+            sections sont maintenant INDÉPENDANTES : celle-ci (dépôt / provenance / suppression)
+            se branche sur « attaché ET vivant » vs « jamais attaché OU supprimé » ; la table des
+            tâches se branche séparément sur « un lien existe » (attaché un jour, peu importe
+            l'état courant de la pièce). */}
         {!control.di_walkthrough_evidence_id || videoWalkthrough?.deleted_at ? (
           <>
             {videoWalkthrough?.deleted_at && (
@@ -351,7 +359,9 @@ export default async function ControlDetail({
             <p className="faint small" data-compteur-conservation-video>
               {compteurConservation.eligible
                 ? (compteurConservation.duree.verifie
-                  ? t('rcmc.conservationJoursRestants', { n: compteurConservation.joursRestants ?? 0 })
+                  ? (compteurConservation.purgeable
+                    ? t('rcmc.conservationPurgeable')
+                    : t('rcmc.conservationJoursRestants', { n: compteurConservation.joursRestants ?? 0 }))
                   : t('rcmc.conservationNonVerifiee'))
                 : t('rcmc.conservationNonEligible')}
             </p>
@@ -362,6 +372,10 @@ export default async function ControlDetail({
                 <button className="btn small secondary">{t('rcmc.supprimerWalkthroughConfirmer')}</button>
               </form>
             </details>
+          </>
+        )}
+        {control.di_walkthrough_evidence_id && (
+          <>
             <table className="data mt" data-taches-controle>
               <thead>
                 <tr><th>#</th><th>{t('rcmc.tache')}</th><th>{t('rcmc.reperVideo')}</th><th>{t('rcmc.procedures')}</th><th>{t('commun.actions')}</th></tr>

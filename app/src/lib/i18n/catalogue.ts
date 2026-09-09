@@ -1026,6 +1026,7 @@ export const LIBELLES = {
   'rcmc.conservationNonEligible': { en: 'Retention countdown not started — the report is not yet signed and/or review notes are not all closed.', fr: 'Compte à rebours de conservation non démarré — le rapport n’est pas encore signé et/ou les notes de revue ne sont pas toutes closes.' },
   'rcmc.conservationNonVerifiee': { en: 'Report signed and review notes closed — but retention duration is unverified, to be set by the firm (VID-01, §3.2).', fr: 'Rapport signé et notes de revue closes — mais la durée de conservation n’est pas vérifiée, à fixer par le cabinet (VID-01, §3.2).' },
   'rcmc.conservationJoursRestants': { en: '{n} day(s) before this recording is eligible for archival purge.', fr: '{n} jour(s) avant que cet enregistrement soit éligible à la purge d’archivage.' },
+  'rcmc.conservationPurgeable': { en: 'This recording is now eligible for archival purge (retention duration elapsed). No automatic purge runs yet — see mandate §3.1 point 2.', fr: 'Cet enregistrement est désormais éligible à la purge d’archivage (durée de conservation écoulée). Aucune purge automatique ne tourne encore — voir mandat §3.1 point 2.' },
   'rcmc.tache': { en: 'task', fr: 'tâche' },
   'rcmc.reperVideo': { en: 'video mark', fr: 'repère vidéo' },
   'rcmc.procedures': { en: 'procedures', fr: 'procédures' },

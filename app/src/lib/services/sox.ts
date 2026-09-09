@@ -205,7 +205,17 @@ export async function attacherWalkthrough(controlId: string, userId: string, evi
  *  pool réseau. CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne vérifie PAS que la vidéo est
  *  déjà éligible à la purge (`compteurConservationVideo`) — le bouton manuel reste disponible à
  *  tout moment, comme le dépôt manuel (§3, « reste toujours possible, en secours ») ; seule la
- *  purge AUTOMATIQUE, hors périmètre de cette tranche, s'appuierait sur l'éligibilité. */
+ *  purge AUTOMATIQUE, hors périmètre de cette tranche, s'appuierait sur l'éligibilité.
+ *
+ *  CORRIGÉ (revue hostile, deux voix indépendantes, constat convergent) : la première version
+ *  lisait `deleted_at` (« déjà supprimé ? ») AVANT d'ouvrir la transaction, puis écrivait sans
+ *  reposer la même condition — deux appels concurrents sur la MÊME pièce passaient tous les deux
+ *  la lecture, et le second écrasait silencieusement `deleted_by`/`deleted_reason` du premier
+ *  (`event_log` gardait les deux tentatives, mais le champ que l'écran affiche perdait la
+ *  provenance du premier auteur — reproduit par les deux réfutateurs). Le contrôle « déjà
+ *  supprimé » est maintenant la MÊME écriture que la marque (`where deleted_at is null`,
+ *  `returning id`) : zéro ligne rendue veut dire qu'une autre transaction a gagné la course, et
+ *  c'est ELLE qui reçoit le refus, jamais un écrasement silencieux. */
 export async function supprimerVideoWalkthrough(controlId: string, userId: string, raison: string): Promise<void> {
   await assertMembreDe('control', controlId, userId, 'supprimer l’enregistrement de walkthrough');
   if (!raison.trim()) throw new Error('la suppression a besoin d’un motif écrit — jamais silencieuse (mandat §3.2)');
@@ -214,16 +224,18 @@ export async function supprimerVideoWalkthrough(controlId: string, userId: strin
     [controlId],
   );
   if (!c.di_walkthrough_evidence_id) throw new Error('aucun enregistrement de walkthrough à supprimer');
-  const ev = await q1<{ deleted_at: string | null }>(`select deleted_at::text from evidence where id = $1`, [c.di_walkthrough_evidence_id]);
-  if (ev.deleted_at) throw new Error('cet enregistrement est déjà supprimé');
   const ctx = await engagementCtx(c.engagement_id);
-  await tx(async (run) => {
+  const supprimee = await tx(async (run) => {
     await run(`select set_config('otto.post_lock_amendment', 'on', true)`);
-    await run(
-      `update evidence set deleted_at = now(), deleted_by = $2, deleted_reason = $3 where id = $1`,
+    const rows = (await run(
+      `update evidence set deleted_at = now(), deleted_by = $2, deleted_reason = $3
+       where id = $1 and deleted_at is null
+       returning id`,
       [c.di_walkthrough_evidence_id, userId, raison.trim()],
-    );
+    )) as { id: string }[];
+    return rows.length > 0;
   });
+  if (!supprimee) throw new Error('cet enregistrement est déjà supprimé');
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
     verb: 'walkthrough_deleted', objectType: 'control', objectId: controlId,
@@ -248,17 +260,38 @@ export interface CompteurConservationVideo {
  *  choisi de mémoire. CE QUE CE COMPTEUR NE FAIT PAS (règle 19) : il ne PURGE rien — §3.1 point 2
  *  (le dépôt automatique et sa purge) reste un chantier séparé, derrière la même porte que le
  *  Lot 8 ; ici, un AFFICHAGE informatif seul, que le bouton de suppression manuel n'attend pas. */
+/** Le calcul PUR (règle 17 : une revue hostile a trouvé cette arithmétique testée par AUCUN cas —
+ *  `videoRetentionDays` n'étant jamais posé dans ce pack, la branche `duree.verifie === true`
+ *  n'était exercée nulle part, ni dans le service ni dans un test). Séparée de
+ *  `compteurConservationVideo` (qui lit la base et le pack) pour être éprouvée directement, sans
+ *  fabriquer un pack de sonde. `depuis` est une DATE (jamais un horodatage) — `derniere_cloture`
+ *  est castée `::date` côté SQL avant d'arriver ici : mélanger une date nue et un `timestamptz`
+ *  texte (l'ancienne forme) faisait dépendre `new Date(...)` d'un format non standard
+ *  (« YYYY-MM-DD HH:MM:SS+00 », jamais garanti par la spécification) au lieu du `T00:00:00Z`
+ *  déjà employé partout ailleurs dans ce fichier (`sox.ts` CTRL-07, `retention.ts`). */
+export function calculerConservationVideo(
+  rapportSigne: boolean, notesClosesToutes: boolean, depuis: string | null,
+  duree: { valeur: number; verifie: true } | { valeur: null; verifie: false },
+): { eligible: boolean; joursRestants: number | null; purgeable: boolean } {
+  const eligible = rapportSigne && notesClosesToutes;
+  let joursRestants: number | null = null;
+  if (eligible && duree.verifie && depuis) {
+    const finMs = new Date(`${depuis}T00:00:00Z`).getTime() + duree.valeur * 86400000;
+    joursRestants = Math.ceil((finMs - Date.now()) / 86400000);
+  }
+  return { eligible, joursRestants, purgeable: joursRestants !== null && joursRestants <= 0 };
+}
+
 export async function compteurConservationVideo(engagementId: string): Promise<CompteurConservationVideo> {
   const eng = await q1<{ report_date: string | null }>(`select report_date::text from engagement where id = $1`, [engagementId]);
   const notes = await q1<{ non_closes: string; derniere_cloture: string | null }>(
-    `select count(*) filter (where status <> 'closed') non_closes, max(closed_at)::text derniere_cloture
+    `select count(*) filter (where status <> 'closed') non_closes, max(closed_at)::date::text derniere_cloture
      from review_note where engagement_id = $1`,
     [engagementId],
   );
   const rapportSigne = eng.report_date !== null;
   const notesClosesToutes = Number(notes.non_closes) === 0;
-  const eligible = rapportSigne && notesClosesToutes;
-  const depuis = eligible
+  const depuis = (rapportSigne && notesClosesToutes)
     ? [eng.report_date, notes.derniere_cloture].filter((d): d is string => d !== null).sort().pop() ?? null
     : null;
   const fs = await frameworkSet(engagementId);
@@ -266,15 +299,8 @@ export async function compteurConservationVideo(engagementId: string): Promise<C
   const duree = pack.videoRetentionDays === undefined
     ? ({ valeur: null, verifie: false } as const)
     : ({ valeur: pack.videoRetentionDays, verifie: true } as const);
-  let joursRestants: number | null = null;
-  if (eligible && duree.verifie && depuis) {
-    const finMs = new Date(depuis).getTime() + duree.valeur * 86400000;
-    joursRestants = Math.ceil((finMs - Date.now()) / 86400000);
-  }
-  return {
-    rapportSigne, notesClosesToutes, eligible, depuis, duree, joursRestants,
-    purgeable: joursRestants !== null && joursRestants <= 0,
-  };
+  const { eligible, joursRestants, purgeable } = calculerConservationVideo(rapportSigne, notesClosesToutes, depuis, duree);
+  return { rapportSigne, notesClosesToutes, eligible, depuis, duree, joursRestants, purgeable };
 }
 
 export interface TacheControle {
