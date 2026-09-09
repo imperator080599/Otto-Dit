@@ -44,14 +44,40 @@ justification (garde ADR-010 inchangée), aboutit avec les deux ; test unitaire 
 lecture `/api/sante` : vide sans tirage, rougit sur un tirage posé directement sans justification
 (bypass du garde), reste verte avec justification, reste verte par le vrai chemin gardé.
 
-**Verify et revue hostile — EN COURS au moment de ce commit, pas encore mesurés.** `tsc --noEmit`
-propre, tests ciblés (`s8.test.ts` 16/16, `ctrl07-lecture.test.ts` 4/4, `etancheite-executee.test.ts`
-2/2, `i18n` 6/6) verts — mesurés. `set -o pipefail; timeout 3600 npm run verify` lancé en arrière-
-plan sur l'arbre figé (PID pinné, `/tmp/verify-ctrl07.log`) ; DEUX réfutateurs indépendants lancés
-en parallèle (règle 30 amendée : cette tranche introduit un code de refus neuf, CTRL-07). Ce commit
-est un POINT DE CONTRÔLE volontaire (arbre gelé, aucune édition en cours) — la suite (corrections
-éventuelles, verify complet mesuré, verdicts des deux voix, SHA servi confirmé) suit dans un ou
-plusieurs commits séparés, jamais un amend (règle : toujours un commit neuf).
+**Revue hostile, DEUX réfutateurs indépendants** (règle 30 amendée : code de refus neuf, CTRL-07)
+— verdicts CONVERGENTS, **SHIP AS-IS** des deux voix. Voix 1 : les 12 citations de lignes changées
+dans `semeur/registre.ts` toutes ouvertes et vérifiées exactes (aucune approximative) ; aucune
+constante réintroduite en silence (les tailles 3/5/2/1/25/10 de `part2.ts` sont toutes dans le
+chemin ADR-010 explicite, justification écrite à l'appui) ; garde CTRL-07 prouvée par mutation
+propre (`if (!table.verifie)` → `if (false)`, le test livré échoue bien, mutation reversée,
+sha256 identique). Voix 2 : ordre des gardes dans `drawAttributeSample` sûr (aucun chemin ne
+contourne ADR-010 ET CTRL-07 à la fois — vérifié par lecture ET par sa propre mutation, angle
+différent de voix 1) ; lecture `/api/sante` CTRL-07 sémantiquement identique au garde d'écriture
+sur ce qui compte comme « justifié » ; propagation à l'écran propre (`executer()`/refus.ts attrape
+toute `Error`, jamais un 500, le préfixe « CTRL-07 : » reconnu par `separerCode`) ; tailles de
+`part2.ts` confirmées identiques chiffre pour chiffre à l'ancien défaut de pack (diff direct de
+`pcaob-sox.ts`) ; aucune migration touchée par ce commit. **Un seul constat non bloquant, R66**
+(voix 2) : `procedure_instance.control_id` n'a aucune FK vers `control` (contrairement à
+`control_test.control_id`) — pré-existant, pas introduit par cette tranche, non exploitable par un
+chemin de production actuel (voir `docs/BACKLOG_REPORTE.md`).
+
+**Constat de PROCESSUS, pas de code (voix 2, §11)** — les deux voix ont fait leur propre preuve
+règle 17 par mutation sur `sox.ts` AU MÊME MOMENT, sans worktree isolé chacune : un run isolé de
+`s8.test.ts` a montré un symptôme trompeur (le refus CTRL-07 n'ayant pas eu lieu) qui ne venait
+d'AUCUNE mutation du code livré, mais de la mutation TIERCE de l'autre voix, l'arbre partagé ayant
+brièvement bougé sous les deux à la fois — exactement le risque que la règle 34 nomme, une couche
+plus loin (deux réfutateurs, pas seulement un harnais et une session). Sept ré-exécutions propres
+et le premier `npm run verify` complet (953/953, fenêtre chevauchant ce moment) confirment que ce
+n'est pas un défaut du code. **Leçon pour toute future revue à deux voix sur du code de sécurité :
+isoler chaque réfutateur dans son propre worktree**, pas seulement compter sur le retrait/retour de
+chaque mutation. Le premier `npm run verify` (`/tmp/verify-ctrl07.log`, 953/953 tests) s'est arrêté
+au pas `semeur` — `docs/SEMEUR_VS_CHEMIN.md` avait divergé du `registre.ts` recalculé par ce commit
+(engendré, jamais rédigé à la main, règle 21) ; régénéré (`npm run semeur -- --figer`, 89 objets ·
+16 décor, INCHANGÉ — uniquement des lignes recalculées). Un DEUXIÈME `npm run verify` a été relancé
+sur l'arbre corrigé, puis TUÉ avant sa fin (règle 34) parce que ce commit lui-même (l'ajout de R66
+au registre, ci-dessus) a édité `docs/BACKLOG_REPORTE.md`/`docs/instantanes/fils.json` PENDANT son
+exécution — aucune mesure ne commence sur un arbre qui bouge, on ne l'attend pas, on le tue et on
+le dit. Un TROISIÈME passage, sur cet arbre désormais figé, suit ce commit.
 
 ## Lot contrôle interne, tranche 2 : les IUC et les facteurs de design, CTRL-02/CTRL-03 (2026-09-08)
 

@@ -261,6 +261,12 @@
       "note": "non bloquant. Corrigé le jour où un écran de gestion des risques (hors périmètre de CTRL-02) expose risk.level en édition."
     },
     {
+      "id": "R66",
+      "etat": "ouvert — procedure_instance.control_id (0001_core.sql:279) n'a aucune contrainte de clé étrangère, contrairement à control_test.control_id/control_task.control_id (on delete restrict). En théorie un control supprimé pendant qu'un procedure_instance/sample orphelin subsiste disparaîtrait silencieusement des jointures join control des lectures /api/sante (CTRL-01 à CTRL-07). Pré-existant, pas introduit par cette tranche ; non exploitable par un chemin de production actuel (aucun code applicatif ne supprime control ; tout tirage réel insère aussi une ligne control_test protégée par on delete restrict).",
+      "depuis": "2026-09-09 (lot contrôle interne, tranche 3 — CTRL-07 ; revue hostile voix 2)",
+      "note": "non bloquant. Corrigé le jour où un chemin de suppression de contrôle apparaît, ou en ajoutant la contrainte manquante par sa propre migration (jamais en éditant 0001, règle 26)."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

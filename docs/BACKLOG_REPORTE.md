@@ -693,3 +693,18 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   limite réelle de l'écran : un auditeur qui juge le niveau `high` au lieu de `medium` ne peut
   pas le dire au produit. Non bloquant pour cette tranche. Corrigé le jour où un écran de
   gestion des risques (hors périmètre de CTRL-02) expose `risk.level` en édition.
+
+- **R66 — `procedure_instance.control_id` (0001_core.sql:279) n'a aucune contrainte de clé
+  étrangère**, contrairement à `control_test.control_id`/`control_task.control_id` et aux autres
+  (tous `references control(id) on delete restrict`). Trouvé par la revue hostile du 2026-09-09
+  (voix 2), lot contrôle interne, tranche 3 (CTRL-07) : en théorie, un `control` supprimé pendant
+  qu'un `procedure_instance`/`sample` orphelin subsiste disparaîtrait silencieusement des
+  jointures `join control` des lectures `/api/sante` (CTRL-01 à CTRL-07 en dépendent toutes) — un
+  vrai tirage-violation qui ne rougirait plus. PRÉ-EXISTANT, pas introduit par cette tranche.
+  Non exploitable par un chemin de production actuel : aucun code applicatif ne supprime jamais
+  `control`, et tout tirage passé par le vrai chemin (`drawAttributeSample`) insère aussi une
+  ligne `control_test`, qui EST protégée par `on delete restrict` — le trou n'existe qu'en
+  combinant un `procedure_instance` posé par SQL direct ET une suppression de `control` par SQL
+  direct, comme le font seulement les fichiers de sonde de la revue hostile. Non bloquant pour
+  cette tranche. Corrigé le jour où un chemin de suppression de contrôle apparaît, ou en ajoutant
+  la contrainte manquante par sa propre migration (jamais en éditant 0001, règle 26).
