@@ -168,15 +168,21 @@ export async function detecterBasculesMaterialite(
   const bascules: { fsliCode: string }[] = [];
   for (const f of candidats) {
     if (Math.abs(numToCents(f.balance)) < seuil) continue;
-    const pose = await q1<{ id: string | null }>(
+    /* `q01`, PAS `q1` (revue hostile, deux voix indépendantes, même constat) : `q1` lève une
+       erreur GÉNÉRIQUE sur zéro ligne — indiscernable entre « conflit, déjà flaggé » (le cas
+       normal ici) et une VRAIE panne SQL sur cet insert précis (FK cassée, etc.). Un `.catch(() =>
+       null)` derrière `q1` aurait avalé les deux de la même façon : un refus calculé puis jeté
+       (règle 13). `q01` rend `null` UNIQUEMENT sur zéro ligne, sans jamais lever — une vraie
+       erreur continue de se propager normalement, sans catch à ajouter ici. */
+    const pose = await q01<{ id: string }>(
       `insert into fsli_materiality_bascule
          (engagement_id, fsli_code, import_file_id, scoping_avant, solde, seuil_performance)
        values ($1,$2,$3,$4,$5,$6)
        on conflict (engagement_id, fsli_code) do nothing
        returning id`,
       [engagementId, f.code, importFileId, f.scoping, f.balance, mat.perf_amount],
-    ).catch(() => null);
-    if (!pose?.id) continue; // déjà flaggé par un import antérieur — premier gagne
+    );
+    if (!pose) continue; // déjà flaggé par un import antérieur — premier gagne
     bascules.push({ fsliCode: f.code });
     await logEvent({
       tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
