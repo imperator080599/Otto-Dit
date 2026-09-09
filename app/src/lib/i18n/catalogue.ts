@@ -1764,7 +1764,6 @@ export const LIBELLES = {
   'suivi.avancementParPoste': { en: 'Progress by line item', fr: 'Avancement par poste' },
   'suivi.postesAcheves': { en: '{n}/{total} line items completed', fr: '{n}/{total} postes achevés' },
   'suivi.aucunPoste': { en: 'No line item in scope yet.', fr: 'Aucun poste retenu au périmètre pour l’instant.' },
-  'suivi.rienNeBloque': { en: 'Nothing blocks sign-off.', fr: 'Rien n’empêche le visa.' },
   'suivi.familles': { en: '{n} famil(y/ies)', fr: '{n} famille(s)' },
   'suivi.demandesEnAttente': { en: 'Requests awaiting the client', fr: 'Demandes en attente du client' },
   'suivi.aucuneDemandeEnAttente': { en: 'No request is awaiting the client.', fr: 'Aucune demande n’attend le client.' },

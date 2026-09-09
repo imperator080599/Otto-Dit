@@ -49,9 +49,11 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
        ici referait deux vérités pour un même mot (revue n°2 §2). SIX, depuis
        que le monde de base porte la mission NEP FY2024 : la reprise N-1 d'un
        dossier neuf sur Altiverre FY2025 est atteignable — même entité, même
-       nature, exercice chaîné. */
+       nature, exercice chaîné. SEPT depuis le suivi de mission (mandat
+       contrôle interne, §5, §7.4) : une VUE PURE, toujours atteignable comme
+       la vue d'ensemble, jamais conditionnée à un état du dossier. */
     expect(new Set(ouvertes)).toEqual(new Set([
-      en('rail.vue'), en('rail.acceptation'), en('rail.equipe'), en('rail.reunions'),
+      en('rail.vue'), en('suivi.titre'), en('rail.acceptation'), en('rail.equipe'), en('rail.reunions'),
       en('rail.journal'), en('rail.reprise'),
     ]));
     expect(rail.find((x) => x.label === en('rail.reprise'))!.atteignable).toBe(true);

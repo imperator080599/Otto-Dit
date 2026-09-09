@@ -71,7 +71,7 @@ export default async function SuiviPage({ params }: { params: Promise<{ id: stri
           <span className="epure-label">{motDuPack(fs.assurance_packs, 'obstacles')}</span>
           <div className={`epure-chiffre ${obstacles.length > 0 ? 'bloquant' : 'ok'}`}>{obstacles.length}</div>
           <span className="epure-mono">
-            {obstacles.length === 0 ? t('suivi.rienNeBloque') : t('suivi.familles', { n: parFamille.size })}
+            {obstacles.length === 0 ? t('obst.aucun') : t('suivi.familles', { n: parFamille.size })}
           </span>
         </Link>
 
@@ -107,7 +107,7 @@ export default async function SuiviPage({ params }: { params: Promise<{ id: stri
       <div className="epure-carte">
         <h2 className="epure-titre" style={{ fontSize: 16, fontWeight: 600 }}>{motDuPack(fs.assurance_packs, 'obstacles')}</h2>
         {obstacles.length === 0 ? (
-          <p className="epure-liste-vide">{t('suivi.rienNeBloque')}</p>
+          <p className="epure-liste-vide">{t('obst.aucun')}</p>
         ) : [...parFamille.entries()].map(([famille, n]) => (
           <div key={famille} className="epure-liste-item">
             <Link href={`/eng/${id}/${obstacles.find((o) => o.famille === famille)!.ou}`}>
