@@ -729,3 +729,20 @@ en production (tranches 1 à 4a) et R59-R62 en attente, PAS silencieusement aban
   reste à DEUX entrées, jamais plus — un TROISIÈME id qui y apparaîtrait sans un événement nommé
   ici serait lui-même une régression à signaler. Non bloquant : la garde CTRL-07 fonctionne
   correctement pour tout nouveau tirage (prouvé par tests, tranche 3 correctif).
+
+- **R68 — `demanderPopulationControle` (`requests.ts`, lot contrôle interne tranche 5, CTRL-05)
+  n'enveloppe pas ses deux `insert` (`request` puis `request_item`) dans `tx()`.** Trouvé par la
+  revue hostile du 2026-09-09 (voix 2) : sur une connexion réseau de production (jamais reproduit
+  en local, PGlite en mémoire), le premier `insert` peut réussir et le second échouer, laissant une
+  `request` orpheline sans `request_item`. `derniereDemandePopulationControle`, le garde CTRL-05
+  (`sox.ts`) et la lecture CTRL-05 (`route.ts`) testent tous seulement `EXISTS(request where
+  control_id=…)`, jamais `request_item` — une telle demande orpheline satisferait donc silencieusement
+  les trois, en violation de l'esprit de CTRL-05 (une demande sans aucun élément n'en est pas une).
+  MÊME défaut de classe déjà trouvé et corrigé le 2026-09-07 dans `demanderPieceLigne`/
+  `demanderPiecesEnLot` (leurs commentaires le documentent) — `demanderDetailDeCompte`, le patron
+  cité par cette tranche, n'avait pas encore reçu ce correctif au moment où `demanderPopulationControle`
+  l'a copié. Non bloquant pour cette tranche (chemin normal jamais exposé : l'écran ne permet aucune
+  demande sans son `request_item`, l'échec réseau isolé entre les deux `insert` est le seul
+  déclencheur). Corrigé le jour où `demanderDetailDeCompte` ET `demanderPopulationControle` sont
+  tous deux enveloppés dans `tx()`, dans la même tranche — pour ne pas répéter le trou une
+  troisième fois dans une fonction sœur future.

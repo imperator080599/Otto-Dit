@@ -273,6 +273,12 @@
       "note": "condition de retrait UNIQUE et nommée : les deux entrées ne se retirent que si les deux sample précis (ces id exacts) disparaissent de la base — parce que engSox est un jour légitimement re-semé en entier (interdit hors mandat écrit, §2) ou clôturé/archivé par un geste produit qui n'existe pas encore. Tant qu'aucun des deux n'arrive, la liste reste à DEUX entrées ; un TROISIÈME id qui y apparaîtrait sans un événement nommé ici serait une régression."
     },
     {
+      "id": "R68",
+      "etat": "ouvert — demanderPopulationControle (requests.ts, CTRL-05) n'enveloppe pas ses deux insert (request puis request_item) dans tx(). Sur une connexion réseau de production (jamais reproduit en local, PGlite en mémoire), le premier insert peut réussir et le second échouer, laissant une request orpheline sans request_item ; derniereDemandePopulationControle, le garde CTRL-05 (sox.ts) et la lecture CTRL-05 (route.ts) testent tous seulement EXISTS(request where control_id=…), jamais request_item — une demande orpheline les satisferait silencieusement. Même défaut de classe déjà trouvé et corrigé le 2026-09-07 dans demanderPieceLigne/demanderPiecesEnLot ; demanderDetailDeCompte (le patron copié par cette tranche) n'avait pas encore reçu ce correctif.",
+      "depuis": "2026-09-09 (lot contrôle interne, tranche 5 — CTRL-05 ; revue hostile voix 2)",
+      "note": "non bloquant : le chemin normal ne l'expose jamais (l'écran ne permet aucune demande sans son request_item). Corrigé le jour où demanderDetailDeCompte ET demanderPopulationControle sont tous deux enveloppés dans tx(), dans la même tranche."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

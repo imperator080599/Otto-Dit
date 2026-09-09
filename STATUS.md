@@ -58,7 +58,47 @@ vert sur le vrai chemin gardé de bout en bout. Régression : `ctrl01/02-03/07-l
 (106 tests).
 
 **Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché + nouveau
-code de refus), verify complet et expédition — détail à suivre dans ce même compte.**
+code de refus), fichiers non chevauchants (voix 1 : `sox.ts` seul ; voix 2 :
+`requests.ts`/`route.ts` seuls).** Voix 1 : SHIP WITH MINOR FIXES — huit constats CONFIRMÉ sur la
+mécanique (ordre étanchéité-d'abord avant le garde D&I puis CTRL-05, refus par mutation règle 17,
+comparaison stricte `control_id`, FK pleine vérifiée sûre en lisant `importRcm` en entier, aucune
+régression), un défaut de CLASSE pré-existant nommé non bloquant (double demande possible, même
+famille que R63, non élargi ici) ; un seul point procédural, pas un défaut de code : sa propre
+mutation-et-reversion (règle 17) a chevauché le `verify` (PID 19003) alors en fond — **run
+invalidé par la règle 34**, signalé à l'orchestrateur plutôt que caché. Voix 2 : SHIP WITH MINOR
+FIXES — dix constats CONFIRMÉ (dont un par mutation règle 17 sur `route.ts`, reversé, `git diff`
+vide), une recommandation non bloquante (`demanderPopulationControle` n'enveloppe pas ses deux
+`insert` dans `tx()`, contrairement au patron plus récent `demanderPieceLigne` qui documente avoir
+corrigé ce même défaut de classe le 2026-09-07 — à corriger avant une prochaine tranche qui
+toucherait ce fichier, sinon une entrée R-nn), deux remarques mineures sans conséquence aujourd'hui
+(`language:'en'` codé en dur, `quarterly` sur-bloqué par CTRL-05 avec une citation « mandat §3.1 »
+imprécise puisque le mandat ne nomme jamais `quarterly` — comportement sûr, jamais exercé dans le
+monde de démo actuel), et un point « jugé seul, non réfuté » (règle 30, documentation) sur le trou
+R48 pré-existant du « destinataire déduit », hérité fidèlement sans être aggravé ni nommé
+explicitement pour CTRL-05.
+
+**Correction procédurale (règle 34) avant la mesure finale.** Le `verify` PID 19003, contaminé par
+le chevauchement décrit ci-dessus, a été TUÉ (pas attendu) dès le constat de voix 1 reçu. Un
+`verify` FRAIS a été relancé sur l'arbre redevenu propre (`git status` vide, les deux fichiers mutés
+confirmés bit-à-bit identiques à l'original par chaque voix) : 121 fichiers, **983/983 tests**,
+gardes, 87 routes 0 échec, 232 étapes/362 clics/231 stations, 312 vues 0 défaut, **EXIT=0**.
+
+**Expédition.** Fast-forward sur `main` (commit `dad1098`, puis `2e1705b` portant aussi la mesure
+servie de la tranche 4 — squash involontaire de git mais sans conséquence, les deux commits sont
+individuellement propres et le second ne touche que `docs/`). CI « vérifier », run 34326544159,
+job `local` (tsc, vitest 983/983, gardes/plancher/langue+épreuve/lectures+épreuve/parcours+épreuve)
+vert ; job `deploye`, étape « le SHA poussé doit être servi dans les 15 minutes »,
+07:58:06Z→08:02:40Z (274 s), succès. Un `url` déclenché en double par deux `deployment_status`
+successifs a produit un ROUGE sur le premier passage (`acceptation cliquée`, run 34326691178,
+07:59:31Z) — le second passage sur le MÊME SHA (run 34326908631, 08:01:53Z) a réussi intégralement
+: flake identifié comme tel (rouge non reproduit sur le commit identique), pas une cause réelle à
+corriger. Confirmation indépendante (`mcp__Vercel__web_fetch_vercel_url`, 08:27:51Z) :
+HTTP 200, `sha=2e1705b`, `identiteCoherente=true`, « toutes les lectures passent », **CTRL-05**
+`ok:true` (« 3 tirage(s) OE, tous à fréquence dérivable — CTRL-05 hors périmètre pour l'instant » —
+attendu, le monde de démo n'a aucun contrôle `as_needed`). R44 : 89 objet(s) · 16 décor(s) ·
+32 non prouvé(s) · 41 prouvé(s), inchangé (aucun objet semé neuf dans cette tranche).
+
+**SHA servi confirmé = 2e1705b.**
 
 ## Lot contrôle interne, tranche 4 : la population dérivée (mandat §3.1) (2026-09-09)
 
