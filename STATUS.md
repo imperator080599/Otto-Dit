@@ -15,9 +15,83 @@ même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
 **§7.4 est maintenant COMPLET** (tableau de bord et kanban, tranches ci-dessous) : §0 du mandat du
 8 septembre est donc entièrement livré. §1 (table d'échantillonnage sourcée) reste **bloqué** par
-une restriction réseau du bac à sable (voir plus bas). **§2 est maintenant COMPLET** (§2.1/§2.2/§2.3
-— bascule, section, demande CTT — et §2.4, les codes de refus MAT-01/02/03, tranches ci-dessous) —
-prochain : §3 (vidéo, dépôt manuel).
+une restriction réseau du bac à sable (voir plus bas). **§2 est COMPLET** (§2.1/§2.2/§2.3 — bascule,
+section, demande CTT — et §2.4, les codes de refus MAT-01/02/03, tranches ci-dessous). **§3.1 point 1
+est maintenant livré** (dépôt/suppression manuels de la vidéo du walkthrough, provenance, compteur de
+conservation, VID-01, tranche ci-dessous) — §3.1 point 2 (dépôt automatique en fin de réunion) reste
+**hors périmètre**, derrière la même porte que le Lot 8 (service externe, identifiants — les
+interdits permanents ne le permettent pas encore). Prochain, dans l'ordre du mandat : §4/Lot 8 point 1
+(la garde de budget EN BASE — préalable écrit avant toute mesure de coût, rien n'est activé avant elle).
+
+## Lot mandat 9 septembre, §3.1 : dépôt/suppression manuels de la vidéo du walkthrough, VID-01 (2026-09-09)
+
+*Mandat §3 : « Un bouton pour déposer, un bouton pour supprimer... La suppression est toujours
+tracée — qui, quand, pourquoi — et jamais silencieuse. » §3.1 : « 1. Maintenant : le dépôt manuel et
+la suppression, la vidéo rangée comme une pièce du dossier avec sa provenance (qui, quand), et le
+compteur de conservation. 2. Plus tard, derrière la même porte que le Lot 8 : le dépôt automatique en
+fin de réunion. » §3.2 : « X est un paramètre de pack, verifie:false... Le compte à rebours ne
+démarre que lorsque les deux conditions sont réunies : rapport signé ET notes de revue closes. »
+`VID-01` — conclure ou maintenir conclu un D&I dont la vidéo d'inquiry a été supprimée, sans qu'une
+autre preuve d'inquiry la remplace.*
+
+**Ce qui a changé.** Le DÉPÔT existait déjà (`attacherWalkthrough`, mandat du 8 septembre) — rien à
+y ajouter. Migration 0157 : `evidence.deleted_at`/`deleted_by`/`deleted_reason` (les trois ou aucune,
+contrainte SQL), symétrique de `quarantined`/`quarantine_reason` — la pièce n'est JAMAIS détruite en
+ligne (règle 28), seule la marque change ; `control.di_walkthrough_evidence_id` continue de pointer
+dessus, interrogeable (qui, quand, pourquoi) au lieu de disparaître de l'historique. Nouveau service
+`supprimerVideoWalkthrough` (sox.ts) : motif requis, tracé (`event_log`), emprunte le couloir
+d'amendement post-verrou (`otto.post_lock_amendment`, 0003 §9.4, jamais employé avant cette tranche)
+pour rester utilisable après clôture du dossier — exactement le scénario que §3.2 nomme. VID-01 :
+`setDiStatus` refuse de conclure un D&I dont la vidéo est supprimée sans remplacement (un
+ré-attachement, déjà idempotent sur le lien, sert de remplacement — aucune table de preuve séparée) ;
+nouvelle lecture `/api/sante` globale pour le second cas du mandat, « maintenir conclu » (un contrôle
+déjà conclu dont la vidéo est supprimée après coup). `compteurConservationVideo` (§3.2) :
+`videoRetentionDays` (pack, même patron que `attributeSampleSizes`/CTRL-07) reste `verifie:false` —
+aucune durée inventée ; éligibilité = rapport signé ET notes de revue closes. UI (rcm/[cid]/page.tsx) :
+provenance affichée, bouton de suppression avec motif requis, compteur informatif.
+
+**Revue hostile, deux voix indépendantes** (règle 30 : tranche touchant le modèle de données et le
+couloir d'amendement post-verrou) — un constat bloquant CONVERGENT (les deux voix, indépendamment) et
+un second constat bloquant propre à une voix :
+- **Convergent** : `supprimerVideoWalkthrough` lisait « déjà supprimé ? » AVANT `tx()`, puis écrivait
+  sans reposer la même condition — deux appels concurrents sur la MÊME pièce passaient tous les deux,
+  le second écrasant silencieusement le `deleted_by`/`deleted_reason` du premier (reproduit
+  empiriquement par les deux réfutateurs, `Promise.allSettled`). Corrigé : l'`UPDATE` porte lui-même
+  la condition (`where deleted_at is null returning id`) — zéro ligne rendue déclenche le refus,
+  jamais un écrasement. Nouveau test qui reproduit la course.
+- **Voix 1 seule, règle 17** : le couloir d'amendement post-verrou — le mécanisme le plus neuf de
+  cette tranche — n'était exercé par AUCUN test contre un dossier réellement VERROUILLÉ, exactement
+  le scénario que §3.2 nomme. Les deux voix ont vérifié MANUELLEMENT qu'il fonctionne aujourd'hui,
+  mais rien ne le prouvait dans la suite livrée. Corrigé : nouveau test qui verrouille l'engagement,
+  prouve qu'une écriture directe est refusée (cas connu mauvais), que la fonction réussit malgré le
+  verrou, et que le réglage ne fuit pas vers une écriture sans rapport juste après.
+- **Voix 2 seule** : la table des tâches (et son formulaire d'ajout) vivait dans la branche « attaché
+  et non supprimé » de l'écran — supprimer la vidéo la rendait invisible alors que
+  `control_task`/`control_task_procedure` restent intacts en base (règle 13). Corrigée, reconfirmée en
+  navigateur (Playwright, dev server réel, reset+reseed) : la table garde sa ligne avant et après
+  suppression.
+- **Mineures, une convergente** : `evidence_deletion_whole` ne retire que l'espace ASCII
+  (`btrim`) — un motif de tabulations/sauts de ligne seuls la satisferait ; non atteignable par le
+  seul chemin qui écrit aujourd'hui (`raison.trim()` en JS), documenté plutôt que tu (règle 19).
+  L'arithmétique du compteur (`joursRestants`/`purgeable`) n'était exercée par aucun test
+  (`videoRetentionDays` jamais posé) — extraite en fonction pure (`calculerConservationVideo`),
+  testée directement. Trois des quatre tests du fichier de service ne nettoyaient rien en `finally` —
+  corrigé, un nettoyeur commun appliqué partout.
+
+**Verify complet, arbre silencieux, UN SEUL passage propre** (`set -o pipefail && timeout 3600 npm
+run verify … ; echo "EXIT=$?"`, mesuré `EXIT=0`) : 137/137 fichiers, 1053/1053 tests, écrans
+91+53/0 échec, densité 0 dépassement, clics 241/0 (379 clics, 52 gestes, 231 stations vérifiées),
+visuel 328/0. `docs/DENSITE.md` régénéré (commit/build seuls, rien de structurel — toujours 81 écrans,
+0 dépassement). Aucune station clics ne touche `/rcm/[cid]` (comme les tranches CTRL-01..07
+précédentes) : pas de nouvelle station ajoutée, cohérent avec ce précédent.
+
+**Conduit en navigateur avant d'être annoncé** (règle 10, deux passages, dev server réel,
+`OTTO_DEMO_PUBLIC=1`) : dépôt existant, suppression avec motif, notice de provenance (qui/quand/motif),
+ré-affichage du formulaire de dépôt, et — après le correctif de la revue hostile — la table des tâches
+qui garde sa ligne avant ET après suppression, confirmée par un rechargement complet de la page.
+
+**SHA servi** : à confirmer après le push (commit `6e94af9`), par `/api/sante` sur le déploiement
+d'aperçu de cette branche — voir l'entrée qui suit.
 
 ## Lot mandat 9 septembre, §2.4 : les codes de refus MAT-01/02/03 (2026-09-09)
 
