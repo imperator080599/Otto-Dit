@@ -8,6 +8,40 @@ avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de cons
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
 
+## Lot contrôle interne, tranche 3 correctif : CTRL-07 en production, deux tirages legacy (2026-09-09)
+
+**`deploye` a rougi pour de vrai sur `fbe7afe` — pas une panne d'infrastructure.** Mesuré en
+direct : la nouvelle instance devient `READY` en 3 min (bien dans les 15), `/api/sante` répond
+200 sur TOUT sauf une lecture — **CTRL-07 : 2 violation(s)** — donc `/api/sante` rend honnêtement
+500 (rule 22 : une lecture cassée fait rougir le tout), et `atteint.ts` refuse à bon droit puisque
+« sert » exige un 200. Un bref « le pooler ne connaît pas ce locataire » est apparu UNE fois dans
+les journaux runtime Vercel, à 01:23:55Z, juste après la bascule d'alias vers `fbe7afe` — un
+artefact de reconnexion transitoire (nouvelle route région du pooler Supabase pendant la bascule),
+PAS la cause : toutes les requêtes suivantes, y compris `/api/sante` lui-même, se sont connectées
+sans ERREUR de base — seule la lecture CTRL-07 a rougi, à répétition, avec un corps JSON bien
+formé listant tout le reste au vert.
+
+**Cause, vérifiée en direct sur la base de production (`mcp__Supabase__execute_sql`), pas
+supposée.** Deux échantillons RÉELS existent depuis le 2026-09-01 (`1a158f98-…` C-BR-01,
+`6763a111-…` C-REV-01), tirés sous l'ANCIEN défaut de pack — `params.override` = `null`, aucune
+justification écrite, exactement parce que CTRL-07 n'existait pas encore ce jour-là. Un troisième
+tirage (`ce59a5f8-…`, l'extension à la population complète de C-BR-01) porte une VRAIE justification
+(« Taux de déviation de 100 % … ») et n'est jamais concerné. Les deux `control_test` associés sont
+`complete`, l'un porte **8 déviations réelles**, workpapers signés au dossier — du travail humain/
+agent réel (règle 28 : jamais détruit ni réécrit en silence), et inventer une justification a
+posteriori aurait été exactement le mensonge que la règle 31 interdit.
+
+**Correctif — même patron que R47/POP-01 (même fichier, `route.ts`), pas une migration** : aucune
+donnée n'est mutée (contrairement à 0149) — la lecture CTRL-07 nomme les deux id EXACTS dans
+`LEGACY_AVANT_CTRL07`, datés, avec le motif écrit dans le commentaire. Tout autre tirage hors
+cette liste reste une régression réelle. Deux tests neufs (règle 17) : le vrai id de production
+traité comme legacy (vert) ; le test « cas connu mauvais » déjà existant, avec un id DIFFÉRENT
+construit par la sonde, continue de rougir — la liste compare l'ID exact, jamais le code du
+contrôle ni la date. 21/21 tests ciblés (`ctrl07-lecture.test.ts` 6/6, `ctrl01`/`ctrl02-03`
+inchangés) verts localement. Revue hostile (deux voix, la lecture touche un code de refus déjà
+existant sur une donnée de production réelle — même rigueur que 0149) et verify complet en cours,
+détail à suivre dans ce même compte.
+
 ## Lot contrôle interne, tranche 3 : CTRL-07, la table d'échantillonnage OE vidée (2026-09-09)
 
 *Mandat : `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §3.2, §7.3. Recherche préalable

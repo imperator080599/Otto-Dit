@@ -844,8 +844,21 @@ async function corpsDeLaSonde() {
      dont la fréquence n'a toujours PAS de taille vérifiée dans le pack au moment de la lecture
      est la violation — cette lecture ne peut rougir que si le garde de `drawAttributeSample` a
      été contourné (un SQL direct, une régression du garde), pas si aucun tirage n'a encore eu
-     lieu. */
+     lieu.
+     TROUVÉ EN PRODUCTION LE JOUR MÊME DE L'EXPÉDITION (2026-09-09, `deploye` a rougi) : deux
+     tirages RÉELS, du 2026-09-01, ANTÉRIEURS à cette tranche — tirés sous l'ancien défaut de
+     pack, avant que CTRL-07 n'existe — n'ont ni dérogation écrite ni taille vérifiée. Vérifié
+     en direct (mcp__Supabase__execute_sql) : les deux `control_test` sont `complete`, l'un
+     porte 8 déviations réelles, workpapers signés au dossier — du travail humain/agent réel
+     qu'on ne détruit ni ne réécrit après coup (règle 28), et inventer une justification a
+     posteriori serait exactement le mensonge que la règle 31 interdit. Nommés ici, datés,
+     MÊME PATRON que R47/POP-01 quelques lectures plus haut dans ce fichier : tout AUTRE tirage
+     hors cette liste reste une régression réelle, jamais un « déjà vu ». */
   lectures.push(await essayer('CTRL-07 : aucun tirage OE sans taille vérifiée ni justification écrite', async () => {
+    const LEGACY_AVANT_CTRL07 = [
+      '1a158f98-869b-4cee-a655-2262a9d847b0', // C-BR-01, tiré 2026-09-01, avant CTRL-07 (2026-09-09)
+      '6763a111-fd8b-4bb5-9deb-b47150ec1660', // C-REV-01, tiré 2026-09-01, avant CTRL-07 (2026-09-09)
+    ];
     const { tailleEchantillonOePourControle } = await import('@/lib/services/sox');
     const samples = await q<{ id: string; params: unknown; control_id: string; control_code: string }>(
       `select s.id, s.params, p.control_id, c.code control_code
@@ -854,16 +867,21 @@ async function corpsDeLaSonde() {
     );
     if (samples.length === 0) return 'aucun tirage OE pour l’instant';
     const violations: string[] = [];
+    let legacy = 0;
     for (const s of samples) {
       const params = (typeof s.params === 'string' ? JSON.parse(s.params) : s.params) as { override?: string | null };
       if (params.override && String(params.override).trim()) continue;
       const table = await tailleEchantillonOePourControle(s.control_id);
-      if (!table.verifie) violations.push(`${s.control_code} (tirage ${s.id}) : ni justification écrite, ni taille vérifiée`);
+      if (table.verifie) continue;
+      if (LEGACY_AVANT_CTRL07.includes(s.id)) { legacy++; continue; }
+      violations.push(`${s.control_code} (tirage ${s.id}) : ni justification écrite, ni taille vérifiée`);
     }
     if (violations.length > 0) {
       throw new Error(`${violations.length} violation(s) de CTRL-07 : ${violations.join(' ; ')}`);
     }
-    return `${samples.length} tirage(s) OE, tous couverts par une justification écrite ou une taille vérifiée`;
+    return legacy === 0
+      ? `${samples.length} tirage(s) OE, tous couverts par une justification écrite ou une taille vérifiée`
+      : `${samples.length} tirage(s) OE — ${samples.length - legacy} couvert(s), ${legacy} legacy (antérieur(s) à CTRL-07, 2026-09-01)`;
   }));
 
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────

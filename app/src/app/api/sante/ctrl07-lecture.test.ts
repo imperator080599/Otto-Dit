@@ -95,6 +95,43 @@ describe('CTRL-07 : la lecture /api/sante', () => {
     }
   });
 
+  it('cas connu mauvais, legacy (règle 17) : le tirage réel du 2026-09-01, antérieur à CTRL-07, ne rougit pas', async () => {
+    /* Trouvé EN PRODUCTION le jour de l'expédition (2026-09-09, `deploye` a rougi) : deux
+       tirages réels (C-BR-01, C-REV-01), tirés le 2026-09-01 sous l'ancien défaut de pack —
+       avant que CTRL-07 n'existe — portent un vrai travail de dossier (control_test 'complete',
+       déviations, workpapers signés) qu'on ne détruit ni ne réécrit (règle 28). La lecture les
+       nomme par leur id EXACT (LEGACY_AVANT_CTRL07, route.ts) plutôt que d'inventer une
+       justification a posteriori (règle 31). Ce test prouve que le VRAI id de production est
+       traité comme legacy ; le test précédent (« cas connu mauvais ») prouve, avec un id
+       différent construit par la sonde, que la liste ne dispense PAS les autres tirages —
+       la liste compare l'ID exact, jamais le code du contrôle ni la date. */
+    const controlId = await poserControle('SONDE-CTRL07-LEGACY');
+    const procedure = (await q1<{ id: string }>(
+      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, control_id, title, status, nature)
+       values ($1,'pcaob-sox','OE-SONDE-CTRL07-LEGACY','control_test',$2,'sonde CTRL-07 legacy','in_progress','tests_de_controles') returning id::text`,
+      [IDS.engNep, controlId],
+    )).id;
+    // Le VRAI id de production (C-BR-01, 2026-09-01) — doit être traité comme legacy, pas rougir.
+    const LEGACY_ID = '1a158f98-869b-4cee-a655-2262a9d847b0';
+    await q(
+      `insert into sample (id, engagement_id, procedure_id, method, params, seed, population_hash, population_size, rationale, status)
+       values ($1,$2,$3,'attribute_frequency',$4,'sonde-seed','sonde-hash',3,'sonde CTRL-07 legacy','drawn')`,
+      [LEGACY_ID, IDS.engNep, procedure, JSON.stringify({ size: 3, frequency: 'monthly', override: null })],
+    );
+    try {
+      const res = await GET();
+      const body = await res.json();
+      const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('CTRL-07'));
+      expect(lecture.ok).toBe(true);
+      expect(res.status).toBe(200);
+      expect(lecture.detail).toContain('legacy');
+    } finally {
+      await q(`delete from sample where id = $1`, [LEGACY_ID]);
+      await q(`delete from procedure_instance where id = $1`, [procedure]);
+      await q(`delete from control where id = $1`, [controlId]);
+    }
+  });
+
   it('le vrai chemin gardé (drawAttributeSample avec dérogation ADR-010) reste vert', async () => {
     const {
       attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, setDiStatus,
