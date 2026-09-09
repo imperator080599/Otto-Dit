@@ -13,8 +13,105 @@ de l'incident 0153/0154) : finir le lot contrôle interne (§7.3 restant, puis �
 §1 (table d'échantillonnage sourcée), §2 (R30/MAT-01-03), §3 (vidéo, dépôt manuel). §5 amendé le
 même jour : direction de design donnée (langage inspiré d'Optro.ai), R59-R62 rouverts — tout
 écran neuf naît désormais dans ce langage, jeton de design à engendrer avant le prochain écran.
-Jeton engendré et premier écran livré (tranche ci-dessous, §7.4 première moitié) : suite du lot
-contrôle interne, kanban (§7.4 seconde moitié) ensuite, puis §1/§2/§3 du mandat du 9 septembre.
+**§7.4 est maintenant COMPLET** (tableau de bord et kanban, tranches ci-dessous) : §0 du mandat du
+8 septembre est donc entièrement livré. Prochain : §1/§2/§3 du mandat du 9 septembre (table
+d'échantillonnage sourcée — bloquée par une restriction réseau du bac à sable, voir plus bas —,
+R30/MAT-01-03, vidéo).
+
+## Lot contrôle interne, tranche 9 : §7.4, le kanban des écarts — §7.4 COMPLET (2026-09-09)
+
+*Mandat §5/§7.4 : « Kanban : colonnes dérivées des états réels du travail ; déplacer une carte
+exécute le geste métier correspondant, jamais un changement d'étiquette décoratif. » Et : « Le
+kanban et le tableau de bord ne possèdent aucun objet. Une carte qui ne se résout pas à
+l'identifiant d'un objet réel est un décor. » Épreuve d'acceptation (§6, point 8) : « un test
+échoue si une seule carte ne se résout pas à l'identifiant d'un objet existant. » Seconde et
+dernière moitié de §7.4 (tableau de bord d'abord, tranche 8 ci-dessous — kanban ensuite).*
+
+**L'objet choisi, et pourquoi.** Recherche comparative (workpaper/request/section_state/deviation/
+control) avant d'écrire une ligne : `exception` (matching.ts) est le SEUL objet dont le cycle porte
+PLUSIEURS gestes RÉELS déjà câblés — `draftClarificationRequest`, `resolveException`,
+`escalateToMisstatement`, tous déjà des formulaires sur `/exceptions`. `section_state.statut`
+écarté explicitement : DÉRIVÉ en SQL, jamais posé — un kanban dessus aurait été le décor exact que
+le mandat interdit (glisser une carte n'y exécuterait littéralement rien). `deviation` et
+`control.di_status` : un seul geste réel câblé chacun, trop minces pour des colonnes multiples.
+
+**Ce qui a changé.** `/eng/[id]/kanban` (nouveau, langage `.epure`) : cinq colonnes
+(open/clarification_requested/explained/resolved/escalated), chaque carte un écart réel
+(`listExceptions`). AUCUN glisser-déposer : ce dépôt n'en a nulle part, et deux des trois gestes
+(résoudre, escalader) exigent une donnée probante NEP 500 qu'aucun glissement ne peut porter
+honnêtement. « Déplacer » est donc un LIEN vers l'ancre déjà posée sur `/exceptions` (`#x-<id>`,
+ADR-102) où vit le VRAI formulaire, déjà gardé — zéro duplication. Le seul geste exécuté DEPUIS le
+tableau lui-même : `draftClarificationRequest`, un bouton par colonne (pas par carte, puisque la
+fonction elle-même est un geste DE LOT — la représenter comme un glissement individuel aurait menti
+sur sa vraie granularité, dans l'autre sens que le mandat interdit).
+
+**`scope_limitation` — le sixième état réel, trouvé sans écran, enregistré R71.**
+`exception.status` porte SIX valeurs (0009_probative_gates.sql) ; le kanban n'en montre que cinq —
+les cinq dont un formulaire existe déjà. `recordScopeLimitation` (matching.ts) est un geste RÉEL et
+TESTÉ qu'AUCUN écran n'appelle (grepé, confirmé). Non ouvert dans cette tranche (construire son
+formulaire dépasse « ajouter une vue kanban ») : enregistré `docs/BACKLOG_REPORTE.md` et
+`docs/instantanes/fils.json` (R71), avec sa condition de retrait nommée. La lecture `/api/sante`
+neuve compte CES écarts À PART du compte de colonnes pour qu'ils ne se perdent jamais dans un total
+qui semblerait complet sans eux (règle 13) — et sur la démonstration publique, ils existent déjà
+réellement : 4 écarts en `scope_limitation`, mesurés en production (voir SHA servi ci-dessous), pas
+seulement dans un test.
+
+**Lecture `/api/sante` ajoutée le jour même** (règle 22, sonde `kanban-lecture.test.ts`) : la somme
+des cinq colonnes + `scope_limitation` doit égaler le total des écarts. Le check constraint SQL
+fermé sur six valeurs rend un septième statut irreproductible — donc non simulable comme cas connu
+mauvais (règle 17, limite nommée dans le commentaire de la lecture elle-même, règle 19) ; ce que la
+lecture PEUT réellement rater est une divergence entre sa propre requête et les colonnes du kanban,
+prouvée par couverture positive des six statuts réels (dont `resolved` et `scope_limitation`, posés
+par leur VRAI chemin gardé — `resolveException`, `recordScopeLimitation` — jamais par un statut SQL
+nu qui violerait leurs propres contraintes probantes).
+
+**Station clics** (mandat §6 point 8, épreuve d'acceptation) : chaque id de carte relevé sur le
+kanban doit se retrouver comme ancre réelle sur `/exceptions` — `clics` tourne contre un BUILD DE
+PRODUCTION sans accès direct à la base, donc la preuve passe par une SECONDE PAGE qui lit la même
+table. Zéro carte reste un ÉCHEC de la station (pas une excuse), même leçon que « mes travaux »
+(tranche antérieure). Le geste de lot a été exercé sur la branche « colonne vide » ce run-ci (0
+écart ouvert à ce point du script) ; `draftClarificationRequest` reste néanmoins prouvé de bout en
+bout ailleurs dans la suite (`s5s6.test.ts`, `loop.test.ts`), pas seulement supposé.
+
+**Correctif appliqué en construisant, avant tout commit de tranche** : un style inline construisant
+`gridTemplateColumns` par gabarit (`repeat(N, 1fr)`, N = le nombre de colonnes) faisait rougir le
+garde de langue (faux positif — du CSS, pas du texte). Retiré ; `.epure-grille` (déjà posée,
+tranche 8, `repeat(auto-fit, minmax(220px, 1fr))`) suffit pour cinq colonnes sans style dynamique.
+
+**Revue hostile (1 voix — tranche sans modèle de données, sécurité, multi-tenant ni code de
+refus)** : SHIP AS-IS, aucun constat bloquant. Vérifié en empruntant le chemin (pas par grep seul,
+règle 24) : la résolution carte→objet, l'invariant de la lecture, la station clics contre un
+faux-positif à vide, la non-duplication de formulaire, le choix de l'objet lui-même.
+
+**Verify complet, UN SEUL run continu, sur le tree du commit `1f1a9a5`** (`timeout 3600`,
+`pipefail` en tête) : tsc propre · 1020/1020 tests vitest · 43/43 gardes · langue 0 doublon (après
+correctif du faux positif CSS) · 231 stations figées vertes · screens/fumee propres · densité 0
+dépassement (81 écrans, `/kanban` ajouté) · **clics 237/237 étapes, 0 échec, 363 clics sur 50
+gestes** · **visuel 328/328 vues, 0 défaut**. `EXIT=0` mesuré.
+
+**SHA poussé** : `1f1a9a5` (`d0a4a85` par-dessus : régénération de `docs/CLICS.md`/`DENSITE.md`,
+rien de structurel). **SHA servi confirmé = `1f1a9a5`**, mesuré en direct
+(`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-nl3cwdoh9-imperator080599.vercel.app/api/sante`,
+jamais une attente de CI, règle 36) : `HTTP 200 · sha=1f1a9a5f2ee80764ff0d626fcaa4169307cb724c ·
+identiteCoherente=true`. Toutes les lectures passent, la lecture « kanban des écarts » comprise —
+`13 écart(s) · 9 en colonne(s) · 4 en scope_limitation (sans écran, R71)` : la démonstration
+publique porte RÉELLEMENT quatre écarts scope_limitation, et l'invariant les compte sans les
+perdre, sur de la vraie donnée, pas seulement sur le cas de sonde. **Toujours pas un déploiement de
+PRODUCTION** (`target: null`) : aucune pull request n'a été demandée pour ce lot.
+
+**§7.4 du mandat contrôle interne (docs/MANDATS/2026-09-08_mandat_controle_interne.md) est
+maintenant COMPLET.** §0 du mandat — le lot entier — est livré : CTRL-01 à CTRL-07 (tranches 1-7,
+2026-09-08/09), le tableau de bord (tranche 8) et le kanban (cette tranche). Prochain, dans l'ordre
+révisé par le fondateur : §1/§2/§3 du mandat du 9 septembre.
+
+**Bloqueur trouvé en recherchant §1 (la table d'échantillonnage sourcée)** : le mandat exige une
+source publique, primaire, citable — `WebSearch` fonctionne dans ce bac à sable, mais `WebFetch`
+retourne `EGRESS_BLOCKED` pour tous les domaines primaires essayés (pcaobus.org, sec.gov,
+hudoig.gov) : la politique réseau du bac à sable bloque la récupération de texte vérifiable. Un
+résumé de moteur de recherche n'est PAS un texte primaire citable (règle 8, mandat §1 : « aucune
+valeur de mémoire »). §1 reste donc NON COMMENCÉ, honnêtement, plutôt que rempli d'un paraphrase
+non vérifiable — à signaler au fondateur si l'accès réseau peut être élargi, ou à traiter avec une
+source que le fondateur fournirait directement.
 
 ## Lot contrôle interne, tranche 8 : §7.4, le suivi de mission — tableau de bord (2026-09-09)
 
