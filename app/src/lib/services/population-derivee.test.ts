@@ -18,26 +18,12 @@ describe('occurrencesDeLaPeriode (pure)', () => {
     expect(occ).toEqual([{ label: 'Exercice clos le 2025-12-31', occurredOn: '2025-12-31' }]);
   });
 
-  it('trimestrielle : quatre occurrences sur un exercice complet', () => {
-    const occ = occurrencesDeLaPeriode('quarterly', '2025-01-01', '2025-12-31');
-    expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30', '2025-09-30', '2025-12-31']);
-  });
-
-  it('cas connu mauvais (règle 17, revue hostile voix 1) : trimestrielle sur une période de PLUS de 12 mois ne tronque plus silencieusement au-delà de 4 trimestres', () => {
-    // Un exercice allongé de 15 mois (premier exercice réel, creerExercice n'impose que debut<fin)
-    // — la version d'origine bornait la boucle à 4 itérations et perdait janvier-mars 2026 sans
-    // aucune erreur. Cinq trimestres complets doivent maintenant sortir.
-    const occ = occurrencesDeLaPeriode('quarterly', '2025-01-01', '2026-03-31');
-    expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30', '2025-09-30', '2025-12-31', '2026-03-31']);
-  });
-
-  it('cas connu mauvais (règle 17, revue hostile voix 1) : un trimestre final PARTIEL est EXCLU, jamais tronqué — même règle que mensuelle', () => {
-    // La version d'origine tronquait le dernier trimestre à la fin de période au lieu de
-    // l'exclure — asymétrique avec mensuelle/hebdomadaire/quotidienne, qui rejettent toutes un
-    // cycle final incomplet. Sur une période qui s'arrête au milieu du 3e trimestre (15 août),
-    // seuls les deux premiers trimestres COMPLETS sortent.
-    const occ = occurrencesDeLaPeriode('quarterly', '2025-01-01', '2025-08-15');
-    expect(occ.map((o) => o.occurredOn)).toEqual(['2025-03-31', '2025-06-30']);
+  it('cas connu mauvais (règle 17, revue hostile voix 2) : « quarterly » n’est PAS dérivable — le mandat §3.1 ne la nomme pas, elle refuse plutôt que de deviner', () => {
+    // `quarterly` avait été ajoutée dans un premier temps (même famille de calcul que
+    // `monthly`) puis retirée : le mandat ne nomme que annuelle/mensuelle/hebdomadaire/
+    // quotidienne, et l'étendre en silence aurait été un dépassement de périmètre non tracé
+    // (règle 14). Un `[]` silencieux serait pire encore (règle 13) — elle refuse, en le disant.
+    expect(() => occurrencesDeLaPeriode('quarterly', '2025-01-01', '2025-12-31')).toThrow(/quarterly.*non dérivable/);
   });
 
   it('mensuelle : douze occurrences sur un exercice complet, y compris un février de 28 jours', () => {
@@ -52,9 +38,19 @@ describe('occurrencesDeLaPeriode (pure)', () => {
     expect(occ[1].occurredOn).toBe('2024-02-29');
   });
 
-  it('hebdomadaire : 52 occurrences sur un exercice de 365 jours', () => {
+  it('hebdomadaire : 52 occurrences sur un exercice de 365 jours, aux VRAIES dates — pas seulement au bon compte (règle 19, revue hostile voix 2)', () => {
+    // Un compte juste avec des dates fausses (décalées, dupliquées, mal ordonnées) passerait un
+    // test qui ne vérifie QUE la longueur — trouvé par la revue hostile comme un trou de
+    // couverture réel sur ce fichier. Semaine 1 se clôt le 7e jour, chaque semaine avance
+    // exactement de 7 jours, jamais de doublon.
     const occ = occurrencesDeLaPeriode('weekly', '2025-01-01', '2025-12-31');
     expect(occ.length).toBe(52);
+    expect(occ[0].occurredOn).toBe('2025-01-07');
+    expect(occ[1].occurredOn).toBe('2025-01-14');
+    expect(occ[51].occurredOn).toBe('2025-12-30');
+    const dates = occ.map((o) => o.occurredOn);
+    expect(new Set(dates).size).toBe(dates.length); // aucun doublon
+    expect(dates).toEqual([...dates].sort()); // strictement croissant
   });
 
   it('quotidienne : une occurrence par jour civil, bornes incluses', () => {
@@ -70,10 +66,11 @@ describe('occurrencesDeLaPeriode (pure)', () => {
     expect(occ.map((o) => o.occurredOn)).toEqual(['2025-06-30', '2025-07-31']);
   });
 
-  it('adhoc et many_daily sont ABSENTS de FREQUENCES_DERIVABLES — le mandat ne les nomme pas (§3.1)', () => {
-    expect(FREQUENCES_DERIVABLES).not.toContain('adhoc');
-    expect(FREQUENCES_DERIVABLES).not.toContain('many_daily');
-    expect(FREQUENCES_DERIVABLES).toEqual(['annual', 'quarterly', 'monthly', 'weekly', 'daily']);
+  it('FREQUENCES_DERIVABLES est EXACTEMENT les quatre valeurs du tableau §3.1, ni plus ni moins (règle 14, revue hostile voix 2)', () => {
+    // `quarterly` avait été ajoutée puis retirée (voir le test « quarterly n'est pas dérivable »
+    // ci-dessus) — ce test fige la liste ENTIÈRE, pas seulement ce qui en est absent, pour que
+    // toute réintroduction silencieuse d'une cinquième valeur fasse rougir ce test-ci.
+    expect(FREQUENCES_DERIVABLES).toEqual(['annual', 'monthly', 'weekly', 'daily']);
   });
 });
 

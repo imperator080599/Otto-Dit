@@ -574,14 +574,19 @@ export async function importInstances(controlId: string, csv: string, userId: st
 }
 
 /** Mandat contrôle interne, §3.1 : les fréquences RÉGULIÈRES dérivent leur population de la
- *  fréquence et de la période — le système la calcule. `adhoc`/`many_daily` en sont exclus
- *  DÉLIBÉRÉMENT (règle 19, où cette règle cesse de regarder) : le mandat ne nomme que
- *  « annuelle, mensuelle, hebdomadaire, quotidienne » (§3.1, le tableau) ; `many_daily` implique
- *  un nombre d'occurrences par jour qu'aucune fréquence ni période ne peut donner sans une
- *  constante inventée (règle 8 — jamais une valeur écrite de mémoire), donc ce n'est pas une
- *  omission mais un refus honnête de deviner. Ces deux fréquences restent sur le chemin de
- *  demande client (`importInstances`, CTRL-05 à venir). */
-export const FREQUENCES_DERIVABLES: readonly Frequency[] = ['annual', 'quarterly', 'monthly', 'weekly', 'daily'];
+ *  fréquence et de la période — le système la calcule. LES QUATRE VALEURS ICI SONT EXACTEMENT
+ *  CELLES DU TABLEAU DU MANDAT (§3.1 : « annuelle, mensuelle, hebdomadaire, quotidienne »), pas
+ *  une de plus — `quarterly` avait été ajoutée dans un premier temps (même famille de calcul que
+ *  `monthly`, aucune constante inventée) puis RETIRÉE (revue hostile voix 2, 2026-09-09) : le
+ *  mandat ne la nomme nulle part, et l'étendre était une extension de périmètre non tracée,
+ *  contraire à la règle 14 (vocabulaire du mandat suivi VERBATIM) — si le fondateur la veut un
+ *  jour, c'est sa tranche à elle, pas un ajout silencieux dans celle-ci. `adhoc`/`many_daily` en
+ *  sont exclus pour une raison DIFFÉRENTE (règle 19, où cette règle cesse de regarder) :
+ *  `many_daily` implique un nombre d'occurrences par jour qu'aucune fréquence ni période ne peut
+ *  donner sans une constante inventée (règle 8), donc ce n'est pas une omission mais un refus
+ *  honnête de deviner. Ces deux fréquences restent sur le chemin de demande client
+ *  (`importInstances`, CTRL-05 à venir). */
+export const FREQUENCES_DERIVABLES: readonly Frequency[] = ['annual', 'monthly', 'weekly', 'daily'];
 
 function iso(d: Date): string { return d.toISOString().slice(0, 10); }
 
@@ -591,26 +596,26 @@ function iso(d: Date): string { return d.toISOString().slice(0, 10); }
  *
  *  UN CYCLE FINAL PARTIEL (la période ne se termine pas exactement à la fin d'un cycle complet
  *  de la fréquence) N'EST JAMAIS INCLUS, POUR AUCUNE FRÉQUENCE — un contrôle « mensuel » sur une
- *  période qui s'arrête le 15 n'a pas eu 15 jours de mois, il n'a pas eu ce mois-là. `quarterly`
- *  suit la MÊME règle que `monthly`/`weekly`/`daily` (corrigé le 2026-09-09, revue hostile voix 1
- *  du lot contrôle interne, tranche 4 : la version d'origine bornait le trimestre en DUR à 4
- *  itérations ET tronquait le dernier trimestre à la fin de période au lieu de l'exclure — sur
- *  une période de PLUS de 12 mois (un premier exercice allongé, cas réel : `creerExercice`,
- *  engagement.ts, n'impose que `debut < fin`), les mois au-delà du 4e trimestre disparaissaient
- *  SANS AUCUNE erreur, silencieusement). Toutes les fréquences bouclent maintenant `for(;;)`
- *  jusqu'à dépasser `fin`, jamais un nombre d'itérations fixé d'avance. */
+ *  période qui s'arrête le 15 n'a pas eu 15 jours de mois, il n'a pas eu ce mois-là. Chaque
+ *  fréquence boucle `for(;;)` jusqu'à dépasser `fin`, jamais un nombre d'itérations fixé d'avance
+ *  (corrigé le 2026-09-09, revue hostile voix 1, lot contrôle interne tranche 4 : une première
+ *  version de `quarterly`, depuis RETIRÉE de `FREQUENCES_DERIVABLES` — voir sa note —, bornait la
+ *  boucle en DUR à 4 itérations et tronquait le dernier cycle au lieu de l'exclure ; sur une
+ *  période de plus de 12 mois, `creerExercice`, engagement.ts, n'imposant que `debut < fin`, les
+ *  mois au-delà du 4e trimestre disparaissaient SANS AUCUNE erreur). */
 export function occurrencesDeLaPeriode(frequency: Frequency, debut: string, fin: string): { label: string; occurredOn: string }[] {
+  if (!FREQUENCES_DERIVABLES.includes(frequency)) {
+    // Un `[]` silencieux se lirait comme « aucune occurrence » plutôt que comme « fréquence non
+    // dérivable » — exactement le silence que la règle 13 traque. `deriverPopulationControle`
+    // gardait déjà ce cas, mais cette fonction est exportée et appelable directement (tests, une
+    // future lecture) : elle porte sa propre garde, jamais un `[]` qui aurait l'air d'une mesure.
+    throw new Error(`occurrencesDeLaPeriode : fréquence « ${frequency} » non dérivable`);
+  }
   const d0 = new Date(`${debut}T00:00:00Z`);
   const d1 = new Date(`${fin}T00:00:00Z`);
   const occ: { label: string; occurredOn: string }[] = [];
   if (frequency === 'annual') {
     occ.push({ label: `Exercice clos le ${iso(d1)}`, occurredOn: iso(d1) });
-  } else if (frequency === 'quarterly') {
-    for (let q = 1; ; q++) {
-      const d = new Date(d0); d.setUTCMonth(d.getUTCMonth() + 3 * q); d.setUTCDate(d.getUTCDate() - 1);
-      if (d > d1) break;
-      occ.push({ label: `Trimestre ${q}, clos le ${iso(d)}`, occurredOn: iso(d) });
-    }
   } else if (frequency === 'monthly') {
     for (let m = 1; ; m++) {
       const d = new Date(d0); d.setUTCMonth(d.getUTCMonth() + m); d.setUTCDate(d.getUTCDate() - 1);

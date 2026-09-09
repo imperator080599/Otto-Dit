@@ -10,34 +10,53 @@ la tranche touche le modèle de données, la sécurité, le multi-tenant ou un c
 
 ## Lot contrôle interne, tranche 4 : la population dérivée (mandat §3.1) (2026-09-09)
 
-*Mandat, §3.1 : pour une fréquence RÉGULIÈRE (annuelle, trimestrielle, mensuelle, hebdomadaire,
-quotidienne), la population d'occurrences OE se DÉRIVE de la fréquence et de la période — le
-système la calcule, sans demande client. `adhoc` (le mandat dit « as_needed » ; le code n'a que
-`adhoc`, la seule valeur réelle du type `Frequency` — aucun concept distinct n'existe) reste sur le
-chemin de demande client (`CTRL-05`, tranche suivante). Recherche préalable (agent dédié) : `importInstances`/
-`requestAndImportListing` ne dérivaient rien pour AUCUNE fréquence — tout contrôle passait par le
-client, y compris les fréquences régulières ; `control_instance` ne portait aucune trace de
-provenance dérivée ; POP-01/`populationDuDetailRapproche` (account-detail.ts) a servi de patron
-pour la discipline de fraîcheur, pas de code réutilisé directement (tables différentes, contrôle
-vs FSLI).*
+*Mandat, §3.1, tableau : pour une fréquence RÉGULIÈRE — **annuelle, mensuelle, hebdomadaire,
+quotidienne, EXACTEMENT ces quatre, verbatim** — la population d'occurrences OE se DÉRIVE de la
+fréquence et de la période, sans demande client. `adhoc` (le mandat dit « as_needed » ; le code
+n'a que `adhoc`, la seule valeur réelle du type `Frequency` — aucun concept distinct n'existe)
+reste sur le chemin de demande client (`CTRL-05`, tranche suivante). Recherche préalable (agent
+dédié) : `importInstances`/`requestAndImportListing` ne dérivaient rien pour AUCUNE fréquence —
+tout contrôle passait par le client ; `control_instance` ne portait aucune trace de provenance
+dérivée ; POP-01/`populationDuDetailRapproche` (account-detail.ts) a servi de patron pour la
+discipline de fraîcheur, pas de code réutilisé directement (tables différentes, contrôle vs FSLI).*
 
 **Ce qui a changé.** Migration `0151_population_derivee.sql` : `control_instance.source` gagne la
 valeur `'derived'` (même patron que 0150 sur `risk.source` — nom de contrainte auto-générée jamais
-supposé, recherché dans `pg_constraint`). `sox.ts` : `FREQUENCES_DERIVABLES` (`annual, quarterly,
-monthly, weekly, daily` — **`adhoc` et `many_daily` en sont délibérément absents**, règle 19 : le
-mandat ne nomme que les quatre premières au §3.1, et `many_daily` impliquerait une constante «
-occurrences par jour » qu'aucune fréquence ni période ne peut fournir sans l'écrire de mémoire,
-règle 8) ; `occurrencesDeLaPeriode` (fonction PURE, testable sans base) calcule les dates
-d'occurrence UTC pour chaque fréquence régulière ; `deriverPopulationControle` les écrit en
-`control_instance`, gardé par `assertMembreDe`, refuse une fréquence non dérivable (nommant
-CTRL-05) et refuse une population déjà présente (dérivation à usage unique, jamais un doublon).
-Écran `rcm/[cid]` : le bouton « importer le listing client » est remplacé par « dériver la
-population » pour les fréquences régulières (le mandat ne prévoit pas de round-trip client là où
-rien ne le justifie) ; une colonne `source` affiche « dérivée » sur chaque ligne ; le tri de la
-liste passe de `label` (lexicographique — cassait l'ordre chronologique : « Mois 10 » avant « Mois
-2 ») à `occurred_on`. Lecture `/api/sante` **population dérivée** : recalcule fraîchement, pour
-tout contrôle portant au moins une ligne `derived`, ce que `occurrencesDeLaPeriode` produirait
-aujourd'hui, et rougit sur toute divergence — même discipline de fraîcheur que POP-01.
+supposé, recherché dans `pg_constraint`). `sox.ts` : `FREQUENCES_DERIVABLES` (`annual, monthly,
+weekly, daily` — **exactement les quatre valeurs du tableau §3.1, ni plus ni moins**, règle 14 ;
+`adhoc`/`many_daily` en sont absents pour une raison DIFFÉRENTE, règle 19 : `many_daily`
+impliquerait une constante « occurrences par jour » qu'aucune fréquence ni période ne peut
+fournir sans l'écrire de mémoire, règle 8) ; `occurrencesDeLaPeriode` (fonction PURE, testable
+sans base, refuse elle-même toute fréquence hors `FREQUENCES_DERIVABLES` plutôt que de rendre un
+`[]` silencieux) calcule les dates d'occurrence UTC ; `deriverPopulationControle` les écrit en
+`control_instance`, gardé par `assertMembreDe` en PREMIER (avant toute autre lecture), refuse une
+fréquence non dérivable (nommant CTRL-05) et refuse une population déjà présente (dérivation à
+usage unique, jamais un doublon). Écran `rcm/[cid]` : le bouton « importer le listing client » est
+remplacé par « dériver la population » pour les fréquences régulières (le mandat ne prévoit pas de
+round-trip client là où rien ne le justifie) ; une colonne `source` affiche « dérivée » sur chaque
+ligne ; le tri de la liste passe de `label` (lexicographique — cassait l'ordre chronologique :
+« Mois 10 » avant « Mois 2 ») à `occurred_on`. Lecture `/api/sante` **population dérivée** :
+recalcule fraîchement, pour tout contrôle portant au moins une ligne `derived`, ce que
+`occurrencesDeLaPeriode` produirait aujourd'hui, et rougit sur toute divergence — même discipline
+de fraîcheur que POP-01.
+
+**Deux correctifs de revue hostile, appliqués AVANT expédition (pas après coup).** Voix 1 : une
+première version de `quarterly` (envisagée en plus des quatre fréquences du mandat) bornait sa
+boucle en DUR à exactement 4 itérations, contrairement aux autres fréquences (`for(;;)` jusqu'à
+dépasser la fin de période) — sur une période de PLUS de 12 mois (un premier exercice allongé, cas
+réel : `creerExercice`, engagement.ts, n'impose que `debut < fin`), les mois au-delà du 4e
+trimestre disparaissaient SANS AUCUNE erreur, silencieusement ; elle tronquait aussi le dernier
+trimestre à la fin de période au lieu de l'exclure, asymétrique avec `monthly`. Voix 2 : `quarterly`
+elle-même n'est NOMMÉE NULLE PART dans le tableau du mandat §3.1 (grep exhaustif du mandat, zéro
+occurrence) — l'ajouter aurait été un dépassement de périmètre non tracé (règle 14, le vocabulaire
+du mandat se suit VERBATIM), et le commentaire du code se contredisait lui-même en le disant. Les
+deux constats convergent sur la même ligne de code : **`quarterly` est RETIRÉE de
+`FREQUENCES_DERIVABLES` et de `occurrencesDeLaPeriode`**, plutôt que réparée puis gardée sans mandat
+qui la nomme — la voie la plus sûre, pas la plus rapide. `occurrencesDeLaPeriode` refuse maintenant
+explicitement toute fréquence hors des quatre du mandat (voix 2, constat sur le `[]` silencieux
+qu'un appel direct à `quarterly` aurait produit sans ce garde). Le test `hebdomadaire`, qui ne
+vérifiait que la LONGUEUR (une implémentation aux dates fausses l'aurait quand même passé — règle
+19), vérifie maintenant les dates exactes, l'absence de doublon et l'ordre croissant.
 
 **Ce qui n'a PAS changé, délibérément (règle 19).** Le monde de démonstration (`part2.ts`,
 `runControlCycle` pour C-BR-01/C-REV-01) N'A PAS été basculé sur le dériveur : ces deux cycles
@@ -58,20 +77,26 @@ contrôle de sonde mensuel, 0 occurrence → clic « Derive population » → 12
 directement dans le panneau (pas un `grep` sur toute la page, règle 15 : une autre table partageait
 la même classe CSS et aurait faussé un comptage global).
 
-**Tests neufs** : `occurrencesDeLaPeriode` — 8 tests purs (annuelle/trimestrielle/mensuelle/
-hebdomadaire/quotidienne sur un exercice complet 2025, année BISSEXTILE 2024 — 29 février, pas 28 —,
-une période COURTE qui ne déborde jamais après sa fin, `FREQUENCES_DERIVABLES` n'inclut ni `adhoc`
-ni `many_daily`). `deriverPopulationControle` (service, 5 tests) : dérive 12 lignes pour un contrôle
-mensuel ; refuse `adhoc` et `many_daily` en nommant la fréquence (règle 17, rien n'est écrit malgré
-le refus) ; refuse une seconde dérivation sur une population déjà `listing` (règle 17, rien
-n'est ajouté) ; étanchéité ETANCH pour un intrus d'un autre cabinet. Lecture `/api/sante` (4
-tests) : vide sans dérivation, verte sur le vrai chemin gardé, rouge sur une ligne dérivée éditée
-à la main (règle 17), verte quand la seule population existante est `listing` — pas lue par erreur.
-Régression : `ctrl01/02-03/07-lecture`, `s8`, `etancheite-executee`, `i18n`, `semeur/coherence`
-tous verts (81 tests).
+**Tests neufs** : `occurrencesDeLaPeriode` — 7 tests purs (annuelle/mensuelle/hebdomadaire/
+quotidienne sur un exercice complet 2025, année BISSEXTILE 2024 — 29 février, pas 28 —, une
+période COURTE qui ne déborde jamais après sa fin, `quarterly` refuse explicitement au lieu de
+rendre un `[]`, `FREQUENCES_DERIVABLES` figée aux quatre valeurs exactes du mandat). Le test
+hebdomadaire vérifie désormais les VRAIES dates (pas seulement un compte de 52). `deriverPopulationControle`
+(service, 5 tests) : dérive 12 lignes pour un contrôle mensuel ; refuse `adhoc` et `many_daily` en
+nommant la fréquence (règle 17, rien n'est écrit malgré le refus) ; refuse une seconde dérivation
+sur une population déjà `listing` (règle 17, rien n'est ajouté) ; étanchéité ETANCH pour un intrus
+d'un autre cabinet, `assertMembreDe` confirmé PREMIER appel de la fonction. Lecture `/api/sante`
+(4 tests) : vide sans dérivation, verte sur le vrai chemin gardé, rouge sur une ligne dérivée
+éditée à la main (règle 17), verte quand la seule population existante est `listing` — pas lue par
+erreur. Migration 0151 éprouvée REJOUÉE deux fois de suite sur une PGlite jetable (voix 2,
+idempotence confirmée empiriquement, pas seulement par lecture du SQL). Régression :
+`ctrl01/02-03/07-lecture`, `s8`, `etancheite-executee`, `i18n`, `semeur/coherence` tous verts
+(71 tests, dernier passage après les deux correctifs).
 
-**Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché), verify
-complet et expédition — détail à suivre dans ce même compte.**
+**Revue hostile, deux voix (règle 30 : nouvelle migration = modèle de données touché) — les DEUX
+constats bloquants (troncature `quarterly` >12 mois, `quarterly` hors périmètre du mandat) ont été
+corrigés avant expédition, détaillés ci-dessus. Verify complet et expédition, sur l'arbre corrigé —
+détail à suivre dans ce même compte.**
 
 ## Lot contrôle interne, tranche 3 correctif : CTRL-07 en production, deux tirages legacy (2026-09-09)
 
