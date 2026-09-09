@@ -170,6 +170,28 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     migration NOUVELLE et idempotente. `migrate()` enregistre l'empreinte de chaque fichier et
     refuse de continuer si un fichier appliqué a changé. Trois déploiements sont morts de cela
     le 3 septembre 2026 (ADR à venir ; commit a06a7f1).
+
+    **« Appliquée » veut dire : une trace dans `_migrations`, sur N'IMPORTE QUELLE base qui en
+    porte une — jamais seulement « servie en production ».** Un déploiement d'APERÇU qui s'arrête
+    juste après (un garde qui rougit plus loin dans le même script, `deploye` qui échoue derrière)
+    a quand même écrit la ligne dans `_migrations` de la base RÉSEAU PARTAGÉE : la migration EST
+    appliquée, que le déploiement dans son ensemble ait réussi ou non. « Ça n'a jamais été servi »
+    n'est PAS « ça n'a jamais été appliqué » — et c'est exactement la confusion qui a fait éditer
+    0153 en place le 2026-09-09 (tranche 6, CTRL-04) : appliquée par le tout premier build
+    d'aperçu (qui s'est arrêté juste après, sur le garde de couverture RLS), puis éditée EN PLACE
+    par une session qui jugeait le premier `deploye` en échec comme preuve que « rien n'était
+    encore servi ». L'édition corrigeait toute base FRAÎCHE (`db:reset` part de zéro) mais RIEN à
+    la base réseau, qui gardait la table dans sa forme d'origine EN PERMANENCE — `migrate()`
+    aurait dû refuser (empreinte différente) au déploiement suivant, ce qui explique à lui seul
+    pourquoi les cinq déploiements suivants sont TOUS restés en ERROR. Corrigé par
+    `0154_control_population_reconciliation_engagement_id.sql` (ALTER en avant, jamais une
+    réédition de 0153) — 0153 elle-même est revenue OCTET POUR OCTET à son contenu d'origine
+    (empreinte vérifiée identique à celle de `_migrations` sur la base réseau, par une requête
+    directe, jamais supposée). Le test qui compte n'est donc jamais « ai-je vu un `deploye` vert
+    pour ce commit ? » mais **« cette migration a-t-elle une ligne dans `_migrations`, sur QUELQUE
+    base que ce soit — locale gardée entre deux sessions, réseau de démonstration, réseau de
+    production ? »** Dans le doute, une requête directe (`select * from _migrations where name =
+    …`) tranche — jamais une inférence depuis le statut d'un déploiement.
 27. **Le SHA poussé doit devenir le SHA servi.** Une tranche poussée et non déployée n'existe pas
     pour le fondateur. Le travail CI `deploye` l'exige en quinze minutes ; une livraison se dit
     « en ligne » seulement avec le SHA servi MESURÉ (`/api/sante`, champ `sha`).

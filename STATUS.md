@@ -7,6 +7,64 @@ contrôle interne D&I/OE, le suivi de mission), à exécuter après la clôture 
 avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de construction : §7.
 Amendement de cadence du même jour (règle 30 de CLAUDE.md, §1) : deux réfutateurs seulement quand
 la tranche touche le modèle de données, la sécurité, le multi-tenant ou un code de refus.
+`docs/MANDATS/2026-09-09_mandat_reponses_fondateur.md` — complète le mandat du 8 septembre (les
+cinq réponses attendues) : ordre de priorité fixé par le fondateur — cet incident d'abord, puis
+§1 (table d'échantillonnage sourcée), §2 (R30/MAT-01-03), §3 (vidéo, dépôt manuel).
+
+## Incident de production : migration 0153 rééditée à tort, corrigée par 0154 (2026-09-09)
+
+**Découvert par le fondateur, pas par l'agent** — les cinq derniers déploiements Vercel étaient en
+ERROR (depuis `c654f40`, y compris `7395e55` sur `main`), la production servait toujours la
+tranche 5 (`3f460a2`), et l'agent attendait une confirmation `deploye` qui ne pouvait pas arriver.
+
+**Ce qui s'est passé.** Migration `0153_ctrl04_population_rapprochee.sql` : appliquée à la base
+RÉSEAU (démo publique partagée) par son tout premier build d'aperçu (`c654f40`, `_migrations`
+horodate 2026-09-09T08:48:00Z), dans sa forme D'ORIGINE — sans `engagement_id`, sans garde de
+verrou, sans RLS. Ce build s'est arrêté juste après, sur le bloc d'assertions rôle/RLS de
+`deploy:reconstruire` (« 2 défaut(s) de couverture RLS ») — LE GARDE A FONCTIONNÉ, règle 17.
+La session suivante a alors ÉDITÉ 0153 EN PLACE (`a9e88ef`) pour ajouter ce qui manquait,
+raisonnant que la règle 26 (« on n'édite jamais une migration appliquée ») ne s'appliquait pas
+puisque « rien n'avait encore été servi » (le premier `deploye`, indépendant du build d'aperçu,
+avait aussi échoué). **C'était une confusion entre « appliquée » et « servie en production »** :
+la ligne dans `_migrations` de la base réseau ne dépend pas du statut final du déploiement, et
+l'édition ne corrigeait qu'une base FRAÎCHE (`db:reset` part toujours de zéro) — rien à la base
+réseau, qui gardait la table dans sa forme d'origine EN PERMANENCE. `migrate()` aurait dû refuser
+(empreinte différente, `MigrationEditee`) à chaque déploiement suivant — ce qui explique à lui
+seul pourquoi TOUS les déploiements suivants (`a9e88ef`, `3659901`, `7395e55`, `409e1b7`) sont
+restés en ERROR, sans qu'aucun harnais local (qui repart toujours de zéro) ne puisse jamais le
+voir. Même classe d'aveuglement structurel que l'incident `daf18e0` (Lot 3, tranche 1) : une
+branche déjà migrée que le harnais local ne peut pas exercer.
+
+**Vérifié directement contre la base réseau avant toute correction** (`mcp__Supabase__execute_sql`,
+projet « Otto Dit », `fhxghmcehfdmxklkhfzk`), jamais supposé : la table `control_population_
+reconciliation` existante n'a pas `engagement_id`, `relrowsecurity=false`, `relforcerowsecurity=
+false`, aucun trigger, 0 ligne. `_migrations` porte une ligne `0153_ctrl04_population_rapprochee.sql`,
+empreinte `8f603898…`. Le SHA-256 du contenu de 0153 tel qu'il était au commit `c654f40` (avant
+l'édition) est **identique, octet pour octet**, à cette empreinte — confirmé par calcul local.
+
+**Corrigé.** `0153` est revenue à son contenu de `c654f40`, INCHANGÉE depuis (empreinte re-vérifiée
+identique). Tout ce qui manquait est dans une migration NOUVELLE, `0154_control_population_
+reconciliation_engagement_id.sql` — `engagement_id` dénormalisé (ALTER + backfill défensif + NOT
+NULL, même précédent que `control_task_procedure`, 0148, pas `account_detail_row`, 0144, puisque
+`rapprocherPopulationControle` écrit dans une transaction séparée de la création de la
+population), garde de verrou + verdict, RLS enable/policy/force — même patron que
+`account_detail_import` (0144). **Prouvé avant de toucher la base réseau**, par une simulation
+locale utilisant le VRAI `migrate()` importé (pas une réimplémentation) : une base PGlite migrée
+« à la main » jusqu'à 0153 inclus (répliquant exactement l'état réseau), puis un second appel à
+`migrate()` — aucune `MigrationEditee`, `0154` s'applique proprement, forme finale correcte
+(colonne, RLS activée et forcée, trigger présent). `npm run db:reset` (fraîche, 0153 puis 0154
+dans le même passage) donne la MÊME forme finale — les deux bases convergent, exactement ce que
+`0154` doit garantir.
+
+**Règle 26 amendée (CLAUDE.md)** : « appliquée » veut dire une ligne dans `_migrations` sur
+N'IMPORTE QUELLE base qui en porte une, jamais seulement « servie en production ». Le test qui
+compte est une requête directe sur `_migrations`, jamais une inférence depuis le statut d'un
+déploiement.
+
+**Suite immédiate** : pousser ce correctif sur `main`, confirmer que `deploye` réussit enfin (le
+premier passage RÉEL sur cette tranche), puis SHA servi confirmé. Priorité fixée par le second
+mandat du fondateur : cet incident d'abord, avant §1 (table d'échantillonnage), §2 (R30), §3
+(vidéo).
 
 ## Lot contrôle interne, tranche 6 : CTRL-04, le rapprochement de la population d'OE (2026-09-09)
 
