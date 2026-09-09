@@ -147,14 +147,14 @@ export async function proposeScoping(engagementId: string, userId: string): Prom
  * indépendamment de `scoping` — cette fonction n'écrit JAMAIS `fsli.scoping` lui-même (D9 reste
  * entier : la décision humaine ne bouge pas), elle rend seulement le dossier du poste ATTEIGNABLE.
  * §2.3 (mandat 2026-09-09) : LE MÊME IMPORT CRÉE AUSSI LA DEMANDE DE DÉTAIL, mais SEULEMENT pour
- * les comptes du poste dont le solde absolu dépasse le CTT (`materiality.ctt_amount`, PAS le
- * seuil de performance qui a servi à détecter la bascule elle-même — deux seuils distincts,
+ * les comptes du poste dont le solde absolu ATTEINT OU DÉPASSE le CTT (`materiality.ctt_amount`,
+ * PAS le seuil de performance qui a servi à détecter la bascule elle-même — deux seuils distincts,
  * `materiality.ts`). `requests.ts::demanderDetailAuDessusDuCtt` est une fonction DISTINCTE de
  * `demanderDetailDeCompte` (Partie B, étape 1, déjà testée, déjà utilisée par `/sampling` sur TOUT
  * le poste) — ce comportement existant ne change pas ici. Importée dynamiquement (comme
  * `obstacles.ts`/`matching.ts` le font déjà ailleurs dans ce dépôt) : `requests.ts` importe déjà
  * `frameworkSet`/`fsliAccounts` DEPUIS ce fichier, un import statique en sens inverse créerait un
- * cycle. Si aucun compte ne dépasse le CTT, aucune demande n'est créée — ce n'est pas une erreur
+ * cycle. Si aucun compte n’atteint le CTT, aucune demande n'est créée — ce n'est pas une erreur
  * (un poste peut devenir matériel par somme de petits comptes, chacun sous le CTT).
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle n'implémente aucun refus (MAT-01/02/03,
  * tranche suivante) — un poste devenu matériel sans section ouverte ou sans demande de détail ne
@@ -215,9 +215,24 @@ export async function detecterBasculesMaterialite(
     );
     /* §2.3 : import dynamique — voir le commentaire d'en-tête de cette fonction (cycle
        fsli.ts ↔ requests.ts). `userId` propagé tel quel : `demanderDetailAuDessusDuCtt` porte sa
-       propre garde `assertMembre`, no-op sur `null` (le cas système, `bootstrapNep`). */
-    const { demanderDetailAuDessusDuCtt } = await import('./requests');
-    await demanderDetailAuDessusDuCtt(engagementId, f.code, ctt, userId);
+       propre garde `assertMembre`, no-op sur `null` (le cas système, `bootstrapNep`).
+       TRY/CATCH TROUVÉ PAR LA REVUE HOSTILE (constat 1) : sans lui, la seule levée prévue de
+       `demanderDetailAuDessusDuCtt` (poste absent du catalogue du pack — ne devrait jamais
+       arriver) aurait fait sortir CETTE fonction en erreur, avortant l'évaluation de TOUS les
+       candidats restants de la boucle en silence — alors que le drapeau et la section de CE
+       poste, eux, sont déjà bien posés ci-dessus et doivent le rester (règle 28). Consignée dans
+       `event_log`, jamais avalée sans trace (règle 13) : une vraie panne reste visible et
+       rejouable, seulement plus loin que ce poste-là. */
+    try {
+      const { demanderDetailAuDessusDuCtt } = await import('./requests');
+      await demanderDetailAuDessusDuCtt(engagementId, f.code, ctt, userId);
+    } catch (e) {
+      await logEvent({
+        tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
+        verb: 'detail_de_compte_ctt_echec', objectType: 'fsli', objectId: f.code,
+        payload: { fsliCode: f.code, erreur: e instanceof Error ? e.message : String(e) },
+      });
+    }
     await logEvent({
       tenantId: ctx.tenant_id, engagementId, actorKind: userId ? 'user' : 'system', actorId: userId,
       verb: 'materialite_basculee', objectType: 'fsli', objectId: f.code,

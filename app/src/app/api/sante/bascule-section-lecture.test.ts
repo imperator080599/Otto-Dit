@@ -28,12 +28,21 @@ describe('bascule de matérialité : la lecture /api/sante (§2.2, section ouver
   afterAll(() => { process.env.OTTO_DEMO_PUBLIC = AVANT; });
 
   it('les bascules du monde de démonstration ont toutes leur section ouverte : la lecture passe', async () => {
+    /* GARDE-FOU DU TEST LUI-MÊME (revue hostile, constat 2) : `lecture.ok === true` seul est
+       satisfait aussi bien par « N bascules, toutes ouvertes » que par « aucune bascule pour
+       l'instant » (la chaîne vide commence aussi par « aucun », et contient aussi « bascule ») —
+       un monde de démonstration qui aurait régressé à zéro bascule passerait ce test SANS RIEN
+       PROUVER. Le compte réel est donc vérifié directement contre la base, pas seulement déduit
+       du texte de la lecture. */
+    const total = await q1<{ n: string }>(`select count(*)::text n from fsli_materiality_bascule`);
+    expect(Number(total!.n), 'bootstrapNep doit produire de vraies bascules — sinon ce test n’éprouve rien').toBeGreaterThan(0);
+
     const res = await GET();
     const body = await res.json();
     const lecture = trouver(body);
     expect(lecture).toBeDefined();
     expect(lecture.ok).toBe(true);
-    expect(lecture.detail).toContain('bascule');
+    expect(lecture.detail).toBe(`${total!.n} bascule(s), toutes avec leur section ouverte`);
     expect(res.status).toBe(200);
   });
 

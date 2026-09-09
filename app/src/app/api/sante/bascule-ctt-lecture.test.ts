@@ -29,11 +29,22 @@ describe('demande de détail au-dessus du CTT : la lecture /api/sante (§2.3)', 
   afterAll(() => { process.env.OTTO_DEMO_PUBLIC = AVANT; });
 
   it('les demandes CTT du monde de démonstration sont toutes rattachées à une bascule réelle : la lecture passe', async () => {
+    /* GARDE-FOU DU TEST LUI-MÊME (revue hostile, constat 2) : `lecture.ok === true` seul est
+       aussi satisfait par « aucune demande CTT pour l'instant » — un monde de démonstration qui
+       aurait régressé à zéro demande CTT (par exemple si §2.3 cessait de se déclencher) passerait
+       ce test SANS RIEN PROUVER. Le compte réel est donc vérifié directement contre la base. */
+    const total = await q1<{ n: string }>(
+      `select count(*)::text n from request where evidence_type_code = $1`,
+      [EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT],
+    );
+    expect(Number(total!.n), 'bootstrapNep doit produire de vraies demandes CTT — sinon ce test n’éprouve rien').toBeGreaterThan(0);
+
     const res = await GET();
     const body = await res.json();
     const lecture = trouver(body);
     expect(lecture).toBeDefined();
     expect(lecture.ok).toBe(true);
+    expect(lecture.detail).toBe(`${total!.n} demande(s) de détail au-dessus du CTT, toutes rattachées à une bascule réelle`);
     expect(res.status).toBe(200);
   });
 

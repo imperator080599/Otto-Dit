@@ -87,8 +87,8 @@ export async function demanderDetailDeCompte(engagementId: string, fsliCode: str
  * l'ouverture de section (§2.2), jamais un geste séparé (mandat §2.5, épreuve 3 : « le même
  * import »). RÉUTILISE le mécanisme de demandes de la Partie B TEL QUEL — même table `request`/
  * `request_item`, même forme que `demanderDetailDeCompte` juste au-dessus. AUCUN CHEMIN NEUF :
- * seul le FILTRE change (les comptes du poste dont le solde absolu dépasse le CTT, pas tout le
- * poste). N'APPELLE PAS `demanderDetailDeCompte` et n'en modifie pas le comportement : celui-ci
+ * seul le FILTRE change (les comptes du poste dont le solde absolu ATTEINT OU DÉPASSE le CTT, pas
+ * tout le poste). N'APPELLE PAS `demanderDetailDeCompte` et n'en modifie pas le comportement : celui-ci
  * sert Partie B, étape 1, sur TOUT le poste — un appelant DÉJÀ testé (s3s4.test.ts, suivi.test.ts)
  * dont le contrat ne doit pas changer pour ce mandat-ci.
  *
