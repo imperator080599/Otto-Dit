@@ -90,8 +90,10 @@ précédentes) : pas de nouvelle station ajoutée, cohérent avec ce précédent
 ré-affichage du formulaire de dépôt, et — après le correctif de la revue hostile — la table des tâches
 qui garde sa ligne avant ET après suppression, confirmée par un rechargement complet de la page.
 
-**SHA servi** : à confirmer après le push (commit `6e94af9`), par `/api/sante` sur le déploiement
-d'aperçu de cette branche — voir l'entrée qui suit.
+**SHA servi confirmé = `80f361f`** (mesuré en direct, `mcp__Vercel__web_fetch_vercel_url`, règle 36) :
+HTTP 200, `identiteCoherente:true`, toutes les lectures passent — VID-01 comprise, `ok:true`, VIDE
+sur la donnée de démonstration actuelle (aucun contrôle conclu, donc rien à signaler). §3.1 point 1
+du mandat du 9 septembre est maintenant COMPLET et servi.
 
 ## Lot mandat 9 septembre, §2.4 : les codes de refus MAT-01/02/03 (2026-09-09)
 
