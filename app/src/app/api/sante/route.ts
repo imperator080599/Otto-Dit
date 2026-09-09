@@ -1091,6 +1091,36 @@ async function corpsDeLaSonde() {
     return 'aucune anomalie · aucune mission à détailler';
   }));
 
+  /* LE KANBAN DES ÉCARTS (mandat contrôle interne, §5, §7.4, seconde moitié
+     — livré ce jour, lu ce jour, règle 22). Le tableau (kanban/page.tsx) ne
+     montre que CINQ colonnes (open/clarification_requested/explained/
+     resolved/escalated) — `scope_limitation` (0009_probative_gates) est un
+     SIXIÈME état réel du même champ, sans écran qui l'écrive encore
+     (R71). Une carte silencieusement absorbée par aucune des deux familles
+     serait EXACTEMENT le silence que la règle 13 nomme : un écart qui
+     existe, que personne ne voit nulle part. Cette lecture GLOBALE
+     additionne les deux familles et exige l'égalité avec le total —
+     elle ne peut rougir que si un septième statut apparaît un jour (une
+     migration qui étend l'enum sans mettre ce compte à jour) ou si la
+     requête elle-même divergeait de `listExceptions`/`COLONNES` (CE QUE
+     CETTE LECTURE NE VÉRIFIE PAS, règle 19 : qu'un lien de carte pointe
+     vers une ANCRE qui existe réellement sur /exceptions — c'est la
+     station clics qui le clique). */
+  lectures.push(await essayer('kanban des écarts : aucune carte perdue entre les colonnes et scope_limitation', async () => {
+    const total = (await q01<{ n: string }>(`select count(*) n from exception`))!;
+    const dansColonnes = (await q01<{ n: string }>(
+      `select count(*) n from exception where status in ('open', 'clarification_requested', 'explained', 'resolved', 'escalated')`))!;
+    const limites = (await q01<{ n: string }>(`select count(*) n from exception where status = 'scope_limitation'`))!;
+    const somme = Number(dansColonnes.n) + Number(limites.n);
+    if (somme !== Number(total.n)) {
+      throw new Error(`${total.n} écart(s) au total, mais ${somme} seulement comptés `
+        + `(${dansColonnes.n} en colonne, ${limites.n} en scope_limitation) — `
+        + 'un statut hors de ces deux familles existe sans que le kanban ni cette lecture ne le sachent');
+    }
+    if (Number(total.n) === 0) return 'aucun écart pour l’instant';
+    return `${total.n} écart(s) · ${dansColonnes.n} en colonne(s) · ${limites.n} en scope_limitation (sans écran, R71)`;
+  }));
+
   /* ── L'ÉTANCHÉITÉ ENTRE CABINETS, LUE DANS L'INSTANCE DÉPLOYÉE ──────────
      (mandat du jour n°3, §1.1 ; chaque tranche livrée ajoute sa lecture le
      jour même). Ces trois lignes disent, depuis la fonction qui répond, ce que

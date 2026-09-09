@@ -1774,6 +1774,18 @@ export const LIBELLES = {
   'suivi.aucunEcart': { en: 'No unresolved deviation.', fr: 'Aucun écart non conclu.' },
   'suivi.aucun': { en: 'none', fr: 'aucun' },
   'suivi.aVoirPlusBas': { en: 'see below', fr: 'à voir plus bas' },
+  // ── Le kanban des écarts (mandat contrôle interne, §5, §7.4, seconde moitié) ─
+  'kanban.titre': { en: 'Exceptions board', fr: 'Kanban des écarts' },
+  'kanban.sousTitre': { en: 'Every card is a real exception; moving it opens its real, already-gated form.', fr: 'Chaque carte est un écart réel ; la déplacer ouvre son vrai formulaire, déjà gardé.' },
+  'kanban.colOuvert': { en: 'Open', fr: 'Ouvert' },
+  'kanban.colClarification': { en: 'Clarification requested', fr: 'Clarification demandée' },
+  'kanban.colExplique': { en: 'Explained by the client', fr: 'Expliqué par le client' },
+  'kanban.colResolu': { en: 'Resolved', fr: 'Résolu' },
+  'kanban.colEscalade': { en: 'Escalated', fr: 'Escaladé' },
+  'kanban.aucune': { en: 'nothing here', fr: 'rien ici' },
+  'kanban.redigerEnLot': { en: 'Draft the clarification request ({n})', fr: 'Rédiger la demande de clarification ({n})' },
+  'kanban.enAttenteDepuis': { en: 'awaiting the client, {n} day(s)', fr: 'en attente du client depuis {n} jour(s)' },
+  'kanban.resoudreOuEscalader': { en: 'resolve or escalate →', fr: 'résoudre ou escalader →' },
 } satisfies Record<string, Entree>;
 
 export type CleLibelle = keyof typeof LIBELLES;

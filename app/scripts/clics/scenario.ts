@@ -3289,6 +3289,52 @@ export async function conduire(
       (await compte('.epure')) > 0, t.slice(0, 60));
   });
 
+  // ── 21c. LE KANBAN DES ÉCARTS (mandat contrôle interne, §5, §7.4, seconde
+  // moitié) — l'épreuve d'acceptation du mandat lui-même (§6, point 8) :
+  // « un test échoue si une seule carte ne se résout pas à l'identifiant
+  // d'un objet existant. » `clics` tourne contre un BUILD DE PRODUCTION, sans
+  // accès direct à la base (contrairement à un test vitest) : la preuve
+  // passe donc par une SECONDE PAGE — chaque id de carte relevé sur le
+  // kanban doit se retrouver comme ANCRE RÉELLE (`#x-<id>`) sur
+  // `/exceptions`, qui lit LA MÊME table (`listExceptions`). Une carte dont
+  // l'id ne mène à aucune ancre serait un décor : cette station le
+  // détecterait en listant l'id manquant, pas en affirmant « ok » en gros.
+  await station('kanban des écarts : chaque carte se résout à un écart réel', async () => {
+    await aller(`${eng}/kanban`);
+    const idsCartes = await p.locator('[data-carte]').evaluateAll(
+      (els) => els.map((el) => el.getAttribute('data-carte')).filter((v): v is string => Boolean(v)));
+    if (idsCartes.length === 0) {
+      dire('kanban : au moins une carte est posée (le monde de démonstration porte des écarts)',
+        false, 'aucune carte — le kanban ne peut pas être éprouvé sans écart');
+      return;
+    }
+    await aller(`${eng}/exceptions`);
+    const manquants: string[] = [];
+    for (const id of idsCartes) {
+      if (!(await compte(`#x-${id}`))) manquants.push(id);
+    }
+    dire('kanban : chaque carte se résout à l’identifiant d’un écart réel (ancre #x-<id> sur /exceptions)',
+      manquants.length === 0, manquants.length === 0
+        ? `${idsCartes.length} carte(s), toutes résolues`
+        : `${manquants.length}/${idsCartes.length} carte(s) SANS ancre : ${manquants.slice(0, 3).join(', ')}`);
+
+    /* LE GESTE DE LOT (« rédiger la demande de clarification ») : posé
+       UNE SEULE FOIS sur la colonne « Ouvert », il exécute le VRAI
+       `draftClarificationRequest` (matching.ts) — pas une étiquette. On le
+       clique quand la colonne en porte, et on vérifie qu'il mène à une
+       VRAIE demande créée (redirection vers /requests/<id>), pas un
+       rafraîchissement sur place. */
+    await aller(`${eng}/kanban`);
+    const boutonLot = p.locator('.epure-carte[data-colonne="open"] form button');
+    if (await boutonLot.count()) {
+      await cliquer('.epure-carte[data-colonne="open"] form button');
+      dire('kanban : le geste de lot (rédiger la clarification) crée une VRAIE demande',
+        /\/requests\//.test(p.url()), p.url());
+    } else {
+      dire('kanban : aucun écart ouvert à rédiger en lot pour l’instant (colonne vide)', true, '0 écart ouvert');
+    }
+  });
+
   // ── 22. OBSTACLES AU VISA
   let restants = 0;
   await station('obstacles au visa', async () => {

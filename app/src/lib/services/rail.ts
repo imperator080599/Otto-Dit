@@ -204,6 +204,11 @@ export async function railDuDossier(
     s.importe, t('rail.raison.apresPremierImport'));
   e('exceptions', sox ? t('rail.deviations') : t('rail.ecarts'), t('rail.quoi.ecarts'),
     s.ecarts, t('rail.raison.auPremierEcart'));
+  /* LE KANBAN (mandat contrôle interne, §5, §7.4, seconde moitié) — même
+     condition que `exceptions` : une vue du même cycle, atteignable au
+     premier écart, grisée avant pour la même raison qu'une table vide. */
+  e('kanban', t('kanban.titre'), t('kanban.sousTitre'),
+    s.ecarts, t('rail.raison.auPremierEcart'));
   e('notes', t('rail.notes'), t('rail.quoi.notes'),
     s.papiers || s.notes, t('rail.raison.auPremierPapier'));
 

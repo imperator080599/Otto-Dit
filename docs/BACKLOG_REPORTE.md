@@ -790,3 +790,22 @@ design : chacun reste une tranche à construire.**
   TROISIÈME id sans événement nommé ici serait une régression à signaler. Non bloquant : la garde
   CTRL-06 (`runAttributeTesting`) fonctionne correctement pour tout nouveau test (prouvé par
   tests, tranche 7).
+
+## Reporté en livrant le kanban des écarts, §7.4 seconde moitié (2026-09-09)
+
+- **R71 — `recordScopeLimitation` (`app/src/lib/services/matching.ts`) est un geste RÉEL, câblé,
+  testé, mais SANS ÉCRAN qui l'appelle — trouvé en construisant le kanban des écarts.** Le champ
+  `exception.status` porte SIX valeurs (`0009_probative_gates.sql` : open, clarification_requested,
+  explained, resolved, escalated, scope_limitation) ; le kanban n'en montre que CINQ colonnes — les
+  cinq dont un écran (`/exceptions`) porte déjà le formulaire réel. `recordScopeLimitation`
+  existe depuis la migration 0009 (« le troisième état terminal ») et n'apparaît dans AUCUN fichier
+  de `src/app` (grepé) : un geste sans chemin humain, exactement ce que `SEMEUR_VS_CHEMIN` (règle
+  20) nomme pour un objet, ici pour une TRANSITION. **Pourquoi non ouvert dans cette tranche** :
+  construire le formulaire (le montant à risque, ce qui a été tenté à la place, per
+  `recordScopeLimitation`'s propre signature) est un geste distinct de « ajouter une vue kanban »
+  — l'ouvrir aurait élargi le périmètre au-delà de ce que §7.4 demande. **La lecture `/api/sante`
+  de cette tranche** (« kanban des écarts : aucune carte perdue... ») compte les écarts
+  `scope_limitation` À PART du compte de colonnes, pour que leur absence d'écran ne devienne
+  jamais un compte qui les PERD — 0 aujourd'hui (aucune ligne `scope_limitation` en base, aucun
+  écran ne pouvant en écrire). **Condition de retrait** : un écran (ou un ajout de colonne au
+  kanban existant) appelle `recordScopeLimitation` depuis un geste humain cliqué.

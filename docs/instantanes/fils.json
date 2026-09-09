@@ -291,6 +291,12 @@
       "note": "condition de retrait UNIQUE et nommée : les deux entrées ne se retirent que si les deux control précis (ces id exacts) disparaissent de la base — re-semis complet d'engSox sous mandat écrit (§2) ou archivage futur par un geste produit qui n'existe pas encore. Un TROISIÈME id sans événement nommé ici serait une régression."
     },
     {
+      "id": "R71",
+      "etat": "ouvert — recordScopeLimitation (matching.ts) est un geste RÉEL, testé, mais qu'AUCUN écran n'appelle : trouvé en construisant le kanban des écarts (aucun fichier de src/app ne l'importe). Le kanban n'affiche que 5 des 6 valeurs de exception.status (open/clarification_requested/explained/resolved/escalated) ; scope_limitation, le sixième état terminal (migration 0009), reste sans chemin humain (SEMEUR_VS_CHEMIN, règle 20, appliqué à une transition plutôt qu'à un objet). Non ouvert dans cette tranche : construire son formulaire dépasse le périmètre de §7.4 (une vue kanban).",
+      "depuis": "2026-09-09 (lot contrôle interne, §7.4 seconde moitié — kanban des écarts)",
+      "note": "condition de retrait : un écran (ou une colonne kanban de plus) appelle recordScopeLimitation depuis un geste humain cliqué. La lecture /api/sante « kanban des écarts » compte les scope_limitation à part (0 aujourd'hui) pour qu'ils ne se perdent jamais silencieusement dans le total."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",
