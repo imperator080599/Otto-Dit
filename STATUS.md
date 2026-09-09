@@ -38,9 +38,38 @@ cette liste reste une régression réelle. Deux tests neufs (règle 17) : le vra
 traité comme legacy (vert) ; le test « cas connu mauvais » déjà existant, avec un id DIFFÉRENT
 construit par la sonde, continue de rougir — la liste compare l'ID exact, jamais le code du
 contrôle ni la date. 21/21 tests ciblés (`ctrl07-lecture.test.ts` 6/6, `ctrl01`/`ctrl02-03`
-inchangés) verts localement. Revue hostile (deux voix, la lecture touche un code de refus déjà
-existant sur une donnée de production réelle — même rigueur que 0149) et verify complet en cours,
-détail à suivre dans ce même compte.
+inchangés) verts localement. **Revue hostile, deux voix indépendantes — SHIP AS-IS convergent des
+deux.** Voix 1 : les deux id vérifiés contre la production réelle (`mcp__Supabase__execute_sql`),
+les deux `control_test` associés `complete` (l'un avec 8 déviations), les deux `workpaper` `signed`
+— confirmé au-delà de la demande ; preuve règle 17 par mutation (retrait d'un id de la liste, le
+test échoue, reverti, `git diff` vide). Voix 2 : patron POP-01 respecté structurellement (le split
+couvert/legacy jamais auto-contradictoire, même correction que POP-01 avait déjà reçue une fois) ;
+comparaison sur l'ID exact confirmée, pas le code du contrôle ; mutation règle 17 sur un angle
+différent (comparaison forcée à `true`), le test « cas connu mauvais » échoue comme attendu, reverti.
+**Constat de processus commun aux deux voix (pas un défaut du code)** : les deux réviseurs ont muté
+la même zone de `route.ts` au même instant, sur le MÊME arbre qu'un `npm run verify` local tournait
+déjà — exactement l'arbre-qui-bouge que la règle 34 interdit de mesurer. Ce premier `npm run verify`
+(PID 970) a donc été TUÉ avant sa fin, sans être compté ; un environnement laissé par un `next build`
+orphelin (même piège que le `next-server` détaché documenté §7, cette fois côté build) a été mesuré
+et nettoyé (`ps`/`lsof`/`free -m` propres) avant de relancer un DEUXIÈME passage, sur un arbre non
+contesté cette fois. **Ce deuxième passage est VERT — `EXIT=0`.** 954/954 tests (117 fichiers), 43
+gardes, `docs/SEMEUR_VS_CHEMIN.md` déjà à jour, langue/lectures/parcours 15/15+6/6+5/5 cas connus
+mauvais, screens 87 routes 0 échec, densité 77 écrans, clics 232 étapes/362 clics/231 stations,
+visuel 312 vues 0 défaut. Aucune commande de `verify` non exécutée sur ce correctif.
+
+**CI `deploye` (run 34300403558, job 102305894353) confirme `28f8c45` servi en 162 s**
+(01:44:46Z→01:47:28Z). Confirmé indépendamment en direct (`mcp__Vercel__web_fetch_vercel_url`,
+02:05:17Z) : HTTP 200, `identiteCoherente=true`, « toutes les lectures passent » — CTRL-01/02/03
+`ok:true`/`vide:true`, **CTRL-07 `ok:true`, detail « 3 tirage(s) OE — 1 couvert(s), 2 legacy
+(antérieur(s) à CTRL-07, 2026-09-01) »** — exactement le comportement attendu. Registre R44
+89/16/32/41, identique à la mesure locale. `fbe7afe` (le commit CTRL-07 initial) n'a jamais reçu
+sa propre confirmation servie — son `deploye` a échoué pour de vrai, corrigé par ce correctif.
+`docs/instantanes/servi.json`/`docs/REPRISE.md` mis à jour. Les deux branches (`main`,
+`claude/otto-session-resume-zimig9`) sont synchronisées au SHA `379ba60` (commit de confirmation,
+docs seules, pas de contenu applicatif nouveau — aucune nouvelle mesure servie requise).
+
+**Lot contrôle interne, §7.3 : CTRL-07 est maintenant COMPLET et confirmé en production.**
+CTRL-04/05/06 restent à faire, chacun sa propre tranche.
 
 ## Lot contrôle interne, tranche 3 : CTRL-07, la table d'échantillonnage OE vidée (2026-09-09)
 
