@@ -98,6 +98,26 @@ describe('garde de budget EN BASE (mandat §4/Lot 8) — fermée par défaut', (
     await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
   });
 
+  /* Revue hostile (voix 1) : la condition exige « qui ET quand », mais aucun cas ne posait UN
+     SEUL des deux champs — une mutation OR→AND sur `!g.activePar || !g.activeLe` faisait passer
+     les 9 tests d'alors sans qu'aucun ne rougisse (règle 17 : une garde jamais éprouvée sur son
+     propre bord n'est pas éprouvée). Les deux moitiés, séparément, ci-dessous. */
+  it('CAS CONNU MAUVAIS (règle 17) : activée avec QUI mais sans QUAND refuse — une paire n’en est pas une à moitié', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: IDS.users.claire, activeLe: null })],
+    );
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
+  it('CAS CONNU MAUVAIS (règle 17) : activée avec QUAND mais sans QUI refuse — même paire, même exigence', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: null, activeLe: new Date().toISOString() })],
+    );
+    await expect(assertBudgetActifEnBase()).rejects.toThrow(/IA-BUDGET-01/);
+  });
+
   it('CAS CONNU MAUVAIS (règle 17) : un état mal typé (plafondUsd en chaîne) est lu comme ABSENT, jamais deviné', async () => {
     await q(
       `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,

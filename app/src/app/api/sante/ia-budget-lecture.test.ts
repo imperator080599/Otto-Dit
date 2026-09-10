@@ -56,6 +56,34 @@ describe('IA-BUDGET-01 : la lecture /api/sante', () => {
     expect(rouge.status).toBe(500);
   });
 
+  /* Revue hostile (voix 1) : une mutation OR→AND sur la condition de provenance passait TOUS les
+     tests d'alors, aucun ne posant UN SEUL des deux champs (qui, quand). Les deux moitiés ici. */
+  it('cas connu mauvais (règle 17) : activée avec QUI mais sans QUAND fait rougir', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: IDS.users.claire, activeLe: null })],
+    );
+    const rouge = await GET();
+    const bodyRouge = await rouge.json();
+    const lectureRouge = bodyRouge.lectures.find((l: { nom: string }) => l.nom.startsWith('IA-BUDGET-01'));
+    expect(lectureRouge.ok).toBe(false);
+    expect(lectureRouge.detail).toContain('sans provenance complète');
+    expect(rouge.status).toBe(500);
+  });
+
+  it('cas connu mauvais (règle 17) : activée avec QUAND mais sans QUI fait rougir', async () => {
+    await q(
+      `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
+      [JSON.stringify({ actif: true, plafondUsd: 5, activePar: null, activeLe: new Date().toISOString() })],
+    );
+    const rouge = await GET();
+    const bodyRouge = await rouge.json();
+    const lectureRouge = bodyRouge.lectures.find((l: { nom: string }) => l.nom.startsWith('IA-BUDGET-01'));
+    expect(lectureRouge.ok).toBe(false);
+    expect(lectureRouge.detail).toContain('sans provenance complète');
+    expect(rouge.status).toBe(500);
+  });
+
   it('cas connu mauvais, moitié protectrice (règle 17) : un état COMPLET et valide ne fait pas rougir', async () => {
     await q(
       `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,

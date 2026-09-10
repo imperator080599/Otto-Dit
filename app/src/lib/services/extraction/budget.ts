@@ -98,7 +98,17 @@ export async function gardeBudgetEnBase(): Promise<GardeBudgetEnBase> {
  *  La provenance (qui, quand) est exigée au MÊME titre que le plafond — pas une case de confort :
  *  une activation sans acteur ni date tracés est le même défaut que `evidence_deletion_whole`
  *  (0157) ou `engagement_lock_verdict.confirmed_by/at` (0042) refusent déjà ailleurs dans ce
- *  dépôt (règle 3, provenance dès la première fonctionnalité) — jamais un geste anonyme. */
+ *  dépôt (règle 3, provenance dès la première fonctionnalité) — jamais un geste anonyme.
+ *
+ *  CE QUE CETTE PROVENANCE N'EST PAS (règle 19, revue hostile) : `activePar`/`activeLe` sont deux
+ *  CHAÎNES dans un `jsonb` — ni l'un ni l'autre n'a la rigueur de `evidence.deleted_by uuid
+ *  references app_user(id)` ou de `engagement_lock_verdict.confirmed_by` (deux vraies clés
+ *  étrangères Postgres) : rien ici ne vérifie que `activePar` désigne un `app_user` réel, ni que
+ *  `activeLe` est une date qui s'analyse. `app_state` elle-même est hors piste d'audit (0005 : ce
+ *  n'est pas une table du dossier). C'est un moindre mal ASSUMÉ, pas une lacune tue : le seul
+ *  écrivain possible reste une écriture SQL directe du fondateur (voir plus haut), donc une
+ *  validation applicative n'y changerait rien — mais un écran ou un rapport qui lirait un jour
+ *  `activePar` ne doit PAS le traiter comme une preuve de la qualité d'une pièce du dossier. */
 export async function assertBudgetActifEnBase(): Promise<GardeBudgetEnBase> {
   const g = await gardeBudgetEnBase();
   if (!g.actif || g.plafondUsd === null || g.plafondUsd <= 0 || !g.activePar || !g.activeLe) {
