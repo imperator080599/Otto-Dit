@@ -166,22 +166,36 @@ portail par jeton n'a pas de locataire : sa politique doit être PAR JETON, à �
   cabinets (le second cabinet fictif est créé par `creerMission` avant l'étape 3), jamais par
   la sonde de santé.
 
-  **ÉCART TROUVÉ LE 2026-09-10, PAS ENCORE RÉSOLU — signalé, jamais choisi seul (interdit,
-  l'étape 3 est un geste du fondateur).** Ce paragraphe décrit le code comme lisant sous
-  `withTenant(<locataire de la démonstration>)`. Vérifié par lecture directe le 2026-09-10 :
-  `app/src/app/api/sante/route.ts:68` appelle `sansLocataire('sante', () => corpsDeLaSonde())`
-  et **rien d'autre** — aucun `withTenant`, aucun `set_config('otto.tenant_id', …)`. Sous le rôle
-  BYPASSRLS servi aujourd'hui, ça ne change rien (les politiques sont inertes). Mais si l'étape 3
-  s'exécutait EXACTEMENT comme ce paragraphe le décrit, `/api/sante` ne poserait aucun locataire
-  et lirait `otto_tenant()` = null : la quasi-totalité de ses lectures rendrait VIDE (la plupart
-  des `essayer()` traitent le vide comme non fatal), pas le contenu réel du cabinet de
-  démonstration que ce paragraphe promet. **Deux options, nommées, ni choisies** : (i) faire
-  poser réellement le locataire de démonstration par la route (un `withTenant` explicite ajouté
-  à `corpsDeLaSonde()`), pour que le paragraphe ci-dessus redevienne vrai ; (ii) corriger ce
-  paragraphe pour décrire ce que la route fait VRAIMENT (une dérogation LOC-01 pure, sans
-  locataire posé) et accepter qu'une fois l'étape 3 faite, `/api/sante` deviendra largement VIDE
-  jusqu'à ce que ce geste soit fait séparément. Le fondateur tranche ; ni l'un ni l'autre n'a été
-  fait ici.
+  **ÉCART TROUVÉ LE 2026-09-10, RÉSOLU LE MÊME JOUR** (docs/MANDATS/2026-09-10_trois_reponses.md,
+  point 2). Ce paragraphe décrivait le code comme lisant sous
+  `withTenant(<locataire de la démonstration>)` — faux au moment où c'était écrit (vérifié par
+  lecture directe : `app/src/app/api/sante/route.ts:68` appelait `sansLocataire('sante', …)` et
+  rien d'autre). **Le fondateur a tranché : pas entre les deux options ci-dessous par leur
+  mécanique, mais en imposant la PROPRIÉTÉ que les deux devaient satisfaire — il doit être
+  IMPOSSIBLE pour la sonde de ne rien voir et de rendre vert.** Choix (i) : `corpsDeLaSonde()`
+  déclare désormais réellement son locataire — une nouvelle lecture, « locataire déclaré par la
+  sonde », EN PREMIER et INCONDITIONNELLE, appelle `verifierLocataireVisible()` (`app/src/lib/db/
+  tenant.ts`) avec l'identité CANONIQUE de la démonstration (`IDS.tenant`/`IDS.engNep`, des
+  identifiants fixes, semés — jamais l'engagement découvert dynamiquement plus bas dans le même
+  fichier). **Corrigé après une première version, par revue hostile (voix 2, 2026-09-10)** : cette
+  lecture vivait d'abord SOUS la découverte dynamique de `eng` (une requête non scopée, tolérée
+  vide) — dans le scénario réel que le fondateur décrit, cette découverte elle-même serait vide
+  sous RLS, et TOUT le bloc sauterait, la nouvelle garantie comprise. Rendue inconditionnelle, elle
+  pose `withTenant(IDS.tenant)` puis relit `IDS.engNep` SOUS ce locataire déclaré, SANS clause
+  `tenant_id` dans la requête — c'est la politique RLS elle-même qui doit laisser passer la ligne.
+  Et surtout : cette lecture **ÉCHOUE** (un vrai `throw`, pas un `vide` informatif) si l'objet
+  connu redevient invisible sous le locataire déclaré — ce qui rend l'ensemble du verdict
+  `/api/sante` (500, jamais 200) quand c'est le cas, QUOI QUE FASSENT les autres lectures. Preuve
+  par cas connu mauvais (règle 17), pas par assertion : `app/src/lib/db/tenant.test.ts`, sous un
+  rôle SANS BYPASSRLS créé par le test — un locataire correct voit sa mission ; un locataire
+  ÉTRANGER, sous RLS, ne la voit plus, et la fonction lève. Sous BYPASSRLS (production et local
+  aujourd'hui), cette lecture reste un round-trip de la déclaration (set_config posé = set_config
+  relu) — elle deviendra le vrai test de visibilité le jour de l'étape 3, non exécutée.
+  **Ce qui reste vrai, nommé plutôt que caché** : les AUTRES lectures de `/api/sante` continuent
+  de lire sous la dérogation « sante », sans locataire posé chacune — les envelopper toutes dans
+  UNE SEULE transaction casserait le reste de la sonde sur un vrai Postgres (une erreur DANS une
+  transaction l'avorte, les requêtes suivantes échoueraient en cascade sans rapport avec leur
+  propre contenu) ; ce refactor plus large est un chantier séparé, pas fait ici.
 - *Point de restauration et surveillance* : avant l'étape 3, un `pg_dump` du schéma public
   (ou le point de restauration Supabase) ; dans les minutes qui suivent la bascule, lire
   `server_error` et le journal Vercel pour le taux d'erreurs « requête sans locataire » —

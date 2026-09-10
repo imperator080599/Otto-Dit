@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q, q1, tx, _setDbForTests } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
-import { withTenant, locataireCourant } from '@/lib/db/tenant';
+import { withTenant, locataireCourant, verifierLocataireVisible } from '@/lib/db/tenant';
 import { armerLeGarde, gardeArme, sansLocataire, CHEMINS_SANS_LOCATAIRE } from '@/lib/db/sans-locataire';
 
 /**
@@ -371,6 +371,39 @@ describe('la fuite entre cabinets, sous un rôle sans BYPASSRLS', () => {
         return r.length;
       });
       expect(vus, 'une pièce qu’AUCUN dossier ne référence reste lisible').toBe(0);
+    });
+  });
+
+  /**
+   * LA SONDE DÉCLARE SON LOCATAIRE, ET UNE LECTURE VIDE ÉCHOUE (décision du
+   * fondateur, 2026-09-10, docs/MANDATS/2026-09-10_trois_reponses.md, point 2 ;
+   * PLAN_RLS.md A.6, écart résolu). SOUS LE RÔLE SANS BYPASSRLS de ce fichier —
+   * exactement le rôle que l'étape 3 servira un jour — pour que le cas connu
+   * mauvais soit une VRAIE dénégation RLS, jamais une clause `where` qui ferait
+   * le travail à sa place.
+   */
+  describe('la sonde déclare son locataire (verifierLocataireVisible, A.6)', () => {
+    it('le bon locataire voit sa propre mission', async () => {
+      const n = await sousLeRole(() => verifierLocataireVisible(IDS.tenant, IDS.engNep));
+      expect(n).toBeGreaterThan(0);
+    });
+
+    it('CAS CONNU MAUVAIS — un locataire ÉTRANGER ne voit PLUS la mission, et la lecture ÉCHOUE (pas « vide »)', async () => {
+      /* La sonde est DÉNIÉE ses lignes : sous RLS, un locataire qui n'est pas
+       * celui du dossier ne le voit pas (CAS 2 ci-dessus le mesure déjà pour
+       * une lecture brute) — ici c'est verifierLocataireVisible elle-même,
+       * celle que /api/sante appelle, qui doit lever plutôt que rendre 0
+       * silencieusement. Observé par un REFUS réel, pas supposé. */
+      await expect(sousLeRole(() => verifierLocataireVisible(autreCabinet, IDS.engNep)))
+        .rejects.toThrow(/SANTE-TENANT-VIDE/);
+    });
+
+    it('un locataire vide ou une mission inconnue restent couverts par les refus déjà existants de withTenant', async () => {
+      /* verifierLocataireVisible ne réimplémente aucun garde : elle délègue à
+       * withTenant, déjà éprouvé (plus haut, « withTenant refuse un locataire
+       * vide ») — un locataire vide lève avant même d'atteindre le corps de
+       * cette fonction. */
+      await expect(verifierLocataireVisible('', IDS.engNep)).rejects.toThrow(/locataire vide/);
     });
   });
 

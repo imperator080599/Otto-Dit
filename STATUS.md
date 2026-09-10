@@ -44,6 +44,55 @@ EXPLICITEMENT gardé par le mandat lui-même à un déclenchement du fondateur (
 ni la date ni le déclencheur, et ne l'ouvre pas de lui-même ») ; §7.5 du mandat contrôle interne
 (l'agent qui pré-remplit) tombe sous l'interdit permanent de l'IA vivante.
 
+## L'écart A.6 de /api/sante, résolu (mandat du fondateur du 10 septembre, point 2) (2026-09-10)
+
+*Trois réponses du fondateur commitées verbatim (`docs/MANDATS/2026-09-10_trois_reponses.md`, règle
+33) : §4 point 3 accordé (plafond de dépense, la garde DB reste seule autorité), l'écart A.6
+tranché — pas entre les deux options par leur mécanique, mais par la PROPRIÉTÉ imposée : « il doit
+être impossible pour la sonde de ne rien voir et de rendre vert » — et le repass design R59-R62
+déclenché (tranche séparée, voir plus bas dans ce fichier au fil des prochains commits).*
+
+**Ce qui a changé.** `app/src/lib/db/tenant.ts` gagne `verifierLocataireVisible(tenantId,
+engagementId)` : pose `withTenant`, relit LA MÊME ligne SOUS ce locataire déclaré SANS filtrer par
+`tenant_id` dans la requête (c'est la politique RLS qui doit laisser passer, jamais une clause
+`where` qui ferait le travail à sa place), et ÉCHOUE — un vrai `throw`, pas un `vide` informatif —
+si la ligne redevient invisible. `app/src/app/api/sante/route.ts` l'appelle EN PREMIER,
+INCONDITIONNELLEMENT, avec l'identité CANONIQUE de la démonstration (`IDS.tenant`/`IDS.engNep`,
+des identifiants fixes, semés) — jamais l'engagement découvert dynamiquement plus bas dans le même
+fichier.
+
+**Revue hostile, deux voix indépendantes (règle 30 amendée : sécurité/multi-tenant, deux
+réfutateurs).** Voix 2 a trouvé un DÉFAUT RÉEL dans le premier jet : la nouvelle lecture vivait
+SOUS `if (eng)`, où `eng` est découvert par une requête NON SCOPÉE, tolérée VIDE
+(`.catch(() => null)`). Dans le scénario réel que le fondateur décrit — aucun locataire posé nulle
+part —, cette découverte elle-même rendrait NULL sous RLS, `eng` serait `null`, et TOUT le bloc
+sauterait, y compris la garantie censée rendre ce silence impossible : le défaut qu'elle devait
+corriger restait entier. **Corrigé** : la lecture est désormais inconditionnelle, en tête de
+`corpsDeLaSonde`, indépendante de la découverte dynamique. Voix 1, indépendamment (mutation testée
+en direct : `throw` retiré → le test connu mauvais échoue bien, confirmant qu'il exerce une vraie
+dénégation RLS, pas un décor), a confirmé le mécanisme (propagation `essayer→cassees→500`, aucune
+fuite silencieuse, nesting `tx()`/savepoint correct, les ~40 autres lectures inchangées) et signalé
+un message d'erreur imprécis sur un chemin de code depuis RETIRÉ par la correction de voix 2 —
+donc résolu par construction, pas laissé de côté.
+
+**Tests** : `app/src/lib/db/tenant.test.ts` — cas bon (locataire correct voit sa mission) et cas
+connu mauvais (locataire ÉTRANGER, sous un rôle SANS BYPASSRLS créé par le test, ne la voit plus —
+`SANTE-TENANT-VIDE` observé, pas supposé), 38/38 verts avec `sans-locataire.test.ts` et
+`rls-couverture.test.ts`. Re-vérifié contre le monde de démonstration RÉEL (serveur dev,
+`OTTO_DEMO_PUBLIC=1`, base fraîche + semée) : `/api/sante` rend 200, la nouvelle lecture est la
+PREMIÈRE de la liste, `ok:true`.
+
+**Ce que cette tranche NE fait PAS** (règle 19) : les ~40 AUTRES lectures de `/api/sante`
+continuent de lire sous la dérogation « sante », sans locataire posé chacune — les envelopper
+toutes dans une seule transaction casserait le reste de la sonde sur un vrai Postgres (une erreur
+DANS une transaction l'avorte, en cascade) ; chantier séparé, nommé, pas fait ici. Sous BYPASSRLS
+(production et local aujourd'hui), cette lecture reste un round-trip de la déclaration — elle
+deviendra le vrai test de visibilité le jour de l'étape 3, toujours non exécutée, toujours
+interdite sans mandat écrit qui la nomme.
+
+**SHA servi confirmé, PRODUCTION** : voir la mesure prise après le push de cette tranche,
+enregistrée ci-dessous une fois le `verify` complet terminé sur cet arbre.
+
 ## PLAN_RLS steps 1-2 : documentation stale corrigée, câblage RE-MESURÉ, R24/R26/R27 levées (2026-09-10)
 
 *Mandat du 9 septembre : « PLAN_RLS steps 1 and 2 are yours: prepare the otto_app role, its

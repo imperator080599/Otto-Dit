@@ -45,6 +45,62 @@ export function locataireDuCode(): string | null {
 }
 
 /**
+ * LA SONDE DÉCLARE SON LOCATAIRE, ET UNE LECTURE VIDE ÉCHOUE (décision du
+ * fondateur, 2026-09-10, docs/MANDATS/2026-09-10_trois_reponses.md, point 2 —
+ * en réponse à l'écart A.6 de PLAN_RLS.md) : « le sondage doit déclarer quel
+ * locataire il lit, et une lecture vide doit ÉCHOUER plutôt que passer... il
+ * doit être impossible pour la sonde de ne rien voir et de rendre vert. »
+ *
+ * Pose `tenantId` par `withTenant` (les DEUX poses : `set_config` dans la
+ * base, contexte asynchrone pour le garde LOC-01), puis relit LA MÊME mission
+ * SOUS ce locataire déclaré — SANS filtrer par `tenant_id` dans la requête :
+ * c'est la politique RLS elle-même qui doit laisser passer la ligne, jamais
+ * une clause `where` qui ferait le travail à sa place. Sous BYPASSRLS
+ * (aujourd'hui, en production comme en local), la politique est inerte et la
+ * ligne se voit toujours quel que soit le locataire déclaré ; ce que cette
+ * fonction PROUVE dès aujourd'hui, c'est le round-trip de la déclaration
+ * elle-même (`set_config` posé = `set_config` relu). Ce qu'elle PROUVERA le
+ * jour de l'étape 3 (non exécutée), c'est que le locataire déclaré voit
+ * réellement sa propre mission — et qu'un locataire qui n'en voit AUCUNE
+ * échoue, au lieu de rendre une sonde aveugle qui se dit verte.
+ *
+ * OÙ ELLE CESSE DE REGARDER (règle 19) : elle ne change RIEN aux AUTRES
+ * lectures de `/api/sante`, qui continuent de lire sous la dérogation nommée
+ * « sante », sans locataire posé — les envelopper TOUTES dans une seule
+ * transaction poserait un problème réel sur un vrai Postgres (une erreur DANS
+ * une transaction l'avorte : les requêtes suivantes échoueraient en cascade,
+ * sans rapport avec leur propre contenu, tant qu'aucun point de reprise ne
+ * les protège) ; ce refactor plus large reste un chantier séparé, nommé ici
+ * plutôt que fait à moitié en silence. Elle ne vérifie pas non plus que
+ * `tenantId` est le BON cabinet au sens métier — c'est l'appelant qui le
+ * fournit, cette fonction ne fait que le round-trip et la visibilité.
+ *
+ * CORRIGÉ APRÈS REVUE HOSTILE (voix 2, 2026-09-10) : `/api/sante` l'appelle
+ * avec le locataire et l'objet CANONIQUES de la démonstration
+ * (`IDS.tenant`/`IDS.engNep`, des identifiants FIXES), jamais avec un
+ * locataire dérivé d'une découverte dynamique — sans quoi la découverte
+ * elle-même, potentiellement aveugle, aurait pu sauter cette vérification
+ * tout entière (voir le commentaire de `corpsDeLaSonde` dans route.ts).
+ */
+export async function verifierLocataireVisible(tenantId: string, engagementId: string): Promise<number> {
+  return withTenant(tenantId, async () => {
+    const vu = await locataireCourant();
+    if (vu !== tenantId) {
+      throw new Error(`SANTE-TENANT : le locataire posé (${tenantId}) ne se relit pas identique depuis `
+        + `la base (lu : ${vu ?? 'aucun'}) — set_config n’a pas tenu`);
+    }
+    const r = await q<{ id: string }>(`select id::text id from engagement where id = $1`, [engagementId]);
+    if (r.length === 0) {
+      throw new Error(`SANTE-TENANT-VIDE : sous le locataire déclaré ${tenantId}, la mission ${engagementId} `
+        + `n’est PLUS visible — sous un rôle sans BYPASSRLS, ce serait un cabinet aveugle à son propre `
+        + `dossier ; la sonde échoue plutôt que de rendre vert sur un dossier qu’elle ne voit plus `
+        + `(décision du fondateur, 2026-09-10, PLAN_RLS.md A.6).`);
+    }
+    return r.length;
+  });
+}
+
+/**
  * LE PORTAIL CLIENT : LE JETON POSÉ POUR LA DURÉE DE LA TRANSACTION
  * (migration 0141 ; mandat du soir, étage 0.2).
  *

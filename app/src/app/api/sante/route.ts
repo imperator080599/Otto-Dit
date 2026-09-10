@@ -69,6 +69,38 @@ export async function GET() {
 }
 
 async function corpsDeLaSonde() {
+  const lectures: Lecture[] = [];
+
+  /* LE LOCATAIRE DÉCLARÉ — INCONDITIONNELLEMENT, EN PREMIER, AVANT TOUTE
+     AUTRE LECTURE (décision du fondateur, 2026-09-10,
+     docs/MANDATS/2026-09-10_trois_reponses.md point 2 ; PLAN_RLS.md A.6,
+     écart résolu). CORRIGÉ APRÈS REVUE HOSTILE (voix 2, 2026-09-10) : la
+     première version de cette lecture vivait SOUS `if (eng)`, où `eng` est
+     découvert par une requête NON SCOPÉE (`order by … limit 1`, plus bas),
+     tolérée VIDE (`.catch(() => null)`). Dans le scénario réel que le
+     fondateur décrit — aucun locataire posé nulle part —, cette découverte
+     elle-même rendrait NULL sous RLS, `eng` serait `null`, TOUT le bloc
+     `if (eng)` sauterait, y compris cette lecture censée rendre le silence
+     impossible : le défaut qu'elle devait corriger restait entier. Corrigée
+     en la rendant INCONDITIONNELLE : elle déclare le cabinet CANONIQUE de la
+     démonstration (`IDS.tenant`, un identifiant FIXE, engendré au semis,
+     jamais dérivé d'une requête qui pourrait elle-même être aveugle) et
+     vérifie qu'un objet connu et toujours semé de ce cabinet (`IDS.engNep`)
+     reste visible sous ce locataire déclaré — avant la découverte dynamique
+     de `eng` ci-dessous, et indépendamment d'elle. Si cette lecture échoue,
+     `cassees.length > 0` (fin de fichier) et le verdict global est rouge,
+     quoi que disent les autres lectures. CE QU'ELLE NE COUVRE PAS (règle
+     19) : les ~40 AUTRES lectures de cette fonction continuent de lire sous
+     la dérogation « sante », sans locataire posé chacune — voir le
+     commentaire de `verifierLocataireVisible` (tenant.ts) pour pourquoi
+     les envelopper toutes casserait la sonde sur un vrai Postgres. */
+  lectures.push(await essayer('locataire déclaré par la sonde (A.6, écart résolu le 2026-09-10)', async () => {
+    const { verifierLocataireVisible } = await import('@/lib/db/tenant');
+    const { IDS } = await import('@/lib/seed');
+    const n = await verifierLocataireVisible(IDS.tenant, IDS.engNep);
+    return `locataire ${IDS.tenant} déclaré par withTenant, ${n} ligne relue sous ce locataire`;
+  }));
+
   /* LE DOSSIER QUE LA SONDE DÉCRIT — et le premier choix était FAUX.
      `order by created_at limit 1` prenait le PLUS ANCIEN dossier d'audit
      légal : en local, c'est le dossier de l'exercice PRÉCÉDENT (FY2024, celui
@@ -85,7 +117,6 @@ async function corpsDeLaSonde() {
      order by p.end_date desc, e.created_at desc, e.id limit 1`)
     .catch(() => null);
 
-  const lectures: Lecture[] = [];
   lectures.push(await essayer('base : une mission existe', async () => eng?.id ?? null));
 
   /* LA MÉTHODE DU CABINET — la lecture qui manquait, et qui a cassé trois
