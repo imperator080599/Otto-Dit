@@ -20,8 +20,78 @@ section, demande CTT — et §2.4, les codes de refus MAT-01/02/03, tranches ci-
 est maintenant livré** (dépôt/suppression manuels de la vidéo du walkthrough, provenance, compteur de
 conservation, VID-01, tranche ci-dessous) — §3.1 point 2 (dépôt automatique en fin de réunion) reste
 **hors périmètre**, derrière la même porte que le Lot 8 (service externe, identifiants — les
-interdits permanents ne le permettent pas encore). Prochain, dans l'ordre du mandat : §4/Lot 8 point 1
-(la garde de budget EN BASE — préalable écrit avant toute mesure de coût, rien n'est activé avant elle).
+interdits permanents ne le permettent pas encore). **§4/Lot 8 point 1 est maintenant livré** (la
+garde de budget EN BASE, tranche ci-dessous) — §4 points 2/3 (la mesure du coût réel, puis le
+fondateur qui relève le plafond) et la seconde moitié de Lot 8 (`PLAN_RLS` étapes 1 et 2, jamais 3
+— un chantier séparé et plus large, non commencé cette session, voir `docs/PLAN_RLS.md`) restent à
+faire. Prochain : §1 reste bloqué (réseau du bac à sable) ; le reste du mandat du 9 septembre est
+maintenant complet ou hors périmètre par construction — voir la note de clôture ci-dessous pour la
+suite proposée.
+
+## Lot mandat 9 septembre, §4/Lot 8 point 1 : la garde de budget EN BASE (2026-09-10)
+
+*Mandat §4 : « je peux surélever le seuil des dépenses... mais 1. la garde de budget en base
+d'abord, telle que le plan l'exige — plafond en base, chemin fermé par défaut, aucune clé au
+dépôt. Elle existe et refuse avant qu'un centime soit engageable. 2. Puis la mesure... 3. Puis
+seulement, le fondateur relève le plafond. » CLAUDE.md, interdits : « L'activation du mode IA
+vivant sur l'URL. Préparer, éprouver en rejeu, laisser le dernier geste au fondateur. Trois
+préconditions dans l'ordre : garde de budget EN BASE, chemin fermé par défaut derrière un
+déverrouillage que seul le fondateur connaît, aucune clé dans le dépôt. »*
+
+**Ce qui a changé.** `app_state` (0005, déjà le patron pour un réglage global sans locataire via
+`clock.ts`) porte le réglage — aucune migration neuve. `gardeBudgetEnBase()` lit ; le champ mal
+typé ou absent est lu comme fermé, jamais deviné. `assertBudgetActifEnBase()` refuse `IA-BUDGET-01`
+tant que l'état n'est pas actif ET complet — plafond positif ET provenance qui/quand, même
+discipline « tout ou rien » que `evidence_deletion_whole` (0157) ou
+`engagement_lock_verdict.confirmed_by/at` (0042). **AUCUN chemin de ce dépôt n'écrit `actif:true`**
+— ni service, ni action serveur, ni script de peuplement (recensé, confirmé par les deux voix de
+la revue hostile) : seule une écriture SQL directe du fondateur sur la base de production peut le
+poser. C'est ce chemin ABSENT qui est le déverrouillage. Nouvelle lecture `/api/sante`
+`IA-BUDGET-01` : rouge sur un état activé mais incomplet, jamais lu comme « à moitié activé ».
+
+**Recherché avant d'écrire une ligne** (les deux voix de la revue hostile ont, chacune
+indépendamment, tenté de RÉFUTER cette affirmation plutôt que de la lire) : `getOcrAdapter()`
+(`adapters.ts`) coupe DÉJÀ, inconditionnellement, tout déploiement public (`demoPublique()`, vraie
+sur tout déploiement Vercel — `VERCEL=1` posée par la plateforme elle-même) vers le rejeu, AVANT
+même de lire `OTTO_OCR_ADAPTER`. Cette garde-ci ne bloque donc AUCUN appel réel aujourd'hui — elle
+prépare la PREMIÈRE des trois préconditions sans toucher au verrou qui existe déjà. Rien n'est
+activé, aucune clé n'est demandée (mandat §4).
+
+**Revue hostile, deux voix indépendantes** (règle 30 : tranche touchant une garde de refus
+budget/sécurité) — chaque voix a vérifié EMPIRIQUEMENT, par injection de mutation dans le code
+(règle 17 appliquée à la revue elle-même), les deux affirmations sur lesquelles repose la sûreté de
+cette tranche : confirmées vraies toutes les deux, par les deux voix, indépendamment.
+- **Bloquant, trouvé par mutation (voix 1)** : la condition « qui ET quand » n'était éprouvée par
+  AUCUN cas posant UN SEUL des deux champs — une mutation OR→AND sur le code réel passait les 13
+  tests d'alors sans qu'aucun ne rougisse. Reproduit avant de corriger (confirmé : 2 tests
+  échouent), puis retiré. Corrigé : quatre nouveaux cas (qui sans quand / quand sans qui, dans le
+  service et dans la lecture `/api/sante`), la mutation re-testée et confirmée détectée.
+- **Mineur (voix 2)** : le commentaire comparait `activePar`/`activeLe` à deux vraies clés
+  étrangères Postgres (`evidence.deleted_by`, `engagement_lock_verdict.confirmed_by`) sans dire
+  que ces deux champs-ci ne sont que des chaînes dans un `jsonb`, sans contrainte référentielle.
+  Corrigé : un paragraphe « ce que cette provenance n'est pas » l'écrit en toutes lettres.
+- **Non retenu (voix 1)** : marquer R18 (`docs/BACKLOG_REPORTE.md`) comme « levée » — ce tableau
+  est un REGISTRE HISTORIQUE d'une nuit de plan passée (« jamais supprimée », son propre en-tête),
+  pas un suivi de tâches vivant ; l'éditer pour dire « résolu » en fausserait le sens. Le lien est
+  nommé ICI à la place, honnêtement borné : **R18 décrivait un risque de COURSE sur le CUMUL**
+  (`gardeBudget()`/`OTTO_BUDGET_USD`, resté en mémoire de processus, **jamais touché par cette
+  tranche**) et proposait « la déplacer en base » comme premier pas. Cette tranche-ci pose une
+  garde EN BASE, mais répond à une question DIFFÉRENTE (« ce déploiement a-t-il le droit
+  d'essayer ? », pas « le cumul est-il exact sous concurrence ? ») — **R18 reste ouvert** pour son
+  risque de course d'origine.
+
+**Verify complet, arbre silencieux, UN SEUL passage propre** (`set -o pipefail && timeout 3600 npm
+run verify … ; echo "EXIT=$?"`, mesuré `EXIT=0`) : 138/138 fichiers, 1066/1066 tests, écrans 91+53/0
+échec, densité 0 dépassement, clics 241/0 (379 clics, 52 gestes), visuel 328/0. 0 marqueur
+« ÉCHEC »/« FAIL » dans les 832 lignes du journal. `docs/DENSITE.md`/`docs/CLICS.md` régénérés
+(commit/date seuls, rien de structurel — toujours 81 écrans, 52 gestes/379 clics).
+
+**Conduit en navigateur** : sans objet pour cette tranche — aucun écran neuf, aucun bouton neuf ;
+la garde est une fonction de service et une lecture `/api/sante`, toutes deux éprouvées par leurs
+tests (règle 17), jamais par un clic (rien n'est cliquable dans ce qui a changé).
+
+**SHA servi** : à confirmer après le push, par `/api/sante` sur le déploiement d'aperçu de cette
+branche — voir l'entrée qui suit.
 
 ## Lot mandat 9 septembre, §3.1 : dépôt/suppression manuels de la vidéo du walkthrough, VID-01 (2026-09-09)
 
