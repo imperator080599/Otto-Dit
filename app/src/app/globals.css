@@ -1,41 +1,78 @@
 /* OTTO design system — hand-rolled (ADR-005). Clean, dense, enterprise-grade. */
 
+/* ══ LE REPASS DESIGN RÉTROACTIF (mandat 2026-09-09 §5 ; déclenché par le
+   fondateur le 2026-09-10, docs/MANDATS/2026-09-10_trois_reponses.md, point 3)
+   ══════════════════════════════════════════════════════════════════════════
+   Les jetons ci-dessous ADOPTENT les valeurs du bloc `.epure` (plus bas dans
+   ce fichier, déjà construit comme « premier geste concret » du mandat) au
+   niveau de `:root` — exactement ce que le commentaire de `.epure` annonçait
+   depuis le 2026-09-09 : « la repasse future changera CES valeurs... elle ne
+   réécrira aucun écran construit avec elles. » Puisque CHAQUE règle de ce
+   fichier lit déjà ses couleurs par variable (aucune couleur en dur ailleurs
+   dans la feuille), ce changement de jetons propage à TOUS les écrans
+   existants sans toucher leur markup — c'est la propriété que le fondateur a
+   demandée : « le repass est un changement de jetons, jamais une réécriture
+   d'écrans. »
+   VÉRIFIÉ, PAS SUPPOSÉ : `npm run visuel` (contraste + débordement, sur les
+   91 routes, clair ET sombre) tourne sur ce commit avant expédition — le
+   verdict est dans STATUS.md, avec le SHA.
+   CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19), délibérément — nommé plutôt
+   que fait à moitié en silence : le bandeau et le rail partagés (`--topbar*`)
+   restent inchangés — c'est le CHROME de navigation, et le commentaire de
+   `.epure` l'excluait déjà explicitement de son propre périmètre ; une
+   tranche séparée les repeindra. La transformation `text-transform:
+   uppercase` sur les CODES DE REFUS (le « monospace en petites capitales »
+   du §5, D.6 point 1) n'est pas non plus posée ici en bloc sur tout
+   `.mono`/`code` — l'appliquer partout capitaliserait aussi des SIREN, IBAN
+   et montants qui ne doivent jamais l'être ; c'est un geste ciblé sur le
+   composant de rendu des refus, laissé pour la tranche suivante (R60-R62).
+   L'échelle typographique (poids des titres) est ajustée ICI ; les couleurs
+   vert/ambre reprennent EXACTEMENT les valeurs déjà corrigées pour le
+   contraste dans `.epure` (2026-09-09, ~4,1-4,3:1) plutôt que d'être
+   redevinées. */
 :root {
-  --bg: #f6f7f9;
+  --bg: #f7f3ec;
   --panel: #ffffff;
-  --border: #e2e6ec;
-  --border-strong: #c9d0da;
-  --text: #16202e;
-  --muted: #62708a;
+  --border: #e8e1d3;
+  --border-strong: #d3c6ac;
+  --text: #211d17;
+  --muted: #7c7466;
   /* LE TEXTE « FAINT » PORTE LA VOIX DU PRODUIT — chaque « pourquoi », chaque
-     règle expliquée — et il était à 2,82:1 sur le fond, 2,61:1 dans un encadré :
-     sous le seuil où un texte est lisible pour tout le monde. Un discret qui ne
-     se lit pas n'est pas discret, il est absent. À 4,89:1 minimum il reste
-     nettement plus léger que le corps de texte, et il se lit. */
-  --faint: #626d7e;
-  --accent: #1f4e8c;
-  --accent-soft: #e8effa;
-  --green: #0e7a5f;
-  --green-soft: #e4f3ee;
-  --amber: #9a6700;
-  --amber-soft: #fbf0d9;
-  --voile: rgba(20, 24, 31, 0.38);
-  --red: #b42318;
-  --red-soft: #fbe9e7;
-  --violet: #5b3fa8;
-  --violet-soft: #efeafc;
+     règle expliquée. Même valeur que --muted ici (une seule encre discrète
+     pour le nouveau langage) : `npm run visuel` mesure le contraste réel
+     plutôt que de le supposer identique à l'ancien réglage. */
+  --faint: #7c7466;
+  --accent: #6a3fd6;
+  --accent-soft: #efe8fc;
+  /* --green et --amber : LES VALEURS DÉJÀ CORRIGÉES POUR LE CONTRASTE dans
+     `.epure` (2026-09-09, ~4,1-4,3:1 — le premier jet, plus clair, rendait
+     2,74:1 et 2,76:1, sous le plancher de `npm run visuel`), pas redevinées. */
+  --green: #4f7a63;
+  --green-soft: #eaf1ec;
+  --amber: #8a6f4f;
+  --amber-soft: #f6efe3;
+  --voile: rgba(33, 29, 23, 0.38);
+  --red: #b06a67;
+  --red-soft: #f7ece9;
+  /* L'accent est DÉSORMAIS le seul violet (§5 : « UN seul accent saturé »).
+     --violet reste un jeton distinct pour ne pas casser les classes qui le
+     nomment (.ai-flag, .badge.violet), mais pointe sur la MÊME encre. */
+  --violet: #6a3fd6;
+  --violet-soft: #efe8fc;
   --topbar: #14263e;
   --topbar-text: #e8edf5;
   --topbar-link: #c6d4e8;
   --topbar-badge: #2b425f;
   --topbar-badge-text: #ffd580;
-  --gray-soft: #eef1f5;
-  --row-hover: #fafbfd;
+  --gray-soft: #f1ece1;
+  --row-hover: #f2ede3;
   --field: #ffffff;
   --on-accent: #ffffff;
-  --accent-hover: #17406f;
-  --track: #e8ecf2;
-  --radius: 8px;
+  --accent-hover: #5730b8;
+  --track: #e8e1d3;
+  /* RAYON GÉNÉREUX, OMBRE QUASI NULLE (§5) — les mêmes valeurs que `.epure`,
+     portées au socle. */
+  --radius: 16px;
   --font: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 }
@@ -45,38 +82,41 @@
    sombres que je montrais venaient du PROTOTYPE. Il tient en une redéfinition
    des jetons parce que le reste de la feuille ne cite plus une seule couleur en
    dur : c'est ce qui rend un thème possible, et son absence qui les rend
-   coûteux. Rien ici n'ajoute de règle de mise en page — seulement de l'encre. */
+   coûteux. Rien ici n'ajoute de règle de mise en page — seulement de l'encre.
+   REPASS DESIGN (voir le bloc clair ci-dessus) : les valeurs reprennent le
+   bloc sombre déjà construit et commité de `.epure` (2026-09-09), portées au
+   socle par la même logique. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e141c;
-    --panel: #151d27;
-    --border: #26313f;
-    --border-strong: #3a4759;
-    --text: #e6ecf4;
-    --muted: #9aa8bd;
-    --faint: #8b98ab;
-    --accent: #7aa9e8;
-    --accent-soft: #17273c;
-    --green: #5fd0aa;
-    --green-soft: #122a24;
-    --amber: #e0b25a;
-    --amber-soft: #2c2415;
+    --bg: #1b1712;
+    --panel: #24201a;
+    --border: #3a3327;
+    --border-strong: #4a4030;
+    --text: #f1ece2;
+    --muted: #b3a996;
+    --faint: #b3a996;
+    --accent: #b79bf2;
+    --accent-soft: #2c2440;
+    --green: #92c1a4;
+    --green-soft: #1c2822;
+    --amber: #d9b47c;
+    --amber-soft: #2e2716;
     --voile: rgba(0, 0, 0, 0.55);
-    --red: #f08a80;
-    --red-soft: #2e1a19;
-    --violet: #b9a3f0;
-    --violet-soft: #211c33;
+    --red: #d99b96;
+    --red-soft: #2f1f1d;
+    --violet: #b79bf2;
+    --violet-soft: #2c2440;
     --topbar: #0a1119;
     --topbar-text: #dbe4f0;
     --topbar-link: #a8bcd6;
     --topbar-badge: #1e2c3f;
     --topbar-badge-text: #ffd580;
-    --gray-soft: #222c39;
-    --row-hover: #1a2331;
-    --field: #101822;
-    --on-accent: #0b131c;
-    --accent-hover: #9cc0f0;
-    --track: #212b38;
+    --gray-soft: #2a251d;
+    --row-hover: #2a251d;
+    --field: #24201a;
+    --on-accent: #1b1712;
+    --accent-hover: #cbb3f5;
+    --track: #3a3327;
   }
   /* Un aplat blanc sur fond sombre éblouit : les PDF et images embarquées
      gardent leur fond, on baisse seulement leur éclat. */
@@ -550,10 +590,17 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
 
 /* La hiérarchie typographique : un titre d'écran, un titre de section, un
    titre de sous-section — trois tailles, trois graisses, et l'interlettrage
-   qui se resserre quand la taille monte. */
-h1 { font-size: 21px; letter-spacing: -.012em; line-height: 1.25; }
-h2 { font-size: 15px; letter-spacing: -.006em; line-height: 1.3; }
-h3 { font-size: 13.5px; line-height: 1.35; }
+   qui se resserre quand la taille monte.
+   REPASS DESIGN (§5 : « titres larges et légers ») : h1 reprend le poids de
+   `.epure-titre` (300) — il est assez grand pour le porter sans perdre en
+   lisibilité, mesuré par `npm run visuel`. h2/h3 s'allègent vers 500 plutôt
+   que 300 : à 15px et 13.5px, un poids aussi léger que le titre d'écran
+   perdrait en netteté — un choix délibéré, pas une demi-mesure silencieuse
+   (règle 19), à revoir si une tranche future du repass le juge encore trop
+   sombre. */
+h1 { font-size: 24px; font-weight: 300; letter-spacing: -.008em; line-height: 1.25; }
+h2 { font-size: 15px; font-weight: 500; letter-spacing: -.004em; line-height: 1.3; }
+h3 { font-size: 13.5px; font-weight: 500; line-height: 1.35; }
 .faint, .muted, .etat-bloc, .repli-resume { letter-spacing: .002em; }
 
 /* Les chiffres s'alignent en colonne, PARTOUT où ils sont en tableau. */
