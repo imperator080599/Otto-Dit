@@ -20,15 +20,17 @@ PRÉVISUALISATION de branche, jamais sur `main`, jusqu'à la fusion par avance r
 §3.1 point 2 (dépôt automatique en fin de réunion) reste **hors périmètre**, derrière la même porte
 que le Lot 8 (service externe, identifiants — les interdits permanents ne le permettent pas encore).
 **§1 (table d'échantillonnage sourcée) est maintenant COMPLET ET SERVI EN PRODUCTION** —
-`otto-dit.vercel.app` sert le commit qui le porte (`49abf73`, à confirmer par mesure directe juste
-en dessous) : CTRL-07 est redessiné, indexé par POPULATION plutôt que par fréquence, à partir de
-l'annexe sourcée (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, règle 33, commitée
+`otto-dit.vercel.app` sert `49abf73`, mesuré directement le 2026-09-10 (`identiteCoherente:true`,
+CTRL-07 comprise) : CTRL-07 est redessiné, indexé par POPULATION plutôt que par fréquence, à partir
+de l'annexe sourcée (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, règle 33, commitée
 verbatim), avec deux voix hostiles indépendantes convergentes ayant trouvé et fait corriger trois
-défauts réels avant fusion (détail dans la tranche ci-dessous). **§4 points 2/3** (la mesure du
-coût réel, puis le fondateur qui relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS`
-étapes 1 et 2, jamais 3 — voir `docs/PLAN_RLS.md`) restent à faire — débloqués par le fondateur le
-2026-09-10. Prochain, dans l'ordre reçu : §4 point 2 (coût mesuré, sans clé), `PLAN_RLS` étapes 1-2
-(rôle `otto_app`, testé en local uniquement).
+défauts réels avant fusion (détail dans la tranche ci-dessous). **§4 point 2 (l'estimation papier du
+coût d'un walkthrough analysé) est COMMIT et poussé sur main** (`COST.md`, §1 quater — ≈ $0,03-0,04
+par walkthrough, ≈ $0,24-0,26 par engagement, aucune clé demandée), SHA servi en production pas
+encore mesuré à l'instant de cette entrée (docs seuls, pas de code d'app touché). **§4 point 3** (le
+fondateur relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS` étapes 1 et 2, jamais 3 —
+voir `docs/PLAN_RLS.md`) restent à faire. Prochain : `PLAN_RLS` étapes 1-2 (rôle `otto_app`, testé
+en local uniquement).
 
 ## §1 : CTRL-07 redessiné, indexé par POPULATION (annexe sourcée du 10 septembre) (2026-09-10)
 
@@ -116,6 +118,13 @@ propre.
 connus mauvais, lectures 0 perdue sur 1716 chemins · 6/6, écrans 91 routes/0 échec, clics 241
 étapes/0 échec/381 clics/240 stations figées, visuel 328 vues/0 défaut. `docs/CLICS.md`/
 `docs/DENSITE.md` régénérés (commit/build/comptes seuls).
+
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `49abf73`**
+(`49abf733091cf63fe9838f087f15bc884d27ca62`, `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` — l'hôte de production, jamais l'alias de branche, règle
+36) : HTTP 200, `identiteCoherente:true`, toutes les lectures passent — CTRL-07 comprise, `ok:true`,
+« 3 tirage(s) OE — 1 couvert(s), 2 legacy », mesuré le 2026-09-10 à 12:00:10Z. §1 du mandat du 9
+septembre est maintenant COMPLET et servi.
 
 **Ce que cette tranche NE fait PAS** (règle 19) : elle ne construit aucun mécanisme
 d'« écrasement de cabinet » (remplacer `pcaob-sox.ts` par la table réelle d'un cabinet reste un
