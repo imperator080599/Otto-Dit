@@ -78,8 +78,13 @@ indépendamment de l'état des étapes 1/2 ; le format `otto_app.<ref>` au poole
 « rôle de production » n'a toujours jamais tourné (`OTTO_CI_DATABASE_URL` jamais configuré,
 hors de portée d'une session sans accès à ce secret).
 
-**SHA servi confirmé, PRODUCTION** : voir la ligne d'en-tête de ce fichier, mesurée après le
-push de cette tranche.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `fd33d20`** (`fd33d2041f15ffeb3f1f8385deac04fc1ac9fe5b`,
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` — l'hôte de
+production, jamais l'alias de branche, règle 36) : HTTP 200, `identiteCoherente:true`, verdict
+« toutes les lectures passent », y compris les lectures PLAN_RLS elles-mêmes (« rôle servi et
+garde de locataire (PLAN_RLS) », « rôle applicatif otto_app (migration 0140) », « portail par
+jeton et pièces (migration 0141) »), mesuré le 2026-09-10 à 12:13:26Z. PLAN_RLS steps 1-2 du
+mandat du 9 septembre sont désormais COMPLETS et servis en production.
 
 ## §1 : CTRL-07 redessiné, indexé par POPULATION (annexe sourcée du 10 septembre) (2026-09-10)
 
