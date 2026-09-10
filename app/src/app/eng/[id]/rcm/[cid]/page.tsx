@@ -574,7 +574,10 @@ export default async function ControlDetail({
             <p className="muted small" data-ctrl04-non-rapprochee>{t('rcmc.ctrl04NonRapprochee')}</p>
           )}
           {instances.length > 0 && !instances.some((i) => i.sampled) && rapprochee && !tailleOe.verifie && (
-            <p className="muted small">{t('rcmc.ctrl07Avertissement')}</p>
+            <p className="muted small">
+              {t('rcmc.ctrl07Avertissement')} {tailleOe.motif}
+              {tailleOe.texteSource && <> — « {tailleOe.texteSource} »</>}
+            </p>
           )}
           {instances.length > 0 && rapprochee && (
             <p className="muted small" data-population-rapprochee>{t('rcmc.populationRapprochee')}</p>

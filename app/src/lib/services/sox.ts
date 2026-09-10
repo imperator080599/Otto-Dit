@@ -5,7 +5,7 @@ import { controlPopulationHash } from '@/lib/kernel/canon';
 import { attributeDraw } from '@/lib/kernel/sampling';
 import { proposeDeficiencySeverity, type DeviationNature } from '@/lib/kernel/deficiency';
 import { primaryPack } from '@/lib/packs';
-import type { Frequency } from '@/lib/packs/types';
+import type { Frequency, TableEchantillonnageAttribut, NiveauConfianceOe, TauxTolerableOe, ImportanceAttribut } from '@/lib/packs/types';
 import { centsToNum } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
@@ -882,26 +882,81 @@ export async function rapprocherPopulationControle(controlId: string, userId: st
 
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
-/** CTRL-07 (mandat contrôle interne, §3.2) : la taille sort d'une table du CABINET, jamais
- *  d'une valeur écrite de mémoire. La table livrée est VIDE (`pcaob-sox.ts`) — cette fonction dit
- *  pourquoi, dans la même forme que l'écran doit l'afficher, pour que le service et l'écran ne
- *  divergent jamais sur ce qu'ils considèrent « vérifié ». */
-export function tailleEchantillonOe(pack: { attributeSampleSizes?: Partial<Record<Frequency, number>> }, frequency: Frequency): { valeur: number; verifie: true } | { valeur: null; verifie: false } {
-  const valeur = pack.attributeSampleSizes?.[frequency];
-  return valeur === undefined ? { valeur: null, verifie: false } : { valeur, verifie: true };
+export type TailleEchantillonOe =
+  | { valeur: number; verifie: true; texteSource?: string }
+  /** pourquoi `verifie` est false — jamais deviné, toujours un motif nommé (règle 19). `texteSource` :
+   *  le texte exact de la source, quand la bande ≤ 200 publie un minimum textuel sans nombre exact. */
+  | { valeur: null; verifie: false; motif: string; texteSource?: string };
+
+type PackEchantillonnage = {
+  attributeSamplingTable?: TableEchantillonnageAttribut;
+  attributeSampleConfidenceLevel?: NiveauConfianceOe;
+  attributeSampleTolerableRate?: TauxTolerableOe;
+  attributeImportance?: ImportanceAttribut;
+};
+
+/** CTRL-07 (mandat §3.2, redessiné par l'annexe sourcée du 10 septembre,
+ *  docs/MANDATS/2026-09-10_annexe_echantillonnage.md) : « la fréquence n'indexe pas la table —
+ *  la fréquence produit la POPULATION, et c'est la population qui indexe la table. » Prend donc
+ *  la POPULATION (le compte d'occurrences du contrôle), jamais la fréquence.
+ *
+ *  ≤ 200 (annexe §2.2) : un minimum SOURCÉ, public — vérifié dès que la population est connue,
+ *  AUCUN jugement de cabinet requis. La bande la plus basse (< 20) ne publie qu'un texte
+ *  (« fewer than 5 »), jamais un nombre exact : `valeur` y reste `null`, `verifie` reste `false`
+ *  — un texte affiché n'est pas un nombre appliqué (règle 8).
+ *
+ *  > 200 (annexe §2.1) : la grille publiée a QUATRE lignes exactes ; laquelle s'applique dépend
+ *  de trois jugements de cabinet (niveau de confiance, taux tolérable, importance de l'attribut)
+ *  — non posés tant que le cabinet ne les a pas fournis (`pcaob-sox.ts` les livre non posés
+ *  sciemment). Une combinaison posée qui ne correspond à AUCUNE des quatre lignes sourcées
+ *  (ex. faible + 95 %) reste non vérifiée elle aussi — jamais devinée par interpolation. */
+export function tailleEchantillonOe(pack: PackEchantillonnage, population: number): TailleEchantillonOe {
+  const table = pack.attributeSamplingTable;
+  if (!table) return { valeur: null, verifie: false, motif: 'aucune table d’échantillonnage sourcée dans le pack' };
+  if (population <= 200) {
+    const bande = table.minimaPopulationsFaibles.find((b) => population >= b.min && population <= b.max);
+    if (!bande) {
+      return { valeur: null, verifie: false, motif: `population de ${population} hors des bandes sourcées (annexe §2.2)` };
+    }
+    if (bande.valeur === null) {
+      return {
+        valeur: null, verifie: false, texteSource: bande.texte,
+        motif: 'la source ne publie qu’un minimum textuel pour cette population (annexe §2.2), jamais un nombre exact',
+      };
+    }
+    return { valeur: bande.valeur, verifie: true, texteSource: bande.texte };
+  }
+  const { attributeSampleConfidenceLevel: confiance, attributeSampleTolerableRate: taux, attributeImportance: importance } = pack;
+  if (!confiance || !taux || !importance) {
+    return {
+      valeur: null, verifie: false,
+      motif: `population de ${population} (> 200, annexe §2.1) — niveau de confiance, taux `
+        + 'tolérable et importance de l’attribut restent des paramètres de cabinet non posés',
+    };
+  }
+  const ligne = table.grillePopulationsElevees.find(
+    (l) => l.importance === importance && l.niveauConfiance === confiance && l.tauxTolerable === taux,
+  );
+  if (!ligne) {
+    return {
+      valeur: null, verifie: false,
+      motif: `combinaison confiance=${confiance} %/taux=${taux} %/importance=${importance} absente `
+        + 'de la table sourcée (annexe §2.1) — aucune valeur devinée par interpolation',
+    };
+  }
+  return { valeur: ligne.valeur, verifie: true };
 }
 
 /** Même lecture que `drawAttributeSample`, pour un écran qui doit savoir AVANT de soumettre si
  *  la taille sera vérifiée ou non — le formulaire ne doit jamais afficher une valeur que le
- *  service refusera ensuite (règle 13). */
-export async function tailleEchantillonOePourControle(controlId: string): Promise<ReturnType<typeof tailleEchantillonOe>> {
-  const c = await q1<{ engagement_id: string; frequency: Frequency }>(
-    `select engagement_id, frequency from control where id = $1`,
-    [controlId],
-  );
+ *  service refusera ensuite (règle 13). Compte la population FRAÎCHEMENT (même discipline que
+ *  `populationControleRapprochee`) : ni la fréquence ni un compte mis en cache. */
+export async function tailleEchantillonOePourControle(controlId: string): Promise<TailleEchantillonOe> {
+  const c = await q1<{ engagement_id: string }>(`select engagement_id from control where id = $1`, [controlId]);
   const fs = await frameworkSet(c.engagement_id);
   const pack = primaryPack(fs as never);
-  return tailleEchantillonOe(pack, c.frequency);
+  const pop = await q1<{ n: string }>(`select count(*)::text as n from control_instance where control_id = $1`, [controlId]);
+  return tailleEchantillonOe(pack, Number(pop.n));
 }
 
 export async function drawAttributeSample(controlId: string, userId: string, overrideSize?: number, overrideJustification?: string): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
@@ -955,12 +1010,12 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   if (overrideSize !== undefined) {
     size = overrideSize;
   } else {
-    const table = tailleEchantillonOe(pack, c.frequency);
+    const table = tailleEchantillonOe(pack, rapprochee.rowCount);
     if (!table.verifie) {
       throw new Error(
-        `CTRL-07 : aucune taille d’échantillon vérifiée pour la fréquence « ${c.frequency} » — `
-        + 'paramètre non vérifié, à fixer par le cabinet (mandat §3.2). Saisissez une taille avec '
-        + 'sa justification écrite en attendant (ADR-010).',
+        `CTRL-07 : aucune taille d’échantillon vérifiée pour une population de ${rapprochee.rowCount} `
+        + `occurrence(s) — ${table.motif} (annexe du 10 septembre, mandat §3.2). Saisissez une `
+        + 'taille avec sa justification écrite en attendant (ADR-010).',
       );
     }
     size = table.valeur;
@@ -994,9 +1049,10 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
     `insert into sample (engagement_id, procedure_id, method, params, seed, population_hash, population_size, rationale, status, validated_by, validated_at, engine_run_id)
      values ($1,$2,'attribute_frequency',$3,$4,$5,$6,$7,'drawn',$8, now(), $9) returning id`,
     [
-      c.engagement_id, procedure.id, JSON.stringify({ size, frequency: c.frequency, override: overrideJustification ?? null }),
+      c.engagement_id, procedure.id,
+      JSON.stringify({ size, population: instances.length, frequency: c.frequency, override: overrideJustification ?? null }),
       seed, popHash, instances.length,
-      `Frequency-based OE sample: ${c.frequency} control ⇒ ${size} instance(s). Basis: ${pack.attributeSampleBasis} Seed "${seed}" — reproducible.`,
+      `Population-band OE sample (annexe du 10 septembre) : population ${instances.length} (${c.frequency} control) ⇒ ${size} instance(s). Basis: ${pack.attributeSampleBasis} Seed "${seed}" — reproducible.`,
       userId, run.id,
     ],
   );

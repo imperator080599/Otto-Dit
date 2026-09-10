@@ -129,6 +129,43 @@ export interface Vocabulaire {
   obstacles: string;
 }
 
+/* §1 de l'annexe sourcée (docs/MANDATS/2026-09-10_annexe_echantillonnage.md) : « la fréquence
+ * n'indexe pas la table — la fréquence produit la POPULATION, et c'est la population qui indexe
+ * la table. » Ces trois types portent le vocabulaire EXACT de la source (HUD Handbook 2000.04
+ * REV-2 CHG-10, Appendix A) — aucune valeur, aucune bande, aucune combinaison ajoutée qui n'y
+ * figure (annexe §5). */
+export type NiveauConfianceOe = '90' | '95';
+export type TauxTolerableOe = '5' | '10';
+export type ImportanceAttribut = 'faible' | 'elevee';
+
+/** Annexe §2.2 (populations ≤ 200) : un minimum SOURCÉ, public — PAS un paramètre de cabinet,
+ *  contrairement au reste de cette table. `valeur: null` pour la bande la plus basse : la source
+ *  ne publie qu'un texte (« fewer than 5 »), jamais un nombre exact — l'inventer serait la faute
+ *  que l'annexe §5 interdit. Bornes inclusives des deux côtés. */
+export interface MinimumPopulationFaible {
+  min: number;
+  max: number;
+  valeur: number | null;
+  /** le texte exact de la source, affiché tel quel — « minimum suggéré, jamais un verdict » (§2.2) */
+  texte: string;
+}
+
+/** Annexe §2.1 (populations > 200) : les QUATRE lignes publiées, verbatim — aucune autre
+ *  combinaison confiance × taux × importance n'existe dans la source. Une combinaison absente
+ *  d'ici reste non vérifiée, jamais devinée par interpolation. */
+export interface LigneGrilleAttribut {
+  importance: ImportanceAttribut;
+  niveauConfiance: NiveauConfianceOe;
+  tauxTolerable: TauxTolerableOe;
+  valeur: number;
+}
+
+export interface TableEchantillonnageAttribut {
+  sourceText: string;
+  minimaPopulationsFaibles: MinimumPopulationFaible[];
+  grillePopulationsElevees: LigneGrilleAttribut[];
+}
+
 export interface AssurancePack {
   id: string;
   name: string;
@@ -146,12 +183,20 @@ export interface AssurancePack {
     /** `unsupported_sample_items` : des lignes de l'échantillon non conclues bloquent-elles le visa ? */
     unsupportedSampleItemsBlocking?: boolean;
   };
-  /* CTRL-07 (mandat contrôle interne, §3.2) : « aucune valeur n'y est écrite de mémoire, ni
-     recopiée d'une méthodologie propriétaire — la table interne d'un cabinet est confidentielle
-     et n'appartient pas à ce produit. » `Partial<...>` (jamais `Record<...>` complet) EST la
-     forme de « table VIDE » : une fréquence ABSENTE de cet objet est une fréquence non vérifiée,
-     pas une fréquence à 0 — `pcaob-sox.ts` la livre `{}` sciemment. */
-  attributeSampleSizes?: Partial<Record<Frequency, number>>;
+  /* CTRL-07 (mandat contrôle interne §3.2, redessiné par l'annexe sourcée du 10 septembre) :
+     `attributeSamplingTable` est un contenu SOURCÉ, public, non confidentiel (HUD Handbook, pas
+     la méthode d'un cabinet) — elle se livre PLEINE (contrairement à l'ancien
+     `attributeSampleSizes`, indexé par fréquence, retiré, qui se livrait vide). Ce qui reste un
+     jugement de cabinet, `verifie:false` par défaut (`undefined` = non posé, même forme que
+     `videoRetentionDays` juste en dessous) : LEQUEL des quatre couples de la grille §2.1
+     s'applique — `attributeSampleConfidenceLevel`/`attributeSampleTolerableRate` (annexe §4,
+     point 1, choisis ensemble) et `attributeImportance` (point 2, « un jugement d'auditeur, pas
+     un calcul »). Les minima ≤ 200 (§2.2) ne demandent AUCUN de ces trois jugements — ils sont
+     déjà vérifiés dès que la population est connue. */
+  attributeSamplingTable?: TableEchantillonnageAttribut;
+  attributeSampleConfidenceLevel?: NiveauConfianceOe;
+  attributeSampleTolerableRate?: TauxTolerableOe;
+  attributeImportance?: ImportanceAttribut;
   attributeSampleBasis?: string;
   attributeSeedDefault?: string;
   /* VID-01 (mandat du 9 septembre, §3.2) : « X est un paramètre de pack, verifie:false, affiché

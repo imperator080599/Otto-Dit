@@ -917,14 +917,16 @@ async function corpsDeLaSonde() {
     return `${concludedControls.length} contrôle(s) conclu(s) · ${iucUtilisees} IUC déclarée(s) utilisée(s), toutes documentées (exactitude + exhaustivité)`;
   }));
 
-  /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3) : « aucune taille n'est écrite de
-     mémoire ». Le pack livre sa table VIDE (`pcaob-sox.ts`) — tout tirage OE passe donc par le
-     chemin de dérogation écrite (ADR-010) tant que le cabinet n'a pas fourni la sienne. Lue
-     GLOBALEMENT, même discipline que CTRL-01/02/03 : un tirage SANS justification écrite ET
-     dont la fréquence n'a toujours PAS de taille vérifiée dans le pack au moment de la lecture
-     est la violation — cette lecture ne peut rougir que si le garde de `drawAttributeSample` a
-     été contourné (un SQL direct, une régression du garde), pas si aucun tirage n'a encore eu
-     lieu.
+  /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3 ; redessiné par l'annexe sourcée du
+     10 septembre) : « aucune taille n'est écrite de mémoire ». Le pack livre désormais une table
+     PLEINE (sourcée, HUD Handbook — `pcaob-sox.ts`), mais deux de ses trois jugements de cabinet
+     (confiance, taux tolérable, importance) restent NON POSÉS : tout tirage sur une population
+     > 200 sans eux, ou sur une population < 20 (la source n'y publie qu'un texte, jamais un
+     nombre), passe donc par le chemin de dérogation écrite (ADR-010). Lue GLOBALEMENT, même
+     discipline que CTRL-01/02/03 : un tirage SANS justification écrite ET dont la taille n'est
+     toujours PAS vérifiée (par la table OU par la dérogation) au moment de la lecture est la
+     violation — cette lecture ne peut rougir que si le garde de `drawAttributeSample` a été
+     contourné (un SQL direct, une régression du garde), pas si aucun tirage n'a encore eu lieu.
      TROUVÉ EN PRODUCTION LE JOUR MÊME DE L'EXPÉDITION (2026-09-09, `deploye` a rougi) : deux
      tirages RÉELS, du 2026-09-01, ANTÉRIEURS à cette tranche — tirés sous l'ancien défaut de
      pack, avant que CTRL-07 n'existe — n'ont ni dérogation écrite ni taille vérifiée. Vérifié

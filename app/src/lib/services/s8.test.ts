@@ -230,11 +230,13 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     expect(after.di_status).toBe('effective');
   });
 
-  it('CTRL-07 : un tirage sans dérogation refuse tant que la table du cabinet est vide, et la dérogation écrite (ADR-010) le débloque', async () => {
-    /* CAS CONNU MAUVAIS (règle 17) : la table `attributeSampleSizes` du pack PCAOB/SOX est
-       livrée VIDE (`pcaob-sox.ts`, mandat §3.2) — aucune fréquence n'y a de taille « vérifiée ».
-       `drawAttributeSample` doit REFUSER tant qu'aucune dérogation écrite n'est fournie, et
-       accepter dès qu'elle l'est (ADR-010, chemin déjà existant, inchangé). */
+  it('CTRL-07 : un tirage sans dérogation refuse pour une petite population (annexe §2.2, minimum textuel), et la dérogation écrite (ADR-010) le débloque', async () => {
+    /* CAS CONNU MAUVAIS (règle 17) : deux occurrences (population < 20) — l'annexe sourcée du
+       10 septembre ne publie qu'un TEXTE pour cette bande (« fewer than 5 »), jamais un nombre
+       exact (§2.2) : `tailleEchantillonOe` reste `verifie:false` même si la table est PLEINE
+       (contrairement à l'ancienne table `attributeSampleSizes`, vide). `drawAttributeSample`
+       doit REFUSER tant qu'aucune dérogation écrite n'est fournie, et accepter dès qu'elle l'est
+       (ADR-010, chemin déjà existant, inchangé). */
     const control = (await listControls(IDS.engSox)).find((c) => c.code === 'C-REV-02')!;
     expect(control.frequency).toBe('many_daily');
     await tacheMinimale(control.id, 'walkthrough-C-REV-02.txt');
@@ -257,10 +259,10 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     const { rapprocherPopulationControle } = await import('./sox');
     await rapprocherPopulationControle(control.id, IDS.users.karim, 'Population de sonde conclue pour isoler CTRL-07.');
 
-    // Cas connu mauvais : aucune taille explicite (donc pas de dérogation) → CTRL-07 refuse,
-    // en nommant la fréquence et le chemin de secours (ADR-010).
+    // Cas connu mauvais : aucune taille explicite (donc pas de dérogation) → CTRL-07 refuse, en
+    // nommant la POPULATION (2, pas la fréquence) et le chemin de secours (ADR-010).
     await expect(drawAttributeSample(control.id, IDS.users.lea))
-      .rejects.toThrow(/CTRL-07.*many_daily.*ADR-010/);
+      .rejects.toThrow(/CTRL-07.*population de 2.*ADR-010/);
 
     // Une taille explicite SANS justification écrite reste refusée par la garde existante
     // (ADR-010, inchangée) — CTRL-07 n'affaiblit pas cette exigence.
@@ -270,19 +272,73 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     // Défaut retiré : taille + justification écrite → le tirage aboutit.
     const draw = await drawAttributeSample(
       control.id, IDS.users.lea, 2,
-      'Table du cabinet non encore fournie (CTRL-07) — taille intérimaire de 2, en attendant.',
+      'Population de 2 (< 20) — l’annexe ne publie qu’un minimum textuel, taille intérimaire de 2.',
     );
     expect(draw.selected.length).toBe(2);
   });
 
-  it('tailleEchantillonOe : une fréquence présente dans le pack est vérifiée, une fréquence absente ne l’est pas', async () => {
+  it('tailleEchantillonOe (annexe sourcée du 10 septembre) : les minima ≤ 200 (§2.2) sont vérifiés sans aucun jugement de cabinet', async () => {
     const { tailleEchantillonOe } = await import('./sox');
-    const verifiee = tailleEchantillonOe({ attributeSampleSizes: { monthly: 3 } }, 'monthly');
-    expect(verifiee).toEqual({ valeur: 3, verifie: true });
-    const nonVerifiee = tailleEchantillonOe({ attributeSampleSizes: { monthly: 3 } }, 'weekly');
-    expect(nonVerifiee).toEqual({ valeur: null, verifie: false });
-    const tableVide = tailleEchantillonOe({}, 'monthly');
-    expect(tableVide).toEqual({ valeur: null, verifie: false });
+    const table = {
+      sourceText: 'sonde',
+      minimaPopulationsFaibles: [
+        { min: 100, max: 200, valeur: 20, texte: 'cent' },
+        { min: 50, max: 99, valeur: 10, texte: 'cinquante' },
+        { min: 20, max: 49, valeur: 5, texte: 'vingt' },
+        { min: 0, max: 19, valeur: null, texte: 'fewer than 5' },
+      ],
+      grillePopulationsElevees: [
+        { importance: 'faible' as const, niveauConfiance: '90' as const, tauxTolerable: '5' as const, valeur: 50 },
+        { importance: 'faible' as const, niveauConfiance: '90' as const, tauxTolerable: '10' as const, valeur: 25 },
+        { importance: 'elevee' as const, niveauConfiance: '95' as const, tauxTolerable: '5' as const, valeur: 65 },
+        { importance: 'elevee' as const, niveauConfiance: '95' as const, tauxTolerable: '10' as const, valeur: 35 },
+      ],
+    };
+    // Bandes numériques : vérifiées sans confiance/taux/importance posés (aucun sur `{attributeSamplingTable: table}`).
+    expect(tailleEchantillonOe({ attributeSamplingTable: table }, 150)).toEqual({ valeur: 20, verifie: true, texteSource: 'cent' });
+    expect(tailleEchantillonOe({ attributeSamplingTable: table }, 200)).toEqual({ valeur: 20, verifie: true, texteSource: 'cent' });
+    expect(tailleEchantillonOe({ attributeSamplingTable: table }, 75)).toEqual({ valeur: 10, verifie: true, texteSource: 'cinquante' });
+    expect(tailleEchantillonOe({ attributeSamplingTable: table }, 30)).toEqual({ valeur: 5, verifie: true, texteSource: 'vingt' });
+    // CAS CONNU MAUVAIS (règle 17) : < 20, la source ne publie qu'un TEXTE — jamais un nombre.
+    const petite = tailleEchantillonOe({ attributeSamplingTable: table }, 5);
+    expect(petite.verifie).toBe(false);
+    expect(petite.valeur).toBeNull();
+    expect(petite.texteSource).toBe('fewer than 5');
+    // Aucune table dans le pack : non vérifié, motif nommé.
+    const sansTable = tailleEchantillonOe({}, 30);
+    expect(sansTable.verifie).toBe(false);
+    expect(sansTable.valeur).toBeNull();
+  });
+
+  it('tailleEchantillonOe (annexe sourcée) : > 200 (§2.1) exige les trois jugements de cabinet, et seule une combinaison SOURCÉE est vérifiée', async () => {
+    const { tailleEchantillonOe } = await import('./sox');
+    const table = {
+      sourceText: 'sonde',
+      minimaPopulationsFaibles: [{ min: 0, max: 200, valeur: 20, texte: 'x' }],
+      grillePopulationsElevees: [
+        { importance: 'faible' as const, niveauConfiance: '90' as const, tauxTolerable: '5' as const, valeur: 50 },
+        { importance: 'faible' as const, niveauConfiance: '90' as const, tauxTolerable: '10' as const, valeur: 25 },
+        { importance: 'elevee' as const, niveauConfiance: '95' as const, tauxTolerable: '5' as const, valeur: 65 },
+        { importance: 'elevee' as const, niveauConfiance: '95' as const, tauxTolerable: '10' as const, valeur: 35 },
+      ],
+    };
+    // CAS CONNU MAUVAIS : > 200, table PLEINE, mais aucun des trois jugements posé → non vérifié.
+    const nonPose = tailleEchantillonOe({ attributeSamplingTable: table }, 500);
+    expect(nonPose.verifie).toBe(false);
+    expect(nonPose.valeur).toBeNull();
+    // Les trois jugements posés, combinaison SOURCÉE (élevée/95%/5%) → vérifiée.
+    expect(tailleEchantillonOe(
+      { attributeSamplingTable: table, attributeSampleConfidenceLevel: '95', attributeSampleTolerableRate: '5', attributeImportance: 'elevee' },
+      500,
+    )).toEqual({ valeur: 65, verifie: true });
+    // CAS CONNU MAUVAIS (règle 17) : les trois jugements posés, mais la combinaison n'existe PAS
+    // dans la source (faible + 95 %) — jamais devinée par interpolation, reste non vérifiée.
+    const combinaisonAbsente = tailleEchantillonOe(
+      { attributeSamplingTable: table, attributeSampleConfidenceLevel: '95', attributeSampleTolerableRate: '5', attributeImportance: 'faible' },
+      500,
+    );
+    expect(combinaisonAbsente.verifie).toBe(false);
+    expect(combinaisonAbsente.valeur).toBeNull();
   });
 
   it('documenterFacteurDesign/documenterIucPreuve : un intrus avec une valeur INVALIDE reçoit le refus ETANCH, jamais CTRL-02/CTRL-03', async () => {
