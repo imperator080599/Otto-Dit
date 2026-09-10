@@ -39,10 +39,61 @@ au fondateur, aucune tranchée ici : (i) la contradiction du test négatif de l'
 `/api/sante` — déjà résolue par deux mécanismes existants, PLAN_RLS.md §0bis A.6 ; (ii) un écart
 trouvé en vérifiant A.6 — `/api/sante` ne pose en réalité aucun locataire, contrairement à ce que
 A.6 décrit, deux options nommées ni choisie. **Aucun autre travail de mandat n'est actuellement
-débloqué** : R59-R62 (repasse design, mandat du 9 septembre §5) restent du travail réel mais
-EXPLICITEMENT gardé par le mandat lui-même à un déclenchement du fondateur (« l'agent n'en invente
-ni la date ni le déclencheur, et ne l'ouvre pas de lui-même ») ; §7.5 du mandat contrôle interne
-(l'agent qui pré-remplit) tombe sous l'interdit permanent de l'IA vivante.
+débloqué** : R59-R62 (repasse design, mandat du 9 septembre §5) restaient du travail réel mais
+gardé par le mandat lui-même à un déclenchement du fondateur — **DÉCLENCHÉ le 2026-09-10**
+(`docs/MANDATS/2026-09-10_trois_reponses.md`, point 3, commité verbatim, règle 33) ; §7.5 du
+mandat contrôle interne (l'agent qui pré-remplit) reste sous l'interdit permanent de l'IA vivante.
+
+**Trois réponses du fondateur (2026-09-10)**, les trois traitées : (1) §4 point 3 accordé (plafond
+de dépense levé, la garde DB en base reste la SEULE autorité d'activation, aucune clé demandée
+encore — reste à construire l'adaptateur préparé/rejoué, non activé) ; (2) **l'écart A.6 de
+/api/sante RÉSOLU ET SERVI EN PRODUCTION** — `otto-dit.vercel.app` sert `a6e0894`, mesuré
+directement le 2026-09-10 (`identiteCoherente:true`, « locataire déclaré par la sonde » premier de
+la liste) : la sonde déclare désormais son locataire, une lecture vide ÉCHOUE plutôt que de passer
+(détail dans la tranche ci-dessous, deux voix hostiles, un défaut réel trouvé et corrigé) ; (3) le
+repass design rétroactif R59-R62 déclenché — tranche 1 (les jetons du socle) **COMPLÈTE**, SHA à
+confirmer ci-dessous après le push de ce jour ; la migration des écrans en découle automatiquement
+(un changement de jetons, pas une réécriture — voir la tranche) ; R60-R62 eux-mêmes restent à
+construire. **Le fondateur ne sera pas réveillé entre les tranches de ce lot** (sa consigne,
+verbatim) — un seul message quand le repass ENTIER est servi.
+
+## Repass design, tranche 1 : les jetons du socle (mandat 2026-09-09 §5, déclenché le 2026-09-10) (2026-09-10)
+
+*Mandat du fondateur, point 3 (`docs/MANDATS/2026-09-10_trois_reponses.md`) : « Open the retroactive
+design repass now — R59 to R62... Start with the design token source as a single authority... then
+migrate screens onto it tranche by tranche, so the repass is a change of tokens and never a rewrite
+of screens. »*
+
+**Ce qui a changé.** `app/src/app/globals.css` : `:root` (clair ET sombre) adopte les valeurs déjà
+construites et contraste-vérifiées du bloc `.epure` (premier geste concret du mandat, 2026-09-09) —
+fond ivoire, cartes blanches, rayon généreux (16px), ombre quasi nulle, UN accent violet, couleurs
+sémantiques désaturées. `h1`/`h2`/`h3` s'allègent vers la hiérarchie « titres larges et légers »
+(h1 : poids 300, comme `.epure-titre` ; h2/h3 : poids 500, un choix délibéré plus sombre que 300 à
+leur taille, nommé plutôt que caché).
+
+**« Un changement de jetons, jamais une réécriture d'écrans » — littéralement.** Puisque chaque
+règle de `globals.css` lit déjà ses couleurs par variable (aucune couleur en dur ailleurs dans la
+feuille), cette redéfinition de `:root` propage automatiquement à TOUS les écrans existants sans
+toucher leur markup. Ce n'est donc pas 91 tranches « écran par écran » : c'est UNE tranche, dont la
+portée couvre l'ensemble de la surface visuelle de l'application d'un coup — la propriété exacte
+que le fondateur demandait. Deux écrans (`/eng/[id]/suivi`, `/eng/[id]/kanban`) portaient déjà le
+langage `.epure` explicitement (construits après le mandat du 9 septembre) ; ils sont inchangés.
+
+**Vérifié, pas supposé, sur l'ensemble de la surface** : `npm run visuel` (contraste + débordement,
+82 écrans × 4 vues, clair et sombre, large et 390px) — **0 défaut**. `npm run verify` complet sur
+cet arbre gelé : 138 fichiers de test (tous verts), `npm run screens` 91 routes/0 échec, `npm run
+clics` 241 étapes/0 échec, `npm run visuel` (re-mesuré dans la même chaîne) 328 vues/0 défaut.
+
+**Ce que cette tranche NE fait PAS** (règle 19, nommé plutôt que fait à moitié en silence) : le
+bandeau et le rail partagés (`--topbar*`) restent inchangés — c'est le CHROME de navigation,
+explicitement hors du périmètre de `.epure` lui-même depuis le 9 septembre ; une tranche séparée
+les repeindra. Aucun `text-transform: uppercase` en bloc sur les codes de refus (le « monospace en
+petites capitales » du §5, D.6 point 1) — l'appliquer partout capitaliserait aussi des SIREN, IBAN
+et montants ; c'est un geste ciblé, laissé à la tranche R60-R62. R59-R62 eux-mêmes restent à
+construire (tranche suivante) : le token existe désormais, ce qui les débloque comme le mandat
+l'annonçait, mais aucun des quatre n'est automatiquement résolu par la seule direction de design.
+
+**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
 
 ## L'écart A.6 de /api/sante, résolu (mandat du fondateur du 10 septembre, point 2) (2026-09-10)
 
@@ -90,8 +141,11 @@ DANS une transaction l'avorte, en cascade) ; chantier séparé, nommé, pas fait
 deviendra le vrai test de visibilité le jour de l'étape 3, toujours non exécutée, toujours
 interdite sans mandat écrit qui la nomme.
 
-**SHA servi confirmé, PRODUCTION** : voir la mesure prise après le push de cette tranche,
-enregistrée ci-dessous une fois le `verify` complet terminé sur cet arbre.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `a6e0894`**
+(`a6e0894977bf61922a888d4312f4d0fbf858a57d`, `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` — l'hôte de production, règle 36) : HTTP 200,
+`identiteCoherente:true`, « locataire déclaré par la sonde » est la PREMIÈRE lecture de la liste,
+`ok:true`, mesuré le 2026-09-10 à 21:39:17Z.
 
 ## PLAN_RLS steps 1-2 : documentation stale corrigée, câblage RE-MESURÉ, R24/R26/R27 levées (2026-09-10)
 
