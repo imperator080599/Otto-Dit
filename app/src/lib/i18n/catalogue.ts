@@ -1628,6 +1628,7 @@ export const LIBELLES = {
   'rcmc.rationaleRequiredToGoBelowThe': { en: 'rationale — required to go below the proposed severity', fr: 'motif — obligatoire pour descendre sous la gravité proposée' },
   'rcmc.sizeNonVerifiee': { en: 'size — unverified for this population (CTRL-07)', fr: 'taille — non vérifiée pour cette population (CTRL-07)' },
   'rcmc.ctrl07Avertissement': { en: 'No sample size is verified for this control’s population yet (CTRL-07):', fr: 'Aucune taille d’échantillon n’est encore vérifiée pour la population de ce contrôle (CTRL-07) :' },
+  'rcmc.tailleSource': { en: 'source:', fr: 'source :' },
   'rcmc.selected': { en: 'selected', fr: 'retenu' },
   'rcmc.owner': { en: 'owner', fr: 'propriétaire' },
   'reun.contact': { en: 'Contact', fr: 'Contact' },

@@ -150,12 +150,13 @@ export async function runControlCycle(controlCode: string): Promise<{ controlId:
     control.id, IDS.users.karim,
     `Listing client importé pour ${controlCode} (voir la demande ci-dessus) — population revue et retenue pour le tirage (démonstration synthétique).`,
   );
-  /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3) : la table d'échantillonnage OE du pack
-     est livrée VIDE (`pcaob-sox.ts`) — aucune taille n'y est plus « vérifiée ». Le tirage de
-     démonstration passe donc par le chemin d'ADR-010 (saisie explicite + justification écrite),
-     déjà existant, jamais un nouveau contournement : ce sont les MÊMES tailles qu'avant (3 pour
-     un contrôle mensuel, 5 pour un hebdomadaire), mais honnêtement étiquetées comme un choix
-     humain documenté, pas un défaut de pack tu. */
+  /* CTRL-07 (mandat contrôle interne, §3.2 ; redessiné par l'annexe sourcée du 10 septembre) :
+     le pack livre désormais une table PLEINE (sourcée), mais le tirage de démonstration continue
+     de passer par le chemin d'ADR-010 (saisie explicite + justification écrite) plutôt que de
+     consulter la table — ce sont les MÊMES tailles qu'avant (3 pour un contrôle mensuel, 5 pour
+     un hebdomadaire), honnêtement étiquetées comme un choix humain documenté, jamais un chemin
+     que le monde de démonstration emprunterait pour prouver la table elle-même (les tests
+     directs de `tailleEchantillonOe`, s8.test.ts, couvrent déjà ce chemin, règle 17). */
   const tailleParFrequence: Record<string, number> = { monthly: 3, weekly: 5, quarterly: 2, annual: 1, daily: 25, many_daily: 25, adhoc: 10 };
   const draw = await drawAttributeSample(
     control.id, IDS.users.lea, tailleParFrequence[control.frequency],

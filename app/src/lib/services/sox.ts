@@ -947,16 +947,33 @@ export function tailleEchantillonOe(pack: PackEchantillonnage, population: numbe
   return { valeur: ligne.valeur, verifie: true };
 }
 
+async function packPourControle(controlId: string): Promise<ReturnType<typeof primaryPack>> {
+  const c = await q1<{ engagement_id: string }>(`select engagement_id from control where id = $1`, [controlId]);
+  const fs = await frameworkSet(c.engagement_id);
+  return primaryPack(fs as never);
+}
+
+/** Même lookup que `drawAttributeSample`, pour une POPULATION DÉJÀ CONNUE — celle réellement
+ *  utilisée pour un tirage passé (`sample.population_size`), jamais recomptée. Nécessaire pour
+ *  la lecture `/api/sante` (route.ts, CTRL-07) : recompter `control_instance` AUJOURD'HUI pour
+ *  juger un tirage d'HIER confondrait « la population a grandi depuis » avec « le tirage était
+ *  bon » — trouvé par la revue hostile du §1 (voix 1) : un tirage de taille 3 sans justification,
+ *  jamais valide, devenait invisible pour cette lecture dès que la population avait grandi au
+ *  point de tomber dans une bande vérifiée. */
+export async function tailleEchantillonOePourPopulationDonnee(controlId: string, population: number): Promise<TailleEchantillonOe> {
+  const pack = await packPourControle(controlId);
+  return tailleEchantillonOe(pack, population);
+}
+
 /** Même lecture que `drawAttributeSample`, pour un écran qui doit savoir AVANT de soumettre si
  *  la taille sera vérifiée ou non — le formulaire ne doit jamais afficher une valeur que le
  *  service refusera ensuite (règle 13). Compte la population FRAÎCHEMENT (même discipline que
- *  `populationControleRapprochee`) : ni la fréquence ni un compte mis en cache. */
+ *  `populationControleRapprochee`) : ni la fréquence ni un compte mis en cache — CE QUI EST
+ *  VOULU ici (un écran de PRÉ-tirage doit refléter la population d'AUJOURD'HUI, contrairement à
+ *  `tailleEchantillonOePourPopulationDonnee` ci-dessus qui juge un tirage déjà fait). */
 export async function tailleEchantillonOePourControle(controlId: string): Promise<TailleEchantillonOe> {
-  const c = await q1<{ engagement_id: string }>(`select engagement_id from control where id = $1`, [controlId]);
-  const fs = await frameworkSet(c.engagement_id);
-  const pack = primaryPack(fs as never);
   const pop = await q1<{ n: string }>(`select count(*)::text as n from control_instance where control_id = $1`, [controlId]);
-  return tailleEchantillonOe(pack, Number(pop.n));
+  return tailleEchantillonOePourPopulationDonnee(controlId, Number(pop.n));
 }
 
 export async function drawAttributeSample(controlId: string, userId: string, overrideSize?: number, overrideJustification?: string): Promise<{ sampleId: string; requestId: string; selected: string[] }> {
@@ -1007,24 +1024,39 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
     throw new Error('overriding the pack sample size requires a written justification (ADR-010)');
   }
   let size: number;
+  let tableUtilisee: TailleEchantillonOe | null = null;
   if (overrideSize !== undefined) {
     size = overrideSize;
   } else {
-    const table = tailleEchantillonOe(pack, rapprochee.rowCount);
-    if (!table.verifie) {
+    tableUtilisee = tailleEchantillonOe(pack, rapprochee.rowCount);
+    if (!tableUtilisee.verifie) {
       throw new Error(
         `CTRL-07 : aucune taille d’échantillon vérifiée pour une population de ${rapprochee.rowCount} `
-        + `occurrence(s) — ${table.motif} (annexe du 10 septembre, mandat §3.2). Saisissez une `
+        + `occurrence(s) — ${tableUtilisee.motif} (annexe du 10 septembre, mandat §3.2). Saisissez une `
         + 'taille avec sa justification écrite en attendant (ADR-010).',
       );
     }
-    size = table.valeur;
+    size = tableUtilisee.valeur;
   }
   const instances = await q<{ id: string; label: string; occurred_on: string | null; performer_name: string | null }>(
     `select id, label, occurred_on::text, performer_name from control_instance where control_id = $1 order by label`,
     [controlId],
   );
   if (instances.length === 0) throw new Error('no instance population — import the client listing first');
+  /* TOCTOU (revue hostile du §1, deux voix indépendantes convergentes) : `rapprochee.rowCount`
+   * (posé ci-dessus, au moment du rapprochement CTRL-04) a servi à VÉRIFIER `size` — mais rien ne
+   * garantissait jusqu'ici que la population n'ait pas bougé entre ce moment et CETTE requête,
+   * plusieurs `await` plus loin (un import concurrent, par exemple). Sans ce garde, un tirage sur
+   * une population de 260 pouvait se voir appliquer la taille vérifiée pour 60 — silencieusement.
+   * Seul le chemin par TABLE est concerné (l'override choisit sa taille sans consulter la table) :
+   * un import concurrent pendant un tirage par dérogation ne pose aucun problème de cohérence. */
+  if (overrideSize === undefined && instances.length !== rapprochee.rowCount) {
+    throw new Error(
+      `CTRL-04 : la population a changé depuis le rapprochement (${rapprochee.rowCount} → `
+      + `${instances.length} occurrence(s)) — concluez un nouveau rapprochement avant de tirer `
+      + 'un échantillon sur la population à jour.',
+    );
+  }
   const popHash = controlPopulationHash(instances.map((i) => ({ label: i.label, occurredOn: i.occurred_on ?? undefined, performerName: i.performer_name ?? undefined })));
   const seed = `${pack.attributeSeedDefault}:${c.code}`;
   const draw = attributeDraw(instances.map((i) => i.label), size, seed, popHash);
@@ -1040,6 +1072,23 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
      values ($1,$2,$3,'control_test',$4,$5,'in_progress','tests_de_controles') returning id`,
     [c.engagement_id, pack.id, `OE-${c.code}`, controlId, `Operating effectiveness — ${c.code} ${c.name}`],
   );
+  /* PROVENANCE (revue hostile du §1, voix 1) : « d'où vient ce chiffre ? » (règle 3) exige plus
+   * que « la table l'a dit » — sur une population > 200, QUATRE valeurs sourcées existent (annexe
+   * §2.1) et seule la combinaison confiance/taux/importance POSÉE AU MOMENT DU TIRAGE dit
+   * laquelle s'est appliquée. Le pack est une config MUTABLE (le cabinet peut la changer plus
+   * tard) : sans ceci, relire `size` dans trois ans ne permet pas de reconstruire pourquoi, une
+   * fois le pack changé. Nul pour un tirage par dérogation (rien à attribuer à la table) ou pour
+   * une population ≤ 200 (le minimum sourcé ne consulte aucun des trois jugements). */
+  const provenanceTable = tableUtilisee && rapprochee.rowCount > 200
+    ? {
+      confidenceLevel: pack.attributeSampleConfidenceLevel ?? null,
+      tolerableRate: pack.attributeSampleTolerableRate ?? null,
+      importance: pack.attributeImportance ?? null,
+    }
+    : null;
+  const mecanisme = overrideSize !== undefined
+    ? 'derogation_ecrite'
+    : rapprochee.rowCount <= 200 ? 'minimum_source_annexe_2_2' : 'grille_cabinet_annexe_2_1';
   const run = await q1<{ id: string }>(
     `insert into engine_run (tenant_id, engagement_id, engine, engine_version, pack_id, config_hash, params, finished_at)
      values ($1,$2,'sampling','v1',$3,$4,$5, now()) returning id`,
@@ -1050,9 +1099,17 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
      values ($1,$2,'attribute_frequency',$3,$4,$5,$6,$7,'drawn',$8, now(), $9) returning id`,
     [
       c.engagement_id, procedure.id,
-      JSON.stringify({ size, population: instances.length, frequency: c.frequency, override: overrideJustification ?? null }),
+      JSON.stringify({
+        size, population: instances.length, frequency: c.frequency, override: overrideJustification ?? null,
+        mecanisme, ...(provenanceTable ?? {}),
+      }),
       seed, popHash, instances.length,
-      `Population-band OE sample (annexe du 10 septembre) : population ${instances.length} (${c.frequency} control) ⇒ ${size} instance(s). Basis: ${pack.attributeSampleBasis} Seed "${seed}" — reproducible.`,
+      `Population-band OE sample (annexe du 10 septembre) : population ${instances.length} (${c.frequency} `
+      + `control) ⇒ ${size} instance(s). Mécanisme : ${mecanisme}`
+      + (provenanceTable ? ` (confiance ${provenanceTable.confidenceLevel} %, taux ${provenanceTable.tolerableRate} %, `
+        + `importance ${provenanceTable.importance})` : '')
+      + (tableUtilisee?.texteSource ? ` — source : « ${tableUtilisee.texteSource} »` : '')
+      + `. Basis: ${pack.attributeSampleBasis} Seed "${seed}" — reproducible.`,
       userId, run.id,
     ],
   );

@@ -947,9 +947,9 @@ async function corpsDeLaSonde() {
       '1a158f98-869b-4cee-a655-2262a9d847b0', // C-BR-01, tiré 2026-09-01, avant CTRL-07 (2026-09-09)
       '6763a111-fd8b-4bb5-9deb-b47150ec1660', // C-REV-01, tiré 2026-09-01, avant CTRL-07 (2026-09-09)
     ];
-    const { tailleEchantillonOePourControle } = await import('@/lib/services/sox');
-    const samples = await q<{ id: string; params: unknown; control_id: string; control_code: string }>(
-      `select s.id, s.params, p.control_id, c.code control_code
+    const { tailleEchantillonOePourPopulationDonnee } = await import('@/lib/services/sox');
+    const samples = await q<{ id: string; params: unknown; control_id: string; control_code: string; population_size: number }>(
+      `select s.id, s.params, p.control_id, c.code control_code, s.population_size
        from sample s join procedure_instance p on p.id = s.procedure_id join control c on c.id = p.control_id
        where s.method = 'attribute_frequency'`,
     );
@@ -957,11 +957,24 @@ async function corpsDeLaSonde() {
     const violations: string[] = [];
     let legacy = 0;
     for (const s of samples) {
-      const params = (typeof s.params === 'string' ? JSON.parse(s.params) : s.params) as { override?: string | null };
+      const params = (typeof s.params === 'string' ? JSON.parse(s.params) : s.params) as { size?: number; override?: string | null };
       if (params.override && String(params.override).trim()) continue;
-      const table = await tailleEchantillonOePourControle(s.control_id);
-      if (table.verifie) continue;
+      /* Revue hostile du §1 (voix 2) : LEGACY d'abord, jamais après le lookup — un legacy dont
+       * la population tombe aujourd'hui dans une bande vérifiée passait AVANT par le compte
+       * « couvert », vidant silencieusement le suivi PERMANENT que R67 exige (les deux id
+       * restent traçables comme legacy quoi que dise la table, pour toujours). */
       if (LEGACY_AVANT_CTRL07.includes(s.id)) { legacy++; continue; }
+      /* Revue hostile du §1 (voix 1 et voix 2, convergentes) : la population au TIRAGE
+       * (`s.population_size`, persistée, jamais recomptée) — pas la population D'AUJOURD'HUI,
+       * qui grandit normalement et laverait silencieusement un tirage jamais valide dès qu'elle
+       * franchit une bande vérifiée. ET la TAILLE réellement tirée doit couvrir le minimum que
+       * la table dit pour CETTE population — `table.verifie` seul ne suffit pas : une lecture
+       * qui ne compare pas `params.size` ne peut jamais rougir sur une table corrompue ou un
+       * mauvais couplage bande/grille (règle 22). Un minimum est un PLANCHER (annexe §2.2/2.1,
+       * « minimum suggéré ») : une taille SUPÉRIEURE reste couverte, jamais une inférieure. */
+      const table = await tailleEchantillonOePourPopulationDonnee(s.control_id, s.population_size);
+      const taille = Number(params.size);
+      if (table.verifie && Number.isFinite(taille) && taille >= table.valeur) continue;
       violations.push(`${s.control_code} (tirage ${s.id}) : ni justification écrite, ni taille vérifiée`);
     }
     if (violations.length > 0) {

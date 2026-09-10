@@ -579,6 +579,14 @@ export default async function ControlDetail({
               {tailleOe.texteSource && <> — « {tailleOe.texteSource} »</>}
             </p>
           )}
+          {/* Revue hostile du §1 (voix 2) : une taille VÉRIFIÉE peut aussi porter une source
+              (le minimum ≤ 200, annexe §2.2) — jusqu'ici affichée seulement quand NON vérifiée.
+              Pour une population de 200 pile, la note « la source dit 199, pas 200 » vivait
+              uniquement dans un commentaire de code, jamais à l'écran — une taille vérifiée ne
+              doit pas laisser croire à une source sans astérisque quand il y en a un. */}
+          {instances.length > 0 && !instances.some((i) => i.sampled) && rapprochee && tailleOe.verifie && tailleOe.texteSource && (
+            <p className="muted small">{t('rcmc.tailleSource')} « {tailleOe.texteSource} »</p>
+          )}
           {instances.length > 0 && rapprochee && (
             <p className="muted small" data-population-rapprochee>{t('rcmc.populationRapprochee')}</p>
           )}
