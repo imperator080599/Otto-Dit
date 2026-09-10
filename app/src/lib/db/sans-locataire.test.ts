@@ -76,12 +76,26 @@ describe('les chemins sans locataire', () => {
    * au lieu de la montrer » — puis faisait exactement cela avec quatre autres.
    *
    * LE CRITÈRE EST DONC LE SEUL VRAI : poser un locataire, c'est appeler
-   * `withTenant(` ou `sansLocataire(`. Rien d'autre ne compte. Et le résultat
-   * est celui que la tranche doit dire en face : **le câblage de l'étape 1
-   * n'est pas fait**, `withTenant` n'a aucun appelant de production, donc
-   * presque tout point d'entrée est DÉCOUVERT. Ce n'est pas un détail à
-   * excuser dans une liste : c'est le compte, il est publié, et il ne peut que
-   * baisser.
+   * `withTenant(` ou `sansLocataire(`. Rien d'autre ne compte.
+   *
+   * CORRECTION DU 2026-09-10 (revue hostile, PLAN_RLS steps 1-2) : le
+   * paragraphe ci-dessus, écrit le 2026-09-03, disait « le câblage de l'étape
+   * 1 n'est pas fait, donc presque tout point d'entrée est DÉCOUVERT » — VRAI
+   * ce jour-là, FAUX depuis le commit `c36076f` (le soir même, 18:29 UTC,
+   * 7h14 après). `q()`/`tx()` (`app/src/lib/db/client.ts`) posent DÉSORMAIS
+   * le locataire eux-mêmes quand le garde est armé et qu'aucune transaction
+   * n'est ouverte, via un « poseur » enregistré une fois (`auth.ts`,
+   * `enregistrerPoseurDeLocataire`) — c'est l'option (a) de PLAN_RLS.md §1,
+   * choisie et construite. Ce test-ci continue de compter des points
+   * d'entrée SANS appel EXPLICITE à `withTenant(`/`sansLocataire(` DANS LEUR
+   * PROPRE TEXTE — un compte qui reste élevé PAR CONCEPTION, puisque presque
+   * aucune page n'a besoin d'appeler ces fonctions directement : le poseur le
+   * fait à leur place. Un compte élevé ici ne veut donc plus dire « non
+   * couvert » — `tenant.test.ts` (« l'écran d'accueil ne lève plus : le
+   * câblage a-t-il été fait ? ») est la preuve, par exécution, que la
+   * couverture réelle existe malgré ce compte. Les assertions de CE fichier
+   * restent vraies et utiles (elles mesurent la forme du code, pas son
+   * comportement) ; c'est le RÉCIT autour d'elles qui mentait par omission.
    */
   function pointsDentree(): string[] {
     return fichiers.filter((f) => {

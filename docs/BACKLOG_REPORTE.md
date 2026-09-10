@@ -95,20 +95,43 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
 
 ## Reportés du jour n°3, tranche §1.1 (2026-09-03)
 
-- **R24 — le câblage de `withTenant`** (fil J3-2). Le mécanisme existe, l'emploi non :
+- **R24 — le câblage de `withTenant`** (fil J3-2). ~~Le mécanisme existe, l'emploi non :
   `executer()` pour les actions serveur, puis un choix (a)/(b) de PLAN_RLS pour les rendus.
-  Tant qu'il manque, armer LOC-01 éteint l'application — c'est mesuré, pas supposé.
+  Tant qu'il manque, armer LOC-01 éteint l'application — c'est mesuré, pas supposé.~~
+  **LEVÉE le 2026-09-10, sur le SHA `c36076f` (posé le 2026-09-03 au soir, la ligne restée
+  stale sur cette page et sur PLAN_RLS.md pendant des dizaines de commits — corrigé aussi) —
+  par la mesure : `executer()` (`app/src/app/refus.ts`) pose `withTenant` autour de chaque
+  action serveur ; `q()`/`tx()` (`app/src/lib/db/client.ts`) posent le locataire pour les
+  rendus via un poseur enregistré (`auth.ts`) ; `npm run screens:garde` (build de production,
+  LOC-01 ARMÉ) rend **85 routes, 0 échec** ; `tenant.test.ts` porte le test qui a changé de
+  sens le jour du câblage. Reconfirmé par lecture directe du code le 2026-09-10, pas seulement
+  cité d'une recherche antérieure (règle 12).**
 - **R25 — les 37 gestes de service encore nus** (fil J3-3). Tous désignés par l'identifiant
   d'un objet FILS ; le patron à appliquer existe dans le dépôt (résoudre le dossier DEPUIS
   l'objet, comme `ipe-actions.ts` et désormais `sections.suivre`). Liste écrite et comptée
-  dans `app/src/lib/core/couverture-etancheite.test.ts`.
-- **R26 — l'isolation de `blob_store`** (fil J3-4). Les octets sont dans la table et la
+  dans `app/src/lib/core/couverture-etancheite.test.ts`. **Reste ouvert** — non vérifié dans
+  cette tranche (règle 15 : rien ici n'a emprunté ce chemin précis).
+- **R26 — l'isolation de `blob_store`** (fil J3-4). ~~Les octets sont dans la table et la
   politique est `using (true)` : sous `otto_app`, un cabinet lirait les pièces de tous les
   autres. Une colonne `tenant_id` casserait la déduplication par contenu ; la sortie est
-  probablement une table de rattachement par locataire. **À fermer AVANT l'étape 3.**
-- **R27 — la politique par jeton du portail client** (fil J3-5). Ses deux pages lisent hors de
-  la portée où le jeton a été résolu : sous garde armé, le contact du client reçoit une page
-  500. **À fermer AVANT l'étape 3.**
+  probablement une table de rattachement par locataire. À fermer AVANT l'étape 3.~~ **LEVÉE le
+  2026-09-10, sur le SHA `c36076f` (posé le 2026-09-03 au soir, la ligne restée stale
+  pendant des dizaines de commits — corrigé aussi) — par la mesure :
+  `supabase/migrations/0141_portail_par_jeton_et_pieces.sql`, politique
+  `blob_store_par_reference` (remplace `using(true)` — les octets ne se lisent que par une
+  référence existante, `evidence`/`export_record`/`file_archive`/portail) ; `tenant.test.ts`,
+  cas connu mauvais « les OCTETS d'une pièce ne se lisent plus entre cabinets ». Reconfirmé par
+  lecture directe de 0141 le 2026-09-10.**
+- **R27 — la politique par jeton du portail client** (fil J3-5). ~~Ses deux pages lisent hors
+  de la portée où le jeton a été résolu : sous garde armé, le contact du client reçoit une page
+  500. À fermer AVANT l'étape 3.~~ **LEVÉE le 2026-09-10, sur le SHA `c36076f` (même commit que
+  R26, la ligne restée stale pendant des dizaines de commits — corrigé aussi) — par la mesure :
+  0141 pose huit politiques par jeton (`client_contact_portail`, `engagement_portail`,
+  `entity_portail`, `request_portail`, `request_item_portail`, `evidence_portail`,
+  `evidence_portail_depot`, `request_item_portail_reponse`) portées par deux fonctions
+  `security definer` justifiées et enregistrées (`rls_definer_justifiee`) ; `tenant.test.ts`,
+  quatre cas connus mauvais (jeton inconnu, contact désactivé, jeton correct scope aux missions
+  propres, byte de blob non référencé). Reconfirmé par lecture directe de 0141 le 2026-09-10.**
 - **R28 — `app_state` inscriptible par tout locataire.** C'est l'horloge de toute
   l'application. Risque théorique aujourd'hui (`warp` n'est appelé que par le semis), mais la
   table demandera une clé par locataire le jour où un écran l'appelle.

@@ -4,26 +4,50 @@
 de connexion. Ce document est le plan complet, avec pour chaque étape la commande, le cas connu
 MAUVAIS qui doit échouer (règle 17), et le retour arrière.
 
-> **ÉTAT AU 2026-09-03 — étape 2 EXÉCUTÉE ; étape 1 à MOITIÉ ; étape 3 NON.**
+> **ÉTAT AU 2026-09-10 (corrigé — voir l'amendement daté ci-dessous) — étapes 1 ET 2 FAITES,
+> MESURÉES ; étape 3 NON, et interdite sans mandat écrit.**
 >
-> La première rédaction de cet encadré disait « étapes 1 et 2 EXÉCUTÉES ». **C'était faux**, et
-> la revue hostile n°9 l'a montré en une commande : `withTenant` n'a **aucun appelant de
-> production**. L'étape 1, telle que ce document la définit lui-même plus bas, est le
-> **câblage** — `executer()` pour les actions serveur, et un choix (a)/(b) pour les rendus.
-> Ni l'un ni l'autre n'est fait. Ce qui existe est le MÉCANISME, pas son emploi.
+> **AMENDEMENT DU 2026-09-10 (PLAN_RLS steps 1-2, mandat du 9 septembre).** L'encadré ci-dessous,
+> écrit le 2026-09-03, disait « étape 1 à MOITIÉ » — vrai ce jour-là. Il est resté tel quel
+> pendant des dizaines de commits (rule 1 : « si le code doit s'écarter d'un document, on corrige
+> le document dans le même commit » — pas fait, corrigé ici a posteriori) alors que le câblage
+> qu'il décrivait comme manquant a été construit LE SOIR MÊME, commit `c36076f` (18:29 UTC, 7h14
+> après la dernière rédaction de cet encadré, `e004053` à 11:15 UTC) : `executer()`
+> (`app/src/app/refus.ts:75`) pose `withTenant` autour de chaque action serveur ; `q()`/`tx()`
+> (`app/src/lib/db/client.ts:285-341`) posent le locataire eux-mêmes pour les rendus, quand le
+> garde est armé et qu'aucune transaction n'est ouverte, via un « poseur » enregistré UNE FOIS
+> (`app/src/lib/core/auth.ts:98`, `enregistrerPoseurDeLocataire`) — c'est l'option **(a)** du §1
+> ci-dessous, choisie et construite, jamais l'option (b) (82 écrans à toucher). **Reconfirmé par
+> lecture directe du code le 2026-09-10** (`executer()`, `q()`/`tx()`, `auth.ts` — les trois
+> extraits cités existent tel que décrit), pas seulement cité d'une recherche antérieure (règle
+> 12). Mesuré par le commit `c36076f` lui-même : `npm run screens:garde` (build de PRODUCTION,
+> garde LOC-01 ARMÉ) — **85 routes, 0 échec**. `tenant.test.ts` porte un test qui a CHANGÉ DE SENS
+> le jour du câblage : « l'écran d'accueil ne lève plus : le câblage a-t-il été fait ? » — avant,
+> il vérifiait l'inverse (qu'armer CASSAIT l'écran).
+>
+> **Ce qui suit, dans l'encadré d'origine du 2026-09-03, restait exact et n'a pas besoin d'être
+> réécrit — seule sa conclusion (« armer aujourd'hui éteindrait l'application ») est maintenant
+> fausse : armer n'éteint plus rien, c'est ce que `screens:garde` 85/0 mesure.**
 >
 > **Ce qui est fait :** `app/src/lib/db/tenant.ts` (`withTenant`), `sans-locataire.ts` (la liste
 > écrite + le garde LOC-01/LOC-02, armé depuis le rôle SERVI),
 > `supabase/migrations/0140_role_applicatif.sql` (le rôle `otto_app`, ses droits, ses six
-> retraits, les cinq politiques qui manquaient — **rejouable**, et éprouvée comme telle), et
-> trois suites qui les exercent sous un rôle **sans BYPASSRLS créé par le test lui-même** :
-> `tenant.test.ts` (15 cas), `sans-locataire.test.ts` (6 cas), `rls-couverture.test.ts` (7 cas).
+> retraits, les cinq politiques qui manquaient — **rejouable**, et éprouvée comme telle),
+> `supabase/migrations/0141_portail_par_jeton_et_pieces.sql` (les deux dettes du §2 fermées LE
+> SOIR MÊME — voir §2 plus bas, corrigé), et QUATRE suites qui les exercent sous un rôle **sans
+> BYPASSRLS créé par le test lui-même** : `tenant.test.ts` (15+ cas, portail compris),
+> `sans-locataire.test.ts` (6 cas — commentaire narratif corrigé le 2026-09-10, ses assertions
+> n'ont pas changé), `rls-couverture.test.ts` (7 cas, revoit aussi les six retraits de 0140 et le
+> registre des fonctions `definer`).
 >
-> **Ce qui n'est PAS fait, et la conséquence, MESURÉE :** armer le garde aujourd'hui
-> **éteindrait l'application**. `tenant.test.ts` l'observe — l'écran d'accueil
-> (`missionsParClient`) et `logEvent`, donc **tout changement d'état du produit**, lèvent
-> LOC-01. Le garde n'« empêche pas l'oubli » : il attend le câblage. Tant qu'il n'est pas fait,
-> l'étape 3 est **interdite**, et ce n'est pas une prudence — c'est une mesure.
+> **Ce qui n'est TOUJOURS PAS fait** (l'étape 3, seule) : le format exact `otto_app.<ref>` au
+> pooler reste **[UNVERIFIED]** (§0bis A.6) — seul le fondateur, depuis sa machine, peut le
+> vérifier par `psql`. La CI « rôle de production » (`.github/workflows/role-production.yml`)
+> n'a JAMAIS tourné contre un vrai pooler réseau : aucun secret `OTTO_CI_DATABASE_URL` n'a été
+> configuré — c'est la SEULE chose qui manque encore à « testé contre une base fraîche », et elle
+> reste hors de portée d'une session sans accès à ce secret. `DATABASE_URL` reste intouché.
+> L'étape 3 reste **interdite sans mandat écrit qui la nomme** (CLAUDE.md, interdits) —
+> indépendamment de l'état des étapes 1/2.
 >
 > **Trois affirmations de ce plan ont été corrigées par la MESURE** — voir §0 bis.
 
@@ -134,6 +158,23 @@ portail par jeton n'a pas de locataire : sa politique doit être PAR JETON, à �
   l'autre » se conduit AUTREMENT : par le harnais d'acceptation avec deux identités de deux
   cabinets (le second cabinet fictif est créé par `creerMission` avant l'étape 3), jamais par
   la sonde de santé.
+
+  **ÉCART TROUVÉ LE 2026-09-10, PAS ENCORE RÉSOLU — signalé, jamais choisi seul (interdit,
+  l'étape 3 est un geste du fondateur).** Ce paragraphe décrit le code comme lisant sous
+  `withTenant(<locataire de la démonstration>)`. Vérifié par lecture directe le 2026-09-10 :
+  `app/src/app/api/sante/route.ts:68` appelle `sansLocataire('sante', () => corpsDeLaSonde())`
+  et **rien d'autre** — aucun `withTenant`, aucun `set_config('otto.tenant_id', …)`. Sous le rôle
+  BYPASSRLS servi aujourd'hui, ça ne change rien (les politiques sont inertes). Mais si l'étape 3
+  s'exécutait EXACTEMENT comme ce paragraphe le décrit, `/api/sante` ne poserait aucun locataire
+  et lirait `otto_tenant()` = null : la quasi-totalité de ses lectures rendrait VIDE (la plupart
+  des `essayer()` traitent le vide comme non fatal), pas le contenu réel du cabinet de
+  démonstration que ce paragraphe promet. **Deux options, nommées, ni choisies** : (i) faire
+  poser réellement le locataire de démonstration par la route (un `withTenant` explicite ajouté
+  à `corpsDeLaSonde()`), pour que le paragraphe ci-dessus redevienne vrai ; (ii) corriger ce
+  paragraphe pour décrire ce que la route fait VRAIMENT (une dérogation LOC-01 pure, sans
+  locataire posé) et accepter qu'une fois l'étape 3 faite, `/api/sante` deviendra largement VIDE
+  jusqu'à ce que ce geste soit fait séparément. Le fondateur tranche ; ni l'un ni l'autre n'a été
+  fait ici.
 - *Point de restauration et surveillance* : avant l'étape 3, un `pg_dump` du schéma public
   (ou le point de restauration Supabase) ; dans les minutes qui suivent la bascule, lire
   `server_error` et le journal Vercel pour le taux d'erreurs « requête sans locataire » —
@@ -274,13 +315,26 @@ ci-dessus :
 neuf attrape le sens qui manquait : une table restée sur la liste alors qu'une migration lui a
 DONNÉ une politique — une justification périmée que rien ne voyait.
 
-**LA DETTE QUE 0140 NE FERME PAS, ET QUI DOIT L'ÊTRE AVANT L'ÉTAPE 3** :
-1. `blob_store` est adressé par CONTENU (déduplication comprise) : sa politique est `true`, donc
-   sous `otto_app` un `select storage_path from blob_store` **énumère les chemins de tous les
-   cabinets**, et un chemin connu se lit. Une colonne `tenant_id` casserait la déduplication ;
-   la sortie est probablement une table de rattachement par locataire. **Non fermé.**
-2. Le **portail client n'a pas de politique par jeton** : ses deux pages lisent hors de la
-   portée de la dérogation. **Non fermé.**
+**LA DETTE QUE 0140 NE FERMAIT PAS — FERMÉE PAR 0141, LE SOIR MÊME (corrigé le 2026-09-10 ;
+resté stale sur cette page pendant des dizaines de commits, rule 1).**
+`supabase/migrations/0141_portail_par_jeton_et_pieces.sql` :
+1. `blob_store` — sa politique `true` (énumérable entre cabinets) est remplacée par
+   `blob_store_par_reference` : les octets ne se lisent que par une référence existante
+   (`evidence`/`export_record`/`file_archive`/portail), jamais par le seul `storage_path`.
+   **Fermé.** Cas connu mauvais couvert : `tenant.test.ts`, « les OCTETS d'une pièce ne se
+   lisent plus entre cabinets ».
+2. **Le portail client** reçoit ses politiques par jeton (`client_contact_portail`,
+   `engagement_portail`, `entity_portail`, `request_portail`, `request_item_portail`,
+   `evidence_portail`, `evidence_portail_depot`, `request_item_portail_reponse` — huit
+   politiques, plus `blob_store_par_reference`, neuf en tout), portées par deux fonctions
+   `security definer` JUSTIFIÉES et enregistrées dans `rls_definer_justifiee`
+   (`otto_portal_contact`, `otto_portal_entity`). **Fermé.** Cas connu mauvais couverts :
+   `tenant.test.ts`, quatre cas — jeton inconnu, contact désactivé, jeton correct (missions
+   propres seulement, zéro papier de travail ni note de revue), byte de blob non référencé.
+
+**Reconfirmé par lecture directe de 0141 le 2026-09-10**, pas seulement cité d'une recherche
+antérieure (règle 12) : les neuf politiques et les deux fonctions `definer` existent telles que
+décrites ci-dessus, dans le fichier de migration lui-même.
 
 **Le cas connu MAUVAIS** : la CI « rôle de production » (`role-production.yml`), qui n'a
 jamais tourné, se lance avec `OTTO_CI_DATABASE_URL` sur le rôle `otto_app` d'une base de CI
@@ -318,11 +372,13 @@ Avec le fondateur à l'écran, dans cet ordre, et **pas un soir** :
   poser AUSSI l'utilisateur (`otto_user()`) par transaction et de réécrire `otto_engagements()`
   — une autre tranche, après celle-ci.
 - Pas de RLS sur PGlite en local hors des tests dédiés (le propriétaire contourne, FORCE ou pas).
-- **Pas d'isolation de `blob_store`** : politique `true`, chemins énumérables entre cabinets
-  (dette n°1 ci-dessus).
-- **Pas de politique par jeton pour le portail client** (dette n°2 ci-dessus).
+- ~~Pas d'isolation de `blob_store`~~ **FERMÉ par 0141** (corrigé le 2026-09-10, voir §2 —
+  politique `blob_store_par_reference` remplace `true`).
+- ~~Pas de politique par jeton pour le portail client~~ **FERMÉ par 0141** (corrigé le
+  2026-09-10, voir §2 — huit politiques par jeton, deux fonctions `definer` justifiées).
 - Pas de couverture du chemin `scripts` par le garde : il tourne sous `postgres`, le garde y
   est désarmé, et le câblage ne changerait rien tant que la CI « rôle de production » ne
-  rejoue pas le semis sous `otto_app`.
+  rejoue pas le semis sous `otto_app` — **toujours vrai** (règle 12, reconfirmé le 2026-09-10 :
+  `role-production.yml` n'a toujours jamais tourné, `OTTO_CI_DATABASE_URL` toujours absent).
 - La sonde d'acceptation et le témoin restent valables : un `set local` vit et meurt avec la
   transaction annulée.

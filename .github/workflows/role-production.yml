@@ -14,14 +14,20 @@
 # main, et chaque nuit.
 #
 # CE QU'IL NE PROUVE PAS, dit ici : le rôle de CI a BYPASSRLS, comme le rôle
-# qui sert la production. `withTenant` EXISTE (docs/PLAN_RLS.md étape 1) mais
-# n'a AUCUN appelant de production : le câblage n'est pas fait. Sous un rôle
-# sans BYPASSRLS, ni l'application ni le semis ne poseraient de locataire —
-# donc ce travail ne pourrait ni semer ni lire. Le bloc d'assertions imprime le
-# rôle tel quel, et ne prétend rien de plus.
+# qui sert la production. Le bloc d'assertions imprime le rôle tel quel, et ne
+# prétend rien de plus.
 #
-# CE TRAVAIL N'A JAMAIS TOURNÉ : écrit sans route réseau vers un pooler. Sa
-# première exécution avec le secret posé est sa première épreuve.
+# CORRECTION DU 2026-09-10 (PLAN_RLS steps 1-2) : cette section disait « le
+# câblage n'est pas fait » — vrai au 2026-09-03, faux depuis le commit
+# `c36076f` (le soir même) : `executer()` (app/refus.ts) pose désormais
+# `withTenant` autour de chaque action serveur, et `q()`/`tx()` posent le
+# locataire eux-mêmes pour les rendus, via un poseur enregistré (`auth.ts`).
+# Le câblage EST fait, mesuré (`tenant.test.ts`, `screens:garde` 85/0) — voir
+# docs/PLAN_RLS.md. Ce qui reste vrai, et qui seul explique que ce travail
+# n'ait jamais tourné : AUCUN secret `OTTO_CI_DATABASE_URL` n'a jamais été
+# configuré, donc l'exercice contre un pooler réseau réel — le seul test qui
+# manque encore — n'a jamais eu lieu. Sa première exécution avec le secret
+# posé reste sa première épreuve.
 name: rôle de production
 
 on:

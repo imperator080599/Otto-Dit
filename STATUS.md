@@ -25,9 +25,9 @@ CTRL-07 comprise) : CTRL-07 est redessiné, indexé par POPULATION plutôt que p
 de l'annexe sourcée (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, règle 33, commitée
 verbatim), avec deux voix hostiles indépendantes convergentes ayant trouvé et fait corriger trois
 défauts réels avant fusion (détail dans la tranche ci-dessous). **§4 point 2 (l'estimation papier du
-coût d'un walkthrough analysé) est COMMIT et poussé sur main** (`COST.md`, §1 quater — ≈ $0,03-0,04
-par walkthrough, ≈ $0,24-0,26 par engagement, aucune clé demandée), SHA servi en production pas
-encore mesuré à l'instant de cette entrée (docs seuls, pas de code d'app touché). **§4 point 3** (le
+coût d'un walkthrough analysé) est COMPLET ET SERVI EN PRODUCTION** (`COST.md`, §1 quater —
+≈ $0,03-0,04 par walkthrough, ≈ $0,24-0,26 par engagement, aucune clé demandée) — `otto-dit.vercel.app`
+sert `8f69852`, mesuré directement le 2026-09-10 (`identiteCoherente:true`). **§4 point 3** (le
 fondateur relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS` étapes 1 et 2, jamais 3 —
 voir `docs/PLAN_RLS.md`) restent à faire. Prochain : `PLAN_RLS` étapes 1-2 (rôle `otto_app`, testé
 en local uniquement).

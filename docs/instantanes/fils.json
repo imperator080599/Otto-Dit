@@ -94,27 +94,27 @@
     },
     {
       "id": "R27",
-      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-05 : `otto_portal_contact()` et `otto_portal_entity()` en `security definer`, registre `rls_definer_justifiee`, migration 0141) — l'entrée du backlog est ANTÉRIEURE et n'a pas été soldée par écrit",
+      "etat": "LEVÉE le 2026-09-10, sur le SHA c36076f, par la mesure — BACKLOG_REPORTE.md porte désormais la citation complète (huit politiques par jeton 0141, deux fonctions definer justifiées, quatre cas connus mauvais de tenant.test.ts, reconfirmé par lecture directe le 2026-09-10)",
       "depuis": "e004053",
-      "note": "à vérifier en empruntant le chemin (portail sous garde armé) avant de la rayer ; ne pas la rayer sur la foi de cette ligne."
+      "note": "chemin emprunté (lecture directe de 0141 + tenant.test.ts), pas seulement cité d'une recherche antérieure (règle 12)."
     },
     {
       "id": "R26",
-      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-06 : `blob_store` isolé PAR CE QUI LE RÉFÉRENCE, migration 0141) — l'entrée du backlog est ANTÉRIEURE et n'a pas été soldée par écrit",
+      "etat": "LEVÉE le 2026-09-10, sur le SHA c36076f, par la mesure — BACKLOG_REPORTE.md porte désormais la citation complète (politique blob_store_par_reference, 0141, cas connu mauvais de tenant.test.ts, reconfirmé par lecture directe le 2026-09-10)",
       "depuis": "e004053",
-      "note": "même réserve que R27 ; conséquence assumée : une pièce que rien ne référence devient illisible."
+      "note": "chemin emprunté (lecture directe de 0141 + tenant.test.ts), pas seulement cité d'une recherche antérieure (règle 12). Conséquence assumée : une pièce que rien ne référence devient illisible."
     },
     {
       "id": "R25",
       "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-01, D-J3N-03, D-J3N-04 : catalogue `engagementDe`, critère « prend un acteur », instrument qui EXÉCUTE) ; treize gestes sur la personne écrits comme exceptions — l'entrée du backlog est ANTÉRIEURE",
       "depuis": "e004053",
-      "note": "même réserve que R27."
+      "note": "PLAN_RLS steps 1-2 (2026-09-10) n'a PAS emprunté ce chemin — sujet distinct (les 37 gestes de service nus, étanchéité) de ce que cette note décrit ; reste marqué « à vérifier » ici, non levé dans BACKLOG_REPORTE.md cette fois."
     },
     {
       "id": "R24",
-      "etat": "traité à l'étage 0 de la nuit J3 (D-J3N-07 : poseur enregistré ; `screens:garde` sous LOC-01 armé, voir le tableau verify) — l'entrée du backlog est ANTÉRIEURE et dit encore « tant qu'il manque »",
+      "etat": "LEVÉE le 2026-09-10, sur le SHA c36076f, par la mesure — BACKLOG_REPORTE.md porte désormais la citation complète (executer()/withTenant, poseur q()/tx(), screens:garde 85/0, reconfirmé par lecture directe le 2026-09-10)",
       "depuis": "e004053",
-      "note": "même réserve que R27 ; l'étape 3 de PLAN_RLS reste INTERDITE et non faite."
+      "note": "chemin emprunté (lecture directe du code), pas seulement cité d'une recherche antérieure (règle 12). L'étape 3 de PLAN_RLS reste INTERDITE et non faite, indépendamment de cette levée."
     },
     {
       "id": "R42",
