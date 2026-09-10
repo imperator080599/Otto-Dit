@@ -19,14 +19,110 @@ tête des tranches ci-dessous : les quatre avaient été annoncées « servies �
 PRÉVISUALISATION de branche, jamais sur `main`, jusqu'à la fusion par avance rapide de ce jour).
 §3.1 point 2 (dépôt automatique en fin de réunion) reste **hors périmètre**, derrière la même porte
 que le Lot 8 (service externe, identifiants — les interdits permanents ne le permettent pas encore).
-**§4 points 2/3** (la mesure du coût réel, puis le fondateur qui relève le plafond) et **la seconde
-moitié de Lot 8** (`PLAN_RLS` étapes 1 et 2, jamais 3 — voir `docs/PLAN_RLS.md`) restent à faire —
-débloqués par le fondateur le 2026-09-10, non commencés à l'instant de cette entrée. **§1 (table
-d'échantillonnage sourcée) n'est plus bloqué** : le fondateur a fourni l'annexe sourcée hors du bac
-à sable, commitée verbatim (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, règle 33) ;
-l'implémentation à partir de cette annexe reste à faire. Prochain, dans l'ordre reçu : §1 (table
-d'échantillonnage), §4 point 2 (coût mesuré, sans clé), `PLAN_RLS` étapes 1-2 (rôle `otto_app`,
-testé en local uniquement).
+**§1 (table d'échantillonnage sourcée) est maintenant COMPLET ET SERVI EN PRODUCTION** —
+`otto-dit.vercel.app` sert le commit qui le porte (`49abf73`, à confirmer par mesure directe juste
+en dessous) : CTRL-07 est redessiné, indexé par POPULATION plutôt que par fréquence, à partir de
+l'annexe sourcée (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, règle 33, commitée
+verbatim), avec deux voix hostiles indépendantes convergentes ayant trouvé et fait corriger trois
+défauts réels avant fusion (détail dans la tranche ci-dessous). **§4 points 2/3** (la mesure du
+coût réel, puis le fondateur qui relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS`
+étapes 1 et 2, jamais 3 — voir `docs/PLAN_RLS.md`) restent à faire — débloqués par le fondateur le
+2026-09-10. Prochain, dans l'ordre reçu : §4 point 2 (coût mesuré, sans clé), `PLAN_RLS` étapes 1-2
+(rôle `otto_app`, testé en local uniquement).
+
+## §1 : CTRL-07 redessiné, indexé par POPULATION (annexe sourcée du 10 septembre) (2026-09-10)
+
+*Annexe, §1-§5 (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, commitée verbatim, règle 33,
+fournie par le fondateur hors du bac à sable — WebFetch y reste bloqué pour les domaines
+primaires). Point central : « la fréquence n'indexe pas la table — la fréquence produit la
+POPULATION, et c'est la population qui indexe la table. » Source : HUD Handbook 2000.04
+REV-2 CHG-10, Appendix A — un guide d'audit fédéral publié, jamais la méthode d'un cabinet.*
+
+**Ce qui a changé.** `attributeSampleSizes` (indexé par fréquence, livré vide) est retiré,
+remplacé par `attributeSamplingTable` (types.ts, pcaob-sox.ts) — un contenu SOURCÉ, public, livré
+PLEIN. Populations ≤ 200 (annexe §2.2) : des minima sourcés, vérifiés dès que la population est
+connue, sans aucun jugement de cabinet — sauf la bande < 20, qui ne publie qu'un texte (« fewer
+than 5 »), jamais un nombre exact. Populations > 200 (§2.1) : une grille à quatre lignes exactes,
+qui exige trois nouveaux paramètres de cabinet non posés (`attributeSampleConfidenceLevel`,
+`attributeSampleTolerableRate`, `attributeImportance`) — CTRL-07 refuse tant qu'ils ne le sont pas ;
+une combinaison posée qui ne correspond à aucune des quatre lignes reste non vérifiée, jamais
+devinée par interpolation. `drawAttributeSample` (sox.ts) réutilise `rapprochee.rowCount` (déjà
+validé frais par CTRL-04) plutôt que de recompter.
+
+**Revue hostile, deux voix indépendantes** (règle 30 : modèle de données/schéma de pack touché) —
+convergentes sur les deux mêmes défauts, chacune en a trouvé un troisième propre à elle, tous
+corrigés :
+- **Convergent, le plus grave** : la lecture `/api/sante` CTRL-07 recomptait la population
+  AUJOURD'HUI pour juger un tirage d'HIER — un tirage jamais valide (mauvaise taille, sans
+  dérogation) redevenait silencieusement « couvert » dès que la population grandissait au point de
+  tomber dans une bande vérifiée (croissance normale d'un engagement, pas une attaque). Corrigé :
+  nouvelle fonction `tailleEchantillonOePourPopulationDonnee`, la lecture utilise désormais
+  `sample.population_size` — persistée AU TIRAGE, jamais recomptée.
+- **Convergent** : la lecture ne comparait jamais la taille RÉELLEMENT tirée au minimum de la
+  table — `table.verifie` seul suffisait, qu'importe `params.size`. Corrigé : `taille >=
+  table.valeur` exigé explicitement (un minimum est un PLANCHER, annexe §2.2/2.1).
+- **Voix 1** : TOCTOU dans `drawAttributeSample` — la population validée par CTRL-04
+  (`rapprochee.rowCount`) et la population effectivement tirée (`instances.length`, requêtée
+  plusieurs `await` plus loin, sans transaction) pouvaient diverger sous un import concurrent.
+  Corrigé : `instances.length !== rapprochee.rowCount` refuse et redemande un rapprochement frais.
+- **Voix 1** : provenance insuffisante — ni `sample.params` ni `engine_run.params` ne disaient
+  QUELLE combinaison confiance/taux/importance avait produit la taille (règle 3), alors que le pack
+  qui les porte est une config MUTABLE. Corrigé : `mecanisme` et la combinaison effective persistés
+  à chaque tirage par table.
+- **Voix 2** : l'ordre de la lecture CTRL-07 vérifiait `table.verifie` AVANT le carve-out
+  `LEGACY_AVANT_CTRL07` — un legacy dont la population tombe aujourd'hui dans une bande vérifiée se
+  serait silencieusement absorbé dans le compte « couvert », vidant le suivi PERMANENT que R67
+  exige. Corrigé : ordre inversé.
+- **Voix 2** : pour une population de 200 pile, le texte sourcé (« la source dit 199, pas 200 »)
+  ne vivait que dans un commentaire de code, jamais à l'écran d'une taille pourtant vérifiée.
+  Corrigé : nouvelle ligne d'affichage sur `/rcm/[cid]`, toujours visible quand `texteSource`
+  existe, verifie ou non.
+- **Voix 2, mineur** : commentaires stale dans `part2.ts` et l'en-tête de `ctrl07-lecture.test.ts`,
+  décrivant encore la table VIDE d'avant le 10 septembre. Corrigés, sans impact fonctionnel (ces
+  deux chemins passent par ADR-010, jamais par la table).
+
+Quatre nouveaux tests, sous `IDS.engSox` (le vrai pack PCAOB/SOX — les tests déjà existants, tous
+sous `engNep` qui ne porte AUCUNE table d'échantillonnage, ne pouvaient pas voir ces trois premiers
+défauts), chacun un cas connu mauvais qui aurait dû passer AVANT le correctif.
+
+**Un défaut trouvé en écrivant ces mêmes tests, pas deviné** : sans une ligne de rapprochement
+CTRL-04 posée pour chaque contrôle de sonde, les quatre nouveaux tests faisaient AUSSI rougir
+CTRL-04 (une lecture globale distincte, qui scanne les mêmes tirages) — `res.status` restait 500
+même quand la lecture CTRL-07 elle-même était correctement `ok:true`. Trouvé par un `expect()`
+forcé à imprimer la lecture réelle plutôt que supposé ; corrigé en posant une ligne de
+rapprochement dans chacun des quatre tests.
+
+**Un défaut de sonde distinct, sans lien avec §1, trouvé en le vérifiant.** `docs/PARCOURS.json`
+(le figé du parcours cliqué) n'avait pas bougé depuis `b37989a` (Lot 4, tranche 3) — des dizaines de
+commits, tout le Lot contrôle interne compris. Deux tentatives de refigure ont produit du bruit,
+ni committé : un `timeout 900` trop court (un budget inventé, pas mesuré, pour `clics` seul — une
+production build + 241 stations dépasse 900 s) a tué deux passages ; le second de ces passages,
+relancé SANS re-semer la base, a produit 28 échecs en cascade — exactement « sur une base déjà
+jouée, des stations rougissent pour rien » (CLAUDE.md §6), pas une régression. Refiguré sur base
+fraîche (`db:reset && demo:seed` immédiatement avant), parcours vert : 241 étapes, 0 échec(s), 381
+clics, 240 stations figées (139 avant — 101 nouvelles captées, tranches déjà shipped : bascule de
+matérialité, CTT, tableau de bord, kanban).
+
+**Le flake déjà documenté (J3-1) reconfirmé, pas supposé.** `tests/screens.test.ts` a fait tomber
+le serveur à TROIS reprises pendant la suite complète, à trois comptes de route DIFFÉRENTS à
+chaque fois (68, puis 75, puis 77) — la signature même de la contention de ressources, jamais un
+défaut lié à une route précise. Vérifié, pas supposé (règle 18) : le fichier SEUL, isolé, passe
+proprement (85 routes, 466,74 s, 1/1). Trois relances de la chaîne complète plus tard, une passe
+propre.
+
+**Verify complet, arbre figé, PROPRE au bout de plusieurs passes** (`set -o pipefail && timeout
+3600 npm run verify … ; echo "EXIT=$?"`, mesuré `EXIT=0` à la dernière) : 138/138 fichiers,
+1071/1071 tests, `npx tsc --noEmit` propre, 44 gardes, langue 0 chaîne hors catalogue · 15/15 cas
+connus mauvais, lectures 0 perdue sur 1716 chemins · 6/6, écrans 91 routes/0 échec, clics 241
+étapes/0 échec/381 clics/240 stations figées, visuel 328 vues/0 défaut. `docs/CLICS.md`/
+`docs/DENSITE.md` régénérés (commit/build/comptes seuls).
+
+**Ce que cette tranche NE fait PAS** (règle 19) : elle ne construit aucun mécanisme
+d'« écrasement de cabinet » (remplacer `pcaob-sox.ts` par la table réelle d'un cabinet reste un
+chantier séparé, non commencé) ; elle ne touche à aucun autre pack (NEP/ISA n'a jamais eu de
+table d'échantillonnage attributif) ; le TOCTOU corrigé porte sur `drawAttributeSample` seul —
+`tailleEchantillonOePourControle` (l'aperçu d'écran, avant tirage) reste volontairement une lecture
+FRAÎCHE, jamais figée, puisqu'un écran de PRÉ-tirage doit refléter la population d'aujourd'hui.
 
 ## Correction R37 : preview confondue avec production, quatre tranches — main fusionné, PRODUCTION mesurée pour de vrai (2026-09-10)
 

@@ -120,6 +120,62 @@ Dans l'application, ce chemin est derrière `npm run demo:ia` (OTTO_TRANSCRIPT_A
 garde de budget ADR-105 en amont, un `ai_run` par analyse ; la démonstration et les
 harnais restent sur le rejeu enregistré — zéro appel payant.
 
+## 1 quater. Un walkthrough analysé — estimation PAPIER, pas une mesure (2026-09-10, mandat §4 point 2)
+
+**Statut : ESTIMATE — aucune clé, aucune dépense, aucun appel.** Le mandat du 9 septembre demande
+ce chiffre AVANT de décider fournisseur/clé/plafond ; produit ici sur du matériel synthétique,
+jamais en direct.
+
+**Pourquoi cette forme.** Aucun chemin de code n'analyse un walkthrough par IA aujourd'hui —
+`attacherWalkthrough`/`ajouterTacheControle` (sox.ts) relient une pièce vidéo et un texte saisi à
+la main, sans jamais lire d'octets ni appeler de modèle. La seule analyse de texte contre
+documentation qui tourne réellement dans ce dépôt est `entretiens-analyste.ts` (ADR-108, §1 ter
+ci-dessus) : un transcript + une documentation de processus, comparés par un appel à outil forcé.
+Ce chiffre modélise un walkthrough analysé COMME S'IL suivait cette même forme — la plus proche
+et la seule mesurée — jamais une forme vidéo/multimodale, qui n'existe nulle part dans ce dépôt
+(aucun champ de prix par seconde ou par image dans `pricing.ts`).
+
+**Matériel synthétique.** Un entretien de walkthrough fictif (un contrôle de rapprochement
+bancaire mensuel, société fictive « Lumibake Industries SAS » — sans lien avec le monde de
+démonstration réel d'Altiverre SAS, ni avec aucun code de contrôle qui y existe) plus la
+documentation du processus qui l'accompagne — même paire {transcript, documentation} que
+`eval:entretien`, taille comparable (4 617 caractères / 753 mots ici, contre 4 351 caractères /
+610 mots pour le transcript réel qui a produit la seule mesure de ce dépôt).
+
+**Aucun tokenizer hors-ligne dans ce dépôt (`grep` sur `package.json`/`node_modules` : aucun) —
+aucun compte de jetons n'est donc mesuré ici, seulement ESTIMÉ par mise à l'échelle du SEUL
+ratio réel connu** (règle 31 : jamais une valeur inventée qui aurait l'air d'une mesure) : le
+ratio jetons-entrée / caractère de la seule analyse réelle mesurée par ce dépôt (§1 ter,
+`npm run eval:entretien`, 2 625 jetons entrés pour 4 351 caractères de transcript +
+documentation) est appliqué tel quel au matériel synthétique ci-dessus. Le jeton-sortie est
+repris SANS mise à l'échelle : sa taille dépend du nombre d'écarts structurés renvoyés, pas de la
+longueur d'entrée — 816 jetons (3 écarts trouvés + 3 candidats) reste l'hypothèse la plus proche
+disponible pour un walkthrough elle aussi de quelques écarts.
+
+**Prix : $5 / $25 par MTok — reconstitué par arithmétique, pas recopié du §3.** Le §3
+ci-dessous (extrapolation papier, jamais exécutée) cite $2/$10 par MTok pour Sonnet ; mais le
+COÛT RÉELLEMENT MESURÉ du §1 ter ($0,0335 pour 2 625 jetons entrés / 816 sortis) ne se
+reconstitue QU'AVEC $5/$25 (2 625×5 + 816×25, en MTok, égale exactement 0,0335 $ — vérifié ici
+par le calcul, pas supposé) : la même paire de prix que le §1 (extraction, Opus). Utilisé ici
+plutôt que le $2/$10 du §3 parce que c'est le seul prix « Sonnet » que ce dépôt ait vu confirmé
+par un dollar réellement dépensé.
+
+| Dérivation | Jetons entrée (estimés) | Jetons sortie (repris de §1 ter) | Coût |
+|---|---|---|---|
+| Par caractère (2 625 ÷ 4 351 car. × 4 617 car.) | 2 785 | 816 | **$0,0343** |
+| Par mot (2 625 ÷ 610 mots × 753 mots) | 3 240 | 816 | **$0,0366** |
+| **Retenu (arrondi, ordre de grandeur)** | | | **≈ $0,03–$0,04 par walkthrough analysé** |
+
+**Par engagement (×7 contrôles, un walkthrough chacun — le RCM du monde de démonstration en
+porte 7)** : ≈ $0,24 à $0,26 — un ordre de grandeur, pas une mesure, cohérent avec le §3 :
+l'inférence n'est pas la contrainte de coût de ce produit.
+
+**Ce que ce chiffre NE dit PAS (règle 19) :** ni le prix réel d'un fournisseur à la date où le
+fondateur lira ceci, ni le coût d'une lecture VIDÉO/multimodale (aucune forme de prix par
+seconde/image n'existe dans ce dépôt), ni un engagement à ce que l'analyse de walkthrough IA soit
+un jour construite dans cette forme précise. Il répond à une seule question : « à quoi ressemble
+l'ordre de grandeur, avant de choisir un fournisseur ? »
+
 ## 2. Build + demo spend to date
 
 | Item | Runs | Tokens | Cost |
