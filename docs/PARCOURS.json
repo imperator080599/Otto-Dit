@@ -217,6 +217,30 @@
       "gabarit": false
     },
     {
+      "nom": "bascule : au moins un poste devenu matériel est listé",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : la ligne mène quelque part",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : le lien ouvre bien la page du poste",
+      "gabarit": false
+    },
+    {
+      "nom": "CTT : au moins une demande de détail au-dessus du CTT est listée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTT : la ligne mène quelque part",
+      "gabarit": false
+    },
+    {
+      "nom": "CTT : le lien ouvre bien la page de la demande",
+      "gabarit": false
+    },
+    {
       "nom": "périmètre : aucun poste décidé à revoir",
       "gabarit": false
     },
@@ -1053,6 +1077,38 @@
       "gabarit": false
     },
     {
+      "nom": "suivi : les quatre panneaux du mandat sont posés",
+      "gabarit": false
+    },
+    {
+      "nom": "suivi : la carte obstacles a un lien réel vers /obstacles",
+      "gabarit": false
+    },
+    {
+      "nom": "suivi : cliquer la carte obstacles ouvre /obstacles",
+      "gabarit": false
+    },
+    {
+      "nom": "suivi : la page s’affiche dans le nouveau langage (classe .epure)",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : au moins une carte est posée (le monde de démonstration porte des écarts)",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : chaque carte se résout à l’identifiant d’un écart réel (ancre #x-<id> sur /exceptions)",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : le geste de lot (rédiger la clarification) crée une VRAIE demande",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : aucun écart ouvert à rédiger en lot pour l’instant (colonne vide)",
+      "gabarit": false
+    },
+    {
       "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
       "gabarit": false
     },
@@ -1292,6 +1348,22 @@
     },
     {
       "nom": "matérialité : le seuil validé et sa justification sont à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : au moins un poste devenu matériel est listé",
+      "gabarit": false
+    },
+    {
+      "nom": "bascule : le lien ouvre bien la page du poste",
+      "gabarit": false
+    },
+    {
+      "nom": "CTT : au moins une demande de détail au-dessus du CTT est listée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTT : le lien ouvre bien la page de la demande",
       "gabarit": false
     },
     {
@@ -1663,11 +1735,11 @@
       "gabarit": false
     },
     {
-      "nom": "évaluation : aucun dépassement à répondre sur cet écran",
+      "nom": "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
       "gabarit": false
     },
     {
-      "nom": "évaluation : déjà conclue",
+      "nom": "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
       "gabarit": false
     },
     {
@@ -2003,6 +2075,26 @@
       "gabarit": false
     },
     {
+      "nom": "suivi : les quatre panneaux du mandat sont posés",
+      "gabarit": false
+    },
+    {
+      "nom": "suivi : cliquer la carte obstacles ouvre /obstacles",
+      "gabarit": false
+    },
+    {
+      "nom": "suivi : la page s’affiche dans le nouveau langage (classe .epure)",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : chaque carte se résout à l’identifiant d’un écart réel (ancre #x-<id> sur /exceptions)",
+      "gabarit": false
+    },
+    {
+      "nom": "kanban : aucun écart ouvert à rédiger en lot pour l’instant (colonne vide)",
+      "gabarit": false
+    },
+    {
       "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
       "gabarit": false
     },
@@ -2039,6 +2131,8 @@
     "acceptation : pas de dossier neuf à accepter",
     "acceptation : décision déjà prise (rejeu)",
     "import : aucune sélection en aval, la confirmation n’est pas demandée",
+    "bascule : la ligne mène quelque part",
+    "CTT : la ligne mène quelque part",
     "périmètre : aucun poste décidé à revoir",
     "risque : aucune assertion à arbitrer — la table du risque est VIDE",
     "risque : une seule valeur dans l’échelle — rien à arbitrer",
@@ -2059,8 +2153,8 @@
     "la boucle : les clarifications sont émises PUIS approuvées avant de partir",
     "écarts : aucun écart ouvert à résoudre",
     "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
-    "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
-    "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
+    "évaluation : aucun dépassement à répondre sur cet écran",
+    "évaluation : déjà conclue",
     "papier : aucun papier de travail dans le dossier",
     "papier : le formulaire d’édition de section existe avant les visas",
     "note ancrée : la conclusion du papier est annotable",
@@ -2071,6 +2165,9 @@
     "bascule : une autre mission est proposée au clic",
     "reprise N-1 : écarter une conclusion SANS motif est refusé",
     "circularisation : une demande reste à envoyer après le listing corrigé",
+    "suivi : la carte obstacles a un lien réel vers /obstacles",
+    "kanban : au moins une carte est posée (le monde de démonstration porte des écarts)",
+    "kanban : le geste de lot (rédiger la clarification) crée une VRAIE demande",
     "mes travaux : un papier existe pour y ancrer une note",
     "mes travaux : la conclusion du papier est annotable",
     "mes travaux : le clic droit ouvre la pose de note",
