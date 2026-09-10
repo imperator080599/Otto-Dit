@@ -32,6 +32,55 @@ fondateur relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS` ét
 voir `docs/PLAN_RLS.md`) restent à faire. Prochain : `PLAN_RLS` étapes 1-2 (rôle `otto_app`, testé
 en local uniquement).
 
+## PLAN_RLS steps 1-2 : documentation stale corrigée, câblage RE-MESURÉ, R24/R26/R27 levées (2026-09-10)
+
+*Mandat du 9 septembre : « PLAN_RLS steps 1 and 2 are yours: prepare the otto_app role, its
+grants and its policies, tested against a fresh database, with nothing applied to the network
+database and DATABASE_URL untouched. » Vérifié par lecture directe du code (règle 12, pas cité
+d'une recherche antérieure sans la rejouer) : c'était déjà fait, le 2026-09-03 au soir, commit
+`c36076f` — et resté NON DOCUMENTÉ comme tel pendant des dizaines de commits (rule 1).*
+
+**Ce qui a changé.** `docs/PLAN_RLS.md` : status box réécrite en amendement daté (pas une
+réécriture silencieuse de l'historique du 2026-09-03) ; §2 « la dette que 0140 ne ferme pas »
+corrigée (fermée par 0141, le même soir) ; un écart NOUVEAU trouvé en vérifiant A.6 signalé sans
+être résolu — `/api/sante` ne pose en réalité AUCUN locataire (`sansLocataire('sante', …)` seul),
+contrairement à ce que A.6 décrit ; deux options nommées, ni choisie, le fondateur tranche.
+`docs/BACKLOG_REPORTE.md` : R24/R26/R27 formellement LEVÉES avec citation complète (SHA, fichier,
+mesure) — `docs/instantanes/fils.json` les marquait déjà « traité mais pas soldé par écrit » ;
+c'est cette écriture manquante qui est faite ici. R25/R28/R29 restent ouverts, non touchés (hors
+chemin vérifié dans cette tranche). Commentaires narratifs stale corrigés dans
+`sans-locataire.test.ts` et `.github/workflows/role-production.yml` (« le câblage n'est pas
+fait ») — assertions INCHANGÉES (elles mesurent une forme de code, jamais un comportement).
+
+**Les deux options du fondateur pour la contradiction de l'étape 3** (le test négatif « un
+cabinet ne lit pas l'autre » sans session sur `/api/sante`) sont déjà résolues, VERBATIM, par
+PLAN_RLS.md §0bis A.6 depuis le 2026-09-02 : (i) une dérogation nommée pour la sonde de santé
+(déjà codée, `sans-locataire.ts`, clé `'sante'`) ; (ii) le test négatif conduit AUTREMENT —
+`tenant.test.ts` CAS 1-4bis EST cette forme, déjà construite et verte aujourd'hui, contre un vrai
+rôle sans BYPASSRLS créé par le test lui-même. **Rien n'a été choisi ici entre les deux — les
+deux existent déjà, chacune pour une moitié différente de la contradiction.**
+
+**CORRECTION, dans le même souffle qu'une affirmation prématurée (règle 12/18, la même faute que
+R37 appliquée à moi-même une fois de plus).** Le premier commit de cette tranche (`c3e2f39`)
+citait « `screens:garde` RE-MESURÉ AUJOURD'HUI, 85 routes, 0 échec » — écrit AVANT que la commande
+ait fini de tourner, sur la seule foi du chiffre historique du 2026-09-03. La mesure réelle,
+achevée ensuite sur base fraîche (`db:reset && demo:seed` puis `npm run screens:garde`, EXIT=0) :
+**91 routes, 0 échec** — l'application a grandi depuis (91, pas 85), et le fond de l'affirmation
+(armer LOC-01 ne casse plus rien) tient, mais le chiffre précédemment cité était faux au moment
+où il a été écrit. `tenant.test.ts`/`sans-locataire.test.ts`/`rls-couverture.test.ts` re-exécutés
+le même jour sur PGlite fraîche : **35/35 verts**. PLAN_RLS.md et BACKLOG_REPORTE.md portent
+désormais le chiffre corrigé, daté, à côté du chiffre historique — aucun n'est effacé.
+
+**Ce que cette tranche NE fait PAS** (règle 19, interdits inchangés) : `DATABASE_URL` intouché ;
+rien appliqué à la base réseau ; l'étape 3 reste **interdite sans mandat écrit qui la nomme**,
+indépendamment de l'état des étapes 1/2 ; le format `otto_app.<ref>` au pooler reste
+**[UNVERIFIED]** — seul le fondateur, par `psql` depuis sa machine, peut le vérifier ; la CI
+« rôle de production » n'a toujours jamais tourné (`OTTO_CI_DATABASE_URL` jamais configuré,
+hors de portée d'une session sans accès à ce secret).
+
+**SHA servi confirmé, PRODUCTION** : voir la ligne d'en-tête de ce fichier, mesurée après le
+push de cette tranche.
+
 ## §1 : CTRL-07 redessiné, indexé par POPULATION (annexe sourcée du 10 septembre) (2026-09-10)
 
 *Annexe, §1-§5 (`docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, commitée verbatim, règle 33,

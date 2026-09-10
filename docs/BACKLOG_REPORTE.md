@@ -103,8 +103,10 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   par la mesure : `executer()` (`app/src/app/refus.ts`) pose `withTenant` autour de chaque
   action serveur ; `q()`/`tx()` (`app/src/lib/db/client.ts`) posent le locataire pour les
   rendus via un poseur enregistré (`auth.ts`) ; `npm run screens:garde` (build de production,
-  LOC-01 ARMÉ) rend **85 routes, 0 échec** ; `tenant.test.ts` porte le test qui a changé de
-  sens le jour du câblage. Reconfirmé par lecture directe du code le 2026-09-10, pas seulement
+  LOC-01 ARMÉ) rendait **85 routes, 0 échec** au 2026-09-03, **RE-MESURÉ le 2026-09-10 sur base
+  fraîche : 91 routes (l'application a grandi depuis), 0 échec, EXIT=0** ; `tenant.test.ts`
+  porte le test qui a changé de sens le jour du câblage. Reconfirmé par lecture directe du code
+  et par ré-exécution le 2026-09-10, pas seulement
   cité d'une recherche antérieure (règle 12).**
 - **R25 — les 37 gestes de service encore nus** (fil J3-3). Tous désignés par l'identifiant
   d'un objet FILS ; le patron à appliquer existe dans le dépôt (résoudre le dossier DEPUIS

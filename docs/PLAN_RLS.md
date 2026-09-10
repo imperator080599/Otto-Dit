@@ -21,13 +21,20 @@ MAUVAIS qui doit échouer (règle 17), et le retour arrière.
 > lecture directe du code le 2026-09-10** (`executer()`, `q()`/`tx()`, `auth.ts` — les trois
 > extraits cités existent tel que décrit), pas seulement cité d'une recherche antérieure (règle
 > 12). Mesuré par le commit `c36076f` lui-même : `npm run screens:garde` (build de PRODUCTION,
-> garde LOC-01 ARMÉ) — **85 routes, 0 échec**. `tenant.test.ts` porte un test qui a CHANGÉ DE SENS
-> le jour du câblage : « l'écran d'accueil ne lève plus : le câblage a-t-il été fait ? » — avant,
-> il vérifiait l'inverse (qu'armer CASSAIT l'écran).
+> garde LOC-01 ARMÉ) — **85 routes, 0 échec**, au 2026-09-03. `tenant.test.ts` porte un test qui a
+> CHANGÉ DE SENS le jour du câblage : « l'écran d'accueil ne lève plus : le câblage a-t-il été
+> fait ? » — avant, il vérifiait l'inverse (qu'armer CASSAIT l'écran). **RE-MESURÉ pour de vrai le
+> 2026-09-10** (base fraîche, `db:reset && demo:seed` immédiatement avant, puis
+> `npm run screens:garde` complet, EXIT=0) : **91 routes, 0 échec** — l'application a grandi
+> depuis le 2026-09-03 (91 routes aujourd'hui contre 85 alors, même compte que le balayage sans
+> garde), et armer LOC-01 continue de ne RIEN casser. `tenant.test.ts` (15+ cas),
+> `sans-locataire.test.ts` (6 cas) et `rls-couverture.test.ts` (7 cas) ré-exécutés le même jour
+> sur PGlite fraîche : 35/35 verts.
 >
 > **Ce qui suit, dans l'encadré d'origine du 2026-09-03, restait exact et n'a pas besoin d'être
 > réécrit — seule sa conclusion (« armer aujourd'hui éteindrait l'application ») est maintenant
-> fausse : armer n'éteint plus rien, c'est ce que `screens:garde` 85/0 mesure.**
+> fausse : armer n'éteint plus rien, c'est ce que `screens:garde` mesure, deux fois, à sept jours
+> d'écart.**
 >
 > **Ce qui est fait :** `app/src/lib/db/tenant.ts` (`withTenant`), `sans-locataire.ts` (la liste
 > écrite + le garde LOC-01/LOC-02, armé depuis le rôle SERVI),
