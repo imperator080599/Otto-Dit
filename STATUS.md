@@ -27,10 +27,22 @@ verbatim), avec deux voix hostiles indépendantes convergentes ayant trouvé et 
 défauts réels avant fusion (détail dans la tranche ci-dessous). **§4 point 2 (l'estimation papier du
 coût d'un walkthrough analysé) est COMPLET ET SERVI EN PRODUCTION** (`COST.md`, §1 quater —
 ≈ $0,03-0,04 par walkthrough, ≈ $0,24-0,26 par engagement, aucune clé demandée) — `otto-dit.vercel.app`
-sert `8f69852`, mesuré directement le 2026-09-10 (`identiteCoherente:true`). **§4 point 3** (le
-fondateur relève le plafond) et **la seconde moitié de Lot 8** (`PLAN_RLS` étapes 1 et 2, jamais 3 —
-voir `docs/PLAN_RLS.md`) restent à faire. Prochain : `PLAN_RLS` étapes 1-2 (rôle `otto_app`, testé
-en local uniquement).
+sert `8f69852`, mesuré directement le 2026-09-10 (`identiteCoherente:true`). **`PLAN_RLS` étapes 1-2
+(rôle `otto_app`, grants, policies — testé en local uniquement, la seconde moitié de Lot 8) sont
+maintenant COMPLÈTES ET SERVIES EN PRODUCTION** — `otto-dit.vercel.app` sert `fd33d20`, mesuré
+directement le 2026-09-10 à 12:13:26Z (`identiteCoherente:true`). Le câblage de l'étape 1 était en
+fait déjà fait depuis le 2026-09-03 (`c36076f`), jamais documenté comme tel avant cette tranche ;
+R24/R26/R27 formellement levées (`docs/BACKLOG_REPORTE.md`). **§4 point 3** (le fondateur relève
+le plafond de dépense) et l'étape 3 de `PLAN_RLS` (**interdite sans mandat écrit qui la nomme**)
+restent hors de portée d'une session : geste du fondateur seul. Deux questions ouvertes laissées
+au fondateur, aucune tranchée ici : (i) la contradiction du test négatif de l'étape 3 sur
+`/api/sante` — déjà résolue par deux mécanismes existants, PLAN_RLS.md §0bis A.6 ; (ii) un écart
+trouvé en vérifiant A.6 — `/api/sante` ne pose en réalité aucun locataire, contrairement à ce que
+A.6 décrit, deux options nommées ni choisie. **Aucun autre travail de mandat n'est actuellement
+débloqué** : R59-R62 (repasse design, mandat du 9 septembre §5) restent du travail réel mais
+EXPLICITEMENT gardé par le mandat lui-même à un déclenchement du fondateur (« l'agent n'en invente
+ni la date ni le déclencheur, et ne l'ouvre pas de lui-même ») ; §7.5 du mandat contrôle interne
+(l'agent qui pré-remplit) tombe sous l'interdit permanent de l'IA vivante.
 
 ## PLAN_RLS steps 1-2 : documentation stale corrigée, câblage RE-MESURÉ, R24/R26/R27 levées (2026-09-10)
 
