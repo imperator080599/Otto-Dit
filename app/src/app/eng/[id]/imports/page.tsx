@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { listImports, activeTb, drawnSamples } from '@/lib/services/imports';
 import type { Violation } from '@/lib/kernel/types';
@@ -72,7 +73,8 @@ export default async function ImportsPage({
             <h2>{t('imp.generalLedgerFecAdapterFrancePack')}</h2>
           {affected.length > 0 && (
             <div className="callout warn">
-              {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}
+              {t('imp.adr016')} {affected.length} {t('imp.drawnSampleSDependOnThe')}{' '}
+              <Link href={`/eng/${id}/sampling`}>{t('imp.seeTheSample')}</Link>
             </div>
           )}
           <form action={uploadFecAction} className="row" style={{ flexWrap: 'wrap' }}>

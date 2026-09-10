@@ -33,10 +33,14 @@ export default async function PopulationPage({ params, searchParams }: { params:
 
   return (
     <div>
+      {/* R60 (D.6 point 4) : les deux compteurs de LIGNES mènent vers le même
+          tableau, ci-dessous, basculé sur la vue qu'ils comptent — le tableau
+          ne peut montrer qu'une des deux vues à la fois, alors le compteur
+          pointe vers la bonne. */}
       <div className="grid cols-4">
-        <div className="panel kpi"><span className="v">{pop.rows.length}</span><span className="l">{t('pop.glLines70xAccounts')}</span></div>
+        <a className="panel kpi" href="?view=all"><span className="v">{pop.rows.length}</span><span className="l">{t('pop.glLines70xAccounts')}</span></a>
         <div className="panel kpi"><span className="v">{fmtEur(pop.totalCents, 'fr')}</span><span className="l">{t('pop.populationAmount')}</span></div>
-        <div className="panel kpi"><span className="v">{flagged.length}</span><span className="l">{t('pop.riskFlaggedLinesAdr003')}</span></div>
+        <a className="panel kpi" href="?view=flags"><span className="v">{flagged.length}</span><span className="l">{t('pop.riskFlaggedLinesAdr003')}</span></a>
         <div className="panel kpi">
           <span className="v">{pop.gate.ok ? '✓' : '✗'}</span>
           <span className="l">{t('pop.reconciliationGate')} {pop.gate.ok ? 'passed' : `blocked: ${pop.gate.blocking.join(', ')}`}</span>

@@ -77,6 +77,8 @@ export default async function BalancesAuxPage({
     });
   }
 
+  const deplacementsAux = new Set(a.deplacements.map((l) => l.aux));
+
   const rapprochement = (ex: Exercice, libelle: CleLibelle) => {
     const f = a.fichiers[ex];
     if (!f) return null;
@@ -130,10 +132,15 @@ export default async function BalancesAuxPage({
                 <button className="btn secondary small">{t('bal.recompute')}</button>
               </form>
             </div>
+            {/* R60 (D.6 point 4) : les deux compteurs de tiers mènent au tableau
+                tiers-par-tiers plus bas — la Repli qui les porte VRAIMENT
+                (badges « nouveau »/« disparu » pour les deux premiers ;
+                « déplacement » pour le troisième, ajouté ci-dessous pour que
+                le compteur ne soit plus un cul-de-sac). */}
             <div className="grid cols-2">
               <div className="kpi"><span className="v">{a.top10?.partN1} % → {a.top10?.partN} %</span><span className="l">{t('bal.top10ConcentrationShareOfThe')}</span></div>
-              <div className="kpi"><span className="v">{a.apparus.length} / {a.disparus.length}</span><span className="l">{t('bal.counterpartiesNewGone')}</span></div>
-              <div className="kpi"><span className="v">{a.deplacements.length}</span><span className="l">{t('bal.shareMovements')} {seuilPts} {t('bal.pts')}</span></div>
+              <a className="kpi" href="#bal-counterpartyByCounterparty"><span className="v">{a.apparus.length} / {a.disparus.length}</span><span className="l">{t('bal.counterpartiesNewGone')}</span></a>
+              <a className="kpi" href="#bal-counterpartyByCounterparty"><span className="v">{a.deplacements.length}</span><span className="l">{t('bal.shareMovements')} {seuilPts} {t('bal.pts')}</span></a>
               <div className="kpi"><span className="v">{a.vieillissement ? `${a.vieillissement.partsN1[4]} % → ${a.vieillissement.partsN[4]} %` : '—'}</span><span className="l">{t('bal.shareBeyond90Days')}</span></div>
             </div>
             {a.vieillissement && (
@@ -208,6 +215,7 @@ export default async function BalancesAuxPage({
                         {l.label}
                         {l.soldeN1 === null && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.new')}</span>}
                         {l.soldeN === null && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.gone')}</span>}
+                        {deplacementsAux.has(l.aux) && <span className="badge amber" style={{ marginLeft: 6 }}>{t('bal.deplacement')}</span>}
                       </td>
                       <td className="num">{l.soldeN1 !== null ? fmtEur(l.soldeN1, 'fr') : '—'}</td>
                       <td className="num">{l.partN1 !== null ? `${l.partN1} %` : '—'}</td>

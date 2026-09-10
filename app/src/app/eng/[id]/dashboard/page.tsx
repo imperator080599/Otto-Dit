@@ -20,24 +20,29 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
 
   return (
     <div>
+      {/* R60 (D.6 point 4) : « tout compteur mène quelque part ». Les quatre
+          tuiles étaient du texte plein — chacune mène désormais vers l'objet
+          qu'elle compte : les deux premières restent sur cette même page (le
+          détail est juste en dessous), les deux dernières vers l'écran qui
+          porte réellement le détail. */}
       <div className="grid cols-4">
-        <div className="panel kpi">
+        <a className="panel kpi" href="#dash-requestTracker">
           <span className="v">{d.progressPct}%</span>
           <span className="l">{t('rail.pieces')}</span>
           <div className="progressbar mt"><div style={{ width: `${d.progressPct}%` }} /></div>
-        </div>
-        <div className="panel kpi">
+        </a>
+        <Link className="panel kpi" href={`/eng/${id}/exceptions`}>
           <span className="v" style={{ color: d.exceptions.open ? 'var(--red)' : 'var(--green)' }}>{d.exceptions.open}</span>
           <span className="l">{t('dash.ecartsOuverts', { total: d.exceptions.total, esc: d.exceptions.escalated })}</span>
-        </div>
-        <div className="panel kpi">
+        </Link>
+        <Link className="panel kpi" href={`/eng/${id}/rcm`}>
           <span className="v" style={{ color: d.deviations.open ? 'var(--red)' : undefined }}>{d.deviations.total}</span>
           <span className="l">{t('dash.deviations', { n: d.deviations.open })}</span>
-        </div>
-        <div className="panel kpi">
+        </Link>
+        <Link className="panel kpi" href={`/eng/${id}/evidence`}>
           <span className="v">{d.evidence.extracted}/{d.evidence.total}</span>
           <span className="l">{t('dash.piecesLues', { n: d.evidence.pendingVerify })}</span>
-        </div>
+        </Link>
       </div>
 
       <div className="grid cols-2">

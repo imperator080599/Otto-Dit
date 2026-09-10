@@ -3374,6 +3374,49 @@ export async function conduire(
     }
   });
 
+  // ── 21d. R60 (D.6 point 4, mandat 2026-09-05 §D.6 ; repass design déclenché
+  // le 2026-09-10) : « tout compteur mène quelque part ». Quatre tuiles
+  // KPI, trois pages, corrigées le même jour (dashboard, population,
+  // balances-aux) — chacune était du texte plein sans lien. La station
+  // clique la tuile et vérifie une VRAIE navigation, pas seulement un
+  // `href` présent (un lien mort passerait le second test, pas le premier).
+  await station('R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux)', async () => {
+    await aller(`${eng}/dashboard`);
+    dire('dashboard : la tuile « pièces reçues » a un lien réel vers le suivi de la demande (même page)',
+      (await p.locator('a.panel.kpi[href="#dash-requestTracker"]').count()) > 0
+        && (await p.locator('#dash-requestTracker').count()) > 0,
+      'lien ou ancre absent');
+    dire('dashboard : la tuile « pièces lues » a un lien réel vers /evidence',
+      (await p.locator('a.panel.kpi[href$="/evidence"]').count()) > 0, 'lien absent');
+    const selExceptions = `a[href$="/exceptions"].panel.kpi, a.panel.kpi[href$="/exceptions"]`;
+    if (!(await p.locator(selExceptions).count())) {
+      dire('dashboard : la tuile écarts a un lien réel vers /exceptions', false, 'lien absent');
+    } else {
+      await cliquer(selExceptions);
+      dire('dashboard : cliquer la tuile écarts ouvre /exceptions', p.url().endsWith('/exceptions'), p.url());
+      await aller(`${eng}/dashboard`);
+    }
+    const selRcm = `a[href$="/rcm"].panel.kpi, a.panel.kpi[href$="/rcm"]`;
+    if (!(await p.locator(selRcm).count())) {
+      dire('dashboard : la tuile déviations a un lien réel vers /rcm', false, 'lien absent');
+    } else {
+      await cliquer(selRcm);
+      dire('dashboard : cliquer la tuile déviations ouvre /rcm', p.url().endsWith('/rcm'), p.url());
+      await aller(`${eng}/dashboard`);
+    }
+
+    await aller(`${eng}/population`);
+    const selFlags = `a.panel.kpi[href="?view=flags"]`;
+    dire('population : la tuile « lignes signalées » a un lien réel (?view=flags)',
+      (await p.locator(selFlags).count()) > 0, 'lien absent');
+
+    await aller(`${eng}/balances-aux`);
+    const selDeplacements = `a.kpi[href="#bal-counterpartyByCounterparty"]`;
+    const nDeplacements = await p.locator(selDeplacements).count();
+    dire('balances-aux : les tuiles tiers apparus/disparus/déplacements ont un lien réel',
+      nDeplacements >= 2, `${nDeplacements} tuile(s) liée(s)`);
+  });
+
   // ── 22. OBSTACLES AU VISA
   let restants = 0;
   await station('obstacles au visa', async () => {
