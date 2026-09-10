@@ -90,8 +90,11 @@ run verify … ; echo "EXIT=$?"`, mesuré `EXIT=0`) : 138/138 fichiers, 1066/106
 la garde est une fonction de service et une lecture `/api/sante`, toutes deux éprouvées par leurs
 tests (règle 17), jamais par un clic (rien n'est cliquable dans ce qui a changé).
 
-**SHA servi** : à confirmer après le push, par `/api/sante` sur le déploiement d'aperçu de cette
-branche — voir l'entrée qui suit.
+**SHA servi confirmé = `a5c4620`** (mesuré en direct, `mcp__Vercel__web_fetch_vercel_url`, règle 36) :
+HTTP 200, `identiteCoherente:true`, toutes les lectures passent — IA-BUDGET-01 comprise, `ok:true`,
+« fermée — aucune garde de budget active en base (défaut, mandat §4) » sur la donnée de production
+réelle (pas seulement en test). §4/Lot 8 point 1 du mandat du 9 septembre est maintenant COMPLET et
+servi.
 
 ## Lot mandat 9 septembre, §3.1 : dépôt/suppression manuels de la vidéo du walkthrough, VID-01 (2026-09-09)
 
