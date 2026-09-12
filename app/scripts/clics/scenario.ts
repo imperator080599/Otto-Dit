@@ -3415,6 +3415,23 @@ export async function conduire(
     const nDeplacements = await p.locator(selDeplacements).count();
     dire('balances-aux : les tuiles tiers apparus/disparus/déplacements ont un lien réel',
       nDeplacements >= 2, `${nDeplacements} tuile(s) liée(s)`);
+
+    /* CORRIGÉ après revue hostile (2026-09-10, constat 1) : la quatrième page
+       du commit (imports, l'avertissement ADR-016) n'était éprouvée nulle
+       part dans cette station — la revendication « corrigée » dans le
+       message de commit n'était pas exercée par le harnais. Le rendu est
+       CONDITIONNEL (`affected.length > 0`) : sur le monde de démonstration
+       courant, aucun échantillon n'est encore invalidé par un ré-import, donc
+       l'avertissement peut être absent — ce n'est pas un échec, c'est nommé. */
+    await aller(`${eng}/imports`);
+    const selAvertissementFec = '.callout.warn a[href$="/sampling"]';
+    const avertissementPresent = await p.locator('.callout.warn').count();
+    if (avertissementPresent > 0) {
+      dire('imports : l’avertissement de ré-import mène à /sampling',
+        (await p.locator(selAvertissementFec).count()) > 0, 'lien absent dans l’avertissement');
+    } else {
+      dire('imports : aucun avertissement de ré-import pour l’instant (rien à invalider)', true, '0 échantillon affecté');
+    }
   });
 
   // ── 22. OBSTACLES AU VISA

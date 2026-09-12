@@ -22,9 +22,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
     <div>
       {/* R60 (D.6 point 4) : « tout compteur mène quelque part ». Les quatre
           tuiles étaient du texte plein — chacune mène désormais vers l'objet
-          qu'elle compte : les deux premières restent sur cette même page (le
-          détail est juste en dessous), les deux dernières vers l'écran qui
-          porte réellement le détail. */}
+          qu'elle compte : la première reste sur cette même page (une ancre
+          vers le détail, juste en dessous) ; les trois autres (écarts,
+          déviations, pièces lues) mènent vers l'écran qui porte réellement
+          leur détail. CORRIGÉ après revue hostile (2026-09-10) : la première
+          rédaction de ce commentaire disait « les deux premières restent sur
+          cette même page » — faux, seule la première le fait. */}
       <div className="grid cols-4">
         <a className="panel kpi" href="#dash-requestTracker">
           <span className="v">{d.progressPct}%</span>

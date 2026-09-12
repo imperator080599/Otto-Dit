@@ -36,7 +36,13 @@ export default async function PopulationPage({ params, searchParams }: { params:
       {/* R60 (D.6 point 4) : les deux compteurs de LIGNES mènent vers le même
           tableau, ci-dessous, basculé sur la vue qu'ils comptent — le tableau
           ne peut montrer qu'une des deux vues à la fois, alors le compteur
-          pointe vers la bonne. */}
+          pointe vers la bonne. CE QUE CE LIEN NE CORRIGE PAS (règle 19,
+          signalé par la revue hostile du 10 septembre, pas réparé ici — hors
+          périmètre de R60, qui demande un lien réel, pas une pagination
+          complète) : `?view=all` tronque à 200 lignes (ligne `shown` plus
+          bas) ; sur une population de plus de 200 lignes, le compteur promet
+          un total que la vue n'affiche pas en entier — le titre de la page
+          le dit alors (« 200 premières lignes »), mais seulement là. */}
       <div className="grid cols-4">
         <a className="panel kpi" href="?view=all"><span className="v">{pop.rows.length}</span><span className="l">{t('pop.glLines70xAccounts')}</span></a>
         <div className="panel kpi"><span className="v">{fmtEur(pop.totalCents, 'fr')}</span><span className="l">{t('pop.populationAmount')}</span></div>
