@@ -53,9 +53,61 @@ la liste) : la sonde déclare désormais son locataire, une lecture vide ÉCHOUE
 (détail dans la tranche ci-dessous, deux voix hostiles, un défaut réel trouvé et corrigé) ; (3) le
 repass design rétroactif R59-R62 déclenché — tranche 1 (les jetons du socle) **COMPLÈTE**, SHA à
 confirmer ci-dessous après le push de ce jour ; la migration des écrans en découle automatiquement
-(un changement de jetons, pas une réécriture — voir la tranche) ; R60-R62 eux-mêmes restent à
-construire. **Le fondateur ne sera pas réveillé entre les tranches de ce lot** (sa consigne,
-verbatim) — un seul message quand le repass ENTIER est servi.
+(un changement de jetons, pas une réécriture — voir la tranche). **R60 (D.6 point 4, « tout
+compteur mène quelque part ») est maintenant COMPLET** — quatre culs-de-sac corrigés (dashboard,
+population, balances-aux, imports), SHA à confirmer ci-dessous après le push de ce jour ; R61
+(aucun état vide muet) et R62 (parcours découverte chronométré) restent à construire, inventaires
+déjà faits (sous-agents Explore, détail dans la tranche R61 à venir). **Le fondateur ne sera pas
+réveillé entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass
+ENTIER est servi.
+
+## R60 (D.6 point 4) : tout compteur mène quelque part — dashboard, population, balances-aux, imports (2026-09-11)
+
+*Mandat 2026-09-05 §D.6 : « Tout compteur affiché conduit quelque part : un test échoue sur un
+compteur sans lien. » Débloqué par le repass design du 10 septembre (le point n'était pas
+constructible avant que le langage visuel existe, per le mandat lui-même) — en réalité indépendant
+du langage visuel : c'est un défaut de NAVIGATION, pas d'esthétique, et il tenait dans l'ancien
+langage comme dans le nouveau.*
+
+**Inventaire préalable, complet** (sous-agent Explore, dédié) : quatre culs-de-sac réels trouvés
+parmi tous les compteurs affichés app-wide — `eng/[id]/dashboard` (4 tuiles KPI), `eng/[id]/
+population` (2 tuiles), `eng/[id]/balances-aux` (1 tuile), `eng/[id]/imports` (1 avertissement).
+Le reste de l'application respecte déjà la règle (`suivi/page.tsx` en est le meilleur exemple,
+cité par le mandat lui-même).
+
+**Ce qui a changé.** Chaque tuile devient un lien réel : dashboard → `#dash-requestTracker`
+(même page), `/exceptions`, `/rcm`, `/evidence` ; population → `?view=all`/`?view=flags` (bascule
+la même table vers la vue comptée) ; balances-aux → l'ancre `#bal-counterpartyByCounterparty`, et
+la tuile « déplacements » gagne un VRAI badge par ligne dans le tableau qu'elle compte
+(`deplacementsAux`, dérivé de `a.deplacements`) — sans quoi le lien aurait mené à un tableau muet
+sur ce qu'il comptait ; imports → `/sampling` depuis l'avertissement de ré-import (ADR-016).
+Nouvelle station clics (« R60 : … », `scripts/clics/scenario.ts`) qui clique chaque tuile et
+vérifie une VRAIE navigation, pas seulement un `href` présent.
+
+**Revue hostile (un réfutateur — UI/navigation, ni sécurité ni multi-tenant ni modèle de
+données, règle 30 amendée), trois constats réels, tous corrigés avant fusion** :
+1. La station clics ne visitait jamais `/imports` — la revendication « imports corrigé » dans le
+   premier message de commit n'était exercée par aucun harnais. Corrigé : la station visite
+   `/imports` et vérifie le lien (conditionnel — l'avertissement n'apparaît que si un ré-import a
+   invalidé un tirage, absent du monde semé aujourd'hui, nommé plutôt que masqué).
+2. Un commentaire de `dashboard/page.tsx` affirmait « les deux premières tuiles restent sur cette
+   même page » — faux, une seule le fait. Corrigé, la faute nommée dans le commentaire lui-même.
+3. **Trouvé en RELISANT le log du premier verify (règle 15 : un « 0 échec(s) » global ne dit pas
+   si chaque ligne est honnête)** : plusieurs `dire(...)` de la nouvelle station passaient un
+   détail STATIQUE (« lien absent ») quel que soit le résultat — un `ok` affichait donc « lien
+   absent » à côté de lui, la même forme d'affirmation qui se contredit que la règle 13 nomme déjà
+   pour CTRL-04. Corrigé : le détail dit ce qui a été VU, dans les deux sens.
+
+**Ce que cette tranche NE fait PAS** (règle 19) : la tuile population liée à `?view=all` promet un
+total que la vue tronque à 200 lignes (comportement PRÉEXISTANT, pas introduit ici) — signalé en
+commentaire, pas réparé : hors périmètre de R60, qui demande un lien réel, pas une pagination
+complète.
+
+**Verify complet, deux fois tué et relancé sur arbre gelé après chaque correction (règle 34)** :
+la version finale, sur le SHA poussé, est verte — 138 fichiers de test, `screens` 91 routes/0
+échec, `clics` 248 étapes/0 échec (la nouvelle station comprise), `visuel` 328 vues/0 défaut.
+
+**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
 
 ## Repass design, tranche 1 : les jetons du socle (mandat 2026-09-09 §5, déclenché le 2026-09-10) (2026-09-10)
 
