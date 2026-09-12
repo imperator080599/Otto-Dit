@@ -51,15 +51,73 @@ encore — reste à construire l'adaptateur préparé/rejoué, non activé) ; (2
 directement le 2026-09-10 (`identiteCoherente:true`, « locataire déclaré par la sonde » premier de
 la liste) : la sonde déclare désormais son locataire, une lecture vide ÉCHOUE plutôt que de passer
 (détail dans la tranche ci-dessous, deux voix hostiles, un défaut réel trouvé et corrigé) ; (3) le
-repass design rétroactif R59-R62 déclenché — tranche 1 (les jetons du socle) **COMPLÈTE**, SHA à
-confirmer ci-dessous après le push de ce jour ; la migration des écrans en découle automatiquement
-(un changement de jetons, pas une réécriture — voir la tranche). **R60 (D.6 point 4, « tout
-compteur mène quelque part ») est maintenant COMPLET** — quatre culs-de-sac corrigés (dashboard,
-population, balances-aux, imports), SHA à confirmer ci-dessous après le push de ce jour ; R61
-(aucun état vide muet) et R62 (parcours découverte chronométré) restent à construire, inventaires
-déjà faits (sous-agents Explore, détail dans la tranche R61 à venir). **Le fondateur ne sera pas
-réveillé entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass
-ENTIER est servi.
+repass design rétroactif R59-R62 déclenché — tranche 1 (les jetons du socle) **COMPLÈTE ET SERVIE
+EN PRODUCTION** (`f91d79e`, mesuré le 2026-09-12) ; la migration des écrans en découle
+automatiquement (un changement de jetons, pas une réécriture — voir la tranche). **R60 (D.6 point
+4, « tout compteur mène quelque part ») COMPLET ET SERVI EN PRODUCTION** (`17017b4`, mesuré le
+2026-09-12) — quatre culs-de-sac corrigés (dashboard, population, balances-aux, imports). **R61
+(D.6 point 5, « aucun état vide muet ») COMPLET** — quinze sites corrigés, SHA à confirmer
+ci-dessous après le push de ce jour. **R62** (parcours découverte chronométré) reste à construire —
+seul point restant avant le message unique promis au fondateur. **Le fondateur ne sera pas réveillé
+entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass ENTIER est
+servi.
+
+## R61 (D.6 point 5) : aucun état vide muet — 15 sites, 10 fichiers (2026-09-12)
+
+*Mandat 2026-09-05 §D.6 : « toute section vide porte une phrase qui dit quoi faire et le geste
+proposé. »*
+
+**Inventaire préalable, complet** (sous-agent Explore dédié) : 15 sites classés — 10 messages
+présents mais SANS geste (A1-A10), 5 tables entièrement muettes (A11-A15), et une catégorie
+« terminale/positive » (~20 sites) et « exemptée » (chrome, cellules de tableau) correctement
+laissées telles quelles.
+
+**Ce qui a changé**, site par site, chacun avec le geste RÉEL déjà présent ailleurs sur le même
+dossier (jamais un lien inventé) : dashboard (tables demandes/papiers) → liens vers `/requests` et
+`/workpapers`, mêmes libellés que ces pages ; population → deux causes distinctes du même vide
+(rien signalé = bonne nouvelle ; aucune ligne du tout = importer le GL) ; scoping → le vrai geste
+manquant (importer une balance) nommé, distinct du bouton « rebuild » déjà visible qui la suppose
+déjà là ; events → le journal ne se vide jamais seul, un vide vient toujours d'un filtre ; risk →
+renvoie au questionnaire ; kanban → cinq colonnes, cinq messages (« rien ici » ne distinguait pas
+une bonne nouvelle d'un état neutre) ; rcm/[cid] → la grille d'attributs choisit entre trois
+messages selon l'étape réelle, les risques liés distinguent « rien lié » de « registre du dossier
+lui-même vide » ; testing/atelier → distingue « aucune ligne tirée » (lien vers /sampling) de « une
+ligne existe, cliquez-en une » (état normal, pas un défaut) ; workpapers/imports → nomment le geste
+déjà visible plus haut sur la même page ; poste → renvoie au formulaire juste en dessous ; suivi →
+même geste que son voisin programme/page.tsx, jamais posé ici.
+
+**Revue hostile (un réfutateur — UI/texte, ni sécurité ni multi-tenant), deux constats réels,
+tous deux corrigés avant fusion** :
+1. **Un état INATTEIGNABLE, ET le mauvais bouton nommé.** Le premier jet du site « circularisations »
+   ciblait `s.rap.lignes.length === 0` avec `s.camp` vrai, en renvoyant vers « importer le
+   listing ». Faux sur les deux plans : `importerListing()` (circularisations.ts) rejette tout
+   fichier de moins de deux lignes AVANT de créer la campagne et ne supprime jamais les tiers déjà
+   partis — aucun chemin ne peut laisser `s.camp` vrai avec zéro ligne ; et même atteignable, le
+   bouton visible dans cet état est TOUJOURS « corriger le listing », jamais « importer »
+   (`s.camp ? corrigerListing : importerListing`). Retiré entièrement, expliqué en commentaire
+   plutôt que masqué (règle 19).
+2. **Le garde mécanique ne cherchait que le texte français retiré.** La nouvelle station clics
+   (kanban) ne vérifiait que « rien ici » — la démonstration sert l'ANGLAIS par défaut
+   (`locServie`), où le texte retiré était « nothing here ». Une régression dans la langue
+   réellement servie serait passée inaperçue. Corrigé : les deux formes de la clé retirée
+   (`kanban.aucune`, désormais absente du catalogue) sont vérifiées, écrites en dur dans le test.
+
+**Preuve mécanique, honnêtement bornée (règle 19)** : le kanban est le SEUL des 15 sites confirmé
+réellement vide sur le monde de démonstration actuel (vérifié en DIRECT — cookie de session, requête
+authentifiée — trois colonnes vides sur cinq) ; la nouvelle station clics vérifie que leurs textes
+sont DISTINCTS et qu'aucun ne reprend le générique retiré, dans les deux langues. Les 14 autres
+corrections sont vérifiées par relecture attentive + TypeScript + le passage complet
+screens/clics/visuel (aucun crash sur aucune branche, sur toutes les 91 routes) mais PAS par une
+assertion dédiée sur LEUR texte précis : le monde de démonstration actuel ne vide pas ces tables, et
+rien ne peut prouver un texte par la navigation seule sans une fixture dédiée par site — un chantier
+plus lourd, non entrepris ici, nommé plutôt que tu.
+
+**Verify complet, tué et relancé une fois sur arbre gelé après la revue hostile (règle 34)** : la
+version finale est verte — 138 fichiers de test, `screens` 91 routes/0 échec, `clics` 249 étapes/0
+échec (la station R61 comprise, kanban confirmé 3 colonnes vides distinctes), `visuel` 328 vues/0
+défaut.
+
+**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
 
 ## R60 (D.6 point 4) : tout compteur mène quelque part — dashboard, population, balances-aux, imports (2026-09-11)
 
@@ -107,7 +165,10 @@ complète.
 la version finale, sur le SHA poussé, est verte — 138 fichiers de test, `screens` 91 routes/0
 échec, `clics` 248 étapes/0 échec (la nouvelle station comprise), `visuel` 328 vues/0 défaut.
 
-**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `17017b4`**
+(`17017b42f14f0d08faf5c8046d72266795046d5a`, `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` — l'hôte de production, règle 36) : HTTP 200,
+`identiteCoherente:true`, toutes les lectures passent, mesuré le 2026-09-12 à 23:04:01Z.
 
 ## Repass design, tranche 1 : les jetons du socle (mandat 2026-09-09 §5, déclenché le 2026-09-10) (2026-09-10)
 
@@ -145,7 +206,10 @@ et montants ; c'est un geste ciblé, laissé à la tranche R60-R62. R59-R62 eux-
 construire (tranche suivante) : le token existe désormais, ce qui les débloque comme le mandat
 l'annonçait, mais aucun des quatre n'est automatiquement résolu par la seule direction de design.
 
-**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `f91d79e`**
+(`f91d79e64011a77da20bff7073bc259d3bd6fe7e`, `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` — l'hôte de production, règle 36) : HTTP 200,
+`identiteCoherente:true`, toutes les lectures passent, mesuré le 2026-09-12 à 22:06:47Z.
 
 ## L'écart A.6 de /api/sante, résolu (mandat du fondateur du 10 septembre, point 2) (2026-09-10)
 
