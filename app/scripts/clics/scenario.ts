@@ -3382,12 +3382,18 @@ export async function conduire(
   // `href` présent (un lien mort passerait le second test, pas le premier).
   await station('R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux)', async () => {
     await aller(`${eng}/dashboard`);
+    /* CORRIGÉ après revue hostile (2026-09-10) : la première rédaction
+       passait « lien absent » comme détail QUEL QUE SOIT le résultat — un
+       « ok » aurait affiché « lien absent » à côté de lui, exactement la
+       forme d'affirmation qui se contredit que la règle 13 nomme déjà pour
+       CTRL-04. Le détail dit maintenant ce qui a été VU, dans les deux sens. */
+    const lienPieces = (await p.locator('a.panel.kpi[href="#dash-requestTracker"]').count()) > 0
+      && (await p.locator('#dash-requestTracker').count()) > 0;
     dire('dashboard : la tuile « pièces reçues » a un lien réel vers le suivi de la demande (même page)',
-      (await p.locator('a.panel.kpi[href="#dash-requestTracker"]').count()) > 0
-        && (await p.locator('#dash-requestTracker').count()) > 0,
-      'lien ou ancre absent');
+      lienPieces, lienPieces ? 'lien et ancre présents' : 'lien ou ancre absent');
+    const lienEvidence = (await p.locator('a.panel.kpi[href$="/evidence"]').count()) > 0;
     dire('dashboard : la tuile « pièces lues » a un lien réel vers /evidence',
-      (await p.locator('a.panel.kpi[href$="/evidence"]').count()) > 0, 'lien absent');
+      lienEvidence, lienEvidence ? 'lien présent' : 'lien absent');
     const selExceptions = `a[href$="/exceptions"].panel.kpi, a.panel.kpi[href$="/exceptions"]`;
     if (!(await p.locator(selExceptions).count())) {
       dire('dashboard : la tuile écarts a un lien réel vers /exceptions', false, 'lien absent');
@@ -3407,8 +3413,9 @@ export async function conduire(
 
     await aller(`${eng}/population`);
     const selFlags = `a.panel.kpi[href="?view=flags"]`;
+    const lienFlags = (await p.locator(selFlags).count()) > 0;
     dire('population : la tuile « lignes signalées » a un lien réel (?view=flags)',
-      (await p.locator(selFlags).count()) > 0, 'lien absent');
+      lienFlags, lienFlags ? 'lien présent' : 'lien absent');
 
     await aller(`${eng}/balances-aux`);
     const selDeplacements = `a.kpi[href="#bal-counterpartyByCounterparty"]`;
@@ -3427,8 +3434,9 @@ export async function conduire(
     const selAvertissementFec = '.callout.warn a[href$="/sampling"]';
     const avertissementPresent = await p.locator('.callout.warn').count();
     if (avertissementPresent > 0) {
+      const lienEchantillon = (await p.locator(selAvertissementFec).count()) > 0;
       dire('imports : l’avertissement de ré-import mène à /sampling',
-        (await p.locator(selAvertissementFec).count()) > 0, 'lien absent dans l’avertissement');
+        lienEchantillon, lienEchantillon ? 'lien présent' : 'lien absent dans l’avertissement');
     } else {
       dire('imports : aucun avertissement de ré-import pour l’instant (rien à invalider)', true, '0 échantillon affecté');
     }
