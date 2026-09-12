@@ -4,6 +4,7 @@ import { motif, type Motif } from './motif';
 import { obstaclesAuVisa, type Famille } from './obstacles';
 import { mesSections, type MesSections, type Section } from './sections';
 import { numeroDemande } from './requests';
+import { lignesNonConclues } from './testing/grille';
 
 // MES TRAVAUX — le point d'origine qui manquait (constat de la revue hostile,
 // tranche 9).
@@ -212,6 +213,52 @@ export async function obstaclesDeMesDossiers(userId: string): Promise<ObstaclesD
   return out;
 }
 
+/** Un de mes dossiers, et ce qui y reste à conclure dans l'échantillon —
+ *  le même calcul que l'avertissement de l'atelier (`lignesNonConclues`,
+ *  grille.ts), jamais une seconde liste. */
+export interface EchantillonDossier {
+  engagementId: string;
+  mission: string;
+  aConclure: number;
+  href: string;
+}
+
+/**
+ * R62 (D.6 point 6) : LE TROU TROUVÉ EN CONSTRUISANT LE PARCOURS « DÉCOUVERTE ».
+ * Le mandat demande un parcours cliqué qui, sans lire le rail, atteint Mes
+ * travaux, comprend ce qui empêche de signer (le panneau des obstacles,
+ * déjà là), PUIS conclut une ligne d'échantillon. Le troisième geste n'avait
+ * AUCUN chemin depuis Mes travaux : les postes ne s'y listent que par
+ * détenteur/attribution/suivi/vue récente (`mesSections`), et le poste qui
+ * porte l'échantillon n'a de détenteur chez PERSONNE dans le monde de
+ * démonstration fraîchement semé (le statut « reviewed » libère le
+ * détenteur). Sans cette lecture, un utilisateur qui n'a jamais lu le rail
+ * ne pouvait tout simplement pas atteindre l'atelier — le silence exact que
+ * la règle 13 nomme : un geste du métier sans écran.
+ *
+ * CE QU'ELLE NE FAIT PAS : elle ne dit pas QUI doit conclure quelle ligne
+ * (même limite assumée que `obstaclesDeMesDossiers` pour le visa) — un
+ * dossier où j'ai le rôle apparaît dès qu'il porte une ligne non conclue,
+ * sans prétendre que c'est mon travail nommément.
+ */
+export async function echantillonsDeMesDossiers(userId: string): Promise<EchantillonDossier[]> {
+  const dossiers = await q<{ id: string; mission: string }>(
+    `select e.id::text, e.name mission
+     from engagement e
+     join engagement_member m on m.engagement_id = e.id and m.user_id = $1
+     where ${OUVERT} and ${CABINET}
+     order by e.name`,
+    [userId],
+  );
+  const out: EchantillonDossier[] = [];
+  for (const d of dossiers) {
+    const { nonConclues, perimees } = await lignesNonConclues(d.id);
+    const aConclure = nonConclues + perimees;
+    if (aConclure > 0) out.push({ engagementId: d.id, mission: d.mission, aConclure, href: `/eng/${d.id}/testing` });
+  }
+  return out;
+}
+
 /** Les trois tranches d'ancienneté d'une note ouverte, en jours calendaires
  *  depuis sa pose : jusqu'à 7, de 8 à 30, au-delà. */
 export type Anciennete = 'j7' | 'j30' | 'plus';
@@ -260,6 +307,7 @@ export interface TableauDeBord {
   lignes: LigneTravail[];
   sections: MesSections;
   obstacles: ObstaclesDossier[];
+  echantillons: EchantillonDossier[];
   notes: NotesDossier[];
 }
 
@@ -280,6 +328,7 @@ export async function tableauDeBord(userId: string): Promise<TableauDeBord> {
       suivies: filtre(sections.suivies), recentes: filtre(sections.recentes),
     },
     obstacles: await obstaclesDeMesDossiers(userId),
+    echantillons: await echantillonsDeMesDossiers(userId),
     notes: await notesOuvertesParAnciennete(userId),
   };
 }

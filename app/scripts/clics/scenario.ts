@@ -3563,6 +3563,96 @@ export async function conduire(
       `${clics} clic(s) → ${cible}`);
   });
 
+  /* R62 (D.6 point 6) : LE PARCOURS « DÉCOUVERTE », CHRONOMÉTRÉ EN CLICS.
+     Le mandat : sans lire le rail, atteindre Mes travaux, comprendre ce qui
+     empêche de signer, conclure une ligne d'échantillon — et CHAQUE étape
+     échoue au-delà d'un plafond fixé. DISTINCT du compteur DESCRIPTIF de
+     chaque geste (`docs/CLICS.md`, la variable `gestes` posée par `station`
+     elle-même) : là, le plafond n'est publié qu'après coup, jamais jugé —
+     ici, il est fixé D'AVANCE et une station entière rougit s'il est dépassé.
+
+     LE COMPTEUR EST LE VRAI COMPTEUR (`clicsCumules`, posé en tête de ce
+     fichier — il écoute les événements `click` du navigateur), jamais le
+     `clics++` manuel de la station voisine (« mes travaux ») : un plafond
+     qui se fierait à un compteur tenu à la main ment le jour où quelqu'un
+     oublie de l'incrémenter.
+
+     LE CHEMIN VERS L'ATELIER A ÉTÉ CONSTRUIT PAR CETTE TRANCHE, PAS SUPPOSÉ :
+     avant elle, aucun lien de Mes travaux ne menait à l'atelier — les quatre
+     listes d'attribution (`mesSections`) ne montrent un poste QUE s'il a un
+     détenteur, un attributaire, un suiveur ou une visite récente pour LA
+     personne connectée, et le poste qui porte l'échantillon perd son
+     détenteur dès qu'il passe « reviewed » (le monde de démonstration frais
+     l'est déjà). Voir `echantillonsDeMesDossiers` (travaux.ts) et le panneau
+     `data-echantillon` de `/travaux`.
+
+     CE QUE CETTE STATION NE PROUVE PAS (règle 19) : que le chemin emprunté
+     est LE PLUS COURT possible — seulement qu'IL EN EXISTE UN sous le
+     plafond fixé. Un chemin plus court qui apparaîtrait plus tard ferait
+     baisser le compte mesuré, jamais échouer la station — et une régression
+     qui ajoute un clic la ferait rougir immédiatement, ce pour quoi elle
+     existe. */
+  await station('R62 : le parcours découverte, chronométré en clics (D.6 point 6)', async () => {
+    await devenir(c.preparateur.id);
+
+    // ÉTAPE 1 — ATTEINDRE MES TRAVAUX, depuis l'accueil, sans lire le rail.
+    await aller(base + '/');
+    const clicsAvant = await clicsCumules();
+    const PLAFOND_TRAVAUX = 1;
+    await cliquer(`.topbar-lien:has-text("${L('commun.mesTravaux')}")`);
+    const clicsTravaux = (await clicsCumules()) - clicsAvant;
+    const surTravaux = p.url().includes('/travaux');
+    dire(`R62 étape 1 — atteindre Mes travaux en ≤ ${PLAFOND_TRAVAUX} clic(s) depuis l’accueil`,
+      surTravaux && clicsTravaux <= PLAFOND_TRAVAUX, `${clicsTravaux} clic(s) → ${p.url().replace(base, '')}`);
+    if (!surTravaux) return;
+
+    // ÉTAPE 2 — COMPRENDRE CE QUI EMPÊCHE DE SIGNER, SANS CLIC DE PLUS : le
+    // panneau des obstacles est déjà sur cet écran, au même coût que l'étape 1.
+    const badgeObstacles = (await p.locator('[data-obstacles] .badge').first().innerText().catch(() => '')).trim();
+    const obstaclesLisibles = (await compte('[data-obstacles]')) > 0 && /^\d+$/.test(badgeObstacles)
+      && ((await compte('[data-obstacle-famille]')) > 0 || R('obst.aucun').test(await texte()));
+    dire(`R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 (≤ ${PLAFOND_TRAVAUX})`,
+      obstaclesLisibles && clicsTravaux <= PLAFOND_TRAVAUX,
+      `panneau des obstacles lisible, ${badgeObstacles || '0'} annoncé(s) — ${clicsTravaux} clic(s) cumulé(s)`);
+
+    // ÉTAPE 3a — ATTEINDRE L'ATELIER, par le panneau construit cette tranche.
+    const lienEchantillon = p.locator('[data-echantillon-dossier] a').first();
+    if (!(await lienEchantillon.count())) {
+      dire('R62 étape 3 — un chemin vers l’atelier existe depuis Mes travaux', false,
+        'panneau « échantillon en cours » vide — rien à conclure sur le dossier de démonstration à cet instant du parcours');
+      return;
+    }
+    const PLAFOND_ATELIER = 2;
+    await lienEchantillon.click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(600);
+    const clicsAtelier = (await clicsCumules()) - clicsAvant;
+    const surAtelier = p.url().includes('/testing');
+    dire(`R62 étape 3a — atteindre l’atelier en ≤ ${PLAFOND_ATELIER} clic(s) cumulés depuis l’accueil`,
+      surAtelier && clicsAtelier <= PLAFOND_ATELIER, `${clicsAtelier} clic(s) → ${p.url().replace(base, '')}`);
+    if (!surAtelier) return;
+
+    // ÉTAPE 3b — CONCLURE UNE LIGNE D'ÉCHANTILLON. Le formulaire vit sous
+    // `data-conclure` (atelier.tsx) ; une ligne s'auto-sélectionne à l'arrivée
+    // (la première non finie, ou la première de la liste) — aucun clic
+    // supplémentaire n'est dû à la sélection elle-même.
+    const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
+    if (!(await boutonConclure.count())) {
+      dire('R62 étape 3b — conclure une ligne d’échantillon', false,
+        'bouton « conclure » absent — grille non figée ou aucune ligne sélectionnée à l’arrivée');
+      return;
+    }
+    const PLAFOND_CONCLURE = 3;
+    await boutonConclure.click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(800);
+    const clicsConclure = (await clicsCumules()) - clicsAvant;
+    const echec = refus(p);
+    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil`,
+      !echec && clicsConclure <= PLAFOND_CONCLURE,
+      echec ?? `${clicsConclure} clic(s) — ligne conclue`);
+  });
+
   await station('clôture et archive scellée', async () => {
     /* CLORE, C'EST SIGNER : la station le DIT au lieu d'hériter de l'identité
        laissée par la précédente. Ce couplage caché a mordu dès qu'une station

@@ -77,9 +77,10 @@ function ListeSections({ titre, sections, cle, t }: { titre: string; sections: S
 export default async function MesTravaux() {
   const user = await requireUser();
   const t = await tr();
-  const { lignes, sections, obstacles, notes } = await tableauDeBord(user.id);
+  const { lignes, sections, obstacles, echantillons, notes } = await tableauDeBord(user.id);
   const natures: LigneTravail['nature'][] = ['note', 'visa', 'demande'];
   const nObstacles = obstacles.reduce((s, d) => s + d.familles.reduce((x, f) => x + f.n, 0), 0);
+  const nEchantillon = echantillons.reduce((s, d) => s + d.aConclure, 0);
 
   return (
     <div className="shell">
@@ -152,6 +153,33 @@ export default async function MesTravaux() {
                   <td><Link href={f.href}>{t('obst.aller')} →</Link></td>
                 </tr>
               )))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* R62 (D.6 point 6) : LE CHEMIN VERS L'ATELIER QUI MANQUAIT — un poste
+          qui porte l'échantillon n'a de détenteur chez personne dès qu'il
+          est « reviewed » (le détenteur se libère), donc aucune des quatre
+          listes d'attribution ne le montre. Sans ce panneau, « conclure une
+          ligne d'échantillon » n'avait AUCUN chemin depuis Mes travaux qui
+          n'oblige pas à lire le rail — le geste existait, l'écran non
+          (règle 13). Même construction que le panneau des obstacles :
+          calculé à l'instant, jamais stocké. */}
+      <div className="panel" data-echantillon>
+        <h2>{t('trav.echantillon.titre')} <span className={`badge ${nEchantillon ? 'amber' : 'green'}`}>{nEchantillon}</span></h2>
+        <p className="faint">{t('trav.echantillon.quoi')}</p>
+        {echantillons.length === 0 ? <p className="faint">{t('trav.echantillon.aucun')}</p> : (
+          <table className="data">
+            <thead><tr><th>{t('col.engagement')}</th><th>{t('trav.echantillon.colLignes')}</th><th></th></tr></thead>
+            <tbody>
+              {echantillons.map((e) => (
+                <tr key={e.engagementId} data-echantillon-dossier={e.engagementId}>
+                  <td className="faint">{e.mission}</td>
+                  <td><span className="badge amber">{e.aConclure}</span></td>
+                  <td><Link href={e.href}>{t('trav.echantillon.aller')} →</Link></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
