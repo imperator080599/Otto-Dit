@@ -664,7 +664,10 @@ export default async function WorkpaperDetail({
             </tbody>
           </table>
           <h2>{t('wp.exportsTerminalHashStamped')}</h2>
-          {exports.length === 0 ? <p className="muted">{t('req.noneYet')}</p> : (
+          {/* R61 (D.6 point 5, « A5 » de l'inventaire du 10 septembre) : le
+              geste existe déjà, en haut de cette même page (« Exporter PDF/
+              Excel ») — le nommer ici évite de le laisser deviner. */}
+          {exports.length === 0 ? <p className="muted">{t('wp.noExportYet')}</p> : (
             <table className="data">
               <thead><tr><th>{t('wp.format')}</th><th>{t('mot.sha256')}</th><th>{t('col.when')}</th><th></th></tr></thead>
               <tbody>

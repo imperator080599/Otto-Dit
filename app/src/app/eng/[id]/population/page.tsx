@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { revenuePopulation } from '@/lib/services/population';
 import { fmtEur } from '@/lib/kernel/canon';
@@ -73,7 +74,17 @@ export default async function PopulationPage({ params, searchParams }: { params:
               <tr><th>{t('col.entry')}</th><th>{t('col.date')}</th><th>{t('col.account')}</th><th>{t('col.piece')}</th><th>{t('col.counterparty')}</th><th className="num">{t('col.amount')}</th><th>{t('col.flags')}</th></tr>
             </thead>
             <tbody>
-              {shown.map((r) => (
+              {shown.length === 0 ? (
+                /* R61 (D.6 point 5, « A13 » de l'inventaire du 10 septembre) :
+                   deux causes distinctes du même vide, deux phrases — « rien
+                   signalé » (bonne nouvelle, view=flags) n'est pas « aucune
+                   ligne du tout » (à corriger, view=all). */
+                <tr><td colSpan={7} className="muted">
+                  {view === 'all'
+                    ? <>{t('pop.noLinesImportTheLedger')} <Link href={`/eng/${id}/imports`}>{t('imp.generalLedgerFecAdapterFrancePack')}</Link></>
+                    : t('pop.noFlaggedLines')}
+                </td></tr>
+              ) : shown.map((r) => (
                 <tr key={r.naturalKey}>
                   <td className="mono">{r.entryNo}</td>
                   <td>{r.entryDate}</td>

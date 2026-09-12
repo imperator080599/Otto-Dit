@@ -53,7 +53,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           <table className="data">
             <thead><tr><th>#</th><th>{t('col.request')}</th><th>{t('col.status')}</th><th>{t('col.progress')}</th><th>{t('col.reminders')}</th></tr></thead>
             <tbody>
-              {d.requests.map((r) => (
+              {d.requests.length === 0 ? (
+                /* R61 (D.6 point 5) : la table était vide et muette (aucune
+                   ligne, aucun texte) — le même défaut nommé « A11 » par
+                   l'inventaire du 10 septembre. Le même libellé et le même
+                   geste que la page /requests elle-même, pour ne pas dire
+                   deux choses différentes du même état. */
+                <tr><td colSpan={5} className="muted">{t('req.noRequestsYetDrawASample')} <Link href={`/eng/${id}/requests`}>{t('col.request')}</Link></td></tr>
+              ) : d.requests.map((r) => (
                 <tr key={r.seq_no}>
                   <td className="mono">R-{String(r.seq_no).padStart(3, '0')}</td>
                   <td>{r.title}</td>
@@ -87,7 +94,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           <table className="data">
             <thead><tr><th>{t('col.code')}</th><th>v</th><th>{t('col.status')}</th><th>{t('dash.lastSignOff')}</th></tr></thead>
             <tbody>
-              {d.workpapers.map((w) => (
+              {d.workpapers.length === 0 ? (
+                /* R61 (D.6 point 5, « A12 » de l'inventaire du 10 septembre) :
+                   même geste, même libellé que /workpapers elle-même. */
+                <tr><td colSpan={4} className="muted">{t('wps.noWorkpapersYetCompleteTestingThen')} <Link href={`/eng/${id}/workpapers`}>{t('col.workpapers')}</Link></td></tr>
+              ) : d.workpapers.map((w) => (
                 <tr key={w.code}>
                   <td className="mono">{w.code}</td>
                   <td>{w.version}</td>

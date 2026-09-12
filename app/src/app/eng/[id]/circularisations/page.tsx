@@ -202,6 +202,13 @@ export default async function CircularisationsPage({
                 </div>
               )}
 
+              {/* R61 (D.6 point 5, « A10 » de l'inventaire du 10 septembre) :
+                  une campagne ouverte sans aucune ligne de rapprochement ne
+                  disait rien — le geste qui la remplirait (importer le
+                  listing) est nommé, juste au-dessus. */}
+              {s.rap.lignes.length === 0 && (
+                <p className="muted">{t('circ.aucuneLigneImporterListing')} {t('circ.importerListing')}</p>
+              )}
               {s.rap.lignes.length > 0 && (
                 <table className="data">
                   <thead>

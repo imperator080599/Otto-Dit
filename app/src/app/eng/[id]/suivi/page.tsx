@@ -99,7 +99,11 @@ export default async function SuiviPage({ params }: { params: Promise<{ id: stri
       <div id="suivi-postes" className="epure-carte">
         <h2 className="epure-titre" style={{ fontSize: 16, fontWeight: 600 }}>{t('suivi.avancementParPoste')}</h2>
         {postes.length === 0 ? (
-          <p className="epure-liste-vide">{t('suivi.aucunPoste')}</p>
+          /* R61 (D.6 point 5, « A6 » de l'inventaire du 10 septembre) : même
+             constat que programme/page.tsx, jamais corrigé ici — le geste
+             (aller au scoping) manquait sur CE panneau alors qu'il existe
+             déjà, mot pour mot, sur son voisin. */
+          <p className="epure-liste-vide">{t('suivi.aucunPoste')} <Link href={`/eng/${id}/scoping`}>{t('rail.quoi.scoping')}</Link></p>
         ) : postes.map((p) => (
           <div key={p.id} className="epure-liste-item">
             <Link href={p.href}>{p.label}</Link>

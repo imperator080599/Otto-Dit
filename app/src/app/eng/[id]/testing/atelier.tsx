@@ -233,7 +233,18 @@ export function Atelier({
       </div>
 
       <div className="atelier-detail">
-        {!sel ? <p className="muted">{t('atl.aucuneLigne')}</p> : (
+        {!sel ? (
+          /* R61 (D.6 point 5, « A4 » de l'inventaire du 10 septembre) : deux
+             causes très différentes du même « rien sélectionné » — le
+             tableau est VIDE (aucun tirage) contre une ligne existe mais
+             n'est pas encore cliquée (état normal, pas un défaut à corriger,
+             règle 19). */
+          <p className="muted">
+            {lignes.length === 0
+              ? <>{t('atl.aucuneLigneTirerEchantillon')} <Link href={`/eng/${engId}/sampling`}>{t('atl.allerAuTirage')}</Link></>
+              : t('atl.aucuneLigneSelectionnee')}
+          </p>
+        ) : (
           <>
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <strong className="mono">{sel.piece}</strong>

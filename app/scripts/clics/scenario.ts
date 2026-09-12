@@ -3374,6 +3374,33 @@ export async function conduire(
     }
   });
 
+  // ── 21d bis. R61 (D.6 point 5, mandat 2026-09-05 §D.6 ; « A2 » de
+  // l'inventaire du 10 septembre) : une colonne vide disait « rien ici »
+  // pour les cinq colonnes indifféremment — un écart ouvert vide (bonne
+  // nouvelle) n'est pas la même chose qu'une clarification vide (rien à
+  // relancer), et le message ne le disait pas. Chaque colonne porte
+  // désormais son propre texte ; cette station vérifie qu'une colonne VIDE
+  // ne porte JAMAIS le texte GÉNÉRIQUE retiré (« rien ici »), et que le
+  // texte affiché est bien celui de SA colonne, pas celui d'une autre.
+  await station('R61 : chaque colonne vide du kanban porte SON état, pas un texte générique', async () => {
+    await aller(`${eng}/kanban`);
+    const texteParColonne: Record<string, string> = {};
+    for (const col of ['open', 'clarification_requested', 'explained', 'resolved', 'escalated']) {
+      const vide = p.locator(`.epure-carte[data-colonne="${col}"] .epure-liste-vide`);
+      if (await vide.count()) texteParColonne[col] = (await vide.textContent()) ?? '';
+    }
+    const nVides = Object.keys(texteParColonne).length;
+    if (nVides === 0) {
+      dire('R61 kanban : au moins une colonne est vide (sinon la station n’éprouve rien)',
+        false, 'les cinq colonnes portent des écarts — refaire tourner après un ré-semis');
+    } else {
+      const textesDistincts = new Set(Object.values(texteParColonne));
+      dire('R61 kanban : les colonnes vides portent des textes DISTINCTS (jamais « rien ici »)',
+        textesDistincts.size === nVides && ![...textesDistincts].some((t) => /^rien ici$/i.test(t.trim())),
+        `${nVides} colonne(s) vide(s) : ${Object.entries(texteParColonne).map(([c, t]) => `${c}="${t}"`).join(' · ')}`);
+    }
+  });
+
   // ── 21d. R60 (D.6 point 4, mandat 2026-09-05 §D.6 ; repass design déclenché
   // le 2026-09-10) : « tout compteur mène quelque part ». Quatre tuiles
   // KPI, trois pages, corrigées le même jour (dashboard, population,

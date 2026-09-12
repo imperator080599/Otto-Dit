@@ -97,6 +97,12 @@ export default async function ImportsPage({
             <tr><th>{t('col.file')}</th><th>{t('col.kind')}</th><th>{t('col.rows')}</th><th>{t('col.status')}</th><th>{t('col.violations')}</th><th>{t('col.when')}</th></tr>
           </thead>
           <tbody>
+            {imports.length === 0 && (
+              /* R61 (D.6 point 5, « A9 » de l'inventaire du 10 septembre) :
+                 les deux formulaires d'import sont juste au-dessus, dans le
+                 même panneau — les nommer évite de laisser un tableau muet. */
+              <tr><td colSpan={6} className="muted">{t('imp.noImportYet')}</td></tr>
+            )}
             {imports.map((f) => {
               const violations: Violation[] = f.validation_report?.violations ?? [];
               return (

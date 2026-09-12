@@ -4,6 +4,7 @@ import { listFslis, confirmScoping, fsliAccounts, rebuildFslis, frameworkSet } f
 import { motDuPack } from '@/lib/packs';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
+import Link from 'next/link';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
@@ -67,7 +68,13 @@ export default async function ScopingPage({
           <tr><th>{t('col.area')}</th><th>{t('scop.etat')}</th><th className="num">{t('col.balance')}</th><th>{t('scop.perimetre')}</th><th>{t('col.basis')}</th><th>{t('scop.decision')}</th></tr>
         </thead>
         <tbody>
-          {withAccounts.map((f) => (
+          {withAccounts.length === 0 ? (
+            /* R61 (D.6 point 5, « A14 » de l'inventaire du 10 septembre) : le
+               bouton « rebuild from TB » ci-dessus suppose une balance DÉJÀ
+               importée — sur un dossier neuf, il n'y en a pas encore, et
+               c'est le vrai geste manquant qui reste tu. */
+            <tr><td colSpan={6} className="muted">{t('scop.noFsliYetImportTb')} <Link href={`/eng/${id}/imports`}>{t('imp.trialBalanceGenericImporter')}</Link></td></tr>
+          ) : withAccounts.map((f) => (
             <tr key={f.id}>
               <td>
                 <details>

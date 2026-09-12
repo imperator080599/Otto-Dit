@@ -50,7 +50,13 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
           <table className="data">
             <thead><tr><th>#</th><th>{t('col.when')}</th><th>{t('col.actor')}</th><th>{t('col.verb')}</th><th>{t('col.object')}</th><th>{t('col.payload')}</th><th>{t('col.hash')}</th></tr></thead>
             <tbody>
-              {events.map((e) => (
+              {events.length === 0 ? (
+                /* R61 (D.6 point 5, « A15 » de l'inventaire du 10 septembre) :
+                   ce journal ne se vide jamais tout seul (append-only) — un
+                   vide ici vient TOUJOURS d'un filtre trop étroit, jamais
+                   d'une absence d'activité. Le geste est donc de le retirer. */
+                <tr><td colSpan={7} className="muted">{t('ev.noEventMatchesThisFilter')} <Link href={`/eng/${id}/events`}>{t('col.all')}</Link></td></tr>
+              ) : events.map((e) => (
                 <tr key={e.id}>
                   <td className="mono faint">{e.id}</td>
                   <td className="faint">{e.created_at.slice(0, 19).replace('T', ' ')}</td>

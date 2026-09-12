@@ -51,6 +51,14 @@ const CLE_COLONNE: Record<Colonne, CleLibelle> = {
 const CLASSE_COLONNE: Record<Colonne, string> = {
   open: 'rouge', clarification_requested: 'ambre', explained: 'violet', resolved: 'vert', escalated: 'ambre',
 };
+/* R61 (D.6 point 5, « A2 » de l'inventaire du 10 septembre) : « rien ici »
+   valait pour les cinq colonnes — un écart ouvert vide (bonne nouvelle) et
+   une clarification en attente vide (rien à relancer) ne disent pas la même
+   chose, et le lisaient identiquement. */
+const CLE_VIDE_COLONNE: Record<Colonne, CleLibelle> = {
+  open: 'kanban.aucunOuvert', clarification_requested: 'kanban.aucuneClarification',
+  explained: 'kanban.aucuneExpliquee', resolved: 'kanban.aucuneResolue', escalated: 'kanban.aucuneEscaladee',
+};
 
 export default async function KanbanPage({
   params, searchParams,
@@ -105,7 +113,7 @@ export default async function KanbanPage({
                 </form>
               )}
               {cartes.length === 0 ? (
-                <p className="epure-liste-vide">{t('kanban.aucune')}</p>
+                <p className="epure-liste-vide">{t(CLE_VIDE_COLONNE[col])}</p>
               ) : cartes.map((x) => (
                 <div key={x.id} className="epure-liste-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }} data-carte={x.id}>
                   <span className="epure-mono">{x.taxonomy_code}</span>

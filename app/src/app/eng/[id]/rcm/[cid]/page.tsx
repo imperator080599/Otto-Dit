@@ -429,7 +429,16 @@ export default async function ControlDetail({
       <Repli cle="eng.id.rcm.cid.design" niveau={2} titre={t('rcmc.facteursEtIuc')} id="design">
         <h3>{t('rcmc.risquesLies')}</h3>
         <div className="row" style={{ flexWrap: 'wrap', gap: 4 }} data-risques-lies>
-          {risquesLies.length === 0 && <span className="faint">{t('rcmc.aucunRisqueLie')}</span>}
+          {/* R61 (D.6 point 5, « A8 » de l'inventaire du 10 septembre) : le
+              formulaire de liaison plus bas ne rend RIEN si le registre du
+              dossier est lui-même vide — la vraie cause, jamais dite. */}
+          {risquesLies.length === 0 && (
+            <span className="faint">
+              {risquesDossier.length === 0
+                ? <>{t('rcmc.aucunRisqueLieRegistreVide')} <Link href={`/eng/${id}/risk`}>{t('risk.riskByAssertion')}</Link></>
+                : t('rcmc.aucunRisqueLie')}
+            </span>
+          )}
           {risquesLies.map((r) => (
             <span key={r.id} className="badge amber" title={r.description}>
               {r.fsli_code ?? '—'} · {r.assertion} · {r.level}
@@ -656,7 +665,18 @@ export default async function ControlDetail({
         </div>
 
         <Repli cle="eng.id.rcm.cid.2" niveau={2} titre={<>Attribute grid</>}>
-          {grid.length === 0 ? <p className="muted">{t('rcmc.notTestedYet')}</p> : (
+          {grid.length === 0 ? (
+            /* R61 (D.6 point 5, « A3 » de l'inventaire du 10 septembre) : le
+               geste réel qui remplirait cette grille dépend d'OÙ le contrôle
+               en est — jamais le même bouton, jamais au même endroit. */
+              <p className="muted">
+                {!instances.some((i) => i.sampled)
+                  ? t('rcmc.notTestedYetDrawSample')
+                  : !(oeInquiryFaite && oeAutreFaite)
+                    ? t('rcmc.notTestedYetDocumentOe')
+                    : t('rcmc.notTestedYetExtractButton')}
+              </p>
+          ) : (
             <table className="data">
               <thead><tr><th>{t('col.instance')}</th>{attrCodes.map((a) => <th key={a}>{a}</th>)}</tr></thead>
               <tbody>
