@@ -954,7 +954,6 @@ export const LIBELLES = {
 
   'circ.corrigerListing': { en: 'Correct the listing (the client replied)', fr: 'Corriger le listing (le client a répondu)' },
   'circ.importerListing': { en: 'Import the listing provided by the client', fr: 'Importer le listing fourni par le client' },
-  'circ.aucuneLigneImporterListing': { en: 'No reconciliation line yet — use', fr: 'Aucune ligne de rapprochement pour l’instant — utilisez' },
   'circ.nConstats': { en: '{n} finding(s).', fr: '{n} constat(s).' },
   'circ.leCompte': { en: 'Account', fr: 'Le compte' },
 

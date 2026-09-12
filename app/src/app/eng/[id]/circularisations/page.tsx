@@ -202,13 +202,22 @@ export default async function CircularisationsPage({
                 </div>
               )}
 
-              {/* R61 (D.6 point 5, « A10 » de l'inventaire du 10 septembre) :
-                  une campagne ouverte sans aucune ligne de rapprochement ne
-                  disait rien — le geste qui la remplirait (importer le
-                  listing) est nommé, juste au-dessus. */}
-              {s.rap.lignes.length === 0 && (
-                <p className="muted">{t('circ.aucuneLigneImporterListing')} {t('circ.importerListing')}</p>
-              )}
+              {/* R61 (D.6 point 5, « A10 » de l'inventaire du 10 septembre) —
+                  CORRIGÉ APRÈS REVUE HOSTILE (2026-09-12) : un premier jet
+                  ajoutait ici un message pour `s.rap.lignes.length === 0`
+                  quand `s.camp` existe, en renvoyant vers le bouton
+                  « importer le listing ». Faux sur les deux plans : (1) sous
+                  `s.camp`, le bouton visible juste au-dessus est TOUJOURS
+                  « corriger le listing » (`corrigerListing`), jamais
+                  « importer » (`s.camp ? corrigerListing : importerListing`,
+                  ligne ~165) — le message nommait un geste qui n'est jamais
+                  affiché dans l'état où il apparaissait ; (2) `importerListing`
+                  (circularisations.ts) REJETTE tout fichier de moins de deux
+                  lignes AVANT de créer la campagne, et n'efface jamais les
+                  tiers déjà partis (`sent_at is not null`) — aucun chemin de
+                  ce service ne peut donc laisser `s.camp` vrai avec zéro
+                  ligne. Un message pour un état inatteignable, qui en plus
+                  se serait trompé de bouton, vaut moins que rien : retiré. */}
               {s.rap.lignes.length > 0 && (
                 <table className="data">
                   <thead>

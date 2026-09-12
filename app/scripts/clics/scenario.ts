@@ -3394,9 +3394,19 @@ export async function conduire(
       dire('R61 kanban : au moins une colonne est vide (sinon la station n’éprouve rien)',
         false, 'les cinq colonnes portent des écarts — refaire tourner après un ré-semis');
     } else {
+      /* CORRIGÉ après revue hostile (2026-09-12) : la première rédaction ne
+         cherchait que le texte FRANÇAIS retiré (« rien ici ») — la
+         démonstration sert l'ANGLAIS par défaut (locServie, voir la station
+         « langue » de ce fichier), où le texte retiré était « nothing
+         here ». Une régression exacte serait passée inaperçue dans la
+         langue réellement servie. Les deux formes de la clé RETIRÉE
+         (`kanban.aucune`, EN/FR) sont donc écrites ici en dur, jamais lues
+         du catalogue — la clé elle-même a disparu, et c'est précisément ce
+         qu'on ne veut plus jamais y revoir. */
+      const TEXTE_GENERIQUE_RETIRE = /^(rien ici|nothing here)$/i;
       const textesDistincts = new Set(Object.values(texteParColonne));
-      dire('R61 kanban : les colonnes vides portent des textes DISTINCTS (jamais « rien ici »)',
-        textesDistincts.size === nVides && ![...textesDistincts].some((t) => /^rien ici$/i.test(t.trim())),
+      dire('R61 kanban : les colonnes vides portent des textes DISTINCTS (jamais le générique retiré)',
+        textesDistincts.size === nVides && ![...textesDistincts].some((t) => TEXTE_GENERIQUE_RETIRE.test(t.trim())),
         `${nVides} colonne(s) vide(s) : ${Object.entries(texteParColonne).map(([c, t]) => `${c}="${t}"`).join(' · ')}`);
     }
   });
