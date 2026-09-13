@@ -309,6 +309,12 @@
       "note": "condition de retrait : materiality.ts::validate (ou son appelant) redéclenche la retentative CTT pour toute bascule non résolue, avec son propre test couvrant la transition « CTT baisse sans import »."
     },
     {
+      "id": "R74",
+      "etat": "en construction — §4 point 3 (mandat du 10 septembre, point 1) : adaptateur d'analyse de walkthrough. Construit et testé UNITAIREMENT (migration 0158, walkthrough-analyse.ts, généralisation de entretiens-analyste.ts, écran de revue L2 sur rcm/[cid], lecture /api/sante, station clics, tests rejoués) — AUCUN appel réel n'a jamais été fait ni tenté (mock uniquement). Reste : verify complet sur l'arbre figé (en cours au moment de cette écriture), revue hostile à deux voix (modèle de données + garde IA-BUDGET-01 + résolution multi-tenant touchés), expédition sur main, SHA production confirmé.",
+      "depuis": "2026-09-13 (§4 point 3, R74)",
+      "note": "condition de retrait : verify complet vert + revue hostile close + SHA production mesuré. Correction consignée ici plutôt que dans BACKLOG_REPORTE.md seul (règle 23 — rien ne sort du registre sans état)."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

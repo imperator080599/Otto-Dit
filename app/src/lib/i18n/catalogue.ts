@@ -1049,7 +1049,6 @@ export const LIBELLES = {
   'rcmc.walkthroughAnalyse': { en: 'Walkthrough analysis — candidate gaps', fr: 'Analyse du walkthrough — écarts candidats' },
   'rcmc.walkthroughAnalyseQuoi': { en: 'The transcript of the recorded walkthrough, confronted with the tasks already documented above — candidate gaps only, never a conclusion. A human decides each one.', fr: 'Le transcript du walkthrough enregistré, confronté aux tâches déjà documentées ci-dessus — des écarts candidats seulement, jamais une conclusion. Une personne statue chacun.' },
   'rcmc.walkthroughTranscriptPlaceholder': { en: 'Paste the walkthrough transcript here.', fr: 'Collez ici le transcript du walkthrough.' },
-  'rcmc.walkthroughDeposerTranscrit': { en: 'Deposit transcript', fr: 'Déposer le transcript' },
   'rcmc.walkthroughAnalyser': { en: 'Analyze', fr: 'Analyser' },
   'rcmc.walkthroughColGenre': { en: 'Kind', fr: 'Genre' },
   'rcmc.walkthroughColDescription': { en: 'Description', fr: 'Description' },

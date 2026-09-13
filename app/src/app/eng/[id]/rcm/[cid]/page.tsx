@@ -474,7 +474,7 @@ export default async function ControlDetail({
           {!walkthroughAnalyse.transcriptDepose ? (
             <form action={deposerTranscriptWalkthroughAction} style={{ display: 'grid', gap: 4, maxWidth: 480 }} data-deposer-transcript-walkthrough>
               <textarea name="contenu" rows={6} required placeholder={t('rcmc.walkthroughTranscriptPlaceholder')} />
-              <button className="btn small">{t('rcmc.walkthroughDeposerTranscrit')}</button>
+              <button className="btn small">{t('proc.deposerTranscript')}</button>
             </form>
           ) : walkthroughAnalyse.ecarts.length === 0 ? (
             <form action={analyserWalkthroughAction} data-analyser-walkthrough>

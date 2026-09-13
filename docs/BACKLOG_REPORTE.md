@@ -896,19 +896,34 @@ design : chacun reste une tranche à construire.**
     écarts candidats — même forme que `transcript_gap`, juste un AUTRE objet source.
   - **Variable d'environnement : `OTTO_WALKTHROUGH_ADAPTER`** (mock/anthropic — même défaut
     `mock`, jamais d'appel externe en suite de tests, règle 4), DISTINCTE de
-    `OTTO_TRANSCRIPT_ADAPTER` pour que le fondateur puisse ouvrir l'un sans l'autre (chaque
-    fonctionnalité sa propre garde de budget EN BASE, jamais une seule bascule pour deux
-    surfaces). `ANTHROPIC_API_KEY` et `OTTO_TRANSCRIPT_MODEL` restent partagés (même clé, même
-    variable de modèle — inutile d'en inventer une seconde pour le même fournisseur).
-  **Ce qui reste à construire, non commencé** : la décision de SCHÉMA (le transcript de
-  walkthrough vit-il dans `interview_transcript`/`transcript_gap` réutilisées, ou dans une table
-  dédiée au walkthrough — un walkthrough est rattaché à un `control_task`/`process`, pas à un
-  `process_interview` ; à trancher avant toute migration), le service qui appelle l'adaptateur, sa
-  garde de budget EN BASE (même patron que l'échelle d'extraction OCR — l'autorité reste la garde,
-  jamais la seule variable d'environnement), l'écran qui déclenche l'analyse et revoit les écarts
-  proposés (plafond HITL L2, règle 7 permanente — jamais L3), sa lecture `/api/sante`, sa station
-  clics, ses tests avec rejeu enregistré. Rien de tout cela n'est activé tant que le fondateur n'a
-  pas ouvert la garde par sa propre écriture SQL (interdit permanent, §2). Nommé plutôt que
-  commencé à la hâte (règle 32 : un étage terminé prime sur deux commencés) — le repass design
-  venait de fermer dans la même session. **Condition de retrait** : l'adaptateur, sa garde, son
-  écran et ses tests existent, gardés, jamais activés sans l'écriture du fondateur.
+    `OTTO_TRANSCRIPT_ADAPTER` — c'est un SÉLECTEUR (quel adaptateur répond), pas un secret.
+    `ANTHROPIC_API_KEY` et `OTTO_TRANSCRIPT_MODEL` restent partagés (même clé, même variable de
+    modèle — inutile d'en inventer une seconde pour le même fournisseur).
+
+  **CORRECTION (2026-09-13, à la construction) — la phrase ci-dessus disait « chaque
+  fonctionnalité sa propre garde de budget EN BASE, jamais une seule bascule pour deux
+  surfaces » avant que le code n'existe. Ce n'est PAS ce qui a été construit, et l'écart se
+  consigne ici plutôt que de laisser une prédiction non tenue passer pour un fait (règle 13).**
+  L'interdit permanent (§2) qui gouverne cette garde parle du « mode IA vivant » AU SINGULIER —
+  une bascule, pas une par fonctionnalité. `assertBudgetActifEnBase()` (`extraction/budget.ts`,
+  clé `app_state.ia_vivante_budget`) est donc restée UNIQUE et PARTAGÉE : le service walkthrough
+  l'appelle telle quelle, sans nouvelle clé `app_state`. C'est aussi, de fait, le PREMIER site
+  d'appel réel de cette garde dans tout le dépôt — `entretiens-analyste.ts` (le chemin réel,
+  Anthropic) ne l'appelait déjà pas avant cette tranche, un écart pré-existant que cette tranche
+  n'a pas corrigé (hors périmètre) mais qu'elle rend visible. Le SÉLECTEUR reste distinct par
+  fonctionnalité (`OTTO_WALKTHROUGH_ADAPTER` vs `OTTO_TRANSCRIPT_ADAPTER` — quel adaptateur
+  tourne) ; la GARDE DE BUDGET, elle, est unique et partagée, conformément à la lettre de
+  l'interdit. Si le fondateur veut un plafond par fonctionnalité, c'est un arbitrage à demander
+  explicitement — non deviné ici.
+
+  **Construit dans cette tranche** (§4 point 3, R74, 2026-09-13) : schéma
+  (`0158_walkthrough_ecarts.sql` — `control_walkthrough_transcript`, `control_walkthrough_gap`,
+  verrou d'engagement, RLS), le service (`walkthrough-analyse.ts` : dépôt, analyse via
+  `getAnalysteWalkthrough()`, décision L2), l'écran de revue humaine sur `rcm/[cid]` (plafond
+  HITL L2, règle 7 — jamais L3), sa lecture `/api/sante`, sa station clics, ses tests avec rejeu
+  enregistré (fixture `dataset/fixtures/walkthroughs.json`, zéro appel réseau). `AnalysteTranscript`
+  (`entretiens-analyste.ts`) a été généralisée pour servir les deux usages sans bifurcation
+  (règle 6) plutôt que dupliquée. **La clé n'a jamais été demandée, exportée ni utilisée** : tout
+  le chemin est prouvé par l'adaptateur de rejeu. **Condition de retrait** : verify complet vert,
+  revue hostile close, SHA production confirmé — à ce moment ce fil se clôt en RÉSOLU, pas en
+  reporté.
