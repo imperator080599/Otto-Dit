@@ -573,6 +573,18 @@ le serveur, pas sa cause — à corréler la prochaine fois avec un `vmstat 1` l
   STATUS.md ont eu lieu entre les deux, ni l'une ni l'autre important au runtime applicatif) —
   voir STATUS.md pour le résultat du passage propre, cité avec son heure et sa durée mesurées.
 
+### Cinquième occurrence (2026-09-13, R74) — encore une route différente, encore silencieuse
+
+`le serveur est tombé après 80 route(s), à « /eng/[id]/rcm (SOX) »` (`verify-r74-3.log`) — une
+CINQUIÈME route différente (après loop SOX, workpapers SOX, testing×2) sur un arbre INCHANGÉ
+depuis le passage précédent de la même tranche (`verify-r74-2.log`, qui était tombé sur un #418,
+pas un ServeurTombe — deux défauts distincts sur deux passages consécutifs du même arbre, aucun
+corrigé par une édition entre les deux, règle 34). Journal identique aux occurrences précédentes :
+aucune exception, aucune trace d'arrêt, la dernière ligne utile est une réponse GET normale suivie
+d'avertissements webpack déjà bénins. Cohérent avec l'hypothèse 1 (pression mémoire/CPU cumulée)
+déjà posée, pas une hypothèse nouvelle. Chaîne rejouée sur le MÊME arbre — résultat cité dans
+STATUS.md.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
