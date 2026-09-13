@@ -4,6 +4,7 @@ import { repoRoot } from '../../src/lib/db/client';
 import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { runLadder } from '../../src/lib/services/extraction/ladder';
 import { getOcrAdapter } from '../../src/lib/services/extraction/adapters';
+import { assertBudgetActifEnBase } from '../../src/lib/services/extraction/budget';
 import {
   compareDoc, falsePositiveRate, pct, score, tally, emptyCounts, add,
   type Comparison, type Counts, type Scored,
@@ -41,6 +42,11 @@ async function main() {
   // reaching it means a loop or a retry storm, so the run stops and says so (ADR-020)
   const budget = Number(flag('budget', '5'));
   const adapter = getOcrAdapter();
+  /* IA-BUDGET-01 — found missing by the surface audit of 2026-09-13
+     (scripts/audit/ia-vivante.ts): this harness calls runLadder() directly, bypassing
+     extractEvidence() and its gate. A deliberately-triggered measurement harness is not
+     exempt from the same discipline as the product. */
+  if (adapter.name !== 'mock') await assertBudgetActifEnBase();
   console.log(`adapter: ${adapter.name} · key: ${keyFingerprint()} · budget guard: $${budget.toFixed(2)}`);
   const root = repoRoot();
   const synthDir = path.join(root, 'dataset', 'eval', 'synthetic');

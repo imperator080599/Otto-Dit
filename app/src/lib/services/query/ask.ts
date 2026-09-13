@@ -10,6 +10,7 @@ import { validatedThresholds } from '../materiality';
 import { catalogueOffer, validatePlan, type PlanSource, type QueryPlan, type ValidPlan } from './plan';
 import { planByRules } from './rules';
 import { getQueryPlanner, type QueryPlannerAdapter } from './adapter';
+import { gardeBudget, assertBudgetActifEnBase } from '../extraction/budget';
 import { assertMembre } from '@/lib/core/membre';
 
 // ADR-017 — « Interroger ». A question becomes a catalogue query or it becomes a refusal.
@@ -127,6 +128,23 @@ export async function ask(
 
   // step 2 — LLM planner, only if the rules missed and an adapter is configured
   if (!candidate) {
+    /* IA-BUDGET-01 AVANT tout appel réel — trouvé ABSENT ici (avec `gardeBudget()`, les
+       deux) par l'audit de surface du 2026-09-13 (scripts/audit/ia-vivante.ts) : ce chemin
+       n'appelait NI l'une NI l'autre garde, alors que `getQueryPlanner()` peut renvoyer
+       `AnthropicQueryPlanner` dès que `OTTO_QUERY_PLANNER=anthropic` est posé. Même ordre que
+       les trois autres chemins réels de ce dépôt.
+       LISTE D'ACCORD (`=== 'anthropic'`), PAS DE REFUS (`!== 'disabled'`) — délibéré : les
+       tests de ce module passent un `QueryPlannerAdapter` FACTICE (`fakePlanner`,
+       query.test.ts) nommé `'test'`, ni `'disabled'` ni `'anthropic'` ; un refus sur
+       `!== 'disabled'` l'aurait fait passer devant la garde par erreur (query.test.ts
+       vérifie déjà `adapter: 'test'` dans la ligne `ai_run` écrite — un nom qu'on ne peut
+       pas changer sans casser ce que le test prouve). N'accorder qu'au SEUL nom que la
+       classe réelle porte est aussi la forme la plus sûre : un futur troisième adaptateur
+       réel devrait explicitement rejoindre cette liste plutôt que de passer par défaut. */
+    if (planner.name === 'anthropic') {
+      await assertBudgetActifEnBase();
+      await gardeBudget();
+    }
     const reply = await planner.plan(asked, lang);
     if (reply.raw !== 'planner_disabled') {
       aiRunId = await recordAiRun({

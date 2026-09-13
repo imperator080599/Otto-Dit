@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
-import { q } from '@/lib/db/client';
+import { q, q1 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { CATALOG, getTemplate } from './catalog';
@@ -9,6 +9,7 @@ import { planByRules } from './rules';
 import { validatePlan } from './plan';
 import { ask, runCatalogue } from './ask';
 import type { QueryPlannerAdapter, PlannerReply } from './adapter';
+import { _reinitialiserGardeBudgetEnBasePourSonde } from '../extraction/budget';
 
 // ADR-017 — « Interroger ». The contract under test: a question either becomes a
 // catalogue query executed against stored records, or an explicit refusal. Never prose,
@@ -189,6 +190,26 @@ describe('« Interroger » — NL → deterministic catalogue query (ADR-017)', 
     for (const t of CATALOG) {
       const res = await runCatalogue(IDS.engNep, t.id, {}, IDS.users.karim);
       expect(res.status, `${t.id} did not execute`).toBe('answered');
+    }
+  });
+
+  /* CAS CONNU MAUVAIS (règle 17) : le chemin RÉEL (OTTO_QUERY_PLANNER=anthropic) doit refuser
+     tant que la garde de budget EN BASE (IA-BUDGET-01) n'est pas ouverte. Ce chemin n'appelait
+     NI cette garde NI même le plafond de dépense cumulée avant le 2026-09-13 — trouvé par
+     l'audit de surface (scripts/audit/ia-vivante.ts), en réponse à une question directe du
+     fondateur. Éprouvé sans qu'AUCUN octet ne parte sur le réseau : la garde refuse AVANT tout
+     `fetch`, et aucun ai_run n'est écrit. */
+  it('CAS CONNU MAUVAIS : le chemin réel (OTTO_QUERY_PLANNER=anthropic) refuse IA-BUDGET-01 tant que la garde en base n’est pas ouverte — zéro appel réseau', async () => {
+    const avant = process.env.OTTO_QUERY_PLANNER;
+    process.env.OTTO_QUERY_PLANNER = 'anthropic';
+    try {
+      const avantRuns = await q1<{ n: string }>(`select count(*)::text n from ai_run where engagement_id = $1`, [IDS.engNep]);
+      await expect(ask(IDS.engNep, 'peu importe la question', IDS.users.karim)).rejects.toThrow(/IA-BUDGET-01/);
+      const apresRuns = await q1<{ n: string }>(`select count(*)::text n from ai_run where engagement_id = $1`, [IDS.engNep]);
+      expect(apresRuns.n).toBe(avantRuns.n);   // zéro ai_run écrit par ce refus
+    } finally {
+      if (avant === undefined) delete process.env.OTTO_QUERY_PLANNER; else process.env.OTTO_QUERY_PLANNER = avant;
+      await _reinitialiserGardeBudgetEnBasePourSonde();
     }
   });
 });

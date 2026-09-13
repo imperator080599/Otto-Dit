@@ -1,0 +1,184 @@
+[
+  {
+    "point": {
+      "fichier": "src/lib/services/entretiens-analyste.ts",
+      "ligne": 106,
+      "nom": "AnthropicAnalyste",
+      "genre": "classe"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 110,
+        "forme": "ANTHROPIC_API_KEY"
+      },
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 206,
+        "forme": "ANTHROPIC_API_KEY"
+      }
+    ],
+    "appelants": [
+      {
+        "fichier": "scripts/eval/entretien.ts",
+        "ligne": 53,
+        "gardeeParAssertBudget": true
+      }
+    ]
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/entretiens-analyste.ts",
+      "ligne": 187,
+      "nom": "getAnalyste",
+      "genre": "fabrique"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 110,
+        "forme": "ANTHROPIC_API_KEY"
+      },
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 206,
+        "forme": "ANTHROPIC_API_KEY"
+      }
+    ],
+    "appelants": [
+      {
+        "fichier": "src/lib/services/entretiens.ts",
+        "ligne": 161,
+        "gardeeParAssertBudget": true
+      }
+    ]
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/entretiens-analyste.ts",
+      "ligne": 199,
+      "nom": "getAnalysteWalkthrough",
+      "genre": "fabrique"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 110,
+        "forme": "ANTHROPIC_API_KEY"
+      },
+      {
+        "fichier": "src/lib/services/entretiens-analyste.ts",
+        "ligne": 206,
+        "forme": "ANTHROPIC_API_KEY"
+      }
+    ],
+    "appelants": [
+      {
+        "fichier": "src/lib/services/walkthrough-analyse.ts",
+        "ligne": 96,
+        "gardeeParAssertBudget": true
+      }
+    ]
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/extraction/adapters.ts",
+      "ligne": 82,
+      "nom": "AnthropicDocAdapter",
+      "genre": "classe"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/extraction/adapters.ts",
+        "ligne": 93,
+        "forme": "ANTHROPIC_API_KEY"
+      },
+      {
+        "fichier": "src/lib/services/extraction/adapters.ts",
+        "ligne": 96,
+        "forme": "new Anthropic( (SDK)"
+      }
+    ],
+    "appelants": []
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/extraction/adapters.ts",
+      "ligne": 172,
+      "nom": "getOcrAdapter",
+      "genre": "fabrique"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/extraction/adapters.ts",
+        "ligne": 93,
+        "forme": "ANTHROPIC_API_KEY"
+      },
+      {
+        "fichier": "src/lib/services/extraction/adapters.ts",
+        "ligne": 96,
+        "forme": "new Anthropic( (SDK)"
+      }
+    ],
+    "appelants": [
+      {
+        "fichier": "src/lib/services/extraction/ladder.ts",
+        "ligne": 119,
+        "gardeeParAssertBudget": true
+      },
+      {
+        "fichier": "scripts/cost/measure.ts",
+        "ligne": 78,
+        "gardeeParAssertBudget": true
+      },
+      {
+        "fichier": "scripts/eval/pieces-neuves.ts",
+        "ligne": 35,
+        "gardeeParAssertBudget": true
+      },
+      {
+        "fichier": "scripts/eval/run.ts",
+        "ligne": 44,
+        "gardeeParAssertBudget": true
+      }
+    ]
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/query/adapter.ts",
+      "ligne": 51,
+      "nom": "AnthropicQueryPlanner",
+      "genre": "classe"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/query/adapter.ts",
+        "ligne": 55,
+        "forme": "ANTHROPIC_API_KEY"
+      }
+    ],
+    "appelants": []
+  },
+  {
+    "point": {
+      "fichier": "src/lib/services/query/adapter.ts",
+      "ligne": 112,
+      "nom": "getQueryPlanner",
+      "genre": "fabrique"
+    },
+    "sitesReels": [
+      {
+        "fichier": "src/lib/services/query/adapter.ts",
+        "ligne": 55,
+        "forme": "ANTHROPIC_API_KEY"
+      }
+    ],
+    "appelants": [
+      {
+        "fichier": "src/lib/services/query/ask.ts",
+        "ligne": 111,
+        "gardeeParAssertBudget": true
+      }
+    ]
+  }
+]

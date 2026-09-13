@@ -4,6 +4,7 @@ import { repoRoot } from '../../src/lib/db/client';
 import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { runLadder } from '../../src/lib/services/extraction/ladder';
 import { getOcrAdapter } from '../../src/lib/services/extraction/adapters';
+import { assertBudgetActifEnBase } from '../../src/lib/services/extraction/budget';
 import { rateFor } from '../../src/lib/core/pricing';
 
 // `npm run cost:measure` — runs the extraction ladder end to end over the synthetic
@@ -48,6 +49,15 @@ async function main() {
 
   const blockers: string[] = [];
   if (which === 'mock') blockers.push('OTTO_OCR_ADAPTER is `mock` — a replay adapter measures nothing. Set it to a live adapter.');
+  /* IA-BUDGET-01 — the SAME function every other real call site uses, its thrown message
+     folded into this script's existing "collect all blockers" UX rather than aborting on the
+     first one. Found missing by the surface audit of 2026-09-13
+     (scripts/audit/ia-vivante.ts) — this script calls runLadder() directly, bypassing
+     extractEvidence() and its gate entirely. A deliberately-triggered measurement harness is
+     not exempt from the same discipline as the product. */
+  if (which !== 'mock') {
+    try { await assertBudgetActifEnBase(); } catch (e) { blockers.push((e as Error).message); }
+  }
   if (which === 'anthropic' && !process.env.ANTHROPIC_API_KEY) blockers.push('ANTHROPIC_API_KEY is not set in this environment.');
   if (rate.inPerMTok === 0 && rate.outPerMTok === 0) {
     blockers.push('OTTO_PRICE_IN_PER_MTOK / OTTO_PRICE_OUT_PER_MTOK are not set — without today’s price list a $ budget cannot be enforced, so the run is refused rather than run blind.');

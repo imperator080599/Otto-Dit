@@ -4,6 +4,7 @@ import { repoRoot } from '../../src/lib/db/client';
 import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { runLadder } from '../../src/lib/services/extraction/ladder';
 import { getOcrAdapter } from '../../src/lib/services/extraction/adapters';
+import { assertBudgetActifEnBase } from '../../src/lib/services/extraction/budget';
 import { compareDoc, pct, score, emptyCounts, add, type Counts, type Comparison } from '../../src/lib/eval/metrics';
 
 // LA PREMIÈRE MESURE HONNÊTE HORS CACHE (point 12, ADR-105) —
@@ -32,6 +33,12 @@ async function main() {
   process.env.OTTO_OCR_ADAPTER = flag('adapter', 'anthropic');
   const budget = Number(flag('budget', '2'));
   const adapter = getOcrAdapter();
+  /* IA-BUDGET-01 (le DROIT même de tenter) AVANT même la vérification de la clé — ce harnais
+     appelle runLadder() directement, hors de extractEvidence() et de sa garde : trouvé par
+     l'audit de surface du 2026-09-13 (scripts/audit/ia-vivante.ts). Un harnais de mesure
+     déclenché délibérément par une session n'est pas dispensé de la même discipline que le
+     produit. */
+  if (adapter.name !== 'mock') await assertBudgetActifEnBase();
   if (adapter.name !== 'mock' && !process.env.ANTHROPIC_API_KEY) {
     console.error('ANTHROPIC_API_KEY absent de app/.env.local — rien ne sera dépensé, rien ne sera mesuré. '
       + 'Ajoutez la clé (jamais dans un shell), puis relancez.');

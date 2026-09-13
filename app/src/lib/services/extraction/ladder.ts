@@ -6,7 +6,7 @@ import { engagementCtx } from '../imports';
 import { findEmbeddedFacturx, parseCiiXml } from './facturx-read';
 import { classify, parseByType, pdfText, type DocType } from './textlayer';
 import { getOcrAdapter, type OcrAdapter } from './adapters';
-import { gardeBudget } from './budget';
+import { gardeBudget, assertBudgetActifEnBase } from './budget';
 import type { ExtractedField } from './fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
@@ -40,7 +40,14 @@ export interface LadderResult {
 export async function runLadder(
   bytes: Uint8Array,
   filename: string,
-  adapter: OcrAdapter = getOcrAdapter(),
+  /* PAS DE DÉFAUT `= getOcrAdapter()` ICI — trouvé le 2026-09-13 en écrivant l'audit de
+     surface (scripts/audit/ia-vivante.ts) : un paramètre par défaut qui appelle la fabrique
+     réelle est un DEUXIÈME chemin vers l'adaptateur réel, hors de la garde IA-BUDGET-01 posée
+     dans `extractEvidence` ci-dessous — mort en pratique (le seul appelant de production
+     passe toujours `adapter` explicitement), mais un chemin mort reste un chemin. Paramètre
+     REQUIS : la dépendance et l'obligation de garde qui va avec restent visibles à chaque
+     appelant, y compris un futur test qui appellerait cette fonction directement. */
+  adapter: OcrAdapter,
 ): Promise<LadderResult> {
   const t0 = Date.now();
   let text = '';
@@ -102,12 +109,18 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
   const ctx = await engagementCtx(ev.engagement_id);
   const bytes = await readBlob(ev.storage_path);
 
-  /* MODE « IA RÉELLE » (ADR-105) : avant qu'une lecture payante puisse partir,
-     la garde de budget compare le cumul d'ai_run au plafond et REFUSE au
-     seuil — l'arrêt est propre, les lectures déjà faites restent au dossier.
-     En rejeu ('mock'), rien ne se dépense et rien n'est gardé. */
+  /* MODE « IA RÉELLE » (ADR-105) : avant qu'une lecture payante puisse partir, IA-BUDGET-01
+     (le DROIT même de tenter — mandat du 9 septembre §4) est vérifiée AVANT le plafond de
+     dépense CUMULÉE (`gardeBudget`, ADR-105) — même ordre que entretiens.ts et
+     walkthrough-analyse.ts. Manquante ici avant le 2026-09-13 (trouvé par l'audit de surface,
+     scripts/audit/ia-vivante.ts, en réponse à une question directe du fondateur) : ce chemin
+     n'appelait QUE `gardeBudget()`, jamais `assertBudgetActifEnBase()`. En rejeu ('mock'),
+     rien ne se dépense et rien n'est gardé. */
   const adapter = getOcrAdapter();
-  if (adapter.name !== 'mock') await gardeBudget();
+  if (adapter.name !== 'mock') {
+    await assertBudgetActifEnBase();
+    await gardeBudget();
+  }
   const res = await runLadder(bytes, ev.filename, adapter);
   await q(`update evidence set doc_type = $2, class_confidence = $3 where id = $1`, [evidenceId, res.docType, res.classConfidence]);
 

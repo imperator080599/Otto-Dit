@@ -3,6 +3,7 @@ import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
 import { loadEnvLocal, keyFingerprint } from '../../src/lib/core/env';
 import { AnthropicAnalyste, RejeuAnalyste, normaliserTranscript } from '../../src/lib/services/entretiens-analyste';
+import { assertBudgetActifEnBase } from '../../src/lib/services/extraction/budget';
 
 // LA PREUVE QUE L'ANALYSTE RÉEL TOURNE (point 2, ADR-108) —
 // `npm run eval:entretien`. Le chemin 'anthropic' de l'analyste de transcript
@@ -42,6 +43,13 @@ async function main() {
     process.exit(1);
   }
 
+  /* IA-BUDGET-01 AVANT l'appel réel — ce harnais construisait `AnthropicAnalyste` directement,
+     hors de `getAnalyste()` et de sa garde : trouvé par l'audit de surface du 2026-09-13, en
+     réponse directe à la question du fondateur (« le harnais qui a produit COST.md §1 ter a-t-il
+     jamais interrogé la garde EN BASE ? » — non, jusqu'à ce correctif). Un harnais de mesure
+     déclenché délibérément par une session n'est pas dispensé de la même discipline que le
+     produit : rien ne dépense sans l'écriture SQL du fondateur, ce script compris. */
+  await assertBudgetActifEnBase();
   const reel = await new AnthropicAnalyste().analyser(transcript, documentation);
   if (!reel) { console.error('réponse vide'); process.exit(1); }
 
