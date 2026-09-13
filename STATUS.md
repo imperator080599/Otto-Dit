@@ -58,12 +58,15 @@ automatiquement (un changement de jetons, pas une réécriture — voir la tranc
 2026-09-12) — quatre culs-de-sac corrigés (dashboard, population, balances-aux, imports). **R61
 (D.6 point 5, « aucun état vide muet ») COMPLET ET SERVI EN PRODUCTION** (`fbfa06b`, mesuré le
 2026-09-12 à 23:10:15Z) — quinze sites corrigés. **R62 (D.6 point 6, « parcours découverte
-chronométré ») COMPLET** — SHA à confirmer ci-dessous après fusion sur `main`. **LE REPASS DESIGN
-ENTIER (jetons + R60 + R61 + R62) EST DONC COMPLET** dès que le SHA de R62 est confirmé servi —
-R59 (comportement par défaut du rail) reste EXPLICITEMENT HORS DE CE REPASS, bloqué sur une
-décision du fondateur distincte (ADR-103, `docs/BACKLOG_REPORTE.md`). **Le fondateur ne sera pas
-réveillé entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass
-(hors R59) est servi ; ce message reste dû dès que le SHA de R62 est confirmé.
+chronométré ») COMPLET ET SERVI EN PRODUCTION** (`4e0eafc`, mesuré le 2026-09-13 à 04:05:12Z) — le
+chemin manquant vers l'atelier construit, trois points de contrôle chronométrés, deux voix
+hostiles indépendantes (registre multi-tenant touché) ayant trouvé et fait corriger quatre défauts
+réels avant fusion. **LE REPASS DESIGN ENTIER (jetons + R60 + R61 + R62) EST DONC COMPLET ET SERVI
+EN PRODUCTION.** R59 (comportement par défaut du rail) reste EXPLICITEMENT HORS DE CE REPASS,
+bloqué sur une décision du fondateur distincte (ADR-103, `docs/BACKLOG_REPORTE.md`). **Le message
+unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell him when that moment
+is — that single message is the only thing you owe him until then ») **est envoyé avec cette
+tranche.**
 
 ## R62 (D.6 point 6) : le parcours découverte, chronométré en clics (2026-09-13)
 
@@ -150,7 +153,15 @@ fichiers de test, 91 routes/0 échec, densité 81 écrans/0 au-delà de 5 action
 échec (387 clics comptés), visuel 328 vues/0 défaut**. R62 étape 3b conclut au premier essai (4
 clics, 1 ligne essayée) sur le monde de démonstration frais.
 
-**SHA servi confirmé, PRODUCTION** : à mesurer après la fusion sur `main`.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `4e0eafc`** (`4e0eafc99112c09624d0ac875471ab7b9e3d4605`,
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` — l'hôte de
+production, jamais l'alias de branche, règle 36) : HTTP 200, `identiteCoherente:true`, toutes les
+lectures `ok:true`, mesuré le 2026-09-13 à 04:05:12Z, moins de deux minutes après le push sur
+`main` (fusion par avance rapide, `fbfa06b..4e0eafc`).
+
+**LE REPASS DESIGN EST DONC COMPLET (jetons + R60 + R61 + R62), servi en production.** R59 reste
+explicitement hors de ce repass (ADR-103, décision du fondateur non tranchée). Le message unique
+promis au fondateur est dû maintenant.
 
 ## R61 (D.6 point 5) : aucun état vide muet — 15 sites, 10 fichiers (2026-09-12)
 
