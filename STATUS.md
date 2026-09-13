@@ -2,6 +2,28 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+---
+
+## MESSAGE AU FONDATEUR (2026-09-13) — le moment annoncé le 10 septembre
+
+Tu as dit, le 10 septembre : « je ne relirai pas écran par écran ; je donnerai mon verdict UNE
+FOIS, sur otto-dit.vercel.app, quand le repass entier sera livré. Dis-moi quand ce moment arrive —
+ce seul message est tout ce que je te dois d'ici là. »
+
+**C'est maintenant.** Le repass — les jetons du socle, puis R60 (tout compteur mène quelque part),
+R61 (aucun état vide muet), R62 (le parcours découverte chronométré en clics) — est COMPLET et SERVI
+EN PRODUCTION. SHA `4e0eafc`, mesuré directement sur `https://otto-dit.vercel.app/api/sante` à
+04:05:12Z le 2026-09-13, moins de deux minutes après la fusion sur `main`.
+
+**R59** (le comportement par défaut du rail) N'EST PAS dans ce que tu vas regarder : il reste
+délibérément hors de ce repass, bloqué sur une tension avec ADR-103 que seul toi peux trancher
+(détail dans `docs/BACKLOG_REPORTE.md`).
+
+Chaque tranche a son détail plus bas (mesures engendrées, revues hostiles, SHA), à lire si tu veux
+le pourquoi de chaque forme. Ce message-ci n'est que le signal que tu as demandé.
+
+---
+
 **Mandat actif** : `docs/MANDATS/2026-09-08_mandat_controle_interne.md` — un nouveau lot (§0 : le
 contrôle interne D&I/OE, le suivi de mission), à exécuter après la clôture du Lot 4 en cours et
 avant le Lot 5, prime sur la suite de l'ordre du plan d'autonomie. Ordre de construction : §7.
