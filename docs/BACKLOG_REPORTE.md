@@ -878,9 +878,10 @@ design : chacun reste une tranche à construire.**
   (ou un appelant qui l'entoure) redéclenche la retentative CTT pour toute bascule non résolue de
   l'engagement, avec son propre test couvrant la transition « CTT baisse sans import ».
 
-- **R74 — §4 point 3 (mandat du 10 septembre, point 1) : l'adaptateur d'analyse de walkthrough
-  reste à construire.** Le fondateur a accordé le plafond de dépense et demande UNE chose en
-  retour : « name the provider, the model, the single call you need it for, and the environment
+- **R74 — §4 point 3 (mandat du 10 septembre, point 1) : l'adaptateur d'analyse de walkthrough :
+  RÉSOLU, servi en production (SHA `b3115b2`, 2026-09-13).** Le fondateur a accordé le plafond de
+  dépense et a demandé UNE chose en retour : « name the provider, the model, the single call you
+  need it for, and the environment
   variable name. » Nommé ici (règle 33 — la demande elle-même mérite d'être commitée, pas
   seulement discutée) :
   - **Fournisseur/modèle : Anthropic, `claude-sonnet-5`** — le SEUL prix confirmé par un dollar
@@ -931,5 +932,13 @@ design : chacun reste une tranche à construire.**
   par `--maxWorkers=2` — preuve directe, pas une hypothèse), un troisième (#418, fil n°7) accepté
   comme bruit documenté après six occurrences identiques et deux hypothèses testées et éliminées,
   par le précédent déjà posé par F14 (docs/CHASSE.md). Deux voix hostiles indépendantes : AUCUN
-  défaut confirmé dans le code de cette tranche. **Condition de retrait restante : SHA production
-  confirmé** — dès que mesuré, ce fil se clôt en RÉSOLU.
+  défaut confirmé dans le code de cette tranche.
+
+  **RÉSOLU — SHA production confirmé.** `b3115b2`, mesuré DIRECTEMENT sur
+  `https://otto-dit.vercel.app/api/sante` à 14:29:58Z le 2026-09-13 (`identiteCoherente:true`),
+  et par le travail CI `deploye` (succès à 14:23:32Z). `IA-BUDGET-01` lit « fermée — aucune garde
+  de budget active en base (défaut, mandat §4) » : aucun geste de cette tranche ne l'a ouverte.
+  R74 ferme ici. Ce qui reste au registre, séparément : le fil `entretiens.ts`/`ladder.ts` non
+  câblé sur `IA-BUDGET-01` (pré-existant, hors périmètre) et le fil du champ `station` jamais
+  câblé dans l'instrument #418 (docs/CHASSE.md) — tous deux consignés, ni l'un ni l'autre corrigé
+  ici.

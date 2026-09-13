@@ -92,6 +92,15 @@ tranche.**
 
 ## R74 (§4 point 3) : l'adaptateur d'analyse de walkthrough — tout ce qui ne demande PAS la clé (2026-09-13)
 
+**COMPLET ET SERVI EN PRODUCTION.** SHA `b3115b2`, confirmé DIRECTEMENT sur
+`https://otto-dit.vercel.app/api/sante` à 14:29:58Z le 2026-09-13 (`identiteCoherente:true`), et
+par le travail CI `deploye` (« le SHA poussé doit être servi dans les 15 minutes », succès à
+14:23:32Z, quatre minutes après la fusion). La nouvelle lecture « walkthrough : aucun écart
+devenu tâche sans tâche RÉELLE liée » est présente et verte (VIDE — aucun écart encore, la
+production n'a pas encore d'usage réel). `IA-BUDGET-01` lit « fermée — aucune garde de budget
+active en base (défaut, mandat §4) » : la garde reste au défaut fermé, exactement comme
+l'interdit permanent l'exige — aucun geste de cette tranche ne l'a ouverte.
+
 *Mandat du fondateur (message du 2026-09-13, en réponse au repass design) : « start building R74 —
 everything that does NOT need the key: the schema, the service, the in-DB budget gate wiring, the
 L2 human-review screen, the /api/sante reading, the clics station, the replayed tests… The
