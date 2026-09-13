@@ -176,8 +176,10 @@ describe('walkthrough : dépôt, analyse (rejeu), écarts candidats statués (§
 
   /* CAS CONNU MAUVAIS (règle 17) : le chemin RÉEL (adaptateur ≠ mock) doit refuser tant que la
      garde de budget EN BASE (IA-BUDGET-01) n'est pas ouverte — câblée pour la première fois dans
-     ce dépôt (entretiens.ts ne l'appelle pas encore, voir walkthrough-analyse.ts). Éprouvé sans
-     qu'AUCUN octet ne parte sur le réseau : la garde refuse AVANT tout `fetch`. */
+     ce dépôt ici. `entretiens.ts` portait le même trou (trouvé par la revue hostile de cette
+     tranche) et a été corrigé dans la foulée, avec son propre cas connu mauvais miroir
+     (entretiens.test.ts). Éprouvé sans qu'AUCUN octet ne parte sur le réseau : la garde refuse
+     AVANT tout `fetch`. */
   it('CAS CONNU MAUVAIS : le chemin réel (OTTO_WALKTHROUGH_ADAPTER=anthropic) refuse IA-BUDGET-01 tant que la garde en base n’est pas ouverte — zéro appel réseau', async () => {
     const { controlId } = await controleAvecVideo('SONDE-R74-G');
     const avant = process.env.OTTO_WALKTHROUGH_ADAPTER;

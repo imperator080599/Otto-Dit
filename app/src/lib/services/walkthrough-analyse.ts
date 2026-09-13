@@ -18,13 +18,13 @@ import { assertMembreDe } from '@/lib/core/membre';
 // est ancré sur `control`, comme sa vidéo (`di_walkthrough_evidence_id`).
 //
 // TROIS PRÉCONDITIONS DANS L'ORDRE (CLAUDE.md, interdits ; mandat du 9
-// septembre §4), câblées ICI POUR LA PREMIÈRE FOIS dans ce dépôt — même
-// entretiens.ts (adapter réel déjà construit, ADR-108) n'appelle QUE
-// `gardeBudget()` (le plafond de dépense CUMULÉE), jamais
+// septembre §4), câblées ICI POUR LA PREMIÈRE FOIS dans ce dépôt. Trouvé en
+// traçant ce chemin : `entretiens.ts` (adapter réel déjà construit, ADR-108)
+// n'appelait QUE `gardeBudget()` (le plafond de dépense CUMULÉE), jamais
 // `assertBudgetActifEnBase()` (IA-BUDGET-01, le DROIT MÊME de tenter une
-// lecture payante) : trouvé en traçant le chemin avant d'écrire cette
-// tranche, corrigé ICI, pas là-bas (règle 19 — cette tranche ne touche pas
-// entretiens.ts, le manque y reste, nommé au backlog).
+// lecture payante) — un écart repris et corrigé par la revue hostile de
+// cette même tranche (`entretiens.ts`, même patron, son propre cas connu
+// mauvais dans `entretiens.test.ts`), pas laissé au backlog.
 //   1. `getAnalysteWalkthrough()` — `demoPublique()` coupe déjà tout
 //      déploiement public vers le rejeu, inconditionnellement (ADR-109).
 //   2. `assertBudgetActifEnBase()` — IA-BUDGET-01 : la garde EN BASE, posée

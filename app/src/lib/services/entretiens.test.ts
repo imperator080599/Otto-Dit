@@ -10,6 +10,7 @@ import {
   creerEntretien, consignerComprehension, deposerTranscript, analyserTranscript,
   statuerEcart, lireEntretiens, purgerTranscriptsEchus, obstaclesEntretiens,
 } from './entretiens';
+import { _reinitialiserGardeBudgetEnBasePourSonde } from './extraction/budget';
 
 // L'ENTRETIEN (point 2, ADR-108) — consentement tracé, module qui fonctionne
 // SANS enregistrement, transcript → écarts CANDIDATS (omissions d'abord),
@@ -155,5 +156,31 @@ describe('entretiens et écarts candidats (ADR-108)', () => {
     expect(lu.transcriptPurge).toBe(true);              // l'écran le DIT, il ne le tait pas
     expect(lu.ecarts.length).toBe(3);
     expect(lu.comprehension).toMatch(/facturation automatisée/);
+  });
+
+  /* CAS CONNU MAUVAIS (règle 17) : le chemin RÉEL (OTTO_TRANSCRIPT_ADAPTER=anthropic) doit
+     refuser tant que la garde de budget EN BASE (IA-BUDGET-01) n'est pas ouverte. Ce chemin
+     n'appelait PAS `assertBudgetActifEnBase()` — trouvé par la revue hostile de R74
+     (walkthrough-analyse.ts, le premier site à l'avoir câblée correctement) : le sélecteur
+     d'adaptateur pouvait atteindre un appel réel sans que la garde EN BASE ne soit jamais
+     interrogée. Éprouvé sans qu'AUCUN octet ne parte sur le réseau : la garde refuse AVANT tout
+     `fetch`, et rien n'est écrit dans transcript_gap. */
+  it('CAS CONNU MAUVAIS : le chemin réel (OTTO_TRANSCRIPT_ADAPTER=anthropic) refuse IA-BUDGET-01 tant que la garde en base n’est pas ouverte — zéro appel réseau', async () => {
+    const itv2 = await creerEntretien({
+      engagementId: IDS.engNep, cycle: 'REVENUE', date: '2026-01-25',
+      sujet: 'sonde IA-BUDGET-01', support: 'enregistrement',
+      participants: PARTICIPANTS, retentionUntil: '2026-07-25', userId: IDS.users.karim,
+    });
+    await deposerTranscript(itv2, TRANSCRIPT, IDS.users.karim);
+    const avant = process.env.OTTO_TRANSCRIPT_ADAPTER;
+    process.env.OTTO_TRANSCRIPT_ADAPTER = 'anthropic';
+    try {
+      await expect(analyserTranscript(itv2, IDS.users.karim)).rejects.toThrow(/IA-BUDGET-01/);
+      const gaps = await q<{ id: string }>(`select id from transcript_gap where interview_id = $1`, [itv2]);
+      expect(gaps).toEqual([]);   // le refus est AVANT toute écriture — rien de partiel
+    } finally {
+      if (avant === undefined) delete process.env.OTTO_TRANSCRIPT_ADAPTER; else process.env.OTTO_TRANSCRIPT_ADAPTER = avant;
+      await _reinitialiserGardeBudgetEnBasePourSonde();
+    }
   });
 });

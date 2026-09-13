@@ -6,7 +6,7 @@ import { nextSeq } from './requests';
 import { raiseFactor } from './questionnaire';
 import { lireProcessus, FSLI_DU_CYCLE } from './processus';
 import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
-import { gardeBudget } from './extraction/budget';
+import { gardeBudget, assertBudgetActifEnBase } from './extraction/budget';
 import { motif, type Motif } from './motif';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
@@ -159,7 +159,17 @@ export async function analyserTranscript(interviewId: string, userId: string): P
   const documentation = digestDocumentation(versions.n.nom, versions.n.etapes, versions.n.controles);
 
   const adapter = getAnalyste();
-  if (adapter.name !== 'mock') await gardeBudget();
+  /* IA-BUDGET-01 AVANT le plafond de dépense — trouvé absent ici par la revue hostile de R74
+     (walkthrough-analyse.ts, qui l'appelle correctement) : cette fonction ne posait QUE
+     `gardeBudget()` (le plafond CUMULÉ), jamais `assertBudgetActifEnBase()` (le DROIT même de
+     tenter une lecture payante). Le sélecteur d'adaptateur (`OTTO_TRANSCRIPT_ADAPTER=anthropic`)
+     combiné à une clé posée aurait donc pu dépenser sans que la garde EN BASE ne soit jamais
+     interrogée — la garde existait depuis le 9 septembre sans un seul site d'appel réel. Cas
+     connu mauvais dans entretiens.test.ts : garde fermée + adaptateur réel ⇒ refus, zéro écriture. */
+  if (adapter.name !== 'mock') {
+    await assertBudgetActifEnBase();
+    await gardeBudget();
+  }
   const reponse = await adapter.analyser(transcript.contenu, documentation);
   if (!reponse) {
     throw new Error('entretien : le rejeu enregistré ne connaît pas ce transcript — déposez celui du jeu de données (dataset/entretiens/), ou lancez le mode IA réelle (npm run demo:ia) pour analyser un entretien jamais vu');

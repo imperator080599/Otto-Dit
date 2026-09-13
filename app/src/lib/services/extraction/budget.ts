@@ -88,12 +88,19 @@ export async function gardeBudgetEnBase(): Promise<GardeBudgetEnBase> {
  *  que personne ne l'a écrite (`gardeBudgetEnBase` rend `actif:false`), et un état INCOMPLET
  *  (`actif:true` sans plafond positif) refuse aussi — jamais lu comme « à moitié activé ».
  *
- *  CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne BLOQUE aucun appel réel aujourd'hui.
- *  `getOcrAdapter()` (adapters.ts) coupe déjà INCONDITIONNELLEMENT tout déploiement public
- *  (`demoPublique()`, vrai sur TOUT déploiement Vercel) vers le rejeu — quoi que dise cette garde.
- *  La relier à un chemin d'exécution réel EST « l'activation du mode IA vivant sur l'URL » que
- *  CLAUDE.md réserve au dernier geste du fondateur, pas à cette tranche (mandat §4 : « rien n'est
- *  activé et aucune clé n'est demandée » tant que 1 et 2 ne sont pas faits).
+ *  CE QUE CETTE FONCTION FAIT ET NE FAIT PAS (règle 19 ; corrigé le 2026-09-13, revue hostile
+ *  R74). Elle est désormais APPELÉE sur DEUX chemins réels : `entretiens.ts::analyserTranscript`
+ *  et `walkthrough-analyse.ts::analyserWalkthrough` — écrit ici avant, faux depuis (une session
+ *  future ne doit pas répéter « aucun chemin ne l'appelle », déjà écrit à tort une fois). Elle ne
+ *  DÉCLENCHE aucun appel réel aujourd'hui pour autant, pour deux raisons distinctes qui tiennent
+ *  ENSEMBLE, pas l'une seule : la garde EN BASE elle-même reste FERMÉE PAR DÉFAUT (aucun chemin
+ *  de ce dépôt n'écrit `actif:true`, voir plus haut) ; et `getOcrAdapter()` (adapters.ts) coupe en
+ *  plus, INCONDITIONNELLEMENT, tout déploiement public (`demoPublique()`, vrai sur TOUT
+ *  déploiement Vercel) vers le rejeu, pour l'échelle d'extraction OCR — un chemin DISTINCT de
+ *  celui-ci. CÂBLER la vérification dans le code n'EST PAS « l'activation du mode IA vivant sur
+ *  l'URL » que CLAUDE.md réserve au dernier geste du fondateur — c'est l'inverse : c'est ce qui
+ *  rend cette activation REFUSÉE par défaut sur un chemin qui, sans elle, l'aurait laissée passer
+ *  dès qu'un sélecteur d'adaptateur et une clé auraient été posés.
  *
  *  La provenance (qui, quand) est exigée au MÊME titre que le plafond — pas une case de confort :
  *  une activation sans acteur ni date tracés est le même défaut que `evidence_deletion_whole`
