@@ -628,6 +628,25 @@ est la plus probable à tomber la première sous pression cumulée), toujours pa
 lien avec le code de cette tranche (`testing/page.tsx` n'importe rien du domaine SOX/walkthrough).
 Chaîne rejouée une fois de plus.
 
+**Huitième occurrence (2026-09-13, R74, `verify-r74-8.log`)** : ENCORE `/eng/[id]/testing`,
+QUATRIÈME fois sur HUIT tentatives à cette même route — et la réponse a pris 30,0 s cette fois
+(contre 13,3-18,4 s aux tentatives précédentes), une tendance à la HAUSSE plutôt qu'un bruit
+stable. `free -m` et `du -sh .next` mesurés AU REPOS entre les tentatives : 13,2 Go libres, 0 Ko
+de swap, `.next` à 441 Mo, aucun processus parasite — rien d'anormal à l'ARRÊT (même limite déjà
+nommée : ça ne dit rien du pic pendant le run).
+
+**Diagnostic construit plutôt qu'une neuvième répétition à l'identique (règle 18)** : `nproc` = 4
+et `vitest.config.ts` a `pool:'forks'` avec `fileParallelism` par défaut (pas de plafond de
+forks posé) — sur 4 cœurs, 140 fichiers de test en parallélisme par défaut PEUT légitimement
+affamer le fork qui fait tourner `next dev` (compilation webpack) + Playwright + Chromium pendant
+que d'AUTRES forks tournent leurs propres tests PGlite au même instant. C'est l'hypothèse 1 déjà
+posée, jamais éprouvée par une vraie mesure jusqu'ici. **Éprouvée maintenant** (`verify-r74-9.log`,
+même chaîne, SEULE différence : `vitest run --poolOptions.forks.maxForks=2` au lieu de `vitest
+run` nu — MÊMES 1086 tests, aucun sauté, seulement moins de forks simultanés). Résultat consigné
+dans STATUS.md dès qu'il est mesuré. Si ce passage est propre, ce sera la PREMIÈRE preuve directe
+(pas une corrélation) que la pression de concurrence CPU, sur CETTE machine à 4 cœurs, est un
+facteur causal réel de R58 — pas seulement compatible avec elle.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
