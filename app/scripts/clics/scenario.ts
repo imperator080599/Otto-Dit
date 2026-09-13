@@ -3625,7 +3625,11 @@ export async function conduire(
     const PLAFOND_ATELIER = 2;
     await lienEchantillon.click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-    await p.waitForTimeout(600);
+    /* L'ATELIER EST UN COMPOSANT SERVEUR LOURD (extraction, matching, grille,
+       budget) — mesuré en dev, `networkidle` rend la main AVANT que l'URL
+       n'ait fini de basculer côté client ; une attente courte lisait encore
+       « /travaux » un instant plus tôt. 3 s couvre la marge mesurée. */
+    await p.waitForTimeout(3000);
     const clicsAtelier = (await clicsCumules()) - clicsAvant;
     const surAtelier = p.url().includes('/testing');
     dire(`R62 étape 3a — atteindre l’atelier en ≤ ${PLAFOND_ATELIER} clic(s) cumulés depuis l’accueil`,
