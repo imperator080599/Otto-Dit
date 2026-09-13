@@ -90,6 +90,94 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## R74 (§4 point 3) : l'adaptateur d'analyse de walkthrough — tout ce qui ne demande PAS la clé (2026-09-13)
+
+*Mandat du fondateur (message du 2026-09-13, en réponse au repass design) : « start building R74 —
+everything that does NOT need the key: the schema, the service, the in-DB budget gate wiring, the
+L2 human-review screen, the /api/sante reading, the clics station, the replayed tests… The
+credential is the LAST wire, not the first. Stop cleanly at that wire and say so. » Les points 1
+et 2 du même message (nommer les deux variables d'environnement précisément, et l'état de la
+tension R59/ADR-103) ont été répondus en chat, sans les choisir — non répétés ici.*
+
+**Construit, testé, gardé — jamais activé** : migration `0158_walkthrough_ecarts.sql`
+(`control_walkthrough_transcript`, `control_walkthrough_gap`, verrou d'engagement, verdict de
+registre, RLS forcée) ; le service `walkthrough-analyse.ts` (dépôt du transcript, analyse via
+`getAnalysteWalkthrough()`, décision par écart — plafond HITL L2, règle 7, jamais L3) ; la
+généralisation de `entretiens-analyste.ts` pour servir à la fois les entretiens de processus et
+les walkthroughs sans bifurcation (règle 6 — mêmes classes `RejeuAnalyste`/`AnthropicAnalyste`,
+paramétrées) ; l'écran de revue humaine sur `rcm/[cid]` ; sa lecture `/api/sante` (un écart
+« task » sans tâche réelle liée fait rougir) ; sa station du parcours cliqué (la PREMIÈRE station
+SOX de tout le scénario — `scripts/clics/contexte.ts` étendu pour résoudre un second dossier) ;
+ses tests avec rejeu enregistré (fixture `dataset/fixtures/walkthroughs.json`, sha256 vérifié,
+zéro appel réseau). **La clé n'a jamais été demandée, exportée, ni utilisée** — tout le chemin
+(dépôt → analyse → décision → refus de la garde) est prouvé par l'adaptateur de rejeu, `mock` par
+défaut. `IA-BUDGET-01` (`assertBudgetActifEnBase`) est câblé sur ce chemin — **le premier site
+d'appel réel de cette garde dans tout le dépôt** (`entretiens-analyste.ts`, le chemin RÉEL, ne
+l'appelait pas avant cette tranche ; écart pré-existant rendu visible, non corrigé ici, hors
+périmètre — confirmé par les deux revues hostiles ci-dessous).
+
+**Verify complet — douze passages, deux défauts distincts diagnostiqués, un troisième accepté
+comme bruit documenté.** Détail entier dans `docs/CHASSE.md` (F17/F17 bis/F17 ter, et la suite de
+la section R58) ; résumé ici :
+- **R58 (le serveur de `tests/screens.test.ts` qui tombe, déjà ouvert depuis des tranches
+  antérieures) a reçu, pour la première fois, une preuve DIRECTE plutôt qu'une corrélation** :
+  cette machine n'a que 4 cœurs et `vitest.config.ts` ne plafonnait aucun fork parallèle ;
+  `vitest run --maxWorkers=2` (mêmes 1086 tests, aucun sauté) a fait disparaître le crash sur le
+  passage suivant, après quatre occurrences consécutives à la même route (`/eng/[id]/testing`,
+  latence en hausse 13,3→30,0 s). Recommandation consignée dans CHASSE.md pour la prochaine
+  session qui lance `npm run verify` sur cette machine.
+- **Un #418 (fil n°7, docs/CHASSE.md §1) s'est reproduit SIX fois sur SIX**, toujours sur la
+  nouvelle station walkthrough, toujours le même bruit (dix-neuf divergences CSSOM déjà
+  documentées — famille F11 — plus la bulle `rail-astuce` déjà connue, E5 ; ZÉRO divergence
+  structurelle, vérifié à chaque occurrence). Deux hypothèses propres à cette station testées et
+  ÉLIMINÉES par la mesure (pas devinées) : le saut d'ancre natif du navigateur (le fragment
+  `#walkthrough-analyse` a été retiré de l'URL — la station navigue vers l'URL plate puis
+  `scrollIntoViewIfNeeded()` — le #418 a persisté) ; une grâce insuffisante après `aller()` (1200 ms
+  ajoutés — persisté aussi). Découverte annexe : le champ `station` de l'instrument #418 n'a
+  **jamais** été câblé depuis sa création (`sonde.station(...)` n'est appelé nulle part) — chaque
+  incident consigné depuis F4 porte le même placeholder mort ; pré-existant, hors périmètre.
+  **Décision, par précédent déjà posé (F14, SHA `9661317`)** : une tranche antérieure a déjà
+  expédié avec cette même signature non résolue, documentée, jugée non bloquante — R74 suit la
+  même règle plutôt que d'inventer une exception plus stricte pour elle-même après douze passages
+  `verify` complets. `npm run visuel`, jamais atteint en douze tentatives (`clics` sortant
+  toujours en échec avant lui), a été lancé SÉPARÉMENT : **328 vues, 0 défaut**.
+- **Résultat mesuré, verify-r74-12 + visuel séparé** : `tsc --noEmit` propre · vitest
+  **140/140 fichiers, 1086/1086 tests** (sous `--maxWorkers=2`) · gardes **44** · semeur propre ·
+  plancher **632**, aucune forme éteinte · langue + épreuve **5/5** cas connus mauvais dénoncés ·
+  lectures + épreuve **0 lecture perdue** sur 1716 chemins · parcours + épreuve **240 stations
+  figées vérifiées, 0 perdue** (24 nouvelles non figées — `--figer` refuse tant qu'un incident
+  navigateur subsiste, par conception, non forcé) · screens (dev + production) **0 échec** ·
+  fumée propre · densité **81 écrans, 0 au-delà de 5 actions** · clics **259 étapes, 1 échec**
+  (le #418 documenté ci-dessus) · visuel **328 vues, 0 défaut**.
+
+**Revue hostile, deux voix indépendantes (règle 30 — modèle de données, garde de budget,
+multi-tenant tous touchés)** : **AUCUN défaut confirmé dans le code de cette tranche.** Les deux
+voix ont vérifié indépendamment (lecture de bout en bout, pas un survol) : l'isolation
+multi-tenant (`assertMembreDe`, la résolution `control_walkthrough_gap` dans `membre.ts`) ; la
+garde `IA-BUDGET-01` correctement câblée avant tout appel d'adaptateur ; RLS + verrou
+d'engagement sur les deux nouvelles tables, conformes au patron établi ; le plafond HITL L2 tenu
+(aucun écart ne devient `control_task` sans un clic humain explicite) ; la provenance
+(`event_log`, `ai_run` avec `purpose:'walkthrough_gaps'`) réellement écrite, pas seulement
+affirmée ; la généralisation de `entretiens-analyste.ts` sans changement de comportement pour le
+chemin entretien existant (tous les nouveaux paramètres ont leur défaut = comportement d'origine) ;
+la lecture `/api/sante` éprouvée sur un cas connu mauvais réel ; l'empreinte sha256 de la fixture
+recalculée indépendamment par chaque voix. La seule chose relevée par les deux voix, convergente
+et déjà connue avant la revue : `entretiens.ts`/`ladder.ts` (le chemin RÉEL des entretiens de
+processus et de l'échelle d'extraction) n'appellent toujours pas `IA-BUDGET-01` — écart
+pré-existant, explicitement hors périmètre de cette tranche (déjà nommé dans le code de cette
+même tranche avant que la revue ne le retrouve), consigné au registre plutôt que corrigé à la
+hâte.
+
+**Ce qui reste, dans l'ordre** : le SHA de fusion, à confirmer servi en production ci-dessous ;
+les 24 stations clics non figées, à figer le jour où le #418 cesse (ou par une décision explicite
+de forcer `--figer` malgré un incident documenté — non prise ici) ; le fil `entretiens.ts`/
+`IA-BUDGET-01` non câblé, au registre (`docs/BACKLOG_REPORTE.md`) ; le fil du champ `station`
+jamais câblé dans l'instrument #418, au registre également. **Le geste du fondateur reste le
+SEUL suivant pour activer réellement l'adaptateur** : poser `ANTHROPIC_API_KEY` (déjà partagée,
+rien de neuf), choisir `OTTO_WALKTHROUGH_ADAPTER=anthropic`, et écrire lui-même la ligne SQL qui
+ouvre `IA-BUDGET-01` — trois gestes distincts, aucun substituable à un autre, et cette tranche
+n'en a exécuté aucun.
+
 ## R62 (D.6 point 6) : le parcours découverte, chronométré en clics (2026-09-13)
 
 *Mandat 2026-09-05 §D.6 : « Un parcours cliqué « découverte » : sans lire le rail, atteindre ses

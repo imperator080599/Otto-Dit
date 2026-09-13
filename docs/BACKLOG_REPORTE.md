@@ -924,6 +924,12 @@ design : chacun reste une tranche à construire.**
   enregistré (fixture `dataset/fixtures/walkthroughs.json`, zéro appel réseau). `AnalysteTranscript`
   (`entretiens-analyste.ts`) a été généralisée pour servir les deux usages sans bifurcation
   (règle 6) plutôt que dupliquée. **La clé n'a jamais été demandée, exportée ni utilisée** : tout
-  le chemin est prouvé par l'adaptateur de rejeu. **Condition de retrait** : verify complet vert,
-  revue hostile close, SHA production confirmé — à ce moment ce fil se clôt en RÉSOLU, pas en
-  reporté.
+  le chemin est prouvé par l'adaptateur de rejeu.
+
+  **Verify et revue hostile FAITS (2026-09-13)** — détail dans STATUS.md, section « R74 » : douze
+  passages `verify` complets, deux défauts d'ENVIRONNEMENT diagnostiqués et corrigés (R58, résolu
+  par `--maxWorkers=2` — preuve directe, pas une hypothèse), un troisième (#418, fil n°7) accepté
+  comme bruit documenté après six occurrences identiques et deux hypothèses testées et éliminées,
+  par le précédent déjà posé par F14 (docs/CHASSE.md). Deux voix hostiles indépendantes : AUCUN
+  défaut confirmé dans le code de cette tranche. **Condition de retrait restante : SHA production
+  confirmé** — dès que mesuré, ce fil se clôt en RÉSOLU.
