@@ -665,7 +665,22 @@ reconstruction de l'instrument #418, une élimination d'UNE variable de CETTE st
 `scripts/clics/scenario.ts` ne navigue plus vers l'URL AVEC fragment (`#walkthrough-analyse`) —
 elle navigue vers l'URL plate puis fait défiler jusqu'à l'ancre via `scrollIntoViewIfNeeded()`,
 éliminant le saut d'ancre natif du navigateur comme variable, sans toucher `aller()` ni l'instrument
-partagé. À rejouer pour voir si le #418 disparaît aussi.
+partagé.
+
+**Mesuré (`verify-r74-10.log`, même chaîne throttlée + le correctif ci-dessus)** :
+`ServeurTombe` toujours absent (règle 30 amendement — confirmation, pas un fait nouveau à
+répéter). **Le #418 S'EST REPRODUIT une QUATRIÈME fois, sur l'URL PLATE cette fois** (plus de
+fragment dans le message d'erreur — le correctif a bien pris effet) — même 20 divergences, même
+bruit connu. **Hypothèse « saut d'ancre natif » ÉLIMINÉE** : retirer le fragment n'a rien changé,
+donc ce n'était pas le mécanisme. Ce qui reste compatible avec les quatre occurrences : cette page
+précise (`rcm/[cid]`, plusieurs panneaux `Repli` — CHACUN un composant CLIENT, `repli.tsx:1`)
+est simplement la plus LOURDE à hydrater de tout le parcours (215 270 octets, comparable à
+`/eng/[id]/testing`, l'autre point chaud de cette même tranche) — `aller()` attend le SILENCE
+RÉSEAU, pas la fin de l'hydratation CPU-liée, donc une page suffisamment lourde peut dépasser
+cette garde même une fois durcie. **Pas une piste nouvelle à construire ici** (même limite que
+F9-F17 : construire le marqueur d'hydratation dépasse le mandat) — accepté comme bruit connu,
+quatre fois vérifié sans divergence structurelle, et la chaîne est rejouée une fois de plus pour
+un passage propre (la variance de timing seule peut suffire, comme pour A-05, F5 : ~50 %).
 
 ### Ce que cette récidive NE change PAS
 
