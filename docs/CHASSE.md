@@ -682,6 +682,21 @@ F9-F17 : construire le marqueur d'hydratation dépasse le mandat) — accepté c
 quatre fois vérifié sans divergence structurelle, et la chaîne est rejouée une fois de plus pour
 un passage propre (la variance de timing seule peut suffire, comme pour A-05, F5 : ~50 %).
 
+**Mesuré (`verify-r74-11.log`, même chaîne + la grâce explicite)** : `ServeurTombe` toujours
+absent. **Le #418 S'EST REPRODUIT une CINQUIÈME fois**, mêmes 20 divergences. **Hypothèse
+« grâce insuffisante » NON CONFIRMÉE non plus** — au moins pas à 1200 ms.
+
+**Découverte annexe, en lisant `scripts/clics/hydratation.ts` pour comprendre le champ
+`station`** : `poserLaSonde()` initialise `station` à `'(avant la première station)'` et expose
+`sonde.station(nom)` pour le faire avancer — mais **AUCUN appel à `sonde.station(...)` n'existe
+dans `scripts/clics/scenario.ts` ni `run.ts`** (vérifié par recherche). Le champ n'a donc JAMAIS
+porté d'information réelle, dans AUCUN incident jamais consigné ici — F4 à F17 disent TOUS
+« station (avant la première station) », sans exception, parce que la valeur ne bouge jamais.
+**Ce n'est pas un indice sur CETTE tranche** (le même vide couvre neuf ans... pardon, neuf mois de
+constats antérieurs) — un prédicat déclaré et jamais câblé (règle 13), consigné ici plutôt que
+corrigé à la hâte (le corriger changerait la FORME de tous les rapports futurs, à faire à part,
+pas au milieu d'une chasse au #418 qui n'en a pas besoin pour ce qu'elle établit déjà par l'URL).
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
