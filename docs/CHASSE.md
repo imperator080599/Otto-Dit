@@ -648,6 +648,25 @@ tenté d'abord, REJETÉ par le CLI de cette version — `--maxWorkers` est le bo
 (pas une corrélation) que la pression de concurrence CPU, sur CETTE machine à 4 cœurs, est un
 facteur causal réel de R58 — pas seulement compatible avec elle.
 
+**Résultat mesuré (`verify-r74-9.log` — deux tentatives, la première rejetée par le CLI sur le
+mauvais nom de drapeau, `--maxWorkers=2` la bonne forme, confirmée par `npx vitest --help`)** :
+`ServeurTombe` **NE S'EST PAS REPRODUIT** — la chaîne a franchi vitest, gardes, semeur, plancher,
+langue×2, lectures×2, parcours×2, screens, fumee, densite, jusqu'à clics. **PREMIÈRE preuve
+directe que la pression de concurrence CPU (4 cœurs, forks non plafonnés) est un facteur causal
+réel de R58**, pas seulement une hypothèse compatible — la hausse de latence des tentatives 5-8
+(13,3→30,0 s) et la disparition du crash sous `--maxWorkers=2` pointent dans le même sens. Reste
+NON prouvé : que ce soit la SEULE cause (R58 a aussi été vu sur une machine où aucun processus
+parasite n'était visible après coup — hypothèse 2, un serveur Next lui-même sans trace, n'est pas
+éliminée par cette seule mesure). Le #418 sur `walkthrough-analyse`, lui, S'EST REPRODUIT une
+TROISIÈME fois, à l'IDENTIQUE, MÊME sous concurrence réduite — donc PAS causé par la même pression
+CPU que R58 (sinon il aurait dû disparaître aussi) : un mécanisme distinct, propre à cette
+transition précise. **Corrigé dans cette tranche, en restant dans son périmètre** (pas une
+reconstruction de l'instrument #418, une élimination d'UNE variable de CETTE station) :
+`scripts/clics/scenario.ts` ne navigue plus vers l'URL AVEC fragment (`#walkthrough-analyse`) —
+elle navigue vers l'URL plate puis fait défiler jusqu'à l'ancre via `scrollIntoViewIfNeeded()`,
+éliminant le saut d'ancre natif du navigateur comme variable, sans toucher `aller()` ni l'instrument
+partagé. À rejouer pour voir si le #418 disparaît aussi.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)

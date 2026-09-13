@@ -3727,7 +3727,16 @@ export async function conduire(
     await station('walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74)', async () => {
       await devenir(c.preparateur.id);
       const engSox = `${base}/eng/${c.controleWalkthrough!.engId}`;
-      await aller(`${engSox}/rcm/${c.controleWalkthrough!.controlId}#walkthrough-analyse`);
+      /* PAS DE FRAGMENT `#walkthrough-analyse` DANS L'URL — trouvé en creusant
+         F17/F17 bis (docs/CHASSE.md §1) : un #418 s'est reproduit 3/3 sur
+         PRÉCISÉMENT cette navigation, toujours du bruit connu (aucune
+         divergence structurelle), mais le saut d'ancre natif du navigateur
+         reste une variable non éliminée tant qu'elle est présente dans l'URL.
+         Le panneau est déjà OUVERT par défaut (aucune préférence mémorisée
+         possible pour une clé neuve, repli.tsx:55) : rien à dérouler, un
+         simple défilement suffit. */
+      await aller(`${engSox}/rcm/${c.controleWalkthrough!.controlId}`);
+      await p.locator('#walkthrough-analyse').scrollIntoViewIfNeeded();
       const TRANSCRIPT = "Auditeur : Pouvez-vous me décrire ce que vous faites quand un client demande un avoir ?\nPropriétaire du contrôle : Le commercial saisit la demande d'avoir dans le système, puis moi je la valide avant qu'elle parte en compta. Je regarde toujours le motif et je vérifie le montant par rapport à la facture d'origine.\nAuditeur : Et pour les avoirs au-delà d'un certain montant ?\nPropriétaire du contrôle : Au-dessus de 5 000 euros, j'envoie systématiquement un mail au directeur financier pour qu'il valide aussi, avant que je ne finalise. C'est comme ça depuis le début de l'année, on a resserré le contrôle après un souci l'an dernier.\nAuditeur : Est-ce que vous faites autre chose de régulier sur ce cycle ?\nPropriétaire du contrôle : Oui, une fois par trimestre je fais un point avec la compta sur les avoirs en attente de plus de trente jours, pour être sûr qu'aucun ne traîne. On regarde la liste ensemble.";
 
       if (await compte('[data-deposer-transcript-walkthrough]')) {
