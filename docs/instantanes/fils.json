@@ -322,9 +322,15 @@
     },
     {
       "id": "R76",
-      "etat": "ouvert — extraction/ladder.ts n'appelle toujours pas assertBudgetActifEnBase() sur son chemin d'adaptateur réel, contrairement à entretiens.ts et walkthrough-analyse.ts (tous deux corrigés le 2026-09-13). getOcrAdapter() coupe déjà tout déploiement PUBLIC (demoPublique()) vers le rejeu, donc rien ne fuit sur otto-dit.vercel.app aujourd'hui — mais un déploiement non-Vercel avec la garde ouverte resterait exposé sur ce seul chemin.",
+      "etat": "RÉSOLU, servi en production — SHA 37cf025, identiteCoherente:true, mesuré directement le 2026-09-13 19:00:09Z. assertBudgetActifEnBase() appelée AVANT gardeBudget() dans extraction/ladder.ts::extractEvidence(), même patron que entretiens.ts/walkthrough-analyse.ts ; le paramètre adaptateur de runLadder() n'a plus de défaut silencieux. Cas connu mauvais (ladder.test.ts, nouveau) : REFUS /IA-BUDGET-01/, doc_type reste null, zéro ai_run, zéro appel réseau.",
       "depuis": "2026-09-13 (revue hostile R74, voix 1 ; reconfirmé au correctif entretiens.ts)",
-      "note": "condition de retrait : assertBudgetActifEnBase() câblée dans ladder.ts avant tout appel réel, même patron que les deux chemins déjà corrigés, avec son propre cas connu mauvais."
+      "note": "trouvé et fermé dans la tranche d'énumération complète demandée par le fondateur (2026-09-13) — voir R77, la même tranche."
+    },
+    {
+      "id": "R77",
+      "etat": "RÉSOLU, servi en production — SHA 37cf025, identiteCoherente:true, mesuré directement le 2026-09-13 19:00:09Z. query/ask.ts n'appelait NI assertBudgetActifEnBase() NI gardeBudget() sur son chemin d'adaptateur réel (planificateur « Interroger ») — un troisième site sans AUCUNE garde, découvert par l'audit de surface engendré (scripts/audit/ia-vivante.ts), que ni la revue hostile de R74 ni celle d'entretiens.ts n'avaient trouvé (aucune des deux ne couvrait scripts/ ni la construction directe d'une classe Anthropic... hors fabrique). Gate sur liste d'autorisation (planner.name === 'anthropic', pas une liste d'exclusion qui aurait accidentellement gardé le double de test name:'test'). Cas connu mauvais (query.test.ts, ajouté) : REFUS /IA-BUDGET-01/, zéro ai_run, zéro appel réseau.",
+      "depuis": "2026-09-13 (audit de surface engendré, mandat du fondateur : « enumerate every site… close every one »)",
+      "note": "l'audit lui-même (scripts/audit/ia-vivante.ts) reporte 7 points d'accès connus, 0 appel non gardé au SHA 37cf025 ; garde structurelle ajoutée (scripts/audit/ia-vivante.test.ts, cas connu mauvais : site fabriqué détecté puis supprimé) pour qu'un futur site non gardé ne puisse plus passer inaperçu. Deux revues hostiles indépendantes ont trouvé et fait corriger deux défauts avant fusion (eval.test.ts pouvait faire un appel réseau réel selon l'environnement du shell — règle 4 ; l'en-tête de l'audit ne nommait pas sa propre imprécision fichier-large — règle 19) ; détail complet dans docs/BACKLOG_REPORTE.md."
     },
     {
       "id": "N2-1",

@@ -976,3 +976,54 @@ design : chacun reste une tranche à construire.**
   sans jamais interroger la garde EN BASE. **Condition de retrait** : `assertBudgetActifEnBase()`
   câblée dans `ladder.ts` avant tout appel réel, même patron que `entretiens.ts`/
   `walkthrough-analyse.ts`, avec son propre cas connu mauvais.
+
+  **RÉSOLU — SHA production confirmé.** `37cf025`, mesuré DIRECTEMENT sur
+  `https://otto-dit.vercel.app/api/sante` à 19:00:09Z le 2026-09-13 (`identiteCoherente:true`).
+  `assertBudgetActifEnBase()` est désormais appelée AVANT `gardeBudget()` dans
+  `extraction/ladder.ts::extractEvidence()`, même patron que `entretiens.ts`/
+  `walkthrough-analyse.ts` ; le troisième paramètre de `runLadder()` (l'adaptateur) est passé
+  explicitement partout, plus de défaut silencieux vers `getOcrAdapter()`. **Cas connu mauvais**
+  (`ladder.test.ts`, nouveau — aucun test n'exerçait `extractEvidence()` avant celui-ci) : une
+  pièce réelle déposée, `OTTO_OCR_ADAPTER=anthropic` posé, garde EN BASE fermée (défaut) — REFUS
+  `/IA-BUDGET-01/`, `evidence.doc_type` reste null, zéro `ai_run` écrit, zéro appel réseau. Trouvé
+  et corrigé dans la MÊME tranche que R77 ci-dessous, à la demande explicite du fondateur d'énumérer
+  et fermer TOUTE la surface plutôt que ce seul fil (2026-09-13, « enumerate every site… close
+  every one »). `IA-BUDGET-01` lit toujours « fermée — aucune garde de budget active en base
+  (défaut, mandat §4) » sur `otto-dit.vercel.app` : ce correctif ne l'a pas ouverte.
+
+- **R77 — `query/ask.ts` (le planificateur « Interroger ») n'appelait NI `assertBudgetActifEnBase()`
+  NI même `gardeBudget()` sur son chemin d'adaptateur réel — un troisième site sans AUCUNE garde,
+  pas seulement sans IA-BUDGET-01.** Découvert le 2026-09-13 par l'audit de surface engendré
+  (`scripts/audit/ia-vivante.ts`), en réponse à la même demande d'énumération complète que R76 —
+  ni la revue hostile de R74 ni celle d'entretiens.ts ne l'avaient trouvé, car aucune des deux ne
+  couvrait `scripts/` ni la construction directe d'une classe `Anthropic...` hors fabrique.
+  **RÉSOLU — SHA production confirmé.** `37cf025`, mesuré DIRECTEMENT sur
+  `https://otto-dit.vercel.app/api/sante` à 19:00:09Z le 2026-09-13 (`identiteCoherente:true`).
+  Gate posée sur liste d'autorisation (`planner.name === 'anthropic'`, jamais une liste
+  d'exclusion — le double de test du fichier porte `name: 'test'` et un test préexistant affirme
+  `adapter: 'test'` dans `ai_run`, qu'une liste d'exclusion aurait accidentellement gardé).
+  **Cas connu mauvais** (`query.test.ts`, ajouté) : `OTTO_QUERY_PLANNER=anthropic` posé, garde EN
+  BASE fermée — REFUS `/IA-BUDGET-01/`, zéro `ai_run` écrit, zéro appel réseau. `IA-BUDGET-01` lit
+  toujours « fermée » en production : ce correctif ne l'a pas ouverte.
+
+  **La tranche entière (R76 + R77)** est engendrée par `scripts/audit/ia-vivante.ts` (règle 21) —
+  `docs/IA_VIVANTE_SURFACE.md` et `docs/instantanes/ia-vivante.json`, régénérés à chaque exécution,
+  reportent **7 points d'accès connus, 0 appel non gardé** au SHA `37cf025`. Une garde structurelle
+  neuve (`scripts/audit/ia-vivante.test.ts`) rejoue le MÊME balayage à chaque `vitest run` — cas
+  connu mauvais : un site fabriqué, écrit puis supprimé dans le même test (règle 24), prouve que le
+  détecteur détecte réellement ; un second test affirme zéro appel non gardé sur le vrai balayage ;
+  un troisième épingle le compte à 7, pour qu'un site apparu ou disparu sans que ce test change
+  soit lui-même le signal d'un trou. Deux revues hostiles indépendantes (règle 30 — garde de budget
+  touchée) : **deux défauts confirmés, tous deux corrigés avant fusion** — (1) `eval.test.ts`
+  appelait `runLadder()` avec `getOcrAdapter()` (sensible à `OTTO_OCR_ADAPTER` ambiant) alors que
+  `runLadder()` lui-même ne garde rien ; un poste ayant suivi la remédiation imprimée par
+  `scripts/cost/measure.ts` sans désexporter aurait fait partir un appel réseau réel au premier
+  `npm test` (règle 4) — corrigé en construisant `new ReplayOcrAdapter()` en dur, plus aucune
+  dépendance à l'environnement du shell ; (2) l'en-tête de `ia-vivante.ts` ne disait pas que
+  `gardeeParAssertBudget` teste la présence du littéral n'importe où dans le FICHIER de l'appelant,
+  pas près du site d'appel précis (règle 19) — nommé maintenant, aucun fichier connu n'a deux sites
+  distincts aujourd'hui, artefact régénéré byte-identique après le correctif. Une troisième
+  observation de la voix 1 (la fabrique reconnue est `export function get...(` seulement, pas
+  `export const getX = () => ...`) était déjà, elle aussi, corrigée dans l'en-tête avant la fusion.
+  Aucun des deux défauts ne changeait le compte de 7 points ni le résultat « 0 non gardé » —
+  vérifié par régénération de l'artefact après chaque correctif.

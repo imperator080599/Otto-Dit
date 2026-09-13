@@ -90,6 +90,111 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Tranche d'énumération « IA vivante » : R76 + R77, garde structurelle (2026-09-13)
+
+*Mandat du fondateur (message du 2026-09-13, après confirmation de R74/entretiens.ts en
+production) : « Do not create a key. One already exists… before the enumeration tranche, answer
+one factual question with a measurement, not a guess : is ANTHROPIC_API_KEY currently set in the
+Vercel environment… enumerate every site that can reach the provider or read
+ANTHROPIC_API_KEY, as a generated artifact ; close every one outside assertBudgetActifEnBase, R76
+included, each with its own known-bad case… add the test that makes a fourth ungated site
+impossible. » Interdit explicite, tenu à la lettre : **la clé n'a été ni créée, ni demandée, ni
+exportée, ni imprimée.**
+
+**Réponse à la question factuelle, honnête plutôt que devinée.** Aucun outil de cette session ne
+liste les variables d'environnement Vercel (`get_project`, `list_projects`, `get_deployment`
+vérifiés — aucun n'expose de nom de variable) ; le CLI Vercel local est présent mais non
+authentifié dans ce bac à sable. **La présence réelle d'`ANTHROPIC_API_KEY` côté Vercel n'a donc
+pas pu être mesurée.** Le fait de code disponible, lui, est vérifié directement (`demoPublique()`,
+`src/lib/core/demo-public.ts`) : `VERCEL === '1'` est posé par la PLATEFORME Vercel elle-même sur
+CHAQUE build/exécution, tous scopes confondus (production, preview, development) — donc
+`demoPublique()` est VRAIE inconditionnellement sur Vercel, quoi que contiennent
+`OTTO_TRANSCRIPT_ADAPTER`/`OTTO_WALKTHROUGH_ADAPTER`/`OTTO_OCR_ADAPTER` ou la clé elle-même, et les
+quatre fabriques d'adaptateur (`getAnalyste`, `getAnalysteWalkthrough`, `getOcrAdapter`,
+`getQueryPlanner`) le vérifient EN PREMIER. Ceci ne prouve pas l'absence de la clé côté Vercel —
+seulement que sa présence là-bas ne change rien à ce que ces quatre fabriques retournent
+aujourd'hui.
+
+**FAIT ET SERVI EN PRODUCTION — l'énumération complète, engendrée, jamais rédigée à la main**
+(`scripts/audit/ia-vivante.ts`, règle 21). Balaye `src/` ET `scripts/` (la première version du
+script ne couvrait que `src/` et ratait `scripts/eval/entretien.ts`, qui construit
+`AnthropicAnalyste` directement, hors fabrique — corrigé avant la première exécution retenue).
+Suit deux façons d'atteindre le fournisseur : une fabrique exportée (`export function get...(`)
+et une instanciation directe d'une classe `Anthropic<Quelque chose>`. Commentaires neutralisés
+avant balayage (`sansCommentaires()`) pour ne pas confondre une mention en prose avec un appel
+réel. Sortie : `docs/IA_VIVANTE_SURFACE.md` (lisible) et `docs/instantanes/ia-vivante.json`
+(donnée), régénérés à chaque exécution — **7 points d'accès connus, 0 appel non gardé au SHA
+`37cf025`.**
+
+**Neuf sites trouvés au total, tous fermés** : deux déjà gardés (`entretiens.ts`,
+`walkthrough-analyse.ts`, tranches précédentes) ; **R76** — `extraction/ladder.ts::extractEvidence()`
+n'appelait ni `assertBudgetActifEnBase()` ni ne passait l'adaptateur explicitement (le troisième
+paramètre de `runLadder()` avait un défaut silencieux vers `getOcrAdapter()`) ; **R77, un
+troisième site trouvé PAR cet audit, pas connu avant lui** — `query/ask.ts` (le planificateur
+« Interroger ») n'appelait NI `assertBudgetActifEnBase()` NI MÊME `gardeBudget()`, un trou plus
+large que R76 ; quatre scripts CLI (`scripts/eval/entretien.ts`, `scripts/eval/pieces-neuves.ts`,
+`scripts/cost/measure.ts`, `scripts/eval/run.ts`) gardés de la même façon, chacun observé EN
+DIRECT refusant sans appel réseau (`scripts/cost/measure.ts` a, par erreur, écrasé le
+`COST.md` git-suivi avec un enregistrement de run bloqué pendant cette observation — repéré
+immédiatement par `git diff`, reverté avant tout commit ; aucune autre sonde n'a touché de fichier
+suivi). Patron uniforme : `assertBudgetActifEnBase()` AVANT `gardeBudget()`, sauté seulement si
+`adapter.name === 'mock'` — sauf `query/ask.ts`, sur liste d'AUTORISATION
+(`planner.name === 'anthropic'`) plutôt qu'exclusion, pour ne pas accidentellement garder le
+double de test `name:'test'` qu'un test préexistant affirme voir dans `ai_run`.
+
+**La garde structurelle, le livrable explicitement demandé**
+(`scripts/audit/ia-vivante.test.ts`) : rejoue le MÊME balayage à chaque `vitest run`, jamais un
+instantané figé. Trois épreuves : (1) **cas connu mauvais** — un fichier de sonde fabriqué,
+écrit sous `scripts/audit/` puis supprimé dans le même test (règle 24), imitant un site réel non
+gardé (`new AnthropicAnalyste()` sans `assertBudgetActifEnBase(`) — le détecteur DOIT le voir,
+sinon il ne détecte rien de réel non plus ; (2) zéro appel non gardé sur le vrai balayage ; (3) le
+compte de points d'accès est épinglé à 7, pour qu'un site apparu ou disparu SANS que ce test
+change soit lui-même le signal d'un trou.
+
+**Deux revues hostiles indépendantes (règle 30 — garde de budget touchée), deux défauts
+confirmés, tous deux corrigés avant fusion** — aucune n'a trouvé de défaut dans l'ordre des
+gardes elles-mêmes (vérifié ligne par ligne par chaque voix : la garde précède toujours tout appel
+réseau et toute écriture, dans les cinq sites de service/CLI et l'audit lui-même) :
+1. **`eval.test.ts` appelait `runLadder()` avec `getOcrAdapter()`** — sensible à `OTTO_OCR_ADAPTER`
+   ambiant — alors que `runLadder()` lui-même NE GARDE RIEN (la garde IA-BUDGET-01 ne vit que dans
+   `extractEvidence()`, que cette suite ne passe jamais). Un poste de développement ayant suivi la
+   remédiation IMPRIMÉE par `scripts/cost/measure.ts` (`export OTTO_OCR_ADAPTER=anthropic` +
+   `export ANTHROPIC_API_KEY=…`) sans désexporter aurait fait partir un appel réseau réel au
+   premier `npm test` — règle 4 (zéro appel externe dans la suite), un risque introduit avant
+   cette tranche mais touché par elle sans être fermé. **Corrigé** : l'adaptateur mock est
+   construit en dur (`new ReplayOcrAdapter()`), plus aucune dépendance à l'environnement du shell
+   — le propre commentaire du fichier promettait déjà « zero network », c'est maintenant garanti
+   par construction.
+2. **L'en-tête de `ia-vivante.ts` ne nommait pas sa propre imprécision** (règle 19) :
+   `gardeeParAssertBudget` teste la présence du littéral `assertBudgetActifEnBase(` n'importe où
+   dans le FICHIER de l'appelant, pas près du site d'appel précis ni lié à l'adaptateur précis
+   appelé — un fichier avec deux sites distincts, l'un gardé et l'autre non, marquerait les DEUX
+   « GARDÉ ». Aucun fichier connu n'a deux sites distincts aujourd'hui (vérifié à la main par les
+   deux voix) ; **nommé** dans l'en-tête, artefact régénéré byte-identique après le correctif. Une
+   troisième observation de la même voix 1 (la fabrique reconnue est `export function get...(`
+   seulement, pas `export const getX = () => ...`) était déjà elle aussi corrigée dans l'en-tête
+   avant que la seconde voix ne rende son verdict.
+
+Verify complet rejoué (`--maxWorkers=2`) : **142/142 fichiers vitest** · screens (dev + production)
+**91 + 53 routes, 0 échec** · densité **81 écrans, 0 au-delà de 5 actions** · clics **259 étapes,
+2 échec(s)** (le même #418 déjà documenté, fil n°7 de `docs/CHASSE.md`, sans rapport avec le code
+de cette tranche — extraction/query/eval, jamais l'hydratation React) · parcours figé **240
+stations vérifiées**.
+
+**SHA `37cf025`, confirmé DIRECTEMENT sur `https://otto-dit.vercel.app/api/sante` à 19:00:09Z le
+2026-09-13** (`identiteCoherente:true`, toutes les lectures passent), et par le déploiement Vercel
+lui-même (`READY`, ~103 s de build, aliasé sur `otto-dit.vercel.app`). `IA-BUDGET-01` lit toujours
+« fermée — aucune garde de budget active en base (défaut, mandat §4) » : aucun geste de cette
+tranche ne l'a ouverte, ni le SQL du fondateur n'a été exécuté par cette session (interdit
+explicite du mandat — c'est SON geste, après ce message).
+
+**Ce qui reste, dans l'ordre** : le fondateur peut maintenant exécuter lui-même le SQL
+`ia_vivante_budget` (plafond 2 USD, son nom, sa main) — troisième geste distinct après la clé et
+le sélecteur d'adaptateur, aucun substituable ; R59/ADR-103 (option b confirmée par le fondateur —
+la replier dans le système de jetons, ré-exprimer ADR-103 en test mécanique) reste à construire,
+non commencée ici, hors périmètre explicite de cette tranche ; R75 (`sonde.station()` jamais
+câblée) reste ouvert, non touché ici.
+
 ## Correctif fondateur : IA-BUDGET-01 câblée dans entretiens.ts (2026-09-13)
 
 *Le fondateur, en confirmant R74 en production, a relevé que le compte rendu enterrait le fait le
