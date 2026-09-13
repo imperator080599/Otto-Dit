@@ -27,8 +27,11 @@ import path from 'node:path';
 // reste nécessaire pour ça, et chaque site listé ici est relu à la main avant d'être marqué
 // « fermé ». Il ne suit pas un ré-export ou un alias d'import renommé
 // (`import { getOcrAdapter as x }`, `import { AnthropicAnalyste as X }`) — aucun site connu
-// ne fait ça, mais un futur pourrait. Une classe réelle qui ne suivrait PAS la convention de
-// nom `Anthropic...` (un futur fournisseur, par exemple) lui échapperait entièrement ; c'est
+// ne fait ça, mais un futur pourrait. Une fabrique écrite `export const getX = () => ...`
+// (une constante fléchée) plutôt que `export function getX(` lui échapperait aussi — aucune
+// fabrique connue n'est écrite ainsi aujourd'hui (revue hostile du 2026-09-13, voix 1), mais
+// rien ne l'empêche demain. Une classe réelle qui ne suivrait PAS la convention de nom
+// `Anthropic...` (un futur fournisseur, par exemple) lui échapperait entièrement ; c'est
 // pour ÇA que la garde structurelle (`scripts/audit/ia-vivante.test.ts`) revérifie le
 // MÊME balayage à chaque `vitest run` plutôt que de se fier une fois pour toutes à cet
 // instantané, ET nomme explicitement le nombre de classes/fabriques attendu — un compte qui
