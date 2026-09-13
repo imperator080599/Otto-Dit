@@ -573,6 +573,25 @@ le serveur, pas sa cause — à corréler la prochaine fois avec un `vmstat 1` l
   STATUS.md ont eu lieu entre les deux, ni l'une ni l'autre important au runtime applicatif) —
   voir STATUS.md pour le résultat du passage propre, cité avec son heure et sa durée mesurées.
 
+- **F17 bis — RÉCIDIVE IDENTIQUE dans `/tmp/verify-r74-4.log`** (2026-09-13, même tranche, arbre
+  INCHANGÉ depuis F17 — entre les deux passages, seule une écriture dans ce fichier a eu lieu,
+  jamais dans le code, règle 34). Même URL, mêmes 20 divergences AU JETON PRÈS, même label
+  « MAL ÉTIQUETÉE ». **Vérifié avant de conclure à une simple coïncidence (règle 18)** : la
+  station `walkthrough-analyse` utilise déjà `aller()` — le helper le PLUS DURCI du harnais contre
+  précisément ce mode d'échec (`waitUntil:'load'` puis `networkidle` 8 s, grâce de 1500 ms
+  documentée en commentaire comme la défense connue contre F4/F9 et alii). Rien dans le code de
+  cette station ne contourne ce helper ; elle l'appelle une seule fois, comme toutes les autres
+  stations. Deux occurrences consécutives sur la MÊME transition, avec la défense DÉJÀ EN PLACE
+  toujours insuffisante, est un fait plus précis que les occurrences précédentes de la §5 (routes
+  différentes à chaque fois) — mais reste COMPATIBLE avec l'hypothèse H déjà posée (un scénario
+  cliqué est déterministe : la MÊME paire de documents produit la MÊME course si la machine est
+  sous la même charge relative), pas une preuve d'une cause distincte. **Pas de nouvelle
+  hypothèse construite ici** (construire le signal d'hydratation décrit en §1 « Ce qui reste à
+  faire » dépasse le mandat de cette tranche) ; consigné pour qu'une session future qui recreuse
+  #418 sache que cette transition précise (rcm/[cid] avec fragment `#walkthrough-analyse`) est
+  reproductible à 2/2 sur cette machine, un candidat plus fiable que les occurrences éparses déjà
+  listées si quelqu'un construit un jour le marqueur d'hydratation.
+
 ### Cinquième occurrence (2026-09-13, R74) — encore une route différente, encore silencieuse
 
 `le serveur est tombé après 80 route(s), à « /eng/[id]/rcm (SOX) »` (`verify-r74-3.log`) — une
