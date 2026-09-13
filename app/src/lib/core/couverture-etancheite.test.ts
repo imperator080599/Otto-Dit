@@ -46,6 +46,7 @@ describe('la couverture des gardes d’étanchéité dans les services', () => {
     'team.ts::declarationState': 'l’état de la déclaration de CETTE personne',
     'travaux.ts::mesTravaux': 'le tableau de bord de CETTE personne',
     'travaux.ts::obstaclesDeMesDossiers': 'les obstacles des dossiers de CETTE personne',
+    'travaux.ts::echantillonsDeMesDossiers': 'même patron qu’obstaclesDeMesDossiers, même jointure engagement_member : les lignes d’échantillon restant à conclure des dossiers de CETTE personne (R62)',
     'travaux.ts::notesOuvertesParAnciennete': 'les notes adressées à CETTE personne',
     'travaux.ts::tableauDeBord': 'le tableau de bord de CETTE personne',
     'monde-demo.ts::remettreLeMondeAZero': 'la remise à zéro de la DÉMONSTRATION : gardée par demoPublique et par l’instantané, et son acteur peut être nul (chemin système)',

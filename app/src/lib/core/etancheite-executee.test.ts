@@ -319,6 +319,7 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
       'team.ts::declarationState': 'l’état de la déclaration de CETTE personne',
       'travaux.ts::mesTravaux': 'le tableau de bord de CETTE personne',
       'travaux.ts::obstaclesDeMesDossiers': 'les obstacles des dossiers de CETTE personne',
+      'travaux.ts::echantillonsDeMesDossiers': 'même patron qu’obstaclesDeMesDossiers, même jointure engagement_member : les lignes d’échantillon restant à conclure des dossiers de CETTE personne (R62)',
       'travaux.ts::notesOuvertesParAnciennete': 'les notes adressées à CETTE personne',
       'travaux.ts::tableauDeBord': 'le tableau de bord de CETTE personne',
     };
