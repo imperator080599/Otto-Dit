@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-13 · 55 gestes · **387 clics** au total.
+Parcours du 2026-09-13 · 56 gestes · **393 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -68,4 +68,5 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux) | 2 |
 | obstacles au visa | 0 |
 | mes travaux : le point d’origine, et les clics comptés | 3 |
+| walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74) | 6 |
 | clôture et archive scellée | 1 |
