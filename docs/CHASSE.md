@@ -552,6 +552,27 @@ le serveur, pas sa cause — à corréler la prochaine fois avec un `vmstat 1` l
 `beforeAll` du balayage (pas seulement après coup). Chaîne rejouée sur le MÊME arbre (aucune
 édition entre les deux passages, règle 34) — résultat cité dans STATUS.md.
 
+- **F17 — UN incident dans `/tmp/verify-r74-2.log`** (2026-09-13, chaîne verify complète pour R74
+  — §4 point 3, l'adaptateur de walkthrough — 259 étapes) : `EXCEPTION sur
+  /eng/70670df5.../rcm/acc3adc9...#walkthrough-analyse : Minified React error #418; args[]=HTML`,
+  sonde d'hydratation « station (avant la première station) », le harnais lui-même signale
+  l'étiquetage SUSPECT (« erreur vient du document PRÉCÉDENT »), `memePage=faux`, flux complet
+  (215 270 octets, `lang="en"`), 20 divergences après normalisation. **Vérifiées une par une avant
+  de conclure (règle 18)** : la première (`rail-astuce`) est la bulle E5 déjà documentée, connue,
+  non filtrée par construction. Les DIX-NEUF autres sont TOUTES de la famille F11 (re-sérialisation
+  CSSOM du navigateur — `style="margin:6px 0"` serveur / `style="margin:6px 0px"` client), sur des
+  panneaux `<details><summary>` génériques (« Revise », « Document », « act… ») qui existaient déjà
+  avant cette tranche — AUCUNE divergence structurelle réelle, AUCUNE sur un libellé propre au
+  nouveau panneau walkthrough. C'est la PREMIÈRE fois que le parcours cliqué visite un écran
+  `rcm/[cid]` (première station SOX du scénario, ajoutée par cette même tranche) — donc la première
+  fois que ce COUPLE de pages (quel que soit le document PRÉCÉDENT réel, non capturé par
+  l'étiquette) se présente au harnais, cohérent avec une intermittence déjà connue plutôt qu'un
+  défaut nouveau. **Pas creusé plus loin ici** (hors mandat de cette tranche, même discipline que
+  F9-F16). La chaîne officielle de cette tranche a été REJOUÉE sur le MÊME arbre (aucune édition du
+  code entre les deux passages, règle 34 — seule cette entrée de CHASSE.md et l'écriture de
+  STATUS.md ont eu lieu entre les deux, ni l'une ni l'autre important au runtime applicatif) —
+  voir STATUS.md pour le résultat du passage propre, cité avec son heure et sa durée mesurées.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
