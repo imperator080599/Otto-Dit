@@ -3714,6 +3714,53 @@ export async function conduire(
       `${clics} clic(s) → ${cible}`);
   });
 
+  /* §4 POINT 3 (mandat du 10 septembre, point 1 ; R74) — L'ANALYSE DE WALKTHROUGH : les
+     AFFORDANCES DE L'ÉCRAN (dépôt, bouton « Analyser », décisions par écart) sont réellement
+     cliquables — la couverture LOGIQUE (fixtures, refus REQ-02-like, garde de budget) est déjà
+     prouvée par walkthrough-analyse.test.ts, même patron qu'étape 7 (ADR : « cette station-ci
+     prouve que les AFFORDANCES DE L'ÉCRAN sont réellement cliquables, ce que la suite de service
+     ne peut pas voir »). PREMIÈRE STATION SOX de ce parcours : `contexte()` ne résolvait qu'un
+     SEUL dossier avant cette tranche (`eng`, NEP) — étendu pour porter aussi un contrôle SOX
+     avec walkthrough déjà attaché (`controleWalkthrough`), résolu comme `eng` avant que le
+     serveur ne prenne la base (PGlite, écrivain unique). */
+  if (c.controleWalkthrough) {
+    await station('walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74)', async () => {
+      await devenir(c.preparateur.id);
+      const engSox = `${base}/eng/${c.controleWalkthrough!.engId}`;
+      await aller(`${engSox}/rcm/${c.controleWalkthrough!.controlId}#walkthrough-analyse`);
+      const TRANSCRIPT = "Auditeur : Pouvez-vous me décrire ce que vous faites quand un client demande un avoir ?\nPropriétaire du contrôle : Le commercial saisit la demande d'avoir dans le système, puis moi je la valide avant qu'elle parte en compta. Je regarde toujours le motif et je vérifie le montant par rapport à la facture d'origine.\nAuditeur : Et pour les avoirs au-delà d'un certain montant ?\nPropriétaire du contrôle : Au-dessus de 5 000 euros, j'envoie systématiquement un mail au directeur financier pour qu'il valide aussi, avant que je ne finalise. C'est comme ça depuis le début de l'année, on a resserré le contrôle après un souci l'an dernier.\nAuditeur : Est-ce que vous faites autre chose de régulier sur ce cycle ?\nPropriétaire du contrôle : Oui, une fois par trimestre je fais un point avec la compta sur les avoirs en attente de plus de trente jours, pour être sûr qu'aucun ne traîne. On regarde la liste ensemble.";
+
+      if (await compte('[data-deposer-transcript-walkthrough]')) {
+        await p.locator('[data-deposer-transcript-walkthrough] textarea[name=contenu]').fill(TRANSCRIPT);
+        await soumettre(p.locator('[data-deposer-transcript-walkthrough] button'));
+        dire('walkthrough : le transcript déposé est accepté', !refus(p), refus(p) ?? 'transcript déposé');
+      }
+      if (await compte('[data-analyser-walkthrough]')) {
+        await soumettre(p.locator('[data-analyser-walkthrough] button'), 2000);
+        dire('walkthrough : l’analyse (rejeu) est acceptée et produit des écarts', !refus(p), refus(p) ?? 'analyse acceptée');
+      }
+      const nEcarts = await compte('[data-ecarts-walkthrough] tbody tr');
+      dire('walkthrough : le rejeu retrouve les écarts ENREGISTRÉS de la fixture (2)', nEcarts === 2, `${nEcarts} écart(s) affiché(s)`);
+      if (nEcarts === 0) return;
+
+      const avantTaches = await compte('[data-taches-controle] tbody tr[data-tache]');
+      await p.locator('[data-ecart-walkthrough="1"] summary.repli-action').click();
+      await soumettre(p.locator('[data-ecart-walkthrough="1"] form[data-ecart-decision="task"] button'), 2000);
+      dire('walkthrough : « en faire une tâche » ajoute une VRAIE ligne à la table des tâches',
+        !refus(p) && (await compte('[data-taches-controle] tbody tr[data-tache]')) === avantTaches + 1,
+        refus(p) ?? `${avantTaches} → ${await compte('[data-taches-controle] tbody tr[data-tache]')} tâche(s)`);
+
+      await p.locator('[data-ecart-walkthrough="2"] summary.repli-action').click();
+      await soumettre(p.locator('[data-ecart-walkthrough="2"] form[data-ecart-decision="question"] button'), 2000);
+      dire('walkthrough : « poser une question » crée une demande BROUILLON (L2, rien ne part sans approbation)',
+        !refus(p) && (await compte('[data-ecart-walkthrough="2"][data-statut="question"]')) === 1,
+        refus(p) ?? 'demande brouillon créée');
+
+      dire('walkthrough : les deux écarts sont désormais statués, aucun ne reste candidat',
+        (await compte('[data-ecart-walkthrough][data-statut="candidate"]')) === 0, 'aucun candidat restant');
+    });
+  }
+
   await station('clôture et archive scellée', async () => {
     /* CLORE, C'EST SIGNER : la station le DIT au lieu d'hériter de l'identité
        laissée par la précédente. Ce couplage caché a mordu dès qu'une station

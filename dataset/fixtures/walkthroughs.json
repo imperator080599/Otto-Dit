@@ -1,0 +1,18 @@
+[
+  {
+    "_note": "Rejeu enregistré, synthétique (R74, §4 point 3) — un walkthrough fictif du contrôle « validation des avoirs » (CP-02-like), société fictive sans lien avec le monde de démonstration réel. Clé : sha256 du texte normalisé (CRLF→LF, trim).",
+    "sha256": "390418bd5bf9f7e3a042b1a6dfa160b849f5bd80b09ca17565f444648d5d1516",
+    "ecarts": [
+      {
+        "kind": "omission_doc",
+        "citation": "une fois par trimestre je fais un point avec la compta sur les avoirs en attente de plus de trente jours",
+        "description": "Une revue trimestrielle des avoirs en attente de plus de trente jours est décrite à l'oral mais n'apparaît dans aucune tâche documentée du contrôle."
+      },
+      {
+        "kind": "contradiction",
+        "citation": "Au-dessus de 5 000 euros, j'envoie systématiquement un mail au directeur financier",
+        "description": "Le walkthrough décrit une validation par le directeur financier au-delà de 5 000 €, un canal (mail) et un seuil à confirmer contre la tâche documentée du contrôle si elle nomme un autre seuil ou un autre acteur."
+      }
+    ]
+  }
+]

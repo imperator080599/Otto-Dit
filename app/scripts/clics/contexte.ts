@@ -13,6 +13,11 @@ export interface Contexte {
   associe: { id: string; nom: string };
   /** Le jeton du portail client — l'autre moitié du produit. */
   jeton: string;
+  /** §4 point 3 (R74) : un contrôle SOX qui porte déjà un enregistrement de walkthrough —
+   *  null si aucun (le monde de démonstration n'en garantit pas toujours un). Le dossier SOX
+   *  (`kind = 'sox_component'`) est un AUTRE engagement que `eng` ci-dessus : le parcours ne
+   *  l'avait jamais résolu avant cette tranche. */
+  controleWalkthrough: { engId: string; controlId: string; code: string } | null;
 }
 
 export async function contexte(): Promise<Contexte> {
@@ -51,9 +56,15 @@ export async function contexte(): Promise<Contexte> {
      where e.id = $1 and c.active order by c.name limit 1`,
     [eng.id]);
 
+  const walkthrough = await q01<{ eng_id: string; control_id: string; code: string }>(
+    `select c.engagement_id::text eng_id, c.id::text control_id, c.code
+     from control c
+     where c.di_walkthrough_evidence_id is not null order by c.code limit 1`);
+
   return {
     eng: eng.id,
     preparateur: senior, reviewer: manager, associe: partner,
     jeton: contact.jeton,
+    controleWalkthrough: walkthrough ? { engId: walkthrough.eng_id, controlId: walkthrough.control_id, code: walkthrough.code } : null,
   };
 }

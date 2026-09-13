@@ -948,6 +948,31 @@ async function corpsDeLaSonde() {
     return `${concludedControls.length} contrôle(s) conclu(s) · ${iucUtilisees} IUC déclarée(s) utilisée(s), toutes documentées (exactitude + exhaustivité)`;
   }));
 
+  /* §4 POINT 3 (mandat du 10 septembre, point 1 ; R74) — L'ANALYSE DE WALKTHROUGH.
+     Un écart candidat devenu « task » (statuerEcartWalkthrough) doit citer une VRAIE tâche —
+     jamais un lien pendu (control_task_id nul ou pointant une ligne disparue). Cette lecture ne
+     peut rougir que si ce chemin a été contourné (un SQL direct, une régression du service) :
+     `statuerEcartWalkthrough` pose toujours le lien dans la MÊME requête que le statut (aucune
+     fenêtre où l'un existe sans l'autre). CE QU'ELLE NE VÉRIFIE PAS (règle 19) : que la garde de
+     budget EN BASE (IA-BUDGET-01) est ouverte ou fermée — c'est délibéré, gardé fermé par défaut
+     tant que le fondateur n'écrit rien (voir la lecture « rôle servi et garde de locataire » pour
+     le patron d'une garde affichée sans jamais être ouverte par ce dépôt). */
+  lectures.push(await essayer('walkthrough : aucun écart devenu tâche sans tâche RÉELLE liée', async () => {
+    const orphelins = await q<{ id: string; control_id: string; seq: number }>(
+      `select g.id::text, g.control_id::text, g.seq from control_walkthrough_gap g
+       where g.status = 'task'
+         and (g.control_task_id is null or not exists (select 1 from control_task t where t.id = g.control_task_id))`,
+    );
+    if (orphelins.length > 0) {
+      throw new Error(`${orphelins.length} écart(s) devenu(s) « tâche » sans tâche réelle liée — `
+        + `${orphelins.map((o) => `contrôle ${o.control_id} #${o.seq}`).join(', ')}`);
+    }
+    const total = await q01<{ n: string }>(`select count(*) n from control_walkthrough_gap where status = 'task'`);
+    return Number(total?.n ?? 0) > 0
+      ? `${total!.n} écart(s) devenu(s) tâche, tous liés à une tâche réelle`
+      : 'aucun écart de walkthrough devenu tâche pour l’instant';
+  }));
+
   /* CTRL-07 (mandat contrôle interne, §3.2, tranche 3 ; redessiné par l'annexe sourcée du
      10 septembre) : « aucune taille n'est écrite de mémoire ». Le pack livre désormais une table
      PLEINE (sourcée, HUD Handbook — `pcaob-sox.ts`), mais deux de ses trois jugements de cabinet

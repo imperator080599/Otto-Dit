@@ -16,12 +16,17 @@ import {
   proceduresOeDuControle, documenterProcedureOe,
 } from '@/lib/services/sox';
 import { draftOeWorkpaper } from '@/lib/services/workpapers/oe-draft';
+import {
+  deposerTranscriptWalkthrough, analyserWalkthrough, statuerEcartWalkthrough, walkthroughDuControle,
+  LIBELLES_ECARTS_WALKTHROUGH,
+} from '@/lib/services/walkthrough-analyse';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { approveSend, demanderPopulationControle, derniereDemandePopulationControle, numeroDemande } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
+import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { Repli } from '@/app/repli';
 
 const RESULT_STYLE: Record<string, string> = { pass: 'green', fail: 'red', na: 'gray' };
@@ -81,6 +86,7 @@ export default async function ControlDetail({
     [id, `OE-${control.code}`],
   );
   const taches = await listerTachesControle(cid);
+  const walkthroughAnalyse = control.di_walkthrough_evidence_id ? await walkthroughDuControle(cid) : null;
   const oeProcedures = await proceduresOeDuControle(cid);
   const oeInquiryFaite = oeProcedures.some((p) => p.procedure === 'inquiry');
   const oeAutreFaite = oeProcedures.some((p) => p.procedure !== 'inquiry');
@@ -187,6 +193,36 @@ export default async function ControlDetail({
         String(formData.get('procedure')) as 'inspection' | 'observation' | 'reperformance',
         String(formData.get('notes') ?? ''),
       );
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+
+  async function deposerTranscriptWalkthroughAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await deposerTranscriptWalkthrough(cid, String(formData.get('contenu') ?? ''), user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function analyserWalkthroughAction() {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await analyserWalkthrough(cid, user.id);
+      revalidatePath(`/eng/${id}/rcm/${cid}`);
+    });
+  }
+  async function statuerEcartWalkthroughAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/rcm/${cid}`, async () => {
+      const { user } = await requireMember(id);
+      await statuerEcartWalkthrough({
+        gapId: String(formData.get('gap_id')),
+        decision: String(formData.get('decision')) as 'question' | 'task' | 'dismissed',
+        reason: String(formData.get('reason') ?? ''),
+        userId: user.id,
+      });
       revalidatePath(`/eng/${id}/rcm/${cid}`);
     });
   }
@@ -425,6 +461,80 @@ export default async function ControlDetail({
           </>
         )}
       </Repli>
+
+      {/* §4 POINT 3 (mandat du 10 septembre, point 1 ; R74) — L'ANALYSE DE WALKTHROUGH.
+          Même forme que l'entretien de processus (ADR-108) : un transcript déposé, confronté
+          AUX TÂCHES DÉJÀ DOCUMENTÉES ci-dessus (jamais un texte libre), produit des écarts
+          CANDIDATS — jamais une conclusion. Rejeu enregistré par défaut (OTTO_WALKTHROUGH_ADAPTER,
+          dataset/fixtures/walkthroughs.json), zéro appel réseau tant que le fondateur n'a pas
+          ouvert la garde de budget EN BASE (IA-BUDGET-01) — voir walkthrough-analyse.ts. */}
+      {walkthroughAnalyse && (
+        <Repli cle="eng.id.rcm.cid.walkthroughAnalyse" niveau={2} titre={t('rcmc.walkthroughAnalyse')} id="walkthrough-analyse">
+          <p className="faint">{t('rcmc.walkthroughAnalyseQuoi')}</p>
+          {!walkthroughAnalyse.transcriptDepose ? (
+            <form action={deposerTranscriptWalkthroughAction} style={{ display: 'grid', gap: 4, maxWidth: 480 }} data-deposer-transcript-walkthrough>
+              <textarea name="contenu" rows={6} required placeholder={t('rcmc.walkthroughTranscriptPlaceholder')} />
+              <button className="btn small">{t('rcmc.walkthroughDeposerTranscrit')}</button>
+            </form>
+          ) : walkthroughAnalyse.ecarts.length === 0 ? (
+            <form action={analyserWalkthroughAction} data-analyser-walkthrough>
+              <button className="btn small">{t('rcmc.walkthroughAnalyser')}</button>
+            </form>
+          ) : (
+            <table className="data mt" data-ecarts-walkthrough>
+              <thead>
+                <tr><th>#</th><th>{t('rcmc.walkthroughColGenre')}</th><th>{t('rcmc.walkthroughColDescription')}</th><th>{t('commun.actions')}</th></tr>
+              </thead>
+              <tbody>
+                {walkthroughAnalyse.ecarts.map((e) => (
+                  <tr key={e.id} data-ecart-walkthrough={e.seq} data-statut={e.status}>
+                    <td className="mono">{e.seq}</td>
+                    <td>
+                      <span className={`badge ${e.kind === 'contradiction' ? 'amber' : 'gray'}`}>
+                        {LIBELLES_ECARTS_WALKTHROUGH[e.kind]}
+                      </span>
+                    </td>
+                    <td>
+                      {e.description}
+                      {e.citation && <div className="faint" style={{ fontSize: 12 }}>« {e.citation} »</div>}
+                    </td>
+                    <td>
+                      {e.status !== 'candidate' ? (
+                        <span className={`badge ${e.status === 'dismissed' ? 'gray' : 'blue'}`}>
+                          {t(`rcmc.walkthroughStatut.${e.status}` as CleLibelle)}
+                          {e.decideur && <span className="faint"> — {e.decideur}</span>}
+                        </span>
+                      ) : (
+                        <details>
+                          <summary className="repli-action">{t('commun.actions')}</summary>
+                          <div style={{ margin: '6px 0', display: 'grid', gap: 6, maxWidth: 360 }}>
+                            <form action={statuerEcartWalkthroughAction} data-ecart-decision="task">
+                              <input type="hidden" name="gap_id" value={e.id} />
+                              <input type="hidden" name="decision" value="task" />
+                              <button className="btn small secondary" type="submit">{t('rcmc.walkthroughEnFaireUneTache')}</button>
+                            </form>
+                            <form action={statuerEcartWalkthroughAction} data-ecart-decision="question">
+                              <input type="hidden" name="gap_id" value={e.id} />
+                              <input type="hidden" name="decision" value="question" />
+                              <button className="btn small secondary" type="submit">{t('rcmc.walkthroughPoserQuestion')}</button>
+                            </form>
+                            <form action={statuerEcartWalkthroughAction} style={{ display: 'grid', gap: 4 }} data-ecart-decision="dismissed">
+                              <input type="hidden" name="gap_id" value={e.id} />
+                              <input type="hidden" name="decision" value="dismissed" />
+                              <input type="text" name="reason" placeholder={t('rcmc.walkthroughMotifEcart')} required />
+                              <button className="btn small secondary" type="submit">{t('rcmc.walkthroughEcarter')}</button>
+                            </form>
+                          </div>
+                        </details>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Repli>
+      )}
 
       <Repli cle="eng.id.rcm.cid.design" niveau={2} titre={t('rcmc.facteursEtIuc')} id="design">
         <h3>{t('rcmc.risquesLies')}</h3>

@@ -44,16 +44,23 @@ export function normaliserTranscript(brut: string): string {
   return brut.replace(/\r\n/g, '\n').trim();
 }
 
-/** Rejeu enregistré — dataset/fixtures/entretiens.json, clé sha256 du texte
- *  normalisé. Un transcript inconnu rend null : le service REFUSE alors en le
- *  disant, il n'invente pas d'écarts. */
+/** Rejeu enregistré — `dataset/fixtures/<fichier>.json` (par défaut `entretiens.json`), clé
+ *  sha256 du texte normalisé. Un transcript inconnu rend null : le service REFUSE alors en le
+ *  disant, il n'invente pas d'écarts.
+ *
+ *  GÉNÉRALISÉ POUR LE WALKTHROUGH (§4 point 3, R74) : le fichier de fixtures est un paramètre,
+ *  pas une constante — un walkthrough et un entretien de processus partagent la MÊME forme
+ *  d'appel (transcript + documentation → écarts candidats, COST.md §1 quater le dit noir sur
+ *  blanc), donc la MÊME classe, jamais une copie qui divergerait en silence (règle 6). Seuls les
+ *  fixtures et — pour l'adaptateur réel ci-dessous — le prompt système changent par domaine. */
 export class RejeuAnalyste implements AnalysteTranscript {
   readonly name = 'mock';
+  constructor(private readonly fichierFixtures = 'entretiens.json') {}
   async analyser(transcript: string): Promise<ReponseAnalyste | null> {
     let fixtures: { sha256: string; ecarts: EcartCandidat[] }[] = [];
     try {
       fixtures = JSON.parse(fs.readFileSync(
-        path.join(repoRoot(), 'dataset', 'fixtures', 'entretiens.json'), 'utf8'));
+        path.join(repoRoot(), 'dataset', 'fixtures', this.fichierFixtures), 'utf8'));
     } catch {
       return null;                       // pas de fixtures : transcript inconnu
     }
@@ -63,7 +70,7 @@ export class RejeuAnalyste implements AnalysteTranscript {
   }
 }
 
-const SYSTEM = [
+const SYSTEM_ENTRETIEN = [
   'Tu compares le transcript d\'un entretien d\'audit à la documentation structurée du processus.',
   'Tu produis des ÉCARTS CANDIDATS, jamais une conclusion, jamais un avis, jamais une recommandation.',
   'Cherche D\'ABORD les omissions : un contrôle ou une vérification décrits à l\'oral et absents de la',
@@ -73,15 +80,38 @@ const SYSTEM = [
   'Aucun écart n\'est aussi une réponse valable : n\'invente rien pour remplir.',
 ].join(' ');
 
+/** §4 point 3 (R74) : le PENDANT walkthrough du prompt ci-dessus — même forme d'appel
+ *  (COST.md §1 quater), un vocabulaire de contrôle interne plutôt que de processus. */
+const SYSTEM_WALKTHROUGH = [
+  'Tu compares le transcript d\'un walkthrough de contrôle interne (l\'enregistrement où le',
+  'propriétaire du contrôle DÉCRIT ce qu\'il fait réellement) aux tâches déjà documentées de ce',
+  'contrôle. Tu produis des ÉCARTS CANDIDATS, jamais une conclusion, jamais un avis, jamais une',
+  'recommandation, jamais un jugement sur le design ou l\'efficacité du contrôle.',
+  'Cherche D\'ABORD les omissions : une étape ou une vérification décrite dans le walkthrough et',
+  'absente des tâches documentées (omission_doc) ; une tâche documentée jamais évoquée dans le',
+  'walkthrough (omission_orale). Puis les contradictions : ce qui est décrit contredit une tâche',
+  'documentée (fréquence, acteur, seuil, système utilisé).',
+  'Chaque écart cite le passage du transcript concerné (champ citation, vide pour une omission orale).',
+  'Aucun écart n\'est aussi une réponse valable : n\'invente rien pour remplir.',
+].join(' ');
+
 /** Adaptateur réel (Anthropic Messages API, appel d'outil forcé — le modèle
  *  ne peut pas répondre en prose). Activé par OTTO_TRANSCRIPT_ADAPTER=anthropic
- *  + ANTHROPIC_API_KEY ; refuse de tourner sans les deux. */
+ *  (entretiens) ou OTTO_WALKTHROUGH_ADAPTER=anthropic (walkthroughs) + ANTHROPIC_API_KEY,
+ *  la MÊME clé, partagée — refuse de tourner sans les deux.
+ *
+ *  `system`/les deux libellés sont des PARAMÈTRES (§4 point 3, R74) : même appel Anthropic,
+ *  même schéma d'outil, seul le vocabulaire du domaine change — jamais une seconde classe qui
+ *  divergerait en silence (règle 6). */
 export class AnthropicAnalyste implements AnalysteTranscript {
   readonly name = 'anthropic';
   constructor(
     private readonly model = process.env.OTTO_TRANSCRIPT_MODEL ?? 'claude-sonnet-5',
     private readonly apiKey = process.env.ANTHROPIC_API_KEY ?? '',
     private readonly baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com',
+    private readonly system = SYSTEM_ENTRETIEN,
+    private readonly labelDocumentation = 'DOCUMENTATION DU PROCESSUS',
+    private readonly labelTranscript = 'TRANSCRIPT DE L\'ENTRETIEN',
   ) {}
 
   async analyser(transcript: string, documentation: string): Promise<ReponseAnalyste | null> {
@@ -121,12 +151,12 @@ export class AnthropicAnalyste implements AnalysteTranscript {
       body: JSON.stringify({
         model: this.model,
         max_tokens: 2048,
-        system: SYSTEM,
+        system: this.system,
         tool_choice: { type: 'tool', name: 'signaler_ecarts' },
         tools: [tool],
         messages: [{
           role: 'user',
-          content: `DOCUMENTATION DU PROCESSUS :\n${documentation}\n\nTRANSCRIPT DE L'ENTRETIEN :\n${normaliserTranscript(transcript)}`,
+          content: `${this.labelDocumentation} :\n${documentation}\n\n${this.labelTranscript} :\n${normaliserTranscript(transcript)}`,
         }],
       }),
     });
@@ -160,4 +190,25 @@ export function getAnalyste(): AnalysteTranscript {
   if (choix === 'mock') return new RejeuAnalyste();
   if (choix === 'anthropic') return new AnthropicAnalyste();
   throw new Error(`OTTO_TRANSCRIPT_ADAPTER « ${choix} » inconnu — 'mock' (rejeu enregistré) ou 'anthropic'`);
+}
+
+/** §4 point 3 (R74) : le SÉLECTEUR walkthrough, INDÉPENDANT de `OTTO_TRANSCRIPT_ADAPTER` — le
+ *  fondateur doit pouvoir ouvrir l'un sans l'autre, chaque surface sa propre bascule (demande du
+ *  fondateur, 2026-09-13). `ANTHROPIC_API_KEY` reste PARTAGÉE : ce n'est pas un second secret,
+ *  seul le sélecteur et les fixtures de rejeu sont distincts. */
+export function getAnalysteWalkthrough(): AnalysteTranscript {
+  if (demoPublique()) return new RejeuAnalyste('walkthroughs.json');   // URL publique : rejeu, point final (ADR-109)
+  const choix = process.env.OTTO_WALKTHROUGH_ADAPTER ?? 'mock';
+  if (choix === 'mock') return new RejeuAnalyste('walkthroughs.json');
+  if (choix === 'anthropic') {
+    return new AnthropicAnalyste(
+      process.env.OTTO_WALKTHROUGH_MODEL ?? process.env.OTTO_TRANSCRIPT_MODEL ?? 'claude-sonnet-5',
+      process.env.ANTHROPIC_API_KEY ?? '',
+      process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com',
+      SYSTEM_WALKTHROUGH,
+      'TÂCHES DÉJÀ DOCUMENTÉES DU CONTRÔLE',
+      'TRANSCRIPT DU WALKTHROUGH',
+    );
+  }
+  throw new Error(`OTTO_WALKTHROUGH_ADAPTER « ${choix} » inconnu — 'mock' (rejeu enregistré) ou 'anthropic'`);
 }
