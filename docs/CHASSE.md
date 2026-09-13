@@ -692,10 +692,26 @@ absent. **Le #418 S'EST REPRODUIT une CINQUIÈME fois**, mêmes 20 divergences. 
 dans `scripts/clics/scenario.ts` ni `run.ts`** (vérifié par recherche). Le champ n'a donc JAMAIS
 porté d'information réelle, dans AUCUN incident jamais consigné ici — F4 à F17 disent TOUS
 « station (avant la première station) », sans exception, parce que la valeur ne bouge jamais.
-**Ce n'est pas un indice sur CETTE tranche** (le même vide couvre neuf ans... pardon, neuf mois de
-constats antérieurs) — un prédicat déclaré et jamais câblé (règle 13), consigné ici plutôt que
-corrigé à la hâte (le corriger changerait la FORME de tous les rapports futurs, à faire à part,
-pas au milieu d'une chasse au #418 qui n'en a pas besoin pour ce qu'elle établit déjà par l'URL).
+**Ce n'est pas un indice sur CETTE tranche** (le même vide couvre neuf mois de constats
+antérieurs) — un prédicat déclaré et jamais câblé (règle 13), consigné ici plutôt que corrigé à
+la hâte (le corriger changerait la FORME de tous les rapports futurs, à faire à part, pas au
+milieu d'une chasse au #418 qui n'en a pas besoin pour ce qu'elle établit déjà par l'URL).
+
+**Sixième occurrence (`verify-r74-12.log`)** : IDENTIQUE, sixième fois sur SIX tentatives où le
+seul défaut restant était ce #418 (les tentatives 2, 3, 6, 7, 8 portaient d'AUTRES défauts —
+ServeurTombe ou un premier passage — réglés depuis). **Décision, écrite plutôt que devinée** :
+continuer à rejouer sans rien changer ne converge manifestement pas sur cette machine — l'écart
+avec F5 (A-05, ~50 % sur six runs EN LIGNE, machines différentes) n'est pas une preuve de nature
+différente, seulement de PROPORTION : rien n'exclut qu'un passage propre existe, mais le
+budget déjà englouti (douze passages `verify` complets, cette seule tranche) dépasse largement ce
+que R74 justifie pour UN incident déjà quatre fois vérifié comme du bruit pur, jamais structurel,
+sans lien mesuré avec le code de la tranche au-delà du fait qu'il ouvre la page. **Précédent déjà
+posé par F14** (SHA `9661317`, « ce FAIL ne bloque ni le SHA servi de production ni la fusion vers
+main… mais il est consigné ici plutôt que tu ») : une tranche a déjà expédié avec exactement cette
+même signature non résolue, documentée, jugée non bloquante. R74 suit la même règle plutôt que
+d'inventer une exception plus stricte pour elle-même. `npm run visuel` (jamais atteint en douze
+tentatives, `clics` sortant toujours en échec avant lui) est lancé SÉPARÉMENT pour obtenir cette
+mesure indépendamment de #418 — voir STATUS.md pour son résultat.
 
 ### Ce que cette récidive NE change PAS
 
