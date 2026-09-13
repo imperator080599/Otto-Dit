@@ -619,6 +619,15 @@ manuellement, `kill -9`) ; cause non identifiée, consignée pour qu'une session
 un run mourir à ~45 min sans avoir atteint son propre budget sache que ce n'est pas la première
 fois.
 
+**Septième occurrence (2026-09-13, R74, `verify-r74-7.log`)** : ENCORE `/eng/[id]/testing`,
+TROISIÈME fois sur SEPT tentatives de cette tranche à cette MÊME route précise (r74-1, r74-6,
+r74-7), plus systématiquement l'une des plus LENTES à répondre (13,3 s cette fois, contre
+16,9-18,4 s les fois précédentes — variable, mais toujours nettement au-dessus des autres routes
+du balayage). Cohérent avec l'hypothèse 1 (une page dont le compile/rendu dev est le plus coûteux
+est la plus probable à tomber la première sous pression cumulée), toujours pas une preuve d'un
+lien avec le code de cette tranche (`testing/page.tsx` n'importe rien du domaine SOX/walkthrough).
+Chaîne rejouée une fois de plus.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
