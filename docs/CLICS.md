@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-13 · 55 gestes · **386 clics** au total.
+Parcours du 2026-09-13 · 55 gestes · **387 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -41,7 +41,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | portail client | 67 |
 | testing : l’atelier | 2 |
 | atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
-| R62 : le parcours découverte, chronométré en clics (D.6 point 6) | 3 |
+| R62 : le parcours découverte, chronométré en clics (D.6 point 6) | 4 |
 | étape 7 : la colonne ajoutée à la main | 8 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
 | atelier : l’aller-retour écart ↔ synthèse | 3 |
