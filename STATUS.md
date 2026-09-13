@@ -120,8 +120,13 @@ qui affirmaient « aucun chemin réel n'appelle cette garde » (`budget.ts`, `wa
 Verify complet rejoué (`--maxWorkers=2`, la défense déjà mesurée contre R58) : **140/140 fichiers,
 1087/1087 tests** · gardes/semeur/plancher/langue/lectures/parcours/screens/fumée/densité tous
 verts · clics **259 étapes, 1 échec** (le même #418 déjà documenté sur la station walkthrough,
-septième occurrence identique, docs/CHASSE.md) · visuel **328 vues, 0 défaut**. SHA `[à compléter
-après fusion]`, confirmé servi ci-dessous.
+septième occurrence identique, docs/CHASSE.md) · visuel **328 vues, 0 défaut**.
+
+**SHA `9862ce3`, confirmé DIRECTEMENT sur `https://otto-dit.vercel.app/api/sante` à 15:34:50Z le
+2026-09-13** (`identiteCoherente:true`), et par le travail CI `deploye` (succès à 15:32:19Z, deux
+minutes après la fusion). `IA-BUDGET-01` lit toujours « fermée — aucune garde de budget active en
+base (défaut, mandat §4) » : le correctif ne l'a pas ouverte, il a seulement fait en sorte qu'elle
+soit VRAIMENT interrogée sur le chemin `entretiens.ts`.
 
 ## R74 (§4 point 3) : l'adaptateur d'analyse de walkthrough — tout ce qui ne demande PAS la clé (2026-09-13)
 

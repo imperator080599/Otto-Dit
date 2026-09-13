@@ -909,9 +909,13 @@ design : chacun reste une tranche à construire.**
   une bascule, pas une par fonctionnalité. `assertBudgetActifEnBase()` (`extraction/budget.ts`,
   clé `app_state.ia_vivante_budget`) est donc restée UNIQUE et PARTAGÉE : le service walkthrough
   l'appelle telle quelle, sans nouvelle clé `app_state`. C'est aussi, de fait, le PREMIER site
-  d'appel réel de cette garde dans tout le dépôt — `entretiens-analyste.ts` (le chemin réel,
-  Anthropic) ne l'appelait déjà pas avant cette tranche, un écart pré-existant que cette tranche
-  n'a pas corrigé (hors périmètre) mais qu'elle rend visible. Le SÉLECTEUR reste distinct par
+  d'appel réel de cette garde dans tout le dépôt — `entretiens.ts` (le chemin réel, Anthropic)
+  ne l'appelait déjà pas avant cette tranche, un écart pré-existant que cette tranche n'a pas
+  corrigé (hors périmètre) mais qu'elle a rendu visible. **CORRIGÉ le 2026-09-13, à la demande
+  explicite du fondateur en relisant ce compte rendu** — `entretiens.ts::analyserTranscript`
+  appelle désormais `assertBudgetActifEnBase()` avant `gardeBudget()`, même patron, avec son
+  propre cas connu mauvais et deux revues hostiles closes (aucun défaut confirmé). SHA `9862ce3`,
+  servi en production, `IA-BUDGET-01` toujours fermée par défaut. Le SÉLECTEUR reste distinct par
   fonctionnalité (`OTTO_WALKTHROUGH_ADAPTER` vs `OTTO_TRANSCRIPT_ADAPTER` — quel adaptateur
   tourne) ; la GARDE DE BUDGET, elle, est unique et partagée, conformément à la lettre de
   l'interdit. Si le fondateur veut un plafond par fonctionnalité, c'est un arbitrage à demander
@@ -938,7 +942,37 @@ design : chacun reste une tranche à construire.**
   `https://otto-dit.vercel.app/api/sante` à 14:29:58Z le 2026-09-13 (`identiteCoherente:true`),
   et par le travail CI `deploye` (succès à 14:23:32Z). `IA-BUDGET-01` lit « fermée — aucune garde
   de budget active en base (défaut, mandat §4) » : aucun geste de cette tranche ne l'a ouverte.
-  R74 ferme ici. Ce qui reste au registre, séparément : le fil `entretiens.ts`/`ladder.ts` non
-  câblé sur `IA-BUDGET-01` (pré-existant, hors périmètre) et le fil du champ `station` jamais
-  câblé dans l'instrument #418 (docs/CHASSE.md) — tous deux consignés, ni l'un ni l'autre corrigé
-  ici.
+  R74 ferme ici. **Correction du 2026-09-13, le fondateur relisant ce compte rendu** : `entretiens.ts`
+  a depuis été câblé sur `IA-BUDGET-01` (voir la correction plus haut dans cette même entrée) —
+  cette clôture disait à tort que ce fil restait ouvert « hors périmètre » alors qu'il venait
+  d'être trouvé PAR cette tranche elle-même et méritait d'être son sujet principal, pas une ligne
+  de clôture. `extraction/ladder.ts` (l'échelle d'extraction OCR), lui, reste réellement non câblé
+  et réellement hors périmètre — R76, ci-dessous. Le champ `station` de l'instrument #418, lui,
+  est maintenant son propre fil — R75, ci-dessous.
+
+- **R75 — `sonde.station()` (`scripts/clics/hydratation.ts`) n'a JAMAIS été appelée : le champ
+  `station` de CHAQUE incident #418 consigné depuis F4 (docs/CHASSE.md) est un placeholder mort,
+  pas une piste.** `poserLaSonde()` initialise `station` à `'(avant la première station)'` et
+  expose `sonde.station(nom)` pour le faire avancer — mais aucun appel à `sonde.station(...)`
+  n'existe dans `scripts/clics/scenario.ts` ni `run.ts` (vérifié par recherche exhaustive). Chaque
+  rapport d'incident #418 jamais écrit dans ce dépôt porte donc la MÊME valeur figée, qu'il se soit
+  produit à la première station ou à la 240ᵉ — une colonne d'attribution qui n'a jamais rien dit,
+  trouvé en creusant F17/F17 bis/F17 ter (R74). C'est le défaut du décor (règle 20 de CLAUDE.md,
+  mandat du semeur) appliqué au propre outil de forensique de ce dépôt : un instrument qui se
+  déclare capable d'attribuer une station sans jamais avoir été câblé pour le faire.
+  **Condition de retrait** : `sonde.station(nom)` est appelée à chaque transition de station dans
+  `scenario.ts` (ou `run.ts`), avec un cas connu mauvais qui prouve qu'un #418 déclenché APRÈS
+  l'appel porte le bon nom, et qu'un #418 déclenché AVANT le tout premier appel porte encore le
+  placeholder (pour ne pas remplacer un silence par un mensonge de précision). Non commencé ici —
+  nommé plutôt que corrigé à la hâte au milieu d'un correctif de garde de budget.
+
+- **R76 — `extraction/ladder.ts` (l'échelle d'extraction OCR) n'appelle toujours pas
+  `assertBudgetActifEnBase()` sur son chemin d'adaptateur réel, contrairement à `entretiens.ts` et
+  `walkthrough-analyse.ts` (tous deux corrigés).** Trouvé par la revue hostile de R74 (voix 1) puis
+  reconfirmé lors du correctif `entretiens.ts` (2026-09-13) : `getOcrAdapter()` (`adapters.ts`)
+  coupe INCONDITIONNELLEMENT tout déploiement public (`demoPublique()`) vers le rejeu, donc rien
+  ne fuit sur `otto-dit.vercel.app` aujourd'hui — mais sur un déploiement NON-Vercel avec
+  `OTTO_OCR_ADAPTER=anthropic` et une clé posée, `extractEvidence()` appellerait l'adaptateur réel
+  sans jamais interroger la garde EN BASE. **Condition de retrait** : `assertBudgetActifEnBase()`
+  câblée dans `ladder.ts` avant tout appel réel, même patron que `entretiens.ts`/
+  `walkthrough-analyse.ts`, avec son propre cas connu mauvais.

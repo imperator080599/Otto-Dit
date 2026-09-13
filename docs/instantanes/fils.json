@@ -310,9 +310,21 @@
     },
     {
       "id": "R74",
-      "etat": "en construction — §4 point 3 (mandat du 10 septembre, point 1) : adaptateur d'analyse de walkthrough. Construit et testé UNITAIREMENT (migration 0158, walkthrough-analyse.ts, généralisation de entretiens-analyste.ts, écran de revue L2 sur rcm/[cid], lecture /api/sante, station clics, tests rejoués) — AUCUN appel réel n'a jamais été fait ni tenté (mock uniquement). Reste : verify complet sur l'arbre figé (en cours au moment de cette écriture), revue hostile à deux voix (modèle de données + garde IA-BUDGET-01 + résolution multi-tenant touchés), expédition sur main, SHA production confirmé.",
+      "etat": "RÉSOLU, servi en production — SHA 9862ce3 (dernier correctif inclus), identiteCoherente:true, mesuré directement le 2026-09-13. L'adaptateur d'analyse de walkthrough : schéma, service, écran de revue L2, lecture /api/sante, station clics, tests rejoués — aucun appel réel jamais fait, mock uniquement. Verify complet vert (12 passages, R58 résolu par --maxWorkers=2, #418 documenté comme bruit connu) + deux revues hostiles closes (aucun défaut confirmé).",
       "depuis": "2026-09-13 (§4 point 3, R74)",
-      "note": "condition de retrait : verify complet vert + revue hostile close + SHA production mesuré. Correction consignée ici plutôt que dans BACKLOG_REPORTE.md seul (règle 23 — rien ne sort du registre sans état)."
+      "note": "en relisant ce compte rendu, le fondateur a relevé que le vrai sujet — IA-BUDGET-01 câblée pour la première fois SEULEMENT dans le nouveau fichier, entretiens.ts (le chemin réel pré-existant) resté ouvert — était enterré sous « deux fils annexes ». Corrigé séparément (voir la note sur le correctif dans BACKLOG_REPORTE.md), pas ici."
+    },
+    {
+      "id": "R75",
+      "etat": "ouvert — sonde.station() (scripts/clics/hydratation.ts) n'est jamais appelée : le champ « station » de chaque incident #418 consigné depuis F4 (docs/CHASSE.md) est un placeholder mort. Trouvé en creusant F17/F17 bis/F17 ter (R74). Non commencé.",
+      "depuis": "2026-09-13 (correctif IA-BUDGET-01, revue par le fondateur)",
+      "note": "condition de retrait : sonde.station(nom) appelée à chaque transition de station dans scenario.ts, avec un cas connu mauvais (un #418 après l'appel porte le bon nom ; un #418 avant le tout premier appel porte encore le placeholder)."
+    },
+    {
+      "id": "R76",
+      "etat": "ouvert — extraction/ladder.ts n'appelle toujours pas assertBudgetActifEnBase() sur son chemin d'adaptateur réel, contrairement à entretiens.ts et walkthrough-analyse.ts (tous deux corrigés le 2026-09-13). getOcrAdapter() coupe déjà tout déploiement PUBLIC (demoPublique()) vers le rejeu, donc rien ne fuit sur otto-dit.vercel.app aujourd'hui — mais un déploiement non-Vercel avec la garde ouverte resterait exposé sur ce seul chemin.",
+      "depuis": "2026-09-13 (revue hostile R74, voix 1 ; reconfirmé au correctif entretiens.ts)",
+      "note": "condition de retrait : assertBudgetActifEnBase() câblée dans ladder.ts avant tout appel réel, même patron que les deux chemins déjà corrigés, avec son propre cas connu mauvais."
     },
     {
       "id": "N2-1",
