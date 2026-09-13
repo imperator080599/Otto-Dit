@@ -1925,7 +1925,9 @@ export async function conduire(
       && ((await compte('[data-obstacle-famille]')) > 0 || R('obst.aucun').test(await texte()));
     dire(`R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 (≤ ${PLAFOND_TRAVAUX})`,
       obstaclesLisibles && clicsTravaux <= PLAFOND_TRAVAUX,
-      `panneau des obstacles lisible, ${badgeObstacles || '0'} annoncé(s) — ${clicsTravaux} clic(s) cumulé(s)`);
+      obstaclesLisibles
+        ? `panneau des obstacles lisible, ${badgeObstacles || '0'} annoncé(s) — ${clicsTravaux} clic(s) cumulé(s)`
+        : `panneau des obstacles ILLISIBLE (badge « ${badgeObstacles || '(absent)'} », familles/« aucun » introuvables)`);
 
     // ÉTAPE 3a — ATTEINDRE L'ATELIER, par le panneau construit cette tranche.
     const lienEchantillon = p.locator('[data-echantillon-dossier] a').first();
@@ -1952,53 +1954,47 @@ export async function conduire(
     //
     // TOUTES LES LIGNES NE SE CONCLUENT PAS AU PREMIER ESSAI, ET C'EST LE
     // PRODUIT QUI A RAISON, PAS LA STATION (mesuré en le découvrant : deux
-    // runs complets ont chacun buté sur une ligne différente). Deux refus
-    // RÉELS et DISTINCTS gardent `conclureLigne` (grille.ts) :
-    //   · REQ-02 — une colonne AJOUTÉE (étape 7) existe sur la grille PARTAGÉE
-    //     sans que sa pièce ait été demandée pour CETTE ligne. Récupérable EN
-    //     UN CLIC : le refus lui-même nomme le geste (« utilisez le bouton
-    //     Demander ») et le bouton EN LOT couvre TOUTES les lignes à la fois.
-    //   · TEST-02/TEST-04 — une VRAIE exception (cellule non conforme sans
-    //     disposition écrite, ou identité divergente) : celle-ci n'est PAS
-    //     récupérable en un clic, une disposition étant un jugement humain
-    //     rédigé, hors du périmètre d'un parcours chronométré. La bonne
-    //     réponse est celle d'un auditeur réel : choisir une autre ligne.
-    // La station essaie donc plusieurs lignes, bornée, en suivant la
-    // récupération REQ-02 quand elle s'applique et en passant à la ligne
-    // suivante sinon — jamais une boucle non bornée (règle 35 : un plafond
-    // fixé, jamais une attente ouverte).
+    // runs complets, à l'ANCIENNE position en fin de parcours, ont chacun
+    // buté sur une ligne différente). TEST-02/TEST-04 (grille.ts) refusent
+    // une ligne dont une cellule non conforme n'a pas de disposition ÉCRITE —
+    // un jugement humain rédigé, hors du périmètre d'un parcours chronométré.
+    // La bonne réponse est celle d'un auditeur réel : choisir une autre ligne.
+    // La station essaie donc CHAQUE ligne du tableau, dans l'ordre, jusqu'à
+    // en trouver une qui conclut — jamais une boucle non bornée (règle 35 :
+    // un plafond fixé, jamais une attente ouverte).
+    //
+    // REQ-02 (la pièce d'une colonne AJOUTÉE jamais demandée) ne peut PAS se
+    // produire ici : ce refus n'existe que si `grille.colonnes` porte une
+    // colonne `ajoutee_par` (grille.ts, conclureLigne), et la SEULE station de
+    // ce parcours qui en ajoute une (« étape 7 : la colonne ajoutée à la
+    // main ») tourne APRÈS celle-ci (positionnement délibéré, voir plus haut).
+    // Une première version de cette station tentait de RÉCUPÉRER un refus
+    // REQ-02 en cliquant le bouton « demander en lot » — du code mort à cette
+    // position, jamais exercé, trouvé par la revue hostile du 2026-09-13
+    // (règle 17 : un chemin jamais emprunté n'est jamais prouvé) — retiré.
     const lignesTable = p.locator('.atelier-table tbody tr');
     const nLignesTable = await lignesTable.count();
-    /* TOUTES LES LIGNES, PAS UN SOUS-ENSEMBLE ARBITRAIRE : un plafond de 6
-       (choisi d'abord, sans mesure) a échoué deux fois de suite sur ce même
-       dossier, chaque fois sur une ligne DIFFÉRENTE parmi les six premières —
-       ce que ce parcours ne peut pas voir depuis le client sans les ouvrir une
-       à une. Le coût d'ouvrir une ligne de plus est un clic CLIENT (aucun
-       aller-retour serveur, `ouvrirLigne` est un état React) ; seule la
-       tentative de CONCLURE coûte un aller-retour. Le plafond ci-dessous
-       borne le nombre de lignes RÉELLEMENT présentes, jamais une constante
-       inventée. */
-    const MAX_LIGNES_ESSAYEES = nLignesTable;
-    if (MAX_LIGNES_ESSAYEES === 0) {
+    if (nLignesTable === 0) {
       dire('R62 étape 3b — conclure une ligne d’échantillon', false,
         'aucune ligne dans l’atelier — rien à conclure sur le dossier de démonstration à cet instant du parcours');
       return;
     }
-    /* Plafond nommé, pas ajusté au résultat : 2 clics pour ouvrir une ligne
-       puis conclure, jusqu'à MAX_LIGNES_ESSAYEES essais, + jusqu'à 2 clics
-       pour la récupération REQ-02 (au plus une fois, ses boutons en lot
-       couvrant toutes les lignes) — la marge qu'un auditeur réel paierait
-       pour éviter une ligne à exception plutôt que d'en rédiger la disposition. */
-    const PLAFOND_CONCLURE = 2 * MAX_LIGNES_ESSAYEES + 2;
+    /* CHAQUE LIGNE EST CLIQUÉE EXPLICITEMENT, Y COMPRIS LA PREMIÈRE — jamais
+       supposée être celle que l'atelier a auto-sélectionnée à l'arrivée
+       (`premierNonFini`, qui suit l'état d'extraction/attestation, pas
+       l'ordre du tableau) : compter sur cette coïncidence exclurait la vraie
+       ligne 0 du tableau de la boucle et essaierait deux fois la même ligne
+       auto-sélectionnée — trouvé par la revue hostile, jamais corrigé avant
+       ce commit. Le coût d'ouvrir une ligne est un clic CLIENT (aucun
+       aller-retour serveur, `ouvrirLigne` est un état React) ; seule la
+       tentative de CONCLURE en coûte un. */
+    const PLAFOND_CONCLURE = 2 * nLignesTable;
     let clicsConclure = 0;
     let echec: string | null = null;
-    let recuperationReq02 = false;
     let ligneEssai = 0;
-    for (; ligneEssai < MAX_LIGNES_ESSAYEES; ligneEssai++) {
-      if (ligneEssai > 0) {
-        await lignesTable.nth(ligneEssai).click();
-        await p.waitForTimeout(500);
-      }
+    for (; ligneEssai < nLignesTable; ligneEssai++) {
+      await lignesTable.nth(ligneEssai).click();
+      await p.waitForTimeout(500);
       const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
       if (!(await boutonConclure.count())) { echec = 'bouton conclure absent sur cette ligne'; continue; }
       await boutonConclure.click();
@@ -2007,29 +2003,11 @@ export async function conduire(
       clicsConclure = (await clicsCumules()) - clicsAvant;
       echec = refus(p);
       if (!echec) break;
-      if (!recuperationReq02 && /REQ-02/.test(echec)) {
-        recuperationReq02 = true;
-        const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
-        const nBoutonsLot = await boutonsLot.count();
-        for (let i = 0; i < nBoutonsLot; i++) {
-          await boutonsLot.nth(i).click();
-          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-          await p.waitForTimeout(800);
-        }
-        if (nBoutonsLot > 0) {
-          await boutonConclure.click();
-          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-          await p.waitForTimeout(800);
-          clicsConclure = (await clicsCumules()) - clicsAvant;
-          echec = refus(p);
-          if (!echec) break;
-        }
-      }
     }
-    const essaiDit = `${Math.min(ligneEssai + 1, MAX_LIGNES_ESSAYEES)} ligne(s) essayée(s)`;
-    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil (≤ ${MAX_LIGNES_ESSAYEES} lignes essayées)`,
+    const essaiDit = `${Math.min(ligneEssai + 1, nLignesTable)} ligne(s) essayée(s)`;
+    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil (≤ ${nLignesTable} lignes essayées)`,
       !echec && clicsConclure <= PLAFOND_CONCLURE,
-      echec ?? `${clicsConclure} clic(s), ${essaiDit}${recuperationReq02 ? ', pièce demandée en lot' : ''} — ligne conclue`);
+      echec ?? `${clicsConclure} clic(s), ${essaiDit} — ligne conclue`);
   });
 
   /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 7 : LA COLONNE AJOUTÉE À LA MAIN. Un

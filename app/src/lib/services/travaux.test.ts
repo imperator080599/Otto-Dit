@@ -11,8 +11,9 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { initTestDb } from '@/lib/test/setup';
 import { q, q1 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
-import { mesTravaux, obstaclesDeMesDossiers, notesOuvertesParAnciennete, tableauDeBord } from './travaux';
+import { mesTravaux, obstaclesDeMesDossiers, echantillonsDeMesDossiers, notesOuvertesParAnciennete, tableauDeBord } from './travaux';
 import { obstaclesAuVisa } from './obstacles';
+import { lignesNonConclues } from './testing/grille';
 
 const KARIM = IDS.users.karim;
 const LEA = IDS.users.lea;
@@ -127,6 +128,42 @@ describe('mes travaux — la liste se DÉRIVE', () => {
     expect(await obstaclesDeMesDossiers(HUGO)).toEqual([]);
   });
 
+  /* R62 (D.6 point 6) : LE MÊME CALCUL QUE L'AVERTISSEMENT DE L'ATELIER —
+     jamais une seconde liste. Exécutée, pas seulement inscrite au registre
+     d'étanchéité comme « même patron qu'obstaclesDeMesDossiers » (revue
+     hostile du 2026-09-13, voix 2 : l'inscription dans PAR_PERSONNE EXCLUT la
+     fonction de l'appel automatique d'etancheite-executee.test.ts — une
+     affirmation non vérifiée par exécution est le silence que règle 15 nomme).
+     Ce test-ci APPELLE la fonction pour de vrai, sur un dossier d'un AUTRE
+     cabinet (le test d'appartenance ci-dessous), sur un dossier scellé (le
+     test de clôture ci-dessous), et ici sur un cabinet SANS aucun dossier
+     (HUGO) pour prouver le repli vide plutôt que de le supposer.
+
+     LE TIRAGE N'EST PAS DANS CETTE BASE (`seedBase`, pas `demo-seed.ts`) :
+     `lignesNonConclues(IDS.engNep)` y rend donc {0,0,0,0} — construire un
+     tirage réaliste exige le flux complet `bootstrapNep`/`samplingAndRequest`
+     (grille.test.ts), hors périmètre d'un test de service dérivé. Ce qui se
+     vérifie ICI est la cohérence AVEC CE QUE `lignesNonConclues` rend, quelle
+     que soit sa valeur — jamais un chiffre supposé — et le repli vide ; la
+     valeur POSITIVE réelle est prouvée ailleurs, par le parcours cliqué
+     complet sur le monde de démonstration (R62 étape 3b, `npm run clics`). */
+  it('l’échantillon restant à conclure de MES dossiers — même calcul que l’avertissement de l’atelier', async () => {
+    const e = await echantillonsDeMesDossiers(KARIM);
+    const { nonConclues, perimees } = await lignesNonConclues(IDS.engNep);
+    const aConclure = nonConclues + perimees;
+    const nep = e.find((x) => x.engagementId === IDS.engNep);
+    if (aConclure > 0) {
+      expect(nep).toBeDefined();
+      expect(nep!.aConclure).toBe(aConclure);
+      expect(nep!.href).toBe(`/eng/${IDS.engNep}/testing`);
+    } else {
+      /* AUCUNE LIGNE À CONCLURE ICI : le dossier ne doit alors PAS apparaître
+         (règle 13 — un compteur à zéro ne se déguise pas en travail dû). */
+      expect(nep).toBeUndefined();
+    }
+    expect(await echantillonsDeMesDossiers(HUGO)).toEqual([]);
+  });
+
   it('les notes ouvertes par ancienneté — jours calendaires, « ouverte » au sens de la vue d’ensemble', async () => {
     const n = await notesOuvertesParAnciennete(KARIM);
     const nep = n.find((x) => x.engagementId === IDS.engNep)!;
@@ -138,11 +175,15 @@ describe('mes travaux — la liste se DÉRIVE', () => {
     expect(await notesOuvertesParAnciennete(HUGO)).toEqual([]);
   });
 
-  it('le tableau de bord rassemble les quatre vues en un appel', async () => {
+  it('le tableau de bord rassemble les cinq vues en un appel', async () => {
     const tb = await tableauDeBord(KARIM);
     expect(tb.lignes.length).toBeGreaterThan(0);
     expect(Object.keys(tb.sections).sort()).toEqual(['attribuees', 'detenues', 'recentes', 'suivies']);
     expect(tb.obstacles.length).toBeGreaterThan(0);
+    /* `tb.echantillons` : PAS de tirage dans cette base (`seedBase`, jamais
+       `demo-seed.ts`) — la cinquième vue est bien LÀ (un tableau), sa valeur
+       positive se prouve ailleurs (voir le test dédié ci-dessus). */
+    expect(Array.isArray(tb.echantillons)).toBe(true);
     expect(tb.notes.length).toBe(1);
   });
 
@@ -185,14 +226,23 @@ describe('mes travaux — la liste se DÉRIVE', () => {
     expect(tb.obstacles.some((x) => x.engagementId === eng.id)).toBe(false);
     expect(tb.notes.some((x) => x.engagementId === eng.id)).toBe(false);
     expect(tb.lignes.some((l) => l.engagementId === eng.id)).toBe(false);
+    /* R62 : le dossier étranger n'a pas d'échantillon tiré, donc son absence
+       ici est attendue même sans étanchéité (`aConclure` resterait à 0). Ce
+       qui compte est que l'APPEL LUI-MÊME (echantillonsDeMesDossiers, via
+       tableauDeBord) traverse ce dossier d'un autre cabinet sans lever ni le
+       lister — la même jointure CABINET/OUVERT qu'obstaclesDeMesDossiers,
+       exécutée pour de vrai plutôt qu'affirmée au registre d'étanchéité seul
+       (revue hostile du 2026-09-13, voix 2). */
+    expect(tb.echantillons.some((x) => x.engagementId === eng.id)).toBe(false);
   });
 
-  it('un dossier SCELLÉ sort de TOUT le tableau de bord — obstacles, notes, sections', async () => {
+  it('un dossier SCELLÉ sort de TOUT le tableau de bord — obstacles, notes, sections, échantillon', async () => {
     await q(`update engagement set status = 'locked' where id = $1`, [IDS.engNep]);
     const tb = await tableauDeBord(KARIM);
     expect(tb.obstacles.some((x) => x.engagementId === IDS.engNep)).toBe(false);
     expect(tb.notes.some((x) => x.engagementId === IDS.engNep)).toBe(false);
     expect(tb.sections.recentes.some((s) => s.engagementId === IDS.engNep)).toBe(false);
+    expect(tb.echantillons.some((x) => x.engagementId === IDS.engNep)).toBe(false);
     await q(`update engagement set status = 'setup' where id = $1`, [IDS.engNep]);
   });
 });
