@@ -604,6 +604,21 @@ d'avertissements webpack déjà bénins. Cohérent avec l'hypothèse 1 (pression
 déjà posée, pas une hypothèse nouvelle. Chaîne rejouée sur le MÊME arbre — résultat cité dans
 STATUS.md.
 
+**Sixième occurrence (2026-09-13, R74, `verify-r74-6.log`)** : `le serveur est tombé après 48
+route(s), à « /eng/[id]/testing »` — MÊME route, MÊME position numérique que la toute première
+tentative de cette même tranche (`verify-r74-1.log`). `/eng/[id]/testing` est systématiquement
+l'une des réponses les plus LENTES du balayage sur cette machine (16,9 s à 18,4 s selon les
+passages, mesuré à quatre reprises maintenant), cohérent avec l'hypothèse 1 (une page proche du
+pic de charge cumulée est la plus probable à tomber en premier) plutôt qu'une preuve d'un lien
+avec le code de cette route. Aucune exception dans le journal, même signature que toutes les
+occurrences précédentes. Chaîne rejouée une fois de plus sur le MÊME arbre. **Note opérationnelle
+distincte, hors R58 lui-même** : le passage `verify-r74-5.log` sur ce même arbre a été terminé
+PAR UN SIGNAL EXTERNE (`EXIT=143`, 2679 s après lancement — sous le budget `timeout 3600` posé,
+donc PAS ce `timeout`-là qui l'a tué) laissant un `next-server` orphelin (PID 12069, tué
+manuellement, `kill -9`) ; cause non identifiée, consignée pour qu'une session future qui verrait
+un run mourir à ~45 min sans avoir atteint son propre budget sache que ce n'est pas la première
+fois.
+
 ### Ce que cette récidive NE change PAS
 
 Le passage qui a suivi cette occurrence (voir STATUS.md, tranche « contrôle interne, tranche 1 »)
