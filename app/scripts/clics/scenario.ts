@@ -3657,7 +3657,16 @@ export async function conduire(
     // fixé, jamais une attente ouverte).
     const lignesTable = p.locator('.atelier-table tbody tr');
     const nLignesTable = await lignesTable.count();
-    const MAX_LIGNES_ESSAYEES = Math.min(6, nLignesTable);
+    /* TOUTES LES LIGNES, PAS UN SOUS-ENSEMBLE ARBITRAIRE : un plafond de 6
+       (choisi d'abord, sans mesure) a échoué deux fois de suite sur ce même
+       dossier, chaque fois sur une ligne DIFFÉRENTE parmi les six premières —
+       ce que ce parcours ne peut pas voir depuis le client sans les ouvrir une
+       à une. Le coût d'ouvrir une ligne de plus est un clic CLIENT (aucun
+       aller-retour serveur, `ouvrirLigne` est un état React) ; seule la
+       tentative de CONCLURE coûte un aller-retour. Le plafond ci-dessous
+       borne le nombre de lignes RÉELLEMENT présentes, jamais une constante
+       inventée. */
+    const MAX_LIGNES_ESSAYEES = nLignesTable;
     if (MAX_LIGNES_ESSAYEES === 0) {
       dire('R62 étape 3b — conclure une ligne d’échantillon', false,
         'aucune ligne dans l’atelier — rien à conclure sur le dossier de démonstration à cet instant du parcours');
