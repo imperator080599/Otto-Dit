@@ -56,11 +56,101 @@ EN PRODUCTION** (`f91d79e`, mesuré le 2026-09-12) ; la migration des écrans en
 automatiquement (un changement de jetons, pas une réécriture — voir la tranche). **R60 (D.6 point
 4, « tout compteur mène quelque part ») COMPLET ET SERVI EN PRODUCTION** (`17017b4`, mesuré le
 2026-09-12) — quatre culs-de-sac corrigés (dashboard, population, balances-aux, imports). **R61
-(D.6 point 5, « aucun état vide muet ») COMPLET** — quinze sites corrigés, SHA à confirmer
-ci-dessous après le push de ce jour. **R62** (parcours découverte chronométré) reste à construire —
-seul point restant avant le message unique promis au fondateur. **Le fondateur ne sera pas réveillé
-entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass ENTIER est
-servi.
+(D.6 point 5, « aucun état vide muet ») COMPLET ET SERVI EN PRODUCTION** (`fbfa06b`, mesuré le
+2026-09-12 à 23:10:15Z) — quinze sites corrigés. **R62 (D.6 point 6, « parcours découverte
+chronométré ») COMPLET** — SHA à confirmer ci-dessous après fusion sur `main`. **LE REPASS DESIGN
+ENTIER (jetons + R60 + R61 + R62) EST DONC COMPLET** dès que le SHA de R62 est confirmé servi —
+R59 (comportement par défaut du rail) reste EXPLICITEMENT HORS DE CE REPASS, bloqué sur une
+décision du fondateur distincte (ADR-103, `docs/BACKLOG_REPORTE.md`). **Le fondateur ne sera pas
+réveillé entre les tranches de ce lot** (sa consigne, verbatim) — un seul message quand le repass
+(hors R59) est servi ; ce message reste dû dès que le SHA de R62 est confirmé.
+
+## R62 (D.6 point 6) : le parcours découverte, chronométré en clics (2026-09-13)
+
+*Mandat 2026-09-05 §D.6 : « Un parcours cliqué « découverte » : sans lire le rail, atteindre ses
+travaux, comprendre ce qui empêche de signer, conclure une ligne d'échantillon. Chaque étape
+mesure le nombre de clics et échoue au-delà du plafond fixé. » Distinct du compteur de clics
+DESCRIPTIF déjà mesuré par `npm run clics` (`docs/CLICS.md` : un coût publié, jamais jugé) —
+ici, un plafond fixé D'AVANCE, et une étape rougit si elle est dépassée.*
+
+**Le trou trouvé en construisant, avant tout code de mécanique.** Reconstruire le parcours d'un
+auditeur qui n'a jamais lu le rail a montré qu'aucun chemin n'existait de Mes travaux (`/travaux`)
+vers l'atelier de test : les quatre listes d'attribution (`mesSections`) ne montrent un poste QUE
+s'il a un détenteur, un attributaire, un suiveur ou une visite récente pour la personne connectée
+— et le poste qui porte l'échantillon perd son détenteur dès qu'il passe « reviewed » (le monde de
+démonstration fraîchement semé l'est déjà). « Conclure une ligne d'échantillon » n'était donc pas
+un geste que le mandat pouvait mesurer : il n'avait pas d'écran (règle 13). Corrigé par un panneau
+neuf, même patron que celui des obstacles : `echantillonsDeMesDossiers` (travaux.ts, dérivé de
+`lignesNonConclues` déjà utilisé par l'avertissement de l'atelier — rien de nouveau stocké) et un
+panneau `data-echantillon` sur `/travaux`, un clic vers `/eng/[id]/testing` par dossier qui porte
+encore du travail.
+
+**Le parcours mesuré, trois points de contrôle, plafonds FIXÉS AVANT la mesure :**
+1. Atteindre Mes travaux depuis l'accueil, par le lien permanent du bandeau — ≤ 1 clic.
+2. Comprendre ce qui empêche de signer — le panneau des obstacles est déjà sur cet écran : ≤ 1
+   clic cumulé (aucun clic de plus que le point 1).
+3. Atteindre l'atelier — ≤ 2 clics cumulés, par le panneau neuf — puis conclure une ligne
+   d'échantillon. Toutes les lignes ne se concluent pas au premier essai (le monde de
+   démonstration porte de vraies exceptions, TEST-02/TEST-04, qui exigent une disposition ÉCRITE —
+   un jugement humain hors du périmètre d'un parcours chronométré) : la station essaie CHAQUE
+   ligne du tableau, dans l'ordre, jusqu'à en trouver une qui conclut, sous un plafond qui suit le
+   nombre RÉEL de lignes présentes (2 clics par ligne essayée), jamais une constante inventée ni
+   une boucle non bornée (règle 35).
+
+**Positionnement dans le fichier, trouvé à la dure.** Trois runs complets avec la station placée
+en FIN de parcours (après « obstacles au visa », ~250 stations plus loin) ont chacun buté sur une
+ligne DIFFÉRENTE avec une vraie exception — même en essayant les DIX-SEPT lignes à la dernière
+tentative. Pas une panne du produit : les stations qui suivent (étape 7, second passage sur les
+pièces, réexécution/évaluation) RECALCULENT la grille et les comparaisons plusieurs fois, et une
+disposition écrite dont la valeur sous-jacente a changé redevient PÉRIMÉE (`dispositionPerimee`,
+atelier.tsx) — comportement voulu, pas un défaut. En fin de parcours, plus une seule des dix-sept
+lignes n'était conclusible sans rédiger une disposition. Déplacée juste après le PREMIER calcul de
+grille (station « atelier de test »), avant toute station qui recalcule — là où des lignes encore
+intactes restent disponibles.
+
+**Revue hostile, DEUX voix indépendantes (règle 30 : ce lot touche le registre multi-tenant
+ETANCH via `echantillonsDeMesDossiers(userId)`), quatre défauts réels trouvés et corrigés avant
+fusion :**
+- **Voix 1** — isolation jugée CORRECTE (SQL tracé directement, identique à `obstaclesDeMesDossiers`,
+  échoue fermé sur un userId inconnu). Deux défauts dans la station : (1) la récupération d'un
+  refus REQ-02 (bouton « demander en lot ») était devenue du CODE MORT après le déplacement —
+  ce refus n'existe que si une colonne ajoutée existe sur la grille, or la seule station qui en
+  ajoute une tourne maintenant APRÈS R62 ; retirée entièrement (règle 17 : un chemin jamais
+  emprunté n'est jamais prouvé). (2) La boucle d'essai ne cliquait jamais explicitement la
+  ligne 0 (elle supposait qu'elle coïncidait avec l'auto-sélection de l'atelier, qui suit
+  l'extraction/attestation, pas l'ordre du tableau) — corrigé, chaque ligne est cliquée
+  explicitement.
+- **Voix 2** — deux défauts : (1) le détail de l'étape 2 affirmait « panneau des obstacles
+  lisible » QUEL QUE SOIT le résultat — le motif exact que règle 13 nomme (un détail qui contredit
+  le verdict) ; rendu dépendant du résultat. (2) **Le plus sérieux** : enregistrer
+  `echantillonsDeMesDossiers` dans le registre `PAR_PERSONNE` (étanchéité) EXCLUT la fonction de
+  l'appel automatique par acteur étranger d'`etancheite-executee.test.ts` — l'inscription
+  affirmait « même patron qu'obstaclesDeMesDossiers » sans qu'AUCUN test n'appelle réellement la
+  fonction en contexte multi-cabinet (une affirmation non exécutée, le silence que règle 15
+  nomme). Corrigé : `travaux.test.ts` étend les trois cas déjà exécutés pour les vues sœurs
+  (appartenance à un dossier d'un AUTRE cabinet, dossier SCELLÉ, cabinet SANS aucun dossier) à
+  `tb.echantillons`, plus un test dédié qui vérifie la cohérence avec `lignesNonConclues` —
+  exécuté pour de vrai.
+
+**Ce que cette tranche NE fait PAS (règle 19).** La station ne prouve pas que le chemin emprunté
+est le plus court possible — seulement qu'il en existe un sous le plafond fixé. Le test unitaire
+de la valeur POSITIVE de `echantillonsDeMesDossiers` (un dossier qui a réellement de l'échantillon
+à conclure) n'est pas construit dans `travaux.test.ts` — sa base (`seedBase`) n'a pas de tirage,
+et le construire exige le flux complet `bootstrapNep`/`samplingAndRequest` (grille.test.ts), hors
+périmètre d'un test de service dérivé ; la valeur positive réelle est prouvée par le parcours
+cliqué complet sur le monde de démonstration (R62 étape 3b elle-même, `npm run clics`).
+
+**Verify complet, sept exécutions sur cet arbre au total** (deux échecs environnementaux
+dispersés et sans rapport avec cette tranche — timeouts Playwright sur des zones jamais touchées
+par le diff, host à charge 4,46/3,92 sur 4 CPU au moment des deux runs les plus dégradés,
+retombée à 1,41 ensuite — puis un run vert, un défaut réel trouvé (REQ-02 non enregistré au
+registre d'étanchéité), puis un run vert, puis le repositionnement, un run vert, puis les
+corrections de revue hostile, un DERNIER run vert confirmé) : la version finale est **138/138
+fichiers de test, 91 routes/0 échec, densité 81 écrans/0 au-delà de 5 actions, clics 253 étapes/0
+échec (387 clics comptés), visuel 328 vues/0 défaut**. R62 étape 3b conclut au premier essai (4
+clics, 1 ligne essayée) sur le monde de démonstration frais.
+
+**SHA servi confirmé, PRODUCTION** : à mesurer après la fusion sur `main`.
 
 ## R61 (D.6 point 5) : aucun état vide muet — 15 sites, 10 fichiers (2026-09-12)
 
@@ -117,7 +207,11 @@ version finale est verte — 138 fichiers de test, `screens` 91 routes/0 échec,
 échec (la station R61 comprise, kanban confirmé 3 colonnes vides distinctes), `visuel` 328 vues/0
 défaut.
 
-**SHA servi confirmé, PRODUCTION** : à mesurer après le push de cette tranche.
+**SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `fbfa06b`** (`fbfa06b5f3a5d2fa0d48a4bdb2b64818309a6d19`,
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` — l'hôte de
+production, jamais l'alias de branche, règle 36) : HTTP 200, `identiteCoherente:true`, toutes les
+lectures `ok:true`, la station R61 (trois colonnes vides distinctes) comprise dans le run qui a
+produit ce SHA.
 
 ## R60 (D.6 point 4) : tout compteur mène quelque part — dashboard, population, balances-aux, imports (2026-09-11)
 
