@@ -1859,6 +1859,179 @@ export async function conduire(
       (await compte('[data-avertissement-lignes]')) === 1 && /unsupported_sample_items/.test(await texte()), 'avertissement affiché');
   });
 
+  /* R62 (D.6 point 6) : LE PARCOURS « DÉCOUVERTE », CHRONOMÉTRÉ EN CLICS.
+     Le mandat : sans lire le rail, atteindre Mes travaux, comprendre ce qui
+     empêche de signer, conclure une ligne d'échantillon — et CHAQUE étape
+     échoue au-delà d'un plafond fixé. DISTINCT du compteur DESCRIPTIF de
+     chaque geste (`docs/CLICS.md`, la variable `gestes` posée par `station`
+     elle-même) : là, le plafond n'est publié qu'après coup, jamais jugé —
+     ici, il est fixé D'AVANCE et une station entière rougit s'il est dépassé.
+
+     LE COMPTEUR EST LE VRAI COMPTEUR (`clicsCumules`, posé en tête de ce
+     fichier — il écoute les événements `click` du navigateur), jamais le
+     `clics++` manuel de la station voisine (« mes travaux ») : un plafond
+     qui se fierait à un compteur tenu à la main ment le jour où quelqu'un
+     oublie de l'incrémenter.
+
+     LE CHEMIN VERS L'ATELIER A ÉTÉ CONSTRUIT PAR CETTE TRANCHE, PAS SUPPOSÉ :
+     avant elle, aucun lien de Mes travaux ne menait à l'atelier — les quatre
+     listes d'attribution (`mesSections`) ne montrent un poste QUE s'il a un
+     détenteur, un attributaire, un suiveur ou une visite récente pour LA
+     personne connectée, et le poste qui porte l'échantillon perd son
+     détenteur dès qu'il passe « reviewed » (le monde de démonstration frais
+     l'est déjà). Voir `echantillonsDeMesDossiers` (travaux.ts) et le panneau
+     `data-echantillon` de `/travaux`.
+
+     CE QUE CETTE STATION NE PROUVE PAS (règle 19) : que le chemin emprunté
+     est LE PLUS COURT possible — seulement qu'IL EN EXISTE UN sous le
+     plafond fixé. Un chemin plus court qui apparaîtrait plus tard ferait
+     baisser le compte mesuré, jamais échouer la station — et une régression
+     qui ajoute un clic la ferait rougir immédiatement, ce pour quoi elle
+     existe.
+
+     POURQUOI ICI, JUSTE APRÈS LE PREMIER GEL DE LA GRILLE, ET PAS PLUS LOIN
+     DANS LE FICHIER. Trois runs complets placés APRÈS « obstacles au visa »
+     (fin de parcours) ont chacun buté sur une ligne DIFFÉRENTE avec une VRAIE
+     exception (TEST-04 : « Montant HT », puis « Quantité livrée », puis même
+     en essayant LES DIX-SEPT LIGNES, « Signature du client ») — jamais une
+     panne du produit : les stations qui suivent (étape 7, second passage sur
+     les pièces, réexécution/évaluation) RE-CALCULENT la grille et les
+     comparaisons plusieurs fois, et une disposition écrite dont la valeur
+     sous-jacente a changé redevient PÉRIMÉE (atelier.tsx, `dispositionPerimee`)
+     — un comportement voulu du produit, pas un défaut à corriger. À la fin
+     du parcours, plus une seule des dix-sept lignes n'était conclusible sans
+     rédiger une disposition, ce qu'un parcours chronométré en clics ne peut
+     pas faire. Ici, juste après le premier calcul de grille et avant toute
+     station qui recalcule, des lignes encore jamais touchées restent
+     disponibles. */
+  await station('R62 : le parcours découverte, chronométré en clics (D.6 point 6)', async () => {
+    await devenir(c.preparateur.id);
+
+    // ÉTAPE 1 — ATTEINDRE MES TRAVAUX, depuis l'accueil, sans lire le rail.
+    await aller(base + '/');
+    const clicsAvant = await clicsCumules();
+    const PLAFOND_TRAVAUX = 1;
+    await cliquer(`.topbar-lien:has-text("${L('commun.mesTravaux')}")`);
+    const clicsTravaux = (await clicsCumules()) - clicsAvant;
+    const surTravaux = p.url().includes('/travaux');
+    dire(`R62 étape 1 — atteindre Mes travaux en ≤ ${PLAFOND_TRAVAUX} clic(s) depuis l’accueil`,
+      surTravaux && clicsTravaux <= PLAFOND_TRAVAUX, `${clicsTravaux} clic(s) → ${p.url().replace(base, '')}`);
+    if (!surTravaux) return;
+
+    // ÉTAPE 2 — COMPRENDRE CE QUI EMPÊCHE DE SIGNER, SANS CLIC DE PLUS : le
+    // panneau des obstacles est déjà sur cet écran, au même coût que l'étape 1.
+    const badgeObstacles = (await p.locator('[data-obstacles] .badge').first().innerText().catch(() => '')).trim();
+    const obstaclesLisibles = (await compte('[data-obstacles]')) > 0 && /^\d+$/.test(badgeObstacles)
+      && ((await compte('[data-obstacle-famille]')) > 0 || R('obst.aucun').test(await texte()));
+    dire(`R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 (≤ ${PLAFOND_TRAVAUX})`,
+      obstaclesLisibles && clicsTravaux <= PLAFOND_TRAVAUX,
+      `panneau des obstacles lisible, ${badgeObstacles || '0'} annoncé(s) — ${clicsTravaux} clic(s) cumulé(s)`);
+
+    // ÉTAPE 3a — ATTEINDRE L'ATELIER, par le panneau construit cette tranche.
+    const lienEchantillon = p.locator('[data-echantillon-dossier] a').first();
+    if (!(await lienEchantillon.count())) {
+      dire('R62 étape 3 — un chemin vers l’atelier existe depuis Mes travaux', false,
+        'panneau « échantillon en cours » vide — rien à conclure sur le dossier de démonstration à cet instant du parcours');
+      return;
+    }
+    const PLAFOND_ATELIER = 2;
+    await lienEchantillon.click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    /* L'ATELIER EST UN COMPOSANT SERVEUR LOURD (extraction, matching, grille,
+       budget) — mesuré en dev, `networkidle` rend la main AVANT que l'URL
+       n'ait fini de basculer côté client ; une attente courte lisait encore
+       « /travaux » un instant plus tôt. 3 s couvre la marge mesurée. */
+    await p.waitForTimeout(3000);
+    const clicsAtelier = (await clicsCumules()) - clicsAvant;
+    const surAtelier = p.url().includes('/testing');
+    dire(`R62 étape 3a — atteindre l’atelier en ≤ ${PLAFOND_ATELIER} clic(s) cumulés depuis l’accueil`,
+      surAtelier && clicsAtelier <= PLAFOND_ATELIER, `${clicsAtelier} clic(s) → ${p.url().replace(base, '')}`);
+    if (!surAtelier) return;
+
+    // ÉTAPE 3b — CONCLURE UNE LIGNE D'ÉCHANTILLON.
+    //
+    // TOUTES LES LIGNES NE SE CONCLUENT PAS AU PREMIER ESSAI, ET C'EST LE
+    // PRODUIT QUI A RAISON, PAS LA STATION (mesuré en le découvrant : deux
+    // runs complets ont chacun buté sur une ligne différente). Deux refus
+    // RÉELS et DISTINCTS gardent `conclureLigne` (grille.ts) :
+    //   · REQ-02 — une colonne AJOUTÉE (étape 7) existe sur la grille PARTAGÉE
+    //     sans que sa pièce ait été demandée pour CETTE ligne. Récupérable EN
+    //     UN CLIC : le refus lui-même nomme le geste (« utilisez le bouton
+    //     Demander ») et le bouton EN LOT couvre TOUTES les lignes à la fois.
+    //   · TEST-02/TEST-04 — une VRAIE exception (cellule non conforme sans
+    //     disposition écrite, ou identité divergente) : celle-ci n'est PAS
+    //     récupérable en un clic, une disposition étant un jugement humain
+    //     rédigé, hors du périmètre d'un parcours chronométré. La bonne
+    //     réponse est celle d'un auditeur réel : choisir une autre ligne.
+    // La station essaie donc plusieurs lignes, bornée, en suivant la
+    // récupération REQ-02 quand elle s'applique et en passant à la ligne
+    // suivante sinon — jamais une boucle non bornée (règle 35 : un plafond
+    // fixé, jamais une attente ouverte).
+    const lignesTable = p.locator('.atelier-table tbody tr');
+    const nLignesTable = await lignesTable.count();
+    /* TOUTES LES LIGNES, PAS UN SOUS-ENSEMBLE ARBITRAIRE : un plafond de 6
+       (choisi d'abord, sans mesure) a échoué deux fois de suite sur ce même
+       dossier, chaque fois sur une ligne DIFFÉRENTE parmi les six premières —
+       ce que ce parcours ne peut pas voir depuis le client sans les ouvrir une
+       à une. Le coût d'ouvrir une ligne de plus est un clic CLIENT (aucun
+       aller-retour serveur, `ouvrirLigne` est un état React) ; seule la
+       tentative de CONCLURE coûte un aller-retour. Le plafond ci-dessous
+       borne le nombre de lignes RÉELLEMENT présentes, jamais une constante
+       inventée. */
+    const MAX_LIGNES_ESSAYEES = nLignesTable;
+    if (MAX_LIGNES_ESSAYEES === 0) {
+      dire('R62 étape 3b — conclure une ligne d’échantillon', false,
+        'aucune ligne dans l’atelier — rien à conclure sur le dossier de démonstration à cet instant du parcours');
+      return;
+    }
+    /* Plafond nommé, pas ajusté au résultat : 2 clics pour ouvrir une ligne
+       puis conclure, jusqu'à MAX_LIGNES_ESSAYEES essais, + jusqu'à 2 clics
+       pour la récupération REQ-02 (au plus une fois, ses boutons en lot
+       couvrant toutes les lignes) — la marge qu'un auditeur réel paierait
+       pour éviter une ligne à exception plutôt que d'en rédiger la disposition. */
+    const PLAFOND_CONCLURE = 2 * MAX_LIGNES_ESSAYEES + 2;
+    let clicsConclure = 0;
+    let echec: string | null = null;
+    let recuperationReq02 = false;
+    let ligneEssai = 0;
+    for (; ligneEssai < MAX_LIGNES_ESSAYEES; ligneEssai++) {
+      if (ligneEssai > 0) {
+        await lignesTable.nth(ligneEssai).click();
+        await p.waitForTimeout(500);
+      }
+      const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
+      if (!(await boutonConclure.count())) { echec = 'bouton conclure absent sur cette ligne'; continue; }
+      await boutonConclure.click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(800);
+      clicsConclure = (await clicsCumules()) - clicsAvant;
+      echec = refus(p);
+      if (!echec) break;
+      if (!recuperationReq02 && /REQ-02/.test(echec)) {
+        recuperationReq02 = true;
+        const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
+        const nBoutonsLot = await boutonsLot.count();
+        for (let i = 0; i < nBoutonsLot; i++) {
+          await boutonsLot.nth(i).click();
+          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+          await p.waitForTimeout(800);
+        }
+        if (nBoutonsLot > 0) {
+          await boutonConclure.click();
+          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+          await p.waitForTimeout(800);
+          clicsConclure = (await clicsCumules()) - clicsAvant;
+          echec = refus(p);
+          if (!echec) break;
+        }
+      }
+    }
+    const essaiDit = `${Math.min(ligneEssai + 1, MAX_LIGNES_ESSAYEES)} ligne(s) essayée(s)`;
+    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil (≤ ${MAX_LIGNES_ESSAYEES} lignes essayées)`,
+      !echec && clicsConclure <= PLAFOND_CONCLURE,
+      echec ?? `${clicsConclure} clic(s), ${essaiDit}${recuperationReq02 ? ', pièce demandée en lot' : ''} — ligne conclue`);
+  });
+
   /* PLAN D'AUTONOMIE, PARTIE B, ÉTAPE 7 : LA COLONNE AJOUTÉE À LA MAIN. Un
      titre libre interprété DÉTERMINISTIQUEMENT contre le catalogue fermé de
      l'échelle d'extraction (COL-01, workpapers/colonne.ts) ; un clic ajoute
@@ -3561,163 +3734,6 @@ export async function conduire(
     dire(`mes travaux : ${n} ligne(s), et l’objet s’atteint en ${clics} clic(s) — le critère est de 3`,
       p.url().includes(cible.split('?')[0]) && clics <= 3,
       `${clics} clic(s) → ${cible}`);
-  });
-
-  /* R62 (D.6 point 6) : LE PARCOURS « DÉCOUVERTE », CHRONOMÉTRÉ EN CLICS.
-     Le mandat : sans lire le rail, atteindre Mes travaux, comprendre ce qui
-     empêche de signer, conclure une ligne d'échantillon — et CHAQUE étape
-     échoue au-delà d'un plafond fixé. DISTINCT du compteur DESCRIPTIF de
-     chaque geste (`docs/CLICS.md`, la variable `gestes` posée par `station`
-     elle-même) : là, le plafond n'est publié qu'après coup, jamais jugé —
-     ici, il est fixé D'AVANCE et une station entière rougit s'il est dépassé.
-
-     LE COMPTEUR EST LE VRAI COMPTEUR (`clicsCumules`, posé en tête de ce
-     fichier — il écoute les événements `click` du navigateur), jamais le
-     `clics++` manuel de la station voisine (« mes travaux ») : un plafond
-     qui se fierait à un compteur tenu à la main ment le jour où quelqu'un
-     oublie de l'incrémenter.
-
-     LE CHEMIN VERS L'ATELIER A ÉTÉ CONSTRUIT PAR CETTE TRANCHE, PAS SUPPOSÉ :
-     avant elle, aucun lien de Mes travaux ne menait à l'atelier — les quatre
-     listes d'attribution (`mesSections`) ne montrent un poste QUE s'il a un
-     détenteur, un attributaire, un suiveur ou une visite récente pour LA
-     personne connectée, et le poste qui porte l'échantillon perd son
-     détenteur dès qu'il passe « reviewed » (le monde de démonstration frais
-     l'est déjà). Voir `echantillonsDeMesDossiers` (travaux.ts) et le panneau
-     `data-echantillon` de `/travaux`.
-
-     CE QUE CETTE STATION NE PROUVE PAS (règle 19) : que le chemin emprunté
-     est LE PLUS COURT possible — seulement qu'IL EN EXISTE UN sous le
-     plafond fixé. Un chemin plus court qui apparaîtrait plus tard ferait
-     baisser le compte mesuré, jamais échouer la station — et une régression
-     qui ajoute un clic la ferait rougir immédiatement, ce pour quoi elle
-     existe. */
-  await station('R62 : le parcours découverte, chronométré en clics (D.6 point 6)', async () => {
-    await devenir(c.preparateur.id);
-
-    // ÉTAPE 1 — ATTEINDRE MES TRAVAUX, depuis l'accueil, sans lire le rail.
-    await aller(base + '/');
-    const clicsAvant = await clicsCumules();
-    const PLAFOND_TRAVAUX = 1;
-    await cliquer(`.topbar-lien:has-text("${L('commun.mesTravaux')}")`);
-    const clicsTravaux = (await clicsCumules()) - clicsAvant;
-    const surTravaux = p.url().includes('/travaux');
-    dire(`R62 étape 1 — atteindre Mes travaux en ≤ ${PLAFOND_TRAVAUX} clic(s) depuis l’accueil`,
-      surTravaux && clicsTravaux <= PLAFOND_TRAVAUX, `${clicsTravaux} clic(s) → ${p.url().replace(base, '')}`);
-    if (!surTravaux) return;
-
-    // ÉTAPE 2 — COMPRENDRE CE QUI EMPÊCHE DE SIGNER, SANS CLIC DE PLUS : le
-    // panneau des obstacles est déjà sur cet écran, au même coût que l'étape 1.
-    const badgeObstacles = (await p.locator('[data-obstacles] .badge').first().innerText().catch(() => '')).trim();
-    const obstaclesLisibles = (await compte('[data-obstacles]')) > 0 && /^\d+$/.test(badgeObstacles)
-      && ((await compte('[data-obstacle-famille]')) > 0 || R('obst.aucun').test(await texte()));
-    dire(`R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 (≤ ${PLAFOND_TRAVAUX})`,
-      obstaclesLisibles && clicsTravaux <= PLAFOND_TRAVAUX,
-      `panneau des obstacles lisible, ${badgeObstacles || '0'} annoncé(s) — ${clicsTravaux} clic(s) cumulé(s)`);
-
-    // ÉTAPE 3a — ATTEINDRE L'ATELIER, par le panneau construit cette tranche.
-    const lienEchantillon = p.locator('[data-echantillon-dossier] a').first();
-    if (!(await lienEchantillon.count())) {
-      dire('R62 étape 3 — un chemin vers l’atelier existe depuis Mes travaux', false,
-        'panneau « échantillon en cours » vide — rien à conclure sur le dossier de démonstration à cet instant du parcours');
-      return;
-    }
-    const PLAFOND_ATELIER = 2;
-    await lienEchantillon.click();
-    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-    /* L'ATELIER EST UN COMPOSANT SERVEUR LOURD (extraction, matching, grille,
-       budget) — mesuré en dev, `networkidle` rend la main AVANT que l'URL
-       n'ait fini de basculer côté client ; une attente courte lisait encore
-       « /travaux » un instant plus tôt. 3 s couvre la marge mesurée. */
-    await p.waitForTimeout(3000);
-    const clicsAtelier = (await clicsCumules()) - clicsAvant;
-    const surAtelier = p.url().includes('/testing');
-    dire(`R62 étape 3a — atteindre l’atelier en ≤ ${PLAFOND_ATELIER} clic(s) cumulés depuis l’accueil`,
-      surAtelier && clicsAtelier <= PLAFOND_ATELIER, `${clicsAtelier} clic(s) → ${p.url().replace(base, '')}`);
-    if (!surAtelier) return;
-
-    // ÉTAPE 3b — CONCLURE UNE LIGNE D'ÉCHANTILLON.
-    //
-    // TOUTES LES LIGNES NE SE CONCLUENT PAS AU PREMIER ESSAI, ET C'EST LE
-    // PRODUIT QUI A RAISON, PAS LA STATION (mesuré en le découvrant : deux
-    // runs complets ont chacun buté sur une ligne différente). Deux refus
-    // RÉELS et DISTINCTS gardent `conclureLigne` (grille.ts) :
-    //   · REQ-02 — une colonne AJOUTÉE (étape 7) existe sur la grille PARTAGÉE
-    //     sans que sa pièce ait été demandée pour CETTE ligne. Récupérable EN
-    //     UN CLIC : le refus lui-même nomme le geste (« utilisez le bouton
-    //     Demander ») et le bouton EN LOT couvre TOUTES les lignes à la fois.
-    //   · TEST-02/TEST-04 — une VRAIE exception (cellule non conforme sans
-    //     disposition écrite, ou identité divergente) : celle-ci n'est PAS
-    //     récupérable en un clic, une disposition étant un jugement humain
-    //     rédigé, hors du périmètre d'un parcours chronométré. La bonne
-    //     réponse est celle d'un auditeur réel : choisir une autre ligne.
-    // La station essaie donc plusieurs lignes, bornée, en suivant la
-    // récupération REQ-02 quand elle s'applique et en passant à la ligne
-    // suivante sinon — jamais une boucle non bornée (règle 35 : un plafond
-    // fixé, jamais une attente ouverte).
-    const lignesTable = p.locator('.atelier-table tbody tr');
-    const nLignesTable = await lignesTable.count();
-    /* TOUTES LES LIGNES, PAS UN SOUS-ENSEMBLE ARBITRAIRE : un plafond de 6
-       (choisi d'abord, sans mesure) a échoué deux fois de suite sur ce même
-       dossier, chaque fois sur une ligne DIFFÉRENTE parmi les six premières —
-       ce que ce parcours ne peut pas voir depuis le client sans les ouvrir une
-       à une. Le coût d'ouvrir une ligne de plus est un clic CLIENT (aucun
-       aller-retour serveur, `ouvrirLigne` est un état React) ; seule la
-       tentative de CONCLURE coûte un aller-retour. Le plafond ci-dessous
-       borne le nombre de lignes RÉELLEMENT présentes, jamais une constante
-       inventée. */
-    const MAX_LIGNES_ESSAYEES = nLignesTable;
-    if (MAX_LIGNES_ESSAYEES === 0) {
-      dire('R62 étape 3b — conclure une ligne d’échantillon', false,
-        'aucune ligne dans l’atelier — rien à conclure sur le dossier de démonstration à cet instant du parcours');
-      return;
-    }
-    /* Plafond nommé, pas ajusté au résultat : 2 clics pour ouvrir une ligne
-       puis conclure, jusqu'à MAX_LIGNES_ESSAYEES essais, + jusqu'à 2 clics
-       pour la récupération REQ-02 (au plus une fois, ses boutons en lot
-       couvrant toutes les lignes) — la marge qu'un auditeur réel paierait
-       pour éviter une ligne à exception plutôt que d'en rédiger la disposition. */
-    const PLAFOND_CONCLURE = 2 * MAX_LIGNES_ESSAYEES + 2;
-    let clicsConclure = 0;
-    let echec: string | null = null;
-    let recuperationReq02 = false;
-    let ligneEssai = 0;
-    for (; ligneEssai < MAX_LIGNES_ESSAYEES; ligneEssai++) {
-      if (ligneEssai > 0) {
-        await lignesTable.nth(ligneEssai).click();
-        await p.waitForTimeout(500);
-      }
-      const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
-      if (!(await boutonConclure.count())) { echec = 'bouton conclure absent sur cette ligne'; continue; }
-      await boutonConclure.click();
-      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-      await p.waitForTimeout(800);
-      clicsConclure = (await clicsCumules()) - clicsAvant;
-      echec = refus(p);
-      if (!echec) break;
-      if (!recuperationReq02 && /REQ-02/.test(echec)) {
-        recuperationReq02 = true;
-        const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
-        const nBoutonsLot = await boutonsLot.count();
-        for (let i = 0; i < nBoutonsLot; i++) {
-          await boutonsLot.nth(i).click();
-          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-          await p.waitForTimeout(800);
-        }
-        if (nBoutonsLot > 0) {
-          await boutonConclure.click();
-          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-          await p.waitForTimeout(800);
-          clicsConclure = (await clicsCumules()) - clicsAvant;
-          echec = refus(p);
-          if (!echec) break;
-        }
-      }
-    }
-    const essaiDit = `${Math.min(ligneEssai + 1, MAX_LIGNES_ESSAYEES)} ligne(s) essayée(s)`;
-    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil (≤ ${MAX_LIGNES_ESSAYEES} lignes essayées)`,
-      !echec && clicsConclure <= PLAFOND_CONCLURE,
-      echec ?? `${clicsConclure} clic(s), ${essaiDit}${recuperationReq02 ? ', pièce demandée en lot' : ''} — ligne conclue`);
   });
 
   await station('clôture et archive scellée', async () => {
