@@ -651,21 +651,22 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   périmètre d'un seul geste »). Ni implémenté ni tranché : nécessite soit un plafond honnête qui
   laisse le comportement déplié-par-défaut intact, soit un arbitrage explicite du fondateur —
   décidé de ne pas deviner. Reporté au Lot 4a suivant ou à un mandat qui le nomme.
-- **R60 — D.6 point 4 (tout compteur mène quelque part) reste NON traité.** Même mandat, §D.6 :
-  « Tout compteur affiché conduit quelque part : un test échoue sur un compteur sans lien. » Aucune
-  fixture de faux positif écrite (règle 25 : une famille bloquante neuve naît en avertissement sauf
-  démonstration du contraire) ; aucun inventaire des compteurs affichés dans l'application n'a été
-  fait. Travail non commencé.
-- **R61 — D.6 point 5 (aucun état vide muet) reste NON traité.** Même mandat, §D.6 : « toute section
-  vide porte une phrase qui dit quoi faire et le geste proposé. » Le cas `layout.tsx:59` (portail
-  client) identifié en recherche comme premier candidat de fixture de faux positif (règle 25),
-  jamais construit. Travail non commencé.
-- **R62 — D.6 point 6 (parcours « découverte » chronométré, avec plafond) reste NON traité.** Même
-  mandat, §D.6 : « sans lire le rail, atteindre ses travaux, comprendre ce qui empêche de signer,
-  conclure une ligne d'échantillon. Chaque étape mesure le nombre de clics et échoue au-delà du
-  plafond fixé. » Distinct du compteur de clics DESCRIPTIF déjà mesuré par `npm run clics`
-  (362 clics sur 48 gestes) : celui-ci demande un VERDICT qui échoue au-delà d'un seuil, jamais
-  construit. Travail non commencé.
+- **R60 — D.6 point 4 (tout compteur mène quelque part) : RÉSOLU, servi en production.** Construit
+  le 2026-09-11, SHA `17017b4` (confirmé `/api/sante`, `identiteCoherente:true`) — quatre
+  culs-de-sac corrigés (dashboard, population, balances-aux, imports), station clics dédiée.
+  Détail : STATUS.md, tranche « R60 (D.6 point 4) ».
+- **R61 — D.6 point 5 (aucun état vide muet) : RÉSOLU, servi en production.** Construit le
+  2026-09-12, SHA `fbfa06b` (confirmé `/api/sante`, `identiteCoherente:true`) — quinze sites
+  corrigés sur dix fichiers, deux voix hostiles indépendantes. Détail : STATUS.md, tranche « R61
+  (D.6 point 5) ».
+- **R62 — D.6 point 6 (parcours « découverte » chronométré, avec plafond) : RÉSOLU, servi en
+  production.** Construit le 2026-09-13, SHA `4e0eafc` (confirmé `/api/sante`,
+  `identiteCoherente:true`) — le chemin manquant vers l'atelier construit
+  (`echantillonsDeMesDossiers`, panneau `/travaux`), trois points de contrôle chronométrés sous
+  plafond fixé, deux voix hostiles indépendantes (registre multi-tenant ETANCH touché) ayant
+  trouvé et fait corriger quatre défauts réels avant fusion. Détail : STATUS.md, tranche « R62
+  (D.6 point 6) ». **Le repass design entier (jetons + R60 + R61 + R62) est donc COMPLET** ; R59
+  reste seul, toujours bloqué sur ADR-103 (paragraphe ci-dessus, inchangé).
 
 **Ces quatre points ferment le Lot 4 tel que défini par `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`,
 §D.6 — délibérément non achevés ici : le mandat du 8 septembre 2026
@@ -876,3 +877,38 @@ design : chacun reste une tranche à construire.**
   ici, pas à improviser en fin de tranche. **Condition de retrait** : `materiality.ts::validate`
   (ou un appelant qui l'entoure) redéclenche la retentative CTT pour toute bascule non résolue de
   l'engagement, avec son propre test couvrant la transition « CTT baisse sans import ».
+
+- **R74 — §4 point 3 (mandat du 10 septembre, point 1) : l'adaptateur d'analyse de walkthrough
+  reste à construire.** Le fondateur a accordé le plafond de dépense et demande UNE chose en
+  retour : « name the provider, the model, the single call you need it for, and the environment
+  variable name. » Nommé ici (règle 33 — la demande elle-même mérite d'être commitée, pas
+  seulement discutée) :
+  - **Fournisseur/modèle : Anthropic, `claude-sonnet-5`** — le SEUL prix confirmé par un dollar
+    réellement dépensé dans ce dépôt (`entretiens-analyste.ts`, `npm run eval:entretien`,
+    $0,0335 pour 2 625/816 jetons, reconstitué EXACTEMENT par $5/$25 par MTok — COST.md §1 ter/1
+    quater). Aucune raison de choisir un autre modèle pour une forme d'appel identique.
+  - **L'appel unique** : `AnalysteTranscript.analyser(transcript, documentation)` —
+    LA MÊME INTERFACE que `entretiens-analyste.ts` sert déjà pour les entretiens de processus,
+    réutilisée telle quelle plutôt que dupliquée (COST.md §1 quater le dit explicitement : « un
+    walkthrough analysé COMME S'IL suivait cette même forme — la plus proche et la seule
+    mesurée »). Un walkthrough analysé, c'est un transcript (déposé par `attacherWalkthrough`,
+    sox.ts — déjà construit, tranche §3) confronté à la documentation du contrôle, cherchant des
+    écarts candidats — même forme que `transcript_gap`, juste un AUTRE objet source.
+  - **Variable d'environnement : `OTTO_WALKTHROUGH_ADAPTER`** (mock/anthropic — même défaut
+    `mock`, jamais d'appel externe en suite de tests, règle 4), DISTINCTE de
+    `OTTO_TRANSCRIPT_ADAPTER` pour que le fondateur puisse ouvrir l'un sans l'autre (chaque
+    fonctionnalité sa propre garde de budget EN BASE, jamais une seule bascule pour deux
+    surfaces). `ANTHROPIC_API_KEY` et `OTTO_TRANSCRIPT_MODEL` restent partagés (même clé, même
+    variable de modèle — inutile d'en inventer une seconde pour le même fournisseur).
+  **Ce qui reste à construire, non commencé** : la décision de SCHÉMA (le transcript de
+  walkthrough vit-il dans `interview_transcript`/`transcript_gap` réutilisées, ou dans une table
+  dédiée au walkthrough — un walkthrough est rattaché à un `control_task`/`process`, pas à un
+  `process_interview` ; à trancher avant toute migration), le service qui appelle l'adaptateur, sa
+  garde de budget EN BASE (même patron que l'échelle d'extraction OCR — l'autorité reste la garde,
+  jamais la seule variable d'environnement), l'écran qui déclenche l'analyse et revoit les écarts
+  proposés (plafond HITL L2, règle 7 permanente — jamais L3), sa lecture `/api/sante`, sa station
+  clics, ses tests avec rejeu enregistré. Rien de tout cela n'est activé tant que le fondateur n'a
+  pas ouvert la garde par sa propre écriture SQL (interdit permanent, §2). Nommé plutôt que
+  commencé à la hâte (règle 32 : un étage terminé prime sur deux commencés) — le repass design
+  venait de fermer dans la même session. **Condition de retrait** : l'adaptateur, sa garde, son
+  écran et ses tests existent, gardés, jamais activés sans l'écriture du fondateur.
