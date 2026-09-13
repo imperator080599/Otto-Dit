@@ -641,9 +641,10 @@ forks posé) — sur 4 cœurs, 140 fichiers de test en parallélisme par défaut
 affamer le fork qui fait tourner `next dev` (compilation webpack) + Playwright + Chromium pendant
 que d'AUTRES forks tournent leurs propres tests PGlite au même instant. C'est l'hypothèse 1 déjà
 posée, jamais éprouvée par une vraie mesure jusqu'ici. **Éprouvée maintenant** (`verify-r74-9.log`,
-même chaîne, SEULE différence : `vitest run --poolOptions.forks.maxForks=2` au lieu de `vitest
-run` nu — MÊMES 1086 tests, aucun sauté, seulement moins de forks simultanés). Résultat consigné
-dans STATUS.md dès qu'il est mesuré. Si ce passage est propre, ce sera la PREMIÈRE preuve directe
+même chaîne, SEULE différence : `vitest run --maxWorkers=2` au lieu de `vitest run` nu — MÊMES
+1086 tests, aucun sauté, seulement moins de forks simultanés ; `--poolOptions.forks.maxForks`
+tenté d'abord, REJETÉ par le CLI de cette version — `--maxWorkers` est le bon nom, `npx vitest
+--help` fait foi). Résultat consigné dans STATUS.md dès qu'il est mesuré. Si ce passage est propre, ce sera la PREMIÈRE preuve directe
 (pas une corrélation) que la pression de concurrence CPU, sur CETTE machine à 4 cœurs, est un
 facteur causal réel de R58 — pas seulement compatible avec elle.
 
