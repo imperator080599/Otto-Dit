@@ -90,6 +90,39 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Correctif fondateur : IA-BUDGET-01 câblée dans entretiens.ts (2026-09-13)
+
+*Le fondateur, en confirmant R74 en production, a relevé que le compte rendu enterrait le fait le
+plus important sous « deux fils annexes » : `IA-BUDGET-01` existe depuis le 9 septembre et R74 en
+est le PREMIER site d'appel réel — pendant que `entretiens.ts` (le chemin réel des entretiens de
+processus, déjà construit) ne l'appelait toujours pas. Son mot : « A guard that nothing called is
+not a guard, and a guard with an uncalled sibling path is worse — it looks closed while a door
+stands open. » Demande explicite : fermer ça AVANT toute autre chose, prouvé par un cas connu
+mauvais, deux voix hostiles — puis seulement les trois réponses (a, b, c) déjà dues, puis le fil
+`sonde.station()`.**
+
+**FAIT ET SERVI EN PRODUCTION.** `assertBudgetActifEnBase()` (IA-BUDGET-01) est désormais appelée
+AVANT `gardeBudget()` dans `entretiens.ts::analyserTranscript`, exactement comme dans
+`walkthrough-analyse.ts` — même patron, même ordre. **Cas connu mauvais** (`entretiens.test.ts`) :
+un entretien avec transcript déposé, `OTTO_TRANSCRIPT_ADAPTER=anthropic` posé, garde EN BASE
+fermée (défaut) — REFUS avec `/IA-BUDGET-01/`, zéro ligne écrite dans `transcript_gap`, zéro appel
+réseau. Deux revues hostiles indépendantes (règle 30 — garde de budget touchée) : **AUCUN défaut
+confirmé.** Les deux voix ont vérifié, chacune de bout en bout : l'ordre des opérations (la garde
+avant tout appel/écriture) ; qu'aucun TROISIÈME chemin de ce dépôt n'atteint un adaptateur réel
+sans passer par cette garde (le seul autre gap connu, `extraction/ladder.ts`, reste hors périmètre
+de ce correctif, déjà consigné à part) ; la logique de refus de `assertBudgetActifEnBase()`
+elle-même, champ par champ (`actif`, `plafondUsd`, `activePar`, `activeLe`) contre un état malformé
+ou absent ; l'hygiène du nouveau test (isolation par fork vitest, restauration de
+`process.env.OTTO_TRANSCRIPT_ADAPTER` et de la garde en base dans un `finally`). Les commentaires
+qui affirmaient « aucun chemin réel n'appelle cette garde » (`budget.ts`, `walkthrough-analyse.ts`,
+`walkthrough-analyse.test.ts`) ont été corrigés plutôt que laissés à mentir par paresse (règle 13).
+
+Verify complet rejoué (`--maxWorkers=2`, la défense déjà mesurée contre R58) : **140/140 fichiers,
+1087/1087 tests** · gardes/semeur/plancher/langue/lectures/parcours/screens/fumée/densité tous
+verts · clics **259 étapes, 1 échec** (le même #418 déjà documenté sur la station walkthrough,
+septième occurrence identique, docs/CHASSE.md) · visuel **328 vues, 0 défaut**. SHA `[à compléter
+après fusion]`, confirmé servi ci-dessous.
+
 ## R74 (§4 point 3) : l'adaptateur d'analyse de walkthrough — tout ce qui ne demande PAS la clé (2026-09-13)
 
 **COMPLET ET SERVI EN PRODUCTION.** SHA `b3115b2`, confirmé DIRECTEMENT sur
