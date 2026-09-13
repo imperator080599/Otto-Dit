@@ -4,12 +4,23 @@ import os from 'node:os';
 import path from 'node:path';
 import { buildCorpus, type EvalDoc } from '../../../scripts/eval/corpus';
 import { runLadder } from '@/lib/services/extraction/ladder';
-import { getOcrAdapter } from '@/lib/services/extraction/adapters';
+import { ReplayOcrAdapter } from '@/lib/services/extraction/adapters';
 import { pdfText } from '@/lib/services/extraction/textlayer';
 import { compareDoc, falsePositiveRate, normalizeValue, score, tally } from './metrics';
 
 // ADR-018 — the eval harness itself is tested: a measurement tool that lies is worse than
 // no measurement. Zero network: the corpus is generated locally and the mock adapter runs.
+//
+// L'adaptateur est construit EXPLICITEMENT (`new ReplayOcrAdapter()`), jamais via
+// `getOcrAdapter()` — trouvé le 2026-09-13 (revue hostile, voix 2) : `getOcrAdapter()` lit
+// `OTTO_OCR_ADAPTER` de l'environnement ambiant, et `runLadder()` lui-même NE GARDE RIEN (la
+// garde IA-BUDGET-01 ne vit que dans `extractEvidence()`, que cette suite ne passe jamais). Un
+// poste de développement qui aurait suivi la remédiation imprimée par `scripts/cost/measure.ts`
+// (`export OTTO_OCR_ADAPTER=anthropic` + `export ANTHROPIC_API_KEY=…`) sans les désexporter
+// ferait partir un appel réseau réel au premier `npm test` — exactement ce que la règle 4
+// interdit. Construire l'adaptateur en dur ici rend ce chemin impossible, quel que soit
+// l'environnement du shell qui lance la suite.
+const adapterDeTest = new ReplayOcrAdapter();
 
 describe('extraction eval harness (ADR-018)', () => {
   let dir: string;
@@ -54,7 +65,7 @@ describe('extraction eval harness (ADR-018)', () => {
   it('scores the layout rung 2 was written for at 100 %, and reports the rest as misses', async () => {
     const comparisons = [];
     for (const d of docs.filter((x) => x.variant === 'fr-canonical' && x.rendering === 'text_layer')) {
-      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, getOcrAdapter());
+      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, adapterDeTest);
       expect(res.rung).toBe('text_layer');
       comparisons.push(...compareDoc(d.truth as unknown as Record<string, string>, res.fields).comparisons);
     }
@@ -68,7 +79,7 @@ describe('extraction eval harness (ADR-018)', () => {
 
   it('foreign text layouts now resolve deterministically, offline and free (ADR-021)', async () => {
     for (const d of docs.filter((x) => ['de', 'es', 'it', 'en', 'fr-variant'].includes(x.variant))) {
-      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, getOcrAdapter());
+      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, adapterDeTest);
       expect(res.rung, `${d.filename} escalated`).toBe('text_layer');
       expect(res.ai).toBeNull(); // no OCR/LLM call: the dictionary is data, not inference
       const { comparisons } = compareDoc(d.truth as unknown as Record<string, string>, res.fields);
@@ -79,7 +90,7 @@ describe('extraction eval harness (ADR-018)', () => {
 
   it('bitmap scans still have nothing for a dictionary to read, and say so', async () => {
     for (const d of docs.filter((x) => x.rendering === 'bitmap')) {
-      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, getOcrAdapter());
+      const res = await runLadder(new Uint8Array(fs.readFileSync(path.join(dir, d.filename))), d.filename, adapterDeTest);
       expect(res.rung, `${d.filename} unexpectedly parsed offline`).toBe('human');
       expect(res.fields.length).toBe(0);
       expect(res.ai).toBeNull();

@@ -25,7 +25,12 @@ import path from 'node:path';
 // CE QUE CE SCRIPT NE REGARDE PAS (règle 19, à ne pas découvrir plus tard) : il ne vérifie
 // PAS que la garde est appelée AVANT l'adaptateur (ordre des lignes) — une lecture humaine
 // reste nécessaire pour ça, et chaque site listé ici est relu à la main avant d'être marqué
-// « fermé ». Il ne suit pas un ré-export ou un alias d'import renommé
+// « fermé ». `gardeeParAssertBudget` teste si `assertBudgetActifEnBase(` apparaît N'IMPORTE OÙ
+// dans le FICHIER de l'appelant, pas près du site d'appel précis ni lié à l'adaptateur précis
+// qu'il appelle (revue hostile du 2026-09-13, voix 2) : un fichier avec deux sites d'adaptateur
+// réel, l'un gardé et l'autre non, marquerait les DEUX « GARDÉ ». Aucun fichier connu n'a deux
+// sites distincts aujourd'hui — chaque entrée reste relue à la main avant d'être fermée — mais
+// un futur fichier pourrait. Il ne suit pas un ré-export ou un alias d'import renommé
 // (`import { getOcrAdapter as x }`, `import { AnthropicAnalyste as X }`) — aucun site connu
 // ne fait ça, mais un futur pourrait. Une fabrique écrite `export const getX = () => ...`
 // (une constante fléchée) plutôt que `export function getX(` lui échapperait aussi — aucune
