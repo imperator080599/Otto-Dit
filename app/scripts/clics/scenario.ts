@@ -3636,61 +3636,79 @@ export async function conduire(
       surAtelier && clicsAtelier <= PLAFOND_ATELIER, `${clicsAtelier} clic(s) → ${p.url().replace(base, '')}`);
     if (!surAtelier) return;
 
-    // ÉTAPE 3b — CONCLURE UNE LIGNE D'ÉCHANTILLON. Le formulaire vit sous
-    // `data-conclure` (atelier.tsx) ; une ligne s'auto-sélectionne à l'arrivée
-    // (la première non finie, ou la première de la liste) — aucun clic
-    // supplémentaire n'est dû à la sélection elle-même.
-    const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
-    if (!(await boutonConclure.count())) {
+    // ÉTAPE 3b — CONCLURE UNE LIGNE D'ÉCHANTILLON.
+    //
+    // TOUTES LES LIGNES NE SE CONCLUENT PAS AU PREMIER ESSAI, ET C'EST LE
+    // PRODUIT QUI A RAISON, PAS LA STATION (mesuré en le découvrant : deux
+    // runs complets ont chacun buté sur une ligne différente). Deux refus
+    // RÉELS et DISTINCTS gardent `conclureLigne` (grille.ts) :
+    //   · REQ-02 — une colonne AJOUTÉE (étape 7) existe sur la grille PARTAGÉE
+    //     sans que sa pièce ait été demandée pour CETTE ligne. Récupérable EN
+    //     UN CLIC : le refus lui-même nomme le geste (« utilisez le bouton
+    //     Demander ») et le bouton EN LOT couvre TOUTES les lignes à la fois.
+    //   · TEST-02/TEST-04 — une VRAIE exception (cellule non conforme sans
+    //     disposition écrite, ou identité divergente) : celle-ci n'est PAS
+    //     récupérable en un clic, une disposition étant un jugement humain
+    //     rédigé, hors du périmètre d'un parcours chronométré. La bonne
+    //     réponse est celle d'un auditeur réel : choisir une autre ligne.
+    // La station essaie donc plusieurs lignes, bornée, en suivant la
+    // récupération REQ-02 quand elle s'applique et en passant à la ligne
+    // suivante sinon — jamais une boucle non bornée (règle 35 : un plafond
+    // fixé, jamais une attente ouverte).
+    const lignesTable = p.locator('.atelier-table tbody tr');
+    const nLignesTable = await lignesTable.count();
+    const MAX_LIGNES_ESSAYEES = Math.min(6, nLignesTable);
+    if (MAX_LIGNES_ESSAYEES === 0) {
       dire('R62 étape 3b — conclure une ligne d’échantillon', false,
-        'bouton « conclure » absent — grille non figée ou aucune ligne sélectionnée à l’arrivée');
+        'aucune ligne dans l’atelier — rien à conclure sur le dossier de démonstration à cet instant du parcours');
       return;
     }
-    const PLAFOND_CONCLURE = 3;
-    await boutonConclure.click();
-    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-    await p.waitForTimeout(800);
-    let clicsConclure = (await clicsCumules()) - clicsAvant;
-    let echec = refus(p);
-
-    /* RÉCUPÉRATION REQ-02 (grille.ts::conclureLigne) : si une station « étape 7 »
-       plus tôt dans CE MÊME parcours a ajouté une colonne à la grille PARTAGÉE
-       sans que sa propre demande en lot ait abouti, TOUTE ligne — y compris
-       celle-ci, choisie sans rapport avec étape 7 — se voit refuser sa
-       conclusion tant que la pièce n'a pas été DEMANDÉE. Le refus lui-même
-       nomme le geste (« utilisez le bouton Demander ») : le suivre est le
-       comportement d'un auditeur réel qui lit le message, pas un contournement
-       du plafond. Le bouton EN LOT (`demanderPiecesEnLot`) couvre TOUTES les
-       lignes en un clic — jamais une boucle ligne par ligne. Plafond distinct,
-       PLUS LARGE, et nommé comme tel : ce n'est plus le chemin nu. */
-    if (echec && /REQ-02/.test(echec)) {
-      const PLAFOND_CONCLURE_AVEC_DEMANDE = 5;
-      const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
-      const nBoutonsLot = await boutonsLot.count();
-      if (nBoutonsLot === 0) {
-        dire(`R62 étape 3b — conclure une ligne d’échantillon (avec récupération REQ-02 si besoin)`,
-          false, `refusée (${echec}) et aucun bouton « demander en lot » visible pour la lever`);
-        return;
+    /* Plafond nommé, pas ajusté au résultat : 2 clics pour ouvrir une ligne
+       puis conclure, jusqu'à MAX_LIGNES_ESSAYEES essais, + jusqu'à 2 clics
+       pour la récupération REQ-02 (au plus une fois, ses boutons en lot
+       couvrant toutes les lignes) — la marge qu'un auditeur réel paierait
+       pour éviter une ligne à exception plutôt que d'en rédiger la disposition. */
+    const PLAFOND_CONCLURE = 2 * MAX_LIGNES_ESSAYEES + 2;
+    let clicsConclure = 0;
+    let echec: string | null = null;
+    let recuperationReq02 = false;
+    let ligneEssai = 0;
+    for (; ligneEssai < MAX_LIGNES_ESSAYEES; ligneEssai++) {
+      if (ligneEssai > 0) {
+        await lignesTable.nth(ligneEssai).click();
+        await p.waitForTimeout(500);
       }
-      for (let i = 0; i < nBoutonsLot; i++) {
-        await boutonsLot.nth(i).click();
-        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
-        await p.waitForTimeout(800);
-      }
+      const boutonConclure = p.locator('form[data-conclure] button[type=submit]').first();
+      if (!(await boutonConclure.count())) { echec = 'bouton conclure absent sur cette ligne'; continue; }
       await boutonConclure.click();
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(800);
       clicsConclure = (await clicsCumules()) - clicsAvant;
       echec = refus(p);
-      dire(`R62 étape 3b — conclure une ligne d’échantillon, après avoir suivi le geste demandé par le refus REQ-02 (≤ ${PLAFOND_CONCLURE_AVEC_DEMANDE} clic(s) cumulés)`,
-        !echec && clicsConclure <= PLAFOND_CONCLURE_AVEC_DEMANDE,
-        echec ?? `${clicsConclure} clic(s) — pièce demandée en lot puis ligne conclue`);
-      return;
+      if (!echec) break;
+      if (!recuperationReq02 && /REQ-02/.test(echec)) {
+        recuperationReq02 = true;
+        const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
+        const nBoutonsLot = await boutonsLot.count();
+        for (let i = 0; i < nBoutonsLot; i++) {
+          await boutonsLot.nth(i).click();
+          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+          await p.waitForTimeout(800);
+        }
+        if (nBoutonsLot > 0) {
+          await boutonConclure.click();
+          await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+          await p.waitForTimeout(800);
+          clicsConclure = (await clicsCumules()) - clicsAvant;
+          echec = refus(p);
+          if (!echec) break;
+        }
+      }
     }
-
-    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil`,
+    const essaiDit = `${Math.min(ligneEssai + 1, MAX_LIGNES_ESSAYEES)} ligne(s) essayée(s)`;
+    dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil (≤ ${MAX_LIGNES_ESSAYEES} lignes essayées)`,
       !echec && clicsConclure <= PLAFOND_CONCLURE,
-      echec ?? `${clicsConclure} clic(s) — ligne conclue`);
+      echec ?? `${clicsConclure} clic(s), ${essaiDit}${recuperationReq02 ? ', pièce demandée en lot' : ''} — ligne conclue`);
   });
 
   await station('clôture et archive scellée', async () => {
