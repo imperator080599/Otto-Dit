@@ -3650,8 +3650,44 @@ export async function conduire(
     await boutonConclure.click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
     await p.waitForTimeout(800);
-    const clicsConclure = (await clicsCumules()) - clicsAvant;
-    const echec = refus(p);
+    let clicsConclure = (await clicsCumules()) - clicsAvant;
+    let echec = refus(p);
+
+    /* RÉCUPÉRATION REQ-02 (grille.ts::conclureLigne) : si une station « étape 7 »
+       plus tôt dans CE MÊME parcours a ajouté une colonne à la grille PARTAGÉE
+       sans que sa propre demande en lot ait abouti, TOUTE ligne — y compris
+       celle-ci, choisie sans rapport avec étape 7 — se voit refuser sa
+       conclusion tant que la pièce n'a pas été DEMANDÉE. Le refus lui-même
+       nomme le geste (« utilisez le bouton Demander ») : le suivre est le
+       comportement d'un auditeur réel qui lit le message, pas un contournement
+       du plafond. Le bouton EN LOT (`demanderPiecesEnLot`) couvre TOUTES les
+       lignes en un clic — jamais une boucle ligne par ligne. Plafond distinct,
+       PLUS LARGE, et nommé comme tel : ce n'est plus le chemin nu. */
+    if (echec && /REQ-02/.test(echec)) {
+      const PLAFOND_CONCLURE_AVEC_DEMANDE = 5;
+      const boutonsLot = p.locator('[data-demander-factures-ajoutees-lot], [data-demander-bl-ajoutees-lot]');
+      const nBoutonsLot = await boutonsLot.count();
+      if (nBoutonsLot === 0) {
+        dire(`R62 étape 3b — conclure une ligne d’échantillon (avec récupération REQ-02 si besoin)`,
+          false, `refusée (${echec}) et aucun bouton « demander en lot » visible pour la lever`);
+        return;
+      }
+      for (let i = 0; i < nBoutonsLot; i++) {
+        await boutonsLot.nth(i).click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(800);
+      }
+      await boutonConclure.click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(800);
+      clicsConclure = (await clicsCumules()) - clicsAvant;
+      echec = refus(p);
+      dire(`R62 étape 3b — conclure une ligne d’échantillon, après avoir suivi le geste demandé par le refus REQ-02 (≤ ${PLAFOND_CONCLURE_AVEC_DEMANDE} clic(s) cumulés)`,
+        !echec && clicsConclure <= PLAFOND_CONCLURE_AVEC_DEMANDE,
+        echec ?? `${clicsConclure} clic(s) — pièce demandée en lot puis ligne conclue`);
+      return;
+    }
+
     dire(`R62 étape 3b — conclure une ligne d’échantillon en ≤ ${PLAFOND_CONCLURE} clic(s) cumulés depuis l’accueil`,
       !echec && clicsConclure <= PLAFOND_CONCLURE,
       echec ?? `${clicsConclure} clic(s) — ligne conclue`);
