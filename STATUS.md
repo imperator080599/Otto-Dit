@@ -90,6 +90,87 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Mandat 2026-09-14, §2 : le degré d'automatisation — AUTO-01, AUTO-02 (2026-09-14)
+
+*Dernière des trois fonctionnalités du mandat (§5 : §1.2-1.3, §1.4-1.5, §3, puis §2 — l'ordre
+initial du plan de tâches de cette session avait §2 et §3 inversés, corrigé avant de commencer
+§3). §2.1 : une échelle FERMÉE — L0 (agent éteint), L1 (suggère à côté, jamais dans un champ —
+pas encore consommé par un écran), L2 (propose dans les champs, validation humaine tracée — le
+plafond PERMANENT du projet, déjà en vigueur PARTOUT avant ce mandat, règle 7), L3 (interdit,
+n'existe dans le type que pour que le refus puisse le nommer). §2.2 : le pack pose un plafond
+(absent ⇒ L2), une mission règle vers le bas SEULEMENT, jamais au-delà (AUTO-01). §2.3 : chaque
+élément produit par l'IA porte le niveau réellement en vigueur à l'instant de sa production,
+immuable (AUTO-02). §2.4 : deux gardes indépendantes, IA-BUDGET-01 (le droit de dépenser) et
+celle-ci (le droit de faire) — aucune ne remplace l'autre.*
+
+**FAIT ET SERVI EN PRODUCTION — SHA à confirmer dans une tranche ultérieure (règle 36).**
+
+**Migration 0164.** `engagement.automation_level` (nullable, CHECK L0/L1/L2, null = hérite du
+plafond du pack) et `ai_run.niveau_automatisation` (NOT NULL, SANS DÉFAUT, backfillée à L2 pour
+les lignes déjà écrites) — la défense en profondeur d'AUTO-02 au niveau de la BASE, pas seulement
+du typage TypeScript.
+
+**`automatisation.ts` (nouveau service).** `plafondDuPack`/`capperNiveau`/`depasseLePlafond`
+(pures), `niveauEffectif` (le niveau réel : réglage de mission plafonné par le pack, sinon le
+plafond lui-même), `definirNiveauMission` (LE seul chemin d'écriture, AUTO-01), `assertNiveauOuvert`
+(refuse AUTO-01 si L0). `AssurancePack.automationLevel` (packs/types.ts) : absent ⇒ L2 — PAS un
+`verifie:false` comme les autres paramètres de cabinet du fichier, puisque L2 est déjà la valeur
+sûre en vigueur partout ; poser explicitement L0/L1 est la façon dont un cabinet se montre plus
+prudent que le défaut.
+
+**AUTO-02 câblée à la source.** `recordAiRun` (core/airuns.ts) refuse tout enregistrement sans
+`niveauAutomatisation` — un champ REQUIS, pas optionnel. Câblée aux QUATRE sites d'appel IA réels
+de ce dépôt (extraction/ladder.ts, entretiens.ts, walkthrough-analyse.ts, query/ask.ts), chacun lit
+le niveau UNE SEULE FOIS et réutilise cette même valeur pour la garde et pour le timbre — jamais
+deux lectures séparées (voir la revue hostile ci-dessous).
+
+**Le détecteur structurel existant étendu, jamais une seconde garde parallèle.**
+`scripts/audit/ia-vivante.ts` (la garde qui rend impossible un site d'appel IA non gardé par
+IA-BUDGET-01, construite le 2026-09-13) couvre désormais AUTO-01 au même titre
+(`gardeeParAssertNiveau`), avec son propre cas connu mauvais. Quatre harnais de mesure sans
+`engagementId` (scripts/eval/*, scripts/cost/measure.ts) documentés HORS PÉRIMÈTRE d'AUTO-01,
+mission-scopée par nature — IA-BUDGET-01, elle, reste globale (`app_state`) et continue de les
+couvrir.
+
+**Lecture `/api/sante` dédiée** (AUTO-01 : aucun réglage de mission ne dépasse le plafond de son
+pack) — défense en profondeur sur ce qui est réellement en base, jamais un second calcul.
+
+**DEUX RELECTEURS HOSTILES INDÉPENDANTS (règle 30 : modèle de données + code de refus touchés),
+les deux voix convergeant sur les MÊMES deux constats, indépendamment — un signal fort.**
+
+1. **ÉLEVÉ/MOYEN (voix 1 ET 2).** Les quatre sites d'appel réels relisaient le niveau une SECONDE
+   fois au moment d'écrire `ai_run`, après le vrai appel IA (potentiellement plusieurs secondes) —
+   une fenêtre TOCTOU où `definirNiveauMission` change le réglage ENTRE la garde et l'écriture
+   aurait timbré la ligne d'un niveau qui n'a JAMAIS accompagné l'appel réel, l'exact contraire de
+   ce qu'AUTO-02/§2.3 promet (« baisser le niveau plus tard ne réécrit jamais l'histoire »).
+   Reproduit par voix 1 : garde ouverte, niveau changé pendant l'appel simulé, second read renvoie
+   la nouvelle valeur. Corrigé : une seule lecture, capturée et réutilisée (`assertNiveauOuvert`
+   accepte désormais un niveau déjà lu).
+2. **ÉLEVÉ/MOYEN (voix 1 ET 2).** Ni la lecture `/api/sante` AUTO-01 ni la branche « mission >
+   plafond » de `definirNiveauMission` ne pouvaient être éprouvées contre un dépassement réel — les
+   deux packs existants (nep-fr, pcaob-sox) ne posent aucun plafond sous L2, rendant la comparaison
+   structurellement TOUJOURS fausse (« une garde qui n'a jamais rien refusé n'est pas une garde »,
+   règle 13). Corrigé : `depasseLePlafond` extraite en fonction PURE prenant le pack déjà résolu
+   (testable avec un pack fictif, sans dépendre du registre réel) ; un test dédié mute
+   temporairement `nepFr.automationLevel` (restauré en `finally`) pour prouver, par exécution, que
+   `definirNiveauMission` refuse VRAIMENT contre un plafond abaissé.
+
+**Un constat LOW/MEDIUM, disclosed, non corrigé** (`docs/BACKLOG_REPORTE.md`) : **R89** — « le
+plafond du cabinet » est en réalité posé au niveau du PACK (code partagé par tous les cabinets sur
+`nep-fr`/`pcaob-sox`), pas par locataire — un plafond propre à un cabinet précis exigerait
+`firm_methodology` (DB, versionné), hors périmètre de ce mandat. Disclosed dans le commentaire du
+champ (`packs/types.ts`), pas une régression de cette tranche : même limite déjà assumée par
+`extrapolationMethod`/`attributeSampleConfidenceLevel`/`videoRetentionDays`, jamais nommée avant
+cette revue.
+
+**Mesures.** `npm run verify` (vitest complet, trois passes après les deux rounds de correctifs) :
+**145 fichiers, 1135 tests, tous verts** (`EXIT=0` lu dans le journal brut). `npm run screens`
+(balayage de PRODUCTION, trois passes) : **93 routes, 0 échec.**
+
+**Ce mandat entier (§1, §3, §2) est maintenant COMPLET.** Aucune suite immédiate prévue par le
+plan de tâches de cette session au-delà de la clôture de cette tranche — écran de fin de mandat
+à composer une fois le SHA confirmé.
+
 ## Mandat 2026-09-14, §3 : le centre de notifications — NOTIF-01 (2026-09-14)
 
 *Suite immédiate de §1.4-1.5 ci-dessous, dans le même souffle, sans attendre de retour (règle 32 —
@@ -101,7 +182,10 @@ VUE sur les éléments préparés par l'IA et non encore validés — exactement
 familles d'objets déjà réelles (écart de walkthrough candidat, déficience proposée, extraction en
 attente de vérification, proposition de matérialité), chacune avec son geste humain déjà existant.*
 
-**FAIT ET SERVI EN PRODUCTION — SHA à confirmer dans une tranche ultérieure (règle 36).**
+**FAIT ET SERVI EN PRODUCTION — SHA `115ebc2`, confirmé DIRECTEMENT sur
+`https://otto-dit.vercel.app/api/sante` à 12:26:31Z le 2026-09-14 (`identiteCoherente:true`, la
+lecture NOTIF-01 elle-même `ok:true` en production, VIDE comme attendu sur un dossier sans élément
+IA en attente).**
 
 **`notifications.ts` (nouveau service).** `elementsIaNonValides(engagementId)` : les quatre
 familles, chacune avec une identité réelle (un id qui existe en base) et un geste humain réel qui
