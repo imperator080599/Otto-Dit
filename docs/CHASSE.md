@@ -206,6 +206,30 @@
   passages, règle 34) — voir STATUS.md pour le résultat du passage propre, cité avec son heure
   et sa durée mesurées — plutôt que poussée sur ce run rouge (même discipline que R37, F9-F15).
 
+- **F17 — DEUX occurrences CONSÉCUTIVES sur le MÊME arbre figé** (2026-09-14, correctif du
+  régression NOTIF-01 — commit `3f9cf1a`, `verify-full-4.log` puis `verify-full-5.log`, aucune
+  édition entre les deux passages, règle 34) : `EXCEPTION sur
+  /eng/70670df5.../rcm/<control_instance_id> : Minified React error #418; args[]=HTML` — un
+  `control_instance_id` DIFFÉRENT à chaque occurrence (`1d6f5d93…` puis `6a5d00e5…`), MÊME forme
+  de page (`rcm/[cid]`, SOX), MÊME domaine que F16. Le premier passage (20 divergences après
+  normalisation) est ENTIÈREMENT composé de bruit déjà nommé : le jeton 87 est la bulle
+  `rail-astuce` non filtrée (E5, connue depuis le 2026-09-06) ; les dix-neuf autres sont TOUS
+  `style="margin:6px 0"` (serveur) / `style="margin: 6px 0px"` (client) — exactement la famille
+  F11 (re-sérialisation CSSOM du navigateur), déjà nommée, déjà non filtrée, déjà reportée R45.
+  Page NON touchée par cette tranche — vérifié par lecture : le diff de `3f9cf1a` ne touche que
+  `notifications.ts`, `notifications.test.ts`, la migration `0164` et `docs/GUARDS.md`, aucun
+  importé par `rcm/[cid]/page.tsx`. **Pas creusé plus loin ici** (même discipline que F9-F16).
+  **Différence avec F13/F15/F16 : PAS rejoué jusqu'à un passage propre.** Chaque passage complet
+  coûte ~15-17 minutes ; ceci est le CINQUIÈME `npm run verify` de cette tranche (les deux
+  premiers ont trouvé et fait corriger deux défauts RÉELS — la migration 0164 et `docs/GUARDS.md`
+  — puis un troisième a trouvé la régression NOTIF-01 elle-même). Sur les deux passages qui
+  suivent le correctif NOTIF-01, TOUTES les stations NOMMÉES passent (`echecs.length` = 0 les
+  deux fois, closure/archive comprises) ; seul `durs.length` (les erreurs navigateur non
+  nommées — `pageerror`/`console`/HTTP 5xx, `scripts/clics/run.ts:109-134`) porte le #418, deux
+  fois, jamais un défaut d'assertion. Rejoue F14 au trait près (« le FAIL ne bloque ni le SHA
+  servi ni la fusion… mais il est consigné ici plutôt que tu ») : expédié sur `verify-full-5.log`
+  SANS passage à zéro incident — voir STATUS.md, mesures citées avec leur SHA et leur heure.
+
 ### Hypothèses ÉLIMINÉES — et par quoi
 
 | # | Hypothèse | Éliminée par | Portée de l'élimination |
