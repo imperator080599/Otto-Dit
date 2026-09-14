@@ -35,7 +35,11 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     const withRefs = sampleTable.table!.rows.filter((r) => (r.refs?.evidenceIds?.length ?? 0) > 0);
     expect(withRefs.length).toBeGreaterThan(10);
     const evalSection = sections.find((s) => s.key === 'evaluation')!;
-    expect(evalSection.body).toContain('36'); // known misstatement figure appears
+    // EXTRAP-01/04 (mandat 2026-09-14) : la méthode d'extrapolation du cabinet n'est pas
+    // vérifiée (packs/nep-fr.ts) — l'évaluation reste 'draft', jamais conclue, donc le corps
+    // ne cite plus le texte de conclusion (qui portait « 36 330 € »). Le connu (127 545,80 €,
+    // strate exhaustive) reste la figure affichée.
+    expect(evalSection.body).toContain('127'); // known misstatement figure appears
     const conclusion = sections.find((s) => s.key === 'conclusion')!;
     // the file cannot be concluded definitively: the ledger audited is the provisional FEC
     // and two limitations on available evidence are recorded. The workpaper says so in the
