@@ -18,6 +18,8 @@ let controlDef: string;
 let gapId: string;
 let deficiencyId: string;
 let extractionId: string;
+let extractionResolvableId: string;
+let extractionResolvableSampleItemId: string;
 let materialityId: string;
 
 describe('le centre de notifications — mandat 2026-09-14, §3', () => {
@@ -69,6 +71,73 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
       [evidenceId],
     )).id;
 
+    /* LA MÊME PIÈCE, MAIS RATTACHÉE À UNE VRAIE LIGNE COURANTE DE L'ATELIER —
+       le cas RÉSOLU, en miroir du cas SANS geste ci-dessus. Construite par la
+       chaîne minimale que `lignesAtelier`/`currentRevenueSample` exigent
+       (`sampling.ts:206-233`, `atelier.ts:81-90`), jamais devinée : un
+       `procedure_instance` REV-SUBST, un `sample` DRAWN, un `gl_entry` réel
+       (via `import_file`), un `sample_item` dessus, une `request_item` qui
+       lui rattache la pièce. Sans ce fixture positif, le correctif du
+       2026-09-14 (l'exclusion des extractions sans ligne courante) n'aurait
+       qu'un côté prouvé : que le cas RÉSOLU continue bien de fonctionner
+       (règle 17 : un cas connu MAUVAIS s'accompagne toujours du cas normal). */
+    const pi = (await q1<{ id: string }>(
+      `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, status)
+       values ($1, 'ISA-2024', 'REV-SUBST', 'substantive', 'REVENUE', 'sonde NOTIF résolue', 'in_progress')
+       returning id::text`,
+      [IDS.engNep],
+    )).id;
+    const sampleResolvableId = (await q1<{ id: string }>(
+      `insert into sample (engagement_id, procedure_id, method, params, seed, population_hash, population_size, status)
+       values ($1, $2, 'monetary_coverage_random', '{}', 'x-notif-resolue', 'y-notif-resolue', 1, 'drawn')
+       returning id::text`,
+      [IDS.engNep, pi],
+    )).id;
+    const importFileId = (await q1<{ id: string }>(
+      `insert into import_file (engagement_id, kind, filename, sha256, status, row_count)
+       values ($1, 'fec', 'fec-sonde-notif.txt', 'sha-fictif-fec-notif', 'validated', 1)
+       returning id::text`,
+      [IDS.engNep],
+    )).id;
+    const glEntryId = (await q1<{ id: string }>(
+      `insert into gl_entry (engagement_id, import_file_id, line_no, natural_key, journal_code, entry_no,
+         entry_date, account_no, piece_ref, aux_label, label, debit, credit)
+       values ($1, $2, 1, 'VE|F-NOTIF-001|1', 'VE', 'F-NOTIF-001', '2025-06-15', '706000',
+         'F-NOTIF-001', 'Client fictif de sonde', 'Vente fictive de sonde', 0, 1000)
+       returning id::text`,
+      [IDS.engNep, importFileId],
+    )).id;
+    extractionResolvableSampleItemId = (await q1<{ id: string }>(
+      `insert into sample_item (sample_id, unit_kind, unit_id, selection_reason, amount, status)
+       values ($1, 'gl_entry', $2, 'high_value', 1000, 'pending')
+       returning id::text`,
+      [sampleResolvableId, glEntryId],
+    )).id;
+    const requestResolvableId = (await q1<{ id: string }>(
+      `insert into request (engagement_id, seq_no, title, status)
+       values ($1, 1, 'Demande fictive de sonde (NOTIF résolue)', 'submitted')
+       returning id::text`,
+      [IDS.engNep],
+    )).id;
+    const requestItemResolvableId = (await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, sample_item_id, status)
+       values ($1, 'document', 'Facture fictive de sonde', $2, 'uploaded')
+       returning id::text`,
+      [requestResolvableId, extractionResolvableSampleItemId],
+    )).id;
+    const evidenceResolvableId = (await q1<{ id: string }>(
+      `insert into evidence (engagement_id, request_item_id, filename, mime, sha256, storage_path, source, uploaded_by_kind, doc_type)
+       values ($1,$2,'facture-de-sonde-resolue.pdf','application/pdf','sha-fictif-sonde-resolue','blob://fictif/sonde-resolue','auditor','app_user','invoice')
+       returning id::text`,
+      [IDS.engNep, requestItemResolvableId],
+    )).id;
+    extractionResolvableId = (await q1<{ id: string }>(
+      `insert into extraction (evidence_id, rung, status, fields)
+       values ($1,'ocr','pending_verify','[]'::jsonb)
+       returning id::text`,
+      [evidenceResolvableId],
+    )).id;
+
     /* Écriture directe (même patron que le walkthrough gap et la déficience
        ci-dessus) plutôt que `materiality.propose()` — ce service exige une
        balance générale déjà importée (`importTb`, S1/S2), hors périmètre
@@ -95,7 +164,12 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
 
     const g = els.find((e) => e.nature === 'walkthroughGap' && e.id === gapId);
     const d = els.find((e) => e.nature === 'deficiency' && e.id === deficiencyId);
-    const x = els.find((e) => e.nature === 'extraction' && e.id === extractionId);
+    /* `extractionId` (sans request_item/sample_item) n'apparaît PLUS ici
+       depuis le correctif du 2026-09-14 — c'est `extractionResolvableId`,
+       rattaché à une vraie ligne courante, qui prouve la résolution réelle
+       pour la nature `extraction` (voir le test dédié à `extractionId` plus
+       bas : il prouve l'EXCLUSION, pas la résolution). */
+    const x = els.find((e) => e.nature === 'extraction' && e.id === extractionResolvableId);
     const m = els.find((e) => e.nature === 'materialite' && e.id === materialityId);
     expect(g).toBeDefined();
     expect(d).toBeDefined();
@@ -122,14 +196,32 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
     expect(d.quand).not.toBeNull();
   });
 
-  it('l’extraction en attente mène en un clic au geste réel (testing) — sans pièce demandée, pas de deep-link', async () => {
-    const x = (await elementsIaNonValides(IDS.engNep)).find((e) => e.id === extractionId)!;
-    expect(x.titre).toEqual({ cle: 'notif.extraction', vars: { fichier: 'piece-de-sonde.pdf' } });
-    /* Cette fixture n'a pas de `request_item`/`sample_item` : la branche
-       `?item=` du href (quand la pièce vient d'une demande liée à une ligne
-       d'échantillon) n'est pas éprouvée ici — reporté, R86. */
-    expect(x.href).toBe(`/eng/${IDS.engNep}/testing`);
+  it('l’extraction en attente, rattachée à une ligne COURANTE, mène en un clic au geste réel (testing?item=)', async () => {
+    const x = (await elementsIaNonValides(IDS.engNep)).find((e) => e.id === extractionResolvableId)!;
+    expect(x.titre).toEqual({ cle: 'notif.extraction', vars: { fichier: 'facture-de-sonde-resolue.pdf' } });
+    expect(x.href).toBe(`/eng/${IDS.engNep}/testing?item=${extractionResolvableSampleItemId}`);
     expect(x.quand).not.toBeNull();
+  });
+
+  /* CAS CONNU MAUVAIS (règle 17), le défaut RÉEL mesuré en conduisant le
+     parcours cliqué jusqu'à la clôture le 2026-09-14 : une extraction
+     `pending_verify` SANS ligne courante résolue par `lignesAtelier` — ici,
+     une pièce jamais liée au sondage (comme les neuf fichiers de population
+     du monde de démonstration : `clients_2025.csv`, `fournisseurs_2024.csv`…)
+     — n'a AUCUN geste réel nulle part dans le produit. Avant le correctif,
+     elle comptait quand même comme obstacle NOTIF-01 avec un lien
+     cul-de-sac (`/testing` sans `?item=`) : DIX occurrences exactes de ce
+     défaut rendaient la démonstration entière INSIGNABLE (règle 25), jamais
+     mesuré avant faute d'un `npm run clics` complet à l'expédition de §3.
+     Elle ne doit désormais PLUS apparaître du tout. */
+  it('une extraction SANS ligne courante résolue n’est PAS comptée — cas connu mauvais mesuré le 2026-09-14', async () => {
+    const els = await elementsIaNonValides(IDS.engNep);
+    expect(els.some((e) => e.id === extractionId)).toBe(false);
+    const famille = (await obstaclesAuVisa(IDS.engNep)).filter((o) => o.famille === 'iaNonValide');
+    expect(famille.length).toBe(els.length);
+    /* Confirmé sans dépendre de la vue : l'objet EXISTE bien en base
+       (règle 16 — ce n'est pas une extraction fantôme, juste sans geste). */
+    expect((await q(`select 1 from extraction where id = $1`, [extractionId])).length).toBe(1);
   });
 
   it('la proposition de matérialité mène en un clic au geste réel (materiality), datée par event_log', async () => {

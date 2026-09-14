@@ -31,6 +31,29 @@ import { CABINET, OUVERT } from './travaux';
 //     générique de la note (`transitionNoteAction`), donc aucune carte
 //     n'y résoudrait un geste RÉEL et non dupliqué (§3, "jamais un
 //     formulaire dupliqué").
+//   - une `extraction.status = 'pending_verify'` SANS LIGNE COURANTE résolue
+//     par `lignesAtelier` — CORRIGÉ le 2026-09-14 après un défaut mesuré en
+//     conduisant le parcours cliqué jusqu'à la clôture (jamais par grep,
+//     règle 15) : sur le monde de démonstration, DIX extractions
+//     pending_verify n'avaient AUCUN geste réel nulle part dans le produit —
+//     neuf fichiers de POPULATION (listings clients/fournisseurs/banques,
+//     journaux de revenus : `request_item_id` NULL, jamais liés au sondage)
+//     et une pièce dont la ligne avait QUITTÉ le tirage après un re-tirage
+//     (`sample_item` superseded) — exactement le cas que l'écran `testing`
+//     documente déjà lui-même comme « n'étant l'obligation de personne »
+//     (`app/src/app/eng/[id]/testing/page.tsx`, le compteur `pending`, qui ne
+//     compte QUE les lignes de `lignesAtelier`, jamais le dossier entier). Le
+//     href se dégradait alors en un lien SANS `?item=` — un cul-de-sac (la
+//     page `/testing` ne montre RIEN à attester pour ces pièces) — tout en
+//     comptant comme obstacle BLOQUANT (NOTIF-01) : la démonstration entière
+//     devenait insignable (règle 25 : aucune famille bloquante neuve ne doit
+//     rendre la démonstration insignable — violée sans avoir été mesurée,
+//     faute d'un `npm run clics` complet avant l'expédition de §3). Le même
+//     filtre qui construit le lien (`ligneParExtraction`, la résolution par
+//     lignage, ADR-133) sert maintenant AUSSI à décider l'INCLUSION : sans
+//     ligne courante résolue, aucun geste réel n'existe — l'élément n'est ni
+//     montré, ni compté (même principe que `wp_extra_cell.verifie=false`
+//     ci-dessus, symétrique).
 //
 // `elementsIaNonValides` NE FILTRE PAS PAR ACCEPTATION DE LA MISSION (revue
 // hostile du 2026-09-14, voix 2, finding MOYEN, reporté R88). C'est une VUE
@@ -130,13 +153,14 @@ export async function elementsIaNonValides(engagementId: string): Promise<Elemen
      (ADR-133), cet identifiant reste celui de la ligne D'ORIGINE — souvent
      SUPERSEDED — alors que `atelier.tsx` ne cherche que parmi les lignes
      COURANTES (`lignesAtelier`, elle-même construite sur le lignage,
-     `LIGNAGE`). Un lien construit sur l'identifiant brut pointerait vers une
-     ligne qu'aucune recherche de l'atelier ne trouve : aucun plantage (tout
-     est optionnel), mais un clic silencieusement sans effet — exactement le
-     défaut que « jamais un formulaire dupliqué » (§3) interdit. La
-     résolution réutilise donc `lignesAtelier` elle-même (jamais une seconde
-     implémentation du lignage) : chaque pièce y est déjà rattachée à SA
-     ligne COURANTE, remontée à travers le lignage. */
+     `LIGNAGE`). La résolution réutilise donc `lignesAtelier` elle-même
+     (jamais une seconde implémentation du lignage) : chaque pièce y est déjà
+     rattachée à SA ligne COURANTE, remontée à travers le lignage.
+     SANS ligne courante résolue, l'élément est EXCLU (pas seulement privé de
+     lien) — voir l'en-tête de ce fichier : ni un fichier de population
+     jamais lié au sondage, ni une pièce dont la ligne a quitté le tirage
+     n'ont de geste réel à offrir ; les compter bloquerait le visa sur un
+     cul-de-sac (règle 25). */
   if (extractions.length > 0) {
     const { lignesAtelier } = await import('./workpapers/atelier');
     const { lignes } = await lignesAtelier(engagementId);
@@ -147,13 +171,12 @@ export async function elementsIaNonValides(engagementId: string): Promise<Elemen
       }
     }
     for (const x of extractions) {
-      const sampleItemId = ligneParExtraction.get(x.id) ?? null;
+      const sampleItemId = ligneParExtraction.get(x.id);
+      if (!sampleItemId) continue;
       out.push({
         id: x.id, nature: 'extraction', engagementId,
         titre: motif('notif.extraction', { fichier: x.filename }),
-        href: sampleItemId
-          ? `/eng/${engagementId}/testing?item=${sampleItemId}`
-          : `/eng/${engagementId}/testing`,
+        href: `/eng/${engagementId}/testing?item=${sampleItemId}`,
         quand: x.created_at, niveau: NIVEAU_ACTUEL,
       });
     }
