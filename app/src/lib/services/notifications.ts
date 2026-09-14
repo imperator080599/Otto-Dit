@@ -32,6 +32,18 @@ import { CABINET, OUVERT } from './travaux';
 //     n'y résoudrait un geste RÉEL et non dupliqué (§3, "jamais un
 //     formulaire dupliqué").
 //
+// `elementsIaNonValides` NE FILTRE PAS PAR ACCEPTATION DE LA MISSION (revue
+// hostile du 2026-09-14, voix 2, finding MOYEN, reporté R88). C'est une VUE
+// PURE (§3.1) : elle montre ce qui existe, jamais ce qui bloque. `obstaclesAuVisa`,
+// elle, s'arrête AVANT de calculer la famille `iaNonValide` tant que la mission
+// n'est pas acceptée — comme pour TOUTES les familles, un comportement qui ne
+// date pas de cette tranche. Sur une mission non encore acceptée qui porte
+// déjà un élément IA, la VUE (ici, `/travaux`, `/eng/[id]/notifications`) peut
+// donc montrer une carte alors que l'OBSTACLE correspondant n'existe pas
+// encore — sans risque pour le visa lui-même (l'obstacle `acceptation` bloque
+// déjà tout, inconditionnellement). La lecture `/api/sante` NOTIF-01
+// (route.ts) est gardée contre ce cas précis pour ne jamais rougir à tort.
+//
 // LE NIVEAU (§2.3, `niveau`) EST ENCORE UNE CONSTANTE, PAS UNE DONNÉE PAR
 // ÉLÉMENT. §2 (AUTO-02 : le niveau horodaté à la production) n'est pas encore
 // construit — ce mandat l'exécute APRÈS §3 (§5, ordre d'exécution). Tant que
@@ -104,24 +116,47 @@ export async function elementsIaNonValides(engagementId: string): Promise<Elemen
     });
   }
 
-  const extractions = await q<{ id: string; created_at: string; filename: string; sample_item_id: string | null }>(
-    `select x.id::text, x.created_at::text, e.filename, ri.sample_item_id::text
+  const extractions = await q<{ id: string; created_at: string; filename: string }>(
+    `select x.id::text, x.created_at::text, e.filename
      from extraction x
      join evidence e on e.id = x.evidence_id
-     left join request_item ri on ri.id = e.request_item_id
      where e.engagement_id = $1 and x.status = 'pending_verify'
      order by x.created_at asc`,
     [engagementId],
   );
-  for (const x of extractions) {
-    out.push({
-      id: x.id, nature: 'extraction', engagementId,
-      titre: motif('notif.extraction', { fichier: x.filename }),
-      href: x.sample_item_id
-        ? `/eng/${engagementId}/testing?item=${x.sample_item_id}`
-        : `/eng/${engagementId}/testing`,
-      quand: x.created_at, niveau: NIVEAU_ACTUEL,
-    });
+  /* LE DEEP-LINK VERS LA LIGNE DE L'ATELIER (`?item=`) NE LIT PAS
+     `request_item.sample_item_id` DIRECTEMENT (revue hostile du 2026-09-14,
+     voix 2, finding ÉLEVÉ, reproduit par lecture). Après un re-tirage
+     (ADR-133), cet identifiant reste celui de la ligne D'ORIGINE — souvent
+     SUPERSEDED — alors que `atelier.tsx` ne cherche que parmi les lignes
+     COURANTES (`lignesAtelier`, elle-même construite sur le lignage,
+     `LIGNAGE`). Un lien construit sur l'identifiant brut pointerait vers une
+     ligne qu'aucune recherche de l'atelier ne trouve : aucun plantage (tout
+     est optionnel), mais un clic silencieusement sans effet — exactement le
+     défaut que « jamais un formulaire dupliqué » (§3) interdit. La
+     résolution réutilise donc `lignesAtelier` elle-même (jamais une seconde
+     implémentation du lignage) : chaque pièce y est déjà rattachée à SA
+     ligne COURANTE, remontée à travers le lignage. */
+  if (extractions.length > 0) {
+    const { lignesAtelier } = await import('./workpapers/atelier');
+    const { lignes } = await lignesAtelier(engagementId);
+    const ligneParExtraction = new Map<string, string>();
+    for (const l of lignes) {
+      for (const ev of l.evidences) {
+        if (ev.extraction) ligneParExtraction.set(ev.extraction.id, l.sampleItemId);
+      }
+    }
+    for (const x of extractions) {
+      const sampleItemId = ligneParExtraction.get(x.id) ?? null;
+      out.push({
+        id: x.id, nature: 'extraction', engagementId,
+        titre: motif('notif.extraction', { fichier: x.filename }),
+        href: sampleItemId
+          ? `/eng/${engagementId}/testing?item=${sampleItemId}`
+          : `/eng/${engagementId}/testing`,
+        quand: x.created_at, niveau: NIVEAU_ACTUEL,
+      });
+    }
   }
 
   /* `materiality` NE PORTE AUCUN `created_at` (0001_core.sql) et

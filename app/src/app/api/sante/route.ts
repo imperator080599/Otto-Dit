@@ -897,19 +897,34 @@ async function corpsDeLaSonde() {
        si un élément IA non validé n'apparaît PAS dans la famille d'obstacle
        correspondante, les deux calculs ont divergé — NOTIF-01 a été
        contourné (une écriture qui bipasse `obstaclesAuVisa`, ou une
-       régression de son câblage). CE QUE CETTE LECTURE NE VÉRIFIE PAS
+       régression de son câblage).
+       LE GARDE-FOU « MISSION NON ACCEPTÉE » (revue hostile du 2026-09-14,
+       voix 2, finding MOYEN) : `obstaclesAuVisa` s'arrête AVANT la famille
+       `iaNonValide` tant que la mission n'est pas acceptée (comme pour
+       TOUTES les familles — le comportement n'est pas neuf). Mais
+       `elementsIaNonValides`, elle, est une VUE PURE sans ce filtre (§3.1 :
+       elle montre ce qui existe, pas ce qui bloque) — sur une mission non
+       encore acceptée qui porte déjà un élément IA (une proposition de
+       matérialité précoce, par exemple), `compteObstacle` resterait à 0 sans
+       que rien n'ait été contourné. Sans ce garde-fou, cette lecture
+       rougirait à tort — un faux refus est le défaut exact que règle 13
+       traque autant qu'un faux succès. CE QUE CETTE LECTURE NE VÉRIFIE PAS
        (règle 19) : que chaque id résout bien une ligne réelle — couvert par
-       `notifications.test.ts`, pas ici. */
+       `notifications.test.ts`, pas ici. L'asymétrie vue/obstacle elle-même
+       (R88, docs/BACKLOG_REPORTE.md) reste un choix assumé du §3.1, pas un
+       défaut à corriger ici. */
     lectures.push(await essayer('NOTIF-01 : tout élément IA non validé compte comme obstacle au visa', async () => {
       const { elementsIaNonValides } = await import('@/lib/services/notifications');
       const { obstaclesAuVisa } = await import('@/lib/services/obstacles');
       const elements = await elementsIaNonValides(id);
       const obstacles = await obstaclesAuVisa(id);
+      const missionNonAcceptee = obstacles.some((o) => o.famille === 'acceptation');
       const compteObstacle = obstacles.filter((o) => o.famille === 'iaNonValide').length;
-      if (elements.length > 0 && compteObstacle !== elements.length) {
+      if (!missionNonAcceptee && elements.length > 0 && compteObstacle !== elements.length) {
         throw new Error(`${elements.length} élément(s) IA non validé(s) mais ${compteObstacle} obstacle(s) `
           + `de la famille iaNonValide — NOTIF-01 a divergé du calcul du visa`);
       }
+      if (missionNonAcceptee) return `mission non acceptée — famille iaNonValide non calculée par obstaclesAuVisa (comportement normal, R88)`;
       if (elements.length === 0) return 'aucun élément IA non validé pour l’instant';
       return `${elements.length} élément(s) IA non validé(s), tous comptés comme obstacle au visa (NOTIF-01)`;
     }));

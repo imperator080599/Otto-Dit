@@ -895,7 +895,6 @@ export const LIBELLES = {
   'notif.deficiency': { en: 'Deficiency severity proposed — control {code}', fr: 'Sévérité de déficience proposée — contrôle {code}' },
   'notif.extraction': { en: 'Extraction awaiting verification — {fichier}', fr: 'Extraction en attente de vérification — {fichier}' },
   'notif.materialite': { en: 'Materiality proposal awaiting validation', fr: 'Proposition de matérialité en attente de validation' },
-  'notif.niveau': { en: 'prepared under automation level {niveau}', fr: 'préparé sous le niveau d’automatisation {niveau}' },
   'notif.dateNonMesuree': { en: 'date not measured', fr: 'date non mesurée' },
   'notif.page.titre': { en: 'AI-prepared elements awaiting validation', fr: 'Éléments préparés par l’IA en attente de validation' },
   'notif.page.quoi': {

@@ -237,6 +237,27 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
        ligne d'appartenance. */
     await q(`insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on) values ($1, $2, 'partner', true, current_date)`,
       [eng.id, KARIM]);
+    /* UN VRAI ÉLÉMENT À FUIR — pas seulement un dossier vide (revue hostile
+       du 2026-09-14, voix 1, finding MOYEN, reproduit : un dossier étranger
+       SANS rien à statuer passe la garde même si `CABINET` n'existait pas,
+       le test ne prouvait donc rien). Une proposition de matérialité, sur
+       LE DOSSIER ÉTRANGER, pour qu'une fuite réelle ait quelque chose à
+       fuir. */
+    const materialiteEtrangere = (await q1<{ id: string }>(
+      `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
+         amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status)
+       values ($1,1,'pbt',100000,0.05,5000,0.75,3750,0.5,2500,0.1,500,'Rationale fictive de sonde (étranger)','proposed')
+       returning id::text`,
+      [eng.id],
+    )).id;
+    await q(
+      `insert into event_log (tenant_id, engagement_id, actor_kind, actor_id, verb, object_type, object_id, hash)
+       values ($1,$2,'system',null,'materiality_proposed','materiality',$3,'hash-fictif-sonde-etranger')`,
+      [autre.id, eng.id, materialiteEtrangere],
+    );
+    /* Confirmé d'abord : l'élément existe bien pour qui a le droit de le voir. */
+    expect(await elementsIaNonValides(eng.id)).toHaveLength(1);
+    /* Puis : KARIM, membre signataire mais d'un AUTRE cabinet, n'en voit rien. */
     expect((await notificationsPourApprobation(KARIM)).some((n) => n.engagementId === eng.id)).toBe(false);
   });
 });

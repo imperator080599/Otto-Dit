@@ -393,6 +393,12 @@
       "note": "non ajouté par la même prudence délibérée que R81. Condition de retrait : une station notifications ajoutée à scenario.ts une fois npm run clics de nouveau fiable."
     },
     {
+      "id": "R88",
+      "etat": "ouvert — elementsIaNonValides (notifications.ts) n'est pas gardée par l'acceptation de la mission, alors qu'obstaclesAuVisa s'arrête AVANT de calculer la famille iaNonValide tant que la mission n'est pas acceptée. Sur une mission non acceptée portant déjà un élément IA, la VUE peut montrer une carte que l'obstacle ne reflète pas encore.",
+      "depuis": "2026-09-14 (revue hostile de la tranche §3, voix 2, finding MOYEN)",
+      "note": "choix assumé : elementsIaNonValides est une VUE PURE (§3.1), la gate d'acceptation appartient à obstaclesAuVisa, comportement déjà partagé par toutes les familles. Sans risque pour le visa (l'obstacle acceptation bloque déjà tout). La lecture /api/sante NOTIF-01 est gardée contre ce cas précis. Condition de retrait : si la vue doit un jour refléter exactement l'obstacle, ajouter le même garde-fou à elementsIaNonValides."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

@@ -1181,3 +1181,20 @@ design : chacun reste une tranche à construire.**
   ne le clique pas encore, et `npm run clics` reste non fiable cette session (R80) — non ajouté par
   la même prudence délibérée. Reporté : ajouter une station une fois `npm run clics` de nouveau
   fiable.
+
+- **R88 — `elementsIaNonValides` (notifications.ts) n'est pas gardée par l'acceptation de la
+  mission, alors qu'`obstaclesAuVisa` s'arrête AVANT de calculer la famille `iaNonValide` tant que
+  la mission n'est pas acceptée.** Trouvé par la revue hostile du 2026-09-14 (§3, voix 2, finding
+  MOYEN). Sur une mission non encore acceptée qui porte déjà un élément IA (une proposition de
+  matérialité précoce, par exemple), la VUE (`/travaux`, `/eng/[id]/notifications`) peut donc
+  montrer une carte alors que l'obstacle `iaNonValide` correspondant n'existe pas encore dans
+  `obstaclesAuVisa`. **Non corrigé, choix assumé** : `elementsIaNonValides` est explicitement une
+  VUE PURE (§3.1, « elle montre ce qui existe, pas ce qui bloque ») — la gate d'acceptation
+  appartient à `obstaclesAuVisa`, pas à la vue, et c'est déjà le comportement de TOUTES les
+  familles, pas une régression de cette tranche. Sans risque pour le visa lui-même : l'obstacle
+  `acceptation` bloque déjà tout, inconditionnellement, avant que quoi que ce soit d'autre ne
+  compte. La lecture `/api/sante` NOTIF-01 est gardée contre ce cas précis (comparaison
+  `elements.length === compteObstacle` sautée si la mission n'est pas acceptée) pour ne jamais
+  rougir à tort. Reporté : si un jour la vue doit refléter exactement l'obstacle (jamais montrer
+  une carte tant que la mission n'est pas acceptée), ajouter le même garde-fou à
+  `elementsIaNonValides`.
