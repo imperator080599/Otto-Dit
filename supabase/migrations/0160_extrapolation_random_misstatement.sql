@@ -1,0 +1,22 @@
+-- §1.2 correctif (revue hostile du 2026-09-14, deux voix indépendantes convergentes) :
+-- `sample_evaluation.projection_method = 'none'` avait DEUX causes distinctes, indiscernables
+-- depuis la ligne stockée seule — aucune strate sondée n'a été tirée (rien à extrapoler, vrai
+-- depuis toujours), OU une strate sondée existe et PORTE un écart mais la méthode du cabinet
+-- n'est pas vérifiée (EXTRAP-04). `evaluation.ts::concludeEvaluation` (EXTRAP-01) ne pouvait donc
+-- QUE bloquer sur la présence d'une strate sondée, jamais sur la présence d'un écart DEDANS —
+-- plus large que ce que le mandat exige explicitement (§1.6 point 1 : « un poste sondé AVEC UN
+-- ÉCART ne se conclut pas sans projection »). Le même trou touchait le récit du papier de travail
+-- (workpapers/draft.ts::projectionRationale, resté aligné sur l'ANCIEN sens de 'none').
+--
+-- `random_misstatement` porte l'écart BRUT (non projeté) de la strate sondée, TOUJOURS calculé
+-- et stocké par `computeSampleEvaluation`, que la méthode soit vérifiée ou non — la même donnée
+-- que `known_misstatement`/`projected_misstatement` déjà sur cette table, jamais une requête
+-- refaite à côté à chaque lecture (ni dans le gate, ni dans le récit du papier), qui pourrait
+-- diverger.
+--
+-- CE QUE CETTE MIGRATION NE FAIT PAS (règle 19) : elle ne recalcule RIEN sur les lignes déjà
+-- écrites (`default 0` les laisse à zéro — une évaluation déjà conclue avant cette tranche a
+-- toujours son propre `known_misstatement`/`projected_misstatement`, inchangés ; seule une
+-- RECONCLUSION future recalculerait `random_misstatement` pour elle). Elle ne change aucun refus
+-- existant — c'est `evaluation.ts` (code, testable) qui reçoit le nouveau critère d'EXTRAP-01.
+alter table sample_evaluation add column if not exists random_misstatement numeric(18,2) not null default 0;

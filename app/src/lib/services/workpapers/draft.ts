@@ -58,11 +58,29 @@ export interface WpSection {
 
 /** Why the projection is what it is. An empty projection is a conclusion about the sample,
  *  and it has to read like one (founder review 2026-08-25). */
-function projectionRationale(method: string, lang: 'fr' | 'en'): string {
+/** EXTRAP-04 (mandat 2026-09-14, §1.3) : `method === 'none'` a PLUSIEURS causes, jamais confondues
+ *  depuis la revue hostile qui a trouvé cette fonction encore alignée sur l'ANCIEN sens (« la
+ *  strate sondée n'a révélé aucune anomalie ») après que `kernel/projection.ts` a changé ce que
+ *  'none' signifie — `projectMisstatement` rend 'none' dès que la méthode n'est pas posée, QUE
+ *  la strate sondée soit propre OU qu'elle porte un écart, et dès qu'il n'y a aucune strate
+ *  sondée du tout. `randomMisstatementCents` (sample_evaluation.random_misstatement, migration
+ *  0160, déjà sur `evaluation`) tranche : nul (aucune strate sondée, OU une strate sondée
+ *  propre — dans les deux cas rien à extrapoler, un fait sur l'ÉCHANTILLON) contre non nul (un
+ *  écart existe mais la méthode du cabinet n'est jamais vérifiée — EXTRAP-04, un fait sur le
+ *  CABINET, l'état PAR DÉFAUT de ce dépôt puisque `nep-fr.ts` ne pose `extrapolationMethod`
+ *  nulle part). Un troisième cas — méthode vérifiée, strate sondée sans aucun écart — NE PRODUIT
+ *  JAMAIS `'none'` (projectMisstatement rend le nom réel de la méthode avec une projection à 0),
+ *  donc ce texte n'a que ces deux branches à couvrir. */
+function projectionRationale(method: string, randomMisstatementCents: number, lang: 'fr' | 'en'): string {
   if (method === 'none') {
+    if (randomMisstatementCents === 0) {
+      return lang === 'fr'
+        ? 'Aucune projection n’est pratiquée : toutes les anomalies relevées se situent dans la strate examinée à 100 % (éléments à fort enjeu et éléments porteurs d’indicateurs de risque), et la strate tirée aléatoirement (si elle existe) n’a révélé aucune anomalie. Il n’y a donc rien à extrapoler à la population non testée — ce n’est pas une projection omise, c’est une projection nulle.'
+        : 'No projection is performed: every misstatement identified falls inside the 100 %-examined stratum (high-value and risk-flagged items), and the randomly drawn stratum (if any) returned no misstatement. There is nothing to extrapolate to the untested population — this is a nil projection, not an omitted one.';
+    }
     return lang === 'fr'
-      ? 'Aucune projection n’est pratiquée : toutes les anomalies relevées se situent dans la strate examinée à 100 % (éléments à fort enjeu et éléments porteurs d’indicateurs de risque), et la strate tirée aléatoirement n’a révélé aucune anomalie. Il n’y a donc rien à extrapoler à la population non testée — ce n’est pas une projection omise, c’est une projection nulle.'
-      : 'No projection is performed: every misstatement identified falls inside the 100 %-examined stratum (high-value and risk-flagged items), and the randomly drawn stratum returned no misstatement. There is nothing to extrapolate to the untested population — this is a nil projection, not an omitted one.';
+      ? 'Aucune projection ne s’affiche : la strate tirée aléatoirement porte une anomalie, mais la méthode d’extrapolation du cabinet (unités monétaires, ratio ou différence) n’est pas encore vérifiée pour cette mission — paramètre à fixer par le cabinet (ISA 530 §14 : la norme exige la projection, elle ne prescrit aucune formule).'
+      : 'No projection is shown: the randomly drawn stratum carries a misstatement, but the firm’s extrapolation method (monetary unit, ratio, or difference) is not yet verified for this engagement — a firm parameter still to be set (ISA 530 §14 requires the projection but prescribes no formula).';
   }
   return lang === 'fr'
     ? `Méthode de projection : ${method} (extrapolation des anomalies de la strate aléatoire à la population non testée).`
@@ -277,11 +295,11 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
             `Anomalies projetées : ${eur(numToCents(evaluation.projected_misstatement))} sur une population non testée de ${eur(numToCents(evaluation.untested_amount))}. ` +
             // "(none)" invited the reading "we did not project". Say why there is nothing
             // to project, so an inspector reads a reasoning and not an omission.
-            `${projectionRationale(evaluation.projection_method, 'fr')} ` +
+            `${projectionRationale(evaluation.projection_method, numToCents(evaluation.random_misstatement), 'fr')} ` +
             `Total connu + projeté : ${eur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement))}, à comparer à l’anomalie tolérable de ${eur(numToCents(evaluation.te_amount))}. ` +
             `${evaluation.status === 'concluded' ? `Conclusion (validée) : ${evaluation.conclusion_basis}` : 'Évaluation non conclue.'}`
           : `Known ${eur(numToCents(evaluation.known_misstatement))}; projected ${eur(numToCents(evaluation.projected_misstatement))} over an untested population of ${eur(numToCents(evaluation.untested_amount))}. ` +
-            `${projectionRationale(evaluation.projection_method, 'en')} ` +
+            `${projectionRationale(evaluation.projection_method, numToCents(evaluation.random_misstatement), 'en')} ` +
             `Known + projected ${eur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement))} against tolerable misstatement ${eur(numToCents(evaluation.te_amount))}. ` +
             `${evaluation.status === 'concluded' ? `Conclusion: ${evaluation.conclusion_basis}` : 'Not concluded.'}`
         : fr ? 'Évaluation non calculée.' : 'Not computed.',

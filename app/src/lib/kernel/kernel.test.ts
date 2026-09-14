@@ -401,7 +401,31 @@ describe('sample evaluation / projection (Gate 2, ISA/NEP 530 — mandat 2026-09
       const r = evaluateSample({ ...input, method });
       expect(r.projectionMethod).toBe('none');
       expect(r.projectedMisstatementCents).toBe(0);
+      // randomMisstatementCents reste calculé MÊME méthode non vérifiée (règle 19 : la donnée
+      // qui distingue les deux causes de 'none' — EXTRAP-01, evaluation.ts — doit survivre au
+      // court-circuit d'EXTRAP-04, sinon rien ne pourrait jamais les départager en aval).
+      expect(r.randomMisstatementCents).toBe(10000);
     }
+  });
+
+  it('EXTRAP-01 : `randomMisstatementCents` distingue une strate sondée PROPRE (rien à extrapoler) d’une strate qui PORTE un écart — même méthode non vérifiée dans les deux cas', () => {
+    const base = {
+      method: null,
+      populationAmountCents: 1000000,
+      coverageAmountCents: 0,
+      populationSize: 100,
+      coverageCount: 0,
+      randomTestedAmountCents: 100000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      teAmountCents: 50000,
+    };
+    const propre = evaluateSample({ ...base, randomMisstatements: [] });
+    expect(propre.projectionMethod).toBe('none');
+    expect(propre.randomMisstatementCents).toBe(0); // mandat §1.6 point 1 : PAS d’écart ⇒ conclûable
+    const porteEcart = evaluateSample({ ...base, randomMisstatements: [{ amountCents: 500, itemAmountCents: 5000 }] });
+    expect(porteEcart.projectionMethod).toBe('none');
+    expect(porteEcart.randomMisstatementCents).toBe(500); // mandat §1.6 point 1 : un écart ⇒ EXTRAP-01 bloque
   });
 
   it('un échantillon ENTIÈREMENT exhaustif (aucune strate sondée) ne projette rien, même méthode posée', () => {

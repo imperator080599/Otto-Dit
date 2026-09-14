@@ -111,6 +111,14 @@ export interface EvaluationResult {
   knownMisstatementCents: number;
   projectedMisstatementCents: number;
   projectionMethod: ExtrapolationMethod | 'none';
+  /** L'écart BRUT (non projeté) de la strate sondée — révisé le 2026-09-14 (revue hostile, deux
+   *  voix indépendantes) : `projectionMethod === 'none'` a DEUX causes (aucune strate sondée,
+   *  OU une strate sondée avec un écart mais une méthode non vérifiée, EXTRAP-04) que rien
+   *  d'autre dans ce résultat ne distingue — la méthode `'none'` ne dit pas laquelle. Ce champ
+   *  tranche : nul ⇒ rien à extrapoler (les deux premières causes) ; non nul avec
+   *  `projectionMethod === 'none'` ⇒ EXTRAP-04 (la vraie cause d'EXTRAP-01, mandat §1.6 point 1
+   *  : « un poste sondé AVEC UN ÉCART »). */
+  randomMisstatementCents: number;
   /** Ce qui reste au-delà de ce qui a été RÉELLEMENT testé dans la strate sondée — jamais la
    *  population sondée entière (qui inclut le testé). Nom conservé identique à la colonne
    *  `sample_evaluation.untested_amount` (0002_testing.sql) : renommer la colonne pour y loger
@@ -139,6 +147,7 @@ export function evaluateSample(input: EvaluationInput): EvaluationResult {
     knownMisstatementCents: known,
     projectedMisstatementCents: projection.projectedCents,
     projectionMethod: projection.method,
+    randomMisstatementCents: input.randomMisstatements.reduce((s, m) => s + m.amountCents, 0),
     untestedAmountCents: Math.max(0, sondee.amountCents - input.randomTestedAmountCents),
     totalKnownPlusProjectedCents: total,
     teAmountCents: input.teAmountCents,

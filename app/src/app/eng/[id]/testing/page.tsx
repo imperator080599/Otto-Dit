@@ -464,21 +464,37 @@ export default async function TestingPage({
             <>
               {/* EXTRAP (mandat 2026-09-14, §1.2/§1.6 point 6) : écart connu, écart projeté et
                   écart total estimé sont TROIS NOMBRES DISTINCTS, chacun avec sa provenance —
-                  jamais additionnés ailleurs qu'au total ci-dessous. */}
-              <div className="grid cols-2">
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
-                <div className="kpi">
-                  {evaluation.projection_method === 'none' ? (
-                    <span className="v faint" style={{ fontSize: 13 }}>{t('test.extrapolationMethodNotVerified')}</span>
-                  ) : (
-                    <span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span>
-                  )}
-                  <span className="l">{t('test.projectedMisstatementMethod')} {evaluation.projection_method !== 'none' && `(${evaluation.projection_method})`}</span>
-                </div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement), 'fr')}</span><span className="l">{t('test.totalEstimatedMisstatement')}</span></div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
-              </div>
+                  jamais additionnés ailleurs qu'au total ci-dessous.
+                  `projection_method === 'none'` a deux causes (revue hostile, 2026-09-14) :
+                  rien à extrapoler (aucune strate sondée, ou une strate sondée propre — un fait
+                  sur l'ÉCHANTILLON, `random_misstatement` nul) contre une strate sondée avec un
+                  écart mais une méthode non vérifiée (EXTRAP-04, un fait sur le CABINET,
+                  `random_misstatement` non nul). Seul le second cas affiche le message « à
+                  fixer par le cabinet » — le premier affiche 0,00 €, une vraie projection nulle,
+                  pas un défaut. Le total, lui, reste INCOMPLET tant que le second cas tient : il
+                  porte l'astérisque plutôt que de prétendre être un chiffre définitif. */}
+              {(() => {
+                const methodeNonVerifiee = evaluation.projection_method === 'none' && numToCents(evaluation.random_misstatement) !== 0;
+                return (
+                  <div className="grid cols-2">
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
+                    <div className="kpi">
+                      {methodeNonVerifiee ? (
+                        <span className="v faint" style={{ fontSize: 13 }}>{t('test.extrapolationMethodNotVerified')}</span>
+                      ) : (
+                        <span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span>
+                      )}
+                      <span className="l">{t('test.projectedMisstatementMethod')} {evaluation.projection_method !== 'none' && `(${evaluation.projection_method})`}</span>
+                    </div>
+                    <div className="kpi">
+                      <span className="v">{fmtEur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement), 'fr')}{methodeNonVerifiee ? ' *' : ''}</span>
+                      <span className="l">{t('test.totalEstimatedMisstatement')}{methodeNonVerifiee ? ` — ${t('test.extrapolationMethodNotVerified')}` : ''}</span>
+                    </div>
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
+                  </div>
+                );
+              })()}
               {reponses.length > 0 ? (
                 <div className="callout mt">
                   <strong>{t('test.responseToExceedingTolerableMisstatement')}</strong>{' '}
