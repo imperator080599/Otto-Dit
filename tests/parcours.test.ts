@@ -31,7 +31,6 @@ import { decideFactor } from '../app/src/lib/services/questionnaire';
 import { currentAcceptation } from '../app/src/lib/services/acceptance';
 import { closeFile } from '../app/src/lib/services/retention';
 import { sealFile } from '../app/src/lib/services/archive';
-import { computeSampleEvaluation, currentEvaluation, recordEvaluationResponse, concludeEvaluation } from '../app/src/lib/services/evaluation';
 
 describe('la mission entière, de l’acceptation à l’export scellé', () => {
   beforeAll(async () => {
@@ -177,36 +176,13 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
       'la circularisation menée à son terme ne laisse aucun obstacle').toBe(false);
   }, 900000);
 
-  it('EXTRAP-01 : l’évaluation ne se conclut pas sans méthode d’extrapolation vérifiée — puis le cabinet la fixe', async () => {
-    /* Mandat 2026-09-14, §1.2. Le poste a une strate SONDÉE — le CONCLURE exige une méthode
-       d'extrapolation vérifiée (SubstantiveConfig.extrapolationMethod, packs/nep-fr.ts),
-       sciemment non posée (EXTRAP-04, règle 8). L'échantillon est ENCORE 'drawn' à ce point du
-       parcours (le FEC définitif, qui le superséderait, n'est importé que dans le test
-       suivant) — c'est ICI, PENDANT que le tirage tient encore, que le cabinet peut fixer sa
-       méthode (recouvrement réservé aux tests) et conclure ; après le re-tirage déclenché par
-       le FEC définitif, `computeSampleEvaluation` n'aurait plus de tirage 'drawn' à évaluer. */
-    const avant = await currentEvaluation(IDS.engNep);
-    await expect(concludeEvaluation(avant!.id, IDS.users.lea, 'Tentative avant méthode vérifiée.'))
-      .rejects.toThrow(/EXTRAP-01/);
-
-    await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
-    const ev = await currentEvaluation(IDS.engNep);
-    expect(ev!.projection_method).toBe('ratio');
-    await recordEvaluationResponse(
-      ev!.id, IDS.users.lea, 'revise_strategy',
-      'Les anomalies non corrigées dépassent l’anomalie tolérable : l’échantillon ne fournit plus une base raisonnable de conclusion sur la population. Extension des travaux et demande de correction adressée à la direction avant conclusion définitive.',
-    );
-    await concludeEvaluation(
-      ev!.id, IDS.users.lea,
-      'Anomalies non corrigées supérieures au seuil de signification : conclusion défavorable en l’état sur l’assertion de rattachement, sous réserve des corrections annoncées par la direction.',
-    );
-  }, 300000);
-
   it('le FEC provisoire bloque la clôture — c’est la règle, pas un accident', async () => {
     const obstacles = await obstaclesAuVisa(IDS.engNep);
-    // l'évaluation est désormais CONCLUE (test précédent) : seul le FEC provisoire reste, mais
-    // conclusionGate() range TOUS ses blocages (y compris ledger_provisional) sous la même
-    // famille 'evaluation' (obstacles.ts) — la famille reste donc non vide pour cette raison.
+    // l'évaluation est désormais CONCLUE (spotcheckAndEvaluate, dans runPart1UpToWorkpaper —
+    // EXTRAP-01 ne bloque pas : la strate sondée de ce poste est propre, migration 0160)
+    // : seul le FEC provisoire reste, mais conclusionGate() range TOUS ses blocages (y compris
+    // ledger_provisional) sous la même famille 'evaluation' (obstacles.ts) — la famille reste
+    // donc non vide pour cette raison.
     expect(obstacles.some((o) => o.famille === 'evaluation')).toBe(true);
     await expect(sealFile(IDS.engNep, IDS.users.claire, '2026-03-31')).rejects.toThrow();
   }, 300000);
@@ -232,9 +208,9 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
     const apres = await q1<{ p: boolean }>(
       `select ledger_is_provisional p from engagement where id = $1`, [IDS.engNep]);
     expect(apres.p, 'le rapprochement propre doit lever le drapeau « provisoire »').toBe(false);
-    // L'évaluation a déjà été conclue au test précédent (EXTRAP-01, méthode vérifiée) —
-    // PENDANT que le tirage tenait encore : le re-tirage déclenché par ce ré-import du FEC
-    // (ADR-016, ci-dessus) superséderait un tirage qu'on tenterait d'évaluer maintenant.
+    // L'évaluation a déjà été conclue (spotcheckAndEvaluate, PENDANT que le tirage tenait
+    // encore) : le re-tirage déclenché par ce ré-import du FEC (ADR-016, ci-dessus)
+    // superséderait un tirage qu'on tenterait d'évaluer maintenant.
 
     const restants = await obstaclesAuVisa(IDS.engNep);
     if (restants.length > 0) {

@@ -47,7 +47,18 @@ describe('déploiement : ce que le code LIT est TRACÉ', () => {
     const declares = tracés();
     const manquants: string[] = [];
     for (const f of fichiers(SRC)) {
-      const src = fs.readFileSync(f, 'utf8');
+      // Un fichier de SONDE d'un autre test (écrit puis supprimé dans le même souffle,
+      // ex. ia-flag-source.test.ts) peut disparaître entre le listage et la lecture quand les
+      // fichiers vitest tournent en parallèle : ENOENT ici ne dit rien sur ce qui EXPÉDIE (un
+      // fichier absent à la lecture ne peut pas partir dans un bundle), donc on le saute plutôt
+      // que de faire échouer une garde de déploiement sur un artefact de test transitoire.
+      let src: string;
+      try {
+        src = fs.readFileSync(f, 'utf8');
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw err;
+      }
       const rel = path.relative(APP, f);
       for (const m of src.matchAll(/repoRoot\(\)\s*,\s*'([a-zA-Z0-9_.-]+)'/g)) {
         const dossier = m[1];

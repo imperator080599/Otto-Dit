@@ -10,7 +10,6 @@ import { signWorkpaper } from './workpapers/lifecycle';
 import { closeFile } from './retention';
 import { sealFile, buildArchive, latestArchive } from './archive';
 import { readBlob } from '@/lib/core/storage';
-import { computeSampleEvaluation, currentEvaluation, recordEvaluationResponse, concludeEvaluation } from './evaluation';
 
 // ADR-022 — what "the closed file" is, and what an inspector receives.
 
@@ -24,21 +23,6 @@ describe('closing the file (ADR-022)', () => {
        l'ARCHIVE, pas sur l'arc — il déroule donc la fin du parcours par les
        mêmes services que les écrans, plutôt que de contourner le verrou. */
     await deroulerFin(IDS.engNep);
-    /* EXTRAP-01 (mandat 2026-09-14, §1.2) : ce poste a une strate SONDÉE — sa conclusion exige
-       désormais une méthode d'extrapolation VÉRIFIÉE, sciemment non posée dans le pack
-       (EXTRAP-04, règle 8). Même recouvrement réservé aux tests que s5s6.test.ts/parcours.test.ts. */
-    await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
-    const ev = await currentEvaluation(IDS.engNep);
-    if (ev && !ev.conclusion_basis) {
-      await recordEvaluationResponse(
-        ev.id, IDS.users.lea, 'revise_strategy',
-        'Les anomalies non corrigées dépassent l’anomalie tolérable : extension des travaux et demande de correction adressée à la direction avant conclusion définitive.',
-      );
-      await concludeEvaluation(
-        ev.id, IDS.users.lea,
-        'Anomalies non corrigées supérieures au seuil de signification : conclusion défavorable en l’état sur l’assertion de rattachement, sous réserve des corrections annoncées par la direction.',
-      );
-    }
     const wpId = await draftRevenueWorkpaper(IDS.engNep, IDS.users.karim);
     await signWorkpaper(wpId, IDS.users.karim, 'preparer_validator');
     await signWorkpaper(wpId, IDS.users.lea, 'reviewer');

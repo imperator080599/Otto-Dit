@@ -303,25 +303,20 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     expect(evUnverified!.projection_method).toBe('none'); // le pack (nep-fr.ts) ne fixe AUCUNE
     // méthode d'extrapolation — EXTRAP-04, sciemment non posée (règle 8).
 
-    // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1) : ce poste A une strate SONDÉE (le
-    // tirage aléatoire de nep-fr.ts, randomSizeDefault: 4) — le conclure sans qu'une méthode
-    // d'extrapolation vérifiée ait produit de projection est refusé, AVANT même le gate TE.
+    // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1) : ce poste A bien une strate SONDÉE (le
+    // tirage aléatoire de nep-fr.ts), mais les cinq anomalies plantées dans ce jeu de données
+    // sont TOUTES rattachées à des pièces sélectionnées par le RISQUE (high_value/risk_flag,
+    // exhaustives par construction) — la sélection par le risque est justement conçue pour les
+    // attraper là, pas dans le tirage aléatoire pur. `random_misstatement` (migration 0160,
+    // le total BRUT de la strate sondée, toujours calculé) le confirme : la strate sondée est
+    // PROPRE ici. EXTRAP-01 ne bloque donc PAS ce poste — une strate sondée propre reste
+    // conclûable sans méthode vérifiée ; le refus lui-même est éprouvé contre un cas FABRIQUÉ
+    // (kernel.test.ts), où la strate sondée porte un écart.
+    expect(Number(evUnverified!.random_misstatement)).toBe(0);
+
+    // le gate TE (pré-existant) reste donc le seul obstacle
     await expect(
       concludeEvaluation(evUnverified!.id, IDS.users.lea, 'Rien à signaler par ailleurs.'),
-    ).rejects.toThrow(/EXTRAP-01/);
-
-    // Le cabinet fixe sa méthode (recouvrement réservé aux tests — la vraie méthode vivrait
-    // dans SubstantiveConfig.extrapolationMethod, packs/nep-fr.ts) : la projection existe
-    // désormais, et le gate TE (pré-existant) redevient le seul obstacle.
-    await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
-    const ev = await currentEvaluation(IDS.engNep);
-    expect(ev!.projection_method).toBe('ratio');
-    expect(Number(ev!.known_misstatement)).toBeCloseTo(127545.8, 2);
-    expect(Number(ev!.known_misstatement)).toBeGreaterThan(Number(ev!.te_amount));
-
-    // the engine refuses to conclude on a sample that no longer supports a conclusion
-    await expect(
-      concludeEvaluation(ev!.id, IDS.users.lea, 'Rien à signaler par ailleurs.'),
     ).rejects.toThrow(/exceeds tolerable misstatement/);
 
     const gateBefore = await conclusionGate(IDS.engNep);
@@ -331,14 +326,14 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
 
     // record the response, then the conclusion is allowed
     await recordEvaluationResponse(
-      ev!.id, IDS.users.lea, 'revise_strategy',
+      evUnverified!.id, IDS.users.lea, 'revise_strategy',
       'Les anomalies non corrigées (127 545,80 €) dépassent le seuil de signification : l’échantillon ne fournit plus une base raisonnable de conclusion sur la population. Extension des travaux au chiffre d’affaires du dernier trimestre et demande de correction adressée à la direction avant conclusion définitive.',
     );
     const gateMid = await conclusionGate(IDS.engNep);
     expect(gateMid.breachAnswered).toBe(true);
 
     await concludeEvaluation(
-      ev!.id, IDS.users.lea,
+      evUnverified!.id, IDS.users.lea,
       'Anomalies non corrigées de 127 545,80 € supérieures au seuil de signification (37 000 €) : conclusion défavorable en l’état sur l’assertion de rattachement, sous réserve des corrections annoncées par la direction.',
     );
     const gate = await conclusionGate(IDS.engNep);
