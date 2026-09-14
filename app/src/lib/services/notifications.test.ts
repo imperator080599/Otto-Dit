@@ -199,4 +199,32 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
     const hugo = IDS.users.hugo;
     expect((await notificationsPourApprobation(hugo)).filter((n) => n.engagementId === IDS.engNep)).toEqual([]);
   });
+
+  /* `notificationsPourApprobation` est inscrite « par personne » dans
+     couverture-etancheite.test.ts et etancheite-executee.test.ts — ce qui
+     l'EXCLUT de l'appel automatique de cette dernière (même patron
+     qu'obstaclesDeMesDossiers/echantillonsDeMesDossiers, travaux.test.ts).
+     La preuve d'étanchéité par EXÉCUTION vit donc ici, pas là-bas — jamais
+     une inscription non vérifiée (revue hostile du 2026-09-13, voix 2, sur
+     le même patron pour R62). */
+  it('une appartenance à un dossier d’un AUTRE cabinet n’affiche rien — l’appartenance ne suffit pas', async () => {
+    const autre = await q1<{ id: string }>(`insert into tenant (name) values ('Autre cabinet (fictif, sonde notif)') returning id::text`);
+    const ent = await q1<{ id: string }>(
+      `insert into entity (tenant_id, name, country, registry_type, registry_no, currency)
+       values ($1, 'Étrangère SA (fictive, sonde notif)', 'FR', 'fictional', null, 'EUR') returning id::text`, [autre.id]);
+    const per = await q1<{ id: string }>(
+      `insert into period (entity_id, label, start_date, end_date) values ($1, 'FY2026', '2026-01-01', '2026-12-31') returning id::text`, [ent.id]);
+    const eng = await q1<{ id: string }>(
+      `insert into engagement (tenant_id, entity_id, period_id, kind, name, framework_set, status)
+       values ($1, $2, $3, 'statutory_audit', 'Dossier étranger (fictif, sonde notif)', '{"assurance_packs":["nep-fr"],"accounting_map":"pcg","language":"fr"}'::jsonb, 'setup')
+       returning id::text`, [autre.id, ent.id, per.id]);
+    /* KARIM appartient au cabinet DE LA DÉMONSTRATION — l'ajouter comme
+       membre SIGNATAIRE d'un dossier d'un AUTRE cabinet ne devrait produire
+       AUCUNE carte, même si `can_sign = true` sur cette ligne : c'est
+       `CABINET` (le tenant de la PERSONNE) qui doit trancher, pas la seule
+       ligne d'appartenance. */
+    await q(`insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on) values ($1, $2, 'partner', true, current_date)`,
+      [eng.id, KARIM]);
+    expect((await notificationsPourApprobation(KARIM)).some((n) => n.engagementId === eng.id)).toBe(false);
+  });
 });

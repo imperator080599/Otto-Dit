@@ -212,6 +212,7 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
       '/eng/[id]/workpapers/[wid]': 'depuis la liste des papiers et depuis « Mes travaux »',
       '/eng/[id]/rcm/[cid]': 'depuis la matrice des contrôles',
       '/eng/[id]/poste/[code]': 'c\'est la destination du groupe « Les postes »',
+      '/eng/[id]/notifications': 'depuis l\'obstacle NOTIF-01 (panneau des obstacles, clôture, suivi de mission) et depuis « Ce que je dois approuver » sur /travaux (mandat 2026-09-14, §3)',
     };
     const racine = path.join(repoRoot(), 'app', 'src', 'app', 'eng', '[id]');
     const routes: string[] = [];

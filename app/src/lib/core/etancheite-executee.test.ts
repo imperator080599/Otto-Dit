@@ -322,6 +322,7 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
       'travaux.ts::echantillonsDeMesDossiers': 'même patron qu’obstaclesDeMesDossiers, même jointure engagement_member : les lignes d’échantillon restant à conclure des dossiers de CETTE personne (R62)',
       'travaux.ts::notesOuvertesParAnciennete': 'les notes adressées à CETTE personne',
       'travaux.ts::tableauDeBord': 'le tableau de bord de CETTE personne',
+      'notifications.ts::notificationsPourApprobation': 'les éléments IA non validés que CETTE personne doit approuver, sur ses propres dossiers (can_sign) — même jointure engagement_member que mesTravaux',
     };
     const LECTURES = new Set(Object.keys(PAR_PERSONNE));
     for (const [k, raison] of Object.entries(PAR_PERSONNE)) {

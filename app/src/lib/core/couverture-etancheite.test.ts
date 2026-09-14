@@ -50,6 +50,7 @@ describe('la couverture des gardes d’étanchéité dans les services', () => {
     'travaux.ts::notesOuvertesParAnciennete': 'les notes adressées à CETTE personne',
     'travaux.ts::tableauDeBord': 'le tableau de bord de CETTE personne',
     'monde-demo.ts::remettreLeMondeAZero': 'la remise à zéro de la DÉMONSTRATION : gardée par demoPublique et par l’instantané, et son acteur peut être nul (chemin système)',
+    'notifications.ts::notificationsPourApprobation': 'les éléments IA non validés que CETTE personne doit approuver, sur ses propres dossiers (can_sign) — même jointure engagement_member que mesTravaux',
   };
 
   function inventaire(): { gardees: string[]; nues: string[] } {
