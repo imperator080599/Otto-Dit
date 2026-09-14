@@ -154,6 +154,18 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
     expect(await visaPossible(IDS.engNep)).toBe(false);
   });
 
+  /* FAUX POSITIF (règle 25 : aucune famille bloquante neuve sans sa fixture
+     de faux positif). IDS.engSox n'a REÇU AUCUNE des fixtures de ce fichier
+     (toutes posées sur IDS.engNep) — la famille iaNonValide doit rester
+     MUETTE dessus, exactement comme `tirage`/`retirage.test.ts` le prouve
+     pour sa propre famille. Un dossier normal, sans rien à statuer, ne se
+     retrouve pas bloqué par une famille neuve (ADR-133). */
+  it('faux positif : un dossier SANS élément IA en attente ne porte AUCUN obstacle iaNonValide', async () => {
+    expect(await elementsIaNonValides(IDS.engSox)).toEqual([]);
+    const obstacles = await obstaclesAuVisa(IDS.engSox);
+    expect(obstacles.filter((o) => o.famille === 'iaNonValide')).toEqual([]);
+  });
+
   it('le compte change selon le rôle — Karim (senior, can_sign=false) ne voit rien compté comme sien, '
     + 'Léa (manager, can_sign=true) si (épreuve §3.4 point 2)', async () => {
     const pourKarim = (await notificationsPourApprobation(KARIM)).filter((n) => n.engagementId === IDS.engNep);
