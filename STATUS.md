@@ -92,6 +92,16 @@ tranche.**
 
 ## Correctif d'expédition : la migration 0164 bloquait le déploiement, NOTIF-01 rendait la démo insignable (2026-09-14)
 
+**SHA SERVI CONFIRMÉ : `b951986`, mesuré directement sur `https://otto-dit.vercel.app/api/sante`
+à 15:38:12Z le 2026-09-14, `identiteCoherente:true`.** Les deux nouvelles lectures NOTIF-01 et
+AUTO-01 passent en production, VIDES sans être vacueuses (le prédicat de vacuité les couvre) :
+« AUTO-01 : aucun réglage de mission ne dépasse le plafond de son pack — VIDE, aucune mission n'a
+encore réglé son niveau » et « NOTIF-01 : tout élément IA non validé compte comme obstacle au
+visa — VIDE, aucun élément IA non validé pour l'instant » — cette dernière confirme, EN
+PRODUCTION, que le correctif tient : les dix extractions qui bloquaient la clôture en local ne
+comptent plus. Le mandat 2026-09-14 entier (§1, §3, §2) et ce correctif sont maintenant COMPLETS
+ET SERVIS.
+
 *Le push de §2 sur `main` (SHA `3f79bb7`) n'a JAMAIS été servi — mesuré, pas supposé : les DEUX
 déploiements (production et branche) sont revenus `ERROR`, confirmé par les journaux de build
 Vercel (`mcp__Vercel__get_deployment_build_logs`), pas par une inférence sur le statut du travail
