@@ -284,6 +284,23 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
 
     Dans le doute, ENCHAÎNER (option 1) — c'est le défaut, pas l'exception.
 
+37. **Un CODE DE REFUS n'est pas revu tant que personne n'a conduit le parcours cliqué JUSQU'À LA
+    CLÔTURE dessus.** Un relecteur hostile LIT et MUTE — il n'appuie pas sur les boutons du
+    parcours démonstratif dans l'ordre où un auditeur le ferait. NOTIF-01 (mandat 2026-09-14, §3)
+    est passé par deux voix hostiles indépendantes ET un `verify` complet vert, et bloquait quand
+    même la clôture de la démonstration entière : ni les fixtures ciblées des relecteurs ni les
+    tests unitaires n'avaient d'objection à formuler, parce qu'aucun des deux n'exerce le monde de
+    démonstration SEMÉ dans son ENTIER jusqu'au bout — seul `npm run clics`, mené à la station de
+    clôture, l'a trouvé (§0 constate : « le verify complet ne tourne qu'à l'expédition », mais une
+    tranche qui pose ou change un refus doit ALLER jusqu'à cette expédition-là avant de se dire
+    finie, jamais s'arrêter à `vitest run` + `screens` ciblés). Donc : toute tranche qui AJOUTE ou
+    CHANGE un code de refus (une famille d'obstacle, un `assert*` qui bloque un chemin d'écriture)
+    n'est close qu'après un `npm run clics` complet, mené sur le monde SEMÉ existant (pas seulement
+    les fixtures que la tranche a posées), qui atteint la station de clôture sans que ce refus ne
+    bloque à tort. Rejoint la règle 25 (aucune famille bloquante neuve ne rend la démonstration
+    insignable) en lui donnant sa PREUVE : la règle 25 dit l'invariant, celle-ci dit COMMENT le
+    mesurer — en marchant le chemin, jamais en le lisant (règle 15).
+
 ## 2. Interdits — sans exception, quel que soit le mandat
 
 - **L'étape 3 de docs/PLAN_RLS.md** (faire servir l'application par `otto_app`) : préparée,
@@ -327,7 +344,19 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
   le refus rangé dans le détail imprimé (D-J3N-16).
 - Des **comptes rendus rédigés à la main** dont les chiffres ne tenaient pas d'un paragraphe à
   l'autre (mandat du semeur, §2) — d'où la règle 21.
-  
+- **NOTIF-01 (mandat 2026-09-14, §3) bloquait la clôture de TOUTE la démonstration**, testée et
+  hostile-revue deux fois, verify complet vert : la spécification (« pas de visa tant qu'un
+  élément préparé par l'IA reste non validé ») ne distinguait pas les éléments qui NAISSENT avec
+  la tranche de ceux qu'un monde déjà semé PORTE DÉJÀ sans geste de résolution atteignable — dix
+  extractions héritées (neuf jamais liées au sondage, une sur un tirage superseded) bloquaient le
+  visa sans qu'aucun bouton du produit ne puisse les faire disparaître. Corrigé (`notifications.ts`
+  exclut désormais ce qui n'a aucune ligne courante résolue), mais la LEÇON dépasse ce correctif :
+  **un nouveau code de refus se teste contre le monde SEMÉ EXISTANT, jamais seulement contre le
+  monde que la tranche elle-même construit** — sinon il bloque sur une histoire que personne ne
+  peut plus purger. D'où la règle 37 : un code de refus neuf ou changé n'est clos qu'après un
+  `npm run clics` complet mené jusqu'à la clôture, pas seulement des fixtures ciblées et deux
+  relectures.
+
   ### Nuit du 6 au 7 septembre — une nuit perdue à attendre un run mort
 
 Le `verify` du Lot 3 tranche 1 a été lancé en tâche de fond, puis invalidé par une édition de
