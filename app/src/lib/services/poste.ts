@@ -4,6 +4,8 @@ import { risksFor, type AssertionRisk } from './risk';
 import { boucle, type Boucle } from './loop';
 import { obstaclesProcessus } from './processus';
 import { leadsheetDuPoste, lireAnalytique, type LigneSoldes, type OrigineN1, type RevueAnalytique } from './analytique';
+import { natureCirculariseeDuPoste, rapprochement } from './circularisations';
+import { atelierDeLaNature } from './programme';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 
 // L'ESPACE DE TRAVAIL D'UN POSTE (R-03, ADR-112 ; anatomie du mandat de la
@@ -225,6 +227,17 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
     [engagementId, code],
   );
 
+  /* CE POSTE EST-IL CIRCULARISÉ (Lot 5, poste Trésorerie, 2026-09-14) ? Le
+     patron `sample`/`sample_item` ci-dessus ne s'applique JAMAIS à un poste
+     confirmé par circularisation (`confirmation_externe`/`rapprochement`,
+     `circularisations.ts` — aucune ligne `sample_item` n'y naît, jamais). Sans
+     cette distinction, les blocs `echantillon`/`testing` restaient bloqués à
+     « à faire », lien vers `/population`/`/testing`, l'écran du CHIFFRE
+     D'AFFAIRES, qui ne sait rien de ce poste — un poste ouvert à moitié
+     (trouvé en conduisant l'écran, pas par lecture, règle 15). */
+  const kindCirc = natureCirculariseeDuPoste(code);
+  const circ = kindCirc ? await rapprochement(engagementId, kindCirc) : null;
+
   /* LES PAPIERS DU POSTE, avec leurs visas : la section « Working papers »
      (§2.3) — référence, état de visa, date, lien. Un papier appartient au
      poste par la procédure qu'il documente (fsli_code), comme le statut de
@@ -318,6 +331,57 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
   const itemsDemandes = demandesDuPoste.reduce((s, d) => s + d.items, 0);
   const faitsDemandes = demandesDuPoste.reduce((s, d) => s + d.faits, 0);
 
+  /* `echantillon`/`testing` — DEUX PATRONS, jamais mélangés (voir `circ`
+     ci-dessus). Un poste circularisé n'a pas de `sample` : la campagne
+     (tiers listés, confirmations envoyées) tient lieu d'« échantillon », le
+     rapprochement dérivé (`rapprochement()`, déjà la même lecture que
+     `/circularisations`) tient lieu de « testing ». Le lien pointe vers
+     `atelierDeLaNature` — LE SEUL endroit qui sait quel écran exécute quelle
+     nature (programme.ts) — jamais un `/testing` recopié à la main ici. */
+  const blocEchantillon: BlocPoste = circ
+    ? {
+        cle: 'echantillon', titre: 'poste.section.echantillon',
+        etat: circ.lignes.length === 0 ? 'a_faire'
+          : circ.lignes.every((l) => l.etat !== 'a_envoyer') ? 'fait' : 'en_cours',
+        resume: circ.lignes.length === 0
+          ? motif('poste.resume.circulariseAbsente')
+          : motif('poste.resume.circulariseEnvoyees', {
+              envoyees: circ.lignes.filter((l) => l.etat !== 'a_envoyer').length, total: circ.lignes.length,
+            }),
+        href: atelierDeLaNature('confirmation_externe', code, base),
+      }
+    : {
+        cle: 'echantillon', titre: 'poste.section.echantillon',
+        etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
+        resume: n(ech?.tire) > 0
+          ? motif('poste.resume.tirage', { items: ech!.items, pop: ech!.pop })
+          : n(ech?.pop) > 0 ? motif('poste.resume.populationSansTirage', { pop: ech!.pop })
+            : motif('poste.resume.populationAbsente'),
+        href: n(ech?.pop) > 0 ? `${base}/sampling` : `${base}/population`,
+      };
+  const blocTesting: BlocPoste = circ
+    ? {
+        cle: 'testing', titre: 'poste.section.testing',
+        etat: circ.lignes.length === 0 ? 'a_faire'
+          : circ.lignes.every((l) => l.etat === 'rapprochee' || (l.etat === 'ecart' && l.explication)) ? 'fait' : 'en_cours',
+        resume: circ.lignes.length === 0
+          ? motif('poste.resume.rienAControler')
+          : motif('poste.resume.circulariseTraitees', {
+              traitees: circ.lignes.filter((l) => l.etat === 'rapprochee' || (l.etat === 'ecart' && l.explication)).length,
+              total: circ.lignes.length,
+            }),
+        href: atelierDeLaNature('rapprochement', code, base),
+      }
+    : {
+        cle: 'testing', titre: 'poste.section.testing',
+        etat: n(ech?.items) === 0 ? 'a_faire'
+          : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',
+        resume: n(ech?.items) === 0
+          ? motif('poste.resume.rienAControler')
+          : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),
+        href: `${base}/testing`,
+      };
+
   const blocs: BlocPoste[] = [
     {
       cle: 'leadsheet', titre: 'poste.section.leadsheet',
@@ -362,24 +426,8 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
         : motif('poste.resume.assertions', { n: risques.length, eleves, arbitres }),
       href: `${base}/risk?fsli=${c}`,
     },
-    {
-      cle: 'echantillon', titre: 'poste.section.echantillon',
-      etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
-      resume: n(ech?.tire) > 0
-        ? motif('poste.resume.tirage', { items: ech!.items, pop: ech!.pop })
-        : n(ech?.pop) > 0 ? motif('poste.resume.populationSansTirage', { pop: ech!.pop })
-          : motif('poste.resume.populationAbsente'),
-      href: n(ech?.pop) > 0 ? `${base}/sampling` : `${base}/population`,
-    },
-    {
-      cle: 'testing', titre: 'poste.section.testing',
-      etat: n(ech?.items) === 0 ? 'a_faire'
-        : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',
-      resume: n(ech?.items) === 0
-        ? motif('poste.resume.rienAControler')
-        : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),
-      href: `${base}/testing`,
-    },
+    blocEchantillon,
+    blocTesting,
     {
       cle: 'papiers', titre: 'col.workpapers',
       etat: papiers.length === 0 ? 'a_faire' : vises > 0 ? 'fait' : 'en_cours',

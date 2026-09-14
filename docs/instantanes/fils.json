@@ -411,6 +411,12 @@
       "note": "hors du diff du correctif NOTIF-01 (testAction/ladder.ts non touchés par cette tranche) — le correctif lui-même reste correct, ce défaut est préexistant et ailleurs. Jugé seul, non réfuté par une seconde voix (règle 30). Condition de retrait : scoper testAction à son contrôle/sa procédure plutôt qu'au dossier entier."
     },
     {
+      "id": "R91",
+      "etat": "ouvert — les blocs ecarts/demandes de la page de poste (poste.ts) ne reflètent pas les écarts/demandes nés d'une circularisation (rapprochement()/redigerQuestions ne touchent jamais exception/sample_item). Un poste circularisé (CASH) affiche toujours ecarts=[] et demandes=[] même après un écart bancaire réel constaté et expliqué.",
+      "depuis": "2026-09-14 soir (Lot 5, poste 1 — Trésorerie)",
+      "note": "non corrigé, choix assumé : l'obstacle au visa (obstaclesCircularisation) ne dépend pas de ces blocs et bloque déjà correctement la clôture sur un écart non expliqué, vérifié par exécution. Le renvoi vers /circularisations reste visible via echantillon/testing. Condition de retrait : fusionner les deux sources d'écarts/demandes dans poste.ts."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

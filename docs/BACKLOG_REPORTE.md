@@ -1228,3 +1228,23 @@ design : chacun reste une tranche à construire.**
   préexistant ailleurs). **Jugé seul, non réfuté par une seconde voix** (règle 30). Reporté :
   scoper `testAction` à son contrôle (ou à sa procédure), pour que « Tester » ne verifie jamais
   une pièce qui n'a rien à voir avec le contrôle cliqué.
+
+- **R91 — les blocs `ecarts`/`demandes` de la page de poste (`poste.ts`) ne reflètent PAS les
+  écarts/demandes nés d'une circularisation.** Trouvé en ouvrant Trésorerie (Lot 5, poste 1, mandat
+  2026-09-14 soir). `rapprochement()` (`circularisations.ts`) dérive ses écarts en comparant
+  `fsliAccounts`/`confirmation_party.montant_confirme` et stocke l'explication dans
+  `confirmation_party.explication` — JAMAIS dans la table `exception`. `redigerQuestions`
+  (`circularisations.ts`) crée un `request`/`request_item` sans `fsli_code` ni `sample_item_id`. Les
+  blocs `ecarts`/`demandes` de `poste.ts` dérivent l'appartenance au poste exclusivement via
+  `sample_item → sample → procedure_instance.fsli_code` (écarts) et
+  `request_item → sample_item → procedure_instance.fsli_code` (demandes) : un poste circularisé
+  (CASH aujourd'hui, PROVISIONS demain) affichera donc TOUJOURS `ecarts.liste = []` et
+  `demandes = []` sur sa page, même après un écart bancaire réel constaté et expliqué (mesuré : le
+  monde de démonstration complet, `acheverCircularisationBanques()`, produit un écart de 1 250 €
+  explicable, invisible sur `/poste/CASH`). **Non corrigé, choix assumé pour cette tranche** :
+  l'obstacle au visa lui-même (`obstaclesCircularisation`, `obstacles.ts`) ne dépend PAS de ces
+  blocs — il bloque déjà correctement la clôture sur un écart non expliqué, vérifié par exécution,
+  indépendamment de ce que la page de poste affiche. Le renvoi vers `/circularisations` reste
+  visible et correct (bloc `echantillon`/`testing`, ce même correctif). Reporté : fusionner les deux
+  sources d'écarts/demandes dans `poste.ts` si un jour la page doit refléter exactement ce qu'un
+  poste circularisé porte, pas seulement ce qu'un poste sondé porte.

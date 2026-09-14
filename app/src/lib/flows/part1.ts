@@ -7,6 +7,8 @@ import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/ser
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis, detecterBasculesMaterialite } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
 import { assessFsli } from '@/lib/services/risk';
+import { planifierProcedure, redigerPapierDeProcedure } from '@/lib/services/programme';
+import { proposerAnalytique, enregistrerAnalytique } from '@/lib/services/analytique';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
 import { generatePbcFromSample, approveSend, requestDetail, demanderDetailDeCompte } from '@/lib/services/requests';
 import { importerDetailDeCompte, rapprocherDetailDeCompte, attenduGlPourPoste } from '@/lib/services/account-detail';
@@ -55,29 +57,38 @@ export async function bootstrapNep(): Promise<void> {
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
 
-  /* UN SEUL POSTE AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
-     Le jeu de démonstration déroule le cycle chiffre d'affaires et lui seul.
-     Tant qu'aucune règle ne le remarquait, quinze autres postes pouvaient
-     rester « retenus » sans qu'aucune procédure ne soit planifiée dessus, et le
-     dossier se clôturait quand même. Depuis la famille d'obstacles
-     « périmètre sans programme », ce serait quinze obstacles au visa — à
-     raison : un poste retenu et jamais travaillé est un trou dans le dossier.
-     Les deux se réconcilient d'une seule façon honnête : le périmètre du
-     dossier de DÉMONSTRATION est le poste qu'on déroule vraiment.
+  /* DEUX POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
+     Le jeu de démonstration déroule le cycle chiffre d'affaires (REVENUE)
+     et, depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14), la trésorerie
+     (CASH) — les circularisations bancaires existaient déjà sur ce poste,
+     scopé `ns_confirmed` par CETTE MÊME convention avant ce correctif ; un
+     poste dont on conduit réellement les procédures et qu'on maintient hors
+     périmètre aurait été l'exact défaut inverse (un geste réel que le
+     dossier prétendrait ne jamais avoir eu besoin de statuer). Tant qu'aucune
+     règle ne le remarquait, quinze autres postes pouvaient rester « retenus »
+     sans qu'aucune procédure ne soit planifiée dessus, et le dossier se
+     clôturait quand même. Depuis la famille d'obstacles « périmètre sans
+     programme », ce serait quatorze obstacles au visa — à raison : un poste
+     retenu et jamais travaillé est un trou dans le dossier. Les deux se
+     réconcilient d'une seule façon honnête : le périmètre du dossier de
+     DÉMONSTRATION est les postes qu'on déroule vraiment.
      CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
-     ces postes DANS le périmètre — la paie pèse 2,6 M€ contre un seuil de
+     CES POSTES-LÀ AUSSI dans le périmètre (vérifié par requête directe avant
+     ce correctif, jamais supposé : `fsli.scoping` de CASH portait déjà le
+     motif « hors périmètre du jeu » — donc PAS `ns_proposed`, le moteur
+     l'avait proposé `in_scope` — la paie pèse 2,6 M€ contre un seuil de
      planification de 27 000 €. Les sortir n'est donc pas un jugement de
      significativité, et le motif le dit à l'écran, dans le journal et dans
      l'archive : c'est une convention du jeu synthétique. Écrire l'inverse
      ferait du dossier de démonstration un dossier qu'un inspecteur rejetterait
      — et le produit refuse partout ailleurs les motifs qui n'en sont pas. */
   const MOTIF_DEMO =
-    'Hors périmètre du jeu de démonstration : seul le cycle chiffre d’affaires y est déroulé. '
-    + 'Ce n’est PAS un jugement de significativité — sur cette entité le poste dépasse le seuil '
-    + 'de planification et serait travaillé dans un dossier réel.';
+    'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires et trésorerie y '
+    + 'sont déroulés. Ce n’est PAS un jugement de significativité — sur cette entité le poste '
+    + 'dépasse le seuil de planification et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (f.code === 'REVENUE') continue;             // le seul poste déroulé
+    if (f.code === 'REVENUE' || f.code === 'CASH') continue; // les deux postes déroulés
     if (f.confirmed_by) continue;                   // une décision humaine ne se réécrit pas (D9)
     await confirmScoping(f.id, IDS.users.lea, 'ns_confirmed',
       f.scoping === 'ns_proposed'
@@ -482,6 +493,52 @@ export async function circulariserBanques(): Promise<void> {
 }
 
 /**
+ * LA TRÉSORERIE, POSTE OUVERT COMPLÈTEMENT (Lot 5, plan d'autonomie Partie
+ * C.3 point 1, mandat 2026-09-14 soir).
+ *
+ * Le plan pose SIX éléments pour qu'un poste compte comme « ouvert » —
+ * « leadsheet N/N-1, revue analytique, procédures commandées par le risque,
+ * atelier de sa nature, papier, écarts. Un poste ouvert à moitié est pire
+ * qu'un lien mort. » Leadsheet et papier sont déjà GÉNÉRIQUES sur `fsliCode`
+ * (`leadsheetDuPoste`/`redigerPapierDeProcedure`, analytique.ts/programme.ts)
+ * — rien à semer pour eux au-delà d'appeler le même service que REVENUE.
+ * L'atelier et les écarts existaient déjà (`circulariserBanques` ci-dessus,
+ * `circularisations.ts`). Ce qui manquait : le risque évalué et les
+ * procédures RÉELLEMENT planifiées (`TRESO-CIRC`/`TRESO-RAPPRO`, corrigées
+ * de `cycle: 'TRESO'` à `cycle: 'CASH'` dans le catalogue par ce même
+ * correctif — R56 fermé POUR CASH), et la revue analytique rédigée.
+ *
+ * ÉVALUER LE RISQUE EST UN GESTE HUMAIN JOURNALISÉ (même garde que
+ * `enrichir.ts` pour TRADE_RECEIVABLES) : le rejouer produirait un second
+ * `risk.assessed` dans la chaîne hachée à chaque exécution. On n'évalue que
+ * si rien ne l'a encore été.
+ */
+export async function planifierTresorerie(): Promise<void> {
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'CASH' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'CASH', IDS.users.lea);
+
+  const circ = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'CASH', code: 'TRESO-CIRC', userId: IDS.users.karim });
+  await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'CASH', code: 'TRESO-RAPPRO', userId: IDS.users.karim });
+
+  const papierExistant = await q01<{ id: string }>(
+    `select id from workpaper where procedure_id = $1 limit 1`, [circ.id]);
+  if (!papierExistant) await redigerPapierDeProcedure({ procedureId: circ.id, userId: IDS.users.karim });
+
+  const dejaRedigee = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'CASH' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigee) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'CASH');
+    await enregistrerAnalytique(IDS.engNep, 'CASH', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -541,4 +598,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await dispositions();
   await spotcheckAndEvaluate();
   await circulariserBanques();
+  await planifierTresorerie();
 }

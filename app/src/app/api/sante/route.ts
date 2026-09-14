@@ -581,24 +581,23 @@ async function corpsDeLaSonde() {
        `confirmation_externe` est planifiée sur CASH (le seul poste câblé,
        `atelierDeLaNature` → `/circularisations`) SANS atelier — une
        régression probable. Un gap sur un AUTRE poste est un état ATTENDU
-       (R56, docs/BACKLOG_REPORTE.md : SIX des sept procédures
-       `confirmation_externe` du catalogue portent un `cycle` (même défaut
-       que R54, pas un `postes` — seule `CONFIRM` porte un `postes`) qui ne
-       correspond à AUCUN `fsli.code` réel — pire que R54/RECALC, ces
-       procédures ne sont PLANIFIABLES SUR AUCUN poste, CASH compris ;
-       `CONFIRM` seule, `postes` non nul mais SANS `CASH`, échapperait à ce
-       rouge si elle était un jour plannable ailleurs), rapporté HONNÊTEMENT
-       dans le détail, jamais tu, jamais bloquant — même correctif que la
-       revue hostile a déjà imposé à la lecture jumelle (le gap hors-poste
-       est calculé AVANT le `throw`, jamais après).
+       (R56, docs/BACKLOG_REPORTE.md — FERMÉ POUR CASH depuis le Lot 5, poste
+       Trésorerie, 2026-09-14 : `TRESO-CIRC` porte désormais `cycle: 'CASH'`,
+       plus `TRESO`. SIX des sept procédures `confirmation_externe` du
+       catalogue portent ENCORE un `cycle` qui ne correspond à AUCUN
+       `fsli.code` réel — ces six restent hors de portée, sur des postes hors
+       Trésorerie (CLIENTS/FOURN/PROV, `CONFIRM`), rapporté HONNÊTEMENT dans
+       le détail, jamais tu, jamais bloquant — même correctif que la revue
+       hostile a déjà imposé à la lecture jumelle (le gap hors-poste est
+       calculé AVANT le `throw`, jamais après).
        CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien des
-       procédures `confirmation_externe` non plannables du tout (R56) —
-       absentes de la requête, donc absentes de ce rapport. AUCUNE instance
-       `confirmation_externe` n'existe dans le monde semé à ce jour (R56) :
-       cette lecture reste donc VERTE-VIDE en local et en production tant que
-       rien ne la plante — sa preuve vient d'un cas connu mauvais à
-       insertion directe (`atelier-confirmation-lecture.test.ts`), pas d'un
-       geste réel de l'auditeur, exactement comme cette phrase le dit. */
+       procédures `confirmation_externe` non plannables du tout (R56, hors
+       CASH). Une instance `TRESO-CIRC` existe désormais dans le monde semé
+       depuis le Lot 5 (`planifierTresorerie()`, `flows/part1.ts`) : cette
+       lecture cesse d'être VERTE-VIDE — sa preuve vient d'un geste réel de
+       planification, plus seulement d'un cas connu mauvais à insertion
+       directe (`atelier-confirmation-lecture.test.ts`, gardé comme second
+       filet, règle 17). */
     lectures.push(await essayer('atelier confirmation_externe disponible (Lot 3, tranche 3)', async () => {
       const { atelierDeLaNature } = await import('@/lib/services/programme');
       const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
@@ -640,16 +639,16 @@ async function corpsDeLaSonde() {
        phrase « CASH toujours… » gardée derrière une vérification réelle,
        dès la première version (le même correctif que la revue hostile a
        imposé une fois puis une seconde, appliqué ici d'emblée).
-       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : contrairement à
-       `confirmation_externe` (R56, où AUCUNE procédure n'échappe au
-       blocage), `RAPPRO` (`cycle: '*'`) EST planifiable sur CASH par une
-       bascule de risque ordinaire dès aujourd'hui — mais RIEN, ni
-       `bootstrapNep()` ni `enrichirMondeDemo()`, ne le fait dans le monde
-       semé (R57) : cette lecture reste donc VERTE-VIDE en local et en
-       production tant que rien ne la plante réellement, exactement comme sa
-       jumelle CASH. Sa preuve vient d'un cas connu mauvais à insertion
-       directe (`atelier-rapprochement-lecture.test.ts`), pas d'un geste
-       réel de l'auditeur. */
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : `TRESO-RAPPRO` porte
+       désormais `cycle: 'CASH'` (Lot 5, poste Trésorerie, 2026-09-14 —
+       même correctif que sa jumelle `TRESO-CIRC` ci-dessus, R56/R57 fermés
+       POUR CASH) et `RAPPRO` (`cycle: '*'`) reste planifiable sur CASH par
+       une bascule de risque ordinaire, comme avant. `planifierTresorerie()`
+       (`flows/part1.ts`) plante désormais `TRESO-RAPPRO` dans le monde semé
+       par un geste réel : cette lecture cesse d'être VERTE-VIDE. Sa preuve
+       vient d'abord d'un geste réel de planification, le cas connu mauvais
+       à insertion directe (`atelier-rapprochement-lecture.test.ts`) restant
+       un second filet (règle 17). */
     lectures.push(await essayer('atelier rapprochement disponible (Lot 3, tranche 4)', async () => {
       const { atelierDeLaNature } = await import('@/lib/services/programme');
       const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(

@@ -446,13 +446,16 @@ export interface LigneProgramme {
  * recalculé au centime, base sondée, justificatifs de CHAQUE paramètre
  * demandés en brouillon : exactement la forme que Partie C.1 décrit pour
  * cette nature) sur REVENUE ; `confirmation_externe` ET `rapprochement`
- * (les circularisations, `TRESO-CIRC`/`RAPPRO` dans le catalogue,
- * `circularisations.ts` — listing des tiers importé, complétude contre le
- * grand livre, envoi simulé, réponse déposée, PUIS rapprochement dérivé,
- * `rapprochement()` ligne ~292 : solde comptable contre `montant_confirme`,
- * écart calculé et jamais tu — les DEUX natures que Partie C.1 décrit pour
- * la Trésorerie, Partie C.3 point 1 : « confirmation_externe + rapprochement.
- * Le plus démonstratif après le CA, et les circularisations existent déjà »)
+ * (les circularisations, `TRESO-CIRC`/`TRESO-RAPPRO` dans le catalogue —
+ * `cycle: 'CASH'` depuis le Lot 5, poste Trésorerie, 2026-09-14 ; RAPPRO
+ * (`cycle: '*'`, générique, exhaustivité du détail) s'y ajoute déjà par son
+ * échappatoire propre, sans rapport avec ce correctif — `circularisations.ts`
+ * — listing des tiers importé, complétude contre le grand livre, envoi
+ * simulé, réponse déposée, PUIS rapprochement dérivé, `rapprochement()`
+ * ligne ~292 : solde comptable contre `montant_confirme`, écart calculé et
+ * jamais tu — les DEUX natures que Partie C.1 décrit pour la Trésorerie,
+ * Partie C.3 point 1 : « confirmation_externe + rapprochement. Le plus
+ * démonstratif après le CA, et les circularisations existent déjà »)
  * sur CASH, TOUTES DEUX rendues sur le MÊME écran (`circularisations/page.tsx`
  * — campagne de confirmation puis rapprochement dérivé, l'un sous l'autre) :
  * même URL, deux entrées de ce dispatch, parce que c'est UN SEUL atelier qui
@@ -468,25 +471,34 @@ export interface LigneProgramme {
  * atelier qui ne saurait pas rapprocher SES écritures à lui.
  * CHAQUE NATURE CÂBLÉE A SA PROCÉDURE-ÉCHAPPATOIRE (`cycle: '*'`) et son
  * lot de procédures bloquées par un `cycle`/`postes` qui ne correspond à
- * AUCUN `fsli.code` réel — TROIS FOIS LE MÊME DÉFAUT, TROIS SÉVÉRITÉS
- * DIFFÉRENTES, toutes PRÉEXISTANTES et distinctes de cette fonction :
+ * AUCUN `fsli.code` réel — DEUX FOIS LE MÊME DÉFAUT, PRÉEXISTANT et
+ * distinct de cette fonction, sur `recalcul_parametre` et sur l'usage
+ * `CLIENTS`/`FOURN`/`PROV` de `CONFIRM` (jamais sur `confirmation_externe`
+ * ni `rapprochement` pour CASH — CORRIGÉ, Lot 5 poste Trésorerie,
+ * 2026-09-14) :
  * `recalcul_parametre` — RECALC/ESTIM échappent (R54, 14 autres bloquées,
- * planifiables nulle part) ; `confirmation_externe` — AUCUNE n'échappe
- * vraiment (R56, `CONFIRM` porte en plus un `postes` qui exclut CASH —
- * `planifierProcedure` REFUSE PROG-02 sur TOUT poste, y compris CASH, le
- * pire des trois) ; `rapprochement` — sur les NEUF procédures du catalogue,
- * DEUX portent `cycle: '*'` (RAPPRO et ANNEXE, `ANNEXE` hors du champ de
- * cette fonction — pas câblée) : RAPPRO échappe donc comme RECALC/ESTIM,
- * `planifierProcedure` ACCEPTE `RAPPRO` sur CASH aujourd'hui, par une
- * bascule de risque ordinaire. Les SEPT restantes portent un `cycle` qui ne
- * correspond à aucun `fsli.code` réel — R57, docs/BACKLOG_REPORTE.md.
- * RAPPRO est donc PLANIFIABLE, mais RIEN ne le
- * plante — ni `bootstrapNep()` ni `enrichirMondeDemo()` — dans le monde
- * semé à ce jour : contrairement à RECALC (planifiable ET seedé, juste
- * absent de `npm run verify`, R55), RAPPRO est planifiable mais jamais
- * seedé nulle part — sa preuve d'atelier vient donc, comme celle de
- * `confirmation_externe`, exclusivement d'un cas connu mauvais à insertion
- * directe (`atelier-rapprochement-lecture.test.ts`), pas d'un clic réel.
+ * planifiables nulle part) ; `confirmation_externe` — `TRESO-CIRC` porte
+ * désormais `cycle: 'CASH'` (corrigé de `'TRESO'`, R56 fermé POUR CASH —
+ * `CONFIRM` garde `postes: ['CLIENTS','TRESO','FOURN','PROV']`, sans
+ * `'CASH'`, et reste donc bloqué sur ces quatre-là, hors périmètre de
+ * cette tranche, R56 encore ouvert POUR ELLES) ; `rapprochement` — sur les
+ * NEUF procédures du catalogue, DEUX portent `cycle: '*'` (RAPPRO et
+ * ANNEXE, `ANNEXE` hors du champ de cette fonction — pas câblée) : RAPPRO
+ * échappe donc comme RECALC/ESTIM et reste planifiable sur CASH par cette
+ * voie ; `TRESO-RAPPRO`, lui, porte désormais `cycle: 'CASH'` (corrigé de
+ * `'TRESO'`, même correctif que TRESO-CIRC) et n'a plus besoin d'échapper.
+ * Les SEPT procédures restantes du catalogue portent toujours un `cycle`
+ * qui ne correspond à aucun `fsli.code` réel — R57, docs/BACKLOG_REPORTE.md,
+ * inchangé par cette tranche (postes hors Trésorerie).
+ * RAPPRO/TRESO-CIRC/TRESO-RAPPRO sont donc tous PLANIFIABLES sur CASH,
+ * mais RIEN ne les plante ENCORE — ni `bootstrapNep()` ni
+ * `enrichirMondeDemo()` — dans le monde semé à la date de ce commentaire :
+ * contrairement à RECALC (planifiable ET seedé, juste absent de
+ * `npm run verify`, R55), leur preuve d'atelier vient encore exclusivement
+ * d'un cas connu mauvais à insertion directe
+ * (`atelier-confirmation-lecture.test.ts`, `atelier-rapprochement-lecture.test.ts`),
+ * pas d'un clic réel — la suite de cette même tranche (Lot 5, Trésorerie)
+ * plante un geste réel via `planifierProcedure`, pas un `insert` direct.
  * RECALC vit aujourd'hui dans « hors commande » (le risque actuel ne la
  * commande plus, mais elle a été planifiée — programme/page.tsx), pas dans
  * « commandées » : l'appelant doit donc offrir l'atelier dans LES DEUX
@@ -503,10 +515,12 @@ export interface LigneProgramme {
  * geste caché.
  *
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
- * atelier — `confirmation_externe` sur PROVISIONS (avocats, Lot 5) et la
- * généralisation des quatre cases câblées à un poste autre que celui déjà
- * câblé (Lot 5, une fois R54/R56/R57 fermés) entrent ICI quand ils existent,
- * jamais ailleurs — un second endroit qui devine l'atelier diverge un jour.
+ * atelier — `confirmation_externe` sur PROVISIONS (avocats, Lot 5 point 6)
+ * et la généralisation des quatre cases câblées à un poste autre que celui
+ * déjà câblé (Lot 5, une fois R54/R57 fermés pour ce poste-là — R56 est
+ * fermé pour CASH depuis cette tranche, encore ouvert pour
+ * CLIENTS/FOURN/PROV) entrent ICI quand ils existent, jamais ailleurs — un
+ * second endroit qui devine l'atelier diverge un jour.
  * Lot 3 (Partie C.1) est COMPLET avec cette quatrième case : les quatre
  * natures qu'il mandatait (`sondage_pieces`, `recalcul_parametre`,
  * `confirmation_externe`, `rapprochement`) ont chacune un atelier réel sur

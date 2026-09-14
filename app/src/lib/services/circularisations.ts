@@ -33,6 +33,15 @@ export type Nature = 'banque' | 'avocat';
  *  français écrit en dur : « 512 » n'existe pas dans un plan américain. */
 const POSTE: Record<Nature, string> = { banque: 'CASH', avocat: 'PROVISIONS' };
 
+/** L'inverse de POSTE — pour qu'un appelant externe (`poste.ts`, Lot 5) sache
+ *  SI un poste FSLI est circularisé ici, et par quelle nature, sans
+ *  réimplémenter cette correspondance (jamais une seconde table). `null` si
+ *  ce poste n'a aucune circularisation câblée. */
+export function natureCirculariseeDuPoste(fsliCode: string): Nature | null {
+  const entree = (Object.entries(POSTE) as [Nature, string][]).find(([, code]) => code === fsliCode);
+  return entree ? entree[0] : null;
+}
+
 const NOM: Record<Nature, { pluriel: string; tiers: string; ref: string }> = {
   banque: { pluriel: 'banques', tiers: 'banque', ref: 'n° de compte' },
   avocat: { pluriel: 'avocats', tiers: 'cabinet', ref: 'référence de dossier' },

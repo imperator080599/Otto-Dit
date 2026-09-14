@@ -2458,7 +2458,7 @@
     },
     {
       "code": "TRESO-CIRC",
-      "cycle": "TRESO",
+      "cycle": "CASH",
       "libelle": "Confirmation bancaire des soldes",
       "objectif": "Confirmer les soldes et les pouvoirs auprès des établissements.",
       "assertion": "realite",
@@ -2496,7 +2496,7 @@
     },
     {
       "code": "TRESO-RAPPRO",
-      "cycle": "TRESO",
+      "cycle": "CASH",
       "libelle": "Rapprochements bancaires et examen des suspens",
       "objectif": "Vérifier le rapprochement et l'apurement des éléments en suspens.",
       "assertion": "mesure",
