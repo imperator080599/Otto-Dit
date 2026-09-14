@@ -814,6 +814,20 @@ export default async function ControlDetail({
       </div>
 
       <div className="panel">
+        {/* §1.5 point 1 (mandat 2026-09-14) : « Tests de contrôles : aucune projection
+            (ISA 530 §A20). L'écran le DIT en une phrase et affiche le taux de déviation ; il
+            ne laisse pas un vide que l'auditeur prendrait pour un oubli. » `grid` est la
+            population RÉELLEMENT testée (une ligne par attribut par occurrence, attributeGrid()
+            ci-dessus) — le dénominateur du taux, pas gridLabels.length (qui ne compterait que
+            les occurrences, sous-comptant un contrôle à plusieurs attributs). */}
+        {grid.length > 0 && (
+          <p className="muted">
+            {t('rcmc.noProjectionTestsOfControls', {
+              n: deviations.length, total: grid.length,
+              rate: (grid.length ? (deviations.length / grid.length) * 100 : 0).toFixed(1),
+            })}
+          </p>
+        )}
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('rcmc.nDeviations', { n: deviations.length })}</h2>
           <span className="row">

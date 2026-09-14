@@ -115,7 +115,7 @@ export type ObjetFils =
   | 'carry_forward' | 'confirmation_party' | 'control' | 'control_task' | 'deficiency' | 'deviation'
   | 'estimation' | 'evidence' | 'exception' | 'extraction' | 'independence_declaration'
   | 'control_walkthrough_gap'
-  | 'ipe_rapport' | 'meeting_invitation' | 'process_interview' | 'reconciliation_item'
+  | 'ipe_rapport' | 'meeting_invitation' | 'misstatement' | 'process_interview' | 'reconciliation_item'
   | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'sample_item'
   | 'transcript_gap'
   | 'workpaper' | 'wp_extra_column';
@@ -144,6 +144,7 @@ const RESOLUTION: Record<ObjetFils, string> = {
   independence_declaration: `select engagement_id::text e from independence_declaration where id = $1`,
   ipe_rapport: `select engagement_id::text e from ipe_rapport where id = $1`,
   meeting_invitation: `select engagement_id::text e from meeting_invitation where id = $1`,
+  misstatement: `select engagement_id::text e from misstatement where id = $1`,
   process_interview: `select engagement_id::text e from process_interview where id = $1`,
   reconciliation_item: `select r.engagement_id::text e from reconciliation_item i
      join reconciliation r on r.id = i.reconciliation_id where i.id = $1`,

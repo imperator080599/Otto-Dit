@@ -351,6 +351,12 @@
       "note": "premier échec RÉEL (pas un délai dépassé) : « balances aux. : le candidat proposé attend une confirmation HUMAINE au registre » puis un locator.fill: Timeout 30000ms exceeded sur la station suivante (scripts/clics/scenario.ts:681) — un écran de rapprochement des balances auxiliaires, AUCUN fichier touché par cette tranche n'a de lien avec lui. Condition de retrait : npm run clics complet et vert sur une session fraîche ; si le blocage se reproduit à la MÊME station, investiguer le composant balances-aux directement (hors périmètre du mandat 2026-09-14)."
     },
     {
+      "id": "R81",
+      "etat": "ouvert — le geste d'écartement EXTRAP-03 (mandat 2026-09-14, §1.4) n'a pas encore de station clics dédiée. Le chemin humain existe (exceptions/page.tsx, dismissMisstatementAsAnomaly éprouvé au niveau service par quatre cas dans s5s6.test.ts), mais scripts/clics/scenario.ts ne le clique pas encore.",
+      "depuis": "2026-09-14 (tranche §1.4-1.5, extrapolation ISA 530)",
+      "note": "non ajouté par prudence délibérée : scenario.ts est un script long et à état partagé où une station mal câblée peut dérégler toutes les stations suivantes, et npm run clics lui-même n'a pas tourné proprement aujourd'hui (R80) pour valider un ajout. Condition de retrait : une station EXTRAP-03 ajoutée à scenario.ts une fois npm run clics de nouveau fiable."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

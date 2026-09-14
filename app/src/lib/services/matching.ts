@@ -574,6 +574,64 @@ export async function escalateToMisstatement(
   return m.id;
 }
 
+/** EXTRAP-03 (mandat 2026-09-14, §1.4) : ISA 530 §13 permet d'écarter un écart comme ANOMALIE
+ *  (« demonstrably not representative », §5(e)) — mais seulement « extremely rare[ly] », avec un
+ *  « high degree of certainty ». Ce degré ne se DÉCLARE pas : il se CORROBORE, par une preuve
+ *  SUPPLÉMENTAIRE obtenue exprès — jamais la même pièce qui a déjà servi à constater l'écart
+ *  (sinon « degré élevé de certitude » ne serait qu'un mot relu deux fois sur le même document).
+ *  Refuse sans (a) une justification écrite ET (b) une pièce non quarantainée, du même dossier,
+ *  distincte de celle de l'exception d'origine. CE QUE CE REFUS NE VÉRIFIE PAS (règle 19) :
+ *  que la pièce supplémentaire a été RÉCEMMENT obtenue (un horodatage récent) — seulement qu'elle
+ *  est DIFFÉRENTE de celle déjà au dossier ; un cabinet pourrait en théorie attacher une pièce
+ *  ancienne mais jamais encore utilisée pour CET écart. */
+export async function dismissMisstatementAsAnomaly(
+  misstatementId: string, userId: string, opts: { reason: string; evidenceId: string },
+): Promise<void> {
+  await assertMembreDe('misstatement', misstatementId, userId, 'écarter un écart comme anomalie (EXTRAP-03)');
+  if (!opts.reason?.trim()) {
+    throw new Error(
+      'EXTRAP-03 : écarter un écart comme anomalie exige une justification écrite — ISA 530 §13, '
+      + '« extremely rare », « high degree of certainty ». Impossible de l’écarter sans elle.',
+    );
+  }
+  if (!opts.evidenceId) {
+    throw new Error(
+      'EXTRAP-03 : écarter un écart comme anomalie exige une preuve SUPPLÉMENTAIRE obtenue exprès '
+      + '(ISA 530 §13) — un degré élevé de certitude ne se déclare pas, il se corrobore. Rattachez '
+      + 'la pièce.',
+    );
+  }
+  const m = await q1<{ engagement_id: string; exception_id: string | null; status: string }>(
+    `select engagement_id, exception_id, status from misstatement where id = $1`, [misstatementId],
+  );
+  if (m.status === 'dismissed') throw new Error('cet écart est déjà écarté comme anomalie');
+  const ev = await q1<{ engagement_id: string; quarantined: boolean }>(
+    `select engagement_id, quarantined from evidence where id = $1`, [opts.evidenceId],
+  );
+  if (ev.engagement_id !== m.engagement_id) throw new Error('la pièce rattachée ne provient pas de ce dossier');
+  if (ev.quarantined) throw new Error('une pièce en quarantaine ne peut pas corroborer un écartement (EXTRAP-03)');
+  if (m.exception_id) {
+    const x = await q01<{ evidence_id: string | null }>(`select evidence_id from exception where id = $1`, [m.exception_id]);
+    if (x?.evidence_id && x.evidence_id === opts.evidenceId) {
+      throw new Error(
+        'EXTRAP-03 : la pièce rattachée est celle qui a DÉJÀ servi à constater l’écart — ISA 530 §13 '
+        + 'exige une preuve SUPPLÉMENTAIRE, obtenue exprès, pas la même pièce relue.',
+      );
+    }
+  }
+  const ctx = await engagementCtx(m.engagement_id);
+  await q(
+    `update misstatement set status = 'dismissed', dismissed_reason = $2, dismissed_evidence_id = $3,
+            dismissed_by = $4, dismissed_at = now() where id = $1`,
+    [misstatementId, opts.reason, opts.evidenceId, userId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId: m.engagement_id, actorKind: 'user', actorId: userId,
+    verb: 'misstatement_dismissed_as_anomaly', objectType: 'misstatement', objectId: misstatementId,
+    payload: { reason: opts.reason.slice(0, 500), evidenceId: opts.evidenceId },
+  });
+}
+
 export async function matchesForSample(engagementId: string) {
   return q<{ sample_item_id: string; status: string; checks: CheckResult[]; piece_ref: string | null; aux_label: string | null; amount: string; selection_reason: string }>(
     `select m.sample_item_id, m.status, m.checks, g.piece_ref, g.aux_label, si.amount::text, si.selection_reason

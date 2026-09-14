@@ -1108,3 +1108,17 @@ design : chacun reste une tranche à construire.**
   tue (silence lu comme un succès, règle 13). Reporté : ré-essayer `npm run clics` sur une session
   fraîche ; si le blocage se reproduit sur la MÊME station, investiguer directement le composant
   « balances aux. » (candidat proposé → confirmation registre) — hors périmètre de ce mandat.
+
+- **R81 — le geste d'écartement EXTRAP-03 (mandat 2026-09-14, §1.4) n'a pas encore de station
+  `clics` dédiée.** Le chemin humain EXISTE (formulaire sur `exceptions/page.tsx`, service
+  `dismissMisstatementAsAnomaly` éprouvé au niveau service par quatre cas — sans justification, sans
+  preuve, avec la même preuve que l'exception d'origine, avec une preuve genuinely distincte —
+  `s5s6.test.ts`), mais `scripts/clics/scenario.ts` ne le CLIQUE pas encore, contrairement au patron
+  établi pour les autres refus (règle 20 : un geste sans chemin humain est un décor — ici le chemin
+  humain existe, seule sa preuve CLIQUÉE manque). Non ajouté cette tranche par prudence délibérée :
+  `scenario.ts` est un script long, séquentiel et à état partagé où une station mal câblée peut
+  dérégler TOUTES les stations suivantes (voir R80, ci-dessus, sur les difficultés déjà rencontrées
+  avec `clics` cette session) — et `clics` lui-même n'a pas pu tourner proprement aujourd'hui pour
+  valider un ajout. Reporté : ajouter une station EXTRAP-03 à `scenario.ts` (refus sans justification
+  OU sans preuve, puis écartement réussi avec preuve distincte) une fois `npm run clics` de nouveau
+  fiable (R80).

@@ -13,7 +13,7 @@ import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentR
 import { generatePbcFromSample, approveSend, requestDetail } from './requests';
 import { ingestEvidence, answerExplanation } from './evidence';
 import { extractAll, pendingVerifications, verifyExtraction } from './extraction/ladder';
-import { runMatching, listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement } from './matching';
+import { runMatching, listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly } from './matching';
 import { startVerificationRun, currentVerificationRun, submitBlindCheck } from './verification';
 import { computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate, recordEvaluationResponse } from './evaluation';
 
@@ -368,5 +368,98 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     await expect(
       concludeEvaluation(ev!.id, IDS.users.lea, 'Tentative de conclusion sans méthode vérifiée.'),
     ).rejects.toThrow(/EXTRAP-01/);
+  });
+
+  it('EXTRAP-03 (mandat 2026-09-14, §1.4) : écarter un écart comme anomalie exige justification ET preuve supplémentaire DISTINCTE de celle de l’exception d’origine', async () => {
+    const evidences = await q<{ id: string }>(
+      `select id from evidence where engagement_id = $1 and quarantined = false order by created_at limit 2`,
+      [IDS.engNep],
+    );
+    if (evidences.length < 2) throw new Error('fixture : au moins deux pièces non quarantainées requises');
+    const [evidenceOrigine, evidenceSupplementaire] = evidences;
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, description, evidence_id)
+       values ($1, 'test_probe_extrap03', 'écart fabriqué pour éprouver EXTRAP-03 (règle 17)', $2)
+       returning id`,
+      [IDS.engNep, evidenceOrigine.id],
+    );
+    const misstatementId = await escalateToMisstatement(exc.id, IDS.users.lea, {
+      kind: 'judgmental', amountCents: 50000, corrected: false, notes: 'sonde EXTRAP-03 (règle 17)',
+    });
+
+    // (a) sans justification écrite
+    await expect(
+      dismissMisstatementAsAnomaly(misstatementId, IDS.users.lea, { reason: '  ', evidenceId: evidenceSupplementaire.id }),
+    ).rejects.toThrow(/EXTRAP-03/);
+
+    // (b) sans preuve rattachée
+    await expect(
+      dismissMisstatementAsAnomaly(misstatementId, IDS.users.lea, { reason: 'Analyse approfondie du cas isolé.', evidenceId: '' }),
+    ).rejects.toThrow(/EXTRAP-03/);
+
+    // (c) la MÊME pièce que l'exception d'origine ne peut pas servir de preuve « supplémentaire »
+    await expect(
+      dismissMisstatementAsAnomaly(misstatementId, IDS.users.lea, {
+        reason: 'Analyse approfondie du cas isolé, degré élevé de certitude.', evidenceId: evidenceOrigine.id,
+      }),
+    ).rejects.toThrow(/EXTRAP-03/);
+
+    // (d) une pièce genuinely DISTINCTE, avec justification : l'écartement réussit
+    await dismissMisstatementAsAnomaly(misstatementId, IDS.users.lea, {
+      reason: 'Cas isolé et documenté : contrepartie liquidée, aucun autre cas similaire sur la population testée — degré élevé de certitude (ISA 530 §13).',
+      evidenceId: evidenceSupplementaire.id,
+    });
+    const apres = await q1<{ status: string; dismissed_reason: string | null; dismissed_evidence_id: string | null; dismissed_by: string | null }>(
+      `select status, dismissed_reason, dismissed_evidence_id::text, dismissed_by::text from misstatement where id = $1`,
+      [misstatementId],
+    );
+    expect(apres.status).toBe('dismissed');
+    expect(apres.dismissed_reason).toContain('degré élevé de certitude');
+    expect(apres.dismissed_evidence_id).toBe(evidenceSupplementaire.id);
+    expect(apres.dismissed_by).toBe(IDS.users.lea);
+
+    // déjà écarté : un second écartement est refusé
+    await expect(
+      dismissMisstatementAsAnomaly(misstatementId, IDS.users.lea, { reason: 'nouvelle tentative', evidenceId: evidenceSupplementaire.id }),
+    ).rejects.toThrow();
+  });
+
+  it('§1.5 point 2 (mandat 2026-09-14) : une conclusion avec projection non nulle alimente le registre des anomalies (kind=\'projected\'), une seule fois', async () => {
+    // Fabrique un écart dans la strate sondée (comme le test EXTRAP-01 ci-dessus), fixe une
+    // méthode vérifiée (recouvrement réservé aux tests), et conclut : la projection calculée
+    // doit apparaître comme une ligne 'projected' du registre (exceptions/page.tsx), pas
+    // seulement sur sample_evaluation — sinon le même chiffre vivrait à un endroit et serait
+    // absent de l'autre (P7, provenance).
+    const sample = await currentRevenueSample(IDS.engNep);
+    const randomItem = sample!.items.find((i) => i.selection_reason === 'random');
+    if (!randomItem) throw new Error('fixture : aucun élément de la strate sondée dans le tirage');
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, sample_item_id, description)
+       values ($1, 'test_probe_projection_registre', $2, 'écart fabriqué pour éprouver le raccordement au registre')
+       returning id`,
+      [IDS.engNep, randomItem.id],
+    );
+    await escalateToMisstatement(exc.id, IDS.users.lea, {
+      kind: 'factual', amountCents: 75000, corrected: false, notes: 'sonde registre (règle 17)',
+    });
+    await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
+    const ev = await currentEvaluation(IDS.engNep);
+    expect(ev!.projection_method).toBe('ratio');
+    expect(Number(ev!.projected_misstatement)).not.toBe(0);
+    // le connu accumulé sur ce dossier (tests précédents) dépasse déjà l'anomalie tolérable :
+    // une réponse est requise avant de pouvoir conclure (gate 1, pré-existant, sans rapport
+    // avec ce que ce test éprouve — le raccordement au registre).
+    await recordEvaluationResponse(
+      ev!.id, IDS.users.lea, 'conclude_with_justification',
+      'Sonde du raccordement au registre (règle 17) — réponse de test, sans rapport avec le fond du dossier.',
+    );
+    await concludeEvaluation(ev!.id, IDS.users.lea, 'Conclusion de test — projection non nulle, méthode vérifiée.');
+
+    const lignesRegistre = await q<{ id: string; amount: string }>(
+      `select id, amount::text from misstatement where sample_evaluation_id = $1 and kind = 'projected'`,
+      [ev!.id],
+    );
+    expect(lignesRegistre.length).toBe(1);
+    expect(Number(lignesRegistre[0].amount)).toBeCloseTo(Number(ev!.projected_misstatement), 2);
   });
 });

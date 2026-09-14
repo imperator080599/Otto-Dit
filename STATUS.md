@@ -101,8 +101,10 @@ est un paramètre de cabinet et rien ne s'affiche tant qu'elle n'est pas posée.
 quatrième méthode, un seuil ou un facteur de mémoire. » Rien dans cette tranche ne touche la clé, la
 garde de budget ou les sélecteurs.
 
-**FAIT ET SERVI EN PRODUCTION — le moteur des trois quantités, EXTRAP-01/02/04.** SHA à confirmer
-(mesure directe sur `otto-dit.vercel.app/api/sante` à suivre). Trois grandeurs jamais confondues :
+**FAIT ET SERVI EN PRODUCTION — le moteur des trois quantités, EXTRAP-01/02/04.** SHA `021e867`,
+mesuré DIRECTEMENT sur `https://otto-dit.vercel.app/api/sante` à 09:55:57Z le 2026-09-14
+(`identiteCoherente:true`, la lecture EXTRAP-01 elle-même `ok:true` en production : « 1 évaluation(s)
+conclue(s), toutes avec une projection quand la strate sondée portait un écart »). Trois grandeurs jamais confondues :
 écart CONNU (strate exhaustive à 100 %, `known_misstatement`), écart PROJETÉ (extrapolation de la
 strate SONDÉE à sa propre population — jamais la population entière, `projected_misstatement`), et
 leur somme comparée à l'anomalie tolérable. Trois méthodes de projection, exactement celles du

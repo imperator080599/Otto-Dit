@@ -2,8 +2,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement } from '@/lib/services/matching';
+import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly } from '@/lib/services/matching';
 import { frameworkSet } from '@/lib/services/fsli';
+import { validatedThresholds } from '@/lib/services/materiality';
 import { q } from '@/lib/db/client';
 import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
@@ -61,8 +62,34 @@ export default async function ExceptionsPage({
      where m.engagement_id = $1 and m.exited_on is null order by u.name`,
     [id],
   );
-  const misstatements = await q<{ id: string; kind: string; amount: string; corrected: boolean; status: string; notes: string | null }>(
-    `select id, kind, amount::text, corrected, status, notes from misstatement where engagement_id = $1 order by created_at`,
+  const misstatements = await q<{
+    id: string; kind: string; amount: string; corrected: boolean; status: string; notes: string | null;
+    dismissed_reason: string | null; dismissed_evidence_filename: string | null; dismissed_by_name: string | null;
+    dismissed_at: string | null;
+  }>(
+    `select m.id, m.kind, m.amount::text, m.corrected, m.status, m.notes,
+            m.dismissed_reason, e.filename dismissed_evidence_filename, u.name dismissed_by_name,
+            m.dismissed_at::text
+     from misstatement m
+     left join evidence e on e.id = m.dismissed_evidence_id
+     left join app_user u on u.id = m.dismissed_by
+     where m.engagement_id = $1 order by m.created_at`,
+    [id],
+  );
+  /* EXTRAP-03 (mandat 2026-09-14, §1.4) : « L'écran affiche EN PERMANENCE le compte d'anomalies
+     écartées sur le dossier — un compte qui monte est en soi un signal. » PERMANENCE veut dire
+     visible même à zéro, jamais replié derrière une section qui n'apparaît que si des anomalies
+     existent déjà (ce panneau-ci vit hors du `misstatements.length > 0` plus bas). */
+  const dismissedCount = misstatements.filter((m) => m.status === 'dismissed').length;
+  /* §1.5 (mandat) : « évaluation contre la matérialité ». Le connu déjà comptabilisé et non corrigé
+     — les anomalies écartées (EXTRAP-03) ne comptent JAMAIS ici : ISA 530 §5(e) les définit comme
+     démontrablement NON représentatives, donc hors de l'évaluation de la population. */
+  const seuils = await validatedThresholds(id);
+  const totalNonCorrigeCents = misstatements
+    .filter((m) => !m.corrected && m.status !== 'dismissed')
+    .reduce((s, m) => s + numToCents(m.amount), 0);
+  const evidencesPourEcartement = await q<{ id: string; filename: string; doc_type: string | null }>(
+    `select id, filename, doc_type from evidence where engagement_id = $1 and quarantined = false order by filename`,
     [id],
   );
 
@@ -114,6 +141,17 @@ export default async function ExceptionsPage({
       });
       revalidatePath(`/eng/${id}/exceptions`);
       revalidatePath(`/eng/${id}/testing`);
+    });
+  }
+  async function dismissAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      await dismissMisstatementAsAnomaly(String(formData.get('misstatement_id')), user.id, {
+        reason: String(formData.get('reason') ?? ''),
+        evidenceId: String(formData.get('evidence_id') ?? ''),
+      });
+      revalidatePath(`/eng/${id}/exceptions`);
     });
   }
 
@@ -236,18 +274,65 @@ export default async function ExceptionsPage({
         </div>
       </div>
 
+      {/* EXTRAP-03 (mandat 2026-09-14, §1.4) : « L'écran affiche EN PERMANENCE le compte
+          d'anomalies écartées sur le dossier — un compte qui monte est en soi un signal. »
+          Hors du `misstatements.length > 0` : visible même à zéro écart, jamais replié. */}
+      <div className="panel">
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <h2>{t('exc.dismissedAnomaliesCount')} <span className={`badge ${dismissedCount > 0 ? 'violet' : 'gray'}`}>{dismissedCount}</span></h2>
+        </div>
+        {seuils && (
+          <p className="muted">
+            {t('exc.evaluatedAgainstMateriality', {
+              amount: fmtEur(totalNonCorrigeCents, 'fr'), te: fmtEur(seuils.teCents, 'fr'),
+            })}
+          </p>
+        )}
+      </div>
+
       {misstatements.length > 0 && (
         <Repli cle="exc.misstatementsIsa450ShapedLedger" niveau={2} titre={t('exc.misstatementsIsa450ShapedLedger')}>
           <table className="data">
-            <thead><tr><th>{t('col.kind')}</th><th className="num">{t('col.amount')}</th><th>{t('col.corrected')}</th><th>{t('col.status')}</th><th>{t('col.notes')}</th></tr></thead>
+            <thead><tr><th>{t('col.kind')}</th><th className="num">{t('col.amount')}</th><th>{t('col.corrected')}</th><th>{t('col.status')}</th><th>{t('col.notes')}</th><th>{t('commun.actions')}</th></tr></thead>
             <tbody>
               {misstatements.map((m) => (
                 <tr key={m.id}>
                   <td><span className="badge violet">{m.kind}</span></td>
                   <td className="num">{fmtEur(numToCents(m.amount), 'fr')}</td>
                   <td>{m.corrected ? <span className="badge green">{t('commun.oui')}</span> : <span className="badge red">{t('commun.non')}</span>}</td>
-                  <td><span className="badge gray">{m.status}</span></td>
-                  <td className="muted">{m.notes}</td>
+                  <td><span className={`badge ${m.status === 'dismissed' ? 'violet' : 'gray'}`}>{m.status}</span></td>
+                  <td className="muted">
+                    {m.notes}
+                    {m.status === 'dismissed' && (
+                      <div>
+                        <div><strong>{t('exc.dismissedReason')}</strong> {m.dismissed_reason}</div>
+                        <div>
+                          <strong>{t('exc.dismissedEvidence')}</strong>{' '}
+                          {m.dismissed_evidence_filename ?? '—'}
+                          {m.dismissed_by_name && ` · ${m.dismissed_by_name}`}
+                          {m.dismissed_at && ` · ${m.dismissed_at.slice(0, 10)}`}
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {m.status !== 'dismissed' && (
+                      <details>
+                        <summary className="repli-action">{t('exc.dismissAsAnomaly')}</summary>
+                        <form action={dismissAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 420 }}>
+                          <input type="hidden" name="misstatement_id" value={m.id} />
+                          <textarea name="reason" rows={2} required placeholder={t('exc.extrap03Reason')} />
+                          <select name="evidence_id" required defaultValue="">
+                            <option value="" disabled>{t('exc.extrap03Evidence')}</option>
+                            {evidencesPourEcartement.map((e) => (
+                              <option key={e.id} value={e.id}>{e.filename}{e.doc_type ? ` [${e.doc_type}]` : ''}</option>
+                            ))}
+                          </select>
+                          <button className="btn small danger">{t('exc.dismissAsAnomaly')}</button>
+                        </form>
+                      </details>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

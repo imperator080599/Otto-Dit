@@ -259,6 +259,27 @@ export async function concludeEvaluation(evaluationId: string, userId: string, b
     verb: 'sample_evaluation_concluded', objectType: 'sample_evaluation', objectId: evaluationId,
     payload: { basis, known: e.known_misstatement, projected: e.projected_misstatement, te: e.te_amount },
   });
+
+  // §1.5 point 2 (mandat 2026-09-14) : « la projection alimente le registre des anomalies déjà
+  // prévu au Lot 6 — factuelle, de jugement, EXTRAPOLÉE ». Sans cette écriture, la projection
+  // resterait visible sur l'écran de testing mais absente du registre (exceptions/page.tsx) que
+  // le cabinet relit pour statuer l'ensemble des écarts — un chiffre affiché à un seul endroit
+  // et absent de l'autre est exactement la divergence que P7 (provenance) interdit. L'index
+  // unique partiel de la migration 0162 (sample_evaluation_id) rend une double écriture
+  // impossible même si concludeEvaluation était appelée deux fois sur la même évaluation.
+  if (numToCents(e.projected_misstatement) !== 0) {
+    await q(
+      `insert into misstatement (engagement_id, exception_id, kind, amount, corrected, status, notes, sample_evaluation_id)
+       values ($1, null, 'projected', $2, false, 'confirmed', $3, $4)
+       on conflict (sample_evaluation_id) where sample_evaluation_id is not null do nothing`,
+      [
+        s.engagement_id, centsToNum(numToCents(e.projected_misstatement)),
+        `Projection ISA 530 §14 (méthode : ${e.projection_method}), extrapolée de la strate sondée `
+        + `à sa population, à la conclusion de l'évaluation d'échantillon.`,
+        evaluationId,
+      ],
+    );
+  }
 }
 
 /** Exceptions that are still holding the file open, with the reason each one blocks.

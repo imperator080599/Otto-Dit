@@ -1258,6 +1258,22 @@ export const LIBELLES = {
   'ev.chaineVerifiee': { en: 'chain verified · {n} events', fr: 'chaîne vérifiée · {n} événements' },
   'ev.chaineRompue': { en: 'CHAIN BROKEN at #{id}', fr: 'CHAÎNE ROMPUE à #{id}' },
   'exc.ecritureLabel': { en: 'entry · {no} {piece} ({date})', fr: 'écriture · {no} {piece} ({date})' },
+  'exc.dismissedAnomaliesCount': { en: 'Misstatements dismissed as an anomaly', fr: 'Écarts écartés comme anomalie' },
+  'exc.evaluatedAgainstMateriality': {
+    en: 'Uncorrected misstatements (excluding dismissed anomalies): {amount}, against tolerable misstatement {te}.',
+    fr: 'Anomalies non corrigées (hors anomalies écartées) : {amount}, à comparer à l’anomalie tolérable {te}.',
+  },
+  'exc.dismissAsAnomaly': { en: 'Dismiss as anomaly (EXTRAP-03)', fr: 'Écarter comme anomalie (EXTRAP-03)' },
+  'exc.extrap03Reason': {
+    en: 'Written justification (ISA 530 §13: extremely rare, high degree of certainty)',
+    fr: 'Justification écrite (ISA 530 §13 : extrêmement rare, degré élevé de certitude)',
+  },
+  'exc.extrap03Evidence': {
+    en: 'Additional evidence obtained specifically for this —',
+    fr: 'Preuve supplémentaire obtenue exprès —',
+  },
+  'exc.dismissedReason': { en: 'Justification:', fr: 'Justification :' },
+  'exc.dismissedEvidence': { en: 'Evidence:', fr: 'Preuve :' },
   'imp.adr016': { en: 'ADR-016 —', fr: 'ADR-016 —' },
   'imp.ligneNo': { en: ' (line {n})', fr: ' (ligne {n})' },
   'reun.envoyeeSimulee': { en: 'sent (SIMULATED — nothing left the building)', fr: 'envoyée (SIMULÉE — rien n’est parti)' },
@@ -1333,6 +1349,10 @@ export const LIBELLES = {
   'proc.chg.controleAjoute': { en: 'Control added: {code} — {libelle}', fr: 'Contrôle ajouté : {code} — {libelle}' },
   'proc.chg.controleModifie': { en: 'Control {code} — {champ} changed', fr: 'Contrôle {code} — {champ} modifié' },
   'rcmc.nDeviations': { en: 'Deviations ({n})', fr: 'Déviations ({n})' },
+  'rcmc.noProjectionTestsOfControls': {
+    en: 'Tests of controls never show a projection (ISA 530 §A20): the sample deviation rate is itself the projected rate for the whole population — {n} deviation(s) on {total} tested, {rate} %.',
+    fr: 'Les tests de contrôles n’affichent jamais de projection (ISA 530 §A20) : le taux de déviation constaté sur l’échantillon EST le taux projeté sur la population entière — {n} déviation(s) sur {total} testé(s), soit {rate} %.',
+  },
   'nm.packNep': { en: 'NEP (France)', fr: 'NEP (France)' },
   'nm.packPcaob': { en: 'PCAOB / SOX', fr: 'PCAOB / SOX' },
   'mat.ancreSeuil': { en: 'Thresholds · {param}', fr: 'Seuils · {param}' },

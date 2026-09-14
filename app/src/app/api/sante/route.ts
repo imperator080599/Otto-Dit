@@ -857,6 +857,31 @@ async function corpsDeLaSonde() {
       if (!concluded || Number(concluded.n) === 0) return 'aucune évaluation conclue pour l’instant';
       return `${concluded.n} évaluation(s) conclue(s), toutes avec une projection quand la strate sondée portait un écart`;
     }));
+    /* EXTRAP-03 (mandat 2026-09-14, §1.4/§1.6 point 3). ISA 530 §13 : écarter un écart comme
+       anomalie exige une justification écrite ET une preuve SUPPLÉMENTAIRE obtenue exprès —
+       `dismissMisstatementAsAnomaly` (matching.ts) refuse sans les deux. Une ligne trouvée ici
+       prouverait que le refus a été contourné (écriture SQL directe, ou régression du service) —
+       la lecture ROUGIT sur CE cas précis. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que
+       la preuve rattachée est bien DIFFÉRENTE de celle de l'exception d'origine (ce contrôle vit
+       dans le service, pas ici — une pièce reconstituée après coup ne le confirmerait pas). */
+    lectures.push(await essayer('EXTRAP-03 : aucun écart écarté comme anomalie sans justification écrite et preuve rattachée', async () => {
+      const violations = await q<{ id: string }>(
+        `select m.id::text from misstatement m
+         where m.engagement_id = $1 and m.status = 'dismissed'
+           and (m.dismissed_reason is null or trim(m.dismissed_reason) = '' or m.dismissed_evidence_id is null)`,
+        [id],
+      );
+      if (violations.length > 0) {
+        throw new Error(`${violations.length} écart(s) écarté(s) comme anomalie SANS justification écrite `
+          + `et/ou preuve rattachée (${violations.map((v) => v.id).join(', ')}) — EXTRAP-03 a été contourné`);
+      }
+      const dismissed = await q01<{ n: string }>(
+        `select count(*) n from misstatement where engagement_id = $1 and status = 'dismissed'`,
+        [id],
+      );
+      if (!dismissed || Number(dismissed.n) === 0) return 'aucun écart écarté comme anomalie pour l’instant';
+      return `${dismissed.n} écart(s) écarté(s) comme anomalie, tous avec justification écrite et preuve rattachée`;
+    }));
     /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
        par défaut que les sections portant du contenu. » `blocPorteContenu`
        est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états
