@@ -90,6 +90,102 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Mandat 2026-09-14, §1.4-1.5 : l'anomalie écartée (EXTRAP-03) et le raccordement au registre (2026-09-14)
+
+*Suite immédiate de §1.2-1.3 ci-dessous, dans le même souffle, sans attendre de retour (règle 32 —
+le fondateur reste absent jusqu'à 19h). §1.4 : l'écartement d'un écart comme anomalie non
+représentative (ISA 530 §13) exige DEUX choses, jamais une seule — une justification ÉCRITE et une
+preuve ADDITIONNELLE obtenue spécifiquement pour cet écartement, distincte de la preuve qui fondait
+déjà l'écart d'origine. §5(e) définit l'anomalie comme un écart DÉCOUVERT DANS L'ÉCHANTILLON — donc
+une ligne `kind='projected'` (l'extrapolation de toute une strate à sa population, §14) ne peut
+JAMAIS être écartée : ce n'est pas une anomalie au sens de la norme, quelle que soit la preuve
+fournie. §1.5 point 1 : un écran de test de contrôles (OE) ne montre jamais de projection — le taux
+de déviation observé sur l'échantillon EST déjà le taux projeté sur toute la population (§A20).
+§1.5 point 2 : la projection doit alimenter le registre des écarts pré-existant, pas vivre à côté.*
+
+**FAIT ET SERVI EN PRODUCTION — SHA `82816c2`, poussé sur `main` par avance rapide depuis
+`claude/otto-session-resume-zimig9`. SHA servi mesuré directement sur
+`https://otto-dit.vercel.app/api/sante` à 10:46:07Z le 2026-09-14 : encore `021e867` (le déploiement
+n'avait pas rattrapé le push au moment de cette mesure) — SHA servi à reconfirmer dans une tranche
+ultérieure, règle 36 : on n'attend pas les ~15 minutes de CI dans le même tour, on enchaîne.**
+
+**EXTRAP-03 (`dismissMisstatementAsAnomaly`, `services/matching.ts`).** Refuse : écart déjà écarté,
+absence de justification écrite, absence de preuve, preuve non distincte de celle de l'écart
+d'origine (quand `exception.evidence_id` est posé), et — le garde-fou central de cette tranche —
+toute ligne `kind='projected'`, sans exception. Migration 0162 : `misstatement` reçoit
+`sample_evaluation_id`, `dismissed_reason`, `dismissed_evidence_id`, `dismissed_by`, `dismissed_at`,
+et un index unique partiel empêchant deux lignes projetées pour la même évaluation.
+`membre.ts::ObjetFils` étendu avec `'misstatement'` (résolution `engagement_id` par jointure) pour
+qu'`assertMembreDe` couvre ce nouveau chemin d'écriture (ETANCH-01/03/04/05).
+
+**§1.5 point 1 — la phrase OE (`rcm/[cid]/page.tsx`).** Le taux de déviation est calculé en
+OCCURRENCES DISTINCTES sur le total testé (`new Set(deviations.map(d => d.instance_label)).size /
+gridLabels.length`), jamais en tests d'attributs — la même convention, déjà éprouvée, que
+`sox.ts`. Aucune projection ne s'affiche sur cet écran ; la phrase le dit explicitement.
+
+**§1.5 point 2 — le raccordement au registre (`concludeEvaluation`, `services/evaluation.ts`).**
+Une conclusion avec projection non nulle insère désormais automatiquement une ligne
+`kind='projected'` dans `misstatement`, liée par `sample_evaluation_id`. Pour éviter de compter deux
+fois le même argent (les lignes brutes de la strate aléatoire QUI ONT SERVI à la projection, et leur
+propre récapitulatif projeté), migration 0163 ajoute `rolled_into_projection` (booléen, jamais une
+suppression — règle 28) ; `concludeEvaluation` marque exactement les lignes qui ont nourri le calcul
+(même prédicat que `computeSampleEvaluation`), et `exceptions/page.tsx` exclut ces lignes de
+`totalNonCorrigeCents` tout en gardant un indicateur visible sur chaque ligne exclue (jamais une
+exclusion silencieuse — règle 13). Le panneau du nombre d'écartements (`dismissedCount`) est rendu
+INCONDITIONNELLEMENT, hors de la garde `misstatements.length > 0`.
+
+**Deux revues hostiles indépendantes (règle 30 : modèle de données + multi-tenant + code de refus
+touchés), quatre constats confirmés, tous corrigés avant expédition.**
+
+1. **CRITIQUE (voix 1, reproduit en direct).** Le contrôle « preuve distincte » ne s'exécutait que
+   `si exception_id` était posé — or la ligne auto-insérée `kind='projected'` a TOUJOURS
+   `exception_id = null`. N'importe quelle preuve, même sans rapport, pouvait donc écarter toute une
+   extrapolation de population. Corrigé : un refus inconditionnel sur `kind === 'projected'`, avant
+   tout autre contrôle, quelle que soit la preuve fournie.
+2. **ÉLEVÉ (les deux voix, indépendamment, mêmes chiffres réels : 13,3 % contre 25,0 % sur le
+   contrôle C-BR-01 de la démo).** La phrase OE utilisait `deviations.length / grid.length`
+   (tests d'attributs au dénominateur) — contredisant la convention déjà établie et déjà éprouvée
+   dans `sox.ts`. Corrigé (voir §1.5 point 1 ci-dessus).
+3. **ÉLEVÉ (voix 2, reproduit en direct par une édition de test temporaire, chiffres mesurés puis
+   révertés : écart de 175 000 centimes / 1 750 €).** Le total du registre sommait à la fois les
+   lignes brutes de la strate aléatoire ET leur propre ligne `kind='projected'` — un double comptage
+   du même argent. Corrigé par `rolled_into_projection` (voir §1.5 point 2 ci-dessus).
+4. **BAS-MOYEN (voix 1, reproduit en direct).** `concludeEvaluation` n'avait aucune garde contre un
+   second appel sur une évaluation déjà `concluded` — une soumission de formulaire dupliquée ou
+   rejouée aurait réécrit `conclusion_basis`/`concluded_by`/`concluded_at` en silence. Corrigé :
+   garde explicite en tête de fonction.
+
+**Deux constats reportés, non corrigés cette tranche, honnêtement consignés
+(`docs/BACKLOG_REPORTE.md`).** **R82** — le contrôle de preuve distincte reste structurellement
+inerte pour toute exception qui ne pose jamais `evidence_id` (`manual_journal_flag`,
+`verification_disagreement`, `reconciliation_diff`) ; corriger exigerait de tracer toute la chaîne
+de preuve, hors périmètre du mandat. **R83** — `workpapers/draft.ts` (non modifié par cette tranche)
+liste désormais des lignes `dismissed`/`projected` réellement atteignables sans les distinguer dans
+sa prose, contrairement au registre ; cosmétique, code pré-existant.
+
+**Investigation d'un échec transitoire (`ctrl05-lecture.test.ts`, règle 18 : une hypothèse plausible
+se prouve, elle ne se suppose pas).** Sous la suite complète en parallèle, deux tests de ce fichier
+ont échoué une fois (`/api/sante` rendant 500 au lieu de 200). Vérifié par DEUX voies indépendantes :
+(a) le fichier seul, isolé, passe 5/5 proprement ; (b) la suite complète, rejouée, passe 143/143 et
+1107/1107 proprement. La voix 2 de la revue hostile a expliqué le mécanisme sans avoir besoin de
+trouver un bug : le statut final de `/api/sante` est `200` seulement si LES ~40+ lectures passent
+toutes — une seule lecture qui bronche transitoirement, même sans rapport avec cette tranche, fait
+tomber toute la route à 500. Conclusion : artefact environnemental sous charge parallèle, pas une
+régression introduite par cette tranche — consigné ici plutôt que tu, jamais réaffirmé comme un
+défaut réel sans l'avoir revérifié.
+
+**Mesures.** `npm run verify` (vitest complet) : **143 fichiers, 1107 tests, tous verts** (`EXIT=0`
+lu dans le journal brut, jamais le résumé du harnais — règle 35). `npm run screens` (balayage de
+PRODUCTION, couvrant `exceptions/page.tsx` et `rcm/[cid]/page.tsx`, les deux écrans réellement
+modifiés) : **91 routes, 0 échec.** `npm run clics` n'a PAS été étendu à EXTRAP-03 cette tranche —
+R81, prudence délibérée le jour même où R80 documente `clics` comme non fiable cette session ; le
+chemin humain EXISTE (formulaire sur `exceptions/page.tsx`) mais sa preuve CLIQUÉE manque encore.
+Deux nouveaux tests de régression ciblés (`s5s6.test.ts`) couvrent spécifiquement le constat CRITIQUE
+et le double comptage corrigé.
+
+**§2 (degré d'automatisation, AUTO-01/AUTO-02) suit immédiatement**, dans le même souffle, sans
+attendre de retour (règle 32).
+
 ## Mandat 2026-09-14, §1.2-1.3 : l'extrapolation ISA 530 — EXTRAP-01/02/04 (2026-09-14)
 
 *Mandat du fondateur (`docs/MANDATS/2026-09-14_mandat_extrapolation_automatisation_notifications.md`,
