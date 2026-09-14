@@ -401,14 +401,16 @@ describe('sample evaluation / projection (Gate 2, ISA/NEP 530 — mandat 2026-09
       const r = evaluateSample({ ...input, method });
       expect(r.projectionMethod).toBe('none');
       expect(r.projectedMisstatementCents).toBe(0);
-      // randomMisstatementCents reste calculé MÊME méthode non vérifiée (règle 19 : la donnée
-      // qui distingue les deux causes de 'none' — EXTRAP-01, evaluation.ts — doit survivre au
-      // court-circuit d'EXTRAP-04, sinon rien ne pourrait jamais les départager en aval).
+      // randomMisstatementCents/randomMisstatementCount restent calculés MÊME méthode non
+      // vérifiée (règle 19 : la donnée qui distingue les deux causes de 'none' — EXTRAP-01,
+      // evaluation.ts — doit survivre au court-circuit d'EXTRAP-04, sinon rien ne pourrait
+      // jamais les départager en aval).
       expect(r.randomMisstatementCents).toBe(10000);
+      expect(r.randomMisstatementCount).toBe(1);
     }
   });
 
-  it('EXTRAP-01 : `randomMisstatementCents` distingue une strate sondée PROPRE (rien à extrapoler) d’une strate qui PORTE un écart — même méthode non vérifiée dans les deux cas', () => {
+  it('EXTRAP-01 : `randomMisstatementCount` distingue une strate sondée PROPRE (rien à extrapoler) d’une strate qui PORTE un écart — même méthode non vérifiée dans les deux cas', () => {
     const base = {
       method: null,
       populationAmountCents: 1000000,
@@ -423,9 +425,38 @@ describe('sample evaluation / projection (Gate 2, ISA/NEP 530 — mandat 2026-09
     const propre = evaluateSample({ ...base, randomMisstatements: [] });
     expect(propre.projectionMethod).toBe('none');
     expect(propre.randomMisstatementCents).toBe(0); // mandat §1.6 point 1 : PAS d’écart ⇒ conclûable
+    expect(propre.randomMisstatementCount).toBe(0);
     const porteEcart = evaluateSample({ ...base, randomMisstatements: [{ amountCents: 500, itemAmountCents: 5000 }] });
     expect(porteEcart.projectionMethod).toBe('none');
     expect(porteEcart.randomMisstatementCents).toBe(500); // mandat §1.6 point 1 : un écart ⇒ EXTRAP-01 bloque
+    expect(porteEcart.randomMisstatementCount).toBe(1);
+  });
+
+  it('EXTRAP-01 (revue hostile, round 2, DEUX voix indépendantes convergentes) : deux écarts RÉELS qui se compensent exactement (+500/-500) ne doivent PAS se lire comme une strate propre — `randomMisstatementCount` reste 2 quand `randomMisstatementCents` retombe à 0', () => {
+    // Cas fabriqué exact des deux revues hostiles du 2026-09-14 : une facture survalorisée de
+    // 500 et une autre sous-valorisée de 500, deux lignes DISTINCTES, chacune un vrai écart non
+    // corrigé et non investigué. La somme SIGNÉE (randomMisstatementCents) est 0 — si EXTRAP-01
+    // se branchait dessus (round 1 du correctif), la strate se lirait PROPRE à tort. Le mandat
+    // (§1.6 point 1 : « un poste sondé AVEC UN ÉCART ») parle de la PRÉSENCE d'écarts, jamais de
+    // leur somme nette : `randomMisstatementCount` (le nombre de lignes) est le signal correct.
+    const r = evaluateSample({
+      method: null,
+      populationAmountCents: 1000000,
+      coverageAmountCents: 0,
+      populationSize: 100,
+      coverageCount: 0,
+      randomTestedAmountCents: 100000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      randomMisstatements: [
+        { amountCents: 50000, itemAmountCents: 500000 },
+        { amountCents: -50000, itemAmountCents: 500000 },
+      ],
+      teAmountCents: 50000,
+    });
+    expect(r.projectionMethod).toBe('none');
+    expect(r.randomMisstatementCents).toBe(0); // la somme signée trompe — ce n'est PAS le signal du refus
+    expect(r.randomMisstatementCount).toBe(2); // le compte dit la vérité : deux écarts existent
   });
 
   it('un échantillon ENTIÈREMENT exhaustif (aucune strate sondée) ne projette rien, même méthode posée', () => {

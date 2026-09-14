@@ -1,0 +1,21 @@
+-- §1.2 correctif round 2 (revue hostile du 2026-09-14, deux voix indépendantes convergentes,
+-- même défaut trouvé séparément) : `random_misstatement` (0160) est une somme SIGNÉE des lignes
+-- d'écart de la strate sondée. Deux écarts RÉELS qui se compensent exactement (une facture
+-- survalorisée de 500 €, une autre sous-valorisée de 500 € — deux lignes distinctes, chacune un
+-- vrai écart non corrigé et non investigué) somment à 0 : EXTRAP-01 (evaluation.ts) lisait donc
+-- cette strate comme PROPRE alors que deux écarts existent, et aucune projection/méthode n'était
+-- jamais exigée. Le mandat (§1.6 point 1 : « un poste sondé AVEC UN ÉCART ne se conclut pas sans
+-- projection ») parle de la PRÉSENCE d'écarts, jamais de leur somme nette.
+--
+-- `random_misstatement_count` porte le NOMBRE de lignes d'écart de la strate sondée, TOUJOURS
+-- calculé par `computeSampleEvaluation`, indépendant du signe. EXTRAP-01 et le récit du papier de
+-- travail (draft.ts::projectionRationale) se branchent désormais sur ce compte ; `random_misstatement`
+-- (la somme signée) reste inchangée et reste la valeur qu'utilise la projection elle-même une fois
+-- la méthode vérifiée (ratio/difference/unités monétaires somment bien les écarts signés, ISA 530
+-- §14) — les deux colonnes ont des rôles distincts, aucune ne remplace l'autre.
+--
+-- CE QUE CETTE MIGRATION NE FAIT PAS (règle 19) : elle ne recalcule RIEN sur les lignes déjà
+-- écrites (`default 0` les laisse à zéro ; seule une RECONCLUSION future recalculerait ce compte).
+-- Elle ne change aucun refus existant — c'est `evaluation.ts` (code, testable) qui reçoit le
+-- nouveau critère d'EXTRAP-01.
+alter table sample_evaluation add column if not exists random_misstatement_count integer not null default 0;

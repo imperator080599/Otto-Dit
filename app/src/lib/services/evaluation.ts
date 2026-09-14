@@ -94,14 +94,14 @@ export async function computeSampleEvaluation(
   const row = await q1<{ id: string }>(
     `insert into sample_evaluation (sample_id, version, known_misstatement, projected_misstatement,
        projection_method, tested_coverage_amount, tested_random_amount, untested_amount, te_amount,
-       random_misstatement, status)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'draft') returning id`,
+       random_misstatement, random_misstatement_count, status)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'draft') returning id`,
     [
       sample.id, (prev[0]?.version ?? 0) + 1,
       centsToNum(result.knownMisstatementCents), centsToNum(result.projectedMisstatementCents),
       result.projectionMethod, centsToNum(coverageTested), centsToNum(randomTested),
       centsToNum(result.untestedAmountCents), centsToNum(result.teAmountCents),
-      centsToNum(result.randomMisstatementCents),
+      centsToNum(result.randomMisstatementCents), result.randomMisstatementCount,
     ],
   );
   await logEvent({
@@ -193,25 +193,31 @@ export async function concludeEvaluation(evaluationId: string, userId: string, b
   const e = await q1<{
     id: string; sample_id: string; known_misstatement: string; projected_misstatement: string;
     te_amount: string; projection_method: string; tested_random_amount: string; random_misstatement: string;
+    random_misstatement_count: number;
   }>(
     `select id, sample_id, known_misstatement::text, projected_misstatement::text, te_amount::text,
-            projection_method, tested_random_amount::text, random_misstatement::text
+            projection_method, tested_random_amount::text, random_misstatement::text, random_misstatement_count
      from sample_evaluation where id = $1`,
     [evaluationId],
   );
   const s = await q1<{ engagement_id: string }>(`select engagement_id from sample where id = $1`, [e.sample_id]);
 
   // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1 : « un poste sondé AVEC UN ÉCART ne se
-  // conclut pas sans projection »). RÉVISÉ le 2026-09-14 (revue hostile, deux voix indépendantes
-  // convergentes) : la première version déclenchait ce refus dès qu'une strate sondée EXISTAIT
-  // (`tested_random_amount > 0`), sans regarder si elle portait un écart — plus large que ce que
-  // le mandat exige, et cela rendait INCONCLUABLE tout poste sondé dont la strate aléatoire
-  // était simplement PROPRE (aucune anomalie trouvée), méthode ou pas. `random_misstatement`
-  // (migration 0160) porte l'écart BRUT de la strate sondée, calculé QUE la méthode soit
-  // vérifiée ou non : ce refus ne déclenche donc QUE quand cet écart existe ET que la méthode
-  // reste non vérifiée (`projection_method === 'none'`) — une strate sondée propre, ou une
-  // méthode déjà vérifiée (même avec projection à 0), reste conclûable sans ce refus.
-  if (numToCents(e.random_misstatement) !== 0 && e.projection_method === 'none') {
+  // conclut pas sans projection »). RÉVISÉ le 2026-09-14 à DEUX REPRISES (revue hostile, quatre
+  // voix indépendantes au total sur les deux rounds, toutes convergentes) :
+  //   round 1 : la première version déclenchait ce refus dès qu'une strate sondée EXISTAIT
+  //   (`tested_random_amount > 0`), sans regarder si elle portait un écart — plus large que ce
+  //   que le mandat exige, INCONCLUABLE tout poste dont la strate aléatoire était simplement
+  //   PROPRE. Corrigé avec `random_misstatement` (migration 0160, la somme SIGNÉE des écarts).
+  //   round 2 : `random_misstatement` étant une somme signée, deux écarts RÉELS qui se
+  //   compensent exactement (ex. +500 € et -500 €, deux factures distinctes, chacune un vrai
+  //   écart non corrigé) sommaient à 0 — la strate se lisait PROPRE alors que deux écarts non
+  //   investigués existent. Le mandat parle de la PRÉSENCE d'écarts, jamais de leur somme nette.
+  // `random_misstatement_count` (migration 0161) porte le NOMBRE de lignes, indépendant du
+  // signe : ce refus déclenche désormais quand AU MOINS UNE ligne d'écart existe dans la strate
+  // sondée ET que la méthode reste non vérifiée — une strate sondée propre (compte nul), ou une
+  // méthode déjà vérifiée, reste conclûable sans ce refus.
+  if (e.random_misstatement_count > 0 && e.projection_method === 'none') {
     throw new Error(
       'EXTRAP-01 : la strate sondée de ce poste porte un écart mais aucune projection à la '
       + 'population n\'a été calculée — la méthode d\'extrapolation du cabinet '
@@ -279,12 +285,14 @@ export async function currentEvaluation(engagementId: string) {
   return q01<{
     id: string; version: number; known_misstatement: string; projected_misstatement: string;
     projection_method: string; tested_coverage_amount: string; tested_random_amount: string;
-    untested_amount: string; te_amount: string; random_misstatement: string; status: string;
+    untested_amount: string; te_amount: string; random_misstatement: string;
+    random_misstatement_count: number; status: string;
     conclusion_basis: string | null; concluded_by: string | null; concluded_at: string | null;
   }>(
     `select se.id, se.version, se.known_misstatement::text, se.projected_misstatement::text,
             se.projection_method, se.tested_coverage_amount::text, se.tested_random_amount::text,
-            se.untested_amount::text, se.te_amount::text, se.random_misstatement::text, se.status,
+            se.untested_amount::text, se.te_amount::text, se.random_misstatement::text,
+            se.random_misstatement_count, se.status,
             se.conclusion_basis, se.concluded_by, se.concluded_at::text
      from sample_evaluation se
      join sample s on s.id = se.sample_id

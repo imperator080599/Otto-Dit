@@ -822,22 +822,26 @@ async function corpsDeLaSonde() {
       return `${total?.n ?? 0} ligne(s) de tirage sur écriture de grand livre, aucune orpheline`;
     }));
     /* EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1 — livré ce jour, lu ce jour, règle 22).
-       ISA 530 §14 exige la projection quand un écart existe. RÉVISÉ le 2026-09-14 (revue
-       hostile, deux voix indépendantes) : la première version rougissait dès qu'une strate
-       sondée EXISTAIT (`tested_random_amount > 0`), plus large que le mandat (« un poste sondé
-       AVEC UN ÉCART ») — corrigée pour lire `random_misstatement` (migration 0160, l'écart BRUT
-       de la strate sondée), exactement le critère que `concludeEvaluation` applique. Une ligne
-       trouvée ici prouverait que le refus a été contourné (écriture SQL directe, ou régression
-       du gate) — la lecture ROUGIT sur CE cas précis, elle ne le déclare pas. CE QUE CETTE
-       LECTURE NE VÉRIFIE PAS (règle 19) : que la méthode elle-même est un paramètre de cabinet
-       VÉRIFIÉ (`SubstantiveConfig.extrapolationMethod`) — c'est `kernel.test.ts` qui le fait,
-       avec ses cas connus mauvais ; ici on lit seulement l'état RÉEL des évaluations conclues. */
+       ISA 530 §14 exige la projection quand un écart existe. RÉVISÉ le 2026-09-14 à DEUX
+       REPRISES (revue hostile, quatre voix indépendantes au total, toutes convergentes) :
+       round 1, la première version rougissait dès qu'une strate sondée EXISTAIT
+       (`tested_random_amount > 0`), plus large que le mandat (« un poste sondé AVEC UN ÉCART »).
+       round 2, `random_misstatement` (0160) étant une somme SIGNÉE, deux écarts RÉELS qui se
+       compensent exactement (ex. +500 €/-500 €) sommaient à 0 et cette lecture ne rougissait
+       PAS alors que deux écarts non investigués existaient. Corrigée pour lire
+       `random_misstatement_count` (migration 0161, le NOMBRE de lignes, indépendant du signe),
+       exactement le critère que `concludeEvaluation` applique. Une ligne trouvée ici prouverait
+       que le refus a été contourné (écriture SQL directe, ou régression du gate) — la lecture
+       ROUGIT sur CE cas précis, elle ne le déclare pas. CE QUE CETTE LECTURE NE VÉRIFIE PAS
+       (règle 19) : que la méthode elle-même est un paramètre de cabinet VÉRIFIÉ
+       (`SubstantiveConfig.extrapolationMethod`) — c'est `kernel.test.ts` qui le fait, avec ses
+       cas connus mauvais ; ici on lit seulement l'état RÉEL des évaluations conclues. */
     lectures.push(await essayer('EXTRAP-01 : aucune évaluation conclue sans projection alors que la strate sondée porte un écart', async () => {
-      const violations = await q<{ id: string; random_misstatement: string }>(
-        `select se.id::text, se.random_misstatement::text
+      const violations = await q<{ id: string; random_misstatement_count: number }>(
+        `select se.id::text, se.random_misstatement_count
          from sample_evaluation se join sample s on s.id = se.sample_id
          where s.engagement_id = $1 and se.status = 'concluded'
-           and se.projection_method = 'none' and se.random_misstatement::numeric <> 0`,
+           and se.projection_method = 'none' and se.random_misstatement_count > 0`,
         [id],
       );
       if (violations.length > 0) {

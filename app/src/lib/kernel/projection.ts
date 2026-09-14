@@ -119,6 +119,18 @@ export interface EvaluationResult {
    *  `projectionMethod === 'none'` ⇒ EXTRAP-04 (la vraie cause d'EXTRAP-01, mandat §1.6 point 1
    *  : « un poste sondé AVEC UN ÉCART »). */
   randomMisstatementCents: number;
+  /** LE NOMBRE de lignes d'écart de la strate sondée — révisé le 2026-09-14 (revue hostile,
+   *  DEUX voix indépendantes convergentes, round 2 du même défaut) : `randomMisstatementCents`
+   *  est une somme SIGNÉE, donc deux écarts RÉELS qui se compensent exactement (une facture
+   *  survalorisée de 500, une autre sous-valorisée de 500 — deux lignes distinctes, chacune un
+   *  vrai écart non corrigé) somment à 0 et se lisaient comme une strate PROPRE alors que deux
+   *  écarts non investigués existent. Le mandat (§1.6 point 1 : « un poste sondé AVEC UN ÉCART »)
+   *  parle de la PRÉSENCE d'écarts, jamais de leur somme nette. EXTRAP-01 (evaluation.ts) et le
+   *  récit du papier de travail (draft.ts::projectionRationale) se branchent désormais sur CE
+   *  compte, jamais sur le signe de `randomMisstatementCents` (qui reste le montant net affiché,
+   *  utile pour la projection elle-même une fois la méthode vérifiée — voir `ratio`/`difference`
+   *  dans `projectMisstatement`, qui utilisent la somme signée par construction, ISA 530 §14). */
+  randomMisstatementCount: number;
   /** Ce qui reste au-delà de ce qui a été RÉELLEMENT testé dans la strate sondée — jamais la
    *  population sondée entière (qui inclut le testé). Nom conservé identique à la colonne
    *  `sample_evaluation.untested_amount` (0002_testing.sql) : renommer la colonne pour y loger
@@ -148,6 +160,7 @@ export function evaluateSample(input: EvaluationInput): EvaluationResult {
     projectedMisstatementCents: projection.projectedCents,
     projectionMethod: projection.method,
     randomMisstatementCents: input.randomMisstatements.reduce((s, m) => s + m.amountCents, 0),
+    randomMisstatementCount: input.randomMisstatements.length,
     untestedAmountCents: Math.max(0, sondee.amountCents - input.randomTestedAmountCents),
     totalKnownPlusProjectedCents: total,
     teAmountCents: input.teAmountCents,

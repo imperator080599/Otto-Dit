@@ -340,4 +340,33 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     expect(gate.evaluationConcluded).toBe(true);
     expect(gate.openExceptions).toBe(0);
   });
+
+  it('EXTRAP-01 (revue hostile, round 2 — deux voix indépendantes) : concludeEvaluation() lève VRAIMENT contre une ligne réelle de sample_evaluation, pas seulement contre evaluateSample() en isolation', async () => {
+    // Les deux revues hostiles du 2026-09-14 ont noté que ce refus n'était jusqu'ici éprouvé
+    // qu'au niveau UNITAIRE (kernel.test.ts, evaluateSample() directement) — jamais à travers le
+    // VRAI chemin de service. La strate sondée du monde de démo est PROPRE (test précédent) :
+    // ce test fabrique délibérément un écart dans la strate SONDÉE (règle 17, cas connu mauvais)
+    // pour prouver que le refus RÉEL — pas seulement sa formule — rougit.
+    const sample = await currentRevenueSample(IDS.engNep);
+    const randomItem = sample!.items.find((i) => i.selection_reason === 'random');
+    if (!randomItem) throw new Error('fixture : aucun élément de la strate sondée dans le tirage');
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, sample_item_id, description)
+       values ($1, 'test_probe_extrap01', $2, 'écart fabriqué pour éprouver EXTRAP-01 (règle 17)')
+       returning id`,
+      [IDS.engNep, randomItem.id],
+    );
+    await escalateToMisstatement(exc.id, IDS.users.lea, {
+      kind: 'factual', amountCents: 100000, corrected: false,
+      notes: 'sonde EXTRAP-01 (règle 17)',
+    });
+
+    await computeSampleEvaluation(IDS.engNep, IDS.users.lea); // méthode toujours non vérifiée (nep-fr.ts)
+    const ev = await currentEvaluation(IDS.engNep);
+    expect(Number(ev!.random_misstatement_count)).toBeGreaterThan(0);
+    expect(ev!.projection_method).toBe('none');
+    await expect(
+      concludeEvaluation(ev!.id, IDS.users.lea, 'Tentative de conclusion sans méthode vérifiée.'),
+    ).rejects.toThrow(/EXTRAP-01/);
+  });
 });
