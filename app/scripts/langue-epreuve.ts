@@ -153,8 +153,8 @@ const CAS: Cas[] = [
     nom: 'un « resume » français en ternaire dans un service',
     racine: 'lib',
     fichier: 'services/poste.ts',
-    avant: "        ? motif('poste.resume.rienAControler')\n        : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),",
-    apres: "        ? 'rien à contrôler tant que l’échantillon n’est pas tiré'\n        : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,",
+    avant: "          ? motif('poste.resume.rienAControler')\n          : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),",
+    apres: "          ? 'rien à contrôler tant que l’échantillon n’est pas tiré'\n          : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,",
     attendu: 'rien à contrôler',
   },
   {
