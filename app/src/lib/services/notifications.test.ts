@@ -31,8 +31,8 @@ describe('le centre de notifications — mandat 2026-09-14, §3', () => {
       [IDS.engNep],
     )).id;
     const run = await q1<{ id: string }>(
-      `insert into ai_run (tenant_id, engagement_id, purpose, adapter, model, prompt_id, prompt_version, input_hash, output_hash)
-       values ($1,$2,'walkthrough_gaps','fixture','fixture-model','p1','v1','h-in','h-out')
+      `insert into ai_run (tenant_id, engagement_id, purpose, adapter, model, prompt_id, prompt_version, input_hash, output_hash, niveau_automatisation)
+       values ($1,$2,'walkthrough_gaps','fixture','fixture-model','p1','v1','h-in','h-out','L2')
        returning id::text`,
       [IDS.tenant, IDS.engNep],
     );

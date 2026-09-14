@@ -18,13 +18,38 @@ import path from 'node:path';
 const SRC = path.join(__dirname, '..');
 
 /** Les deux formes : `from '…'` et `await import('…')` — la sonde n'utilise
- *  que la seconde, et ne chercher que la première l'aurait rendue invisible. */
+ *  que la seconde, et ne chercher que la première l'aurait rendue invisible.
+ *  ET LES DEUX SYNTAXES DE CHEMIN : un fichier SOUS `services/` s'importe
+ *  souvent l'un l'autre par un chemin RELATIF (`./automatisation`,
+ *  `../automatisation` depuis `services/extraction/`) — la convention
+ *  déjà établie de ce dépôt à l'intérieur de `services/`, jamais l'alias
+ *  `@/lib/services/...` que seuls les ÉCRANS emploient. Une version qui ne
+ *  reconnaissait QUE l'alias rendait le saut d'UN hop (service → service)
+ *  aveugle à toute chaîne relative — `automatisation.ts`, atteint par de
+ *  vrais écrans via `entretiens.ts`/`walkthrough-analyse.ts`/
+ *  `extraction/ladder.ts`/`query/ask.ts` (tous relatifs), se lisait comme
+ *  du code mort alors qu'il ne l'est pas (trouvé au ship du mandat
+ *  2026-09-14 §2). Un chemin relatif est résolu depuis le DOSSIER du
+ *  fichier scanné, puis normalisé vers la forme `@/lib/services/...` —
+ *  jamais suivi hors de `services/` (un relatif qui en sortirait n'est pas
+ *  un service et n'a pas sa place dans ce compte). */
 function importsDe(fichier: string): string[] {
   const code = fs.readFileSync(fichier, 'utf8');
-  return [
-    ...[...code.matchAll(/from\s+'(@\/lib\/services\/[^']+)'/g)].map((m) => m[1]),
-    ...[...code.matchAll(/import\(\s*'(@\/lib\/services\/[^']+)'\s*\)/g)].map((m) => m[1]),
+  const dir = path.dirname(fichier);
+  const servicesDir = path.join(SRC, 'lib', 'services');
+  const resoudre = (spec: string): string | null => {
+    if (spec.startsWith('@/lib/services/')) return spec;
+    if (!spec.startsWith('.')) return null;
+    const abs = path.resolve(dir, spec);
+    const rel = path.relative(servicesDir, abs);
+    if (rel.startsWith('..') || !rel) return null;
+    return `@/lib/services/${rel.split(path.sep).join('/')}`;
+  };
+  const specs = [
+    ...[...code.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]),
+    ...[...code.matchAll(/import\(\s*'([^']+)'\s*\)/g)].map((m) => m[1]),
   ];
+  return specs.map(resoudre).filter((x): x is string => x !== null);
 }
 
 /** Un ÉCRAN, c'est une page — mais aussi un LAYOUT (le rail y vit) et une
