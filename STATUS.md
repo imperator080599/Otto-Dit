@@ -90,6 +90,79 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## R59/ADR-103 : le composant IaFlag, data-ia-prepare — R59 fermé par une voie différente (2026-09-14)
+
+*Mandat du fondateur (message du 2026-09-13, après confirmation de la tranche d'énumération) :
+« R59 / ADR-103: option (b) confirmed. Fold it into the token system, and re-express ADR-103's
+intent as a mechanical test — an AI-prepared item must be impossible to miss — so the test
+carries it, not the stylesheet. Freeze the property, never the appearance. »*
+
+**FAIT ET SERVI EN PRODUCTION.** SHA `5a95da7`, confirmé DIRECTEMENT sur
+`https://otto-dit.vercel.app/api/sante` à 06:26:11Z le 2026-09-14 (`identiteCoherente:true`).
+
+R59 (D.6 point 2, « le rail n'ouvre par défaut que les groupes portant du travail ») était bloqué
+depuis le 8 septembre sur une tension réelle avec ADR-103 (le rail grisé-avec-raison, jamais
+masqué sans explication). Le fondateur a tranché ADR-103 LUI-MÊME plutôt que de choisir entre les
+deux options exposées — et a substitué un invariant DIFFÉRENT à la place du plafond de
+destinations envisagé : tout contenu que l'IA a préparé (plafond HITL L2, règle 7 — « l'IA
+prépare, un humain revoit et approuve ») doit être IMPOSSIBLE À MANQUER, porté par une PROPRIÉTÉ
+testable plutôt que par une apparence.
+
+**Avant cette tranche**, la seule preuve qu'un champ venait de l'IA était la classe CSS `.ai-flag`
+(`globals.css`, jetons `--violet`/`--violet-soft` déjà posés par le repass design R60-R62) — une
+apparence, jamais une propriété que quoi que ce soit pouvait chercher sans deviner une couleur.
+
+**Construit** : le composant `IaFlag` (`src/app/ia-flag.tsx`) pose `data-ia-prepare="true"` EN
+MÊME TEMPS que la classe visuelle — devenu la SEULE façon de marquer un contenu préparé par l'IA.
+Huit sites existants migrés (`workpapers/[wid]`, `materiality`, `notes`, `testing/atelier`,
+`dashboard`, `reunions` ×2). **Deux sites réels trouvés SANS AUCUN marqueur** (recherche dédiée,
+pas seulement un grep du nom de classe) dans `rcm/[cid]/page.tsx` : la table entière des écarts de
+walkthrough candidats (chaque ligne vient de l'analyse IA du transcript, jamais d'une saisie
+humaine — corrigée en posant l'attribut sur chaque `<tr>`) et la sévérité de déficience PROPOSÉE
+(`severity_proposed`, tant que `severity_final` reste null — une fois décidée par un humain, plus
+de marqueur, comme il se doit).
+
+**Garde de régression engendrée** (`scripts/audit/ia-flag-source.ts`, règle 21) : refuse tout
+usage brut de `className="ai-flag"` en dehors du composant — la classe et l'attribut ne peuvent
+plus se séparer. **Assertion clics ajoutée** à la station walkthrough déjà existante
+(`scripts/clics/scenario.ts`) : chaque écart candidat porte le marqueur, éprouvé sur du DOM RENDU
+avec de VRAIES données IA (le rejeu de la fixture), pas seulement en source.
+
+**Revue hostile, UN réfutateur (règle 30, amendement du 8 septembre — cette tranche ne touche ni
+le modèle de données, ni la sécurité, ni le multi-tenant, ni un code de refus)** : **un défaut réel
+confirmé et corrigé avant fusion.** La première version de la garde de régression ne cherchait
+qu'une classe SEULE sur sa ligne — `className={\`ai-flag ${x}\`}` (un gabarit AVEC interpolation,
+l'idiome DÉJÀ en usage ailleurs dans ce dépôt : `carry-forward/page.tsx`, `team/page.tsx`,
+`suivi/page.tsx`) et `clsx('ai-flag', x)` passaient tous deux inaperçus — et l'en-tête du script
+affirmait À TORT couvrir le premier cas. **Corrigé** en extrayant chaque chaîne et chaque gabarit
+(multi-lignes compris) du fichier entier plutôt que de raisonner ligne par ligne, avec un cas connu
+mauvais qui rejoue les deux formes dans un seul fichier de sonde. Limitation restante nommée
+honnêtement (règle 19) : une classe construite par concaténation (`'ai-' + 'flag'`) reste
+indétectable par un balayage lexical — aucun site connu ne le fait. La revue a aussi confirmé,
+en lisant le code réel (pas le résumé de la tranche) : `deficiency` est lu FRAIS à chaque requête
+par un composant serveur (aucun risque d'hydratation divergente sur `severity_final == null`) ;
+`IaFlag` fonctionne sans risque depuis un composant client (`testing/atelier.tsx`) ; les huit sites
+migrés n'ont perdu aucune prop (`style` correctement propagé) ; la sélection clics est bien scopée
+et son assertion tourne AVANT les décisions qui suivent dans la même station ; `severity_final` et
+`status` sont toujours écrits en LOCKSTEP par `decideDeficiency` (aucun cas où `== null` diverge de
+`status === 'proposed'`) ; `.ai-flag` (la classe CSS elle-même) n'a pas été touchée.
+
+**Verify complet, deux passages** (le premier sur le commit avant correctif, le second — celui qui
+compte — sur le commit final après la revue) : **143/143 fichiers vitest, 1095/1095 tests** ·
+gardes **44** · langue **0 chaîne hors catalogue** · lectures **0 perdue sur 1716 chemins** ·
+parcours **240 stations figées vérifiées** · screens (dev + production) **91 + 53 routes, 0
+échec** · densité **81 écrans, 0 au-delà de 5 actions** · clics **260 étapes, 1 échec** (le même
+#418 déjà documenté, fil n°7 de `docs/CHASSE.md` — un contrôle SOX DIFFÉRENT à chaque passage,
+signature de timing déjà connue, sans rapport avec cette tranche) · visuel **328 vues, 0 défaut**,
+relancé SÉPARÉMENT (`npm run clics` bloque la chaîne `&&` avant `visuel` — précédent déjà posé
+pour R74, `docs/BACKLOG_REPORTE.md`).
+
+**Ce qui reste, dans l'ordre** : rien côté R59 lui-même — fermé. Un mandat neuf du fondateur
+(`docs/MANDATS/2026-09-14_mandat_extrapolation_automatisation_notifications.md`, commité verbatim
+avant exécution, règle 33) attend en §5 : extrapolation ISA 530, notifications (vue sur
+`data-ia-prepare`, exactement ce que cette tranche vient de rendre exhaustif), degré
+d'automatisation L0-L3. Prochaine tranche.
+
 ## Tranche d'énumération « IA vivante » : R76 + R77, garde structurelle (2026-09-13)
 
 *Mandat du fondateur (message du 2026-09-13, après confirmation de R74/entretiens.ts en

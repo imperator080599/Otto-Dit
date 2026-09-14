@@ -665,8 +665,35 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   (`echantillonsDeMesDossiers`, panneau `/travaux`), trois points de contrôle chronométrés sous
   plafond fixé, deux voix hostiles indépendantes (registre multi-tenant ETANCH touché) ayant
   trouvé et fait corriger quatre défauts réels avant fusion. Détail : STATUS.md, tranche « R62
-  (D.6 point 6) ». **Le repass design entier (jetons + R60 + R61 + R62) est donc COMPLET** ; R59
-  reste seul, toujours bloqué sur ADR-103 (paragraphe ci-dessus, inchangé).
+  (D.6 point 6) ». **Le repass design entier (jetons + R60 + R61 + R62) est donc COMPLET.**
+
+  **R59 — RÉSOLU, servi en production, par une VOIE DIFFÉRENTE de celle envisagée ci-dessus.** Le
+  fondateur a tranché ADR-103 lui-même le 2026-09-13 (« option (b) confirmée : fold it into the
+  token system, and re-express ADR-103's intent as a mechanical test — an AI-prepared item must
+  be impossible to miss — so the test carries it, not the stylesheet. Freeze the property, never
+  the appearance. ») — donc PAS le plafond de destinations visibles envisagé en 2026-09-08 (qui
+  restait en tension avec ADR-103), mais un invariant NOUVEAU que le fondateur a substitué à sa
+  place : tout contenu préparé par l'IA (plafond HITL L2, règle 7) doit porter un marqueur
+  STRUCTUREL, testable, jamais seulement une classe CSS. SHA `5a95da7`, confirmé DIRECTEMENT sur
+  `https://otto-dit.vercel.app/api/sante` à 06:26:11Z le 2026-09-14 (`identiteCoherente:true`).
+  Construit : le composant `IaFlag` (`src/app/ia-flag.tsx`) pose `data-ia-prepare="true"` en même
+  temps que la classe visuelle `.ai-flag` — huit sites existants migrés, DEUX sites réels trouvés
+  SANS AUCUN marqueur et corrigés (`rcm/[cid]/page.tsx` : la table entière des écarts de
+  walkthrough candidats, et la sévérité de déficience proposée tant que non décidée) ; garde de
+  régression engendrée (`scripts/audit/ia-flag-source.ts`, règle 21) refusant tout usage brut de
+  `className="ai-flag"` hors du composant ; une assertion clics ajoutée à la station walkthrough
+  déjà existante, éprouvée sur du DOM RENDU avec de vraies données IA. Revue hostile (règle 30, un
+  seul réfutateur — ne touche ni le modèle de données, ni la sécurité, ni le multi-tenant, ni un
+  code de refus) : **un défaut réel confirmé et corrigé avant fusion** — la garde de régression
+  avait un bypass réel (un gabarit `className={\`ai-flag ${x}\`}` avec interpolation, l'idiome
+  DÉJÀ en usage ailleurs dans ce dépôt, et `clsx('ai-flag', x)` échappaient tous deux au premier
+  balayage ligne-par-ligne, et son en-tête affirmait À TORT couvrir le premier cas) ; corrigé en
+  extrayant chaque chaîne/gabarit du fichier plutôt que de raisonner ligne par ligne, avec un cas
+  connu mauvais qui rejoue les deux formes. Verify complet rejoué après le correctif : **143/143
+  fichiers vitest, 1095/1095 tests** · gardes/langue/lectures/parcours/screens/densité tous verts
+  · clics **260 étapes, 1 échec** (le même #418 déjà documenté, fil n°7 de `docs/CHASSE.md`, sur
+  un contrôle SOX différent à chaque passage — timing, pas cette tranche) · visuel **328 vues, 0
+  défaut**, relancé séparément (`clics` bloque la chaîne `&&`, précédent déjà posé pour R74).
 
 **Ces quatre points ferment le Lot 4 tel que défini par `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`,
 §D.6 — délibérément non achevés ici : le mandat du 8 septembre 2026

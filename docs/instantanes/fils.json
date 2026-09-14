@@ -220,9 +220,9 @@
     },
     {
       "id": "R59",
-      "etat": "reporté — D.6 point 2 (le rail n'ouvre par défaut que les groupes portant du travail) non traité : entre en tension avec ADR-103 (le rail grisé-avec-raison déjà en place dans nav.tsx) et recoupe le fil déjà déféré R39/DA-33. Nécessite un plafond honnête qui laisse le déplié-par-défaut intact, ou un arbitrage explicite du fondateur — décidé de ne pas deviner.",
-      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche)",
-      "note": "Lot 4 clos sans ce point (mandat contrôle interne du 2026-09-08, §0 : orienter vers la capacité, pas le polissage). Reporté au Lot 4a suivant ou à un mandat qui le nomme. ROUVERT le 2026-09-09 (mandat_reponses_fondateur.md §5, amendement) — direction de design donnée, mais la tension ADR-103 elle-même reste NON résolue par le §5 (qui porte sur le langage visuel, pas le repli du rail) : reste en l'état jusqu'à un arbitrage explicite."
+      "etat": "RÉSOLU, servi en production — SHA 5a95da7, identiteCoherente:true, mesuré directement le 2026-09-14 06:26:11Z. Le fondateur a tranché ADR-103 lui-même (2026-09-13, option b) : pas le plafond de destinations visibles envisagé en 2026-09-08, mais un invariant substitué — tout contenu préparé par l'IA porte un marqueur STRUCTUREL testable (data-ia-prepare, composant IaFlag), jamais seulement une classe CSS. Huit sites migrés, deux sites réels trouvés sans aucun marqueur et corrigés (rcm/[cid].tsx : écarts de walkthrough, sévérité de déficience proposée), garde de régression engendrée, assertion clics sur DOM rendu.",
+      "depuis": "2026-09-08 (Lot 4, tranche 4a, recherche) — résolu le 2026-09-14 par une voie différente de celle envisagée",
+      "note": "Revue hostile (un réfutateur, règle 30) : un défaut réel confirmé (bypass de la garde de régression sur un gabarit interpolé/clsx) et corrigé avant fusion. Détail complet dans docs/BACKLOG_REPORTE.md."
     },
     {
       "id": "R60",
