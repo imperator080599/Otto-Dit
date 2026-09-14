@@ -744,3 +744,32 @@ a été refait et est passé propre — donc la LIVRAISON n'a jamais été bloqu
 diagnostiqué (règle 32 : jamais expédier pendant que la chaîne verify est rouge sans en connaître
 la cause). Mais l'INSTRUMENT (règle 35) mérite mieux qu'une ré-exécution silencieuse : la
 prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas après.
+
+- **F18 — UN incident dans `verify-tresorerie-2.log`** (2026-09-14 soir, chaîne verify complète
+  pour Lot 5 poste 1 — Trésorerie, sur l'arbre du commit `d5a71c9`, 245 étapes) : `EXCEPTION sur
+  /eng/70670df5.../rcm/37351a58-25f5-4f5d-b2cc-7921fe0ca515 : Minified React error #418;
+  args[]=HTML`, sonde d'hydratation « station (avant la première station) » (le prédicat toujours
+  non câblé, F17), `memePage=faux`, flux complet (215 453 octets, `lang="en"`), 20 divergences
+  après normalisation. **Vérifiées avant de conclure (règle 18)** : le jeton 87 est la bulle
+  `rail-astuce` déjà documentée (E5) ; les DIX-NEUF autres sont TOUS `style="margin:6px 0"`
+  (serveur) / `style="margin:6px 0px"` (client) — exactement la famille F11 (re-sérialisation
+  CSSOM du navigateur), déjà nommée, déjà non filtrée, déjà reportée R45. Même forme, même famille
+  de page (`rcm/[cid]`, SOX) que F12/F15/F16/F17. **Page NON touchée par cette tranche** — vérifié
+  par lecture du diff : `d5a71c9` et les commits de cette tranche (`ce43b91`, `f96e55c`) ne
+  touchent que `methodology/procedures.json`, `circularisations.ts`, `poste.ts`, `catalogue.ts`,
+  `programme.ts` (commentaire), `api/sante/route.ts` (commentaire), `part1.ts`, `draft.ts`,
+  `enrichir.test.ts`, `langue-epreuve.ts`, `scripts/clics/scenario.ts` — aucun importé par
+  `rcm/[cid]/page.tsx`. **Pas creusé plus loin ici** (même discipline que F9-F17). Les 12 échecs
+  RÉELS de ce même passage (station 16 « papier de travail et visas » et station 23 « mes
+  travaux ») avaient une cause DISTINCTE et root-causée séparément : `scripts/clics/scenario.ts`
+  choisissait `.first()` sur `a[href*="/workpapers/"]` de la liste `/eng/[id]/workpapers`
+  (`order by w.code`, `lifecycle.ts:35`) pour désigner « le » papier de la station — jusqu'ici
+  toujours REV-01 faute d'un second papier dans le monde semé. Le nouveau papier CAS-01
+  (Trésorerie) trie AVANT REV-01 (`CAS-01` < `REV-01` alphabétiquement) et la station, conçue
+  autour d'un contenu spécifique au cycle chiffre d'affaires (colonne « BL signé ? », rapport IPE
+  FEC-2025), s'est mise à cibler CAS-01 par accident, en cascade jusqu'à la clôture (2 obstacles
+  restants, 19 stations figées jamais atteintes). Corrigé en ciblant `tr:has-text("REV-01")`
+  explicitement aux deux points d'appel (commit `d5a71c9`) — une fragilité STRUCTURELLE du
+  harnais de clics que n'importe quel poste du Lot 5 aurait fait apparaître, pas spécifique à
+  Trésorerie. Sans lien avec le #418 ci-dessus : les deux défauts coexistaient sur le même
+  passage, aucun n'expliquait l'autre.

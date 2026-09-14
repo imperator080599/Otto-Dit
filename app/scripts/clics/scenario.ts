@@ -2601,7 +2601,14 @@ export async function conduire(
       dire('papier : le papier se RÉDIGE depuis les faits stockés, pas à la main',
         !refus(p), refus(p) ?? 'papier rédigé');
     }
-    const lien = await p.locator('a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
+    /* NOMMÉ, pas « le premier de la liste » : cette station teste un contenu
+       du CYCLE CHIFFRE D'AFFAIRES précis (colonne « BL signé ? », rapport IPE
+       FEC-2025) — dès qu'un second poste porte son propre papier (Lot 5), la
+       liste (`listWorkpapers`, order by w.code) trie alphabétiquement et
+       `.first()` peut tomber sur CE papier-là au lieu de REV-01 (CAS-01 <
+       REV-01). Trouvé en clics sur la tranche Trésorerie : CAS-01 n'a ni
+       colonne ajoutée ni rapport FEC-2025, la station échouait en cascade. */
+    const lien = await p.locator('tr:has-text("REV-01") a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
     if (!lien) { dire('papier : aucun papier de travail dans le dossier', false, 'écran vide'); return; }
 
     await aller(base + lien);
@@ -3667,7 +3674,11 @@ export async function conduire(
   await station('mes travaux : le point d’origine, et les clics comptés', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/workpapers`);
-    const lienWp = await p.locator('a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
+    /* MÊME PAPIER que la station 16 (REV-01), pas « le premier de la liste » —
+       la note ancrée ici vise la référence qu'un pas ultérieur relit
+       (« CAS-01:conclusion » n'existait plus dans l'état du dossier une fois
+       CAS-01 traité ailleurs dans le parcours, tranche Trésorerie). */
+    const lienWp = await p.locator('tr:has-text("REV-01") a[href*="/workpapers/"]').first().getAttribute('href').catch(() => null);
     if (!lienWp) { dire('mes travaux : un papier existe pour y ancrer une note', false, 'aucun papier'); return; }
     await aller(base + lienWp);
     const conclusion = p.locator('.annotable:has(> h2:text-is("Conclusion"))').first();
