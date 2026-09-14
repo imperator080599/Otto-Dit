@@ -35,7 +35,12 @@ import { CABINET, OUVERT } from './travaux';
 //     par `lignesAtelier` — CORRIGÉ le 2026-09-14 après un défaut mesuré en
 //     conduisant le parcours cliqué jusqu'à la clôture (jamais par grep,
 //     règle 15) : sur le monde de démonstration, DIX extractions
-//     pending_verify n'avaient AUCUN geste réel nulle part dans le produit —
+//     pending_verify n'avaient AUCUN GESTE D'ATTESTATION DÉLIBÉRÉ (§3, « un
+//     geste humain réel qui la résout ») nulle part dans le produit — un
+//     effet de bord existe (`testAction`/`rcm/[cid]/page.tsx` vérifie TOUT
+//     le dossier plutôt que le seul contrôle testé, R90, trouvé par la revue
+//     hostile de ce correctif), mais jamais une attestation scopée à CETTE
+//     pièce, ce que le mandat exige —
 //     neuf fichiers de POPULATION (listings clients/fournisseurs/banques,
 //     journaux de revenus : `request_item_id` NULL, jamais liés au sondage)
 //     et une pièce dont la ligne avait QUITTÉ le tirage après un re-tirage

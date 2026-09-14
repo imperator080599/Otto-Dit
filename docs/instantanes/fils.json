@@ -405,6 +405,12 @@
       "note": "même limite, déjà assumée, que les autres paramètres de cabinet du même type (extrapolationMethod, attributeSampleConfidenceLevel, videoRetentionDays), jamais nommée avant cette revue — désormais disclosed dans packs/types.ts. Condition de retrait : un plafond propre à un cabinet précis vivrait dans firm_methodology (DB, par locataire, versionné) — hors périmètre du mandat 2026-09-14."
     },
     {
+      "id": "R90",
+      "etat": "ouvert — « Tester » sur un contrôle (rcm/[cid]/page.tsx, testAction) attribue verified à TOUTES les extractions pending_verify du DOSSIER, pas seulement à celles du contrôle testé (extractAll + boucle pendingVerifications non filtrée par contrôle/procédure). Contredit partiellement la justification écrite de notifications.ts (« aucun geste réel nulle part ») : un geste existe, mal scopé, jamais un geste d'attestation délibéré au sens du mandat §3.",
+      "depuis": "2026-09-14 (revue hostile du correctif NOTIF-01, voix 2, finding MOYEN, prouvé par exécution)",
+      "note": "hors du diff du correctif NOTIF-01 (testAction/ladder.ts non touchés par cette tranche) — le correctif lui-même reste correct, ce défaut est préexistant et ailleurs. Jugé seul, non réfuté par une seconde voix (règle 30). Condition de retrait : scoper testAction à son contrôle/sa procédure plutôt qu'au dossier entier."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

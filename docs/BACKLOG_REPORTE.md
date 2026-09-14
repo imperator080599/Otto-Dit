@@ -1209,3 +1209,22 @@ design : chacun reste une tranche à construire.**
   `packs/types.ts`** (le commentaire du champ le dit désormais explicitement). Reporté : un plafond
   PROPRE à un cabinet précis exigerait de vivre dans `firm_methodology` (DB, par locataire,
   versionné) — hors périmètre du mandat 2026-09-14.
+
+- **R90 — « Tester » sur un contrôle (`rcm/[cid]/page.tsx`, `testAction`) attribue `verified` à
+  TOUTES les extractions `pending_verify` du DOSSIER, pas seulement à celles du contrôle testé.**
+  Trouvé par la revue hostile du correctif NOTIF-01 (2026-09-14, voix 2, finding MOYEN, prouvé par
+  exécution — pas seulement lu). `testAction` appelle `extractAll(engagementId, …)` puis boucle
+  `pendingVerifications(engagementId)` → `verifyExtraction(p.id, user.id)`, sans filtrer par
+  contrôle ni par procédure : cliquer « Tester » sur N'IMPORTE QUEL contrôle OE fait donc
+  disparaître, comme effet de bord, toute extraction en attente ailleurs dans le dossier — y
+  compris les extractions sans ligne courante que le correctif NOTIF-01 exclut désormais de la
+  vue (`notifications.ts`). Ceci contredit partiellement la justification écrite dans l'en-tête de
+  `notifications.ts` (« aucun geste réel nulle part dans le produit ») : un geste existe bel et
+  bien, simplement mal scopé — jamais un geste D'ATTESTATION délibéré au sens du mandat (§3, « un
+  geste humain réel qui la résout »), mais un effet de bord d'un bouton sans rapport. **Non
+  corrigé ici** : `testAction`/`ladder.ts` ne sont touchés par AUCUN diff de cette tranche — la
+  revue l'a elle-même explicitement classé hors de son périmètre, et le correctif NOTIF-01
+  lui-même reste correct (il implémente ce que le mandat demande, indépendamment de ce défaut
+  préexistant ailleurs). **Jugé seul, non réfuté par une seconde voix** (règle 30). Reporté :
+  scoper `testAction` à son contrôle (ou à sa procédure), pour que « Tester » ne verifie jamais
+  une pièce qui n'a rien à voir avec le contrôle cliqué.

@@ -90,6 +90,86 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Correctif d'expédition : la migration 0164 bloquait le déploiement, NOTIF-01 rendait la démo insignable (2026-09-14)
+
+*Le push de §2 sur `main` (SHA `3f79bb7`) n'a JAMAIS été servi — mesuré, pas supposé : les DEUX
+déploiements (production et branche) sont revenus `ERROR`, confirmé par les journaux de build
+Vercel (`mcp__Vercel__get_deployment_build_logs`), pas par une inférence sur le statut du travail
+CI (règle 26). Trois défauts réels ont été trouvés et corrigés avant de réexpédier — aucun n'avait
+été vu par les deux revues hostiles précédentes (§2 et §3), parce qu'aucune n'avait fait tourner
+`npm run verify` en entier jusqu'à `clics` : les tranches précédentes validaient par `vitest run` +
+`screens` ciblés (règle 30), une pratique légitime en cours de construction mais qui n'avait, pour
+ce mandat, jamais été complétée par le verify intégral à l'expédition réelle.*
+
+**Défaut 1 — la migration 0164 bloquait TOUT déploiement (CRITIQUE, mesuré par les journaux de
+build, pas supposé).** Le backfill `update ai_run set niveau_automatisation = 'L2' where … is
+null` déclenchait le garde append-only (`ai_run_append_only`, migration 0003, `for each row`) dès
+qu'`ai_run` porte de vraies lignes — vert en local/CI SEULEMENT parce que la base de test y arrive
+VIDE (l'UPDATE ne touche aucune ligne, le déclencheur ne s'exécute jamais). Exactement règle 11 :
+un test vert sur un chemin que la production n'emprunte pas ne prouve rien. Vérifié AVANT de
+corriger (règle 26) : `_migrations` ne porte AUCUNE ligne pour 0164, ni en local ni sur le réseau
+(requête directe sur les deux bases) — le protocole simple de Postgres a annulé tout le lot dès
+l'échec de l'UPDATE. Cette migration n'ayant donc jamais été RÉELLEMENT appliquée nulle part,
+l'éditer en place était correct, pas une réédition d'une migration appliquée. Corrigé par `ADD
+COLUMN … DEFAULT 'L2'` (mécanisme de défaut rapide de Postgres, aucun UPDATE, le déclencheur ne
+voit rien) puis `DROP DEFAULT`. Validé par exécution directe contre la base locale persistée (2
+lignes `ai_run` réelles, le cas reproducteur exact), puis contre une base fraîche portant une
+ligne insérée AVANT la migration (les deux revues hostiles ci-dessous l'ont rejoué indépendamment).
+
+**Défaut 2 — `docs/GUARDS.md` avait divergé depuis §3.** La famille d'obstacle `iaNonValide`
+(NOTIF-01, expédiée avec §3) n'avait jamais reçu son `npm run gardes -- --figer` — un oubli de
+clôture de §3, pas de §2. Régénéré : G-65 nomme désormais `iaNonValide`, l'ancienne G-65
+(`unsupported_sample_items`) décalée en G-66.
+
+**Défaut 3 — NOTIF-01 rendait la démonstration INSIGNABLE (violation de la règle 25, jamais mesuré
+avant ce jour).** En conduisant le parcours cliqué JUSQU'À LA CLÔTURE pour la première fois depuis
+§3, dix obstacles `iaNonValide` subsistaient sur le dossier NEP à la fin du parcours, empêchant la
+clôture — trois stations figées (clôture, empreinte SHA-256, téléchargement du zip) devenaient
+JAMAIS ATTEINTES. Investigation par exécution directe (jamais par grep, règle 15) : les dix
+étaient TOUTES des extractions `pending_verify` sans AUCUN geste réel de résolution nulle part
+dans le produit — neuf fichiers de POPULATION (listings clients/fournisseurs/banques, journaux de
+revenus : `request_item_id` NULL, jamais liés au sondage) et une pièce dont la ligne avait QUITTÉ
+le tirage après un re-tirage (`sample_item` superseded — exactement le cas que l'écran `testing`
+documente déjà lui-même comme « n'étant l'obligation de personne »). Corrigé dans
+`notifications.ts` : le même filtre qui construit le lien `?item=` (résolution par lignage via
+`lignesAtelier`, ADR-133) sert maintenant AUSSI à décider l'INCLUSION — sans ligne courante
+résolue, l'élément n'est ni montré ni compté (même principe que l'exclusion déjà faite pour
+`wp_extra_cell.verifie=false`, R84). Vérifié : 10 → 0 obstacle(s) sur le dossier NEP après le
+correctif, contre l'état de base laissé par le parcours cliqué en échec. Un fixture positif
+(chaîne `sample`/`gl_entry`/`request_item`/`evidence` complète, construite depuis les schémas
+plutôt que devinée) prouve désormais, pour la première fois, que le deep-link `?item=` réel
+fonctionne (R86 levé) ; l'ancien fixture sous-spécifié devient le cas connu mauvais (règle 17).
+
+**DEUX RELECTEURS HOSTILES INDÉPENDANTS (règle 30 : modèle de données + code de refus touchés),
+sur le diff exact de ce correctif (`3f79bb7..85c9cd1`).** Chacun a rejoué la migration 0164
+corrigée contre une base PGlite portant une vraie ligne `ai_run` PRÉEXISTANTE et confirmé, par
+exécution : succès sans exception, backfill correct, `NOT NULL` sans défaut qui refuse bien un
+futur INSERT sans le champ. Chacun a fait tourner `notifications.test.ts` (13/13 verts), réintroduit
+le défaut d'origine pour confirmer que le test dédié l'attrape (cas connu mauvais, règle 17), et
+cassé délibérément `currentRevenueSample`/`lignesAtelier` pour écarter un faux positif silencieux
+du fixture résolvable. L'un a en outre construit un second cabinet fictif complet pour prouver
+l'étanchéité multi-tenant du nouveau filtre par exécution (3/3 verts), et confirmé que la lecture
+`/api/sante` NOTIF-01 et l'obstacle `obstaclesAuVisa` partagent la MÊME fonction
+(`elementsIaNonValides`, aucun second chemin oublié). **Aucun défaut réel trouvé dans le diff
+revu, sur les deux voix.**
+
+**Un constat MOYEN, hors diff, disclosed, non corrigé — R90** (`docs/BACKLOG_REPORTE.md`) :
+« Tester » sur un contrôle (`rcm/[cid]/page.tsx`, `testAction`) vérifie en réalité TOUTES les
+extractions `pending_verify` du DOSSIER, pas seulement celles du contrôle testé — un geste existe
+donc, mal scopé, jamais une attestation délibérée au sens du mandat. Contredit partiellement
+l'affirmation d'origine du commentaire de `notifications.ts` (corrigée en conséquence). Ni
+`testAction` ni `ladder.ts` ne sont touchés par ce correctif — préexistant, ailleurs, jugé seul,
+non réfuté par une seconde voix.
+
+**Mesures finales, engendrées, citées avec leur SHA.** `npm run verify` (chaîne complète, cinq
+passes sur cette tranche : deux ont trouvé et fait corriger les défauts 1 et 2, une troisième la
+régression NOTIF-01 elle-même, les deux dernières confirment) : **145 fichiers, 1136 tests, tous
+verts** sur les deux derniers passages consécutifs (`EXIT=1` lu dans le journal brut à cause du
+seul #418 déjà tracké, JAMAIS d'un échec de station nommée — voir `docs/CHASSE.md` §F17). `npm run
+screens` : **93 routes, 0 échec.** `npm run clics` (dernier passage, `verify-full-5.log`) : **260
+étapes conduites, ZÉRO échec de station nommée, closure et archive comprises** (le seul « 1
+échec(s) » compté par le harnais est le #418 côté navigateur, F17, non lié à cette tranche).
+
 ## Mandat 2026-09-14, §2 : le degré d'automatisation — AUTO-01, AUTO-02 (2026-09-14)
 
 *Dernière des trois fonctionnalités du mandat (§5 : §1.2-1.3, §1.4-1.5, §3, puis §2 — l'ordre
@@ -103,7 +183,9 @@ n'existe dans le type que pour que le refus puisse le nommer). §2.2 : le pack p
 immuable (AUTO-02). §2.4 : deux gardes indépendantes, IA-BUDGET-01 (le droit de dépenser) et
 celle-ci (le droit de faire) — aucune ne remplace l'autre.*
 
-**FAIT ET SERVI EN PRODUCTION — SHA à confirmer dans une tranche ultérieure (règle 36).**
+**Le SHA `3f79bb7` de cette tranche n'a JAMAIS été servi — voir la tranche « Correctif
+d'expédition » ci-dessus : le déploiement est revenu ERROR (migration 0164), corrigé, et c'est le
+SHA de cette correction qui a fini par être confirmé en production.**
 
 **Migration 0164.** `engagement.automation_level` (nullable, CHECK L0/L1/L2, null = hérite du
 plafond du pack) et `ai_run.niveau_automatisation` (NOT NULL, SANS DÉFAUT, backfillée à L2 pour
