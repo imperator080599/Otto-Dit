@@ -333,6 +333,24 @@
       "note": "l'audit lui-même (scripts/audit/ia-vivante.ts) reporte 7 points d'accès connus, 0 appel non gardé au SHA 37cf025 ; garde structurelle ajoutée (scripts/audit/ia-vivante.test.ts, cas connu mauvais : site fabriqué détecté puis supprimé) pour qu'un futur site non gardé ne puisse plus passer inaperçu. Deux revues hostiles indépendantes ont trouvé et fait corriger deux défauts avant fusion (eval.test.ts pouvait faire un appel réseau réel selon l'environnement du shell — règle 4 ; l'en-tête de l'audit ne nommait pas sa propre imprécision fichier-large — règle 19) ; détail complet dans docs/BACKLOG_REPORTE.md."
     },
     {
+      "id": "R78",
+      "etat": "ouvert — la lecture /api/sante EXTRAP-01 (mandat 2026-09-14, §1.2) n'a pas encore son fichier de cas connu mauvais dédié, contrairement aux ~15 lectures sœurs du même fichier (mat03-lecture.test.ts, pop01-legacy.test.ts, etc.). Le refus RÉEL, lui, est éprouvé par un test d'intégration (s5s6.test.ts).",
+      "depuis": "2026-09-14 (revue hostile de la tranche §1.2-1.3, voix 1, finding 3)",
+      "note": "condition de retrait : extrap01-lecture.test.ts, écrivant une ligne sample_evaluation directement en base (projection_method='none', random_misstatement_count>0, status='concluded') et prouvant que la lecture rougit dessus, patron des lectures voisines."
+    },
+    {
+      "id": "R79",
+      "etat": "ouvert — computeSampleEvaluation (evaluation.ts) filtre ses anomalies par engagement_id, jamais par le sample.id précis sélectionné juste au-dessus. Pré-existant (diff identique contre 9c00633, avant le mandat), inatteignable aujourd'hui : aucun chemin du dépôt n'accumule une anomalie avant un re-tirage qui superséderait l'échantillon.",
+      "depuis": "2026-09-14 (revue hostile de la tranche §1.2-1.3, trouvé INDÉPENDAMMENT par les deux voix)",
+      "note": "le rayon d'impact grandit du fait que cette même tranche rend random_misstatement/random_misstatement_count PORTEURS D'UN REFUS (EXTRAP-01), pas seulement affichés. Condition de retrait : and si.sample_id = $2 (ou équivalent) sur la requête `mis` d'evaluation.ts, le jour où un chemin réel accumule une anomalie avant un re-tirage."
+    },
+    {
+      "id": "R80",
+      "etat": "ouvert — npm run clics n'a pas pu être conduit à son terme cette session (six tentatives : trois timeouts pendant une phase de build/parcours dont la sortie n'est imprimée qu'à la toute fin, une terminée en EXIT=1 réel sur un écran sans rapport avec la tranche livrée, une tentative de diagnostic bloquée plus de 11 minutes). npm run screens (le balayage de production qui couvre l'écran réellement modifié par cette tranche, testing/page.tsx) est passé propre (91 routes, 0 échec) sur le même état du dépôt.",
+      "depuis": "2026-09-14 (tranche §1.2-1.3, extrapolation ISA 530)",
+      "note": "premier échec RÉEL (pas un délai dépassé) : « balances aux. : le candidat proposé attend une confirmation HUMAINE au registre » puis un locator.fill: Timeout 30000ms exceeded sur la station suivante (scripts/clics/scenario.ts:681) — un écran de rapprochement des balances auxiliaires, AUCUN fichier touché par cette tranche n'a de lien avec lui. Condition de retrait : npm run clics complet et vert sur une session fraîche ; si le blocage se reproduit à la MÊME station, investiguer le composant balances-aux directement (hors périmètre du mandat 2026-09-14)."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

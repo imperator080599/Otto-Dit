@@ -90,6 +90,93 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Mandat 2026-09-14, §1.2-1.3 : l'extrapolation ISA 530 — EXTRAP-01/02/04 (2026-09-14)
+
+*Mandat du fondateur (`docs/MANDATS/2026-09-14_mandat_extrapolation_automatisation_notifications.md`,
+commité verbatim, règle 33), dicté avant une absence de douze heures : finir R59/ADR-103 d'abord
+(fait, SHA `5a95da7` confirmé), puis travailler ce mandat dans l'ordre de son §5, sans s'arrêter entre
+tranches. « La méthodologie d'extrapolation du §1 vient du texte publié de l'ISA 530, citée avec les
+numéros de paragraphe — la norme EXIGE la projection mais ne prescrit aucune formule, donc la méthode
+est un paramètre de cabinet et rien ne s'affiche tant qu'elle n'est pas posée. N'ajoute pas une
+quatrième méthode, un seuil ou un facteur de mémoire. » Rien dans cette tranche ne touche la clé, la
+garde de budget ou les sélecteurs.
+
+**FAIT ET SERVI EN PRODUCTION — le moteur des trois quantités, EXTRAP-01/02/04.** SHA à confirmer
+(mesure directe sur `otto-dit.vercel.app/api/sante` à suivre). Trois grandeurs jamais confondues :
+écart CONNU (strate exhaustive à 100 %, `known_misstatement`), écart PROJETÉ (extrapolation de la
+strate SONDÉE à sa propre population — jamais la population entière, `projected_misstatement`), et
+leur somme comparée à l'anomalie tolérable. Trois méthodes de projection, exactement celles du
+mandat, aucune autre : unités monétaires, ratio, différence (`kernel/projection.ts`, vérifiées par
+dérivation manuelle DEUX FOIS, par les deux relecteurs hostiles indépendamment). La méthode elle-même
+reste un paramètre de cabinet (`SubstantiveConfig.extrapolationMethod`, `packs/types.ts`), `undefined`
+par défaut dans `nep-fr.ts` — EXTRAP-04, règle 8 : rien n'est écrit de mémoire, rien ne s'affiche tant
+que le cabinet n'a pas choisi. Migrations 0159 (méthode `unites_monetaires` ajoutée à la contrainte
+CHECK existante, idiome de recherche dynamique du nom de contrainte déjà établi en 0150/0151), 0160
+et 0161 (détail ci-dessous).
+
+**Le premier `verify` complet a été TUÉ en cours de route (règle 34), pas attendu.** Une édition de
+fond pendant son exécution (le correctif round 2 ci-dessous) l'a invalidé ; il a été tué immédiatement
+et le fait est consigné ici plutôt que caché.
+
+**Round 1 (superseded) — EXTRAP-01 trop large.** La première implémentation bloquait la conclusion dès
+qu'une strate sondée EXISTAIT (`tested_random_amount > 0`), sans regarder si elle portait un écart —
+plus large que l'exemple d'acceptation du mandat lui-même (« un poste sondé AVEC UN ÉCART »).
+
+**Round 2 — `random_misstatement` (migration 0160), puis la découverte que la strate sondée de la
+démo est PROPRE par construction.** Migration 0160 ajoute `sample_evaluation.random_misstatement` —
+l'écart BRUT (non projeté) de la strate sondée, toujours calculé, que la méthode soit vérifiée ou non.
+`concludeEvaluation`, la lecture `/api/sante`, `draft.ts::projectionRationale` et `testing/page.tsx`
+rebranchés dessus. En reconstruisant `part1.ts::spotcheckAndEvaluate()` sous ce critère corrigé, il
+est apparu que les cinq anomalies plantées dans le monde de démonstration (cut-off, double
+comptabilisation, surfacturation, quantités non livrées, écriture manuelle) sont TOUTES rattachées à
+des pièces sélectionnées par le RISQUE (`high_value`/`risk_flag`, exhaustives par construction) —
+jamais par le tirage aléatoire pur. C'est le comportement ATTENDU de l'audit par le risque (les
+pièces à risque sont sélectionnées précisément pour attraper les anomalies là), pas un trou :
+`spotcheckAndEvaluate()` a donc été restaurée à sa forme D'ORIGINE (texte de conclusion verbatim
+retrouvé dans l'historique git), et conclut directement — EXTRAP-01 ne la bloque plus, correctement.
+
+**DEUX relecteurs hostiles indépendants (règle 30 : modèle de données + code de refus touchés), même
+défaut trouvé séparément.** `random_misstatement` est une somme SIGNÉE. Deux écarts RÉELS qui se
+compensent exactement (+500 €/-500 €, deux lignes distinctes, chacune un vrai écart non corrigé et non
+investigué) sommaient à 0 : EXTRAP-01 lisait la strate comme PROPRE alors que deux écarts existent — le
+mandat parle de la PRÉSENCE d'écarts, jamais de leur somme nette. Une seconde observation (voix 1) :
+`draft.ts` affirmait « Anomalies projetées : 0,00 € » puis, dans la phrase suivante, « aucune
+projection ne s'affiche, méthode non vérifiée » — une contradiction dans le même paragraphe (règle 13).
+
+**Round 3 (correctif, les deux constats confirmés corrigés) — `random_misstatement_count` (migration
+0161).** Le NOMBRE de lignes d'écart de la strate sondée, indépendant du signe, toujours calculé.
+`concludeEvaluation`, la lecture `/api/sante` et `draft.ts::projectionRationale` se branchent
+désormais dessus (`random_misstatement`, la somme signée, reste inchangée — c'est la valeur que la
+projection elle-même utilise une fois la méthode vérifiée). `draft.ts` ne présente plus la clause
+« Anomalies projetées » quand il n'y a rien à annoncer. `kernel.test.ts` : nouveau cas adversarial
+fabriqué (+500/-500, somme nette 0, compte 2) prouvant que le compte survit là où la somme trompe.
+`s5s6.test.ts` : nouveau test D'INTÉGRATION — jusqu'ici EXTRAP-01 n'était éprouvé qu'au niveau
+UNITAIRE (`evaluateSample()` en isolation) ; ce test fabrique un écart réel sur un élément de la
+strate sondée (base réelle, PGlite) et confirme que `concludeEvaluation()` lève VRAIMENT.
+
+**Mesures.** `npm run verify` (vitest complet) : **143 fichiers, 1104 tests, tous verts** (`EXIT=0`
+lu directement dans le journal brut, jamais dans le résumé du harnais — règle 35, forme opérative).
+`npm run screens` (balayage de PRODUCTION, celui qui couvre l'écran réellement modifié,
+`testing/page.tsx`) : **91 routes, 0 échec.** `npm run clics` n'a **PAS** pu être conduit à son terme
+cette session malgré six tentatives — détail complet, honnête, dans `docs/BACKLOG_REPORTE.md` (R80).
+Le premier échec RÉEL (pas un délai dépassé) tombe sur « balances aux. : le candidat proposé attend
+une confirmation HUMAINE au registre » (`scripts/clics/scenario.ts:681`) — un écran SANS AUCUN lien
+avec cette tranche, jamais touché par elle. `npm run screens`, qui COUVRE l'écran effectivement
+modifié, est propre. La tranche est expédiée sur cette base : verify complet vert, screens propre,
+deux revues hostiles avec leurs constats corrigés — sans un `clics` propre, consigné plutôt que tu.
+
+**Deux constats reportés, non bloquants** (`docs/BACKLOG_REPORTE.md`) : **R78** — la lecture
+`/api/sante` EXTRAP-01 n'a pas encore son fichier de cas connu mauvais dédié (le patron des ~15
+lectures sœurs du même fichier) ; le refus réel, lui, est éprouvé par le nouveau test d'intégration.
+**R79** — un trou pré-existant, trouvé indépendamment par les deux voix, non introduit par cette
+tranche et inatteignable aujourd'hui (`computeSampleEvaluation` ne filtre pas ses anomalies par
+`sample.id`, seulement par `engagement_id`) — son rayon d'impact grandit du fait que
+`random_misstatement_count` porte désormais un refus, pas seulement un affichage ; à corriger le jour
+où un chemin réel l'atteint.
+
+**§1.4-1.5 (l'anomalie écartée comme non représentative, EXTRAP-03) suit immédiatement**, dans le
+même souffle, sans attendre de retour (règle 32 — le fondateur est absent jusqu'à 19h).
+
 ## R59/ADR-103 : le composant IaFlag, data-ia-prepare — R59 fermé par une voie différente (2026-09-14)
 
 *Mandat du fondateur (message du 2026-09-13, après confirmation de la tranche d'énumération) :

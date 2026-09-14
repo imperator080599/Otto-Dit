@@ -1054,3 +1054,57 @@ design : chacun reste une tranche à construire.**
   `export const getX = () => ...`) était déjà, elle aussi, corrigée dans l'en-tête avant la fusion.
   Aucun des deux défauts ne changeait le compte de 7 points ni le résultat « 0 non gardé » —
   vérifié par régénération de l'artefact après chaque correctif.
+
+- **R78 — la lecture `/api/sante` EXTRAP-01 n'a pas de fichier de cas connu mauvais dédié, contrairement
+  à ses ~15 voisines dans le même fichier.** Trouvé par la revue hostile du mandat 2026-09-14 (§1.2-1.3,
+  voix 1, finding 3, LOW-MEDIUM). `app/src/app/api/sante/route.ts` porte sa propre requête SQL,
+  indépendante de celle de `concludeEvaluation` (`evaluation.ts`) — les deux implémentent le MÊME
+  prédicat séparément, ce qui pourrait diverger silencieusement avec le temps si l'une des deux
+  évolue sans l'autre. Chaque lecture sœur du fichier (`mat03-lecture.test.ts`, `pop01-legacy.test.ts`,
+  `ctrl0*-lecture.test.ts`, etc.) a son propre test qui écrit une ligne directement en base et prouve
+  que la lecture ROUGIT dessus (règle 17) — EXTRAP-01 n'a pas encore le sien. Un test d'INTÉGRATION
+  existe désormais pour le refus lui-même (`s5s6.test.ts`, la vraie conclusion via `concludeEvaluation`),
+  mais pas pour la lecture `/api/sante` séparément. Reporté : pas bloquant pour la tranche §1.2-1.3
+  (le refus réel est éprouvé), mais un `extrap01-lecture.test.ts` reste à écrire pour fermer ce trou
+  selon le patron établi.
+
+- **R79 — `computeSampleEvaluation` (evaluation.ts) filtre les anomalies par `engagement_id`, jamais par
+  le `sample.id` précis sélectionné juste au-dessus.** Trouvé INDÉPENDAMMENT par les DEUX voix de la
+  revue hostile du mandat 2026-09-14 (§1.2-1.3), toutes deux d'accord : **pré-existant, non introduit
+  par cette tranche** (diff identique octet pour octet contre le commit `9c00633`, avant le début du
+  mandat) et **inatteignable aujourd'hui** — aucun chemin du dépôt n'accumule une anomalie sur un
+  `sample_item` avant un re-tirage qui le superséderait (`retirage.test.ts` exerce les re-tirages mais
+  jamais avec une anomalie déjà attachée). Si un engagement accumulait un jour plusieurs échantillons
+  REV-SUBST successifs (re-tirage après anomalie constatée), une anomalie de l'ancien tirage pourrait
+  fuiter dans l'évaluation du nouveau. Cette même tranche rend `random_misstatement`/
+  `random_misstatement_count` PORTEURS D'UN REFUS (EXTRAP-01), pas seulement affichés — le même trou
+  ancien a donc un rayon d'impact plus large qu'avant, même si personne n'y a touché. Reporté :
+  ajouter `and si.sample_id = $2` (ou équivalent) à la requête `mis` d'`evaluation.ts` le jour où un
+  chemin réel accumule une anomalie avant un re-tirage.
+
+- **R80 — `npm run clics` n'a pas pu être conduit à son terme cette session, sur du code SANS lien avec
+  la tranche §1.2-1.3.** Six tentatives : trois « Terminated » par le budget `timeout` posé (600s, 900s,
+  900s) PENDANT la phase de build (silencieuse — `clics/run.ts` ne tamponne la sortie du build et de
+  TOUT le parcours cliqué qu'en mémoire, ne l'imprime qu'à la toute fin ; un build isolé mesuré deux
+  fois séparément, `npm run build` direct, prend ~45-51 s — donc soit le build a réellement pris
+  beaucoup plus longtemps dans ces tentatives précises, soit le blocage était ailleurs et invisible tant
+  que rien n'échoue) ; une tentative a réellement TERMINÉ (`EXIT=1`, PAS un timeout) avec un premier
+  échec concret sur « balances aux. : le candidat proposé attend une confirmation HUMAINE au registre »
+  puis « station interrompue — locator.fill: Timeout 30000ms exceeded » sur la station suivante,
+  entraînant une cascade d'échecs sur des écrans SANS rapport (processus, entretien, colonne, poste,
+  estimation…) — cohérent avec UNE interruption précoce qui dérègle un parcours séquentiel où chaque
+  station dépend de l'état des précédentes ; une dernière tentative de diagnostic (lancée directement,
+  hors `npm run`, pour observer en direct) a dépassé 11 minutes avec un navigateur réel actif mais du
+  temps CPU cumulé qui ne progressait plus — cohérent avec un blocage sur un `locator` qui n'aboutit
+  jamais, pas avec une machine occupée ailleurs. La station qui a échoué (« balances aux. »,
+  `scripts/clics/scenario.ts:681`) est un écran de rapprochement des balances auxiliaires — AUCUN
+  fichier touché par cette tranche (`api/sante/route.ts`, `testing/page.tsx`, `kernel/projection.ts`,
+  `services/evaluation.ts`, `services/workpapers/draft.ts`, `packs/*.ts`, `i18n/catalogue.ts`,
+  `flows/part1.ts`, les migrations 0159-0161) n'a de lien avec cet écran. `npm run screens` (le
+  balayage de production, QUI COUVRE `testing/page.tsx`, l'écran réellement modifié par cette tranche)
+  est passé PROPRE (91 routes, 0 échec) dans la même session, sur le même état du dépôt. La tranche est
+  expédiée sur cette base — verify complet (143 fichiers/1104 tests), `screens` propre, deux revues
+  hostiles avec leurs constats corrigés — SANS un `clics` propre, honnêtement consigné ici plutôt que
+  tue (silence lu comme un succès, règle 13). Reporté : ré-essayer `npm run clics` sur une session
+  fraîche ; si le blocage se reproduit sur la MÊME station, investiguer directement le composant
+  « balances aux. » (candidat proposé → confirmation registre) — hors périmètre de ce mandat.
