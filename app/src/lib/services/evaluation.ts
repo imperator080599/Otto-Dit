@@ -34,6 +34,17 @@ export async function computeSampleEvaluation(
   );
   // stratum amounts + counts: 100%-examined strata = high_value + risk_flag (EXTRAP-02 :
   // ces deux strates n'entrent JAMAIS dans la strate « sondée » ci-dessous).
+  //
+  // CE QUE CE REGROUPEMENT NE COUVRE PAS (règle 19) : `sample_item.selection_reason` admet
+  // aussi 'carried_forward' (0002_testing.sql) — ni `coverageTested`/`coverageCount` (exhaustif)
+  // ni `randomTested`/`randomCount` (sondé) ne le comptent, donc un élément reporté de N-1
+  // n'entrerait dans AUCUNE strate ici : sa valeur comptable et tout écart qui lui serait
+  // attaché disparaîtraient du connu ET du projeté. Vérifié à l'écriture de cette tranche
+  // (2026-09-14) : aucun chemin du dépôt n'écrit encore 'carried_forward' dans cette colonne
+  // (seule `atelier.ts` porte le LIBELLÉ, jamais la valeur) — le trou est donc RÉEL mais pas
+  // encore ATTEIGNABLE. S'il le devient, ce regroupement devra le rattacher explicitement
+  // (probablement à la strate exhaustive, puisqu'un report de N-1 n'est jamais un tirage
+  // aléatoire nouveau) avant que cette tranche puisse rester vraie.
   const strata = await q<{ selection_reason: string; tested: string; n: string }>(
     `select si.selection_reason, coalesce(sum(si.amount),0)::text tested, count(*)::text n
      from sample_item si where si.sample_id = $1 group by si.selection_reason`,
