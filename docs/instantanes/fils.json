@@ -357,6 +357,18 @@
       "note": "non ajouté par prudence délibérée : scenario.ts est un script long et à état partagé où une station mal câblée peut dérégler toutes les stations suivantes, et npm run clics lui-même n'a pas tourné proprement aujourd'hui (R80) pour valider un ajout. Condition de retrait : une station EXTRAP-03 ajoutée à scenario.ts une fois npm run clics de nouveau fiable."
     },
     {
+      "id": "R82",
+      "etat": "ouvert — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 (matching.ts::dismissMisstatementAsAnomaly) est structurellement inerte pour toute exception qui ne pose jamais evidence_id (manual_journal_flag — la famille la plus à risque —, verification_disagreement, reconciliation_diff). Sans exception.evidence_id à comparer, n'importe quelle pièce non quarantainée passe pour « supplémentaire ».",
+      "depuis": "2026-09-14 (revue hostile de la tranche §1.4-1.5, voix 1, finding MEDIUM)",
+      "note": "non corrigé cette tranche : élargir « déjà utilisée » au-delà du seul champ exception.evidence_id exigerait de tracer toute la chaîne de preuve de l'écart (extraction, vérification, rapprochement), hors périmètre du mandat 2026-09-14. Condition de retrait : une notion de preuve « déjà vue sur ce dossier pour cet écart » qui couvre la chaîne complète."
+    },
+    {
+      "id": "R83",
+      "etat": "ouvert — le papier de travail engendré (workpapers/draft.ts, non modifié par cette tranche) liste chaque ligne misstatement, y compris désormais dismissed et projected (des états nouvellement atteignables), sans les distinguer — contrairement à exceptions/page.tsx qui sépare clairement écarté/projeté/brut.",
+      "depuis": "2026-09-14 (revue hostile de la tranche §1.4-1.5, voix 1, finding LOW)",
+      "note": "pas une somme erronée (une phrase de prose, pas un agrégat), mais une incohérence narrative réelle et nouvellement atteignable entre l'écran de registre et le récit du papier de travail sur les mêmes lignes. Condition de retrait : annoter chaque ligne du tableau draft.ts de son statut, comme le fait déjà le registre."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

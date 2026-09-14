@@ -1122,3 +1122,28 @@ design : chacun reste une tranche à construire.**
   valider un ajout. Reporté : ajouter une station EXTRAP-03 à `scenario.ts` (refus sans justification
   OU sans preuve, puis écartement réussi avec preuve distincte) une fois `npm run clics` de nouveau
   fiable (R80).
+
+- **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
+  pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
+  plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,
+  `reconciliation_diff` ; matching.ts/verification.ts/reconciliation.ts, aucune des trois n'appelle
+  `raiseException` avec un `evidenceId`). Trouvé par la revue hostile du 2026-09-14 (§1.4-1.5, voix 1,
+  finding MEDIUM). `dismissMisstatementAsAnomaly` (matching.ts) ne compare `opts.evidenceId` à
+  `exception.evidence_id` QUE si ce dernier est posé — sans lui, n'importe quelle pièce non
+  quarantainée passe pour « supplémentaire », y compris une pièce déjà utilisée ailleurs dans le
+  dossier pour un tout autre usage. Non corrigé cette tranche : élargir la définition de « déjà
+  utilisée » au-delà du seul champ `exception.evidence_id` exigerait de tracer toute la chaîne de
+  preuve de l'écart (extraction, vérification, rapprochement), pas seulement son lien direct — hors
+  périmètre du mandat 2026-09-14. Reporté : envisager une notion de preuve « déjà vue sur ce
+  dossier pour cet écart » qui couvre la chaîne complète, pas seulement `exception.evidence_id`.
+
+- **R83 — le papier de travail engendré (`workpapers/draft.ts`, non modifié par cette tranche) liste
+  chaque ligne `misstatement`, y compris désormais `dismissed` et `projected` (des états qui ne
+  devenaient réellement atteignables qu'avec cette tranche), SANS les distinguer — contrairement à
+  `exceptions/page.tsx` qui sépare clairement écarté/projeté/brut.** Trouvé par la revue hostile du
+  2026-09-14 (§1.4-1.5, voix 1, finding LOW). Pas une somme erronée (c'est une phrase de prose
+  jointe, pas un agrégat), mais une incohérence narrative réelle et nouvellement atteignable entre
+  l'écran de registre et le récit du papier de travail sur les MÊMES lignes. Non corrigé cette
+  tranche (cosmétique, code pré-existant, hors périmètre immédiat). Reporté : annoter chaque ligne
+  du tableau `draft.ts` de son statut (écarté comme anomalie / projeté / brut) comme le fait déjà
+  le registre.

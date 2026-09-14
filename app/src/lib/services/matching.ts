@@ -580,10 +580,27 @@ export async function escalateToMisstatement(
  *  SUPPLÉMENTAIRE obtenue exprès — jamais la même pièce qui a déjà servi à constater l'écart
  *  (sinon « degré élevé de certitude » ne serait qu'un mot relu deux fois sur le même document).
  *  Refuse sans (a) une justification écrite ET (b) une pièce non quarantainée, du même dossier,
- *  distincte de celle de l'exception d'origine. CE QUE CE REFUS NE VÉRIFIE PAS (règle 19) :
- *  que la pièce supplémentaire a été RÉCEMMENT obtenue (un horodatage récent) — seulement qu'elle
- *  est DIFFÉRENTE de celle déjà au dossier ; un cabinet pourrait en théorie attacher une pièce
- *  ancienne mais jamais encore utilisée pour CET écart. */
+ *  distincte de celle de l'exception d'origine.
+ *
+ *  RÉVISÉ le 2026-09-14 (revue hostile, voix 1, finding CRITIQUE, reproduit en exécution) :
+ *  une ligne `kind='projected'` (l'extrapolation AUTOMATIQUE de la strate sondée à sa population,
+ *  `evaluation.ts::concludeEvaluation`, jamais une exception à `exception_id`) passait par ce
+ *  refus SANS AUCUN contrôle de distinction possible — son `exception_id` est NULL, donc la
+ *  comparaison ci-dessous ne s'exécutait jamais, et n'importe quelle pièce, même sans rapport,
+ *  suffisait à effacer TOUT le chiffre projeté du registre. ISA 530 §5(e)/§13 définissent
+ *  l'anomalie comme un écart DÉCOUVERT DANS L'ÉCHANTILLON, jamais une extrapolation statistique
+ *  déjà agrégée sur la population entière — une ligne `projected` n'est donc structurellement PAS
+ *  écartable comme anomalie, quelle que soit la preuve fournie.
+ *
+ *  CE QUE CE REFUS NE VÉRIFIE PAS (règle 19) : que la pièce supplémentaire a été RÉCEMMENT obtenue
+ *  (un horodatage récent) — seulement qu'elle est DIFFÉRENTE de celle déjà au dossier. La
+ *  comparaison elle-même ne s'exécute QUE si l'exception d'origine porte un `evidence_id` — les
+ *  familles qui n'en posent jamais (`manual_journal_flag`, `verification_disagreement`,
+ *  `reconciliation_diff` — matching.ts/verification.ts/reconciliation.ts) n'ont donc rien à
+ *  comparer et laissent passer n'importe quelle pièce non quarantainée comme « supplémentaire »
+ *  (revue hostile, voix 1, finding MEDIUM — R82, docs/BACKLOG_REPORTE.md, non corrigé cette
+ *  tranche : élargir la définition de « déjà utilisée » au-delà d'`exception.evidence_id` seul
+ *  exigerait de tracer toute la chaîne de preuve de l'écart, pas seulement son champ direct). */
 export async function dismissMisstatementAsAnomaly(
   misstatementId: string, userId: string, opts: { reason: string; evidenceId: string },
 ): Promise<void> {
@@ -601,10 +618,17 @@ export async function dismissMisstatementAsAnomaly(
       + 'la pièce.',
     );
   }
-  const m = await q1<{ engagement_id: string; exception_id: string | null; status: string }>(
-    `select engagement_id, exception_id, status from misstatement where id = $1`, [misstatementId],
+  const m = await q1<{ engagement_id: string; exception_id: string | null; status: string; kind: string }>(
+    `select engagement_id, exception_id, status, kind from misstatement where id = $1`, [misstatementId],
   );
   if (m.status === 'dismissed') throw new Error('cet écart est déjà écarté comme anomalie');
+  if (m.kind === 'projected') {
+    throw new Error(
+      'EXTRAP-03 : une ligne PROJETÉE (l’extrapolation de la strate sondée à sa population, ISA 530 '
+      + '§14) n’est pas un écart « découvert dans l’échantillon » (§5(e)/§13) — elle ne peut pas être '
+      + 'écartée comme anomalie. Écartez, le cas échéant, les écarts INDIVIDUELS qui l’alimentent.',
+    );
+  }
   const ev = await q1<{ engagement_id: string; quarantined: boolean }>(
     `select engagement_id, quarantined from evidence where id = $1`, [opts.evidenceId],
   );

@@ -193,13 +193,21 @@ export async function concludeEvaluation(evaluationId: string, userId: string, b
   const e = await q1<{
     id: string; sample_id: string; known_misstatement: string; projected_misstatement: string;
     te_amount: string; projection_method: string; tested_random_amount: string; random_misstatement: string;
-    random_misstatement_count: number;
+    random_misstatement_count: number; status: string;
   }>(
     `select id, sample_id, known_misstatement::text, projected_misstatement::text, te_amount::text,
-            projection_method, tested_random_amount::text, random_misstatement::text, random_misstatement_count
+            projection_method, tested_random_amount::text, random_misstatement::text, random_misstatement_count, status
      from sample_evaluation where id = $1`,
     [evaluationId],
   );
+  // revue hostile (voix 1, finding LOW-MEDIUM) : sans ce garde, une requête dupliquée/relancée
+  // (un formulaire soumis deux fois avant que la page ne se re-rende) écrasait silencieusement
+  // conclusion_basis/concluded_by/concluded_at d'une évaluation DÉJÀ conclue, et aurait tenté
+  // une seconde écriture de la ligne 'projected' (protégée par l'index unique de la migration
+  // 0162, mais la métadonnée de conclusion elle-même ne l'était pas).
+  if (e.status === 'concluded') {
+    throw new Error('cette évaluation est déjà conclue — une conclusion ne se réécrit pas en silence');
+  }
   const s = await q1<{ engagement_id: string }>(`select engagement_id from sample where id = $1`, [e.sample_id]);
 
   // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1 : « un poste sondé AVEC UN ÉCART ne se
@@ -278,6 +286,24 @@ export async function concludeEvaluation(evaluationId: string, userId: string, b
         + `à sa population, à la conclusion de l'évaluation d'échantillon.`,
         evaluationId,
       ],
+    );
+    // revue hostile (voix 2, finding HIGH, reproduit en exécution — écart mesuré de 175 000 c€) :
+    // sans cette écriture, les lignes BRUTES de la strate sondée qui ont ALIMENTÉ la projection
+    // ci-dessus (le même filtre EXACT que `computeSampleEvaluation` applique pour construire
+    // `randomMis`) restaient sommées dans le registre (exceptions/page.tsx) EN PLUS de leur propre
+    // projection — le même écart compté deux fois. `rolled_into_projection` (migration 0163) les
+    // marque comme désormais REPRÉSENTÉES par la ligne 'projected' ; rien n'est supprimé ni
+    // recalculé (règle 28), seulement retiré d'une somme qui les compterait en double.
+    await q(
+      `update misstatement set rolled_into_projection = true
+       where id in (
+         select m.id from misstatement m
+         join exception x on x.id = m.exception_id
+         join sample_item si on si.id = x.sample_item_id
+         where si.sample_id = $1 and si.selection_reason = 'random'
+           and m.status in ('proposed','confirmed') and m.corrected = false
+       )`,
+      [e.sample_id],
     );
   }
 }

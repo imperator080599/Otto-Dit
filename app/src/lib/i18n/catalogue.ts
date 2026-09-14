@@ -1274,6 +1274,10 @@ export const LIBELLES = {
   },
   'exc.dismissedReason': { en: 'Justification:', fr: 'Justification :' },
   'exc.dismissedEvidence': { en: 'Evidence:', fr: 'Preuve :' },
+  'exc.rolledIntoProjection': {
+    en: '↳ Represented by its own projected line below — excluded from the total to avoid double-counting.',
+    fr: '↳ Représentée par sa propre ligne projetée ci-dessous — exclue du total pour éviter un double compte.',
+  },
   'imp.adr016': { en: 'ADR-016 —', fr: 'ADR-016 —' },
   'imp.ligneNo': { en: ' (line {n})', fr: ' (ligne {n})' },
   'reun.envoyeeSimulee': { en: 'sent (SIMULATED — nothing left the building)', fr: 'envoyée (SIMULÉE — rien n’est parti)' },

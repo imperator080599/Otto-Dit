@@ -861,19 +861,26 @@ async function corpsDeLaSonde() {
        anomalie exige une justification écrite ET une preuve SUPPLÉMENTAIRE obtenue exprès —
        `dismissMisstatementAsAnomaly` (matching.ts) refuse sans les deux. Une ligne trouvée ici
        prouverait que le refus a été contourné (écriture SQL directe, ou régression du service) —
-       la lecture ROUGIT sur CE cas précis. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que
-       la preuve rattachée est bien DIFFÉRENTE de celle de l'exception d'origine (ce contrôle vit
-       dans le service, pas ici — une pièce reconstituée après coup ne le confirmerait pas). */
+       la lecture ROUGIT sur CE cas précis. RÉVISÉ le 2026-09-14 (revue hostile, voix 1, finding
+       CRITIQUE reproduit en exécution) : une ligne kind='projected' (l'extrapolation
+       AUTOMATIQUE, jamais un écart « découvert dans l'échantillon », ISA 530 §5(e)) ne peut
+       structurellement PAS être écartée comme anomalie — le service le refuse désormais
+       inconditionnellement. Une telle ligne trouvée dismissed prouverait, elle aussi, un
+       contournement. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : que la preuve rattachée
+       est bien DIFFÉRENTE de celle de l'exception d'origine (ce contrôle vit dans le service,
+       pas ici — une pièce reconstituée après coup ne le confirmerait pas). */
     lectures.push(await essayer('EXTRAP-03 : aucun écart écarté comme anomalie sans justification écrite et preuve rattachée', async () => {
-      const violations = await q<{ id: string }>(
-        `select m.id::text from misstatement m
+      const violations = await q<{ id: string; kind: string }>(
+        `select m.id::text, m.kind from misstatement m
          where m.engagement_id = $1 and m.status = 'dismissed'
-           and (m.dismissed_reason is null or trim(m.dismissed_reason) = '' or m.dismissed_evidence_id is null)`,
+           and (m.dismissed_reason is null or trim(m.dismissed_reason) = '' or m.dismissed_evidence_id is null
+                or m.kind = 'projected')`,
         [id],
       );
       if (violations.length > 0) {
-        throw new Error(`${violations.length} écart(s) écarté(s) comme anomalie SANS justification écrite `
-          + `et/ou preuve rattachée (${violations.map((v) => v.id).join(', ')}) — EXTRAP-03 a été contourné`);
+        throw new Error(`${violations.length} écart(s) écarté(s) comme anomalie SANS justification écrite, `
+          + `SANS preuve rattachée, OU sur une ligne PROJETÉE (${violations.map((v) => `${v.id}:${v.kind}`).join(', ')}) `
+          + `— EXTRAP-03 a été contourné`);
       }
       const dismissed = await q01<{ n: string }>(
         `select count(*) n from misstatement where engagement_id = $1 and status = 'dismissed'`,

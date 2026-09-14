@@ -816,18 +816,27 @@ export default async function ControlDetail({
       <div className="panel">
         {/* §1.5 point 1 (mandat 2026-09-14) : « Tests de contrôles : aucune projection
             (ISA 530 §A20). L'écran le DIT en une phrase et affiche le taux de déviation ; il
-            ne laisse pas un vide que l'auditeur prendrait pour un oubli. » `grid` est la
-            population RÉELLEMENT testée (une ligne par attribut par occurrence, attributeGrid()
-            ci-dessus) — le dénominateur du taux, pas gridLabels.length (qui ne compterait que
-            les occurrences, sous-comptant un contrôle à plusieurs attributs). */}
-        {grid.length > 0 && (
-          <p className="muted">
-            {t('rcmc.noProjectionTestsOfControls', {
-              n: deviations.length, total: grid.length,
-              rate: (grid.length ? (deviations.length / grid.length) * 100 : 0).toFixed(1),
-            })}
-          </p>
-        )}
+            ne laisse pas un vide que l'auditeur prendrait pour un oubli. »
+            RÉVISÉ le 2026-09-14 (revue hostile, DEUX voix indépendantes convergentes) : le
+            dénominateur initial (grid.length, une ligne par ATTRIBUT par occurrence) contredisait
+            — et sous-estimait de moitié sur le contrôle de démonstration mesuré — la convention
+            DÉJÀ établie et ÉPROUVÉE de ce dépôt (sox.ts::proposeDeficiencySeverity, s8.test.ts :
+            « the deviation RATE is deviating instances over instances tested — one month that
+            fails three attributes is one month that failed, not three »). Le taux ici reprend
+            EXACTEMENT cette même définition (occurrences déviantes / occurrences testées), sur
+            la MÊME population que le reste de cet écran (gridLabels, déjà calculé ci-dessus),
+            pas une notion nouvelle ni un appel à un sample_id figé sur le dernier test seul. */}
+        {gridLabels.length > 0 && (() => {
+          const occurrencesDeviantes = new Set(deviations.map((d) => d.instance_label).filter(Boolean)).size;
+          return (
+            <p className="muted">
+              {t('rcmc.noProjectionTestsOfControls', {
+                n: occurrencesDeviantes, total: gridLabels.length,
+                rate: ((occurrencesDeviantes / gridLabels.length) * 100).toFixed(1),
+              })}
+            </p>
+          );
+        })()}
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('rcmc.nDeviations', { n: deviations.length })}</h2>
           <span className="row">

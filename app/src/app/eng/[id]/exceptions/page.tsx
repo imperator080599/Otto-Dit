@@ -65,11 +65,11 @@ export default async function ExceptionsPage({
   const misstatements = await q<{
     id: string; kind: string; amount: string; corrected: boolean; status: string; notes: string | null;
     dismissed_reason: string | null; dismissed_evidence_filename: string | null; dismissed_by_name: string | null;
-    dismissed_at: string | null;
+    dismissed_at: string | null; rolled_into_projection: boolean;
   }>(
     `select m.id, m.kind, m.amount::text, m.corrected, m.status, m.notes,
             m.dismissed_reason, e.filename dismissed_evidence_filename, u.name dismissed_by_name,
-            m.dismissed_at::text
+            m.dismissed_at::text, m.rolled_into_projection
      from misstatement m
      left join evidence e on e.id = m.dismissed_evidence_id
      left join app_user u on u.id = m.dismissed_by
@@ -83,10 +83,16 @@ export default async function ExceptionsPage({
   const dismissedCount = misstatements.filter((m) => m.status === 'dismissed').length;
   /* §1.5 (mandat) : « évaluation contre la matérialité ». Le connu déjà comptabilisé et non corrigé
      — les anomalies écartées (EXTRAP-03) ne comptent JAMAIS ici : ISA 530 §5(e) les définit comme
-     démontrablement NON représentatives, donc hors de l'évaluation de la population. */
+     démontrablement NON représentatives, donc hors de l'évaluation de la population.
+     `rolled_into_projection` (migration 0163, revue hostile voix 2, finding HIGH reproduit en
+     exécution) EXCLUT les lignes BRUTES de la strate sondée déjà REPRÉSENTÉES par leur propre
+     ligne 'projected' — sans ce filtre, le même écart se sommait deux fois (une fois brut, une
+     fois extrapolé), mesuré à 175 000 c€ d'écart contre known+projected (testing/page.tsx) sur
+     un cas réel. La ligne 'projected' elle-même n'est jamais `rolled_into_projection` — elle
+     reste comptée, une seule fois. */
   const seuils = await validatedThresholds(id);
   const totalNonCorrigeCents = misstatements
-    .filter((m) => !m.corrected && m.status !== 'dismissed')
+    .filter((m) => !m.corrected && m.status !== 'dismissed' && !m.rolled_into_projection)
     .reduce((s, m) => s + numToCents(m.amount), 0);
   const evidencesPourEcartement = await q<{ id: string; filename: string; doc_type: string | null }>(
     `select id, filename, doc_type from evidence where engagement_id = $1 and quarantined = false order by filename`,
@@ -303,6 +309,9 @@ export default async function ExceptionsPage({
                   <td><span className={`badge ${m.status === 'dismissed' ? 'violet' : 'gray'}`}>{m.status}</span></td>
                   <td className="muted">
                     {m.notes}
+                    {m.rolled_into_projection && (
+                      <div className="faint">{t('exc.rolledIntoProjection')}</div>
+                    )}
                     {m.status === 'dismissed' && (
                       <div>
                         <div><strong>{t('exc.dismissedReason')}</strong> {m.dismissed_reason}</div>
@@ -316,7 +325,10 @@ export default async function ExceptionsPage({
                     )}
                   </td>
                   <td>
-                    {m.status !== 'dismissed' && (
+                    {/* EXTRAP-03 (revue hostile, voix 1) : une ligne 'projected' est TOUJOURS
+                        refusée par le service (matching.ts) — le formulaire ne s'offre donc pas,
+                        plutôt que de promettre un geste qui échoue systématiquement. */}
+                    {m.status !== 'dismissed' && m.kind !== 'projected' && (
                       <details>
                         <summary className="repli-action">{t('exc.dismissAsAnomaly')}</summary>
                         <form action={dismissAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 420 }}>

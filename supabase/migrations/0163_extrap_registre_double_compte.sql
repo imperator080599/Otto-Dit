@@ -1,0 +1,16 @@
+-- Mandat 2026-09-14, §1.5 point 2, correctif (revue hostile, voix 2, finding HIGH, reproduit en
+-- exécution avec des chiffres réels). `concludeEvaluation` (evaluation.ts) insère depuis 0162 une
+-- ligne `misstatement` de kind='projected' portant l'extrapolation — mais les lignes BRUTES de la
+-- strate sondée qui ont ALIMENTÉ cette extrapolation (escaladées via escalateToMisstatement,
+-- lues par computeSampleEvaluation dans `randomMis`) restaient, elles, `status in
+-- ('proposed','confirmed')` et `corrected=false` : le total du registre des anomalies
+-- (exceptions/page.tsx) les sommait DEUX FOIS — une fois brutes, une fois via leur propre
+-- projection. Mesuré : 152 123 188 c€ au registre contre 151 948 188 c€ sur known+projected
+-- (testing/page.tsx), un écart de 175 000 c€ correspondant exactement aux lignes brutes comptées
+-- en double.
+--
+-- `rolled_into_projection` marque les lignes BRUTES dont le montant est désormais REPRÉSENTÉ par
+-- une ligne 'projected' — jamais la ligne 'projected' elle-même. Le total du registre les exclut ;
+-- rien n'est supprimé ni recalculé en silence (règle 28) : la ligne brute reste au dossier,
+-- consultable, seulement retirée d'une SOMME qui la compterait deux fois.
+alter table misstatement add column if not exists rolled_into_projection boolean not null default false;

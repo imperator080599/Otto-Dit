@@ -439,7 +439,7 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
        returning id`,
       [IDS.engNep, randomItem.id],
     );
-    await escalateToMisstatement(exc.id, IDS.users.lea, {
+    const misstatementBrutId = await escalateToMisstatement(exc.id, IDS.users.lea, {
       kind: 'factual', amountCents: 75000, corrected: false, notes: 'sonde registre (règle 17)',
     });
     await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
@@ -461,5 +461,44 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     );
     expect(lignesRegistre.length).toBe(1);
     expect(Number(lignesRegistre[0].amount)).toBeCloseTo(Number(ev!.projected_misstatement), 2);
+
+    // revue hostile (voix 2, finding HIGH, reproduit en exécution — écart mesuré de 175 000 c€) :
+    // la ligne BRUTE qui a alimenté la projection doit être marquée `rolled_into_projection`,
+    // et un total du registre qui l'exclut doit retomber EXACTEMENT sur known+projected — pas
+    // sur known+projected+la ligne brute comptée une seconde fois.
+    const brut = await q1<{ rolled_into_projection: boolean }>(
+      `select rolled_into_projection from misstatement where id = $1`, [misstatementBrutId],
+    );
+    expect(brut.rolled_into_projection).toBe(true);
+    const totalRegistreSansDoubleCompte = await q1<{ n: string }>(
+      `select coalesce(sum(amount),0)::text n from misstatement
+       where engagement_id = $1 and corrected = false and status <> 'dismissed' and rolled_into_projection = false`,
+      [IDS.engNep],
+    );
+    expect(Number(totalRegistreSansDoubleCompte.n)).toBeCloseTo(
+      Number(ev!.known_misstatement) + Number(ev!.projected_misstatement), 2,
+    );
+  });
+
+  it('EXTRAP-03 (revue hostile, voix 1, finding CRITIQUE) : une ligne \'projected\' n’est JAMAIS écartable comme anomalie, quelle que soit la preuve fournie', async () => {
+    // Round 1 du correctif ne vérifiait la distinction de preuve QUE si exception_id était posé
+    // — or une ligne 'projected' (l'extrapolation automatique, evaluation.ts) a TOUJOURS
+    // exception_id = null : n'importe quelle pièce, même sans rapport, suffisait à effacer
+    // TOUT le chiffre projeté du registre. Reproduit puis corrigé : le refus est désormais
+    // INCONDITIONNEL sur kind='projected', peu importe la preuve fournie.
+    const ligneProjetee = await q1<{ id: string }>(
+      `select id from misstatement where engagement_id = $1 and kind = 'projected' limit 1`,
+      [IDS.engNep],
+    );
+    const uneEvidence = await q1<{ id: string }>(
+      `select id from evidence where engagement_id = $1 and quarantined = false limit 1`,
+      [IDS.engNep],
+    );
+    await expect(
+      dismissMisstatementAsAnomaly(ligneProjetee.id, IDS.users.lea, {
+        reason: 'Tentative de contournement : cette pièce n’a aucun rapport avec l’écart projeté.',
+        evidenceId: uneEvidence.id,
+      }),
+    ).rejects.toThrow(/EXTRAP-03/);
   });
 });
