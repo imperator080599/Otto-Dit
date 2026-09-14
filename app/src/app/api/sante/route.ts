@@ -889,6 +889,30 @@ async function corpsDeLaSonde() {
       if (!dismissed || Number(dismissed.n) === 0) return 'aucun écart écarté comme anomalie pour l’instant';
       return `${dismissed.n} écart(s) écarté(s) comme anomalie, tous avec justification écrite et preuve rattachée`;
     }));
+    /* NOTIF-01 (mandat 2026-09-14, §3.3). Le centre de notifications ne
+       possède aucun objet — c'est une vue sur les éléments préparés par l'IA
+       et non encore validés (`elementsIaNonValides`), et le même calcul
+       alimente l'obstacle au visa `iaNonValide` (obstacles.ts). CETTE
+       LECTURE VÉRIFIE LE CÂBLAGE, pas juste l'existence de l'un ou l'autre :
+       si un élément IA non validé n'apparaît PAS dans la famille d'obstacle
+       correspondante, les deux calculs ont divergé — NOTIF-01 a été
+       contourné (une écriture qui bipasse `obstaclesAuVisa`, ou une
+       régression de son câblage). CE QUE CETTE LECTURE NE VÉRIFIE PAS
+       (règle 19) : que chaque id résout bien une ligne réelle — couvert par
+       `notifications.test.ts`, pas ici. */
+    lectures.push(await essayer('NOTIF-01 : tout élément IA non validé compte comme obstacle au visa', async () => {
+      const { elementsIaNonValides } = await import('@/lib/services/notifications');
+      const { obstaclesAuVisa } = await import('@/lib/services/obstacles');
+      const elements = await elementsIaNonValides(id);
+      const obstacles = await obstaclesAuVisa(id);
+      const compteObstacle = obstacles.filter((o) => o.famille === 'iaNonValide').length;
+      if (elements.length > 0 && compteObstacle !== elements.length) {
+        throw new Error(`${elements.length} élément(s) IA non validé(s) mais ${compteObstacle} obstacle(s) `
+          + `de la famille iaNonValide — NOTIF-01 a divergé du calcul du visa`);
+      }
+      if (elements.length === 0) return 'aucun élément IA non validé pour l’instant';
+      return `${elements.length} élément(s) IA non validé(s), tous comptés comme obstacle au visa (NOTIF-01)`;
+    }));
     /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
        par défaut que les sections portant du contenu. » `blocPorteContenu`
        est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états

@@ -1147,3 +1147,37 @@ design : chacun reste une tranche à construire.**
   tranche (cosmétique, code pré-existant, hors périmètre immédiat). Reporté : annoter chaque ligne
   du tableau `draft.ts` de son statut (écarté comme anomalie / projeté / brut) comme le fait déjà
   le registre.
+
+- **R84 — le centre de notifications (mandat 2026-09-14, §3) ne couvre pas `wp_extra_cell.verifie
+  = false`** (une cellule de colonne ajoutée sur la grille de test, non vérifiée) comme une carte à
+  part. Elle est DÉRIVÉE de l'état de l'extraction qui la remplit (`colonne.ts`) : la compter à part
+  aurait affiché DEUX cartes — une pour l'extraction, une pour la cellule — qui se résolvent par le
+  MÊME geste (`verifyExtraction`, atelier de testing). Décision délibérée, pas un oubli : une
+  notification qui duplique le geste d'une autre contredirait le mandat lui-même (« jamais un
+  formulaire dupliqué », §3.2). Reporté : si un jour une cellule peut être vérifiée SANS passer par
+  l'extraction (un second chemin de vérification), cette exclusion devra être revue.
+
+- **R85 — le centre de notifications ne couvre pas les `review_note` portant une réponse
+  automatisée d'OTTO** (`notes/page.tsx`, `cr.verdict === 'execute'`). Il n'existe aujourd'hui aucun
+  geste d'« approbation » de la réponse d'OTTO distinct de la fermeture générique de la note
+  (`transitionNoteAction`) — une carte qui y mènerait ne résoudrait donc rien de plus spécifique
+  qu'une carte de note ordinaire, hors du périmètre de ce mandat (qui porte sur des ÉLÉMENTS DU
+  DOSSIER préparés par l'IA, pas sur des réponses de chat). Reporté : si un geste d'approbation
+  dédié de la réponse d'OTTO apparaît un jour, ajouter cette famille.
+
+- **R86 — la branche `?item=` du href d'une notification d'extraction (le lien profond vers la
+  ligne d'échantillon précise dans l'atelier de testing, quand la pièce vient d'une demande liée à
+  un `sample_item`) n'est pas éprouvée par `notifications.test.ts`.** La fixture du test n'a pas de
+  `request_item`/`sample_item` (chaîne lourde à construire — `sample` exige un `procedure_instance`,
+  hors périmètre d'une fixture ciblée) ; seule la branche SANS pièce liée (href nu vers `/testing`)
+  est éprouvée. Le code lui-même distingue bien les deux cas (`elementsIaNonValides`,
+  notifications.ts) ; c'est la COUVERTURE de la branche riche qui manque, pas le comportement.
+  Reporté : construire une fixture complète (via le flux `part1.ts`/`grille.test.ts` existant plutôt
+  qu'une écriture directe) pour couvrir cette branche.
+
+- **R87 — le centre de notifications (§3) n'a pas encore de station `clics` dédiée**, même patron
+  que R81 (EXTRAP-03) : le chemin humain EXISTE (`/travaux`, panneau « Ce que je dois approuver » ;
+  `/eng/[id]/notifications`, la destination de l'obstacle NOTIF-01), mais `scripts/clics/scenario.ts`
+  ne le clique pas encore, et `npm run clics` reste non fiable cette session (R80) — non ajouté par
+  la même prudence délibérée. Reporté : ajouter une station une fois `npm run clics` de nouveau
+  fiable.

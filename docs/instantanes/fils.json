@@ -369,6 +369,30 @@
       "note": "pas une somme erronée (une phrase de prose, pas un agrégat), mais une incohérence narrative réelle et nouvellement atteignable entre l'écran de registre et le récit du papier de travail sur les mêmes lignes. Condition de retrait : annoter chaque ligne du tableau draft.ts de son statut, comme le fait déjà le registre."
     },
     {
+      "id": "R84",
+      "etat": "ouvert — le centre de notifications (mandat 2026-09-14, §3, notifications.ts::elementsIaNonValides) ne couvre pas wp_extra_cell.verifie = false comme une carte à part : dérivée de l'état de l'extraction qui la remplit, la compter séparément aurait affiché deux cartes se résolvant par le MÊME geste (verifyExtraction).",
+      "depuis": "2026-09-14 (tranche §3, centre de notifications)",
+      "note": "décision délibérée, pas un oubli — une notification qui duplique le geste d'une autre contredirait le mandat (« jamais un formulaire dupliqué », §3.2). Condition de retrait : un second chemin de vérification de la cellule qui ne passerait pas par l'extraction."
+    },
+    {
+      "id": "R85",
+      "etat": "ouvert — le centre de notifications ne couvre pas les review_note portant une réponse automatisée d'OTTO (cr.verdict === 'execute') : aucun geste d'« approbation » distinct de la fermeture générique de la note n'existe aujourd'hui.",
+      "depuis": "2026-09-14 (tranche §3, centre de notifications)",
+      "note": "hors périmètre du mandat, qui porte sur des éléments du dossier préparés par l'IA, pas sur des réponses de chat. Condition de retrait : un geste d'approbation dédié de la réponse d'OTTO."
+    },
+    {
+      "id": "R86",
+      "etat": "ouvert — la branche ?item= du href d'une notification d'extraction (lien profond vers la ligne d'échantillon, quand la pièce vient d'une demande liée à un sample_item) n'est pas éprouvée par notifications.test.ts — seule la branche sans pièce liée l'est.",
+      "depuis": "2026-09-14 (tranche §3, centre de notifications)",
+      "note": "fixture lourde à construire (sample exige un procedure_instance), hors périmètre d'une fixture ciblée ; le code distingue bien les deux cas, c'est la couverture qui manque. Condition de retrait : une fixture complète via le flux part1.ts/grille.test.ts existant."
+    },
+    {
+      "id": "R87",
+      "etat": "ouvert — le centre de notifications (§3) n'a pas encore de station clics dédiée (même patron que R81) : le chemin humain existe (/travaux, /eng/[id]/notifications) mais scripts/clics/scenario.ts ne le clique pas, et npm run clics reste non fiable cette session (R80).",
+      "depuis": "2026-09-14 (tranche §3, centre de notifications)",
+      "note": "non ajouté par la même prudence délibérée que R81. Condition de retrait : une station notifications ajoutée à scenario.ts une fois npm run clics de nouveau fiable."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

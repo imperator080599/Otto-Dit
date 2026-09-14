@@ -596,6 +596,7 @@ export const GARDES: Garde[] = [
     ['ipe', 'obst.ipeQuestionNonPosee', 'ipe.test.ts'],
     ['jalons', 'obst.jalonEnRetard', null],
     ['materialite', 'obst.basculeSansSection / obst.basculeSansDemandeCtt', 'services/obstacles-materialite.test.ts'],
+    ['iaNonValide', 'obst.iaNonValide (NOTIF-01)', 'services/notifications.test.ts'],
     /* W1 : la famille naît en AVERTISSEMENT (drapeau de pack à off) — la
        fixture appariée (dossier sain, aucun avertissement) vit dans le test. */
     ['unsupported_sample_items — avertissement, drapeau nep-fr à off', 'obst.lignesNonConclues / obst.lignesConclusionPerimee', 'testing/grille.test.ts'],

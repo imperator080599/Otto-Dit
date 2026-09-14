@@ -175,7 +175,7 @@ describe('mes travaux — la liste se DÉRIVE', () => {
     expect(await notesOuvertesParAnciennete(HUGO)).toEqual([]);
   });
 
-  it('le tableau de bord rassemble les cinq vues en un appel', async () => {
+  it('le tableau de bord rassemble les six vues en un appel (mandat 2026-09-14, §3 : notifications)', async () => {
     const tb = await tableauDeBord(KARIM);
     expect(tb.lignes.length).toBeGreaterThan(0);
     expect(Object.keys(tb.sections).sort()).toEqual(['attribuees', 'detenues', 'recentes', 'suivies']);
@@ -185,6 +185,11 @@ describe('mes travaux — la liste se DÉRIVE', () => {
        positive se prouve ailleurs (voir le test dédié ci-dessus). */
     expect(Array.isArray(tb.echantillons)).toBe(true);
     expect(tb.notes.length).toBe(1);
+    /* `tb.notifications` : Karim est SENIOR sur ce dossier (`can_sign =
+       false`, seed.ts) — zéro élément compté comme sien, la valeur POSITIVE
+       (Léa) se prouve dans `notifications.test.ts`, jamais une seconde fois
+       ici avec un chiffre supposé. */
+    expect(tb.notifications).toEqual([]);
   });
 
   it('les sections « ouvertes récemment » sont dans l’ordre des visites, la dernière en tête', async () => {

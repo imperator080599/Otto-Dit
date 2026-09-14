@@ -883,6 +883,34 @@ export const LIBELLES = {
   },
   'obst.jalonEnRetard': { en: 'Milestone overdue and not done: {libelle} ({date})', fr: 'Jalon échu et non fait : {libelle} ({date})' },
   'obst.evaluation': { en: '{quoi}', fr: '{quoi}' },
+  'obst.iaNonValide': { en: '{quoi}', fr: '{quoi}' },
+
+  // ── Mandat 2026-09-14, §3 : le centre de notifications ─────────────────
+  'famille.iaNonValide.titre': { en: 'Unvalidated AI-prepared elements', fr: 'Éléments préparés par l’IA non validés' },
+  'famille.iaNonValide.pourquoi': {
+    en: 'Everything the AI prepares for the dossier is proposed, never accepted on its own — a human reviews and validates each element before it counts (permanent L2 ceiling).',
+    fr: 'Tout ce que l’IA prépare pour le dossier est proposé, jamais accepté seul — un humain revoit et valide chaque élément avant qu’il compte (plafond permanent L2).',
+  },
+  'notif.walkthroughGap': { en: 'Walkthrough gap candidate — control {code}', fr: 'Écart de walkthrough candidat — contrôle {code}' },
+  'notif.deficiency': { en: 'Deficiency severity proposed — control {code}', fr: 'Sévérité de déficience proposée — contrôle {code}' },
+  'notif.extraction': { en: 'Extraction awaiting verification — {fichier}', fr: 'Extraction en attente de vérification — {fichier}' },
+  'notif.materialite': { en: 'Materiality proposal awaiting validation', fr: 'Proposition de matérialité en attente de validation' },
+  'notif.niveau': { en: 'prepared under automation level {niveau}', fr: 'préparé sous le niveau d’automatisation {niveau}' },
+  'notif.dateNonMesuree': { en: 'date not measured', fr: 'date non mesurée' },
+  'notif.page.titre': { en: 'AI-prepared elements awaiting validation', fr: 'Éléments préparés par l’IA en attente de validation' },
+  'notif.page.quoi': {
+    en: 'Every element the AI prepared for this engagement, still awaiting human validation — computed now, nothing stored.',
+    fr: 'Chaque élément préparé par l’IA pour ce dossier, encore en attente de validation humaine — calculé à l’instant, rien n’est stocké.',
+  },
+  'notif.page.aucun': { en: 'No AI-prepared element awaiting validation on this engagement.', fr: 'Aucun élément préparé par l’IA en attente de validation sur ce dossier.' },
+  'notif.col.element': { en: 'Element', fr: 'Élément' },
+  'notif.col.niveau': { en: 'Level', fr: 'Niveau' },
+  'trav.notifications.titre': { en: 'What I must approve', fr: 'Ce que je dois approuver' },
+  'trav.notifications.quoi': {
+    en: 'AI-prepared elements on engagements where I can sign — computed now, nothing stored. A colleague who cannot sign on an engagement sees none of it counted as theirs.',
+    fr: 'Éléments préparés par l’IA sur les dossiers où je peux signer — calculé à l’instant, rien n’est stocké. Un collègue qui ne peut pas signer sur un dossier n’en voit rien compté comme sien.',
+  },
+  'trav.notifications.aucun': { en: 'Nothing of mine to approve right now.', fr: 'Rien à approuver de mon côté pour l’instant.' },
 
   // ── La boucle, étape par étape ─────────────────────────────────────────
   'loop.aucunEchantillon': { en: 'no sample drawn on this area — the loop has not started', fr: 'aucun échantillon tiré sur ce poste — la boucle n’a pas commencé' },

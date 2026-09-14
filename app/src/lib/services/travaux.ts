@@ -5,6 +5,7 @@ import { obstaclesAuVisa, type Famille } from './obstacles';
 import { mesSections, type MesSections, type Section } from './sections';
 import { numeroDemande } from './requests';
 import { lignesNonConclues } from './testing/grille';
+import type { CarteNotification } from './notifications';
 
 // MES TRAVAUX — le point d'origine qui manquait (constat de la revue hostile,
 // tranche 9).
@@ -73,8 +74,8 @@ const NOM_VISA: Record<RoleVisa, CleLibelle> = {
    affiché un dossier étranger avec son nom (revue hostile n°5). Et les
    dossiers SCELLÉS ou archivés sortent de TOUT le tableau de bord, pas
    seulement des obstacles — l'écran le dit une fois pour toutes. */
-const CABINET = `e.tenant_id = (select tenant_id from app_user where id = $1)`;
-const OUVERT = `e.status not in ('locked', 'archived')`;
+export const CABINET = `e.tenant_id = (select tenant_id from app_user where id = $1)`;
+export const OUVERT = `e.status not in ('locked', 'archived')`;
 
 export async function mesTravaux(userId: string): Promise<LigneTravail[]> {
   const lignes: LigneTravail[] = [];
@@ -309,6 +310,7 @@ export interface TableauDeBord {
   obstacles: ObstaclesDossier[];
   echantillons: EchantillonDossier[];
   notes: NotesDossier[];
+  notifications: CarteNotification[];
 }
 
 /** Tout ce que l'écran « Mes travaux » montre, en un appel. */
@@ -321,6 +323,12 @@ export async function tableauDeBord(userId: string): Promise<TableauDeBord> {
      join engagement_member m on m.engagement_id = e.id and m.user_id = $1
      where ${OUVERT}`, [userId])).map((r) => r.id));
   const filtre = (l: Section[]) => l.filter((s) => ouverts.has(s.engagementId));
+  /* IMPORT TARDIF (pas en tête de fichier) : `notifications.ts` importe déjà
+     `CABINET`/`OUVERT` DEPUIS ce fichier — un import statique EN TÊTE, ici,
+     fermerait un cycle direct à deux fichiers (travaux.ts ↔ notifications.ts).
+     L'appel TARDIF, à l'intérieur de la fonction, évite le cycle sans rien
+     devoir à l'ordre de résolution des modules. */
+  const { notificationsPourApprobation } = await import('./notifications');
   return {
     lignes: await mesTravaux(userId),
     sections: {
@@ -330,5 +338,6 @@ export async function tableauDeBord(userId: string): Promise<TableauDeBord> {
     obstacles: await obstaclesDeMesDossiers(userId),
     echantillons: await echantillonsDeMesDossiers(userId),
     notes: await notesOuvertesParAnciennete(userId),
+    notifications: await notificationsPourApprobation(userId),
   };
 }

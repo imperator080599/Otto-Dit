@@ -38,7 +38,7 @@ import { primaryPack } from '@/lib/packs';
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
-  | 'ipe' | 'tirage' | 'materialite';
+  | 'ipe' | 'tirage' | 'materialite' | 'iaNonValide';
 
 export interface Obstacle {
   famille: Famille;
@@ -64,6 +64,7 @@ const OU: Record<Famille, string> = {
   circularisation: 'circularisations',
   tirage: 'sampling',
   materialite: 'materiality',
+  iaNonValide: 'notifications',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -215,6 +216,16 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
      obstacle porte donc sur la question NON POSÉE, pas sur la réponse. */
   const { obstaclesIpe } = await import('./ipe');
   ajoute('ipe', (await obstaclesIpe(engagementId)).map((o) => o.motif));
+
+  /* 9 bis. NOTIF-01 (mandat 2026-09-14, §3.3) : « Le refus qui rend le
+     plafond L2 opposable ». Tant qu'un élément préparé par l'IA reste non
+     validé sur le dossier — écart de walkthrough candidat, déficience
+     proposée, extraction en attente de vérification, proposition de
+     matérialité —, le dossier ne se signe pas. Le calcul vit dans
+     `notifications.ts` (`elementsIaNonValides`), JAMAIS une seconde liste :
+     c'est le même calcul que le centre de notifications lui-même. */
+  const { obstaclesIaNonValidee } = await import('./notifications');
+  ajoute('iaNonValide', await obstaclesIaNonValidee(engagementId));
 
   // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.

@@ -34,4 +34,5 @@ export const FAMILLES: Record<Famille, { titre: CleLibelle; pourquoi: CleLibelle
   processus: { titre: 'rail.processus', pourquoi: 'famille.processus.pourquoi' },
   achevement: { titre: 'rail.achevement', pourquoi: 'famille.achevement.pourquoi' },
   materialite: { titre: 'famille.materialite.titre', pourquoi: 'famille.materialite.pourquoi' },
+  iaNonValide: { titre: 'famille.iaNonValide.titre', pourquoi: 'famille.iaNonValide.pourquoi' },
 };

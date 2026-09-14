@@ -77,7 +77,7 @@ function ListeSections({ titre, sections, cle, t }: { titre: string; sections: S
 export default async function MesTravaux() {
   const user = await requireUser();
   const t = await tr();
-  const { lignes, sections, obstacles, echantillons, notes } = await tableauDeBord(user.id);
+  const { lignes, sections, obstacles, echantillons, notes, notifications } = await tableauDeBord(user.id);
   const natures: LigneTravail['nature'][] = ['note', 'visa', 'demande'];
   const nObstacles = obstacles.reduce((s, d) => s + d.familles.reduce((x, f) => x + f.n, 0), 0);
   const nEchantillon = echantillons.reduce((s, d) => s + d.aConclure, 0);
@@ -126,6 +126,35 @@ export default async function MesTravaux() {
           </div>
         );
       })}
+
+      {/* MANDAT 2026-09-14, §3 : CE QUE MOI JE DOIS APPROUVER — filtré par
+          `can_sign` (je peux signer sur ce dossier), l'âge le plus ancien en
+          tête. Un collègue sans `can_sign` sur ce même dossier n'en verrait
+          aucun compté comme sien (épreuve du mandat, §3.4 point 2). Rien
+          n'y est stocké — même calcul que l'obstacle `iaNonValide` du
+          dossier, jamais une seconde liste. */}
+      <div className="panel" data-notifications>
+        <h2>{t('trav.notifications.titre')} <span className={`badge ${notifications.length ? 'amber' : 'green'}`}>{notifications.length}</span></h2>
+        <p className="faint">{t('trav.notifications.quoi')}</p>
+        {notifications.length === 0 ? <p className="faint">{t('trav.notifications.aucun')}</p> : (
+          <table className="data">
+            <thead>
+              <tr><th>{t('col.engagement')}</th><th>{t('notif.col.element')}</th><th>{t('notif.col.niveau')}</th><th>{t('col.date')}</th><th></th></tr>
+            </thead>
+            <tbody>
+              {notifications.map((n) => (
+                <tr key={n.id} data-notification={n.id} data-notification-nature={n.nature}>
+                  <td className="faint">{n.mission}</td>
+                  <td>{t(n.titre.cle, n.titre.vars)}</td>
+                  <td className="faint">{n.niveau}</td>
+                  <td className="faint">{n.quand ?? t('notif.dateNonMesuree')}</td>
+                  <td><Link href={n.href}>{t('obst.aller')} →</Link></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* CE QUI EMPÊCHE LE VISA, DOSSIER PAR DOSSIER — le même calcul que
           l'écran des obstacles du dossier ; chaque famille mène à l'écran qui
