@@ -115,6 +115,33 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
     second réfuteur indépendant** (la voix qui l'a soulevée ne peut pas aussi la juger) — si une
     session future ou le fondateur la trouve fausse, elle se corrige ici, dans ce fichier, jamais
     en silence ailleurs.
+
+    **Amendement du 14 septembre 2026 (soir, mandat leçons NOTIF-01 et Lot 5) — lève « aucun
+    nouveau cycle au-delà du chiffre d'affaires » EXACTEMENT pour le Lot 5, rien de plus.** Le
+    mandat `docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md`, point 3, dit verbatim :
+    « Next work — Lot 5 of the plan d'autonomie, never opened: les postes, in the C.3 order
+    (Trésorerie, Clients, Immobilisations, Fournisseurs, Paie, Provisions, Stocks, Capitaux
+    propres et impôt). » C'est une instruction DIRECTE et NOMMÉE — pas une inférence, pas un
+    silence à interpréter — du fondateur qui a lui-même écrit cette règle. §0 point 5 de ce fichier
+    dit qu'un mandat ne prime jamais sur une règle permanente SANS le dire explicitement ; le voici
+    dit explicitement, comme l'amendement du 8 septembre l'a déjà fait une fois pour « pack SOX
+    gelé ». **Ce qui change** : « aucun nouveau cycle au-delà du chiffre d'affaires » ne s'applique
+    plus aux HUIT postes du Lot 5 (Partie C.3 du plan d'autonomie,
+    `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`), dans l'ordre donné, un par tranche,
+    chacun tenu à la barre de complétude que le plan lui-même pose (« leadsheet N/N-1, revue
+    analytique, procédures commandées par le risque, atelier de sa nature, papier, écarts — un
+    poste ouvert à moitié est pire qu'un lien mort »). **Ce qui RESTE gelé, sans exception** :
+    tout cycle AU-DELÀ de ces huit postes ; pack SOX gelé ; aucune constante ou table
+    d'échantillonnage écrite de mémoire (règle 8, toujours `verifie:false` tant que non fournie).
+    **Aucun contenu de procédure nouveau n'est requis pour ouvrir Trésorerie** — vérifié avant
+    d'amender cette règle, pas supposé : `methodology/procedures.json` v1.4.0 porte déjà
+    `TRESO-CIRC`/`TRESO-RAPPRO`/`CONFIRM`, contenu sourcé (`sources: ["ISA-505"]` etc.), non
+    modifié par cette tranche — ce qui manquait était une CORRESPONDANCE entre le vocabulaire
+    `cycle`/`postes` du catalogue (`TRESO`) et le vrai code FSLI (`CASH`), déjà documentée comme
+    dette avant ce mandat (R56/R57, `docs/BACKLOG_REPORTE.md`). Corriger cette correspondance est
+    de la MÉCANIQUE (au sens de règle 9 : contenu et configuration, jamais une bifurcation de
+    code) — le même type de distinction déjà posée par l'objection ci-dessus (observation/
+    inspection) et par l'amendement du 8 septembre lui-même, jamais laissée en silence.
 15. **Chercher un mot n'est pas vérifier un chemin.** Un `grep` répond à « ce texte existe-t-il ? »,
     jamais à « cette règle s'applique-t-elle ? ». La seconde ne se répond qu'en empruntant le
     chemin : un test qui l'exerce, ou un clic (ADR-094). **Un balayage de texte n'est pas une
