@@ -28,6 +28,7 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { Repli } from '@/app/repli';
+import { IaFlag, IA_PREPARE_ATTRS } from '@/app/ia-flag';
 
 const RESULT_STYLE: Record<string, string> = { pass: 'green', fail: 'red', na: 'gray' };
 
@@ -487,7 +488,10 @@ export default async function ControlDetail({
               </thead>
               <tbody>
                 {walkthroughAnalyse.ecarts.map((e) => (
-                  <tr key={e.id} data-ecart-walkthrough={e.seq} data-statut={e.status}>
+                  /* R59/ADR-103 (mandat du 10 septembre, option b) : chaque ligne vient de
+                     l'analyse (rejeu) du transcript, jamais d'une saisie humaine — l'attribut
+                     structurel le porte, pas seulement l'absence de bouton « saisir ». */
+                  <tr key={e.id} data-ecart-walkthrough={e.seq} data-statut={e.status} {...IA_PREPARE_ATTRS}>
                     <td className="mono">{e.seq}</td>
                     <td>
                       <span className={`badge ${e.kind === 'contradiction' ? 'amber' : 'gray'}`}>
@@ -873,7 +877,9 @@ export default async function ControlDetail({
         )}
         {deficiency && (
           <div className={`callout ${deficiency.status === 'confirmed' ? '' : 'warn'} mt`}>
-            <strong>{(deficiency.severity_final ?? deficiency.severity_proposed).replace(/_/g, ' ').toUpperCase()}</strong>{' '}
+            {deficiency.severity_final == null
+              ? <IaFlag><strong>{deficiency.severity_proposed.replace(/_/g, ' ').toUpperCase()}</strong></IaFlag>
+              : <strong>{deficiency.severity_final.replace(/_/g, ' ').toUpperCase()}</strong>}{' '}
             <span className="badge gray">{deficiency.status}</span>
             <p>{deficiency.narrative}</p>
             {deficiency.status === 'proposed' && (

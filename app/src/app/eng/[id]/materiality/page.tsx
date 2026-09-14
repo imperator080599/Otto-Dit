@@ -9,6 +9,7 @@ import { fmtEur } from '@/lib/kernel/canon';
 import { q } from '@/lib/db/client';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
+import { IaFlag } from '@/app/ia-flag';
 import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../notes/actions';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
@@ -100,7 +101,7 @@ export default async function MaterialityPage({
             <p>
               <span className={`badge ${current.status === 'validated' ? 'green' : 'amber'}`}>{current.status}</span>{' '}
               <span className="badge gray">v{current.version}</span>{' '}
-              <span className="ai-flag">{t('mat.engineProposalHumanDecides')}</span>
+              <IaFlag>{t('mat.engineProposalHumanDecides')}</IaFlag>
             </p>
             <div className="grid cols-2">
               {annotable('seuil_signification', t('mat.seuilDeSignification'),

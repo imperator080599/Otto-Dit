@@ -7,6 +7,7 @@ import { separerCode } from '@/app/refus';
 import { declarerCleAction, declarerDomaineAction, choisirCreneauAction, envoyerAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
+import { IaFlag } from '@/app/ia-flag';
 
 // LES RÉUNIONS (ADR-101). Tout ce qui s'affiche ici est DÉTERMINISTE et
 // local ; la lecture d'agendas et l'envoi sont SIMULÉS, et l'écran le dit —
@@ -95,7 +96,7 @@ export default async function ReunionsPage({
       </div>
 
       <div className="panel">
-            <h2>{t('reun.proposeSlots')} <span className="ai-flag">{t('reun.simulatedAvailabilityFreeBusyOnly')}</span></h2>
+            <h2>{t('reun.proposeSlots')} <IaFlag>{t('reun.simulatedAvailabilityFreeBusyOnly')}</IaFlag></h2>
         <form method="get" className="row">
           <label className="row" style={{ gap: 4 }}>du <input name="de" placeholder="AAAA-MM-JJ" defaultValue={de ?? '2026-03-02'} style={{ width: 110 }} /></label>
           <label className="row" style={{ gap: 4 }}>au <input name="a" placeholder="AAAA-MM-JJ" defaultValue={a ?? '2026-03-06'} style={{ width: 110 }} /></label>
@@ -143,7 +144,7 @@ export default async function ReunionsPage({
       </div>
 
       <div className="panel">
-            <h2>{<>{t('reun.proposeSlots')} <span className="ai-flag">{t('reun.simulatedAvailabilityFreeBusyOnly')}</span></>}</h2>
+            <h2>{<>{t('reun.proposeSlots')} <IaFlag>{t('reun.simulatedAvailabilityFreeBusyOnly')}</IaFlag></>}</h2>
         {invs.length === 0 ? <p className="muted">{t('reun.noInvitationThePathKeyContact')}</p>
           : invs.map((i) => (
             <div className={`callout ${i.statut === 'envoyee_simulee' ? 'green' : ''}`} key={i.id}>

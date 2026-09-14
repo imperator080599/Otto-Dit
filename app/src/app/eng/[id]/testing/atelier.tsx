@@ -7,6 +7,7 @@ import type { Grille, Cellule, ConclusionLigne } from '@/lib/services/testing/gr
 import { ETAT_CELLULE } from '@/lib/services/testing/etat-cellule';
 import { useT } from '@/lib/i18n/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
+import { IaFlag } from '@/app/ia-flag';
 
 // L'ATELIER (point 10, ADR-104) : l'écran où l'auditeur passe son temps.
 // La pièce et la ligne CÔTE À CÔTE ; la comparaison lisible SUR la ligne ;
@@ -439,7 +440,7 @@ export function Atelier({
             {pieceSel && (
               <p className="faint mt" style={{ fontSize: 11.5 }}>
                 {t('atl.empreinte', { h: pieceSel.sha256.slice(0, 14) })}
-                {extraction && <> · {t('atl.echelon')} <span className="ai-flag">{extraction.rung}</span></>}
+                {extraction && <> · {t('atl.echelon')} <IaFlag>{extraction.rung}</IaFlag></>}
                 {extraction && extraction.coutUsd > 0 && <> · {t('atl.lectureCout', { c: extraction.coutUsd.toFixed(4) })}</>}
                 {' '}· <a href="#reexecution">{t('atl.reexecution')}</a>
               </p>

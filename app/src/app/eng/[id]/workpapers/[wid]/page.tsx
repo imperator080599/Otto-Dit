@@ -9,6 +9,7 @@ import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { colonnes } from '@/lib/methodology/catalogue';
 import type { WpSection } from '@/lib/services/workpapers/draft';
 import { Annotable } from '@/app/annotable';
+import { IaFlag } from '@/app/ia-flag';
 import { poserNoteAncreeAction, repondreNoteAction, transitionNoteAction } from '../../notes/actions';
 import { executerNoteOtto } from '@/lib/services/notes/otto';
 import { joindreAnnexe, annexesDuPapier } from '@/lib/services/workpapers/annexes';
@@ -407,7 +408,7 @@ export default async function WorkpaperDetail({
         {ipe?.valideParNom && (
           <p className="faint mt">
             {ipe.valideParNom} · {ipe.valideLe?.slice(0, 10)}
-            {ipe.redigeParIa && <> · <span className="ai-flag">{t('wp.draftedByTheEngineApprovedBy')}</span></>}
+            {ipe.redigeParIa && <> · <IaFlag>{t('wp.draftedByTheEngineApprovedBy')}</IaFlag></>}
           </p>
         )}
       </div>
@@ -519,7 +520,7 @@ export default async function WorkpaperDetail({
                               {cel.evidence_id
                                 ? <a href={`/api/blob/${cel.evidence_id}`} target="_blank" title={t('wp.theDocumentCarryingTheFigure')}>{affiche}</a>
                                 : affiche}
-                              {!cel.verifie && <span className="ai-flag" style={{ marginLeft: 4 }}>{t('wp.toCheck')}</span>}
+                              {!cel.verifie && <IaFlag style={{ marginLeft: 4 }}>{t('wp.toCheck')}</IaFlag>}
                             </td>
                           );
                         })}

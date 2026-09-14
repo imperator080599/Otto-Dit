@@ -6,6 +6,7 @@ import { ensureReminders } from '@/lib/services/requests';
 import { frameworkSet } from '@/lib/services/fsli';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
+import { IaFlag } from '@/app/ia-flag';
 
 const SEV_BADGE: Record<string, string> = { deficiency: 'amber', significant_deficiency: 'violet', material_weakness: 'red' };
 
@@ -120,7 +121,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           )}
           <h2>{t('dash.aiUsageAndCostD12')}</h2>
           <p>
-            <span className="ai-flag">{d.ai.runs} {t('dash.aiOcrRunS')}</span>{' '}
+            <IaFlag>{d.ai.runs} {t('dash.aiOcrRunS')}</IaFlag>{' '}
             <span className="faint">${d.ai.costUsd.toFixed(4)} {t('dash.demoRunsOnRecordedFixturesZero')}</span>
           </p>
           <h2>{t('col.framework')}</h2>

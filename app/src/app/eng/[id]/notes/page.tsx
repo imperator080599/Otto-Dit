@@ -7,6 +7,7 @@ import type { CompteRenduOtto } from '@/lib/services/notes/otto';
 import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { Repli } from '@/app/repli';
+import { IaFlag } from '@/app/ia-flag';
 
 // LA VUE TRANSVERSE DES NOTES DE REVUE (ADR-097). Toutes les notes de la
 // mission, leurs ancres RÉSOLUES contre l'état actuel du dossier : une note
@@ -82,7 +83,7 @@ export default async function NotesPage({
             <div className={`callout${cr?.verdict === 'refuse' ? ' warn' : ''}`} key={r.id} style={{ marginTop: 8 }}>
               <strong>{r.author_kind === 'otto' ? 'OTTO' : r.author_name}</strong>
               {cr?.verdict === 'refuse' && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.refusal')}</span>}
-              {cr?.verdict === 'execute' && <span className="ai-flag" style={{ marginLeft: 6 }}>{t('notes.executeParOtto')}</span>}
+              {cr?.verdict === 'execute' && <IaFlag style={{ marginLeft: 6 }}>{t('notes.executeParOtto')}</IaFlag>}
               <p style={{ margin: '4px 0' }}>{r.text}</p>
               {cr && cr.verdict === 'execute' && (
                 <ul className="faint" style={{ margin: '4px 0 0', paddingLeft: 18 }}>

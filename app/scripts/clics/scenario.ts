@@ -3758,6 +3758,15 @@ export async function conduire(
       dire('walkthrough : le rejeu retrouve les écarts ENREGISTRÉS de la fixture (2)', nEcarts === 2, `${nEcarts} écart(s) affiché(s)`);
       if (nEcarts === 0) return;
 
+      /* R59/ADR-103 (mandat du 10 septembre, option b) : chaque écart candidat vient de
+         l'analyse IA du transcript, jamais d'une saisie humaine — la ligne DOIT porter
+         data-ia-prepare="true" (posé par la même constante que le composant IaFlag,
+         src/app/ia-flag.tsx). Éprouvé ici sur du DOM RENDU avec de VRAIES données IA
+         (le rejeu de la fixture), pas seulement dans le code source. */
+      const nMarques = await compte('[data-ecarts-walkthrough] tbody tr[data-ia-prepare="true"]');
+      dire('walkthrough : chaque écart candidat porte le marqueur structurel « préparé par l’IA »',
+        nMarques === nEcarts, `${nMarques}/${nEcarts} ligne(s) marquée(s)`);
+
       const avantTaches = await compte('[data-taches-controle] tbody tr[data-tache]');
       await p.locator('[data-ecart-walkthrough="1"] summary.repli-action').click();
       await soumettre(p.locator('[data-ecart-walkthrough="1"] form[data-ecart-decision="task"] button'), 2000);
