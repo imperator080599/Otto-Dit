@@ -194,7 +194,19 @@ export interface AssurancePack {
      de L2, jamais d'un refus qui bloquerait chaque appel IA existant du jour
      au lendemain. Poser explicitement L0/L1 est la façon dont un cabinet se
      montre PLUS prudent que le défaut du produit — jamais plus permissif :
-     L3 n'existe même pas dans le type. */
+     L3 n'existe même pas dans le type.
+
+     CE QUE « DU CABINET » VEUT DIRE ICI, PRÉCISÉMENT (règle 19, revue
+     hostile du 2026-09-14, voix 2) : `AssurancePack` est du CONTENU DE CODE
+     (règle 9), pas une ligne par locataire — TOUS les cabinets dont une
+     mission porte `assurance_packs: ['nep-fr']` PARTAGENT ce même plafond,
+     et le changer exige un commit + déploiement, jamais un réglage propre à
+     UN cabinet. C'est la même limite, déjà assumée, que
+     `extrapolationMethod`/`attributeSampleConfidenceLevel`/
+     `videoRetentionDays` juste en dessous — pas une régression de ce champ,
+     mais elle n'était nommée nulle part avant cette revue. Un plafond
+     PROPRE à un cabinet précis exigerait de vivre dans `firm_methodology`
+     (DB, par locataire, versionné) — hors périmètre du mandat 2026-09-14. */
   automationLevel?: NiveauAutomatisation;
   /**
    * Les DRAPEAUX du pack : ce qu'une famille d'obstacles au visa fait quand

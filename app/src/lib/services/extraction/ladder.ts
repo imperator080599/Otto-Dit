@@ -118,10 +118,15 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
      n'appelait QUE `gardeBudget()`, jamais `assertBudgetActifEnBase()`. En rejeu ('mock'),
      rien ne se dépense et rien n'est gardé. */
   const adapter = getOcrAdapter();
+  /* UNE SEULE LECTURE, RÉUTILISÉE (revue hostile du 2026-09-14, voix 1 ET 2) :
+     relire le niveau APRÈS l'appel IA réel (potentiellement long) ouvrirait
+     une fenêtre où un changement de réglage timbrerait ai_run d'un niveau
+     qui n'a jamais accompagné cet appel — voir automatisation.ts. */
+  const niveau = await niveauEffectif(ev.engagement_id);
   if (adapter.name !== 'mock') {
     /* AUTO-01 (mandat 2026-09-14, §2.4) au même titre qu'IA-BUDGET-01 juste
        en dessous — deux gardes indépendantes, aucune ne remplace l'autre. */
-    await assertNiveauOuvert(ev.engagement_id);
+    await assertNiveauOuvert(ev.engagement_id, niveau);
     await assertBudgetActifEnBase();
     await gardeBudget();
   }
@@ -144,7 +149,7 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
       tokensOut: res.ai.tokensOut,
       costUsd: res.ai.costUsd,
       latencyMs: res.latencyMs,
-      niveauAutomatisation: await niveauEffectif(ev.engagement_id),
+      niveauAutomatisation: niveau,
     });
   }
   const id = await insertExtraction(evidenceId, res.rung, res.status, res.fields, aiRunId);

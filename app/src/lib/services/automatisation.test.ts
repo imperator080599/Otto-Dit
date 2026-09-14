@@ -8,9 +8,10 @@ import { q } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { recordAiRun } from '@/lib/core/airuns';
 import {
-  plafondDuPack, capperNiveau, niveauEffectif, definirNiveauMission, assertNiveauOuvert,
+  plafondDuPack, capperNiveau, depasseLePlafond, niveauEffectif, definirNiveauMission, assertNiveauOuvert,
 } from './automatisation';
 import { assertBudgetActifEnBase, _reinitialiserGardeBudgetEnBasePourSonde } from './extraction/budget';
+import { nepFr } from '@/lib/packs/nep-fr';
 
 describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
   beforeAll(async () => {
@@ -37,6 +38,39 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
        definirNiveauMission) ne se lit jamais telle quelle. */
     expect(capperNiveau('L2', 'L0')).toBe('L0');
     expect(capperNiveau('L2', 'L1')).toBe('L1');
+  });
+
+  it('depasseLePlafond : prend le pack déjà résolu — éprouvée contre un plafond RÉEL sous L2 (règle 17)', () => {
+    /* CAS CONNU MAUVAIS : ni nep-fr ni pcaob-sox ne posent aujourd'hui de
+       plafond sous L2 — une version qui résolvait le pack par le registre
+       réel (comme la toute première forme de cette lecture) ne pouvait donc
+       JAMAIS être éprouvée contre un dépassement authentique, seulement
+       contre le cas trivial « L2 contre L2 » (revue hostile du 2026-09-14,
+       voix 1 ET 2, même constat). Un pack FICTIF, ici, pose le plafond bas. */
+    expect(depasseLePlafond('L2', { automationLevel: 'L1' })).toBe(true);
+    expect(depasseLePlafond('L1', { automationLevel: 'L1' })).toBe(false);
+    expect(depasseLePlafond('L0', { automationLevel: 'L1' })).toBe(false);
+    expect(depasseLePlafond('L2', {})).toBe(false);   // absent ⇒ L2, jamais dépassé par L2 lui-même
+  });
+
+  it('definirNiveauMission : AUTO-01 refuse RÉELLEMENT contre un plafond de pack abaissé (pas seulement en théorie)', async () => {
+    /* Mutation TEMPORAIRE d'un pack RÉEL (nep-fr), restaurée en finally —
+       même discipline que les sondes de scripts/audit/ (règle 24 : rien de
+       durable ne doit survivre au test). C'est la preuve, par exécution, que
+       la branche « mission > plafond du pack » de definirNiveauMission
+       refuse VRAIMENT quand un cabinet abaisse son plafond — jusqu'ici
+       correcte seulement à la lecture du code (revue hostile du 2026-09-14,
+       voix 2, finding MOYEN). */
+    const original = nepFr.automationLevel;
+    nepFr.automationLevel = 'L1';
+    try {
+      await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.karim)).rejects.toThrow(/AUTO-01/);
+      expect(await niveauEffectif(IDS.engNep)).toBe('L1');   // rien écrit, le refus a bien eu lieu AVANT l'update
+      await expect(definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim)).resolves.toBeUndefined();
+      expect(await niveauEffectif(IDS.engNep)).toBe('L1');
+    } finally {
+      nepFr.automationLevel = original;
+    }
   });
 
   it('niveauEffectif : sans réglage de mission, c’est le plafond du pack (nep-fr, non posé ⇒ L2)', async () => {

@@ -399,6 +399,12 @@
       "note": "choix assumé : elementsIaNonValides est une VUE PURE (§3.1), la gate d'acceptation appartient à obstaclesAuVisa, comportement déjà partagé par toutes les familles. Sans risque pour le visa (l'obstacle acceptation bloque déjà tout). La lecture /api/sante NOTIF-01 est gardée contre ce cas précis. Condition de retrait : si la vue doit un jour refléter exactement l'obstacle, ajouter le même garde-fou à elementsIaNonValides."
     },
     {
+      "id": "R89",
+      "etat": "ouvert — AssurancePack.automationLevel (mandat 2026-09-14, §2.2, le plafond « du cabinet ») est posé au niveau du PACK (contenu de code, partagé par tous les cabinets utilisant nep-fr/pcaob-sox), pas au niveau du LOCATAIRE. Changer ce plafond exige un commit + déploiement, jamais un réglage propre à un cabinet précis.",
+      "depuis": "2026-09-14 (revue hostile de la tranche §2, voix 2, finding LOW/MEDIUM)",
+      "note": "même limite, déjà assumée, que les autres paramètres de cabinet du même type (extrapolationMethod, attributeSampleConfidenceLevel, videoRetentionDays), jamais nommée avant cette revue — désormais disclosed dans packs/types.ts. Condition de retrait : un plafond propre à un cabinet précis vivrait dans firm_methodology (DB, par locataire, versionné) — hors périmètre du mandat 2026-09-14."
+    },
+    {
       "id": "N2-1",
       "etat": "ouvert — la barre d'ancres se construit côté SERVEUR, écran par écran ; les onglets d'ancrage n'existent que sur la page de poste",
       "depuis": "nuit 2",

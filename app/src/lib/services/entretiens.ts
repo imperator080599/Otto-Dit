@@ -167,10 +167,13 @@ export async function analyserTranscript(interviewId: string, userId: string): P
      combiné à une clé posée aurait donc pu dépenser sans que la garde EN BASE ne soit jamais
      interrogée — la garde existait depuis le 9 septembre sans un seul site d'appel réel. Cas
      connu mauvais dans entretiens.test.ts : garde fermée + adaptateur réel ⇒ refus, zéro écriture. */
+  /* UNE SEULE LECTURE, RÉUTILISÉE (revue hostile du 2026-09-14, voix 1 ET 2,
+     même constat) : voir automatisation.ts pour la fenêtre TOCTOU évitée. */
+  const niveau = await niveauEffectif(itv.engagement_id);
   if (adapter.name !== 'mock') {
     /* AUTO-01 (mandat 2026-09-14, §2.4) — même ordre, même indépendance
        qu'IA-BUDGET-01 juste en dessous. */
-    await assertNiveauOuvert(itv.engagement_id);
+    await assertNiveauOuvert(itv.engagement_id, niveau);
     await assertBudgetActifEnBase();
     await gardeBudget();
   }
@@ -193,7 +196,7 @@ export async function analyserTranscript(interviewId: string, userId: string): P
     tokensOut: reponse.tokensOut,
     costUsd: reponse.costUsd,
     latencyMs: reponse.latencyMs,
-    niveauAutomatisation: await niveauEffectif(itv.engagement_id),
+    niveauAutomatisation: niveau,
   });
   for (let i = 0; i < reponse.ecarts.length; i++) {
     const e = reponse.ecarts[i];

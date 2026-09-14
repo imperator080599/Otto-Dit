@@ -61,6 +61,22 @@ export function capperNiveau(mission: NiveauAutomatisation, plafond: NiveauAutom
   return ORDRE[mission] <= ORDRE[plafond] ? mission : plafond;
 }
 
+/** Un réglage de mission dépasse-t-il le plafond de SON pack ? PREND LE PACK
+ *  DÉJÀ RÉSOLU plutôt que de le résoudre elle-même (revue hostile du
+ *  2026-09-14, voix 1 ET 2, même constat ÉLEVÉ/MOYEN indépendamment) :
+ *  aucun des deux packs réels (nep-fr, pcaob-sox) ne pose encore de plafond
+ *  sous L2 — une version qui résolvait le pack par le REGISTRE réel ne
+ *  pouvait donc jamais être éprouvée contre un dépassement authentique,
+ *  seulement contre le cas trivial « L2 contre L2 ». Prendre le pack en
+ *  paramètre rend la fonction testable avec un pack FICTIF qui pose un
+ *  plafond bas — le cas connu mauvais que règle 17 exige — sans dépendre du
+ *  contenu des packs d'aujourd'hui. `definirNiveauMission` et la lecture
+ *  `/api/sante` AUTO-01 (route.ts) l'utilisent TOUTES LES DEUX — jamais un
+ *  second calcul. */
+export function depasseLePlafond(mission: NiveauAutomatisation, pack: { automationLevel?: NiveauAutomatisation }): boolean {
+  return ORDRE[mission] > ORDRE[plafondDuPack(pack)];
+}
+
 /** Le niveau RÉELLEMENT en vigueur sur ce dossier, à l'instant de l'appel :
  *  le réglage de la mission s'il est posé, sinon le plafond du pack. */
 export async function niveauEffectif(engagementId: string): Promise<NiveauAutomatisation> {
@@ -83,12 +99,11 @@ export async function definirNiveauMission(
   await assertMembre(engagementId, userId, 'définir le niveau d’automatisation de la mission');
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);
-  const plafond = plafondDuPack(pack);
-  if (ORDRE[niveau] > ORDRE[plafond]) {
+  if (depasseLePlafond(niveau, pack)) {
     throw new Error(
-      `AUTO-01 : le niveau ${niveau} dépasse le plafond en vigueur (${plafond}, posé par le pack `
-      + `${pack.id}) — une mission peut être plus prudente que son cabinet, jamais plus permissive `
-      + '(mandat 2026-09-14, §2.2).',
+      `AUTO-01 : le niveau ${niveau} dépasse le plafond en vigueur (${plafondDuPack(pack)}, posé par `
+      + `le pack ${pack.id}) — une mission peut être plus prudente que son cabinet, jamais plus `
+      + 'permissive (mandat 2026-09-14, §2.2).',
     );
   }
   await q(`update engagement set automation_level = $2 where id = $1`, [engagementId, niveau]);
@@ -97,9 +112,20 @@ export async function definirNiveauMission(
 /** À appeler AVANT toute tentative d'appel IA réel, au même titre que
  *  `assertBudgetActifEnBase` (IA-BUDGET-01) — les DEUX gardes sont
  *  indépendantes, aucune ne remplace l'autre (§2.4). Refuse (AUTO-01) si le
- *  niveau effectif est L0 : l'agent est éteint pour ce périmètre. */
-export async function assertNiveauOuvert(engagementId: string): Promise<NiveauAutomatisation> {
-  const niveau = await niveauEffectif(engagementId);
+ *  niveau effectif est L0 : l'agent est éteint pour ce périmètre.
+ *
+ *  `niveauDejaLu` (revue hostile du 2026-09-14, voix 1 ET 2, même constat
+ *  ÉLEVÉ/MOYEN indépendamment) : l'appelant qui a DÉJÀ lu le niveau (pour la
+ *  garde) doit passer CETTE valeur, jamais laisser cette fonction relire —
+ *  une seconde lecture, après le vrai appel IA (parfois plusieurs secondes
+ *  plus tard), ouvre une fenêtre où `definirNiveauMission` change le réglage
+ *  ENTRE la garde et l'écriture de `ai_run.niveau_automatisation` : la ligne
+ *  porterait alors un niveau qui n'a JAMAIS accompagné l'appel réel — l'exact
+ *  contraire de ce qu'AUTO-02/§2.3 promet. Les quatre sites d'appel réels ne
+ *  lisent donc plus qu'UNE fois, et réutilisent la même valeur pour la garde
+ *  et pour le timbre. */
+export async function assertNiveauOuvert(engagementId: string, niveauDejaLu?: NiveauAutomatisation): Promise<NiveauAutomatisation> {
+  const niveau = niveauDejaLu ?? await niveauEffectif(engagementId);
   if (niveau === 'L0') {
     throw new Error(
       'AUTO-01 : l’agent IA est éteint (niveau L0) sur ce dossier — aucun appel ne part '

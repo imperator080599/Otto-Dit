@@ -142,8 +142,11 @@ export async function ask(
        pas changer sans casser ce que le test prouve). N'accorder qu'au SEUL nom que la
        classe réelle porte est aussi la forme la plus sûre : un futur troisième adaptateur
        réel devrait explicitement rejoindre cette liste plutôt que de passer par défaut. */
+    /* UNE SEULE LECTURE, RÉUTILISÉE (revue hostile du 2026-09-14, voix 1 ET 2,
+       même constat) : voir automatisation.ts pour la fenêtre TOCTOU évitée. */
+    const niveau = await niveauEffectif(engagementId);
     if (planner.name === 'anthropic') {
-      await assertNiveauOuvert(engagementId);   // AUTO-01 (§2.4), indépendante d'IA-BUDGET-01
+      await assertNiveauOuvert(engagementId, niveau);   // AUTO-01 (§2.4), indépendante d'IA-BUDGET-01
       await assertBudgetActifEnBase();
       await gardeBudget();
     }
@@ -163,7 +166,7 @@ export async function ask(
         tokensOut: reply.tokensOut,
         costUsd: reply.costUsd,
         latencyMs: reply.latencyMs,
-        niveauAutomatisation: await niveauEffectif(engagementId),
+        niveauAutomatisation: niveau,
       });
       source = 'llm';
     }

@@ -939,17 +939,19 @@ async function corpsDeLaSonde() {
        plafonnent déjà à la lecture (défense en profondeur, jamais un refus
        en production), mais ce silence-là est exactement ce que règle 13
        traque — la lecture le rend visible plutôt que de le laisser
-       corrigé sans bruit. */
+       corrigé sans bruit. `depasseLePlafond` (jamais un second calcul,
+       partagée avec `definirNiveauMission`) : voir son propre commentaire,
+       automatisation.ts — extraite en fonction PURE prenant le pack déjà
+       résolu précisément pour rester éprouvable contre un plafond réel
+       sous L2 (aucun des deux packs d'aujourd'hui n'en pose un), revue
+       hostile du 2026-09-14, voix 1 ET 2. */
     lectures.push(await essayer('AUTO-01 : aucun réglage de mission ne dépasse le plafond de son pack', async () => {
-      const { capperNiveau } = await import('@/lib/services/automatisation');
+      const { depasseLePlafond } = await import('@/lib/services/automatisation');
       const { primaryPack } = await import('@/lib/packs');
       const missions = await q<{ id: string; automation_level: 'L0' | 'L1' | 'L2'; framework_set: unknown }>(
         `select id::text, automation_level, framework_set from engagement where automation_level is not null`,
       );
-      const violations = missions.filter((m) => {
-        const pack = primaryPack(m.framework_set as never);
-        return capperNiveau(m.automation_level, pack.automationLevel ?? 'L2') !== m.automation_level;
-      });
+      const violations = missions.filter((m) => depasseLePlafond(m.automation_level, primaryPack(m.framework_set as never)));
       if (violations.length > 0) {
         throw new Error(`${violations.length} mission(s) dont le réglage dépasse le plafond de son pack `
           + `(${violations.map((v) => v.id).join(', ')}) — AUTO-01 a été contourné (écriture SQL directe, `

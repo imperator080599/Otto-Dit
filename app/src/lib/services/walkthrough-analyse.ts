@@ -95,8 +95,11 @@ export async function analyserWalkthrough(controlId: string, userId: string): Pr
   const documentation = await documentationDuControle(controlId);
 
   const adapter = getAnalysteWalkthrough();
+  /* UNE SEULE LECTURE, RÉUTILISÉE (revue hostile du 2026-09-14, voix 1 ET 2,
+     même constat) : voir automatisation.ts pour la fenêtre TOCTOU évitée. */
+  const niveau = await niveauEffectif(engagementId);
   if (adapter.name !== 'mock') {
-    await assertNiveauOuvert(engagementId);  // 0. AUTO-01 (§2.4), indépendante des deux suivantes
+    await assertNiveauOuvert(engagementId, niveau);  // 0. AUTO-01 (§2.4), indépendante des deux suivantes
     await assertBudgetActifEnBase();   // 1. le droit même de tenter (IA-BUDGET-01)
     await gardeBudget();               // 2. le plafond de dépense cumulée
   }
@@ -119,7 +122,7 @@ export async function analyserWalkthrough(controlId: string, userId: string): Pr
     tokensOut: reponse.tokensOut,
     costUsd: reponse.costUsd,
     latencyMs: reponse.latencyMs,
-    niveauAutomatisation: await niveauEffectif(engagementId),
+    niveauAutomatisation: niveau,
   });
   for (let i = 0; i < reponse.ecarts.length; i++) {
     const e = reponse.ecarts[i];

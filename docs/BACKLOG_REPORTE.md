@@ -1198,3 +1198,14 @@ design : chacun reste une tranche à construire.**
   rougir à tort. Reporté : si un jour la vue doit refléter exactement l'obstacle (jamais montrer
   une carte tant que la mission n'est pas acceptée), ajouter le même garde-fou à
   `elementsIaNonValides`.
+
+- **R89 — `AssurancePack.automationLevel` (mandat 2026-09-14, §2.2, le plafond « du cabinet ») est
+  posé au niveau du PACK (contenu de code, partagé par tous les cabinets utilisant `nep-fr`/
+  `pcaob-sox`), pas au niveau du LOCATAIRE.** Trouvé par la revue hostile du 2026-09-14 (§2, voix
+  2, finding LOW/MEDIUM). Changer ce plafond exige un commit + déploiement, jamais un réglage
+  propre à UN cabinet précis — la même limite, déjà assumée, que `extrapolationMethod`/
+  `attributeSampleConfidenceLevel`/`videoRetentionDays` (les autres « paramètres de cabinet » du
+  même type), mais jamais nommée avant cette revue. **Non corrigé, disclosed dans
+  `packs/types.ts`** (le commentaire du champ le dit désormais explicitement). Reporté : un plafond
+  PROPRE à un cabinet précis exigerait de vivre dans `firm_methodology` (DB, par locataire,
+  versionné) — hors périmètre du mandat 2026-09-14.
