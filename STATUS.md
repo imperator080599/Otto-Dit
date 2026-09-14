@@ -90,6 +90,95 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Mandat 2026-09-14, §3 : le centre de notifications — NOTIF-01 (2026-09-14)
+
+*Suite immédiate de §1.4-1.5 ci-dessous, dans le même souffle, sans attendre de retour (règle 32 —
+le fondateur reste absent jusqu'à 19h). §5 du mandat place §3 (notifications) AVANT §2 (degré
+d'automatisation) — l'ordre initial du plan de tâches de cette session avait les deux inversés,
+corrigé avant de commencer. §3.1 : « Le centre de notifications ne possède aucun objet. C'est une
+VUE sur les éléments préparés par l'IA et non encore validés — exactement l'inventaire que
+`IaFlag`/`data-ia-prepare` vient de rendre exhaustif (R59). » Rien de nouveau à stocker : quatre
+familles d'objets déjà réelles (écart de walkthrough candidat, déficience proposée, extraction en
+attente de vérification, proposition de matérialité), chacune avec son geste humain déjà existant.*
+
+**FAIT ET SERVI EN PRODUCTION — SHA à confirmer dans une tranche ultérieure (règle 36).**
+
+**`notifications.ts` (nouveau service).** `elementsIaNonValides(engagementId)` : les quatre
+familles, chacune avec une identité réelle (un id qui existe en base) et un geste humain réel qui
+la résout — jamais un formulaire dupliqué. `notificationsPourApprobation(userId)` : « ce que moi je
+dois approuver », filtré par `can_sign` (`engagement_member`) sur mes dossiers — un collègue sans
+`can_sign` sur un dossier n'y voit rien compté comme sien (§3.2, l'épreuve « le compte change selon
+le rôle »), l'âge le plus ancien en tête. Deux catégories délibérément non couvertes, disclosed
+R84/R85 (`wp_extra_cell` dérivé de l'extraction ; les réponses automatisées d'OTTO sans geste
+d'approbation dédié).
+
+**NOTIF-01 (§3.3, obstacles.ts).** Nouvelle famille `iaNonValide`, câblée dans `obstaclesAuVisa` —
+tant qu'un élément IA reste non validé sur le dossier, il ne se signe pas. Même calcul que le centre
+de notifications, jamais une seconde liste (`obstaclesIaNonValidee` appelle
+`elementsIaNonValides`). Wiré comme obstacle BLOQUANT dès sa naissance (pas un avertissement,
+contrairement à la pratique par défaut du dépôt pour une famille neuve) — justifié : le fait
+bloquant ne peut exister QUE là où un élément réel reste à statuer, prouvé par une fixture de faux
+positif dédiée (`IDS.engSox`, sans rien à statuer, famille muette — règle 25).
+
+**Deux écrans.** `/eng/[id]/notifications` (nouveau, dossier par dossier — la destination de
+l'obstacle NOTIF-01, déclarée dans `AILLEURS` de `rail.test.ts`, jamais depuis le rail). Un nouveau
+panneau « Ce que je dois approuver » sur `/travaux` (cross-dossier, `tableauDeBord` étendu d'un
+sixième champ `notifications`).
+
+**Lecture `/api/sante` dédiée.** Vérifie le CÂBLAGE (pas juste l'existence) : tout élément IA non
+validé doit compter comme obstacle de la famille `iaNonValide`, sauf sur une mission non acceptée
+(garde-fou ajouté après la revue hostile, voir plus bas).
+
+**DEUX RELECTEURS HOSTILES INDÉPENDANTS (règle 30 : multi-tenant + code de refus touchés), quatre
+constats confirmés, tous corrigés avant expédition.**
+
+1. **ÉLEVÉ (voix 2, reproduit par lecture attentive, pas juste « non testé »).** Le lien profond
+   d'une notification d'extraction (`?item=`) lisait `request_item.sample_item_id` BRUT. Après un
+   re-tirage (ADR-133), cet identifiant reste celui de la ligne D'ORIGINE — souvent *superseded* —
+   alors que l'atelier de testing (`atelier.tsx`) ne cherche que parmi les lignes COURANTES. Un
+   clic sur une telle carte n'aurait RIEN sélectionné, silencieusement — exactement le défaut que
+   « jamais un formulaire dupliqué » (§3) interdit. Corrigé : la résolution réutilise
+   `lignesAtelier()` elle-même (jamais une seconde implémentation du lignage, `LIGNAGE`) — chaque
+   pièce y est déjà rattachée à SA ligne courante, remontée à travers `sample_item.repris_de`.
+2. **MOYEN (voix 2).** `elementsIaNonValides` n'est pas gardée par l'acceptation de la mission,
+   contrairement à `obstaclesAuVisa` qui s'arrête AVANT de calculer la famille `iaNonValide` sur une
+   mission non acceptée (comportement partagé par TOUTES les familles, pas neuf). Conséquence
+   étroite : la lecture `/api/sante` NOTIF-01 pouvait rougir À TORT sur une mission non acceptée
+   portant déjà un élément IA. Corrigée avec un garde-fou dédié (`missionNonAcceptee`) ; l'asymétrie
+   vue/obstacle elle-même reste un choix ASSUMÉ (§3.1 : une vue montre ce qui existe, pas ce qui
+   bloque — et l'obstacle `acceptation` bloque déjà tout, inconditionnellement), disclosed R88.
+3. **MOYEN (voix 1, reproduit en direct).** Le test d'étanchéité cross-tenant ne posait AUCUN
+   élément réel sur le dossier étranger — il aurait passé même sans le filtre `CABINET`, prouvant
+   uniquement qu'un dossier VIDE ne fuit rien. Corrigé : une vraie proposition de matérialité, sur
+   le dossier étranger, avant d'affirmer qu'elle n'apparaît pas côté cabinet démonstration.
+4. **BAS (voix 2).** Clé de catalogue `notif.niveau` définie (fr/en) mais jamais référencée —
+   retirée.
+
+**Câblage d'étanchéité structurel.** `notificationsPourApprobation` inscrite « par personne »
+(`couverture-etancheite.test.ts`, `etancheite-executee.test.ts`, même patron que `mesTravaux`) —
+sa preuve par EXÉCUTION vit dans `notifications.test.ts`, pas dans l'appel automatique (même
+discipline que R62, revue hostile du 2026-09-13).
+
+**Mesures.** `npm run verify` (vitest complet, deux passes après les deux rounds de correctifs) :
+**144 fichiers, 1119 tests, tous verts** (`EXIT=0` lu dans le journal brut). `npm run screens`
+(balayage de PRODUCTION, deux passes) : **93 routes, 0 échec** — `/eng/[id]/notifications` et
+`/travaux` confirmés à 200 sous les deux packs (NEP et SOX). Un timeout isolé sur
+`/eng/[id]/provenance` (SOX), jamais touché par cette tranche, a été observé UNE fois sous charge
+parallèle complète puis n'a PAS reproduit sur deux relances indépendantes (isolée, puis la suite
+complète) — artefact environnemental, pas une régression (même mécanisme que la flakiness de
+`ctrl05-lecture.test.ts` documentée dans la tranche §1.4-1.5).
+
+**Quatre constats reportés, non bloquants** (`docs/BACKLOG_REPORTE.md`) : **R84/R85** — deux
+catégories d'éléments IA délibérément non couvertes (dérivation, absence de geste dédié). **R86** —
+la branche riche du deep-link d'extraction (avec un `sample_item` réel) reste non couverte par
+`notifications.test.ts` (fixture lourde), même si la revue hostile a confirmé son MÉCANISME correct
+après le correctif ci-dessus. **R87** — pas encore de station `clics` dédiée (même prudence que R81,
+`npm run clics` non fiable cette session, R80). **R88** — l'asymétrie vue/obstacle sur une mission
+non acceptée, choix assumé (voir constat 2 ci-dessus).
+
+**§2 (degré d'automatisation, AUTO-01/AUTO-02) suit immédiatement**, dans le même souffle, sans
+attendre de retour (règle 32).
+
 ## Mandat 2026-09-14, §1.4-1.5 : l'anomalie écartée (EXTRAP-03) et le raccordement au registre (2026-09-14)
 
 *Suite immédiate de §1.2-1.3 ci-dessous, dans le même souffle, sans attendre de retour (règle 32 —
