@@ -113,7 +113,16 @@ describe('enrichirMondeDemo', () => {
     expect(Boolean(proc.n && proc.n1)).toBe(true);
     expect(Number(apres!.controles)).toBeGreaterThan(0);
     expect(Number(apres!.conclues)).toBeGreaterThan(0);
-    expect(Number(apres!.analytique)).toBe(1);
+    /* DELTA, pas absolu — même patron que `membres` juste au-dessus (ligne
+       87). Un absolu supposait `avant.analytique === 0`, vrai tant que
+       TRADE_RECEIVABLES était le seul poste à en écrire une ; depuis le Lot
+       5 (poste Trésorerie, 2026-09-14), CASH écrit la sienne dans
+       `runPart1UpToWorkpaper()` (avant que ce test ne s'exécute) — l'absolu
+       aurait dû être 2, un chiffre qui casse au prochain poste. Le delta ne
+       dépend que de ce qu'`enrichirMondeDemo()` ajoute VRAIMENT (une ligne,
+       pour TRADE_RECEIVABLES), quel que soit le nombre de postes déjà
+       ouverts avant lui. */
+    expect(Number(apres!.analytique)).toBe(Number(avant!.analytique) + 1);
 
     /* AUCUNE nouvelle famille d'obstacles : le monde enrichi est aussi signable
        qu'avant — les familles d'après sont un sous-ensemble de celles d'avant

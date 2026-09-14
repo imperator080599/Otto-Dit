@@ -525,7 +525,32 @@ export async function planifierTresorerie(): Promise<void> {
 
   const papierExistant = await q01<{ id: string }>(
     `select id from workpaper where procedure_id = $1 limit 1`, [circ.id]);
-  if (!papierExistant) await redigerPapierDeProcedure({ procedureId: circ.id, userId: IDS.users.karim });
+  if (!papierExistant) {
+    const wp = await redigerPapierDeProcedure({ procedureId: circ.id, userId: IDS.users.karim });
+    /* L'IPE (information produite par l'entité) EST UN OBSTACLE AU VISA
+       (obstacles.ts) SUR TOUT PAPIER, jamais seulement REVENUE — même
+       geste que `declarerIpe` (enrichir.ts) pour TRADE_RECEIVABLES, écrit
+       ici plutôt que réutilisé (cette fonction est privée à enrichir.ts,
+       hardcodée sur le cycle REVENUE — jamais une résolution devinée pour
+       CASH par une fonction qui ne le connaît pas). TRESO-CIRC porte
+       `population.source: "balance"` (methodology/procedures.json) : la
+       source est la balance elle-même, déjà importée dans bootstrapNep(). */
+    const tb = await q01<{ id: string }>(
+      `select id::text from import_file where engagement_id = $1 and kind = 'tb' order by created_at desc limit 1`,
+      [IDS.engNep],
+    );
+    const { enregistrerIpe } = await import('@/lib/services/ipe');
+    if (tb) {
+      await enregistrerIpe(wp.id, {
+        utilisee: true, nature: 'systeme', importFileId: tb.id,
+        exhaustivite: 'Comptes de trésorerie rapprochés à la balance importée.',
+        exactitude: 'Soldes vérifiés contre le grand livre au centime.',
+        dateDocument: '2025-12-31', approprie: true,
+      }, IDS.users.karim);
+    } else {
+      await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+    }
+  }
 
   const dejaRedigee = await q01<{ id: string }>(
     `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'CASH' limit 1`,

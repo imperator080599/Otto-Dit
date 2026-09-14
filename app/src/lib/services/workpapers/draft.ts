@@ -408,9 +408,20 @@ export async function draftRevenueWorkpaper(engagementId: string, userId: string
      deux papiers d'un même poste ne se marchent pas dessus. */
   let reference = prev[0]?.reference ?? null;
   if (!reference) {
+    /* SCOPÉ AU POSTE — le commentaire ci-dessus le dit depuis toujours, le
+       SQL ne le faisait pas (trouvé en ouvrant Trésorerie, Lot 5, poste 1,
+       2026-09-14 : la première fois qu'un AUTRE poste que REVENUE porte un
+       papier référencé avant REV-01 — CASH, `C-01` — REV-01 recevait
+       `A-02` au lieu de `A-01`, la séquence comptant TOUT papier référencé
+       de la mission, pas seulement ceux de REVENUE). Même correctif que
+       `programme.ts::redigerPapierDeProcedure` — jamais une seconde
+       implémentation qui diverge (règle 19), donc corrigé ICI pour matcher
+       CE que le commentaire promettait déjà, pas réécrit ailleurs. */
     const dejaVus = await q1<{ n: string }>(
-      `select count(distinct code) n from workpaper
-       where engagement_id = $1 and reference is not null and code <> 'REV-01'`,
+      `select count(distinct w.code) n from workpaper w
+       join procedure_instance q on q.id = w.procedure_id
+       where w.engagement_id = $1 and q.fsli_code = 'REVENUE'
+         and w.reference is not null and w.code <> 'REV-01'`,
       [engagementId],
     );
     reference = referencePapier(cat, {
