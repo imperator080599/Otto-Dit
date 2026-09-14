@@ -1,39 +1,53 @@
 import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
-import { evaluateSample } from '@/lib/kernel/projection';
+import { evaluateSample, type MisstatementLine, type ExtrapolationMethod } from '@/lib/kernel/projection';
 import { centsToNum, numToCents } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { validatedThresholds } from './materiality';
+import { frameworkSet } from './fsli';
+import { primaryPack } from '@/lib/packs';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 
 // Gate 2 (audit partner): sample evaluation inside the procedure workpaper — known +
 // projected misstatement vs tolerable misstatement, computed L0, concluded L4. The
 // conclusion gate is: all exceptions dispositioned AND the aggregate evaluated vs TE.
 
-export async function computeSampleEvaluation(engagementId: string, userId: string | null): Promise<string> {
+export async function computeSampleEvaluation(
+  engagementId: string, userId: string | null,
+  /** RECOUVREMENT DE MÉTHODE, réservé aux tests (jamais un chemin humain/écran — la méthode
+   *  RÉELLE vit dans `SubstantiveConfig.extrapolationMethod`, un paramètre de pack, EXTRAP-04).
+   *  Nécessaire pour éprouver le chemin « méthode vérifiée » avant que le cabinet ne l'ait
+   *  posée dans `nep-fr.ts` — même patron que `_reinitialiserGardeBudgetEnBasePourSonde`
+   *  (budget.ts) : un recouvrement nommé, jamais un défaut silencieux. */
+  methodOverrideForTest?: ExtrapolationMethod | null,
+): Promise<string> {
   await assertMembre(engagementId, userId, 'computeSampleEvaluation');
   const ctx = await engagementCtx(engagementId);
   const thresholds = await validatedThresholds(engagementId);
   if (!thresholds) throw new Error('validated materiality required');
-  const sample = await q1<{ id: string; population_amount: string; coverage_amount: string | null }>(
-    `select s.id, s.population_amount::text, s.coverage_amount::text
+  const sample = await q1<{ id: string; population_amount: string; coverage_amount: string | null; population_size: number }>(
+    `select s.id, s.population_amount::text, s.coverage_amount::text, s.population_size
      from sample s join procedure_instance p on p.id = s.procedure_id
      where s.engagement_id = $1 and p.template_code = 'REV-SUBST' and s.status = 'drawn'
      order by s.created_at desc limit 1`,
     [engagementId],
   );
-  // stratum amounts + misstatements: 100%-examined strata = high_value + risk_flag
-  const strata = await q<{ selection_reason: string; tested: string }>(
-    `select si.selection_reason, coalesce(sum(si.amount),0)::text tested
+  // stratum amounts + counts: 100%-examined strata = high_value + risk_flag (EXTRAP-02 :
+  // ces deux strates n'entrent JAMAIS dans la strate « sondée » ci-dessous).
+  const strata = await q<{ selection_reason: string; tested: string; n: string }>(
+    `select si.selection_reason, coalesce(sum(si.amount),0)::text tested, count(*)::text n
      from sample_item si where si.sample_id = $1 group by si.selection_reason`,
     [sample.id],
   );
   const testedBy = (r: string) => numToCents(strata.find((s) => s.selection_reason === r)?.tested ?? '0');
+  const countBy = (r: string) => Number(strata.find((s) => s.selection_reason === r)?.n ?? '0');
   const coverageTested = testedBy('high_value') + testedBy('risk_flag');
+  const coverageCount = countBy('high_value') + countBy('risk_flag');
   const randomTested = testedBy('random');
+  const randomCount = countBy('random');
 
-  const mis = await q<{ selection_reason: string; amount: string }>(
-    `select si.selection_reason, m.amount::text
+  const mis = await q<{ selection_reason: string; amount: string; item_amount: string | null }>(
+    `select si.selection_reason, m.amount::text, si.amount::text item_amount
      from misstatement m
      join exception x on x.id = m.exception_id
      join sample_item si on si.id = x.sample_item_id
@@ -41,14 +55,26 @@ export async function computeSampleEvaluation(engagementId: string, userId: stri
     [engagementId],
   );
   const coverageMis = mis.filter((m) => m.selection_reason !== 'random').reduce((s, m) => s + numToCents(m.amount), 0);
-  const randomMis = mis.filter((m) => m.selection_reason === 'random').reduce((s, m) => s + numToCents(m.amount), 0);
+  const randomMis: MisstatementLine[] = mis
+    .filter((m) => m.selection_reason === 'random')
+    .map((m) => ({ amountCents: numToCents(m.amount), itemAmountCents: numToCents(m.item_amount) }));
+
+  // EXTRAP-04 : la méthode est un paramètre de CABINET (SubstantiveConfig.extrapolationMethod,
+  // packs/types.ts), `undefined` = non vérifié — jamais devinée ici.
+  const fs = await frameworkSet(engagementId);
+  const pack = primaryPack(fs as never);
+  const method = methodOverrideForTest !== undefined ? methodOverrideForTest : (pack.substantive?.extrapolationMethod ?? null);
 
   const result = evaluateSample({
+    method,
     populationAmountCents: numToCents(sample.population_amount),
     coverageAmountCents: coverageTested,
+    populationSize: sample.population_size,
+    coverageCount,
     randomTestedAmountCents: randomTested,
+    randomTestedCount: randomCount,
     coverageMisstatementCents: coverageMis,
-    randomMisstatementCents: randomMis,
+    randomMisstatements: randomMis,
     teAmountCents: thresholds.teCents,
   });
 
@@ -71,6 +97,7 @@ export async function computeSampleEvaluation(engagementId: string, userId: stri
     payload: {
       known: centsToNum(result.knownMisstatementCents),
       projected: centsToNum(result.projectedMisstatementCents),
+      method: result.projectionMethod,
       withinTolerable: result.withinTolerable,
       requestedBy: userId,
     },
@@ -150,12 +177,32 @@ export async function evaluationResponses(evaluationId: string) {
 export async function concludeEvaluation(evaluationId: string, userId: string, basis: string): Promise<void> {
   await assertMembreDe('sample_evaluation', evaluationId, userId, 'conclure une évaluation d’échantillon');
   if (!basis.trim()) throw new Error('conclusion basis required (L4)');
-  const e = await q1<{ id: string; sample_id: string; known_misstatement: string; projected_misstatement: string; te_amount: string }>(
-    `select id, sample_id, known_misstatement::text, projected_misstatement::text, te_amount::text
+  const e = await q1<{
+    id: string; sample_id: string; known_misstatement: string; projected_misstatement: string;
+    te_amount: string; projection_method: string; tested_random_amount: string;
+  }>(
+    `select id, sample_id, known_misstatement::text, projected_misstatement::text, te_amount::text,
+            projection_method, tested_random_amount::text
      from sample_evaluation where id = $1`,
     [evaluationId],
   );
   const s = await q1<{ engagement_id: string }>(`select engagement_id from sample where id = $1`, [e.sample_id]);
+
+  // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1) : un poste TESTÉ PAR SONDAGE (une strate
+  // aléatoire existe) ne se conclut pas sans projection à la population — `projection_method`
+  // vaut 'none' exactement quand le paramètre de cabinet n'a jamais été vérifié (EXTRAP-04,
+  // evaluateSample) ou qu'aucun écart de la strate sondée n'appelle de projection. Un
+  // échantillon ENTIÈREMENT exhaustif (aucune strate aléatoire, tested_random_amount = 0) n'a
+  // rien à projeter — §A20 ne s'applique qu'aux tests de contrôles, hors de ce chemin — donc
+  // seule la présence d'une strate sondée déclenche ce refus.
+  if (numToCents(e.tested_random_amount) > 0 && e.projection_method === 'none') {
+    throw new Error(
+      'EXTRAP-01 : ce poste a été testé par sondage (une strate aléatoire existe) mais aucune '
+      + 'projection à la population n\'a été calculée — la méthode d\'extrapolation du cabinet '
+      + '(SubstantiveConfig.extrapolationMethod) n\'est pas encore vérifiée (EXTRAP-04). '
+      + 'Impossible de conclure sans elle.',
+    );
+  }
 
   // gate 1 — exceeding tolerable misstatement blocks the conclusion until answered
   const total = numToCents(e.known_misstatement) + numToCents(e.projected_misstatement);

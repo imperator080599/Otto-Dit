@@ -35,6 +35,9 @@ export const nepFr: AssurancePack = {
     randomSizeDefault: 4,
     seedDefault: 'otto-demo-rev-1',
     tolerances: { amountAbs: 1, amountPct: 0.005, dateDays: 5, pricePct: 0.01, qtyAbs: 0 },
+    // EXTRAP-04 (mandat 2026-09-14, §1.3) : `extrapolationMethod` reste NON POSÉ, sciemment —
+    // aucune méthode de projection n'est écrite de mémoire. « paramètre non vérifié — à fixer
+    // par le cabinet » tant que ce champ est absent, même forme que `videoRetentionDays`.
   },
   /* La famille `unsupported_sample_items` (lignes de l'échantillon non
      conclues dans l'atelier) est un AVERTISSEMENT : elle ne bloque pas le

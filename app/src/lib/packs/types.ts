@@ -54,6 +54,13 @@ export interface SubstantiveConfig {
   randomSizeDefault: number;
   seedDefault: string; // deterministic pack default, overridable at L3
   tolerances: VouchingTolerances;
+  /* EXTRAP-04 (mandat 2026-09-14, §1.3) : ISA 530 EXIGE la projection (§14) mais NE DONNE
+     AUCUNE FORMULE — la méthode est donc un paramètre de cabinet, jamais une constante du
+     dépôt, même forme que `videoRetentionDays`/`attributeSampleConfidenceLevel` juste en
+     dessous : `undefined` EST la forme de « non vérifié », jamais une méthode choisie de
+     mémoire. Tant qu'elle n'est pas posée, `projeter()` (kernel/projection.ts) rend
+     `method:'none'`, `projectedCents:0` — aucune projection ne s'affiche (EXTRAP-04). */
+  extrapolationMethod?: 'unites_monetaires' | 'ratio' | 'difference';
 }
 
 export interface TaxonomyEntry {

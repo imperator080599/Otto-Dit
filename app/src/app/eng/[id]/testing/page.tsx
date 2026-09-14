@@ -462,9 +462,20 @@ export default async function TestingPage({
             <p className="muted">{t('test.cumulVsTe')}</p>
           ) : (
             <>
+              {/* EXTRAP (mandat 2026-09-14, §1.2/§1.6 point 6) : écart connu, écart projeté et
+                  écart total estimé sont TROIS NOMBRES DISTINCTS, chacun avec sa provenance —
+                  jamais additionnés ailleurs qu'au total ci-dessous. */}
               <div className="grid cols-2">
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
-                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span><span className="l">Projected ({evaluation.projection_method})</span></div>
+                <div className="kpi">
+                  {evaluation.projection_method === 'none' ? (
+                    <span className="v faint" style={{ fontSize: 13 }}>{t('test.extrapolationMethodNotVerified')}</span>
+                  ) : (
+                    <span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span>
+                  )}
+                  <span className="l">{t('test.projectedMisstatementMethod')} {evaluation.projection_method !== 'none' && `(${evaluation.projection_method})`}</span>
+                </div>
+                <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement), 'fr')}</span><span className="l">{t('test.totalEstimatedMisstatement')}</span></div>
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
                 <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
               </div>

@@ -296,11 +296,27 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
 
   it('sample evaluation: the breach blocks the conclusion until a response is recorded', async () => {
     await computeSampleEvaluation(IDS.engNep, IDS.users.lea);
-    const ev = await currentEvaluation(IDS.engNep);
+    const evUnverified = await currentEvaluation(IDS.engNep);
     // 36 330 cut-off + 36 800 double booking + 1 800 overbilling + 2 615,80 undelivered
     // units + 50 000 manual journal — every one admitted by the client, none corrected
+    expect(Number(evUnverified!.known_misstatement)).toBeCloseTo(127545.8, 2);
+    expect(evUnverified!.projection_method).toBe('none'); // le pack (nep-fr.ts) ne fixe AUCUNE
+    // méthode d'extrapolation — EXTRAP-04, sciemment non posée (règle 8).
+
+    // EXTRAP-01 (mandat 2026-09-14, §1.2/§1.6 point 1) : ce poste A une strate SONDÉE (le
+    // tirage aléatoire de nep-fr.ts, randomSizeDefault: 4) — le conclure sans qu'une méthode
+    // d'extrapolation vérifiée ait produit de projection est refusé, AVANT même le gate TE.
+    await expect(
+      concludeEvaluation(evUnverified!.id, IDS.users.lea, 'Rien à signaler par ailleurs.'),
+    ).rejects.toThrow(/EXTRAP-01/);
+
+    // Le cabinet fixe sa méthode (recouvrement réservé aux tests — la vraie méthode vivrait
+    // dans SubstantiveConfig.extrapolationMethod, packs/nep-fr.ts) : la projection existe
+    // désormais, et le gate TE (pré-existant) redevient le seul obstacle.
+    await computeSampleEvaluation(IDS.engNep, IDS.users.lea, 'ratio');
+    const ev = await currentEvaluation(IDS.engNep);
+    expect(ev!.projection_method).toBe('ratio');
     expect(Number(ev!.known_misstatement)).toBeCloseTo(127545.8, 2);
-    expect(ev!.projection_method).toBe('none'); // all of it sits in the 100 %-coverage stratum
     expect(Number(ev!.known_misstatement)).toBeGreaterThan(Number(ev!.te_amount));
 
     // the engine refuses to conclude on a sample that no longer supports a conclusion

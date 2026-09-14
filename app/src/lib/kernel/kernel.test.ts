@@ -266,34 +266,160 @@ describe('vouching (kernel matching)', () => {
   });
 });
 
-describe('sample evaluation / projection (Gate 2)', () => {
-  it('projects the random-stratum rate over the untested remainder', () => {
+describe('sample evaluation / projection (Gate 2, ISA/NEP 530 — mandat 2026-09-14 §1)', () => {
+  // Trois quantités jamais confondues (§1.2) : known = strate EXHAUSTIVE seulement (jamais
+  // la strate sondée, EXTRAP-02) ; projected = extrapolation de la strate SONDÉE ; total =
+  // known + projected.
+  it('ratio : projette (écart / valeur comptable échantillon) × valeur comptable population SONDÉE', () => {
     const r = evaluateSample({
+      method: 'ratio',
       populationAmountCents: 1000000,
       coverageAmountCents: 600000,
+      populationSize: 100,
+      coverageCount: 10,
       randomTestedAmountCents: 100000,
+      randomTestedCount: 20,
       coverageMisstatementCents: 5000,
-      randomMisstatementCents: 2000,
+      randomMisstatements: [{ amountCents: 2000, itemAmountCents: 5000 }],
       teAmountCents: 50000,
     });
-    expect(r.untestedAmountCents).toBe(300000);
-    expect(r.projectedMisstatementCents).toBe(6000); // 2% × 300 000
-    expect(r.knownMisstatementCents).toBe(7000);
+    // population sondée = 1 000 000 − 600 000 = 400 000 ; projection = (2000/100000) × 400000
+    expect(r.projectedMisstatementCents).toBe(8000);
+    expect(r.knownMisstatementCents).toBe(5000); // la strate exhaustive SEULE — jamais +2000
     expect(r.totalKnownPlusProjectedCents).toBe(13000);
+    expect(r.untestedAmountCents).toBe(300000); // 400 000 sondée − 100 000 réellement testé
+    expect(r.projectionMethod).toBe('ratio');
     expect(r.withinTolerable).toBe(true);
   });
 
-  it('flags totals above tolerable misstatement', () => {
+  it('ratio : flags totals above tolerable misstatement', () => {
     const r = evaluateSample({
+      method: 'ratio',
       populationAmountCents: 1000000,
       coverageAmountCents: 0,
+      populationSize: 100,
+      coverageCount: 0,
       randomTestedAmountCents: 100000,
+      randomTestedCount: 10,
       coverageMisstatementCents: 0,
-      randomMisstatementCents: 10000,
+      randomMisstatements: [{ amountCents: 10000, itemAmountCents: 10000 }],
       teAmountCents: 50000,
     });
-    expect(r.projectedMisstatementCents).toBe(90000);
+    expect(r.projectedMisstatementCents).toBe(100000); // (10000/100000) × 1 000 000
     expect(r.withinTolerable).toBe(false);
+  });
+
+  it('difference : projette (écart total ÷ n) × N — des COMPTES, jamais des montants', () => {
+    const r = evaluateSample({
+      method: 'difference',
+      populationAmountCents: 500000,
+      coverageAmountCents: 0,
+      populationSize: 50,
+      coverageCount: 0,
+      randomTestedAmountCents: 50000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      randomMisstatements: [
+        { amountCents: 1000, itemAmountCents: 5000 },
+        { amountCents: -200, itemAmountCents: 5000 },
+      ],
+      teAmountCents: 50000,
+    });
+    // écart total échantillon = 800 ; ÷ n(10) × N(50) = 4000
+    expect(r.projectedMisstatementCents).toBe(4000);
+    expect(r.projectionMethod).toBe('difference');
+  });
+
+  it('unités monétaires : entachement PAR LIGNE (écart ÷ valeur comptable) × intervalle de sondage', () => {
+    const r = evaluateSample({
+      method: 'unites_monetaires',
+      populationAmountCents: 500000,
+      coverageAmountCents: 0,
+      populationSize: 50,
+      coverageCount: 0,
+      randomTestedAmountCents: 50000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      randomMisstatements: [{ amountCents: 500, itemAmountCents: 5000 }], // entachement 10 %
+      teAmountCents: 50000,
+    });
+    // intervalle = 500 000 (population sondée) ÷ 10 (n) = 50 000 ; projection = 10 % × 50 000
+    expect(r.projectedMisstatementCents).toBe(5000);
+    expect(r.projectionMethod).toBe('unites_monetaires');
+  });
+
+  it('unités monétaires : une ligne sans valeur comptable (0) est exclue, jamais une division par zéro', () => {
+    const r = evaluateSample({
+      method: 'unites_monetaires',
+      populationAmountCents: 500000,
+      coverageAmountCents: 0,
+      populationSize: 50,
+      coverageCount: 0,
+      randomTestedAmountCents: 50000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      randomMisstatements: [{ amountCents: 500, itemAmountCents: 0 }],
+      teAmountCents: 50000,
+    });
+    expect(Number.isFinite(r.projectedMisstatementCents)).toBe(true);
+    expect(r.projectedMisstatementCents).toBe(0);
+  });
+
+  it('EXTRAP-02 : un écart de la strate EXHAUSTIVE ne change jamais la projection', () => {
+    const base = {
+      method: 'ratio' as const,
+      populationAmountCents: 1000000,
+      coverageAmountCents: 600000,
+      populationSize: 100,
+      coverageCount: 10,
+      randomTestedAmountCents: 100000,
+      randomTestedCount: 20,
+      randomMisstatements: [{ amountCents: 2000, itemAmountCents: 5000 }],
+      teAmountCents: 50000,
+    };
+    const petit = evaluateSample({ ...base, coverageMisstatementCents: 1000 });
+    const grand = evaluateSample({ ...base, coverageMisstatementCents: 900000 });
+    // seul le CONNU bouge — la projection ne voit jamais coverageMisstatementCents
+    expect(petit.projectedMisstatementCents).toBe(grand.projectedMisstatementCents);
+    expect(petit.knownMisstatementCents).toBe(1000);
+    expect(grand.knownMisstatementCents).toBe(900000);
+  });
+
+  it('EXTRAP-04 : méthode non vérifiée (null/undefined) ⇒ aucune projection, jamais devinée', () => {
+    const input = {
+      populationAmountCents: 1000000,
+      coverageAmountCents: 0,
+      populationSize: 100,
+      coverageCount: 0,
+      randomTestedAmountCents: 100000,
+      randomTestedCount: 10,
+      coverageMisstatementCents: 0,
+      randomMisstatements: [{ amountCents: 10000, itemAmountCents: 10000 }],
+      teAmountCents: 50000,
+    };
+    for (const method of [null, undefined]) {
+      const r = evaluateSample({ ...input, method });
+      expect(r.projectionMethod).toBe('none');
+      expect(r.projectedMisstatementCents).toBe(0);
+    }
+  });
+
+  it('un échantillon ENTIÈREMENT exhaustif (aucune strate sondée) ne projette rien, même méthode posée', () => {
+    const r = evaluateSample({
+      method: 'ratio',
+      populationAmountCents: 1000000,
+      coverageAmountCents: 1000000,
+      populationSize: 100,
+      coverageCount: 100,
+      randomTestedAmountCents: 0,
+      randomTestedCount: 0,
+      coverageMisstatementCents: 5000,
+      randomMisstatements: [],
+      teAmountCents: 50000,
+    });
+    expect(r.projectionMethod).toBe('none');
+    expect(r.projectedMisstatementCents).toBe(0);
+    expect(r.knownMisstatementCents).toBe(5000);
   });
 });
 

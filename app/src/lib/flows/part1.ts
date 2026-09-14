@@ -24,7 +24,7 @@ import { processInbound } from '@/lib/services/inbound';
 import { extractAll, pendingVerifications, verifyExtraction } from '@/lib/services/extraction/ladder';
 import { runMatching, listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, recordScopeLimitation } from '@/lib/services/matching';
 import { startVerificationRun, currentVerificationRun, submitBlindCheck } from '@/lib/services/verification';
-import { computeSampleEvaluation, concludeEvaluation, currentEvaluation, recordEvaluationResponse } from '@/lib/services/evaluation';
+import { computeSampleEvaluation } from '@/lib/services/evaluation';
 
 // Part 1 demo flow (07 §6) executed programmatically — the SAME service calls the UI
 // makes. Used by `npm run demo:seed` (turnkey demo state) and by the test suites.
@@ -427,24 +427,20 @@ export async function spotcheckAndEvaluate(): Promise<void> {
       secondsSpent: 110,
     });
   }
+  // EXTRAP-01 (mandat 2026-09-14, §1.2) : ce poste a une strate SONDÉE (le tirage aléatoire de
+  // nep-fr.ts) — le conclure exige désormais une méthode d'extrapolation VÉRIFIÉE
+  // (SubstantiveConfig.extrapolationMethod, packs/nep-fr.ts), sciemment non posée (EXTRAP-04,
+  // règle 8 : aucune méthode n'est écrite de mémoire). Le monde de démonstration s'ARRÊTE donc
+  // au calcul de l'évaluation — comme s'arrêterait un vrai dossier tant que le cabinet n'a pas
+  // fait ce choix. Le semeur ne force PAS un état que seul lui pourrait produire (règle 20,
+  // mandat du semeur) : rejouer l'ancien enchaînement « répondre au dépassement puis conclure »
+  // exigerait un recouvrement de méthode qu'aucun chemin humain ne peut poser (les paramètres de
+  // pack sont du code, jamais un réglage d'écran — même verrou que CTRL-07/VID-01).
+  // `computeSampleEvaluation` calcule bien known=127 545,80 € (strate exhaustive), toujours
+  // au-dessus du seuil — visible dans le workpaper et le gate d'achèvement, jamais masqué ;
+  // l'évaluation reste 'draft'. Le refus EXTRAP-01 lui-même est éprouvé par un test, pas rejoué
+  // ici (s5s6.test.ts).
   await computeSampleEvaluation(IDS.engNep, IDS.users.lea);
-  const evaluation = await currentEvaluation(IDS.engNep);
-
-  // Known misstatements (127 545,80 €) exceed both tolerable misstatement (27 000 €) and
-  // materiality (37 000 €). The engine refuses a conclusion until that is answered
-  // (migration 0009): the sample no longer provides a reasonable basis for a conclusion on
-  // the population, so the strategy is revised before concluding.
-  await recordEvaluationResponse(
-    evaluation!.id,
-    IDS.users.lea,
-    'revise_strategy',
-    'Les anomalies non corrigées relevées (127 545,80 €) dépassent le seuil de signification (37 000 €) et l’anomalie tolérable (27 000 €). L’échantillon ne fournit plus une base raisonnable de conclusion sur la population : extension des travaux au chiffre d’affaires du quatrième trimestre, demande de correction adressée à la direction, et re-exécution du rapprochement balance/grand livre sur le FEC définitif avant conclusion définitive.',
-  );
-  await concludeEvaluation(
-    evaluation!.id,
-    IDS.users.lea,
-    'Anomalies non corrigées de 127 545,80 € (rattachement 36 330 €, double comptabilisation 36 800 €, surfacturation 1 800 €, quantités non livrées 2 615,80 €, écriture manuelle de 50 000 € rattachée au mauvais exercice), supérieures au seuil de signification de 37 000 €. Conclusion en l’état : le chiffre d’affaires est surévalué de façon significative si les corrections annoncées par la direction ne sont pas comptabilisées. Deux limitations sont par ailleurs consignées (bon de livraison non obtenu, FEC provisoire) : la conclusion est provisoire jusqu’au rapprochement du FEC définitif.',
-  );
 }
 
 /** Run the whole Part 1 flow up to (not including) the workpaper. */
