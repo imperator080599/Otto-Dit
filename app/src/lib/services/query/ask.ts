@@ -12,6 +12,7 @@ import { planByRules } from './rules';
 import { getQueryPlanner, type QueryPlannerAdapter } from './adapter';
 import { gardeBudget, assertBudgetActifEnBase } from '../extraction/budget';
 import { assertMembre } from '@/lib/core/membre';
+import { assertNiveauOuvert, niveauEffectif } from '../automatisation';
 
 // ADR-017 — « Interroger ». A question becomes a catalogue query or it becomes a refusal.
 // There is no third outcome: the answer is ALWAYS a table of stored records with links
@@ -142,6 +143,7 @@ export async function ask(
        classe réelle porte est aussi la forme la plus sûre : un futur troisième adaptateur
        réel devrait explicitement rejoindre cette liste plutôt que de passer par défaut. */
     if (planner.name === 'anthropic') {
+      await assertNiveauOuvert(engagementId);   // AUTO-01 (§2.4), indépendante d'IA-BUDGET-01
       await assertBudgetActifEnBase();
       await gardeBudget();
     }
@@ -161,6 +163,7 @@ export async function ask(
         tokensOut: reply.tokensOut,
         costUsd: reply.costUsd,
         latencyMs: reply.latencyMs,
+        niveauAutomatisation: await niveauEffectif(engagementId),
       });
       source = 'llm';
     }

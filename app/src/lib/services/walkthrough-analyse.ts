@@ -7,6 +7,7 @@ import { ajouterTacheControle } from './sox';
 import { getAnalysteWalkthrough, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
 import { gardeBudget, assertBudgetActifEnBase } from './extraction/budget';
 import { assertMembreDe } from '@/lib/core/membre';
+import { assertNiveauOuvert, niveauEffectif } from './automatisation';
 
 // §4 POINT 3 (mandat du 10 septembre 2026, point 1) — L'ANALYSE DE WALKTHROUGH (R74).
 //
@@ -95,6 +96,7 @@ export async function analyserWalkthrough(controlId: string, userId: string): Pr
 
   const adapter = getAnalysteWalkthrough();
   if (adapter.name !== 'mock') {
+    await assertNiveauOuvert(engagementId);  // 0. AUTO-01 (§2.4), indépendante des deux suivantes
     await assertBudgetActifEnBase();   // 1. le droit même de tenter (IA-BUDGET-01)
     await gardeBudget();               // 2. le plafond de dépense cumulée
   }
@@ -117,6 +119,7 @@ export async function analyserWalkthrough(controlId: string, userId: string): Pr
     tokensOut: reponse.tokensOut,
     costUsd: reponse.costUsd,
     latencyMs: reponse.latencyMs,
+    niveauAutomatisation: await niveauEffectif(engagementId),
   });
   for (let i = 0; i < reponse.ecarts.length; i++) {
     const e = reponse.ecarts[i];

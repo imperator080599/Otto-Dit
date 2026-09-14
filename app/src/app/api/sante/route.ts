@@ -928,6 +928,36 @@ async function corpsDeLaSonde() {
       if (elements.length === 0) return 'aucun élément IA non validé pour l’instant';
       return `${elements.length} élément(s) IA non validé(s), tous comptés comme obstacle au visa (NOTIF-01)`;
     }));
+    /* AUTO-01 (mandat 2026-09-14, §2.2). `engagement.automation_level` n'est
+       CHECK-contraint qu'à ('L0','L1','L2') — pas à « ne dépasse jamais le
+       plafond du PACK de cette mission », un invariant qui vit dans
+       `automatisation.ts::definirNiveauMission` (le seul chemin d'écriture
+       de ce dépôt), jamais dans une contrainte SQL. Cette lecture rejoue
+       l'invariant sur CE QUI EST RÉELLEMENT EN BASE — une écriture SQL
+       directe qui bipasserait `definirNiveauMission` ne serait PAS
+       silencieusement absorbée : `niveauEffectif`/`capperNiveau` la
+       plafonnent déjà à la lecture (défense en profondeur, jamais un refus
+       en production), mais ce silence-là est exactement ce que règle 13
+       traque — la lecture le rend visible plutôt que de le laisser
+       corrigé sans bruit. */
+    lectures.push(await essayer('AUTO-01 : aucun réglage de mission ne dépasse le plafond de son pack', async () => {
+      const { capperNiveau } = await import('@/lib/services/automatisation');
+      const { primaryPack } = await import('@/lib/packs');
+      const missions = await q<{ id: string; automation_level: 'L0' | 'L1' | 'L2'; framework_set: unknown }>(
+        `select id::text, automation_level, framework_set from engagement where automation_level is not null`,
+      );
+      const violations = missions.filter((m) => {
+        const pack = primaryPack(m.framework_set as never);
+        return capperNiveau(m.automation_level, pack.automationLevel ?? 'L2') !== m.automation_level;
+      });
+      if (violations.length > 0) {
+        throw new Error(`${violations.length} mission(s) dont le réglage dépasse le plafond de son pack `
+          + `(${violations.map((v) => v.id).join(', ')}) — AUTO-01 a été contourné (écriture SQL directe, `
+          + 'ou definirNiveauMission a régressé)');
+      }
+      if (missions.length === 0) return 'aucune mission n’a encore réglé son niveau d’automatisation';
+      return `${missions.length} mission(s) avec un réglage explicite, toutes dans les bornes du plafond de leur pack`;
+    }));
     /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
        par défaut que les sections portant du contenu. » `blocPorteContenu`
        est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états

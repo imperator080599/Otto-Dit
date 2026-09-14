@@ -9,6 +9,7 @@ import { getOcrAdapter, type OcrAdapter } from './adapters';
 import { gardeBudget, assertBudgetActifEnBase } from './budget';
 import type { ExtractedField } from './fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { assertNiveauOuvert, niveauEffectif } from '../automatisation';
 
 // The extraction ladder (ADR-002/ADR-012): XML → text layer → OCR/LLM → human.
 // Rungs 1–2 are deterministic (L0/L1, complete immediately, spot-check control covers
@@ -118,6 +119,9 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
      rien ne se dépense et rien n'est gardé. */
   const adapter = getOcrAdapter();
   if (adapter.name !== 'mock') {
+    /* AUTO-01 (mandat 2026-09-14, §2.4) au même titre qu'IA-BUDGET-01 juste
+       en dessous — deux gardes indépendantes, aucune ne remplace l'autre. */
+    await assertNiveauOuvert(ev.engagement_id);
     await assertBudgetActifEnBase();
     await gardeBudget();
   }
@@ -140,6 +144,7 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
       tokensOut: res.ai.tokensOut,
       costUsd: res.ai.costUsd,
       latencyMs: res.latencyMs,
+      niveauAutomatisation: await niveauEffectif(ev.engagement_id),
     });
   }
   const id = await insertExtraction(evidenceId, res.rung, res.status, res.fields, aiRunId);

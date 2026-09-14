@@ -8,19 +8,19 @@
 
 Sites réels dans ce fichier : ANTHROPIC_API_KEY @ L110, ANTHROPIC_API_KEY @ L206
 
-- scripts/eval/entretien.ts:53 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
+- scripts/eval/entretien.ts:53 — IA-BUDGET-01 : GARDÉ · AUTO-01 : **NON GARDÉ**
 
 ## `getAnalyste` — fabrique (src/lib/services/entretiens-analyste.ts:187)
 
 Sites réels dans ce fichier : ANTHROPIC_API_KEY @ L110, ANTHROPIC_API_KEY @ L206
 
-- src/lib/services/entretiens.ts:161 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
+- src/lib/services/entretiens.ts:162 — IA-BUDGET-01 : GARDÉ · AUTO-01 : GARDÉ
 
 ## `getAnalysteWalkthrough` — fabrique (src/lib/services/entretiens-analyste.ts:199)
 
 Sites réels dans ce fichier : ANTHROPIC_API_KEY @ L110, ANTHROPIC_API_KEY @ L206
 
-- src/lib/services/walkthrough-analyse.ts:96 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
+- src/lib/services/walkthrough-analyse.ts:97 — IA-BUDGET-01 : GARDÉ · AUTO-01 : GARDÉ
 
 ## `AnthropicDocAdapter` — classe (src/lib/services/extraction/adapters.ts:82)
 
@@ -32,10 +32,10 @@ Aucun appelant trouvé (fabrique ou classe non utilisée ailleurs).
 
 Sites réels dans ce fichier : ANTHROPIC_API_KEY @ L93, new Anthropic( (SDK) @ L96
 
-- src/lib/services/extraction/ladder.ts:119 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
-- scripts/cost/measure.ts:78 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
-- scripts/eval/pieces-neuves.ts:35 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
-- scripts/eval/run.ts:44 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
+- src/lib/services/extraction/ladder.ts:120 — IA-BUDGET-01 : GARDÉ · AUTO-01 : GARDÉ
+- scripts/cost/measure.ts:78 — IA-BUDGET-01 : GARDÉ · AUTO-01 : **NON GARDÉ**
+- scripts/eval/pieces-neuves.ts:35 — IA-BUDGET-01 : GARDÉ · AUTO-01 : **NON GARDÉ**
+- scripts/eval/run.ts:44 — IA-BUDGET-01 : GARDÉ · AUTO-01 : **NON GARDÉ**
 
 ## `AnthropicQueryPlanner` — classe (src/lib/services/query/adapter.ts:51)
 
@@ -47,8 +47,8 @@ Aucun appelant trouvé (fabrique ou classe non utilisée ailleurs).
 
 Sites réels dans ce fichier : ANTHROPIC_API_KEY @ L55
 
-- src/lib/services/query/ask.ts:111 — GARDÉ (assertBudgetActifEnBase présent dans le fichier)
+- src/lib/services/query/ask.ts:112 — IA-BUDGET-01 : GARDÉ · AUTO-01 : GARDÉ
 
 ---
 
-**0 appel(s) NON gardé(s)** au moment de cette exécution.
+**0 appel(s) NON gardé(s) par IA-BUDGET-01**, **4 par AUTO-01** au moment de cette exécution.

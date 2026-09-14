@@ -173,6 +173,12 @@ export interface TableEchantillonnageAttribut {
   grillePopulationsElevees: LigneGrilleAttribut[];
 }
 
+/** L'échelle d'automatisation (mandat 2026-09-14, §2.1) — FERMÉE : `L3` n'y figure
+ *  même pas, pour qu'aucun code ne puisse le viser par erreur. `L2` reste le
+ *  plafond PERMANENT du projet, tenu par `automatisation.ts`, jamais par ce
+ *  type seul. */
+export type NiveauAutomatisation = 'L0' | 'L1' | 'L2';
+
 export interface AssurancePack {
   id: string;
   name: string;
@@ -180,6 +186,16 @@ export interface AssurancePack {
   vocabulaire: Vocabulaire;
   materiality: MaterialityConfig;
   substantive?: SubstantiveConfig;
+  /* Mandat 2026-09-14, §2.2 : le plafond du cabinet pour ce pack. CONTRAIREMENT
+     à `attributeSampleConfidenceLevel`/`videoRetentionDays` ci-dessous,
+     `undefined` n'est PAS ici « non vérifié, refuser d'afficher » — L2 est
+     déjà la valeur SÛRE et déjà en vigueur PARTOUT dans ce produit (CLAUDE.md
+     règle 7, le plafond HITL permanent). Un pack qui ne pose rien hérite donc
+     de L2, jamais d'un refus qui bloquerait chaque appel IA existant du jour
+     au lendemain. Poser explicitement L0/L1 est la façon dont un cabinet se
+     montre PLUS prudent que le défaut du produit — jamais plus permissif :
+     L3 n'existe même pas dans le type. */
+  automationLevel?: NiveauAutomatisation;
   /**
    * Les DRAPEAUX du pack : ce qu'une famille d'obstacles au visa fait quand
    * elle se déclenche. Une famille neuve naît en AVERTISSEMENT (drapeau à

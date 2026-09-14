@@ -39,7 +39,7 @@ describe('garde de budget du mode IA réelle (ADR-105)', () => {
     await recordAiRun({
       tenantId: IDS.tenant, engagementId: null, purpose: 'ocr', adapter: 'anthropic',
       model: 'claude-opus-5', promptId: 'ocr-extract', promptVersion: 'v1',
-      input: 'test', output: '[]', costUsd: 0.02,
+      input: 'test', output: '[]', costUsd: 0.02, niveauAutomatisation: 'L2',
     });
     expect(await depenseCumuleeUsd()).toBeGreaterThanOrEqual(0.02);
     process.env.OTTO_BUDGET_USD = '0.01';

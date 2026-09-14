@@ -17,7 +17,7 @@ deletes** anywhere provenance flows — supersede with versions.
 | `component` | corp_group_id, entity_id, role(parent\|component), significance | Group structure. |
 | `referral_instruction` | component_id, title, body, issued_by, received_at, status | Group-auditor instructions (data-model-only MVP). |
 | `period` | entity_id, label(FY2025), start_date, end_date, prior_period_id | Roll-forward spine (D9): `prior_period_id` + `rolled_from` refs on facts. |
-| `engagement` | tenant_id, entity_id, period_id, kind(statutory_audit\|sox_component\|integrated), **classe**(eip\|cotee\|composante\|autre, 0035), framework_set jsonb{assurance_packs[], accounting_map, language, **materiality_benchmark?**(pbt\|revenue)}, status(setup\|fieldwork\|review\|locked\|archived), locked_at, retention_until, component_id?, methodology_id | Demo: TWO engagements on one entity (Q6): NEP statutory + SOX component. |
+| `engagement` | tenant_id, entity_id, period_id, kind(statutory_audit\|sox_component\|integrated), **classe**(eip\|cotee\|composante\|autre, 0035), framework_set jsonb{assurance_packs[], accounting_map, language, **materiality_benchmark?**(pbt\|revenue)}, status(setup\|fieldwork\|review\|locked\|archived), locked_at, retention_until, component_id?, methodology_id, **automation_level?**(L0\|L1\|L2, 0164) | Demo: TWO engagements on one entity (Q6): NEP statutory + SOX component. `automation_level` (mandat 2026-09-14, §2.2): mission override of the firm pack's automation ceiling, downward only (AUTO-01), null = inherit the pack default. |
 | `engagement_member` | engagement_id, user_id, eng_role(partner\|manager\|senior\|staff), can_sign bool | Membership drives authorization (ADR-007). |
 | `client_contact` | entity_id, name, email, portal_token, active | Portal identity; token = magic-link auth (ADR-006). |
 
@@ -110,7 +110,7 @@ sorted by (label), fields `[label, occurred_on, performer_name]`.
 | Table | Key fields | Notes |
 |---|---|---|
 | `event_log` | id bigserial, tenant_id, engagement_id?, actor_kind(user\|system\|ai), actor_id?, verb, object_type, object_id, payload jsonb, prev_hash, hash, created_at | **Append-only, hash-chained** per engagement. Every state change in this doc writes here. |
-| `ai_run` | tenant_id, engagement_id?, purpose(extraction\|classification\|drafting\|suggestion), adapter(anthropic\|mistral_ocr\|mock), model, prompt_id, prompt_version, input_hash, output_hash, tokens_in, tokens_out, cost_usd, latency_ms | FRC-guidance-as-feature; COST.md is derived from this table. |
+| `ai_run` | tenant_id, engagement_id?, purpose(extraction\|classification\|drafting\|suggestion\|ocr\|transcript_gaps\|walkthrough_gaps), adapter(anthropic\|mistral_ocr\|mock), model, prompt_id, prompt_version, input_hash, output_hash, tokens_in, tokens_out, cost_usd, latency_ms, **niveau_automatisation**(L0\|L1\|L2, not null, 0164) | FRC-guidance-as-feature; COST.md is derived from this table. AUTO-02 (mandat 2026-09-14, §2.3): `niveau_automatisation` is the level actually in force when THIS row was written, immutable, never rewritten when a mission's level changes later. |
 | `notification` | recipient_kind+id, kind, payload jsonb, read_at? | Portal + auditor inbox. |
 
 ## 9. Immutability, versioning, lock, retention

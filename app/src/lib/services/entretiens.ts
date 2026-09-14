@@ -9,6 +9,7 @@ import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens
 import { gardeBudget, assertBudgetActifEnBase } from './extraction/budget';
 import { motif, type Motif } from './motif';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { assertNiveauOuvert, niveauEffectif } from './automatisation';
 
 // L'ENTRETIEN DU RESPONSABLE DE PROCESSUS (point 2, ADR-108) — participants,
 // date, support, compréhension documentée. PRÉCAUTION JURIDIQUE formalisée
@@ -167,6 +168,9 @@ export async function analyserTranscript(interviewId: string, userId: string): P
      interrogée — la garde existait depuis le 9 septembre sans un seul site d'appel réel. Cas
      connu mauvais dans entretiens.test.ts : garde fermée + adaptateur réel ⇒ refus, zéro écriture. */
   if (adapter.name !== 'mock') {
+    /* AUTO-01 (mandat 2026-09-14, §2.4) — même ordre, même indépendance
+       qu'IA-BUDGET-01 juste en dessous. */
+    await assertNiveauOuvert(itv.engagement_id);
     await assertBudgetActifEnBase();
     await gardeBudget();
   }
@@ -189,6 +193,7 @@ export async function analyserTranscript(interviewId: string, userId: string): P
     tokensOut: reponse.tokensOut,
     costUsd: reponse.costUsd,
     latencyMs: reponse.latencyMs,
+    niveauAutomatisation: await niveauEffectif(itv.engagement_id),
   });
   for (let i = 0; i < reponse.ecarts.length; i++) {
     const e = reponse.ecarts[i];

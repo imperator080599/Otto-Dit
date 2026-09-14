@@ -46,7 +46,14 @@ const APP = path.join(import.meta.dirname, '..', '..');
 
 interface SiteReel { fichier: string; ligne: number; forme: string; }
 interface PointDAcces { fichier: string; ligne: number; nom: string; genre: 'fabrique' | 'classe'; }
-interface Appelant { fichier: string; ligne: number; gardeeParAssertBudget: boolean; }
+interface Appelant {
+  fichier: string; ligne: number; gardeeParAssertBudget: boolean;
+  /* AUTO-01 (mandat 2026-09-14, §2.4) : la garde du NIVEAU, indépendante
+     d'IA-BUDGET-01 — même patron de détection (le texte figure QUELQUE PART
+     dans le fichier de l'appelant), mêmes limites (règle 19, voir l'en-tête
+     du fichier : ni l'ordre des lignes, ni l'alias d'import ne sont vérifiés). */
+  gardeeParAssertNiveau: boolean;
+}
 interface EntreeSurface {
   point: PointDAcces;
   sitesReels: SiteReel[];
@@ -132,6 +139,7 @@ export function auditer(): EntreeSurface[] {
             fichier: relatif(f),
             ligne: i + 1,
             gardeeParAssertBudget: /assertBudgetActifEnBase\(/.test(contenuPropre),
+            gardeeParAssertNiveau: /assertNiveauOuvert\(/.test(contenuPropre),
           });
         }
       });
@@ -156,6 +164,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     '',
   ];
   let ouvert = 0;
+  let ouvertNiveau = 0;
   for (const e of surface) {
     md.push(`## \`${e.point.nom}\` — ${e.point.genre} (${e.point.fichier}:${e.point.ligne})`);
     md.push('');
@@ -165,14 +174,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       md.push('Aucun appelant trouvé (fabrique ou classe non utilisée ailleurs).');
     } else {
       for (const a of e.appelants) {
-        const etat = a.gardeeParAssertBudget ? 'GARDÉ (assertBudgetActifEnBase présent dans le fichier)' : '**NON GARDÉ**';
+        const etatBudget = a.gardeeParAssertBudget ? 'IA-BUDGET-01 : GARDÉ' : 'IA-BUDGET-01 : **NON GARDÉ**';
+        const etatNiveau = a.gardeeParAssertNiveau ? 'AUTO-01 : GARDÉ' : 'AUTO-01 : **NON GARDÉ**';
         if (!a.gardeeParAssertBudget) ouvert++;
-        md.push(`- ${a.fichier}:${a.ligne} — ${etat}`);
+        if (!a.gardeeParAssertNiveau) ouvertNiveau++;
+        md.push(`- ${a.fichier}:${a.ligne} — ${etatBudget} · ${etatNiveau}`);
       }
     }
     md.push('');
   }
-  md.push(`---\n\n**${ouvert} appel(s) NON gardé(s)** au moment de cette exécution.`);
+  md.push(`---\n\n**${ouvert} appel(s) NON gardé(s) par IA-BUDGET-01**, **${ouvertNiveau} par AUTO-01** au moment de cette exécution.`);
   fs.writeFileSync(path.join(dossier, '..', 'IA_VIVANTE_SURFACE.md'), md.join('\n') + '\n');
-  console.log(`surface IA vivante : ${surface.length} point(s) d'accès, ${ouvert} appel(s) non gardé(s) — docs/IA_VIVANTE_SURFACE.md écrit`);
+  console.log(`surface IA vivante : ${surface.length} point(s) d'accès, ${ouvert} appel(s) sans IA-BUDGET-01, ${ouvertNiveau} sans AUTO-01 — docs/IA_VIVANTE_SURFACE.md écrit`);
 }
