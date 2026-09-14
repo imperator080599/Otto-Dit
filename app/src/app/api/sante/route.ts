@@ -821,6 +821,37 @@ async function corpsDeLaSonde() {
       );
       return `${total?.n ?? 0} ligne(s) de tirage sur écriture de grand livre, aucune orpheline`;
     }));
+    /* EXTRAP-01 (mandat 2026-09-14, §1.2 — livré ce jour, lu ce jour, règle 22). ISA 530 §14
+       exige la projection ; §A20 n'en exempte que les tests de CONTRÔLES. Cette lecture vérifie
+       qu'AUCUNE `sample_evaluation` CONCLUE ne porte `projection_method = 'none'` alors que sa
+       strate sondée (`tested_random_amount`) est non nulle — exactement ce que
+       `evaluation.ts::concludeEvaluation` est censé refuser AVANT l'écriture. Une ligne trouvée
+       ici prouverait que le refus a été contourné (écriture SQL directe, ou régression du gate)
+       — la lecture ROUGIT sur CE cas précis, elle ne le déclare pas. CE QUE CETTE LECTURE NE
+       VÉRIFIE PAS (règle 19) : que la méthode elle-même est un paramètre de cabinet VÉRIFIÉ
+       (`SubstantiveConfig.extrapolationMethod`) — c'est `kernel.test.ts` qui le fait, avec ses
+       cas connus mauvais ; ici on lit seulement l'état RÉEL des évaluations conclues du dossier. */
+    lectures.push(await essayer('EXTRAP-01 : aucune évaluation conclue sans projection alors qu’une strate sondée existe', async () => {
+      const violations = await q<{ id: string; tested_random_amount: string }>(
+        `select se.id::text, se.tested_random_amount::text
+         from sample_evaluation se join sample s on s.id = se.sample_id
+         where s.engagement_id = $1 and se.status = 'concluded'
+           and se.projection_method = 'none' and se.tested_random_amount::numeric > 0`,
+        [id],
+      );
+      if (violations.length > 0) {
+        throw new Error(`${violations.length} évaluation(s) CONCLUE(S) sans méthode d’extrapolation `
+          + `alors qu’une strate sondée existe (${violations.map((v) => v.id).join(', ')}) — `
+          + 'EXTRAP-01 a été contourné (écriture directe, ou concludeEvaluation a régressé)');
+      }
+      const concluded = await q01<{ n: string }>(
+        `select count(*) n from sample_evaluation se join sample s on s.id = se.sample_id
+         where s.engagement_id = $1 and se.status = 'concluded'`,
+        [id],
+      );
+      if (!concluded || Number(concluded.n) === 0) return 'aucune évaluation conclue pour l’instant';
+      return `${concluded.n} évaluation(s) conclue(s), toutes avec une projection à la population quand une strate sondée existait`;
+    }));
     /* D.6 POINT 3 (mandat, épreuve de l'épure) : « Une page de poste n'ouvre
        par défaut que les sections portant du contenu. » `blocPorteContenu`
        est une fonction PURE (poste.ts), déjà éprouvée sur ses quatre états
