@@ -773,3 +773,25 @@ prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas aprè
   harnais de clics que n'importe quel poste du Lot 5 aurait fait apparaître, pas spécifique à
   Trésorerie. Sans lien avec le #418 ci-dessus : les deux défauts coexistaient sur le même
   passage, aucun n'expliquait l'autre.
+
+- **F19 — UN incident dans `/tmp/verify-clients-2.log`** (2026-09-15, chaîne verify complète pour
+  Lot 5 poste 2 — Clients, sur l'arbre du commit `c58bc02`, 260 étapes) : `EXCEPTION sur
+  /eng/70670df5.../rcm/dea9524d-ad3c-42c6-af19-76f4de109036 : Minified React error #418;
+  args[]=HTML`, sonde d'hydratation « station (avant la première station) », flux complet
+  (215 731 octets, `lang="en"`), 20 divergences après normalisation. **Vérifiées avant de
+  conclure (règle 18)** : le jeton 87 est la bulle `rail-astuce` déjà documentée (E5) ; les
+  DIX-NEUF autres sont, comme dans F11/F18, la re-sérialisation CSSOM déjà nommée, déjà non
+  filtrée, déjà reportée R45. Même page (`rcm/[cid]`, SOX) que F12/F15/F16/F17/F18 — rejoue F18
+  au trait près, un jour plus tard, sur un arbre différent. **Page NON touchée par cette
+  tranche** — vérifié par lecture du diff (`git diff --stat main..HEAD`) : `c58bc02` et les
+  commits de cette tranche (`90a2c85`, `c58bc02`) ne touchent que
+  `app/src/app/api/sante/atelier-recalcul-lecture.test.ts`, `app/src/app/api/sante/route.ts`,
+  `app/src/lib/flows/enrichir.test.ts`, `app/src/lib/flows/part1.ts`,
+  `app/src/lib/i18n/catalogue.ts`, `app/src/lib/services/poste.ts`,
+  `app/src/lib/services/programme.ts`, `methodology/papier.json`, `methodology/procedures.json`,
+  `docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json` — aucun importé par
+  `rcm/[cid]/page.tsx`. **Pas creusé plus loin ici** (même discipline que F9-F18). Clôture et
+  archive ATTEINTES (240 stations figées vérifiées, empreinte SHA-256 affichée, zip téléchargé
+  309 ko) : l'unique échec est le #418 disjoint ci-dessus, pas un obstacle du parcours. Reste de
+  la chaîne propre : 145/145 fichiers de test, 1136/1136 tests, gardes/semeur/plancher/langue/
+  lectures/parcours/screens/fumee/densite tous verts, 0 échec sur les 93+52 routes ouvertes.

@@ -174,8 +174,17 @@ avec cette tranche). `npm run visuel` (lancé séparément — `npm run clics` s
 seul `#418`, empêchant la chaîne `&&` d'atteindre `visuel`, même situation déjà établie par F14) :
 **336 vues, 0 défaut.**
 
-**Non expédié à la clôture de cette section** : fusion sur `main`, confirmation du SHA servi en
-production, et la suite du Lot 5 (poste 2, Clients) — voir la suite de STATUS.md pour leur mesure.
+**Fusion et SHA servi.** `claude/otto-session-resume-zimig9` fusionné par avance rapide sur `main`
+(commit `0e2cd82`), poussé. **SHA servi confirmé, PRODUCTION, mesuré pour de vrai = `0e2cd82`**
+(`0e2cd82912890e033f6cd55d1193af72c2426572`) : `mcp__Vercel__list_deployments` montre
+`dpl_542SFLkDpebyLYjosty5U9JmZzg7`, cible `production`, état `READY`, commit `0e2cd82912…` sur
+`main`, créé à 08:20:41Z le 2026-09-15 ; confirmé une seconde fois par lecture directe de
+`https://otto-dit.vercel.app/api/sante` (`mcp__Vercel__web_fetch_vercel_url`, jamais `curl` — le
+bac à sable ne joint pas `*.vercel.app`) à 09:36:32Z le même jour : `"sha":"0e2cd82912…"`,
+`identiteCoherente:true`. R56/R57 restent partiellement levées (CASH seul ; les autres postes du
+Lot 5 les lèvent au fur et à mesure qu'ils ouvrent leur propre correspondance cycle↔fsli).
+
+La suite du Lot 5 (poste 2, Clients) — voir la suite de STATUS.md pour sa mesure.
 
 ## Correctif d'expédition : la migration 0164 bloquait le déploiement, NOTIF-01 rendait la démo insignable (2026-09-14)
 
