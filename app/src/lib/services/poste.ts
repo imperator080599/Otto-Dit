@@ -346,6 +346,23 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
      `/circularisations`) tient lieu de « testing ». Le lien pointe vers
      `atelierDeLaNature` — LE SEUL endroit qui sait quel écran exécute quelle
      nature (programme.ts) — jamais un `/testing` recopié à la main ici. */
+  /* TROISIÈME PATRON (Lot 5, poste 2 — Clients, 2026-09-15) : ni circularisé
+     ni sondé à la REVENUE (`ech` reste vide pour tout poste où AUCUNE
+     procédure `sondage_pieces` n'est planifiée — CLIENTS-AVOIRS, la seule qui
+     aurait rempli `ech` pour TRADE_RECEIVABLES, est disclosed R92, jamais
+     planifiée). Sans ce troisième patron, un poste travaillé par
+     `rapprochement`/`recalcul_parametre` SEULS (aucune circularisation, aucun
+     sondage) affichait « population absente » → `/population` — l'écran du
+     CHIFFRE D'AFFAIRES, qui ne connaît rien à ce poste : deux procédures
+     réelles, deux papiers réels, un lien qui ment. Trouvé en conduisant
+     `vuePoste('TRADE_RECEIVABLES')` avant d'annoncer l'écran (règle 10), pas
+     deviné. Discriminant : `atelierDeLaNature('rapprochement', code, base)`
+     non nul ET `circ` nul — CASH (rapprochement circularisé) passe par le
+     PREMIER patron, jamais par celui-ci. */
+  const atelierRapprochementSeul = !circ ? atelierDeLaNature('rapprochement', code, base) : null;
+  const atelierRecalculSeul = !circ ? atelierDeLaNature('recalcul_parametre', code, base) : null;
+  const patronRapprochementSeul = !circ && n(ech?.pop) === 0 && Boolean(atelierRapprochementSeul);
+
   const blocEchantillon: BlocPoste = circ
     ? {
         cle: 'echantillon', titre: 'poste.section.echantillon',
@@ -358,7 +375,14 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
             }),
         href: atelierDeLaNature('confirmation_externe', code, base),
       }
-    : {
+    : patronRapprochementSeul
+      ? {
+          cle: 'echantillon', titre: 'poste.section.echantillon',
+          etat: papiers.length > 0 ? 'en_cours' : 'a_faire',
+          resume: motif('poste.resume.rapprochementSansEchantillon'),
+          href: atelierRapprochementSeul,
+        }
+      : {
         cle: 'echantillon', titre: 'poste.section.echantillon',
         etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
         resume: n(ech?.tire) > 0
@@ -380,7 +404,14 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
             }),
         href: atelierDeLaNature('rapprochement', code, base),
       }
-    : {
+    : patronRapprochementSeul && atelierRecalculSeul
+      ? {
+          cle: 'testing', titre: 'poste.section.testing',
+          etat: papiers.length > 0 ? 'en_cours' : 'a_faire',
+          resume: motif('poste.resume.recalculSansEchantillon'),
+          href: atelierRecalculSeul,
+        }
+      : {
         cle: 'testing', titre: 'poste.section.testing',
         etat: n(ech?.items) === 0 ? 'a_faire'
           : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',

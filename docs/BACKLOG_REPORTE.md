@@ -1267,3 +1267,24 @@ design : chacun reste une tranche à construire.**
   visible et correct (bloc `echantillon`/`testing`, ce même correctif). Reporté : fusionner les deux
   sources d'écarts/demandes dans `poste.ts` si un jour la page doit refléter exactement ce qu'un
   poste circularisé porte, pas seulement ce qu'un poste sondé porte.
+
+- **R92 — CLIENTS-AVOIRS (nature `sondage_pieces`) est COMMANDÉE PAR LE RISQUE sur le dossier NEP
+  mais N'A AUCUN ATELIER.** Trouvé en ouvrant Clients (Lot 5, poste 2, 2026-09-15) : mesuré par
+  exécution (`assessFsli`/`risksFor` contre la base seedée), l'assertion `exhaustivite` de
+  TRADE_RECEIVABLES est `moyen` (facteur « plus de 200 écritures », 1267 écritures) — au-dessus du
+  `risque_minimum: "moyen"` de CLIENTS-AVOIRS (« Avoirs postérieurs à la clôture »). Contrairement à
+  CLIENTS-AGE et CLIENTS-DEPREC (également commandées, toutes deux résolues cette même tranche via
+  des ateliers DÉJÀ poste-agnostiques — `balances-aux`, `estimations`), `sondage_pieces` n'a
+  aujourd'hui qu'UN SEUL atelier construit (`/testing`, REVENUE), et son moteur de tirage
+  (`proposeRevenueSample`/`drawRevenueSample`, `sampling.ts`) est câblé EN DUR sur
+  `revenuePopulation()`, sans paramètre de poste — généraliser à une population « avoirs émis après
+  la clôture » est une mécanique neuve à construire (rule 14 amendement le permet), pas une ligne de
+  routage à ajouter comme pour les deux autres. **Non planifiée cette tranche, délibérément** :
+  planifier CLIENTS-AVOIRS via `planifierProcedure` sans atelier atteignable créerait un « poste
+  retenu SANS procédure planifiée » inversé — une procédure planifiée SANS geste possible, le même
+  défaut que R56/R57 nomment déjà pour d'autres (nature, poste) — jamais un obstacle caché derrière
+  un lien mort (règle 13). Clients ouvre donc avec DEUX procédures risk-commandées sur trois
+  traitées ; la troisième reste un poste ouvert à MOITIÉ sur CE point précis, disclosed plutôt que
+  caché. Se referme le jour où `sondage_pieces` se généralise à une population autre que REVENUE —
+  vraisemblablement quand Fournisseurs ou Stocks (Lot 5) en aura besoin aussi, un atelier générique
+  plutôt qu'un troisième câblage en dur.

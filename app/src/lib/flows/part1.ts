@@ -59,16 +59,17 @@ export async function bootstrapNep(): Promise<void> {
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
 
-  /* DEUX POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
-     Le jeu de démonstration déroule le cycle chiffre d'affaires (REVENUE)
-     et, depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14), la trésorerie
-     (CASH) — les circularisations bancaires existaient déjà sur ce poste,
-     scopé `ns_confirmed` par CETTE MÊME convention avant ce correctif ; un
-     poste dont on conduit réellement les procédures et qu'on maintient hors
-     périmètre aurait été l'exact défaut inverse (un geste réel que le
-     dossier prétendrait ne jamais avoir eu besoin de statuer). Tant qu'aucune
-     règle ne le remarquait, quinze autres postes pouvaient rester « retenus »
-     sans qu'aucune procédure ne soit planifiée dessus, et le dossier se
+  /* TROIS POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
+     Le jeu de démonstration déroule le cycle chiffre d'affaires (REVENUE),
+     depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14) la trésorerie
+     (CASH), et depuis le Lot 5 poste 2 (Clients, 2026-09-15) les créances
+     clients (TRADE_RECEIVABLES) — chacun scopé `ns_confirmed` par CETTE MÊME
+     convention avant son propre correctif ; un poste dont on conduit
+     réellement les procédures et qu'on maintient hors périmètre aurait été
+     l'exact défaut inverse (un geste réel que le dossier prétendrait ne
+     jamais avoir eu besoin de statuer). Tant qu'aucune règle ne le
+     remarquait, quinze autres postes pouvaient rester « retenus » sans
+     qu'aucune procédure ne soit planifiée dessus, et le dossier se
      clôturait quand même. Depuis la famille d'obstacles « périmètre sans
      programme », ce serait quatorze obstacles au visa — à raison : un poste
      retenu et jamais travaillé est un trou dans le dossier. Les deux se
@@ -76,21 +77,22 @@ export async function bootstrapNep(): Promise<void> {
      DÉMONSTRATION est les postes qu'on déroule vraiment.
      CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
      CES POSTES-LÀ AUSSI dans le périmètre (vérifié par requête directe avant
-     ce correctif, jamais supposé : `fsli.scoping` de CASH portait déjà le
-     motif « hors périmètre du jeu » — donc PAS `ns_proposed`, le moteur
-     l'avait proposé `in_scope` — la paie pèse 2,6 M€ contre un seuil de
-     planification de 27 000 €. Les sortir n'est donc pas un jugement de
-     significativité, et le motif le dit à l'écran, dans le journal et dans
+     chaque correctif, jamais supposé : `fsli.scoping` de CASH puis de
+     TRADE_RECEIVABLES portait déjà le motif « hors périmètre du jeu » — donc
+     PAS `ns_proposed`, le moteur l'avait proposé `in_scope` — TRADE_RECEIVABLES
+     pèse 1 554 017,64 € (créances clients), la paie pèse 2,6 M€, contre un
+     seuil de planification de 27 000 €. Les sortir n'est donc pas un jugement
+     de significativité, et le motif le dit à l'écran, dans le journal et dans
      l'archive : c'est une convention du jeu synthétique. Écrire l'inverse
      ferait du dossier de démonstration un dossier qu'un inspecteur rejetterait
      — et le produit refuse partout ailleurs les motifs qui n'en sont pas. */
   const MOTIF_DEMO =
-    'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires et trésorerie y '
-    + 'sont déroulés. Ce n’est PAS un jugement de significativité — sur cette entité le poste '
-    + 'dépasse le seuil de planification et serait travaillé dans un dossier réel.';
+    'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie et '
+    + 'clients y sont déroulés. Ce n’est PAS un jugement de significativité — sur cette entité le '
+    + 'poste dépasse le seuil de planification et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (f.code === 'REVENUE' || f.code === 'CASH') continue; // les deux postes déroulés
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES'].includes(f.code)) continue; // les trois postes déroulés
     if (f.confirmed_by) continue;                   // une décision humaine ne se réécrit pas (D9)
     await confirmScoping(f.id, IDS.users.lea, 'ns_confirmed',
       f.scoping === 'ns_proposed'
@@ -580,6 +582,67 @@ export async function planifierTresorerie(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 2 (Clients, 2026-09-15) — même patron que `planifierTresorerie()`,
+ * DEUX procédures au lieu d'une paire circularisation/rapprochement : CLIENTS-AGE
+ * (rapprochement, atelier `/balances-aux`) et CLIENTS-DEPREC (recalcul_parametre,
+ * atelier `/estimations`). CLIENTS-CIRC n'est PAS planifiée ici : mesuré par
+ * exécution avant d'écrire cette fonction (assessFsli + risksFor), l'assertion
+ * `realite` de TRADE_RECEIVABLES est `faible` — sous le `risque_minimum: "moyen"`
+ * de CLIENTS-CIRC. La planifier quand même aurait été une décision inventée,
+ * pas une procédure commandée par le risque (règle 14, « les procédures
+ * commandées PAR LE RISQUE »). CLIENTS-AVOIRS (sondage_pieces) EST commandée
+ * mais SANS atelier atteignable — disclosed R92, pas planifiée (même raison
+ * que ci-dessus, à l'envers : ici c'est l'atelier qui manque, pas le risque).
+ *
+ * LES DEUX PAPIERS RÉFÉRENCENT UNE POPULATION QUI N'EXISTE PAS ENCORE AU
+ * MOMENT DU SEED. `CLIENTS-AGE.population.source` et `CLIENTS-DEPREC.population.source`
+ * (methodology/procedures.json) sont tous deux la balance auxiliaire des
+ * clients — et son IMPORT est un GESTE DE L'AUDITEUR (ADR-107, point 1),
+ * conduit par le parcours cliqué (`scripts/clics/scenario.ts`, station
+ * balances-aux), jamais pré-semé. Même choix que `circulariserBanques()` :
+ * la graine pose le PROGRAMME (risque, procédure, papier, IPE non utilisée)
+ * et le geste réel FINIT le travail au clic — le papier se rédige quand même
+ * « depuis les faits stockés », qui sont vides tant que rien n'est importé,
+ * et l'IPE le dit honnêtement (`utilisee: false`) plutôt que de fabriquer un
+ * rapport qui n'existe pas.
+ */
+export async function planifierClients(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesClients = new Set((await answers(IDS.engNep, 'TRADE_RECEIVABLES')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesClients.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'TRADE_RECEIVABLES', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'TRADE_RECEIVABLES' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'TRADE_RECEIVABLES', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  for (const code of ['CLIENTS-AGE', 'CLIENTS-DEPREC'] as const) {
+    const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'TRADE_RECEIVABLES', code, userId: IDS.users.karim });
+    const papierExistant = await q01<{ id: string }>(
+      `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+    if (!papierExistant) {
+      const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+      await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+    }
+  }
+
+  const dejaRedigeeClients = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'TRADE_RECEIVABLES' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeeClients) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'TRADE_RECEIVABLES');
+    await enregistrerAnalytique(IDS.engNep, 'TRADE_RECEIVABLES', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -640,4 +703,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await spotcheckAndEvaluate();
   await circulariserBanques();
   await planifierTresorerie();
+  await planifierClients();
 }

@@ -516,23 +516,45 @@ export interface LigneProgramme {
  *
  * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : elle ne construit AUCUN
  * atelier — `confirmation_externe` sur PROVISIONS (avocats, Lot 5 point 6)
- * et la généralisation des quatre cases câblées à un poste autre que celui
- * déjà câblé (Lot 5, une fois R54/R57 fermés pour ce poste-là — R56 est
- * fermé pour CASH depuis cette tranche, encore ouvert pour
- * CLIENTS/FOURN/PROV) entrent ICI quand ils existent, jamais ailleurs — un
- * second endroit qui devine l'atelier diverge un jour.
- * Lot 3 (Partie C.1) est COMPLET avec cette quatrième case : les quatre
+ * et `confirmation_externe` sur TRADE_RECEIVABLES (CLIENTS-CIRC : NON commandée
+ * par le risque sur ce dossier aujourd'hui — l'assertion `realite` y est
+ * `faible`, mesuré par exécution avant de scoper la tranche Clients, pas
+ * supposé — mais deviendrait un atelier RÉEL à construire, `circularisations.ts`
+ * n'a que les Nature `banque`/`avocat`, le jour où le risque la commande),
+ * et `sondage_pieces` sur TRADE_RECEIVABLES (CLIENTS-AVOIRS : commandée par le
+ * risque sur ce dossier — `exhaustivite` y est `moyen` —, mais SANS atelier :
+ * `sample`/`sample_item` ne sont écrits que par `proposeRevenueSample`/
+ * `drawRevenueSample`, câblés en dur sur `revenuePopulation()`, disclosed R92
+ * (docs/BACKLOG_REPORTE.md) plutôt que planifiée sans écran atteignable)
+ * entrent ICI le jour où ils existent, jamais ailleurs — un second endroit
+ * qui devine l'atelier diverge un jour.
+ * Lot 3 (Partie C.1) est COMPLET avec la quatrième case (CASH) : les quatre
  * natures qu'il mandatait (`sondage_pieces`, `recalcul_parametre`,
  * `confirmation_externe`, `rapprochement`) ont chacune un atelier réel sur
- * au moins un poste. Les QUATRE autres natures (`revue_analytique_substantive`,
- * `test_exhaustif`, `tests_de_controles`, `observation_documentee`) et la
- * généralisation à d'autres postes entrent au Lot 5.
+ * au moins un poste. Lot 5, poste 2 (Clients, 2026-09-15) généralise DEUX de
+ * ces quatre cases (`rapprochement`, `recalcul_parametre`) à un second poste —
+ * les deux ateliers sous-jacents (`balances-aux`, `estimations`) étaient
+ * DÉJÀ poste-agnostiques, seule la ligne de routage manquait. Les QUATRE
+ * autres natures (`revue_analytique_substantive`, `test_exhaustif`,
+ * `tests_de_controles`, `observation_documentee`) restent hors de ce Lot.
  */
 export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
   if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
   if (nature === 'recalcul_parametre' && fsliCode === 'REVENUE') return `${base}/estimations`;
   if (nature === 'confirmation_externe' && fsliCode === 'CASH') return `${base}/circularisations`;
   if (nature === 'rapprochement' && fsliCode === 'CASH') return `${base}/circularisations`;
+  /* Lot 5, poste 2 (Clients, 2026-09-15) : `rapprochement` sur TRADE_RECEIVABLES
+     n'est PAS le rapprochement de tiers circularisés (`circularisations.ts`,
+     Nature 'banque'/'avocat' seulement — CLIENTS-CIRC n'est pas commandée par
+     le risque sur ce dossier, vérifié par exécution, pas supposé) : c'est
+     CLIENTS-AGE, « rapprocher la balance âgée au solde comptable » — l'atelier
+     qui fait déjà exactement ça est `/balances-aux` (ADR-107, point 1),
+     poste-agnostique par construction (`Cote = 'clients' | 'fournisseurs'`).
+     Même chose pour `recalcul_parametre`/CLIENTS-DEPREC : `estimations.ts`
+     est déjà générique (clé par `pieceRef`, jamais par `fsliCode`), câblé ici
+     pour un second poste plutôt que dupliqué. */
+  if (nature === 'rapprochement' && fsliCode === 'TRADE_RECEIVABLES') return `${base}/balances-aux?cote=clients`;
+  if (nature === 'recalcul_parametre' && fsliCode === 'TRADE_RECEIVABLES') return `${base}/estimations`;
   return null;
 }
 

@@ -1719,7 +1719,7 @@
     },
     {
       "code": "CLIENTS-AGE",
-      "cycle": "CLIENTS",
+      "cycle": "TRADE_RECEIVABLES",
       "libelle": "Balance âgée et cohérence au grand livre",
       "objectif": "Rapprocher la balance âgée au solde comptable et analyser l'antériorité.",
       "assertion": "exhaustivite",
@@ -1743,7 +1743,7 @@
     },
     {
       "code": "CLIENTS-DEPREC",
-      "cycle": "CLIENTS",
+      "cycle": "TRADE_RECEIVABLES",
       "libelle": "Dépréciation des créances douteuses",
       "objectif": "Vérifier que les créances non recouvrables sont dépréciées.",
       "assertion": "evaluation",

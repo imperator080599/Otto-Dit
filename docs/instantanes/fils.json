@@ -451,6 +451,12 @@
       "etat": "SOLDÉ le 2026-09-03 (e004053) — le produit avait raison ; reste l'observation J3-6 : l'ordre des lignes de la grille n'est pas stable",
       "depuis": "nuit 2",
       "note": ""
+    },
+    {
+      "id": "R92",
+      "etat": "ouvert — CLIENTS-AVOIRS (nature sondage_pieces) est COMMANDÉE PAR LE RISQUE sur le dossier NEP (exhaustivite=moyen, mesuré par exécution) mais n'a AUCUN atelier : sample/sample_item ne sont écrits que par proposeRevenueSample/drawRevenueSample, câblés en dur sur revenuePopulation(), sans paramètre de poste.",
+      "depuis": "2026-09-15 (Lot 5, poste 2 — Clients)",
+      "note": "non planifiée délibérément (planifier sans atelier atteignable créerait une procédure planifiée sans geste possible, même défaut que R56/R57). Clients ouvre avec CLIENTS-AGE et CLIENTS-DEPREC (résolues cette tranche, ateliers déjà poste-agnostiques) mais pas CLIENTS-AVOIRS. Condition de retrait : généraliser sondage_pieces à une population autre que REVENUE — un atelier générique, pas un troisième câblage en dur."
     }
   ]
 }

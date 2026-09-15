@@ -517,26 +517,31 @@ async function corpsDeLaSonde() {
        R54/R55 (docs/BACKLOG_REPORTE.md) le disent déjà : RECALC et ESTIM sont
        plannables sur N'IMPORTE QUEL poste dès aujourd'hui via une bascule de
        risque ordinaire, pas seulement REVENUE — et `atelierDeLaNature` ne
-       construit un atelier réel QUE pour REVENUE (le seul câblé à ce jour,
-       Lot 3 tranche 2). Une procédure `recalcul_parametre` planifiée sur un
-       poste hors REVENUE (TRADE_RECEIVABLES, etc.) est donc un état ATTENDU
-       et déjà consigné, pas une régression : cette lecture ne fait ROUGIR le
-       endpoint entier QUE si le poste absent d'atelier est REVENUE (le seul
-       cas qui trahirait une vraie perte de câblage). Un gap hors REVENUE est
-       rapporté HONNÊTEMENT dans le détail (compte + poste), jamais tu, mais
-       ne bloque pas /api/sante — sans quoi cette lecture reproduirait
-       exactement R53 (une garde qui rougit sur un état sanctionné et
-       attendu plutôt que sur une régression réelle).
+       construit un atelier réel QUE pour les postes CÂBLÉS (REVENUE depuis
+       Lot 3 tranche 2 ; TRADE_RECEIVABLES depuis Lot 5, poste Clients,
+       2026-09-15 — `POSTES_CABLES` ci-dessous). Une procédure
+       `recalcul_parametre` planifiée sur un poste NON câblé est donc un état
+       ATTENDU et déjà consigné, pas une régression : cette lecture ne fait
+       ROUGIR le endpoint entier QUE si le poste absent d'atelier est un des
+       postes CÂBLÉS (le seul cas qui trahirait une vraie perte de câblage).
+       Un gap hors postes câblés est rapporté HONNÊTEMENT dans le détail
+       (compte + poste), jamais tu, mais ne bloque pas /api/sante — sans quoi
+       cette lecture reproduirait exactement R53 (une garde qui rougit sur un
+       état sanctionné et attendu plutôt que sur une régression réelle).
        CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien des
        procédures `recalcul_parametre` du catalogue qui ne sont pas encore
        planifiables du tout (R54 — quatorze des seize procédures portent un
        `cycle` qui ne correspond à aucun `fsli.code` réel) : une procédure
        qui ne peut jamais être planifiée n'apparaît jamais dans la requête,
-       donc jamais dans ce rapport. Elle ne dit rien non plus d'un atelier
-       construit pour un poste hors REVENUE : le jour où `atelierDeLaNature`
-       gagne un second poste câblé, cette lecture continuera de ne rougir que
-       sur REVENUE tant que le code n'est pas mis à jour pour l'inclure.
-       RÉFUTATION HOSTILE (deux réfutateurs indépendants, avant livraison) :
+       donc jamais dans ce rapport.
+       LE JOUR PRÉDIT EST ARRIVÉ (Lot 5, poste Clients, 2026-09-15) :
+       `atelierDeLaNature` gagne TRADE_RECEIVABLES comme second poste câblé
+       (`CLIENTS-DEPREC`, → `/estimations`, déjà générique — voir
+       `programme.ts`). `POSTES_CABLES` ci-dessous liste maintenant les DEUX
+       postes attendus, comparés à ce qu'`atelierDeLaNature` rend RÉELLEMENT
+       — jamais l'inverse (interroger sa propre sortie pour détecter sa
+       propre régression ne détecterait rien). RÉFUTATION HOSTILE (deux
+       réfutateurs indépendants, avant livraison) :
        une première version de ce message THROW, dans le cas mixte (une
        régression REVENUE ET un gap hors REVENUE en même temps), taisait le
        gap hors REVENUE — le `throw` sortait avant que `horsRevenue` soit
@@ -554,25 +559,31 @@ async function corpsDeLaSonde() {
          where engagement_id = $1 and nature = 'recalcul_parametre' group by template_code, fsli_code`,
         [id]);
       if (rows.length === 0) return 'aucune procédure recalcul_parametre planifiée encore';
+      /* POSTES_CABLES : la liste ATTENDUE, indépendante de ce qu'`atelierDeLaNature`
+         rend réellement — comparer sa sortie à elle-même ne détecterait jamais
+         sa propre régression. REVENUE (Lot 3 tranche 2) et TRADE_RECEIVABLES
+         (Lot 5, poste Clients, 2026-09-15) sont les deux postes câblés à ce jour. */
+      const POSTES_CABLES = ['REVENUE', 'TRADE_RECEIVABLES'];
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('recalcul_parametre', r.fsli_code ?? '', '/base'));
-      const regression = sansAtelier.filter((r) => r.fsli_code === 'REVENUE');
-      const horsRevenue = sansAtelier.filter((r) => r.fsli_code !== 'REVENUE');
-      const detailHorsRevenue = horsRevenue.length > 0
-        ? ` ; ${horsRevenue.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsRevenue.length} template/poste `
-          + 'distinct(s)) hors REVENUE sans atelier construit — attendu, R54/R55 : '
-          + horsRevenue.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+      const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const detailHorsPostesCables = horsPostesCables.length > 0
+        ? ` ; ${horsPostesCables.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsPostesCables.length} template/poste `
+          + `distinct(s)) hors ${POSTES_CABLES.join('/')} sans atelier construit — attendu, R54/R55 : `
+          + horsPostesCables.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
         : '';
       if (regression.length > 0) {
         const instances = regression.reduce((s, r) => s + Number(r.n), 0);
         throw new Error(`${instances} instance(s) (${regression.length} template(s)) recalcul_parametre `
-          + 'planifiée(s) sur REVENUE SANS atelier réel — régression probable de atelierDeLaNature : '
-          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
-          + detailHorsRevenue);
+          + `planifiée(s) sur un poste câblé (${[...new Set(regression.map((r) => r.fsli_code))].join('/')}) SANS atelier réel — `
+          + 'régression probable de atelierDeLaNature : '
+          + regression.map((r) => `${r.template_code} (poste ${r.fsli_code}, ${r.n} instance(s))`).join(', ')
+          + detailHorsPostesCables);
       }
       const n = rows.reduce((s, r) => s + Number(r.n), 0);
-      const revenuVerifie = rows.some((r) => r.fsli_code === 'REVENUE');
-      const noteRevenue = revenuVerifie ? ', REVENUE toujours avec un atelier réel' : '';
-      return `${n} procédure(s) recalcul_parametre planifiée(s)${noteRevenue}${detailHorsRevenue}`;
+      const postesVerifies = POSTES_CABLES.filter((p) => rows.some((r) => r.fsli_code === p));
+      const notePostesCables = postesVerifies.length > 0 ? `, ${postesVerifies.join('/')} toujours avec un atelier réel` : '';
+      return `${n} procédure(s) recalcul_parametre planifiée(s)${notePostesCables}${detailHorsPostesCables}`;
     }));
     /* LOT 3, TRANCHE 3 (mandat, Partie C.1 — livrée ce jour, lue ce jour,
        règle 22). JUMELLE de la lecture recalcul_parametre ci-dessus, CASH au
@@ -628,27 +639,32 @@ async function corpsDeLaSonde() {
     /* LOT 3, TRANCHE 4 — LOT 3 COMPLET (mandat, Partie C.1 — livrée ce jour,
        lue ce jour, règle 22). JUMELLE des deux lectures ci-dessus, même
        raisonnement, même structure : elle rougit l'endpoint entier QUE si
-       une procédure `rapprochement` est planifiée sur CASH (le seul poste
-       câblé, `atelierDeLaNature` → `/circularisations`) SANS atelier — une
-       régression probable. Un gap hors CASH est un état ATTENDU (R57,
-       docs/BACKLOG_REPORTE.md : SEPT des neuf procédures `rapprochement` du
-       catalogue — les deux autres, RAPPRO et ANNEXE, portent `cycle: '*'` —
-       portent un `cycle` qui ne correspond à AUCUN `fsli.code` réel — même
-       mécanisme que R54/R56), rapporté HONNÊTEMENT, jamais tu,
-       jamais bloquant — le gap hors-poste est calculé AVANT le `throw`, la
-       phrase « CASH toujours… » gardée derrière une vérification réelle,
-       dès la première version (le même correctif que la revue hostile a
-       imposé une fois puis une seconde, appliqué ici d'emblée).
-       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : `TRESO-RAPPRO` porte
-       désormais `cycle: 'CASH'` (Lot 5, poste Trésorerie, 2026-09-14 —
-       même correctif que sa jumelle `TRESO-CIRC` ci-dessus, R56/R57 fermés
-       POUR CASH) et `RAPPRO` (`cycle: '*'`) reste planifiable sur CASH par
-       une bascule de risque ordinaire, comme avant. `planifierTresorerie()`
-       (`flows/part1.ts`) plante désormais `TRESO-RAPPRO` dans le monde semé
-       par un geste réel : cette lecture cesse d'être VERTE-VIDE. Sa preuve
-       vient d'abord d'un geste réel de planification, le cas connu mauvais
-       à insertion directe (`atelier-rapprochement-lecture.test.ts`) restant
-       un second filet (règle 17). */
+       une procédure `rapprochement` est planifiée SUR UN POSTE CÂBLÉ SANS
+       atelier — une régression probable. Un gap sur un poste NON câblé
+       est un état ATTENDU (R57, docs/BACKLOG_REPORTE.md : les procédures
+       `rapprochement` restantes — cinq du catalogue CLIENTS/FOURN/PROV
+       hors CLIENTS-AGE, désormais fermé pour TRADE_RECEIVABLES — portent
+       un `cycle` qui ne correspond à AUCUN `fsli.code` réel, même mécanisme
+       que R54/R56), rapporté HONNÊTEMENT, jamais tu, jamais bloquant — le
+       gap hors-postes-câblés est calculé AVANT le `throw`, la phrase
+       « … toujours… » gardée derrière une vérification réelle, dès la
+       première version (le même correctif que la revue hostile a imposé
+       une fois puis une seconde, appliqué ici d'emblée).
+       LE JOUR PRÉDIT EST ARRIVÉ (Lot 5, poste Clients, 2026-09-15) :
+       `atelierDeLaNature` gagne TRADE_RECEIVABLES comme second poste câblé
+       (`CLIENTS-AGE`, → `/balances-aux?cote=clients`, déjà générique — voir
+       `programme.ts`). `POSTES_CABLES` liste maintenant les DEUX postes
+       attendus, comparés à ce qu'`atelierDeLaNature` rend RÉELLEMENT —
+       jamais l'inverse (même correctif que sa jumelle `recalcul_parametre`
+       ci-dessus, même tranche : avant ce correctif, `regression` ne
+       filtrait que sur CASH, et une vraie régression sur l'atelier
+       TRADE_RECEIVABLES serait tombée SILENCIEUSEMENT dans le gap
+       « attendu » plutôt que de rougir l'endpoint). `planifierClients()`
+       (`flows/part1.ts`) plante `CLIENTS-AGE` dans le monde semé par un
+       geste réel : cette lecture, déjà non VERTE-VIDE depuis CASH, gagne
+       une seconde preuve par geste réel. Le cas connu mauvais à insertion
+       directe (`atelier-rapprochement-lecture.test.ts`) reste un second
+       filet (règle 17). */
     lectures.push(await essayer('atelier rapprochement disponible (Lot 3, tranche 4)', async () => {
       const { atelierDeLaNature } = await import('@/lib/services/programme');
       const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
@@ -656,25 +672,27 @@ async function corpsDeLaSonde() {
          where engagement_id = $1 and nature = 'rapprochement' group by template_code, fsli_code`,
         [id]);
       if (rows.length === 0) return 'aucune procédure rapprochement planifiée encore';
+      const POSTES_CABLES = ['CASH', 'TRADE_RECEIVABLES'];
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('rapprochement', r.fsli_code ?? '', '/base'));
-      const regression = sansAtelier.filter((r) => r.fsli_code === 'CASH');
-      const horsCash = sansAtelier.filter((r) => r.fsli_code !== 'CASH');
-      const detailHorsCash = horsCash.length > 0
-        ? ` ; ${horsCash.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsCash.length} template/poste `
-          + 'distinct(s)) hors CASH sans atelier construit — attendu, R57 : '
-          + horsCash.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+      const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const detailHorsCash = horsPostesCables.length > 0
+        ? ` ; ${horsPostesCables.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsPostesCables.length} template/poste `
+          + `distinct(s)) hors ${POSTES_CABLES.join('/')} sans atelier construit — attendu, R57 : `
+          + horsPostesCables.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
         : '';
       if (regression.length > 0) {
         const instances = regression.reduce((s, r) => s + Number(r.n), 0);
         throw new Error(`${instances} instance(s) (${regression.length} template(s)) rapprochement `
-          + 'planifiée(s) sur CASH SANS atelier réel — régression probable de atelierDeLaNature : '
-          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
+          + `planifiée(s) sur un poste câblé (${[...new Set(regression.map((r) => r.fsli_code))].join('/')}) SANS atelier réel — `
+          + 'régression probable de atelierDeLaNature : '
+          + regression.map((r) => `${r.template_code} (poste ${r.fsli_code}, ${r.n} instance(s))`).join(', ')
           + detailHorsCash);
       }
       const n = rows.reduce((s, r) => s + Number(r.n), 0);
-      const cashVerifie = rows.some((r) => r.fsli_code === 'CASH');
-      const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
-      return `${n} procédure(s) rapprochement planifiée(s)${noteCash}${detailHorsCash}`;
+      const postesVerifies = POSTES_CABLES.filter((p) => rows.some((r) => r.fsli_code === p));
+      const notePostesCables = postesVerifies.length > 0 ? `, ${postesVerifies.join('/')} toujours avec un atelier réel` : '';
+      return `${n} procédure(s) rapprochement planifiée(s)${notePostesCables}${detailHorsCash}`;
     }));
     /* LOT 4, TRANCHE 1 (mandat, Partie D.1 — « les écrans qui manquent … la
        déplanification d'une procédure », livrée ce jour, lue ce jour, règle

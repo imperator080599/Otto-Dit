@@ -162,7 +162,7 @@
     "sequence_chiffres": 2,
     "lettres_par_poste": {
       "REVENUE": "A",
-      "RECEIVABLES": "B",
+      "TRADE_RECEIVABLES": "B",
       "CASH": "C",
       "PAYABLES": "D",
       "INVENTORY": "E",

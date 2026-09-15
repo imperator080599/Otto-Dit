@@ -1376,6 +1376,8 @@ export const LIBELLES = {
   'poste.resume.circulariseEnvoyees': { en: '{envoyees} / {total} confirmation(s) sent', fr: '{envoyees} / {total} confirmation(s) envoyée(s)' },
   'poste.resume.circulariseAbsente': { en: 'no party circularised yet', fr: 'aucun tiers circularisé encore' },
   'poste.resume.circulariseTraitees': { en: '{traitees} / {total} reconciled or explained', fr: '{traitees} / {total} rapproché(s) ou expliqué(s)' },
+  'poste.resume.rapprochementSansEchantillon': { en: 'worked by reconciliation, not by sample — see the workshop', fr: 'travaillé par rapprochement, pas par échantillon — voir l’atelier' },
+  'poste.resume.recalculSansEchantillon': { en: 'worked by recalculation, not by sample — see the workshop', fr: 'travaillé par recalcul, pas par échantillon — voir l’atelier' },
   'proc.chg.etapeSupprimee': { en: 'Step removed: {code} — {libelle}', fr: 'Étape supprimée : {code} — {libelle}' },
   'proc.chg.etapeAjoutee': { en: 'Step added: {code} — {libelle}', fr: 'Étape ajoutée : {code} — {libelle}' },
   'proc.chg.etapeModifiee': { en: 'Step {code} — {champ} changed', fr: 'Étape {code} — {champ} modifié' },
