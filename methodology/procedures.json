@@ -1781,7 +1781,7 @@
     },
     {
       "code": "CLIENTS-CIRC",
-      "cycle": "CLIENTS",
+      "cycle": "TRADE_RECEIVABLES",
       "libelle": "Circularisation des clients",
       "objectif": "Confirmer le solde directement auprès du tiers.",
       "assertion": "realite",
@@ -1820,7 +1820,7 @@
     },
     {
       "code": "CLIENTS-ALT",
-      "cycle": "CLIENTS",
+      "cycle": "TRADE_RECEIVABLES",
       "libelle": "Procédures alternatives sur les non-réponses à la circularisation",
       "objectif": "Obtenir une preuve équivalente quand le tiers ne répond pas. Une non-réponse n'est pas une preuve.",
       "assertion": "realite",
@@ -1872,7 +1872,7 @@
     },
     {
       "code": "CLIENTS-AVOIRS",
-      "cycle": "CLIENTS",
+      "cycle": "TRADE_RECEIVABLES",
       "libelle": "Avoirs postérieurs à la clôture",
       "objectif": "Chercher, dans les avoirs émis après la clôture, ceux qui se rattachent à l'exercice.",
       "assertion": "exhaustivite",

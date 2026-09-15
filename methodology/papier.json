@@ -164,7 +164,7 @@
       "REVENUE": "A",
       "TRADE_RECEIVABLES": "B",
       "CASH": "C",
-      "PAYABLES": "D",
+      "TRADE_PAYABLES": "D",
       "INVENTORY": "E",
       "_defaut": "Z"
     }

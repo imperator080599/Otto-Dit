@@ -528,6 +528,18 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   cycle ↔ fsli comme donnée de méthode plutôt que comme deux vocabulaires qui coïncident par
   hasard — vraisemblablement le Lot 5 (postes), qui construit précisément ces procédures poste par
   poste.
+
+  **Partiellement levée le 2026-09-15, sur le commit `90a2c85` — `CLIENTS-DEPREC` SEULEMENT.**
+  `CLIENTS-DEPREC.cycle` corrigé de `"CLIENTS"` à `"TRADE_RECEIVABLES"` (Lot 5, poste 2 — Clients) :
+  `planifierProcedure({fsliCode:'TRADE_RECEIVABLES', code:'CLIENTS-DEPREC'})` réussit désormais,
+  seedé par `planifierClients()` (`part1.ts`), son papier TRA-02 existe et son atelier
+  (`estimations.ts`) est réel. **Précision ajoutée le même soir, par la revue hostile** : corriger
+  le `cycle` ne veut PAS dire que CLIENTS-DEPREC est « commandée par le risque » sur ce dossier —
+  mesuré directement (`risksFor`), son assertion `evaluation` est `faible`, SOUS son
+  `risque_minimum: "moyen"` ; elle est planifiée « hors commande » (voir R92, deuxième constat), pas
+  déclenchée par le risque. Les TREIZE autres procédures (`IMMO_COR`, `IMMO_INC`, `STOCKS`,
+  `PERSONNEL`, `SOCIAL`, `DETTES_FI`, `PROV` — quatorze moins CLIENTS-DEPREC, répartition non
+  recomptée ici) restent non corrigées — à lever poste par poste, au fil du Lot 5.
 - **R55 — `npm run verify` (et donc `npm run clics`, `screens`, `fumee`, `densite`, `visuel`
   exécutés depuis ce bac à sable) ne lance JAMAIS `demo:enrichir`** (`db:reset && demo:seed && …`,
   package.json) — seul `npm run demo` (la commande interactive, `scripts/demo/lancer.mjs`) et
@@ -609,9 +621,18 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   Trésorerie) : `planifierProcedure({fsliCode:'CASH', code:'TRESO-RAPPRO'})` réussit désormais,
   seedé par `planifierTresorerie()` (`part1.ts`), exercé par le parcours cliqué jusqu'à la clôture
   (règle 37) — la première instance `rapprochement` RÉELLE du monde semé, là où le paragraphe
-  ci-dessus ne connaissait qu'un cas connu mauvais à insertion directe. Les SIX autres procédures
-  (`IMMO_COR-TAB`, `IMMO_INC-TAB`, `CLIENTS-AGE`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `FISCAL-TVA`)
+  ci-dessus ne connaissait qu'un cas connu mauvais à insertion directe. Les CINQ autres procédures
+  (`IMMO_COR-TAB`, `IMMO_INC-TAB`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `FISCAL-TVA`)
   restent non corrigées — à lever poste par poste, au fil du Lot 5.
+
+  **Partiellement levée à nouveau le 2026-09-15 (même soir), sur le commit `90a2c85` —
+  `CLIENTS-AGE` SEULEMENT, en plus de `TRESO-RAPPRO` ci-dessus.** `CLIENTS-AGE.cycle` corrigé de
+  `"CLIENTS"` à `"TRADE_RECEIVABLES"` (Lot 5, poste 2 — Clients) :
+  `planifierProcedure({fsliCode:'TRADE_RECEIVABLES', code:'CLIENTS-AGE'})` réussit désormais, seedé
+  par `planifierClients()` (`part1.ts`), exercé par le parcours cliqué jusqu'à la clôture (règle
+  37), et vérifié RÉELLEMENT commandée par le risque (`exhaustivite:moyen` ≥ son
+  `risque_minimum: "faible"`, `requiredProcedures` exécuté directement — contrairement à
+  CLIENTS-DEPREC, voir R54). Les CINQ procédures ci-dessus restent non corrigées.
 
 - **R58 — `tests/screens.test.ts` a fait tomber le serveur, intermittent, trois fois sur cinq
   passages complets de `npm run verify` pendant le Lot 4, tranche 3 (2026-09-08).** Symptôme
@@ -1272,19 +1293,97 @@ design : chacun reste une tranche à construire.**
   mais N'A AUCUN ATELIER.** Trouvé en ouvrant Clients (Lot 5, poste 2, 2026-09-15) : mesuré par
   exécution (`assessFsli`/`risksFor` contre la base seedée), l'assertion `exhaustivite` de
   TRADE_RECEIVABLES est `moyen` (facteur « plus de 200 écritures », 1267 écritures) — au-dessus du
-  `risque_minimum: "moyen"` de CLIENTS-AVOIRS (« Avoirs postérieurs à la clôture »). Contrairement à
-  CLIENTS-AGE et CLIENTS-DEPREC (également commandées, toutes deux résolues cette même tranche via
-  des ateliers DÉJÀ poste-agnostiques — `balances-aux`, `estimations`), `sondage_pieces` n'a
-  aujourd'hui qu'UN SEUL atelier construit (`/testing`, REVENUE), et son moteur de tirage
+  `risque_minimum: "moyen"` de CLIENTS-AVOIRS (« Avoirs postérieurs à la clôture »). `sondage_pieces`
+  n'a aujourd'hui qu'UN SEUL atelier construit (`/testing`, REVENUE), et son moteur de tirage
   (`proposeRevenueSample`/`drawRevenueSample`, `sampling.ts`) est câblé EN DUR sur
   `revenuePopulation()`, sans paramètre de poste — généraliser à une population « avoirs émis après
   la clôture » est une mécanique neuve à construire (rule 14 amendement le permet), pas une ligne de
-  routage à ajouter comme pour les deux autres. **Non planifiée cette tranche, délibérément** :
+  routage à ajouter comme pour les autres. **Non planifiée cette tranche, délibérément** :
   planifier CLIENTS-AVOIRS via `planifierProcedure` sans atelier atteignable créerait un « poste
   retenu SANS procédure planifiée » inversé — une procédure planifiée SANS geste possible, le même
   défaut que R56/R57 nomment déjà pour d'autres (nature, poste) — jamais un obstacle caché derrière
-  un lien mort (règle 13). Clients ouvre donc avec DEUX procédures risk-commandées sur trois
-  traitées ; la troisième reste un poste ouvert à MOITIÉ sur CE point précis, disclosed plutôt que
-  caché. Se referme le jour où `sondage_pieces` se généralise à une population autre que REVENUE —
-  vraisemblablement quand Fournisseurs ou Stocks (Lot 5) en aura besoin aussi, un atelier générique
-  plutôt qu'un troisième câblage en dur.
+  un lien mort (règle 13). Se referme le jour où `sondage_pieces` se généralise à une population
+  autre que REVENUE — vraisemblablement quand Fournisseurs ou Stocks (Lot 5) en aura besoin aussi,
+  un atelier générique plutôt qu'un troisième câblage en dur.
+
+  **Corrigée le 2026-09-15 (même soir, revue hostile) — la première rédaction ci-dessus
+  DIAGNOSTIQUAIT MAL sa propre cause.** `CLIENTS-AVOIRS.cycle` (comme `CLIENTS-CIRC.cycle` et
+  `CLIENTS-ALT.cycle`, ni l'un ni l'autre mentionné jusqu'ici) était resté `"CLIENTS"` — exactement
+  le défaut R54/R56/R57 que cette même tranche venait de corriger pour CLIENTS-AGE/CLIENTS-DEPREC,
+  pas encore pour ces trois-là. `proceduresDuCycle` (`methodology/catalogue.ts:200`,
+  `p.cycle === '*' || p.cycle === cycle`) ne voyait donc JAMAIS CLIENTS-AVOIRS pour
+  `fsliCode='TRADE_RECEIVABLES'`, quel que soit le niveau de risque : le paragraphe ci-dessus avait
+  mesuré le niveau de risque à la main (`assessFsli`/`risksFor` comparé à `risque_minimum`) SANS
+  exécuter `requiredProcedures()` bout en bout — exactement règle 15, chercher un fait n'est pas
+  emprunter le chemin. Trouvé par un relecteur hostile indépendant, vérifié par exécution directe
+  (constat, pas supposition) : `requiredProcedures(engNep, 'TRADE_RECEIVABLES')` rendait
+  `['DETAIL','RA','RAPPRO','SEQ']` (les quatre transverses, `cycle: '*'`) — ni CLIENTS-AGE, ni
+  CLIENTS-AVOIRS, ni aucune procédure spécifique au poste. **Corrigé** : les trois `cycle` passés à
+  `"TRADE_RECEIVABLES"` (mécanique de correspondance, même raisonnement que l'amendement de la
+  règle 14 — pas du contenu de procédure neuf). Re-mesuré après correction, sur une base
+  fraîchement reconstruite (`db:reset && demo:seed`, compte identique — 13 exceptions, 8
+  déviations, 6 papiers, 377 événements, donc déterministe) :
+  `requiredProcedures(engNep, 'TRADE_RECEIVABLES') = ['CLIENTS-AGE','CLIENTS-AVOIRS','DETAIL','RA',
+  'RAPPRO','SEQ']` — CLIENTS-AVOIRS est maintenant VISIBLE et VÉRIFIÉ commandée (le constat central
+  du paragraphe d'origine tenait, seulement pas par le chemin qu'il citait). CLIENTS-CIRC et
+  CLIENTS-ALT restent absents de cette liste, cette fois pour la BONNE raison : `realite:faible`
+  sur ce dossier, sous leur `risque_minimum` — leur `cycle` est corrigé pour le jour où `realite`
+  montera, mais rien ne les rend commandées aujourd'hui.
+
+  **Deuxième constat, même mesure directe : CLIENTS-DEPREC N'EST PAS commandée par le risque,
+  contrairement à ce que le commit `90a2c85` affirmait.** `risksFor(engNep, 'TRADE_RECEIVABLES')`
+  mesuré donne `evaluation:faible` — SOUS le `risque_minimum: "moyen"` de CLIENTS-DEPREC — alors que
+  ce même commit écrivait « CLIENTS-DEPREC (evaluation, moyen) ». `planifierProcedure` (PROG-01/02/03,
+  `programme.ts:87`) ne vérifie PAS le niveau de risque — seulement le catalogue, la correspondance
+  cycle↔poste et le périmètre — donc `planifierClients()` (qui plante CLIENTS-AGE et CLIENTS-DEPREC
+  par une liste CODÉE EN DUR, pas depuis `requiredProcedures()`) a planifié CLIENTS-DEPREC SANS que
+  cela dépende de son niveau de risque réel : la mesure d'origine (règle 18, hypothèse jamais
+  diagnostic) était fausse dès le départ, pas une régression de cette correction. CLIENTS-DEPREC
+  reste planifiée (son atelier `estimations.ts` est réel et fonctionnel, le papier TRA-02 existe) —
+  ce n'est pas une procédure ORPHELINE — mais elle apparaît « hors commande » (`programme.ts`,
+  `horsCommande`) plutôt que « commandée », et non « commandée par le risque » comme l'écrivait le
+  commit. Le dossier ouvre donc avec DEUX procédures VÉRIFIÉES commandées (CLIENTS-AGE via
+  `exhaustivite:moyen`, CLIENTS-AVOIRS via `exhaustivite:moyen`), UNE planifiée mais pas commandée
+  (CLIENTS-DEPREC), et UNE commandée sans atelier (CLIENTS-AVOIRS, toujours ouverte, voir ci-dessus).
+  Leçon générale, au-delà de ce poste : une affirmation « X est commandée par le risque » ne se
+  clôt jamais par une comparaison à la main entre `risksFor` et `risque_minimum` — seule l'exécution
+  de `requiredProcedures()` (ou `proceduresRequises`) fait foi.
+
+- **R93 — le garde-fou D9 (« une décision humaine de périmètre ne se réécrit pas ») est DUPLIQUÉ,
+  sans mécanisme partagé, entre `part1.ts` et `enrichir.ts`.** Trouvé par une revue hostile pendant
+  la clôture de Clients (Lot 5, poste 2, 2026-09-15) : `bootstrapNep()` (`part1.ts`) et
+  `enrichirMondeDemo()` (`enrichir.ts`) portent chacun, indépendamment, la MÊME requête
+  (`verb='demo_scoping_seeded' and payload->>'fsli'=X`) pour savoir si un poste a déjà été laissé
+  retenu par l'un des deux — sans liste partagée, sans constante commune, sans test structurel qui
+  les lie. C'est exactement le trou que la tranche Clients vient de refermer pour TRADE_RECEIVABLES
+  (trouvé par `enrichir.test.ts` CONSTAT 1/6, corrigé au commit `c58bc02`) : un futur poste du Lot 5
+  qui a besoin de la même protection peut être ajouté d'un SEUL côté sans que rien ne le signale,
+  sauf un test dédié écrit à la main pour CE poste précis, comme celui-ci a dû l'être. Non corrigé
+  cette tranche, délibérément : construire un mécanisme partagé (une liste unique, ou un helper
+  commun) est un refactor qui dépasse le mandat d'une seule tranche de poste (règle 8) et touche
+  un chemin déjà éprouvé (`enrichir.ts`) sans qu'un défaut RÉEL, aujourd'hui, ne le commande — trois
+  postes (REVENUE, CASH, TRADE_RECEIVABLES) le portent correctement, chacun testé individuellement.
+  Se referme le jour où un TROISIÈME poste retenu par le seed de base a besoin de la même garde et
+  qu'une tranche choisit d'unifier plutôt que de dupliquer une quatrième fois — vraisemblablement
+  quand le Lot 5 aura ouvert deux ou trois postes de plus et que le patron sera assez répété pour
+  justifier l'abstraction (règle : pas d'abstraction avant trois répétitions équivalentes).
+
+- **R94 — le TROISIÈME patron de `poste.ts` (échantillon/testing ni circularisé ni sondé à la
+  REVENUE) est silencieux si un poste qu'il sert aujourd'hui gagne un jour un VRAI tirage.** Trouvé
+  par une revue hostile pendant la clôture de Clients (Lot 5, poste 2, 2026-09-15) :
+  `poste.ts:346-410` route TRADE_RECEIVABLES (et CASH) vers `rapprochement`/`recalcul_parametre`
+  quand `atelierDeLaNature` confirme un atelier réel HORS circularisation ET que
+  `n(ech?.pop) === 0`. Correct aujourd'hui — vérifié : `circ` est toujours non-null pour CASH
+  (`natureCirculariseeDuPoste`), et aucun chemin de code ne produit de tirage substantif sur
+  TRADE_RECEIVABLES (`sampling.ts` câblé en dur sur `revenuePopulation()`, R92) — mais SILENCIEUX
+  le jour où ce ne sera plus vrai : si R92 se referme en généralisant `sondage_pieces` à une
+  population « avoirs après clôture » et qu'un tirage RÉEL apparaît un jour sur TRADE_RECEIVABLES
+  (`ech.pop > 0`), les blocs `rapprochement`/`recalcul_parametre` disparaîtraient de l'écran SANS
+  avertissement — ce risque de disparition silencieuse n'est aujourd'hui documenté que pour `circ`
+  (le commentaire de règle 19 sur le poste circularisé), pas pour ce troisième patron. Non corrigé
+  cette tranche, délibérément : un test qui protège contre un état qui n'existe encore nulle part
+  dans le dépôt (aucun poste ne combine aujourd'hui un atelier `rapprochement`/`recalcul_parametre`
+  ET un tirage réel) serait un test contre un décor, pas contre un défaut — rule 25 (aucune famille
+  bloquante neuve sans son cas de faux positif RÉEL). Se referme le jour où R92 se généralise
+  (`sondage_pieces` hors REVENUE) : cette même tranche devra alors vérifier explicitement, par
+  exécution, que `poste.ts` reste honnête sur le poste concerné avant de considérer R92 close.

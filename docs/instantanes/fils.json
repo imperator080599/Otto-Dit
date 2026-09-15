@@ -454,9 +454,21 @@
     },
     {
       "id": "R92",
-      "etat": "ouvert — CLIENTS-AVOIRS (nature sondage_pieces) est COMMANDÉE PAR LE RISQUE sur le dossier NEP (exhaustivite=moyen, mesuré par exécution) mais n'a AUCUN atelier : sample/sample_item ne sont écrits que par proposeRevenueSample/drawRevenueSample, câblés en dur sur revenuePopulation(), sans paramètre de poste.",
+      "etat": "ouvert — CLIENTS-AVOIRS (nature sondage_pieces) est COMMANDÉE PAR LE RISQUE sur le dossier NEP (exhaustivite=moyen, VÉRIFIÉ par requiredProcedures() exécuté directement, pas seulement comparé à la main) mais n'a AUCUN atelier : sample/sample_item ne sont écrits que par proposeRevenueSample/drawRevenueSample, câblés en dur sur revenuePopulation(), sans paramètre de poste. Corrigé le même soir (revue hostile) : le diagnostic d'origine ratait sa propre cause — CLIENTS-AVOIRS.cycle (et CLIENTS-CIRC/CLIENTS-ALT, non mentionnés jusque-là) était resté \"CLIENTS\", invisible à proceduresDuCycle ; les trois cycle corrigés à TRADE_RECEIVABLES, CLIENTS-AVOIRS re-vérifiée commandée par exécution après correction. Constat distinct trouvé en re-vérifiant : CLIENTS-DEPREC N'EST PAS commandée par le risque (evaluation=faible, sous son risque_minimum=moyen) contrairement à ce que le commit d'origine affirmait — planifiée quand même (planifierProcedure ne vérifie pas le risque), donc hors commande plutôt qu'orpheline.",
       "depuis": "2026-09-15 (Lot 5, poste 2 — Clients)",
-      "note": "non planifiée délibérément (planifier sans atelier atteignable créerait une procédure planifiée sans geste possible, même défaut que R56/R57). Clients ouvre avec CLIENTS-AGE et CLIENTS-DEPREC (résolues cette tranche, ateliers déjà poste-agnostiques) mais pas CLIENTS-AVOIRS. Condition de retrait : généraliser sondage_pieces à une population autre que REVENUE — un atelier générique, pas un troisième câblage en dur."
+      "note": "non planifiée délibérément (planifier sans atelier atteignable créerait une procédure planifiée sans geste possible, même défaut que R56/R57). Clients ouvre avec CLIENTS-AGE et CLIENTS-AVOIRS VÉRIFIÉES commandées (exécution, pas comparaison à la main), CLIENTS-DEPREC planifiée mais hors commande. Condition de retrait de R92 : généraliser sondage_pieces à une population autre que REVENUE — un atelier générique, pas un troisième câblage en dur."
+    },
+    {
+      "id": "R93",
+      "etat": "ouvert — le garde-fou D9 (\"une décision humaine de périmètre ne se réécrit pas\") est dupliqué, sans mécanisme partagé, entre bootstrapNep() (part1.ts) et enrichirMondeDemo() (enrichir.ts) : chacun porte indépendamment la même requête sur l'événement demo_scoping_seeded. Trouvé par une revue hostile pendant la clôture de Clients — exactement le trou refermé pour TRADE_RECEIVABLES (enrichir.test.ts CONSTAT 1/6, commit c58bc02) qui peut se reproduire pour un futur poste ajouté d'un seul côté.",
+      "depuis": "2026-09-15 (Lot 5, poste 2 — Clients, revue hostile)",
+      "note": "non corrigé délibérément : trois postes (REVENUE, CASH, TRADE_RECEIVABLES) le portent correctement, chacun testé individuellement ; unifier est un refactor hors mandat d'une seule tranche de poste. Se referme quand un troisième poste retenu par le seed de base a besoin de la même garde et qu'une tranche choisit d'unifier plutôt que dupliquer une quatrième fois."
+    },
+    {
+      "id": "R94",
+      "etat": "ouvert — le troisième patron de poste.ts (échantillon/testing ni circularisé ni sondé façon REVENUE, poste.ts:346-410) est silencieux si un poste qu'il sert aujourd'hui (TRADE_RECEIVABLES, CASH) gagne un jour un vrai tirage (ech.pop > 0) : les blocs rapprochement/recalcul_parametre disparaîtraient de l'écran sans avertissement, ce risque n'étant documenté que pour le cas circularisé. Trouvé par une revue hostile pendant la clôture de Clients.",
+      "depuis": "2026-09-15 (Lot 5, poste 2 — Clients, revue hostile)",
+      "note": "non corrigé délibérément : un test contre un état qui n'existe encore nulle part dans le dépôt serait un test contre un décor (règle 25). Se referme le jour où R92 se généralise (sondage_pieces hors REVENUE) : cette tranche-là devra vérifier explicitement, par exécution, que poste.ts reste honnête sur le poste concerné."
     }
   ]
 }

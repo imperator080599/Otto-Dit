@@ -49,8 +49,15 @@ describe('catalogue méthodologique', () => {
   });
 
   it('couvre les cycles du dossier, pas seulement les ventes', () => {
+    /* CLIENTS retiré de cette liste le 2026-09-15 (Lot 5, poste 2 — Clients, revue hostile) :
+       les trois dernières procédures qui portaient encore ce vocabulaire de cycle
+       (CLIENTS-CIRC, CLIENTS-ALT, CLIENTS-AVOIRS) ont été corrigées vers le vrai fsli.code
+       TRADE_RECEIVABLES (même correctif que CLIENTS-AGE/CLIENTS-DEPREC, R54/R57) — "CLIENTS"
+       n'existe donc plus comme valeur de cycle nulle part dans le catalogue. Les sept autres
+       restent du vocabulaire de cycle en attente de leur propre correction, postes non encore
+       ouverts par le Lot 5. */
     const cycles = new Set(cat.procedures.map((p) => p.cycle).filter((c) => c !== '*'));
-    for (const attendu of ['FOURN', 'IMMO_COR', 'STOCKS', 'CLIENTS', 'PERSONNEL', 'CAPITAUX', 'DETTES_FI', 'PROV']) {
+    for (const attendu of ['FOURN', 'IMMO_COR', 'STOCKS', 'PERSONNEL', 'CAPITAUX', 'DETTES_FI', 'PROV']) {
       expect(cycles.has(attendu), `cycle ${attendu} absent du catalogue`).toBe(true);
     }
   });

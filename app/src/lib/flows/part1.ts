@@ -94,10 +94,13 @@ export async function bootstrapNep(): Promise<void> {
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
     if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES'].includes(f.code)) {
-      /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ,
-         PAS appelé par ce seed — utilisé par ses propres tests) porte SA
-         PROPRE garde D9 sur ce poste précis, basée sur CE MÊME événement
-         `demo_scoping_seeded` : sans lui, `enrichir.ts` croit n'avoir
+      /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
+         CETTE fonction — PAS appelé ici, mais bien appelé en aval par
+         `scripts/deploy/reconstruire.ts`, le build de production, dans le
+         MÊME processus ; ce n'est donc PAS un simple outil de test isolé,
+         règle 19) porte SA PROPRE garde D9 sur ce poste précis, basée sur
+         CE MÊME événement `demo_scoping_seeded` : sans lui, `enrichir.ts`
+         croit n'avoir
          JAMAIS statué ce poste et RÉÉCRIT une décision humaine ultérieure
          (`ns_confirmed` posée par un associé) avec sa propre convention —
          trouvé par `enrichir.test.ts` (« CONSTAT 1 et 6 »), pas deviné :
