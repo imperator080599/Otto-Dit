@@ -615,7 +615,17 @@ async function corpsDeLaSonde() {
        lecture cesse d'être VERTE-VIDE — sa preuve vient d'un geste réel de
        planification, plus seulement d'un cas connu mauvais à insertion
        directe (`atelier-confirmation-lecture.test.ts`, gardé comme second
-       filet, règle 17). */
+       filet, règle 17).
+       LE JOUR PRÉDIT EST ARRIVÉ (Lot 5, poste Fournisseurs, 2026-09-15) :
+       `atelierDeLaNature` gagne TRADE_PAYABLES comme second poste câblé
+       (`FOURN-CIRC`, → `/circularisations`, même mécanique que CASH depuis
+       la migration 0165). `POSTES_CABLES` liste maintenant les DEUX postes
+       attendus, comparés à ce qu'`atelierDeLaNature` rend RÉELLEMENT —
+       jamais l'inverse (même correctif que ses jumelles `recalcul_parametre`
+       et `rapprochement` ci-dessus/ci-dessous : avant ce correctif,
+       `regression` ne filtrait que sur CASH, et une vraie régression sur
+       l'atelier TRADE_PAYABLES serait tombée SILENCIEUSEMENT dans le gap
+       « attendu R56 » plutôt que de rougir l'endpoint). */
     lectures.push(await essayer('atelier confirmation_externe disponible (Lot 3, tranche 3)', async () => {
       const { atelierDeLaNature } = await import('@/lib/services/programme');
       const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
@@ -623,25 +633,25 @@ async function corpsDeLaSonde() {
          where engagement_id = $1 and nature = 'confirmation_externe' group by template_code, fsli_code`,
         [id]);
       if (rows.length === 0) return 'aucune procédure confirmation_externe planifiée encore';
+      const POSTES_CABLES = ['CASH', 'TRADE_PAYABLES'];
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('confirmation_externe', r.fsli_code ?? '', '/base'));
-      const regression = sansAtelier.filter((r) => r.fsli_code === 'CASH');
-      const horsCash = sansAtelier.filter((r) => r.fsli_code !== 'CASH');
-      const detailHorsCash = horsCash.length > 0
-        ? ` ; ${horsCash.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsCash.length} template/poste `
-          + 'distinct(s)) hors CASH sans atelier construit — attendu, R56 : '
-          + horsCash.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+      const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
+      const detailHorsCash = horsPostesCables.length > 0
+        ? ` ; hors ${POSTES_CABLES.join('/')}, attendu R56 : `
+          + horsPostesCables.map((r) => `${r.template_code}/${r.fsli_code ?? '(aucun)'}`).join(', ')
         : '';
       if (regression.length > 0) {
         const instances = regression.reduce((s, r) => s + Number(r.n), 0);
-        throw new Error(`${instances} instance(s) (${regression.length} template(s)) confirmation_externe `
-          + 'planifiée(s) sur CASH SANS atelier réel — régression probable de atelierDeLaNature : '
-          + regression.map((r) => `${r.template_code} (${r.n} instance(s))`).join(', ')
+        throw new Error(`${instances} instance(s) confirmation_externe sur `
+          + `${[...new Set(regression.map((r) => r.fsli_code))].join('/')} SANS atelier — régression atelierDeLaNature : `
+          + regression.map((r) => `${r.template_code}/${r.fsli_code}`).join(', ')
           + detailHorsCash);
       }
       const n = rows.reduce((s, r) => s + Number(r.n), 0);
-      const cashVerifie = rows.some((r) => r.fsli_code === 'CASH');
-      const noteCash = cashVerifie ? ', CASH toujours avec un atelier réel' : '';
-      return `${n} procédure(s) confirmation_externe planifiée(s)${noteCash}${detailHorsCash}`;
+      const postesVerifies = POSTES_CABLES.filter((p) => rows.some((r) => r.fsli_code === p));
+      const notePostesCables = postesVerifies.length > 0 ? `, ${postesVerifies.join('/')} toujours avec un atelier réel` : '';
+      return `${n} procédure(s) confirmation_externe planifiée(s)${notePostesCables}${detailHorsCash}`;
     }));
     /* LOT 3, TRANCHE 4 — LOT 3 COMPLET (mandat, Partie C.1 — livrée ce jour,
        lue ce jour, règle 22). JUMELLE des deux lectures ci-dessus, même

@@ -9,7 +9,7 @@ import {
   proceduresDuCycle, procedure as procedureDuCatalogue, gabarit, referencePapier, sens as sensDeTest,
   justificatifs, executable,
 } from '@/lib/methodology/catalogue';
-import type { NatureDeTest } from '@/lib/methodology/types';
+import type { NatureDeTest, Catalogue } from '@/lib/methodology/types';
 import type { WpSection } from './workpapers/draft';
 import { assertMembre } from '@/lib/core/membre';
 import { requiredProcedures, excludedProcedures, risksFor } from './risk';
@@ -127,9 +127,34 @@ export async function planifierProcedure(o: {
   return { id: r.id, creee: true };
 }
 
-/** Le préfixe de code d'un papier, par poste : « REV » pour REVENUE — celui que porte déjà REV-01. */
-function prefixeDuPoste(fsliCode: string): string {
-  return fsliCode.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'WP';
+/**
+ * Le préfixe de code d'un papier, par poste — celui que porte déjà REV-01.
+ *
+ * TROUVÉ PAR EXÉCUTION (Lot 5, poste Fournisseurs, 2026-09-15), PAS SUPPOSÉ :
+ * cette fonction dérivait naïvement les trois premières lettres du
+ * `fsli_code` (« TRA » pour TRADE_RECEIVABLES ET pour TRADE_PAYABLES — la
+ * même collision qu'un préfixe français en dur aurait produite, la classe
+ * même d'erreur que cette mécanique existe pour éviter), sans jamais
+ * consulter `lettres_par_poste` (`papier.json`), qui existe PRÉCISÉMENT pour
+ * donner à chaque poste une lettre distincte et QUE `referencePapier`
+ * utilisait déjà pour le champ `reference` — deux dérivations indépendantes
+ * du même concept, l'une correcte, l'autre pas. `code` (la clé unique en
+ * base, `workpaper_engagement_id_code_version_key`) et `reference` (le champ
+ * cabinet-facing) portaient donc CHACUN sa propre lettre, muettes l'une de
+ * l'autre — muet jusqu'à ce que deux postes partagent enfin le même préfixe
+ * naïf. Reproduit par exécution (`planifierFournisseurs()` contre une base
+ * fraîche : `duplicate key value violates unique constraint
+ * "workpaper_engagement_id_code_version_key"`, TRADE_PAYABLES tentant
+ * d'insérer « TRA-01 », déjà pris par TRADE_RECEIVABLES). Corrigé en
+ * RÉUTILISANT `lettres_par_poste`, jamais une seconde table de
+ * correspondance : les papiers déjà créés (CAS-01, PPE-01, TRA-01/02)
+ * gardent leur code d'origine (règle 26 du produit, appliquée ici aux
+ * données semées : `code` ne se régénère que `if (!code)`, pour une
+ * NOUVELLE série) — seuls les postes ouverts APRÈS ce correctif reçoivent la
+ * lettre correcte et unique. */
+function prefixeDuPoste(cat: Catalogue, fsliCode: string): string {
+  const r = cat.papier.referencement;
+  return (r.lettres_par_poste[fsliCode] ?? r.lettres_par_poste._defaut ?? 'WP').toUpperCase();
 }
 
 /**
@@ -206,7 +231,7 @@ export async function redigerPapierDeProcedure(o: {
     const pris = new Set((await q<{ code: string }>(
       `select distinct w.code from workpaper w join procedure_instance q on q.id = w.procedure_id
        where w.engagement_id = $1 and q.fsli_code = $2`, [pi.engagement_id, pi.fsli_code])).map((x) => x.code));
-    const prefixe = prefixeDuPoste(pi.fsli_code);
+    const prefixe = prefixeDuPoste(cat, pi.fsli_code);
     let n = 1;
     while (pris.has(`${prefixe}-${String(n).padStart(2, '0')}`)) n++;
     code = `${prefixe}-${String(n).padStart(2, '0')}`;
@@ -590,6 +615,14 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      (union de type fermée), ni `/testing` (câblé en dur sur
      `revenuePopulation()`, R92) : disclosed R95, pas planifiées. */
   if (nature === 'recalcul_parametre' && fsliCode === 'PPE') return `${base}/estimations`;
+  /* Lot 5, poste 4 (Fournisseurs, 2026-09-15) : FOURN-CIRC (confirmation_externe)
+     réutilise le MÊME atelier que TRESO-CIRC — `circularisations.ts` porte
+     désormais une troisième Nature (`fournisseur`, migration 0165), le même
+     écran `/circularisations` route les trois. FOURN-SUL/FOURN-FNP
+     (sondage_pieces) N'ONT AUCUN atelier réutilisable — même gap que
+     CLIENTS-AVOIRS/IMMO_COR-ACQ (R92/R95) : `/testing` reste câblé sur
+     REVENUE — disclosed R96/backlog, pas planifiées. */
+  if (nature === 'confirmation_externe' && fsliCode === 'TRADE_PAYABLES') return `${base}/circularisations`;
   return null;
 }
 

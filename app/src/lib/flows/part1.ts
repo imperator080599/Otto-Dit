@@ -60,16 +60,18 @@ export async function bootstrapNep(): Promise<void> {
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
 
-  /* TROIS POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
+  /* QUATRE POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
      Le jeu de démonstration déroule le cycle chiffre d'affaires (REVENUE),
      depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14) la trésorerie
-     (CASH), et depuis le Lot 5 poste 2 (Clients, 2026-09-15) les créances
-     clients (TRADE_RECEIVABLES) — chacun scopé `ns_confirmed` par CETTE MÊME
-     convention avant son propre correctif ; un poste dont on conduit
-     réellement les procédures et qu'on maintient hors périmètre aurait été
-     l'exact défaut inverse (un geste réel que le dossier prétendrait ne
-     jamais avoir eu besoin de statuer). Tant qu'aucune règle ne le
-     remarquait, quinze autres postes pouvaient rester « retenus » sans
+     (CASH), depuis le Lot 5 poste 2 (Clients, 2026-09-15) les créances
+     clients (TRADE_RECEIVABLES), depuis le Lot 5 poste 3 (Immobilisations,
+     2026-09-15) PPE, et depuis le Lot 5 poste 4 (Fournisseurs, 2026-09-15)
+     les dettes fournisseurs (TRADE_PAYABLES) — chacun scopé `ns_confirmed`
+     par CETTE MÊME convention avant son propre correctif ; un poste dont on
+     conduit réellement les procédures et qu'on maintient hors périmètre
+     aurait été l'exact défaut inverse (un geste réel que le dossier
+     prétendrait ne jamais avoir eu besoin de statuer). Tant qu'aucune règle
+     ne le remarquait, quinze autres postes pouvaient rester « retenus » sans
      qu'aucune procédure ne soit planifiée dessus, et le dossier se
      clôturait quand même. Depuis la famille d'obstacles « périmètre sans
      programme », ce serait quatorze obstacles au visa — à raison : un poste
@@ -79,28 +81,31 @@ export async function bootstrapNep(): Promise<void> {
      CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
      CES POSTES-LÀ AUSSI dans le périmètre (vérifié par requête directe avant
      chaque correctif, jamais supposé : `fsli.scoping` de CASH puis de
-     TRADE_RECEIVABLES puis de PPE portait déjà le motif « hors périmètre du
-     jeu » — donc PAS `ns_proposed`, le moteur l'avait proposé `in_scope` —
-     TRADE_RECEIVABLES pèse 1 554 017,64 € (créances clients), PPE pèse
-     1 050 000,00 € (immobilisations corporelles), la paie pèse 2,6 M€, contre
-     un seuil de planification de 27 000 €. Les sortir n'est donc pas un
-     jugement de significativité, et le motif le dit à l'écran, dans le
-     journal et dans l'archive : c'est une convention du jeu synthétique.
-     Écrire l'inverse ferait du dossier de démonstration un dossier qu'un
-     inspecteur rejetterait — et le produit refuse partout ailleurs les
-     motifs qui n'en sont pas. INTANGIBLES reste HORS de cette liste : sa
-     balance (12 000,00 €) est SOUS le seuil de planification — vérifié par
-     requête directe, `fsli.scoping_basis` d'INTANGIBLES ne porte PAS le motif
-     générique ci-dessous, il dit « ressorti du périmètre » — un jugement de
-     significativité GENUINE, pas une convention à lever un jour. */
+     TRADE_RECEIVABLES puis de PPE puis de TRADE_PAYABLES portait déjà le
+     motif « hors périmètre du jeu » — donc PAS `ns_proposed`, le moteur
+     l'avait proposé `in_scope` — TRADE_RECEIVABLES pèse 1 554 017,64 €
+     (créances clients), PPE pèse 1 050 000,00 € (immobilisations
+     corporelles), TRADE_PAYABLES pèse 265 632,25 € (dettes fournisseurs, un
+     seul compte collectif 401000, `fsliAccounts` vérifié par exécution), la
+     paie pèse 2,6 M€, contre un seuil de planification de 27 000 €. Les
+     sortir n'est donc pas un jugement de significativité, et le motif le
+     dit à l'écran, dans le journal et dans l'archive : c'est une convention
+     du jeu synthétique. Écrire l'inverse ferait du dossier de démonstration
+     un dossier qu'un inspecteur rejetterait — et le produit refuse partout
+     ailleurs les motifs qui n'en sont pas. INTANGIBLES reste HORS de cette
+     liste : sa balance (12 000,00 €) est SOUS le seuil de planification —
+     vérifié par requête directe, `fsli.scoping_basis` d'INTANGIBLES ne porte
+     PAS le motif générique ci-dessous, il dit « ressorti du périmètre » —
+     un jugement de significativité GENUINE, pas une convention à lever un
+     jour. */
   const MOTIF_DEMO =
     'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie, '
-    + 'clients et immobilisations y sont déroulés. Ce n’est PAS un jugement de significativité — '
-    + 'sur cette entité le poste dépasse le seuil de planification et serait travaillé dans un '
-    + 'dossier réel.';
+    + 'clients, immobilisations et fournisseurs y sont déroulés. Ce n’est PAS un jugement de '
+    + 'significativité — sur cette entité le poste dépasse le seuil de planification et serait '
+    + 'travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE'].includes(f.code)) {
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES'].includes(f.code)) {
       /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
          CETTE fonction — PAS appelé ici, mais bien appelé en aval par
          `scripts/deploy/reconstruire.ts`, le build de production, dans le
@@ -746,6 +751,70 @@ export async function planifierImmobilisations(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 4 (Fournisseurs/TRADE_PAYABLES, 2026-09-15) — UNE SEULE
+ * procédure planifiée, FOURN-CIRC (confirmation_externe), même patron que
+ * Trésorerie/Clients/Immobilisations : mesuré par exécution avant d'écrire
+ * (`assessFsli` + `requiredProcedures` contre la base seedée), TROIS
+ * procédures du cycle sont commandées par le risque sur TRADE_PAYABLES —
+ * FOURN-CIRC (confirmation_externe, `exhaustivite:moyen` ≥ `moyen`),
+ * FOURN-FNP (sondage_pieces, `exhaustivite:moyen` ≥ `moyen`) et FOURN-SUL
+ * (sondage_pieces, `exhaustivite:moyen` ≥ `faible`) — mais SEULE FOURN-CIRC a
+ * un atelier atteignable : `circularisations.ts` porte désormais la Nature
+ * `fournisseur` (migration 0165, mécanique livrée plus tôt ce jour),
+ * `programme.ts` route `confirmation_externe`+TRADE_PAYABLES vers le MÊME
+ * `/circularisations` que CASH. FOURN-FNP et FOURN-SUL (sondage_pieces)
+ * N'ONT NI L'UNE NI L'AUTRE d'atelier : même gap que CLIENTS-AVOIRS/
+ * IMMO_COR-ACQ (R92/R95) — `/testing` reste câblé sur REVENUE — disclosed R97
+ * plutôt que planifiées sans écran atteignable. FOURN-CUTOFF-REC reste SOUS
+ * son `risque_minimum` (`moyen`) sur ce dossier — non commandée, pas
+ * seulement non planifiée.
+ *
+ * R96 (docs/BACKLOG_REPORTE.md) EST UNE CONDITION BLOQUANTE que cette
+ * fonction RESPECTE PAR OMISSION : elle plante FOURN-CIRC (procédure, papier
+ * `utilisee:false`, honnête — même limite que CLIENTS-DEPREC/IMMO_COR-DOT,
+ * aucun calcul automatisé n'existe pour ce papier), jamais une campagne de
+ * circularisation DÉPOSÉE. `circulariserBanques()`/`acheverCircularisationBanques()`
+ * ci-dessous montrent le patron complet (listing → envoi → réponse → écart)
+ * pour la nature `banque` ; AUCUN équivalent n'existe ni ne doit exister pour
+ * `fournisseur` tant que R96 n'est pas résolu — déposer une réponse
+ * afficherait un écart FAUX (comparaison au solde ENTIER du compte collectif
+ * 401000, prouvé par exécution lors de la revue hostile de la mécanique).
+ */
+export async function planifierFournisseurs(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesFourn = new Set((await answers(IDS.engNep, 'TRADE_PAYABLES')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesFourn.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'TRADE_PAYABLES', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'TRADE_PAYABLES' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'TRADE_PAYABLES', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'TRADE_PAYABLES', code: 'FOURN-CIRC', userId: IDS.users.karim });
+  const papierExistant = await q01<{ id: string }>(
+    `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+  if (!papierExistant) {
+    const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+    await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+  }
+
+  const dejaRedigeeFourn = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'TRADE_PAYABLES' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeeFourn) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'TRADE_PAYABLES');
+    await enregistrerAnalytique(IDS.engNep, 'TRADE_PAYABLES', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -808,4 +877,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await planifierTresorerie();
   await planifierClients();
   await planifierImmobilisations();
+  await planifierFournisseurs();
 }

@@ -13,7 +13,8 @@ import { tr } from '@/lib/i18n';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { Repli } from '@/app/repli';
 
-// LES CIRCULARISATIONS (point 3, ADR-111) — banques et avocats.
+// LES CIRCULARISATIONS (point 3, ADR-111) — banques, avocats et fournisseurs
+// (Lot 5, poste 4, 2026-09-15).
 //
 // L'écran suit la mécanique et rien d'autre : le listing du client, la
 // COMPLÉTUDE dérivée dans les deux sens, la demande (envoi simulé, jamais sans
@@ -23,6 +24,7 @@ import { Repli } from '@/app/repli';
 const NATURES: { cle: Nature; titre: CleLibelle; quoi: CleLibelle; poste: CleLibelle }[] = [
   { cle: 'banque', titre: 'circ.banques', quoi: 'circ.banquesQuoi', poste: 'circ.posteTresorerie' },
   { cle: 'avocat', titre: 'circ.avocats', quoi: 'circ.avocatsQuoi', poste: 'circ.posteProvisions' },
+  { cle: 'fournisseur', titre: 'circ.fournisseurs', quoi: 'circ.fournisseursQuoi', poste: 'circ.posteFournisseurs' },
 ];
 
 const ETATS: Record<string, { libelle: CleLibelle; badge: string }> = {
@@ -86,7 +88,7 @@ export default async function CircularisationsPage({
         bytes: new Uint8Array(await fichier.arrayBuffer()), source: 'email',
         uploadedBy: { kind: 'app_user', id: user.id }, audience: 'client_provided',
       });
-      if (kind === 'banque') {
+      if (kind !== 'avocat') {
         const montant = String(formData.get('montant') ?? '').replace(/\s/g, '').replace(',', '.');
         if (!montant || Number.isNaN(Number(montant))) {
           throw new Error('circularisation : le solde confirmé se lit SUR la réponse — saisissez-le (en euros).');
@@ -236,7 +238,7 @@ export default async function CircularisationsPage({
                         <td><span className={ETATS[l.etat].badge}>{t(ETATS[l.etat].libelle)}</span></td>
                         <td className="num">{l.soldeComptableCents === null ? '—' : fmtEur(l.soldeComptableCents, 'fr')}</td>
                         <td className="num">
-                          {s.cle === 'banque'
+                          {s.cle !== 'avocat'
                             ? (l.confirmeCents === null ? '—' : fmtEur(l.confirmeCents, 'fr'))
                             : (l.provisionConfirmeeCents === null ? '—' : fmtEur(l.provisionConfirmeeCents, 'fr'))}
                         </td>
@@ -271,7 +273,7 @@ export default async function CircularisationsPage({
                                 <input type="hidden" name="party_id" value={l.id} />
                                 <input type="hidden" name="kind" value={s.cle} />
                                 <input type="file" name="fichier" required />
-                                {s.cle === 'banque' ? (
+                                {s.cle !== 'avocat' ? (
                                   <input name="montant" placeholder={t('circ.confirmedBalance')} required />
                                 ) : (
                                   <>

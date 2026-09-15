@@ -1494,3 +1494,47 @@ design : chacun reste une tranche à construire.**
   circularisation fournisseur au SEUL cas où le tiers confirmé détient 100 % du solde du compte
   (aucun cas dans ce dossier aujourd'hui, F001 seul ne représentant que 193 502,33 € sur
   265 632,25 €).
+
+- **R97 — FOURN-SUL (décaissements postérieurs) et FOURN-FNP (factures non parvenues) sont
+  COMMANDÉES PAR LE RISQUE sur TRADE_PAYABLES (Lot 5, poste 4, 2026-09-15) mais N'ONT AUCUN
+  atelier.** Trouvé en ouvrant Fournisseurs, mesuré par exécution (`requiredProcedures('TRADE_PAYABLES')`
+  exécuté directement contre la base seedée, pas comparé à la main) : les deux, nature
+  `sondage_pieces`, `exhaustivite:moyen` (1 facteur, « plus de 200 écritures ») ≥ leur
+  `risque_minimum` respectif (`faible` pour FOURN-SUL, `moyen` pour FOURN-FNP) — VÉRIFIÉES
+  commandées, pas supposées. Même gap que CLIENTS-AVOIRS (R92) et IMMO_COR-ACQ (R95) : `/testing`
+  reste le seul atelier `sondage_pieces` construit, câblé en dur sur `revenuePopulation()`
+  (`sampling.ts`). FOURN-SUL porte une note propre au catalogue (« Aucun tirage : la population est
+  déjà bornée par le seuil de remontée, et tous ses éléments sont testés ») qui pourrait un jour
+  justifier un atelier PLUS SIMPLE qu'un tirage (une liste exhaustive au-dessus d'un seuil, pas un
+  échantillon) — non exploré ici, delibérément : construire un atelier neuf pour une seule
+  procédure serait une mécanique nouvelle, hors du périmètre d'une tranche d'ouverture de poste.
+  FOURN-CUTOFF-REC reste SOUS son `risque_minimum` (`moyen`) sur ce dossier — non commandée, pas
+  seulement non planifiée, pas concernée par ce constat. **Non planifiées cette tranche,
+  délibérément** — même raisonnement que R92/R95 : planifier sans atelier atteignable créerait une
+  procédure planifiée sans geste possible (règle 13). **Conséquence visible, disclosed plutôt que
+  cachée** : le bloc `testing` de `vuePoste('TRADE_PAYABLES')` (`poste.ts`), faute d'atelier
+  `sondage_pieces` sur ce poste ET porteur d'une circularisation (`circ` non nul), retombe sur son
+  propre bucket `circ`-based à zéro ligne (`poste.resume.rienAControler`, `href: null`) — vérifié
+  par exécution (`vuePoste('TRADE_PAYABLES').blocs`), pas supposé ; aucune régression du patron
+  TROISIÈME de `poste.ts` (voir R94) : ce poste porte un `circ` non nul (nature `fournisseur`),
+  jamais les branches `patronRapprochementSeul`/`patronRecalculSeul`. Se referme le jour où une
+  tranche généralise `/testing` (sondage_pieces hors REVENUE) — vraisemblablement avec R92/R95.
+
+  **Défaut MÉCANIQUE réel trouvé et corrigé en construisant cette tranche (pas un R, corrigé
+  sur-le-champ) : `prefixeDuPoste()` (`programme.ts`) collidait entre TRADE_PAYABLES et
+  TRADE_RECEIVABLES.** Cette fonction dérivait le préfixe du CODE INTERNE d'un papier (la clé
+  unique en base, `workpaper_engagement_id_code_version_key`) en prenant les trois premières
+  lettres du `fsli_code` — « TRA » pour LES DEUX postes une fois la ponctuation retirée — sans
+  jamais consulter `lettres_par_poste` (`papier.json`), qui donne déjà à chaque poste une lettre
+  UNIQUE et que `referencePapier()` utilisait déjà pour le champ `reference` (cabinet-facing) :
+  deux dérivations indépendantes du même concept, l'une correcte, l'autre pas — muette jusqu'à ce
+  que deux postes partagent enfin le même préfixe naïf. Reproduit par exécution
+  (`planifierFournisseurs()` contre une base fraîche : `duplicate key value violates unique
+  constraint "workpaper_engagement_id_code_version_key"`, TRADE_PAYABLES tentant d'insérer
+  « TRA-01 », déjà pris par TRADE_RECEIVABLES/CLIENTS-AGE). Corrigé en réutilisant
+  `lettres_par_poste`, jamais une seconde table de correspondance — les papiers déjà créés
+  (CAS-01, PPE-01, TRA-01/02) gardent leur code d'origine (le code ne se régénère que pour une
+  NOUVELLE série), seuls les postes ouverts APRÈS ce correctif reçoivent la lettre correcte et
+  unique (TRADE_PAYABLES : « D-01 »). Aucun autre poste futur ne peut plus retomber dans cette
+  collision : toute nouvelle lettre vient de la même source que `reference`, jamais recalculée à
+  côté.

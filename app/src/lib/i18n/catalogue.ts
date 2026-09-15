@@ -968,10 +968,13 @@ export const LIBELLES = {
 
   'circ.banques': { en: 'Banks', fr: 'Banques' },
   'circ.avocats': { en: 'Lawyers', fr: 'Avocats' },
+  'circ.fournisseurs': { en: 'Suppliers', fr: 'Fournisseurs' },
   'circ.banquesQuoi': { en: 'The balance of every account at the closing date, confirmed by the bank itself.', fr: 'Le solde de chaque compte à la date de clôture, confirmé par la banque elle-même.' },
   'circ.avocatsQuoi': { en: 'Open disputes and the amounts provided for, confirmed by the firm that handles them.', fr: 'Les litiges en cours et les montants provisionnés, confirmés par le cabinet qui les suit.' },
+  'circ.fournisseursQuoi': { en: 'The balance of the account at the closing date, confirmed by the supplier itself.', fr: 'Le solde du compte à la date de clôture, confirmé par le fournisseur lui-même.' },
   'circ.posteTresorerie': { en: 'cash', fr: 'trésorerie' },
   'circ.posteProvisions': { en: 'provisions', fr: 'provisions' },
+  'circ.posteFournisseurs': { en: 'suppliers', fr: 'fournisseurs' },
   'circ.posteSuffixe': { en: '— area {poste}', fr: '— poste {poste}' },
   'circ.etat.a_envoyer': { en: 'to send', fr: 'à envoyer' },
   'circ.etat.envoyee': { en: 'sent — no reply', fr: 'envoyée — sans réponse' },
