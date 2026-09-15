@@ -4,6 +4,41 @@
 
 ---
 
+## CRITIQUE (expédition directe sur `main`) : restaure la migration 0165 — un correctif violait la règle 26 et bloquait TOUS les déploiements (2026-09-15)
+
+Le check-in programmé pour confirmer le SHA servi du merge de la mécanique circularisation
+fournisseur (`a10e484`) a trouvé sa production en ÉTAT ERROR — et tous les déploiements suivants
+(branche de travail et `main`) également en ERROR. Le journal de build
+(`mcp__Vercel__get_deployment_build_logs`) est sans ambiguïté : `deploy:reconstruire`
+(`migrate()`) a refusé avec « 1 migration(s) ÉDITÉE(S) APRÈS APPLICATION :
+0165_circularisation_fournisseur.sql » contre la base Supabase PARTAGÉE.
+
+La migration `0165_circularisation_fournisseur.sql` avait bien été appliquée à cette base — par
+le tout premier déploiement d'APERÇU de la tranche mécanique (commit `4fd9b1f`,
+`dpl_TKGDS66Pydqyj8Jf8U88Hzm48Tfb`, état READY) — AVANT qu'un correctif ultérieur (commit
+`2e0aadc`, sur la tranche même) n'édite le commentaire d'en-tête du même fichier, en affirmant :
+« sûre au sens de la règle 26 — elle n'a jamais porté de ligne dans `_migrations` sur une base
+persistante ». **Cette affirmation était FAUSSE** : inférée du statut d'un déploiement plutôt que
+vérifiée par une requête directe sur `_migrations` — exactement l'anti-patron que la règle 26 de
+CLAUDE.md nomme elle-même (« Dans le doute, une requête directe... tranche — jamais une inférence
+depuis le statut d'un déploiement »).
+
+**Corrigé, directement sur `main`** (expédition d'urgence, hors du cycle habituel de revue — le
+reste de la tranche en cours, l'ouverture du poste Fournisseurs, continue sa propre revue hostile
+séparément sur la branche de travail) : `supabase/migrations/0165_circularisation_fournisseur.sql`
+restauré OCTET POUR OCTET à son contenu du commit `4fd9b1f` (`git diff 4fd9b1f -- supabase/migrations/0165...`
+vide, empreinte SHA-256 identique) — jamais une nouvelle réédition, la seule façon de faire
+concorder à nouveau l'empreinte que `migrate()` compare. Le constat que ce correctif visait à
+documenter (le commentaire d'origine affirme au passé une revue hostile qui n'avait pas encore eu
+lieu au moment où il a été écrit — règle 13) reste vrai, et reste désormais IMMUABLE dans le
+fichier appliqué : il ne peut plus être corrigé dans la migration elle-même sans répéter la même
+erreur. Le compte rendu honnête vit ici, jamais dans un fichier de migration appliqué.
+
+**Aucune donnée n'a été perdue ni corrompue** — le site a simplement continué de servir le SHA de
+la tranche Immobilisations (`5cc7b7a`, dernier déploiement production READY avant cet incident)
+pendant que ces déploiements échouaient. SHA servi à mesurer de nouveau une fois ce correctif
+déployé.
+
 ## MESSAGE AU FONDATEUR (2026-09-13) — le moment annoncé le 10 septembre
 
 Tu as dit, le 10 septembre : « je ne relirai pas écran par écran ; je donnerai mon verdict UNE
