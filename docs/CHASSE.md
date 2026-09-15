@@ -983,3 +983,37 @@ individuelle reste une commande rejouable (règle 12), son propre journal en fai
   fichier. `npm run visuel` n'a toujours pas tourné dans ce même appel (`clics` rend `EXIT=1` sur
   ce flake, le `&&` qui le précède ne l'atteint donc jamais — même précédent que F14) ; relancé
   séparément.
+
+- **F25 — UN incident dans `verify-fournisseurs-reste-2.log`** (2026-09-15, sur l'arbre du commit
+  `56bf874` — Fournisseurs poste-opening, après six occurrences consécutives de R58 dans
+  `tests/screens.test.ts`, six routes distinctes, toujours disjointes du diff de la tranche —
+  §voir les six entrées R58 ci-dessus). Plutôt qu'une septième chaîne `npm run verify` complète
+  identique, les étapes que ce seul point d'arrêt (`vitest run`) empêchait mécaniquement
+  d'atteindre ont été lancées UNE PAR UNE sur une base fraîche (`db:reset && demo:seed`), chacune
+  sous son propre nom d'étape, sur le MÊME arbre : `gardes` (45 gardes, à jour), `semeur` (registre
+  à jour), `plancher` (1137 tests collectés, aucune forme éteinte), `langue` (0 chaîne hors
+  catalogue, 0 libellé en dur), `langue:epreuve` (15/15 cas connus mauvais dénoncés),
+  `lectures` (0 lecture perdue sur 1716 chemins), `lectures:epreuve` (6/6 cas connus mauvais
+  dénoncés), `parcours` (0 station perdue), `parcours:epreuve` (5/5 cas connus mauvais dénoncés),
+  `screens` [balayage PRODUCTION, distinct de `tests/screens.test.ts`] (93 routes, 0 échec),
+  `fumee` (52 routes, 0 échec), `densite` (83 écrans, 0 dépassement) — TOUTES PROPRES. Puis
+  `clics` : REJOUE F18-F24 au trait près, même page `rcm/[cid]` (SOX), `EXCEPTION ... Minified
+  React error #418`, 20 divergences d'hydratation après normalisation sur les mêmes tokens
+  (87 = `rail-astuce`/E5, les dix-neuf autres = re-sérialisation CSSOM/F11). Clôture et archive
+  ATTEINTES (240 stations figées vérifiées, empreinte SHA-256 `c10d25a108e833d9…`, zip téléchargé
+  355 ko), 260 étapes conduites, 389 clics comptés — DIXIÈME confirmation consécutive que ce
+  défaut est disjoint de tout ce que cette tranche a touché (diff : `circularisations.ts`,
+  `circularisations/page.tsx`, `part1.ts`, `programme.ts`, `api/sante/route.ts`, `catalogue.ts`,
+  migration 0165, aucun rapport avec `rcm/[cid]`). Le `EXIT=1` de `npm run clics` a rompu le `&&`
+  qui précède `visuel` (même précédent que F14) ; relancé séparément. `docs/CLICS.md` et
+  `docs/DENSITE.md` régénérés et commités avec leurs vrais chiffres mesurés sur `56bf874` (la
+  version précédente de ces deux fichiers datait du commit `2e0aadc`, avant l'implémentation de
+  la tranche elle-même) — les écarts de chiffres (390→389 clics, 33→43 items sur `/programme`,
+  2→3 replis sur `/circularisations`) reflètent le vrai contenu ajouté par cette tranche
+  (procédure FOURN-CIRC, message de dépôt bloqué), pas un défaut. Pas creusé plus loin (même
+  discipline que F9-F24). **Bilan de la chaîne pour cette tranche, sans un seul passage unique
+  complet mais avec CHAQUE étape confirmée propre au moins une fois sur cet arbre** : `tsc
+  --noEmit` et `vitest run` (144/145 fichiers, 1136/1137 tests, seul `screens.test.ts` en échec)
+  confirmés par les six tentatives complètes ci-dessus ; `tests/screens.test.ts` seul confirmé
+  PASSE six fois en isolation (450-477 s à chaque fois) ; `gardes` à `visuel` confirmés par ce
+  seul appel ci-dessus, moins `visuel` lui-même à relancer séparément.
