@@ -845,6 +845,22 @@ cette tranche (`i18n/catalogue.ts`, `services/poste.ts`, `BACKLOG_REPORTE.md`, `
 rapport avec `/eng/[id]/exceptions`. Pas creusé plus loin (même discipline établie pour R58 tout au
 long de ce fichier) — chaîne relancée une troisième fois pour cette tranche.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste.log`, 2026-09-15, chaîne verify complète pour
+la tranche d'ouverture du poste Fournisseurs, sur l'arbre du commit `9b7cebe` — après les DEUX
+revues hostiles et leurs correctifs)** : `le serveur est tombé après 85 route(s), à
+« /eng/[id]/reunions (SOX) »` — encore une route différente de toutes les précédentes (testing,
+loop, workpapers, rcm, population, exceptions), cohérent avec l'hypothèse 1 (pression
+mémoire/CPU cumulée, pas une route précise). Aucun processus parasite mesuré (`ps aux | grep
+next|vitest`, juste après). Isolé, `npx vitest run tests/screens.test.ts` seul, sous un budget de
+900 s : **PASSE, 1/1, 451,82 s** — cohérent avec les 399-670 s déjà mesurés. Diff de cette tranche
+(`circularisations.ts`, `circularisations/page.tsx`, `part1.ts`, `programme.ts`, `api/sante/route.ts`,
+`i18n/catalogue.ts`, `BACKLOG_REPORTE.md`, `fils.json`, `circularisations.test.ts`,
+`atelier-confirmation-lecture.test.ts`) : aucun rapport avec `/eng/[id]/reunions`. Le MÊME
+`npm run verify` a aussi trouvé un vrai défaut, sans rapport avec R58 : un doublon sémantique i18n
+(`circ.posteFournisseurs` = `mot.suppliers`, `langue.test.ts`) — corrigé séparément (commit
+`f235e5d`), pas confondu avec ce flake. Pas creusé plus loin (même discipline établie pour R58
+tout au long de ce fichier) — chaîne à relancer une seconde fois pour cette tranche.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
