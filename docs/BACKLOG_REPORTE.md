@@ -1495,6 +1495,27 @@ design : chacun reste une tranche à construire.**
   (aucun cas dans ce dossier aujourd'hui, F001 seul ne représentant que 193 502,33 € sur
   265 632,25 €).
 
+  **Amendement du 2026-09-15 (même soir, tranche d'ouverture du poste Fournisseurs) — LE SYMPTÔME
+  DANGEREUX EST DÉSORMAIS BLOQUÉ, R96 LUI-MÊME RESTE OUVERT.** La condition bloquante ci-dessus
+  parlait de ne pas SEMER une réponse déposée — mais une SECONDE revue hostile (celle de cette
+  tranche même) a prouvé par exécution que le défaut n'était pas seulement un risque de semis :
+  la tranche qui ouvre l'écran `/circularisations` à la nature `fournisseur` (NATURES gagne
+  l'entrée, les discriminants `kind === 'banque'` rekeyés en `kind !== 'avocat'`) rendait le
+  formulaire de dépôt de réponse RÉELLEMENT FONCTIONNEL pour un fournisseur, sans aucune garde —
+  n'importe quel auditeur cliquant sur « déposer la réponse » aurait pu produire l'écart faux de
+  459 134,58 € directement depuis l'écran, pas seulement depuis un script de semis. **Corrigé** :
+  `deposerReponse()` (`circularisations.ts`) refuse désormais explicitement `kind === 'fournisseur'`
+  (message citant R96), et `circularisations/page.tsx` remplace le formulaire de dépôt par un aveu
+  honnête (`circ.depositNotYetAvailable`) pour cette nature plutôt que de laisser le formulaire
+  produire un refus surprenant. `importerListing`/`envoyer` restent possibles (aucun des deux ne
+  compare quoi que ce soit au compte collectif). Testé par exécution
+  (`circularisations.test.ts` : import + envoi acceptés, dépôt refusé avec le message R96).
+  **Ce correctif ferme le RISQUE D'ÉCRAN, PAS R96 lui-même** : le rapprochement générique reste
+  structurellement incapable de comparer un tiers à un compte collectif ; la vraie correction
+  (balance auxiliaire par tiers) reste à construire, et tant qu'elle ne l'est pas, la
+  circularisation fournisseur reste utilisable seulement jusqu'à l'envoi de la demande, jamais
+  jusqu'au dépôt d'une réponse.
+
 - **R97 — FOURN-SUL (décaissements postérieurs) et FOURN-FNP (factures non parvenues) sont
   COMMANDÉES PAR LE RISQUE sur TRADE_PAYABLES (Lot 5, poste 4, 2026-09-15) mais N'ONT AUCUN
   atelier.** Trouvé en ouvrant Fournisseurs, mesuré par exécution (`requiredProcedures('TRADE_PAYABLES')`

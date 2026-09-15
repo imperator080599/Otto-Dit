@@ -266,6 +266,14 @@ export default async function CircularisationsPage({
                               <input type="hidden" name="party_id" value={l.id} />
                               <button className="btn small secondary">{t('circ.sendSimulated')}</button>
                             </form>
+                          ) : s.cle === 'fournisseur' ? (
+                            /* R96 (docs/BACKLOG_REPORTE.md) : TRADE_PAYABLES n'a qu'un compte
+                               collectif au grand livre — déposer une réponse comparerait le
+                               solde d'un tiers au solde entier du compte et afficherait un écart
+                               qui n'en est pas un. `deposerReponse` (circularisations.ts) refuse
+                               déjà ce dépôt côté service ; l'aveu ICI est honnête plutôt que de
+                               laisser le formulaire produire un refus surprenant (règle 13). */
+                            <span className="faint">{t('circ.depositNotYetAvailable')}</span>
                           ) : (
                             <details>
                               <summary className="repli-action">{t('circ.uploadTheReply')}</summary>

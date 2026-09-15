@@ -100,6 +100,29 @@ describe('circularisations : la complétude et le rapprochement se DÉRIVENT', (
     })).rejects.toThrow(/aucune demande n’est partie|aucune demande n'est partie/);
   });
 
+  /* R96 : TRADE_PAYABLES n'a qu'UN SEUL compte collectif au grand livre —
+     déposer une réponse fournisseur comparerait le solde d'un tiers au solde
+     ENTIER du compte, et afficherait un écart qui n'en est pas un. Trouvé par
+     une revue hostile qui a prouvé, par exécution, que sans ce refus l'ÉCRAN
+     (pas seulement le semeur) pouvait déclencher le défaut. */
+  it('R96 : importer et envoyer une demande FOURNISSEUR reste possible, mais DÉPOSER une réponse est REFUSÉ', async () => {
+    await importerListing(IDS.engNep, 'fournisseur',
+      ['Tiers;Contact;Reference;Compte',
+        'Float Glass Industries GmbH (fictif);comptes-clients@floatglass-fictif.example;CLI-ALT-4471;401000'].join('\n'), K);
+    const floatGlass = (await tiers(IDS.engNep, 'fournisseur')).find((t) => t.reference === 'CLI-ALT-4471')!;
+    expect(floatGlass, 'le listing fournisseur importe bien le tiers').toBeTruthy();
+
+    // Importer et envoyer ne sont PAS concernés par R96 — ils ne comparent rien au compte collectif.
+    await envoyer(floatGlass.id, K);
+    const apresEnvoi = (await tiers(IDS.engNep, 'fournisseur')).find((t) => t.id === floatGlass.id)!;
+    expect(apresEnvoi.sent_at).toBeTruthy();
+
+    await expect(deposerReponse({
+      partyId: floatGlass.id, userId: K, evidenceId: await pieceBidon('confirmation-floatglass.pdf'),
+      montantConfirmeCents: 19350233,
+    })).rejects.toThrow(/compte collectif|R96/);
+  });
+
   /* ═══ 4. LE RAPPROCHEMENT, ET LA RÈGLE « TOUT ÉCART SE DIT » ═══════════ */
 
   it('listing corrigé, réponse déposée : l’écart au grand livre est CALCULÉ, et tout écart remonte', async () => {

@@ -434,6 +434,7 @@ export const LIBELLES = {
   'circ.sendSimulated': { en: 'Send (simulated)', fr: 'Envoyer (simulé)' },
   'circ.uploadTheReply': { en: 'Upload the reply', fr: 'Déposer la réponse' },
   'circ.recordTheReply': { en: 'Record the reply', fr: 'Enregistrer la réponse' },
+  'circ.depositNotYetAvailable': { en: 'reply deposit not yet available — the reconciliation against a collective account isn\'t reliable yet (R96)', fr: 'dépôt de réponse non disponible — le rapprochement contre un compte collectif n\'est pas encore fiable (R96)' },
   'circ.counterpartiesDifferenceRule': { en: 'counterparties · difference rule:', fr: 'tiers · règle d’écart :' },
   'circ.statesAccount': { en: ') states account', fr: ') annonce le compte' },
 

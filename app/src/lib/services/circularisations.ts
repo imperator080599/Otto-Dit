@@ -297,6 +297,30 @@ export async function deposerReponse(input: {
   if (!p.sent_at) {
     throw new CircularisationError('circularisation : aucune demande n\'est partie vers ce tiers — une confirmation qu\'on n\'a pas demandée n\'est pas une réponse.');
   }
+  /* R96 (docs/BACKLOG_REPORTE.md, trouvé par revue hostile le 2026-09-15,
+     confirmé de nouveau par une SECONDE revue hostile — celle de la tranche
+     d'ouverture du poste Fournisseurs — qui a prouvé que sans ce refus,
+     l'ÉCRAN lui-même (pas seulement le semeur) pouvait déclencher le défaut) :
+     `TRADE_PAYABLES` ne porte qu'UN SEUL compte collectif au grand livre
+     (401000, `fsliAccounts`), partagé par tous les fournisseurs —
+     `rapprochement()` compare alors le solde d'UN tiers au solde ENTIER du
+     compte, et affiche un écart FAUX même sur une confirmation exacte et
+     complète (prouvé par exécution : Float Glass, solde vrai 193 502,33 €,
+     contre le compte à -265 632,25 €, donne ecartCents=459134.58). Tant que
+     ce calcul n'est pas rapproché contre la balance auxiliaire PAR TIERS
+     (`aux_balance_row`/`balances-aux.ts`) plutôt que contre le solde du
+     compte collectif, DÉPOSER une réponse fournisseur produirait un constat
+     que rien ne soutient — refusé ICI, dans le service, pas seulement caché
+     dans l'écran (règle 13 : un formulaire que le navigateur refuse d'envoyer
+     n'est pas une garde tant que le service, lui, l'accepterait encore). */
+  if (p.kind === 'fournisseur') {
+    throw new CircularisationError(
+      'circularisation : le rapprochement fournisseur n\'est pas encore fiable sur ce dossier — '
+      + 'TRADE_PAYABLES ne porte qu\'un compte collectif au grand livre, et comparer le solde d\'un '
+      + 'seul tiers à ce compte entier afficherait un écart qui n\'en est pas un (R96, '
+      + 'docs/BACKLOG_REPORTE.md). Importer le listing et envoyer la demande restent possibles ; '
+      + 'déposer une réponse est refusé tant que ce point n\'est pas résolu.');
+  }
   if (p.kind !== 'avocat' && input.montantConfirmeCents === undefined) {
     throw new CircularisationError('circularisation : le solde confirmé est obligatoire — c\'est lui qu\'on rapproche.');
   }
