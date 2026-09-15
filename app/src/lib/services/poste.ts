@@ -398,15 +398,32 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
           resume: motif('poste.resume.rapprochementSansEchantillon'),
           href: atelierRapprochementSeul,
         }
-      : {
-        cle: 'echantillon', titre: 'poste.section.echantillon',
-        etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
-        resume: n(ech?.tire) > 0
-          ? motif('poste.resume.tirage', { items: ech!.items, pop: ech!.pop })
-          : n(ech?.pop) > 0 ? motif('poste.resume.populationSansTirage', { pop: ech!.pop })
-            : motif('poste.resume.populationAbsente'),
-        href: n(ech?.pop) > 0 ? `${base}/sampling` : `${base}/population`,
-      };
+      /* Lot 5, poste 3 (Immobilisations, 2026-09-15, revue hostile) : `/population`
+         et `/sampling` sont les écrans du CHIFFRE D'AFFAIRES (`sampling.ts` câblé
+         en dur sur `revenuePopulation()`) — corrects pour REVENUE (qui n'a jamais
+         d'atelier `rapprochement`, donc tombe toujours ici), FAUX pour tout autre
+         poste qui tombe ici faute d'atelier `rapprochement`/`sondage_pieces`
+         (aujourd'hui : PPE, disclosed R95). Prêter l'écran REVENUE à un poste qui
+         n'a rien à voir serait le même défaut que le troisième patron existe pour
+         éviter (règle 13) — trouvé en conduisant `vuePoste('PPE')`, pas deviné.
+         `sans_objet`/`href: null` : rien à voir n'est pas rien à dire (règle 61,
+         D.6 point 5) — le motif nomme R95 explicitement. */
+      : patronSansEchantillon && code !== 'REVENUE'
+        ? {
+            cle: 'echantillon', titre: 'poste.section.echantillon',
+            etat: 'sans_objet',
+            resume: motif('poste.resume.echantillonSansAtelier'),
+            href: null,
+          }
+        : {
+          cle: 'echantillon', titre: 'poste.section.echantillon',
+          etat: n(ech?.tire) > 0 ? 'fait' : n(ech?.pop) > 0 ? 'en_cours' : 'a_faire',
+          resume: n(ech?.tire) > 0
+            ? motif('poste.resume.tirage', { items: ech!.items, pop: ech!.pop })
+            : n(ech?.pop) > 0 ? motif('poste.resume.populationSansTirage', { pop: ech!.pop })
+              : motif('poste.resume.populationAbsente'),
+          href: n(ech?.pop) > 0 ? `${base}/sampling` : `${base}/population`,
+        };
   const blocTesting: BlocPoste = circ
     ? {
         cle: 'testing', titre: 'poste.section.testing',

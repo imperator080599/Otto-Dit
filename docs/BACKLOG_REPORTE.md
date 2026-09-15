@@ -537,9 +537,20 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   le `cycle` ne veut PAS dire que CLIENTS-DEPREC est « commandée par le risque » sur ce dossier —
   mesuré directement (`risksFor`), son assertion `evaluation` est `faible`, SOUS son
   `risque_minimum: "moyen"` ; elle est planifiée « hors commande » (voir R92, deuxième constat), pas
-  déclenchée par le risque. Les TREIZE autres procédures (`IMMO_COR`, `IMMO_INC`, `STOCKS`,
-  `PERSONNEL`, `SOCIAL`, `DETTES_FI`, `PROV` — quatorze moins CLIENTS-DEPREC, répartition non
-  recomptée ici) restent non corrigées — à lever poste par poste, au fil du Lot 5.
+  déclenchée par le risque.
+
+  **Partiellement levée UNE SECONDE FOIS le 2026-09-15 (même soir), sur le commit `ecc421f` —
+  `IMMO_COR-CESS` et `IMMO_COR-DOT` (Lot 5, poste 3 — Immobilisations).** Les deux corrigés de
+  `cycle:"IMMO_COR"` à `cycle:"PPE"` (les six procédures `IMMO_COR-*` l'ont été ensemble, mais
+  seules ces deux sont `recalcul_parametre` — les quatre autres relèvent de R56/R57). **Compte
+  RECOMPTÉ par mesure directe (`python3` sur `methodology/procedures.json`, pas recopié de tête —
+  la version précédente de ce paragraphe disait « treize », déjà fausse avant même cette
+  correction : trouvé par une revue hostile qui a remarqué que ce fichier n'avait pas été mis à
+  jour alors que la tranche courante en corrigeait une partie du contenu, règle 31)** : ONZE
+  procédures `recalcul_parametre` restent avec un `cycle` qui ne correspond à AUCUN `fsli.code`
+  réel — `IMMO_INC-CESS`, `IMMO_INC-DOT`, `STOCKS-VALO`, `STOCKS-COUT`, `STOCKS-NRV`,
+  `PERSONNEL-CP`, `SOCIAL-COTIS`, `DETTES_FI-TAB`, `DETTES_FI-INT`, `DETTES_FI-COV`,
+  `PROV-RECALC` — à lever poste par poste, au fil du Lot 5.
 - **R55 — `npm run verify` (et donc `npm run clics`, `screens`, `fumee`, `densite`, `visuel`
   exécutés depuis ce bac à sable) ne lance JAMAIS `demo:enrichir`** (`db:reset && demo:seed && …`,
   package.json) — seul `npm run demo` (la commande interactive, `scripts/demo/lancer.mjs`) et
@@ -632,7 +643,20 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   par `planifierClients()` (`part1.ts`), exercé par le parcours cliqué jusqu'à la clôture (règle
   37), et vérifié RÉELLEMENT commandée par le risque (`exhaustivite:moyen` ≥ son
   `risque_minimum: "faible"`, `requiredProcedures` exécuté directement — contrairement à
-  CLIENTS-DEPREC, voir R54). Les CINQ procédures ci-dessus restent non corrigées.
+  CLIENTS-DEPREC, voir R54). Les QUATRE procédures restantes à ce stade (`IMMO_COR-TAB`,
+  `IMMO_INC-TAB`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `FISCAL-TVA` — l'énoncé « cinq » écrit ici même
+  ce soir-là était déjà faux d'une unité, non recompté avant ce correctif) restaient non corrigées.
+
+  **Partiellement levée une TROISIÈME fois le 2026-09-15 (même soir), sur le commit `ecc421f` —
+  `IMMO_COR-TAB` (Lot 5, poste 3 — Immobilisations). Corrigée par une revue hostile qui a
+  remarqué que ce paragraphe n'avait pas été recompté malgré le correctif du même commit (règle
+  31).** `IMMO_COR-TAB.cycle` corrigé de `"IMMO_COR"` à `"PPE"` : `requiredProcedures('PPE')`
+  exécuté directement confirme `IMMO_COR-TAB` commandée (`exhaustivite:faible` ≥ son
+  `risque_minimum:"faible"`) — MAIS elle n'a AUCUN atelier réutilisable (`/balances-aux` a un type
+  `Cote` fermé), donc disclosed R95, PAS planifiée (contrairement à CLIENTS-AGE/TRESO-RAPPRO
+  ci-dessus, qui ont chacune un atelier réel). **Compte final, recompté par mesure directe** (pas
+  recopié de tête) : QUATRE procédures `rapprochement` restent avec un `cycle` qui ne correspond à
+  AUCUN `fsli.code` réel — `IMMO_INC-TAB`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `FISCAL-TVA`.
 
 - **R58 — `tests/screens.test.ts` a fait tomber le serveur, intermittent, trois fois sur cinq
   passages complets de `npm run verify` pendant le Lot 4, tranche 3 (2026-09-08).** Symptôme
