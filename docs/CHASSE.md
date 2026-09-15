@@ -1024,3 +1024,20 @@ individuelle reste une commande rejouable (règle 12), son propre journal en fai
   ci-dessus ; `visuel` relancé séparément juste après (`verify-fournisseurs-reste-2.log`
   ci-dessus n'atteint pas `visuel`, cassé par le même `#418` sur `clics`) : **336 vues, 0
   défaut**, `EXIT=0` réel confirmé sur la ligne brute de la tâche de fond.
+
+- **F26 — UN incident dans `verify-paie-3.log`** (2026-09-15, troisième chaîne verify complète
+  pour la tranche Paie — poste 5, sur l'arbre du commit `48cea4d`, après les deux correctifs
+  trouvés par les deux premières tentatives : l'épreuve langue réindentée, le dépassement de
+  densité sur `/loop`) : REJOUE F18-F25 au trait près, même page `rcm/[cid]` (SOX), `EXCEPTION
+  sur /eng/70670df5.../rcm/cefc625e-1440-4562-8e7e-08f1fff182c2 : Minified React error #418`.
+  **Cette fois, `vitest run` LUI-MÊME est passé PROPRE au premier coup — 145/145 fichiers,
+  1137/1137 tests, AUCUN `ServeurTombe`/R58** — contrairement aux six tentatives de la tranche
+  précédente (Fournisseurs), R58 ne s'est PAS manifesté cette fois : cohérent avec l'hypothèse 1
+  (pression cumulée variable d'un run à l'autre, jamais garantie de se manifester), pas une
+  contradiction. `densite` confirme aussi 0 dépassement DANS la même chaîne (le correctif
+  `/loop` tient sur un build frais généré par cette même tentative, pas seulement sur le
+  build isolé testé séparément avant ce commit). Clôture et archive ATTEINTES (240 stations
+  figées vérifiées), 260 étapes conduites, 388 clics comptés — ONZIÈME confirmation consécutive
+  que `#418` est disjoint de tout ce que le Lot 5 a touché jusqu'ici, sur un CINQUIÈME poste
+  distinct. Pas creusé plus loin (même discipline que F9-F25). `npm run visuel` cassé par le
+  même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le précède) ; relancé séparément.
