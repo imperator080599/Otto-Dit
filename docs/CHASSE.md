@@ -844,3 +844,10 @@ Clients avait montré qu'un `timeout 300` est trop court pour ce fichier, F19/F2
 cette tranche (`i18n/catalogue.ts`, `services/poste.ts`, `BACKLOG_REPORTE.md`, `fils.json`) : aucun
 rapport avec `/eng/[id]/exceptions`. Pas creusé plus loin (même discipline établie pour R58 tout au
 long de ce fichier) — chaîne relancée une troisième fois pour cette tranche.
+
+- **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
+  Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
+  trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
+  fichiers, 1136/1136 tests — c'est le PREMIER passage complet de cette tranche sans AUCUN autre
+  défaut (les deux précédents avaient chacun un défaut réel : H1/H2 puis R58). Pas creusé plus loin
+  (même discipline que F9-F21).
