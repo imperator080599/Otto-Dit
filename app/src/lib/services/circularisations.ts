@@ -305,14 +305,25 @@ export async function deposerReponse(input: {
      (401000, `fsliAccounts`), partagé par tous les fournisseurs —
      `rapprochement()` compare alors le solde d'UN tiers au solde ENTIER du
      compte, et affiche un écart FAUX même sur une confirmation exacte et
-     complète (prouvé par exécution : Float Glass, solde vrai 193 502,33 €,
-     contre le compte à -265 632,25 €, donne ecartCents=459134.58). Tant que
-     ce calcul n'est pas rapproché contre la balance auxiliaire PAR TIERS
-     (`aux_balance_row`/`balances-aux.ts`) plutôt que contre le solde du
-     compte collectif, DÉPOSER une réponse fournisseur produirait un constat
-     que rien ne soutient — refusé ICI, dans le service, pas seulement caché
-     dans l'écran (règle 13 : un formulaire que le navigateur refuse d'envoyer
-     n'est pas une garde tant que le service, lui, l'accepterait encore). */
+     complète : Float Glass, solde vrai 193 502,33 €, contre le compte à
+     -265 632,25 €. Tant que ce calcul n'est pas rapproché contre la balance
+     auxiliaire PAR TIERS (`aux_balance_row`/`balances-aux.ts`) plutôt que
+     contre le solde du compte collectif, DÉPOSER une réponse fournisseur
+     produirait un constat que rien ne soutient — refusé ICI, dans le
+     service, pas seulement caché dans l'écran (règle 13 : un formulaire que
+     le navigateur refuse d'envoyer n'est pas une garde tant que le service,
+     lui, l'accepterait encore).
+     LE CHIFFRE CITÉ ICI A CHANGÉ (Lot 5, poste Provisions, 2026-09-15) : la
+     mesure d'origine (`ecartCents=459134.58`) datait d'AVANT le correctif du
+     signe dans `rapprochement()` (voir le commentaire « LE SENS DU SOLDE »
+     ci-dessous) — elle additionnait le défaut R96 ET un doublage de signe
+     qu'aucune des deux revues précédentes n'avait distingué. Avec le signe
+     corrigé, le même cas (193 502,33 € contre -265 632,25 €) calculerait
+     aujourd'hui -72 129,92 € — un écart plus petit, toujours FAUX pour la
+     même raison R96 (le compte reste collectif), mais recalculé à la main
+     ici, jamais réexécuté : ce chemin reste refusé avant d'atteindre
+     `rapprochement()`, donc invérifiable par exécution tant que R96
+     lui-même n'est pas résolu. */
   if (p.kind === 'fournisseur') {
     throw new CircularisationError(
       'circularisation : le rapprochement fournisseur n\'est pas encore fiable sur ce dossier — '
@@ -376,7 +387,28 @@ export async function rapprochement(engagementId: string, kind: Nature): Promise
     const confirme = t.montant_confirme === null ? null : numToCents(t.montant_confirme);
     const provisions = t.litiges ? t.litiges.reduce((s, l) => s + (l.provision_cents ?? 0), 0) : null;
     const compare = kind !== 'avocat' ? confirme : provisions;
-    const ecart = solde !== null && compare !== null ? compare - solde : null;
+    /* LE SENS DU SOLDE — trouvé par une revue hostile le 2026-09-15 (Lot 5,
+       poste Provisions), CONFIRMÉ par exécution avant ce correctif : `solde`
+       vient de `fsliAccounts()`, le solde SIGNÉ du grand livre — négatif pour
+       un poste à solde CRÉDITEUR par nature (une dette, une provision :
+       PROVISIONS mesuré à -60 000,00 €, TRADE_PAYABLES à -265 632,25 €),
+       positif pour un poste à solde DÉBITEUR (CASH, mesuré à 31 062,70 €).
+       Mais ce qu'un auditeur SAISIT dans le formulaire (`provision`,
+       `montant_confirme`) est TOUJOURS une magnitude positive — « la
+       provision déclarée est de 60 000 € », jamais « -60 000 ». Comparer
+       directement `compare - solde` sur un poste créditeur DOUBLE l'écart
+       au lieu de le mesurer (60 000 - (-60 000) = 120 000 sur une
+       confirmation EXACTE) — reproduit par exécution à travers
+       `deposerReponse()`, le même chemin qu'un clic réel emprunterait.
+       `banque` (CASH, débiteur) n'a jamais montré ce défaut : son solde est
+       déjà du même signe que ce qu'on y confirme. `avocat`/`fournisseur`
+       (créditeurs tous les deux) ont besoin du solde RETOURNÉ pour se
+       comparer à une magnitude positive — fournisseur reste bloqué par R96
+       (`deposerReponse` refuse `kind==='fournisseur'` avant d'atteindre ce
+       calcul), mais corriger ici évite de redécouvrir le même défaut le
+       jour où R96 sera résolu pour de bon. */
+    const soldeCompare = kind === 'banque' || solde === null ? solde : -solde;
+    const ecart = soldeCompare !== null && compare !== null ? compare - soldeCompare : null;
     /* LA RÈGLE DIFFÈRE, ET C'EST VOULU : côté banque ET fournisseur, TOUT écart
        se dit — un centime non expliqué sur un solde confirmé n'existe pas par
        hasard. Côté avocats, la provision est une estimation : c'est le seuil

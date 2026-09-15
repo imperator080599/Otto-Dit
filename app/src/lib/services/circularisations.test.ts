@@ -172,6 +172,59 @@ describe('circularisations : la complétude et le rapprochement se DÉRIVENT', (
     expect(l.etat).toBe('rapprochee');
   });
 
+  it('avocat : une provision qui ÉGALE le solde créditeur ne fabrique pas un écart doublé (Lot 5, poste Provisions)', async () => {
+    /* Trouvé par une revue hostile le 2026-09-15 : `rapprochement()` comparait
+       `provisions` (toujours saisi POSITIF par l'auditeur, « la provision
+       déclarée est de 60 000 € ») directement au solde SIGNÉ du grand livre —
+       négatif pour un poste créditeur comme PROVISIONS. Une provision EXACTE
+       produisait donc `ecart = provisions - solde = 60 000 - (-60 000) =
+       120 000` : un écart FABRIQUÉ, doublé, sur une confirmation parfaite —
+       reproduit par exécution avant ce test, à travers `deposerReponse()`,
+       le même chemin qu'un clic réel emprunterait. Ce test EST le cas connu
+       mauvais (règle 17) : sans le correctif du signe dans `rapprochement()`,
+       il échoue avec `ecartCents: 120000`, pas `0`. */
+    await importerListing(IDS.engNep, 'avocat',
+      ['Tiers;Contact;Reference;Compte',
+        'Cabinet Vialar & Associés (fictif);secretariat@vialar-associes.example;DOSSIER-2025-014;151000'].join('\n'), K);
+    const vialar = (await tiers(IDS.engNep, 'avocat')).find((t) => t.reference === 'DOSSIER-2025-014')!;
+    expect(vialar, 'le listing avocat importe bien le tiers').toBeTruthy();
+    await envoyer(vialar.id, K);
+
+    const solde = (await rapprochement(IDS.engNep, 'avocat'))
+      .lignes.find((l) => l.id === vialar.id)!.soldeComptableCents!;
+    expect(solde, 'PROVISIONS est un poste créditeur : son solde de grand livre est négatif').toBeLessThan(0);
+
+    await deposerReponse({
+      partyId: vialar.id, userId: K, evidenceId: await pieceBidon('confirmation-vialar.pdf'),
+      litiges: [{ objet: 'Litige test (fictif)', provision_cents: -solde, statut: 'ongoing' }],
+    });
+
+    const l = (await rapprochement(IDS.engNep, 'avocat')).lignes.find((x) => x.id === vialar.id)!;
+    expect(l.provisionConfirmeeCents).toBe(-solde);
+    expect(l.ecartCents).toBe(0);
+    expect(l.remonte).toBe(false);
+    expect(l.etat).toBe('rapprochee');
+  });
+
+  it('avocat : une VRAIE différence entre la provision et le solde reste mesurée, pas silencieusement annulée', async () => {
+    await importerListing(IDS.engNep, 'avocat',
+      ['Tiers;Contact;Reference;Compte',
+        'Cabinet témoin (fictif);temoin@cabinet-fictif.example;DOSSIER-TEMOIN;151000'].join('\n'), K);
+    const temoin = (await tiers(IDS.engNep, 'avocat')).find((t) => t.reference === 'DOSSIER-TEMOIN')!;
+    await envoyer(temoin.id, K);
+    const solde = (await rapprochement(IDS.engNep, 'avocat'))
+      .lignes.find((l) => l.id === temoin.id)!.soldeComptableCents!;
+
+    const provisionDeclareeCents = -solde + 500000;   // 5 000,00 € de provision sous-évaluée
+    await deposerReponse({
+      partyId: temoin.id, userId: K, evidenceId: await pieceBidon('confirmation-temoin-avocat.pdf'),
+      litiges: [{ objet: 'Litige témoin (fictif)', provision_cents: provisionDeclareeCents, statut: 'ongoing' }],
+    });
+
+    const l = (await rapprochement(IDS.engNep, 'avocat')).lignes.find((x) => x.id === temoin.id)!;
+    expect(l.ecartCents).toBe(500000);
+  });
+
   /* ═══ 5. CE QUI EN SORT ════════════════════════════════════════════════ */
 
   it('les questions au client naissent en BROUILLON, une par constat', async () => {

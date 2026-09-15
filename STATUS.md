@@ -177,17 +177,53 @@ quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ) et PROV-LITIGES elle-mêm
 leur `risque_minimum` sur ce dossier — NON commandées, pas disclosed comme un gap (rien à
 disclosed : c'est le fonctionnement normal du risque, pas une limite de l'atelier).
 
-**PROV-LITIGES A UN ATELIER RÉEL** — le PREMIER poste du Lot 5 dont l'ouverture ne révèle AUCUN
-gap d'atelier. « Revue des litiges et confirmation des conseils juridiques » EST la Nature
-`avocat` que `circularisations.ts` porte depuis ADR-111 (`POSTE.avocat === 'PROVISIONS'`, jamais
-changé, JAMAIS exercée par un poste réellement ouvert avant celui-ci — la revue hostile de la
-tranche Fournisseurs avait déjà noté qu'avocat n'avait aucune couverture de test dans tout le
-dépôt). `programme.ts` route désormais `confirmation_externe`+PROVISIONS vers le MÊME
-`/circularisations` que CASH/TRADE_PAYABLES. `poste.ts` : AUCUN changement nécessaire, vérifié
-par exécution (`vuePoste('PROVISIONS')`) — `natureCirculariseeDuPoste('PROVISIONS')` retourne
-déjà `'avocat'` par la même table `POSTE` inversée que TRADE_PAYABLES a déjà généralisée.
-`/api/sante` : `POSTES_CABLES` (lecture confirmation_externe) étend à `['CASH', 'TRADE_PAYABLES',
-'PROVISIONS']`. `methodology/papier.json` : `"PROVISIONS": "H"` ajouté.
+**PROV-LITIGES A UN ATELIER RÉEL** — le PREMIER poste du Lot 5 dont l'ouverture branche une
+procédure `confirmation_externe` sur un écran réel dès le premier jet (CASH et TRADE_PAYABLES
+l'avaient déjà, mais pas dès leur toute première tranche). « Revue des litiges et confirmation
+des conseils juridiques » EST la Nature `avocat` que `circularisations.ts` porte depuis ADR-111
+(`POSTE.avocat === 'PROVISIONS'`, jamais changé, JAMAIS exercée par un poste réellement ouvert
+avant celui-ci — la revue hostile de la tranche Fournisseurs avait déjà noté qu'avocat n'avait
+aucune couverture de test dans tout le dépôt). `programme.ts` route désormais
+`confirmation_externe`+PROVISIONS vers le MÊME `/circularisations` que CASH/TRADE_PAYABLES.
+`poste.ts` : AUCUN changement nécessaire, vérifié par exécution (`vuePoste('PROVISIONS')`) —
+`natureCirculariseeDuPoste('PROVISIONS')` retourne déjà `'avocat'` par la même table `POSTE`
+inversée que TRADE_PAYABLES a déjà généralisée. `/api/sante` : `POSTES_CABLES` (lecture
+confirmation_externe) étend à `['CASH', 'TRADE_PAYABLES', 'PROVISIONS']`.
+`methodology/papier.json` : `"PROVISIONS": "H"` ajouté.
+
+**CORRECTIF, TROUVÉ PAR UNE REVUE HOSTILE, PAS PAR MOI-MÊME CETTE FOIS : l'affirmation
+« AUCUN gap d'atelier » ci-dessus était FAUSSE.** Le bloc `testing` de `vuePoste('PROVISIONS')`
+affiche `href: null` — la branche `circ` de `blocTesting` (`poste.ts`) appelle EN DUR
+`atelierDeLaNature('rapprochement', code, base)`, quelle que soit la nature RÉELLEMENT commandée ;
+`rapprochement` n'est câblé pour aucun poste au-delà de CASH/TRADE_RECEIVABLES. **Même gap que
+R97** (TRADE_PAYABLES porte le même `href: null` sur son propre bloc `testing`, pour la même
+raison mécanique) — R97 amendé pour couvrir PROVISIONS et nommer la cause précise (un appel en
+dur à `'rapprochement'`, pas « aucun atelier pour la nature commandée » en général). **Un SECOND
+défaut, plus sévère, trouvé par la même revue** (voir le paragraphe R96/signe ci-dessous) a rendu
+cette tranche du diff sujette à DEUX réfutateurs indépendants a posteriori, plutôt qu'un seul —
+règle 30 appliquée après coup, pas avant, parce que le premier cadrage (« pas de code de refus,
+pas de modèle de données ») était correct pour le DIFF d'origine mais pas pour ce que ce diff
+rendait RÉELLEMENT exploitable (même leçon que la revue hostile Fournisseurs sur R96).
+
+**DÉFAUT SÉVÈRE trouvé par la même revue hostile, CONFIRMÉ PAR EXÉCUTION à travers
+`deposerReponse()` : le rapprochement `avocat` DOUBLAIT l'écart au lieu de le mesurer.**
+`rapprochement()` comparait `provisions` (toujours saisi POSITIF par l'auditeur — « la provision
+déclarée est de 60 000 € ») directement au `solde` SIGNÉ du grand livre — négatif pour PROVISIONS
+(poste créditeur, mesuré à -60 000,00 €). Une provision EXACTEMENT correcte produisait donc
+`ecart = 60 000 - (-60 000) = 120 000` : un écart FABRIQUÉ, doublé, sur une confirmation parfaite
+— reproduit par exécution à travers le même chemin qu'un clic réel emprunterait, jamais couvert
+par aucun test avant cette revue (`grep -rn avocat` sur tous les `*.test.ts` du dépôt ne
+retournait rien de significatif). **Corrigé** (`circularisations.ts`, commentaire « LE SENS DU
+SOLDE ») : le solde est retourné avant comparaison pour tout poste créditeur (`avocat`,
+`fournisseur` — ce dernier reste bloqué par R96, donc invérifiable par exécution, mais corrigé
+en prévision du jour où R96 sera résolu). **DEUX nouveaux tests** (`circularisations.test.ts`) :
+une provision exacte ne produit plus d'écart fabriqué (`ecartCents: 0`), et un vrai écart reste
+mesuré (pas silencieusement annulé par le correctif). Rule 17 respectée : chaque test confirmé
+en échec (`120000`/`0` attendus, `12000000`/`500000` obtenus) contre le code non corrigé, avant
+restauration du correctif. `docs/BACKLOG_REPORTE.md` (R96, amendement) et `fils.json` mis à jour
+— le chiffre `459 134,58 €` déjà cité pour R96 datait d'AVANT ce correctif et additionnait les
+deux défauts sans les distinguer ; recalculé à la main (fournisseur reste invérifiable par
+exécution) : -72 129,92 €, toujours faux pour la seule raison R96, sans le doublage de signe.
 
 **Implémentation.** `part1.ts` : `PROVISIONS` ajouté au périmètre de démonstration (skip-list de
 `bootstrapNep()`, `MOTIF_DEMO` mis à jour pour six postes) ; nouvelle `planifierProvisions()`

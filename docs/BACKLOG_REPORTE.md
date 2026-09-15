@@ -1516,6 +1516,21 @@ design : chacun reste une tranche à construire.**
   circularisation fournisseur reste utilisable seulement jusqu'à l'envoi de la demande, jamais
   jusqu'au dépôt d'une réponse.
 
+  **Amendement du 2026-09-15 (même soir, tranche Provisions) — le chiffre `459 134,58 €` cité
+  ci-dessus est DÉSORMAIS STALE, pas une mesure qui tiendrait rejouée telle quelle.** Une revue
+  hostile de la tranche Provisions a trouvé un SECOND défaut, distinct de R96, dans le même
+  calcul : `rapprochement()` comparait `compare - solde` sans tenir compte du SIGNE du solde de
+  grand livre — négatif pour un poste créditeur (PROVISIONS, TRADE_PAYABLES), alors que ce qu'un
+  auditeur saisit est toujours une magnitude positive. Le chiffre `459 134,58 €` additionnait
+  DONC le vrai défaut R96 (compte collectif) ET ce doublage de signe, sans que les deux revues
+  précédentes ne les distinguent. **Corrigé** (`circularisations.ts`, commentaire « LE SENS DU
+  SOLDE ») : le solde est désormais retourné avant comparaison pour tout poste créditeur — testé
+  par exécution pour `avocat` (`circularisations.test.ts`, deux nouveaux cas : une provision
+  exacte ne produit plus d'écart fabriqué, un vrai écart reste mesuré). **Pour `fournisseur`,
+  invérifiable par exécution** (le chemin reste refusé par R96 avant d'atteindre ce calcul) :
+  recalculé à la main, le même cas afficherait aujourd'hui -72 129,92 € — toujours FAUX pour la
+  raison R96 elle-même (compte collectif), mais sans le doublage de signe. R96 reste ouvert.
+
 - **R97 — FOURN-SUL (décaissements postérieurs) et FOURN-FNP (factures non parvenues) sont
   COMMANDÉES PAR LE RISQUE sur TRADE_PAYABLES (Lot 5, poste 4, 2026-09-15) mais N'ONT AUCUN
   atelier.** Trouvé en ouvrant Fournisseurs, mesuré par exécution (`requiredProcedures('TRADE_PAYABLES')`
@@ -1540,6 +1555,24 @@ design : chacun reste une tranche à construire.**
   TROISIÈME de `poste.ts` (voir R94) : ce poste porte un `circ` non nul (nature `fournisseur`),
   jamais les branches `patronRapprochementSeul`/`patronRecalculSeul`. Se referme le jour où une
   tranche généralise `/testing` (sondage_pieces hors REVENUE) — vraisemblablement avec R92/R95.
+
+  **Amendement du 2026-09-15 (même soir, tranche Provisions) — LE MÊME `href:null` REVIENT SUR
+  PROVISIONS, ET LE MÉCANISME EXACT EST PLUS ÉTROIT QUE CE QUE CE CONSTAT DISAIT.** Une revue
+  hostile a trouvé, par exécution (`vuePoste('PROVISIONS').blocs`) : le bloc `testing` de
+  PROVISIONS affiche AUSSI `href: null` — la tranche Provisions avait pourtant annoncé « AUCUN
+  gap d'atelier », une affirmation FAUSSE (règle 13) que cet amendement corrige. Le mécanisme
+  PRÉCIS (`poste.ts`, branche `circ` de `blocTesting`) n'est PAS « aucun atelier pour la nature
+  commandée » en général : c'est un appel EN DUR à `atelierDeLaNature('rapprochement', code,
+  base)`, quelle que soit la nature RÉELLEMENT commandée sur ce poste. Pour TRADE_PAYABLES,
+  `sondage_pieces` (FOURN-SUL/FOURN-FNP) est commandée mais `rapprochement` ne l'est PAS — le
+  code demande quand même `rapprochement`, donc `null`, et la conclusion du constat d'origine
+  (« faute d'atelier sondage_pieces ») était correcte dans son EFFET mais imprécise dans sa
+  CAUSE. Pour PROVISIONS, c'est `RAPPRO` elle-même (transverse, `risque_minimum:faible`,
+  universelle) qui EST commandée — mais `atelierDeLaNature('rapprochement', 'PROVISIONS', base)`
+  n'est câblé nulle part (seul `confirmation_externe` l'est pour ce poste) : même `href: null`,
+  cause plus directe encore. Se referme le jour où `blocTesting` distingue la nature RÉELLEMENT
+  commandée plutôt que de supposer `rapprochement`, ou le jour où `rapprochement` reçoit un
+  atelier pour CASH-like postes circularisés au-delà de CASH lui-même.
 
   **Défaut MÉCANIQUE réel trouvé et corrigé en construisant cette tranche (pas un R, corrigé
   sur-le-champ) : `prefixeDuPoste()` (`programme.ts`) collidait entre TRADE_PAYABLES et
