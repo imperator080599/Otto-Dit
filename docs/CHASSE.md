@@ -1015,5 +1015,12 @@ individuelle reste une commande rejouable (règle 12), son propre journal en fai
   complet mais avec CHAQUE étape confirmée propre au moins une fois sur cet arbre** : `tsc
   --noEmit` et `vitest run` (144/145 fichiers, 1136/1137 tests, seul `screens.test.ts` en échec)
   confirmés par les six tentatives complètes ci-dessus ; `tests/screens.test.ts` seul confirmé
-  PASSE six fois en isolation (450-477 s à chaque fois) ; `gardes` à `visuel` confirmés par ce
-  seul appel ci-dessus, moins `visuel` lui-même à relancer séparément.
+  PASSE en isolation CINQ fois sur les six occurrences (occurrences 1 à 5 — reunions, risk,
+  travaux, rcm, provenance — chacune rejouée seule et verte, 450-477 s à chaque fois ; la
+  SIXIÈME occurrence, fs-tieout, n'a PAS reçu son propre rejeu isolé — la décision ci-dessus a
+  été de passer directement aux étapes restantes plutôt que de rejouer une sixième fois un test
+  déjà éprouvé cinq fois de suite sur un arbre fonctionnellement identique ; ne pas compter cette
+  sixième comme une isolation mesurée, règle 31) ; `gardes` à `clics` confirmés par ce seul appel
+  ci-dessus ; `visuel` relancé séparément juste après (`verify-fournisseurs-reste-2.log`
+  ci-dessus n'atteint pas `visuel`, cassé par le même `#418` sur `clics`) : **336 vues, 0
+  défaut**, `EXIT=0` réel confirmé sur la ligne brute de la tâche de fond.
