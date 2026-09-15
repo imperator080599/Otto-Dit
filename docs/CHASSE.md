@@ -1042,6 +1042,32 @@ individuelle reste une commande rejouable (règle 12), son propre journal en fai
   distinct. Pas creusé plus loin (même discipline que F9-F25). `npm run visuel` cassé par le
   même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le précède) ; relancé séparément.
 
+- **F27 — UN incident dans `verify-provisions-3.log`** (2026-09-15, troisième chaîne verify
+  complète pour la tranche Provisions — poste 6, sur l'arbre du commit `4ec8617`, après le
+  correctif du signe `d4cd834`, le correctif de l'assertion Lot 3 périmée `7bacd5c`, et la
+  septième occurrence R58 journalisée dans `4ec8617` elle-même) : REJOUE F18-F26 au trait près,
+  même page `rcm/[cid]` (SOX), `EXCEPTION sur
+  /eng/70670df5.../rcm/e1981c59-2a7e-4fc9-aac5-570246ce159a : Minified React error #418`. `EXIT=`
+  réel `1` (règle 35, lu sur `bf77d8nea.output`). `vitest run` propre au premier coup — 145/145
+  fichiers, 1139/1139 tests, AUCUN `ServeurTombe`/R58 cette fois (contrairement à l'occurrence
+  juste avant sur ce même arbre) — cohérent avec l'hypothèse 1 (jamais garanti de se manifester
+  à chaque run). `gardes`, `semeur`, `plancher`, `langue`, `langue:epreuve`, `lectures`,
+  `lectures:epreuve`, `parcours`, `parcours:epreuve` tous propres ; `screens` (93 routes, 0
+  échec) et `fumee` (52 routes, 0 échec) sur le build de PRODUCTION propres ; `densite` sans
+  dépassement rapporté. Clôture et archive ATTEINTES (240 stations figées vérifiées, archive
+  scellée, empreinte SHA-256 affichée, téléchargement vérifié comme de vrais octets de zip), 260
+  étapes conduites, 387 clics comptés — DOUZIÈME confirmation consécutive que `#418` est disjoint
+  de tout ce que cette tranche a touché (diff : `circularisations.ts`, `circularisations.test.ts`,
+  `programme.ts`, `part1.ts`, `api/sante/route.ts`, `papier.json`, `procedures.json`,
+  `catalogue.test.ts`, `programme-vue.test.ts`, aucun rapport avec `rcm/[cid]`), sur un SIXIÈME
+  poste distinct. Pas creusé plus loin (même discipline que F9-F26). **Bilan de la chaîne pour
+  cette tranche** : un premier passage (`verify-provisions.log`) a trouvé un vrai défaut sans
+  rapport avec R58/#418 (assertion Lot 3 périmée, corrigée dans `7bacd5c`) ; un deuxième
+  (`verify-provisions-2.log`) a trouvé la septième occurrence R58 (isolée et confirmée PASSE,
+  425,29 s) ; ce troisième passage est PROPRE modulo le seul `#418` déjà éprouvé onze fois avant
+  lui. `npm run visuel` cassé par le même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le
+  précède) ; relancé séparément.
+
 **Nouvelle occurrence R58 (`verify-provisions-2.log`, 2026-09-15, chaîne verify complète #2 pour
 la tranche Provisions — poste 6, sur l'arbre du commit `7bacd5c`, après le correctif du signe
 `d4cd834` et le correctif de l'assertion Lot 3 périmée `7bacd5c` ; la #1, `verify-provisions.log`
