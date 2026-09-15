@@ -567,17 +567,22 @@ async function corpsDeLaSonde() {
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('recalcul_parametre', r.fsli_code ?? '', '/base'));
       const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
       const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
+      /* Messages COURTS, délibérément (`essayer()` coupe tout message d'erreur
+         à 300 caractères, ligne 56 — pré-existant, partagé par toutes les
+         lectures). Deux postes câblés à nommer au lieu d'un seul (Lot 5,
+         poste Clients) pousse la phrase au-delà : trouvé par
+         `atelier-rapprochement-lecture.test.ts` (cas mixte), pas deviné —
+         « attendu » et le poste HORS-CABLÉ coupés en silence avant ce
+         raccourci. */
       const detailHorsPostesCables = horsPostesCables.length > 0
-        ? ` ; ${horsPostesCables.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsPostesCables.length} template/poste `
-          + `distinct(s)) hors ${POSTES_CABLES.join('/')} sans atelier construit — attendu, R54/R55 : `
-          + horsPostesCables.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+        ? ` ; hors ${POSTES_CABLES.join('/')}, attendu R54/R55 : `
+          + horsPostesCables.map((r) => `${r.template_code}/${r.fsli_code ?? '(aucun)'}`).join(', ')
         : '';
       if (regression.length > 0) {
         const instances = regression.reduce((s, r) => s + Number(r.n), 0);
-        throw new Error(`${instances} instance(s) (${regression.length} template(s)) recalcul_parametre `
-          + `planifiée(s) sur un poste câblé (${[...new Set(regression.map((r) => r.fsli_code))].join('/')}) SANS atelier réel — `
-          + 'régression probable de atelierDeLaNature : '
-          + regression.map((r) => `${r.template_code} (poste ${r.fsli_code}, ${r.n} instance(s))`).join(', ')
+        throw new Error(`${instances} instance(s) recalcul_parametre sur `
+          + `${[...new Set(regression.map((r) => r.fsli_code))].join('/')} SANS atelier — régression atelierDeLaNature : `
+          + regression.map((r) => `${r.template_code}/${r.fsli_code}`).join(', ')
           + detailHorsPostesCables);
       }
       const n = rows.reduce((s, r) => s + Number(r.n), 0);
@@ -676,17 +681,20 @@ async function corpsDeLaSonde() {
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('rapprochement', r.fsli_code ?? '', '/base'));
       const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
       const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
+      /* Message COURT, délibérément (`essayer()` coupe à 300 caractères,
+         ligne 56 — même correctif que sa jumelle recalcul_parametre
+         ci-dessus, même tranche : deux postes câblés à nommer au lieu d'un
+         seul poussait la phrase au-delà, coupant « TRADE_PAYABLES » en
+         silence dans le cas mixte). */
       const detailHorsCash = horsPostesCables.length > 0
-        ? ` ; ${horsPostesCables.reduce((s, r) => s + Number(r.n), 0)} instance(s) (${horsPostesCables.length} template/poste `
-          + `distinct(s)) hors ${POSTES_CABLES.join('/')} sans atelier construit — attendu, R57 : `
-          + horsPostesCables.map((r) => `${r.template_code} (poste ${r.fsli_code ?? '(aucun)'}, ${r.n} instance(s))`).join(', ')
+        ? ` ; hors ${POSTES_CABLES.join('/')}, attendu R57 : `
+          + horsPostesCables.map((r) => `${r.template_code}/${r.fsli_code ?? '(aucun)'}`).join(', ')
         : '';
       if (regression.length > 0) {
         const instances = regression.reduce((s, r) => s + Number(r.n), 0);
-        throw new Error(`${instances} instance(s) (${regression.length} template(s)) rapprochement `
-          + `planifiée(s) sur un poste câblé (${[...new Set(regression.map((r) => r.fsli_code))].join('/')}) SANS atelier réel — `
-          + 'régression probable de atelierDeLaNature : '
-          + regression.map((r) => `${r.template_code} (poste ${r.fsli_code}, ${r.n} instance(s))`).join(', ')
+        throw new Error(`${instances} instance(s) rapprochement sur `
+          + `${[...new Set(regression.map((r) => r.fsli_code))].join('/')} SANS atelier — régression atelierDeLaNature : `
+          + regression.map((r) => `${r.template_code}/${r.fsli_code}`).join(', ')
           + detailHorsCash);
       }
       const n = rows.reduce((s, r) => s + Number(r.n), 0);

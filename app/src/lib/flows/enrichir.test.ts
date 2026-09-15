@@ -153,11 +153,22 @@ describe('enrichirMondeDemo', () => {
        le grand livre de la cliente : la famille d'obstacles « ipe » se taisait
        sur une réponse fausse. La déclaration suit désormais la source écrite
        dans la méthode, et reprend le rapport déjà documenté (0036). */
+    /* SCOPÉ AU CYCLE CHIFFRE D'AFFAIRES (`fsli_code = 'REVENUE'`), pas
+       « tout papier hors REV-01 » — même défaut que draft.ts (règle 19,
+       trouvé par ce même correctif de tranche) : `w.code <> 'REV-01'` était
+       un proxy sûr pour « les cinq autres papiers REVENUE d'enrichir.ts »
+       tant qu'AUCUN autre poste ne portait de papier. Depuis Lot 5 (poste
+       Clients), TRA-01/TRA-02 (planifierClients(), part1.ts) existent AUSSI
+       hors REV-01 — et portent honnêtement `utilisee: false` : leur
+       population (comptes auxiliaires) n'est importée que par le geste
+       cliqué réel (ADR-107), jamais au seed, contrairement aux papiers
+       REVENUE d'enrichir.ts dont la population est déjà en base. */
     const lignes = await q<{ code: string; utilisee: boolean; rapport: string | null }>(
       `select w.code, i.utilisee, r.nom rapport
        from ipe i join workpaper w on w.id = i.workpaper_id
+       join procedure_instance p on p.id = w.procedure_id
        left join ipe_rapport r on r.id = i.rapport_id
-       where w.engagement_id = $1 and w.code <> 'REV-01'`, [ENG]);
+       where w.engagement_id = $1 and p.fsli_code = 'REVENUE' and w.code <> 'REV-01'`, [ENG]);
     expect(lignes.length).toBeGreaterThanOrEqual(5);
     for (const l of lignes) {
       expect(l.utilisee, `${l.code} : la population vient du grand livre ou de la balance`).toBe(true);

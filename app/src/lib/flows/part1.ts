@@ -7,6 +7,7 @@ import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/ser
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis, detecterBasculesMaterialite } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
 import { assessFsli } from '@/lib/services/risk';
+import { logEvent } from '@/lib/core/events';
 import { questionsOfScope, answerQuestion, answers } from '@/lib/services/questionnaire';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { planifierProcedure, redigerPapierDeProcedure } from '@/lib/services/programme';
@@ -92,7 +93,33 @@ export async function bootstrapNep(): Promise<void> {
     + 'poste dépasse le seuil de planification et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES'].includes(f.code)) continue; // les trois postes déroulés
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES'].includes(f.code)) {
+      /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ,
+         PAS appelé par ce seed — utilisé par ses propres tests) porte SA
+         PROPRE garde D9 sur ce poste précis, basée sur CE MÊME événement
+         `demo_scoping_seeded` : sans lui, `enrichir.ts` croit n'avoir
+         JAMAIS statué ce poste et RÉÉCRIT une décision humaine ultérieure
+         (`ns_confirmed` posée par un associé) avec sa propre convention —
+         trouvé par `enrichir.test.ts` (« CONSTAT 1 et 6 »), pas deviné :
+         laisser TRADE_RECEIVABLES retenu dès ce seed (règle 14, Lot 5) sans
+         émettre ce marqueur crée exactement le trou que D9 interdit.
+         REVENUE/CASH n'ont pas cette garde côté `enrichir.ts` : rien à
+         émettre pour eux ici. */
+      if (f.code === 'TRADE_RECEIVABLES') {
+        const dejaMarque = await q01<{ id: string }>(
+          `select id from event_log where engagement_id = $1 and verb = 'demo_scoping_seeded' and payload->>'fsli' = 'TRADE_RECEIVABLES'`,
+          [IDS.engNep],
+        );
+        if (!dejaMarque) {
+          await logEvent({
+            tenantId: IDS.tenant, engagementId: IDS.engNep, actorKind: 'system', actorId: null,
+            verb: 'demo_scoping_seeded', objectType: 'fsli', objectId: f.id,
+            payload: { fsli: 'TRADE_RECEIVABLES', motif: 'Lot 5, poste Clients : retenu dès le seed de base, pas par enrichir.ts — même marqueur pour que sa garde D9 le sache.' },
+          });
+        }
+      }
+      continue; // les trois postes déroulés
+    }
     if (f.confirmed_by) continue;                   // une décision humaine ne se réécrit pas (D9)
     await confirmScoping(f.id, IDS.users.lea, 'ns_confirmed',
       f.scoping === 'ns_proposed'

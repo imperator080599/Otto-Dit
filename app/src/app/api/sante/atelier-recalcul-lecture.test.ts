@@ -9,18 +9,21 @@ import { GET } from './route';
 // LOT 3, TRANCHE 2 (mandat, Partie C.1) — LA LECTURE « atelier recalcul_parametre
 // disponible » DE /api/sante, cas connu mauvais (règle 17) : preuve rejouable
 // (règle 12) qu'elle rougit quand une procédure recalcul_parametre est
-// planifiée sur REVENUE sans que `atelierDeLaNature` sache en construire un —
-// le seul poste que cette lecture traite comme une régression (voir route.ts,
-// tête de la lecture). Un poste HORS REVENUE sans atelier (R54/R55 : RECALC
-// est plannable sur n'importe quel poste dès aujourd'hui) est un état ATTENDU
-// et déjà consigné : la lecture doit rester VERTE et le dire honnêtement dans
-// le détail, jamais rouge — la première version de ce fichier affirmait le
-// contraire (règle 24, réfutation hostile) et confondait un état sanctionné
-// avec une régression, exactement la faute que R53 nomme ailleurs dans ce
-// dépôt. `bootstrapNep()` seul ne plante PAS RECALC (c'est
-// `enrichirMondeDemo()`, un flux séparé, qui le fait dans le monde de
-// démonstration réel) : ce fichier pose lui-même chaque ligne dont il a
-// besoin, en contournant DIRECTEMENT la base.
+// planifiée sur un poste CÂBLÉ sans que `atelierDeLaNature` sache en
+// construire un (REVENUE depuis Lot 3 ; TRADE_RECEIVABLES depuis Lot 5,
+// poste Clients, 2026-09-15 — POSTES_CABLES, route.ts). Un poste HORS ces
+// deux-là sans atelier (R54/R55 : RECALC est plannable sur n'importe quel
+// poste dès aujourd'hui) est un état ATTENDU et déjà consigné : la lecture
+// doit rester VERTE et le dire honnêtement dans le détail, jamais rouge —
+// la première version de ce fichier affirmait le contraire (règle 24,
+// réfutation hostile) et confondait un état sanctionné avec une régression,
+// exactement la faute que R53 nomme ailleurs dans ce dépôt. Ce fichier
+// utilise TRADE_PAYABLES (Fournisseurs, Lot 5 pas encore ouvert) comme
+// exemple de poste HORS-câblé — TRADE_RECEIVABLES ne convient plus depuis
+// qu'il est câblé, ce même correctif l'a trouvé (`bootstrapNep()` seul ne
+// plante PAS RECALC — c'est `enrichirMondeDemo()`, un flux séparé, qui le
+// fait dans le monde de démonstration réel) : ce fichier pose lui-même
+// chaque ligne dont il a besoin, en contournant DIRECTEMENT la base.
 
 describe('atelier recalcul_parametre : la lecture /api/sante', () => {
   const AVANT = process.env.OTTO_DEMO_PUBLIC;
@@ -59,7 +62,7 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
        produise pour de vrai. */
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_RECEIVABLES', 'sonde atelier — poste sans atelier, hors REVENUE', 'recalcul_parametre')`,
+       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_PAYABLES', 'sonde atelier — poste sans atelier, hors REVENUE', 'recalcul_parametre')`,
       [IDS.engNep],
     );
 
@@ -69,10 +72,10 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
     expect(lectureApresHorsRevenue.ok).toBe(true);
     expect(apresHorsRevenue.status).toBe(200);
     expect(lectureApresHorsRevenue.detail).toContain('RECALC');
-    expect(lectureApresHorsRevenue.detail).toContain('TRADE_RECEIVABLES');
+    expect(lectureApresHorsRevenue.detail).toContain('TRADE_PAYABLES');
     expect(lectureApresHorsRevenue.detail).toContain('attendu');
 
-    await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'TRADE_RECEIVABLES' and nature = 'recalcul_parametre'`, [IDS.engNep]);
+    await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'TRADE_PAYABLES' and nature = 'recalcul_parametre'`, [IDS.engNep]);
 
     const vert = await GET();
     const bodyVert = await vert.json();
@@ -99,7 +102,7 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
        découvert une fois trouvé). */
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_RECEIVABLES', 'sonde branche négative — aucune ligne REVENUE', 'recalcul_parametre')`,
+       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_PAYABLES', 'sonde branche négative — aucune ligne REVENUE', 'recalcul_parametre')`,
       [IDS.engNep],
     );
     try {
@@ -108,11 +111,11 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
       const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('atelier recalcul_parametre'));
       expect(lecture.ok).toBe(true);
       expect(res.status).toBe(200);
-      expect(lecture.detail).toContain('TRADE_RECEIVABLES');
+      expect(lecture.detail).toContain('TRADE_PAYABLES');
       expect(lecture.detail).toContain('attendu');
       expect(lecture.detail).not.toContain('REVENUE toujours avec un atelier réel');
     } finally {
-      await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'TRADE_RECEIVABLES' and nature = 'recalcul_parametre'`, [IDS.engNep]);
+      await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'TRADE_PAYABLES' and nature = 'recalcul_parametre'`, [IDS.engNep]);
     }
   });
 
@@ -174,7 +177,7 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
     );
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_RECEIVABLES', 'sonde gap hors REVENUE co-occurrent', 'recalcul_parametre')`,
+       values ($1, 'nep-fr', 'RECALC', 'substantive', 'TRADE_PAYABLES', 'sonde gap hors REVENUE co-occurrent', 'recalcul_parametre')`,
       [IDS.engNep],
     );
 
@@ -187,7 +190,7 @@ describe('atelier recalcul_parametre : la lecture /api/sante', () => {
       expect(rouge.status).toBe(500);
       expect(lectureRouge.detail).toContain('REVENUE');
       expect(lectureRouge.detail).toContain('régression');
-      expect(lectureRouge.detail).toContain('TRADE_RECEIVABLES');
+      expect(lectureRouge.detail).toContain('TRADE_PAYABLES');
       expect(lectureRouge.detail).toContain('attendu');
     } finally {
       await q(`delete from procedure_instance where engagement_id = $1 and nature = 'recalcul_parametre'`, [IDS.engNep]);
