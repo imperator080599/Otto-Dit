@@ -7,6 +7,8 @@ import { computeTbGl, latestTbGl, noteReconciliationLimitation } from '@/lib/ser
 import { rebuildFslis, proposeScoping, confirmScoping, listFslis, detecterBasculesMaterialite } from '@/lib/services/fsli';
 import { propose, validate } from '@/lib/services/materiality';
 import { assessFsli } from '@/lib/services/risk';
+import { questionsOfScope, answerQuestion, answers } from '@/lib/services/questionnaire';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { planifierProcedure, redigerPapierDeProcedure } from '@/lib/services/programme';
 import { proposerAnalytique, enregistrerAnalytique } from '@/lib/services/analytique';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from '@/lib/services/sampling';
@@ -514,6 +516,20 @@ export async function circulariserBanques(): Promise<void> {
  * si rien ne l'a encore été.
  */
 export async function planifierTresorerie(): Promise<void> {
+  /* MÊME GESTE que TRADE_RECEIVABLES quand ce poste est devenu retenu
+     (enrichir.ts) : les questions de SECTION sont les mêmes pour tout poste
+     retenu (questionnaire.ts, questionnaireObstacles) — rester ns_confirmed
+     dispensait CASH de les répondre ; redevenu in_scope (règle 14, amendement
+     du 14 septembre), l'obstacle « obst.questionsSectionSansReponse »
+     apparaît pour de vrai au visa si personne n'y répond. Trouvé par le
+     parcours cliqué mené à la clôture (règle 37), pas deviné. */
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesCash = new Set((await answers(IDS.engNep, 'CASH')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesCash.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'CASH', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
   const dejaEvalue = await q01<{ id: string }>(
     `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'CASH' limit 1`,
     [IDS.engNep],
