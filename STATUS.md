@@ -90,6 +90,97 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Lot 5, poste 2 : Clients ouvert complètement (2026-09-15)
+
+*Même mandat que Trésorerie ci-dessous (`docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md`,
+point 3), deuxième poste de l'ordre C.3 : Clients (TRADE_RECEIVABLES), après Trésorerie.*
+
+**Recherche, mesurée avant d'écrire.** `assessFsli`/`risksFor` exécutés contre le dossier NEP
+seedé : `exhaustivite:moyen` (facteur « plus de 200 écritures », 1267) et `evaluation:faible` sur
+TRADE_RECEIVABLES. Trois procédures du catalogue dépassent leur `risque_minimum` au moment de la
+recherche : CLIENTS-AGE (`exhaustivite`, `faible`), CLIENTS-AVOIRS (`exhaustivite`, `moyen`) —
+toutes deux VÉRIFIÉES commandées par exécution directe de `requiredProcedures()`, voir plus bas —
+et CLIENTS-DEPREC, dont la mesure d'origine s'est révélée FAUSSE (voir revue hostile ci-dessous).
+CLIENTS-CIRC et CLIENTS-ALT restent sous leur `risque_minimum` (`realite:faible`).
+
+**Implémentation.** `methodology/procedures.json` : `CLIENTS-AGE`/`CLIENTS-DEPREC.cycle` corrigés
+de `"CLIENTS"` à `"TRADE_RECEIVABLES"` (même correctif que TRESO→CASH, R54/R57). `papier.json` :
+même défaut de correspondance trouvé une SECONDE fois — `lettres_par_poste["RECEIVABLES"]` ne
+correspondait à AUCUN `fsli.code` réel, corrigé en `"TRADE_RECEIVABLES"`. `programme.ts` :
+`atelierDeLaNature` câble TRADE_RECEIVABLES vers `balances-aux`/`estimations`, tous deux DÉJÀ
+poste-agnostiques (ADR-107, clé par `pieceRef`) — une ligne de routage, pas une mécanique neuve.
+`part1.ts` : TRADE_RECEIVABLES restauré à `in_scope` (moteur genuinement in_scope, balance
+1 554 017,64 €). Nouvelle `planifierClients()` : questionnaire, risque, CLIENTS-AGE/CLIENTS-DEPREC
+plantées par `planifierProcedure`, papiers TRA-01/TRA-02 avec IPE honnêtement `utilisee:false` (la
+balance auxiliaire clients n'est importée que par le geste cliqué réel, ADR-107, jamais pré-semée),
+revue analytique. `poste.ts` : un TROISIÈME patron d'écran (ni circularisé ni sondé façon REVENUE)
+route `echantillon`/`testing` vers `balances-aux`/`estimations` quand `atelierDeLaNature` confirme
+un atelier réel hors circularisation.
+
+**Trois défauts RÉELS trouvés par le premier verify complet, aucun deviné.** (1) `enrichir.ts`
+porte SA PROPRE garde D9 sur TRADE_RECEIVABLES, basée sur l'événement `demo_scoping_seeded` qu'IL
+SEUL émettait jusqu'ici — laisser le poste retenu dès `planifierClients()` sans émettre ce marqueur
+aurait recréé le trou que D9 interdit (une décision humaine ultérieure réécrite silencieusement).
+Trouvé par `enrichir.test.ts` (CONSTAT 1/6). Corrigé : `bootstrapNep()` émet le même événement,
+même verbe, même forme de payload. (2) `enrichir.test.ts` (CONSTAT 4) vérifiait « tout papier hors
+REV-01 a une IPE `utilisee:true` » — un proxy sûr tant qu'aucun autre poste ne portait de papier ;
+TRA-01/TRA-02 existent désormais avec `utilisee:false` HONNÊTE. Corrigé en scopant au join
+`procedure_instance.fsli_code = 'REVENUE'`. (3) Les deux lectures `/api/sante` « atelier
+disponible » ne détectaient une régression que sur le poste initialement câblé (REVENUE/CASH) —
+généralisées via `POSTES_CABLES`, comparant une liste ATTENDUE (jamais `atelierDeLaNature` contre
+elle-même) ; messages raccourcis pour tenir dans la troncature à 300 caractères d'`essayer()`.
+
+**UN RELECTEUR HOSTILE INDÉPENDANT** (règle 30 : ni migration, ni multi-tenant, ni code de refus
+dans cette tranche — un seul suffit, même précédent que Trésorerie). Quatre constats réels : **C1
+(sévère)** — R92 (voir plus bas) diagnostiquait sa propre cause à côté : CLIENTS-AVOIRS,
+CLIENTS-CIRC et CLIENTS-ALT portaient encore `cycle:"CLIENTS"`, invisibles à `proceduresDuCycle`
+quel que soit le risque ; la mesure d'origine comparait `risksFor` à `risque_minimum` À LA MAIN,
+sans exécuter `requiredProcedures()` bout en bout (règle 15). Corrigé, re-vérifié par exécution sur
+base fraîche (déterministe — mêmes comptes : 13 exceptions, 8 déviations, 6 papiers, 377
+événements) : `requiredProcedures('TRADE_RECEIVABLES')` rend maintenant `CLIENTS-AGE` ET
+`CLIENTS-AVOIRS`. **En re-vérifiant C1, un SECOND défaut trouvé, indépendamment du relecteur** :
+CLIENTS-DEPREC N'EST PAS commandée par le risque — `evaluation:faible` mesuré, SOUS son
+`risque_minimum:"moyen"` — contrairement à ce que le commit d'origine affirmait.
+`planifierProcedure` ne vérifie jamais le niveau de risque (seulement catalogue/cycle/périmètre),
+donc `planifierClients()` l'avait planifiée quand même via sa liste codée en dur ; elle reste
+fonctionnelle (atelier réel, papier TRA-02) mais « hors commande », pas « commandée par le
+risque ». **C3** — `papier.json` portait `"PAYABLES"`, qui ne correspond à AUCUN `fsli.code` réel
+(le vrai code est `TRADE_PAYABLES`) — même famille, une TROISIÈME fois, corrigée avant que
+Fournisseurs (Lot 5, poste 4) n'en hérite silencieusement. **C4** (mineur) — un commentaire de
+`part1.ts` affirmait qu'`enrichir.ts` n'est « pas appelé par ce seed », faux : le build de
+production (`scripts/deploy/reconstruire.ts`) l'appelle bel et bien, reformulé. **C2** — une
+contradiction documentaire dans `docs/BACKLOG_REPORTE.md` (R57 listait encore CLIENTS-AGE parmi
+les procédures « non corrigées » alors que ce même commit venait de la corriger), réparée. **C5/C6
+(fragilités de conception, disclosed, pas corrigées)** : R93 (le garde-fou D9 est dupliqué sans
+mécanisme partagé entre `part1.ts` et `enrichir.ts` — un futur poste peut le manquer d'un seul
+côté) ; R94 (le troisième patron de `poste.ts` est silencieux si TRADE_RECEIVABLES gagne un jour un
+vrai tirage). Toutes deux non corrigées délibérément : refactor hors mandat d'une tranche de poste
+(R93, règle 8) ; test contre un décor qui n'existe encore nulle part dans le dépôt (R94, règle 25).
+
+**R54, R56, R57, R92 mis à jour pour dire la vérité mesurée.** R54 : « partiellement levée » pour
+CLIENTS-DEPREC (le `cycle` est corrigé, ce qui ne veut PAS dire commandée par le risque — voir
+ci-dessus). R57 : CLIENTS-AGE retiré de la liste des procédures `rapprochement` non corrigées (cinq
+restantes). R92 réécrite en entier : le diagnostic d'origine était faux, la correction et la
+re-vérification par exécution sont maintenant la version qui fait foi ; le CLIENTS-DEPREC-n'est-pas-
+commandée y est documenté comme second constat. R93/R94 nouvelles, disclosed.
+
+**Mesures finales, engendrées.** `npm run verify` (chaîne complète, QUATRE passes sur cette
+tranche — deux ont trouvé et fait corriger des défauts réels, une a heurté le flake `#418` déjà
+tracké (F19, `docs/CHASSE.md`), une le REJOUE au trait près après les correctifs hostiles (F20,
+même page `rcm/[cid]`, disjointe du diff) : **145 fichiers, 1136 tests, tous verts** sur le dernier
+passage complet. Un passage a aussi heurté R58 (`ServeurTombe`, route SOX `/eng/[id]/population`,
+quatrième occurrence de ce flake pré-documenté) — confirmé disjoint par `ps aux` (aucun processus
+parasite) et par un passage isolé vert (`screens.test.ts` seul, 1/1, 453,79 s). `npm run clics`
+(dernier passage, `verify-clients-4.log`) : **260 étapes conduites, ZÉRO échec de station nommée,
+clôture ET archive atteintes** (le seul « 1 échec(s) » compté par le harnais est `#418`, F20, sans
+lien avec cette tranche). `npm run visuel` (lancé séparément — `clics` sort en échec sur ce seul
+`#418`, même situation que F14/Trésorerie) : **336 vues, 0 défaut.** Suites ciblées après les
+correctifs hostiles : 67 tests (papier/catalogue/risk/poste/programme/enrichir/part1) + 102 tests
+(api/sante, 26 fichiers), tous verts.
+
+**Non expédié à la clôture de cette section** : fusion sur `main`, confirmation du SHA servi en
+production — voir la suite de STATUS.md pour leur mesure.
+
 ## Lot 5, poste 1 : Trésorerie ouverte complètement (2026-09-14/15)
 
 *Mandat du fondateur du 2026-09-14 soir (`docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md`,
