@@ -882,6 +882,18 @@ rapport avec `/travaux`. TROISIÈME confirmation consécutive de disjonction sur
 tranche (après `/eng/[id]/reunions` et `/eng/[id]/risk`) — pas creusé plus loin, même discipline.
 Chaîne à relancer une quatrième fois.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste-4.log`, 2026-09-15, chaîne verify complète
+#4 pour la même tranche, arbre inchangé depuis `c1ffd54`)** : `le serveur est tombé après 82
+route(s), à « /eng/[id]/rcm (SOX) »` — CETTE FOIS sur la même route que la famille F9-F24 (#418),
+mais un défaut DIFFÉRENT (`ServeurTombe`, crash serveur complet mesuré par `screens.test.ts` —
+pas une divergence d'hydratation côté client mesurée par `clics`) : `rcm/[cid]` est déjà connue
+comme une page lourde, cohérente avec les deux hypothèses à la fois sans que l'une n'explique
+l'autre. Aucun processus parasite mesuré. Isolé, `npx vitest run tests/screens.test.ts` seul, sous
+900 s : **PASSE, 1/1, 466,47 s** — cohérent avec les quatre mesures précédentes (450-472 s). Reste
+de la chaîne propre (1136/1137). Diff inchangé depuis les trois occurrences précédentes de ce même
+arbre — sans rapport avec `/eng/[id]/rcm`. QUATRIÈME confirmation consécutive de disjonction sur
+cette seule tranche — pas creusé plus loin, même discipline. Chaîne à relancer une cinquième fois.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
