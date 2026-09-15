@@ -90,6 +90,86 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Lot 5, poste 4 : Fournisseurs (TRADE_PAYABLES) ouvert — leadsheet, revue analytique, une procédure commandée, atelier, papier, deux gaps disclosed (R97) (2026-09-15)
+
+*Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3,
+après la mécanique circularisation fournisseur (section suivante ci-dessous).*
+
+**Recherche, mesurée avant d'écrire.** `assessFsli`/`requiredProcedures` exécutés contre le
+dossier NEP seedé : TRADE_PAYABLES (265 632,25 €, UN SEUL compte collectif `401000`,
+`fsliAccounts` vérifié par exécution) porte `exhaustivite:moyen` (1 facteur, « plus de 200
+écritures ») et `realite:moyen` (1 facteur, variation N/N-1 de 45 297 € contre un seuil de
+27 000 €). Trois procédures du cycle commandées — FOURN-CIRC (`confirmation_externe`), FOURN-FNP
+et FOURN-SUL (`sondage_pieces`) — mais SEULE FOURN-CIRC a un atelier atteignable. FOURN-CUTOFF-REC
+reste sous son `risque_minimum`, non commandée.
+
+**Implémentation.** `part1.ts` : `TRADE_PAYABLES` ajouté au périmètre de démonstration (skip-list
+de `bootstrapNep()`, `MOTIF_DEMO` mis à jour) ; nouvelle `planifierFournisseurs()` (questionnaire,
+risque, UNE SEULE procédure planifiée — FOURN-CIRC —, papier `utilisee:false` honnête, revue
+analytique), mirroir exact de `planifierClients()`/`planifierImmobilisations()`. `programme.ts` :
+`atelierDeLaNature` route `confirmation_externe`+TRADE_PAYABLES vers le même `/circularisations`
+que CASH. `circularisations/page.tsx` : `NATURES` gagne l'entrée `fournisseur`, les deux
+discriminants binaires `kind === 'banque'`/`s.cle === 'banque'` rekeyés en `kind !== 'avocat'`/
+`s.cle !== 'avocat'` (même refactor que `circularisations.ts` dans la mécanique). `catalogue.ts` :
+trois nouvelles clés i18n. `api/sante/route.ts` : la lecture « atelier confirmation_externe
+disponible » étend `POSTES_CABLES` à `CASH`/`TRADE_PAYABLES` (même correctif déjà appliqué à sa
+jumelle `rapprochement` pour CASH/TRADE_RECEIVABLES) — sans lui, une vraie régression sur l'atelier
+TRADE_PAYABLES serait tombée silencieusement dans le gap « attendu R56 ».
+
+**R96 (revue hostile de la mécanique, plus tôt ce jour) est une condition BLOQUANTE que cette
+tranche respecte PAR OMISSION** : `planifierFournisseurs()` plante FOURN-CIRC (procédure, papier)
+mais AUCUNE campagne de circularisation déposée — déposer une réponse afficherait un écart FAUX
+(comparaison au solde entier du compte collectif). `poste.ts` : AUCUN changement nécessaire,
+vérifié par exécution (`vuePoste('TRADE_PAYABLES')`), déjà générique via
+`natureCirculariseeDuPoste`.
+
+**UN DÉFAUT MÉCANIQUE RÉEL trouvé en conduisant `planifierFournisseurs()` avant d'annoncer l'écran
+(règle 10), corrigé avant tout commit.** `prefixeDuPoste()` (`programme.ts`) dérivait le CODE
+INTERNE d'un papier (la clé unique en base) par les trois premières lettres du `fsli_code` — « TRA »
+pour TRADE_PAYABLES ET TRADE_RECEIVABLES, jamais consulté `lettres_par_poste` (`papier.json`), déjà
+utilisé par `referencePapier()` pour le champ `reference`. Reproduit par exécution (`duplicate key
+value violates unique constraint "workpaper_engagement_id_code_version_key"`). Corrigé en
+réutilisant `lettres_par_poste` — les papiers déjà créés (CAS-01, PPE-01, TRA-01/02) gardent leur
+code d'origine, TRADE_PAYABLES reçoit « D-01 ». Le test existant
+(`atelier-confirmation-lecture.test.ts`) utilisait TRADE_PAYABLES comme fixture « poste sans
+atelier » : remplacé par PROVISIONS (toujours sans atelier câblé aujourd'hui, vérifié par lecture
+directe). Les deux défauts (R97 disclosed, `prefixeDuPoste`) sont enregistrés ensemble dans
+`docs/BACKLOG_REPORTE.md`/`docs/instantanes/fils.json`.
+
+**UN SEUL RELECTEUR HOSTILE** (règle 30 : ni migration, ni multi-tenant, ni code de refus neuf dans
+cette tranche — même précédent que Trésorerie/Clients/Immobilisations).
+
+**Mesures avant expédition.** Suite ciblée (atelier-confirmation/rapprochement/recalcul-lecture,
+deplanification-lecture, nature-lecture, etancheite, enrichir, programme-vue, circularisations,
+catalogue — 68/68) et `tsc --noEmit` propres. `npm run verify` complet à suivre après la revue
+hostile.
+
+**CORRECTIF D'EXPÉDITION DÉCOUVERT EN CONFIRMANT LE SHA SERVI DE LA TRANCHE PRÉCÉDENTE — le
+« correctif » C2 de la mécanique (ci-dessous) violait la règle 26, et a bloqué TOUS les
+déploiements depuis `a10e484`.** Le check-in programmé pour confirmer le SHA servi du merge de la
+mécanique sur `main` (`a10e484`) a trouvé son déploiement de production en ÉTAT ERROR — et tous les
+déploiements suivants (branche comme `main`) également en ERROR, `765a775` compris. Le journal de
+build (`mcp__Vercel__get_deployment_build_logs`) est sans ambiguïté : `deploy:reconstruire`
+(`migrate()`) a refusé avec « 1 migration(s) ÉDITÉE(S) APRÈS APPLICATION :
+0165_circularisation_fournisseur.sql » contre la base Supabase PARTAGÉE. La migration 0165 avait
+bien été appliquée à cette base — par le tout premier déploiement d'APERÇU de la mécanique (commit
+`4fd9b1f`, `dpl_TKGDS66Pydqyj8Jf8U88Hzm48Tfb`, état READY) — avant même que le correctif C2 (commit
+`2e0aadc`) n'édite le commentaire d'en-tête du même fichier. Le commit `2e0aadc` affirmait « sûre au
+sens de la règle 26 — elle n'a jamais porté de ligne dans `_migrations` sur une base persistante » :
+une AFFIRMATION FAUSSE, inférée du statut d'un déploiement plutôt que vérifiée par une requête
+directe sur `_migrations` — exactement l'anti-patron que la règle 26 elle-même nomme (« Dans le
+doute, une requête directe... tranche — jamais une inférence depuis le statut d'un déploiement »).
+**Corrigé** : `supabase/migrations/0165_circularisation_fournisseur.sql` restauré OCTET POUR OCTET
+à son contenu du commit `4fd9b1f` (`git diff 4fd9b1f -- supabase/migrations/0165...` vide, empreinte
+SHA-256 identique) — jamais une nouvelle réédition, la seule façon de faire concorder à nouveau
+l'empreinte que `migrate()` compare. **Conséquence pour C2** : le constat lui-même (le commentaire
+d'origine affirme au passé une revue qui n'avait pas encore eu lieu, règle 13) reste VRAI et reste
+dans le fichier appliqué, IMMUABLE — il ne peut plus être corrigé dans la migration elle-même sans
+répéter la même erreur. Le compte rendu honnête vit ICI, jamais dans le fichier. **Aucune donnée
+n'a été perdue ni corrompue** — le site a simplement continué de servir le SHA de la tranche
+Immobilisations (`5cc7b7a`) pendant que ces déploiements échouaient ; voir la mesure du SHA servi
+réel ci-dessous, une fois le prochain déploiement confirmé vert.
+
 ## Lot 5, poste 4 (mécanique) : circularisation généralisée aux fournisseurs (2026-09-15)
 
 *Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3 :
