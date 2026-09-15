@@ -245,8 +245,46 @@ dans la MÊME phrase — une contradiction interne repérée en relisant mon pro
 résultat mesuré, corrigée en « CINQ » avant tout commit.
 
 **Mesures avant expédition.** Suite ciblée (catalogue, poste, enrichir, atelier-confirmation-
-lecture — 36/36) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet à
-suivre.
+lecture — 36/36) propres. `tsc --noEmit` propre.
+
+**SECONDE revue hostile, INDÉPENDANTE, sur le correctif de signe lui-même** (règle 30 : requise
+après coup une fois le défaut trouvé par la première voix, même précédent que Fournisseurs/R96-
+live-in-UI). Verdict : correctif CORRECT et COMPLET pour toute valeur de `kind`/`Nature`
+existant réellement dans ce dépôt aujourd'hui (`'banque' | 'avocat' | 'fournisseur'` — vérifié en
+lisant le type lui-même, `git log --all` sur ce fichier, ET la contrainte CHECK SQL de
+`confirmation_campaign.kind` en base, migration 0165 — trois vérifications indépendantes,
+aucune ne trouve de quatrième valeur type `'client'`). Convention de signe (`fsliAccounts()`,
+débit moins crédit) reconfirmée contre les VRAIES données du TB semé (151000 : -60 000,00 € ;
+401000 : -265 632,25 €, les deux exactement comme annoncé). Suite `circularisations.test.ts`
+rejouée par ce second réfuteur lui-même — 12/12, pas seulement rapportée. Deux points signalés
+comme informatifs, non bloquants : (1) le correctif code en dur `kind === 'banque'` comme seule
+exception plutôt que dériver le sens du solde d'une table — un piège de maintenabilité latent si
+une future nature débitrice non nommée `'banque'` apparaît, sans effet sur le comportement
+actuel ; (2) rien n'empêche aujourd'hui la saisie d'une magnitude négative côté formulaire — le
+correctif REPOSE sur cette convention sans la GARDER. Aucun des deux n'a été jugé bloquant pour
+cette tranche ; consignés ici pour une session future, pas dans BACKLOG_REPORTE.md (pas une dette
+identifiée, une observation de robustesse).
+
+**`npm run verify` complet, trois passages sur l'arbre gelé successivement corrigé.** Premier
+passage (`verify-provisions.log`, commit `d4cd834`) a trouvé un VRAI défaut, sans rapport avec
+R58/#418 : `programme-vue.test.ts` portait encore une assertion du Lot 3
+(`atelierDeLaNature('confirmation_externe','PROVISIONS',...) === null`), avec son propre
+commentaire d'origine prévoyant « entre au Lot 5 avec le poste lui-même » — jamais mise à jour
+quand le commit `8207058` a effectivement câblé PROVISIONS. Corrigé (`7bacd5c`) : l'assertion
+reflète maintenant `/eng/x/circularisations`, 12/12 sur ce fichier. Deuxième passage
+(`verify-provisions-2.log`, commit `7bacd5c`) a trouvé la SEPTIÈME occurrence du flake connu R58
+(`ServeurTombe`, `tests/screens.test.ts`, une septième route distincte — `/eng/[id]/requests` —
+jamais liée au diff ; isolé et reconfirmé PASSE, 425,29 s ; journalisé dans `docs/CHASSE.md`,
+commit `4ec8617`). Troisième passage (`verify-provisions-3.log`, commit `4ec8617`) : **propre —
+145/145 fichiers, 1139/1139 tests, AUCUN R58 cette fois** ; `gardes` à `densite` tous propres ;
+clôture et archive ATTEINTES (240 stations figées, 260 étapes, 387 clics) ; SEUL incident : la
+DOUZIÈME confirmation consécutive du flake `#418` (`Minified React error`, `rcm/[cid]` SOX),
+disjoint du diff de cette tranche, journalisé F27 (`docs/CHASSE.md`, commit `db30e8e`). `npm run
+visuel`, cassé par le `&&` derrière `clics`, relancé séparément : **336 vues, 0 défaut(s)**,
+`EXIT=0` réel confirmé sur la ligne brute de la tâche de fond. `docs/CLICS.md`/`docs/DENSITE.md`
+régénérés et commités avec leurs vrais chiffres (388→387 clics, 52→58 items `/programme`, 6→7
+`/loop` — reflètent le contenu de cette tranche, pas un défaut ; 0 dépassement de densité
+toujours confirmé).
 
 ## Lot 5, poste 5 : Paie (PAYROLL) ouverte — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R98 disclosed, défaut mécanique corrigé (2026-09-15)
 
