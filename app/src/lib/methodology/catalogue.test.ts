@@ -56,14 +56,20 @@ describe('catalogue méthodologique', () => {
        poste 3 — Immobilisations : les SIX procédures IMMO_COR-* (TAB, ACQ, CESS, DOT,
        ENTRETIEN, INDICES) corrigées vers PPE, même mécanique. FOURN retiré le même jour, poste
        4 — Fournisseurs : les QUATRE procédures FOURN-* (SUL, FNP, CUTOFF-REC, CIRC) corrigées
-       vers TRADE_PAYABLES, même mécanique. Ni "CLIENTS", ni "IMMO_COR", ni "FOURN" n'existent
-       donc plus comme valeur de cycle nulle part dans le catalogue. Les cinq autres restent du
-       vocabulaire de cycle en attente de leur propre correction, postes non encore ouverts par
-       le Lot 5. */
+       vers TRADE_PAYABLES, même mécanique. SOCIAL retiré le même jour, poste 5 — Paie :
+       SOCIAL-COTIS corrigée vers PAYROLL, et PERSONNEL-DSN avec elle (même mécanique). Ni
+       "CLIENTS", ni "IMMO_COR", ni "FOURN", ni "SOCIAL" n'existent donc plus comme valeur de
+       cycle nulle part dans le catalogue. "PERSONNEL" reste, DÉLIBÉRÉMENT — PERSONNEL-CP
+       (provision pour congés payés) est un poste de BILAN (compte 15x, provision), pas une
+       charge PAYROLL (compte 64x) : le corriger vers PAYROLL aurait été une correspondance
+       FAUSSE (règle 8), pas une correction — il attend le poste Provisions (Lot 5, poste 6,
+       pas encore ouvert). Les quatre autres restent du vocabulaire de cycle en attente de leur
+       propre correction, postes non encore ouverts par le Lot 5. */
     const cycles = new Set(cat.procedures.map((p) => p.cycle).filter((c) => c !== '*'));
     for (const attendu of ['STOCKS', 'PERSONNEL', 'CAPITAUX', 'DETTES_FI', 'PROV']) {
       expect(cycles.has(attendu), `cycle ${attendu} absent du catalogue`).toBe(true);
     }
+    expect(cycles.has('SOCIAL'), 'cycle SOCIAL corrigé vers PAYROLL, ne doit plus exister').toBe(false);
   });
 
   it('porte les deux sens du test, pas seulement le grand livre vers la pièce', () => {

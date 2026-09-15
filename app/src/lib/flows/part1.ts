@@ -60,13 +60,14 @@ export async function bootstrapNep(): Promise<void> {
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
 
-  /* QUATRE POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
+  /* CINQ POSTES AU PÉRIMÈTRE — et le motif dit la vérité sur ce qu'il est.
      Le jeu de démonstration déroule le cycle chiffre d'affaires (REVENUE),
      depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14) la trésorerie
      (CASH), depuis le Lot 5 poste 2 (Clients, 2026-09-15) les créances
      clients (TRADE_RECEIVABLES), depuis le Lot 5 poste 3 (Immobilisations,
-     2026-09-15) PPE, et depuis le Lot 5 poste 4 (Fournisseurs, 2026-09-15)
-     les dettes fournisseurs (TRADE_PAYABLES) — chacun scopé `ns_confirmed`
+     2026-09-15) PPE, depuis le Lot 5 poste 4 (Fournisseurs, 2026-09-15)
+     les dettes fournisseurs (TRADE_PAYABLES), et depuis le Lot 5 poste 5
+     (Paie, 2026-09-15) les charges de personnel (PAYROLL) — chacun scopé `ns_confirmed`
      par CETTE MÊME convention avant son propre correctif ; un poste dont on
      conduit réellement les procédures et qu'on maintient hors périmètre
      aurait été l'exact défaut inverse (un geste réel que le dossier
@@ -81,13 +82,15 @@ export async function bootstrapNep(): Promise<void> {
      CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
      CES POSTES-LÀ AUSSI dans le périmètre (vérifié par requête directe avant
      chaque correctif, jamais supposé : `fsli.scoping` de CASH puis de
-     TRADE_RECEIVABLES puis de PPE puis de TRADE_PAYABLES portait déjà le
-     motif « hors périmètre du jeu » — donc PAS `ns_proposed`, le moteur
-     l'avait proposé `in_scope` — TRADE_RECEIVABLES pèse 1 554 017,64 €
-     (créances clients), PPE pèse 1 050 000,00 € (immobilisations
-     corporelles), TRADE_PAYABLES pèse 265 632,25 € (dettes fournisseurs, un
-     seul compte collectif 401000, `fsliAccounts` vérifié par exécution), la
-     paie pèse 2,6 M€, contre un seuil de planification de 27 000 €. Les
+     TRADE_RECEIVABLES puis de PPE puis de TRADE_PAYABLES puis de PAYROLL
+     portait déjà le motif « hors périmètre du jeu » — donc PAS `ns_proposed`,
+     le moteur l'avait proposé `in_scope` — TRADE_RECEIVABLES pèse
+     1 554 017,64 € (créances clients), PPE pèse 1 050 000,00 €
+     (immobilisations corporelles), TRADE_PAYABLES pèse 265 632,25 € (dettes
+     fournisseurs, un seul compte collectif 401000, `fsliAccounts` vérifié par
+     exécution), PAYROLL pèse 2 601 608,10 € (charges de personnel, comptes
+     641000/645000, `fsliAccounts` vérifié par exécution), contre un seuil de
+     planification de 27 000 €. Les
      sortir n'est donc pas un jugement de significativité, et le motif le
      dit à l'écran, dans le journal et dans l'archive : c'est une convention
      du jeu synthétique. Écrire l'inverse ferait du dossier de démonstration
@@ -100,12 +103,12 @@ export async function bootstrapNep(): Promise<void> {
      jour. */
   const MOTIF_DEMO =
     'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie, '
-    + 'clients, immobilisations et fournisseurs y sont déroulés. Ce n’est PAS un jugement de '
+    + 'clients, immobilisations, fournisseurs et paie y sont déroulés. Ce n’est PAS un jugement de '
     + 'significativité — sur cette entité le poste dépasse le seuil de planification et serait '
     + 'travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES'].includes(f.code)) {
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES', 'PAYROLL'].includes(f.code)) {
       /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
          CETTE fonction — PAS appelé ici, mais bien appelé en aval par
          `scripts/deploy/reconstruire.ts`, le build de production, dans le
@@ -118,10 +121,11 @@ export async function bootstrapNep(): Promise<void> {
          trouvé par `enrichir.test.ts` (« CONSTAT 1 et 6 »), pas deviné :
          laisser TRADE_RECEIVABLES retenu dès ce seed (règle 14, Lot 5) sans
          émettre ce marqueur crée exactement le trou que D9 interdit.
-         REVENUE/CASH/PPE n'ont pas cette garde côté `enrichir.ts` : rien à
-         émettre pour eux ici — vérifié pour PPE avant d'ouvrir ce poste
-         (Lot 5, Immobilisations, 2026-09-15), pas supposé par analogie avec
-         TRADE_RECEIVABLES : `enrichir.ts` ne mentionne `PPE` NULLE PART
+         REVENUE/CASH/PPE/PAYROLL n'ont pas cette garde côté `enrichir.ts` :
+         rien à émettre pour eux ici — vérifié pour PPE avant d'ouvrir ce
+         poste (Lot 5, Immobilisations, 2026-09-15) puis pour PAYROLL (Lot 5,
+         Paie, 2026-09-15), pas supposé par analogie avec TRADE_RECEIVABLES :
+         `enrichir.ts` ne mentionne ni `PPE` ni `PAYROLL` NULLE PART
          (recherche directe dans le fichier). C'est exactement le trou que
          R93 nomme (le garde-fou D9 est dupliqué sans mécanisme partagé) —
          cette tranche n'a pas eu BESOIN d'ajouter un second marqueur ici,
@@ -815,6 +819,85 @@ export async function planifierFournisseurs(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 5 (Paie/PAYROLL, 2026-09-15) — UNE SEULE procédure planifiée,
+ * PERSONNEL-DSN (rapprochement), même patron minimal que Trésorerie/Clients/
+ * Immobilisations/Fournisseurs : mesuré par exécution avant d'écrire
+ * (`fsliAccounts` + `assessFsli` + `requiredProcedures` contre la base
+ * seedée). `fsliAccounts(eng, 'PAYROLL')` porte deux comptes (641000
+ * Rémunérations, 645000 Charges de sécurité sociale, `pcg.ts`), solde
+ * 2 601 608,10 €. `assessFsli` mesure `realite:eleve` (2 facteurs — variation
+ * N/N-1 de 230 040 € contre un seuil de 27 000 €, et 100 % d'écritures d'OD
+ * manuelles) ; toutes les autres assertions restent `faible`.
+ *
+ * `methodology/procedures.json` portait DEUX procédures pour ce cycle sous
+ * les noms `cycle:"PERSONNEL"` et `cycle:"SOCIAL"` — jamais consultées par
+ * `proceduresDuCycle`, qui filtre sur le VRAI code FSLI (même correspondance
+ * cassée que TRESO/CLIENTS/IMMO_COR/FOURN, R54/R57/R95/R97). Corrigé pour
+ * PERSONNEL-DSN et SOCIAL-COTIS (`cycle:"PAYROLL"`, version 1.4.1) —
+ * PERSONNEL-CP (provision pour congés payés) reste `cycle:"PERSONNEL"`,
+ * DÉLIBÉRÉMENT NON corrigé ici : son objet réel est une provision de BILAN
+ * (compte 15x), pas une charge de PAYROLL (compte 64x) — elle relève du
+ * futur poste Provisions (Lot 5, poste 6), pas de celui-ci ; la corriger
+ * maintenant vers PAYROLL aurait été une correspondance FAUSSE, pas une
+ * correspondance manquante (règle 8, ne rien écrire de mémoire).
+ *
+ * Une fois la correspondance corrigée, SEPT procédures sont commandées par
+ * le risque sur PAYROLL : les quatre transverses de base (DETAIL/RAPPRO/RA/
+ * SEQ, `risque_minimum:faible`, universelles), trois commandées par
+ * `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même
+ * (`exhaustivite:faible`). AUCUNE n'a d'atelier réel : `rapprochement`
+ * (RAPPRO, PERSONNEL-DSN) n'est câblé QUE pour CASH/TRADE_RECEIVABLES — pas
+ * de concept de « balance âgée » pour la paie, `/balances-aux` resterait un
+ * écran qui ment (même défaut que R95 existe pour nommer) ; `sondage_pieces`
+ * (DETAIL/FRAUDE/MANUEL) n'est câblé QUE pour REVENUE (`/testing`, R92/R95/
+ * R97) ; `observation_documentee` (ENTRETIEN) et `test_exhaustif` (SEQ) NE
+ * SONT CÂBLÉS NULLE PART, pour AUCUN poste, encore — vérifié par lecture
+ * complète de `atelierDeLaNature` (programme.ts), pas supposé. C'est le
+ * poste le plus dépourvu d'atelier de tout le Lot 5 jusqu'ici : chaque poste
+ * précédent avait AU MOINS une nature câblée (`rapprochement` OU
+ * `recalcul_parametre`) ; PAYROLL n'en a AUCUNE. Disclosed R98
+ * (`docs/BACKLOG_REPORTE.md`) plutôt que planifiées sans écran atteignable —
+ * PERSONNEL-DSN seule est plantée (procédure + papier `utilisee:false`
+ * honnête, même limite que CLIENTS-DEPREC/IMMO_COR-DOT/FOURN-CIRC), pour que
+ * l'obstacle « périmètre sans programme » (`obstacles.ts`) trouve une ligne
+ * `procedure_instance` — ce prédicat ne demande qu'une ligne, jamais un
+ * atelier cliquable, vérifié par lecture directe de sa requête SQL.
+ */
+export async function planifierPaie(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesPaie = new Set((await answers(IDS.engNep, 'PAYROLL')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesPaie.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'PAYROLL', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'PAYROLL' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'PAYROLL', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'PAYROLL', code: 'PERSONNEL-DSN', userId: IDS.users.karim });
+  const papierExistant = await q01<{ id: string }>(
+    `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+  if (!papierExistant) {
+    const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+    await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+  }
+
+  const dejaRedigeePaie = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'PAYROLL' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeePaie) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'PAYROLL');
+    await enregistrerAnalytique(IDS.engNep, 'PAYROLL', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -878,4 +961,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await planifierClients();
   await planifierImmobilisations();
   await planifierFournisseurs();
+  await planifierPaie();
 }

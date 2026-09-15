@@ -167,6 +167,7 @@
       "TRADE_PAYABLES": "D",
       "INVENTORY": "E",
       "PPE": "F",
+      "PAYROLL": "G",
       "_defaut": "Z"
     }
   },

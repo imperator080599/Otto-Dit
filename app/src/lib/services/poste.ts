@@ -444,15 +444,33 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
           resume: motif('poste.resume.recalculSansEchantillon'),
           href: atelierRecalculSeul,
         }
-      : {
-        cle: 'testing', titre: 'poste.section.testing',
-        etat: n(ech?.items) === 0 ? 'a_faire'
-          : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',
-        resume: n(ech?.items) === 0
-          ? motif('poste.resume.rienAControler')
-          : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),
-        href: `${base}/testing`,
-      };
+      /* Lot 5, poste 5 (Paie, 2026-09-15, règle 10) : MÊME défaut que le
+         troisième patron (`blocEchantillon` ci-dessus, H2, Immobilisations)
+         — jamais corrigé ICI parce qu'aucun poste avant PAYROLL n'était
+         jamais tombé dans cette branche (`patronRecalculSeul` était vrai
+         pour CHAQUE poste déjà ouvert : REVENUE via `circ` non applicable
+         ici, TRADE_RECEIVABLES et PPE via `/estimations`). PAYROLL n'a NI
+         `rapprochement` NI `recalcul_parametre` câblés (R98) : sans ce
+         garde-fou, `href: ${base}/testing` pointerait vers l'écran du
+         CHIFFRE D'AFFAIRES pour un poste qui n'a rien à voir avec lui —
+         trouvé en conduisant `vuePoste('PAYROLL')` avant d'annoncer l'écran
+         (règle 10), pas deviné. */
+      : patronSansEchantillon && code !== 'REVENUE'
+        ? {
+            cle: 'testing', titre: 'poste.section.testing',
+            etat: 'sans_objet',
+            resume: motif('poste.resume.echantillonSansAtelier'),
+            href: null,
+          }
+        : {
+          cle: 'testing', titre: 'poste.section.testing',
+          etat: n(ech?.items) === 0 ? 'a_faire'
+            : n(ech?.testes) >= n(ech?.items) ? 'fait' : 'en_cours',
+          resume: n(ech?.items) === 0
+            ? motif('poste.resume.rienAControler')
+            : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),
+          href: `${base}/testing`,
+        };
 
   const blocs: BlocPoste[] = [
     {

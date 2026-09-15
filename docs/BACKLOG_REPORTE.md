@@ -1559,3 +1559,46 @@ design : chacun reste une tranche à construire.**
   unique (TRADE_PAYABLES : « D-01 »). Aucun autre poste futur ne peut plus retomber dans cette
   collision : toute nouvelle lettre vient de la même source que `reference`, jamais recalculée à
   côté.
+
+- **R98 — PAYROLL (Lot 5, poste 5 — Paie, 2026-09-15) N'A AUCUN ATELIER RÉEL, le poste le plus
+  dépourvu de tout le Lot 5 jusqu'ici.** Mesuré par exécution avant d'écrire
+  (`fsliAccounts`/`assessFsli`/`requiredProcedures('PAYROLL')` contre la base seedée, pas supposé) :
+  PAYROLL (2 601 608,10 €, comptes 641000/645000, `pcg.ts`) porte `realite:eleve` (2 facteurs —
+  variation N/N-1 de 230 040 € contre un seuil de 27 000 €, et 100 % d'écritures d'OD manuelles),
+  toutes les autres assertions restent `faible`. SEPT procédures sont commandées : les quatre
+  transverses universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois commandées par
+  `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même (`exhaustivite:faible`,
+  cycle corrigé `PERSONNEL`→`PAYROLL` cette même tranche, même mécanique que R54/R57/R95/R97).
+  AUCUNE des sept n'a d'atelier : `rapprochement` (RAPPRO/PERSONNEL-DSN) n'est câblé que pour
+  CASH/TRADE_RECEIVABLES (aucun concept de « balance âgée » n'existe pour la paie — `/balances-aux`
+  resterait un écran qui ment, même défaut que R95 existe pour nommer) ; `sondage_pieces`
+  (DETAIL/FRAUDE/MANUEL) n'est câblé que pour REVENUE (`/testing`, même gap que R92/R95/R97) ;
+  `observation_documentee` (ENTRETIEN) et `test_exhaustif` (SEQ) NE SONT CÂBLÉS NULLE PART, pour
+  AUCUN poste, encore — vérifié par lecture complète d'`atelierDeLaNature` (`programme.ts`), pas
+  supposé. Chaque poste précédent du Lot 5 avait AU MOINS une nature câblée ; PAYROLL n'en a
+  aucune. **Non planifiées cette tranche, délibérément** (six des sept) — même raisonnement que
+  R92/R95/R97 : planifier sans atelier atteignable créerait une procédure planifiée sans geste
+  possible (règle 13). **PERSONNEL-DSN seule est plantée** (procédure + papier `utilisee:false`
+  honnête), pour que l'obstacle « périmètre sans programme » (`obstacles.ts`) trouve une ligne
+  `procedure_instance` — ce prédicat ne demande qu'une ligne, jamais un atelier cliquable, vérifié
+  par lecture directe de sa requête SQL avant de choisir cette forme minimale.
+
+  **PERSONNEL-CP (provision pour congés payés) reste DÉLIBÉRÉMENT NON corrigée**
+  (`cycle:"PERSONNEL"`, jamais `PAYROLL`) : son objet réel est une provision de BILAN (compte 15x),
+  pas une charge PAYROLL (compte 64x) — elle attend le poste Provisions (Lot 5, poste 6, pas encore
+  ouvert). La corriger vers PAYROLL aurait été une correspondance FAUSSE, pas une correction
+  manquante (règle 8).
+
+  **Défaut MÉCANIQUE réel trouvé et corrigé en construisant cette tranche (pas un R, corrigé
+  sur-le-champ) : le bloc `testing` de `poste.ts` retombait sur `href: /testing` (l'écran du
+  CHIFFRE D'AFFAIRES) pour PAYROLL, faute d'atelier `recalcul_parametre`.** Le troisième patron de
+  `poste.ts` (R94) avait déjà ce garde-fou sur le bloc `echantillon` (H2, Immobilisations,
+  2026-09-15) mais PAS sur le bloc `testing` — jamais corrigé là parce qu'aucun poste ouvert avant
+  PAYROLL n'était jamais tombé dans cette branche (`patronRecalculSeul` était vrai pour CHAQUE
+  poste précédent : TRADE_RECEIVABLES et PPE via `/estimations`, REVENUE et CASH via `circ`/leur
+  propre patron). Reproduit par exécution (`vuePoste('PAYROLL').blocs` avant d'annoncer l'écran,
+  règle 10) : `testing.href` valait `/eng/.../testing`, un écran sans aucun rapport avec la paie.
+  Corrigé en étendant le MÊME garde-fou (`patronSansEchantillon && code !== 'REVENUE'` →
+  `etat:'sans_objet'`, `href:null`) au bloc `testing`, vérifié sans régression sur REVENUE (inchangé,
+  toujours `/testing`), CASH, TRADE_RECEIVABLES, PPE, TRADE_PAYABLES (les cinq comparés par
+  exécution directe avant et après le correctif).

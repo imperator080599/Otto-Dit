@@ -69,7 +69,10 @@ describe('enrichirMondeDemo', () => {
   it('refuse de fabriquer une procédure hors méthode ou hors périmètre (PROG-01/02/03)', async () => {
     await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'REVENUE', code: 'PROCEDURE-INVENTEE', userId: IDS.users.karim })).rejects.toThrow(/PROG-01/);
     await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'REVENUE', code: 'STOCKS-INV', userId: IDS.users.karim })).rejects.toThrow(/PROG-02/);
-    await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'PAYROLL', code: 'RA', userId: IDS.users.karim })).rejects.toThrow(/PROG-03/);
+    /* PAYROLL retenu au périmètre depuis le 2026-09-15 (Lot 5, poste 5 — Paie) : n'est plus
+       hors périmètre sur ce dossier, remplacé par INVENTORY (STOCKS, poste non encore ouvert
+       par le Lot 5, vérifié par lecture directe du motif de scoping avant de choisir). */
+    await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'INVENTORY', code: 'RA', userId: IDS.users.karim })).rejects.toThrow(/PROG-03/);
   });
 
   it('enrichit sans remplacer : quatre états de section, papiers à visas différents dont un périmé, notes datées dont une sur une cellule, processus et matrice, lignes conclues', async () => {

@@ -130,7 +130,72 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
-## Lot 5, poste 4 : Fournisseurs (TRADE_PAYABLES) ouvert — leadsheet, revue analytique, une procédure commandée, atelier, papier, deux gaps disclosed (R97) (2026-09-15)
+## Lot 5, poste 5 : Paie (PAYROLL) ouverte — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R98 disclosed, défaut mécanique corrigé (2026-09-15)
+
+*Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs ci-dessous, cinquième poste de
+l'ordre C.3 : Paie (PAYROLL), après Fournisseurs.*
+
+**Recherche, mesurée avant d'écrire.** `fsliAccounts`/`assessFsli`/`requiredProcedures` exécutés
+contre le dossier NEP seedé : PAYROLL (2 601 608,10 €, deux comptes — 641000 Rémunérations du
+personnel, 645000 Charges de sécurité sociale, `pcg.ts`) porte `realite:eleve` (2 facteurs —
+variation N/N-1 de 230 040 € contre un seuil de 27 000 €, et 100 % d'écritures d'OD manuelles),
+toutes les autres assertions restent `faible`. `methodology/procedures.json` v1.4.0 portait DEUX
+procédures pour ce cycle sous `cycle:"PERSONNEL"` et `cycle:"SOCIAL"` — jamais consultées par
+`proceduresDuCycle`, qui filtre sur le VRAI code FSLI (même correspondance cassée que TRESO/
+CLIENTS/IMMO_COR/FOURN, R54/R57/R95/R97). Corrigées vers `cycle:"PAYROLL"` (PERSONNEL-DSN,
+SOCIAL-COTIS ; version 1.4.1) — **PERSONNEL-CP (provision pour congés payés) reste DÉLIBÉRÉMENT
+NON corrigée** : son objet réel est une provision de BILAN (compte 15x), pas une charge PAYROLL
+(compte 64x) — elle attend le poste Provisions (Lot 5, poste 6, pas encore ouvert) ; la corriger
+vers PAYROLL aurait été une correspondance FAUSSE, pas une correction manquante (règle 8).
+`methodology/papier.json` : `"PAYROLL": "G"` ajouté à `lettres_par_poste`.
+
+**Une fois la correspondance corrigée, SEPT procédures sont commandées** : les quatre transverses
+universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois commandées par `realite:eleve`
+(ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même (`exhaustivite:faible`). **AUCUNE n'a
+d'atelier réel** — le poste le plus dépourvu de tout le Lot 5 jusqu'ici : `rapprochement` n'est
+câblé que pour CASH/TRADE_RECEIVABLES (aucun concept de « balance âgée » pour la paie), `sondage_
+pieces` n'est câblé que pour REVENUE, et `observation_documentee`/`test_exhaustif` NE SONT CÂBLÉS
+NULLE PART pour AUCUN poste, encore — vérifié par lecture complète d'`atelierDeLaNature`. Disclosed
+**R98** (`docs/BACKLOG_REPORTE.md`) plutôt que planifiées sans écran atteignable : six des sept
+non planifiées. **PERSONNEL-DSN seule est plantée** (`planifierPaie()`, procédure + papier
+`utilisee:false` honnête, même limite que CLIENTS-DEPREC/IMMO_COR-DOT/FOURN-CIRC), pour que
+l'obstacle « périmètre sans programme » (`obstacles.ts`) trouve une ligne `procedure_instance` —
+ce prédicat ne demande qu'une ligne, jamais un atelier cliquable, vérifié par lecture directe de
+sa requête SQL avant de choisir cette forme minimale.
+
+**Implémentation.** `part1.ts` : `PAYROLL` ajouté au périmètre de démonstration (skip-list de
+`bootstrapNep()`, `MOTIF_DEMO` mis à jour pour cinq postes) ; nouvelle `planifierPaie()` (mirroir
+exact de `planifierFournisseurs()`). Vérifié par lecture directe (règle 10, comme pour
+TRADE_RECEIVABLES/PPE) : `enrichir.ts` ne mentionne `PAYROLL` NULLE PART — aucun marqueur D9
+supplémentaire nécessaire, même famille que REVENUE/CASH/PPE.
+
+**UN DÉFAUT MÉCANIQUE RÉEL trouvé en conduisant `vuePoste('PAYROLL')` avant d'annoncer l'écran
+(règle 10), corrigé avant tout commit.** Le bloc `testing` de `poste.ts` retombait sur
+`href: /testing` (l'écran du CHIFFRE D'AFFAIRES) pour PAYROLL, faute d'atelier
+`recalcul_parametre`. Le troisième patron de `poste.ts` (R94) portait déjà ce garde-fou sur le bloc
+`echantillon` (H2, Immobilisations, 2026-09-15) mais PAS sur `testing` — jamais corrigé là parce
+qu'aucun poste ouvert avant PAYROLL n'était jamais tombé dans cette branche (`patronRecalculSeul`
+toujours vrai pour REVENUE/CASH/TRADE_RECEIVABLES/PPE/TRADE_PAYABLES). Corrigé en étendant le MÊME
+garde-fou (`patronSansEchantillon && code !== 'REVENUE'` → `etat:'sans_objet'`, `href:null`) au
+bloc `testing`, vérifié SANS régression par exécution directe des SIX postes (PAYROLL, REVENUE,
+CASH, TRADE_RECEIVABLES, PPE, TRADE_PAYABLES comparés un par un, avant et après le correctif).
+
+**Correctifs de test associés.** `catalogue.test.ts` : le test « couvre les cycles du dossier »
+documente désormais le retrait de `SOCIAL` (plus aucune procédure ne le porte) et la persistance
+DÉLIBÉRÉE de `PERSONNEL` (PERSONNEL-CP, pour Provisions). `enrichir.test.ts` : la fixture PROG-03
+(« hors périmètre ») utilisait `PAYROLL` comme exemple de poste hors scope — devenu FAUX une fois
+PAYROLL scopé in_scope par cette tranche ; remplacée par `INVENTORY` (STOCKS, poste non encore
+ouvert, vérifié par lecture directe du motif de scoping avant de choisir).
+
+**Aucune modification d'`/api/sante` requise** : les trois lectures `POSTES_CABLES` existantes
+(recalcul_parametre, confirmation_externe, rapprochement) restent correctes sans PAYROLL — l'ajouter
+aurait AFFIRMÉ à tort qu'un atelier existe, exactement l'inverse de ce que R98 dit. La lecture D.6
+point 3 (sections vides repliées par défaut) reste générique par construction, vérifiée sans
+changement.
+
+**Mesures avant expédition.** Suite ciblée (catalogue, poste, enrichir — 31/31, incluant le test
+PROG-03 corrigé) et une suite plus large (risk, programme, analytique, api/sante — 28 fichiers,
+131/131) propres. `tsc --noEmit` propre. `npm run verify` complet à suivre.
 
 *Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3,
 après la mécanique circularisation fournisseur (section suivante ci-dessous).*

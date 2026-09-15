@@ -1,6 +1,6 @@
 {
   "_note": "Catalogue méthodologique par cycle. CONTENU, non code : le prototype comme l'application le consomment, aucun des deux ne le contient en dur. Les prédicats de population et les résolveurs de référence sont NOMMÉS ici et IMPLÉMENTÉS dans le code ; « non_implemente » signale une procédure cataloguée que le jeu de données ou l'implémentation actuelle ne permet pas d'exécuter — elle est affichée comme telle, jamais simulée.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "sens_de_test": {
     "gl_vers_piece": {
       "libelle": "du grand livre vers la pièce",
@@ -1968,7 +1968,7 @@
     },
     {
       "code": "PERSONNEL-DSN",
-      "cycle": "PERSONNEL",
+      "cycle": "PAYROLL",
       "libelle": "Rapprochement de la paie aux déclarations sociales",
       "objectif": "Rapprocher les charges de personnel comptabilisées aux déclarations sociales déposées.",
       "assertion": "exhaustivite",
@@ -2061,7 +2061,7 @@
     },
     {
       "code": "SOCIAL-COTIS",
-      "cycle": "SOCIAL",
+      "cycle": "PAYROLL",
       "libelle": "Contrôle des charges sociales et des taxes assises sur les salaires",
       "objectif": "Recalculer les cotisations par application des taux à leur assiette.",
       "assertion": "mesure",
