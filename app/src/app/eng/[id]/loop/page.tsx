@@ -55,7 +55,17 @@ export default async function LoopPage({
       <div className="panel">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('loop.theLoop')} {poste}</h2>
-          <span>
+          {/* UN GESTE PAR POSTE, PAS UNE COMMANDE GLOBALE (mesure de densité,
+              mandat §3.D) : ce sélecteur CHOISIT un poste parmi n retenus —
+              le geste appartient AU POSTE (l'objet qu'il sélectionne), comme
+              un lien de ligne de tableau ou la bande de sélection de
+              /methodology. `data-actions-item` le dit au lieu de le laisser
+              compter comme une commande primaire par poste — trouvé en
+              conduisant `npm run densite` après l'ouverture du sixième poste
+              (Paie) : à cinq postes retenus le sélecteur restait sous le
+              plafond par coïncidence, jamais marqué ; le compte réel de ce
+              geste n'a jamais changé de nature, seulement son nombre. */}
+          <span data-actions-item>
             {postes.map((p) => (
               <Link
                 key={p.code}

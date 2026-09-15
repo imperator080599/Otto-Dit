@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
 # Densité mesurée — 83 écrans (build de production, base semée)
 
-Mesure prise sur le commit `56bf874`, build `P5OJtvQ1Xeffn08evLsWU`.
+Mesure prise sur le commit `508b71d + arbre de travail modifié (mesure prise avant le commit qui la publie)`, build `mZibB9CLKNFj9k7C8Qrfe`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 
@@ -15,11 +15,11 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 - `/eng/[id]/testing` — les onglets de pièce de l'atelier — choisir une pièce parmi n, comme des onglets
 - `/methodology` — la bande de sélection du fichier de méthode — un lien par fichier attendu
 - `/eng/[id]/poste/[code]` — le lien « Ouvrir » PAR ÉTAPE (processus, contrôle interne, risques, échantillon, testing) — un groupe par étape, le geste appartient à l'étape, comme un lien de ligne de tableau
+- `/eng/[id]/loop` — le sélecteur de poste — un lien par poste retenu, le geste appartient au poste, comme un lien de ligne de tableau. Marqué le 2026-09-15 (Lot 5, poste 5 — Paie) : à cinq postes retenus ce sélecteur restait sous le plafond de 5 actions primaires par coïncidence, jamais déclaré ; le sixième poste (PAYROLL) l'a fait dépasser et a révélé que ce geste n'avait jamais été de la bonne catégorie.
 
 | Écran | Actions primaires | Repliées | D'item | Champs à taper | Titre lu |
 |---|---|---|---|---|---|
 | `/eng/[id]/reunions (SOX)` | 5 | 0 | 0 | 6 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
-| `/eng/[id]/loop` | 5 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/obstacles` | 5 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/events` | 4 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/events (SOX)` | 4 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
@@ -67,7 +67,7 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/scoping (SOX)` | 1 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/workpapers` | 1 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/methodology` | 1 | 0 | 12 | 0 | Firm methodology |
-| `/portal/[token]/[rid]` | 1 | 0 | 27 | 0 | R-012 — Justificatifs — contrôle du chiffre d'affaires (sélection) |
+| `/portal/[token]/[rid]` | 1 | 0 | 27 | 0 | R-011 — Justificatifs — contrôle du chiffre d'affaires (sélection) |
 | `/eng/[id]` | 0 | 0 | 12 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id] (SOX)` | 0 | 0 | 12 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/acceptance` | 0 | 0 | 11 | 0 | Altiverre FY2025 — Audit légal (NEP) |
@@ -84,12 +84,13 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/exceptions (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/kanban` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/kanban (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
+| `/eng/[id]/loop` | 0 | 0 | 6 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/loop (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/notes` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/notes (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/notifications` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/notifications (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
-| `/eng/[id]/programme` | 0 | 0 | 43 | 0 | Altiverre FY2025 — Audit légal (NEP) |
+| `/eng/[id]/programme` | 0 | 0 | 52 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/programme (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/rcm (SOX)` | 0 | 0 | 12 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/rcm/[cid]` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |

@@ -71,6 +71,11 @@ const ITEMS_DECLARES: Record<string, string> = {
   '/eng/[id]/poste/[code]': 'le lien « Ouvrir » PAR ÉTAPE (processus, contrôle interne, risques, '
     + 'échantillon, testing) — un groupe par étape, le geste appartient à l\'étape, comme un lien '
     + 'de ligne de tableau',
+  '/eng/[id]/loop': 'le sélecteur de poste — un lien par poste retenu, le geste appartient au '
+    + 'poste, comme un lien de ligne de tableau. Marqué le 2026-09-15 (Lot 5, poste 5 — Paie) : '
+    + 'à cinq postes retenus ce sélecteur restait sous le plafond de 5 actions primaires par '
+    + 'coïncidence, jamais déclaré ; le sixième poste (PAYROLL) l\'a fait dépasser et a révélé '
+    + 'que ce geste n\'avait jamais été de la bonne catégorie.',
 };
 
 function lancer(args: string[]): ChildProcess {
