@@ -534,6 +534,20 @@ se décide avec un auditeur.
   runtime applicatif) ; le lot contrôle interne touchait `sox.ts`/`membre.ts`/`part2.ts`/l'écran
   `rcm/[cid]` — `/eng/[id]/testing` (REVENUE) n'importe RIEN de ce fichier (vérifié par lecture
   des imports de `testing/page.tsx`, aucune mention de `sox`, `membre`, `control`).
+- **Quatrième occurrence (Lot 5, poste 2 — Clients, revue hostile, 2026-09-15), sur le commit
+  `e25ad17` — troisième route différente : `/eng/[id]/population` (SOX).** `verify-clients-3.log`,
+  chaîne complète (145 fichiers, 1136 tests) : `page.goto` a dépassé `Timeout 30000ms exceeded`, pas
+  une exception applicative. `ps aux --sort=-%mem` juste après : **aucun processus parasite**
+  (même constat que la récidive du lot contrôle interne). Isolé, `npx vitest run
+  ../tests/screens.test.ts` seul : PREMIÈRE tentative tuée par un `timeout 300` trop court
+  (`EXIT=143` — le budget, pas le test, a tranché : la première occurrence de ce défaut précis dans
+  cette enquête, la durée réelle de ce fichier isolé dépasse largement 300 s) ; SECONDE tentative,
+  `timeout 900` : **PASSE, 1/1, 453,79 s** — cohérent avec les 399,62 s et 502,70 s déjà mesurés
+  (la variance elle-même n'est pas expliquée, seulement bornée). Diff de cette tranche
+  (`procedures.json`, `papier.json`, `part1.ts`, `catalogue.test.ts`) : aucun rapport avec
+  `/eng/[id]/population` ni avec le pack SOX — vérifié par lecture, même conclusion que les
+  occurrences précédentes. Confirme la borne temporelle établie (~450-900 s), n'élimine aucune
+  hypothèse ci-dessous.
 
 ### Hypothèses NON éliminées, à éprouver la prochaine fois que ça arrive
 
