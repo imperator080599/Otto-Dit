@@ -209,7 +209,28 @@ changement.
 
 **Mesures avant expédition.** Suite ciblée (catalogue, poste, enrichir — 31/31, incluant le test
 PROG-03 corrigé) et une suite plus large (risk, programme, analytique, api/sante — 28 fichiers,
-131/131) propres. `tsc --noEmit` propre. `npm run verify` complet à suivre.
+131/131) propres. `tsc --noEmit` propre.
+
+**UN RELECTEUR HOSTILE INDÉPENDANT** (règle 30 : ni migration, ni multi-tenant, ni code de refus
+dans cette tranche — vérifié dans le diff par le relecteur lui-même, un seul suffit, même précédent
+que Trésorerie/Clients/Immobilisations). Dix points vérifiés PAR EXÉCUTION (pas par lecture seule) :
+la correspondance PERSONNEL-CP/PROVISIONS relue contre `pcg.ts` (juste) ; le correctif `poste.ts`
+reproduit par un cas connu mauvais injecté puis retiré (règle 17 — la régression réapparaît
+exactement comme décrit quand le garde-fou est retiré) ; les six postes comparés sans régression ;
+`planifierPaie()` rejoué deux fois de suite, idempotent ; les deux fixtures de test relues par la
+même discipline (retirer le correctif, confirmer que le test échoue comme attendu, restaurer) ;
+aucun migration/tenant/refus touché confirmé depuis le diff ; le solde et les comptes PAYROLL
+confirmés identiques à la base seedée. **UN CONSTAT RÉEL, non bloquant, corrigé avant expédition** :
+le compte « SEPT procédures commandées » était FAUX — `requiredProcedures('PAYROLL').length` vaut
+HUIT (4 transverses + 3 par `realite:eleve` + PERSONNEL-DSN), répété tel quel dans le commentaire
+de `part1.ts`, dans `STATUS.md`, et dans les deux entrées R98 (`BACKLOG_REPORTE.md`,
+`fils.json`) — un chiffre en prose que le script n'avait pas produit (règle 31), sans effet sur le
+comportement runtime. Corrigé aux quatre endroits (commit `bbceec9`), jamais dans le message du
+commit déjà poussé (`692dcf7`, non réécrit). Un second point signalé, informatif et non nouveau :
+aucun test automatisé ne fixe les états `blocs` de `vuePoste` pour un poste donné — déjà le cas
+avant cette tranche (H2/Immobilisations avait le même trou), pas aggravé ici.
+
+`npm run verify` complet à suivre.
 
 *Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3,
 après la mécanique circularisation fournisseur (section suivante ci-dessous).*
