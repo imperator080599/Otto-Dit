@@ -871,5 +871,25 @@ long de ce fichier) — chaîne relancée une troisième fois pour cette tranche
   même Lot 5 que ce défaut est disjoint de tout ce qui a été touché par le correctif (commentaires
   dans `circularisations.ts`, en-tête de la migration 0165, `LISEZ-MOI.md`, `BACKLOG_REPORTE.md`,
   `fils.json` — aucun rapport avec `rcm/[cid]`, aucun code exécuté n'a changé côté SOX). Pas
-  creusé plus loin (même discipline que F9-F23). `clics`/`visuel` relancés isolément sur la même
-  base déjà semée par cette même chaîne (ne re-sème pas, `clics` ne l'exige pas).
+  creusé plus loin (même discipline que F9-F23).
+
+  **Rejeu isolé, même soir — confirme F24 et corrige une erreur de méthode.** Un premier essai
+  de relancer `clics` seul, SANS reseeder, sur la base DÉJÀ jouée par la chaîne verify ci-dessus,
+  a produit 66 « échec(s) » qui n'étaient PAS des défauts — exactement le cas connu documenté en
+  §6 de CLAUDE.md (« sur une base déjà jouée, des stations rougissent pour rien ») : rejeter des
+  imports déjà faits, redéposer des réponses déjà déposées, etc. Écarté sans le committer (`git
+  checkout -- docs/CLICS.md`), jamais confondu avec un vrai résultat. Un second essai
+  (`db:reset && demo:seed && clics && visuel` sous `timeout 900`) a expiré (`EXIT=143`) pendant le
+  build de production de `clics` lui-même — budget insuffisant, pas un défaut. Un `docs/CLICS.md`
+  non commité (353 clics, cinq catégories de fin de parcours à zéro) est apparu dans l'arbre de
+  travail après cet essai avorté, sans explication définitivement établie (aucun processus
+  concurrent trouvé par `ps aux` au moment du constat) — écarté de la même façon, jamais commité.
+  Un troisième essai, sous `timeout 1800`, a tourné jusqu'au bout PROPREMENT : 260 étapes
+  conduites, 1 échec (le même #418 sur `rcm/[cid]`, un troisième UUID de RCM différent, même
+  signature de 20 divergences d'hydratation sur `<form style="margin:6px 0…">`), 390 clics comptés,
+  clôture et archive ATTEINTES — NEUVIÈME confirmation consécutive que ce défaut est disjoint. Le
+  `docs/CLICS.md` engendré par ce troisième essai est BYTE POUR BYTE identique à la version déjà
+  commitée (`git diff` vide) : aucune régression du parcours, aucun changement à committer pour ce
+  fichier. `npm run visuel` n'a toujours pas tourné dans ce même appel (`clics` rend `EXIT=1` sur
+  ce flake, le `&&` qui le précède ne l'atteint donc jamais — même précédent que F14) ; relancé
+  séparément.
