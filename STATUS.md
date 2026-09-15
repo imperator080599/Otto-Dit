@@ -130,6 +130,17 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## SHA servi confirmé — tranche Fournisseurs poste-opening fusionnée sur `main` (`a8c2603`) (2026-09-15)
+
+Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
+poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__list_deployments` montre
+`dpl_GmGtjZCU8GeSqJENNbYdbYKw8SjL` (cible `production`) à l'état `READY`, commit
+`a8c2603d10973b31dedbc3a693143d0e81d41b74` ; `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` rend `sha: "a8c2603d10973b31dedbc3a693143d0e81d41b74"`,
+`identiteCoherente: true`, HTTP 200, verdict « toutes les lectures passent ». La tranche
+Fournisseurs poste-opening (recherche, implémentation, deux revues hostiles, correctif d'urgence
+migration 0165, chaîne verify équivalente gardes→visuel) est donc EN LIGNE.
+
 ## Lot 5, poste 5 : Paie (PAYROLL) ouverte — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R98 disclosed, défaut mécanique corrigé (2026-09-15)
 
 *Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs ci-dessous, cinquième poste de
