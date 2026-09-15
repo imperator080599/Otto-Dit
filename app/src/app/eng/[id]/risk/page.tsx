@@ -82,9 +82,20 @@ export default async function RiskPage({
   const raised = await raisedShare(id);
   const byCode = new Map([...sectionAnswers, ...entityAnswers].map((a) => [a.question_code, a]));
 
+  /* LE POSTE COURANT SURVIT À L'ACTION (`?fsli=${code}`), pas seulement le
+     chemin nu. Sur `executer()`, un succès redirige vers EXACTEMENT le
+     chemin donné (refus.ts) : le chemin nu ramène TOUJOURS au poste par
+     DÉFAUT (`fslis[0]?.code`, plus haut) — invisible tant qu'un seul poste
+     était jamais retenu (REVENUE, toujours premier), révélé dès que
+     Trésorerie (CASH, poste de BILAN) trie AVANT lui : répondre UNE question
+     sur REVENUE rebondissait sur CASH, perdant la place de qui répond —
+     un défaut RÉEL du produit, pas seulement du harnais de clics qui l'a
+     trouvé (`npm run clics` mené jusqu'à la clôture, règle 37 ; l'obstacle
+     « questions de section sans réponse » restait posé sur REVENUE alors
+     que la station se croyait terminée). */
   async function assessAction(formData: FormData) {
     'use server';
-    return executer(`/eng/${id}/risk`, async () => {
+    return executer(`/eng/${id}/risk?fsli=${code}`, async () => {
       const { user } = await requireMember(id);
       await assessFsli(id, String(formData.get('fsli')), user.id);
       revalidatePath(`/eng/${id}/risk`);
@@ -93,7 +104,7 @@ export default async function RiskPage({
 
   async function answerAction(formData: FormData) {
     'use server';
-    return executer(`/eng/${id}/risk`, async () => {
+    return executer(`/eng/${id}/risk?fsli=${code}`, async () => {
       const { user } = await requireMember(id);
       const scope = String(formData.get('scope'));
       await answerQuestion({
@@ -110,7 +121,7 @@ export default async function RiskPage({
 
   async function decideAction(formData: FormData) {
     'use server';
-    return executer(`/eng/${id}/risk`, async () => {
+    return executer(`/eng/${id}/risk?fsli=${code}`, async () => {
       const { user } = await requireMember(id);
       await decideFactor(
         id,
@@ -125,7 +136,7 @@ export default async function RiskPage({
 
   async function overrideAction(formData: FormData) {
     'use server';
-    return executer(`/eng/${id}/risk`, async () => {
+    return executer(`/eng/${id}/risk?fsli=${code}`, async () => {
       const { user } = await requireMember(id);
       const level = String(formData.get('level') ?? '');
       await overrideLevel(
