@@ -870,6 +870,18 @@ Aucun processus parasite mesuré. Isolé, `npx vitest run tests/screens.test.ts`
 propre. Diff de cette tranche sans rapport avec `/eng/[id]/risk`. Pas creusé plus loin — chaîne à
 relancer une troisième fois pour cette tranche.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste-3.log`, 2026-09-15, chaîne verify complète
+#3 pour la même tranche, arbre inchangé depuis `8a0d5f3`)** : `le serveur est tombé après 55
+route(s), à « /travaux »` — une QUATRIÈME route différente, et un compte de routes plus bas que les
+deux essais précédents (85, 86, puis 55) — cohérent avec l'hypothèse 1 (la pression cumulée varie
+d'un essai à l'autre, ce n'est pas un seuil de routes fixe). Aucun processus parasite mesuré.
+Isolé, `npx vitest run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 471,86 s** —
+cohérent avec les trois mesures précédentes de cette même tranche (450-472 s). Reste de la chaîne
+propre (1136/1137). Diff inchangé depuis les deux occurrences précédentes de ce même arbre — sans
+rapport avec `/travaux`. TROISIÈME confirmation consécutive de disjonction sur cette seule
+tranche (après `/eng/[id]/reunions` et `/eng/[id]/risk`) — pas creusé plus loin, même discipline.
+Chaîne à relancer une quatrième fois.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
