@@ -861,6 +861,15 @@ next|vitest`, juste après). Isolé, `npx vitest run tests/screens.test.ts` seul
 `f235e5d`), pas confondu avec ce flake. Pas creusé plus loin (même discipline établie pour R58
 tout au long de ce fichier) — chaîne à relancer une seconde fois pour cette tranche.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste-2.log`, 2026-09-15, chaîne verify complète
+#2 pour la même tranche, sur l'arbre du commit `9c3d019` — après le correctif du doublon i18n)** :
+`le serveur est tombé après 86 route(s), à « /eng/[id]/risk (SOX) »` — une TROISIÈME route
+différente pour cette même tranche, cohérent avec l'hypothèse 1 (pression mémoire/CPU cumulée).
+Aucun processus parasite mesuré. Isolé, `npx vitest run tests/screens.test.ts` seul, sous 900 s :
+**PASSE, 1/1, 471,80 s**. Le REPOS du chaîne (1136/1137 tests, le doublon i18n bien corrigé) est
+propre. Diff de cette tranche sans rapport avec `/eng/[id]/risk`. Pas creusé plus loin — chaîne à
+relancer une troisième fois pour cette tranche.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
