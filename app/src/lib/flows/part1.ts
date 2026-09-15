@@ -841,11 +841,13 @@ export async function planifierFournisseurs(): Promise<void> {
  * maintenant vers PAYROLL aurait été une correspondance FAUSSE, pas une
  * correspondance manquante (règle 8, ne rien écrire de mémoire).
  *
- * Une fois la correspondance corrigée, SEPT procédures sont commandées par
- * le risque sur PAYROLL : les quatre transverses de base (DETAIL/RAPPRO/RA/
- * SEQ, `risque_minimum:faible`, universelles), trois commandées par
- * `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même
- * (`exhaustivite:faible`). AUCUNE n'a d'atelier réel : `rapprochement`
+ * Une fois la correspondance corrigée, HUIT procédures sont commandées par
+ * le risque sur PAYROLL (compté par exécution, `requiredProcedures('PAYROLL').length`,
+ * jamais recopié de tête — règle 31) : les quatre transverses de base
+ * (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`, universelles), trois
+ * commandées par `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et
+ * PERSONNEL-DSN elle-même (`exhaustivite:faible`) — 4+3+1 = 8. AUCUNE n'a
+ * d'atelier réel : `rapprochement`
  * (RAPPRO, PERSONNEL-DSN) n'est câblé QUE pour CASH/TRADE_RECEIVABLES — pas
  * de concept de « balance âgée » pour la paie, `/balances-aux` resterait un
  * écran qui ment (même défaut que R95 existe pour nommer) ; `sondage_pieces`

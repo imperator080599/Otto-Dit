@@ -160,15 +160,18 @@ NON corrigée** : son objet réel est une provision de BILAN (compte 15x), pas u
 vers PAYROLL aurait été une correspondance FAUSSE, pas une correction manquante (règle 8).
 `methodology/papier.json` : `"PAYROLL": "G"` ajouté à `lettres_par_poste`.
 
-**Une fois la correspondance corrigée, SEPT procédures sont commandées** : les quatre transverses
-universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois commandées par `realite:eleve`
-(ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même (`exhaustivite:faible`). **AUCUNE n'a
-d'atelier réel** — le poste le plus dépourvu de tout le Lot 5 jusqu'ici : `rapprochement` n'est
-câblé que pour CASH/TRADE_RECEIVABLES (aucun concept de « balance âgée » pour la paie), `sondage_
-pieces` n'est câblé que pour REVENUE, et `observation_documentee`/`test_exhaustif` NE SONT CÂBLÉS
-NULLE PART pour AUCUN poste, encore — vérifié par lecture complète d'`atelierDeLaNature`. Disclosed
-**R98** (`docs/BACKLOG_REPORTE.md`) plutôt que planifiées sans écran atteignable : six des sept
-non planifiées. **PERSONNEL-DSN seule est plantée** (`planifierPaie()`, procédure + papier
+**Une fois la correspondance corrigée, HUIT procédures sont commandées** (compté par exécution,
+`requiredProcedures('PAYROLL').length`, jamais recopié de tête — une revue hostile a trouvé « SEPT »
+faux dans un premier jet de cette même section, corrigé ici avant expédition, règle 31) : les
+quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois commandées
+par `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même (`exhaustivite:faible`)
+— 4+3+1 = 8. **AUCUNE n'a d'atelier réel** — le poste le plus dépourvu de tout le Lot 5 jusqu'ici :
+`rapprochement` n'est câblé que pour CASH/TRADE_RECEIVABLES (aucun concept de « balance âgée »
+pour la paie), `sondage_pieces` n'est câblé que pour REVENUE, et `observation_documentee`/
+`test_exhaustif` NE SONT CÂBLÉS NULLE PART pour AUCUN poste, encore — vérifié par lecture complète
+d'`atelierDeLaNature`. Disclosed **R98** (`docs/BACKLOG_REPORTE.md`) plutôt que planifiées sans
+écran atteignable : sept des huit non planifiées. **PERSONNEL-DSN seule est plantée**
+(`planifierPaie()`, procédure + papier
 `utilisee:false` honnête, même limite que CLIENTS-DEPREC/IMMO_COR-DOT/FOURN-CIRC), pour que
 l'obstacle « périmètre sans programme » (`obstacles.ts`) trouve une ligne `procedure_instance` —
 ce prédicat ne demande qu'une ligne, jamais un atelier cliquable, vérifié par lecture directe de

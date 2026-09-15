@@ -1565,18 +1565,20 @@ design : chacun reste une tranche à construire.**
   (`fsliAccounts`/`assessFsli`/`requiredProcedures('PAYROLL')` contre la base seedée, pas supposé) :
   PAYROLL (2 601 608,10 €, comptes 641000/645000, `pcg.ts`) porte `realite:eleve` (2 facteurs —
   variation N/N-1 de 230 040 € contre un seuil de 27 000 €, et 100 % d'écritures d'OD manuelles),
-  toutes les autres assertions restent `faible`. SEPT procédures sont commandées : les quatre
-  transverses universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois commandées par
-  `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même (`exhaustivite:faible`,
-  cycle corrigé `PERSONNEL`→`PAYROLL` cette même tranche, même mécanique que R54/R57/R95/R97).
-  AUCUNE des sept n'a d'atelier : `rapprochement` (RAPPRO/PERSONNEL-DSN) n'est câblé que pour
+  toutes les autres assertions restent `faible`. HUIT procédures sont commandées (compté par
+  exécution, `requiredProcedures('PAYROLL').length`, jamais recopié de tête — règle 31) : les
+  quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`), trois
+  commandées par `realite:eleve` (ENTRETIEN, FRAUDE, MANUEL), et PERSONNEL-DSN elle-même
+  (`exhaustivite:faible`, cycle corrigé `PERSONNEL`→`PAYROLL` cette même tranche, même mécanique
+  que R54/R57/R95/R97) — 4+3+1 = 8. AUCUNE des huit n'a d'atelier : `rapprochement` (RAPPRO/
+  PERSONNEL-DSN) n'est câblé que pour
   CASH/TRADE_RECEIVABLES (aucun concept de « balance âgée » n'existe pour la paie — `/balances-aux`
   resterait un écran qui ment, même défaut que R95 existe pour nommer) ; `sondage_pieces`
   (DETAIL/FRAUDE/MANUEL) n'est câblé que pour REVENUE (`/testing`, même gap que R92/R95/R97) ;
   `observation_documentee` (ENTRETIEN) et `test_exhaustif` (SEQ) NE SONT CÂBLÉS NULLE PART, pour
   AUCUN poste, encore — vérifié par lecture complète d'`atelierDeLaNature` (`programme.ts`), pas
   supposé. Chaque poste précédent du Lot 5 avait AU MOINS une nature câblée ; PAYROLL n'en a
-  aucune. **Non planifiées cette tranche, délibérément** (six des sept) — même raisonnement que
+  aucune. **Non planifiées cette tranche, délibérément** (sept des huit) — même raisonnement que
   R92/R95/R97 : planifier sans atelier atteignable créerait une procédure planifiée sans geste
   possible (règle 13). **PERSONNEL-DSN seule est plantée** (procédure + papier `utilisee:false`
   honnête), pour que l'obstacle « périmètre sans programme » (`obstacles.ts`) trouve une ligne
