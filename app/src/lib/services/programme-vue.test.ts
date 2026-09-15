@@ -231,9 +231,14 @@ describe('le programme de travail', () => {
     expect(atelierDeLaNature('confirmation_externe', 'AUTRE-POSTE', '/eng/x')).toBeNull();
     expect(atelierDeLaNature('rapprochement', 'REVENUE', '/eng/x')).toBeNull();
     expect(atelierDeLaNature('rapprochement', 'AUTRE-POSTE', '/eng/x')).toBeNull();
-    /* confirmation_externe sur PROVISIONS (avocats, Partie C.3 point 6) entre
-       au Lot 5 avec le poste lui-même — pas ces tranches (règle 8). */
-    expect(atelierDeLaNature('confirmation_externe', 'PROVISIONS', '/eng/x')).toBeNull();
+    /* confirmation_externe sur PROVISIONS (avocats) était `null` du temps du
+       Lot 3 — cette ligne le documentait comme une frontière à venir, « entre
+       au Lot 5 » (Partie C.3 point 6). Le Lot 5, poste 6 (Provisions,
+       2026-09-15, commit 8207058) l'a effectivement câblé sur le même
+       `circularisations` que CASH ci-dessus — cette assertion aurait dû être
+       mise à jour DANS ce commit et ne l'a pas été, cassant `npm run verify`
+       à la tranche suivante (trouvé par exécution, jamais par lecture). */
+    expect(atelierDeLaNature('confirmation_externe', 'PROVISIONS', '/eng/x')).toBe('/eng/x/circularisations');
     /* Lot 3 (Partie C.1) est COMPLET avec ces quatre cases : les quatre
        autres natures (revue_analytique_substantive, test_exhaustif,
        tests_de_controles, observation_documentee) entrent au Lot 5, sans
