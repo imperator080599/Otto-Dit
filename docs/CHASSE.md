@@ -859,3 +859,17 @@ long de ce fichier) — chaîne relancée une troisième fois pour cette tranche
   confirmation consécutive sur ce même Lot 5 que ce défaut est disjoint de tout ce qui a été
   touché (migration, `circularisations.ts`, `procedures.json`, `catalogue.test.ts`, aucun rapport
   avec `rcm/[cid]`). Pas creusé plus loin (même discipline que F9-F22).
+
+- **F24 — UN incident dans `verify-fournisseurs-mecanique.log`** (2026-09-15, chaîne verify
+  complète après le correctif C1/C2 de la revue hostile sur la tranche « mécanique circularisation
+  fournisseur », sur l'arbre du commit `2e0aadc`, 260 étapes) : REJOUE F18-F23 au trait près, même
+  page `rcm/[cid]` (SOX), mêmes 20 divergences d'hydratation sur `<form style="margin:6px 0…">`
+  après normalisation. `npm run verify` a rendu `EXIT=1` (vérifié sur la ligne brute du wrapper,
+  jamais sur le résumé de la tâche de fond, qui affichait à tort « exit code 0 » — règle 35 :
+  ce résumé mesure le script wrapper, pas `npm run verify` lui-même). Clôture et archive ATTEINTES
+  (240 stations), 145/145 fichiers, 1136/1136 tests — HUITIÈME confirmation consécutive sur ce
+  même Lot 5 que ce défaut est disjoint de tout ce qui a été touché par le correctif (commentaires
+  dans `circularisations.ts`, en-tête de la migration 0165, `LISEZ-MOI.md`, `BACKLOG_REPORTE.md`,
+  `fils.json` — aucun rapport avec `rcm/[cid]`, aucun code exécuté n'a changé côté SOX). Pas
+  creusé plus loin (même discipline que F9-F23). `clics`/`visuel` relancés isolément sur la même
+  base déjà semée par cette même chaîne (ne re-sème pas, `clics` ne l'exige pas).
