@@ -201,6 +201,18 @@ export interface Complétude {
  * compte bancaire oublié par le client. Une ligne du listing qu'aucun compte ne
  * porte l'est tout autant : un compte ouvert et jamais comptabilisé. Les deux
  * se DISENT ; c'est le client qui explique, pas la machine qui devine.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : elle suppose qu'un compte
+ * du grand livre est couvert dans son ENTIER par les tiers qui le portent —
+ * vrai pour banque et avocat dans ce pack (un compte = un seul tiers), FAUX
+ * pour fournisseur : `TRADE_PAYABLES` ne porte qu'UN SEUL compte collectif
+ * (401000, `fsliAccounts`, vérifié par exécution), partagé par tous les
+ * fournisseurs. Un SEUL tiers listé « couvre » donc ce compte ici (`couverts`
+ * teste l'appartenance au compte, pas la part du solde), même si son solde ne
+ * représente qu'une fraction du collectif — voir l'avertissement de
+ * `rapprochement()` ci-dessous, qui porte le même défaut sur l'écart. R96
+ * (docs/BACKLOG_REPORTE.md) : non résolu, condition bloquante avant de semer
+ * une vraie campagne fournisseur.
  */
 export async function completude(engagementId: string, kind: Nature): Promise<Complétude> {
   const poste = POSTE[kind];
@@ -345,7 +357,27 @@ export async function rapprochement(engagementId: string, kind: Nature): Promise
        se dit — un centime non expliqué sur un solde confirmé n'existe pas par
        hasard. Côté avocats, la provision est une estimation : c'est le seuil
        de remontée du dossier (CTT) qui décide. `fournisseur` ajouté le
-       2026-09-15 (Lot 5, poste 4) : même règle que banque, pas une nouvelle. */
+       2026-09-15 (Lot 5, poste 4) : même règle que banque, pas une nouvelle.
+     *
+     * CE QUE CE CALCUL NE VÉRIFIE PAS (règle 19, R96) : `solde` est le solde
+     * ENTIER du compte du grand livre (`fsliAccounts`), pas la part de ce
+     * compte qui revient au tiers confirmé. Pour banque et avocat dans ce
+     * pack, c'est la même chose (un compte = un seul tiers). Pour fournisseur,
+     * `TRADE_PAYABLES` n'a qu'UN SEUL compte collectif (401000) partagé par
+     * tous les fournisseurs : `ecart` compare alors le solde d'UN tiers au
+     * solde de TOUS, et vaut donc non nul par construction, même sur une
+     * confirmation exacte et complète. Prouvé par exécution le 2026-09-15
+     * (revue hostile, C1) : le solde VRAI de Float Glass seul (193 502,33 €,
+     * `dataset/balances_aux/fournisseurs_2025.csv`) contre le solde collectif
+     * (-265 632,25 €) donne un écart de 459 134,58 € — pas une anomalie, un
+     * artefact de la comparaison. Une campagne fournisseur qui dépose une
+     * réponse aujourd'hui affichera donc TOUJOURS `etat: 'ecart'`, forçant une
+     * explication écrite (`expliquerEcart`) qui devra dire « ce compte est
+     * collectif, le reste appartient aux tiers non circularisés » — un
+     * contournement HITL valable (l'obstacle au visa reste honnête, la
+     * mécanique d'écriture d'explication fonctionne), mais le CHIFFRE
+     * `ecartCents` affiché à l'écran ne représente pas un écart réel et ne
+     * doit pas être présenté comme tel avant que R96 ne soit résolu. */
     const remonte = ecart !== null && (kind !== 'avocat' ? ecart !== 0 : Math.abs(ecart) > (ctt ?? 0));
     const etat: EtatTiers = !t.sent_at ? 'a_envoyer'
       : !t.received_at ? 'envoyee'

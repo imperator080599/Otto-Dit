@@ -1452,3 +1452,45 @@ design : chacun reste une tranche à construire.**
   constat. Se referme le jour où une tranche généralise `/balances-aux` (rollforward) et
   `/testing` (sondage_pieces hors REVENUE) — vraisemblablement en même temps que R92, puisque
   Fournisseurs (Lot 5, poste 4) portera probablement le même besoin de sondage_pieces généralisé.
+
+- **R96 — le rapprochement générique de `circularisations.ts` compare le solde d'UN tiers au solde
+  ENTIER de son compte du grand livre — faux dès qu'un compte est COLLECTIF (partagé par plusieurs
+  tiers), le cas de `TRADE_PAYABLES` dans ce pack.** Trouvé par la revue hostile (voix 1, C1) de la
+  tranche « mécanique : `circularisations.ts` étendue à la nature `fournisseur` » (Lot 5, poste 4,
+  2026-09-15), et CONFIRMÉ par exécution moi-même avant correction (règle 15/18 : une explication
+  plausible est une hypothèse, pas un diagnostic) — pas seulement pris au mot du réfuteur. Preuve :
+  `fsliAccounts(engagementId, 'TRADE_PAYABLES')` ne rend qu'UNE ligne, le compte collectif `401000`
+  (`fsliAccounts`, vérifié par exécution). Un test jetable (`_sonde_c1_verif.test.ts`, supprimé
+  avant ce commit — règle 24) a déposé le solde VRAI et COMPLET de Float Glass seul, seul tiers du
+  listing (193 502,33 €, somme des cinq tranches d'âge de `dataset/balances_aux/fournisseurs_2025.csv`,
+  compte auxiliaire F001), contre le solde comptable du compte 401000 tel que lu par `rapprochement`
+  (-265 632,25 €) : `ecartCents = 459134.58`€, `remonte: true`, `etat: 'ecart'` — un écart NON NUL
+  sur une confirmation exacte et complète, uniquement parce que le tiers confirmé ne représente
+  qu'une fraction du compte collectif. `completude()` porte le même défaut dans l'autre sens : un
+  SEUL tiers listé « couvre » le compte entier (`comptesSansTiers` vide), quelle que soit la part
+  du solde qu'il représente réellement.
+  **Essayé et écarté avant d'écrire ceci** : réduire `dataset/circularisations/fournisseurs.csv` à
+  un seul tiers (Float Glass) — NE RÉSOUT RIEN, prouvé par la même sonde : même le solde vrai d'UN
+  SEUL tiers ne peut égaler le solde d'un compte que PLUSIEURS tiers alimentent (`fournisseurs.csv`
+  reste donc à DEUX tiers, son contenu d'origine, revue hostile comprise — trimer le fichier
+  n'aurait fait que masquer que le défaut tient au compte, pas au nombre de lignes).
+  **Non corrigé dans cette tranche, délibérément** — la vraie correction (rapprocher contre la
+  balance auxiliaire par tiers, `aux_balance_row`/`balances-aux.ts`, cote `'fournisseurs'`, plutôt
+  que contre `fsliAccounts`) suppose un lien tiers↔compte-auxiliaire qui n'existe encore nulle part
+  (le listing porte une `Reference` arbitraire, pas le `compte_aux` F00x) et une balance auxiliaire
+  déjà importée pour ce dossier — c'est la mécanique de LA TRANCHE D'OUVERTURE du poste (Lot 5,
+  poste 4, pas encore commencée), pas de cette tranche-ci qui ne fait que généraliser le type
+  `Nature`. Disclosed plutôt que caché (règle 13/19) : un commentaire dans `circularisations.ts`
+  près de `rapprochement()`/`completude()` nomme la limite, et `dataset/circularisations/LISEZ-MOI.md`
+  a été corrigé (son entête initiale sous-estimait la sévérité — « couverture partielle » n'est pas
+  « le chiffre affiché est un artefact, pas un écart réel »).
+  **CONDITION BLOQUANTE pour la tranche d'ouverture du poste Fournisseurs** : elle ne doit PAS
+  semer une réponse déposée (`deposerReponse` avec `montantConfirmeCents`) sur le listing actuel
+  sans résoudre ce point — sinon la démonstration affichera un « écart » de plusieurs centaines de
+  milliers d'euros sur une confirmation parfaitement correcte, lisible par un auditeur externe
+  comme un vrai défaut du dossier. Se referme le jour où cette tranche construit soit le lien
+  tiers↔compte-auxiliaire et bascule la comparaison sur `aux_balance_row` pour la nature
+  `fournisseur` uniquement (banque/avocat inchangés), soit — solution plus modeste — restreint la
+  circularisation fournisseur au SEUL cas où le tiers confirmé détient 100 % du solde du compte
+  (aucun cas dans ce dossier aujourd'hui, F001 seul ne représentant que 193 502,33 € sur
+  265 632,25 €).

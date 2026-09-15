@@ -13,11 +13,22 @@ Ce que le CLIENT fournit, tel qu'il le fournit : un tableau `Tiers;Contact;Refer
 - `fournisseurs.csv` — Lot 5, poste 4 (Fournisseurs, 2026-09-15) : deux fournisseurs déjà
   connus du dossier (mêmes raisons sociales fictives que `dataset/balances_aux/fournisseurs_2025.csv`,
   F001/F002), tous deux rattachés au compte collectif `401000` — ce pack ne porte qu'UN SEUL
-  compte fournisseurs au grand livre (`fsliAccounts`, vérifié par exécution), la circularisation
-  couvre donc une PARTIE du solde collectif par une sélection de tiers majeurs, pas un compte par
-  tiers comme pour les banques. Aucun défaut de complétude délibéré ici (contrairement à
-  `banques.csv`) — ce fichier sert la nature `confirmation_externe`, pas une démonstration du
-  contrôle de complétude, déjà couverte par `banques.csv`.
+  compte fournisseurs au grand livre (`fsliAccounts`, vérifié par exécution). Aucun défaut de
+  complétude délibéré ici (contrairement à `banques.csv`) — ce fichier sert la nature
+  `confirmation_externe`, pas une démonstration du contrôle de complétude, déjà couverte par
+  `banques.csv`.
+  **Limite structurelle, plus sévère qu'annoncé à l'écriture initiale de ce fichier, prouvée par
+  exécution (revue hostile du 2026-09-15, C1, `docs/BACKLOG_REPORTE.md` R96) : ce fichier n'est
+  PAS encore consommé par un flux d'import (aucun `importerListing(..., 'fournisseur', ...)`
+  câblé au monde semé) — c'est un listing PRÉPARÉ pour la tranche d'ouverture du poste
+  Fournisseurs, pas encore joué. Le jour où il le sera, `rapprochement()` comparera le solde
+  confirmé d'UN tiers au solde ENTIER du compte collectif : même une confirmation exacte et
+  complète de Float Glass (193 502,33 €) contre le solde du compte (-265 632,25 €) produit un
+  écart de 459 134,58 € — pas une anomalie du dossier, un artefact de la comparaison (voir le
+  commentaire dans `circularisations.ts` près de `rapprochement()`/`completude()`). Ce n'est PAS
+  résolu par réduire le nombre de tiers du listing : le défaut tient au compte COLLECTIF, pas au
+  nombre de lignes. R96 est une condition BLOQUANTE avant de semer une vraie campagne fournisseur
+  avec des réponses déposées — pas seulement une note.**
 
 Aucune banque, aucun cabinet, aucun fournisseur, aucun IBAN et aucune adresse ne correspondent
 à quoi que ce soit de réel : les domaines sont en `.example`, réservé par la RFC 2606 précisément
