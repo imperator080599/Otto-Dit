@@ -230,7 +230,22 @@ commit déjà poussé (`692dcf7`, non réécrit). Un second point signalé, info
 aucun test automatisé ne fixe les états `blocs` de `vuePoste` pour un poste donné — déjà le cas
 avant cette tranche (H2/Immobilisations avait le même trou), pas aggravé ici.
 
-`npm run verify` complet à suivre.
+**Mesures finales, engendrées — UN SEUL `npm run verify` complet, propre à l'exception du flake
+`#418` déjà tracké (F26, `docs/CHASSE.md`).** Trois tentatives : la première a trouvé un vrai
+échec dans `langue:epreuve` (le point d'injection du cas « ternaire dans un service » avait bougé
+dans `poste.ts` — corrigé, réindenté, 15/15 revérifié) ; la deuxième a trouvé un vrai dépassement
+dans `densite` (`/eng/[id]/loop` à 6 actions primaires, le sélecteur de poste jamais marqué
+`data-actions-item` — corrigé, revérifié sur un build frais séparé : 0 dépassement) ; la
+troisième est PROPRE de bout en bout : `tsc --noEmit` propre, **`vitest run` : 145/145 fichiers,
+1137/1137 tests, AUCUN `ServeurTombe`/R58** (contrairement aux six tentatives de la tranche
+précédente), `gardes`/`semeur`/`plancher`/`langue`/`langue:epreuve`/`lectures`/`lectures:epreuve`/
+`parcours`/`parcours:epreuve` tous propres, `screens` (93 routes, 0 échec), `fumee` (52 routes,
+0 échec), `densite` (0 dépassement, confirmé DANS la même chaîne). `npm run clics` : **260 étapes
+conduites, ZÉRO échec de station nommée, clôture ET archive atteintes** (le seul « 1 échec(s) »
+compté par le harnais est `#418`, F26 — ONZIÈME confirmation consécutive de sa disjonction, sur
+un CINQUIÈME poste distinct). `npm run visuel` (lancé séparément — `clics` sort en échec sur ce
+seul `#418`, même précédent que F14/Trésorerie/Clients/Immobilisations/Fournisseurs) : **336
+vues, 0 défaut.**
 
 *Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3,
 après la mécanique circularisation fournisseur (section suivante ci-dessous).*
