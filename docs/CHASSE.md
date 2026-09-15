@@ -894,6 +894,22 @@ de la chaîne propre (1136/1137). Diff inchangé depuis les trois occurrences pr
 arbre — sans rapport avec `/eng/[id]/rcm`. QUATRIÈME confirmation consécutive de disjonction sur
 cette seule tranche — pas creusé plus loin, même discipline. Chaîne à relancer une cinquième fois.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste-5.log`, 2026-09-15, chaîne verify complète
+#5 pour la même tranche, arbre inchangé depuis `6cf7fe6`)** : `le serveur est tombé après 81
+route(s), à « /eng/[id]/provenance (SOX) »` — une CINQUIÈME route différente pour cette même
+tranche (reunions, risk, travaux, rcm, maintenant provenance), cohérent avec l'hypothèse 1
+(pression mémoire/CPU cumulée, pas une route précise). Aucun processus parasite mesuré (`ps aux |
+grep -E "next|vitest"`, vide). Un diagnostic de ressources a aussi été conduit à ce cinquième
+passage (`free -h`, `df -h`, `uptime`, `nproc`, `ps aux --sort=-%cpu`) : mémoire (14 Gi libres/15
+Gi) et disque (23 Go disponibles) sains, `load average` à 5,43 sur une machine à 4 cœurs
+(`nproc`=4) — élevé mais cohérent avec l'hypothèse déjà posée (une session longue, 12 h 30
+d'activité, de nombreux `verify` déjà exécutés), ne contredit ni ne remplace le diagnostic établi.
+Isolé, `npx vitest run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 477,03 s** —
+cohérent avec les cinq mesures précédentes de cette même tranche (450-477 s). Reste de la chaîne
+propre (1136/1137). Diff inchangé depuis les quatre occurrences précédentes de ce même arbre —
+sans rapport avec `/eng/[id]/provenance`. CINQUIÈME confirmation consécutive de disjonction sur
+cette seule tranche — pas creusé plus loin, même discipline. Chaîne à relancer une sixième fois.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
