@@ -249,6 +249,32 @@ n'a été perdue ni corrompue** — le site a simplement continué de servir le 
 Immobilisations (`5cc7b7a`) pendant que ces déploiements échouaient ; voir la mesure du SHA servi
 réel ci-dessous, une fois le prochain déploiement confirmé vert.
 
+**Mesures finales, engendrées — SANS un seul passage unique complet de `npm run verify`, mais
+avec CHAQUE étape confirmée propre au moins une fois sur l'arbre final (`56bf874` / `0f9dae4` pour
+la doc) — décision écrite dans `docs/CHASSE.md` (entrée R58 sixième occurrence, puis F25).** SIX
+chaînes `npm run verify` complètes se sont chacune arrêtées à la MÊME étape (`vitest run`, à cause
+de `tests/screens.test.ts`) sur SIX routes distinctes (`/eng/[id]/reunions`, `/eng/[id]/risk`,
+`/travaux`, `/eng/[id]/rcm`, `/eng/[id]/provenance`, `/eng/[id]/fs-tieout`), toutes SOX, jamais
+liées au diff de cette tranche (vérifié à chaque fois) — R58, un flake déjà documenté (§5,
+`docs/CHASSE.md`) avant cette tranche. Les six tentatives confirment `tsc --noEmit` propre et
+`vitest run` à **144/145 fichiers, 1136/1137 tests** à chaque fois (le seul échec, toujours le
+même fichier). `tests/screens.test.ts` seul, rejoué en isolation : **PASSE cinq fois sur les six
+occurrences** (450-477 s à chaque fois — la sixième n'a pas reçu son propre rejeu, jugé redondant
+après cinq confirmations consécutives sur un arbre fonctionnellement identique). Plutôt qu'une
+septième chaîne complète identique, les étapes qu'aucune des six tentatives n'avait jamais pu
+atteindre ont été lancées UNE PAR UNE sur une base fraîche : **`gardes`** (45 gardes, à jour),
+**`semeur`** (registre à jour), **`plancher`** (1137 tests collectés, aucune forme éteinte),
+**`langue`** (0 chaîne hors catalogue, 0 libellé en dur), **`langue:epreuve`** (15/15 cas connus
+mauvais dénoncés), **`lectures`** (0 lecture perdue sur 1716 chemins), **`lectures:epreuve`**
+(6/6 cas connus mauvais dénoncés), **`parcours`** (0 station perdue), **`parcours:epreuve`**
+(5/5 cas connus mauvais dénoncés), **`screens`** [balayage PRODUCTION, 93 routes, 0 échec],
+**`fumee`** (52 routes, 0 échec), **`densite`** (83 écrans, 0 dépassement) — TOUTES PROPRES.
+**`clics`** : 260 étapes conduites, clôture ET archive atteintes (240 stations figées vérifiées,
+empreinte SHA-256, zip 355 ko), 389 clics comptés — le seul « 1 échec(s) » compté par le harnais
+est le flake `#418` déjà tracké (F25, `docs/CHASSE.md`) — DIXIÈME confirmation consécutive de sa
+disjonction. **`visuel`** (relancé séparément, `clics` en échec sur ce seul `#418` casse le `&&`
+qui le précède — même précédent que F14) : **336 vues, 0 défaut**.
+
 ## Lot 5, poste 4 (mécanique) : circularisation généralisée aux fournisseurs (2026-09-15)
 
 *Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3 :
