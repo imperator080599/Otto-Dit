@@ -36,8 +36,13 @@ erreur. Le compte rendu honnête vit ici, jamais dans un fichier de migration ap
 
 **Aucune donnée n'a été perdue ni corrompue** — le site a simplement continué de servir le SHA de
 la tranche Immobilisations (`5cc7b7a`, dernier déploiement production READY avant cet incident)
-pendant que ces déploiements échouaient. SHA servi à mesurer de nouveau une fois ce correctif
-déployé.
+pendant que ces déploiements échouaient.
+
+**SHA servi CONFIRMÉ, mesuré deux fois.** `mcp__Vercel__get_deployment` (`dpl_E7LEAxdg6AMq5mKYLwa2NGGbDnSV`,
+cible production) : `READY`, commit `1d3d3d17ee5233fce67c4e12d05003e9cae408b3`. `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : `sha: "1d3d3d17ee5233fce67c4e12d05003e9cae408b3"`,
+`identiteCoherente: true`, HTTP 200, toutes les lectures passent. Le correctif d'urgence est donc
+servi — la migration 0165 dans sa forme d'origine, sans le correctif C2 qui bloquait le déploiement.
 
 ## MESSAGE AU FONDATEUR (2026-09-13) — le moment annoncé le 10 septembre
 
