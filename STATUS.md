@@ -130,6 +130,19 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## SHA servi confirmé — tranche Provisions fusionnée sur `main` (`95af49a`) (2026-09-15)
+
+Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
+poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__get_deployment` montre
+`dpl_5Gm346kDwDgjCULuiDti6awqPceG` (cible `production`) à l'état `READY`, commit
+`95af49ad65c6c0c937a77ef3a2af5b4474655bb3` ; `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` rend `sha: "95af49ad65c6c0c937a77ef3a2af5b4474655bb3"`,
+`identiteCoherente: true`, HTTP 200, verdict « toutes les lectures passent ». La tranche
+Provisions (recherche, implémentation, deux revues hostiles — l'une trouvant le défaut sévère de
+signe et le gap d'atelier R97-class, l'autre confirmant le correctif —, trois passages verify
+dont un a corrigé une assertion Lot 3 périmée, `visuel` propre) est donc EN LIGNE. Sixième des
+huit postes du Lot 5 (ordre C.3) livré ; Stocks (INVENTORY) et Capitaux propres et impôt restent.
+
 ## SHA servi confirmé — tranche Fournisseurs poste-opening fusionnée sur `main` (`a8c2603`) (2026-09-15)
 
 Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
