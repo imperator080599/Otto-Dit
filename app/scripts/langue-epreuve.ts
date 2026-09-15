@@ -149,12 +149,17 @@ const CAS: Cas[] = [
   },
   {
     /* LA FORME TERNAIRE, que la septième version ne lisait pas : la propriété
-       est suivie d'une condition, pas d'une chaîne. */
+       est suivie d'une condition, pas d'une chaîne. Ré-indentée le 2026-09-15
+       (Lot 5, poste 5 — Paie) : le nouveau patron `sans_objet`/`href:null`
+       du bloc `testing` (R98, même garde-fou que `blocEchantillon`/H2) a
+       poussé cette branche d'un niveau — le POINT D'INJECTION a bougé, pas
+       la garde elle-même (`langue.ts` l'a dit lui-même : « l'écran a changé
+       — l'épreuve doit être remise à jour, pas retirée »). */
     nom: 'un « resume » français en ternaire dans un service',
     racine: 'lib',
     fichier: 'services/poste.ts',
-    avant: "          ? motif('poste.resume.rienAControler')\n          : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),",
-    apres: "          ? 'rien à contrôler tant que l’échantillon n’est pas tiré'\n          : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,",
+    avant: "            ? motif('poste.resume.rienAControler')\n            : motif('poste.resume.testes', { testes: ech!.testes, items: ech!.items }),",
+    apres: "            ? 'rien à contrôler tant que l’échantillon n’est pas tiré'\n            : `${ech!.testes} / ${ech!.items} élément(s) contrôlé(s)`,",
     attendu: 'rien à contrôler',
   },
   {
