@@ -62,16 +62,18 @@ describe('catalogue méthodologique', () => {
        PROV-RECALC corrigées vers PROVISIONS, et PERSONNEL-CP (provision pour congés
        payés, compte 15x — un poste de BILAN, pas une charge PAYROLL/compte 64x, laissée
        délibérément non corrigée par la tranche Paie, règle 8) trouve ENFIN sa vraie
-       correspondance PROVISIONS avec elles. Ni "CLIENTS", ni "IMMO_COR", ni "FOURN", ni
-       "SOCIAL", ni "PROV", ni "PERSONNEL" n'existent donc plus comme valeur de cycle
-       nulle part dans le catalogue. Les trois autres (STOCKS, CAPITAUX, DETTES_FI)
-       restent du vocabulaire de cycle en attente de leur propre correction, postes non
-       encore ouverts par le Lot 5. */
+       correspondance PROVISIONS avec elles. STOCKS retiré le même jour, poste 7 — Stocks :
+       les SIX procédures STOCKS-* (INV, VALO, COUT, NRV, CUTOFF, TIERS) corrigées vers
+       INVENTORY, même mécanique. Ni "CLIENTS", ni "IMMO_COR", ni "FOURN", ni "SOCIAL", ni
+       "PROV", ni "PERSONNEL", ni "STOCKS" n'existent donc plus comme valeur de cycle
+       nulle part dans le catalogue. Les deux derniers (CAPITAUX, DETTES_FI)
+       restent du vocabulaire de cycle en attente de leur propre correction, poste non
+       encore ouvert par le Lot 5. */
     const cycles = new Set(cat.procedures.map((p) => p.cycle).filter((c) => c !== '*'));
-    for (const attendu of ['STOCKS', 'CAPITAUX', 'DETTES_FI']) {
+    for (const attendu of ['CAPITAUX', 'DETTES_FI']) {
       expect(cycles.has(attendu), `cycle ${attendu} absent du catalogue`).toBe(true);
     }
-    for (const parti of ['SOCIAL', 'PROV', 'PERSONNEL']) {
+    for (const parti of ['SOCIAL', 'PROV', 'PERSONNEL', 'STOCKS']) {
       expect(cycles.has(parti), `cycle ${parti} corrigé, ne doit plus exister`).toBe(false);
     }
   });

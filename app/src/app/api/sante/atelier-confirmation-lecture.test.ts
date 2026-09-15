@@ -30,9 +30,13 @@ import { GET } from './route';
 // par `circularisations.ts` depuis ADR-111 mais jamais exercée avant ce poste).
 // Réutiliser l'un ou l'autre ici aurait fait de ce fichier un test qui affirme
 // une régression sur un poste qui n'en porte plus. Remplacé par INVENTORY
-// (`fsli.code` réel, poste STOCKS non encore ouvert par le Lot 5), qui reste
-// SANS atelier câblé dans `atelierDeLaNature` pour `confirmation_externe`
-// aujourd'hui (vérifié par lecture directe de `programme.ts` avant ce correctif).
+// (`fsli.code` réel). Le poste Stocks a ÉTÉ OUVERT depuis (Lot 5, poste 7,
+// même jour) — mais UNIQUEMENT sur `observation_documentee` (STOCKS-INV,
+// disclosed R99, aucun atelier) : `confirmation_externe` reste NON commandée
+// et NON câblée dans `atelierDeLaNature` pour ce poste (vérifié par lecture
+// directe de `programme.ts` avant ce correctif) — la fixture reste valide
+// pour ce qu'elle teste précisément, même si le poste lui-même n'est plus
+// « non ouvert ».
 
 describe('atelier confirmation_externe : la lecture /api/sante', () => {
   const AVANT = process.env.OTTO_DEMO_PUBLIC;

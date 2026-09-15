@@ -143,6 +143,68 @@ signe et le gap d'atelier R97-class, l'autre confirmant le correctif —, trois 
 dont un a corrigé une assertion Lot 3 périmée, `visuel` propre) est donc EN LIGNE. Sixième des
 huit postes du Lot 5 (ordre C.3) livré ; Stocks (INVENTORY) et Capitaux propres et impôt restent.
 
+## Lot 5, poste 7 : Stocks (INVENTORY) ouverts — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R99 disclosed (2026-09-15)
+
+*Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs/Paie/Provisions ci-dessus,
+septième poste de l'ordre C.3 : Stocks (INVENTORY), après Provisions.*
+
+**Recherche, mesurée avant d'écrire.** `fsliAccounts`/`assessFsli`/`requiredProcedures` exécutés
+contre le dossier NEP seedé (via un test vitest jetable, la sonde `tsx` directe s'étant montrée
+trop lente pour être utile — abandonnée après 164 s sans résultat, remplacée par le patron
+`initTestDb()` + import TB/FEC déjà éprouvé par `programme-vue.test.ts`) : INVENTORY (800 000,00 €,
+deux comptes — 301000 « Stocks matières premières » 420 000,00 € et 355000 « Stocks produits
+finis » 380 000,00 €) porte TOUTES ses assertions `faible` (0 facteur). `methodology/
+procedures.json` v1.4.2 portait SIX procédures pour ce cycle sous `cycle:"STOCKS"` (STOCKS-INV,
+VALO, COUT, NRV, CUTOFF, TIERS) — jamais consultées par `proceduresDuCycle`, même correspondance
+cassée que TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL/PROV (R54/R57/R95/R97/R98). Les SIX corrigées vers
+`cycle:"INVENTORY"` (version 1.4.3).
+
+**CINQ procédures commandées** (compté par exécution, `requiredProcedures('INVENTORY').length`) :
+les quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ) et STOCKS-INV elle-même
+(`realite:faible`) — 4+1 = 5. STOCKS-VALO/COUT/NRV/CUTOFF/TIERS (`risque_minimum:moyen`) restent
+SOUS leur seuil sur ce dossier — NON commandées, pas disclosed comme un gap : le fonctionnement
+normal du risque, pas une limite de l'atelier.
+
+**STOCKS-INV N'A AUCUN ATELIER — disclosed R99, même situation que PAYROLL (R98).** Sa nature,
+`observation_documentee` (assistance à l'inventaire physique), n'a JAMAIS eu de route dans
+`atelierDeLaNature` — vérifié par lecture complète du fichier avant d'écrire. Contrairement à
+`confirmation_externe` (CASH/TRADE_PAYABLES/PROVISIONS) ou `rapprochement` (CASH), qui portaient
+déjà un écran avant que leur propre tranche les exerce sur un nouveau poste, aucun écran
+d'assistance à l'inventaire physique n'existe nulle part dans ce dépôt. Construire cet écran
+serait de la MÉCANIQUE NEUVE, pas la correction d'une correspondance déjà câblée ailleurs — hors
+du périmètre d'une tranche d'ouverture de poste (règle 9). `poste.ts` : AUCUN changement
+nécessaire, vérifié par exécution (`vuePoste('INVENTORY')` après `runPart1UpToWorkpaper()`
+complet, pas par analogie) — le bloc `testing` rend `etat:'sans_objet'`, `href:null`, même
+garde-fou générique posé pour PAYROLL (R98) qui couvre déjà toute nature sans atelier réel.
+
+**Implémentation.** `part1.ts` : `INVENTORY` ajouté au périmètre de démonstration (skip-list de
+`bootstrapNep()`, `MOTIF_DEMO` mis à jour pour huit postes) ; nouvelle `planifierStocks()`
+(mirroir exact des six précédentes, plante STOCKS-INV avec un papier `utilisee:false` honnête).
+**Correctif de rule 31 trouvé en même temps** : le commentaire d'en-tête de `bootstrapNep()`
+affirmait encore « CINQ POSTES AU PÉRIMÈTRE » alors que PAYROLL puis PROVISIONS avaient déjà porté
+le compte réel à sept — un chiffre en prose que rien ne produisait, jamais corrigé aux deux
+tranches précédentes. Corrigé en « HUIT » en même temps que cette tranche l'étend, avec une note
+explicite plutôt qu'un silence.
+
+**Correctifs de test associés.** `catalogue.test.ts` : « STOCKS » déplacé de la liste des cycles
+attendus PRÉSENTS vers celle des cycles CORRIGÉS (absents). `enrichir.test.ts` : la fixture PROG-03
+« poste hors périmètre » utilisait `INVENTORY` (choisie pendant la tranche Paie, alors non ouvert)
+— devenue FAUSSE une fois INVENTORY câblé par cette tranche ; remplacée par `EQUITY` (Capitaux
+propres, poste 8, dernier poste du Lot 5, non encore ouvert), vérifié par lecture directe de
+`fsli.scoping`/`scoping_basis` avant de choisir (`ns_confirmed`, même motif générique que les
+autres postes hors périmètre du jeu, pas un jugement de significativité comme INTANGIBLES) — au
+passage, une erreur d'attribution dans mon propre commentaire de remplacement (« la fixture avait
+déjà porté TRADE_RECEIVABLES ») a été trouvée et corrigée par `git log -S` AVANT tout commit :
+cette ligne précise n'a jamais porté que PAYROLL puis INVENTORY, la chaîne TRADE_RECEIVABLES
+appartenant à une fixture SÉPARÉE (`atelier-confirmation-lecture.test.ts`). Ce dernier fichier :
+son commentaire d'historique corrigé pour ne plus affirmer qu'INVENTORY est « un poste non encore
+ouvert » (il l'est désormais) tout en gardant l'assertion valide (INVENTORY reste sans atelier
+`confirmation_externe`, la seule chose que ce fichier teste).
+
+**Mesures avant expédition.** Suite ciblée (catalogue, enrichir, atelier-confirmation-lecture,
+programme-vue — 40/40) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet
+à suivre.
+
 ## SHA servi confirmé — tranche Fournisseurs poste-opening fusionnée sur `main` (`a8c2603`) (2026-09-15)
 
 Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,

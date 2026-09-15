@@ -1637,3 +1637,38 @@ design : chacun reste une tranche à construire.**
   `etat:'sans_objet'`, `href:null`) au bloc `testing`, vérifié sans régression sur REVENUE (inchangé,
   toujours `/testing`), CASH, TRADE_RECEIVABLES, PPE, TRADE_PAYABLES (les cinq comparés par
   exécution directe avant et après le correctif).
+
+- **R99 — INVENTORY (Lot 5, poste 7 — Stocks, 2026-09-15) N'A AUCUN ATELIER RÉEL, même situation
+  que PAYROLL (R98).** Mesuré par exécution avant d'écrire (`fsliAccounts`/`assessFsli`/
+  `requiredProcedures('INVENTORY')` contre la base seedée, pas supposé) : INVENTORY (800 000,00 €,
+  deux comptes — 301000 « Stocks matières premières » 420 000,00 € et 355000 « Stocks produits
+  finis » 380 000,00 €) porte TOUTES ses assertions `faible` (0 facteur). `methodology/
+  procedures.json` portait SIX procédures pour ce cycle sous `cycle:"STOCKS"` (STOCKS-INV, VALO,
+  COUT, NRV, CUTOFF, TIERS) — jamais consultées par `proceduresDuCycle`, même correspondance
+  cassée que TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL/PROV (R54/R57/R95/R97/R98). Les SIX corrigées
+  vers `cycle:"INVENTORY"` cette même tranche (version 1.4.3). CINQ procédures sont commandées une
+  fois la correspondance corrigée (compté par exécution, `requiredProcedures('INVENTORY').length`,
+  jamais recopié de tête — règle 31) : les quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ,
+  `risque_minimum:faible`) et STOCKS-INV elle-même (`realite:faible`) — 4+1 = 5 ; STOCKS-VALO/COUT/
+  NRV/CUTOFF/TIERS (`risque_minimum:moyen`) restent SOUS leur seuil sur ce dossier (chacune de
+  leurs assertions mesurée `faible`) — NON commandées, pas disclosed comme un gap.
+
+  **STOCKS-INV N'A AUCUN ATELIER** : sa nature, `observation_documentee` (assistance à
+  l'inventaire physique), n'a JAMAIS eu de route dans `atelierDeLaNature` — vérifié par lecture
+  complète du fichier avant d'écrire, pas supposé. Contrairement à `confirmation_externe`
+  (CASH/TRADE_PAYABLES/PROVISIONS) ou `rapprochement` (CASH), qui portaient déjà un écran avant
+  que leur propre tranche les exerce sur un nouveau poste, aucun écran d'assistance à l'inventaire
+  physique n'existe nulle part dans ce dépôt. Construire cet écran serait de la MÉCANIQUE NEUVE
+  (un atelier qui n'existe encore pour aucun poste), pas la correction d'une correspondance déjà
+  câblée ailleurs — hors du périmètre d'une tranche d'ouverture de poste (règle 9). **Non
+  planifiée cette tranche, délibérément** — même raisonnement que R92/R95/R97/R98 : planifier sans
+  atelier atteignable créerait une procédure planifiée sans geste possible (règle 13). **STOCKS-INV
+  EST TOUT DE MÊME PLANTÉE** (procédure + papier `utilisee:false` honnête), pour que l'obstacle
+  « périmètre sans programme » trouve une ligne `procedure_instance`, même patron que PERSONNEL-DSN
+  (R98) et PROV-LITIGES.
+
+  `poste.ts` : AUCUN changement nécessaire, vérifié par exécution (`vuePoste('INVENTORY')` après
+  `runPart1UpToWorkpaper()` complet, pas par analogie) — le bloc `testing` rend
+  `etat:'sans_objet'`, `href:null`, `resume.cle:'poste.resume.echantillonSansAtelier'` : le
+  garde-fou générique posé pour PAYROLL (R98, même mécanisme que R97) couvre déjà toute nature
+  sans atelier réel, sans qu'aucun poste au-delà de PAYROLL n'ait eu besoin de l'étendre.

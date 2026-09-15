@@ -1,6 +1,6 @@
 {
   "_note": "Catalogue méthodologique par cycle. CONTENU, non code : le prototype comme l'application le consomment, aucun des deux ne le contient en dur. Les prédicats de population et les résolveurs de référence sont NOMMÉS ici et IMPLÉMENTÉS dans le code ; « non_implemente » signale une procédure cataloguée que le jeu de données ou l'implémentation actuelle ne permet pas d'exécuter — elle est affichée comme telle, jamais simulée.",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "sens_de_test": {
     "gl_vers_piece": {
       "libelle": "du grand livre vers la pièce",
@@ -1474,7 +1474,7 @@
     },
     {
       "code": "STOCKS-INV",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Assistance à l'inventaire physique",
       "objectif": "Constater par soi-même l'existence et l'état des stocks, et tester le comptage dans les deux sens.",
       "assertion": "realite",
@@ -1515,7 +1515,7 @@
     },
     {
       "code": "STOCKS-VALO",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Test de valorisation selon la méthode retenue",
       "objectif": "Vérifier que le coût unitaire retenu est celui que la méthode déclarée produit.",
       "assertion": "evaluation",
@@ -1554,7 +1554,7 @@
     },
     {
       "code": "STOCKS-COUT",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Test du coût de revient des produits fabriqués",
       "objectif": "Vérifier la composition du coût de revient : matières, main-d'œuvre, frais indirects.",
       "assertion": "evaluation",
@@ -1601,7 +1601,7 @@
     },
     {
       "code": "STOCKS-NRV",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Dépréciation : valeur nette de réalisation et rotation lente",
       "objectif": "Vérifier que le stock n'est pas porté au-dessus de ce qu'il rapportera.",
       "assertion": "evaluation",
@@ -1639,7 +1639,7 @@
     },
     {
       "code": "STOCKS-CUTOFF",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Cut-off des réceptions et des expéditions",
       "objectif": "Vérifier que les mouvements de fin d'exercice sont dans le bon exercice, dans les deux sens.",
       "assertion": "separation",
@@ -1679,7 +1679,7 @@
     },
     {
       "code": "STOCKS-TIERS",
-      "cycle": "STOCKS",
+      "cycle": "INVENTORY",
       "libelle": "Stocks détenus chez des tiers",
       "objectif": "Obtenir une preuve pour les stocks qui ne sont pas dans les murs.",
       "assertion": "realite",
