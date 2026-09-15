@@ -831,3 +831,16 @@ prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas aprè
   `api/sante/route.ts`, `catalogue.test.ts`) : aucun rapport avec `rcm/[cid]`, cinquième
   confirmation consécutive du même défaut disjoint sur ce même Lot. Pas creusé plus loin (même
   discipline que F9-F20).
+
+**Nouvelle occurrence R58 (`verify-immo-2.log`, 2026-09-15, chaîne verify complète #2 pour la
+tranche Immobilisations, sur l'arbre du commit `7607592` — après les correctifs de la revue
+hostile H1/H2)** : `le serveur est tombé après 69 route(s), à « /eng/[id]/exceptions (SOX) »` —
+une route ENCORE différente de toutes les précédentes (testing, loop, workpapers, rcm, population),
+cohérent avec l'hypothèse 1 (pression mémoire/CPU cumulée, pas une route précise). Aucun processus
+parasite mesuré (`ps aux --sort=-%mem`, juste après). Isolé, `npx vitest run
+../tests/screens.test.ts` seul, sous un budget réaliste de 900 s (le premier essai de la tranche
+Clients avait montré qu'un `timeout 300` est trop court pour ce fichier, F19/F20 cadence) :
+**PASSE, 1/1, 472,56 s** — cohérent avec les 399-670 s déjà mesurés sur cette machine. Diff de
+cette tranche (`i18n/catalogue.ts`, `services/poste.ts`, `BACKLOG_REPORTE.md`, `fils.json`) : aucun
+rapport avec `/eng/[id]/exceptions`. Pas creusé plus loin (même discipline établie pour R58 tout au
+long de ce fichier) — chaîne relancée une troisième fois pour cette tranche.
