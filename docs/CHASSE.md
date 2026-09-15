@@ -822,3 +822,12 @@ prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas aprè
   de tout ce que cette tranche a touché, pas une nouvelle information. `npm run visuel`, relancé
   séparément (même contrainte F14 : `clics` sort en échec sur ce seul `#418`) — résultat mesuré
   séparément, voir STATUS.md.
+
+- **F21 — UN incident dans `verify-immo-1.log`** (2026-09-15, chaîne verify complète pour Lot 5
+  poste 3 — Immobilisations, sur l'arbre du commit `ecc421f`, 260 étapes) : REJOUE F18/F19/F20 au
+  trait près, même page `rcm/[cid]` (SOX), `EXCEPTION ... Minified React error #418`. Clôture et
+  archive ATTEINTES (240 stations), 145/145 fichiers, 1136/1136 tests. Diff de cette tranche
+  (`procedures.json`, `papier.json`, `part1.ts`, `poste.ts`, `programme.ts`,
+  `api/sante/route.ts`, `catalogue.test.ts`) : aucun rapport avec `rcm/[cid]`, cinquième
+  confirmation consécutive du même défaut disjoint sur ce même Lot. Pas creusé plus loin (même
+  discipline que F9-F20).
