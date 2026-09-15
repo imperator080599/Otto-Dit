@@ -90,6 +90,93 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Lot 5, poste 1 : Trésorerie ouverte complètement (2026-09-14/15)
+
+*Mandat du fondateur du 2026-09-14 soir (`docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md`,
+point 3, commité verbatim, règle 33) : ouvrir Lot 5 poste par poste, dans l'ordre C.3
+(Trésorerie, Clients, Immobilisations, Fournisseurs, Paie, Provisions, Stocks, Capitaux propres et
+impôt), chaque poste tenu à la barre de complétude du plan lui-même — « leadsheet N/N-1, revue
+analytique, procédures commandées par le risque, atelier de sa nature, papier, écarts — un poste
+ouvert à moitié est pire qu'un lien mort ». Amendement de la règle 14 de CLAUDE.md (commité le même
+soir) lève « aucun cycle au-delà du chiffre d'affaires » EXACTEMENT pour ces huit postes, rien de
+plus — vérifié avant d'amender, pas supposé : `methodology/procedures.json` v1.4.0 portait déjà
+`TRESO-CIRC`/`TRESO-RAPPRO`/`CONFIRM`, sourcés (ISA-505), ce qui manquait était une CORRESPONDANCE
+`cycle` ↔ `fsli.code` (R56/R57, dette déjà connue) — de la mécanique (règle 9), pas du contenu de
+procédure neuf.
+
+**Implémentation.** `methodology/procedures.json` : `TRESO-CIRC`/`TRESO-RAPPRO.cycle` corrigés de
+`"TRESO"` à `"CASH"`. `part1.ts` : `bootstrapNep()`'s boucle de scoping-override ne force plus CASH
+à `ns_confirmed` — restauré à la proposition GÉNUINE du moteur (`in_scope`, balance 310 627,03 €
+au-dessus de la matérialité de performance — vérifié par sonde directe, pas supposé). Nouveau
+`planifierTresorerie()` : évalue le risque, planifie `TRESO-CIRC`/`TRESO-RAPPRO`, rédige le papier
+CAS-01 avec son IPE (désigne le TB importé), écrit la revue analytique, répond les six questions de
+section du questionnaire résiduel — chaque étape gardée par un `select … limit 1` avant d'agir
+(même patron que `enrichir.ts` pour TRADE_RECEIVABLES, vérifié idempotent par exécution DOUBLE en
+revue hostile, tous les compteurs identiques au second passage). `poste.ts` : les blocs
+`echantillon`/`testing` d'un poste circularisé (nouveau `natureCirculariseeDuPoste`,
+`circularisations.ts`) routent désormais vers `confirmation_externe`/`rapprochement`
+(`atelierDeLaNature`, programme.ts) plutôt que vers l'écran `/population`/`/testing` du CHIFFRE
+D'AFFAIRES, qui ne connaît rien à Trésorerie.
+
+**Trois défauts RÉELS trouvés par le parcours cliqué mené jusqu'à la clôture (règle 37), aucun
+deviné.** Le premier poste retenu au-delà de REVENUE a fait apparaître, pour la première fois, trois
+hypothèses implicites de monde-à-un-seul-poste dans le harnais et l'application — chacune invisible
+tant que REVENUE restait, par coïncidence, toujours « le premier » :
+1. `scripts/clics/scenario.ts` (station « papier de travail et visas ») choisissait `.first()` sur
+   les liens `/workpapers/` de la liste (`order by w.code`, `lifecycle.ts`) — CAS-01 triant AVANT
+   REV-01 alphabétiquement, la station entière (colonne ajoutée ADR-099, IPE FEC-2025 — du contenu
+   spécifique au cycle chiffre d'affaires) ciblait CAS-01 par erreur, 12 échecs en cascade. Corrigé
+   en ciblant `tr:has-text("REV-01")` explicitement à deux points d'appel (commit `caaebce`).
+2. La même station « questionnaire résiduel » ne visitait que `/risk` SANS `?fsli=`, donc « le
+   premier poste retenu » (`order by statement, code` — CASH, poste de BILAN, trie avant REVENUE,
+   compte de résultat). Comparé au SHA `b951986` (dernier confirmé servi) dans un `git worktree`
+   isolé : REVENUE porte DÉJÀ zéro réponse à ce stade — PAS une régression de cette tranche, une
+   lacune préexistante de cette station, jamais visible tant qu'un seul poste n'était jamais
+   retenu. Corrigé en découvrant les postes à visiter depuis les badges `a[href^="?fsli="]` de la
+   page elle-même, jamais une liste codée en dur (commit `89363b7`).
+3. **Un défaut RÉEL DU PRODUIT, pas seulement du harnais.** `executer()` (refus.ts) redirige vers
+   EXACTEMENT le chemin donné en cas de succès ; les quatre actions de `/eng/[id]/risk`
+   (`assessAction`/`answerAction`/`decideAction`/`overrideAction`) redirigeaient toutes vers le
+   chemin NU `/eng/[id]/risk`, perdant le `?fsli=` du poste consulté. Répondre à UNE question sur
+   la section de REVENUE rebondissait sur la page de CASH (déjà tout répondu), faisant croire à qui
+   répond — humain ou parcours cliqué — que le résiduel était clos alors que cinq questions sur six
+   restaient sans réponse : un vrai refus dont le calcul tenait (`obst.questionsSectionSansReponse`),
+   caché par un rebondissement de page que rien ne signalait (règle 13). Root-causé par lecture du
+   code, pas deviné (règle 18) ; écarté par la mesure directe qu'il s'agissait d'une régression du
+   correctif n°2 lui-même avant de conclure. Corrigé en redirigeant vers `/eng/${id}/risk?fsli=${code}`
+   sur les quatre actions (commit `7fde536`).
+
+**UN RELECTEUR HOSTILE INDÉPENDANT** (règle 30, amendement du 8 septembre : ni modèle de données
+neuf, ni code de refus neuf, ni multi-tenant ni sécurité au sens de ce mandat — un seul suffit,
+bien que le relecteur ait vérifié le point multi-tenant du redirect `?fsli=` par acquit de
+conscience). Vérifié par EXÉCUTION, jamais par lecture seule (règle 15) : `bootstrapNep()` rejoué
+contre une base fraîche (CASH `in_scope` confirmé, quinze autres postes toujours `ns_confirmed`,
+aucune régression) ; `planifierTresorerie()` rejoué DEUX FOIS, compteurs identiques (idempotence
+prouvée, pas supposée) ; `draft.ts` comparé ligne à ligne au patron déjà correct de
+`programme.ts` ; suites ciblées vertes (`enrichir.test.ts` 11/11, `poste.test.ts`+`rail.test.ts`
+19/19, `langue.test.ts` 9/9, `methodology/catalogue.test.ts` 12/12, `langue:epreuve` 15/15).
+**Aucun défaut fonctionnel confirmé.** Un constat DISCLOSED, corrigé sur-le-champ (coût quasi nul,
+un commentaire, pas un comportement) : `poste.ts` affirmait qu'un `sample_item` « ne naît JAMAIS »
+pour un poste circularisé — vrai aujourd'hui parce qu'AUCUN chemin de code ne produit de tirage
+substantif hors REVENUE (`sampling.ts` câblé en dur sur `revenuePopulation()`), pas parce que la
+structure l'interdit ; le commentaire affirmait plus que ce qu'il garantissait (règle 13,
+corollaire). Reformulé pour nommer la limite (règle 19) plutôt que l'absolu — aucun code changé.
+
+**Mesures finales, engendrées.** `npm run verify` (chaîne complète, NEUF passes sur cette tranche —
+détail : deux ont trouvé et fait corriger les trois défauts ci-dessus, une a heurté le flake `#418`
+déjà tracké (`docs/CHASSE.md` F18, page `rcm/[cid]` non touchée par cette tranche), une le flake
+préexistant R58 (`ServeurTombe`, `tests/screens.test.ts`, jamais reproduit isolé — confirmé par un
+passage isolé vert, 1/1) : **145 fichiers, 1136 tests, tous verts** sur le dernier passage complet.
+`npm run clics` (dernier passage, `verify-tresorerie-9.log`/`bi4e05s9q.output`) : **260 étapes
+conduites, ZÉRO échec de station nommée, clôture ET archive atteintes pour la première fois depuis
+l'ouverture de ce poste** (le seul « 1 échec(s) » compté par le harnais est `#418`, F18, sans lien
+avec cette tranche). `npm run visuel` (lancé séparément — `npm run clics` sort en échec sur ce
+seul `#418`, empêchant la chaîne `&&` d'atteindre `visuel`, même situation déjà établie par F14) :
+**336 vues, 0 défaut.**
+
+**Non expédié à la clôture de cette section** : fusion sur `main`, confirmation du SHA servi en
+production, et la suite du Lot 5 (poste 2, Clients) — voir la suite de STATUS.md pour leur mesure.
+
 ## Correctif d'expédition : la migration 0164 bloquait le déploiement, NOTIF-01 rendait la démo insignable (2026-09-14)
 
 **SHA SERVI CONFIRMÉ : `b951986`, mesuré directement sur `https://otto-dit.vercel.app/api/sante`

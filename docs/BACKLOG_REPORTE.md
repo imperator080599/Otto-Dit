@@ -573,6 +573,15 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   (atelier `confirmation_externe`), 2026-09-07 — signalé, pas corrigé, même discipline que R54
   (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se referme avec R54,
   vraisemblablement au Lot 5.
+
+  **Partiellement levée le 2026-09-15, sur le commit `ce43b91`, par la mesure directe (`node
+  methodology/valider.mjs`, EXIT=0, puis `planifierProcedure` exécuté contre une base fraîche) —
+  `TRESO-CIRC` SEULEMENT.** `TRESO-CIRC.cycle` corrigé de `"TRESO"` à `"CASH"` (Lot 5, poste 1 —
+  Trésorerie) : `planifierProcedure({fsliCode:'CASH', code:'TRESO-CIRC'})` réussit désormais, seedé
+  par `planifierTresorerie()` (`part1.ts`), exercé par le parcours cliqué jusqu'à la clôture (règle
+  37). `CONFIRM` reste EXACTEMENT dans l'état décrit ci-dessus (`postes` exclut toujours CASH) et
+  les CINQ autres procédures (`FOURN-CIRC`, `STOCKS-TIERS`, `CLIENTS-CIRC`, `DETTES_FI-CIRC`,
+  `PROV-LITIGES`) restent non corrigées — à lever poste par poste, au fil du Lot 5.
 - **R57 — SEPT des NEUF procédures `rapprochement` du catalogue (`IMMO_COR-TAB`,
   `IMMO_INC-TAB`, `CLIENTS-AGE`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `TRESO-RAPPRO`, `FISCAL-TVA`)
   portent un `cycle` qui ne correspond à AUCUN `fsli.code` réel — MÊME mécanisme que R54/R56,
@@ -593,6 +602,16 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   (atelier `rapprochement`, dernière tranche du Lot 3), 2026-09-07 — signalé, pas corrigé, même
   discipline que R54/R56 (règle 8, règle 14 : contenu de méthode, pas mécanique d'atelier). Se
   referme avec R54/R56, vraisemblablement au Lot 5.
+
+  **Partiellement levée le 2026-09-15, sur le commit `ce43b91`, par la mesure directe (`node
+  methodology/valider.mjs`, EXIT=0, puis `planifierProcedure` exécuté contre une base fraîche) —
+  `TRESO-RAPPRO` SEULEMENT.** `TRESO-RAPPRO.cycle` corrigé de `"TRESO"` à `"CASH"` (Lot 5, poste 1 —
+  Trésorerie) : `planifierProcedure({fsliCode:'CASH', code:'TRESO-RAPPRO'})` réussit désormais,
+  seedé par `planifierTresorerie()` (`part1.ts`), exercé par le parcours cliqué jusqu'à la clôture
+  (règle 37) — la première instance `rapprochement` RÉELLE du monde semé, là où le paragraphe
+  ci-dessus ne connaissait qu'un cas connu mauvais à insertion directe. Les SIX autres procédures
+  (`IMMO_COR-TAB`, `IMMO_INC-TAB`, `CLIENTS-AGE`, `PERSONNEL-DSN`, `CAPITAUX-VAR`, `FISCAL-TVA`)
+  restent non corrigées — à lever poste par poste, au fil du Lot 5.
 
 - **R58 — `tests/screens.test.ts` a fait tomber le serveur, intermittent, trois fois sur cinq
   passages complets de `npm run verify` pendant le Lot 4, tranche 3 (2026-09-08).** Symptôme

@@ -228,13 +228,21 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
   );
 
   /* CE POSTE EST-IL CIRCULARISÉ (Lot 5, poste Trésorerie, 2026-09-14) ? Le
-     patron `sample`/`sample_item` ci-dessus ne s'applique JAMAIS à un poste
-     confirmé par circularisation (`confirmation_externe`/`rapprochement`,
-     `circularisations.ts` — aucune ligne `sample_item` n'y naît, jamais). Sans
-     cette distinction, les blocs `echantillon`/`testing` restaient bloqués à
-     « à faire », lien vers `/population`/`/testing`, l'écran du CHIFFRE
-     D'AFFAIRES, qui ne sait rien de ce poste — un poste ouvert à moitié
-     (trouvé en conduisant l'écran, pas par lecture, règle 15). */
+     bloc `circ` REMPLACE entièrement le patron `sample`/`sample_item`
+     ci-dessus, sans les fusionner — CE QUE CETTE RÈGLE NE VÉRIFIE PAS
+     (règle 19) : si un poste circularisé portait un jour AUSSI un vrai
+     tirage substantif indépendant (`ech` non nul), ce bloc l'écraserait
+     silencieusement. Aujourd'hui inerte : `proposeRevenueSample`/
+     `drawRevenueSample` (sampling.ts) sont câblés en dur sur
+     `revenuePopulation()`, sans paramètre de poste — `ech` ne peut être non
+     nul QUE pour REVENUE, jamais pour un poste circularisé. Si un futur
+     poste du Lot 5 combine circularisation ET tirage substantif, ce bloc
+     devra choisir explicitement, pas se taire (revue hostile de cette
+     tranche). Sans cette distinction, les blocs `echantillon`/`testing`
+     restaient bloqués à « à faire », lien vers `/population`/`/testing`,
+     l'écran du CHIFFRE D'AFFAIRES, qui ne sait rien de ce poste — un poste
+     ouvert à moitié (trouvé en conduisant l'écran, pas par lecture, règle
+     15). */
   const kindCirc = natureCirculariseeDuPoste(code);
   const circ = kindCirc ? await rapprochement(engagementId, kindCirc) : null;
 
