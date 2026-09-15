@@ -468,7 +468,13 @@
       "id": "R94",
       "etat": "ouvert — le troisième patron de poste.ts (échantillon/testing ni circularisé ni sondé façon REVENUE, poste.ts:346-410) est silencieux si un poste qu'il sert aujourd'hui (TRADE_RECEIVABLES, CASH) gagne un jour un vrai tirage (ech.pop > 0) : les blocs rapprochement/recalcul_parametre disparaîtraient de l'écran sans avertissement, ce risque n'étant documenté que pour le cas circularisé. Trouvé par une revue hostile pendant la clôture de Clients.",
       "depuis": "2026-09-15 (Lot 5, poste 2 — Clients, revue hostile)",
-      "note": "non corrigé délibérément : un test contre un état qui n'existe encore nulle part dans le dépôt serait un test contre un décor (règle 25). Se referme le jour où R92 se généralise (sondage_pieces hors REVENUE) : cette tranche-là devra vérifier explicitement, par exécution, que poste.ts reste honnête sur le poste concerné."
+      "note": "non corrigé délibérément : un test contre un état qui n'existe encore nulle part dans le dépôt serait un test contre un décor (règle 25). Se referme le jour où R92 se généralise (sondage_pieces hors REVENUE) : cette tranche-là devra vérifier explicitement, par exécution, que poste.ts reste honnête sur le poste concerné. Précision 2026-09-15 (Immobilisations) : un défaut VOISIN (patronRapprochementSeul gatait à tort blocTesting/recalcul_parametre) trouvé et corrigé sur PPE, sans refermer R94."
+    },
+    {
+      "id": "R95",
+      "etat": "ouvert — IMMO_COR-TAB (rapprochement) et IMMO_COR-ACQ (sondage_pieces) sont COMMANDÉES PAR LE RISQUE sur PPE (exhaustivite:faible, realite:eleve — VÉRIFIÉ par requiredProcedures('PPE') exécuté directement) mais N'ONT AUCUN atelier. IMMO_COR-TAB : /balances-aux ne généralise pas (type Cote fermé 'clients'|'fournisseurs', et un tableau de variation n'est de toute façon pas le même calcul qu'un rapprochement sous-registre). IMMO_COR-ACQ : même gap que CLIENTS-AVOIRS (R92), /testing câblé en dur sur revenuePopulation(). Conséquence visible : le bloc echantillon de vuePoste('PPE') retombe sur le bucket par défaut (population absente -> /population, écran REVENUE), vérifié par exécution.",
+      "depuis": "2026-09-15 (Lot 5, poste 3 — Immobilisations)",
+      "note": "non planifiées délibérément (même raisonnement que R92 : planifier sans atelier atteignable créerait une procédure planifiée sans geste possible). IMMO_COR-CESS/ENTRETIEN/INDICES restent sous leur risque_minimum, non concernées. Se referme le jour où une tranche généralise /balances-aux (rollforward) et /testing (sondage_pieces hors REVENUE) — vraisemblablement avec R92, Fournisseurs (Lot 5 poste 4) portant probablement le même besoin."
     }
   ]
 }

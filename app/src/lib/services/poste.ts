@@ -358,10 +358,26 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
      `vuePoste('TRADE_RECEIVABLES')` avant d'annoncer l'écran (règle 10), pas
      deviné. Discriminant : `atelierDeLaNature('rapprochement', code, base)`
      non nul ET `circ` nul — CASH (rapprochement circularisé) passe par le
-     PREMIER patron, jamais par celui-ci. */
+     PREMIER patron, jamais par celui-ci.
+     LES DEUX NATURES DÉCOUPLÉES (Lot 5, poste 3 — Immobilisations,
+     2026-09-15) : la première forme de ce patron gardait `blocTesting` (la
+     vue `recalcul_parametre`) derrière `patronRapprochementSeul` — un nom ET
+     une condition qui ne parlent QUE de `rapprochement`. Ça tenait tant que
+     le seul poste à emprunter ce patron (TRADE_RECEIVABLES) avait les DEUX
+     ateliers câblés ensemble ; PPE n'a QUE `recalcul_parametre`
+     (IMMO_COR-DOT) câblé, `rapprochement` (IMMO_COR-TAB) restant disclosed
+     R95, sans atelier. Sans ce découplage, `blocTesting` serait retombé sur
+     `/testing` (REVENUE) pour PPE malgré un atelier RÉEL (`/estimations`)
+     disponible — trouvé en conduisant `vuePoste('PPE')` avant d'annoncer
+     l'écran (règle 10), pas deviné, exactement le défaut que ce patron
+     existe pour éviter. `patronSansEchantillon` porte maintenant la
+     condition COMMUNE (ni circularisé, ni sondé) ; chaque bloc vérifie SON
+     PROPRE atelier, indépendamment de l'autre. */
   const atelierRapprochementSeul = !circ ? atelierDeLaNature('rapprochement', code, base) : null;
   const atelierRecalculSeul = !circ ? atelierDeLaNature('recalcul_parametre', code, base) : null;
-  const patronRapprochementSeul = !circ && n(ech?.pop) === 0 && Boolean(atelierRapprochementSeul);
+  const patronSansEchantillon = !circ && n(ech?.pop) === 0;
+  const patronRapprochementSeul = patronSansEchantillon && Boolean(atelierRapprochementSeul);
+  const patronRecalculSeul = patronSansEchantillon && Boolean(atelierRecalculSeul);
 
   const blocEchantillon: BlocPoste = circ
     ? {
@@ -404,7 +420,7 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
             }),
         href: atelierDeLaNature('rapprochement', code, base),
       }
-    : patronRapprochementSeul && atelierRecalculSeul
+    : patronRecalculSeul
       ? {
           cle: 'testing', titre: 'poste.section.testing',
           etat: papiers.length > 0 ? 'en_cours' : 'a_faire',

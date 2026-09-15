@@ -166,6 +166,7 @@
       "CASH": "C",
       "TRADE_PAYABLES": "D",
       "INVENTORY": "E",
+      "PPE": "F",
       "_defaut": "Z"
     }
   },

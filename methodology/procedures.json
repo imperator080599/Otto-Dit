@@ -946,7 +946,7 @@
     },
     {
       "code": "IMMO_COR-TAB",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Tableau de variation des immobilisations",
       "objectif": "Rapprocher ouverture, acquisitions, cessions et clôture au grand livre.",
       "assertion": "exhaustivite",
@@ -970,7 +970,7 @@
     },
     {
       "code": "IMMO_COR-ACQ",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Test des acquisitions de l'exercice",
       "objectif": "Vérifier que les acquisitions sont réelles, correctement évaluées et immobilisables.",
       "assertion": "realite",
@@ -1039,7 +1039,7 @@
     },
     {
       "code": "IMMO_COR-CESS",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Test des cessions et recalcul du résultat de cession",
       "objectif": "Vérifier la sortie de l'actif et le résultat de cession.",
       "assertion": "mesure",
@@ -1077,7 +1077,7 @@
     },
     {
       "code": "IMMO_COR-DOT",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Recalcul des dotations aux amortissements",
       "objectif": "Refaire le calcul des dotations à partir de la base, de la durée et de la méthode.",
       "assertion": "mesure",
@@ -1132,7 +1132,7 @@
     },
     {
       "code": "IMMO_COR-ENTRETIEN",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Revue des charges d'entretien — recherche de capitalisations omises",
       "objectif": "Chercher, dans les charges, ce qui aurait dû être immobilisé. C'est le SENS INVERSE du test des acquisitions.",
       "assertion": "exhaustivite",
@@ -1186,7 +1186,7 @@
     },
     {
       "code": "IMMO_COR-INDICES",
-      "cycle": "IMMO_COR",
+      "cycle": "PPE",
       "libelle": "Revue des indices de perte de valeur",
       "objectif": "Identifier les indices qui déclencheraient un test de dépréciation.",
       "assertion": "evaluation",

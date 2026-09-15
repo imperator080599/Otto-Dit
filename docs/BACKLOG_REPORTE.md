@@ -1387,3 +1387,44 @@ design : chacun reste une tranche à construire.**
   bloquante neuve sans son cas de faux positif RÉEL). Se referme le jour où R92 se généralise
   (`sondage_pieces` hors REVENUE) : cette même tranche devra alors vérifier explicitement, par
   exécution, que `poste.ts` reste honnête sur le poste concerné avant de considérer R92 close.
+
+  **Précision du 2026-09-15 (même soir, Lot 5 poste 3 — Immobilisations) : un défaut VOISIN, pas
+  celui-ci, trouvé et corrigé avant que R94 ne se manifeste.** En ouvrant PPE (SEUL
+  `recalcul_parametre` câblé, `rapprochement` disclosed R95 ci-dessous — la première fois qu'un
+  poste a UN SEUL des deux ateliers, pas les deux ensemble comme TRADE_RECEIVABLES), `vuePoste('PPE')`
+  conduit avant d'annoncer l'écran (règle 10) a montré que `blocTesting` (recalcul_parametre)
+  retombait sur `/testing` (REVENUE) malgré un atelier RÉEL (`/estimations`) : la condition
+  `patronRapprochementSeul && atelierRecalculSeul` exigeait à TORT que l'atelier de
+  `rapprochement` existe pour afficher la vue de `recalcul_parametre` — un couplage qui tenait par
+  coïncidence tant que le seul poste concerné (TRADE_RECEIVABLES) avait les deux. Corrigé :
+  `patronRapprochementSeul`/`patronRecalculSeul` désormais INDÉPENDANTS, chacun sur son propre
+  atelier (`poste.ts`, commit à venir). Ceci NE referme PAS R94 (le risque de disparition
+  silencieuse d'un bloc entier si `ech.pop` devient réel reste entier) — mais réduit sa surface :
+  `blocTesting` de PPE ne dépend plus du tout de `atelierRapprochementSeul`.
+
+- **R95 — IMMO_COR-TAB (`rapprochement`) et IMMO_COR-ACQ (`sondage_pieces`) sont COMMANDÉES PAR LE
+  RISQUE sur PPE mais N'ONT AUCUN atelier.** Trouvé en ouvrant Immobilisations (Lot 5, poste 3,
+  2026-09-15) : mesuré par exécution (`assessFsli`/`risksFor` contre la base seedée),
+  `exhaustivite:faible` (≥ `risque_minimum:"faible"` d'IMMO_COR-TAB) et `realite:eleve` (2
+  facteurs, ≥ `risque_minimum:"faible"` d'IMMO_COR-ACQ) — les deux VÉRIFIÉES commandées par
+  `requiredProcedures('PPE')` exécuté directement (règle 15, leçon de R92), pas comparées à la
+  main. **IMMO_COR-TAB (rapprochement)** : `/balances-aux` (ADR-107) ne généralise pas — son type
+  `Cote` est une union FERMÉE (`'clients' | 'fournisseurs'`), et un « tableau de variation des
+  immobilisations » (ouverture + acquisitions − cessions = clôture) n'est de toute façon PAS le
+  même calcul qu'un rapprochement sous-registre↔GL : une VRAIE mécanique de rollforward serait à
+  construire, pas une ligne de routage. **IMMO_COR-ACQ (sondage_pieces)** : même gap que
+  CLIENTS-AVOIRS (R92) — `/testing` est le seul atelier `sondage_pieces` construit, câblé en dur
+  sur `revenuePopulation()` (`sampling.ts`). **Non planifiées cette tranche, délibérément** — même
+  raisonnement que R92 : planifier sans atelier atteignable créerait une procédure planifiée SANS
+  geste possible (règle 13). **Conséquence visible, disclosed plutôt que cachée** : le bloc
+  `echantillon` de `vuePoste('PPE')` (`poste.ts`), faute d'atelier `rapprochement` OU
+  `sondage_pieces` sur ce poste, retombe sur le bucket PAR DÉFAUT (« population absente » →
+  `/population`, l'écran REVENUE) — vérifié par exécution (`vuePoste('PPE').blocs`), pas supposé.
+  Ce n'est pas une régression du patron TROISIÈME (poste.ts, voir la précision R94 ci-dessus) : ce
+  patron exige un atelier RÉEL pour s'activer, et PPE n'en a aucun côté `echantillon` — la
+  conséquence honnête d'un poste qui a DEUX procédures commandées sans écran, pas une de trop.
+  IMMO_COR-CESS, IMMO_COR-ENTRETIEN et IMMO_COR-INDICES restent SOUS leur `risque_minimum`
+  (`moyen`) sur ce dossier — non commandées, pas seulement non planifiées, pas concernées par ce
+  constat. Se referme le jour où une tranche généralise `/balances-aux` (rollforward) et
+  `/testing` (sondage_pieces hors REVENUE) — vraisemblablement en même temps que R92, puisque
+  Fournisseurs (Lot 5, poste 4) portera probablement le même besoin de sondage_pieces généralisé.

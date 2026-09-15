@@ -525,18 +525,33 @@ export interface LigneProgramme {
  * risque sur ce dossier — `exhaustivite` y est `moyen` —, mais SANS atelier :
  * `sample`/`sample_item` ne sont écrits que par `proposeRevenueSample`/
  * `drawRevenueSample`, câblés en dur sur `revenuePopulation()`, disclosed R92
- * (docs/BACKLOG_REPORTE.md) plutôt que planifiée sans écran atteignable)
- * entrent ICI le jour où ils existent, jamais ailleurs — un second endroit
- * qui devine l'atelier diverge un jour.
+ * (docs/BACKLOG_REPORTE.md) plutôt que planifiée sans écran atteignable),
+ * `rapprochement` sur PPE (IMMO_COR-TAB, tableau de variation des
+ * immobilisations : `/balances-aux` ne généralise pas — `Cote` est une union
+ * fermée `'clients' | 'fournisseurs'`, et un rollforward ouverture+
+ * acquisitions-cessions=clôture n'est de toute façon PAS le même calcul
+ * qu'un rapprochement sous-registre↔GL) et `sondage_pieces` sur PPE
+ * (IMMO_COR-ACQ, acquisitions : même gap que CLIENTS-AVOIRS, `/testing` câblé
+ * sur REVENUE) — ces deux-là disclosed R95 plutôt que planifiées, Lot 5 poste 3
+ * (Immobilisations, 2026-09-15) — entrent ICI le jour où ils existent, jamais
+ * ailleurs — un second endroit qui devine l'atelier diverge un jour.
  * Lot 3 (Partie C.1) est COMPLET avec la quatrième case (CASH) : les quatre
  * natures qu'il mandatait (`sondage_pieces`, `recalcul_parametre`,
  * `confirmation_externe`, `rapprochement`) ont chacune un atelier réel sur
  * au moins un poste. Lot 5, poste 2 (Clients, 2026-09-15) généralise DEUX de
  * ces quatre cases (`rapprochement`, `recalcul_parametre`) à un second poste —
- * les deux ateliers sous-jacents (`balances-aux`, `estimations`) étaient
- * DÉJÀ poste-agnostiques, seule la ligne de routage manquait. Les QUATRE
- * autres natures (`revue_analytique_substantive`, `test_exhaustif`,
- * `tests_de_controles`, `observation_documentee`) restent hors de ce Lot.
+ * les deux ateliers sous-jacents (`balances-aux`, `estimations`) sont
+ * poste-agnostiques PAR LEUR CLÉ, seule la ligne de routage manquait ; NI L'UN
+ * NI L'AUTRE n'est poste-agnostique dans son CALCUL (`balances-aux.ts` : type
+ * `Cote` fermé à deux valeurs ; `estimations.ts` : `montantComptabilise` filtre
+ * en dur les comptes `70%` — précision ajoutée le 2026-09-15, poste 3, la
+ * phrase d'origine ne le disait pas). Lot 5, poste 3 (Immobilisations)
+ * généralise UNE SEULE case (`recalcul_parametre`, à PPE, même limite de
+ * calcul que ci-dessus) ; les DEUX autres cases qu'il aurait pu généraliser
+ * (`rapprochement`, `sondage_pieces`) restent SANS atelier sur ce poste,
+ * disclosed R95. Les QUATRE autres natures (`revue_analytique_substantive`,
+ * `test_exhaustif`, `tests_de_controles`, `observation_documentee`) restent
+ * hors de ce Lot.
  */
 export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
   if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
@@ -549,12 +564,32 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      le risque sur ce dossier, vérifié par exécution, pas supposé) : c'est
      CLIENTS-AGE, « rapprocher la balance âgée au solde comptable » — l'atelier
      qui fait déjà exactement ça est `/balances-aux` (ADR-107, point 1),
-     poste-agnostique par construction (`Cote = 'clients' | 'fournisseurs'`).
-     Même chose pour `recalcul_parametre`/CLIENTS-DEPREC : `estimations.ts`
-     est déjà générique (clé par `pieceRef`, jamais par `fsliCode`), câblé ici
-     pour un second poste plutôt que dupliqué. */
+     poste-agnostique PAR SA CLÉ (`Cote = 'clients' | 'fournisseurs'`), mais
+     PAS par son TYPE — un troisième poste (ex. Immobilisations) ne pourrait
+     PAS réutiliser `/balances-aux` sans étendre ce type union, une vraie
+     mécanique neuve, pas un câblage supplémentaire (voir R95, poste 3 ne
+     l'a donc PAS reçu). `recalcul_parametre`/CLIENTS-DEPREC : `estimations.ts`
+     est générique par sa CLÉ (`pieceRef`, jamais `fsliCode`) — MAIS PAS par
+     son calcul : `montantComptabilise` (`estimations.ts`) filtre en dur
+     `account_no like '70%'` (comptes de PRODUITS), donc son papier reste
+     `utilisee:false` HONNÊTE (jamais exercé) sur TOUT poste hors REVENUE,
+     câblé ici pour un second poste plutôt que dupliqué — précision corrigée
+     le 2026-09-15 (poste 3, Immobilisations) : la phrase d'origine disait
+     « déjà générique » sans nuance, ce qui était vrai pour la clé, faux pour
+     le calcul (règle 13, corollaire). */
   if (nature === 'rapprochement' && fsliCode === 'TRADE_RECEIVABLES') return `${base}/balances-aux?cote=clients`;
   if (nature === 'recalcul_parametre' && fsliCode === 'TRADE_RECEIVABLES') return `${base}/estimations`;
+  /* Lot 5, poste 3 (Immobilisations, 2026-09-15) : PPE seul (INTANGIBLES reste
+     sous la matérialité de performance sur ce dossier, 12 000 € < 27 000 € —
+     mesuré, pas supposé ; FINANCIAL_ASSETS absent du plan de comptes). Seule
+     IMMO_COR-DOT (recalcul_parametre, dotations aux amortissements) reçoit un
+     atelier — le même `/estimations` que TRADE_RECEIVABLES, MÊME LIMITE
+     ci-dessus (papier `utilisee:false`, jamais exercé). IMMO_COR-TAB
+     (rapprochement, tableau de variation) et IMMO_COR-ACQ (sondage_pieces,
+     acquisitions) N'ONT AUCUN atelier réutilisable — ni `/balances-aux`
+     (union de type fermée), ni `/testing` (câblé en dur sur
+     `revenuePopulation()`, R92) : disclosed R95, pas planifiées. */
+  if (nature === 'recalcul_parametre' && fsliCode === 'PPE') return `${base}/estimations`;
   return null;
 }
 

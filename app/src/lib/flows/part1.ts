@@ -79,21 +79,28 @@ export async function bootstrapNep(): Promise<void> {
      CE QUE LE MOTIF NE PRÉTEND PAS ÊTRE. Sur cette entité, le moteur propose
      CES POSTES-LÀ AUSSI dans le périmètre (vérifié par requête directe avant
      chaque correctif, jamais supposé : `fsli.scoping` de CASH puis de
-     TRADE_RECEIVABLES portait déjà le motif « hors périmètre du jeu » — donc
-     PAS `ns_proposed`, le moteur l'avait proposé `in_scope` — TRADE_RECEIVABLES
-     pèse 1 554 017,64 € (créances clients), la paie pèse 2,6 M€, contre un
-     seuil de planification de 27 000 €. Les sortir n'est donc pas un jugement
-     de significativité, et le motif le dit à l'écran, dans le journal et dans
-     l'archive : c'est une convention du jeu synthétique. Écrire l'inverse
-     ferait du dossier de démonstration un dossier qu'un inspecteur rejetterait
-     — et le produit refuse partout ailleurs les motifs qui n'en sont pas. */
+     TRADE_RECEIVABLES puis de PPE portait déjà le motif « hors périmètre du
+     jeu » — donc PAS `ns_proposed`, le moteur l'avait proposé `in_scope` —
+     TRADE_RECEIVABLES pèse 1 554 017,64 € (créances clients), PPE pèse
+     1 050 000,00 € (immobilisations corporelles), la paie pèse 2,6 M€, contre
+     un seuil de planification de 27 000 €. Les sortir n'est donc pas un
+     jugement de significativité, et le motif le dit à l'écran, dans le
+     journal et dans l'archive : c'est une convention du jeu synthétique.
+     Écrire l'inverse ferait du dossier de démonstration un dossier qu'un
+     inspecteur rejetterait — et le produit refuse partout ailleurs les
+     motifs qui n'en sont pas. INTANGIBLES reste HORS de cette liste : sa
+     balance (12 000,00 €) est SOUS le seuil de planification — vérifié par
+     requête directe, `fsli.scoping_basis` d'INTANGIBLES ne porte PAS le motif
+     générique ci-dessous, il dit « ressorti du périmètre » — un jugement de
+     significativité GENUINE, pas une convention à lever un jour. */
   const MOTIF_DEMO =
-    'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie et '
-    + 'clients y sont déroulés. Ce n’est PAS un jugement de significativité — sur cette entité le '
-    + 'poste dépasse le seuil de planification et serait travaillé dans un dossier réel.';
+    'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie, '
+    + 'clients et immobilisations y sont déroulés. Ce n’est PAS un jugement de significativité — '
+    + 'sur cette entité le poste dépasse le seuil de planification et serait travaillé dans un '
+    + 'dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES'].includes(f.code)) {
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE'].includes(f.code)) {
       /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
          CETTE fonction — PAS appelé ici, mais bien appelé en aval par
          `scripts/deploy/reconstruire.ts`, le build de production, dans le
@@ -106,8 +113,15 @@ export async function bootstrapNep(): Promise<void> {
          trouvé par `enrichir.test.ts` (« CONSTAT 1 et 6 »), pas deviné :
          laisser TRADE_RECEIVABLES retenu dès ce seed (règle 14, Lot 5) sans
          émettre ce marqueur crée exactement le trou que D9 interdit.
-         REVENUE/CASH n'ont pas cette garde côté `enrichir.ts` : rien à
-         émettre pour eux ici. */
+         REVENUE/CASH/PPE n'ont pas cette garde côté `enrichir.ts` : rien à
+         émettre pour eux ici — vérifié pour PPE avant d'ouvrir ce poste
+         (Lot 5, Immobilisations, 2026-09-15), pas supposé par analogie avec
+         TRADE_RECEIVABLES : `enrichir.ts` ne mentionne `PPE` NULLE PART
+         (recherche directe dans le fichier). C'est exactement le trou que
+         R93 nomme (le garde-fou D9 est dupliqué sans mécanisme partagé) —
+         cette tranche n'a pas eu BESOIN d'ajouter un second marqueur ici,
+         mais un futur poste pourrait en avoir besoin sans que rien ne le
+         signale. */
       if (f.code === 'TRADE_RECEIVABLES') {
         const dejaMarque = await q01<{ id: string }>(
           `select id from event_log where engagement_id = $1 and verb = 'demo_scoping_seeded' and payload->>'fsli' = 'TRADE_RECEIVABLES'`,
@@ -673,6 +687,65 @@ export async function planifierClients(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 3 (Immobilisations/PPE, 2026-09-15) — UNE SEULE procédure
+ * planifiée, IMMO_COR-DOT (recalcul_parametre, dotations aux amortissements),
+ * contrairement à Trésorerie (deux) et Clients (deux) : mesuré par exécution
+ * avant d'écrire (`assessFsli` + `risksFor` contre la base seedée), TROIS
+ * procédures dépassent leur `risque_minimum` sur PPE — IMMO_COR-TAB
+ * (rapprochement, `exhaustivite:faible` ≥ `faible`), IMMO_COR-ACQ
+ * (sondage_pieces, `realite:eleve` ≥ `faible`) et IMMO_COR-DOT
+ * (recalcul_parametre, `mesure:faible` ≥ `faible`) — mais SEULE IMMO_COR-DOT
+ * a un atelier atteignable (`/estimations`, réutilisé de TRADE_RECEIVABLES,
+ * `atelierDeLaNature` dans `programme.ts`). IMMO_COR-TAB et IMMO_COR-ACQ
+ * n'ont NI L'UNE NI L'AUTRE d'atelier : `/balances-aux` ne généralise pas
+ * (type `Cote` fermé), `/testing` reste câblé sur REVENUE (R92) — disclosed
+ * R95 plutôt que planifiées sans écran atteignable (même raisonnement que
+ * CLIENTS-AVOIRS/R92 dans `planifierClients()` ci-dessus). IMMO_COR-CESS,
+ * IMMO_COR-ENTRETIEN et IMMO_COR-INDICES restent SOUS leur `risque_minimum`
+ * (`moyen`) sur ce dossier — non commandées, pas seulement non planifiées.
+ *
+ * MÊME LIMITE que CLIENTS-DEPREC sur le papier : `estimations.ts` est
+ * générique par sa CLÉ (`pieceRef`), pas par son CALCUL
+ * (`montantComptabilise` filtre `account_no like '70%'`, des comptes de
+ * PRODUITS — une dotation aux amortissements se book en 68x/28x). L'IPE
+ * reste donc `utilisee: false`, HONNÊTE : le papier se rédige depuis des
+ * faits stockés vides, jamais un calcul fabriqué.
+ */
+export async function planifierImmobilisations(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesImmo = new Set((await answers(IDS.engNep, 'PPE')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesImmo.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'PPE', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'PPE' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'PPE', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'PPE', code: 'IMMO_COR-DOT', userId: IDS.users.karim });
+  const papierExistant = await q01<{ id: string }>(
+    `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+  if (!papierExistant) {
+    const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+    await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+  }
+
+  const dejaRedigeeImmo = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'PPE' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeeImmo) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'PPE');
+    await enregistrerAnalytique(IDS.engNep, 'PPE', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -734,4 +807,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await circulariserBanques();
   await planifierTresorerie();
   await planifierClients();
+  await planifierImmobilisations();
 }

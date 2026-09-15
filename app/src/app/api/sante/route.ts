@@ -561,9 +561,11 @@ async function corpsDeLaSonde() {
       if (rows.length === 0) return 'aucune procédure recalcul_parametre planifiée encore';
       /* POSTES_CABLES : la liste ATTENDUE, indépendante de ce qu'`atelierDeLaNature`
          rend réellement — comparer sa sortie à elle-même ne détecterait jamais
-         sa propre régression. REVENUE (Lot 3 tranche 2) et TRADE_RECEIVABLES
-         (Lot 5, poste Clients, 2026-09-15) sont les deux postes câblés à ce jour. */
-      const POSTES_CABLES = ['REVENUE', 'TRADE_RECEIVABLES'];
+         sa propre régression. REVENUE (Lot 3 tranche 2), TRADE_RECEIVABLES
+         (Lot 5, poste Clients, 2026-09-15) et PPE (Lot 5, poste Immobilisations,
+         2026-09-15 — IMMO_COR-DOT, → `/estimations`) sont les TROIS postes
+         câblés à ce jour. */
+      const POSTES_CABLES = ['REVENUE', 'TRADE_RECEIVABLES', 'PPE'];
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('recalcul_parametre', r.fsli_code ?? '', '/base'));
       const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
       const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));
