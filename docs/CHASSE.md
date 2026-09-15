@@ -851,3 +851,11 @@ long de ce fichier) — chaîne relancée une troisième fois pour cette tranche
   fichiers, 1136/1136 tests — c'est le PREMIER passage complet de cette tranche sans AUCUN autre
   défaut (les deux précédents avaient chacun un défaut réel : H1/H2 puis R58). Pas creusé plus loin
   (même discipline que F9-F21).
+
+- **F23 — UN incident dans `verify-fourn-mecanique-1.log`** (2026-09-15, chaîne verify complète
+  pour la tranche « mécanique circularisation fournisseur » (migration 0165), sur l'arbre du
+  commit `4fd9b1f`, 260 étapes) : REJOUE F18-F22 au trait près, même page `rcm/[cid]` (SOX).
+  Clôture et archive ATTEINTES (240 stations), 145/145 fichiers, 1136/1136 tests — SEPTIÈME
+  confirmation consécutive sur ce même Lot 5 que ce défaut est disjoint de tout ce qui a été
+  touché (migration, `circularisations.ts`, `procedures.json`, `catalogue.test.ts`, aucun rapport
+  avec `rcm/[cid]`). Pas creusé plus loin (même discipline que F9-F22).
