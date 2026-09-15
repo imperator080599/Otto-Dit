@@ -809,3 +809,16 @@ prochaine occurrence doit capturer 1 et 2 ci-dessus AVANT de relancer, pas aprè
   309 ko) : l'unique échec est le #418 disjoint ci-dessus, pas un obstacle du parcours. Reste de
   la chaîne propre : 145/145 fichiers de test, 1136/1136 tests, gardes/semeur/plancher/langue/
   lectures/parcours/screens/fumee/densite tous verts, 0 échec sur les 93+52 routes ouvertes.
+
+- **F20 — UN incident dans `verify-clients-4.log`** (2026-09-15, quatrième chaîne verify complète
+  de la tranche Clients, sur l'arbre du commit `e25ad17` — après la correction des constats
+  hostiles C1-C4, 260 étapes) : REJOUE F19 AU TRAIT PRÈS, sur le MÊME arbre applicatif (seul
+  `rcm/[cid]/page.tsx` compte ici, non touché par les correctifs hostiles) — `EXCEPTION sur
+  /eng/70670df5.../rcm/ca612bb1-3c8b-4186-a5e8-cab2b4c0dc80 : Minified React error #418`, flux
+  complet (215 731 octets, identique à F19 à l'octet près), jeton 87 = `rail-astuce` (E5), les
+  dix-neuf autres = re-sérialisation CSSOM (F11). Clôture et archive ATTEINTES (240 stations),
+  145/145 fichiers, 1136/1136 tests. Pas creusé plus loin (même discipline que F9-F19) — cette
+  quatrième occurrence sur le même Lot 5 confirme seulement que le défaut est stable et disjoint
+  de tout ce que cette tranche a touché, pas une nouvelle information. `npm run visuel`, relancé
+  séparément (même contrainte F14 : `clics` sort en échec sur ce seul `#418`) — résultat mesuré
+  séparément, voir STATUS.md.
