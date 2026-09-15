@@ -1001,17 +1001,29 @@ export async function conduire(
       }
     }
 
-    /* LE QUESTIONNAIRE : compter d'abord, boucler ensuite. Une liste vide veut
+    /* LE QUESTIONNAIRE : compter d'abord, boucler ensuite — POUR CHAQUE POSTE
+       RETENU, pas seulement celui par défaut. `/risk` sans `?fsli=` rend le
+       PREMIER poste dans l'ordre bilan-puis-résultat (rail.ts,
+       postesRetenus, « order by statement, code ») : tant que REVENUE était
+       seul retenu, c'était lui. Depuis que Trésorerie (CASH, poste de
+       BILAN) est retenu, CASH passe devant REVENUE (compte de résultat) —
+       REVENUE restait alors à jamais sans réponse, un obstacle « 6 sans
+       réponse » jamais levé par ce parcours, jamais visible dans « total »
+       (qui ne comptait que la page par défaut). Trouvé par le parcours
+       cliqué mené jusqu'à la clôture (règle 37), pas deviné : sur la base
+       fraîche, seul CASH portait des réponses (le seed, planifierTresorerie)
+       et REVENUE restait à zéro après le passage complet de cette station.
+       Les postes à visiter se lisent depuis les badges DE LA PAGE ELLE-MÊME
+       (`a[href^="?fsli="]`), jamais une liste codée en dur qui prendrait
+       encore du retard au prochain poste du Lot 5. Une liste vide voulait
        dire deux choses — « tout est répondu » et « la page n'est pas encore
        revenue » — et la première version les confondait : après l'arbitrage,
-       elle lisait zéro formulaire au milieu d'un re-rendu, sortait de la boucle
-       et annonçait « 0 sans réponse » sur un questionnaire entièrement vierge. */
+       elle lisait zéro formulaire au milieu d'un re-rendu, sortait de la
+       boucle et annonçait « 0 sans réponse » sur un questionnaire
+       entièrement vierge. */
     await aller(`${eng}/risk`);
-    const total = await compte('form:has(select[name=answer])');
-    if (total === 0) {
-      dire('risque : aucun formulaire de questionnaire à l’écran', false,
-        'la liste est vide — répondu, ou pas encore rendu ?');
-    }
+    const codesPostes = await p.locator('a[href^="?fsli="]').evaluateAll(
+      (els) => els.map((e) => e.textContent?.trim()).filter((x): x is string => Boolean(x)));
 
     /* ATTENDRE QUE LA RÉPONSE SOIT LÀ, pas qu'un délai soit écoulé. La
        première version attendait 900 ms puis relisait le DOM : en production le
@@ -1023,36 +1035,49 @@ export async function conduire(
       (els) => els.map((e, i) => ({ i, v: (e.querySelector('select[name=answer]') as HTMLSelectElement)?.value }))
         .filter((x) => !x.v).map((x) => x.i));
 
-    let repondus = 0;
-    for (let tour = 0; tour < 60 && total > 0; tour++) {
-      const vides = await videsMaintenant();
-      if (!vides.length) break;
-      const f = p.locator('form:has(select[name=answer])').nth(vides[0]);
-      await f.locator('select[name=answer]').selectOption('non');
-      await f.locator('button').first().click();
+    let totalGlobal = 0; let reponduGlobal = 0; let resteGlobal = 0;
+    for (const codePoste of codesPostes) {
+      await aller(`${eng}/risk?fsli=${codePoste}`);
+      const total = await compte('form:has(select[name=answer])');
+      totalGlobal += total;
+      if (total === 0) continue;
 
-      // …et on attend que le compte DIMINUE, sinon on relit la page, puis on renonce.
-      let vu = false;
-      for (let attente = 0; attente < 12; attente++) {
-        await p.waitForTimeout(500);
-        if ((await videsMaintenant()).length < vides.length) { vu = true; break; }
-      }
-      if (!vu) {
-        await aller(`${eng}/risk`);
-        if ((await videsMaintenant()).length >= vides.length) {
-          dire('risque : une réponse au questionnaire ne s’enregistre pas', false,
-            refus(p) ?? `${vides.length} question(s) restent sans réponse après envoi`);
-          break;
+      for (let tour = 0; tour < 60; tour++) {
+        const vides = await videsMaintenant();
+        if (!vides.length) break;
+        const f = p.locator('form:has(select[name=answer])').nth(vides[0]);
+        await f.locator('select[name=answer]').selectOption('non');
+        await f.locator('button').first().click();
+
+        // …et on attend que le compte DIMINUE, sinon on relit la page, puis on renonce.
+        let vu = false;
+        for (let attente = 0; attente < 12; attente++) {
+          await p.waitForTimeout(500);
+          if ((await videsMaintenant()).length < vides.length) { vu = true; break; }
         }
+        if (!vu) {
+          await aller(`${eng}/risk?fsli=${codePoste}`);
+          if ((await videsMaintenant()).length >= vides.length) {
+            dire('risque : une réponse au questionnaire ne s’enregistre pas', false,
+              refus(p) ?? `${vides.length} question(s) restent sans réponse après envoi (${codePoste})`);
+            break;
+          }
+        }
+        reponduGlobal++;
+        const r = refus(p);
+        if (r) { dire('risque : la réponse au questionnaire est REFUSÉE', false, r); break; }
       }
-      repondus++;
-      const r = refus(p);
-      if (r) { dire('risque : la réponse au questionnaire est REFUSÉE', false, r); break; }
+      const reste = await p.locator('form:has(select[name=answer])').evaluateAll(
+        (els) => els.filter((e) => !(e.querySelector('select[name=answer]') as HTMLSelectElement)?.value).length);
+      resteGlobal += reste;
     }
-    const reste = await p.locator('form:has(select[name=answer])').evaluateAll(
-      (els) => els.filter((e) => !(e.querySelector('select[name=answer]') as HTMLSelectElement)?.value).length);
+    if (totalGlobal === 0) {
+      dire('risque : aucun formulaire de questionnaire à l’écran', false,
+        'la liste est vide — répondu, ou pas encore rendu ?');
+    }
     dire('risque : le questionnaire résiduel est répondu, question par question',
-      total > 0 && reste === 0, `${total} question(s), ${repondus} répondue(s), ${reste} sans réponse`);
+      totalGlobal > 0 && resteGlobal === 0,
+      `${codesPostes.length} poste(s) · ${totalGlobal} question(s), ${reponduGlobal} répondue(s), ${resteGlobal} sans réponse`);
   });
 
   // ── 8. SONDAGE : proposer → valider → TIRER → demander les pièces
