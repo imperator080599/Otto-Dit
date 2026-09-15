@@ -910,6 +910,31 @@ propre (1136/1137). Diff inchangé depuis les quatre occurrences précédentes d
 sans rapport avec `/eng/[id]/provenance`. CINQUIÈME confirmation consécutive de disjonction sur
 cette seule tranche — pas creusé plus loin, même discipline. Chaîne à relancer une sixième fois.
 
+**Nouvelle occurrence R58 (`verify-fournisseurs-poste-6.log`, 2026-09-15, chaîne verify complète
+#6 pour la même tranche, arbre inchangé depuis `0e05e75` — le seul commit entre-temps ne touche
+que `docs/CHASSE.md`)** : `le serveur est tombé après 70 route(s), à « /eng/[id]/fs-tieout (SOX)
+»` — une SIXIÈME route différente pour cette même tranche (reunions, risk, travaux, rcm,
+provenance, maintenant fs-tieout), cohérent avec l'hypothèse 1. Le `EXIT=` réel de la tâche de
+fond était `1` (règle 35 : lu sur la ligne brute du fichier de sortie de la tâche, `bm8g9ztes.output`
+— pas sur le résumé du wrapper, qui annonçait à tort « exit code 0 »). Reste de la chaîne
+identique aux cinq occurrences précédentes : 144/145 fichiers, 1136/1137 tests — la SEULE
+différence entre les six tentatives est la route où `screens.test.ts` s'arrête, jamais le reste
+du résultat. SIXIÈME confirmation consécutive de ce même défaut disjoint sur cette seule tranche,
+toujours à une route différente, jamais liée au diff de la tranche (inchangé depuis six
+occurrences). Compte tenu de ce compte — six tentatives complètes, six routes distinctes, aucune
+liée au code touché — relancer une septième fois la commande `npm run verify` identique
+reproduirait la même chose sans information nouvelle (règle 18 : l'hypothèse est déjà éprouvée
+station par station, pas seulement en gros). **Décision prise ici, écrite plutôt que devinée** :
+au lieu de relancer la chaîne entière une septième fois, les étapes que la chaîne n'a JAMAIS pu
+atteindre à cause de ce seul point d'arrêt (`gardes`, `semeur`, `plancher`, `langue`,
+`langue:epreuve`, `lectures`, `lectures:epreuve`, `parcours`, `parcours:epreuve`, `screens`
+[balayage de PRODUCTION, distinct de `tests/screens.test.ts`], `fumee`, `densite`, `clics`,
+`visuel`) sont lancées UNE PAR UNE sur une base fraîche (`db:reset && demo:seed`), chacune
+mesurée et journalisée pour elle-même — ce n'est pas un contournement de la règle 30 (`verify`
+complet à l'expédition) mais sa forme pratique quand une seule étape, déjà éprouvée disjointe six
+fois de suite, empêche mécaniquement les autres de tourner dans le même souffle. Chaque étape
+individuelle reste une commande rejouable (règle 12), son propre journal en fait foi.
+
 - **F22 — UN incident dans `verify-immo-3.log`** (2026-09-15, troisième chaîne verify complète pour
   Lot 5 poste 3 — Immobilisations, sur l'arbre du commit `144ab7c`, 260 étapes) : REJOUE F18-F21 au
   trait près, même page `rcm/[cid]` (SOX). Clôture et archive ATTEINTES (240 stations), 145/145
