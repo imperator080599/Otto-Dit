@@ -90,6 +90,75 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Lot 5, poste 4 (mécanique) : circularisation généralisée aux fournisseurs (2026-09-15)
+
+*Même mandat que Trésorerie/Clients/Immobilisations ci-dessous, quatrième poste de l'ordre C.3 :
+Fournisseurs (TRADE_PAYABLES), après Trésorerie, Clients, Immobilisations. Cette tranche NE
+scope PAS encore TRADE_PAYABLES `in_scope` et NE planifie AUCUNE procédure — elle construit
+uniquement la MÉCANIQUE que la tranche d'ouverture du poste, à suivre immédiatement, utilisera.*
+
+**Le blocage qui a motivé le découpage.** L'obstacle « périmètre sans programme »
+(`obstacles.ts`) exige qu'un poste `in_scope` porte AU MOINS une procédure PLANIFIÉE (pas
+seulement disclosed) avant que la clôture de la démonstration ne l'atteigne — vérifié par lecture
+directe du prédicat, pas supposé par analogie avec Clients/Immobilisations (qui, eux, avaient
+chacun au moins un atelier réel à planifier). Recherche sur Fournisseurs : `requiredProcedures`
+commande FOURN-CIRC (`confirmation_externe`, `moyen`), mais `circularisations.ts` ne portait que
+`Nature = 'banque' | 'avocat'` — aucun atelier réel n'existait pour un poste fournisseur avant
+cette tranche. Décision (règle 5, petites tranches) : scinder en une tranche MÉCANIQUE (celle-ci —
+généraliser `circularisations.ts`, migration seule) puis une tranche D'OUVERTURE séparée (à
+suivre, qui scope, planifie et câble l'écran).
+
+**Implémentation.** `supabase/migrations/0165_circularisation_fournisseur.sql` (NOUVELLE
+migration, jamais une édition de 0030 — règle 26) : `confirmation_campaign.kind` étendu à
+`'fournisseur'`. `circularisations.ts` : `Nature` étendu, `POSTE`/`NOM` étendus (`fournisseur` →
+`TRADE_PAYABLES`), le discriminant binaire rekeyé de `kind === 'banque'` à `kind !== 'avocat'`
+partout SAUF le corps de la lettre d'envoi (`envoyer()`), qui reste un ternaire à trois branches —
+« engagements hors bilan » n'a de sens que pour une banque. `methodology/procedures.json` : les
+QUATRE procédures `FOURN-*` corrigées de `cycle:"FOURN"` à `cycle:"TRADE_PAYABLES"` (même
+correctif de correspondance que CASH/TRADE_RECEIVABLES/PPE, R54/R57/R95).
+`dataset/circularisations/fournisseurs.csv` (nouveau, pas encore consommé par un flux d'import —
+préparé pour la tranche d'ouverture) : deux fournisseurs du dossier (F001/F002), tous deux
+rattachés au compte collectif `401000`.
+
+**DEUX RÉFUTATEURS INDÉPENDANTS** (règle 30 : cette tranche touche le modèle de données ET du code
+de refus — les deux critères qui exigent deux voix, pas une seule comme Immobilisations).
+**Voix 2** : aucun défaut. **Voix 1, C1 (SÉVÈRE, structurel, confirmé par exécution avant
+correction)** : `rapprochement()`/`completude()` comparent le solde d'UN tiers au solde ENTIER de
+son compte du grand livre — vrai pour banque/avocat (un compte = un seul tiers dans ce pack), FAUX
+pour fournisseur : `TRADE_PAYABLES` ne porte qu'UN SEUL compte collectif (`401000`,
+`fsliAccounts`, vérifié par exécution). Reproduit par une sonde jetable (supprimée avant tout
+commit, règle 24) : le solde VRAI et COMPLET de Float Glass seul (193 502,33 €, somme des cinq
+tranches d'âge de `dataset/balances_aux/fournisseurs_2025.csv`) contre le solde du compte 401000
+(-265 632,25 €) donne `ecartCents=459134.58`, `remonte:true`, `etat:'ecart'` — sur une
+confirmation exacte. Essayé et écarté avant de conclure : réduire `fournisseurs.csv` à un seul
+tiers ne résout rien (même vérifié par la même sonde) — le défaut tient au compte collectif, pas
+au nombre de lignes ; le fichier reste à ses deux tiers d'origine. **Non corrigé dans cette
+tranche, délibérément** : la vraie correction (rapprocher contre la balance auxiliaire par tiers,
+`aux_balance_row`/`balances-aux.ts`, plutôt que `fsliAccounts`) suppose un lien tiers↔compte-
+auxiliaire qui n'existe pas encore et relève de la tranche d'ouverture du poste, pas de cette
+généralisation du type `Nature`. Disclosed par un commentaire dans `circularisations.ts` (près de
+`rapprochement()`/`completude()`), une correction de `LISEZ-MOI.md`, et **R96**
+(`docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json`) — **condition BLOQUANTE explicite pour
+la tranche d'ouverture** : ne pas semer de réponse déposée (`deposerReponse` avec
+`montantConfirmeCents`) sur ce listing avant de résoudre R96. **C2** : l'en-tête de la migration
+0165 affirmait au passé qu'une revue hostile à deux voix avait déjà eu lieu, écrit AVANT qu'elle
+n'ait eu lieu — une affirmation non vérifiable au moment où elle a été écrite (règle 13).
+Reformulé pour renvoyer au compte rendu réel plutôt que de l'affirmer sur place.
+
+**Mesures finales, engendrées.** `npm run verify` (chaîne complète après le correctif C1/C2) :
+**145 fichiers, 1136 tests, tous verts** ; `tsc --noEmit` propre. `npm run clics` : **260 étapes
+conduites, ZÉRO échec de station nommée, clôture ET archive atteintes** (le seul « 1 échec(s) »
+compté par le harnais est `#418`, F24 dans `docs/CHASSE.md` — NEUVIÈME confirmation consécutive
+que ce flake est disjoint de tout ce que cette tranche a touché, confirmé par un rejeu propre
+après deux essais de méthode ratés — base déjà jouée, puis budget de `timeout` trop court —
+eux-mêmes écartés sans être commités). `npm run visuel` (lancé séparément — `clics` sort en échec
+sur ce seul `#418`, même précédent que F14/Trésorerie/Clients/Immobilisations) : **336 vues, 0
+défaut.**
+
+**Non expédié à la clôture de cette section** : fusion sur `main`, confirmation du SHA servi en
+production, et la tranche d'ouverture du poste Fournisseurs elle-même (scoping, planification,
+écran) — voir la suite de STATUS.md pour leur mesure.
+
 ## Lot 5, poste 3 : Immobilisations (PPE) ouvertes complètement (2026-09-15)
 
 *Même mandat que Trésorerie/Clients ci-dessous, troisième poste de l'ordre C.3 : Immobilisations,
