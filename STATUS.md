@@ -141,6 +141,17 @@ poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__list_deploy
 Fournisseurs poste-opening (recherche, implémentation, deux revues hostiles, correctif d'urgence
 migration 0165, chaîne verify équivalente gardes→visuel) est donc EN LIGNE.
 
+## SHA servi confirmé — tranche Paie fusionnée sur `main` (`eaaf647`) (2026-09-15)
+
+Fusion rapide-avant de `claude/otto-session-resume-zimig9` dans `main`, poussée. **SHA servi
+CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__list_deployments` montre `dpl_4qpAaDh2Yz2qx1nhLP42vyB7uB98`
+(cible `production`) à l'état `READY`, commit `eaaf6477fe246be887c2b1178f76b21959d94c11` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` rend
+`sha: "eaaf6477fe246be887c2b1178f76b21959d94c11"`, `identiteCoherente: true`, HTTP 200, verdict
+« toutes les lectures passent ». La tranche Paie (recherche, `planifierPaie()`, correctif
+`poste.ts`, correctif `langue:epreuve`, correctif densité `/loop`, un seul `npm run verify`
+propre modulo `#418`) est donc EN LIGNE.
+
 ## Lot 5, poste 6 : Provisions (PROVISIONS) ouvertes — leadsheet, revue analytique, une procédure commandée AVEC UN ATELIER RÉEL (2026-09-15)
 
 *Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs/Paie ci-dessous, sixième et
