@@ -54,12 +54,14 @@ describe('catalogue méthodologique', () => {
        CLIENTS-ALT, CLIENTS-AVOIRS) ont été corrigées vers le vrai fsli.code TRADE_RECEIVABLES
        (même correctif que CLIENTS-AGE/CLIENTS-DEPREC, R54/R57). IMMO_COR retiré le même jour,
        poste 3 — Immobilisations : les SIX procédures IMMO_COR-* (TAB, ACQ, CESS, DOT,
-       ENTRETIEN, INDICES) corrigées vers PPE, même mécanique. Ni "CLIENTS" ni "IMMO_COR"
-       n'existent donc plus comme valeur de cycle nulle part dans le catalogue. Les six autres
-       restent du vocabulaire de cycle en attente de leur propre correction, postes non encore
-       ouverts par le Lot 5. */
+       ENTRETIEN, INDICES) corrigées vers PPE, même mécanique. FOURN retiré le même jour, poste
+       4 — Fournisseurs : les QUATRE procédures FOURN-* (SUL, FNP, CUTOFF-REC, CIRC) corrigées
+       vers TRADE_PAYABLES, même mécanique. Ni "CLIENTS", ni "IMMO_COR", ni "FOURN" n'existent
+       donc plus comme valeur de cycle nulle part dans le catalogue. Les cinq autres restent du
+       vocabulaire de cycle en attente de leur propre correction, postes non encore ouverts par
+       le Lot 5. */
     const cycles = new Set(cat.procedures.map((p) => p.cycle).filter((c) => c !== '*'));
-    for (const attendu of ['FOURN', 'STOCKS', 'PERSONNEL', 'CAPITAUX', 'DETTES_FI', 'PROV']) {
+    for (const attendu of ['STOCKS', 'PERSONNEL', 'CAPITAUX', 'DETTES_FI', 'PROV']) {
       expect(cycles.has(attendu), `cycle ${attendu} absent du catalogue`).toBe(true);
     }
   });
@@ -128,8 +130,10 @@ describe('catalogue méthodologique', () => {
   });
 
   it('n’exige une procédure qu’au niveau de risque qu’elle déclare', () => {
+    /* 'FOURN' -> 'TRADE_PAYABLES' le 2026-09-15 (Lot 5, poste 4 — Fournisseurs) : même
+       correctif de correspondance cycle↔fsli.code que les tranches précédentes. */
     const requises = (n: 'faible' | 'moyen' | 'eleve') =>
-      proceduresRequises(cat, 'FOURN', () => n).map((p) => p.code);
+      proceduresRequises(cat, 'TRADE_PAYABLES', () => n).map((p) => p.code);
     const bas = requises('faible');
     const haut = requises('eleve');
     expect(haut.length).toBeGreaterThan(bas.length);

@@ -27,11 +27,14 @@ import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 // dérive de ce qu'un humain a fait (envoyé, déposé, saisi) et de la comparaison
 // au grand livre, recalculée à chaque lecture (statuts dérivés, ADR-084).
 
-export type Nature = 'banque' | 'avocat';
+export type Nature = 'banque' | 'avocat' | 'fournisseur';
 
 /** Le poste qui porte les comptes à couvrir — PAR LE PACK, jamais un préfixe
- *  français écrit en dur : « 512 » n'existe pas dans un plan américain. */
-const POSTE: Record<Nature, string> = { banque: 'CASH', avocat: 'PROVISIONS' };
+ *  français écrit en dur : « 512 » n'existe pas dans un plan américain.
+ *  `fournisseur` ajouté le 2026-09-15 (Lot 5, poste 4, migration 0165) :
+ *  FOURN-CIRC (confirmation_externe, TRADE_PAYABLES) commandée par le
+ *  risque sur ce dossier — mesuré par exécution, pas supposé. */
+const POSTE: Record<Nature, string> = { banque: 'CASH', avocat: 'PROVISIONS', fournisseur: 'TRADE_PAYABLES' };
 
 /** L'inverse de POSTE — pour qu'un appelant externe (`poste.ts`, Lot 5) sache
  *  SI un poste FSLI est circularisé ici, et par quelle nature, sans
@@ -45,6 +48,7 @@ export function natureCirculariseeDuPoste(fsliCode: string): Nature | null {
 const NOM: Record<Nature, { pluriel: string; tiers: string; ref: string }> = {
   banque: { pluriel: 'banques', tiers: 'banque', ref: 'n° de compte' },
   avocat: { pluriel: 'avocats', tiers: 'cabinet', ref: 'référence de dossier' },
+  fournisseur: { pluriel: 'fournisseurs', tiers: 'fournisseur', ref: 'référence de compte' },
 };
 
 export interface Tiers {
@@ -239,17 +243,24 @@ export async function envoyer(partyId: string, userId: string): Promise<{ remis:
       + 'avant d\'écrire à un tiers en son nom.');
   });
   const transport = getTransportCircularisation();
-  const objet = p.kind === 'banque'
-    ? `Confirmation de solde au ${p.as_of} — ${p.reference}`
-    : `Confirmation des litiges en cours au ${p.as_of} — ${p.reference}`;
+  /* Le CORPS diffère par NATURE, pas seulement par le discriminant fonctionnel
+     (montant confirmé vs litiges) — une banque et un fournisseur confirment
+     tous deux un SOLDE, mais « engagements hors bilan » n'a de sens que pour
+     une banque. Fournisseur ajouté le 2026-09-15 (Lot 5, poste 4). */
+  const objet = p.kind === 'avocat'
+    ? `Confirmation des litiges en cours au ${p.as_of} — ${p.reference}`
+    : `Confirmation de solde au ${p.as_of} — ${p.reference}`;
+  const corpsSuite = p.kind === 'avocat'
+    ? `les litiges en cours, leur objet et les montants provisionnés à cette date.`
+    : p.kind === 'banque'
+      ? `le solde du compte ${p.reference} à cette date, ainsi que les engagements hors bilan.`
+      : `le solde de votre compte à cette date, tel qu'il ressort de vos livres.`;
   const remise = await transport.envoyer({
     destinataire: p.email,
     copies: copies.map((c) => c.email),
     objet,
     corps: `Dans le cadre de l'audit des comptes clos le ${p.as_of}, merci de confirmer directement `
-      + (p.kind === 'banque'
-        ? `le solde du compte ${p.reference} à cette date, ainsi que les engagements hors bilan.`
-        : `les litiges en cours, leur objet et les montants provisionnés à cette date.`),
+      + corpsSuite,
   });
   await q(`update confirmation_party set sent_at = now(), sent_by = $2 where id = $1`, [partyId, userId]);
   await logEvent({
@@ -274,7 +285,7 @@ export async function deposerReponse(input: {
   if (!p.sent_at) {
     throw new CircularisationError('circularisation : aucune demande n\'est partie vers ce tiers — une confirmation qu\'on n\'a pas demandée n\'est pas une réponse.');
   }
-  if (p.kind === 'banque' && input.montantConfirmeCents === undefined) {
+  if (p.kind !== 'avocat' && input.montantConfirmeCents === undefined) {
     throw new CircularisationError('circularisation : le solde confirmé est obligatoire — c\'est lui qu\'on rapproche.');
   }
   if (p.kind === 'avocat' && (!input.litiges || input.litiges.length === 0)) {
@@ -328,13 +339,14 @@ export async function rapprochement(engagementId: string, kind: Nature): Promise
     const solde = t.compte ? soldes.get(t.compte) ?? null : null;
     const confirme = t.montant_confirme === null ? null : numToCents(t.montant_confirme);
     const provisions = t.litiges ? t.litiges.reduce((s, l) => s + (l.provision_cents ?? 0), 0) : null;
-    const compare = kind === 'banque' ? confirme : provisions;
+    const compare = kind !== 'avocat' ? confirme : provisions;
     const ecart = solde !== null && compare !== null ? compare - solde : null;
-    /* LA RÈGLE DIFFÈRE, ET C'EST VOULU : côté banque, TOUT écart se dit — un
-       centime non expliqué sur un compte confirmé n'existe pas par hasard.
-       Côté avocats, la provision est une estimation : c'est le seuil de
-       remontée du dossier (CTT) qui décide. */
-    const remonte = ecart !== null && (kind === 'banque' ? ecart !== 0 : Math.abs(ecart) > (ctt ?? 0));
+    /* LA RÈGLE DIFFÈRE, ET C'EST VOULU : côté banque ET fournisseur, TOUT écart
+       se dit — un centime non expliqué sur un solde confirmé n'existe pas par
+       hasard. Côté avocats, la provision est une estimation : c'est le seuil
+       de remontée du dossier (CTT) qui décide. `fournisseur` ajouté le
+       2026-09-15 (Lot 5, poste 4) : même règle que banque, pas une nouvelle. */
+    const remonte = ecart !== null && (kind !== 'avocat' ? ecart !== 0 : Math.abs(ecart) > (ctt ?? 0));
     const etat: EtatTiers = !t.sent_at ? 'a_envoyer'
       : !t.received_at ? 'envoyee'
         : ecart === null ? 'recue'
@@ -348,8 +360,8 @@ export async function rapprochement(engagementId: string, kind: Nature): Promise
   }
   return {
     lignes,
-    seuilCents: kind === 'banque' ? 0 : ctt,
-    regle: kind === 'banque'
+    seuilCents: kind !== 'avocat' ? 0 : ctt,
+    regle: kind !== 'avocat'
       ? 'tout écart se dit, quel que soit son montant'
       : `écart remonté au-delà du seuil de remontée du dossier${ctt === null ? ' (non fixé : aucun seuil validé)' : ''}`,
   };
@@ -407,7 +419,7 @@ export async function redigerQuestions(engagementId: string, kind: Nature, userI
     ...c.tiersSansCompte.map((x) =>
       `Le listing porte « ${x.nom} » (${x.reference})${x.compte ? ` rattaché au compte ${x.compte}` : ''}, qu'aucun compte du grand livre ne porte. Ce compte est-il ouvert, et pourquoi n'est-il pas comptabilisé ?`),
     ...r.lignes.filter((l) => l.remonte).map((l) =>
-      `${l.nom} (${l.reference}) : ${kind === 'banque' ? 'le solde confirmé' : 'la provision confirmée'} et la comptabilité diffèrent de ${(Math.abs(l.ecartCents ?? 0) / 100).toFixed(2)} €. Quelle en est l'explication ?`),
+      `${l.nom} (${l.reference}) : ${kind !== 'avocat' ? 'le solde confirmé' : 'la provision confirmée'} et la comptabilité diffèrent de ${(Math.abs(l.ecartCents ?? 0) / 100).toFixed(2)} €. Quelle en est l'explication ?`),
   ];
   if (!questions.length) {
     throw new CircularisationError('circularisation : aucun constat à questionner — rien ne justifie une demande.');
@@ -433,7 +445,7 @@ export async function redigerQuestions(engagementId: string, kind: Nature, userI
 /** Ce qui EMPÊCHE le visa — calculé, jamais saisi (famille « circularisation »). */
 export async function obstaclesCircularisation(engagementId: string): Promise<Motif[]> {
   const out: Motif[] = [];
-  for (const kind of ['banque', 'avocat'] as const) {
+  for (const kind of ['banque', 'avocat', 'fournisseur'] as const) {
     const camp = await campagne(engagementId, kind);
     if (!camp) continue;   // pas de campagne ouverte : rien à exiger
     const c = await completude(engagementId, kind);

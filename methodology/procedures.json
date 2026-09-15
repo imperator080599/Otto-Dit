@@ -721,7 +721,7 @@
     },
     {
       "code": "FOURN-SUL",
-      "cycle": "FOURN",
+      "cycle": "TRADE_PAYABLES",
       "libelle": "Recherche de passifs non enregistrés — décaissements postérieurs",
       "objectif": "Détecter les dettes nées avant la clôture et non comptabilisées : c'est la procédure centrale du cycle, et le sens inverse du test de détail.",
       "assertion": "exhaustivite",
@@ -802,7 +802,7 @@
     },
     {
       "code": "FOURN-FNP",
-      "cycle": "FOURN",
+      "cycle": "TRADE_PAYABLES",
       "libelle": "Factures non parvenues — justification et dénouement",
       "objectif": "Vérifier que les charges à payer correspondent à des biens ou services reçus avant la clôture, et qu'elles se dénouent.",
       "assertion": "exhaustivite",
@@ -867,7 +867,7 @@
     },
     {
       "code": "FOURN-CUTOFF-REC",
-      "cycle": "FOURN",
+      "cycle": "TRADE_PAYABLES",
       "libelle": "Cut-off des réceptions — des bons de réception vers la comptabilité",
       "objectif": "Vérifier que les réceptions de fin d'exercice sont comptabilisées dans le bon exercice, en partant des bons de réception.",
       "assertion": "separation",
@@ -908,7 +908,7 @@
     },
     {
       "code": "FOURN-CIRC",
-      "cycle": "FOURN",
+      "cycle": "TRADE_PAYABLES",
       "libelle": "Circularisation des fournisseurs et rapprochement des relevés",
       "objectif": "Confirmer les soldes auprès des fournisseurs, ou rapprocher leurs relevés.",
       "assertion": "exhaustivite",
