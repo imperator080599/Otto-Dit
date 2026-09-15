@@ -176,13 +176,52 @@ atelier » : remplacé par PROVISIONS (toujours sans atelier câblé aujourd'hui
 directe). Les deux défauts (R97 disclosed, `prefixeDuPoste`) sont enregistrés ensemble dans
 `docs/BACKLOG_REPORTE.md`/`docs/instantanes/fils.json`.
 
-**UN SEUL RELECTEUR HOSTILE** (règle 30 : ni migration, ni multi-tenant, ni code de refus neuf dans
-cette tranche — même précédent que Trésorerie/Clients/Immobilisations).
+**UN RELECTEUR HOSTILE INDÉPENDANT** (règle 30 : au départ jugée comme ni migration, ni
+multi-tenant, ni code de refus neuf — même cadrage que Trésorerie/Clients/Immobilisations), **A
+TROUVÉ UN CONSTAT SÉVÈRE, VÉRIFIÉ PAR EXÉCUTION, QUI A CHANGÉ CE CADRAGE.** Le cadrage de la
+tranche (« juste du routage, du scoping, une fonction de seed ») sous-estimait ce que le diff
+changeait réellement : en ajoutant l'entrée `fournisseur` à `NATURES` et en rekeyant les deux
+discriminants `kind === 'banque'` en `kind !== 'avocat'` dans `circularisations/page.tsx`, la
+tranche rendait le formulaire de DÉPÔT DE RÉPONSE (`deposerAction`) pleinement fonctionnel pour
+fournisseur — exactement comme pour banque. Reproduit par exécution, à travers les MÊMES
+fonctions de service que les actions serveur de l'écran appellent : `importerListing` + `envoyer`
++ `deposerReponse(montant EXACT de Float Glass, 193 502,33 €)` produit `ecartCents=459134.58`,
+`remonte:true` — un écart FABRIQUÉ sur une confirmation parfaite et complète, atteignable en
+trois clics depuis l'écran que `vuePoste('TRADE_PAYABLES')` pointe lui-même comme prochaine étape.
+R96 parlait de ne pas SEMER une réponse déposée ; l'affirmation initiale (« R96 est respecté PAR
+OMISSION ») était vraie pour le seed et trompeuse pour l'écran livré dans le même diff.
 
-**Mesures avant expédition.** Suite ciblée (atelier-confirmation/rapprochement/recalcul-lecture,
-deplanification-lecture, nature-lecture, etancheite, enrichir, programme-vue, circularisations,
-catalogue — 68/68) et `tsc --noEmit` propres. `npm run verify` complet à suivre après la revue
-hostile.
+**Corrigé À LA SOURCE** (service, pas seulement l'écran — règle 13 : un formulaire que le
+navigateur refuse d'envoyer n'est pas une garde tant que le service, lui, l'accepterait encore) :
+`deposerReponse()` (`circularisations.ts`) refuse désormais explicitement `kind === 'fournisseur'`,
+message nommant R96 et le compte collectif. `importerListing`/`envoyer` restent possibles (aucun
+des deux ne compare quoi que ce soit au compte collectif). `circularisations/page.tsx` : le
+formulaire de dépôt est remplacé par un aveu honnête (`circ.depositNotYetAvailable`) pour cette
+nature plutôt que de laisser un clic produire un refus surprenant.
+
+**CE CORRECTIF TOUCHE DÉSORMAIS DU CODE DE REFUS NEUF — DEUX RÉFUTATEURS INDÉPENDANTS requis
+(règle 30), pas un seul.** Le premier a trouvé le défaut ci-dessus ; un SECOND réfutateur
+indépendant a vérifié le correctif par exécution (pas par lecture seule) : le refus se déclenche
+AVANT toute écriture en base (`received_at`/`montant_confirme` restent NULL après le refus, vérifié
+par requête directe) ; `importerListing`/`envoyer` fonctionnent toujours pour fournisseur ; banque
+ET avocat NE SONT PAS régressés (les deux flux de dépôt rejoués en entier, avocat n'avait AUCUNE
+couverture de test avant ce correctif — sonde jetable écrite et supprimée pour le prouver aussi) ;
+aucun AUTRE chemin de code n'atteint `deposerReponse` en contournant l'écran (tous les appelants
+grep-és : `page.tsx`, `circularisations.test.ts`, `acheverCircularisationBanques()` — celle-ci
+seulement `kind:'banque'`) ; le nouveau test n'est PAS vacueux — retirer SEULEMENT le nouveau bloc
+de refus fait échouer CE test précisément, aucun autre (règle 17, cas connu mauvais prouvé) ;
+`rapprochement('fournisseur')` ne peut plus jamais montrer un écart fabriqué (tous les
+`confirmeCents` restent `null` tant qu'aucun dépôt ne peut réussir). Deux constats mineurs,
+process, non bloquants : cette section STATUS.md n'existait pas encore au moment du correctif
+(corrigé maintenant, ce paragraphe) ; `npm run clics` n'a pas encore tourné sur ce commit précis
+(à suivre ci-dessous) et sa scénario actuelle n'a de toute façon aucune station qui dépose une
+réponse fournisseur — ne validerait donc pas CE refus spécifiquement même une fois lancé, à noter
+pour une tranche future qui construirait cette station.
+
+**Mesures avant expédition (après les deux revues).** Suite ciblée (atelier-confirmation/
+rapprochement/recalcul-lecture, deplanification-lecture, nature-lecture, etancheite, enrichir,
+programme-vue, circularisations, catalogue — 69/69, incluant le nouveau test R96) et
+`tsc --noEmit` propres. `npm run verify` complet à suivre.
 
 **CORRECTIF D'EXPÉDITION DÉCOUVERT EN CONFIRMANT LE SHA SERVI DE LA TRANCHE PRÉCÉDENTE — le
 « correctif » C2 de la mécanique (ci-dessous) violait la règle 26, et a bloqué TOUS les
