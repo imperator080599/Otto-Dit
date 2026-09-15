@@ -90,6 +90,84 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## Lot 5, poste 3 : Immobilisations (PPE) ouvertes complètement (2026-09-15)
+
+*Même mandat que Trésorerie/Clients ci-dessous, troisième poste de l'ordre C.3 : Immobilisations,
+après Trésorerie (CASH) et Clients (TRADE_RECEIVABLES).*
+
+**Recherche, mesurée avant d'écrire.** `assessFsli`/`risksFor` exécutés contre le dossier NEP
+seedé : PPE (1 050 000,00 €) porte `realite:eleve` (2 facteurs) et `separation:moyen` (1 facteur).
+INTANGIBLES (12 000,00 €) reste GENUINEMENT hors périmètre — sous le seuil de planification
+(27 000 €), `scoping_basis` distinct de la convention de démo, vérifié par requête directe.
+FINANCIAL_ASSETS absent du plan de comptes de ce dossier. `requiredProcedures('PPE')`, exécuté
+directement après le correctif de cycle (voir ci-dessous), confirme TROIS procédures commandées :
+IMMO_COR-TAB (rapprochement, `exhaustivite:faible`), IMMO_COR-ACQ (sondage_pieces,
+`realite:eleve`), IMMO_COR-DOT (recalcul_parametre, `mesure:faible`).
+
+**Implémentation.** `methodology/procedures.json` : les SIX procédures `IMMO_COR-*` corrigées de
+`cycle:"IMMO_COR"` à `cycle:"PPE"` (même correctif que CASH/TRADE_RECEIVABLES, R54/R57).
+`papier.json` : `"PPE": "F"` ajouté, vérifié par exécution (`referencePapier` rend `F-01`).
+`programme.ts` : `atelierDeLaNature` câble `recalcul_parametre`+PPE → `/estimations` (réutilisation) ;
+NE câble PAS `rapprochement`/`sondage_pieces` pour PPE — aucun atelier réutilisable (`/balances-aux`
+a un type `Cote` fermé ; `/testing` câblé sur REVENUE), disclosed R95. `part1.ts` : PPE restauré à
+`in_scope` (moteur genuinement in_scope, vérifié) ; pas de synchronisation D9 nécessaire —
+`enrichir.ts` ne mentionne PPE nulle part (recherche directe, pas supposé par analogie). Nouvelle
+`planifierImmobilisations()` : questionnaire, risque, UNE SEULE procédure planifiée (IMMO_COR-DOT),
+papier PPE-01 avec IPE honnêtement `utilisee:false` (même limite que CLIENTS-DEPREC :
+`montantComptabilise` filtre en dur les comptes 70x, ne fonctionnerait pas pour une dotation aux
+amortissements), revue analytique. `api/sante/route.ts` : `POSTES_CABLES` (lecture
+recalcul_parametre) étendu à PPE.
+
+**UN DÉFAUT RÉEL trouvé en conduisant `vuePoste('PPE')` avant d'annoncer l'écran (règle 10),
+corrigé avant la revue hostile.** `poste.ts` : `patronRapprochementSeul` gatait à tort le bloc
+`testing` (recalcul_parametre) derrière l'atelier de `rapprochement` — un couplage qui tenait par
+coïncidence tant que le seul poste concerné (TRADE_RECEIVABLES) avait les deux ateliers ensemble.
+PPE (recalcul_parametre SEUL) serait retombé sur `/testing` (REVENUE) malgré un atelier réel
+(`/estimations`). Corrigé : `patronRapprochementSeul`/`patronRecalculSeul` désormais indépendants,
+chacun sur son propre atelier.
+
+**UN RELECTEUR HOSTILE INDÉPENDANT** (règle 30 : ni migration, ni multi-tenant, ni code de refus
+dans cette tranche — un seul suffit, même précédent que Trésorerie/Clients). Deux constats réels,
+vérifiés par exécution directe (`requiredProcedures('PPE')`, `vuePoste` sur les quatre postes, un
+cas connu mauvais injecté puis retiré sur `POSTES_CABLES`) : **H2** — le bloc `echantillon` de
+`vuePoste('PPE')` retombait sur `href: /population` (l'écran REVENUE) sans aucun avertissement,
+faute d'atelier `rapprochement`/`sondage_pieces` sur PPE. Honnêtement disclosed dans
+`BACKLOG_REPORTE.md` mais pas dans l'écran. Corrigé : `poste.ts` distingue désormais REVENUE (qui a
+toujours eu ce repli légitimement) de tout autre poste tombant ici faute d'atelier — `etat:
+'sans_objet'`, `href: null`, nouveau motif `poste.resume.echantillonSansAtelier` nommant R95.
+Vérifié par exécution : PPE → `sans_objet`/`null` ; REVENUE, TRADE_RECEIVABLES, CASH inchangés
+(mêmes `href` qu'avant, confirmé un par un). **H1** — `docs/BACKLOG_REPORTE.md` et
+`docs/instantanes/fils.json` gardaient les comptes D'ORIGINE de R54 (« quatorze », puis « treize »)
+et R57 (« sept », puis « cinq ») APRÈS que cette même tranche a corrigé IMMO_COR-CESS/IMMO_COR-DOT
+et IMMO_COR-TAB — exactement le défaut de règle 31 (une valeur qui a l'air d'une mesure sans en
+être une), et la même classe de défaut que la revue hostile Clients avait déjà trouvée une fois
+(C2). Recompté par mesure directe (script Python sur `procedures.json`, pas recopié de tête) :
+R54 = ONZE procédures `recalcul_parametre` encore mismatched (pas treize), R57 = QUATRE procédures
+`rapprochement` encore mismatched (pas cinq). Les deux fichiers corrigés avec les listes exactes.
+**Aucun autre défaut de fond** — le test modifié (`catalogue.test.ts`, retrait de `'IMMO_COR'`)
+reste un test réel, pas affaibli à vacuité.
+
+**R95 nouvelle entrée (disclosed) : IMMO_COR-TAB (rapprochement) et IMMO_COR-ACQ (sondage_pieces)
+sont commandées par le risque sur PPE mais n'ont aucun atelier.** `/balances-aux` a un type `Cote`
+fermé (`'clients'|'fournisseurs'`) — un rollforward n'est de toute façon pas le même calcul qu'un
+rapprochement sous-registre. `/testing` reste câblé sur REVENUE (R92). Non planifiées
+délibérément — planifier sans atelier atteignable créerait une procédure planifiée sans geste
+possible. Se referme avec R92, vraisemblablement quand Fournisseurs (Lot 5, poste 4) portera le
+même besoin.
+
+**Mesures finales, engendrées.** `npm run verify` (chaîne complète, TROIS passes sur cette
+tranche — la première a trouvé les défauts que la revue hostile a confirmés (H1/H2), la deuxième a
+heurté R58 (`ServeurTombe`, route SOX `/eng/[id]/exceptions`, confirmé disjoint par `ps aux` et un
+passage isolé vert, `screens.test.ts` seul 1/1, 472,56 s), la troisième est PROPRE — seul le flake
+`#418` déjà tracké (F22, `docs/CHASSE.md`) : **145 fichiers, 1136 tests, tous verts**. `npm run
+clics` (dernier passage, `verify-immo-3.log`) : **260 étapes conduites, ZÉRO échec de station
+nommée, clôture ET archive atteintes** (le seul « 1 échec(s) » compté par le harnais est `#418`,
+F22, sans lien avec cette tranche). `npm run visuel` (lancé séparément — `clics` sort en échec sur
+ce seul `#418`, même situation que F14/Trésorerie/Clients) : **336 vues, 0 défaut.**
+
+**Non expédié à la clôture de cette section** : fusion sur `main`, confirmation du SHA servi en
+production — voir la suite de STATUS.md pour leur mesure.
+
 ## Lot 5, poste 2 : Clients ouvert complètement (2026-09-15)
 
 *Même mandat que Trésorerie ci-dessous (`docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md`,
