@@ -24,7 +24,7 @@ import { Repli } from '@/app/repli';
 const NATURES: { cle: Nature; titre: CleLibelle; quoi: CleLibelle; poste: CleLibelle }[] = [
   { cle: 'banque', titre: 'circ.banques', quoi: 'circ.banquesQuoi', poste: 'circ.posteTresorerie' },
   { cle: 'avocat', titre: 'circ.avocats', quoi: 'circ.avocatsQuoi', poste: 'circ.posteProvisions' },
-  { cle: 'fournisseur', titre: 'circ.fournisseurs', quoi: 'circ.fournisseursQuoi', poste: 'circ.posteFournisseurs' },
+  { cle: 'fournisseur', titre: 'circ.fournisseurs', quoi: 'circ.fournisseursQuoi', poste: 'mot.suppliers' },
 ];
 
 const ETATS: Record<string, { libelle: CleLibelle; badge: string }> = {
