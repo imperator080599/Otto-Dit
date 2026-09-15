@@ -103,12 +103,12 @@ export async function bootstrapNep(): Promise<void> {
      jour. */
   const MOTIF_DEMO =
     'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie, '
-    + 'clients, immobilisations, fournisseurs et paie y sont déroulés. Ce n’est PAS un jugement de '
-    + 'significativité — sur cette entité le poste dépasse le seuil de planification et serait '
-    + 'travaillé dans un dossier réel.';
+    + 'clients, immobilisations, fournisseurs, paie et provisions y sont déroulés. Ce n’est PAS un '
+    + 'jugement de significativité — sur cette entité le poste dépasse le seuil de planification '
+    + 'et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES', 'PAYROLL'].includes(f.code)) {
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES', 'PAYROLL', 'PROVISIONS'].includes(f.code)) {
       /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
          CETTE fonction — PAS appelé ici, mais bien appelé en aval par
          `scripts/deploy/reconstruire.ts`, le build de production, dans le
@@ -900,6 +900,82 @@ export async function planifierPaie(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 6 (Provisions/PROVISIONS, 2026-09-15) — UNE SEULE procédure
+ * planifiée, PROV-LITIGES (confirmation_externe), même patron minimal que
+ * les cinq postes précédents : mesuré par exécution avant d'écrire
+ * (`fsliAccounts` + `assessFsli` + `requiredProcedures` contre la base
+ * seedée). `fsliAccounts(eng, 'PROVISIONS')` porte UN SEUL compte (151000
+ * « Provisions pour risques »), solde -60 000,00 € — un seul tiers
+ * (`dataset/circularisations/avocats.csv`, Cabinet Vialar & Associés) sur
+ * ce compte, donc AUCUN risque R96 (le rapprochement collectif compare un
+ * tiers au compte ENTIER — sans objet ici, un seul tiers EST le compte).
+ * `assessFsli` mesure TOUTES les assertions `faible` (0 facteur) sur ce
+ * dossier.
+ *
+ * `methodology/procedures.json` portait TROIS procédures pour ce cycle sous
+ * `cycle:"PROV"` (PROV-LITIGES, PROV-RECALC) et `cycle:"PERSONNEL"`
+ * (PERSONNEL-CP, laissée délibérément non corrigée par la tranche Paie —
+ * une provision de BILAN, pas une charge PAYROLL) — aucune jamais
+ * consultée par `proceduresDuCycle`, même correspondance cassée que
+ * TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL (R54/R57/R95/R97/R98). Les TROIS
+ * corrigées vers `cycle:"PROVISIONS"` cette même tranche (version 1.4.2) :
+ * PERSONNEL-CP trouve ENFIN sa vraie correspondance, pas une nouvelle
+ * incertitude.
+ *
+ * Une fois la correspondance corrigée, CINQ procédures sont commandées
+ * (compté par exécution, `requiredProcedures('PROVISIONS').length`, jamais
+ * recopié de tête — règle 31, leçon de la tranche précédente) : les quatre
+ * transverses universelles (DETAIL/RAPPRO/RA/SEQ, `risque_minimum:faible`)
+ * et PROV-LITIGES elle-même (`exhaustivite:faible`) — 4+1 = 5 ; PROV-RECALC
+ * et PERSONNEL-CP (`evaluation:moyen`) restent SOUS leur `risque_minimum`
+ * sur ce dossier (`evaluation` mesurée `faible`) — NON commandées, pas
+ * disclosed comme un gap. **PROV-LITIGES A UN ATELIER RÉEL** — le premier
+ * poste du Lot 5, après CASH et TRADE_PAYABLES, à en recevoir un pour
+ * `confirmation_externe` : « Revue des litiges et confirmation des
+ * conseils juridiques » EST la Nature `avocat` que `circularisations.ts`
+ * porte depuis ADR-111 (`POSTE.avocat === 'PROVISIONS'`, jamais changé,
+ * jamais exercée par un poste réellement ouvert avant celui-ci) —
+ * `programme.ts` route désormais `confirmation_externe`+PROVISIONS vers le
+ * MÊME `/circularisations` que CASH/TRADE_PAYABLES. `poste.ts` : AUCUN
+ * changement nécessaire, vérifié par exécution (`vuePoste('PROVISIONS')`),
+ * `natureCirculariseeDuPoste('PROVISIONS')` retourne déjà `'avocat'` par la
+ * même table `POSTE` inversée que TRADE_PAYABLES a généralisée.
+ */
+export async function planifierProvisions(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesProv = new Set((await answers(IDS.engNep, 'PROVISIONS')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesProv.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'PROVISIONS', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'PROVISIONS' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'PROVISIONS', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'PROVISIONS', code: 'PROV-LITIGES', userId: IDS.users.karim });
+  const papierExistant = await q01<{ id: string }>(
+    `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+  if (!papierExistant) {
+    const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+    await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+  }
+
+  const dejaRedigeeProv = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'PROVISIONS' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeeProv) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'PROVISIONS');
+    await enregistrerAnalytique(IDS.engNep, 'PROVISIONS', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -964,4 +1040,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await planifierImmobilisations();
   await planifierFournisseurs();
   await planifierPaie();
+  await planifierProvisions();
 }

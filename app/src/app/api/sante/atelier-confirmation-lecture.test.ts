@@ -22,12 +22,15 @@ import { GET } from './route';
 // à un jour où ce contournement ne serait plus nécessaire — cette lecture le dit
 // elle-même en tête de route.ts.
 //
-// LE POSTE « SANS ATELIER » DE CE FICHIER A CHANGÉ DEUX FOIS DÉJÀ (Lot 5, poste
-// Fournisseurs, 2026-09-15) : TRADE_PAYABLES servait de fixture « hors CASH, sans
-// atelier » jusqu'à cette tranche, qui lui construit un atelier réel
-// (`FOURN-CIRC` → `/circularisations`) — le réutiliser ici aurait fait de ce
-// fichier un test qui affirme une régression sur un poste qui n'en porte plus.
-// Remplacé par PROVISIONS (`fsli.code` réel, Lot 5 point 6 — avocats), qui reste
+// LE POSTE « SANS ATELIER » DE CE FICHIER A CHANGÉ TROIS FOIS DÉJÀ (Lot 5) :
+// TRADE_PAYABLES servait de fixture « hors CASH, sans atelier » jusqu'au poste
+// Fournisseurs (2026-09-15), qui lui construit un atelier réel (`FOURN-CIRC` →
+// `/circularisations`) ; remplacé par PROVISIONS, qui à son tour a reçu le sien
+// au poste Provisions (même jour, `PROV-LITIGES` = Nature `avocat`, déjà portée
+// par `circularisations.ts` depuis ADR-111 mais jamais exercée avant ce poste).
+// Réutiliser l'un ou l'autre ici aurait fait de ce fichier un test qui affirme
+// une régression sur un poste qui n'en porte plus. Remplacé par INVENTORY
+// (`fsli.code` réel, poste STOCKS non encore ouvert par le Lot 5), qui reste
 // SANS atelier câblé dans `atelierDeLaNature` pour `confirmation_externe`
 // aujourd'hui (vérifié par lecture directe de `programme.ts` avant ce correctif).
 
@@ -66,7 +69,7 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
        simule tous les deux, sans attendre qu'ils se produisent pour de vrai. */
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'PROVISIONS', 'sonde atelier — poste sans atelier, hors CASH/TRADE_PAYABLES', 'confirmation_externe')`,
+       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'INVENTORY', 'sonde atelier — poste sans atelier, hors CASH/TRADE_PAYABLES', 'confirmation_externe')`,
       [IDS.engNep],
     );
 
@@ -76,10 +79,10 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
     expect(lectureApresHorsCash.ok).toBe(true);
     expect(apresHorsCash.status).toBe(200);
     expect(lectureApresHorsCash.detail).toContain('CONFIRM');
-    expect(lectureApresHorsCash.detail).toContain('PROVISIONS');
+    expect(lectureApresHorsCash.detail).toContain('INVENTORY');
     expect(lectureApresHorsCash.detail).toContain('attendu');
 
-    await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'PROVISIONS' and nature = 'confirmation_externe'`, [IDS.engNep]);
+    await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'INVENTORY' and nature = 'confirmation_externe'`, [IDS.engNep]);
 
     const vert = await GET();
     const bodyVert = await vert.json();
@@ -103,7 +106,7 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
        construit précisément cet état. */
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'PROVISIONS', 'sonde branche négative — aucune ligne CASH', 'confirmation_externe')`,
+       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'INVENTORY', 'sonde branche négative — aucune ligne CASH', 'confirmation_externe')`,
       [IDS.engNep],
     );
     try {
@@ -112,11 +115,11 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
       const lecture = body.lectures.find((l: { nom: string }) => l.nom.startsWith('atelier confirmation_externe'));
       expect(lecture.ok).toBe(true);
       expect(res.status).toBe(200);
-      expect(lecture.detail).toContain('PROVISIONS');
+      expect(lecture.detail).toContain('INVENTORY');
       expect(lecture.detail).toContain('attendu');
       expect(lecture.detail).not.toContain('CASH toujours avec un atelier réel');
     } finally {
-      await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'PROVISIONS' and nature = 'confirmation_externe'`, [IDS.engNep]);
+      await q(`delete from procedure_instance where engagement_id = $1 and fsli_code = 'INVENTORY' and nature = 'confirmation_externe'`, [IDS.engNep]);
     }
   });
 
@@ -171,7 +174,7 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
     );
     await q(
       `insert into procedure_instance (engagement_id, pack_id, template_code, kind, fsli_code, title, nature)
-       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'PROVISIONS', 'sonde gap hors CASH co-occurrent', 'confirmation_externe')`,
+       values ($1, 'nep-fr', 'CONFIRM', 'substantive', 'INVENTORY', 'sonde gap hors CASH co-occurrent', 'confirmation_externe')`,
       [IDS.engNep],
     );
 
@@ -184,7 +187,7 @@ describe('atelier confirmation_externe : la lecture /api/sante', () => {
       expect(rouge.status).toBe(500);
       expect(lectureRouge.detail).toContain('CASH');
       expect(lectureRouge.detail).toContain('régression');
-      expect(lectureRouge.detail).toContain('PROVISIONS');
+      expect(lectureRouge.detail).toContain('INVENTORY');
       expect(lectureRouge.detail).toContain('attendu');
     } finally {
       await q(`delete from procedure_instance where engagement_id = $1 and nature = 'confirmation_externe'`, [IDS.engNep]);

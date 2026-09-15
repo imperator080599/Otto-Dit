@@ -625,7 +625,12 @@ async function corpsDeLaSonde() {
        et `rapprochement` ci-dessus/ci-dessous : avant ce correctif,
        `regression` ne filtrait que sur CASH, et une vraie régression sur
        l'atelier TRADE_PAYABLES serait tombée SILENCIEUSEMENT dans le gap
-       « attendu R56 » plutôt que de rougir l'endpoint). */
+       « attendu R56 » plutôt que de rougir l'endpoint).
+       TROISIÈME POSTE (Lot 5, poste Provisions, 2026-09-15) : PROVISIONS
+       gagne aussi son atelier réel — PROV-LITIGES EST la Nature `avocat`,
+       que `circularisations.ts` porte depuis ADR-111
+       (`POSTE.avocat === 'PROVISIONS'`) mais qu'AUCUN poste n'avait encore
+       exercée avant celui-ci. */
     lectures.push(await essayer('atelier confirmation_externe disponible (Lot 3, tranche 3)', async () => {
       const { atelierDeLaNature } = await import('@/lib/services/programme');
       const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
@@ -633,7 +638,7 @@ async function corpsDeLaSonde() {
          where engagement_id = $1 and nature = 'confirmation_externe' group by template_code, fsli_code`,
         [id]);
       if (rows.length === 0) return 'aucune procédure confirmation_externe planifiée encore';
-      const POSTES_CABLES = ['CASH', 'TRADE_PAYABLES'];
+      const POSTES_CABLES = ['CASH', 'TRADE_PAYABLES', 'PROVISIONS'];
       const sansAtelier = rows.filter((r) => !atelierDeLaNature('confirmation_externe', r.fsli_code ?? '', '/base'));
       const regression = sansAtelier.filter((r) => POSTES_CABLES.includes(r.fsli_code ?? ''));
       const horsPostesCables = sansAtelier.filter((r) => !POSTES_CABLES.includes(r.fsli_code ?? ''));

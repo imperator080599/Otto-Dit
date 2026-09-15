@@ -168,6 +168,7 @@
       "INVENTORY": "E",
       "PPE": "F",
       "PAYROLL": "G",
+      "PROVISIONS": "H",
       "_defaut": "Z"
     }
   },

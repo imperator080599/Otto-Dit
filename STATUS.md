@@ -141,6 +141,66 @@ poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__list_deploy
 Fournisseurs poste-opening (recherche, implémentation, deux revues hostiles, correctif d'urgence
 migration 0165, chaîne verify équivalente gardes→visuel) est donc EN LIGNE.
 
+## Lot 5, poste 6 : Provisions (PROVISIONS) ouvertes — leadsheet, revue analytique, une procédure commandée AVEC UN ATELIER RÉEL (2026-09-15)
+
+*Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs/Paie ci-dessous, sixième et
+dernier poste de l'ordre C.3 : Provisions (PROVISIONS), après Paie.*
+
+**Recherche, mesurée avant d'écrire.** `fsliAccounts`/`assessFsli`/`requiredProcedures` exécutés
+contre le dossier NEP seedé : PROVISIONS (-60 000,00 €, UN SEUL compte — 151000 « Provisions
+pour risques ») porte TOUTES ses assertions `faible` (0 facteur). Un seul tiers
+(`dataset/circularisations/avocats.csv`, Cabinet Vialar & Associés, déjà préparé depuis ADR-111
+mais jamais consommé par aucun flux) sur ce compte — donc AUCUN risque R96 (le rapprochement
+collectif compare un tiers au compte ENTIER ; sans objet quand un seul tiers EST le compte).
+`methodology/procedures.json` v1.4.1 portait TROIS procédures pour ce cycle sous
+`cycle:"PROV"` (PROV-LITIGES, PROV-RECALC) et `cycle:"PERSONNEL"` (PERSONNEL-CP, laissée
+délibérément non corrigée par la tranche Paie — une provision de BILAN, compte 15x, pas une
+charge PAYROLL/compte 64x) — jamais consultées par `proceduresDuCycle`, même correspondance
+cassée que TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL (R54/R57/R95/R97/R98). Les TROIS corrigées vers
+`cycle:"PROVISIONS"` (version 1.4.2) : PERSONNEL-CP trouve ENFIN sa vraie correspondance.
+
+**CINQ procédures commandées** (compté par exécution, `requiredProcedures('PROVISIONS').length`
+— la leçon de la tranche précédente appliquée dès l'écriture, pas après une revue hostile) : les
+quatre transverses universelles (DETAIL/RAPPRO/RA/SEQ) et PROV-LITIGES elle-même
+(`exhaustivite:faible`) — 4+1 = 5. PROV-RECALC et PERSONNEL-CP (`evaluation:moyen`) restent SOUS
+leur `risque_minimum` sur ce dossier — NON commandées, pas disclosed comme un gap (rien à
+disclosed : c'est le fonctionnement normal du risque, pas une limite de l'atelier).
+
+**PROV-LITIGES A UN ATELIER RÉEL** — le PREMIER poste du Lot 5 dont l'ouverture ne révèle AUCUN
+gap d'atelier. « Revue des litiges et confirmation des conseils juridiques » EST la Nature
+`avocat` que `circularisations.ts` porte depuis ADR-111 (`POSTE.avocat === 'PROVISIONS'`, jamais
+changé, JAMAIS exercée par un poste réellement ouvert avant celui-ci — la revue hostile de la
+tranche Fournisseurs avait déjà noté qu'avocat n'avait aucune couverture de test dans tout le
+dépôt). `programme.ts` route désormais `confirmation_externe`+PROVISIONS vers le MÊME
+`/circularisations` que CASH/TRADE_PAYABLES. `poste.ts` : AUCUN changement nécessaire, vérifié
+par exécution (`vuePoste('PROVISIONS')`) — `natureCirculariseeDuPoste('PROVISIONS')` retourne
+déjà `'avocat'` par la même table `POSTE` inversée que TRADE_PAYABLES a déjà généralisée.
+`/api/sante` : `POSTES_CABLES` (lecture confirmation_externe) étend à `['CASH', 'TRADE_PAYABLES',
+'PROVISIONS']`. `methodology/papier.json` : `"PROVISIONS": "H"` ajouté.
+
+**Implémentation.** `part1.ts` : `PROVISIONS` ajouté au périmètre de démonstration (skip-list de
+`bootstrapNep()`, `MOTIF_DEMO` mis à jour pour six postes) ; nouvelle `planifierProvisions()`
+(mirroir exact des cinq précédentes). Vérifié par lecture directe (règle 10) : `enrichir.ts` ne
+mentionne `PROVISIONS` NULLE PART — aucun marqueur D9 supplémentaire nécessaire.
+
+**Correctifs de test associés.** `catalogue.test.ts` : le test « couvre les cycles du dossier »
+documente le retrait de `PROV` et `PERSONNEL` (plus aucune procédure ne les porte) — trois
+cycles retirés au total ce jour comptés (SOCIAL depuis Paie, PROV et PERSONNEL depuis cette
+tranche). `atelier-confirmation-lecture.test.ts` : la fixture « poste sans atelier, hors CASH/
+TRADE_PAYABLES » utilisait PROVISIONS — devenu FAUX une fois PROVISIONS câblé par cette tranche ;
+remplacée par `INVENTORY` (poste STOCKS, non encore ouvert par le Lot 5, vérifié par lecture
+directe de `programme.ts` avant de choisir).
+
+**Une erreur trouvée et corrigée PAR MOI-MÊME avant tout commit** (pas par une revue hostile
+cette fois — la leçon de la tranche Paie appliquée directement) : le premier jet du commentaire
+de `planifierProvisions()` annonçait « SIX procédures sont commandées » puis écrivait « 4+1 = 5 »
+dans la MÊME phrase — une contradiction interne repérée en relisant mon propre texte contre le
+résultat mesuré, corrigée en « CINQ » avant tout commit.
+
+**Mesures avant expédition.** Suite ciblée (catalogue, poste, enrichir, atelier-confirmation-
+lecture — 36/36) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet à
+suivre.
+
 ## Lot 5, poste 5 : Paie (PAYROLL) ouverte — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R98 disclosed, défaut mécanique corrigé (2026-09-15)
 
 *Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs ci-dessous, cinquième poste de

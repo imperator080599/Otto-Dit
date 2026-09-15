@@ -1,6 +1,6 @@
 {
   "_note": "Catalogue méthodologique par cycle. CONTENU, non code : le prototype comme l'application le consomment, aucun des deux ne le contient en dur. Les prédicats de population et les résolveurs de référence sont NOMMÉS ici et IMPLÉMENTÉS dans le code ; « non_implemente » signale une procédure cataloguée que le jeu de données ou l'implémentation actuelle ne permet pas d'exécuter — elle est affichée comme telle, jamais simulée.",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "sens_de_test": {
     "gl_vers_piece": {
       "libelle": "du grand livre vers la pièce",
@@ -2015,7 +2015,7 @@
     },
     {
       "code": "PERSONNEL-CP",
-      "cycle": "PERSONNEL",
+      "cycle": "PROVISIONS",
       "libelle": "Provision pour congés payés",
       "objectif": "Recalculer la provision à partir des droits acquis non pris.",
       "assertion": "evaluation",
@@ -2372,7 +2372,7 @@
     },
     {
       "code": "PROV-LITIGES",
-      "cycle": "PROV",
+      "cycle": "PROVISIONS",
       "libelle": "Revue des litiges et confirmation des conseils juridiques",
       "objectif": "Identifier les litiges et obtenir l'appréciation des conseils.",
       "assertion": "exhaustivite",
@@ -2420,7 +2420,7 @@
     },
     {
       "code": "PROV-RECALC",
-      "cycle": "PROV",
+      "cycle": "PROVISIONS",
       "libelle": "Recalcul des provisions et revue de leur dénouement",
       "objectif": "Vérifier le mode de calcul et l'issue des provisions de l'exercice précédent.",
       "assertion": "evaluation",

@@ -623,6 +623,17 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      CLIENTS-AVOIRS/IMMO_COR-ACQ (R92/R95) : `/testing` reste câblé sur
      REVENUE — disclosed R96/backlog, pas planifiées. */
   if (nature === 'confirmation_externe' && fsliCode === 'TRADE_PAYABLES') return `${base}/circularisations`;
+  /* Lot 5, poste 6 (Provisions, 2026-09-15) : PROV-LITIGES (confirmation_externe,
+     « Revue des litiges et confirmation des conseils juridiques ») EST la
+     Nature `avocat` — `circularisations.ts` la porte déjà depuis ADR-111
+     (`POSTE.avocat === 'PROVISIONS'`, jamais changé, jamais exercée par un
+     poste réellement ouvert avant celui-ci), le même `/circularisations`
+     route les quatre Natures désormais. PROV-RECALC (recalcul_parametre) et
+     PERSONNEL-CP (recalcul_parametre, corrigé vers PROVISIONS cette même
+     tranche — provision de bilan, pas une charge PAYROLL) restent SOUS leur
+     `risque_minimum` (`moyen`) sur ce dossier : non commandées, pas
+     seulement non planifiées, aucun disclosed nécessaire ici. */
+  if (nature === 'confirmation_externe' && fsliCode === 'PROVISIONS') return `${base}/circularisations`;
   return null;
 }
 
