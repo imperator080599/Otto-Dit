@@ -1041,3 +1041,19 @@ individuelle reste une commande rejouable (règle 12), son propre journal en fai
   que `#418` est disjoint de tout ce que le Lot 5 a touché jusqu'ici, sur un CINQUIÈME poste
   distinct. Pas creusé plus loin (même discipline que F9-F25). `npm run visuel` cassé par le
   même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le précède) ; relancé séparément.
+
+**Nouvelle occurrence R58 (`verify-provisions-2.log`, 2026-09-15, chaîne verify complète #2 pour
+la tranche Provisions — poste 6, sur l'arbre du commit `7bacd5c`, après le correctif du signe
+`d4cd834` et le correctif de l'assertion Lot 3 périmée `7bacd5c` ; la #1, `verify-provisions.log`
+sur `d4cd834`, avait trouvé un VRAI défaut — l'assertion Lot 3 périmée sur
+`atelierDeLaNature('confirmation_externe','PROVISIONS',...)`, sans rapport avec R58, corrigé
+avant cette tentative)** : `le serveur est tombé après 84 route(s), à « /eng/[id]/requests (SOX)
+»` — une SEPTIÈME route différente au total (reunions, risk, travaux, rcm, provenance,
+fs-tieout, maintenant requests), toujours cohérent avec l'hypothèse 1 (pression mémoire/CPU
+cumulée, jamais une route précise). Le `EXIT=` réel de la tâche de fond était `1` (règle 35 : lu
+sur la ligne brute du fichier de sortie, `bbi6n37mb.output` — pas sur le résumé du wrapper, qui
+annonçait à tort « exit code 0 »). Reste de la chaîne propre : 144/145 fichiers, 1138/1139 tests
+(le total a augmenté d'une unité depuis la tranche Fournisseurs — les deux nouveaux tests
+`circularisations.test.ts` de `d4cd834`). Isolé, `npx vitest run tests/screens.test.ts` seul,
+sous 900 s : **PASSE, 1/1, 425,29 s** — cohérent avec toutes les mesures précédentes de ce même
+test (425-477 s selon les tranches). Diff inchangé depuis l'isolation. Chaîne à relancer.
