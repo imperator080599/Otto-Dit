@@ -60,7 +60,16 @@ dépassement** (commit `70f3790`) · `clics` **EXIT=1 réel, seul motif `#418`**
 station passent, clôture et archive ATTEINTES (240 stations figées vérifiées, 263 étapes, 386
 clics). `visuel` (relancé séparément) : **336 vues, 0 défaut**.
 
-**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_ErkErFZX1UzR6y9ce34GDTXgpiTz`, cible
+production) READY, commit `c89549121c853d4e144df8ddaa19c697babbf016` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : HTTP 200, sha identique, `identiteCoherente=true`,
+« toutes les lectures passent » — nouvelle lecture « H-2 slice 2 : le propriétaire du point
+d'action client » `ok:true, vide:true`, detail « VIDE — aucun point d'action client avec
+propriétaire assigné » (attendu : la base RÉELLE de production n'a jamais eu ce formulaire
+soumis — seul `npm run clics`, qui exerce ce geste, en assigne un, et sur sa propre base locale,
+jamais sur la production). Une lecture VIDE ici n'est pas un défaut : elle rougirait (HTTP 500)
+si un `owner_contact_id` pointait un contact désactivé ou d'une autre entité — éprouvé en local
+par mutation directe (`h2-slice2-proprietaire-lecture.test.ts`, cas connu mauvais, règle 17).
 
 **Lot 7, H-2 slice 2 est COMPLÈTE.** Reste du Lot 7 : H-2 slice 3 (la relance PROPRE au point
 d'action, au-delà du `ensureReminders` de niveau `request` déjà construit pour H-1) — et,
