@@ -1150,3 +1150,12 @@ cette même section). Reste de la chaîne propre : 144/145 fichiers, 1138/1139 t
 `npx vitest run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 441,41 s** — cohérent
 avec toutes les mesures précédentes (425-477 s selon les tranches). Diff inchangé depuis
 l'isolation. Chaîne à relancer.
+
+**Nouvelle occurrence R58 (`verify-capitaux-2.log`, 2026-09-16, chaîne verify complète #2 pour la
+même tranche, sur l'arbre du commit `8b6cb70` — le seul commit entre-temps ne touche que
+`docs/CHASSE.md`)** : `le serveur est tombé après 79 route(s), à « /eng/[id]/processus (SOX) »` —
+une NEUVIÈME route distincte au total, toujours cohérent avec l'hypothèse 1. `EXIT=1` réel.
+Reste de la chaîne propre : 144/145 fichiers, 1138/1139 tests. Isolé, `npx vitest run
+tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 443,18 s** — cohérent avec toutes les
+mesures précédentes. Diff inchangé depuis l'isolation. DEUXIÈME confirmation consécutive de
+disjonction sur cette seule tranche — chaîne à relancer une troisième fois.
