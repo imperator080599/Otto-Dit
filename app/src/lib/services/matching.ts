@@ -339,10 +339,16 @@ export async function listExceptions(engagementId: string) {
  * l'exception d'audit (le dossier) du point d'action client (l'entité) ». Recherche préalable
  * (un sous-agent) : cette distinction est DÉJÀ un invariant tenu par le code —
  * `draftClarificationRequest` crée un `request_item(kind='explanation', exception_id=…)` par
- * écart ouvert ; le client répond par `evidence.ts::answerExplanation` (écrit
- * `request_item.client_note`/`status`, JAMAIS `exception.resolution`) ; seul un humain, par
- * `resolveException`, referme le DOSSIER. Cette fonction ne fait qu'AFFICHER les deux objets
- * déjà distincts côte à côte — zéro migration, zéro geste neuf.
+ * écart ouvert ; le client répond par `evidence.ts::answerExplanation`, qui écrit
+ * `request_item.client_note`/`status` ET, TEMPORAIREMENT, `exception.resolution` (texte brut du
+ * client, statut `'explained'` — CORRIGÉ ici après que la revue hostile a trouvé cette affirmation
+ * non vérifiée : le texte transite bien par la colonne `resolution` du dossier, mais n'y reste
+ * QUE jusqu'à ce qu'un humain appelle `resolveException`, qui le REMPLACE par sa propre
+ * conclusion) ; seul CE geste humain referme le DOSSIER (`status='resolved'`). L'invariant du
+ * mandat (« le point d'action client… n'entre pas dans le dossier comme conclusion ») tient donc
+ * par le STATUT (jamais `'resolved'` avant l'humain), pas par l'absence totale d'écriture sur
+ * `exception`. Cette fonction ne fait qu'AFFICHER les deux objets déjà distincts côte à côte —
+ * zéro migration, zéro geste neuf.
  *
  * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : « propriétaire » (aucun contact assigné à un
  * `request_item`), « échéance » PROPRE au constat (seule `request.due_date`, au grain du LOT,
@@ -362,7 +368,7 @@ export async function constatEtPointAction(engagementId: string) {
      from exception x
      join request_item i on i.exception_id = x.id
      join request r on r.id = i.request_id
-     where x.engagement_id = $1
+     where x.engagement_id = $1 and i.kind = 'explanation'
      order by r.due_date nulls last, x.created_at`,
     [engagementId],
   );

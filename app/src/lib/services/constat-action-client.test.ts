@@ -65,4 +65,31 @@ describe('constatEtPointAction (H-2 slice 1) : le constat et le point d’action
       await q(`delete from exception where id = $1`, [exc.id]);
     }
   });
+
+  it('un request_item d’un AUTRE genre pointant exception_id (règle 17 : jamais posé par le chemin gardé, mais la garde le rejette quand même)', async () => {
+    /* Trouvé par la revue hostile : la requête ne filtrait pas i.kind = 'explanation', alors
+       que son propre docstring et la lecture sœur /api/sante l'affirment — non exploitable en
+       pratique (seul draftClarificationRequest pose exception_id, toujours avec kind=
+       'explanation'), mais un défaut de cohérence réel. Corrigé (i.kind = 'explanation' ajouté) ;
+       ce test le fige. */
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, status, description)
+       values ($1, 'missing_document', 'clarification_requested', 'sonde H-2 : genre inattendu') returning id::text`,
+      [IDS.engNep],
+    );
+    const item = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status)
+       values ($1, 'document', 'sonde H-2 : jamais posé ainsi par le produit', $2, 'pending') returning id::text`,
+      [requestId, exc.id],
+    );
+    try {
+      const rows = await constatEtPointAction(IDS.engNep);
+      expect(rows.find((r) => r.exception_id === exc.id), 'un request_item hors kind=explanation ne doit jamais apparaître ici').toBeUndefined();
+    } finally {
+      await q(`delete from request_item where id = $1`, [item.id]);
+      await q(`delete from exception where id = $1`, [exc.id]);
+    }
+  });
 });
