@@ -4,6 +4,109 @@
 
 ---
 
+## Lot 6, tranche 3 (NEP 240) — épine dorsale : population et tirage des écritures à risque (2026-09-16)
+
+*Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1, premier morceau du Lot 6
+(« test des écritures — NEP 240 — réduit à sa colonne vertébrale »), poursuivi le même jour sous
+le mandat du fondateur du 2026-09-16 qui redemande explicitement Lot 6 puis Lot 7, sans pause
+entre tranches, avec obligation nouvelle : chaque tranche nomme désormais un SHA de production
+MESURÉ (voir §0 de ce mandat, cité verbatim ci-dessous à sa propre section).*
+
+**Recherche préalable (un sous-agent, plus une lecture directe extensive et des sondes vitest
+jetables)**, avant tout code : `sampling.ts` (REV-SUBST) est entièrement câblé en dur —
+`template_code = 'REV-SUBST'` en quatre endroits, `revenuePopulation()` filtre `account_no like
+'70%'` — jamais générique, jamais touché par cette tranche (ADR-016, le chemin le plus exercé du
+dépôt). `methodology/procedures.json` porte déjà MANUEL (`ecritures_manuelles`) et FRAUDE
+(`ecritures_marqueurs_fraude`), toutes deux `cycle:"*"`, `nature:"sondage_pieces"`,
+`risque_minimum:"moyen"` — REVENUE porte déjà `realite:moyen` (vérifié par sonde directe contre
+la base seedée, pas supposé) : les deux procédures sont DÉJÀ commandées par le risque sur
+REVENUE aujourd'hui, avant tout commit de cette tranche, mais AUCUNE n'a de ligne
+`procedure_instance` — « commandée, jamais planifiée », le même gap déjà nommé pour
+CLIENTS-AVOIRS (R92) et IMMO_COR-TAB/ACQ (R95).
+
+**Implémenté** (commit `0d0bf6a`) :
+1. `kernel/types.ts`/`kernel/flags.ts` — nouveau drapeau `late_validation`
+   (`validDate > periodEnd`), précédent SQL déjà exercé par `risk.ts:177`.
+2. `services/population.ts` — `journalEntryPopulation(engagementId, fsliCode, predicate)`,
+   GÉNÉRIQUE par FSLI (contrairement à `revenuePopulation()`) : filtre `gl_entry` par les
+   comptes RÉELS du poste (`fsliAccounts`) puis par les drapeaux du prédicat
+   (`ecritures_manuelles` → `manual_journal` ; `ecritures_marqueurs_fraude` →
+   `weekend`/`round_amount`/`late_validation`).
+3. `services/sampling-je.ts` (fichier neuf) — propose/valide/tire/courant, PARALLÈLE à
+   `sampling.ts`, jamais une modification de celui-ci : réutilise `validateSampleParams`
+   (déjà générique sur `sample.id`) et `monetaryDraw` (kernel) SANS DUPLICATION. Le tirage est
+   EXHAUSTIF sur la population filtrée — effet de bord voulu de `monetaryDraw` : puisque
+   `journalEntryPopulation` ne retient que des lignes déjà `flags.length > 0`, son bucket
+   `flagged` sélectionne INCONDITIONNELLEMENT tout le monde, quel que soit le seuil de
+   couverture — exactement la pratique NEP 240 (examiner les écritures identifiées), sans
+   branche spéciale écrite pour l'obtenir. Vérifié par la revue hostile en LISANT `kernel/sampling.ts`
+   plutôt qu'en croyant la prose (constat 3 ci-dessous).
+4. **Correctif de sécurité de routage (règle 13), trouvé PENDANT cette tranche, pas apporté par
+   elle** : `atelierDeLaNature` (programme.ts) gagne un QUATRIÈME paramètre optionnel,
+   `templateCode`. Sans lui, `sondage_pieces` + REVENUE ouvrait TOUJOURS `/testing` — câblé en
+   dur sur `currentRevenueSample`, filtré `template_code = 'REV-SUBST'` — pour N'IMPORTE QUELLE
+   procédure de cette nature sur ce poste, y compris MANUEL/FRAUDE qui étaient déjà planifiables
+   par le bouton « planifier » de `/programme` AVANT ce commit (le risque les commandait déjà).
+   Un clic sur leur atelier aurait donc silencieusement montré le tirage de REV-SUBST — un lien
+   menteur, atteignable dès avant cette tranche, pas seulement un risque théorique qu'elle
+   introduirait. `undefined` préserve le comportement d'origine pour tous les appelants
+   préexistants (poste.ts, trois lectures `/api/sante` jumelles) ; seuls les deux points d'appel
+   de `programme/page.tsx` passent désormais `l.code`.
+5. Nouvelle lecture `/api/sante` : « atelier sondage_pieces réservé à REV-SUBST sur REVENUE »,
+   modelée sur les trois lectures jumelles `atelier … disponible` (Lot 3) mais dans le sens
+   inverse — elle rougit si une ligne HORS REV-SUBST reçoit quand même un atelier, jamais
+   l'inverse.
+
+**Délibérément hors de cette tranche, disclosed R104** (`docs/BACKLOG_REPORTE.md`,
+`docs/instantanes/fils.json`) : aucun atelier interactif (le papier reste générique,
+`redigerPapierDeProcedure`) ; « saisie par la direction » (le second volet du `population.filtre`
+des deux procédures dans la méthode) non calculable — `gl_entry` (0001_core.sql, vérifié) ne
+porte aucune colonne auteur/rôle ; `flows/part1.ts` ne plante NI MANUEL NI FRAUDE dans le monde
+semé (même choix que R92/R95) — leur chemin humain existe (`/programme`) mais n'a jamais été
+cliqué, donc NON PROUVÉ au sens de la règle 20, seulement testé en base.
+
+**Tests** (4 fichiers neufs/étendus) : `kernel.test.ts` (le nouveau drapeau, cas connu mauvais —
+ligne à temps ≠ ligne en retard ≠ ligne non validée) ; `sampling-je.test.ts` (filtrage de
+population avec MUTATION SQL DIRECTE d'un drapeau puis retour, round-trip vérifié ; cycle complet
+propose→valide→tire pour LES DEUX templates, exhaustif sur sa population ; `DRAW` refusé avant
+`VALIDATE`) ; `programme-vue.test.ts` (le nouveau paramètre, comportement rétro-compatible pour
+`undefined` ET la disambiguïsation explicite) ; `nep240-sondage-lecture.test.ts` (état vide, état
+honnête sans atelier avec « R104 » cité à l'écran, RÉGRESSION SIMULÉE — `vi.doMock` reproduisant
+EXACTEMENT le bug d'avant ce correctif — qui fait rougir `/api/sante` entier, HTTP 500).
+
+**Revue hostile (un seul réfutateur, règle 30 amendée — tranche hors modèle de
+données/sécurité/multi-tenant/code de refus).** Dix constats, AUCUN bloquant. Deux corrigés
+(commit `88ff8e0`) :
+1. **R104 complété d'un quatrième point** : `drawJournalEntrySample` n'a pas le bloc de reprise
+   par `natural_key` (ADR-133) que `drawRevenueSample` implémente sur le même geste — un
+   re-tirage MANUEL/FRAUDE ne rattacherait pas les nouvelles `sample_item` aux anciennes.
+   Confirmé INERTE aujourd'hui par grep (aucun écran ni fonction de `requests.ts` n'est jamais
+   appelé avec un identifiant MANUEL/FRAUDE), mais nommé explicitement comme piège pour la
+   tranche qui construira leur atelier — exactement la classe de défaut qu'ADR-133 existe pour
+   éviter, jamais laissé à redécouvrir.
+2. `sampling-je.ts` : la phrase de justification MANUEL citait `journal ${'OD'}` en dur alors
+   que la logique ne dépend que du drapeau `manual_journal` — retiré.
+Les huit autres constats confirment (par lecture ET par exécution, jamais par confiance en la
+prose) : le SQL de `journalEntryPopulation` paramétré et isolé par `engagement_id` ; la
+réutilisation de `monetaryDraw`/`validateSampleParams` saine ; `atelierDeLaNature` sans
+régression sur ses appelants existants (15/15 tests jumeaux verts) ; la nouvelle lecture
+`/api/sante` un vrai garde-fou, pas une tautologie ; R104 honnête sur ses trois premiers points ;
+le dormant `si_facteur` un gap préexistant, pas aggravé par cette tranche.
+
+**Mesures finales, `npm run verify` complet sur l'arbre gelé du commit `88ff8e0`** (règle 34/35,
+`set -o pipefail && timeout 3600 npm run verify 2>&1 | tee … ; echo "EXIT=$?"`, EXIT lu dans le
+journal brut du harnais, jamais dans le résumé du wrapper) : `tsc --noEmit` propre · **149/149
+fichiers, 1154/1154 tests vitest** · `gardes` 46 gardes · `semeur` à jour · `plancher` 1154
+collectés, plancher 632 · `langue` 0 chaîne hors catalogue, **15/15** cas connus mauvais ·
+`lectures` 0 perdue sur 1716 chemins, **6/6** · `parcours` 0 station perdue (25 nouvelles non
+encore figées, churn des tranches précédentes), **5/5** · `screens` **93 routes, 0 échec** ·
+`fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0 dépassement** (`docs/DENSITE.md`
+régénéré, commit `11aa99c`) · `clics` **EXIT=1 réel**, seul motif `#418` (F30, `docs/CHASSE.md`)
+sur `/rcm/[cid]`, SEIZIÈME confirmation consécutive que ce flake est disjoint de tout changement
+applicatif — clôture et archive ATTEINTES (240 stations figées vérifiées, 260 étapes, 385 clics).
+`visuel` (relancé séparément, même précédent que toutes les tranches précédentes — `clics` en
+échec sur `#418` casse le `&&`) : **336 vues, 0 défaut(s)**.
+
 ## Lot 6, tranche 2 : le registre des anomalies — DÉJÀ COMPLET, vérifié (2026-09-16)
 
 *Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1, deuxième morceau du

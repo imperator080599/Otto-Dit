@@ -1218,3 +1218,17 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   ce n'est pas la même famille d'incident que §6 — juste plus lent cette fois, cause non
   investiguée (règle 30, une exécution qui aboutit n'appelle pas la même urgence qu'une qui
   meurt).
+
+- **F30 — UN incident** (2026-09-16, Lot 6, tranche 3 — NEP 240, épine dorsale, sur l'arbre du
+  commit `88ff8e0`), `EXIT=1` réel lu dans le journal brut (`set -o pipefail && timeout 3600 npm
+  run verify … ; echo "EXIT=$?"`, jamais dans le résumé du wrapper de tâche de fond — celui-ci
+  annonçait « exit code 0 », le vrai `EXIT=1` n'apparaissait que dans la sortie brute du shell,
+  pas dans le fichier `tee`), UNE SEULE route cette fois — `/eng/70670df5-.../rcm/0e349e73-...` (la
+  route habituelle, `rcm/[cid]`, de très loin la plus fréquente de cet historique). Disjoint de la
+  tranche : aucun des fichiers touchés (`kernel/flags.ts`, `kernel/types.ts`, `population.ts`,
+  `sampling-je.ts`, `programme.ts::atelierDeLaNature`, `route.ts`) ne touche `/rcm`, et les 1154
+  tests vitest de la suite complète passent tous, `#418` mis à part. Clôture et archive ATTEINTES
+  (240 stations figées vérifiées, empreinte SHA-256 affichée, téléchargement vérifié), 260 étapes
+  conduites, 385 clics comptés — SEIZIÈME confirmation consécutive que `#418` est disjoint de tout
+  ce que ce dépôt touche. Pas creusé plus loin (même discipline que F9-F29). `npm run visuel`
+  cassé par le même `#418` sur `clics` ; relancé séparément, propre (336 vues, 0 défaut).
