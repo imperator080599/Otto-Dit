@@ -4,6 +4,69 @@
 
 ---
 
+## Lot 7, H-2 slice 2 — propriétaire et échéance sur le point d'action client (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 1 (règle 32). H-2 :
+« propriétaire, échéance, état, relance » (`docs/REGISTRE_IDEES.md` ligne 270). Slice 1 a
+affiché « état » (deux statuts déjà distincts en base). Cette slice ajoute « propriétaire » et
+« échéance » PROPRES au point d'action — la première tranche du Lot 7 à toucher le modèle de
+données.*
+
+**Décision (recherche préalable de H-2, disclosed slice 1)** : étendre `request_item`
+(`owner_contact_id`, `due_date`) plutôt que réhabiliter `followup`, un décor documenté depuis la
+première migration du dépôt, jamais fini.
+
+**Implémenté** (commit `cd4e395`) : migration `0166` (owner_contact_id → client_contact,
+due_date) ; `matching.ts::assignerProprietairePointAction` (geste humain de l'auditeur, refuse
+un item hors `kind='explanation'` et un contact d'une autre entité) ; `constatEtPointAction`
+étendue ; panneau `exceptions/page.tsx` (formulaire d'assignation). Station clics ajoutée
+(`9639cd8`) et `docs/CLICS.md` régénéré (`479a245`) — règle 10, conduite dans un navigateur
+avant d'être annoncée : 262 étapes, 386 clics, clôture atteinte, les deux nouvelles assertions
+`ok`.
+
+**Revue hostile, DEUX réfutateurs indépendants (règle 30 : modèle de données touché).** Quatre
+constats réels, tous corrigés (commit `efd8ca1` + `2678d61`) :
+1. **Règle 22 non tenue (les deux voix)** — aucune lecture `/api/sante` neuve le jour même.
+   Ajoutée : « H-2 slice 2 : le propriétaire du point d'action client », re-dérive
+   indépendamment, rougit sur un `owner_contact_id` qui ne pointe plus un `client_contact` actif
+   de la bonne entité (mutable seulement hors du chemin gardé).
+2. **Contrainte DB manquante (voix 1, reproduite en exécution)** — une mutation SQL directe hors
+   `kind='explanation'` était acceptée sans erreur. Migration NEUVE `0167` (jamais une édition de
+   `0166`, règle 26) : `check (kind = 'explanation' or (owner_contact_id is null and due_date is
+   null))`, sur le précédent de `engagement_contact_domaine_coherent` (0023).
+3. **R105 enregistré (`docs/BACKLOG_REPORTE.md`)** — le décor `followup` (cité par 0166 comme
+   « disclosed R-nn » AVANT que cet identifiant n'existe réellement — une affirmation de
+   traçabilité non vérifiée, règle 13/18) et le trou de RLS column-blind pré-existant (0141) que
+   0166 élargit aux deux colonnes cabinet-only sans garde additionnelle (non exploitable tant que
+   l'étape 3 de PLAN_RLS reste un interdit non exécuté).
+4. **Disclosure ajoutée** au docstring de `constatEtPointAction` (voix 2) : `item_due_date`
+   dépassée n'est QUE de l'affichage aujourd'hui, aucune famille d'obstacle ne la lit.
+5. **Station clics durcie (voix 1)** : la seconde assertion pouvait passer vacueusement si aucun
+   contact actif n'existait — restructurée en deux assertions distinctes.
+
+**Vitest complet a rougi POUR DE VRAI une fois (règle 18, pas un flake)** : `R105`, ajouté au
+registre du correctif, n'avait pas encore son état dans `docs/instantanes/fils.json` —
+`reprise.test.ts` l'exige (« chaque R24+… a un état non vide »). Corrigé (`2678d61`), reconfirmé
+24/24.
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur
+l'arbre du commit `2678d61`) : `tsc` propre · **155/155 fichiers, 1177/1177 tests vitest** ·
+`gardes` 47 · `semeur` à jour · `plancher` 1177 collectés · `langue` 0 hors catalogue, **15/15**
+· `lectures` 0 perdue, **6/6** · `parcours` 0 station perdue (319 déclarées, 290 figées), **5/5**
+· `screens` **93 routes, 0 échec** · `fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0
+dépassement** (commit `70f3790`) · `clics` **EXIT=1 réel, seul motif `#418`** (F34,
+`docs/CHASSE.md`, vingtième confirmation consécutive), les TROIS assertions de la nouvelle
+station passent, clôture et archive ATTEINTES (240 stations figées vérifiées, 263 étapes, 386
+clics). `visuel` (relancé séparément) : **336 vues, 0 défaut**.
+
+**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-2 slice 2 est COMPLÈTE.** Reste du Lot 7 : H-2 slice 3 (la relance PROPRE au point
+d'action, au-delà du `ensureReminders` de niveau `request` déjà construit pour H-1) — et,
+au-delà de H-2, la question de R105 (followup/RLS column-blind) reste ouverte pour un chantier
+séparé, jamais bloquante pour la suite du Lot 7.
+
 ## Lot 7, H-2 slice 1 — écran « constat vs point d'action client » (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après le Lot 7 tranche 2 (règle 32). H-2 :

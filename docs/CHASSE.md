@@ -1270,3 +1270,18 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   — DIX-NEUVIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
   discipline que F9-F32). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de
   `clics`), propre (336 vues, 0 défaut).
+
+- **F34 — UN incident** (2026-09-16, Lot 7, H-2 slice 2 — propriétaire/échéance sur le point
+  d'action client, sur l'arbre CORRIGÉ du commit `efd8ca1`/`2678d61`, après quatre constats non
+  bloquants trouvés par DEUX réfutateurs indépendants — règle 30, modèle de données touché — et
+  corrigés le même jour, voir STATUS.md, « Lot 7, H-2 slice 2 »). `EXIT=1` réel (journal brut,
+  `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/be32ba00-...` (l'habituelle,
+  `rcm/[cid]`). Disjoint de la tranche : les migrations 0166/0167, `matching.ts::assignerProprietaire
+  PointAction`, `exceptions/page.tsx`, la nouvelle lecture `/api/sante` et `scenario.ts` ne touchent
+  pas `/rcm`, et les 1177 tests vitest passent tous. Les trois assertions de la nouvelle station
+  clics (« au moins un contact… », « assigner ne bloque pas… », « le propriétaire assigné
+  apparaît… ») passent toutes. Clôture et archive ATTEINTES (« le dossier se CLÔT et l'archive
+  est scellée », 240 stations figées vérifiées), 263 étapes conduites, 386 clics comptés — VINGTIÈME
+  confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que
+  F9-F33). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de `clics`), propre
+  (336 vues, 0 défaut).
