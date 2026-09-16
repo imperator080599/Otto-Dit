@@ -1817,3 +1817,35 @@ design : chacun reste une tranche à construire.**
   mais jamais consulté par `requiredProcedures()` — est un gap PRÉEXISTANT, distinct de celui-ci,
   déjà noté ici pour mémoire (règle 13 : un prédicat déclaré et non implémenté) plutôt que corrigé
   par cette tranche non plus.
+
+- **R105 — deux constats TROUVÉS PAR LA REVUE HOSTILE (Lot 7, H-2 slice 2, deux réfutateurs
+  indépendants, règle 30 : modèle de données touché) sur la migration `0166_constat_point_
+  action_proprietaire_echeance.sql`, disclosed plutôt que corrigés dans cette même tranche.**
+  (1) `followup` (`0002_testing.sql`) reste un DÉCOR exact — deux usages dans tout le dépôt
+  (`matching.ts:384` en écriture, `evidence.ts:144` en écriture), `approved_by` toujours NULL,
+  aucun `SELECT` nulle part, aucune politique RLS, les états `approved`/`sent` de son propre
+  `check` jamais atteints — trouvé par la recherche préalable de H-2 (STATUS.md, section « Lot 7,
+  H-2 slice 1 »), cité dans le commentaire de la migration 0166 comme « disclosed R-nn
+  (BACKLOG_REPORTE.md) » AVANT que cet identifiant n'existe réellement — une affirmation de
+  traçabilité non vérifiée avant d'être commitée (règle 13/18), maintenant corrigée EN CRÉANT ce
+  R-nn (celui-ci) plutôt qu'en éditant 0166 (règle 26 : jamais éditer une migration appliquée,
+  même pour un commentaire). (2) `request_item_portail_reponse` (`0141_portail_par_jeton_et_
+  pieces.sql:148-152`, `for update using (...)` SANS `with check` explicite) borne les LIGNES
+  qu'un client peut modifier via le portail (un item d'une demande non-brouillon de sa propre
+  entité), mais RIEN ne borne les COLONNES — le `grant` (`0140_role_applicatif.sql:37`) est au
+  niveau table entière, aucun trigger `before update` ne restreint `request_item`. Ce trou est
+  PRÉEXISTANT depuis 0141, pas introduit par 0166, mais 0166 en ÉLARGIT le rayon en ajoutant
+  précisément les deux colonnes les plus sensibles côté CABINET (`owner_contact_id`, `due_date`
+  — « assigner un propriétaire est un geste humain » de l'AUDITEUR, jamais du client, dit le
+  commentaire de 0166 lui-même) à une surface d'écriture déjà non bornée par colonne, sans garde
+  additionnelle. **Non exploitable aujourd'hui** : `answerExplanation` (le seul chemin d'écriture
+  du portail sur `request_item`) n'écrit que `client_note`/`status`, des colonnes fixes dans son
+  propre UPDATE ; et l'étape 3 de PLAN_RLS (faire servir l'application par `otto_app`, seul rôle
+  sous lequel RLS s'appliquerait) reste un INTERDIT non exécuté (CLAUDE.md §2). Mais le trou
+  EXISTERAIT le jour où cette étape serait exécutée sans qu'une migration future n'y ait d'abord
+  ajouté un `with check` restreignant les colonnes, ou un `revoke update (owner_contact_id,
+  due_date) from otto_app`, ou un trigger — exactement ce que règle 13/ADR-088/089 demandent de
+  nommer même non exploitable aujourd'hui. | 2026-09-16 (Lot 7, H-2 slice 2) | non corrigé,
+  délibérément hors du périmètre de cette tranche (règle 8) ; à reprendre soit quand `followup`
+  est enfin retiré/documenté à part, soit AVANT que l'étape 3 de PLAN_RLS ne soit un jour exécutée
+  — pas avant.

@@ -359,6 +359,16 @@ export async function listExceptions(engagementId: string) {
  * point d'action (`request_item.due_date`, distincte de `request.due_date` au grain du LOT que
  * H-1 slice 2 bloque déjà) sont maintenant portées ICI, sur l'objet ENTITÉ lui-même — jamais sur
  * `exception`, qui reste le dossier auditeur seul.
+ *
+ * TROUVÉ PAR LA REVUE HOSTILE (voix 2, slice 2) — DISCLOSURE AJOUTÉE ICI, PAS UN COMPORTEMENT
+ * CORRIGÉ : `item_due_date` dépassée n'est QUE de l'affichage — aucune famille d'obstacle au visa
+ * ne la lit (contrairement à `request.due_date`, que H-1 slice 2 bloque via `obstaclesDemandes`).
+ * Un point d'action dont l'échéance CLIENT est dépassée depuis longtemps, sur une demande dont
+ * l'échéance LOT reste dans le futur (ou absente), ne fait rougir ni le visa ni aucune lecture
+ * `/api/sante` sur ce seul critère — la lecture « H-2 slice 2 » (route.ts) ne détecte qu'un
+ * propriétaire orphelin/désactivé/d'une autre entité, jamais un simple retard d'échéance. Voulu
+ * pour cette slice (bloquer sur l'échéance du point d'action est un chantier séparé, une famille
+ * d'obstacle neuve au grain de l'item plutôt que de la demande) — disclosed, pas construit.
  */
 export async function constatEtPointAction(engagementId: string) {
   return q<{

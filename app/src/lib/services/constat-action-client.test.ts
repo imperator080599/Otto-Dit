@@ -163,4 +163,17 @@ describe('constatEtPointAction (H-2 slice 1) : le constat et le point d’action
       await q(`delete from entity where id = $1`, [autreEntite.id]);
     }
   });
+
+  it('migration 0167 (revue hostile voix 1, règle 17) : la base elle-même refuse owner_contact_id/due_date hors kind=explanation', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const item = await q1<{ id: string }>(`select id::text from request_item where request_id = $1`, [requestId]);
+    /* Mutation SQL DIRECTE, hors du chemin gardé (jamais assignerProprietairePointAction) — le
+       seul moyen de prouver que le FILET tient même sans passer par le service applicatif,
+       exactement ce que la revue hostile a trouvé absent avant ce correctif. */
+    await expect(
+      q(`update request_item set owner_contact_id = $2, due_date = '2026-10-01' where id = $1`, [item.id, IDS.contacts.sophie]),
+      'la contrainte request_item_owner_only_for_explanation doit refuser un item kind=document',
+    ).rejects.toThrow();
+  });
 });

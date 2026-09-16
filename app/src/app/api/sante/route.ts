@@ -912,9 +912,10 @@ async function corpsDeLaSonde() {
        réouvert le dossier sans reprendre la clarification déjà envoyée — silencieux sinon).
        INFORMATIVE, comme les lectures sœurs : un point d'action client en attente est le travail
        NORMAL d'un dossier en cours, jamais une panne. CE QUE CETTE LECTURE NE VÉRIFIE PAS
-       (règle 19) : le propriétaire, l'échéance ou la relance PROPRES au constat — H-2 slice 1
-       ne les construit pas (disclosed R-nn, BACKLOG_REPORTE.md, pour une slice ultérieure de
-       modèle de données). */
+       (règle 19) : le propriétaire, l'échéance et le retard PROPRE au point d'action — H-2 slice 1
+       ne les construit pas ; slice 2 (migration 0166, lecture ci-dessous) ajoute propriétaire et
+       échéance, mais PAS encore un obstacle qui bloque le visa sur un retard au grain de l'item
+       (disclosed dans le docstring de `constatEtPointAction`, matching.ts). */
     lectures.push(await essayer('H-2 : le constat vs le point d’action client', async () => {
       const rows = await q<{ item_status: string; exception_status: string }>(
         `select i.status item_status, x.status exception_status
@@ -934,6 +935,43 @@ async function corpsDeLaSonde() {
         return acc;
       }, {});
       return `${rows.length} point(s) d'action client — ${Object.entries(parStatut).map(([k, v]) => `${k}:${v}`).join(' · ')}`;
+    }));
+    /* H-2, SLICE 2 (Lot 7, migration 0166) — TROUVÉE MANQUANTE PAR LA REVUE HOSTILE (les deux
+       voix, règle 30) : cette tranche touchait le modèle de données (owner_contact_id/due_date
+       sur request_item) sans ajouter sa propre lecture le jour même — violation directe de la
+       règle 22 de CLAUDE.md, corrigée ici avant de clore la tranche. RE-DÉRIVE indépendamment par
+       une jointure SQL directe (jamais un appel à `constatEtPointAction`, règle 16). Le SEUL cas
+       qui la fait échouer : un `owner_contact_id` posé qui ne pointe plus un `client_contact`
+       ACTIF de la MÊME entité que le dossier — un état que `assignerProprietairePointAction`
+       refuse à l'écriture (matching.ts), donc cette lecture ne peut rougir QUE si ce contact a été
+       désactivé ou déplacé APRÈS l'assignation (un geste hors de ce chemin, ou une désactivation
+       légitime d'un contact — les deux méritent d'être vus). INFORMATIVE sinon : un propriétaire
+       assigné ou une échéance posée est le travail normal d'un dossier en cours. CE QUE CETTE
+       LECTURE NE VÉRIFIE PAS (règle 19) : qu'une échéance `item_due_date` DÉPASSÉE bloque le visa
+       — elle ne le fait pas aujourd'hui (disclosed dans le docstring de `constatEtPointAction`,
+       matching.ts, et R105, BACKLOG_REPORTE.md), cette lecture reste donc muette sur un simple
+       retard, seulement sur un propriétaire devenu incohérent. */
+    lectures.push(await essayer('H-2 slice 2 : le propriétaire du point d’action client', async () => {
+      const rows = await q<{ item_id: string; owner_contact_id: string | null; owner_actif: boolean | null; owner_bonne_entite: boolean | null; item_due_date: string | null }>(
+        `select i.id item_id, i.owner_contact_id, cc.active owner_actif,
+                (cc.entity_id = e.entity_id) owner_bonne_entite, i.due_date::text item_due_date
+         from request_item i
+         join exception x on x.id = i.exception_id
+         join request r on r.id = i.request_id
+         join engagement e on e.id = r.engagement_id
+         left join client_contact cc on cc.id = i.owner_contact_id
+         where x.engagement_id = $1 and i.kind = 'explanation'`,
+        [id],
+      );
+      const assignes = rows.filter((r) => r.owner_contact_id !== null);
+      if (!assignes.length) return 'aucun point d’action client avec propriétaire assigné';
+      const incoherents = assignes.filter((r) => r.owner_actif !== true || r.owner_bonne_entite !== true);
+      if (incoherents.length > 0) {
+        throw new Error(`${incoherents.length} point(s) d'action avec un propriétaire désactivé `
+          + 'ou d’une autre entité que le dossier');
+      }
+      const avecEcheance = assignes.filter((r) => r.item_due_date !== null).length;
+      return `${assignes.length} point(s) d'action avec propriétaire assigné, ${avecEcheance} avec échéance posée`;
     }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni

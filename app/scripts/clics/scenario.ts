@@ -2313,14 +2313,22 @@ export async function conduire(
     const select = f.locator('select[name=owner_contact_id]');
     const vals = await select.locator('option').evaluateAll(
       (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
-    if (vals.length) await select.selectOption(vals[0]);
+    /* RÈGLE 17 : une assertion qui peut passer SANS RIEN VÉRIFIER (ici, si le monde de démo ne
+       portait aucun contact client actif) n'est pas une garde — trouvé par la revue hostile
+       (voix 1) sur la forme `vals.length === 0 || …` d'un premier essai. Le monde de démo porte
+       toujours au moins un contact (Sophie, Théo — seed.ts) : ce compte le DIT, plutôt que de le
+       supposer en silence dans la condition suivante. */
+    dire('constat vs point d’action client : au moins un contact client existe pour assigner',
+      vals.length > 0, `${vals.length} contact(s) disponible(s)`);
+    if (!vals.length) return;
+    await select.selectOption(vals[0]);
     await f.locator('input[name=due_date]').fill('2026-10-15');
     await soumettre(f.locator(`button:has-text("${L('exc.assigner')}")`), 2000);
     dire('constat vs point d’action client : assigner un propriétaire/échéance ne bloque pas, et le dossier ne bouge pas',
       refus(p) === null, refus(p) ?? 'assigné');
     const apres = await texte();
     dire('constat vs point d’action client : le propriétaire assigné apparaît à l’écran',
-      vals.length === 0 || apres.includes('2026-10-15'), 'échéance affichée après assignation');
+      apres.includes('2026-10-15'), 'échéance affichée après assignation');
   });
 
   // ── 13. PORTAIL, SECOND PASSAGE : le client répond aux clarifications
