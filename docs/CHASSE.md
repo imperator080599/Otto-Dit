@@ -1244,3 +1244,17 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   260 étapes conduites, 385 clics comptés — DIX-SEPTIÈME confirmation consécutive que `#418` est
   disjoint. Pas creusé plus loin (même discipline que F9-F30). `npm run visuel` relancé
   séparément (le `&&` casse sur l'échec de `clics`), propre (336 vues, 0 défaut).
+
+- **F32 — UN incident** (2026-09-16, Lot 7, tranche 2 — H-1 slice 2, obstaclesDemandes, sur l'arbre
+  CORRIGÉ du commit `6d6bb39`, après un défaut RÉEL trouvé par la revue hostile voix 2 et corrigé
+  le même jour — voir STATUS.md, « Lot 7, tranche 2 » : sans le correctif, R-008 restait
+  `partially_submitted` EN PERMANENCE après le warp de 25 jours de `demo-seed.ts`, et la famille
+  neuve bloquait le visa SANS RECOURS ; résolu avant cette mesure). `EXIT=1` réel (journal brut,
+  `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/c90cc298-...` (l'habituelle,
+  `rcm/[cid]`). Disjoint de la tranche : `obstacles.ts::obstaclesDemandes`, `familles.ts`,
+  `catalogue.ts`, la nouvelle lecture `/api/sante` et `part1.ts::clientDeposits` ne touchent pas
+  `/rcm`, et les 1165 tests vitest passent tous. Clôture et archive ATTEINTES (« le dossier se CLÔT
+  et l'archive est scellée », 240 stations figées vérifiées), 260 étapes conduites, 385 clics
+  comptés — DIX-HUITIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin
+  (même discipline que F9-F31). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de
+  `clics`), propre (336 vues, 0 défaut).
