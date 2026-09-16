@@ -1322,3 +1322,17 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   clics comptés — VINGT-DEUXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus
   loin (même discipline que F9-F35). `npm run visuel` relancé séparément (le `&&` casse sur
   l'échec de `clics`), propre (344 vues, 0 défaut).
+
+- **F37 — UN incident** (2026-09-16, Lot 7, H-3 slice 2 — la règle « hors exercice » sur le grand
+  livre, sur l'arbre CORRIGÉ du commit `d0d4218` — un seul constat non bloquant, purement
+  cosmétique, trouvé par la revue hostile (un commentaire disant encore « six » clés au lieu de
+  « sept »), corrigé le jour même. Voir STATUS.md, « Lot 7, H-3 slice 2 »). `EXIT=1` réel (journal
+  brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/f6426ffc-...` (l'habituelle,
+  `rcm/[cid]`). Disjoint de la tranche : `kernel/flags.ts`, `imports.ts`, `grand-livre.ts`,
+  `exceptions/page.tsx` (inchangé), la nouvelle lecture `/api/sante` et `scenario.ts` ne touchent
+  pas `/rcm`, et les 1193 tests vitest passent tous — dont les nouveaux cas connus bon/mauvais de
+  `hors_periode` (kernel.test.ts) et la lecture sante dédiée. La station « grand livre » confirme
+  les SEPT règles (au lieu de six). Clôture et archive ATTEINTES (240 stations figées vérifiées),
+  266 étapes conduites, 386 clics comptés — VINGT-TROISIÈME confirmation consécutive que `#418`
+  est disjoint. Pas creusé plus loin (même discipline que F9-F36). `npm run visuel` relancé
+  séparément (le `&&` casse sur l'échec de `clics`), propre (344 vues, 0 défaut).

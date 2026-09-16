@@ -4,6 +4,69 @@
 
 ---
 
+## Lot 7, H-3 slice 2 — la règle « hors exercice » sur le grand livre (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-3 slice 1 (règle 32). Découpe
+recommandée par la recherche H-3 initiale : ajouter les règles techniques exhaustives encore
+absentes, chacune sourcée avant d'être écrite (règle 8) ou écartée si aucune source précise
+n'existe.*
+
+**Recherche préalable dédiée (un sous-agent)**, avant tout code — trois candidates envisagées,
+DEUX écartées avec un motif écrit :
+1. **Cohérence débit=crédit** : DÉJÀ vérifiée par le parseur FEC (`kernel/fec.ts::entryBalance`,
+   `severity:'error'`) — `imports.ts` garde TOUTE l'insertion dans `gl_entry` derrière `ok =
+   parsed.ok` : aucune écriture déséquilibrée n'atteint jamais la base. Un flag qui répéterait
+   cette règle ne rougirait JAMAIS sur des données de production — la garde vide proscrite par la
+   règle 17. **Pas construite.**
+2. **Doublons au grain du grand livre** : chevauche `findDuplicateInvoices` (kernel/matching.ts,
+   document-based, échantillon) sans source ISA/NEP précise trouvée dans `methodology/*.json`
+   (règle 8). **Pas construite, hors scope.**
+3. **Hors exercice** (`hors_periode`) : une date de comptabilisation carrément hors des bornes de
+   l'exercice audité — DISTINCTE de `period_end` (proximité de la clôture). `parseFec` calcule
+   déjà cette même comparaison au niveau du FICHIER (`date_out_of_period`, `warning`, ATTEINT bien
+   `gl_entry`, contrairement au cas 1). **Retenue.** Sourçage (règle 8) : aucune norme ISA/NEP
+   précise trouvée pour ce contrôle exact — seule l'analogie ISA-240 (déjà citée pour MANUEL) est
+   disponible, marquée **[UNVERIFIED]** et disclosed comme plus faible que celle de CUTOFF, au
+   catalogue (`gl.regle.hors_periode.neCouvrePas`), jamais affirmée comme vérifiée.
+
+**Implémenté** (commit `475b4d5`) : `kernel/flags.ts` — `FlagConfig` étend `periodStart` ;
+`computeFlags` calcule `hors_periode`. Cas connu mauvais D'ABORD (règle 17, `kernel.test.ts`) :
+une écriture au premier ou dernier jour de l'exercice ne doit JAMAIS porter le flag. Tous les
+appelants de `defaultFlagConfig` mis à jour (`imports.ts`, `scripts/dataset/generate.ts`,
+`tests/acceptance.kernel.test.ts`) — septième règle enregistrée dans `grand-livre.ts::REGLES`,
+trois nouvelles clés catalogue, nouvelle lecture `/api/sante` « H-3 slice 2 » (re-dérive
+indépendamment contre `period.start_date`/`end_date`, règle 16 ; rougit sur une dérive, règle 17),
+station clics mise à jour (SEPT règles désormais attendues).
+
+**Revue hostile, UN réfutateur (règle 30 : zéro modèle de données/sécurité/multi-tenant/refus,
+mais infrastructure PARTAGÉE — `flags.ts`/`imports.ts` touchés par TOUTES les écritures de tous
+les dossiers, revue particulièrement rigoureuse sur la non-régression des six règles
+préexistantes).** Verdict SHIP AS-IS — sept points vérifiés en exécution (aucun appelant de
+`defaultFlagConfig` oublié, `tsc --noEmit` propre, comparaison de chaînes ISO équivalente à une
+comparaison chronologique pour ce format précis, jointure `/api/sante` non multipliante — un
+engagement a toujours exactement une période, `period_id not null`, les six règles préexistantes
+octet pour octet inchangées, aucun autre `<strong>« Couvre :»` sur l'écran, le disclaimer
+[UNVERIFIED] lui-même honnête). Un seul constat, non bloquant et purement cosmétique (un
+commentaire de `grand-livre/page.tsx` disait encore « six » clés au lieu de « sept ») — corrigé le
+jour même (`d0d4218`).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur l'arbre
+du commit `d0d4218`) : `tsc` propre · **159/159 fichiers, 1193/1193 tests vitest** · `gardes` 47 ·
+`semeur` à jour · `langue` 0 hors catalogue, 0 libellé en dur, **15/15** · `lectures` 0 perdue,
+**6/6** · `parcours` 0 station perdue, **5/5** · `screens` **95 routes, 0 échec** · `fumee` **53
+routes, 0 échec** · `densite` **85 écrans, 0 dépassement** (régénéré séparément sur `1253d0e`) ·
+`clics` **EXIT=1 réel, seul motif `#418`** (F37, vingt-troisième confirmation, la station « grand
+livre » confirme les sept règles), clôture et archive ATTEINTES (266 étapes, 386 clics). `visuel`
+(relancé séparément) : **344 vues, 0 défaut**.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-3 slice 2 est COMPLÈTE.** Reste du Lot 7 : H-3 slice 3, optionnelle (atelier de revue
+ligne à ligne pour MANUEL/FRAUDE, R104) — à ne prendre qu'après validation explicite que ce n'est
+pas juste « finir Lot 6 » déguisé en H-3. Au-delà de H-3 : H-4 à H-6 du registre, par ordre de
+valeur.
+
 ## Lot 7, H-3 slice 1 — le test exhaustif du grand livre, rendu visible (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 3 (règle 32). H-2 est
