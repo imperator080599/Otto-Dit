@@ -1672,3 +1672,45 @@ design : chacun reste une tranche à construire.**
   `etat:'sans_objet'`, `href:null`, `resume.cle:'poste.resume.echantillonSansAtelier'` : le
   garde-fou générique posé pour PAYROLL (R98, même mécanisme que R97) couvre déjà toute nature
   sans atelier réel, sans qu'aucun poste au-delà de PAYROLL n'ait eu besoin de l'étendre.
+
+- **R100 — EQUITY (Lot 5, poste 8 — Capitaux propres et impôt, 2026-09-16, LE DERNIER POSTE DU
+  LOT 5) N'A AUCUN ATELIER RÉEL POUR AUCUNE DE SES DEUX PROCÉDURES PROPRES — un gap DOUBLE, jamais
+  vu sur un seul poste jusqu'ici.** Mesuré par exécution avant d'écrire, à travers le VRAI
+  `runPart1UpToWorkpaper()` (une première sonde isolée avait mesuré TOUTES les assertions
+  `faible` — FAUX, corrigé avant tout commit en rejouant contre le pipeline réel de démonstration,
+  qui pose des écritures et avance l'horloge avant que ce poste ne soit évalué) : EQUITY
+  (-1 644 000,00 €, trois comptes — 101000 « Capital social » -500 000,00 €, 106100 « Réserve
+  légale » -50 000,00 €, 110000 « Report à nouveau » -1 094 000,00 €) porte `realite:moyen`
+  (1 facteur : `variation`), toutes les autres assertions `faible`. `methodology/procedures.json`
+  portait TROIS procédures pour ce cycle sous `cycle:"CAPITAUX"` (CAPITAUX-VAR, CAPITAUX-PV,
+  CAPITAUX-CONV) — jamais consultées par `proceduresDuCycle`, même correspondance cassée que
+  TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL/PROV/STOCKS (R54/R57/R95/R97/R98/R99). Les TROIS corrigées
+  vers `cycle:"EQUITY"` cette même tranche (version 1.4.4).
+
+  **HUIT procédures commandées** une fois la correspondance corrigée (compté par exécution,
+  `requiredProcedures('EQUITY').length`, jamais recopié de tête — règle 31) : les quatre
+  transverses au seuil `faible` (DETAIL/RA/RAPPRO/SEQ), DEUX transverses débloquées par
+  `realite:moyen` (FRAUDE, MANUEL — même paire que PAYROLL avait débloquée par `realite:eleve`),
+  et les DEUX procédures propres au poste : CAPITAUX-VAR (`rapprochement`, `exhaustivite:faible`)
+  et CAPITAUX-PV (`sondage_pieces`, `droits:faible`) — 4+2+2 = 8. CAPITAUX-CONV
+  (`test_exhaustif`, `presentation:moyen`) reste SOUS son seuil (`presentation` mesurée `faible`)
+  — NON commandée, pas disclosed comme un gap.
+
+  **NI CAPITAUX-VAR NI CAPITAUX-PV N'A D'ATELIER.** `rapprochement` n'est câblé (`programme.ts`,
+  lu en entier) que pour CASH/TRADE_RECEIVABLES ; `sondage_pieces` n'est câblé que pour REVENUE.
+  Aucune des deux natures n'atteint EQUITY — contrairement à chaque gap précédent de cette
+  famille (R92/R95/R97/R98/R99), qui portait sur UNE SEULE nature sans atelier, celui-ci en porte
+  DEUX à la fois, sur le MÊME poste. `poste.ts` : AUCUN changement nécessaire, vérifié par
+  exécution (`vuePoste('EQUITY')` après `runPart1UpToWorkpaper()` complet) — le garde-fou
+  générique posé pour PAYROLL (R98) couvre déjà toute nature sans atelier réel, quel que soit le
+  nombre de procédures qui s'y heurtent en même temps. **Les DEUX procédures sont plantées**
+  (même patron que `planifierTresorerie()`, qui en plante déjà deux), chacune avec un papier
+  `utilisee:false` honnête.
+
+  **Le Lot 5 est COMPLET avec ce poste** : les huit postes nommés par le mandat
+  (`docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie C.3) sont désormais tous ouverts —
+  Trésorerie, Clients, Immobilisations, Fournisseurs, Paie, Provisions, Stocks, Capitaux propres
+  et impôt. DETTES_FI (FINANCIAL_DEBT, emprunts) reste le seul cycle de méthode encore mal
+  correspondu (`cycle:"DETTES_FI"` au lieu de `"FINANCIAL_DEBT"`) — mais ce FSLI n'est nommé par
+  AUCUN des huit postes du mandat : sa correction reste hors du périmètre du Lot 5, pas un gap
+  de ce lot.

@@ -60,21 +60,23 @@ export async function bootstrapNep(): Promise<void> {
   await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
   await proposeScoping(IDS.engNep, IDS.users.lea);
 
-  /* HUIT POSTES AU PÉRIMÈTRE (« CINQ » dans cette même phrase était déjà FAUX
-     avant cette tranche — resté à sa valeur d'origine alors que PAYROLL puis
-     PROVISIONS avaient déjà porté le compte à sept ; corrigé ici en même temps
-     que STOCKS l'étend à huit, plutôt que de laisser courir un chiffre en
-     prose que rien ne produisait — règle 31) — et le motif dit la vérité sur
-     ce qu'il est. Le jeu de démonstration déroule le cycle chiffre d'affaires
-     (REVENUE), depuis le Lot 5 (poste Trésorerie, mandat 2026-09-14) la
-     trésorerie (CASH), depuis le Lot 5 poste 2 (Clients, 2026-09-15) les
-     créances clients (TRADE_RECEIVABLES), depuis le Lot 5 poste 3
-     (Immobilisations, 2026-09-15) PPE, depuis le Lot 5 poste 4 (Fournisseurs,
-     2026-09-15) les dettes fournisseurs (TRADE_PAYABLES), depuis le Lot 5
-     poste 5 (Paie, 2026-09-15) les charges de personnel (PAYROLL), depuis le
-     Lot 5 poste 6 (Provisions, 2026-09-15) les provisions (PROVISIONS), et
-     depuis le Lot 5 poste 7 (Stocks, 2026-09-15) les stocks (INVENTORY) —
-     chacun scopé `ns_confirmed`
+  /* NEUF POSTES AU PÉRIMÈTRE (« CINQ » dans cette même phrase était déjà FAUX
+     avant la tranche Stocks — resté à sa valeur d'origine alors que PAYROLL puis
+     PROVISIONS avaient déjà porté le compte à sept ; corrigé cette fois-là en
+     « HUIT », étendu ici à « NEUF » avec Capitaux propres — même discipline,
+     jamais un chiffre en prose que rien ne produisait — règle 31) — et le
+     motif dit la vérité sur ce qu'il est. Le jeu de démonstration déroule le
+     cycle chiffre d'affaires (REVENUE), depuis le Lot 5 (poste Trésorerie,
+     mandat 2026-09-14) la trésorerie (CASH), depuis le Lot 5 poste 2
+     (Clients, 2026-09-15) les créances clients (TRADE_RECEIVABLES), depuis le
+     Lot 5 poste 3 (Immobilisations, 2026-09-15) PPE, depuis le Lot 5 poste 4
+     (Fournisseurs, 2026-09-15) les dettes fournisseurs (TRADE_PAYABLES),
+     depuis le Lot 5 poste 5 (Paie, 2026-09-15) les charges de personnel
+     (PAYROLL), depuis le Lot 5 poste 6 (Provisions, 2026-09-15) les
+     provisions (PROVISIONS), depuis le Lot 5 poste 7 (Stocks, 2026-09-15) les
+     stocks (INVENTORY), et depuis le Lot 5 poste 8 (Capitaux propres et
+     impôt, 2026-09-16) les capitaux propres (EQUITY) — chacun scopé
+     `ns_confirmed`
      par CETTE MÊME convention avant son propre correctif ; un poste dont on
      conduit réellement les procédures et qu'on maintient hors périmètre
      aurait été l'exact défaut inverse (un geste réel que le dossier
@@ -110,12 +112,12 @@ export async function bootstrapNep(): Promise<void> {
      jour. */
   const MOTIF_DEMO =
     'Hors périmètre du jeu de démonstration : seuls les cycles chiffre d’affaires, trésorerie, '
-    + 'clients, immobilisations, fournisseurs, paie, provisions et stocks y sont déroulés. Ce n’est '
-    + 'PAS un jugement de significativité — sur cette entité le poste dépasse le seuil de '
-    + 'planification et serait travaillé dans un dossier réel.';
+    + 'clients, immobilisations, fournisseurs, paie, provisions, stocks et capitaux propres y sont '
+    + 'déroulés. Ce n’est PAS un jugement de significativité — sur cette entité le poste dépasse le '
+    + 'seuil de planification et serait travaillé dans un dossier réel.';
   const fslis = await listFslis(IDS.engNep);
   for (const f of fslis) {
-    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES', 'PAYROLL', 'PROVISIONS', 'INVENTORY'].includes(f.code)) {
+    if (['REVENUE', 'CASH', 'TRADE_RECEIVABLES', 'PPE', 'TRADE_PAYABLES', 'PAYROLL', 'PROVISIONS', 'INVENTORY', 'EQUITY'].includes(f.code)) {
       /* TRADE_RECEIVABLES SEUL, parce que `enrichir.ts` (un flux SÉPARÉ de
          CETTE fonction — PAS appelé ici, mais bien appelé en aval par
          `scripts/deploy/reconstruire.ts`, le build de production, dans le
@@ -1057,6 +1059,91 @@ export async function planifierStocks(): Promise<void> {
 }
 
 /**
+ * LOT 5, POSTE 8 — LE DERNIER DU PLAN (Capitaux propres et impôt/EQUITY,
+ * 2026-09-16). Mesuré par exécution avant d'écrire (`fsliAccounts` +
+ * `assessFsli` + `requiredProcedures` contre la base seedée, à travers le
+ * VRAI `runPart1UpToWorkpaper()` — une première sonde isolée, montée à la
+ * main comme `programme-vue.test.ts`, avait mesuré TOUTES les assertions
+ * `faible` : FAUX, corrigé avant tout commit en rejouant contre le pipeline
+ * réel, où `realite` mesure `moyen` (1 facteur : `variation`) — la
+ * démonstration entière avance l'horloge et pose des écritures avant que ce
+ * poste ne soit évalué, un effet qu'une fixture isolée ne reproduit pas).
+ * `fsliAccounts(eng, 'EQUITY')` porte TROIS comptes (101000 « Capital
+ * social » -500 000,00 € ; 106100 « Réserve légale » -50 000,00 € ; 110000
+ * « Report à nouveau » -1 094 000,00 € ; total -1 644 000,00 €).
+ *
+ * `methodology/procedures.json` portait TROIS procédures pour ce cycle sous
+ * `cycle:"CAPITAUX"` (CAPITAUX-VAR, CAPITAUX-PV, CAPITAUX-CONV) — jamais
+ * consultées par `proceduresDuCycle`, même correspondance cassée que
+ * TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL/PROV/STOCKS
+ * (R54/R57/R95/R97/R98/R99). Les TROIS corrigées vers `cycle:"EQUITY"`
+ * cette même tranche (version 1.4.4).
+ *
+ * **HUIT procédures commandées** une fois la correspondance corrigée
+ * (compté par exécution, `requiredProcedures('EQUITY').length`, jamais
+ * recopié de tête — règle 31) : les quatre transverses universelles au
+ * seuil `faible` (DETAIL/RA/RAPPRO/SEQ), DEUX autres transverses débloquées
+ * PAR le facteur `realite:moyen` (FRAUDE, MANUEL — `risque_minimum:moyen`,
+ * même paire que PAYROLL avait débloquée par `realite:eleve`), et les DEUX
+ * procédures propres au poste : CAPITAUX-VAR (`rapprochement`,
+ * `exhaustivite:faible`) et CAPITAUX-PV (`sondage_pieces`, `droits:faible`)
+ * — 4+2+2 = 8. CAPITAUX-CONV (`test_exhaustif`, `presentation:moyen`) reste
+ * SOUS son seuil (`presentation` mesurée `faible`) — NON commandée, pas
+ * disclosed comme un gap.
+ *
+ * **NI CAPITAUX-VAR NI CAPITAUX-PV N'A D'ATELIER — disclosed R100, la même
+ * famille que R92/R95/R97/R98/R99, mais DOUBLE cette fois.** `rapprochement`
+ * n'est câblé que pour CASH/TRADE_RECEIVABLES (`programme.ts`, lu en
+ * entier) ; `sondage_pieces` n'est câblé que pour REVENUE. Aucune des deux
+ * natures n'atteint EQUITY. `poste.ts` : AUCUN changement nécessaire,
+ * vérifié par exécution (`vuePoste('EQUITY')` après
+ * `runPart1UpToWorkpaper()` complet) — le garde-fou générique posé pour
+ * PAYROLL (R98) couvre déjà toute nature sans atelier réel, quel que soit
+ * le nombre de procédures qui s'y heurtent.
+ *
+ * **Les DEUX procédures sont plantées** (même patron que
+ * `planifierTresorerie()`, qui en plante déjà deux — TRESO-CIRC/TRESO-RAPPRO
+ * — pas un précédent inventé pour cette tranche), chacune avec un papier
+ * `utilisee:false` honnête : aucune des deux n'a d'atelier réel à faire
+ * semblant d'avoir consulté.
+ */
+export async function planifierCapitaux(): Promise<void> {
+  const cat = await catalogueDeLaMission(IDS.engNep);
+  const reponduesEquity = new Set((await answers(IDS.engNep, 'EQUITY')).map((a) => a.question_code));
+  for (const qn of questionsOfScope(cat, 'section')) {
+    if (reponduesEquity.has(qn.code)) continue;
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'EQUITY', questionCode: qn.code, answer: 'non', detail: '', actorUserId: IDS.users.lea });
+  }
+
+  const dejaEvalue = await q01<{ id: string }>(
+    `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'EQUITY' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaEvalue) await assessFsli(IDS.engNep, 'EQUITY', IDS.users.lea);
+
+  const { enregistrerIpe } = await import('@/lib/services/ipe');
+  for (const code of ['CAPITAUX-VAR', 'CAPITAUX-PV']) {
+    const proc = await planifierProcedure({ engagementId: IDS.engNep, fsliCode: 'EQUITY', code, userId: IDS.users.karim });
+    const papierExistant = await q01<{ id: string }>(
+      `select id from workpaper where procedure_id = $1 limit 1`, [proc.id]);
+    if (!papierExistant) {
+      const wp = await redigerPapierDeProcedure({ procedureId: proc.id, userId: IDS.users.karim });
+      await enregistrerIpe(wp.id, { utilisee: false }, IDS.users.karim);
+    }
+  }
+
+  const dejaRedigeeEquity = await q01<{ id: string }>(
+    `select id from fsli_analytique where engagement_id = $1 and fsli_code = 'EQUITY' limit 1`,
+    [IDS.engNep],
+  );
+  if (!dejaRedigeeEquity) {
+    const proposition = await proposerAnalytique(IDS.engNep, 'EQUITY');
+    await enregistrerAnalytique(IDS.engNep, 'EQUITY', IDS.users.karim, proposition.texte,
+      { origine: 'proposee_validee', engineRunId: proposition.engineRunId });
+  }
+}
+
+/**
  * LA CIRCULARISATION, MENÉE À SON TERME.
  *
  * `circulariserBanques()` s'arrête au listing incomplet — c'est ce que le
@@ -1123,4 +1210,5 @@ export async function runPart1UpToWorkpaper(): Promise<void> {
   await planifierPaie();
   await planifierProvisions();
   await planifierStocks();
+  await planifierCapitaux();
 }

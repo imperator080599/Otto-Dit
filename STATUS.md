@@ -130,6 +130,20 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## SHA servi confirmé — tranche Stocks fusionnée sur `main` (`0ee73da`) (2026-09-16)
+
+Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
+poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__get_deployment` montre
+`dpl_5RHKrkzQzA2jgPTnwfyKcN3amyPf` (cible `production`) à l'état `READY`, commit
+`0ee73da7b416b44cf0087ee3c1e37e4865ac37ad` ; `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` rend `sha: "0ee73da7b416b44cf0087ee3c1e37e4865ac37ad"`,
+`identiteCoherente: true`, HTTP 200, verdict « toutes les lectures passent ». La tranche Stocks
+(recherche, implémentation, une revue hostile sans défaut, verify complet avec deux incidents
+documentés — un EXIT=143 d'infrastructure non expliqué, une contamination densite/clics résolue
+par l'ordre canonique — clôture et archive atteintes, 386 clics, 336 vues visuel) est donc EN
+LIGNE. Septième des huit postes du Lot 5 (ordre C.3) livré ; Capitaux propres et impôt reste,
+dernier poste du plan.
+
 ## SHA servi confirmé — tranche Provisions fusionnée sur `main` (`95af49a`) (2026-09-15)
 
 Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
@@ -142,6 +156,75 @@ Provisions (recherche, implémentation, deux revues hostiles — l'une trouvant 
 signe et le gap d'atelier R97-class, l'autre confirmant le correctif —, trois passages verify
 dont un a corrigé une assertion Lot 3 périmée, `visuel` propre) est donc EN LIGNE. Sixième des
 huit postes du Lot 5 (ordre C.3) livré ; Stocks (INVENTORY) et Capitaux propres et impôt restent.
+
+## Lot 5, poste 8 (LE DERNIER) : Capitaux propres et impôt (EQUITY) ouverts — leadsheet, revue analytique, deux procédures commandées SANS AUCUN ATELIER, R100 disclosed (2026-09-16)
+
+*Même mandat que Trésorerie/Clients/Immobilisations/Fournisseurs/Paie/Provisions/Stocks
+ci-dessus, HUITIÈME ET DERNIER poste de l'ordre C.3 : Capitaux propres et impôt (EQUITY), après
+Stocks. Le Lot 5 est complet avec ce poste.*
+
+**Recherche, mesurée avant d'écrire — avec une correction en cours de route.** Une première
+sonde isolée (montée à la main, comme `programme-vue.test.ts`) mesurait TOUTES les assertions
+d'EQUITY `faible`. Rejouée à travers le VRAI `runPart1UpToWorkpaper()` (le pipeline complet de
+démonstration, qui avance l'horloge et pose des écritures avant que ce poste ne soit évalué —
+un effet qu'une fixture isolée ne reproduit pas), le résultat était DIFFÉRENT :
+`realite:moyen` (1 facteur, `variation`), toutes les autres assertions `faible` — corrigé AVANT
+tout commit, jamais laissé courir la première mesure. `fsliAccounts(eng, 'EQUITY')` porte TROIS
+comptes (101000 « Capital social » -500 000,00 € ; 106100 « Réserve légale » -50 000,00 € ;
+110000 « Report à nouveau » -1 094 000,00 € ; total -1 644 000,00 €).
+
+Le mandat nomme ce poste « Capitaux propres et impôt » sans préciser de `fsli.code` (contrairement
+aux sept précédents, chacun mappé 1:1). `impôt sur les bénéfices` (INCOME_TAX) a été vérifié
+directement : AUCUN compte sur ce dossier (`fsliAccounts(eng,'INCOME_TAX')` rend `[]`) — rien à
+leadsheet, rien à revoir analytiquement, un poste qui serait un pur décor si ouvert (règle 20).
+« et impôt » se lit donc comme une description du CYCLE au sens large (capitaux propres et
+impôts, un regroupement usuel en audit français), pas comme l'exigence d'ouvrir un second
+`fsli.code` sans données. EQUITY seul reste le mapping cohérent avec le patron 1:1 des sept
+postes précédents — même lecture qui a déjà dû s'appliquer pour Paie/Stocks (le mandat annonçait
+`recalcul_parametre` pour chacun, jamais pleinement satisfait par les données réelles).
+
+`methodology/procedures.json` portait TROIS procédures pour ce cycle sous `cycle:"CAPITAUX"`
+(CAPITAUX-VAR, CAPITAUX-PV, CAPITAUX-CONV) — jamais consultées par `proceduresDuCycle`, même
+correspondance cassée que TRESO/CLIENTS/IMMO_COR/FOURN/PAYROLL/PROV/STOCKS
+(R54/R57/R95/R97/R98/R99). Les TROIS corrigées vers `cycle:"EQUITY"` (version 1.4.4).
+
+**HUIT procédures commandées** (compté par exécution, `requiredProcedures('EQUITY').length`,
+jamais recopié de tête — règle 31) : les quatre transverses au seuil `faible` (DETAIL/RA/RAPPRO/
+SEQ), DEUX transverses débloquées PAR `realite:moyen` (FRAUDE, MANUEL — même paire que PAYROLL
+avait débloquée par `realite:eleve`), et les DEUX procédures propres au poste : CAPITAUX-VAR
+(`rapprochement`, `exhaustivite:faible`) et CAPITAUX-PV (`sondage_pieces`, `droits:faible`) —
+4+2+2 = 8. CAPITAUX-CONV (`test_exhaustif`, `presentation:moyen`) reste SOUS son seuil
+(`presentation` mesurée `faible`) — NON commandée, pas disclosed comme un gap.
+
+**NI CAPITAUX-VAR NI CAPITAUX-PV N'A D'ATELIER — disclosed R100, un gap DOUBLE, jamais vu sur un
+seul poste jusqu'ici.** `rapprochement` n'est câblé (`programme.ts`, lu en entier) que pour
+CASH/TRADE_RECEIVABLES ; `sondage_pieces` n'est câblé que pour REVENUE. Aucune des deux natures
+n'atteint EQUITY. `poste.ts` : AUCUN changement nécessaire, vérifié par exécution
+(`vuePoste('EQUITY')` après `runPart1UpToWorkpaper()` complet) — le garde-fou générique posé pour
+PAYROLL (R98) couvre déjà toute nature sans atelier réel, quel que soit le nombre de procédures
+qui s'y heurtent en même temps.
+
+**Implémentation.** `part1.ts` : `EQUITY` ajouté au périmètre de démonstration (skip-list de
+`bootstrapNep()`, `MOTIF_DEMO` mis à jour pour neuf postes) ; nouvelle `planifierCapitaux()`
+(même patron que `planifierTresorerie()`, qui plante déjà DEUX procédures — pas un précédent
+inventé pour cette tranche), plantant CAPITAUX-VAR ET CAPITAUX-PV, chacune avec un papier
+`utilisee:false` honnête. Correctif rule 31 en chaîne : le commentaire d'en-tête de
+`bootstrapNep()` (déjà corrigé CINQ→HUIT à la tranche Stocks) étendu HUIT→NEUF avec cette
+tranche, même discipline.
+
+**Correctifs de test associés.** `catalogue.test.ts` : « CAPITAUX » déplacé de la liste des
+cycles attendus PRÉSENTS vers celle des cycles CORRIGÉS (absents) ; seul « DETTES_FI » reste,
+hors des huit postes nommés par le mandat. `enrichir.test.ts` : la fixture PROG-03 « poste hors
+périmètre » utilisait `EQUITY` (choisie pendant la tranche Stocks, alors non ouvert) — devenue
+FAUSSE une fois EQUITY câblé par cette tranche ; remplacée par `FINANCIAL_DEBT` (le seul
+`fsli.code` du dossier qui reste hors périmètre ET hors des huit postes nommés — le Lot 5 étant
+désormais complet, cette fixture n'a plus de raison structurelle de rechanger de poste).
+`atelier-confirmation-lecture.test.ts` : inchangé, reste sur INVENTORY (EQUITY ne touche pas
+`confirmation_externe`, la fixture reste valide sans modification).
+
+**Mesures avant expédition.** Suite ciblée (catalogue, enrichir, atelier-confirmation-lecture,
+programme-vue — 40/40) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet
+à suivre.
 
 ## Lot 5, poste 7 : Stocks (INVENTORY) ouverts — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R99 disclosed (2026-09-15)
 

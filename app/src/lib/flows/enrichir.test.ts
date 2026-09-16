@@ -69,17 +69,18 @@ describe('enrichirMondeDemo', () => {
   it('refuse de fabriquer une procédure hors méthode ou hors périmètre (PROG-01/02/03)', async () => {
     await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'REVENUE', code: 'PROCEDURE-INVENTEE', userId: IDS.users.karim })).rejects.toThrow(/PROG-01/);
     await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'REVENUE', code: 'STOCKS-INV', userId: IDS.users.karim })).rejects.toThrow(/PROG-02/);
-    /* INVENTORY retenu au périmètre depuis le 2026-09-15 (Lot 5, poste 7 — Stocks) : n'est plus
-       hors périmètre sur ce dossier — DEUXIÈME fois que cette fixture précise doit changer de
-       poste (PAYROLL → INVENTORY à la tranche Paie, vérifié par `git log -S` avant d'écrire
-       cette phrase plutôt que supposé — cette ligne n'a jamais porté TRADE_RECEIVABLES, à ne
-       pas confondre avec la fixture SÉPARÉE de `atelier-confirmation-lecture.test.ts` qui,
-       elle, a bien suivi cette chaîne). Remplacé par EQUITY (Capitaux propres, poste 8 —
-       Capitaux propres et impôt, dernier poste du Lot 5, non encore ouvert) : vérifié par
-       lecture directe de `fsli.scoping`/`scoping_basis` avant de choisir, `ns_confirmed` sur
-       le même motif générique que les autres postes hors périmètre du jeu (pas un jugement de
-       significativité comme INTANGIBLES). */
-    await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'EQUITY', code: 'RA', userId: IDS.users.karim })).rejects.toThrow(/PROG-03/);
+    /* EQUITY retenu au périmètre depuis le 2026-09-16 (Lot 5, poste 8 — Capitaux propres et
+       impôt, le DERNIER du Lot 5) : n'est plus hors périmètre sur ce dossier — TROISIÈME fois
+       que cette fixture précise doit changer de poste (PAYROLL → INVENTORY à la tranche Paie,
+       INVENTORY → EQUITY à la tranche Stocks, vérifié par `git log -S` avant d'écrire cette
+       phrase). Remplacé par FINANCIAL_DEBT (emprunts et dettes financières) : le SEUL fsli.code
+       du dossier qui reste hors périmètre du jeu ET hors des huit postes nommés par le mandat
+       — vérifié par lecture directe de `fsli.scoping`/`scoping_basis` avant de choisir,
+       `ns_confirmed` sur le même motif générique que les autres postes hors périmètre du jeu
+       (pas un jugement de significativité comme INTANGIBLES). Le Lot 5 étant désormais complet
+       (huit postes ouverts), cette fixture n'a plus de raison structurelle de rechanger de
+       poste — FINANCIAL_DEBT reste hors périmètre tant qu'aucun mandat ne l'ouvre. */
+    await expect(planifierProcedure({ engagementId: ENG, fsliCode: 'FINANCIAL_DEBT', code: 'RA', userId: IDS.users.karim })).rejects.toThrow(/PROG-03/);
   });
 
   it('enrichit sans remplacer : quatre états de section, papiers à visas différents dont un périmé, notes datées dont une sur une cellule, processus et matrice, lignes conclues', async () => {

@@ -1,6 +1,6 @@
 {
   "_note": "Catalogue méthodologique par cycle. CONTENU, non code : le prototype comme l'application le consomment, aucun des deux ne le contient en dur. Les prédicats de population et les résolveurs de référence sont NOMMÉS ici et IMPLÉMENTÉS dans le code ; « non_implemente » signale une procédure cataloguée que le jeu de données ou l'implémentation actuelle ne permet pas d'exécuter — elle est affichée comme telle, jamais simulée.",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "sens_de_test": {
     "gl_vers_piece": {
       "libelle": "du grand livre vers la pièce",
@@ -2108,7 +2108,7 @@
     },
     {
       "code": "CAPITAUX-VAR",
-      "cycle": "CAPITAUX",
+      "cycle": "EQUITY",
       "libelle": "Tableau de variation des capitaux propres",
       "objectif": "Rapprocher l'ouverture, le résultat, l'affectation et la clôture.",
       "assertion": "exhaustivite",
@@ -2132,7 +2132,7 @@
     },
     {
       "code": "CAPITAUX-PV",
-      "cycle": "CAPITAUX",
+      "cycle": "EQUITY",
       "libelle": "Procès-verbaux d'assemblée et affectation du résultat",
       "objectif": "Vérifier que l'affectation comptabilisée est celle qui a été décidée.",
       "assertion": "droits",
@@ -2178,7 +2178,7 @@
     },
     {
       "code": "CAPITAUX-CONV",
-      "cycle": "CAPITAUX",
+      "cycle": "EQUITY",
       "libelle": "Conventions réglementées",
       "objectif": "Identifier les conventions entre la société et ses dirigeants ou associés.",
       "assertion": "presentation",
