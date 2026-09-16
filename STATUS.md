@@ -4,6 +4,65 @@
 
 ---
 
+## Lot 7, H-2 slice 1 — écran « constat vs point d'action client » (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après le Lot 7 tranche 2 (règle 32). H-2 :
+« le cycle de vie du constat vis-à-vis du client » (`docs/REGISTRE_IDEES.md` ligne 270) —
+« propriétaire, échéance, état, relance — en distinguant NETTEMENT l'exception d'audit (le
+dossier) du point d'action client (l'entité) », condition écrite : « le point d'action client
+ne remplace jamais l'exception d'audit et n'entre pas dans le dossier comme conclusion ».*
+
+**Recherche préalable (un sous-agent)**, avant tout code : cette séparation est DÉJÀ un
+invariant tenu par le code existant — `draftClarificationRequest` crée un `request_item(kind=
+'explanation', exception_id=…)` par écart ouvert ; le client répond par
+`evidence.ts::answerExplanation` ; seul un humain, par `resolveException`, referme le DOSSIER
+(`status='resolved'`). Découverte majeure, disclosed sans être corrigée ici (hors périmètre de
+cette slice) : la table `followup` (migration `0002_testing.sql`, documentée depuis le premier
+jour comme « auto-drafted clarification, L2 approve-to-send ») est un DÉCOR exact — deux usages
+seulement dans tout le dépôt, `approved_by` toujours NULL, aucun SELECT nulle part, aucune
+politique RLS. Découpage retenu : slice 1 (celle-ci, zéro migration, pure lecture, un
+réfutateur) · slice 2 (modèle de données — trancher entre réhabiliter `followup` ou étendre
+`request_item`, deux réfutateurs, règle 30) · slice 3 (relance).
+
+**Implémenté** (commit `4e60d9b`) : `matching.ts::constatEtPointAction(engagementId)` —
+jointure exception/request_item(kind='explanation')/request. Panneau ajouté à
+`exceptions/page.tsx` : « le constat » (exception.status/taxonomy_code/description) et « le
+point d'action client » (request_item.status/client_note, request.due_date/status) comme deux
+colonnes distinctes, jamais fusionnées. Nouvelle lecture `/api/sante` qui RE-DÉRIVE
+indépendamment (jointure SQL directe, jamais un appel à `constatEtPointAction`) et rougit sur
+le seul cas anormal identifié : un point d'action `pending` dont le constat est redevenu
+`open` sans reprise. i18n : cinq clés neuves, 0 chaîne hors catalogue.
+
+**Revue hostile (un seul réfutateur, règle 30 : tranche pure lecture, aucun modèle de données
+ni code de refus touché).** Deux constats RÉELS, non bloquants, corrigés (commit `94eb4e6`) :
+(1) `constatEtPointAction` ne filtrait pas `i.kind = 'explanation'` dans son SQL, contrairement
+à son propre docstring et à la lecture sœur `/api/sante` qui, elle, filtrait déjà — non
+exploitable aujourd'hui (seul `draftClarificationRequest` pose `exception_id`, toujours avec ce
+`kind`), mais un écart entre ce que la fonction prétend et ce qu'elle fait (règle 16) ; filtre
+ajouté, test de régression écrit. (2) Le docstring affirmait qu'`answerExplanation` n'écrit
+JAMAIS `exception.resolution` — faux : il l'écrit TEMPORAIREMENT (texte brut du client, statut
+`'explained'`), écrasé seulement quand un humain appelle `resolveException` ; l'invariant du
+mandat tient par le STATUT, pas par l'absence totale d'écriture — docstring corrigé pour dire
+précisément ce que le code fait, une affirmation non vérifiée prise pour acquise avant la revue
+(règle 18).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur
+l'arbre du commit `94eb4e6`) : `tsc` propre · **154/154 fichiers, 1171/1171 tests vitest** ·
+`gardes` 47 · `semeur` à jour · `plancher` 1171 collectés · `langue` 0 hors catalogue, **15/15**
+· `lectures` 0 perdue, **6/6** · `parcours` 0 station perdue, **5/5** · `screens` **93 routes, 0
+échec** · `fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0 dépassement** (commit
+`b839ab0`) · `clics` **EXIT=1 réel, seul motif `#418`** (F33, `docs/CHASSE.md`, dix-neuvième
+confirmation consécutive), clôture et archive ATTEINTES (240 stations figées vérifiées, 260
+étapes, 385 clics — identique à la référence, ZÉRO nouvel échec). `visuel` (relancé
+séparément) : **336 vues, 0 défaut**.
+
+**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-2 slice 1 est COMPLÈTE.** Reste du Lot 7 : H-2 slice 2 (modèle de données —
+propriétaire/échéance/relance propres au constat, décision `followup` vs `request_item` à
+trancher d'abord, deux réfutateurs requis) puis slice 3 (relance).
+
 ## Lot 7, tranche 2 (H-1 slice 2) — obstacle au visa : les demandes en retard (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après le Lot 7 tranche 1 (règle 32). H-1

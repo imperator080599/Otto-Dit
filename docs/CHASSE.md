@@ -1258,3 +1258,15 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   comptés — DIX-HUITIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin
   (même discipline que F9-F31). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de
   `clics`), propre (336 vues, 0 défaut).
+
+- **F33 — UN incident** (2026-09-16, Lot 7, H-2 slice 1 — « constat vs point d'action client »,
+  sur l'arbre CORRIGÉ du commit `94eb4e6`, après deux constats non bloquants trouvés par la revue
+  hostile et corrigés le même jour — voir STATUS.md, « Lot 7, H-2 slice 1 »). `EXIT=1` réel
+  (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/13b527a1-...`
+  (l'habituelle, `rcm/[cid]`). Disjoint de la tranche : `matching.ts::constatEtPointAction`,
+  `exceptions/page.tsx`, la nouvelle lecture `/api/sante` et `catalogue.ts` ne touchent pas `/rcm`,
+  et les 1171 tests vitest passent tous. Clôture et archive ATTEINTES (« le dossier se CLÔT et
+  l'archive est scellée », 240 stations figées vérifiées), 260 étapes conduites, 385 clics comptés
+  — DIX-NEUVIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
+  discipline que F9-F32). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de
+  `clics`), propre (336 vues, 0 défaut).
