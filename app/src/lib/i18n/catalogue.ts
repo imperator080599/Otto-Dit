@@ -782,6 +782,7 @@ export const LIBELLES = {
   'obst.posteSansProcedure': { en: '{code} — {nom}: in scope, no procedure planned', fr: '{code} — {nom} : retenu au périmètre, aucune procédure planifiée' },
   'obst.basculeSansSection': { en: '{code} — {nom}: materiality bascule flagged, but its section was never opened (MAT-01)', fr: '{code} — {nom} : bascule de matérialité signalée, mais sa section n’a jamais été ouverte (MAT-01)' },
   'obst.basculeSansDemandeCtt': { en: '{code} — {nom}: {n} account(s) above CTT, no detail request exists (MAT-02)', fr: '{code} — {nom} : {n} compte(s) au-dessus du CTT, aucune demande de détail n’existe (MAT-02)' },
+  'obst.analytiquePerimee': { en: '{code} — {nom}: analytical review (v{version}) is stale — balances have moved since it was written (ANA-04)', fr: '{code} — {nom} : revue analytique (v{version}) périmée — les soldes ont bougé depuis sa rédaction (ANA-04)' },
   'obst.pointageNonPointee': { en: 'Financial statements: {ref} “{libelle}” — not tied out', fr: 'États financiers : {ref} « {libelle} » — non pointée' },
   'obst.pointageEcart': { en: 'Financial statements: {ref} “{libelle}” — difference of {ecart} € unexplained', fr: 'États financiers : {ref} « {libelle} » — écart de {ecart} € non expliqué' },
   'obst.achevementNonOuvert': { en: 'Completion: the completion procedures have not been opened.', fr: 'Achèvement : les travaux d’achèvement n’ont pas été ouverts.' },
@@ -868,6 +869,11 @@ export const LIBELLES = {
   'famille.materialite.pourquoi': {
     en: 'A line item that became material this way must have its section reachable and, above CTT, its accounts requested.',
     fr: 'Un poste devenu matériel de cette façon doit avoir sa section atteignable et, au-dessus du CTT, ses comptes demandés.',
+  },
+  'famille.analytique.titre': { en: 'Stale analytical review', fr: 'Revue analytique périmée' },
+  'famille.analytique.pourquoi': {
+    en: 'A written analytical review whose balances have since moved must be re-read against the current figures before sign-off.',
+    fr: 'Une revue analytique rédigée dont les soldes ont bougé depuis doit être relue contre les chiffres actuels avant le visa.',
   },
   'famille.tirage.titre': { en: 'Selection re-drawn', fr: 'Tirage refait' },
   'famille.tirage.pourquoi': {

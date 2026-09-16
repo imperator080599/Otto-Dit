@@ -824,6 +824,23 @@ async function corpsDeLaSonde() {
       const mat02 = obstacles.filter((o) => o.cle === 'obst.basculeSansDemandeCtt').length;
       return `${obstacles.length} obstacle(s) · MAT-01 (section manquante) : ${mat01} · MAT-02 (demande CTT manquante) : ${mat02}`;
     }));
+    /* ANA-04 (Lot 6, mandat 2026-09-05 plan d'autonomie, Partie D.1 — livré ce jour, lu ce jour,
+       règle 22). Cette lecture tourne le MÊME chemin que `/obstacles` (`obstaclesAnalytique`,
+       obstacles.ts) — jamais une requête refaite à côté. Une revue analytique périmée est le
+       travail NORMAL d'un dossier en cours (les soldes bougent légitimement, un humain relit) :
+       cette lecture reste donc INFORMATIVE sur le compte, comme les autres familles d'obstacles
+       ailleurs dans ce fichier — un compte non nul REMONTE (il ne passe jamais pour « VIDE » ni
+       pour un simple « ok »), c'est ce qui la fait rougir sur le cas qu'elle surveille. CE QUE
+       CETTE LECTURE NE VÉRIFIE PAS (règle 19) : qu'une revue périmée finit par être relue —
+       aucune boucle de retentative n'existe pour cette famille (contrairement à MAT-01/02,
+       ci-dessus, qui a la sienne) ; une revue peut rester périmée aussi longtemps qu'un humain ne
+       l'a pas rouverte, et c'est voulu — un stock d'obstacles ouverts n'est pas une panne. */
+    lectures.push(await essayer('ANA-04 : les revues analytiques périmées', async () => {
+      const { obstaclesAnalytique } = await import('@/lib/services/obstacles');
+      const obstacles = await obstaclesAnalytique(id);
+      if (!obstacles.length) return 'aucune revue analytique périmée';
+      return `${obstacles.length} revue(s) analytique(s) périmée(s) — ${obstacles.map((o) => o.vars?.code).join(', ')}`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

@@ -17,6 +17,7 @@ import { frameworkSet, fsliAccounts } from './fsli';
 import { EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT } from './requests';
 import { numToCents } from '@/lib/util/num';
 import { primaryPack } from '@/lib/packs';
+import { lireAnalytique } from './analytique';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -38,7 +39,7 @@ import { primaryPack } from '@/lib/packs';
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
-  | 'ipe' | 'tirage' | 'materialite' | 'iaNonValide';
+  | 'ipe' | 'tirage' | 'materialite' | 'iaNonValide' | 'analytique';
 
 export interface Obstacle {
   famille: Famille;
@@ -65,6 +66,7 @@ const OU: Record<Famille, string> = {
   tirage: 'sampling',
   materialite: 'materiality',
   iaNonValide: 'notifications',
+  analytique: 'analytique',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -183,6 +185,12 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
 
   /* 6 ter. LA BASCULE DE MATÉRIALITÉ NON RÉSOLUE (mandat 2026-09-09, §2.4 — MAT-01/MAT-02). */
   ajoute('materialite', await obstaclesMaterialite(engagementId));
+
+  /* 6 quater. ANA-04 (Lot 6, mandat 2026-09-05 plan d'autonomie, Partie D.1 : « revue analytique
+     périmée qui bloque le visa »). Placée ici, avant le pointage et l'évaluation : la revue
+     analytique est un travail de poste, comme la boucle et la matérialité au-dessus — elle se
+     juge avant qu'on ne pointe les états financiers ou qu'on n'évalue les anomalies accumulées. */
+  ajoute('analytique', await obstaclesAnalytique(engagementId));
 
   // 7. Le pointage des états financiers.
   ajoute('pointage', await obstaclesPointage(engagementId));
@@ -318,6 +326,37 @@ export async function obstaclesMaterialite(engagementId: string): Promise<Motif[
       if (comptes.length > 0) {
         out.push(motif('obst.basculeSansDemandeCtt', { code: b.fsli_code, nom: b.fsli_name ?? b.fsli_code, n: comptes.length }));
       }
+    }
+  }
+  return out;
+}
+
+/**
+ * ANA-04 (Lot 6, mandat 2026-09-05 plan d'autonomie, Partie D.1 : « revue analytique périmée qui
+ * bloque le visa »). Un poste retenu au périmètre dont la revue analytique a été RÉDIGÉE, puis
+ * dont les soldes ont bougé depuis (le fingerprint `soldes_hash` ne correspond plus à l'empreinte
+ * courante de la leadsheet — `analytique.ts::lireAnalytique`), bloque le visa tant qu'elle n'est
+ * pas relue et re-rédigée : un texte qui commente des chiffres que le dossier ne porte plus n'est
+ * plus une revue analytique de CE dossier.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : un poste dont la revue analytique n'a JAMAIS
+ * été rédigée (`lireAnalytique` rend `null`) n'est PAS bloqué ici — le mandat nomme « périmée »,
+ * pas « manquante », et un poste sans aucune revue est une lacune d'une autre nature (proche de
+ * `posteSansProcedure`, §5 ci-dessus, mais distincte : une revue analytique n'est pas une
+ * procédure). Élargir cette famille au « jamais rédigée » se ferait dans une tranche à part, avec
+ * son propre motif et son propre cas connu mauvais — pas ici, en passant.
+ */
+export async function obstaclesAnalytique(engagementId: string): Promise<Motif[]> {
+  const postes = await q<{ code: string; name: string }>(
+    `select code, name from fsli where engagement_id = $1
+       and scoping in ('in_scope', 'in_scope_qualitative') order by code`,
+    [engagementId],
+  );
+  const out: Motif[] = [];
+  for (const p of postes) {
+    const revue = await lireAnalytique(engagementId, p.code);
+    if (revue && revue.perimee) {
+      out.push(motif('obst.analytiquePerimee', { code: p.code, nom: p.name, version: revue.version }));
     }
   }
   return out;

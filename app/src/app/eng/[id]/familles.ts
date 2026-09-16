@@ -35,4 +35,5 @@ export const FAMILLES: Record<Famille, { titre: CleLibelle; pourquoi: CleLibelle
   achevement: { titre: 'rail.achevement', pourquoi: 'famille.achevement.pourquoi' },
   materialite: { titre: 'famille.materialite.titre', pourquoi: 'famille.materialite.pourquoi' },
   iaNonValide: { titre: 'famille.iaNonValide.titre', pourquoi: 'famille.iaNonValide.pourquoi' },
+  analytique: { titre: 'famille.analytique.titre', pourquoi: 'famille.analytique.pourquoi' },
 };
