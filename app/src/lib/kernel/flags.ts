@@ -58,6 +58,7 @@ export function computeFlags(rows: GlRow[], cfg: FlagConfig): FlaggedGlRow[] {
       flags.push('period_end');
     }
     if (r.auxNo && patternParties.has(r.auxNo) && isCreditNote(r)) flags.push('credit_note_pattern');
+    if (r.validDate && r.validDate > cfg.periodEnd) flags.push('late_validation');
     return { ...r, flags };
   });
 }

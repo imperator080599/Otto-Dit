@@ -719,6 +719,50 @@ async function corpsDeLaSonde() {
       const notePostesCables = postesVerifies.length > 0 ? `, ${postesVerifies.join('/')} toujours avec un atelier réel` : '';
       return `${n} procédure(s) rapprochement planifiée(s)${notePostesCables}${detailHorsCash}`;
     }));
+    /* LOT 6, TRANCHE 3 (NEP 240, 2026-09-16, règle 22). JUMELLE DIFFÉRENTE des
+       trois lectures `atelier … disponible` ci-dessus : celles-là rougissent
+       sur un POSTE câblé sans atelier ; celle-ci rougit sur le cas inverse —
+       un atelier rendu pour la MAUVAISE procédure. `sondage_pieces` +
+       REVENUE n'a plus une seule procédure possible depuis que MANUEL et
+       FRAUDE (methodology/procedures.json, ISA-240) déclarent la même nature
+       sur le même poste que REV-SUBST : `atelierDeLaNature` distingue
+       maintenant les trois par `template_code` (programme.ts, quatrième
+       paramètre) — /testing ne s'ouvre QUE pour REV-SUBST, MANUEL/FRAUDE
+       reçoivent `null` (disclosed R104). Cette lecture interroge la BASE :
+       toute ligne `sondage_pieces` sur REVENUE dont le template N'EST PAS
+       REV-SUBST et qui reçoit quand même un atelier est une régression du
+       distinguo lui-même — un LIEN MENTEUR (règle 13), pas un état attendu.
+       `flows/part1.ts` ne plante NI MANUEL NI FRAUDE dans le monde semé
+       (même choix que CLIENTS-AVOIRS/IMMO_COR-TAB/ACQ) : cette lecture reste
+       VERTE-VIDE tant que personne n'a cliqué « planifier » sur `/programme`
+       — sa preuve vient, comme ses jumelles à leur naissance, d'un cas connu
+       mauvais à insertion directe (`nep240-sondage-lecture.test.ts`, règle 17).
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne dit rien de
+       REV-SUBST lui-même (câblé depuis le Lot 2, jamais régressé ici) ni de
+       `sondage_pieces` sur un AUTRE poste que REVENUE (aucun atelier n'y
+       existe encore pour personne, R92/R95 — hors du champ de CETTE
+       lecture, qui ne regarde que la collision REV-SUBST/MANUEL/FRAUDE). */
+    lectures.push(await essayer('atelier sondage_pieces réservé à REV-SUBST sur REVENUE (Lot 6, tranche 3 — NEP 240)', async () => {
+      const { atelierDeLaNature } = await import('@/lib/services/programme');
+      const rows = await q<{ template_code: string; fsli_code: string | null; n: string }>(
+        `select template_code, fsli_code, count(*) n from procedure_instance
+         where engagement_id = $1 and nature = 'sondage_pieces' and fsli_code = 'REVENUE'
+         group by template_code, fsli_code`,
+        [id]);
+      if (rows.length === 0) return 'aucune procédure sondage_pieces planifiée sur REVENUE encore';
+      const menteuses = rows.filter((r) => r.template_code !== 'REV-SUBST'
+        && atelierDeLaNature('sondage_pieces', 'REVENUE', '/base', r.template_code) !== null);
+      if (menteuses.length > 0) {
+        const instances = menteuses.reduce((s, r) => s + Number(r.n), 0);
+        throw new Error(`${instances} instance(s) sondage_pieces sur REVENUE hors REV-SUBST reçoivent quand même `
+          + `l'atelier /testing — régression atelierDeLaNature, lien menteur : `
+          + menteuses.map((r) => r.template_code).join(', '));
+      }
+      const n = rows.reduce((s, r) => s + Number(r.n), 0);
+      const autres = rows.filter((r) => r.template_code !== 'REV-SUBST').map((r) => r.template_code);
+      const noteAutres = autres.length > 0 ? `, dont ${autres.join('/')} sans atelier (disclosed R104), honnêtement` : '';
+      return `${n} procédure(s) sondage_pieces planifiée(s) sur REVENUE${noteAutres}`;
+    }));
     /* LOT 4, TRANCHE 1 (mandat, Partie D.1 — « les écrans qui manquent … la
        déplanification d'une procédure », livrée ce jour, lue ce jour, règle
        22). `deplanned_at`/`deplanned_by`/`deplanned_motif` (migration 0147)

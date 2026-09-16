@@ -94,6 +94,26 @@ describe('JE risk flags (ADR-003)', () => {
     expect(rows[0].flags).toContain('credit_note_pattern');
     expect(rows[3].flags).not.toContain('credit_note_pattern');
   });
+
+  /* Lot 6, tranche 3 (NEP 240) : `late_validation` — précédent SQL déjà exercé
+   * par `risk.ts:177` (« validation après la clôture »), repris ici comme
+   * comparaison pure. CAS CONNU MAUVAIS (règle 17) : une ligne validée AVANT
+   * la clôture ne doit PAS porter le drapeau — sans cette assertion, un
+   * comparateur inversé (`<` au lieu de `>`) passerait la première moitié du
+   * test tout en marquant TOUT le monde en retard. */
+  it('flags late validation (valid_date after period end, ADR-003 — précédent risk.ts:177)', () => {
+    const rows = computeFlags(
+      [
+        glRow({ naturalKey: 'VE|late|1', entryNo: 'late', entryDate: '2025-06-16', validDate: '2026-01-15' }),
+        glRow({ naturalKey: 'VE|ontime|1', entryNo: 'ontime', entryDate: '2025-06-16', validDate: '2025-12-20' }),
+        glRow({ naturalKey: 'VE|unvalidated|1', entryNo: 'unvalidated', entryDate: '2025-06-16', validDate: undefined }),
+      ],
+      cfg,
+    );
+    expect(rows[0].flags).toContain('late_validation');
+    expect(rows[1].flags).not.toContain('late_validation');
+    expect(rows[2].flags).not.toContain('late_validation');
+  });
 });
 
 describe('sampling engine', () => {

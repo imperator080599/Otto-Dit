@@ -578,8 +578,44 @@ export interface LigneProgramme {
  * `test_exhaustif`, `tests_de_controles`, `observation_documentee`) restent
  * hors de ce Lot.
  */
-export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string): string | null {
-  if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') return `${base}/testing`;
+/**
+ * Lot 6, tranche 3 (NEP 240, 2026-09-16) — QUATRIÈME PARAMÈTRE, `templateCode`,
+ * OPTIONNEL pour ne rien casser des appels existants (poste.ts, les lectures
+ * `/api/sante`, `programme-vue.test.ts` : aucun n'a de procédure précise en
+ * tête, ils demandent « CETTE nature, CE poste, quel atelier ? » en général).
+ *
+ * LA RAISON : `sondage_pieces` + REVENUE n'a plus UNE SEULE procédure possible.
+ * MANUEL et FRAUDE (methodology/procedures.json, ISA-240) déclarent elles
+ * aussi `nature: "sondage_pieces"` et sont déjà COMMANDÉES sur REVENUE par le
+ * risque courant (§ catalogue) — donc déjà PLANIFIABLES dès aujourd'hui par
+ * n'importe qui via le bouton « planifier » de `/programme`, AVANT même que ce
+ * commit n'existe. Sans ce paramètre, `atelierDeLaNature('sondage_pieces',
+ * 'REVENUE', base)` renvoyait `/testing` pour CES DEUX-LÀ aussi — un LIEN
+ * MENTEUR (règle 13) : `/testing` ne lit QUE `currentRevenueSample`
+ * (sampling.ts), câblé en dur sur `template_code = 'REV-SUBST'` — cliquer
+ * l'atelier depuis une ligne MANUEL ou FRAUDE aurait ouvert le tirage de
+ * REV-SUBST, jamais le leur (qui, cette tranche, n'existe d'ailleurs pas
+ * encore — `sampling-je.ts` construit la population et le tirage MAIS
+ * `flows/part1.ts` ne les plante PAS dans le monde semé, même choix que
+ * CLIENTS-AVOIRS/R92 et IMMO_COR-TAB/IMMO_COR-ACQ/R95 ci-dessus : commandée,
+ * planifiable par un geste réel, sans atelier construit cette tranche —
+ * disclosed R104, docs/BACKLOG_REPORTE.md).
+ *
+ * CE CORRECTIF N'EST PAS DE LA MÉCANIQUE NOUVELLE POUR MANUEL/FRAUDE
+ * SPÉCIFIQUEMENT : c'est la MÊME fonction, la SEULE qui sait quel écran
+ * exécute quelle nature (son propre en-tête, ligne ~465), qui apprend à
+ * distinguer DEUX PROCÉDURES qui partagent une nature sur le MÊME poste —
+ * un cas que les quatre autres cases câblées (chacune bornée à un poste ET,
+ * jusqu'ici, une seule procédure catalogue par poste) n'avaient jamais
+ * rencontré. `undefined` (l'ancien comportement, tous les appels existants)
+ * se lit comme « n'importe quelle procédure » — donc toujours `/testing`,
+ * exactement comme avant ce commit, pour ne régresser AUCUN appelant qui ne
+ * connaît pas encore le distinguo.
+ */
+export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: string, templateCode?: string): string | null {
+  if (nature === 'sondage_pieces' && fsliCode === 'REVENUE') {
+    return (templateCode === undefined || templateCode === 'REV-SUBST') ? `${base}/testing` : null;
+  }
   if (nature === 'recalcul_parametre' && fsliCode === 'REVENUE') return `${base}/estimations`;
   if (nature === 'confirmation_externe' && fsliCode === 'CASH') return `${base}/circularisations`;
   if (nature === 'rapprochement' && fsliCode === 'CASH') return `${base}/circularisations`;

@@ -133,7 +133,7 @@ export default async function ProgrammePage({
                         dans « commandées » — sans cette ligne, l'atelier livré
                         cette tranche n'aurait jamais été atteignable au clic. */}
                     {l.planifiee && (() => {
-                      const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`);
+                      const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`, l.code);
                       return href ? (
                         <> · <Link href={href} data-atelier={l.code}>{t('prog.allerAtelier')}</Link></>
                       ) : (
@@ -205,7 +205,7 @@ export default async function ProgrammePage({
                             (`procedure_instance`), jamais sur l'entrée abstraite du
                             catalogue — avant planification, il n'y a rien à ouvrir. */}
                         {l.planifiee && (() => {
-                          const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`);
+                          const href = atelierDeLaNature(l.nature, poste.code, `/eng/${id}`, l.code);
                           return href ? (
                             <div><Link href={href} data-atelier={l.code}>{t('prog.allerAtelier')}</Link></div>
                           ) : (

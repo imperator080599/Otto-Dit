@@ -247,6 +247,17 @@ describe('le programme de travail', () => {
     expect(atelierDeLaNature('observation_documentee', 'REVENUE', '/eng/x')).toBeNull();
   });
 
+  it("Lot 6, tranche 3 (NEP 240) — sondage_pieces/REVENUE n'ouvre `/testing` que pour REV-SUBST ; MANUEL et FRAUDE, qui partagent la même nature ET le même poste, reçoivent `null` — jamais le tirage de l'autre (règle 13, lien menteur)", () => {
+    // Comportement PRÉ-EXISTANT (aucun templateCode passé) : inchangé, toujours /testing —
+    // c'est ce que tous les appelants d'avant cette tranche font encore (poste.ts, les
+    // lectures /api/sante des Lots 3-5).
+    expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x')).toBe('/eng/x/testing');
+    // Avec le code explicite : REV-SUBST seul garde /testing.
+    expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x', 'REV-SUBST')).toBe('/eng/x/testing');
+    expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x', 'MANUEL')).toBeNull();
+    expect(atelierDeLaNature('sondage_pieces', 'REVENUE', '/eng/x', 'FRAUDE')).toBeNull();
+  });
+
   it('Lot 3, tranche 1 — la nature d’une procédure planifiée vient du catalogue, pas devinée', async () => {
     const cat = await catalogueDeLaMission(IDS.engNep);
     const poste = (await programmeDuDossier(IDS.engNep)).find((p) => p.code === POSTE)!;

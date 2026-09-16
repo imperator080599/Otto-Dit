@@ -1778,3 +1778,28 @@ design : chacun reste une tranche à construire.**
   avant que le Lot 7+ n'ajoute des postes, ou avant que `/api/sante` ne triple encore son coût —
   la voix 2 recommande de regrouper les requêtes par poste à la manière de `obstaclesMaterialite`
   (une requête ensembliste pour tout le dossier) le jour où cette tranche est reprise.
+
+- **R104 — MANUEL et FRAUDE (NEP 240/ISA 240, `methodology/procedures.json`) sont commandées par
+  le risque sur REVENUE, planifiables par un geste réel (`/programme`, bouton « planifier »,
+  `planifierProcedure` déjà générique), leur population/tirage sont construits et testés
+  (`population.ts::journalEntryPopulation`, `sampling-je.ts`), mais TROIS choses manquent.**
+  (1) Aucun atelier interactif : `testing/grille.ts` reste câblé sur `template_code = 'REV-SUBST'`
+  seul — une procédure MANUEL/FRAUDE tirée n'a pas d'écran pour revoir chaque écriture une par
+  une, seulement le papier générique (`redigerPapierDeProcedure`) et `/programme`.
+  `atelierDeLaNature` (programme.ts) le dit honnêtement (`null`, `templateCode` ≠ `'REV-SUBST'`),
+  jamais un lien menteur — corrigé DANS cette même tranche (règle 13), mais l'absence d'atelier
+  elle-même reste. (2) « saisie par la direction » (le second volet du `population.filtre` de
+  MANUEL ET de FRAUDE dans la méthode) n'est PAS calculé : `gl_entry` (0001_core.sql) ne porte
+  aucune colonne auteur/rôle — structurellement impossible avec le schéma actuel, pas un oubli de
+  cette tranche. (3) `flows/part1.ts` ne plante NI MANUEL NI FRAUDE dans le monde semé (même choix
+  que CLIENTS-AVOIRS/R92 et IMMO_COR-TAB/IMMO_COR-ACQ/R95 : commandée, planifiable, sans atelier
+  construit) — leur chemin humain existe (`/programme`) mais n'a jamais été cliqué dans le monde
+  de démonstration, donc NON PROUVÉ au sens de la règle 20, seulement testé en base (règle 17,
+  `sampling-je.test.ts`) et par cas connu mauvais (`nep240-sondage-lecture.test.ts`). | 2026-09-16
+  (Lot 6, tranche 3, NEP 240) | non corrigé, délibérément hors du périmètre de cette tranche
+  (règle 8 — construire la mécanique de population/tirage était le mandat de « bâtir l'épine
+  dorsale » ; l'atelier, le clic réel et une colonne auteur sur `gl_entry` seraient chacun un
+  chantier séparé). Le dormant `si_facteur` (methodology/schema.json, `types.ts:129`) — déclaré
+  mais jamais consulté par `requiredProcedures()` — est un gap PRÉEXISTANT, distinct de celui-ci,
+  déjà noté ici pour mémoire (règle 13 : un prédicat déclaré et non implémenté) plutôt que corrigé
+  par cette tranche non plus.
