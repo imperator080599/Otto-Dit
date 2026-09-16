@@ -1083,3 +1083,57 @@ annonçait à tort « exit code 0 »). Reste de la chaîne propre : 144/145 fich
 `circularisations.test.ts` de `d4cd834`). Isolé, `npx vitest run tests/screens.test.ts` seul,
 sous 900 s : **PASSE, 1/1, 425,29 s** — cohérent avec toutes les mesures précédentes de ce même
 test (425-477 s selon les tranches). Diff inchangé depuis l'isolation. Chaîne à relancer.
+
+## 6. `npm run clics` joué avant `npm run densite` contamine la mesure de densité
+
+**Trouvé le 2026-09-16, tranche Stocks (Lot 5, poste 7), après deux incidents non expliqués.**
+Deux tentatives consécutives de `npm run verify`/`npm run clics` (isolé, sous `timeout`, avec ET
+sans le wrapper `timeout`) sont mortes à l'identique — `  build…` imprimé, puis `Terminated`,
+`EXIT=143` réel (règle 35, lu sur la ligne brute des deux tâches de fond, `bqujrp548.output` puis
+`bmeh8xmau.output`) — alors qu'un `npm run build` lancé en DEHORS de `clics/run.ts` (même arbre,
+même dossier) a terminé PROPREMENT en 57,85 s, `EXIT=0` réel. **Cause NON identifiée** (mémoire et
+charge mesurées saines aux deux occurrences, `free -h`/`uptime` : 14 Gi libres, load < 1 ; le
+`timeout` lui-même n'a jamais expiré, sans quoi l'un des deux essais aurait rendu `124`, pas
+`143` — quelque chose d'EXTÉRIEUR au script et à mon propre `timeout` a envoyé le signal, sans
+que sa source soit prouvée). **Pas creusé plus loin** (règle 30 : proportionné à l'enjeu — deux
+occurrences d'un incident d'infrastructure non reproduit une troisième fois après un
+`db:reset && demo:seed` propre, ci-dessous).
+
+**Un troisième essai, lancé sans `timeout`, a fini par ABOUTIR — mais ROUGE (32 échec(s), 36
+stations FIGÉES JAMAIS ATTEINTES, clôture NON atteinte)**, avec un motif reconnaissable : de
+nombreuses lectures à « 0 dossier(s), 0 famille(s) » dès le tableau de bord, alors que le dossier
+venait d'être confirmé existant à l'étape précédente. **CLAUDE.md §6 le dit déjà** : « sur une
+base déjà jouée, des stations rougissent pour rien » — `npm run clics` NE RE-SÈME PAS, et entre
+les deux essais précédents (morts à `build…`, donc SANS AVOIR TOUCHÉ la base) un état « déjà joué »
+s'était installé par un mécanisme non retracé. Le `docs/CLICS.md` produit par ce troisième essai
+(315 clics, stations tardives — réunions et après — toutes à 0) a été rejeté SANS être commité
+(`git checkout --`), plutôt que gardé comme preuve douteuse d'un objet qui n'est pas celui dont on
+parle (règle 16).
+
+**Corrigé par la forme canonique** : `npm run db:reset && npm run demo:seed`, PUIS `npm run
+clics`, sur une base garantie fraîche — propre au premier essai qui a suivi cette discipline
+(260 étapes, clôture et archive atteintes).
+
+**Second défaut, plus subtil, trouvé en cherchant à confirmer que le premier était bien réglé** :
+`npm run densite`, mesuré APRÈS ce `npm run clics` propre (sur LA MÊME base, sans nouveau
+`db:reset`), a rapporté un VRAI dépassement — `/eng/[id]/testing : 6 actions primaires` — absent
+du tout premier passage complet de cette tranche (`densite` y avait mesuré 0 dépassement, DANS
+L'ORDRE CANONIQUE `...screens && fumee && densite && clics && visuel`, densite AVANT clics). Le
+code n'avait pas changé entre les deux mesures : la SEULE différence était que `clics` avait déjà
+cliqué à travers le dossier et modifié son état RÉEL (pièces déposées, demandes créées) avant que
+`densite` ne mesure `/eng/[id]/testing` — un écran dont le nombre de boutons dépend visiblement de
+CE QUI EST DÉJÀ DANS LE DOSSIER (au-delà des onglets de pièces, déjà exemptés par
+`data-actions-item`), pas seulement de son propre code. **Reproduit par exécution, pas supposé** :
+`db:reset && demo:seed` frais, PUIS `densite` SEUL (build fraîchement reconstruit,
+`rm -rf .next && npm run build` avant, pour exclure tout résidu) → **0 dépassement**, chiffres
+IDENTIQUES au tout premier passage (126 champs à taper au total) ; PUIS `clics` sur cette même
+base fraîche → PROPRE, clôture atteinte, 386 clics, TROIS occurrences `#418` cette fois (routes
+`/portal/demo-sophie-altiverre/[rid]`, `/eng/[id]/exceptions`, `/eng/[id]/rcm/[cid]` — la première
+fois que ce flake est observé HORS de `rcm/[cid]`, toujours cohérent avec l'hypothèse H : une
+course entre navigation côté client et hydratation serveur, générique à toute page, jamais prouvée
+spécifique à `rcm`). **Leçon pour toute session future** : `densite` et `clics` NE SONT PAS
+indépendants l'un de l'autre malgré leur apparence de deux mesures séparées — l'ORDRE de la chaîne
+canonique (`densite` avant `clics`) n'est pas arbitraire, il évite que `clics` (qui écrit
+RÉELLEMENT dans la base, contrairement à `screens`/`fumee` qui ne font que lire) ne contamine la
+mesure de densité. Isoler `densite` pour le rejouer seul EXIGE de repartir d'une base fraîche,
+jamais de la base laissée par un `clics` déjà passé.
