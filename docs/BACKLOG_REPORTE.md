@@ -1782,7 +1782,7 @@ design : chacun reste une tranche à construire.**
 - **R104 — MANUEL et FRAUDE (NEP 240/ISA 240, `methodology/procedures.json`) sont commandées par
   le risque sur REVENUE, planifiables par un geste réel (`/programme`, bouton « planifier »,
   `planifierProcedure` déjà générique), leur population/tirage sont construits et testés
-  (`population.ts::journalEntryPopulation`, `sampling-je.ts`), mais TROIS choses manquent.**
+  (`population.ts::journalEntryPopulation`, `sampling-je.ts`), mais QUATRE choses manquent.**
   (1) Aucun atelier interactif : `testing/grille.ts` reste câblé sur `template_code = 'REV-SUBST'`
   seul — une procédure MANUEL/FRAUDE tirée n'a pas d'écran pour revoir chaque écriture une par
   une, seulement le papier générique (`redigerPapierDeProcedure`) et `/programme`.
@@ -1795,11 +1795,25 @@ design : chacun reste une tranche à construire.**
   que CLIENTS-AVOIRS/R92 et IMMO_COR-TAB/IMMO_COR-ACQ/R95 : commandée, planifiable, sans atelier
   construit) — leur chemin humain existe (`/programme`) mais n'a jamais été cliqué dans le monde
   de démonstration, donc NON PROUVÉ au sens de la règle 20, seulement testé en base (règle 17,
-  `sampling-je.test.ts`) et par cas connu mauvais (`nep240-sondage-lecture.test.ts`). | 2026-09-16
-  (Lot 6, tranche 3, NEP 240) | non corrigé, délibérément hors du périmètre de cette tranche
-  (règle 8 — construire la mécanique de population/tirage était le mandat de « bâtir l'épine
-  dorsale » ; l'atelier, le clic réel et une colonne auteur sur `gl_entry` seraient chacun un
-  chantier séparé). Le dormant `si_facteur` (methodology/schema.json, `types.ts:129`) — déclaré
+  `sampling-je.test.ts`) et par cas connu mauvais (`nep240-sondage-lecture.test.ts`).
+  (4) **TROUVÉ PAR LA REVUE HOSTILE (règle 30) — `drawJournalEntrySample` (`sampling-je.ts`) N'A
+  PAS le bloc de reprise par `natural_key` (ADR-133) que `drawRevenueSample` (`sampling.ts`)
+  implémente sur le MÊME geste : un re-tirage MANUEL/FRAUDE (après un re-import du grand livre
+  qui change `journalEntryPopulation.hash`, ou un simple re-propose) ne rattache PAS les nouvelles
+  `sample_item` aux anciennes par `repris_de` — le même défaut que le ré-import du grand livre
+  définitif a un jour rendu 33 pièces inatteignables (ADR-133, migration historique). **Inerte
+  aujourd'hui, vérifié par grep, pas supposé** : aucun écran ni fonction générique de demande
+  (`requests.ts`) n'est jamais appelé avec un `sample_id`/`sample_item_id` MANUEL/FRAUDE — la
+  seule source de ces identifiants dans le produit reste `currentRevenueSample`, filtrée
+  `template_code = 'REV-SUBST'`. Devient un piège vivant le jour où une tranche future câble
+  `requests.ts` (déjà générique sur un `sample_item_id` nu, sans vérification de template) sur
+  un atelier MANUEL/FRAUDE. | 2026-09-16 (Lot 6, tranche 3, NEP 240 ; point 4 ajouté le même jour
+  par la revue hostile, avant le premier push) | non corrigé, délibérément hors du périmètre de
+  cette tranche (règle 8 — construire la mécanique de population/tirage était le mandat de « bâtir
+  l'épine dorsale » ; l'atelier, le clic réel, une colonne auteur sur `gl_entry`, et le portage du
+  bloc `repris_de` seraient chacun un chantier séparé — le dernier, en particulier, se fait le jour
+  où une tranche construit l'atelier MANUEL/FRAUDE, avant que quiconque ne s'appuie sur `requests.ts`
+  pour ces templates). Le dormant `si_facteur` (methodology/schema.json, `types.ts:129`) — déclaré
   mais jamais consulté par `requiredProcedures()` — est un gap PRÉEXISTANT, distinct de celui-ci,
   déjà noté ici pour mémoire (règle 13 : un prédicat déclaré et non implémenté) plutôt que corrigé
   par cette tranche non plus.

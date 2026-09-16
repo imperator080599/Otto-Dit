@@ -62,7 +62,7 @@ export async function proposeJournalEntrySample(
     seed: `${templateCode.toLowerCase()}-v1`,
   };
   const rationale = templateCode === 'MANUEL'
-    ? `NEP 240 : examen de toutes les écritures manuelles (journal ${'OD'}) identifiées sur le poste, `
+    ? `NEP 240 : examen de toutes les écritures manuelles identifiées sur le poste, `
       + `population de ${pop.units.length} écriture(s).`
     : `NEP 240 : examen de toutes les écritures porteuses d'un indicateur de risque de fraude `
       + `(week-end, montant rond au millier, validation après la clôture), population de ${pop.units.length} écriture(s).`;
