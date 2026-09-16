@@ -73,7 +73,15 @@ perdue, **6/6** · `parcours` 0 station perdue (319 déclarées, 290 figées), *
 (240 stations figées vérifiées, 262 étapes, 385 clics). `visuel` (relancé séparément) : **336
 vues, 0 défaut**.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_HjxRaxewPHFou861hK2BycJkFLX5`, cible
+production) READY, commit `2b5b000bcdf6fdf68f73f2a06e1454461e429aeb` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : HTTP 200, sha identique, `identiteCoherente=true`,
+« toutes les lectures passent » — nouvelle lecture « H-2 slice 3 : la relance du point d'action
+client » `ok:true, vide:true`, detail « VIDE — aucune relance de point d'action pour l'instant »
+(attendu : la base RÉELLE de production n'a jamais eu ce bouton cliqué — seul `npm run clics`,
+qui exerce ce geste quand le monde de démo local le permet, en écrit une, et sur sa propre base,
+jamais sur la production). Une lecture VIDE ici n'est pas un défaut : elle rougirait sur une
+dérive du `request_id` dénormalisé, éprouvé en local par mutation directe (règle 17).
 
 **Lot 7, H-2 slice 3 est COMPLÈTE.** Les quatre volets de H-2 (état, propriétaire, échéance,
 relance) sont désormais tous construits. R106 (relance jamais cliquée pour de vrai sur ce monde de
