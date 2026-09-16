@@ -66,7 +66,14 @@ dans un état intermédiaire que `clics` lui-même finit par résoudre plus loin
 parcours) n'est jamais l'état que `fumee`/`screens` sont censés éprouver. Consigné ici pour que la
 prochaine tranche ne refasse pas la même mesure dans le mauvais ordre.**
 
-**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_C7bp4pm9TgeMsC8oFieZXRKRjA65`, cible
+`production`) : `READY`, commit `a05cac6cd4772f99ed23e2d4bde6e84e1886a74f` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` : HTTP 200,
+`sha` identique, `identiteCoherente:true`, verdict « toutes les lectures passent » — la nouvelle
+lecture « H-1 : les demandes en retard » `ok:true`, detail « 1 demande(s) en retard — R-001 »
+(non VIDE, informative, exactement comme conçue — la base RÉELLE de production porte une demande
+naturellement en retard, différent du monde de démo local). `docs/instantanes/servi.json` et
+`docs/REPRISE.md` mis à jour dans le même geste.
 
 **Lot 7, tranche 2 est COMPLÈTE.** Reste du Lot 7 : H-2 (le cycle de vie du constat vis-à-vis du
 client, un chantier de modèle de données à part, deux réfutateurs requis — règle 30), à ouvrir par
