@@ -1321,9 +1321,8 @@ export const LIBELLES = {
   'exc.colProprietaire': { en: 'Owner · due date', fr: 'Propriétaire · échéance' },
   'exc.assignerAucun': { en: '— no owner —', fr: '— aucun propriétaire —' },
   'exc.assigner': { en: 'Assign', fr: 'Assigner' },
-  'exc.relancer': { en: 'Send reminder', fr: 'Relancer' },
-  'exc.derniereRelance': { en: 'last reminder', fr: 'dernière relance' },
-  'exc.relanceEnvoyee': { en: 'reminder sent (simulated — no real message left)', fr: 'relance envoyée (simulée — aucun message réel n’est parti)' },
+  'exc.relancer': { en: 'Send reminder (simulated)', fr: 'Relancer (simulé)' },
+  'exc.derniereRelance': { en: 'last reminder (simulated — no real message left)', fr: 'dernière relance (simulée — aucun message réel n’est parti)' },
   'exc.evaluatedAgainstMateriality': {
     en: 'Uncorrected misstatements (excluding dismissed anomalies): {amount}, against tolerable misstatement {te}.',
     fr: 'Anomalies non corrigées (hors anomalies écartées) : {amount}, à comparer à l’anomalie tolérable {te}.',
