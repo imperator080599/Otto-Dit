@@ -4,6 +4,82 @@
 
 ---
 
+## Lot 7, H-2 slice 3 — la relance propre au point d'action client (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 2 (règle 32). H-2 :
+« propriétaire, échéance, état, relance ». Les trois premières slices ont affiché état,
+propriétaire et échéance PROPRES au point d'action ; celle-ci construit « relance » — au grain de
+l'ITEM (`request_item`), au-delà de la cadence automatique `ensureReminders` que H-1 construit
+déjà au grain de la DEMANDE (`request`).*
+
+**Recherche préalable** (research agent, avant tout code) : `ensureReminders` (`requests.ts:509`)
+opère STRICTEMENT sur `request` — la table `reminder` (`0002_testing.sql`) ne porte alors aucune
+colonne `request_item_id`, aucune ligne de relance ne peut jamais distinguer LEQUEL point d'action
+d'une demande elle concerne. Le portail client n'affiche nulle part l'échéance/le propriétaire du
+point d'action (slice 2). Un modèle de transport simulé existe déjà pour les réunions
+(`SimulatedTransportAdapter`, `agenda/adapters.ts`, ADR-101) — modèle réutilisé pour la même
+honnêteté, pas la même classe (un seul site d'appel ne justifiait pas une nouvelle abstraction
+d'adaptateur).
+
+**Implémenté** (commit `1cca603`) : migration `0168` (NEUVE, règle 26 : ne touche ni 0166 ni
+0167) — `reminder.request_item_id`, nullable, les relances de niveau `request` gardent cette
+colonne NULL. `matching.ts::relancerPointAction` : geste EXPLICITE et humain de l'auditeur (jamais
+une cadence automatique), refuse un item hors `kind='explanation'`, sans propriétaire assigné
+(personne à relancer), ou déjà répondu (`status≠'pending'`, rien à relancer). `constatEtPointAction`
+étendue avec `derniere_relance`. Panneau `exceptions/page.tsx` : bouton « Relancer », offert
+seulement quand propriétaire assigné ET item encore pending. `/api/sante` : nouvelle lecture
+« H-2 slice 3 : la relance du point d'action client », AJOUTÉE LE MÊME JOUR (règle 22, leçon
+tirée en slice 2) — re-dérive indépendamment (règle 16), rougit sur une dérive du `request_id`
+dénormalisé (cas connu mauvais, règle 17). Station clics ajoutée (règle 10).
+
+**Revue hostile, DEUX réfutateurs indépendants (règle 30 : modèle de données touché).** Voix 2
+(multi-tenant/RLS/règle 26) : SHIP AS-IS, aucun constat bloquant — RLS de `reminder` intacte
+(`request_id` toujours dérivé côté application dans la même requête, jamais un paramètre
+d'appelant), `assertMembreDe` re-vérifié indépendant, migration 0168 une addition pure. Voix 1
+(logique fonctionnelle), UN constat réel et BLOQUANT : le transport 100% simulé (`remis:false`,
+CLAUDE.md §2, interdit non négociable) n'atteignait JAMAIS l'écran — le bouton disait juste
+« Relancer », la clé `exc.relanceEnvoyee` créée pour porter la disclosure n'était référencée nulle
+part. Corrigé (`9b78787`) : la disclosure vit désormais en PERMANENCE sur le bouton (« Relancer
+(simulé) ») et sur la ligne « dernière relance », avant ET après le clic — patron déjà établi
+(`reun.sendSimulatedTransport`) ; `exc.relanceEnvoyee`, devenue redondante, supprimée plutôt que
+laissée morte.
+
+**Trouvé EN CONDUISANT L'ÉCRAN DANS UN NAVIGATEUR (règle 10), pas par les tests unitaires** : le
+premier `npm run clics` complet a montré la nouvelle station « relancer » tombant systématiquement
+sur « rien à relancer ». Diagnostiqué (règle 18, pas supposé) : la station d'assignation (slice 2,
+DÉJÀ EN PRODUCTION) prenait le PREMIER formulaire trouvé sans restriction de statut — sur ce monde
+de démo, ce premier formulaire tombait sur un point d'action déjà répondu historiquement.
+Corrigé (`2005a7d`) : cibler une ligne encore `pending`. Recheck : AUCUNE ligne pending n'existe
+jamais à ce point du parcours canonique — les deux créatrices de points d'action H-2
+(`draftClarificationRequest`, sur `/exceptions` et `/kanban`) trouvent zéro écart `open` à ce
+moment (vérifié dans le journal). **R106 enregistré** (`docs/BACKLOG_REPORTE.md`,
+`docs/instantanes/fils.json`, commit `a085b76`), disclosed plutôt que corrigé : aucun défaut de
+LOGIQUE dans H-2 (chaque geste prouvé par exécution directe, 11 tests succès+refus,
+`constat-action-client.test.ts`) — c'est le monde de démo scellé qui n'offre jamais la fenêtre
+pour prouver le geste positif de relance PAR LE CLIC ; la vraie cause touche `demo-seed.ts`, un
+chantier séparé et plus risqué qu'un correctif de station cette nuit.
+
+**Vitest complet reconfirmé propre** après le correctif R106 (`reprise.test.ts`, 24/24 — le
+guard qui exige un état non vide pour chaque R24+ dans `fils.json`).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur l'arbre
+du commit `a085b76`) : `tsc` propre · **156/156 fichiers, 1182/1182 tests vitest** · `gardes` 47 ·
+`semeur` à jour · `plancher` 1182 collectés · `langue` 0 hors catalogue, **15/15** · `lectures` 0
+perdue, **6/6** · `parcours` 0 station perdue (319 déclarées, 290 figées), **5/5** · `screens`
+**93 routes, 0 échec** · `fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0 dépassement**
+(régénéré séparément sur le même commit, `19f65d5`) · `clics` **EXIT=1 réel, seul motif `#418`**
+(F35, `docs/CHASSE.md`, vingt-et-unième confirmation consécutive), clôture et archive ATTEINTES
+(240 stations figées vérifiées, 262 étapes, 385 clics). `visuel` (relancé séparément) : **336
+vues, 0 défaut**.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-2 slice 3 est COMPLÈTE.** Les quatre volets de H-2 (état, propriétaire, échéance,
+relance) sont désormais tous construits. R106 (relance jamais cliquée pour de vrai sur ce monde de
+démo scellé) et R105 (followup/RLS column-blind, slice 2) restent ouverts pour un chantier séparé,
+jamais bloquants pour la suite du plan d'autonomie.
+
 ## Lot 7, H-2 slice 2 — propriétaire et échéance sur le point d'action client (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 1 (règle 32). H-2 :

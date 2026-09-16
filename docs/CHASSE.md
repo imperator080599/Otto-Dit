@@ -1285,3 +1285,18 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que
   F9-F33). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de `clics`), propre
   (336 vues, 0 défaut).
+
+- **F35 — UN incident** (2026-09-16, Lot 7, H-2 slice 3 — la relance propre au point d'action
+  client, sur l'arbre CORRIGÉ du commit `a085b76` — un constat bloquant trouvé par la revue
+  hostile voix 1 corrigé le jour même (`9b78787`, disclosure du transport simulé), et R106
+  enregistré, disclosed plutôt que corrigé (`a085b76` — voir STATUS.md, « Lot 7, H-2 slice 3 »).
+  `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/
+  aed1d05c-...` (l'habituelle, `rcm/[cid]`). Disjoint de la tranche : la migration 0168,
+  `matching.ts::relancerPointAction`, `exceptions/page.tsx`, la nouvelle lecture `/api/sante` et
+  `scenario.ts` ne touchent pas `/rcm`, et les 1182 tests vitest passent tous. La station
+  « relancer » retombe honnêtement sur « rien à relancer » (R106 : ce monde de démo ne laisse
+  jamais d'écart open à ce point du parcours), ne bloque pas la clôture. Clôture et archive
+  ATTEINTES (« le dossier se CLÔT et l'archive est scellée », 240 stations figées vérifiées), 262
+  étapes conduites, 385 clics comptés — VINGT-ET-UNIÈME confirmation consécutive que `#418` est
+  disjoint. Pas creusé plus loin (même discipline que F9-F34). `npm run visuel` relancé séparément
+  (le `&&` casse sur l'échec de `clics`), propre (336 vues, 0 défaut).
