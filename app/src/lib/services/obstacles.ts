@@ -377,24 +377,45 @@ export async function obstaclesAnalytique(engagementId: string): Promise<Motif[]
  * démonstration), bloque le visa jusqu'à ce qu'elle soit close ou rouverte avec une nouvelle
  * échéance.
  *
- * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : elle ne regarde pas l'état des ÉLÉMENTS de la
- * demande — une demande en retard dont tous les éléments sont déjà `complete`/`na` mais dont le
- * statut n'a pas encore été refermé par l'auditeur bloque QUAND MÊME (même simplicité que
- * `requestsEnAttente`, `requests.ts`, qui ne filtre pas non plus par élément) : refermer une
- * demande est un geste humain, pas un calcul dérivé, et cette famille ne devine pas qu'il a
- * seulement été omis. Une demande SANS échéance (`due_date` NULL) n'est jamais bloquante ici —
- * aucune date à dépasser, et `demanderPiecesEnLot`/`generatePbcFromSample` n'en posent pas
- * toujours une (disclosed R-nn si une tranche future en a besoin, non nécessaire ici : une
- * demande sans échéance reste visible et travaillable via `requestsEnAttente`, seulement jamais
- * BLOQUANTE par CETTE famille).
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : elle ne referme jamais une demande elle-même
+ * — refermer est un geste humain (`markAllSubmitted`), jamais un calcul dérivé ici, et cette
+ * famille ne devine pas qu'un geste de clôture a seulement été omis. Une demande SANS échéance
+ * (`due_date` NULL) n'est jamais bloquante ici — aucune date à dépasser, et
+ * `demanderPiecesEnLot`/`generatePbcFromSample` n'en posent pas toujours une (disclosed R-nn si
+ * une tranche future en a besoin, non nécessaire ici : une demande sans échéance reste visible et
+ * travaillable via `requestsEnAttente`, seulement jamais BLOQUANTE par CETTE famille).
+ *
+ * UN ÉLÉMENT `pending` DONT L'EXCEPTION EST DÉJÀ DÉCIDÉE NE COMPTE PAS COMME « ENCORE DÛ » —
+ * trouvé par la revue hostile (voix 2, Lot 7 tranche 2) sur le monde de démo RÉEL (`demo-seed.ts`,
+ * warp de 25 jours), pas sur la fixture vitest fraîche : R-008 (la demande PBC revenue) reste
+ * `partially_submitted` pour toujours à cause de l'item A2 (bon de livraison introuvable —
+ * `recordScopeLimitation`, part1.ts) et d'une écriture manuelle déjà `escalated` — aucun chemin du
+ * produit ne referme jamais `request_item.status` quand l'exception qui porte le vrai jugement est
+ * classée, donc sans cette exclusion la famille bloquerait le visa EN PERMANENCE et SANS RECOURS,
+ * exactement la classe de défaut NOTIF-01 (CLAUDE.md §3 : un refus neuf testé contre le monde
+ * vitest frais, jamais contre le monde SEMÉ). La frontière `resolved`/`escalated`/
+ * `scope_limitation` = « décidé » est RÉUTILISÉE, pas inventée : c'est la même que
+ * `evaluation.ts:317` (`status not in ('resolved','escalated','scope_limitation')` = encore
+ * ouvert). Un élément SANS exception (les pièces d'étendue comme les relevés bancaires, ou une
+ * demande de détail de compte simple) reste, lui, pleinement « encore dû » — rien ne l'a jamais
+ * statué.
  */
 export async function obstaclesDemandes(engagementId: string): Promise<Motif[]> {
   const t = await now();
   const rows = await q<{ id: string; seq_no: number; title: string; due_date: string }>(
-    `select id, seq_no, title, due_date::text from request
-     where engagement_id = $1 and status in ('sent', 'partially_submitted', 'reopened')
-       and due_date is not null and due_date < $2
-     order by due_date asc`,
+    `select r.id, r.seq_no, r.title, r.due_date::text from request r
+     where r.engagement_id = $1 and r.status in ('sent', 'partially_submitted', 'reopened')
+       and r.due_date is not null and r.due_date < $2
+       and exists (
+         select 1 from request_item i
+         where i.request_id = r.id and i.status = 'pending'
+           and not exists (
+             select 1 from exception x
+             where x.sample_item_id = i.sample_item_id
+               and x.status in ('resolved', 'escalated', 'scope_limitation')
+           )
+       )
+     order by r.due_date asc`,
     [engagementId, t.toISOString().slice(0, 10)],
   );
   return rows.map((r) => motif('obst.demandeEnRetard', {

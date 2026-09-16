@@ -281,6 +281,28 @@ export async function clientDeposits(requestId: string): Promise<void> {
     });
   }
 
+  /* Les deux pièces d'ÉTENDUE (relevés bancaires, ajoutées inconditionnellement par
+     `generatePbcFromSample`, `sample_item_id` NULL) restaient jusqu'ici JAMAIS déposées : la
+     boucle ci-dessus les exclut exprès (`i.sample_item_id`). Trouvé par la revue hostile de
+     Lot 7 tranche 2 (H-1 slice 2) : sans ce dépôt, ces deux `request_item` restent `pending`
+     pour toujours, ce qui n'est pas un décor de test (règle 20) — les fixtures existent
+     (`evidence_index.json`, docType `bank_statement`) et n'étaient simplement jamais reliées. */
+  for (const item of detail!.items.filter((i) => i.kind === 'document' && !i.sample_item_id)) {
+    const mois = /novembre|november/i.test(item.description) ? '2025-11' : '2025-12';
+    const entry = evidenceIndex.find((e) => e.docType === 'bank_statement' && e.filename.includes(mois));
+    if (!entry) continue;
+    const bytes = fs.readFileSync(ds(...entry.filename.split('/')));
+    await ingestEvidence({
+      engagementId: IDS.engNep,
+      requestItemId: item.id,
+      filename: path.basename(entry.filename),
+      mime: 'application/pdf',
+      bytes,
+      source: 'portal',
+      uploadedBy: { kind: 'client_contact', id: IDS.contacts.sophie },
+    });
+  }
+
   // an unknown sender forwards a document: allow-listing holds, it is quarantined and an
   // auditor has to look at it before it can ever support a conclusion
   await processInbound(IDS.engNep, {
