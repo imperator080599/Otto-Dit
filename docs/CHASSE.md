@@ -1192,3 +1192,29 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   DERNIER poste distinct. Pas creusé plus loin (même discipline que F9-F27). `npm run visuel`
   cassé par le même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le précède) ; relancé
   séparément.
+
+- **F29 — UN incident dans `clics-ana04.log`** (2026-09-16, Lot 6, tranche ANA-04 — la revue
+  analytique périmée bloque le visa, sur l'arbre du commit `6867856`), `EXIT=1` réel, DEUX
+  routes cette fois : `EXCEPTION sur /eng/e7a83891-.../risk : Minified React error #418`
+  (**ROUTE NOUVELLE, jamais vue avant dans cet historique** — vérifié par relecture de F1-F28,
+  les routes connues restent `rcm/[cid]` de très loin la plus fréquente, `testing`,
+  `workpapers/[id]`, `exceptions`, `portal/demo-sophie-altiverre/[rid]`, toujours cohérent avec
+  l'hypothèse H : une navigation cliente commencée avant la fin de l'hydratation du document
+  précédent, jamais spécifique à une page) et `EXCEPTION sur
+  /eng/70670df5.../rcm/941cc93e-283d-4e1a-a9f1-c5ac14849d96 : Minified React error #418` (la
+  route habituelle). **Disjoint de la tranche ANA-04** : ni `/risk` ni `/rcm/[cid]` ne touchent
+  `obstacles.ts`/`analytique.ts`, et les SEPT tests neufs de la tranche (deux fichiers,
+  `obstacles-analytique.test.ts` + `ana04-lecture.test.ts`) passent tous, isolés et dans la
+  chaîne `vitest run` complète (145/145 fichiers, aucun `ServeurTombe`/R58 cette fois). Clôture
+  et archive ATTEINTES (240 stations figées vérifiées, empreinte SHA-256 affichée, téléchargement
+  vérifié), 260 étapes conduites, 385 clics comptés — QUINZIÈME confirmation consécutive que
+  `#418` est disjoint de tout ce que ce dépôt touche, sur une DEUXIÈME route jamais vue. Pas
+  creusé plus loin (même discipline que F9-F28). **Observation annexe, non un défaut de cette
+  tranche** : cette exécution a pris nettement plus longtemps que la fourchette habituelle
+  (150-260 s mesurées ailleurs dans ce dépôt) — la phase `build…` de `next-server` a occupé
+  plusieurs minutes avant que le premier clic ne parte, avec un temps CPU qui progressait mais
+  lentement (croissance mesurée par `ps`, jamais un hang total comme l'incident EXIT=143 de la
+  tranche Stocks, §6) ; le run a fini par ABOUTIR proprement (`EXIT=1`, seulement `#418`), donc
+  ce n'est pas la même famille d'incident que §6 — juste plus lent cette fois, cause non
+  investiguée (règle 30, une exécution qui aboutit n'appelle pas la même urgence qu'une qui
+  meurt).
