@@ -4,6 +4,74 @@
 
 ---
 
+## Lot 7, tranche 2 (H-1 slice 2) — obstacle au visa : les demandes en retard (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après le Lot 7 tranche 1 (règle 32). H-1
+slice 2 : « ce qui reste dû est un obstacle au visa », le critère d'admission même de H-1
+(`docs/REGISTRE_IDEES.md`).*
+
+**Implémenté** (commit `be205d2`) : nouvelle famille d'obstacle `demandes` dans `obstacles.ts`
+(miroir du patron ANA-04, Lot 6) — `obstaclesDemandes(engagementId)` lève `obst.demandeEnRetard`
+pour toute `request` `sent`/`partially_submitted`/`reopened` dont `due_date` est dépassée.
+`Famille`/`OU` étendus, appel dans `obstaclesAuVisa()`, titre/pourquoi dans `familles.ts`, lecture
+informative `/api/sante` (« H-1 : les demandes en retard »), garde déclarée dans `registre.ts`
+(`docs/GUARDS.md` régénéré, G-67). Deux tests initiaux (cas connu bon vérifié directement contre le
+monde semé, cas connu mauvais par mutation SQL de `due_date`).
+
+**Revue hostile, DEUX réfutateurs indépendants (règle 30 : code de refus neuf).** Voix 1 (lecture
+statique + épreuve empirique ciblée) : aucun défaut réel dans le prédicat lui-même. Voix 2 a
+reproduit EXACTEMENT le warp de 25 jours de `demo-seed.ts` (pas seulement la fixture vitest
+fraîche) et a trouvé un défaut RÉEL et BLOQUANT : R-008 (la demande PBC revenue du monde de démo)
+reste `partially_submitted` EN PERMANENCE — l'item A2 (bon de livraison introuvable,
+`recordScopeLimitation`) et une écriture manuelle déjà `escalated` laissent des `request_item`
+`pending` qu'aucun chemin produit ne referme jamais (ni `recordScopeLimitation` ni
+`escalateToMisstatement` ni `resolveException` ne touchent `request_item.status` — seuls
+`ingestEvidence`/`answerExplanation` le font). Sans correctif, la famille neuve aurait bloqué le
+visa du dossier de démo SANS RECOURS — exactement la classe de défaut NOTIF-01 (CLAUDE.md §3,
+règle 37 rejouée mot pour mot : deux revues hostiles + tests ciblés n'ont rien vu, seule
+l'exécution du warp réel l'a trouvé).
+
+**Correctif** (commit `6d6bb39`) : `obstaclesDemandes` ne compte plus un élément `pending` comme
+« encore dû » si son exception associée a atteint une disposition DÉCIDÉE
+(`resolved`/`escalated`/`scope_limitation`) — la même frontière que `evaluation.ts:317`, réutilisée
+verbatim, pas inventée. `part1.ts::clientDeposits` dépose désormais aussi les deux relevés
+bancaires (pièces d'étendue, `sample_item_id` NULL, jusqu'ici exclues par la boucle de dépôt bien
+qu'ayant leurs fixtures dans `evidence_index.json`) — un vrai gap de la seed, pas un contournement.
+Deux tests de régression ajoutés à `obstacles-demandes.test.ts`, dont un qui rejoue le warp réel de
+`demo-seed.ts` et exige `obstaclesDemandes(engNep) === []` après — le même chemin que la revue
+hostile a emprunté, jamais seulement la fixture fraîche.
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués une dernière
+fois avant la première mesure de cette liste, sur l'arbre du commit `6d6bb39`) : `tsc` propre ·
+**152/152 fichiers, 1165/1165 tests vitest** · `gardes` 47 · `semeur` à jour · `plancher` 1165
+collectés · `langue` 0 hors catalogue, **15/15** · `lectures` 0 perdue, **6/6** · `parcours` 0
+station perdue (315 déclarées, 290 figées, 25 nouvelles à figer), **5/5** · `screens` **93 routes,
+0 échec** · `fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0 dépassement**
+(`docs/DENSITE.md` régénéré, commit `c56c8ac`) · `clics` **EXIT=1 réel, seul motif `#418`** (F32,
+`docs/CHASSE.md`, dix-huitième confirmation consécutive), clôture et archive ATTEINTES (240
+stations figées vérifiées, « le dossier se CLÔT et l'archive est scellée »), 260 étapes, 385
+clics — identique au chiffre de référence, ZÉRO nouvel échec introduit par cette tranche. `visuel`
+(relancé séparément, `clics` casse le `&&`) : **336 vues, 0 défaut**.
+
+**Un premier passage de `fumee`/`screens`, mené APRÈS `clics` au lieu d'AVANT (ordre non canonique,
+erreur de méthode de cette session), avait montré à tort 2 « échecs » — `/api/sante` 500 (la
+lecture CTRL-01, domaine SOX/ICFR, sans aucun rapport avec cette tranche) et `/eng/[id]/poste/
+[code]` 404 — qui ont disparu dès la reprise dans l'ordre canonique (`db:reset && demo:seed` puis
+`screens`/`fumee` AVANT `clics`, exactement l'ordre de `npm run verify`). Diagnostiqué, pas
+supposé (règle 18) : `C-BR-01 : 4 deviation(s)` est une constante ÉTABLIE du seed SOX (citée
+ailleurs dans ce fichier) — la lecture CTRL-01 rougit tant que `clics` n'a pas encore documenté la
+procédure manquante de ce contrôle ; lancer `fumee` sur une base déjà travaillée par `clics` (donc
+dans un état intermédiaire que `clics` lui-même finit par résoudre plus loin dans son propre
+parcours) n'est jamais l'état que `fumee`/`screens` sont censés éprouver. Consigné ici pour que la
+prochaine tranche ne refasse pas la même mesure dans le mauvais ordre.**
+
+**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, tranche 2 est COMPLÈTE.** Reste du Lot 7 : H-2 (le cycle de vie du constat vis-à-vis du
+client, un chantier de modèle de données à part, deux réfutateurs requis — règle 30), à ouvrir par
+sa propre recherche préalable avant tout code.
+
 ## Lot 7, tranche 1 (H-1) — portail : « ce que vous me devez encore » (2026-09-16)
 
 *Suite du mandat du fondateur (2026-09-16), enchaîné sans pause après le Lot 6 (règle 32).
