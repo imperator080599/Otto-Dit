@@ -179,6 +179,15 @@ export const LIBELLES = {
     fr: 'Demandez à votre contact au cabinet d’audit de vous renvoyer un lien.',
   },
   'portal.demandeCloturee': { en: 'Request closed.', fr: 'Demande clôturée.' },
+  // Lot 7, tranche 1 (REGISTRE_IDEES.md H-1) — l'écran nommé par le fondateur : « ce que vous me
+  // devez encore », un agrégat d'ÉLÉMENTS encore dus, distinct de la liste des DEMANDES ci-dessus.
+  'portal.ceQueVousDevez': { en: 'What you still owe us', fr: 'Ce que vous me devez encore' },
+  'portal.ceQueVousDevezAide': {
+    en: 'Every outstanding item across your open requests, in one place.',
+    fr: 'Tous les éléments encore dus, toutes demandes ouvertes confondues, au même endroit.',
+  },
+  'portal.aucunElementDu': { en: 'Nothing outstanding — you’re up to date.', fr: 'Rien n’est dû — vous êtes à jour.' },
+  'portal.elementColonne': { en: 'Item', fr: 'Élément' },
   'commun.exerciceN': { en: 'year N ({d})', fr: 'exercice N ({d})' },
   'commun.exerciceN1': { en: 'year N-1 ({d})', fr: 'exercice N-1 ({d})' },
   'commun.faitLe': { en: 'done {d}', fr: 'fait le {d}' },

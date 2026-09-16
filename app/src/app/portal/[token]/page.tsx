@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { portalSession } from '@/lib/core/auth';
-import { portalRequests } from '@/lib/services/portal';
+import { portalRequests, portalOutstandingItems } from '@/lib/services/portal';
 import { deuxLangues } from '@/app/portal/deux-langues';
 import { traduire, type CleLibelle } from '@/lib/i18n/catalogue';
 import { withJeton } from '@/lib/db/tenant';
@@ -32,10 +32,39 @@ async function PortalHomeCorps({ params }: { params: Promise<{ token: string }> 
   const requests = await portalRequests(session.contact.entity_id);
   const byEng = new Map<string, typeof requests>();
   for (const r of requests) byEng.set(r.engagement_name, [...(byEng.get(r.engagement_name) ?? []), r]);
+  const outstanding = await portalOutstandingItems(session.contact.entity_id);
+  const langAccueil = langueDuPortail(requests);
+  const t = (cle: CleLibelle, vars?: Record<string, string | number>) => traduire(langAccueil, cle, vars);
 
   return (
     <div className="shell" style={{ maxWidth: 860 }}>
       <h1>{traduire(langueDuPortail(requests), 'portal.bonjour', { nom: session.contact.name })}</h1>
+      {/* Lot 7, tranche 1 (REGISTRE_IDEES.md H-1) — l'écran nommé par le fondateur : un agrégat
+          d'ÉLÉMENTS encore dus, toutes demandes ouvertes confondues, avant la liste des demandes
+          elle-même (l'agrégat répond à « qu'est-ce qu'il me reste à faire ? » avant que le détail
+          par demande ne réponde à « où ? »). État vide honnête (règle 61 : rien à voir n'est pas
+          rien à dire) plutôt qu'une section absente. */}
+      <div className="panel" data-portail-du>
+        <h2>{t('portal.ceQueVousDevez')}</h2>
+        <p className="faint" style={{ margin: '0 0 8px' }}>{t('portal.ceQueVousDevezAide')}</p>
+        {outstanding.length === 0 ? (
+          <p className="muted">{t('portal.aucunElementDu')}</p>
+        ) : (
+          <table className="data">
+            <thead><tr><th>{t('portal.elementColonne')}</th><th>{t('portal.demande')}</th><th>{t('portal.echeance')}</th><th></th></tr></thead>
+            <tbody>
+              {outstanding.map((it) => (
+                <tr key={it.id}>
+                  <td>{it.description}</td>
+                  <td>{it.engagement_name} <span className="mono">R-{String(it.seq_no).padStart(3, '0')}</span> {it.request_title}</td>
+                  <td>{it.due_date}</td>
+                  <td><Link className="btn small" href={`/portal/${token}/${it.request_id}`}>{t('portal.ouvrir')}</Link></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
       {[...byEng.entries()].map(([engName, reqs]) => {
         const lang = (reqs[0].language === 'fr' ? 'fr' : 'en') as 'fr' | 'en';
         const t = (cle: CleLibelle, vars?: Record<string, string | number>) => traduire(lang, cle, vars);

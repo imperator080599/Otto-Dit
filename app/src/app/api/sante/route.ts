@@ -1702,6 +1702,44 @@ async function corpsDeLaSonde() {
       + `${reg.length} fonction(s) definer justifiée(s), registre SQL et code d’accord`;
   }));
 
+  /* LOT 7, TRANCHE 1 (mandat REGISTRE_IDEES.md, H-1 — livrée ce jour, lue ce jour, règle 22).
+     `portalOutstandingItems` (portal.ts) est nouvelle : elle agrège, par ENTITÉ, tout
+     `request_item` `pending` dont la demande parente reste `sent`/`partially_submitted`/
+     `reopened` — l'écran « ce que vous me devez encore » du portail (D.6.4/H-1) s'appuie
+     entièrement dessus. Le risque réel n'est pas dans la fonction elle-même (déjà couverte par
+     `s3s4.test.ts`, deux cas connus mauvais par mutation SQL directe, règle 17) : c'est qu'une
+     RÉGRESSION future y réintroduise un élément déjà réglé (`complete`/`na`/`uploaded`) ou dont
+     la demande n'est plus ouverte (`draft`/`submitted`/`accepted`). Cette lecture RE-DÉRIVE la
+     réponse INDÉPENDAMMENT — une jointure directe sur `request_item`/`request`, jamais un appel
+     à `portalOutstandingItems` suivi d'une comparaison à elle-même (interroger sa propre sortie
+     pour détecter sa propre régression ne détecterait rien, même défaut que les lectures
+     `atelier … disponible` du Lot 3 ont dû corriger dès leur écriture). CE QUE CETTE LECTURE NE
+     VÉRIFIE PAS (règle 19) : elle ne porte que sur L'ENTITÉ de la mission de démonstration
+     (`eng.id` scope ici à un `engagement`, jamais à un contact ni un jeton) — l'isolation
+     inter-cabinet du portail est prouvée ailleurs (`s3s4.test.ts`, « client-isolation »), pas
+     ici. */
+  lectures.push(await essayer('portail : « ce que vous me devez encore » cohérent avec les demandes ouvertes (Lot 7, tranche 1)', async () => {
+    if (!eng) return 'aucune mission encore — rien à agréger';
+    const { portalOutstandingItems } = await import('@/lib/services/portal');
+    const eng2 = await q01<{ entity_id: string }>(`select entity_id from engagement where id = $1`, [eng.id]);
+    if (!eng2) return 'aucune mission encore — rien à agréger';
+    const outstanding = await portalOutstandingItems(eng2.entity_id);
+    if (outstanding.length === 0) return 'aucun élément « encore dû » pour l’instant';
+    const verif = await q<{ id: string; item_status: string; req_status: string }>(
+      `select i.id::text, i.status item_status, r.status req_status
+         from request_item i join request r on r.id = i.request_id
+        where i.id = any($1::uuid[])`,
+      [outstanding.map((o) => o.id)],
+    );
+    const mauvais = verif.filter((v) => v.item_status !== 'pending'
+      || !['sent', 'partially_submitted', 'reopened'].includes(v.req_status));
+    if (mauvais.length > 0) {
+      throw new Error(`${mauvais.length} élément(s) rendu(s) comme « encore dû » alors que leur `
+        + `état réel ne l’est plus (item/demande) : ${mauvais.map((m) => `${m.id.slice(0, 8)} (${m.item_status}/${m.req_status})`).join(', ')}`);
+    }
+    return `${outstanding.length} élément(s) « encore dû(s) », tous cohérents avec l’état réel de leur demande`;
+  }));
+
   lectures.push(await essayer('gardes d’étanchéité dans les services (ETANCH-01/02/03)', async () => {
     /* TROIS FAILLES CORRIGÉES (revue hostile n°9, constat 8). La première
        version : (1) rendait « aucune mission » en VERT sur une base vide ;

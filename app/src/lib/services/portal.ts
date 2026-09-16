@@ -27,6 +27,41 @@ export async function portalItems(requestId: string) {
   );
 }
 
+/**
+ * Lot 7, tranche 1 (mandat REGISTRE_IDEES.md, H-1) — « ce que vous me devez encore » : l'écran
+ * nommé littéralement par le fondateur, qui n'existait sous AUCUN nom avant cette tranche
+ * (recherche préalable, vérifiée par grep sur le dépôt entier). `portalRequests` liste les
+ * DEMANDES (une ligne par requête, `submitted` mêlé aux ouvertes, distingué seulement par un
+ * badge) ; celle-ci liste les ÉLÉMENTS encore dus — un agrégat, pas une liste de dossiers à
+ * ouvrir un par un. MÊME PATRON que `portalRequests` (même jointure, même filtre de statut de
+ * requête), UNE clause de plus : `i.status = 'pending'`.
+ *
+ * CE QUI COMPTE COMME « ENCORE DÛ » (règle 19, décision explicite plutôt que devinée) :
+ * `request_item.status = 'pending'` SEUL — pas `'uploaded'`. Une pièce déposée mais non encore
+ * acceptée par l'auditeur (`'uploaded'`) n'est plus, du point de vue du CLIENT, quelque chose
+ * qu'IL doit encore faire ; l'attente est alors du côté du cabinet. `'na'`/`'complete'` sont
+ * déjà réglés. La requête parente doit rester `sent`/`partially_submitted`/`reopened` — le même
+ * filtre que `portalRequests`, jamais `'submitted'` (une requête entièrement soumise ne porte,
+ * par construction, plus aucun item `pending`, mais le filtre le dit explicitement plutôt que
+ * de s'appuyer en silence sur cette invariance).
+ */
+export async function portalOutstandingItems(entityId: string) {
+  return q<{
+    id: string; kind: string; description: string; request_id: string; seq_no: number;
+    request_title: string; due_date: string | null; engagement_name: string;
+  }>(
+    `select i.id, i.kind, i.description, r.id request_id, r.seq_no, r.title request_title,
+            r.due_date::text, e.name engagement_name
+     from request_item i
+     join request r on r.id = i.request_id
+     join engagement e on e.id = r.engagement_id
+     where e.entity_id = $1 and r.status in ('sent','partially_submitted','reopened')
+       and i.status = 'pending'
+     order by r.due_date nulls last, e.name, r.seq_no, i.created_at`,
+    [entityId],
+  );
+}
+
 /** Guard: the request must belong to the contact's entity (token scope). */
 export async function portalRequestGuard(requestId: string, entityId: string): Promise<boolean> {
   const rows = await q<{ id: string }>(

@@ -14,7 +14,7 @@ import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, lis
 import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 import { populationDuDetailRapproche, attenduGlPourPoste } from './account-detail';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from './evidence';
-import { portalRequests, portalItems, portalRequestGuard } from './portal';
+import { portalRequests, portalItems, portalRequestGuard, portalOutstandingItems } from './portal';
 import { processInbound } from './inbound';
 import { warp, resetClock, DAY_MS } from '@/lib/core/clock';
 import { portalSession } from '@/lib/core/auth';
@@ -198,6 +198,42 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
     expect(after!.request.status).toBe('partially_submitted'); // untouched items remain pending
   });
 
+  /* Lot 7, tranche 1 (REGISTRE_IDEES.md H-1) — « ce que vous me devez encore ». Fixture PROPRE
+   * (un nouveau poste, PURCHASES, jamais réutilisé après approbation-envoi ailleurs dans ce
+   * fichier — demanderDetailDeCompte ne dédoublonne jamais, mot pour mot dans son propre
+   * docstring, donc réutiliser un poste déjà demandé ailleurs n'aurait rien cassé, mais une
+   * fixture dédiée reste plus lisible) plutôt que la fixture partagée « sophie » ci-dessus,
+   * dont l'état dépend de l'ordre d'exécution des tests précédents. CAS CONNU MAUVAIS (règle 17,
+   * deux mutations SQL directes, chacune round-trip vérifiée) : une ligne dont la demande PARENTE
+   * n'est plus ouverte ne doit JAMAIS apparaître, même si la ligne elle-même reste `pending`. */
+  it('portal: « ce que vous me devez encore » agrège les éléments PENDING de toute demande OUVERTE, jamais plus', async () => {
+    const session = await portalSession(PORTAL_TOKENS.sophie);
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const detail = await requestDetail(requestId);
+    const itemId = detail!.items[0].id;
+
+    const avant = await portalOutstandingItems(session!.contact.entity_id);
+    expect(avant.some((it) => it.id === itemId)).toBe(true);
+    const ligne = avant.find((it) => it.id === itemId)!;
+    expect(ligne.request_id).toBe(requestId);
+    expect(ligne.engagement_name).toBeTruthy();
+
+    // cas connu mauvais 1 : l'élément lui-même réglé (complete) — disparaît, puis revient.
+    await q(`update request_item set status = 'complete' where id = $1`, [itemId]);
+    expect((await portalOutstandingItems(session!.contact.entity_id)).some((it) => it.id === itemId)).toBe(false);
+    await q(`update request_item set status = 'pending' where id = $1`, [itemId]);
+    expect((await portalOutstandingItems(session!.contact.entity_id)).some((it) => it.id === itemId)).toBe(true);
+
+    // cas connu mauvais 2 : la demande PARENTE close (submitted) alors que l'élément reste
+    // pending en base (un état qui ne devrait normalement pas survenir en pratique, mais que
+    // rien n'empêche structurellement) — l'agrégat doit suivre la demande, pas l'élément seul.
+    await q(`update request set status = 'submitted' where id = $1`, [requestId]);
+    expect((await portalOutstandingItems(session!.contact.entity_id)).some((it) => it.id === itemId)).toBe(false);
+    await q(`update request set status = 'sent' where id = $1`, [requestId]);
+    expect((await portalOutstandingItems(session!.contact.entity_id)).some((it) => it.id === itemId)).toBe(true);
+  });
+
   it('client-isolation: the portal surface exposes no audit documentation (test-asserted)', async () => {
     // The portal module's whole read surface is requests/items — assert the shapes carry
     // no workpaper/sample/exception references and the guard blocks foreign requests.
@@ -209,6 +245,12 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
       );
     }
     expect(await portalRequestGuard('00000000-0000-4000-8000-000000000000', session!.contact.entity_id)).toBe(false);
+    const outstanding = await portalOutstandingItems(session!.contact.entity_id);
+    for (const it of outstanding) {
+      expect(Object.keys(it).sort()).toEqual(
+        ['description', 'due_date', 'engagement_name', 'id', 'kind', 'request_id', 'request_title', 'seq_no'].sort(),
+      );
+    }
     // the auditor-only tables are not referenced anywhere in the portal module
     const portalSource = fs.readFileSync(path.join(repoRoot(), 'app', 'src', 'lib', 'services', 'portal.ts'), 'utf8');
     for (const forbidden of ['workpaper', 'sample', 'exception', 'review_note', 'signoff', 'materiality', 'event_log']) {
