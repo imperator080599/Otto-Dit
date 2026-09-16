@@ -902,6 +902,39 @@ async function corpsDeLaSonde() {
       if (!obstacles.length) return 'aucune demande en retard';
       return `${obstacles.length} demande(s) en retard — ${obstacles.map((o) => o.vars?.numero).join(', ')}`;
     }));
+    /* H-2, slice 1 (Lot 7 — REGISTRE_IDEES.md ligne 270, « le cycle de vie du constat
+       vis-à-vis du client »). Cette lecture RE-DÉRIVE indépendamment par une jointure directe
+       (jamais un appel à `constatEtPointAction` comparé à lui-même, règle 16) le même invariant
+       que le panneau `/eng/[id]/exceptions` affiche : tout `request_item` créé par
+       `draftClarificationRequest` (kind='explanation', `exception_id` non nul) doit pointer une
+       `exception` qui existe encore ET dont le statut n'est PAS redevenu 'open' pendant que le
+       point d'action client reste `pending` (un retour à 'open' voudrait dire qu'un geste a
+       réouvert le dossier sans reprendre la clarification déjà envoyée — silencieux sinon).
+       INFORMATIVE, comme les lectures sœurs : un point d'action client en attente est le travail
+       NORMAL d'un dossier en cours, jamais une panne. CE QUE CETTE LECTURE NE VÉRIFIE PAS
+       (règle 19) : le propriétaire, l'échéance ou la relance PROPRES au constat — H-2 slice 1
+       ne les construit pas (disclosed R-nn, BACKLOG_REPORTE.md, pour une slice ultérieure de
+       modèle de données). */
+    lectures.push(await essayer('H-2 : le constat vs le point d’action client', async () => {
+      const rows = await q<{ item_status: string; exception_status: string }>(
+        `select i.status item_status, x.status exception_status
+         from request_item i join exception x on x.id = i.exception_id
+         where i.exception_id is not null and i.kind = 'explanation'
+           and x.engagement_id = $1`,
+        [id],
+      );
+      if (!rows.length) return 'aucun point d’action client encore engendré';
+      const rouvertesSansReprise = rows.filter((r) => r.item_status === 'pending' && r.exception_status === 'open');
+      if (rouvertesSansReprise.length > 0) {
+        throw new Error(`${rouvertesSansReprise.length} point(s) d'action client dont le constat est redevenu 'open' `
+          + 'sans reprendre la clarification déjà envoyée');
+      }
+      const parStatut = rows.reduce<Record<string, number>>((acc, r) => {
+        acc[r.item_status] = (acc[r.item_status] ?? 0) + 1;
+        return acc;
+      }, {});
+      return `${rows.length} point(s) d'action client — ${Object.entries(parStatut).map(([k, v]) => `${k}:${v}`).join(' · ')}`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

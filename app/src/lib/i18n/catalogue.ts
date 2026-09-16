@@ -1310,6 +1310,14 @@ export const LIBELLES = {
   'ev.chaineRompue': { en: 'CHAIN BROKEN at #{id}', fr: 'CHAÎNE ROMPUE à #{id}' },
   'exc.ecritureLabel': { en: 'entry · {no} {piece} ({date})', fr: 'écriture · {no} {piece} ({date})' },
   'exc.dismissedAnomaliesCount': { en: 'Misstatements dismissed as an anomaly', fr: 'Écarts écartés comme anomalie' },
+  'exc.constatVsActionClient': { en: 'The finding vs. the client action item', fr: 'Le constat vs le point d’action client' },
+  'exc.constatVsActionClientAide': {
+    en: 'Two distinct objects: the finding (audit file, closed only by a human) and the client\'s action item (the entity, tracked via the portal). One is never confused with the other.',
+    fr: 'Deux objets distincts : le constat (dossier d’audit, refermé seulement par un humain) et le point d’action côté client (l’entité, suivi par le portail). L’un n’est jamais confondu avec l’autre.',
+  },
+  'exc.colConstat': { en: 'Finding', fr: 'Constat' },
+  'exc.colActionClient': { en: 'Client action item', fr: 'Point d’action client' },
+  'exc.colDemande': { en: 'Request', fr: 'Demande' },
   'exc.evaluatedAgainstMateriality': {
     en: 'Uncorrected misstatements (excluding dismissed anomalies): {amount}, against tolerable misstatement {te}.',
     fr: 'Anomalies non corrigées (hors anomalies écartées) : {amount}, à comparer à l’anomalie tolérable {te}.',

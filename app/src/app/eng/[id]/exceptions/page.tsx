@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly } from '@/lib/services/matching';
+import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly, constatEtPointAction } from '@/lib/services/matching';
 import { frameworkSet } from '@/lib/services/fsli';
 import { validatedThresholds } from '@/lib/services/materiality';
 import { q } from '@/lib/db/client';
@@ -19,6 +19,11 @@ import { Repli } from '@/app/repli';
 const STATUS_BADGE: Record<string, string> = {
   open: 'red', clarification_requested: 'amber', explained: 'blue', resolved: 'green', escalated: 'violet',
 };
+
+/* MÊME MAP que requests/[rid]/page.tsx::ITEM_BADGE (request_item.status) — recopiée plutôt
+   qu'importée : ce fichier n'a pas d'export partagé pour cette constante, et H-2 slice 1 est
+   une lecture, pas une raison d'introduire un module de constantes partagées non demandé. */
+const ITEM_BADGE: Record<string, string> = { pending: 'gray', uploaded: 'blue', complete: 'green', na: 'gray' };
 
 export default async function ExceptionsPage({
   params, searchParams,
@@ -38,6 +43,7 @@ export default async function ExceptionsPage({
   const fs = await frameworkSet(id);
   const isSox = fs.assurance_packs.includes('pcaob-sox');
   const exceptions = await listExceptions(id);
+  const constatsEtActions = await constatEtPointAction(id);
   /* LES ANCRES DES ÉCARTS (ADR-102) : « pourquoi as-tu considéré celui-ci
      comme résolu ? » est la note de revue la plus fréquente en pratique.
      L'identité métier d'un écart : sa taxonomie + l'écriture qui le porte
@@ -278,6 +284,54 @@ export default async function ExceptionsPage({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* H-2, slice 1 (Lot 7, `docs/REGISTRE_IDEES.md` ligne 270 — « le cycle de vie du constat
+          vis-à-vis du client ») : ce panneau ne CRÉE rien — il rend VISIBLES, comme deux objets
+          nommés distinctement, ce que `draftClarificationRequest`/`answerExplanation`/
+          `resolveException` tiennent déjà séparé en base (matching.ts::constatEtPointAction).
+          « Constat » = le dossier (exception.status, refermé SEULEMENT par un humain via
+          resolveException) ; « point d'action client » = l'entité (request_item.status/
+          client_note, jamais lu comme une conclusion). Zéro migration, pure lecture — visible
+          même vide (une slice qui n'a encore engendré aucune clarification n'est pas une panne). */}
+      <div className="panel">
+        <h2>{t('exc.constatVsActionClient')} <span className="badge gray">{constatsEtActions.length}</span></h2>
+        <p className="faint" style={{ margin: '0 0 8px' }}>{t('exc.constatVsActionClientAide')}</p>
+        {constatsEtActions.length === 0 ? (
+          <p className="muted">{t('req.noneYet')}</p>
+        ) : (
+          <div className="table-scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>{t('exc.colConstat')}</th>
+                  <th>{t('col.status')}</th>
+                  <th>{t('exc.colActionClient')}</th>
+                  <th>{t('exc.colDemande')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {constatsEtActions.map((c) => (
+                  <tr key={c.item_id}>
+                    <td style={{ maxWidth: 360 }}>
+                      <span className={`badge ${STATUS_BADGE[c.exception_status] ?? 'gray'}`}>{c.taxonomy_code}</span>
+                      <div className="faint">{c.description}</div>
+                    </td>
+                    <td><span className={`badge ${STATUS_BADGE[c.exception_status] ?? 'gray'}`}>{c.exception_status}</span></td>
+                    <td>
+                      <span className={`badge ${ITEM_BADGE[c.item_status] ?? 'gray'}`}>{c.item_status}</span>
+                      {c.client_note && <div className="faint">↳ {c.client_note}</div>}
+                    </td>
+                    <td>
+                      <Link href={`/eng/${id}/requests/${c.request_id}`}>{c.request_title}</Link>
+                      <div className="faint">{c.request_status}{c.due_date ? ` · ${c.due_date}` : ''}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* EXTRAP-03 (mandat 2026-09-14, §1.4) : « L'écran affiche EN PERMANENCE le compte

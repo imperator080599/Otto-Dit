@@ -333,6 +333,41 @@ export async function listExceptions(engagementId: string) {
   );
 }
 
+/**
+ * H-2, slice 1 (Lot 7, `docs/REGISTRE_IDEES.md` ligne 270) : « le cycle de vie du constat
+ * vis-à-vis du client » — « propriétaire, échéance, état, relance — en distinguant NETTEMENT
+ * l'exception d'audit (le dossier) du point d'action client (l'entité) ». Recherche préalable
+ * (un sous-agent) : cette distinction est DÉJÀ un invariant tenu par le code —
+ * `draftClarificationRequest` crée un `request_item(kind='explanation', exception_id=…)` par
+ * écart ouvert ; le client répond par `evidence.ts::answerExplanation` (écrit
+ * `request_item.client_note`/`status`, JAMAIS `exception.resolution`) ; seul un humain, par
+ * `resolveException`, referme le DOSSIER. Cette fonction ne fait qu'AFFICHER les deux objets
+ * déjà distincts côte à côte — zéro migration, zéro geste neuf.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : « propriétaire » (aucun contact assigné à un
+ * `request_item`), « échéance » PROPRE au constat (seule `request.due_date`, au grain du LOT,
+ * existe — H-1 slice 2 bloque déjà à ce grain) et « relance » PROPRE au point d'action (seul
+ * `reminder`, au grain de `request`, existe) restent hors de cette slice — disclosed dans
+ * `docs/REGISTRE_IDEES.md`/`BACKLOG_REPORTE.md`, pour une slice de modèle de données ultérieure.
+ */
+export async function constatEtPointAction(engagementId: string) {
+  return q<{
+    exception_id: string; taxonomy_code: string; exception_status: string; description: string;
+    item_id: string; item_status: string; client_note: string | null;
+    request_id: string; request_title: string; request_status: string; due_date: string | null;
+  }>(
+    `select x.id exception_id, x.taxonomy_code, x.status exception_status, x.description,
+            i.id item_id, i.status item_status, i.client_note,
+            r.id request_id, r.title request_title, r.status request_status, r.due_date::text
+     from exception x
+     join request_item i on i.exception_id = x.id
+     join request r on r.id = i.request_id
+     where x.engagement_id = $1
+     order by r.due_date nulls last, x.created_at`,
+    [engagementId],
+  );
+}
+
 const CLARIFICATION_TEMPLATES: Record<string, string> = {
   duplicate_document: "La facture {piece} apparaît à l'appui de plusieurs écritures comptables. Merci de confirmer s'il s'agit d'une double comptabilisation et, le cas échéant, de nous transmettre l'écriture de correction.",
   missing_document: 'Le justificatif demandé ({piece}) n’a pas pu être fourni. Merci d’indiquer la raison et de transmettre tout élément probant alternatif (bon de livraison, preuve d’expédition, accusé de réception).',
