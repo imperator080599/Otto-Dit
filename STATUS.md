@@ -102,6 +102,25 @@ touchés, `git status` confirmé propre à la fin des deux revues.
 processus (GUARDS.md non régénéré), déjà corrigé avant ce commit.** `npm run gardes` repasse
 propre. Prêt pour la chaîne `verify` complète.
 
+**Mesures finales, `npm run verify` complet sur l'arbre gelé du commit `79fea34` (règle 34,
+tourné une seule fois — aucune édition pendant le run).** `tsc --noEmit` propre ; `vitest run` :
+**147/147 fichiers verts**, tous les tests ANA-04 compris ; `gardes` : 46 gardes, **à jour, aucune
+divergence** (le correctif tient) ; `semeur`/`plancher` : 1144 tests collectés, plancher 632,
+aucune forme éteinte ; `langue`/`langue:epreuve` : 0 chaîne hors catalogue, 0 libellé en dur ;
+`lectures`/`lectures:epreuve` : 6/6 cas connus mauvais dénoncés ; `parcours`/`parcours:epreuve` :
+5/5 cas connus mauvais dénoncés (25 stations non figées signalées par le scénario — DETTE
+PRÉEXISTANTE, vérifiée par `git diff` comme extérieure au diff de cette tranche : ANA-04 ne touche
+ni `clics/run.ts` ni `PARCOURS.json`, non traitée ici, hors périmètre) ; `screens` (build
+PRODUCTION) : **93 routes, 0 échec** ; `fumee` : **52 routes, 0 échec** ; `densite` : **83 écrans,
+0 dépassement** (`docs/DENSITE.md` régénéré sur ce commit). `clics` : **EXIT=1 réel**, seul motif
+`#418` (F29, QUINZIÈME confirmation, disjoint) sur UNE seule route cette fois (`/rcm/[cid]`) —
+clôture et archive ATTEINTES (240 stations figées vérifiées, 260 étapes, 385 clics). `visuel`
+(relancé séparément, même précédent que F14 — `clics` sort en échec sur `#418` et casse le `&&`
+qui le précède) : **336 vues, 0 défaut**.
+
+**Le Lot 6, tranche 1 (ANA-04) est COMPLET.** Fusion et confirmation du SHA servi en production à
+suivre.
+
 ## CRITIQUE (expédition directe sur `main`) : restaure la migration 0165 — un correctif violait la règle 26 et bloquait TOUS les déploiements (2026-09-15)
 
 Le check-in programmé pour confirmer le SHA servi du merge de la mécanique circularisation
