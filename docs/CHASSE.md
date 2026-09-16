@@ -1159,3 +1159,13 @@ Reste de la chaîne propre : 144/145 fichiers, 1138/1139 tests. Isolé, `npx vit
 tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 443,18 s** — cohérent avec toutes les
 mesures précédentes. Diff inchangé depuis l'isolation. DEUXIÈME confirmation consécutive de
 disjonction sur cette seule tranche — chaîne à relancer une troisième fois.
+
+**Nouvelle occurrence R58 (`verify-capitaux-3.log`, 2026-09-16, chaîne verify complète #3 pour la
+même tranche, sur l'arbre du commit `434e08c` — le seul commit entre-temps ne touche que
+`docs/CHASSE.md`)** : `le serveur est tombé après 70 route(s), à « /eng/[id]/fs-tieout (SOX) »` —
+LA MÊME route que la première occurrence de cette tranche (pas une dixième route distincte cette
+fois), toujours cohérent avec l'hypothèse 1 (rien n'empêche une route déjà vue de revenir).
+`EXIT=1` réel. Reste de la chaîne propre : 144/145 fichiers, 1138/1139 tests. Isolé, `npx vitest
+run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 435,21 s** — cohérent avec toutes les
+mesures précédentes. Diff inchangé depuis l'isolation. TROISIÈME confirmation consécutive de
+disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
