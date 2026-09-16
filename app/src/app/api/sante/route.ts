@@ -973,6 +973,34 @@ async function corpsDeLaSonde() {
       const avecEcheance = assignes.filter((r) => r.item_due_date !== null).length;
       return `${assignes.length} point(s) d'action avec propriétaire assigné, ${avecEcheance} avec échéance posée`;
     }));
+    /* H-2, slice 3 (migration 0168) : `relancerPointAction` (matching.ts) écrit une ligne
+       `reminder(request_id, request_item_id)` par relance PROPRE à un point d'action — dérivée
+       de l'item dans la MÊME requête au moment de l'écriture (jamais reçue en entrée séparée),
+       donc `request_id` et l'item.request_id devraient TOUJOURS coïncider par construction. Cette
+       lecture re-DÉRIVE indépendamment (règle 16) : elle rougit si une ligne `reminder` avec
+       `request_item_id` non nul pointe un `request_id` différent de celui de son `request_item` —
+       le seul cas possible est une dérive de données (une mutation directe hors du chemin gardé),
+       jamais un geste normal du produit. CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne
+       compte ni ne borne la FRÉQUENCE des relances (aucun plafond n'existe, disclosed dans le
+       docstring de `relancerPointAction`) ni ne lit les relances de niveau `request`
+       (`request_item_id is null`, H-1/`ensureReminders`) — hors périmètre de cette slice. */
+    lectures.push(await essayer('H-2 slice 3 : la relance du point d’action client', async () => {
+      const rows = await q<{ reminder_id: string; rem_request_id: string; item_request_id: string }>(
+        `select rem.id reminder_id, rem.request_id rem_request_id, i.request_id item_request_id
+         from reminder rem
+         join request_item i on i.id = rem.request_item_id
+         join request r on r.id = i.request_id
+         where r.engagement_id = $1 and rem.request_item_id is not null`,
+        [id],
+      );
+      if (!rows.length) return 'aucune relance de point d’action pour l’instant';
+      const incoherentes = rows.filter((r) => r.rem_request_id !== r.item_request_id);
+      if (incoherentes.length > 0) {
+        throw new Error(`${incoherentes.length} relance(s) de point d'action dont le request_id `
+          + 'dénormalisé ne correspond plus à celui de leur item (dérive de données)');
+      }
+      return `${rows.length} relance(s) de point d'action, toutes cohérentes avec leur item`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

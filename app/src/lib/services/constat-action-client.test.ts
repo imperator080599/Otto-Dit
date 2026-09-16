@@ -3,7 +3,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { q, q1 } from '@/lib/db/client';
-import { constatEtPointAction, assignerProprietairePointAction } from './matching';
+import { constatEtPointAction, assignerProprietairePointAction, relancerPointAction } from './matching';
 import { demanderDetailDeCompte, approveSend } from './requests';
 
 // H-2, slice 1 (Lot 7 — docs/REGISTRE_IDEES.md ligne 270 : « le cycle de vie du constat
@@ -175,5 +175,75 @@ describe('constatEtPointAction (H-2 slice 1) : le constat et le point d’action
       q(`update request_item set owner_contact_id = $2, due_date = '2026-10-01' where id = $1`, [item.id, IDS.contacts.sophie]),
       'la contrainte request_item_owner_only_for_explanation doit refuser un item kind=document',
     ).rejects.toThrow();
+  });
+
+  it('H-2 slice 3 : relancer un point d’action assigné écrit une relance PROPRE à l’item, jamais confondue avec celles de la demande', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, status, description)
+       values ($1, 'missing_document', 'clarification_requested', 'sonde H-2 slice 3 : relance') returning id::text`,
+      [IDS.engNep],
+    );
+    const item = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status)
+       values ($1, 'explanation', 'sonde H-2 slice 3', $2, 'pending') returning id::text`,
+      [requestId, exc.id],
+    );
+    try {
+      await assignerProprietairePointAction(item.id, IDS.contacts.sophie, '2026-10-15', IDS.users.karim);
+      const resultat = await relancerPointAction(item.id, IDS.users.karim);
+      expect(resultat.remis, 'transport SIMULÉ — jamais un envoi réel').toBe(false);
+      const rem = await q1<{ request_id: string; request_item_id: string }>(
+        `select request_id::text, request_item_id::text from reminder where request_item_id = $1`,
+        [item.id],
+      );
+      expect(rem.request_id, 'request_id dénormalisé doit coïncider avec celui du point d’action').toBe(requestId);
+      const trouve = (await constatEtPointAction(IDS.engNep)).find((r) => r.item_id === item.id);
+      expect(trouve?.derniere_relance, 'la relance doit apparaître dans constatEtPointAction').toBeTruthy();
+    } finally {
+      await q(`delete from reminder where request_item_id = $1`, [item.id]);
+      await q(`delete from request_item where id = $1`, [item.id]);
+      await q(`delete from exception where id = $1`, [exc.id]);
+    }
+  });
+
+  it('H-2 slice 3, cas connus mauvais (règle 17) : sans propriétaire, sur un item déjà répondu, ou hors kind=explanation, la relance est refusée', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const docItem = await q1<{ id: string }>(`select id::text from request_item where request_id = $1`, [requestId]);
+    await expect(
+      relancerPointAction(docItem.id, IDS.users.karim),
+      'un item kind=document n’est pas un point d’action',
+    ).rejects.toThrow();
+
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, status, description)
+       values ($1, 'missing_document', 'clarification_requested', 'sonde H-2 slice 3 : cas mauvais') returning id::text`,
+      [IDS.engNep],
+    );
+    const sansProprietaire = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status)
+       values ($1, 'explanation', 'sonde H-2 slice 3 : sans propriétaire', $2, 'pending') returning id::text`,
+      [requestId, exc.id],
+    );
+    const dejaRepondu = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status, owner_contact_id)
+       values ($1, 'explanation', 'sonde H-2 slice 3 : déjà répondu', $2, 'complete', $3) returning id::text`,
+      [requestId, exc.id, IDS.contacts.sophie],
+    );
+    try {
+      await expect(
+        relancerPointAction(sansProprietaire.id, IDS.users.karim),
+        'sans propriétaire assigné, personne à relancer',
+      ).rejects.toThrow();
+      await expect(
+        relancerPointAction(dejaRepondu.id, IDS.users.karim),
+        'un point d’action déjà répondu (complete) n’a rien à relancer',
+      ).rejects.toThrow();
+    } finally {
+      await q(`delete from request_item where id in ($1, $2)`, [sansProprietaire.id, dejaRepondu.id]);
+      await q(`delete from exception where id = $1`, [exc.id]);
+    }
   });
 });

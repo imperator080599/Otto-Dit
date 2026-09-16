@@ -2331,6 +2331,27 @@ export async function conduire(
       apres.includes('2026-10-15'), 'échéance affichée après assignation');
   });
 
+  // ── 12ter. H-2 SLICE 3 : relancer le point d'action tout juste assigné (station 12bis) — un
+  //    geste EXPLICITE de l'auditeur, distinct de la cadence automatique d'ensureReminders (H-1,
+  //    grain `request`). Offert seulement quand un propriétaire est assigné ET l'item encore
+  //    'pending' — c'est exactement l'état laissé par 12bis, avant la réponse du client (13).
+  await station('constat vs point d’action client : relancer', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/exceptions`);
+    const f = p.locator(`form:has(button:has-text("${L('exc.relancer')}"))`).first();
+    if (!(await f.count())) {
+      dire('constat vs point d’action client : aucun point d’action à relancer ici',
+        true, 'rien à relancer');
+      return;
+    }
+    await soumettre(f.locator(`button:has-text("${L('exc.relancer')}")`), 2000);
+    dire('constat vs point d’action client : relancer ne bloque pas',
+      refus(p) === null, refus(p) ?? 'relancé');
+    const apres = await texte();
+    dire('constat vs point d’action client : la dernière relance apparaît à l’écran',
+      apres.includes(L('exc.derniereRelance')), 'dernière relance affichée après le clic');
+  });
+
   // ── 13. PORTAIL, SECOND PASSAGE : le client répond aux clarifications
   await station('portail : réponses aux clarifications', async () => {
     await ctx.clearCookies();

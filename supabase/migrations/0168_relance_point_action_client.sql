@@ -1,0 +1,12 @@
+-- H-2, slice 3 (Lot 7, docs/REGISTRE_IDEES.md ligne 270) : la relance PROPRE au point d'action
+-- client, au-delà de la relance de niveau `request` que `ensureReminders` (requests.ts) construit
+-- déjà pour H-1. `reminder` (0002_testing.sql) ne porte aujourd'hui qu'un grain `request_id` —
+-- une ligne de relance ne peut jamais distinguer LEQUEL des points d'action de cette demande elle
+-- concerne. `request_item_id`, nullable : les relances de niveau request, existantes et futures
+-- (`ensureReminders`), gardent cette colonne NULL — rien ne change pour elles. Une relance de
+-- point d'action porte les DEUX colonnes : `request_id` reste rempli (dénormalisé depuis l'item,
+-- toujours dérivé côté application dans la même requête qui le lit, jamais accepté en entrée
+-- séparée — donc toujours cohérent par construction, pas par contrainte SQL) pour que tout code
+-- déjà écrit sur `reminder.request_id` reste correct sans modification ; `request_item_id` cible
+-- le point d'action précis.
+alter table reminder add column request_item_id uuid references request_item(id);

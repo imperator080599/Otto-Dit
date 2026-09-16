@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly, constatEtPointAction, assignerProprietairePointAction } from '@/lib/services/matching';
+import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly, constatEtPointAction, assignerProprietairePointAction, relancerPointAction } from '@/lib/services/matching';
 import { contactsDisponibles } from '@/lib/services/reunions';
 import { frameworkSet } from '@/lib/services/fsli';
 import { validatedThresholds } from '@/lib/services/materiality';
@@ -180,6 +180,14 @@ export default async function ExceptionsPage({
       revalidatePath(`/eng/${id}/exceptions`);
     });
   }
+  async function relancerAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      await relancerPointAction(String(formData.get('item_id')), user.id);
+      revalidatePath(`/eng/${id}/exceptions`);
+    });
+  }
 
   const open = exceptions.filter((x) => x.status === 'open');
   // what may be linked as corroboration: any non-quarantined piece of evidence on the file,
@@ -341,6 +349,9 @@ export default async function ExceptionsPage({
                       {/* H-2, slice 2 (migration 0166) : propriétaire/échéance PROPRES au point
                           d'action — jamais posés sur `exception`, toujours sur `request_item`. */}
                       <div className="faint">{c.owner_name ?? t('exc.assignerAucun')}{c.item_due_date ? ` · ${c.item_due_date}` : ''}</div>
+                      {c.derniere_relance && (
+                        <div className="faint">{t('exc.derniereRelance')} · {c.derniere_relance.slice(0, 10)}</div>
+                      )}
                       <form action={assignerAction} className="row" style={{ gap: 4, marginTop: 4 }}>
                         <input type="hidden" name="item_id" value={c.item_id} />
                         <select name="owner_contact_id" defaultValue={c.owner_contact_id ?? ''} style={{ maxWidth: 140 }}>
@@ -350,6 +361,18 @@ export default async function ExceptionsPage({
                         <input type="date" name="due_date" defaultValue={c.item_due_date ?? ''} style={{ maxWidth: 130 }} />
                         <button className="btn small secondary">{t('exc.assigner')}</button>
                       </form>
+                      {/* H-2, slice 3 : relance PROPRE au point d'action — offerte seulement
+                          quand quelqu'un existe à relancer (propriétaire assigné) et qu'il reste
+                          quelque chose à relancer (item encore 'pending') ; sinon le service
+                          refuserait systématiquement, donc le formulaire ne s'offre pas plutôt
+                          que de promettre un geste voué à l'échec (même discipline que EXTRAP-03
+                          plus bas dans cet écran). */}
+                      {c.owner_contact_id && c.item_status === 'pending' && (
+                        <form action={relancerAction} style={{ marginTop: 4 }}>
+                          <input type="hidden" name="item_id" value={c.item_id} />
+                          <button className="btn small">{t('exc.relancer')}</button>
+                        </form>
+                      )}
                     </td>
                     <td>
                       <Link href={`/eng/${id}/requests/${c.request_id}`}>{c.request_title}</Link>

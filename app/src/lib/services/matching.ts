@@ -350,10 +350,6 @@ export async function listExceptions(engagementId: string) {
  * `exception`. Cette fonction ne fait qu'AFFICHER les deux objets déjà distincts côte à côte —
  * zéro migration, zéro geste neuf.
  *
- * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : « relance » PROPRE au point d'action (seul
- * `reminder`, au grain de `request`, existe) reste hors de cette slice — disclosed dans
- * `docs/REGISTRE_IDEES.md`/`BACKLOG_REPORTE.md`, pour une slice ultérieure.
- *
  * H-2, SLICE 2 (migration 0166) : « propriétaire » (`request_item.owner_contact_id`, un
  * `client_contact` — jamais un contact CABINET, `engagement_contact`) et « échéance » PROPRE au
  * point d'action (`request_item.due_date`, distincte de `request.due_date` au grain du LOT que
@@ -369,17 +365,24 @@ export async function listExceptions(engagementId: string) {
  * propriétaire orphelin/désactivé/d'une autre entité, jamais un simple retard d'échéance. Voulu
  * pour cette slice (bloquer sur l'échéance du point d'action est un chantier séparé, une famille
  * d'obstacle neuve au grain de l'item plutôt que de la demande) — disclosed, pas construit.
+ *
+ * H-2, SLICE 3 (migration 0168) : `derniere_relance` — la dernière relance PROPRE à ce point
+ * d'action (`relancerPointAction`, ci-dessous), distincte des relances de niveau `request` que
+ * `ensureReminders` engendre pour H-1 (celles-ci ne portent jamais `request_item_id`, donc
+ * n'apparaissent jamais ici).
  */
 export async function constatEtPointAction(engagementId: string) {
   return q<{
     exception_id: string; taxonomy_code: string; exception_status: string; description: string;
     item_id: string; item_status: string; client_note: string | null;
     owner_contact_id: string | null; owner_name: string | null; item_due_date: string | null;
+    derniere_relance: string | null;
     request_id: string; request_title: string; request_status: string; request_due_date: string | null;
   }>(
     `select x.id exception_id, x.taxonomy_code, x.status exception_status, x.description,
             i.id item_id, i.status item_status, i.client_note,
             i.owner_contact_id, cc.name owner_name, i.due_date::text item_due_date,
+            (select max(rem.scheduled_for)::text from reminder rem where rem.request_item_id = i.id) derniere_relance,
             r.id request_id, r.title request_title, r.status request_status, r.due_date::text request_due_date
      from exception x
      join request_item i on i.exception_id = x.id
@@ -425,6 +428,62 @@ export async function assignerProprietairePointAction(
     verb: 'point_action_client_assigne', objectType: 'request_item', objectId: itemId,
     payload: { ownerContactId, dueDate },
   });
+}
+
+/**
+ * H-2, slice 3 (migration 0168) : la relance PROPRE au point d'action client — un geste humain de
+ * l'auditeur qui signale au propriétaire assigné (slice 2) que son point d'action reste sans
+ * réponse. DISTINCTE de `ensureReminders` (requests.ts), qui relance au grain de la DEMANDE
+ * entière, à une cadence AUTOMATIQUE (3 jours après échéance puis chaque semaine) : ici la
+ * relance est un geste EXPLICITE et EXCLUSIVEMENT humain, au grain de l'ITEM, sans cadence ni
+ * planification — chaque clic écrit une ligne `reminder(request_item_id=…)` distincte.
+ *
+ * Refuse : un item qui n'est pas un point d'action réel (même garde que
+ * `assignerProprietairePointAction`) ; un point d'action SANS propriétaire assigné (personne à
+ * qui adresser la relance — assigner d'abord) ; un point d'action déjà répondu
+ * (`status ≠ 'pending'`, rien à relancer).
+ *
+ * Transport SIMULÉ (CLAUDE.md §2 : « aucun e-mail... ne part vers un destinataire réel ») —
+ * `remis` dit la vérité (toujours `false` ici), jamais un succès qu'aucun envoi réel ne justifie ;
+ * même honnêteté que `SimulatedTransportAdapter` (agenda/adapters.ts, ADR-101).
+ *
+ * CE QUE CETTE FONCTION NE FAIT PAS (règle 19) : aucune cadence automatique (contrairement à
+ * `ensureReminders`) — jamais planifiée par le système, jamais rappelée d'elle-même. Aucun
+ * plafond de fréquence : rien n'empêche aujourd'hui de relancer deux fois de suite dans la même
+ * minute — disclosed, pas construit, hors périmètre de cette slice.
+ */
+export async function relancerPointAction(itemId: string, userId: string): Promise<{ remis: boolean; detail: string }> {
+  const engagementId = await assertMembreDe('request_item', itemId, userId, 'relancer le point d’action client');
+  const item = await q1<{
+    kind: string; exception_id: string | null; status: string;
+    owner_contact_id: string | null; request_id: string;
+  }>(
+    `select kind, exception_id, status, owner_contact_id, request_id from request_item where id = $1`,
+    [itemId],
+  );
+  if (item.kind !== 'explanation' || !item.exception_id) {
+    throw new Error('ce n’est pas un point d’action client (kind ≠ explanation, ou aucun constat lié)');
+  }
+  if (!item.owner_contact_id) {
+    throw new Error('aucun propriétaire assigné — personne à relancer (assigner un propriétaire d’abord)');
+  }
+  if (item.status !== 'pending') {
+    throw new Error(`ce point d’action n’est plus en attente (statut « ${item.status} ») — rien à relancer`);
+  }
+  const contact = await q1<{ name: string }>(`select name from client_contact where id = $1`, [item.owner_contact_id]);
+  const ctx = await engagementCtx(engagementId);
+  const resultat = { remis: false, detail: 'transport simulé — aucune relance réelle n’est partie (Q12, ADR-101)' };
+  await q(
+    `insert into reminder (request_id, request_item_id, scheduled_for, sent_at, channel, status)
+     values ($1, $2, now(), now(), 'portal', 'sent')`,
+    [item.request_id, itemId],
+  );
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'point_action_client_relance', objectType: 'request_item', objectId: itemId,
+    payload: { ownerContactId: item.owner_contact_id, ownerName: contact.name, remis: resultat.remis },
+  });
+  return resultat;
 }
 
 const CLARIFICATION_TEMPLATES: Record<string, string> = {
