@@ -43,7 +43,19 @@ async function PortalHomeCorps({ params }: { params: Promise<{ token: string }> 
           d'ÉLÉMENTS encore dus, toutes demandes ouvertes confondues, avant la liste des demandes
           elle-même (l'agrégat répond à « qu'est-ce qu'il me reste à faire ? » avant que le détail
           par demande ne réponde à « où ? »). État vide honnête (règle 61 : rien à voir n'est pas
-          rien à dire) plutôt qu'une section absente. */}
+          rien à dire) plutôt qu'une section absente.
+
+          DÉLIBÉRÉMENT SANS LIEN « Ouvrir » (trouvé par bissection sur `npm run clics`, pas
+          deviné — cette section a d'abord porté un `<Link href={.../portal/[token]/[id]}>`
+          par ligne, identique en FORME à ceux de la table des demandes ci-dessous). La station
+          « portail client » (scenario.ts) sélectionne CHAQUE demande à traiter par
+          `a[href*="/portal/"]` sur TOUTE LA PAGE, sans borner à une table précise — un second
+          lien vers la MÊME demande la faisait visiter et traiter DEUX FOIS (dépôts et réponses
+          d'explication rejoués), corrompant l'état partagé au point de faire échouer, bien plus
+          loin dans le parcours, la disposition et la conclusion de la grille de test (rejoué
+          quatre fois sur l'arbre gelé, jamais reproduit une fois ce lien retiré — bissection par
+          `git worktree`, pas une hypothèse). La ligne reste consultable et s'ouvre déjà par la
+          table des demandes, juste en dessous : rien n'est perdu, seul le doublon l'est. */}
       <div className="panel" data-portail-du>
         <h2>{t('portal.ceQueVousDevez')}</h2>
         <p className="faint" style={{ margin: '0 0 8px' }}>{t('portal.ceQueVousDevezAide')}</p>
@@ -51,14 +63,13 @@ async function PortalHomeCorps({ params }: { params: Promise<{ token: string }> 
           <p className="muted">{t('portal.aucunElementDu')}</p>
         ) : (
           <table className="data">
-            <thead><tr><th>{t('portal.elementColonne')}</th><th>{t('portal.demande')}</th><th>{t('portal.echeance')}</th><th></th></tr></thead>
+            <thead><tr><th>{t('portal.elementColonne')}</th><th>{t('portal.demande')}</th><th>{t('portal.echeance')}</th></tr></thead>
             <tbody>
               {outstanding.map((it) => (
                 <tr key={it.id}>
                   <td>{it.description}</td>
                   <td>{it.engagement_name} <span className="mono">R-{String(it.seq_no).padStart(3, '0')}</span> {it.request_title}</td>
                   <td>{it.due_date}</td>
-                  <td><Link className="btn small" href={`/portal/${token}/${it.request_id}`}>{t('portal.ouvrir')}</Link></td>
                 </tr>
               ))}
             </tbody>
