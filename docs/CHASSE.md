@@ -1169,3 +1169,26 @@ fois), toujours cohérent avec l'hypothèse 1 (rien n'empêche une route déjà 
 run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 435,21 s** — cohérent avec toutes les
 mesures précédentes. Diff inchangé depuis l'isolation. TROISIÈME confirmation consécutive de
 disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
+
+- **F28 — UN incident dans `verify-capitaux-4.log`** (2026-09-16, quatrième chaîne verify
+  complète pour la tranche Capitaux propres et impôt — poste 8, LE DERNIER du Lot 5, sur l'arbre
+  du commit `d6defa0`, après trois occurrences R58 consécutives) : REJOUE F18-F27 au trait près,
+  même page `rcm/[cid]` (SOX), `EXCEPTION sur
+  /eng/70670df5.../rcm/5dea29b8-fe77-481f-bade-7bb99ae56f70 : Minified React error #418`.
+  **Numérotation corrigée avant de commiter** (règle 31) : ce bullet aurait dû être F28, pas F29
+  — jamais aucun F28 n'a existé ; et le compte « Nième confirmation » qui suit compte les RUNS
+  qui ont vu `#418`, pas les routes individuelles — le passage `verify-stocks-3.log` (§6
+  ci-dessus, tranche Stocks) avait vu `#418` sur TROIS routes en un seul run mais n'avait jamais
+  reçu son propre numéro d'ordre ; compté ici comme UNE SEULE confirmation (la treizième), ce qui
+  fait de ce run-ci la QUATORZIÈME, pas la dixième comme écrit dans un premier temps.
+  **Cette fois, `vitest run` LUI-MÊME est passé PROPRE au premier coup — 145/145 fichiers,
+  1139/1139 tests, AUCUN `ServeurTombe`/R58** — contrairement aux trois tentatives précédentes de
+  cette même tranche, cohérent avec l'hypothèse 1 (pression cumulée variable d'un run à l'autre,
+  jamais garantie de se manifester). `gardes` à `densite` tous propres, `screens` (93 routes, 0
+  échec) et `fumee` (52 routes, 0 échec) sur le build de PRODUCTION propres. Clôture et archive
+  ATTEINTES (240 stations figées vérifiées, archive scellée, empreinte SHA-256 affichée,
+  téléchargement vérifié), 260 étapes conduites, 385 clics comptés — QUATORZIÈME confirmation
+  consécutive que `#418` est disjoint de tout ce que le Lot 5 a touché, sur un HUITIÈME ET
+  DERNIER poste distinct. Pas creusé plus loin (même discipline que F9-F27). `npm run visuel`
+  cassé par le même `#418` sur `clics` (`EXIT=1` casse le `&&` qui le précède) ; relancé
+  séparément.
