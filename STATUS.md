@@ -75,7 +75,12 @@ de `gouvernance.test.ts` et le cas de `h4-tranche1-comite-lecture.test.ts`) · `
 signés/total et un badge de statut), clôture et archive ATTEINTES (270 étapes, 387 clics).
 `visuel` (relancé séparément) : **352 vues, 0 défaut**.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__list_deployments` (`dpl_FVBgz9XcuDzGU1ksy57ZKfvbp1GC`, cible
+production) READY, commit `c7c19defc6f2e8d0f7ba26618dd297e663158834` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : HTTP 200, sha identique, `identiteCoherente=true`,
+« toutes les lectures passent » — nouvelle lecture « H-4 tranche 1 : la synthèse comité cohérente
+avec le dossier » `ok:true`, detail « 2/6 papier(s) signé(s), travail « gouvernance » non ouvert,
+14 obstacle(s) au visa » (non VIDE, informative, la base RÉELLE de production).
 
 **Lot 7, H-4 tranche 1 est COMPLÈTE.** Reste du registre : H-5 (adaptateur d'import GRC — matrice
 risques-contrôles importée COMME PIÈCE, jamais recréée) et H-6 (passe de design) — par ordre de
