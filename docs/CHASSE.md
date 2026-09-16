@@ -1336,3 +1336,19 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   266 étapes conduites, 386 clics comptés — VINGT-TROISIÈME confirmation consécutive que `#418`
   est disjoint. Pas creusé plus loin (même discipline que F9-F36). `npm run visuel` relancé
   séparément (le `&&` casse sur l'échec de `clics`), propre (344 vues, 0 défaut).
+
+- **F38 — UN incident** (2026-09-16, Lot 7, H-4 tranche 1 — le périmètre d'audience « comité »,
+  sur l'arbre du commit `3325b29` — revue hostile SHIP AS-IS, zéro constat corrigé, la thèse même
+  de la lecture `/api/sante` volontairement informative vérifiée EMPIRIQUEMENT par le réfutateur
+  (défaut injecté dans `jalonProchain`, confirmé rougir `gouvernance.test.ts`, confirmé rester vert
+  côté `/api/sante` — exactement ce que le commentaire de `route.ts` affirmait). `EXIT=1` réel
+  (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/028533a0-...`
+  (l'habituelle, `rcm/[cid]`). Disjoint de la tranche : `gouvernance.ts`, `comite/page.tsx`,
+  `dashboard/page.tsx` (un lien ajouté), la nouvelle lecture `/api/sante` et `scenario.ts` ne
+  touchent pas `/rcm`, et les 1201 tests vitest passent tous — dont les 7 nouveaux cas connus
+  bon/mauvais de `gouvernance.test.ts` (dont le cas connu mauvais sur `jalonProchain`) et la
+  lecture sante dédiée. La station « comité » confirme le compte papiers signés/total et un badge
+  de statut. Clôture et archive ATTEINTES (240 stations figées vérifiées), 270 étapes conduites,
+  387 clics comptés — VINGT-QUATRIÈME confirmation consécutive que `#418` est disjoint. Pas creusé
+  plus loin (même discipline que F9-F37). `npm run visuel` relancé séparément (le `&&` casse sur
+  l'échec de `clics`), propre (352 vues, 0 défaut).

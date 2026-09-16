@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-16 · 59 gestes · **386 clics** au total.
+Parcours du 2026-09-16 · 60 gestes · **387 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -50,6 +50,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | constat vs point d’action client : assigner un propriétaire | 0 |
 | constat vs point d’action client : relancer | 0 |
 | grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà | 1 |
+| comité : la synthèse de gouvernance agrège ce que le dossier sait déjà | 1 |
 | portail : réponses aux clarifications | 5 |
 | testing : le second passage sur les pièces arrivées après coup | 3 |
 | estimation : le fichier de calcul de la cliente | 9 |

@@ -4,6 +4,83 @@
 
 ---
 
+## Lot 7, H-4 tranche 1 — le périmètre d'audience « comité » (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-3 slice 2 (règle 32). H-3 slice 3
+écartée avant de commencer : STATUS.md la nommait explicitement à risque de « finir Lot 6 déguisé
+en H-3 » (atelier de revue MANUEL/FRAUDE, R104) — H-3 elle-même (le test exhaustif du grand livre)
+est déjà COMPLÈTE avec ses sept règles (slices 1+2) ; la suite naturelle, par ordre de valeur du
+registre, était H-4.*
+
+**Recherche préalable dédiée (un sous-agent, lecture seule)** : `docs/REGISTRE_IDEES.md` ligne 272
+(H-4) — « le reporting en trois périmètres d'audience — équipe, direction, comité » — dit
+explicitement OUI pour équipe et comité, **NON** pour un tableau de bord qui piloterait
+l'ENTITÉ (GRC, hors produit). Trouvé : équipe existait déjà (`/eng/[id]/page.tsx`,
+`travaux.ts::tableauDeBord`) ; direction existait déjà (`/eng/[id]/dashboard`, avec un concept
+« audience » déjà construit — `TrackerAudience: 'team'|'client'|'group'`) ; comité manquait, mais
+le CONCEPT lui-même existait déjà en base depuis longtemps comme travail d'achèvement
+(`completion_item.nature='gouvernance'`, migration 0020, 2026 — « communication à la
+gouvernance »). Ce qui manquait n'était donc PAS un nouveau modèle de données, seulement un écran
+qui AGRÈGE.
+
+**Implémenté** (commit `3325b29`) : `gouvernance.ts::syntheseComite` — pure agrégation (règle 9 :
+mécanique, pas contenu) sur `obstaclesAuVisa`, `exception`, `deficiency`, `completion_item`,
+`workpaper`, `engagement_milestone` (via `jalons()`). ZÉRO nouvelle table, ZÉRO écriture, ZÉRO
+appel LLM (règle 6). L'écran `/eng/[id]/comite`, atteint via un lien posé sur `/dashboard` (jamais
+une URL devinée), ajouté à `AILLEURS` (`rail.test.ts`) — pure lecture, jamais un état du dossier,
+même précédent que `/grand-livre` (H-3). R16 (backlog reporté, « rien de signé ne sort de
+mémoire ») tenu : l'écran ne RÉDIGE jamais la communication elle-même — le champ `conclusion`
+affiché vient exclusivement de ce qu'un humain a déjà écrit via `completion.ts::conclure()`.
+
+**Un doublon sémantique trouvé PAR LE VITEST COMPLET lui-même (règle 18), pas par la revue
+hostile** : la clé `gov.titre` répétait mot pour mot `ach.gouvernance.titre` — `langue.test.ts`
+(« aucun doublon sémantique ») a rougi. Corrigé en réutilisant la clé existante partout (titre de
+l'écran, lien depuis `/dashboard`, station clics) — pas une nouvelle clé, la MÊME clé (même
+précédent que R16 : un seul concept, une seule vérité).
+
+**La lecture `/api/sante` reste délibérément INFORMATIVE, et ce choix est écrit, pas supposé** :
+le seul invariant candidat pour une re-dérivation adversariale (règle 16 : « aucune conclusion
+vide sur un travail d'achèvement conclu ») est DÉJÀ un `check constraint` SQL
+(`done_needs_substance`, migration 0020) — Postgres refuse cet état AVANT même que le code
+s'exécute. Une garde ici ne pourrait jamais échouer (règle 17 : « une garde qui n'a jamais rien
+refusé n'est pas une garde ») — écrire quand même ce test aurait été la même faute que les cinq
+instruments cités en règle 17 du CLAUDE.md. Le SEUL calcul non trivial du module — `jalonProchain`,
+qui doit exclure les jalons déjà EN RETARD — est, lui, éprouvé contre un cas connu mauvais dans
+`gouvernance.test.ts` (un jalon délibérément en retard, chronologiquement le plus proche, ne doit
+JAMAIS être choisi comme « prochain »).
+
+**Revue hostile, UN réfutateur (règle 30 : zéro modèle de données/sécurité/multi-tenant/refus).**
+Verdict **SHIP AS-IS**, zéro constat corrigé. Le réfutateur a VÉRIFIÉ EMPIRIQUEMENT (pas supposé)
+la thèse de la lecture informative : il a lui-même injecté le défaut que `gouvernance.test.ts`
+teste (retrait du filtre `due_date >= aujourdhui` dans `jalonProchain`), confirmé que
+`gouvernance.test.ts` rougit bien, confirmé que la lecture `/api/sante` reste verte (exactement ce
+que le commentaire de `route.ts` affirme), puis restauré le fichier (`git diff` vide, vérifié). Il
+a aussi vérifié directement la migration 0020 (ligne 41, `done_needs_substance`) plutôt que de
+croire le commentaire sur parole. Aucune fuite multi-tenant trouvée (les six requêtes SQL filtrent
+toutes `engagement_id = $1`). Deux points mineurs relevés, non corrigés, non bloquants : un pattern
+préexistant (`NATURES.find(...)!`, identique à `completion/page.tsx`) et un usage de `new Date()`
+plutôt que `core/clock::now()` pour `jalonsEnRetard`/`jalonProchain` — cohérent avec le calcul
+DÉJÀ existant de la famille `jalons` dans `obstacles.ts` (même précédent, pas une incohérence
+nouvelle).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur l'arbre
+du commit `3325b29`) : `tsc` propre · **161/161 fichiers, 1201/1201 tests vitest** (dont les 7 cas
+de `gouvernance.test.ts` et le cas de `h4-tranche1-comite-lecture.test.ts`) · `gardes` 47 ·
+`semeur` à jour · `langue` 0 hors catalogue, 0 libellé en dur (après correction du doublon) ·
+`lectures` 0 perdue, **6/6** · `parcours` 0 station perdue, **5/5** · `screens` **97 routes, 0
+échec** (+2 : `/eng/[id]/comite`, comptée deux fois — pack par défaut et variante SOX) · `fumee`
+**54 routes, 0 échec** · `densite` **87 écrans, 0 dépassement** · `clics` **EXIT=1 réel, seul motif
+`#418`** (F38, vingt-quatrième confirmation, la station « comité » confirme le compte papiers
+signés/total et un badge de statut), clôture et archive ATTEINTES (270 étapes, 387 clics).
+`visuel` (relancé séparément) : **352 vues, 0 défaut**.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-4 tranche 1 est COMPLÈTE.** Reste du registre : H-5 (adaptateur d'import GRC — matrice
+risques-contrôles importée COMME PIÈCE, jamais recréée) et H-6 (passe de design) — par ordre de
+valeur, H-5 est la suite naturelle. H-3 slice 3 reste explicitement en attente (voir ci-dessus).
+
 ## Lot 7, H-3 slice 2 — la règle « hors exercice » sur le grand livre (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-3 slice 1 (règle 32). Découpe
