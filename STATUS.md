@@ -60,7 +60,13 @@ routes, 0 échec** · `densite` **85 écrans, 0 dépassement** (régénéré sé
 livre » confirme les sept règles), clôture et archive ATTEINTES (266 étapes, 386 clics). `visuel`
 (relancé séparément) : **344 vues, 0 défaut**.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_EfBHhaZDDgxuwPT6mT1mwBpkETnN`, cible
+production) READY, commit `ca9ff702a40b75656d85ebb9837e51c0fe52efcd` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : HTTP 200, sha identique, `identiteCoherente=true`,
+« toutes les lectures passent » — nouvelle lecture « H-3 slice 2 : le test exhaustif du grand
+livre (règle hors exercice) » `ok:true`, detail « 4731 écriture(s) active(s), 0 marquée(s) hors
+exercice — cohérent avec les bornes de la période » (non VIDE, informative, la base RÉELLE de
+production porte 4731 écritures actives, toutes dans la période — attendu d'un FEC réel).
 
 **Lot 7, H-3 slice 2 est COMPLÈTE.** Reste du Lot 7 : H-3 slice 3, optionnelle (atelier de revue
 ligne à ligne pour MANUEL/FRAUDE, R104) — à ne prendre qu'après validation explicite que ce n'est
