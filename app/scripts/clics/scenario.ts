@@ -2395,6 +2395,25 @@ export async function conduire(
       nCouvre === 7, `${nCouvre}/7 disclosure(s) « couvre » affichée(s)`);
   });
 
+  // ── 12quinquies. H-4, TRANCHE 1 (Lot 7, docs/REGISTRE_IDEES.md §H, ligne 272) : le troisième
+  //    périmètre d'audience — équipe et direction existaient déjà, comité manquait. Un écran de
+  //    LECTURE PURE (aucun geste d'écriture), conduit dans un navigateur (règle 10) : agrège ce
+  //    que le dossier sait déjà (obstacles, écarts, achèvement, papiers, jalons) — zéro contenu
+  //    rédigé ici (R16). Atteint via le lien posé sur /dashboard, jamais une URL devinée.
+  await station('comité : la synthèse de gouvernance agrège ce que le dossier sait déjà', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/dashboard`);
+    const lien = p.locator(`a:has-text("${L('ach.gouvernance.titre')}")`).first();
+    dire('comité : le lien depuis le dashboard existe', (await lien.count()) > 0, 'lien absent');
+    if (!(await lien.count())) return;
+    await cliquer(`a:has-text("${L('ach.gouvernance.titre')}")`, 1500);
+    dire('comité : la navigation atteint bien l’écran dédié', p.url().includes('/comite'), p.url());
+    const contenu = await texte();
+    dire('comité : le compte de papiers signés est affiché', /\d+\/\d+/.test(contenu), 'aucun compte signé(s)/total affiché');
+    const badge = await p.locator('.panel .badge').first().count();
+    dire('comité : un badge de statut (visa possible ou obstacles) est affiché', badge > 0, 'aucun badge de statut');
+  });
+
   // ── 13. PORTAIL, SECOND PASSAGE : le client répond aux clarifications
   await station('portail : réponses aux clarifications', async () => {
     await ctx.clearCookies();

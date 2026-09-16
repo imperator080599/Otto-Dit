@@ -214,6 +214,7 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
       '/eng/[id]/poste/[code]': 'c\'est la destination du groupe « Les postes »',
       '/eng/[id]/notifications': 'depuis l\'obstacle NOTIF-01 (panneau des obstacles, clôture, suivi de mission) et depuis « Ce que je dois approuver » sur /travaux (mandat 2026-09-14, §3)',
       '/eng/[id]/grand-livre': 'depuis le lien posé sur /analytique (Lot 7, H-3 slice 1) — pure lecture, jamais un état du dossier, donc jamais repris au rail',
+      '/eng/[id]/comite': 'depuis le lien posé sur /dashboard (Lot 7, H-4 tranche 1) — pure lecture agrégée, jamais un état du dossier, donc jamais repris au rail',
     };
     const racine = path.join(repoRoot(), 'app', 'src', 'app', 'eng', '[id]');
     const routes: string[] = [];

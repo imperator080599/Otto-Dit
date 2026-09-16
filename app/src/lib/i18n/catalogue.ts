@@ -1980,6 +1980,23 @@ export const LIBELLES = {
   'mat.basculeProcedures': { en: 'Procedures on file', fr: 'Procédures au dossier' },
   'mat.basculeAucuneProcedure': { en: 'none — nothing was ever planned', fr: 'aucune — rien n’a jamais été planifié' },
   'mat.basculeNProcedures': { en: '{n} already planned', fr: '{n} déjà planifiée(s)' },
+
+  // ── H-4 tranche 1 : le périmètre d'audience « comité » (gouvernance) ──────
+  // Pas de 'gov.titre' séparé : le titre de l'écran RÉUTILISE 'ach.gouvernance.titre' (même
+  // concept, même phrase — le détecteur de doublons sémantiques l'exige, langue.test.ts).
+  'gov.aide': { en: 'What is already known about the file, gathered for the audience it is meant for — nothing is drafted here, nothing is sent from here.', fr: 'Ce que le dossier sait déjà de lui-même, rassemblé pour le public auquel c’est destiné — rien n’est rédigé ici, rien n’en part.' },
+  'gov.visaPossible': { en: 'No blocker to sign-off', fr: 'Aucun obstacle au visa' },
+  'gov.obstaclesRestants': { en: '{n} blocker(s) to sign-off', fr: '{n} obstacle(s) au visa' },
+  'gov.ecarts': { en: 'Exceptions', fr: 'Écarts' },
+  'gov.ecartsDetail': { en: '{ouverts} open / {total} total ({escalades} escalated)', fr: '{ouverts} ouvert(s) / {total} au total ({escalades} escaladé(s))' },
+  'gov.deficiences': { en: 'Control deficiencies', fr: 'Déficiences de contrôle' },
+  'gov.aucuneDeficience': { en: 'none identified so far', fr: 'aucune identifiée pour l’instant' },
+  'gov.achevement': { en: 'Completion procedures', fr: 'Travaux d’achèvement' },
+  'gov.papiersSignes': { en: 'Signed workpapers', fr: 'Papiers signés' },
+  'gov.jalonsEnRetard': { en: '{n} overdue milestone(s)', fr: '{n} jalon(s) en retard' },
+  'gov.aucunJalonEnRetard': { en: 'no milestone overdue', fr: 'aucun jalon en retard' },
+  'gov.prochainJalon': { en: 'Next milestone', fr: 'Prochain jalon' },
+  'gov.aucunJalonAVenir': { en: 'none scheduled', fr: 'aucun à venir' },
 } satisfies Record<string, Entree>;
 
 export type CleLibelle = keyof typeof LIBELLES;

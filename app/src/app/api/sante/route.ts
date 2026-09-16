@@ -1056,6 +1056,28 @@ async function corpsDeLaSonde() {
       }
       return `${total} écriture(s) active(s), ${marque} marquée(s) hors exercice — cohérent avec les bornes de la période`;
     }));
+    /* H-4 tranche 1 (Lot 7, docs/REGISTRE_IDEES.md §H, ligne 272) : `syntheseComite`
+       (gouvernance.ts) AGRÈGE ce que le dossier sait déjà (obstaclesAuVisa, completion_item,
+       workpaper, engagement_milestone) — zéro donnée mise en cache, zéro colonne dénormalisée.
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS, ET POURQUOI (règle 19) : elle ne re-DÉRIVE RIEN
+       indépendamment (contrairement à H-3, qui recompare `gl_entry.flags` — une colonne écrite une
+       fois à l'import — à une règle recalculée). Le seul invariant candidat trouvé en écrivant
+       cette tranche — « aucun travail d'achèvement conclu sans texte de conclusion » — est DÉJÀ un
+       `check constraint` SQL (`done_needs_substance`, migration 0020) : Postgres refuse cet état
+       AVANT même que ce code s'exécute, donc une garde ici ne pourrait jamais échouer (règle 17 :
+       « une garde qui n'a jamais rien refusé n'est pas une garde ») — écrire quand même le test
+       aurait été la même faute que les cinq instruments cités en règle 17. Cette lecture reste
+       donc INFORMATIVE : elle confirme que l'agrégation ne plante pas sur le dossier réel, rien de
+       plus. Le choix du prochain jalon (`jalonProchain`) — le seul calcul non trivial de ce
+       module — est, lui, éprouvé contre un cas connu mauvais dans `gouvernance.test.ts`. */
+    lectures.push(await essayer('H-4 tranche 1 : la synthèse comité cohérente avec le dossier', async () => {
+      const { syntheseComite } = await import('@/lib/services/gouvernance');
+      const s = await syntheseComite(id);
+      if (s.papiers.total === 0 && s.achevement.length === 0) return 'aucun papier ni travail d’achèvement pour l’instant';
+      const gouv = s.achevement.find((a) => a.nature === 'gouvernance');
+      return `${s.papiers.signes}/${s.papiers.total} papier(s) signé(s), travail « gouvernance » `
+        + `${gouv?.status ?? 'non ouvert'}, ${s.obstaclesTotal} obstacle(s) au visa`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

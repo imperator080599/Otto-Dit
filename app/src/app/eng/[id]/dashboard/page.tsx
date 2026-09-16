@@ -130,6 +130,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
             <span className="badge gray">{fs.accounting_map}</span>
             <span className="badge gray">{fs.language}</span>
           </div>
+          <p className="faint mt"><Link href={`/eng/${id}/comite`}>{t('ach.gouvernance.titre')} →</Link></p>
         </Repli>
       </div>
     </div>
