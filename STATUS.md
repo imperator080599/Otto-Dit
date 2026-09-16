@@ -57,9 +57,16 @@ confirmation consécutive), clôture et archive ATTEINTES (240 stations figées 
 étapes, 385 clics — identique à la référence, ZÉRO nouvel échec). `visuel` (relancé
 séparément) : **336 vues, 0 défaut**.
 
-**SHA servi CONFIRMÉ.** À faire dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_5wMKwfqpdQFqfGVEYo7sN42pb87Z`, cible
+`production`) : `READY`, commit `8e472506dde0575529d50189435ddd02f742f568` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` : HTTP 200,
+`sha` identique, `identiteCoherente:true`, verdict « toutes les lectures passent » — la
+nouvelle lecture « H-2 : le constat vs le point d'action client » `ok:true`, detail « 11
+point(s) d'action client — complete:11 » (non VIDE, informative, la base RÉELLE de production
+porte onze points d'action déjà répondus par le client). `docs/instantanes/servi.json` et
+`docs/REPRISE.md` mis à jour dans le même geste.
 
-**Lot 7, H-2 slice 1 est COMPLÈTE.** Reste du Lot 7 : H-2 slice 2 (modèle de données —
+**Lot 7, H-2 slice 1 est COMPLÈTE et servie.** Reste du Lot 7 : H-2 slice 2 (modèle de données —
 propriétaire/échéance/relance propres au constat, décision `followup` vs `request_item` à
 trancher d'abord, deux réfutateurs requis) puis slice 3 (relance).
 
