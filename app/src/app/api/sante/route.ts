@@ -1099,6 +1099,12 @@ async function corpsDeLaSonde() {
       return r ? `${r.n} objet(s)` : 'vide';
     }));
   }
+  /* FIN du bloc `if (eng) { const id = eng.id; ... }` ouvert ligne 129 — `id` n'est PLUS visible
+     en dessous de cette accolade (trouvé par `tsc`, Lot 7 tranche 1 : une lecture ajoutée ~600
+     lignes plus bas référençait `id` en croyant être encore dans ce bloc). Toute lecture écrite
+     APRÈS ce point doit garder son propre `if (!eng) return …` et utiliser `eng.id` localement
+     (voir ligne ~1529 pour le précédent déjà établi, et la lecture Lot 7 tranche 1 plus bas pour
+     la même forme). */
 
   /* CTRL-01 (mandat contrôle interne, 2026-09-08, Lot suivant tranche 1) : « l'inquiry seule ne
      conclut rien ». Lue GLOBALEMENT (tous les dossiers, pas seulement `id`) : l'invariant doit
