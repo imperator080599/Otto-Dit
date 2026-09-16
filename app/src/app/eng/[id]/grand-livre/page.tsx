@@ -3,7 +3,7 @@ import { testExhaustifGrandLivre } from '@/lib/services/grand-livre';
 import { fmtEur } from '@/lib/kernel/canon';
 import { tr, locale, type CleLibelle } from '@/lib/i18n';
 
-/** Une règle de `flags.ts` (JeFlag) est TOUJOURS l'une des six clés `gl.regle.<code>.*` posées
+/** Une règle de `flags.ts` (JeFlag) est TOUJOURS l'une des sept clés `gl.regle.<code>.*` posées
  *  dans le catalogue (langue.ts en garde la couverture, `gl.regle.` groupe entier) — jamais un
  *  code arbitraire venu d'ailleurs. */
 const cleRegle = (regle: string, champ: 'libelle' | 'couvre' | 'neCouvrePas') => `gl.regle.${regle}.${champ}` as CleLibelle;
