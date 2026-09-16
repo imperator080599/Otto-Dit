@@ -223,8 +223,39 @@ désormais complet, cette fixture n'a plus de raison structurelle de rechanger d
 `confirmation_externe`, la fixture reste valide sans modification).
 
 **Mesures avant expédition.** Suite ciblée (catalogue, enrichir, atelier-confirmation-lecture,
-programme-vue — 40/40) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet
-à suivre.
+programme-vue — 40/40) propres. `tsc --noEmit` propre.
+
+**Revue hostile, UNE SEULE voix** (règle 30 : ni modèle de données, ni multi-tenant, ni code de
+refus touchés par cette tranche). Verdict : SOUND — chaque affirmation reproduite
+indépendamment, y compris un contrôle que la tranche elle-même n'avait pas fait (recherche
+directe dans `dataset/tb_2025.csv` pour confirmer qu'AUCUN compte de classe 63/69 n'existe,
+au-delà de la seule vérification `fsliAccounts('INCOME_TAX')`). La décision de scope EQUITY-seul
+(« et impôt » lu comme description du cycle, pas comme second `fsli.code` à ouvrir) confirmée
+correcte et défendue, pas juste acceptée. Aucun défaut trouvé.
+
+**`npm run verify` complet, avec TROIS occurrences R58 consécutives avant un passage propre.**
+Premier passage (`verify-capitaux.log`) : `le serveur est tombé... à « /eng/[id]/fs-tieout
+(SOX) »` — HUITIÈME route distincte au total pour ce flake connu et disjoint (déjà vue pour
+Fournisseurs). Isolé, confirmé PASSE (441,41 s), relancé. Deuxième passage
+(`verify-capitaux-2.log`) : NEUVIÈME route (`/eng/[id]/processus`), isolé confirmé PASSE
+(443,18 s), relancé. Troisième passage (`verify-capitaux-3.log`) : MÊME route que le premier
+essai (`fs-tieout`), isolé confirmé PASSE (435,21 s), relancé une quatrième fois. **Quatrième
+passage (`verify-capitaux-4.log`) : PROPRE au premier coup — 145/145 fichiers, 1139/1139 tests,
+AUCUN R58 cette fois.** `gardes` à `densite` tous propres (0 dépassement, mesuré dans l'ordre
+canonique du chaîne, pas isolé). `screens` (93 routes, 0 échec) et `fumee` (52 routes, 0 échec)
+sur le build de PRODUCTION propres. Clôture et archive ATTEINTES (240 stations figées vérifiées,
+archive scellée, empreinte SHA-256 affichée, téléchargement vérifié), 260 étapes conduites, 385
+clics — SEUL incident : la QUATORZIÈME confirmation consécutive du flake `#418`
+(`Minified React error`, `rcm/[cid]` SOX), disjoint du diff de cette tranche, journalisé F28
+(`docs/CHASSE.md`, commit `5c6aab8` — qui corrige au passage une erreur de numérotation trouvée
+avant de commiter, F29→F28, et le compte d'ordre DIXIÈME→QUATORZIÈME, règle 31). `npm run
+visuel`, cassé par le `&&` derrière `clics`, relancé séparément : **336 vues, 0 défaut(s)**,
+`EXIT=0` réel confirmé sur la ligne brute de la tâche de fond. `docs/CLICS.md`/`docs/DENSITE.md`
+régénérés et commités sur le commit `d6defa0`, dans l'ordre canonique.
+
+**Le Lot 5 est COMPLET.** Les huit postes nommés par le mandat (Trésorerie, Clients,
+Immobilisations, Fournisseurs, Paie, Provisions, Stocks, Capitaux propres et impôt) sont tous
+ouverts, chacun avec sa mesure par exécution, sa revue hostile, et son verify complet.
 
 ## Lot 5, poste 7 : Stocks (INVENTORY) ouverts — leadsheet, revue analytique, une procédure commandée SANS ATELIER, R99 disclosed (2026-09-15)
 
