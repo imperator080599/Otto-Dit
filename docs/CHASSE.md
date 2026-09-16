@@ -1137,3 +1137,16 @@ canonique (`densite` avant `clics`) n'est pas arbitraire, il évite que `clics` 
 RÉELLEMENT dans la base, contrairement à `screens`/`fumee` qui ne font que lire) ne contamine la
 mesure de densité. Isoler `densite` pour le rejouer seul EXIGE de repartir d'une base fraîche,
 jamais de la base laissée par un `clics` déjà passé.
+
+**Nouvelle occurrence R58 (`verify-capitaux.log`, 2026-09-16, chaîne verify complète pour la
+tranche Capitaux propres et impôt — poste 8, LE DERNIER du Lot 5, sur l'arbre du commit
+`9aec3b5`)** : `le serveur est tombé après 70 route(s), à « /eng/[id]/fs-tieout (SOX) »` — une
+HUITIÈME route distincte au total sur ce même défaut connu et disjoint (reunions, risk, travaux,
+rcm, provenance, fs-tieout [Fournisseurs], requests, maintenant fs-tieout à nouveau [Capitaux] —
+même route que la tranche Fournisseurs avait déjà vue, cohérent avec l'hypothèse 1 : pression
+mémoire/CPU cumulée, jamais une route précise, et rien n'empêche une même route de revenir).
+`EXIT=1` réel cette fois (pas de répétition du `EXIT=143` non expliqué documenté plus haut dans
+cette même section). Reste de la chaîne propre : 144/145 fichiers, 1138/1139 tests. Isolé,
+`npx vitest run tests/screens.test.ts` seul, sous 900 s : **PASSE, 1/1, 441,41 s** — cohérent
+avec toutes les mesures précédentes (425-477 s selon les tranches). Diff inchangé depuis
+l'isolation. Chaîne à relancer.
