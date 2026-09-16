@@ -79,6 +79,20 @@ générique `a[href*="/portal/"]` de la station « portail client » (`scenario.
 livré — un second lien vers une demande déjà listée ailleurs sur la même page la fait traiter en
 double. Documenté dans le commentaire du code, à l'endroit du correctif.
 
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_56u4pXguidFbX3xQARU2QNBQuc7F`, cible
+`production`) : `READY`, commit `5dd2c52f0e27fb6e752b1570454a8109286938a5` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` : HTTP 200,
+`sha` identique, `identiteCoherente:true`, verdict « toutes les lectures passent » — la nouvelle
+lecture « portail : "ce que vous me devez encore" cohérent avec les demandes ouvertes »
+`ok:true`, detail « 7 élément(s) "encore dû(s)", tous cohérents avec l'état réel de leur
+demande ». `docs/instantanes/servi.json` et `docs/REPRISE.md` mis à jour dans le même geste.
+
+**Lot 7, tranche 1 est COMPLÈTE et servie.** Reste du Lot 7, dans l'ordre établi par la
+recherche préalable : H-1 slice 2 (l'obstacle au visa sur les demandes en retard, satisfaisant
+le critère d'admission même d'H-1 — « ce qui reste dû est un obstacle au visa ») puis H-2 (le
+cycle de vie du constat vis-à-vis du client, un chantier de modèle de données à part, deux
+réfutateurs requis — règle 30).
+
 ## Lot 6, tranche 3 (NEP 240) — épine dorsale : population et tirage des écritures à risque (2026-09-16)
 
 ## Lot 6, tranche 3 (NEP 240) — épine dorsale : population et tirage des écritures à risque (2026-09-16)
