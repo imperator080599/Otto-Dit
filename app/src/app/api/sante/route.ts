@@ -885,6 +885,23 @@ async function corpsDeLaSonde() {
       if (!obstacles.length) return 'aucune revue analytique périmée';
       return `${obstacles.length} revue(s) analytique(s) périmée(s) — ${obstacles.map((o) => o.vars?.code).join(', ')}`;
     }));
+    /* H-1, slice 2 (Lot 7, tranche 2 — REGISTRE_IDEES.md) : « ce qui reste dû est un obstacle au
+       visa », le critère d'admission même de H-1. Cette lecture tourne le MÊME chemin que
+       `/obstacles` (`obstaclesDemandes`, obstacles.ts) — jamais une requête refaite à côté. Une
+       demande en retard est le travail NORMAL d'un dossier en cours (un client répond en retard,
+       un auditeur relance) : cette lecture reste donc INFORMATIVE sur le compte, comme les autres
+       familles d'obstacles ci-dessus — un compte non nul REMONTE, il ne passe jamais pour « VIDE »
+       ni pour un simple « ok », c'est ce qui la fait rougir sur le cas qu'elle surveille. CE QUE
+       CETTE LECTURE NE VÉRIFIE PAS (règle 19) : qu'une demande en retard finit par être relancée
+       ou résolue — aucune boucle de retentative n'existe pour cette famille ; une demande peut
+       rester en retard aussi longtemps qu'aucune pièce ne vient la clore, et c'est voulu — un
+       stock de demandes en retard n'est pas une panne, c'est ce que l'obstacle rend visible. */
+    lectures.push(await essayer('H-1 : les demandes en retard', async () => {
+      const { obstaclesDemandes } = await import('@/lib/services/obstacles');
+      const obstacles = await obstaclesDemandes(id);
+      if (!obstacles.length) return 'aucune demande en retard';
+      return `${obstacles.length} demande(s) en retard — ${obstacles.map((o) => o.vars?.numero).join(', ')}`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

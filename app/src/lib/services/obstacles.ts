@@ -14,10 +14,11 @@ import { motif, type Motif } from './motif';
 import { lignesNonConclues } from './testing/grille';
 import { sortiesNonStatuees, lignesSuperseesSansRetirage } from './sampling';
 import { frameworkSet, fsliAccounts } from './fsli';
-import { EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT } from './requests';
+import { EVIDENCE_TYPE_DETAIL_DE_COMPTE_CTT, numeroDemande } from './requests';
 import { numToCents } from '@/lib/util/num';
 import { primaryPack } from '@/lib/packs';
 import { lireAnalytique } from './analytique';
+import { now, DAY_MS } from '@/lib/core/clock';
 
 // LES OBSTACLES AU VISA — une seule liste, CALCULÉE (point 8).
 //
@@ -39,7 +40,7 @@ import { lireAnalytique } from './analytique';
 export type Famille =
   | 'acceptation' | 'independance' | 'reprise' | 'questionnaire' | 'processus' | 'programme'
   | 'boucle' | 'pointage' | 'evaluation' | 'achevement' | 'jalons' | 'circularisation'
-  | 'ipe' | 'tirage' | 'materialite' | 'iaNonValide' | 'analytique';
+  | 'ipe' | 'tirage' | 'materialite' | 'iaNonValide' | 'analytique' | 'demandes';
 
 export interface Obstacle {
   famille: Famille;
@@ -67,6 +68,7 @@ const OU: Record<Famille, string> = {
   materialite: 'materiality',
   iaNonValide: 'notifications',
   analytique: 'analytique',
+  demandes: 'requests',
 };
 
 /** Les postes retenus au périmètre : c'est sur eux que les travaux se jugent. */
@@ -191,6 +193,10 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
      analytique est un travail de poste, comme la boucle et la matérialité au-dessus — elle se
      juge avant qu'on ne pointe les états financiers ou qu'on n'évalue les anomalies accumulées. */
   ajoute('analytique', await obstaclesAnalytique(engagementId));
+
+  /* 6 quinquies. Lot 7, tranche 2 (H-1 slice 2, REGISTRE_IDEES.md) : « ce qui reste dû est un
+     obstacle au visa » — le critère d'admission même de H-1, tenu ici pour la première fois. */
+  ajoute('demandes', await obstaclesDemandes(engagementId));
 
   // 7. Le pointage des états financiers.
   ajoute('pointage', await obstaclesPointage(engagementId));
@@ -360,6 +366,41 @@ export async function obstaclesAnalytique(engagementId: string): Promise<Motif[]
     }
   }
   return out;
+}
+
+/**
+ * Lot 7, tranche 2 (H-1 slice 2, `docs/REGISTRE_IDEES.md` — « l'espace de demandes porté à leur
+ * niveau ») : « ce qui reste dû est un obstacle au visa », le critère d'admission écrit par le
+ * fondateur lui-même pour H-1, tenu ici mot pour mot. Une demande ENVOYÉE
+ * (`sent`/`partially_submitted`/`reopened`) dont l'échéance (`due_date`) est DÉPASSÉE, à la date
+ * de l'horloge courante (`now()`, `core/clock` — jamais `new Date()`, sensible au warp de la
+ * démonstration), bloque le visa jusqu'à ce qu'elle soit close ou rouverte avec une nouvelle
+ * échéance.
+ *
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : elle ne regarde pas l'état des ÉLÉMENTS de la
+ * demande — une demande en retard dont tous les éléments sont déjà `complete`/`na` mais dont le
+ * statut n'a pas encore été refermé par l'auditeur bloque QUAND MÊME (même simplicité que
+ * `requestsEnAttente`, `requests.ts`, qui ne filtre pas non plus par élément) : refermer une
+ * demande est un geste humain, pas un calcul dérivé, et cette famille ne devine pas qu'il a
+ * seulement été omis. Une demande SANS échéance (`due_date` NULL) n'est jamais bloquante ici —
+ * aucune date à dépasser, et `demanderPiecesEnLot`/`generatePbcFromSample` n'en posent pas
+ * toujours une (disclosed R-nn si une tranche future en a besoin, non nécessaire ici : une
+ * demande sans échéance reste visible et travaillable via `requestsEnAttente`, seulement jamais
+ * BLOQUANTE par CETTE famille).
+ */
+export async function obstaclesDemandes(engagementId: string): Promise<Motif[]> {
+  const t = await now();
+  const rows = await q<{ id: string; seq_no: number; title: string; due_date: string }>(
+    `select id, seq_no, title, due_date::text from request
+     where engagement_id = $1 and status in ('sent', 'partially_submitted', 'reopened')
+       and due_date is not null and due_date < $2
+     order by due_date asc`,
+    [engagementId, t.toISOString().slice(0, 10)],
+  );
+  return rows.map((r) => motif('obst.demandeEnRetard', {
+    numero: numeroDemande(r.seq_no), titre: r.title,
+    jours: Math.floor((t.getTime() - Date.parse(r.due_date + 'T00:00:00Z')) / DAY_MS),
+  }));
 }
 
 /**

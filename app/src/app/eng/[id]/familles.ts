@@ -36,4 +36,5 @@ export const FAMILLES: Record<Famille, { titre: CleLibelle; pourquoi: CleLibelle
   materialite: { titre: 'famille.materialite.titre', pourquoi: 'famille.materialite.pourquoi' },
   iaNonValide: { titre: 'famille.iaNonValide.titre', pourquoi: 'famille.iaNonValide.pourquoi' },
   analytique: { titre: 'famille.analytique.titre', pourquoi: 'famille.analytique.pourquoi' },
+  demandes: { titre: 'famille.demandes.titre', pourquoi: 'famille.demandes.pourquoi' },
 };

@@ -792,6 +792,7 @@ export const LIBELLES = {
   'obst.basculeSansSection': { en: '{code} — {nom}: materiality bascule flagged, but its section was never opened (MAT-01)', fr: '{code} — {nom} : bascule de matérialité signalée, mais sa section n’a jamais été ouverte (MAT-01)' },
   'obst.basculeSansDemandeCtt': { en: '{code} — {nom}: {n} account(s) above CTT, no detail request exists (MAT-02)', fr: '{code} — {nom} : {n} compte(s) au-dessus du CTT, aucune demande de détail n’existe (MAT-02)' },
   'obst.analytiquePerimee': { en: '{code} — {nom}: analytical review (v{version}) is stale — balances have moved since it was written (ANA-04)', fr: '{code} — {nom} : revue analytique (v{version}) périmée — les soldes ont bougé depuis sa rédaction (ANA-04)' },
+  'obst.demandeEnRetard': { en: '{numero} “{titre}” — {jours} day(s) past due', fr: '{numero} « {titre} » — en retard de {jours} jour(s)' },
   'obst.pointageNonPointee': { en: 'Financial statements: {ref} “{libelle}” — not tied out', fr: 'États financiers : {ref} « {libelle} » — non pointée' },
   'obst.pointageEcart': { en: 'Financial statements: {ref} “{libelle}” — difference of {ecart} € unexplained', fr: 'États financiers : {ref} « {libelle} » — écart de {ecart} € non expliqué' },
   'obst.achevementNonOuvert': { en: 'Completion: the completion procedures have not been opened.', fr: 'Achèvement : les travaux d’achèvement n’ont pas été ouverts.' },
@@ -883,6 +884,11 @@ export const LIBELLES = {
   'famille.analytique.pourquoi': {
     en: 'A written analytical review whose balances have since moved must be re-read against the current figures before sign-off.',
     fr: 'Une revue analytique rédigée dont les soldes ont bougé depuis doit être relue contre les chiffres actuels avant le visa.',
+  },
+  'famille.demandes.titre': { en: 'Overdue requests', fr: 'Demandes en retard' },
+  'famille.demandes.pourquoi': {
+    en: 'A sent request past its due date must be closed, or reopened with a new due date, before sign-off — what is still owed is an obstacle to signing.',
+    fr: 'Une demande envoyée dont l’échéance est dépassée doit être close, ou rouverte avec une nouvelle échéance, avant le visa — ce qui reste dû est un obstacle à la signature.',
   },
   'famille.tirage.titre': { en: 'Selection re-drawn', fr: 'Tirage refait' },
   'famille.tirage.pourquoi': {
