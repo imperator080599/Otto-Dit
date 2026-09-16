@@ -2372,6 +2372,29 @@ export async function conduire(
       apres.includes(L('exc.derniereRelance')), 'dernière relance affichée après le clic');
   });
 
+  // ── 12quater. H-3, SLICE 1 (Lot 7, docs/REGISTRE_IDEES.md §H) : le test exhaustif du grand
+  //    livre — un écran de LECTURE PURE (aucun geste d'écriture), conduit dans un navigateur
+  //    (règle 10) : ADR-003 calcule déjà les six règles à l'import, sur TOUTE la population ;
+  //    cet écran les rend visibles pour la première fois. Atteint via le lien posé sur
+  //    /analytique, jamais une navigation directe par URL devinée.
+  await station('grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/analytique`);
+    const lien = p.locator(`a:has-text("${L('gl.titre')}")`).first();
+    dire('grand livre : le lien depuis l’analytique existe', (await lien.count()) > 0, 'lien absent');
+    if (!(await lien.count())) return;
+    await cliquer(`a:has-text("${L('gl.titre')}")`, 1500);
+    dire('grand livre : la navigation atteint bien l’écran dédié', p.url().includes('/grand-livre'), p.url());
+    const contenu = await texte();
+    dire('grand livre : la couverture (100% des écritures actives) est affichée',
+      /\d/.test(contenu) && contenu.includes(L('gl.regle.weekend.libelle')), 'aucun chiffre ou règle affiché(e)');
+    /* CHAQUE règle porte sa disclosure « couvre »/« ne couvre pas » — jamais une seule, sinon un
+       défaut d'affichage sur les cinq autres passerait inaperçu (règle 17 appliquée à l'écran). */
+    const nCouvre = await p.locator('strong', { hasText: L('gl.couvre') }).count();
+    dire('grand livre : les SIX règles portent chacune leur disclosure de couverture',
+      nCouvre === 6, `${nCouvre}/6 disclosure(s) « couvre » affichée(s)`);
+  });
+
   // ── 13. PORTAIL, SECOND PASSAGE : le client répond aux clarifications
   await station('portail : réponses aux clarifications', async () => {
     await ctx.clearCookies();

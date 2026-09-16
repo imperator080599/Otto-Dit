@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { q, q01 } from '@/lib/db/client';
+import { q, q01, q1 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { dbKind } from '@/lib/db/client';
 import { versionServie } from '@/lib/version';
@@ -1000,6 +1000,36 @@ async function corpsDeLaSonde() {
           + 'dénormalisé ne correspond plus à celui de leur item (dérive de données)');
       }
       return `${rows.length} relance(s) de point d'action, toutes cohérentes avec leur item`;
+    }));
+    /* H-3, slice 1 (Lot 7, docs/REGISTRE_IDEES.md §H) : `testExhaustifGrandLivre` (grand-livre.ts)
+       LIT la colonne `gl_entry.flags`, déjà écrite à l'import par `computeFlags` (ADR-003) — elle
+       ne re-dérive rien. Cette lecture, elle, RE-DÉRIVE indépendamment (règle 16) la règle
+       `weekend` en SQL pur depuis `entry_date` (extract(dow from …) in (0,6)) et compare au
+       contenu de `flags` : les deux DOIVENT toujours coïncider, par construction (le calcul à
+       l'import est le même prédicat). Rougit sur toute dérive — un `gl_entry.flags` édité hors du
+       chemin gardé, ou un futur changement de `computeFlags` non ré-importé. CE QUE CETTE LECTURE
+       NE VÉRIFIE PAS (règle 19) : les cinq AUTRES règles de `flags.ts` (round_amount,
+       manual_journal, period_end, credit_note_pattern, late_validation) — `weekend` est la seule
+       assez simple pour se re-dériver en une ligne SQL sans dupliquer la config (`FlagConfig`,
+       seuils configurables) ; les autres resteraient à couvrir par une lecture séparée si cette
+       classe de dérive devenait un risque réel. */
+    lectures.push(await essayer('H-3 slice 1 : le test exhaustif du grand livre (règle week-end)', async () => {
+      const row = await q1<{ vrai_weekend: string; marque_weekend: string; total: string }>(
+        `select count(*) filter (where extract(dow from entry_date) in (0,6)) vrai_weekend,
+                count(*) filter (where flags @> '["weekend"]'::jsonb) marque_weekend,
+                count(*) total
+         from gl_entry where engagement_id = $1 and status = 'active'`,
+        [id],
+      );
+      const total = Number(row.total);
+      if (!total) return 'aucune écriture active dans le grand livre';
+      const vrai = Number(row.vrai_weekend);
+      const marque = Number(row.marque_weekend);
+      if (vrai !== marque) {
+        throw new Error(`${marque} écriture(s) marquée(s) « week-end » en base, mais ${vrai} `
+          + 'ont réellement une date de samedi/dimanche — le flag a dérivé de la règle');
+      }
+      return `${total} écriture(s) active(s), ${marque} marquée(s) week-end — cohérent avec la date de comptabilisation`;
     }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni

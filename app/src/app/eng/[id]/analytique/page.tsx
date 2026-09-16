@@ -26,6 +26,7 @@ export default async function AnalytiquePage({ params }: { params: Promise<{ id:
       <h2 style={{ margin: 0 }}>{t('ana.titre')}</h2>
       <p className="faint">{t('ana.aide')}</p>
       <p className="faint" data-origine-n1={origine.source}>{phraseOrigineN1(t, origine)}</p>
+      <p className="faint"><Link href={`${base}/grand-livre`}>{t('gl.titre')} →</Link></p>
       {(['BS', 'IS'] as const).map((etat) => (
         <div className="panel" key={etat}>
           <h3 style={{ marginTop: 0 }}>{t(etat === 'BS' ? 'rail.groupe.bilan' : 'rail.groupe.resultat')}</h3>
