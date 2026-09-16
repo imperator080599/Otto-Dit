@@ -4,6 +4,104 @@
 
 ---
 
+## Lot 6, tranche 1 : ANA-04 — la revue analytique périmée bloque le visa (2026-09-16)
+
+*Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1 : « Lot 6 — La crédibilité
+en inspection : test des écritures (NEP 240) réduit à sa colonne vertébrale ; registre des
+anomalies (...) ; revue analytique périmée qui bloque le visa. » Premier des trois morceaux du
+Lot 6, choisi en premier parce que la DÉTECTION existait déjà (`analytique.ts::lireAnalytique`,
+comparaison du `soldes_hash` figé à l'empreinte courante de la leadsheet, `perimee: boolean`
+déjà affiché à l'écran du poste) — seul le BLOCAGE au visa manquait. Recherche préalable
+(`docs/REPRISE.md`, docs du plan) confirmée par lecture directe du code, pas devinée.*
+
+**Implémenté** (commit `6867856`) : nouvelle famille d'obstacle `analytique` dans
+`obstacles.ts` (fonction `obstaclesAnalytique()`, appelée en 6 quater dans `obstaclesAuVisa`,
+après la matérialité et avant le pointage). **Décision délibérée, documentée dans le docstring
+(règle 19)** : un poste dont la revue analytique n'a JAMAIS été rédigée ne bloque PAS ici — le
+mandat nomme « périmée », pas « manquante ». Câblage complet : `Famille`/`OU`/`FAMILLES`
+(destination `/eng/[id]/analytique`, l'écran de revue globale déjà existant), i18n
+(`obst.analytiquePerimee`, `famille.analytique.*`), lecture `/api/sante` ANA-04 (informative,
+même discipline que MAT-01/02), garde déclarée `registre.ts`.
+
+**Tests** (5, deux fichiers neufs — le commit `6867856` affirmait « sept » à tort, corrigé ici
+par un compte direct `grep -c "  it("`, règle 31) : `obstacles-analytique.test.ts` (cas connu bon — les huit
+revues du Lot 5, fraîches, ne lèvent rien ; cas connu mauvais règle 17 — un solde mué HORS du
+chemin gardé, SQL direct sur `account`, round-trip vérifié ; la frontière règle 19 — REVENUE sans
+revue ne bloque pas) et `ana04-lecture.test.ts` (même discipline côté `/api/sante`). Vérifié aussi
+contre la VRAIE base enrichie (`db:reset && demo:seed && demo:enrichir`, pas seulement
+`runPart1UpToWorkpaper()` isolé) : aucune fausse péremption introduite par l'enrichissement — les
+neuf revues (Lot 5 + REVENUE, écrite par l'enrichissement) restent toutes fraîches.
+
+**`npm run clics` (rule 37 : tout code de refus neuf doit atteindre la clôture sur le monde
+semé).** Un seul passage, plus lent que la fourchette habituelle (la phase `build…` a occupé
+plusieurs minutes, CPU croissant mais lentement, jamais un hang total comme l'EXIT=143 de la
+tranche Stocks §6) mais ABOUTI proprement : `EXIT=1` réel, seul motif `#418` (F29,
+`docs/CHASSE.md`) sur DEUX routes — `/risk` (jamais vue avant dans cet historique) et
+`/rcm/[cid]` (l'habituelle) — QUINZIÈME confirmation consécutive que ce flake est disjoint,
+aucun rapport avec `obstacles.ts`/`analytique.ts`. Clôture et archive ATTEINTES (240 stations
+figées vérifiées, empreinte SHA-256, téléchargement vérifié), 260 étapes, 385 clics.
+
+**Revue hostile — voix 1 (indépendante, règle 30 : deux réfutateurs car la tranche touche un
+code de refus).** N'a pas pu casser la logique elle-même (mutation de scoping après péremption
+correctement gérée — testé par la voix elle-même — ; i18n `{nom}`/`{version}` sans risque de
+`null`/`NaN` — `fsli.name` est `not null` en base ; destination `/eng/[id]/analytique` réelle,
+même limitation « famille, pas lien profond par poste » que toutes les autres familles ; lecture
+`/api/sante` prouvée par un cas connu mauvais qui lui est propre, pas seulement décorative).
+**DEUX défauts de PROCESSUS réels, trouvés et CORRIGÉS avant ce commit** :
+1. `npm run gardes -- --figer` n'avait jamais tourné après l'ajout de la garde déclarée —
+   `docs/GUARDS.md` divergeait du registre, ce qui aurait fait échouer `npm run gardes` (donc
+   `npm run verify` en entier). Corrigé : régénéré (46 gardes), `npm run gardes` repasse propre.
+   Conséquence secondaire, NATURELLE au schéma de numérotation auto-incrémenté (`G-${50+i}`), pas
+   un défaut : `unsupported_sample_items` décale de G-66 à G-67 — la mention historique « décalée
+   en G-66 » plus haut dans ce fichier (§ notification, 2026-09-14) reste correcte pour SON propre
+   moment, elle n'est pas réécrite (une entrée datée décrit son état à sa date, jamais mise à jour
+   rétroactivement à chaque renumérotation future — sinon toute tranche future devrait rouvrir
+   toutes les entrées passées).
+2. Ce fichier lui-même n'était pas mis à jour dans le même commit que l'implémentation (règle 5) —
+   corrigé par cette section même.
+
+**Trouvaille annexe, disclosed pour une tranche future (pas un défaut de celle-ci) : R102.** La
+voix 1 a vérifié par lecture que `posteSansProcedure` (obstacles.ts) ne contrôle que la PRÉSENCE
+d'une `procedure_instance`, quel que soit son type — pas spécifiquement `RA` (la procédure
+« revue analytique substantive » de `methodology/procedures.json`). Un poste peut donc compléter
+tout son programme sans qu'une seule ligne `fsli_analytique` n'existe jamais, sans qu'AUCUN
+obstacle (ni `posteSansProcedure`, ni `obstaclesAnalytique`, puisque « manquante » n'est pas
+« périmée ») ne le signale — un trou plus grand que celui que ferme ANA-04 aujourd'hui. Enregistré
+comme R102 dans `docs/BACKLOG_REPORTE.md`/`fils.json`, pour une ANA-05 future, hors du périmètre
+de cette tranche (règle 8 : la chose plus petite).
+
+**Revue hostile — voix 2 (indépendante, en parallèle, sans coordination avec la voix 1).**
+CONVERGE sur le même défaut bloquant (`docs/GUARDS.md` divergé, confirmé par une mesure
+indépendante — `git show eb4f5e1:docs/GUARDS.md` identique octet pour octet à `938b532`, alors que
+`registre.ts` avait changé) et sur le même effet de bord (renumérotation positionnelle de
+`unsupported_sample_items`). **Trouve DEUX choses que la voix 1 n'avait pas** :
+1. Le commit `6867856` affirmait « sept » tests neufs — FAUX, recompté directement
+   (`grep -c "  it("`) : CINQ. Corrigé ci-dessus (règle 31).
+2. **R103, disclosed, non corrigé délibérément** (règle 8) : `obstaclesAnalytique` coûte 74
+   requêtes SQL sur le dossier de démonstration contre 9 pour `obstaclesMaterialite`, sa voisine —
+   mesuré par instrumentation directe de `getDb().query`, pas estimé. Cause : la boucle par poste
+   appelle `lireAnalytique` → `leadsheetDuPoste`, qui relit et refiltre en JS toute la table
+   `account` par poste (rien filtré par `fsli_code` en SQL), contrairement au patron ensembliste
+   déjà établi par sa voisine dans le même fichier. `/api/sante` appelle ce chemin coûteux TROIS
+   FOIS par requête sans partager le résultat. Corriger proprement toucherait
+   `leadsheetDuPoste`/`fsliAccounts`/`soldesN1`, des fonctions PARTAGÉES par de nombreux autres
+   appelants — un chantier plus large que cette tranche ; disclosed pour une reprise avant que le
+   Lot 7+ n'ajoute des postes.
+
+N'a pas réussi à casser la logique elle-même (round-trip de la mutation SQL directe prouvé
+octet-identique après revert ; le détecteur SHA-256 réagit à n'importe quel delta non nul, donc le
+choix de la magnitude de mutation ne change rien à ce qui est prouvé ; cassé DÉLIBÉRÉMENT
+`revue.perimee` → `false` pour confirmer que le test connu mauvais échoue vraiment, rule 17 ;
+isolation multi-tenant tracée propre sur les trois fonctions ; interpolation `{version}` et regex
+de vacuité `essayer()` toutes deux vérifiées par exécution, pas seulement lues). **Note
+d'environnement de la voix 2** : des fichiers de sonde non-siens sont apparus dans l'arbre pendant
+sa revue (probablement la voix 1, qui travaillait en parallèle dans le même répertoire) — jamais
+touchés, `git status` confirmé propre à la fin des deux revues.
+
+**Les deux voix convergent : la logique métier tient, le seul défaut bloquant est un défaut de
+processus (GUARDS.md non régénéré), déjà corrigé avant ce commit.** `npm run gardes` repasse
+propre. Prêt pour la chaîne `verify` complète.
+
 ## CRITIQUE (expédition directe sur `main`) : restaure la migration 0165 — un correctif violait la règle 26 et bloquait TOUS les déploiements (2026-09-15)
 
 Le check-in programmé pour confirmer le SHA servi du merge de la mécanique circularisation

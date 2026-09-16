@@ -511,6 +511,18 @@
       "etat": "ouvert — docs/instantanes/servi.json n'a plus été mis à jour depuis le 2026-09-09 (sha 11f99dd, tranche CTRL-06 ; git log confirme : dernier commit sur ce fichier 3cd799f, aucun depuis), alors que STATUS.md a documenté et confirmé en direct sept confirmations de SHA servi depuis (Fournisseurs a8c2603, Paie eaaf647, Provisions 95af49a, Stocks 0ee73da, Capitaux 58b4e64, plus les tranches antérieures au Lot 5). npm run reprise compare son champ sha (figé) au HEAD courant et rendait « servi ≠ HEAD » depuis une semaine sans que rien ne le distingue d'un bruit ordinaire — règle 13, le silence lu comme un succès. Corrigé le 2026-09-16 pour la mesure courante (sha racine remis sur 58b4e64 puis 99f927c une fois son propre déploiement confirmé, l'ancienne entrée 11f99dd déplacée en historique) ; non corrigé pour les sept entrées historique manquantes des tranches intermédiaires — non recréées de mémoire (règle 31).",
       "depuis": "2026-09-16 (confirmation SHA servi, tranche Capitaux — trouvé en régénérant docs/REPRISE.md après la clôture du Lot 5)",
       "note": "correctif limité à la mesure courante ; reconstituer les sept entrées historique manquantes (Fournisseurs/Paie/Provisions/Stocks/Capitaux + antérieures) resterait à faire à partir des commits STATUS.md déjà cités dans le journal git, si un futur geste en a besoin."
+    },
+    {
+      "id": "R102",
+      "etat": "ouvert — un poste peut compléter tout son programme substantif sans qu'aucune revue analytique (fsli_analytique) n'existe jamais, et rien ne le signale au visa. posteSansProcedure (obstacles.ts) ne contrôle que la PRÉSENCE d'une procedure_instance, quel que soit son type, pas spécifiquement RA (revue analytique substantive) ; ANA-04 lui-même ne bloque que sur périmée, jamais sur jamais rédigée (décision délibérée de sa propre tranche, règle 19).",
+      "depuis": "2026-09-16 (revue hostile voix 1 de la tranche ANA-04, Lot 6)",
+      "note": "non corrigé, délibérément hors du périmètre d'ANA-04 (règle 8) — se referme avec une ANA-05 future, qui devrait soit exiger une revue analytique pour tout poste retenu comme condition de posteSansProcedure, soit ajouter sa propre famille analytiqueManquante distincte d'ANA-04."
+    },
+    {
+      "id": "R103",
+      "etat": "ouvert — obstaclesAnalytique (obstacles.ts, ANA-04) coûte 74 requêtes SQL sur le dossier de démonstration (8 postes retenus) contre 9 pour obstaclesMaterialite, sa voisine directe — mesuré par instrumentation directe de getDb().query (revue hostile voix 2), pas estimé. Cause : la boucle par poste appelle lireAnalytique -> leadsheetDuPoste, qui relit et refiltre en JavaScript toute la table account du dossier à chaque poste (engagementRules, fsliAccounts, soldesN1 — rien filtré par fsli_code en SQL), contrairement au patron ensembliste déjà établi par obstaclesMaterialite dans le même fichier. Aggravant : /api/sante appelle ce chemin coûteux TROIS FOIS par requête sans partager le résultat, et obstaclesAuVisa lui-même n'est mis en cache sur aucun des quatre rendus serveur qui l'appellent.",
+      "depuis": "2026-09-16 (revue hostile voix 2 de la tranche ANA-04, Lot 6)",
+      "note": "non corrigé, délibérément : un correctif propre toucherait leadsheetDuPoste/fsliAccounts/soldesN1 (analytique.ts, fsli.ts), des fonctions partagées par de nombreux autres appelants — un chantier plus large que ANA-04 lui-même (règle 8). Pas urgent à l'échelle actuelle (8-9 postes) mais à corriger avant que le Lot 7+ n'ajoute des postes, ou avant que /api/sante ne triple encore son coût — regrouper les requêtes par poste à la manière de obstaclesMaterialite le jour où cette tranche est reprise."
     }
   ]
 }

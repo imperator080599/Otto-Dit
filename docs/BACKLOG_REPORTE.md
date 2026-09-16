@@ -1736,3 +1736,45 @@ design : chacun reste une tranche à construire.**
   texte de mesure que cette session n'a pas elle-même produit. **Non corrigé** : reconstituer les
   sept entrées `historique` manquantes une par une, à partir des commits `STATUS.md` déjà cités
   dans le journal git, si un futur geste en a besoin.
+
+- **R102 — un poste peut compléter tout son programme substantif SANS QU'AUCUNE revue analytique
+  (`fsli_analytique`) n'existe jamais, et rien ne le signale au visa.** Trouvé par la revue
+  hostile (voix 1, règle 30) de la tranche ANA-04 (Lot 6, 2026-09-16) : `posteSansProcedure`
+  (`obstacles.ts`) ne contrôle que la PRÉSENCE d'une `procedure_instance` pour le poste, quel que
+  soit son type — pas spécifiquement `RA` (la procédure « revue analytique substantive » de
+  `methodology/procedures.json`), qui produit un papier via le mécanisme générique de
+  `programme.ts`, structurellement SÉPARÉ de `fsli_analytique`/`enregistrerAnalytique` (la table
+  que `lireAnalytique`/ANA-04 lit). ANA-04 lui-même ne peut pas non plus attraper ce cas : il ne
+  bloque que sur « périmée », jamais sur « jamais rédigée » (décision délibérée de sa propre
+  tranche, règle 19 — le mandat nomme « périmée », pas « manquante »). Conséquence : un poste peut
+  arriver au visa n'ayant reçu ZÉRO phrase d'analyse au sens leadsheet N/N-1, sans qu'aucun des
+  deux obstacles existants ne le voie. | 2026-09-16 (revue hostile de la tranche ANA-04) | non
+  corrigé, délibérément hors du périmètre d'ANA-04 (règle 8 : la chose plus petite) — se referme
+  avec une ANA-05 future, qui devrait vraisemblablement soit exiger une revue analytique pour tout
+  poste retenu comme condition de `posteSansProcedure`, soit ajouter sa propre famille
+  `analytiqueManquante` distincte d'ANA-04.
+
+- **R103 — `obstaclesAnalytique` (obstacles.ts, ANA-04) coûte 74 requêtes SQL sur le dossier de
+  démonstration (8 postes retenus), contre 9 pour `obstaclesMaterialite`, sa voisine directe dans
+  le même fichier — mesuré par la revue hostile (voix 2, règle 30) en instrumentant `getDb().query`
+  directement, pas estimé.** Cause : la boucle par poste appelle `lireAnalytique` →
+  `leadsheetDuPoste`, qui appelle `engagementRules` (2 requêtes) + `fsliAccounts` (relit
+  `engagementRules` puis un `select` NON FILTRÉ sur toute la table `account` du dossier, filtré
+  ensuite en JavaScript) + `soldesN1` (`missionN1` + un second balayage complet via
+  `comptesDeLaBalance`) — RIEN n'est filtré par `fsli_code` en SQL, chaque poste relit et refiltre
+  la table entière en mémoire. `obstaclesMaterialite`, à l'inverse, sort tôt si la liste des
+  bascules est vide et utilise une seule requête ensembliste (`not exists`) pour tous les postes
+  à la fois — le patron déjà établi dans ce fichier, qu'ANA-04 ne suit pas. Aggravant : `/api/sante`
+  appelle ce chemin coûteux TROIS FOIS par requête (`obstaclesAuVisa` directement, une seconde fois
+  à l'intérieur de la lecture NOTIF-01, et une troisième fois par la nouvelle lecture ANA-04
+  elle-même — aucune des trois ne partage son résultat), et `obstaclesAuVisa` lui-même est appelé
+  sans aucun cache sur au moins quatre rendus serveur (`/eng/[id]`, `/obstacles`, `/suivi`,
+  `/close`). | 2026-09-16 (revue hostile de la tranche ANA-04) | non corrigé, délibérément : un
+  correctif propre toucherait `leadsheetDuPoste`/`fsliAccounts`/`soldesN1` (`analytique.ts`,
+  `fsli.ts`), des fonctions PARTAGÉES par de nombreux autres appelants (l'écran de poste,
+  `proposerAnalytique`, `revueAnalytiqueGlobale`…) — un chantier plus large que ANA-04 lui-même
+  (règle 8 : la chose plus petite, ne pas élargir une tranche pour bien faire). Pas urgent à
+  l'échelle actuelle de la démonstration (8-9 postes, petites tables de comptes) mais à corriger
+  avant que le Lot 7+ n'ajoute des postes, ou avant que `/api/sante` ne triple encore son coût —
+  la voix 2 recommande de regrouper les requêtes par poste à la manière de `obstaclesMaterialite`
+  (une requête ensembliste pour tout le dossier) le jour où cette tranche est reprise.
