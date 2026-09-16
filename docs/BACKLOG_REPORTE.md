@@ -1849,3 +1849,37 @@ design : chacun reste une tranche à construire.**
   délibérément hors du périmètre de cette tranche (règle 8) ; à reprendre soit quand `followup`
   est enfin retiré/documenté à part, soit AVANT que l'étape 3 de PLAN_RLS ne soit un jour exécutée
   — pas avant.
+
+- **R106 — le monde de démo SCELLÉ que `npm run clics` conduit ne laisse jamais d'écart OUVERT
+  au moment où les gestes de rédaction de clarification (`draftClarificationRequest`) sont
+  offerts, TROUVÉ en construisant Lot 7, H-2 slice 3 (règle 10 : conduit dans un navigateur avant
+  d'être annoncé — pas trouvé par les tests unitaires, dont la fixture ne porte qu'un item
+  propre).** La station clics « constat vs point d'action client : assigner un propriétaire »
+  (H-2 slice 2, DÉJÀ EN PRODUCTION) prenait jusqu'ici le PREMIER formulaire d'assignation trouvé,
+  sans restriction de statut — et ce premier formulaire tombait toujours sur un point d'action
+  HISTORIQUEMENT déjà répondu (`status='complete'`, semé par `demo-seed.ts`), jamais sur un point
+  d'action FRAIS créé pendant le parcours cliqué lui-même. Corrigé pour H-2 slice 3 en ciblant une
+  ligne encore `pending` (`scenario.ts`, station 12bis) — mais aucune n'existe : les DEUX points
+  d'entrée qui créent un point d'action au grain `exception_id` (`draftClarificationRequest`,
+  offert sur `/exceptions` quand `open.length > 0`, et sur `/kanban` via la colonne « Ouvert »,
+  station ~21d) trouvent tous deux ZÉRO écart `open` à ce moment du parcours canonique — vérifié
+  dans le journal de `npm run clics` (« la boucle : aucun écart ouvert ne réclame de clarification
+  — rien à émettre » ; « kanban : aucun écart ouvert à rédiger en lot pour l'instant »). La SEULE
+  autre créatrice de `request_item(kind='explanation')`, `demandeClarificationLignes`
+  (`requests.ts:554`, station « atelier : la clarification en lot »), ne pose JAMAIS
+  `exception_id` — ses items ne rejoignent donc jamais `constatEtPointAction` (H-2), par
+  construction, pas par accident (docstring de `constatEtPointAction`, matching.ts). **Portée** :
+  aucun défaut de LOGIQUE dans H-2 slices 1/2/3 — chaque geste (assigner, relancer) est prouvé par
+  exécution directe et par cas connus mauvais (`constat-action-client.test.ts`,
+  `h2-slice2/3-*-lecture.test.ts`, 11+ tests couvrant succès ET refus). C'est le parcours CLIQUÉ
+  qui, sur ce monde de démo précis, n'exerce jamais le geste POSITIF de relance contre un point
+  d'action frais — seulement le chemin « rien à relancer », honnête (règle 17 : nomme sa
+  précondition plutôt que de la cacher dans un OU vacueux) mais jamais la preuve par le clic que
+  règle 10 réclame pour la relance elle-même. | 2026-09-16 (Lot 7, H-2 slice 3) | non corrigé,
+  délibérément hors du périmètre de cette tranche : la vraie cause (pourquoi AUCUN écart
+  n'atteint jamais `open` au moment de ces deux stations, sur ce monde de démo scellé et
+  déterministe) touche `demo-seed.ts`/`lib/flows/*`, un chantier séparé et plus risqué qu'une
+  correctif de station — reprendre en (a) traçant, dans `demo-seed.ts`, le moment exact où le
+  dernier écart `open` quitte ce statut avant la station 12/kanban, et (b) soit en retardant CE
+  moment d'une étape, soit en insérant les stations d'assignation/relance À UN POINT du parcours
+  où un écart `open` existe encore prouvé — jamais en devinant un emplacement.

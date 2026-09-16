@@ -2347,6 +2347,14 @@ export async function conduire(
   //    geste EXPLICITE de l'auditeur, distinct de la cadence automatique d'ensureReminders (H-1,
   //    grain `request`). Offert seulement quand un propriétaire est assigné ET l'item encore
   //    'pending' — c'est exactement l'état laissé par 12bis, avant la réponse du client (13).
+  //
+  //    R106 (docs/BACKLOG_REPORTE.md), DISCLOSED PLUTÔT QUE CACHÉ : sur ce monde de démo, AUCUN
+  //    écart n'est jamais 'open' au moment où 12bis/12ter tournent (draftClarificationRequest ne
+  //    trouve jamais rien à créer, ni sur /exceptions ni sur /kanban) — cette station retombe donc
+  //    en pratique sur « rien à relancer », honnêtement, à chaque exécution de ce monde de démo
+  //    précis. Le geste POSITIF reste prouvé par exécution directe
+  //    (constat-action-client.test.ts), pas encore par un clic réel dans ce parcours — R106 le
+  //    nomme comme un chantier séparé (demo-seed.ts), pas une faiblesse de cette station.
   await station('constat vs point d’action client : relancer', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/exceptions`);
