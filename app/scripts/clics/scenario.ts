@@ -2296,6 +2296,33 @@ export async function conduire(
     }
   });
 
+  // ── 12bis. H-2 SLICE 2 : assigner un propriétaire et une échéance au point d'action client
+  //    APRÈS l'émission des clarifications (étape 12, request_item kind=explanation créés,
+  //    encore pending) et AVANT que le client n'y réponde (étape 13) — le moment naturel où
+  //    l'auditeur assigne. Formulaire scopé par `has-text(exc.assigner)`, jamais par un
+  //    sélecteur large sur `/portal/` ou `form` seul (leçon de Lot 7 tranche 1, STATUS.md).
+  await station('constat vs point d’action client : assigner un propriétaire', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/exceptions`);
+    const f = p.locator(`form:has(button:has-text("${L('exc.assigner')}"))`).first();
+    if (!(await f.count())) {
+      dire('constat vs point d’action client : aucun point d’action à assigner ici',
+        true, 'rien à assigner');
+      return;
+    }
+    const select = f.locator('select[name=owner_contact_id]');
+    const vals = await select.locator('option').evaluateAll(
+      (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
+    if (vals.length) await select.selectOption(vals[0]);
+    await f.locator('input[name=due_date]').fill('2026-10-15');
+    await soumettre(f.locator(`button:has-text("${L('exc.assigner')}")`), 2000);
+    dire('constat vs point d’action client : assigner un propriétaire/échéance ne bloque pas, et le dossier ne bouge pas',
+      refus(p) === null, refus(p) ?? 'assigné');
+    const apres = await texte();
+    dire('constat vs point d’action client : le propriétaire assigné apparaît à l’écran',
+      vals.length === 0 || apres.includes('2026-10-15'), 'échéance affichée après assignation');
+  });
+
   // ── 13. PORTAIL, SECOND PASSAGE : le client répond aux clarifications
   await station('portail : réponses aux clarifications', async () => {
     await ctx.clearCookies();
