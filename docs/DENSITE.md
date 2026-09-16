@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
-# Densité mesurée — 83 écrans (build de production, base semée)
+# Densité mesurée — 85 écrans (build de production, base semée)
 
-Mesure prise sur le commit `a085b76`, build `2YqiAY5Kiu6MBmw1Feaz9`.
+Mesure prise sur le commit `980b593`, build `g1_KohTb60fwx42L4hqE6`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 
@@ -82,6 +82,8 @@ pas la frappe. Le titre est celui LU dans la page — la preuve que la mesure a 
 | `/eng/[id]/evidence (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/exceptions` | 0 | 0 | 29 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/exceptions (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
+| `/eng/[id]/grand-livre` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
+| `/eng/[id]/grand-livre (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/kanban` | 0 | 0 | 0 | 0 | Altiverre FY2025 — Audit légal (NEP) |
 | `/eng/[id]/kanban (SOX)` | 0 | 0 | 0 | 0 | Altiverre FY2025 — SOX 404 component (PCAOB/COSO) |
 | `/eng/[id]/loop` | 0 | 0 | 9 | 0 | Altiverre FY2025 — Audit légal (NEP) |
