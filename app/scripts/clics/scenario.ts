@@ -2301,15 +2301,27 @@ export async function conduire(
   //    encore pending) et AVANT que le client n'y réponde (étape 13) — le moment naturel où
   //    l'auditeur assigne. Formulaire scopé par `has-text(exc.assigner)`, jamais par un
   //    sélecteur large sur `/portal/` ou `form` seul (leçon de Lot 7 tranche 1, STATUS.md).
+  //
+  //    CIBLE UNE LIGNE ENCORE 'pending' (règle 17, trouvé en construisant 12ter) : sur ce monde
+  //    de démo, le `.first()` formulaire d'assignation peut tomber sur un point d'action DÉJÀ
+  //    répondu historiquement (status='complete') — `assignerProprietairePointAction` ne le
+  //    refuse pas (aucune restriction de statut, c'est voulu), mais `relancerPointAction`, LUI,
+  //    refuse un item non 'pending' (rien à relancer). Sans ce ciblage, 12ter tombait
+  //    vacueusement sur « rien à relancer » alors qu'un point d'action pending existait bien
+  //    ailleurs dans le même tableau — jamais reproduit par les tests unitaires (fixture propre,
+  //    un seul item), trouvé seulement en conduisant l'écran dans un navigateur (règle 10/37).
   await station('constat vs point d’action client : assigner un propriétaire', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/exceptions`);
-    const f = p.locator(`form:has(button:has-text("${L('exc.assigner')}"))`).first();
-    if (!(await f.count())) {
-      dire('constat vs point d’action client : aucun point d’action à assigner ici',
+    const lignePending = p.locator('tr')
+      .filter({ has: p.locator(`form:has(button:has-text("${L('exc.assigner')}"))`) })
+      .filter({ has: p.locator('td:nth-child(3) span.badge:has-text("pending")') });
+    if (!(await lignePending.count())) {
+      dire('constat vs point d’action client : aucun point d’action PENDING à assigner ici',
         true, 'rien à assigner');
       return;
     }
+    const f = lignePending.first().locator(`form:has(button:has-text("${L('exc.assigner')}"))`);
     const select = f.locator('select[name=owner_contact_id]');
     const vals = await select.locator('option').evaluateAll(
       (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
