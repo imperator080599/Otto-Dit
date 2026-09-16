@@ -1318,6 +1318,9 @@ export const LIBELLES = {
   'exc.colConstat': { en: 'Finding', fr: 'Constat' },
   'exc.colActionClient': { en: 'Client action item', fr: 'Point d’action client' },
   'exc.colDemande': { en: 'Request', fr: 'Demande' },
+  'exc.colProprietaire': { en: 'Owner · due date', fr: 'Propriétaire · échéance' },
+  'exc.assignerAucun': { en: '— no owner —', fr: '— aucun propriétaire —' },
+  'exc.assigner': { en: 'Assign', fr: 'Assigner' },
   'exc.evaluatedAgainstMateriality': {
     en: 'Uncorrected misstatements (excluding dismissed anomalies): {amount}, against tolerable misstatement {te}.',
     fr: 'Anomalies non corrigées (hors anomalies écartées) : {amount}, à comparer à l’anomalie tolérable {te}.',

@@ -350,28 +350,71 @@ export async function listExceptions(engagementId: string) {
  * `exception`. Cette fonction ne fait qu'AFFICHER les deux objets déjà distincts côte à côte —
  * zéro migration, zéro geste neuf.
  *
- * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : « propriétaire » (aucun contact assigné à un
- * `request_item`), « échéance » PROPRE au constat (seule `request.due_date`, au grain du LOT,
- * existe — H-1 slice 2 bloque déjà à ce grain) et « relance » PROPRE au point d'action (seul
- * `reminder`, au grain de `request`, existe) restent hors de cette slice — disclosed dans
- * `docs/REGISTRE_IDEES.md`/`BACKLOG_REPORTE.md`, pour une slice de modèle de données ultérieure.
+ * CE QUE CETTE FONCTION NE VÉRIFIE PAS (règle 19) : « relance » PROPRE au point d'action (seul
+ * `reminder`, au grain de `request`, existe) reste hors de cette slice — disclosed dans
+ * `docs/REGISTRE_IDEES.md`/`BACKLOG_REPORTE.md`, pour une slice ultérieure.
+ *
+ * H-2, SLICE 2 (migration 0166) : « propriétaire » (`request_item.owner_contact_id`, un
+ * `client_contact` — jamais un contact CABINET, `engagement_contact`) et « échéance » PROPRE au
+ * point d'action (`request_item.due_date`, distincte de `request.due_date` au grain du LOT que
+ * H-1 slice 2 bloque déjà) sont maintenant portées ICI, sur l'objet ENTITÉ lui-même — jamais sur
+ * `exception`, qui reste le dossier auditeur seul.
  */
 export async function constatEtPointAction(engagementId: string) {
   return q<{
     exception_id: string; taxonomy_code: string; exception_status: string; description: string;
     item_id: string; item_status: string; client_note: string | null;
-    request_id: string; request_title: string; request_status: string; due_date: string | null;
+    owner_contact_id: string | null; owner_name: string | null; item_due_date: string | null;
+    request_id: string; request_title: string; request_status: string; request_due_date: string | null;
   }>(
     `select x.id exception_id, x.taxonomy_code, x.status exception_status, x.description,
             i.id item_id, i.status item_status, i.client_note,
-            r.id request_id, r.title request_title, r.status request_status, r.due_date::text
+            i.owner_contact_id, cc.name owner_name, i.due_date::text item_due_date,
+            r.id request_id, r.title request_title, r.status request_status, r.due_date::text request_due_date
      from exception x
      join request_item i on i.exception_id = x.id
      join request r on r.id = i.request_id
+     left join client_contact cc on cc.id = i.owner_contact_id
      where x.engagement_id = $1 and i.kind = 'explanation'
-     order by r.due_date nulls last, x.created_at`,
+     order by i.due_date nulls last, r.due_date nulls last, x.created_at`,
     [engagementId],
   );
+}
+
+/**
+ * H-2, slice 2 : assigner (ou effacer) le PROPRIÉTAIRE et/ou l'ÉCHÉANCE d'un point d'action
+ * client — un geste humain de l'AUDITEUR (« à qui, chez le client, revient ce point, et pour
+ * quand »), jamais déduit. `itemId` doit être un point d'action réel (`kind='explanation'`,
+ * `exception_id` non nul) — assigner un propriétaire à une pièce demandée normalement (BL,
+ * facture) n'a pas de sens dans ce vocabulaire et est refusé. Le contact, s'il est fourni, doit
+ * appartenir à l'ENTITÉ du dossier (même garde que `declarerContactCle`, reunions.ts) — jamais un
+ * contact d'un autre client.
+ */
+export async function assignerProprietairePointAction(
+  itemId: string, ownerContactId: string | null, dueDate: string | null, userId: string,
+): Promise<void> {
+  const engagementId = await assertMembreDe('request_item', itemId, userId, 'assigner un propriétaire/échéance au point d’action client');
+  const item = await q1<{ kind: string; exception_id: string | null }>(
+    `select kind, exception_id from request_item where id = $1`, [itemId],
+  );
+  if (item.kind !== 'explanation' || !item.exception_id) {
+    throw new Error('ce n’est pas un point d’action client (kind ≠ explanation, ou aucun constat lié)');
+  }
+  if (ownerContactId) {
+    const contact = await q01<{ id: string }>(
+      `select cc.id from client_contact cc join engagement e on e.entity_id = cc.entity_id
+       where cc.id = $1 and e.id = $2 and cc.active`,
+      [ownerContactId, engagementId],
+    );
+    if (!contact) throw new Error('contact : inconnu, désactivé, ou d’une autre entité que ce dossier');
+  }
+  const ctx = await engagementCtx(engagementId);
+  await q(`update request_item set owner_contact_id = $2, due_date = $3 where id = $1`, [itemId, ownerContactId, dueDate]);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'point_action_client_assigne', objectType: 'request_item', objectId: itemId,
+    payload: { ownerContactId, dueDate },
+  });
 }
 
 const CLARIFICATION_TEMPLATES: Record<string, string> = {

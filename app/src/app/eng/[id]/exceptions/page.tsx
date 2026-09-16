@@ -2,7 +2,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly, constatEtPointAction } from '@/lib/services/matching';
+import { listExceptions, draftClarificationRequest, resolveException, escalateToMisstatement, dismissMisstatementAsAnomaly, constatEtPointAction, assignerProprietairePointAction } from '@/lib/services/matching';
+import { contactsDisponibles } from '@/lib/services/reunions';
 import { frameworkSet } from '@/lib/services/fsli';
 import { validatedThresholds } from '@/lib/services/materiality';
 import { q } from '@/lib/db/client';
@@ -44,6 +45,7 @@ export default async function ExceptionsPage({
   const isSox = fs.assurance_packs.includes('pcaob-sox');
   const exceptions = await listExceptions(id);
   const constatsEtActions = await constatEtPointAction(id);
+  const contactsPourAssignation = await contactsDisponibles(id);
   /* LES ANCRES DES ÉCARTS (ADR-102) : « pourquoi as-tu considéré celui-ci
      comme résolu ? » est la note de revue la plus fréquente en pratique.
      L'identité métier d'un écart : sa taxonomie + l'écriture qui le porte
@@ -163,6 +165,18 @@ export default async function ExceptionsPage({
         reason: String(formData.get('reason') ?? ''),
         evidenceId: String(formData.get('evidence_id') ?? ''),
       });
+      revalidatePath(`/eng/${id}/exceptions`);
+    });
+  }
+  async function assignerAction(formData: FormData) {
+    'use server';
+    return executer(`/eng/${id}/exceptions`, async () => {
+      const { user } = await requireMember(id);
+      const contactId = String(formData.get('owner_contact_id') ?? '');
+      const dueDate = String(formData.get('due_date') ?? '');
+      await assignerProprietairePointAction(
+        String(formData.get('item_id')), contactId || null, dueDate || null, user.id,
+      );
       revalidatePath(`/eng/${id}/exceptions`);
     });
   }
@@ -307,6 +321,7 @@ export default async function ExceptionsPage({
                   <th>{t('exc.colConstat')}</th>
                   <th>{t('col.status')}</th>
                   <th>{t('exc.colActionClient')}</th>
+                  <th>{t('exc.colProprietaire')}</th>
                   <th>{t('exc.colDemande')}</th>
                 </tr>
               </thead>
@@ -323,8 +338,22 @@ export default async function ExceptionsPage({
                       {c.client_note && <div className="faint">↳ {c.client_note}</div>}
                     </td>
                     <td>
+                      {/* H-2, slice 2 (migration 0166) : propriétaire/échéance PROPRES au point
+                          d'action — jamais posés sur `exception`, toujours sur `request_item`. */}
+                      <div className="faint">{c.owner_name ?? t('exc.assignerAucun')}{c.item_due_date ? ` · ${c.item_due_date}` : ''}</div>
+                      <form action={assignerAction} className="row" style={{ gap: 4, marginTop: 4 }}>
+                        <input type="hidden" name="item_id" value={c.item_id} />
+                        <select name="owner_contact_id" defaultValue={c.owner_contact_id ?? ''} style={{ maxWidth: 140 }}>
+                          <option value="">{t('exc.assignerAucun')}</option>
+                          {contactsPourAssignation.map((ct) => <option key={ct.id} value={ct.id}>{ct.nom}</option>)}
+                        </select>
+                        <input type="date" name="due_date" defaultValue={c.item_due_date ?? ''} style={{ maxWidth: 130 }} />
+                        <button className="btn small secondary">{t('exc.assigner')}</button>
+                      </form>
+                    </td>
+                    <td>
                       <Link href={`/eng/${id}/requests/${c.request_id}`}>{c.request_title}</Link>
-                      <div className="faint">{c.request_status}{c.due_date ? ` · ${c.due_date}` : ''}</div>
+                      <div className="faint">{c.request_status}{c.request_due_date ? ` · ${c.request_due_date}` : ''}</div>
                     </td>
                   </tr>
                 ))}

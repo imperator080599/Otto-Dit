@@ -3,7 +3,7 @@ import { initTestDb } from '@/lib/test/setup';
 import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { q, q1 } from '@/lib/db/client';
-import { constatEtPointAction } from './matching';
+import { constatEtPointAction, assignerProprietairePointAction } from './matching';
 import { demanderDetailDeCompte, approveSend } from './requests';
 
 // H-2, slice 1 (Lot 7 — docs/REGISTRE_IDEES.md ligne 270 : « le cycle de vie du constat
@@ -90,6 +90,77 @@ describe('constatEtPointAction (H-2 slice 1) : le constat et le point d’action
     } finally {
       await q(`delete from request_item where id = $1`, [item.id]);
       await q(`delete from exception where id = $1`, [exc.id]);
+    }
+  });
+
+  it('H-2 slice 2 : assigner un propriétaire (client_contact de l’entité) et une échéance au point d’action, jamais au constat', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, status, description)
+       values ($1, 'missing_document', 'clarification_requested', 'sonde H-2 slice 2 : assignation') returning id::text`,
+      [IDS.engNep],
+    );
+    const item = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status)
+       values ($1, 'explanation', 'sonde H-2 slice 2', $2, 'pending') returning id::text`,
+      [requestId, exc.id],
+    );
+    try {
+      await assignerProprietairePointAction(item.id, IDS.contacts.sophie, '2026-10-01', IDS.users.karim);
+      const trouve = (await constatEtPointAction(IDS.engNep)).find((r) => r.item_id === item.id);
+      expect(trouve?.owner_contact_id).toBe(IDS.contacts.sophie);
+      expect(trouve?.owner_name).toBeTruthy();
+      expect(trouve?.item_due_date).toBe('2026-10-01');
+      expect(trouve?.exception_status, 'assigner un propriétaire ne touche JAMAIS le dossier').toBe('clarification_requested');
+      // effacer : ownerContactId=null, dueDate=null
+      await assignerProprietairePointAction(item.id, null, null, IDS.users.karim);
+      const apres = (await constatEtPointAction(IDS.engNep)).find((r) => r.item_id === item.id);
+      expect(apres?.owner_contact_id).toBeNull();
+      expect(apres?.item_due_date).toBeNull();
+    } finally {
+      await q(`delete from request_item where id = $1`, [item.id]);
+      await q(`delete from exception where id = $1`, [exc.id]);
+    }
+  });
+
+  it('H-2 slice 2, cas connus mauvais (règle 17) : un item non-point-d’action et un contact d’une AUTRE entité sont refusés', async () => {
+    const requestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    await approveSend(requestId, IDS.users.karim);
+    const item = await q1<{ id: string }>(`select id::text from request_item where request_id = $1`, [requestId]);
+    await expect(
+      assignerProprietairePointAction(item.id, null, '2026-10-01', IDS.users.karim),
+      'demanderDetailDeCompte crée un item kind=document, jamais un point d’action',
+    ).rejects.toThrow();
+
+    const exc = await q1<{ id: string }>(
+      `insert into exception (engagement_id, taxonomy_code, status, description)
+       values ($1, 'missing_document', 'clarification_requested', 'sonde H-2 slice 2 : contact étranger') returning id::text`,
+      [IDS.engNep],
+    );
+    const explItem = await q1<{ id: string }>(
+      `insert into request_item (request_id, kind, description, exception_id, status)
+       values ($1, 'explanation', 'sonde H-2 slice 2', $2, 'pending') returning id::text`,
+      [requestId, exc.id],
+    );
+    const autreEntite = await q1<{ id: string }>(
+      `insert into entity (tenant_id, name, country, registry_type) values ($1, 'sonde H-2 : autre entité', 'FR', 'fictional') returning id::text`,
+      [IDS.tenant],
+    );
+    const contactEtranger = await q1<{ id: string }>(
+      `insert into client_contact (entity_id, name, email, portal_token) values ($1, 'Contact étranger', 'etranger@sonde.example', 'sonde-h2-etranger') returning id::text`,
+      [autreEntite.id],
+    );
+    try {
+      await expect(
+        assignerProprietairePointAction(explItem.id, contactEtranger.id, null, IDS.users.karim),
+        'un contact d’une autre entité ne doit jamais être assignable comme propriétaire',
+      ).rejects.toThrow();
+    } finally {
+      await q(`delete from request_item where id = $1`, [explItem.id]);
+      await q(`delete from exception where id = $1`, [exc.id]);
+      await q(`delete from client_contact where id = $1`, [contactEtranger.id]);
+      await q(`delete from entity where id = $1`, [autreEntite.id]);
     }
   });
 });
