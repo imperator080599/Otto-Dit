@@ -130,6 +130,29 @@ unique promis au fondateur** (sa consigne du 10 septembre, verbatim : « Tell hi
 is — that single message is the only thing you owe him until then ») **est envoyé avec cette
 tranche.**
 
+## SHA servi confirmé — tranche Capitaux fusionnée sur `main` (`58b4e64`) — LE LOT 5 EST COMPLET (2026-09-16)
+
+Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
+poussée. **SHA servi CONFIRMÉ, mesuré deux fois** : `mcp__Vercel__get_deployment` montre
+`dpl_8mJHaGGt2XyQZuKVfgdN8AgGeUp7` (cible `production`) à l'état `READY`, commit
+`58b4e64149af8f82102ef0935742482a077388d1` ; `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` rend `sha: "58b4e64149af8f82102ef0935742482a077388d1"`,
+`identiteCoherente: true`, HTTP 200, verdict « toutes les lectures passent ». La tranche Capitaux
+propres et impôt (recherche incluant la résolution de l'ambiguïté du nom composé du mandat — vérifié
+directement dans le TB que INCOME_TAX ne porte aucun compte réel, donc hors du périmètre de ce
+poste —, implémentation avec une auto-correction avant commit sur l'évaluation du risque [le pipeline
+réel mesure `realite:moyen`, pas `faible` comme la sonde isolée l'avait d'abord montré], une revue
+hostile sans défaut allant même plus loin que la recherche de la tranche elle-même, verify complet
+avec trois occurrences consécutives de R58 avant un quatrième passage propre — clôture et archive
+atteintes, 385 clics, 336 vues visuel) est donc EN LIGNE.
+
+**Huitième et DERNIER poste du Lot 5 (ordre C.3 du mandat) livré.** Les huit postes nommés par
+`docs/MANDATS/2026-09-14_mandat_lecons_notif01_et_lot5.md` point 3 — Trésorerie, Clients,
+Immobilisations, Fournisseurs, Paie, Provisions, Stocks, Capitaux propres et impôt — sont désormais
+tous ouverts complètement (leadsheet N/N-1, revue analytique, procédures commandées par le risque,
+atelier de sa nature quand il existe — sinon le manque est déclaré, jamais simulé —, papier, écarts).
+**Le Lot 5 est COMPLET.**
+
 ## SHA servi confirmé — tranche Stocks fusionnée sur `main` (`0ee73da`) (2026-09-16)
 
 Fusion rapide-avant (`git merge --ff-only`) de `claude/otto-session-resume-zimig9` dans `main`,
