@@ -74,7 +74,13 @@ motif `#418`** (F36, vingt-deuxième confirmation, les quatre assertions de la n
 passent), clôture et archive ATTEINTES (266 étapes, 386 clics). `visuel` (relancé séparément) :
 **344 vues, 0 défaut**.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_H8rsJTWcC9L2C6bfoLpvGCiaqzvC`, cible
+production) READY, commit `77cd110a29a23b31a60c1bc46d6396982c210a1c` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` : HTTP 200, sha identique, `identiteCoherente=true`,
+« toutes les lectures passent » — nouvelle lecture « H-3 slice 1 : le test exhaustif du grand
+livre (règle week-end) » `ok:true`, detail « 4731 écriture(s) active(s), 417 marquée(s) week-end
+— cohérent avec la date de comptabilisation » : non vide, informative, sur la base RÉELLE de
+production.
 
 **Lot 7, H-3 slice 1 est COMPLÈTE.** Reste du Lot 7 : H-3 slice 2 (nouvelles règles techniques
 exhaustives — cohérence débit=crédit, doublons, écritures hors période — chacune sourcée avant
