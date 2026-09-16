@@ -121,6 +121,17 @@ qui le précède) : **336 vues, 0 défaut**.
 **Le Lot 6, tranche 1 (ANA-04) est COMPLET.** Fusion et confirmation du SHA servi en production à
 suivre.
 
+**SHA servi CONFIRMÉ, mesuré deux fois.** `mcp__Vercel__get_deployment` (`dpl_4hPqb9zQrqtnJpCWFdTLTxvpxtp4`,
+cible `production`) : `READY`, commit `c00b43a2122129ac64e63010595ae251fbf9177a` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` rend
+`sha: "c00b43a2122129ac64e63010595ae251fbf9177a"`, `identiteCoherente: true`, HTTP 200, verdict
+« toutes les lectures passent » — nouvelle lecture **ANA-04** `"ok":true,"vide":true`, detail
+« VIDE — aucune revue analytique périmée » (les huit revues du Lot 5 restent fraîches en
+production, comme attendu). ANA-04 (recherche, implémentation, deux revues hostiles
+indépendantes, un correctif de processus, verify complet) est donc EN LIGNE. Reste du Lot 6 :
+registre des anomalies (déjà largement construit sous le mandat 2026-09-14, à vérifier) et test
+des écritures NEP 240 (greenfield).
+
 ## CRITIQUE (expédition directe sur `main`) : restaure la migration 0165 — un correctif violait la règle 26 et bloquait TOUS les déploiements (2026-09-15)
 
 Le check-in programmé pour confirmer le SHA servi du merge de la mécanique circularisation

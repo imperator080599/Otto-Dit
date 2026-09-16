@@ -1,12 +1,17 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "99f927c2588e151761ca655fbd674b6987941d86",
+  "sha": "c00b43a2122129ac64e63010595ae251fbf9177a",
   "mesure": {
-    "quand": "2026-09-16T03:20:51Z",
-    "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_DBngjPBezHGrmXEDEM9AvAoB1sWZ, cible production) READY, commit 99f927c2588e151761ca655fbd674b6987941d86 ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=99f927c2588e151761ca655fbd674b6987941d86, identiteCoherente=true, « toutes les lectures passent ». Commit de documentation seule (STATUS.md : SHA servi confirmé de la tranche Capitaux) — contenu applicatif identique à 58b4e64. Le Lot 5 (les huit postes du mandat du 14 septembre) est COMPLET et servi."
+    "quand": "2026-09-16T07:30:17Z",
+    "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_4hPqb9zQrqtnJpCWFdTLTxvpxtp4, cible production) READY, commit c00b43a2122129ac64e63010595ae251fbf9177a ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=c00b43a2122129ac64e63010595ae251fbf9177a, identiteCoherente=true, « toutes les lectures passent » — nouvelle lecture ANA-04 \"ok\":true,\"vide\":true, detail « VIDE — aucune revue analytique périmée » (attendu : les huit revues du Lot 5 restent fraîches en production). Lot 6, tranche 1 : ANA-04, la revue analytique périmée bloque le visa (mandat 2026-09-05 plan d'autonomie, Partie D.1). Deux réfutateurs indépendants (règle 30 : la tranche touche un code de refus) : SHIP après correction d'un défaut de processus (docs/GUARDS.md jamais régénéré après l'ajout de la garde déclarée, corrigé avant fusion) — aucun défaut de logique trouvé par les deux voix, qui ont chacune tenté de casser l'obstacle par mutation directe sans y parvenir. Deux trouvailles disclosed R102/R103 (BACKLOG_REPORTE.md), non corrigées délibérément, hors périmètre de cette tranche. npm run verify complet sur l'arbre gelé : 147/147 fichiers, gardes à jour (46), clôture et archive atteintes (260 étapes, 385 clics), seul incident #418 (F29, quinzième confirmation, disjoint), visuel 336 vues/0 défaut."
   },
   "historique": [
+    {
+      "sha": "99f927c2588e151761ca655fbd674b6987941d86",
+      "quand": "2026-09-16T03:20:51Z",
+      "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_DBngjPBezHGrmXEDEM9AvAoB1sWZ, cible production) READY, commit 99f927c2588e151761ca655fbd674b6987941d86 ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=99f927c2588e151761ca655fbd674b6987941d86, identiteCoherente=true, « toutes les lectures passent ». Commit de documentation seule (STATUS.md : SHA servi confirmé de la tranche Capitaux) — contenu applicatif identique à 58b4e64. Le Lot 5 (les huit postes du mandat du 14 septembre) est COMPLET et servi."
+    },
     {
       "sha": "58b4e64149af8f82102ef0935742482a077388d1",
       "quand": "2026-09-16T03:14:27Z",
