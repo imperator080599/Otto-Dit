@@ -1714,3 +1714,25 @@ design : chacun reste une tranche à construire.**
   correspondu (`cycle:"DETTES_FI"` au lieu de `"FINANCIAL_DEBT"`) — mais ce FSLI n'est nommé par
   AUCUN des huit postes du mandat : sa correction reste hors du périmètre du Lot 5, pas un gap
   de ce lot.
+
+- **R101 — `docs/instantanes/servi.json` n'a plus été mis à jour depuis le 2026-09-09 (SHA
+  `11f99dd`, tranche CTRL-06), alors que `STATUS.md` a documenté et confirmé en direct SEPT
+  confirmations de SHA servi depuis (`git log --oneline -- docs/instantanes/servi.json` : dernier
+  commit `3cd799f`, aucun depuis).** Chaque tranche du reste du mandat contrôle interne (§7.4,
+  §1-§4), du repass design, de l'inventaire des points d'appel IA (R76), des notifications et du
+  degré d'automatisation, et TOUT le Lot 5 (Trésorerie, Clients, Immobilisations, Fournisseurs,
+  Paie, Provisions, Stocks, Capitaux) a mesuré et documenté sa confirmation servie dans
+  `STATUS.md` — jamais recopiée dans cet instantané. Conséquence mesurée : `npm run reprise`
+  compare son champ `sha` (figé à `11f99dd`, 2026-09-09) au HEAD courant et rend « servi ≠ HEAD »
+  depuis une semaine, un signal que toute session lit comme du bruit ordinaire plutôt que comme le
+  fait qu'il est réellement périmé — exactement la règle 13 (le silence lu comme un succès).
+  Corrigé le 2026-09-16 : le champ `sha`/`mesure` racine remis sur la dernière mesure directe
+  réelle de cette session (`58b4e64`, puis `99f927c` une fois son propre déploiement confirmé),
+  l'ancienne entrée `11f99dd` déplacée dans `historique`, et une note explicite ajoutée disant que
+  les SEPT confirmations intermédiaires (Fournisseurs `a8c2603`, Paie `eaaf647`, Provisions
+  `95af49a`, Stocks `0ee73da`, Capitaux `58b4e64`, plus les tranches antérieures au Lot 5) sont
+  RÉELLEMENT mesurées et citées dans `STATUS.md` mais N'ONT PAS reçu leur propre entrée
+  `historique` ici — pas recréées de mémoire (règle 31), pour ne pas inventer un horodatage ou un
+  texte de mesure que cette session n'a pas elle-même produit. **Non corrigé** : reconstituer les
+  sept entrées `historique` manquantes une par une, à partir des commits `STATUS.md` déjà cités
+  dans le journal git, si un futur geste en a besoin.
