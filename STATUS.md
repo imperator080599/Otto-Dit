@@ -4,6 +4,83 @@
 
 ---
 
+## Lot 7, tranche 1 (H-1) — portail : « ce que vous me devez encore » (2026-09-16)
+
+*Suite du mandat du fondateur (2026-09-16), enchaîné sans pause après le Lot 6 (règle 32).
+Recherche préalable (un sous-agent) : `docs/REGISTRE_IDEES.md`, item H-1 — « l'espace de demandes
+porté à leur niveau », dont l'écran nommé littéralement, « ce que vous me devez encore »,
+n'existait sous aucun nom avant cette tranche (vérifié par grep sur le dépôt entier). H-1 se
+découpe en trois tranches ; celle-ci est la première, la plus petite et la plus sûre (zéro
+migration, pure lecture) — H-1 slice 2 (obstacle au visa sur les demandes en retard) et H-2 (le
+cycle de vie du constat client, un chantier de modèle de données à part) restent à faire.*
+
+**Implémenté** (commit `f61e60f`) : `portalOutstandingItems(entityId)` (`portal.ts`), agrégat de
+tout `request_item` `pending` dont la demande parente reste `sent`/`partially_submitted`/
+`reopened` — même patron que `portalRequests`, une clause de plus. Décision explicite (règle 19) :
+`'pending'` seul compte comme « encore dû », jamais `'uploaded'` (une pièce déposée mais pas
+encore acceptée est une attente côté cabinet, pas côté client — vérifié par lecture complète
+d'`evidence.ts`, aucun writer ne repasse un item à `pending`). Nouvelle section sur
+`/portal/[token]`, sous le même garde de jeton que le reste de l'écran (migration 0141). Nouvelle
+lecture `/api/sante` qui RE-DÉRIVE indépendamment (jointure directe, jamais une comparaison à
+elle-même). i18n : quatre clés neuves, 0 chaîne hors catalogue.
+
+**Revue hostile (un seul réfutateur, règle 30 amendée).** Aucun constat bloquant, un seul appliqué
+(commit `15a3ff8` — un marqueur de commentaire à la fin d'un bloc `if (eng)` dans `route.ts`,
+trouvé pendant l'implémentation par `tsc`, diagnostiqué sans ambiguïté par la revue elle-même).
+`tsc`/`langue`/`lectures`/les tests ciblés tous reconfirmés propres PAR la revue.
+
+**CE QUE LA REVUE HOSTILE N'A PAS TROUVÉ, ET QUE SEUL `npm run clics` A TROUVÉ — exactement la
+leçon de NOTIF-01 (mandat du 14 septembre, règle 37), rejouée ici mot pour mot.** Cette tranche
+ne pose ni ne change de code de refus : rien n'obligeait, à la lettre de la règle 37, un
+`npm run clics` complet avant de la dire close. Lancé quand même, par prudence (règle 12 : une
+mesure jamais rejouée n'est qu'une affirmation) — et il a bien fait : **`EXIT=1` avec SIX échecs
+réels et 1294 clics comptés (contre 385 d'habitude)**, sur des stations SANS RAPPORT apparent
+avec cette tranche — la disposition et la conclusion d'une ligne de la grille de test, le retour
+depuis un écart, une clarification en lot, le bandeau « mes travaux ». Ni `vitest` (150/150
+fichiers, 1158/1158 tests) ni `tsc` ni `langue` ni `lectures` n'avaient rien vu : un relecteur
+hostile LIT et MUTE, il n'appuie pas sur les boutons d'un parcours de bout en bout (règle 37,
+mot pour mot).
+
+**Diagnostic, par BISSECTION plutôt que par hypothèse (règle 18) : `git worktree`, six exécutions
+complètes (`db:reset && demo:seed && clics`, base fraîche à chaque fois, EXIT lu dans le journal
+brut à chaque passage).** Le commit précédent cette tranche (`f5fa6d2`) est TOUJOURS propre — 385
+clics, 1 échec (`#418` seul), reproduit deux fois, chiffres identiques. Cette tranche seule (à sa
+pointe, `15a3ff8`) introduit la régression — reproduite QUATRE fois, chiffres identiques à chaque
+fois (6 échecs, 1294 clics), y compris après avoir tué un `next-server` orphelin d'un essai de
+diagnostic précédent (l'hypothèse « c'est un processus qui traîne » a été ÉPROUVÉE et rejetée, pas
+supposée). Isolée ensuite au SEUL fichier `page.tsx` : en révertant juste ce fichier sur l'arbre
+de la tranche (`portal.ts`/`route.ts`/`catalogue.ts` gardés), l'exécution redevient propre (385/1).
+
+**Cause trouvée, pas seulement contournée** (commit `eb5c5b3`) : la station « portail client »
+(`scripts/clics/scenario.ts`) sélectionne CHAQUE demande à traiter par `a[href*="/portal/"]` sur
+TOUTE LA PAGE, sans borner à une table précise. Le lien « Ouvrir » que cette tranche posait sur
+chaque ligne de « ce que vous me devez encore » pointait vers LA MÊME url `/portal/[token]/[id]`
+que la table des demandes juste en dessous — un second lien vers la même demande, qui la faisait
+visiter et traiter DEUX FOIS (dépôts de pièces et réponses d'explication rejoués), corrompant
+l'état partagé au point de faire échouer, bien plus loin dans le parcours, la grille de test.
+**Corrigé en retirant le lien** — la ligne reste consultable, s'ouvre déjà par la table des
+demandes juste en dessous, rien n'est perdu. `tsc`/`langue`/`lectures` reconfirmés propres ; le
+cycle `db:reset && demo:seed && clics` repasse à 385 clics / 1 échec (`#418` seul), reproduit une
+seconde fois sur l'arbre committé avant de conclure.
+
+**Mesures finales, `npm run verify` complet sur l'arbre corrigé du commit `eb5c5b3`** (règle
+34/35, `timeout 3600`, EXIT lu dans le journal brut) : `tsc` propre · **150/150 fichiers,
+1158/1158 tests vitest** · `gardes` 46 · `plancher` 1158 collectés · `langue` 0 hors catalogue,
+**15/15** · `lectures` 0 perdue, **6/6** · `parcours` 0 station perdue, **5/5** · `screens` **93
+routes, 0 échec** · `fumee` **52 routes, 0 échec** · `densite` **83 écrans, 0 dépassement**
+(`docs/DENSITE.md` régénéré, commit `a4a2d6a`) · `clics` **EXIT=1 réel, seul motif `#418`** (F31,
+`docs/CHASSE.md`, dix-septième confirmation consécutive), clôture et archive ATTEINTES (260
+étapes, 385 clics — retour à la normale). `visuel` (relancé séparément, `clics` casse le `&&`) :
+**336 vues, 0 défaut**.
+
+**Leçon retenue pour les tranches suivantes de ce Lot (H-1 slice 2, H-2)** : tout nouveau lien
+`/portal/...` posé sur la page d'accueil du portail doit être vérifié contre le sélecteur
+générique `a[href*="/portal/"]` de la station « portail client » (`scenario.ts`) avant d'être
+livré — un second lien vers une demande déjà listée ailleurs sur la même page la fait traiter en
+double. Documenté dans le commentaire du code, à l'endroit du correctif.
+
+## Lot 6, tranche 3 (NEP 240) — épine dorsale : population et tirage des écritures à risque (2026-09-16)
+
 ## Lot 6, tranche 3 (NEP 240) — épine dorsale : population et tirage des écritures à risque (2026-09-16)
 
 *Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1, premier morceau du Lot 6

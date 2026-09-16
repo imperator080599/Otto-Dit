@@ -1232,3 +1232,15 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   conduites, 385 clics comptés — SEIZIÈME confirmation consécutive que `#418` est disjoint de tout
   ce que ce dépôt touche. Pas creusé plus loin (même discipline que F9-F29). `npm run visuel`
   cassé par le même `#418` sur `clics` ; relancé séparément, propre (336 vues, 0 défaut).
+
+- **F31 — UN incident** (2026-09-16, Lot 7, tranche 1 — le portail « ce que vous me devez encore »,
+  sur l'arbre CORRIGÉ du commit `eb5c5b3`, après un défaut RÉEL de cette tranche trouvé et corrigé
+  le même jour — voir STATUS.md, « Lot 7, tranche 1 » : un défaut sans rapport avec `#418`,
+  qui rendait `clics` rouge de façon DÉTERMINISTE avec 6 échecs et 1294 clics, résolu avant cette
+  mesure). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../
+  rcm/923aa3e8-...` (l'habituelle, `rcm/[cid]`). Disjoint de la tranche : `portal.ts`, la page du
+  portail, `catalogue.ts` et la nouvelle lecture `/api/sante` ne touchent pas `/rcm`, et les
+  1158 tests vitest passent tous. Clôture et archive ATTEINTES (240 stations figées vérifiées),
+  260 étapes conduites, 385 clics comptés — DIX-SEPTIÈME confirmation consécutive que `#418` est
+  disjoint. Pas creusé plus loin (même discipline que F9-F30). `npm run visuel` relancé
+  séparément (le `&&` casse sur l'échec de `clics`), propre (336 vues, 0 défaut).
