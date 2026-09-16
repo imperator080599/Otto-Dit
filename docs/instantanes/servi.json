@@ -1,12 +1,17 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "58b4e64149af8f82102ef0935742482a077388d1",
+  "sha": "99f927c2588e151761ca655fbd674b6987941d86",
   "mesure": {
-    "quand": "2026-09-16T03:14:27Z",
-    "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_8mJHaGGt2XyQZuKVfgdN8AgGeUp7, cible production) READY, commit 58b4e64149af8f82102ef0935742482a077388d1 ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=58b4e64149af8f82102ef0935742482a077388d1, identiteCoherente=true, « toutes les lectures passent ». Huitième et dernier poste du Lot 5 (Capitaux propres et impôt, EQUITY) — le Lot 5 est COMPLET, les huit postes nommés par le mandat du 14 septembre sont tous ouverts. Détail de la tranche dans STATUS.md. R101 (docs/BACKLOG_REPORTE.md) : cette entrée, et celle qui la précède ici, sont les deux premières de cet instantané depuis le 2026-09-09 — SEPT confirmations intermédiaires (tranches post-CTRL-06 du mandat contrôle interne, repass design, R76, notifications, degré d'automatisation, et Fournisseurs/Paie/Provisions/Stocks du Lot 5) ont été mesurées et documentées dans STATUS.md sans jamais être recopiées ici ; non reconstituées de mémoire (règle 31), seulement disclosed."
+    "quand": "2026-09-16T03:20:51Z",
+    "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_DBngjPBezHGrmXEDEM9AvAoB1sWZ, cible production) READY, commit 99f927c2588e151761ca655fbd674b6987941d86 ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=99f927c2588e151761ca655fbd674b6987941d86, identiteCoherente=true, « toutes les lectures passent ». Commit de documentation seule (STATUS.md : SHA servi confirmé de la tranche Capitaux) — contenu applicatif identique à 58b4e64. Le Lot 5 (les huit postes du mandat du 14 septembre) est COMPLET et servi."
   },
   "historique": [
+    {
+      "sha": "58b4e64149af8f82102ef0935742482a077388d1",
+      "quand": "2026-09-16T03:14:27Z",
+      "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_8mJHaGGt2XyQZuKVfgdN8AgGeUp7, cible production) READY, commit 58b4e64149af8f82102ef0935742482a077388d1 ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante : HTTP 200, sha=58b4e64149af8f82102ef0935742482a077388d1, identiteCoherente=true, « toutes les lectures passent ». Huitième et dernier poste du Lot 5 (Capitaux propres et impôt, EQUITY) — le Lot 5 est COMPLET, les huit postes nommés par le mandat du 14 septembre sont tous ouverts. Détail de la tranche dans STATUS.md. R101 (docs/BACKLOG_REPORTE.md) : cette entrée, et celle qui la précède ici, sont les deux premières de cet instantané depuis le 2026-09-09 — SEPT confirmations intermédiaires (tranches post-CTRL-06 du mandat contrôle interne, repass design, R76, notifications, degré d'automatisation, et Fournisseurs/Paie/Provisions/Stocks du Lot 5) ont été mesurées et documentées dans STATUS.md sans jamais être recopiées ici ; non reconstituées de mémoire (règle 31), seulement disclosed."
+    },
     {
       "sha": "11f99dd69cbf3ffd2e4c0fc48f58c42b07749004",
       "quand": "2026-09-09T14:10:06Z",
