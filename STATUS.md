@@ -45,6 +45,12 @@ hostile requise (rien à réviser), aucun `npm run verify` requis (rien à re-v�
 qui l'est déjà par chaque tranche précédente). **Le Lot 6, tranche 2 est COMPLET, sans commit
 applicatif.**
 
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment`/`list_deployments` (`dpl_H8zVti2MU8Us5CwiiDXLW9ua2J3J`,
+cible `production`) : `READY`, commit `1162162e5bdc796f77dd2d2b34d14527c1d8f003` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `/api/sante` rend `sha` identique, `identiteCoherente:
+true`, HTTP 200, verdict « toutes les lectures passent ». Reste du Lot 6 : test des écritures
+NEP 240 (greenfield).
+
 ## Lot 6, tranche 1 : ANA-04 — la revue analytique périmée bloque le visa (2026-09-16)
 
 *Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1 : « Lot 6 — La crédibilité
