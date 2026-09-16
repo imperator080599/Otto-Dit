@@ -4,6 +4,47 @@
 
 ---
 
+## Lot 6, tranche 2 : le registre des anomalies — DÉJÀ COMPLET, vérifié (2026-09-16)
+
+*Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1, deuxième morceau du
+Lot 6 : « registre des anomalies (factuelle, de jugement, extrapolée ; projection ; corrigées et
+non corrigées ; évaluation contre la matérialité). » Recherche préalable (agent d'exploration,
+puis lecture directe du code par cette session) : cette pièce est déjà construite dans sa quasi-
+totalité, sous le mandat du 2026-09-14 — `evaluation.ts:270` cite littéralement « la projection
+alimente le registre des anomalies déjà prévu au Lot 6 ». Cette tranche ne CONSTRUIT rien : elle
+VÉRIFIE, par exécution et par clic, que les cinq exigences du mandat sont tenues, puis le dit.*
+
+**Les cinq exigences, vérifiées une par une, par lecture directe du code (pas devinées) :**
+1. **Factuelle, de jugement, extrapolée** — `misstatement.kind` (migration `0002_testing.sql`)
+   ∈ `('factual','judgmental','projected')`, exactement les trois catégories nommées.
+2. **Projection** — `concludeEvaluation` (`evaluation.ts`) insère une ligne `kind='projected'`,
+   sourcée de `evaluateSample`/ISA 530 §14 (extrapolation), liée par `sample_evaluation_id`
+   (migration 0162, index partiel unique empêchant le double-compte).
+3. **Corrigées et non corrigées** — `misstatement.corrected boolean`.
+4. **Évaluation contre la matérialité** — `conclusionGate()` (`evaluation.ts`) calcule
+   `|connu + projeté| <= TE` et bloque (`tolerable_exceeded_unanswered`) tant qu'aucune réponse
+   documentée n'existe ; l'écran `exceptions/page.tsx` affiche en permanence le total non corrigé
+   contre le TE (EXTRAP-03), même à zéro.
+5. **Le mécanisme de rejet ISA 530 §13** (« manifestement non représentatif ») existe aussi,
+   au-delà des cinq exigences nommées : migration 0162 (`dismissed_reason`,
+   `dismissed_evidence_id`), service `dismissMisstatementAsAnomaly` (`matching.ts`).
+
+**Vérifié par le CHEMIN, pas seulement par lecture (règle 15, règle 20/37).** `docs/CLICS.md`,
+régénéré sur commit `c00b43a` (tranche ANA-04, ce même jour) : les stations « résolution des
+écarts » (26 clics), « re-exécution et évaluation » (4 clics) et « kanban des écarts » exercent
+DÉJÀ ce registre à chaque `npm run clics`, depuis le mandat du 14 septembre — clôture et archive
+systématiquement atteintes depuis (voir chaque tranche du Lot 5 et d'ANA-04 ci-dessus). Aucun clic
+neuf n'était nécessaire : le chemin humain existe et est déjà emprunté par le parcours figé.
+
+**`dataset/ANOMALIES.md` N'EST PAS ce registre** (vérifié, pas supposé) : c'est le manifeste des
+anomalies semées pour l'acceptation (A1-A8, D1-D4, jeu Altiverre) — un fichier de test de
+génération, distinct de l'objet `exception`/`misstatement` que l'auditeur travaille en ligne.
+
+**Aucun code changé.** Cette tranche est un constat écrit, pas un correctif — aucune revue
+hostile requise (rien à réviser), aucun `npm run verify` requis (rien à re-vérifier au-delà de ce
+qui l'est déjà par chaque tranche précédente). **Le Lot 6, tranche 2 est COMPLET, sans commit
+applicatif.**
+
 ## Lot 6, tranche 1 : ANA-04 — la revue analytique périmée bloque le visa (2026-09-16)
 
 *Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1 : « Lot 6 — La crédibilité
