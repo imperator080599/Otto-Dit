@@ -202,8 +202,33 @@ ouvert » (il l'est désormais) tout en gardant l'assertion valide (INVENTORY re
 `confirmation_externe`, la seule chose que ce fichier teste).
 
 **Mesures avant expédition.** Suite ciblée (catalogue, enrichir, atelier-confirmation-lecture,
-programme-vue — 40/40) propres. `tsc --noEmit` propre. Revue hostile et `npm run verify` complet
-à suivre.
+programme-vue — 40/40) propres. `tsc --noEmit` propre.
+
+**Revue hostile, UNE SEULE voix** (règle 30 : ni modèle de données, ni multi-tenant, ni code de
+refus touchés par cette tranche). Verdict : les affirmations factuelles tiennent — chaque compte
+(deux comptes INVENTORY, 800 000,00 €, cinq procédures commandées, aucun atelier pour
+`observation_documentee`) reproduit indépendamment par exécution réelle du pipeline
+`runPart1UpToWorkpaper()`, pas depuis une fixture reconstruite à la main. Aucun défaut trouvé.
+
+**`npm run verify` complet, avec un incident d'infrastructure non expliqué et une contamination
+méthodologique découverts et corrigés en cours de route.** Premier passage complet
+(`verify-stocks.log`) : `tsc`/`vitest` (145/145, 1139/1139, zéro R58) et `gardes` à `densite`
+tous propres (0 dépassement) — puis `clics` meurt net à `  build…`, `EXIT=143` réel, sans rapport
+avec R58/#418. Isolé seul, MÊME défaut reproduit deux fois (avec et sans mon propre `timeout`),
+alors qu'un `npm run build` mené HORS de `clics/run.ts` termine proprement en 57,85 s — cause
+non identifiée, journalisée `docs/CHASSE.md` §6, pas creusée plus loin (règle 30). Une troisième
+tentative a fini par tourner mais ROUGE (32 échecs, clôture non atteinte) : la base avait été
+« déjà jouée » par un essai antérieur sans que je m'en rende compte — exactement le gotcha que
+CLAUDE.md §6 nomme déjà. **Corrigé par la discipline canonique** : `db:reset && demo:seed` frais
+avant `clics`. **Second défaut, plus subtil** : mesurer `densite` APRÈS ce `clics` propre (au lieu
+de l'ordre canonique de `npm run verify`) rapportait un FAUX dépassement sur `/eng/[id]/testing` —
+contamination par l'état RÉEL que `clics` avait laissé dans le dossier, pas un défaut de code.
+Reproduit et corrigé par exécution : `densite` SEUL sur base fraîche → 0 dépassement (identique
+au tout premier passage) ; `clics` ensuite sur cette même base fraîche → **propre, clôture et
+archive atteintes, 260 étapes, 386 clics**, `#418` observé TROIS fois cette fois (dont, pour la
+première fois, hors de `rcm/[cid]` — toujours cohérent avec l'hypothèse H, disjoint du diff de
+cette tranche). `visuel` : **336 vues, 0 défaut**. Les deux incidents sont journalisés en détail
+dans `docs/CHASSE.md` §6.
 
 ## SHA servi confirmé — tranche Fournisseurs poste-opening fusionnée sur `main` (`a8c2603`) (2026-09-15)
 
