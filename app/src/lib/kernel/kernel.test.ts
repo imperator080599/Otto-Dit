@@ -63,7 +63,7 @@ describe('canon', () => {
 });
 
 describe('JE risk flags (ADR-003)', () => {
-  const cfg = defaultFlagConfig('2025-12-31');
+  const cfg = defaultFlagConfig('2025-01-01', '2025-12-31');
 
   it('flags weekend, round amount, manual journal, period end', () => {
     const rows = computeFlags(
@@ -77,6 +77,27 @@ describe('JE risk flags (ADR-003)', () => {
     expect(rows[0].flags).toEqual(expect.arrayContaining(['weekend', 'round_amount', 'manual_journal']));
     expect(rows[1].flags).toContain('period_end');
     expect(rows[2].flags).toEqual([]);
+  });
+
+  /* H-3, SLICE 2 (Lot 7) : `hors_periode` — DISTINCTE de `period_end` (proximité de la clôture) :
+   * une date carrément hors des bornes [periodStart, periodEnd]. CAS CONNU MAUVAIS (règle 17) :
+   * une écriture dans l'exercice, même proche des bornes, ne doit JAMAIS porter le flag — sans
+   * cette assertion, une comparaison large (`<=`/`>=` au lieu de `<`/`>`) marquerait à tort le
+   * premier et le dernier jour de l'exercice. */
+  it('flags entries dated outside the exercise period (hors_periode), never one inside it', () => {
+    const rows = computeFlags(
+      [
+        glRow({ naturalKey: 'VE|before|1', entryNo: 'before', entryDate: '2024-12-20' }), // avant l'exercice
+        glRow({ naturalKey: 'VE|after|1', entryNo: 'after', entryDate: '2026-01-05' }), // après l'exercice
+        glRow({ naturalKey: 'VE|first|1', entryNo: 'first', entryDate: '2025-01-01' }), // premier jour, DANS l'exercice
+        glRow({ naturalKey: 'VE|last|1', entryNo: 'last', entryDate: '2025-12-31' }), // dernier jour, DANS l'exercice
+      ],
+      cfg,
+    );
+    expect(rows[0].flags).toContain('hors_periode');
+    expect(rows[1].flags).toContain('hors_periode');
+    expect(rows[2].flags).not.toContain('hors_periode');
+    expect(rows[3].flags).not.toContain('hors_periode');
   });
 
   it('flags credit-note patterns per counterparty (≥3 credit notes)', () => {

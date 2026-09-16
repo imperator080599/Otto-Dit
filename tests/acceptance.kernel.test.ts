@@ -83,7 +83,7 @@ beforeAll(() => {
 
   // recompute the draw with the CURRENT kernel + pinned params
   const revRows = glRows.filter((r) => r.accountNo.startsWith('70'));
-  const flagged = computeFlags(revRows, defaultFlagConfig('2025-12-31'));
+  const flagged = computeFlags(revRows, defaultFlagConfig('2025-01-01', '2025-12-31'));
   const SELECTION_FLAGS = new Set(['weekend', 'round_amount', 'manual_journal', 'credit_note_pattern']);
   const units: SampleUnit[] = flagged.map((r) => ({
     id: r.naturalKey,
@@ -162,7 +162,7 @@ describe('acceptance — substantive anomalies (zero false negatives)', () => {
 
   it('A6 weekend/round/manual JE and A8 credit-note pattern carry their flags', () => {
     const revRows = glRows.filter((r) => r.accountNo.startsWith('70'));
-    const flagged = computeFlags(revRows, defaultFlagConfig('2025-12-31'));
+    const flagged = computeFlags(revRows, defaultFlagConfig('2025-01-01', '2025-12-31'));
     const a6 = manifest.substantiveAnomalies.find((a) => a.id === 'A6')!;
     const je = flagged.find((r) => r.naturalKey === a6.units[0])!;
     expect(je.flags).toEqual(expect.arrayContaining(['weekend', 'round_amount', 'manual_journal']));

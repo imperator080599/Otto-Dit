@@ -1031,6 +1031,31 @@ async function corpsDeLaSonde() {
       }
       return `${total} écriture(s) active(s), ${marque} marquée(s) week-end — cohérent avec la date de comptabilisation`;
     }));
+    /* H-3, slice 2 (Lot 7) : `hors_periode` (kernel/flags.ts) — re-DÉRIVE indépendamment (règle
+       16) en comparant `entry_date` aux bornes RÉELLES de l'exercice (`period.start_date`/
+       `end_date`, jamais la config `FlagConfig` que le flag lui-même a utilisée à l'import) et
+       compare au flag stocké. Rougit sur toute dérive. */
+    lectures.push(await essayer('H-3 slice 2 : le test exhaustif du grand livre (règle hors exercice)', async () => {
+      const row = await q1<{ vrai_hors: string; marque_hors: string; total: string }>(
+        `select count(*) filter (where g.entry_date < p.start_date or g.entry_date > p.end_date) vrai_hors,
+                count(*) filter (where g.flags @> '["hors_periode"]'::jsonb) marque_hors,
+                count(*) total
+         from gl_entry g
+         join engagement e on e.id = g.engagement_id
+         join period p on p.id = e.period_id
+         where g.engagement_id = $1 and g.status = 'active'`,
+        [id],
+      );
+      const total = Number(row.total);
+      if (!total) return 'aucune écriture active dans le grand livre';
+      const vrai = Number(row.vrai_hors);
+      const marque = Number(row.marque_hors);
+      if (vrai !== marque) {
+        throw new Error(`${marque} écriture(s) marquée(s) « hors exercice » en base, mais ${vrai} `
+          + 'ont réellement une date hors des bornes [start_date, end_date] de la période — le flag a dérivé de la règle');
+      }
+      return `${total} écriture(s) active(s), ${marque} marquée(s) hors exercice — cohérent avec les bornes de la période`;
+    }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni
        `importTb` ni `rebuildFslis` ni `importFec` ne DÉTRUISENT jamais ces objets — une sélection

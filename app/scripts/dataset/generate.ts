@@ -143,7 +143,7 @@ async function main() {
 
   // ---------- revenue population + flags + pinned draw ----------
   const revRows = glRows.filter((r) => r.accountNo.startsWith('70'));
-  const flagCfg = defaultFlagConfig(ENTITY.periodEnd);
+  const flagCfg = defaultFlagConfig(ENTITY.periodStart, ENTITY.periodEnd);
   const flagged = computeFlags(revRows, flagCfg);
   const SELECTION_FLAGS = new Set(['weekend', 'round_amount', 'manual_journal', 'credit_note_pattern']);
   const units: SampleUnit[] = flagged.map((r) => ({

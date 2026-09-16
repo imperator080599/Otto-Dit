@@ -3,17 +3,27 @@ import { numToCents } from '@/lib/util/num';
 import type { JeFlag } from '@/lib/kernel/types';
 
 /**
- * H-3, SLICE 1 (Lot 7, `docs/REGISTRE_IDEES.md` §H) : « l'analytique en population COMPLÈTE à
- * côté du sondage, avec l'énoncé honnête de ce qu'un test exhaustif couvre et ne couvre pas ».
+ * H-3, SLICES 1 et 2 (Lot 7, `docs/REGISTRE_IDEES.md` §H) : « l'analytique en population COMPLÈTE
+ * à côté du sondage, avec l'énoncé honnête de ce qu'un test exhaustif couvre et ne couvre pas ».
  *
- * NE CRÉE RIEN DE NOUVEAU : `computeFlags` (ADR-003, `kernel/flags.ts`) tourne déjà, à l'IMPORT,
- * sur TOUT le grand livre importé (`imports.ts`, `computeFlags(parsed.rows, …)` — pas un
- * sous-ensemble filtré par cycle ni par poste). Le résultat est stocké sur CHAQUE `gl_entry`
- * (`flags` jsonb), mais AUCUN écran ne le rendait visible sur la population entière avant cette
- * slice — seul le sous-ensemble déjà repris par un TIRAGE (MANUEL/FRAUDE, Lot 6 tranche 3,
+ * SLICE 1 : `computeFlags` (ADR-003, `kernel/flags.ts`) tournait déjà, à l'IMPORT, sur TOUT le
+ * grand livre importé (`imports.ts`, `computeFlags(parsed.rows, …)` — pas un sous-ensemble filtré
+ * par cycle ni par poste), pour SIX règles. Le résultat est stocké sur CHAQUE `gl_entry` (`flags`
+ * jsonb), mais AUCUN écran ne le rendait visible sur la population entière avant cette slice —
+ * seul le sous-ensemble déjà repris par un TIRAGE (MANUEL/FRAUDE, Lot 6 tranche 3,
  * `sampling-je.ts`) l'exploitait, au grain d'un `sample`, jamais celui de « 100% des écritures ».
- * Cette fonction ne fait que LIRE et AGRÉGER ce qui existe déjà — zéro nouvelle règle de
- * détection, zéro migration.
+ *
+ * SLICE 2 : une SEPTIÈME règle, `hors_periode` (recherche préalable dédiée) — les deux autres
+ * candidates envisagées ont été écartées, PAS construites : « cohérence débit=crédit » est
+ * structurellement redondante (`fec.ts::entryBalance`, `severity:'error'`, bloque l'import ENTIER
+ * avant toute insertion dans `gl_entry` — un flag qui la répéterait ne rougirait JAMAIS sur des
+ * données de production, la garde vide proscrite par la règle 17) ; « doublons au grain du grand
+ * livre » chevauche `findDuplicateInvoices` (kernel/matching.ts) sans source ISA/NEP précise
+ * trouvée dans `methodology/*.json` (règle 8) — disclosed, pas construite, pas ce tour-ci.
+ *
+ * Cette fonction ne fait que LIRE et AGRÉGER ce qui existe déjà — zéro migration ; la règle
+ * `hors_periode` elle-même est neuve dans `flags.ts`, testée d'abord contre un cas connu mauvais
+ * (règle 17, `kernel.test.ts`).
  *
  * L'ÉNONCÉ HONNÊTE (le second volet du critère d'admission H-3, ce qu'une règle couvre et ne
  * couvre pas) vit dans le CATALOGUE (`i18n/catalogue.ts`, clés `gl.regle.<code>.*`), jamais ici —
@@ -27,7 +37,7 @@ import type { JeFlag } from '@/lib/kernel/types';
  * RE-DÉRIVE une règle indépendamment en SQL et compare (règle 16).
  */
 
-const REGLES: JeFlag[] = ['weekend', 'round_amount', 'manual_journal', 'period_end', 'credit_note_pattern', 'late_validation'];
+const REGLES: JeFlag[] = ['weekend', 'round_amount', 'manual_journal', 'period_end', 'credit_note_pattern', 'late_validation', 'hors_periode'];
 
 export interface ReglesGL {
   regle: JeFlag;

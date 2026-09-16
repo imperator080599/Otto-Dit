@@ -32,7 +32,7 @@ describe('testExhaustifGrandLivre (H-3 slice 1) : le test exhaustif rend visible
   it('chaque règle porte un compte cohérent avec une re-dérivation SQL directe, et jamais plus que le total', async () => {
     const { total, regles } = await testExhaustifGrandLivre(IDS.engNep);
     expect(regles.map((r) => r.regle).sort()).toEqual(
-      ['credit_note_pattern', 'late_validation', 'manual_journal', 'period_end', 'round_amount', 'weekend'].sort(),
+      ['credit_note_pattern', 'late_validation', 'manual_journal', 'period_end', 'round_amount', 'weekend', 'hors_periode'].sort(),
     );
     for (const r of regles) {
       expect(r.nombre, `${r.regle} ne peut pas dépasser le total`).toBeLessThanOrEqual(total);
@@ -66,6 +66,20 @@ describe('testExhaustifGrandLivre (H-3 slice 1) : le test exhaustif rend visible
     for (const e of weekend.exemples) {
       const dow = new Date(`${e.entryDate}T00:00:00Z`).getUTCDay();
       expect([0, 6], `l'exemple ${e.entryNo} du ${e.entryDate} doit tomber un week-end`).toContain(dow);
+    }
+  });
+
+  it('cas connu bon : la règle hors_periode, vérifiée exemple par exemple, tombe bien hors des bornes de l’exercice', async () => {
+    const { regles } = await testExhaustifGrandLivre(IDS.engNep);
+    const horsPeriode = regles.find((r) => r.regle === 'hors_periode')!;
+    if (horsPeriode.nombre === 0) return; // rien à vérifier sur cette exécution du monde de démo
+    const periode = await q1<{ start_date: string; end_date: string }>(
+      `select p.start_date::text, p.end_date::text from engagement e join period p on p.id = e.period_id where e.id = $1`,
+      [IDS.engNep],
+    );
+    for (const e of horsPeriode.exemples) {
+      const dedans = e.entryDate >= periode.start_date && e.entryDate <= periode.end_date;
+      expect(dedans, `l'exemple ${e.entryNo} du ${e.entryDate} doit tomber HORS [${periode.start_date}, ${periode.end_date}]`).toBe(false);
     }
   });
 

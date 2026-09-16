@@ -39,7 +39,8 @@ export type JeFlag =
   | 'manual_journal'
   | 'period_end'
   | 'credit_note_pattern'
-  | 'late_validation';
+  | 'late_validation'
+  | 'hors_periode';
 
 export interface FlaggedGlRow extends GlRow {
   flags: JeFlag[];

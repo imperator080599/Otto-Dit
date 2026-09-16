@@ -245,7 +245,7 @@ export async function importFec(opts: {
       await q(`update gl_entry set status = 'superseded' where engagement_id = $1 and status = 'active'`, [opts.engagementId]);
     }
     // flags computed at import (ADR-003) on the revenue-relevant view of the whole ledger
-    const flagged = computeFlags(parsed.rows, defaultFlagConfig(ctx.period_end));
+    const flagged = computeFlags(parsed.rows, defaultFlagConfig(ctx.period_start, ctx.period_end));
     const oldByNk = new Map(old.map((o) => [o.natural_key, o.id]));
     for (const r of flagged) {
       const inserted = await q1<{ id: string }>(
