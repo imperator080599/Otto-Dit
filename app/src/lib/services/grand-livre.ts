@@ -33,7 +33,7 @@ export interface ReglesGL {
   regle: JeFlag;
   nombre: number;
   exemples: {
-    entryNo: string; entryDate: string; accountNo: string; label: string | null;
+    id: string; entryNo: string; entryDate: string; accountNo: string; label: string | null;
     montantCents: number; pieceRef: string | null;
   }[];
 }
@@ -51,10 +51,10 @@ export async function testExhaustifGrandLivre(engagementId: string): Promise<{ t
       [engagementId, JSON.stringify([code])],
     );
     const exemples = await q<{
-      entry_no: string; entry_date: string; account_no: string; label: string | null;
+      id: string; entry_no: string; entry_date: string; account_no: string; label: string | null;
       debit: string; credit: string; piece_ref: string | null;
     }>(
-      `select entry_no, entry_date::text, account_no, label, debit::text, credit::text, piece_ref
+      `select id::text, entry_no, entry_date::text, account_no, label, debit::text, credit::text, piece_ref
        from gl_entry where engagement_id = $1 and status = 'active' and flags @> $2::jsonb
        order by entry_date desc, entry_no limit 10`,
       [engagementId, JSON.stringify([code])],
@@ -63,6 +63,7 @@ export async function testExhaustifGrandLivre(engagementId: string): Promise<{ t
       regle: code,
       nombre: Number(countRow.n),
       exemples: exemples.map((e) => ({
+        id: e.id,
         entryNo: e.entry_no,
         entryDate: e.entry_date,
         accountNo: e.account_no,

@@ -56,7 +56,7 @@ export default async function GrandLivrePage({ params }: { params: Promise<{ id:
                 </thead>
                 <tbody>
                   {r.exemples.map((e) => (
-                    <tr key={`${r.regle}-${e.entryNo}-${e.entryDate}`}>
+                    <tr key={e.id}>
                       <td>{e.entryDate}</td>
                       <td className="mono">{e.entryNo}{e.pieceRef ? ` · ${e.pieceRef}` : ''}</td>
                       <td className="mono">{e.accountNo}</td>
