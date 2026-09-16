@@ -4,6 +4,83 @@
 
 ---
 
+## Lot 7, H-3 slice 1 — le test exhaustif du grand livre, rendu visible (2026-09-16)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 3 (règle 32). H-2 est
+COMPLÈTE (quatre volets). Prochain point par ordre de valeur, `docs/REGISTRE_IDEES.md` §H : H-3,
+« l'analytique en population COMPLÈTE à côté du sondage, avec l'énoncé honnête de ce qu'un test
+exhaustif couvre et ne couvre pas ».*
+
+**Recherche préalable (un sous-agent)**, avant tout code : `computeFlags` (ADR-003,
+`kernel/flags.ts`) tourne déjà, à l'IMPORT (`imports.ts`), sur TOUT le grand livre importé — pas
+un sous-ensemble filtré par cycle ni par poste. Le résultat (six règles : week-end, montant rond,
+écriture manuelle, fin de période, motif d'avoirs répétés, validation tardive) est stocké sur
+CHAQUE `gl_entry` (`flags` jsonb), mais AUCUN écran ne le rendait visible sur la population
+ENTIÈRE avant cette slice — seul le sous-ensemble déjà TIRÉ par MANUEL/FRAUDE (Lot 6 tranche 3,
+`sampling-je.ts`) l'exploitait, au grain d'un `sample`, jamais celui de « 100% des écritures ».
+**Périmètre gelé (règle 14) : HORS gel.** `gl_entry` n'a pas de notion de cycle FSLI intrinsèque
+— ce test s'applique à toute la population sans ouvrir de poste ni de procédure nouvelle, à la
+différence des huit postes du Lot 5. Découpe recommandée en 2-3 slices ; celle-ci est la
+première : rendre visible ce qui existe déjà, zéro nouvelle règle de détection.
+
+**Implémenté** (commit `b6cb55b`) : `grand-livre.ts::testExhaustifGrandLivre` — LIT et AGRÈGE
+`gl_entry.flags`, retourne des CODES (JeFlag), jamais de libellé en dur (`langue.ts` le détecte et
+le refuse — trouvé au premier passage, corrigé avant le commit : la disclosure « couvre »/« ne
+couvre pas » vit désormais au catalogue, `gl.regle.<code>.*`, une clé par règle, deux langues).
+Écran `/eng/[id]/grand-livre` (découvert automatiquement par screens/fumee/densite/visuel,
+`scripts/screens/routes.ts` lit l'arborescence de `src/app`, jamais une liste tenue à la main),
+lien posé depuis `/analytique`. `/api/sante` : nouvelle lecture « H-3 slice 1 : le test exhaustif
+du grand livre (règle week-end) » — re-dérive indépendamment (règle 16, `extract(dow from
+entry_date)` en SQL pur) et compare au flag stocké ; rougit sur une dérive (cas connu mauvais,
+règle 17). Les cinq autres règles restent hors de cette lecture, disclosed (règle 19). Station
+clics ajoutée (règle 10) : atteint l'écran via le lien réel, vérifie que les SIX règles portent
+chacune leur disclosure — jamais une seule (leçon tirée du correctif de la station « relancer »,
+H-2 slice 3).
+
+**Revue hostile, UN réfutateur (règle 30 : zéro modèle de données, sécurité, multi-tenant ou
+code de refus touché).** Verdict SHIP AS-IS, aucun constat bloquant — huit points vérifiés en
+exécution (cohérence `status='active'` avec le ré-import, syntaxe `jsonb @>` testée directement,
+lacune de la lecture sante disclosed et non bloquante pour une slice 1, absence de faux positif du
+sélecteur clics, impossibilité mathématique d'un flag `round_amount` sur montant nul, les deux
+suites de tests exécutées réellement, cohérence du contrôle d'accès avec `analytique.ts`).
+
+**Trouvé PAR LE VITEST COMPLET lui-même, pas par la revue hostile (règle 18, deux défauts réels)**
+— corrigé le jour même (commit `980b593`) :
+1. `rail.test.ts` (« aucun écran de dossier n'est injoignable ») : `/eng/[id]/grand-livre`
+   n'était atteignable par AUCUN chemin de lecture déclaré (le lien ad hoc sur `/analytique`
+   n'est ni le rail ni `destinationsDuPoste`). Ajouté à `AILLEURS` avec sa raison écrite (même
+   patron que `/rcm/[cid]`) plutôt que forcé au rail : cet écran est une pure lecture, jamais un
+   état du dossier.
+2. `tests/screens.test.ts` (React : « Encountered two children with the same key ») : la clé
+   `${regle}-${entryNo}-${entryDate}` n'était pas unique — une même écriture porte PLUSIEURS
+   lignes (débit sur un compte, crédit sur un autre), et deux lignes peuvent porter le MÊME flag.
+   `grand-livre.ts` sélectionne désormais `gl_entry.id` (clé primaire) et l'expose comme clé React.
+
+**Une mesure INTERMÉDIAIRE (avant ce correctif, commit `99cb667`) a montré DEUX occurrences de
+`#418` au lieu d'une** — diagnostiqué, pas supposé (règle 18) : la même signature exacte en
+première divergence des deux (le tooltip `rail-astuce`, déjà catalogué, apparu au chargement
+initial avant tout geste scripté), disjointe des fichiers de cette tranche. La mesure FINALE, sur
+l'arbre corrigé, est revenue à UNE SEULE occurrence — confirmant le bruit de chronologie plutôt
+qu'une régression (docs/CHASSE.md, F36).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur l'arbre
+du commit `980b593`) : `tsc` propre · **158/158 fichiers, 1189/1189 tests vitest** · `gardes` 47 ·
+`semeur` à jour · `plancher` collectés · `langue` 0 hors catalogue, 0 libellé en dur dans un
+service, **15/15** · `lectures` 0 perdue, **6/6** · `parcours` 0 station perdue, **5/5** ·
+`screens` **95 routes, 0 échec** (+2 : grand-livre) · `fumee` **53 routes, 0 échec** · `densite`
+**85 écrans, 0 dépassement** (+2, régénéré séparément sur `0bd6644`) · `clics` **EXIT=1 réel, seul
+motif `#418`** (F36, vingt-deuxième confirmation, les quatre assertions de la nouvelle station
+passent), clôture et archive ATTEINTES (266 étapes, 386 clics). `visuel` (relancé séparément) :
+**344 vues, 0 défaut**.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-3 slice 1 est COMPLÈTE.** Reste du Lot 7 : H-3 slice 2 (nouvelles règles techniques
+exhaustives — cohérence débit=crédit, doublons, écritures hors période — chacune sourcée avant
+d'être écrite, règle 8) et slice 3 optionnelle (atelier de revue ligne à ligne pour MANUEL/FRAUDE,
+R104). Au-delà de H-3 : H-4 à H-6 du registre, par ordre de valeur.
+
 ## Lot 7, H-2 slice 3 — la relance propre au point d'action client (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-2 slice 2 (règle 32). H-2 :

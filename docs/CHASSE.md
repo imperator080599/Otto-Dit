@@ -1300,3 +1300,25 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   étapes conduites, 385 clics comptés — VINGT-ET-UNIÈME confirmation consécutive que `#418` est
   disjoint. Pas creusé plus loin (même discipline que F9-F34). `npm run visuel` relancé séparément
   (le `&&` casse sur l'échec de `clics`), propre (336 vues, 0 défaut).
+
+- **F36 — UN incident, sur l'arbre CORRIGÉ** (2026-09-16, Lot 7, H-3 slice 1 — le test exhaustif
+  du grand livre, commit `980b593` — DEUX défauts réels trouvés par le `vitest` COMPLET lui-même,
+  pas par la revue hostile : `rail.test.ts` (l'écran neuf n'était atteignable par aucun chemin de
+  lecture déclaré) et une collision de clé React dans `tests/screens.test.ts` (deux lignes de la
+  même écriture partageant le même flag rendaient la même clé `regle-entryNo-entryDate`) — les
+  deux corrigés le jour même, voir STATUS.md « Lot 7, H-3 slice 1 »). **Mesure INTERMÉDIAIRE, AVANT
+  ce correctif** (commit `99cb667`, non retenue comme confirmation) : DEUX occurrences de `#418`
+  cette fois — l'une sur `/eng/.../suivi` (une route jamais vue auparavant), l'autre sur l'habituel
+  `/rcm/[cid]`. Diagnostiqué, pas supposé (règle 18) : les DEUX incidents portent la MÊME signature
+  EXACTE en première divergence (le tooltip client-only `rail-astuce`/« Collapse the rail », déjà
+  catalogué F9+, apparu « avant la première station » — donc au chargement initial, avant tout
+  geste scripté) ; disjoint des fichiers de cette tranche (`grand-livre.ts`/`page.tsx` ne touchent
+  ni `/suivi` ni `/rcm`). **Mesure FINALE, sur l'arbre corrigé** (commit `980b593`) : `EXIT=1`
+  réel (journal brut, `set -o pipefail`), retour à UNE SEULE occurrence — `/eng/70670df5-.../rcm/
+  332ea850-...` (l'habituelle) — confirmant que le doublement de la mesure intermédiaire était du
+  bruit de chronologie (hypothèse H, §1), pas une régression de cette tranche. 158/158 fichiers
+  vitest (1189/1189 tests) passent tous. La station « grand livre » (les quatre assertions)
+  passe. Clôture et archive ATTEINTES (240 stations figées vérifiées), 266 étapes conduites, 386
+  clics comptés — VINGT-DEUXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus
+  loin (même discipline que F9-F35). `npm run visuel` relancé séparément (le `&&` casse sur
+  l'échec de `clics`), propre (344 vues, 0 défaut).
