@@ -1,12 +1,17 @@
 {
   "_": "LE SHA SERVI EST MESURÉ, JAMAIS SUPPOSÉ (règle 27). Ce fichier est un instantané : il porte la dernière lecture de /api/sante (champ `sha`), qui l'a faite et quand. Le bac à sable de l'agent ne joint pas *.vercel.app : la mesure vient de la CI (travail `deploye`, scripts/deploiement/atteint.ts) ou d'un outil de la session. `npm run reprise` compare ce SHA au HEAD et le dit quand ils diffèrent. Une entrée d'historique sans lecture rejouable porte `quand: \"non mesuré\"` plutôt qu'un horodatage ISO qui aurait l'air d'une mesure (revue hostile du 2026-09-06).",
   "url": "https://otto-dit.vercel.app",
-  "sha": "1162162e5bdc796f77dd2d2b34d14527c1d8f003",
+  "sha": "4b5fcbc9c178bc22dd461f03854ff3a43805f31a",
   "mesure": {
-    "quand": "2026-09-16T07:36:49Z",
-    "par": "Confirmé en direct : mcp__Vercel__list_deployments (dpl_H8zVti2MU8Us5CwiiDXLW9ua2J3J, cible production) READY, commit 1162162e5bdc796f77dd2d2b34d14527c1d8f003 ; mcp__Vercel__web_fetch_vercel_url sur /api/sante : HTTP 200, sha identique, identiteCoherente=true, « toutes les lectures passent ». Lot 6, tranche 2 : le registre des anomalies, vérifié déjà complet (aucun code changé, cinq exigences du mandat tenues depuis le 2026-09-14, vérifié par le chemin cliqué docs/CLICS.md). Docs seules, aucun verify requis."
+    "quand": "2026-09-16T08:47:37Z",
+    "par": "Confirmé en direct : mcp__Vercel__get_deployment (dpl_HwypPbRjpb8eCRXeiMXBJRfkz19r, cible production) READY, commit 4b5fcbc9c178bc22dd461f03854ff3a43805f31a ; mcp__Vercel__web_fetch_vercel_url sur https://otto-dit.vercel.app/api/sante (en-tête `date` du serveur, 08:47:37Z) : HTTP 200, sha identique, identiteCoherente=true, « toutes les lectures passent » — nouvelle lecture « atelier sondage_pieces réservé à REV-SUBST sur REVENUE (Lot 6, tranche 3 — NEP 240) » ok:true, detail « 3 procédure(s) sondage_pieces planifiée(s) sur REVENUE, dont CUTOFF/MANUEL sans atelier (disclosed R104), honnêtement » (aucune régression du distinguo REV-SUBST/MANUEL/FRAUDE). Lot 6, tranche 3 : NEP 240, l'épine dorsale (population et tirage des écritures à risque, MANUEL/FRAUDE). Un réfutateur (règle 30 amendée), deux constats corrigés avant ce push (R104 étendu, phrase de justification simplifiée). npm run verify complet sur l'arbre gelé du commit 88ff8e0 : 149/149 fichiers vitest (1154/1154 tests), gardes 46, langue 15/15, lectures 6/6, parcours 5/5, screens 93/0, fumee 52/0, densite 83 écrans/0 dépassement, clics EXIT=1 (seul motif #418, F30, seizième confirmation), visuel relancé séparément (336 vues, 0 défaut). Le Lot 6 (mandat 2026-09-05, Partie D.1) est COMPLET : ANA-04, registre des anomalies, NEP 240 — les trois morceaux sont en ligne."
   },
   "historique": [
+    {
+      "sha": "1162162e5bdc796f77dd2d2b34d14527c1d8f003",
+      "quand": "2026-09-16T07:36:49Z",
+      "par": "Confirmé en direct : mcp__Vercel__list_deployments (dpl_H8zVti2MU8Us5CwiiDXLW9ua2J3J, cible production) READY, commit 1162162e5bdc796f77dd2d2b34d14527c1d8f003 ; mcp__Vercel__web_fetch_vercel_url sur /api/sante : HTTP 200, sha identique, identiteCoherente=true, « toutes les lectures passent ». Lot 6, tranche 2 : le registre des anomalies, vérifié déjà complet (aucun code changé, cinq exigences du mandat tenues depuis le 2026-09-14, vérifié par le chemin cliqué docs/CLICS.md). Docs seules, aucun verify requis."
+    },
     {
       "sha": "c00b43a2122129ac64e63010595ae251fbf9177a",
       "quand": "2026-09-16T07:30:17Z",

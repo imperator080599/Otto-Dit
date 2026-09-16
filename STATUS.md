@@ -107,6 +107,20 @@ applicatif — clôture et archive ATTEINTES (240 stations figées vérifiées, 
 `visuel` (relancé séparément, même précédent que toutes les tranches précédentes — `clics` en
 échec sur `#418` casse le `&&`) : **336 vues, 0 défaut(s)**.
 
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_HwypPbRjpb8eCRXeiMXBJRfkz19r`, cible
+`production`) : `READY`, commit `4b5fcbc9c178bc22dd461f03854ff3a43805f31a` ;
+`mcp__Vercel__web_fetch_vercel_url` sur `https://otto-dit.vercel.app/api/sante` : HTTP 200,
+`sha` identique, `identiteCoherente:true`, verdict « toutes les lectures passent » — la nouvelle
+lecture « atelier sondage_pieces réservé à REV-SUBST sur REVENUE » `ok:true`, detail « 3
+procédure(s) sondage_pieces planifiée(s) sur REVENUE, dont CUTOFF/MANUEL sans atelier (disclosed
+R104), honnêtement » (aucune régression). `docs/instantanes/servi.json` et `docs/REPRISE.md` mis
+à jour dans le même geste.
+
+**Le Lot 6 (mandat 2026-09-05, Partie D.1) est COMPLET** : ANA-04 (la revue analytique périmée
+bloque le visa), le registre des anomalies (déjà complet, vérifié), NEP 240 (l'épine dorsale) —
+les trois morceaux sont en ligne. Suite du mandat du fondateur (2026-09-16) : Lot 7 (l'espace de
+demandes au niveau du marché, le cycle de vie du constat client), enchaîné sans pause (règle 32).
+
 ## Lot 6, tranche 2 : le registre des anomalies — DÉJÀ COMPLET, vérifié (2026-09-16)
 
 *Mandat `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, Partie D.1, deuxième morceau du
