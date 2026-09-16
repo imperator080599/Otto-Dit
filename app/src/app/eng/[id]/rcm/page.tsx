@@ -1,11 +1,9 @@
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
-import { listControls, setDiStatus, importRcm, listDeficiencies } from '@/lib/services/sox';
-import { repoRoot } from '@/lib/db/client';
-import fs from 'node:fs';
-import path from 'node:path';
+import { listControls, setDiStatus, listDeficiencies } from '@/lib/services/sox';
 import { executer } from '@/app/refus';
+import { uploadRcmAction } from './actions';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
 import { Repli } from '@/app/repli';
@@ -26,15 +24,6 @@ export default async function RcmPage({
   const controls = await listControls(id);
   const deficiencies = await listDeficiencies(id);
 
-  async function importDatasetRcm() {
-    'use server';
-    return executer(`/eng/${id}/rcm`, async () => {
-      const { user } = await requireMember(id);
-      const csv = fs.readFileSync(path.join(repoRoot(), 'dataset', 'sox', 'rcm.csv'), 'utf8');
-      await importRcm(id, csv, user.id);
-      revalidatePath(`/eng/${id}/rcm`);
-    });
-  }
   async function diAction(formData: FormData) {
     'use server';
     return executer(`/eng/${id}/rcm`, async () => {
@@ -56,7 +45,11 @@ export default async function RcmPage({
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>{t('rcm.riskControlMatrixRcm')}</h2>
           {controls.length === 0 && (
-            <form action={importDatasetRcm}><button className="btn">{t('rcm.importRcmClientListing')}</button></form>
+            <form action={uploadRcmAction} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <input type="hidden" name="engagement_id" value={id} />
+              <input type="file" name="file" accept=".csv" required />
+              <button className="btn">{t('rcm.importRcmClientListing')}</button>
+            </form>
           )}
         </div>
         <div className="table-scroll">

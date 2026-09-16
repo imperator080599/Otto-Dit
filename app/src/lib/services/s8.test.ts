@@ -36,6 +36,56 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     expect(Number(attrs[0].n)).toBeGreaterThan(7);
   });
 
+  /* Lot 7, H-5 tranche 1 (`docs/REGISTRE_IDEES.md` §H, ligne 273) : « importée COMME PIÈCE,
+     jamais recréée ». `importRcm` crée désormais une vraie ligne `import_file` (kind='rcm',
+     sha256, validation_report, status) — MÊME précédent que `importTb`/`importFec` — et chaque
+     `rcm_row` de cet import pointe dessus. Ces tests prouvent l'AGRÉGATION de provenance contre
+     ce que `bootstrapSox` a réellement importé (le fixture `dataset/sox/rcm.csv`, via
+     `part2.ts:31`), jamais une fixture isolée. */
+  it('H-5 tranche 1 : chaque rcm_row importé porte la provenance de SON fichier (import_file, kind=rcm)', async () => {
+    const csv = fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8');
+    const file = await q1<{ id: string; kind: string; filename: string; sha256: string; status: string; row_count: number }>(
+      `select id::text, kind, filename, sha256, status, row_count from import_file
+       where engagement_id = $1 and kind = 'rcm' order by created_at asc limit 1`,
+      [IDS.engSox],
+    );
+    expect(file.kind).toBe('rcm');
+    expect(file.filename).toBe('rcm.csv');
+    expect(file.status).toBe('validated');
+    expect(file.row_count).toBe(7);
+    const { sha256 } = await import('@/lib/core/hash');
+    expect(file.sha256).toBe(sha256(csv));
+    const rows = await q<{ n: string }>(
+      `select count(*) n from rcm_row where engagement_id = $1 and import_file_id <> $2`,
+      [IDS.engSox, file.id],
+    );
+    expect(Number(rows[0].n), 'aucun rcm_row de ce dossier ne doit pointer un AUTRE fichier').toBe(0);
+    const orphelins = await q<{ n: string }>(
+      `select count(*) n from rcm_row where engagement_id = $1 and import_file_id is null`,
+      [IDS.engSox],
+    );
+    expect(Number(orphelins[0].n), 'aucun rcm_row importé par cette tranche ne doit être orphelin de provenance').toBe(0);
+  });
+
+  it('H-5 tranche 1, cas connu mauvais (règle 17) : un ré-import du MÊME listing ne recrée rien, et le dit — validated_with_warnings, 0 importé', async () => {
+    const { importRcm } = await import('./sox');
+    const csv = fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8');
+    const avant = await q1<{ n: string }>(`select count(*) n from control where engagement_id = $1`, [IDS.engSox]);
+    const { importFileId, count } = await importRcm(IDS.engSox, csv, IDS.users.karim, 'rcm-reimport.csv');
+    expect(count, 'les SEPT contrôles existent déjà par code : rien de nouveau ne doit être créé').toBe(0);
+    const apres = await q1<{ n: string }>(`select count(*) n from control where engagement_id = $1`, [IDS.engSox]);
+    expect(Number(apres.n), 'un ré-import du même listing ne doit JAMAIS dupliquer un contrôle').toBe(Number(avant.n));
+    const file = await q1<{ status: string; row_count: number; validation_report: { skippedExistingCode: number } }>(
+      `select status, row_count, validation_report from import_file where id = $1`, [importFileId],
+    );
+    expect(file.status, 'un import qui n’a RIEN créé de nouveau se voit, il ne se tait pas').toBe('validated_with_warnings');
+    expect(file.row_count).toBe(0);
+    expect(file.validation_report.skippedExistingCode).toBe(7);
+    // La pièce elle-même EXISTE et se garde — un import qui n'a rien créé n'est pas un import qui n'a jamais eu lieu.
+    const rows = await q<{ n: string }>(`select count(*) n from rcm_row where import_file_id = $1`, [importFileId]);
+    expect(Number(rows[0].n)).toBe(0);
+  });
+
   it('D&I gate blocks OE testing on a not-assessed control', async () => {
     /* Les SEPT contrôles démarrent `not_assessed` depuis la correction CTRL-01 du
        2026-09-08 (importRcm ne lit plus di_status du listing client — un jugement de

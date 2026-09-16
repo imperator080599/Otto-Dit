@@ -1,6 +1,6 @@
 import { q, q01, q1, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
-import { hashObject } from '@/lib/core/hash';
+import { hashObject, sha256 } from '@/lib/core/hash';
 import { controlPopulationHash } from '@/lib/kernel/canon';
 import { attributeDraw } from '@/lib/kernel/sampling';
 import { proposeDeficiencySeverity, type DeviationNature } from '@/lib/kernel/deficiency';
@@ -58,12 +58,31 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
-export async function importRcm(engagementId: string, csv: string, userId: string): Promise<number> {
+export async function importRcm(
+  engagementId: string, csv: string, userId: string, filename = 'rcm.csv',
+): Promise<{ importFileId: string; count: number }> {
   await assertMembre(engagementId, userId, 'importRcm');
   const ctx = await engagementCtx(engagementId);
   const lines = csv.trim().split(/\r?\n/);
   const headers = splitCsvLine(lines[0]);
   const idx = (n: string) => headers.indexOf(n);
+  /* Lot 7, H-5 tranche 1 (`docs/REGISTRE_IDEES.md` §H, ligne 273) : « importée COMME PIÈCE,
+     jamais recréée ». `import_file` (règle 0001) anticipait déjà `kind='rcm'`, jamais employé —
+     cette tranche crée enfin la ligne de provenance (sha256, validation_report, status), MÊME
+     précédent que `importTb`/`importFec` (imports.ts). `filename` défaut à 'rcm.csv' pour ne pas
+     casser les deux appels du semeur (part2.ts, enrichir.ts) qui n'en passaient aucun avant cette
+     tranche — les deux ont été mis à jour pour passer le vrai nom malgré tout (règle 16 : jamais
+     de valeur qui a l'air d'une provenance sans en être une). */
+  const totalRows = lines.length - 1;
+  /* La ligne `import_file` se crée AVANT la boucle (son `id` porte chaque `rcm_row`), et se
+     COMPLÈTE après (row_count/status/validation_report ne sont connus qu'une fois le CSV
+     parcouru — les doublons de code, silencieusement ignorés par la boucle depuis toujours,
+     comptent désormais comme un AVERTISSEMENT plutôt que de rester invisibles). */
+  const file = await q1<{ id: string }>(
+    `insert into import_file (engagement_id, kind, filename, sha256, validation_report, status, row_count)
+     values ($1,'rcm',$2,$3,'{}'::jsonb,'validated',0) returning id`,
+    [engagementId, filename, sha256(csv)],
+  );
   const processIds = new Map<string, string>();
   let count = 0;
   for (const line of lines.slice(1)) {
@@ -97,8 +116,8 @@ export async function importRcm(engagementId: string, csv: string, userId: strin
     );
     const assertionsList = (get('assertions') || '').split('|').filter(Boolean);
     await q(
-      `insert into rcm_row (engagement_id, control_id, risk_desc, assertions, coso_component) values ($1,$2,$3,$4,$5)`,
-      [engagementId, control.id, get('risk_desc'), assertionsList, get('coso_component')],
+      `insert into rcm_row (engagement_id, control_id, risk_desc, assertions, coso_component, import_file_id) values ($1,$2,$3,$4,$5,$6)`,
+      [engagementId, control.id, get('risk_desc'), assertionsList, get('coso_component'), file.id],
     );
     /* CTRL-02 (mandat contrôle interne, §2.4.1) : « ce facteur porte un lien vers les objets
        risque réels, jamais du texte libre seul ». `risk_desc` ci-dessus reste le texte du
@@ -135,11 +154,20 @@ export async function importRcm(engagementId: string, csv: string, userId: strin
     }
     count++;
   }
+  const skipped = totalRows - count;
+  await q(
+    `update import_file set row_count = $2, status = $3, validation_report = $4 where id = $1`,
+    [
+      file.id, count,
+      skipped > 0 ? 'validated_with_warnings' : 'validated',
+      JSON.stringify({ totalRows, imported: count, skippedExistingCode: skipped }),
+    ],
+  );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
-    verb: 'rcm_imported', objectType: 'control', payload: { controls: count },
+    verb: 'rcm_imported', objectType: 'import_file', objectId: file.id, payload: { controls: count, skipped },
   });
-  return count;
+  return { importFileId: file.id, count };
 }
 
 export async function listControls(engagementId: string) {

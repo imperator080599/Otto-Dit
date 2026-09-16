@@ -1883,3 +1883,24 @@ design : chacun reste une tranche à construire.**
   dernier écart `open` quitte ce statut avant la station 12/kanban, et (b) soit en retardant CE
   moment d'une étape, soit en insérant les stations d'assignation/relance À UN POINT du parcours
   où un écart `open` existe encore prouvé — jamais en devinant un emplacement.
+
+- **R107 — le vrai geste d'upload RCM (`uploadRcmAction`, Lot 7 H-5 tranche 1) n'est cliqué par
+  AUCUNE station de `npm run clics`, sur le monde de démo canonique.** Le bouton
+  `rcm.importRcmClientListing` ne s'affiche QUE quand `controls.length === 0` pour le dossier
+  courant — et les DEUX dossiers que le parcours cliqué visite avec un rail RCM (`eng`/engNep, via
+  `enrichir.ts:388` ; `engSox`, via `part2.ts:31`) ont TOUS LES DEUX leur RCM importée PAR LE
+  SEMEUR avant que clics ne s'exécute : le formulaire d'upload n'est donc jamais OFFERT à l'écran
+  au moment où le parcours passe. `registre.ts` (règle 20) marquait déjà ce chemin `non_prouve`
+  AVANT cette tranche (l'ancien bouton-démo, lui non plus, n'était jamais cliqué) — cette tranche
+  a rendu le geste RÉEL (vrai fichier, vraie provenance `import_file`) sans changer son
+  atteignabilité par le parcours canonique, donc l'état du registre reste honnêtement
+  `non_prouve`. **Portée** : aucun défaut de logique dans `importRcm`/`uploadRcmAction` — prouvés
+  par exécution directe (7 tests, `s8.test.ts`, dont 2 cas connus mauvais) et par la lecture
+  `/api/sante` dédiée (3 tests, dont 2 cas connus mauvais, `h5-tranche1-rcm-provenance-lecture.
+  test.ts`) ; seul le CLIC du bouton, sur ce monde scellé, manque. | 2026-09-16 (Lot 7, H-5
+  tranche 1) | non corrigé, délibérément hors du périmètre de cette tranche : forcer une preuve
+  par clic exigerait soit un troisième dossier créé À VIDE pendant le parcours lui-même (risque de
+  régression sur un parcours déjà long et fragile au `#418`), soit retarder l'import RCM du semeur
+  après la station RCM du parcours (même classe de risque que R106 sur `demo-seed.ts`/
+  `lib/flows/*`) — reprendre en choisissant l'une des deux options seulement après avoir mesuré le
+  coût réel sur `docs/CLICS.md` (étapes/clics), jamais en devinant laquelle est la moins risquée.

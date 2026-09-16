@@ -28,7 +28,7 @@ export async function bootstrapSox(): Promise<void> {
   await importTb({ engagementId: IDS.engSox, userId: IDS.users.karim, filename: 'tb_2025.csv', content: tb, mapping: detectTbMapping(tb.split('\n')[0]), periodKind: 'current' });
   await rebuildFslis(IDS.engSox, IDS.users.karim);
   await validate(await propose(IDS.engSox, IDS.users.lea), IDS.users.lea);
-  await importRcm(IDS.engSox, fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8'), IDS.users.karim);
+  await importRcm(IDS.engSox, fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8'), IDS.users.karim, 'rcm.csv');
 }
 
 /** Population listing request (standing item) → client provides the listing → import. */

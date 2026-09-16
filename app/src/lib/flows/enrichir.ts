@@ -385,7 +385,7 @@ export async function enrichirMondeDemo(): Promise<RapportEnrichissement> {
   /* 7. LA MATRICE RISQUES-CONTRÔLES du cycle — la même que celle de l'entité. */
   await conduireEtape('matrice risques-contrôles du cycle', async () => {
       const avant = await listControls(ENG);
-      if (avant.length === 0) await importRcm(ENG, fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8'), karim);
+      if (avant.length === 0) await importRcm(ENG, fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8'), karim, 'rcm.csv');
       const apres = await listControls(ENG);
       return { fait: apres.length > 0, detail: `${apres.length} contrôle(s)` };
   });
