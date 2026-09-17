@@ -134,6 +134,15 @@ body {
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Cette règle h1 (et ses sœurs h2/h3 juste dessous) est CASCADE-MORTE pour
+   font-size depuis le repass ADR-125 (plus bas dans ce fichier, même
+   sélecteur, même spécificité, déclaré APRÈS — il gagne toujours). --t6 ici
+   ne documente donc pas la valeur d'ORIGINE de cette règle (c'était 20px
+   avant le repass) mais celle du repass qui la recouvre — les deux
+   déclarations partagent maintenant le même jeton, donc RIEN ne casse si
+   l'une des deux disparaît un jour, mais un futur lecteur qui ne le sait pas
+   pourrait croire que retirer le repass ADR-125 changerait le rendu de h1 :
+   ce ne serait pas le cas (revue hostile, Lot 7, H-6 tranche 1). */
 h1 { font-size: var(--t6); margin: 0 0 4px; font-weight: 650; }
 h2 { font-size: var(--t5); margin: 22px 0 8px; font-weight: 650; }
 h3 { font-size: var(--t3); margin: 16px 0 6px; font-weight: 600; }
