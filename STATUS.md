@@ -74,7 +74,18 @@ seul motif `#418`** (F39, VINGT-CINQUIÈME confirmation, la station « rcm : l'u
 listing client » CONFIRME des contrôles importés), clôture et archive ATTEINTES (271 étapes, 388
 clics). `visuel` (relancé séparément) : **352 vues, 0 défaut**.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__list_deployments` (`dpl_GsWj2xwDFzQRWNDSZeeM7hgdYfFy`, cible
+production) READY, commit `d38f734dc2b6f7f875961ce9b92852afc233fa1c` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 01:08:18Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent » — nouvelle lecture « H-5 tranche 1 :
+la provenance RCM cohérente avec le fichier importé » `ok:true`, `vide:true`, detail « VIDE — aucun
+import RCM avec provenance pour l'instant — 7 ligne(s) antérieure(s) à cette tranche (migration 0169),
+sans provenance rétroactive ». Cette mesure est une preuve vivante, pas seulement une confirmation :
+production porte réellement 7 lignes RCM importées par un `reconstruire.ts` antérieur à la migration
+0169 (sans `import_file_id`), exactement le cas que la lecture initiale (avant correctif voix 1) aurait
+lu comme un défaut et aurait fait rougir en HTTP 500 — la conception informative retenue après la revue
+hostile est donc exercée par le monde réel, pas seulement par un test. Registre du décor (semeur.ts) :
+31 non prouvé(s) · 42 prouvé(s) (était 32/41 avant cette tranche).
 
 **Lot 7, H-5 tranche 1 est COMPLÈTE.** Tranches 2/3 optionnelles de H-5 (tolérance de format
 façon export AuditBoard/ServiceNow ; « tests de la direction » comme IPE) restent à évaluer par
