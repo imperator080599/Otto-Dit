@@ -559,6 +559,12 @@
       "etat": "ouvert — STOCKS-INV (INVENTORY, nature observation_documentee, R99) est câblée sur l'atelier « détail du compte » (réutilisé de R98/PERSONNEL-DSN), qui ne fait qu'UNE réconciliation de TOTAL — pas le test bidirectionnel ligne à ligne (réalité + exhaustivité) que le controle de la procédure exige (methodology/procedures.json : « deux sens obligatoires »).",
       "depuis": "2026-09-17 (Lot 7, priorité 1, R99)",
       "note": "non corrigé, délibérément : un total qui rapproche est un premier geste réel (le poste n'ouvre plus sur rien, D.0), pas le geste complet que la méthode décrit — account-detail.ts porte déjà les lignes individuelles (account_detail_row) si une tranche future construit le tirage bidirectionnel, mais c'est hors du périmètre d'une tranche d'ouverture d'atelier (règle 9)."
+    },
+    {
+      "id": "R110",
+      "etat": "ouvert — CAPITAUX-PV (EQUITY, nature sondage_pieces, R100) n'a AUCUN atelier, même situation que CLIENTS-AVOIRS/IMMO_COR-ACQ/FOURN-SUL/FOURN-FNP (R92/R95/R96) ; CAPITAUX-VAR (même poste, nature rapprochement) EST câblée sur /poste/EQUITY/detail-compte.",
+      "depuis": "2026-09-17 (Lot 7, priorité 1, R100)",
+      "note": "non corrigé, délibérément : la population de CAPITAUX-PV elle-même porte predicat:\"non_implemente\" dans methodology/procedures.json (source : registre des assemblées, pas le grand livre) — même la SOURCE des données à échantillonner n'existe encore nulle part dans ce dépôt, hors du périmètre d'une tranche de câblage d'atelier (règle 9)."
     }
   ]
 }

@@ -1967,3 +1967,28 @@ design : chacun reste une tranche à construire.**
   | non corrigé, délibérément — un total qui rapproche est un premier geste réel (le poste n'ouvre
   plus sur rien, D.0), pas le geste complet que la méthode décrit ; à reprendre si le fondateur
   juge le test bidirectionnel prioritaire face au reste du registre.
+
+- **R110 — CAPITAUX-PV (EQUITY, nature `sondage_pieces`, R100) N'A AUCUN ATELIER — même situation
+  que CLIENTS-AVOIRS/IMMO_COR-ACQ/FOURN-SUL/FOURN-FNP (R92/R95/R96).** `methodology/procedures.json`
+  (CAPITAUX-PV) : `unite: "procès-verbal"`, `sens: "inspection"`, population `source: "registre des
+  assemblées"`, `predicat: "non_implemente"` — le contrôle vérifie que l'affectation comptabilisée
+  du résultat reproduit la décision d'assemblée (procès-verbal), et que les distributions sont
+  autorisées. `sondage_pieces` ne connaît QUE `/testing`, câblé en dur sur `revenuePopulation()`
+  (population ET grille facture/bon-de-livraison du CHIFFRE D'AFFAIRES, pas seulement la clé) — le
+  prêter à CAPITAUX-PV serait le même défaut que le troisième patron de `poste.ts` existe pour
+  éviter (règle 13, même raisonnement déjà tenu quatre fois). Ici la situation est même en amont
+  de ça : la POPULATION elle-même de CAPITAUX-PV porte `predicat: "non_implemente"` dans la méthode
+  — un procès-verbal d'assemblée n'est ni une écriture du grand livre ni un compte de balance, donc
+  même la SOURCE des données à échantillonner (un dépôt de procès-verbaux, structuré) n'existe
+  encore nulle part dans ce dépôt, contrairement à CLIENTS-AVOIRS/IMMO_COR-ACQ/FOURN-SUL/FOURN-FNP
+  qui portent au moins une population dérivable du grand livre. **Portée d'une tranche future, si
+  elle est prise** : un dépôt de procès-verbaux (import_file réel, sur le modèle H-5/RCM déjà
+  construit) avec un champ structuré `affectation`/`dividende` par document, PUIS un échantillonnage
+  sur cette population neuve, PUIS un test d'appariement contre l'écriture d'affectation réelle —
+  trois mécaniques neuves, aucune ne se réduit à câbler un atelier existant (règle 9, hors périmètre
+  d'une tranche de câblage). CAPITAUX-VAR (même poste, nature `rapprochement`) EST câblée (R100,
+  `/poste/EQUITY/detail-compte`, réutilisé de R98/R99 sans changement de service) — seule CAPITAUX-PV
+  reste sans atelier. | 2026-09-17 (Lot 7, priorité 1, R100) | non corrigé, délibérément — le poste
+  EQUITY n'ouvre plus sur RIEN pour sa procédure principale (CAPITAUX-VAR), mais CAPITAUX-PV reste
+  un décor tant qu'une tranche future construit son dépôt de procès-verbaux ; à reprendre si le
+  fondateur juge cette procédure prioritaire face au reste du registre.
