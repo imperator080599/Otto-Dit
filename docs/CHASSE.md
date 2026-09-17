@@ -1422,3 +1422,27 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   Pas creusé plus loin (même discipline que F9-F40). `npm run visuel` relancé séparément (le `&&`
   casse sur l'échec de `clics`), propre (356 vues, 0 défaut — 89 écrans, +1 vs la tranche
   précédente, exactement le nouvel écran).
+
+- **F42 — UN incident** (2026-09-17, Lot 7, priorité 1 (R99) — l'atelier « détail du compte » pour
+  INVENTORY, sur l'arbre du commit `2bdc402`, réutilisant le MÊME écran que PAYROLL (R98) pour une
+  seconde nature — un réfutateur : SHIP WITH MINOR FIXES, un seul constat cosmétique corrigé
+  (le texte descriptif de `AILLEURS` dans `rail.test.ts` ne citait que R98/rapprochement, pas
+  R99/observation_documentee, qui route désormais aussi vers cette route — jamais comparé par le
+  test, corrigé pour rester honnête). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE
+  route — `/eng/70670df5-.../rcm/02bc3a46-...` (l'habituelle, `rcm/[cid]` — même signature exacte,
+  le tooltip `rail-astuce` au jeton 87, « avant la première station »). Disjoint de la tranche :
+  cette tranche touche `programme.ts::atelierDeLaNature` (un nouveau cas `observation_documentee`+
+  INVENTORY), `poste.ts` (`atelierObservationSeul` ajouté à côté d'`atelierRapprochementSeul` —
+  trouvé nécessaire PAR EXÉCUTION, `atelierDeLaNature` seul ne suffisait pas), et `scenario.ts`
+  (une station neuve pour INVENTORY) — rien qui touche `/rcm`. Les 1209 tests vitest passent tous
+  (aucun test neuf : la logique réutilisée était déjà couverte par R98). La station « détail du
+  compte INVENTORY » PASSE intégralement : demander → importer → refus POP-02 → conclure expliqué
+  — les DEUX boutons exercés (monde INVENTORY sans demande/import préexistant, comme PAYROLL).
+  R109 (BACKLOG_REPORTE.md, fils.json) disclosed : cet atelier ne fait qu'UNE réconciliation de
+  TOTAL, pas le test bidirectionnel ligne à ligne que `methodology/procedures.json` exige pour
+  STOCKS-INV (« deux sens obligatoires », vérifié par le réfutateur en lisant directement la
+  ligne du fichier) — un premier geste réel, pas le geste complet que la méthode décrit. Clôture
+  et archive ATTEINTES (240 stations figées vérifiées), 281 étapes conduites, 398 clics comptés —
+  VINGT-HUITIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
+  discipline que F9-F41). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut —
+  89 écrans, inchangé vs R98 : même route, pas une nouvelle).

@@ -4,6 +4,58 @@
 
 ---
 
+## Lot 7, priorité 1 (R99) — l'atelier « détail du compte » pour INVENTORY (2026-09-17)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17), enchaîné sans pause après R98 (règle 32).*
+
+**Le constat** : STOCKS-INV (poste INVENTORY, nature `observation_documentee`) était plantée
+(`part1.ts::planifierStocks`) sans AUCUN atelier atteignable — cette nature n'avait JAMAIS de route
+nulle part dans `atelierDeLaNature`, contrairement à `rapprochement`/`confirmation_externe` qui
+portaient déjà un écran avant leur propre tranche d'extension.
+
+**Implémenté** (commit `aa52b7b`) : réutilise le MÊME `/eng/[id]/poste/[code]/detail-compte` que
+PAYROLL (R98) — même précédent que `/circularisations`, qui sert déjà `confirmation_externe` ET
+`rapprochement` sur le même écran : le geste (importer un listing client, rapprocher au grand
+livre, expliquer l'écart) est identique. `programme.ts::atelierDeLaNature` : nouveau cas
+`observation_documentee`+`INVENTORY`. **Trouvé par exécution, pas supposé** : ce seul changement
+NE SUFFISAIT PAS — `vuePoste('INVENTORY')` restait `sans_objet`, parce que `poste.ts` ne
+consultait QUE les natures `rapprochement`/`recalcul_parametre` via ses propres variables locales,
+jamais `atelierDeLaNature` directement pour une nature arbitraire. Corrigé en ajoutant
+`atelierObservationSeul` à côté d'`atelierRapprochementSeul` dans `blocEchantillon`. Revérifié par
+exécution après ce second correctif : l'écran devient atteignable pour INVENTORY, PAYROLL reste
+inchangé.
+
+**R109 disclosed** (`BACKLOG_REPORTE.md`, `fils.json`), pas corrigé : cet atelier ne fait qu'UNE
+réconciliation de TOTAL, pas le test BIDIRECTIONNEL ligne à ligne (réalité + exhaustivité) que le
+`controle` de STOCKS-INV exige (`methodology/procedures.json` : « deux sens obligatoires »). Un
+premier geste réel (le poste n'ouvre plus sur rien, D.0), pas le geste complet que la méthode
+décrit — `account-detail.ts` porte déjà les lignes individuelles si une tranche future construit
+le tirage bidirectionnel, hors du périmètre d'une tranche d'ouverture d'atelier (règle 9).
+
+**Un réfutateur** (règle 30 : ni modèle de données, ni sécurité, ni refus neuf) : SHIP WITH MINOR
+FIXES — un seul constat cosmétique (le texte de `rail.test.ts::AILLEURS` ne citait que R98, pas
+R99, jamais comparé par le test), corrigé (commit `2bdc402`). Le OR entre les deux ateliers
+(`atelierRapprochementSeul || atelierObservationSeul`) vérifié sans ambiguïté aujourd'hui (aucun
+poste ne porte les deux natures à la fois), un risque latent noté pour une session future si un
+poste venait à en porter deux.
+
+**Mesures finales, ordre CANONIQUE, sur l'arbre du commit `2bdc402`** (`npm run verify`, budget
+3600s, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163/163 fichiers (1209/1209 tests,
+inchangé) ; gardes 47 ; semeur à jour ; plancher 1209/632 ; langue 15/15 ; lectures 0 perdue sur
+1990 chemins figés dans 93 écrans ; parcours 5/5 (342 déclarées/290 figées/52 nouvelles — même
+dette pré-existante que R98, non traitée ici) ; screens 98 routes/0 échec ; fumee 55/0 ; densite
+88/0 ; clics EXIT=1 réel (seul motif #418, F42, vingt-huitième confirmation, 281 étapes/398 clics,
+la station INVENTORY passe intégralement) ; visuel (relancé séparément) 356 vues/0 défaut (89
+écrans, inchangé vs R98 — même route, pas une nouvelle).
+
+**Priorité 1b (R99) est COMPLÈTE.** Suite immédiate : R100 (EQUITY — CAPITAUX-VAR/`rapprochement`
+et CAPITAUX-PV/`sondage_pieces`, les deux natures déjà existantes, aucune UI neuve attendue non
+plus).
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+---
+
 ## Lot 7, priorité 1 (R98) — l'atelier « détail du compte » pour PAYROLL (2026-09-17)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17 sur les trois priorités : les ateliers
