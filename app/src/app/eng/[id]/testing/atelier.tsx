@@ -299,6 +299,7 @@ export function Atelier({
               </div>
               {grille && mesCellules.length === 0 && <p className="muted" data-cellules-aucune>{t('atl.cel.aucune')}</p>}
               {mesCellules.length > 0 && (
+                <div className="table-scroll">
                 <table className="data cellules" title={t('atl.cel.titre')}>
                   <thead>
                     <tr>
@@ -346,6 +347,7 @@ export function Atelier({
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
               {grille && (
                 <form action={conclure} ref={refConclure} className="row mt" data-conclure>
