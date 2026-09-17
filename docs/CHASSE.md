@@ -1376,3 +1376,20 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que
   F9-F38). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de `clics`), propre
   (352 vues, 0 défaut).
+
+- **F40 — UN incident, sur l'arbre CORRIGÉ** (2026-09-17, Lot 7, H-6 tranche 1 — l'échelle
+  typographique (`--t1..--t6`), sur l'arbre du commit `6c91ec0`, APRÈS le correctif d'un seul
+  constat non bloquant trouvé par UN réfutateur — `SHIP WITH MINOR FIXES`, un trou de
+  documentation sur la cascade-mort de la règle `h1` de base, commenté en toutes lettres, aucun
+  défaut fonctionnel). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route —
+  `/eng/70670df5-.../rcm/0b4e6753-...` (l'habituelle, `rcm/[cid]` — même signature exacte, le
+  tooltip `rail-astuce` au jeton 87, « avant la première station »). Disjoint de la tranche :
+  cette tranche ne touche QUE `app/src/app/globals.css` (des jetons CSS, aucun composant React
+  RCM) et `app/src/app/globals.css.test.ts` (un test qui ne s'exécute jamais dans un navigateur) —
+  et les 1209 tests vitest passent tous, dont les 2 nouveaux tests du garde typographique, l'un
+  prouvé contre un cas connu mauvais par injection réelle dans le vrai fichier (règle 17). `npm
+  run visuel` relancé séparément (le `&&` casse sur l'échec de `clics`) DEUX fois — avant et après
+  le correctif de revue hostile — propre les deux fois (352 vues, 0 défaut), confirmant qu'une
+  migration de jetons CSS pure ne modifie aucun rendu mesurable. Clôture et archive ATTEINTES (240
+  stations figées vérifiées), 271 étapes conduites, 388 clics comptés — VINGT-SIXIÈME confirmation
+  consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F39).

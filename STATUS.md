@@ -4,6 +4,79 @@
 
 ---
 
+## Lot 7, H-6 tranche 1 — l'échelle typographique (2026-09-17)
+
+*Suite du mandat du fondateur, enchaîné sans pause après la décision H-6 (règle 32).*
+
+**Recherche préalable dédiée** (un sous-agent, lecture seule) : état des jetons `globals.css`
+(l'espacement a une échelle nommée depuis ADR-125, `--e1..--e6` ; la couleur ne marque déjà que
+les problèmes) ; ce que `npm run visuel` mesure (débordement horizontal + contraste WCAG, sur 4
+vues) et ne mesure PAS (cohérence d'espacement, échelle typographique, « air AI generated » — un
+jugement humain) ; gap concret trouvé : **aucune échelle typographique nommée** — 69 déclarations
+`font-size:` en dur (mesuré par grep, jamais supposé), contre une seule échelle d'espacement
+documentée. Recommandation retenue, la plus petite et mesurable : nommer l'échelle et migrer
+`h1`/`h2`/`h3`/`.faint`/`body`/`code` dessus, sans toucher au markup (même propriété que le repass
+de jetons 2026-09-09/10).
+
+**Implémenté** (commit `d927327`) : `--t1..--t6` (12/12.5/13.5/14/15/24px — six tailles déjà en
+usage à ces endroits précis, rien de redeviné) ajoutés à `:root` juste après le bloc `--e1..--e6`
+d'ADR-125. 9 déclarations migrées : les DEUX points de déclaration de `h1`/`h2`/`h3` (une base et
+un repass ADR-125, qui se cascadent l'un sur l'autre), `.faint`, `body`, `code`/`.mono`. Les 60
+autres déclarations en dur restent — nommé explicitement (règle 19), délibérément hors périmètre
+de cette petite tranche (règle 5).
+
+**`app/src/app/globals.css.test.ts`** (nouveau) : garde (a) que les deux points de déclaration de
+h1/h2/h3 lisent bien les jetons (pas une demi-mesure silencieuse) et (b) que le compte de
+`font-size: Npx` en dur ne remonte jamais au-delà du seuil gardé (60), prouvée contre un cas connu
+mauvais (règle 17) — une régression est injectée dans une COPIE de texte (jamais dans le vrai
+fichier) et le test confirme que le détecteur la voit.
+
+Un réfutateur (règle 30 : ni modèle de données, ni sécurité, ni multi-tenant, ni refus — un seul
+suffit) : SHIP WITH MINOR FIXES, un seul constat, non bloquant — la règle `h1` de base (ligne
+~137) est cascade-morte pour `font-size` depuis le repass ADR-125 (même sélecteur, déclaré après,
+toujours gagnant), donc `--t6` n'y documente pas sa valeur d'ORIGINE (20px avant ADR-125) mais
+celle du repass qui la recouvre. Aucun risque fonctionnel réel (les deux déclarations partagent
+maintenant le même jeton — vérifié par le réfuteur en exécutant réellement `npx vitest run
+src/app/globals.css.test.ts`, `npx tsc --noEmit`, et une injection réelle de régression dans le
+VRAI fichier, restauré ensuite, `git status --short` propre après restauration), mais un trou de
+documentation (règle 19) : commenté en toutes lettres (commit `6c91ec0`).
+
+**`npm run visuel`** : lancé deux fois — une première fois avant la revue hostile (352 vues, 0
+défaut), une seconde fois sur l'arbre final, après le correctif, sur la base fraîchement
+reconstruite par `npm run verify` lui-même (352 vues, 0 défaut) — aucune régression de contraste
+ni de mise en page mesurée par la migration de jetons.
+
+**Note factuelle, sans rapport avec cette tranche** : l'étape `parcours` de `npm run verify` a
+rapporté « 332 station(s) déclarée(s) · 290 figée(s) · 42 station(s) NOUVELLE(S) — à figer quand le
+parcours sera vert » — `docs/PARCOURS.json` n'a pas été refigé depuis le 2026-09-10 (commit
+`d5673b0`), donc ce chiffre est de la dette accumulée sur PLUSIEURS tranches antérieures (dont au
+moins la station RCM ajoutée par H-5), jamais introduite ni aggravée par H-6 tranche 1 (qui ne
+touche pas `scenario.ts`). Non bloquant (`parcours`/`parcours:epreuve` sortent tous deux en
+succès), non traité ici — hors périmètre d'une tranche CSS.
+
+**Mesures finales, ordre CANONIQUE, sur l'arbre du commit `6c91ec0`** (`npm run verify`, budget
+3600s, `set -o pipefail`, log complet conservé) : `tsc --noEmit` propre ; vitest 163/163 fichiers
+(1209/1209 tests, +1 fichier/+2 tests vs H-5 — le nouveau `globals.css.test.ts`) ; gardes 47 ;
+semeur 89 objet(s)/16 décor(s)/31 non prouvé(s)/42 prouvé(s), inchangé depuis H-5 (cette tranche ne
+touche pas le registre) ; plancher 1209 collecté(s), 632, aucune forme éteinte ou isolée ; langue 0
+hors catalogue/0 libellé en dur, 15/15 cas connus mauvais dénoncés ; lectures 0 perdue sur 1990
+chemins figés dans 93 écrans, 6/6 cas connus mauvais ; parcours 332 déclarée(s)/290 figée(s) (voir
+note ci-dessus, non lié), 5/5 cas connus mauvais dénoncés ; screens 97 routes/0 échec ; fumee 54
+route(s)/0 échec ; densite 87 écrans/0 dépassement ; clics EXIT=1 réel (seul motif #418, sur
+`/rcm`, disjoint de cette tranche — F39 continue de le documenter, vingt-cinquième confirmation
+déjà établie par H-5 ; 271 étapes/388 clics, clôture et archive atteintes) ; visuel (relancé
+séparément, la chaîne `&&` s'arrête à `clics` comme d'habitude) 352 vues/0 défaut.
+
+**Lot 7, H-6 tranche 1 est COMPLÈTE.** Le registre H-1 à H-6 (docs/REGISTRE_IDEES.md §H) est
+désormais ouvert sur ses six points, chacun avec au moins une tranche livrée. R108 (H-5 volet 2)
+reste délibérément reporté. Suite naturelle : évaluer si une tranche H-6 supplémentaire (migrer
+d'autres sélecteurs sur `--t1..--t6`, ou nommer une échelle pour les 60 déclarations restantes) a
+assez de valeur face à d'autres chantiers du registre, ou si le Lot 7 se referme ici.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+---
+
 ## Lot 7 — décision : H-6 pris avant H-5 volets 2/3 (2026-09-17)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-5 tranche 1 (règle 32).*
