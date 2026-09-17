@@ -215,7 +215,7 @@ describe('le rail du dossier (ADR-103, ADR-112)', () => {
       '/eng/[id]/notifications': 'depuis l\'obstacle NOTIF-01 (panneau des obstacles, clôture, suivi de mission) et depuis « Ce que je dois approuver » sur /travaux (mandat 2026-09-14, §3)',
       '/eng/[id]/grand-livre': 'depuis le lien posé sur /analytique (Lot 7, H-3 slice 1) — pure lecture, jamais un état du dossier, donc jamais repris au rail',
       '/eng/[id]/comite': 'depuis le lien posé sur /dashboard (Lot 7, H-4 tranche 1) — pure lecture agrégée, jamais un état du dossier, donc jamais repris au rail',
-      '/eng/[id]/poste/[code]/detail-compte': 'depuis le bloc « échantillon » de /poste/[code] quand programme.ts::atelierDeLaNature route la nature `rapprochement` du poste (Lot 7, priorité 1, R98) — conditionnel à la procédure planifiée, jamais un rail générique',
+      '/eng/[id]/poste/[code]/detail-compte': 'depuis le bloc « échantillon » de /poste/[code] quand programme.ts::atelierDeLaNature route la nature `rapprochement` (PAYROLL, R98) ou `observation_documentee` (INVENTORY, R99) du poste — conditionnel à la procédure planifiée, jamais un rail générique',
     };
     const racine = path.join(repoRoot(), 'app', 'src', 'app', 'eng', '[id]');
     const routes: string[] = [];
