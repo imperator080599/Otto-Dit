@@ -52,7 +52,11 @@ la station INVENTORY passe intégralement) ; visuel (relancé séparément) 356 
 et CAPITAUX-PV/`sondage_pieces`, les deux natures déjà existantes, aucune UI neuve attendue non
 plus).
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_Drfg4Mawd8C4hSDqqiHs4yZTz6Rg`, cible
+production) READY, commit `d3f2a1ffc409295950fdfd01b89e75eeb3f4461b` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 08:17:37Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor 89/16/31/42
+inchangé. Aucune nouvelle lecture `/api/sante` (aucune mécanique neuve dans le service).
 
 ---
 
