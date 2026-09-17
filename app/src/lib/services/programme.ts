@@ -704,6 +704,24 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      ici. Un total qui rapproche est un premier geste réel, pas le geste
      complet que la méthode décrit. */
   if (nature === 'observation_documentee' && fsliCode === 'INVENTORY') return `${base}/poste/INVENTORY/detail-compte`;
+  /* Lot 7, priorité 1 (R100, docs/BACKLOG_REPORTE.md) : CAPITAUX-VAR (EQUITY,
+     nature `rapprochement` — « capitaux N-1 + résultat N ± mouvements =
+     capitaux N, tout écart expliqué ») est le MÊME geste, au sens strict,
+     que PERSONNEL-DSN (R98) : un tableau de variation reçu du client,
+     rapproché au grand livre au TOTAL, écart expliqué par écrit. Troisième
+     poste sur le MÊME atelier — la propriété annoncée dès R98 (« réutilisable
+     pour un futur poste sans mécanique neuve supplémentaire ») tient : zéro
+     ligne de service changée, seul ce cas ajouté. CAPITAUX-PV (EQUITY, nature
+     `sondage_pieces`) N'EST PAS câblée ici, délibérément — disclosed R110,
+     même raisonnement que CLIENTS-AVOIRS/IMMO_COR-ACQ/FOURN-SUL/FOURN-FNP
+     (R92/R95/R96) : `sondage_pieces` ne connaît QUE `/testing`, câblé en dur
+     sur `revenuePopulation()` (population ET grille facture/bon-de-livraison,
+     pas seulement la clé) — la population de CAPITAUX-PV elle-même porte
+     `predicat: "non_implemente"` dans la méthode (procès-verbaux d'assemblée,
+     pas des écritures), donc même la SOURCE des données à échantillonner
+     n'existe encore nulle part dans ce dépôt. Une vraie mécanique neuve, hors
+     du périmètre d'une tranche de câblage d'atelier. */
+  if (nature === 'rapprochement' && fsliCode === 'EQUITY') return `${base}/poste/EQUITY/detail-compte`;
   return null;
 }
 
