@@ -1393,3 +1393,32 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   migration de jetons CSS pure ne modifie aucun rendu mesurable. Clôture et archive ATTEINTES (240
   stations figées vérifiées), 271 étapes conduites, 388 clics comptés — VINGT-SIXIÈME confirmation
   consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F39).
+
+- **F41 — UN incident, sur l'arbre CORRIGÉ** (2026-09-17, Lot 7, priorité 1 (R98) — l'atelier
+  « détail du compte » pour PAYROLL, sur l'arbre du commit `c97228c`, APRÈS le correctif d'un seul
+  constat réel trouvé par le PREMIER passage `npm run verify` lui-même, pas par le réfutateur : le
+  garde de couverture (`rail.test.ts`) a rougi POUR DE VRAI — le nouvel écran `/eng/[id]/poste/
+  [code]/detail-compte` n'était déclaré nulle part (ni rail, ni `destinationsDuPoste`, ni
+  `AILLEURS`) ; corrigé en l'ajoutant à `AILLEURS` avec sa raison (même précédent que `/grand-livre`
+  et `/comite`). Un réfutateur (règle 30 : ni modèle de données, ni sécurité, ni refus neuf) :
+  `SHIP AS-IS`, aucun défaut réel trouvé — `account-detail.ts` vérifié générique par `fsliCode` par
+  lecture complète (260 lignes) et par lecture de `fsliAccounts`, étanchéité multi-cabinet tenue
+  (`assertMembreDe` ancré sur l'objet, jamais un champ de formulaire), aucun plantage sur un
+  `fsli_code` arbitraire. Le SECOND échec du premier passage (`screens.test.ts`, « le serveur est
+  tombé ») était un artefact de CONCURRENCE, pas une régression — le réfutateur avait un vitest en
+  cours au même moment (CLAUDE.md §7 : deux vitest en parallèle font tomber le serveur du
+  balayage) ; reproduit : relancé seul, sans aucun autre processus, `screens.test.ts` passe
+  proprement (`EXIT=0`, 472 s). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route —
+  `/eng/70670df5-.../rcm/bc2f2c47-...` (l'habituelle, `rcm/[cid]` — même signature exacte, le
+  tooltip `rail-astuce` au jeton 87, « avant la première station »). Disjoint de la tranche : cette
+  tranche touche `programme.ts::atelierDeLaNature` (un nouveau `if` littéral gardé par nature ET
+  fsliCode), une route neuve sous `/poste/[code]/detail-compte`, et `scenario.ts` (une station
+  neuve pour PAYROLL) — rien qui touche `/rcm`. Les 1209 tests vitest passent tous (aucun test
+  neuf : la logique réutilisée était déjà couverte). La station « détail du compte PAYROLL » PASSE
+  intégralement : demander → importer → refus POP-02 sans explication → conclure expliqué — les
+  DEUX boutons sont exercés (contrairement à REVENUE, le monde PAYROLL ne porte aucune demande/
+  import préexistant). Clôture et archive ATTEINTES (240 stations figées vérifiées), 276 étapes
+  conduites, 393 clics comptés — VINGT-SEPTIÈME confirmation consécutive que `#418` est disjoint.
+  Pas creusé plus loin (même discipline que F9-F40). `npm run visuel` relancé séparément (le `&&`
+  casse sur l'échec de `clics`), propre (356 vues, 0 défaut — 89 écrans, +1 vs la tranche
+  précédente, exactement le nouvel écran).

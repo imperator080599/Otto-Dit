@@ -4,6 +4,74 @@
 
 ---
 
+## Lot 7, priorité 1 (R98) — l'atelier « détail du compte » pour PAYROLL (2026-09-17)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17 sur les trois priorités : les ateliers
+manquants R98/R99/R100 d'abord, H-6 profond ensuite, H-3 slice 3 en dernier), enchaîné sans pause
+après H-6 tranche 1 (règle 32).*
+
+**Le constat, mesuré avant d'écrire (pas supposé)** : `docs/BACKLOG_REPORTE.md` R98 documentait que
+PERSONNEL-DSN (poste PAYROLL, nature `rapprochement`) était une procédure PLANTÉE
+(`part1.ts::planifierPaie` crée déjà le `procedure_instance` + le `workpaper`) mais SANS AUCUN
+atelier atteignable — `atelierDeLaNature('rapprochement', 'PAYROLL', base)` rendait `null`, faute
+d'un cas câblé pour ce poste (seuls CASH et TRADE_RECEIVABLES l'avaient). Un décor au sens de la
+règle 20 : le bouton du bloc « échantillon » sur `/poste/PAYROLL` menait, avant cette tranche, à
+`sans_objet`.
+
+**Recherche préalable** : lecture complète d'`account-detail.ts` (260 lignes) et de
+`requests.ts::demanderDetailDeCompte`/`derniereDemandeDetailDeCompte` — ces fonctions sont déjà
+GÉNÉRIQUES par `fsliCode` depuis leur origine (elles alimentent `/sampling`, l'écran REVENUE du
+plan d'autonomie Partie B étapes 1-2), sans aucun compte ni FSLI en dur. Seul un ÉCRAN manquait
+pour un poste hors REVENUE — aucune mécanique neuve dans le service (règle 9).
+
+**Implémenté** (commit `ddc30c4`) : nouvelle route `/eng/[id]/poste/[code]/detail-compte`
+(poste-agnostique PAR SA CLÉ, réutilisable pour un futur poste sans mécanique neuve
+supplémentaire), réutilisant verbatim les fonctions de service et les libellés i18n déjà génériques
+de `/sampling` (`samp.*`) — deux nouvelles clés seulement (`detailCompte.retourPoste`/
+`titreEcran`). `programme.ts::atelierDeLaNature` : un nouveau cas littéral
+`rapprochement`+`PAYROLL`. Vérifié PAR EXÉCUTION (pas supposé) : `vuePoste('PAYROLL').blocs
+.echantillon.href` pointe désormais vers le nouvel atelier au lieu de `sans_objet`. Station clics
+ajoutée : demander → importer → refus POP-02 sans explication → conclure expliqué — le monde
+PAYROLL ne porte aucune demande/import préexistant (contrairement à REVENUE, semé déjà rapproché),
+donc les DEUX boutons sont exercés par cette station, pas seulement l'un des deux.
+
+**Premier passage `npm run verify` : deux échecs, tous deux diagnostiqués, un seul réel.**
+(1) `rail.test.ts` a rougi POUR DE VRAI (règle 18 : pas un flake) — le garde de couverture exige
+que tout écran de dossier soit atteignable par le rail, `destinationsDuPoste`, ou déclaré dans
+`AILLEURS` avec sa raison ; le nouvel écran n'était déclaré nulle part. Corrigé (commit `c97228c`)
+en l'ajoutant à `AILLEURS`, même précédent que `/grand-livre`/`/comite`. (2) `screens.test.ts` a
+rougi (« le serveur est tombé ») — diagnostiqué comme un ARTEFACT DE CONCURRENCE, pas une
+régression : le réfutateur hostile avait un vitest en cours au même moment (CLAUDE.md §7, deux
+vitest en parallèle font tomber le serveur du balayage) ; reproduit en relançant `screens.test.ts`
+SEUL, sans aucun autre processus — passe proprement (EXIT=0, 472 s).
+
+**Un réfutateur** (règle 30 : ni modèle de données, ni sécurité, ni refus neuf) : SHIP AS-IS, aucun
+défaut réel trouvé — `account-detail.ts` vérifié générique par lecture complète, étanchéité
+multi-cabinet tenue (`assertMembreDe` ancré sur l'objet, jamais un champ de formulaire), aucun
+plantage sur un `fsli_code` arbitraire (refus propre, capturé par `executer`), sélecteurs `data-*`
+de la station clics croisés avec le fichier neuf.
+
+**Mesures finales, ordre CANONIQUE, sur l'arbre du commit `c97228c`** (`npm run verify`, budget
+3600s, `set -o pipefail`, log complet conservé) : `tsc --noEmit` propre ; vitest 163/163 fichiers
+(1209/1209 tests, inchangé — la logique réutilisée était déjà couverte) ; gardes 47 ; semeur à
+jour, inchangé (aucun objet semé neuf : la station clics crée ses objets elle-même, pas le semeur) ;
+plancher 1209/632 ; langue 15/15 ; lectures 0 perdue sur 1990 chemins figés dans 93 écrans ;
+parcours 5/5 cas connus mauvais (337 déclarées/290 figées/47 nouvelles — dette pré-existante de
+figement, `docs/PARCOURS.json` stale depuis 2026-09-10, sans rapport avec cette tranche, non
+traitée ici) ; screens 98 routes/0 échec (le nouvel écran inclus) ; fumee 55/0 ; densite 88/0 ;
+clics EXIT=1 réel (seul motif #418, F41, vingt-septième confirmation, 276 étapes/393 clics, la
+station PAYROLL passe intégralement) ; visuel (relancé séparément) 356 vues/0 défaut (89 écrans,
++1 exactement le nouvel écran).
+
+**Priorité 1a (R98) est COMPLÈTE.** Suite immédiate : R99 (INVENTORY/STOCKS-INV, nature
+`observation_documentee`) — recherche déjà faite : réutilise le MÊME écran `/poste/[code]/
+detail-compte` (même précédent que `/circularisations`, qui sert déjà deux natures), un seul
+nouveau cas dans `atelierDeLaNature`, aucune UI neuve.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+---
+
 ## Lot 7, H-6 tranche 1 — l'échelle typographique (2026-09-17)
 
 *Suite du mandat du fondateur, enchaîné sans pause après la décision H-6 (règle 32).*
