@@ -547,6 +547,12 @@
       "etat": "levée le 2026-09-17, sur le commit 0f5892b — l'énoncé d'origine était FAUX pour le monde LOCAL canonique. Trouvé par la revue hostile (voix 1) du correctif de cette même tranche, vérifié en empruntant le chemin (règle 15) : select count(*) from control where engagement_id=engNep après db:reset && demo:seed rend 0 — demo-seed.ts n'appelle JAMAIS enrichirMondeDemo(), seul reconstruire.ts (production) le fait. engNep porte donc zéro contrôle à ce point du parcours canonique local, et le formulaire d'upload EST offert. Corrigé en étendant la station clics existante « R60 : les compteurs du dossier mènent quelque part » pour y uploader réellement dataset/sox/rcm.csv via le vrai formulaire — npm run verify complet confirme la station verte (F39, docs/CHASSE.md).",
       "depuis": "2026-09-16 (Lot 7, H-5 tranche 1)",
       "note": "levée le 2026-09-17 (Lot 7, H-5 tranche 1, correctif) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la mesure."
+    },
+    {
+      "id": "R108",
+      "etat": "ouvert — H-5 volet 2 (« tests de la direction » comme IPE, REGISTRE_IDEES.md ligne 273) reste un gap réel après la tranche 1. L'infra IPE existante (ipe.ts, ipe_rapport, ADR-118) documente qu'une pièce a été retenue comme IPE pour un workpaper, mais aucun chemin n'ingère les résultats structurés de tests de contrôle de la direction (par contrôle, par attribut) ; aucune colonne du schéma (control_test, control_instance, attribute_result) ne distingue testé-par-la-direction de testé-par-l'auditeur ; aucune notion de compétence/objectivité de la direction n'est modélisée.",
+      "depuis": "2026-09-17 (Lot 7, après H-5 tranche 1, recherche dédiée avant l'ouverture de H-6)",
+      "note": "non corrigé, délibérément reporté : touche un jugement d'audit (l'appui sur les travaux de la direction, ISA 500/AS 1105.10) qu'un mandat futur du fondateur devrait trancher explicitement plutôt qu'une session qui invente seule le barème de compétence/objectivité. H-6 (passe de design, déjà scopée, sans nouvelle mécanique d'audit) est pris en premier par ordre de valeur."
     }
   ]
 }

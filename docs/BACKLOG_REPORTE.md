@@ -1919,3 +1919,29 @@ design : chacun reste une tranche à construire.**
   `dataset/sox/rcm.csv` via le vrai formulaire — `npm run verify` complet sur l'arbre du commit
   `0f5892b` confirme la station verte (« rcm : l'upload réel du listing client... importe des
   contrôles »), F39 (docs/CHASSE.md).
+
+- **R108 — H-5 volet 2, « tests de la direction » importés comme IPE (REGISTRE_IDEES.md ligne
+  273), reste un GAP RÉEL après la tranche 1 (qui n'a couvert que la matrice risques-contrôles).**
+  Recherche dédiée (agent Explore, 2026-09-17, avant l'ouverture de H-6) : l'infra IPE existante
+  (`ipe.ts`, tables `ipe`/`ipe_rapport`, migration 0036, ADR-118) documente qu'UNE pièce du dossier
+  a été retenue comme « information produite par l'entité » pour UN workpaper (exhaustivité/
+  exactitude tracées) — un mécanisme générique de désignation-de-pièce, PAS un adaptateur d'import
+  structuré. `sox.ts` n'a aucune référence à `ipe_rapport` (grep croisé : 0 résultat). Aucune
+  colonne du schéma ne distingue « testé par la direction » de « testé par l'auditeur » :
+  `control_instance.source` (`'listing'|'evidence'`) qualifie l'origine de l'OCCURRENCE, pas qui a
+  testé l'efficacité opérationnelle ; `control_instance.performer_name` désigne qui EXÉCUTE le
+  contrôle métier, pas qui le TESTE ; `attribute_result.basis` (`'extraction_field'|'human'`)
+  qualifie comment l'AUDITEUR a obtenu son résultat ; `control_test` (id, control_id,
+  procedure_id, sample_id, status, conclusion, concluded_by) n'a ni `tested_by` ni `source`. Aucune
+  notion de compétence/objectivité de la direction (l'appui sur les travaux d'autrui, exigence
+  ISA 500/AS 1105.10 typique) n'est modélisée. **Portée d'une tranche future, si elle est prise** :
+  a minima une colonne de provenance sur `control_test` (ou une table neuve) distinguant
+  direction/auditeur avec traçabilité vers `import_file_id`/`ipe_rapport_id`, et la documentation
+  de l'obligation d'évaluation de l'auditeur (compétence/objectivité, réexécution partielle) avant
+  réutilisation — actuellement absente. Reste cohérent avec le principe H-5 (« jamais recréé ») :
+  réutiliser `ipe_rapport` comme pièce désignée, la couche structurante manque. | 2026-09-17 (Lot
+  7, après H-5 tranche 1) | non corrigé, délibérément reporté : la tranche touche des questions de
+  jugement d'audit (l'appui sur les travaux de la direction) qu'un mandat futur du fondateur devrait
+  trancher explicitement plutôt qu'une session qui invente le barème de compétence/objectivité
+  seule ; H-6 (passe de design, déjà scopée, sans nouvelle mécanique d'audit) est pris en premier
+  par ordre de valeur (STATUS.md, « tranches optionnelles de H-5... face à H-6 »).

@@ -4,6 +4,29 @@
 
 ---
 
+## Lot 7 — décision : H-6 pris avant H-5 volets 2/3 (2026-09-17)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-5 tranche 1 (règle 32).*
+
+STATUS.md posait la question ouverte : « Tranches 2/3 optionnelles de H-5 […] restent à évaluer
+par ordre de valeur face à H-6 ». Recherche dédiée (agent Explore, lecture seule) sur le volet 2
+de H-5 (« tests de la direction » comme IPE) : c'est un GAP RÉEL — l'infra IPE existante
+(`ipe.ts`/`ipe_rapport`, ADR-118) documente qu'une pièce a été retenue comme IPE pour un
+workpaper, mais aucun chemin n'ingère les RÉSULTATS structurés de tests de contrôle de la
+direction, et aucune colonne du schéma (`control_test`/`control_instance`/`attribute_result`) ne
+distingue testé-par-la-direction de testé-par-l'auditeur — l'appui sur les travaux d'autrui
+(ISA 500/AS 1105.10, compétence/objectivité) n'est modélisé nulle part. Enregistré R108
+(BACKLOG_REPORTE.md, fils.json), délibérément reporté : construire seule le barème de
+compétence/objectivité de la direction est un jugement d'audit qu'un mandat futur du fondateur
+devrait trancher explicitement, pas une décision de session. H-6 (passe de design, déjà scopée
+par le registre, aucune nouvelle mécanique d'audit) est donc pris en premier par ordre de valeur.
+
+Recherche H-6 en cours (agent Explore, lecture seule) : état des jetons existants (`globals.css`),
+ce que `npm run visuel` mesure et ne mesure pas, gaps visuels réels et non résolus, et la plus
+petite première tranche mesurable.
+
+---
+
 ## Lot 7, H-5 tranche 1 — le vrai geste d'upload RCM (import_file réel, provenance) (2026-09-17)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-4 tranche 1 (règle 32).*
