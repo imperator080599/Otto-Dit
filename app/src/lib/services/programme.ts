@@ -683,6 +683,27 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      CLÉ (route `[code]`), donc réutilisable pour un futur poste sans
      mécanique neuve supplémentaire — contrairement à `/balances-aux`. */
   if (nature === 'rapprochement' && fsliCode === 'PAYROLL') return `${base}/poste/PAYROLL/detail-compte`;
+  /* Lot 7, priorité 1 (R99, docs/BACKLOG_REPORTE.md) : STOCKS-INV (INVENTORY,
+     nature `observation_documentee` — assistance à l'inventaire physique)
+     était plantée sans AUCUN atelier : cette nature n'a JAMAIS eu de route
+     nulle part dans ce dépôt (vérifié par lecture complète de cette fonction
+     avant ce commit), contrairement à `rapprochement`/`confirmation_externe`
+     qui portaient déjà un écran avant que leur propre tranche les étende à
+     un nouveau poste. Réutilise le MÊME `/poste/[code]/detail-compte` que
+     PAYROLL (R98, juste au-dessus) — même précédent que `/circularisations`,
+     qui sert déjà `confirmation_externe` ET `rapprochement` sur le même
+     écran : le geste (importer un listing du client, rapprocher au grand
+     livre, expliquer l'écart par écrit) est le MÊME, quelle que soit la
+     nature qui le commande. CE QUE CE CHOIX NE FAIT PAS (règle 19) : le
+     `controle` de STOCKS-INV (`methodology/procedures.json`) exige « deux
+     sens obligatoires (réalité + exhaustivité) » — un test BIDIRECTIONNEL
+     ligne à ligne (chaque item physique retrouvé au livre, chaque item du
+     livre retrouvé au physique). Cet atelier ne fait qu'UNE réconciliation
+     de TOTAL (le même geste que PERSONNEL-DSN), pas un test par ligne dans
+     les deux sens — disclosed R109, pas une mécanique dual-sens construite
+     ici. Un total qui rapproche est un premier geste réel, pas le geste
+     complet que la méthode décrit. */
+  if (nature === 'observation_documentee' && fsliCode === 'INVENTORY') return `${base}/poste/INVENTORY/detail-compte`;
   return null;
 }
 

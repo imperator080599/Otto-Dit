@@ -375,8 +375,15 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
      PROPRE atelier, indépendamment de l'autre. */
   const atelierRapprochementSeul = !circ ? atelierDeLaNature('rapprochement', code, base) : null;
   const atelierRecalculSeul = !circ ? atelierDeLaNature('recalcul_parametre', code, base) : null;
+  /* Lot 7, priorité 1 (R99) : STOCKS-INV (INVENTORY, nature `observation_documentee`)
+     réutilise le MÊME atelier « détail du compte » que `rapprochement` (R98,
+     PERSONNEL-DSN — même écran, même geste : importer, rapprocher, expliquer
+     l'écart) — donc la MÊME place dans `blocEchantillon` ci-dessous, jamais un
+     quatrième patron distinct pour une différence de NATURE que l'écran ne
+     voit pas. */
+  const atelierObservationSeul = !circ ? atelierDeLaNature('observation_documentee', code, base) : null;
   const patronSansEchantillon = !circ && n(ech?.pop) === 0;
-  const patronRapprochementSeul = patronSansEchantillon && Boolean(atelierRapprochementSeul);
+  const patronRapprochementSeul = patronSansEchantillon && Boolean(atelierRapprochementSeul || atelierObservationSeul);
   const patronRecalculSeul = patronSansEchantillon && Boolean(atelierRecalculSeul);
 
   const blocEchantillon: BlocPoste = circ
@@ -396,7 +403,7 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
           cle: 'echantillon', titre: 'poste.section.echantillon',
           etat: papiers.length > 0 ? 'en_cours' : 'a_faire',
           resume: motif('poste.resume.rapprochementSansEchantillon'),
-          href: atelierRapprochementSeul,
+          href: atelierRapprochementSeul || atelierObservationSeul,
         }
       /* Lot 5, poste 3 (Immobilisations, 2026-09-15, revue hostile) : `/population`
          et `/sampling` sont les écrans du CHIFFRE D'AFFAIRES (`sampling.ts` câblé

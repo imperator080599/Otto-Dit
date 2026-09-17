@@ -553,6 +553,12 @@
       "etat": "ouvert — H-5 volet 2 (« tests de la direction » comme IPE, REGISTRE_IDEES.md ligne 273) reste un gap réel après la tranche 1. L'infra IPE existante (ipe.ts, ipe_rapport, ADR-118) documente qu'une pièce a été retenue comme IPE pour un workpaper, mais aucun chemin n'ingère les résultats structurés de tests de contrôle de la direction (par contrôle, par attribut) ; aucune colonne du schéma (control_test, control_instance, attribute_result) ne distingue testé-par-la-direction de testé-par-l'auditeur ; aucune notion de compétence/objectivité de la direction n'est modélisée.",
       "depuis": "2026-09-17 (Lot 7, après H-5 tranche 1, recherche dédiée avant l'ouverture de H-6)",
       "note": "non corrigé, délibérément reporté : touche un jugement d'audit (l'appui sur les travaux de la direction, ISA 500/AS 1105.10) qu'un mandat futur du fondateur devrait trancher explicitement plutôt qu'une session qui invente seule le barème de compétence/objectivité. H-6 (passe de design, déjà scopée, sans nouvelle mécanique d'audit) est pris en premier par ordre de valeur."
+    },
+    {
+      "id": "R109",
+      "etat": "ouvert — STOCKS-INV (INVENTORY, nature observation_documentee, R99) est câblée sur l'atelier « détail du compte » (réutilisé de R98/PERSONNEL-DSN), qui ne fait qu'UNE réconciliation de TOTAL — pas le test bidirectionnel ligne à ligne (réalité + exhaustivité) que le controle de la procédure exige (methodology/procedures.json : « deux sens obligatoires »).",
+      "depuis": "2026-09-17 (Lot 7, priorité 1, R99)",
+      "note": "non corrigé, délibérément : un total qui rapproche est un premier geste réel (le poste n'ouvre plus sur rien, D.0), pas le geste complet que la méthode décrit — account-detail.ts porte déjà les lignes individuelles (account_detail_row) si une tranche future construit le tirage bidirectionnel, mais c'est hors du périmètre d'une tranche d'ouverture d'atelier (règle 9)."
     }
   ]
 }

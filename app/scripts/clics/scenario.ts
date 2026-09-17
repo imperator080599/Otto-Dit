@@ -1447,6 +1447,51 @@ export async function conduire(
     }
   });
 
+  /* Lot 7, priorité 1 (R99, docs/BACKLOG_REPORTE.md) : STOCKS-INV (INVENTORY,
+     nature `observation_documentee`) réutilise le MÊME atelier que PAYROLL
+     (R98, station ci-dessus) — même écran, même patron de station. Le monde
+     de démo ne porte AUCUNE demande ni import INVENTORY avant cette station,
+     donc les DEUX boutons sont exercés ici aussi. R109 (BACKLOG_REPORTE.md) :
+     cette station ne prouve QU'UNE réconciliation de total, jamais le test
+     bidirectionnel ligne à ligne que la méthode décrit — disclosed, pas une
+     prétention que cette station ne tient pas. */
+  await station('détail du compte : INVENTORY (R99, atelier réutilisé)', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/poste/INVENTORY/detail-compte`);
+    dire('détail du compte INVENTORY : aucune demande encore — le bouton est offert',
+      (await compte('[data-demander-detail-de-compte]')) > 0,
+      refus(p) ?? 'bouton absent');
+    await soumettre(p.locator('[data-demander-detail-de-compte]').first(), 3000);
+    dire('détail du compte INVENTORY : demander engendre une VRAIE demande — le lien remplace le bouton',
+      !refus(p) && (await compte('[data-detail-de-compte-lien]')) > 0,
+      refus(p) ?? 'lien affiché');
+    if (await compte('[data-import-detail-fichier]')) {
+      const avant = await compte('[data-rapprochement-ligne]');
+      await p.locator('[data-import-detail-fichier]').setInputFiles({
+        name: 'inventaire-clics.csv', mimeType: 'text/csv',
+        buffer: Buffer.from('référence;libellé;montant\nSTOCK-CLIC-001;Relevé physique du parcours cliqué;555555,55', 'utf-8'),
+      });
+      await soumettre(p.locator(`button:has-text("${L('samp.rapprochementImporterFichier')}")`).first(), 2000);
+      const apres = await compte('[data-rapprochement-ligne]');
+      dire('détail du compte INVENTORY : importer engendre une ligne RÉELLE (le MÊME atelier que PAYROLL, jamais dupliqué)',
+        !refus(p) && apres > avant,
+        refus(p) ?? (apres > avant ? `ligne engendrée (${avant} → ${apres})` : `AUCUNE nouvelle ligne (${avant} → ${apres})`));
+      if (apres > avant) {
+        const ligne = p.locator('[data-rapprochement-ligne]').first();
+        await soumettre(ligne.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('refus : conclure le rapprochement INVENTORY SANS explication est refusé (POP-02, même règle que PAYROLL/REVENUE)',
+          /POP-02/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+        await aller(`${eng}/poste/INVENTORY/detail-compte`);
+        const ligneApres = p.locator('[data-rapprochement-ligne]').first();
+        await ligneApres.locator('input[name=explication]').fill('Relevé physique daté de clôture, écart confirmé et documenté.');
+        await soumettre(ligneApres.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('détail du compte INVENTORY : expliqué par écrit, le rapprochement se conclut',
+          !refus(p) && (await p.locator('[data-rapprochement-ligne]').first().locator('[data-rapprochement-conclu]').count()) > 0,
+          refus(p) ?? 'rapprochement conclu');
+      }
+    }
+  });
+
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);

@@ -1945,3 +1945,25 @@ design : chacun reste une tranche à construire.**
   trancher explicitement plutôt qu'une session qui invente le barème de compétence/objectivité
   seule ; H-6 (passe de design, déjà scopée, sans nouvelle mécanique d'audit) est pris en premier
   par ordre de valeur (STATUS.md, « tranches optionnelles de H-5... face à H-6 »).
+
+- **R109 — STOCKS-INV (INVENTORY, nature `observation_documentee`, R99) est câblée sur l'atelier
+  « détail du compte », qui ne fait qu'UNE réconciliation de TOTAL — pas le test BIDIRECTIONNEL
+  ligne à ligne (réalité + exhaustivité) que le `controle` de la procédure exige.**
+  `methodology/procedures.json` (STOCKS-INV) : « deux sens obligatoires (réalité + exhaustivité) »
+  — un auditeur qui assiste à un inventaire physique sélectionne des items sur le PLANCHER et les
+  retrouve au LIVRE (réalité/existence), ET sélectionne des items au LIVRE et les retrouve sur le
+  PLANCHER (exhaustivité) : deux directions, chacune sur un échantillon d'items distincts.
+  L'atelier construit (Lot 7, priorité 1, `/poste/[code]/detail-compte`, réutilisé de R98) importe
+  un fichier CSV du client, compare son TOTAL au grand livre, et exige une explication écrite de
+  l'écart — le MÊME geste que PERSONNEL-DSN (rapprochement), pas un test par ligne dans les deux
+  sens. **Portée d'une tranche future, si elle est prise** : `account-detail.ts` porte déjà les
+  lignes individuelles (`account_detail_row`, référence/libellé/montant) — un tirage d'items côté
+  PLANCHER (échantillon du fichier importé, retrouvés dans une SECONDE source — le grand livre par
+  référence) et un tirage côté LIVRE (échantillon du grand livre, retrouvés dans le fichier
+  importé) sont concevables SANS nouvelle table, mais c'est une mécanique de RAPPROCHEMENT LIGNE À
+  LIGNE bidirectionnel, jamais construite dans ce dépôt — hors du périmètre d'une tranche
+  d'ouverture d'atelier (règle 9, même raisonnement que R92/R95/R97/R98/R99 eux-mêmes : un premier
+  geste réel vaut mieux qu'un geste complet non construit). | 2026-09-17 (Lot 7, priorité 1, R99)
+  | non corrigé, délibérément — un total qui rapproche est un premier geste réel (le poste n'ouvre
+  plus sur rien, D.0), pas le geste complet que la méthode décrit ; à reprendre si le fondateur
+  juge le test bidirectionnel prioritaire face au reste du registre.
