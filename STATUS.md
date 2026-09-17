@@ -4,6 +4,62 @@
 
 ---
 
+## Lot 7, priorité 1 (R100) — l'atelier « détail du compte » pour EQUITY (2026-09-17)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17), enchaîné sans pause après R99 (règle 32) —
+dernier item de la liste nommée « les ateliers manquants (R98, R99, R100) ».*
+
+**Le constat** : CAPITAUX-VAR (poste EQUITY, nature `rapprochement`) et CAPITAUX-PV (nature
+`sondage_pieces`) portaient un gap DOUBLE (disclosed R100 le 2026-09-16, tranche Lot 5) — aucune
+des deux procédures propres au poste n'atteignait un atelier réel.
+
+**Implémenté** (commit `be3c58c`) : `programme.ts::atelierDeLaNature`, nouveau cas
+`rapprochement`+`EQUITY` → `/poste/EQUITY/detail-compte` — le MÊME atelier que PAYROLL (R98) et
+INVENTORY (R99), zéro ligne de service changée, troisième poste sur le même écran. **Vérifié par
+exécution, pas supposé** : `vuePoste(IDS.engNep, 'EQUITY')` confirme `blocs.echantillon.href`
+pointant vers cet atelier, `etat:'en_cours'` ; PAYROLL et INVENTORY re-vérifiés dans le même
+passage, sans régression. Contrairement à R99 (`observation_documentee`, qui avait exigé une
+variable locale neuve dans `poste.ts`), AUCUN changement de `poste.ts` n'était nécessaire ici :
+`atelierRapprochementSeul` était déjà générique par `fsliCode` depuis avant cette tranche —
+hypothèse confirmée par exécution, pas par analogie.
+
+**CAPITAUX-PV reste SANS atelier — disclosed R110** (`BACKLOG_REPORTE.md`, `fils.json`), pas
+corrigé : `sondage_pieces` ne connaît que `/testing`, câblé en dur sur `revenuePopulation()` — le
+même raisonnement que R92/R95/R96. En amont de ceux-ci : la population de CAPITAUX-PV porte
+`predicat:"non_implemente"` dans la méthode (source = registre des assemblées, jamais le grand
+livre), donc même la SOURCE des données à échantillonner n'existe encore nulle part dans ce
+dépôt — hors du périmètre d'une tranche de câblage d'atelier (règle 9).
+
+**Un réfutateur** (règle 30 : ni modèle de données, ni sécurité, ni refus neuf) : un constat réel
+trouvé — l'entrée R100 pré-existante (écrite le 2026-09-16, tranche Lot 5 précédente) affirmait
+encore « NI CAPITAUX-VAR NI CAPITAUX-PV N'A D'ATELIER », contredisant R110 dans le même fichier
+une fois CAPITAUX-VAR câblée. Corrigé (commit `ef8c6f7`) : un paragraphe d'amendement ajouté APRÈS
+le texte d'origine dans `BACKLOG_REPORTE.md` (jamais réécrit en place), `fils.json` mis à jour
+(`etat` passé à « PARTIELLEMENT CORRIGÉ », texte d'origine déplacé dans `note`). Le reste de la
+revue (collision/ordre dans `atelierDeLaNature`, genericité de `poste.ts`, `circularisations.ts`
+— EQUITY n'est jamais circularisée, station clics, `AILLEURS`, `fsliAccounts('EQUITY')` non vide)
+confirmé sain, aucun autre correctif nécessaire.
+
+**Mesures finales, ordre CANONIQUE, sur l'arbre du commit `95f2c7e`** (`npm run verify`, budget
+3600s, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163/163 fichiers (1209/1209 tests,
+inchangé) ; gardes propres ; semeur à jour ; plancher 1209 test(s)/632, aucune forme éteinte ou
+isolée ; langue 0 chaîne hors catalogue/0 en dur ; lectures 0 perdue sur 1990 chemins figés dans
+93 écrans (6/6 cas connus mauvais dénoncés) ; parcours 347 déclarées/290 figées/57 nouvelles (5/5
+cas connus mauvais dénoncés — même dette pré-existante que R98/R99, non traitée ici) ; screens 98
+routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà de 5 actions ; clics EXIT=1
+réel (seul motif #418, F43, VINGT-NEUVIÈME confirmation, 286 étapes/403 clics sur 63 gestes, les
+CINQ assertions de la station EQUITY passent intégralement) ; visuel (relancé séparément, le `&&`
+s'arrête avant lui) 356 vues/0 défaut (89 écrans, inchangé vs R98/R99 — même route).
+
+**Priorité 1 (R98/R99/R100) est COMPLÈTE.** Les trois ateliers manquants nommés par le mandat du
+fondateur sont câblés. Suite immédiate : Priorité 2 (H-6, passe de design profonde, en tranches,
+« jusqu'à ce que les écrans tiennent ensemble comme une épure, pas jusqu'à ce qu'un compte de
+jetons atteigne zéro »).
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, priorité 1 (R99) — l'atelier « détail du compte » pour INVENTORY (2026-09-17)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17), enchaîné sans pause après R98 (règle 32).*

@@ -1446,3 +1446,24 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   VINGT-HUITIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
   discipline que F9-F41). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut —
   89 écrans, inchangé vs R98 : même route, pas une nouvelle).
+
+- **F43 — UN incident** (2026-09-17, Lot 7, priorité 1 (R100) — l'atelier « détail du compte » pour
+  EQUITY, sur l'arbre du commit `95f2c7e`, réutilisant le MÊME écran que PAYROLL (R98)/INVENTORY
+  (R99) pour une troisième nature/poste — un réfutateur : un constat RÉEL trouvé et corrigé
+  (l'entrée R100 pré-existante, écrite le 2026-09-16 dans la tranche Lot 5 précédente, affirmait
+  encore « NI CAPITAUX-VAR NI CAPITAUX-PV N'A D'ATELIER » — contredisant R110 (écrite par cette
+  tranche) dans le MÊME fichier une fois CAPITAUX-VAR câblée ; corrigé par un paragraphe
+  d'amendement ajouté APRÈS le texte d'origine dans `BACKLOG_REPORTE.md`, jamais réécrit en place,
+  et `fils.json` mis à jour). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route —
+  `/eng/70670df5-.../rcm/e220be0b-...` (l'habituelle, `rcm/[cid]` — même signature exacte, le
+  tooltip `rail-astuce` au jeton 87). Disjoint de la tranche : cette tranche touche
+  `programme.ts::atelierDeLaNature` (un nouveau cas `rapprochement`+EQUITY) et `scenario.ts` (une
+  station neuve pour EQUITY) — rien qui touche `/rcm`, et `poste.ts` n'a REÇU AUCUN changement
+  cette fois (contrairement à R99), vérifié par exécution : `atelierRapprochementSeul` était déjà
+  générique par `fsliCode`. Les 1209 tests vitest passent tous (aucun test neuf : la logique
+  réutilisée était déjà couverte par R98/R99). La station « détail du compte EQUITY » PASSE
+  intégralement (les cinq assertions : bouton demander → lien → import → refus POP-02 → conclu).
+  Clôture et archive ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63
+  gestes — VINGT-NEUVIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin
+  (même discipline que F9-F42). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut —
+  89 écrans, inchangé vs R98/R99 : même route, pas une nouvelle).
