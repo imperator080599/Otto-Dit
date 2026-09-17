@@ -1715,6 +1715,16 @@ design : chacun reste une tranche à construire.**
   AUCUN des huit postes du mandat : sa correction reste hors du périmètre du Lot 5, pas un gap
   de ce lot.
 
+  **Amendement du 2026-09-17 (Lot 7, priorité 1, commit `be3c58c`) — le gap DOUBLE ci-dessus
+  n'est plus double.** CAPITAUX-VAR (`rapprochement`) est câblée sur `/poste/EQUITY/detail-compte`
+  (le même atelier que PAYROLL/R98 et INVENTORY/R99, zéro ligne de service changée) — mesuré par
+  exécution (`vuePoste(IDS.engNep, 'EQUITY')` après chargement complet, pas par lecture de code
+  seule) : `blocs.echantillon.href` pointe désormais vers cet atelier, `etat:'en_cours'`. CAPITAUX-PV
+  (`sondage_pieces`) reste SANS atelier, disclosed séparément sous **R110** — la revue hostile de
+  cette tranche a trouvé que ce paragraphe n'avait pas été amendé au moment où R110 a été écrit,
+  laissant R100 et R110 se contredire dans le même fichier (règle 13) ; corrigé ici plutôt que
+  laissé en silence.
+
 - **R101 — `docs/instantanes/servi.json` n'a plus été mis à jour depuis le 2026-09-09 (SHA
   `11f99dd`, tranche CTRL-06), alors que `STATUS.md` a documenté et confirmé en direct SEPT
   confirmations de SHA servi depuis (`git log --oneline -- docs/instantanes/servi.json` : dernier
