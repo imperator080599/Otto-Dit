@@ -68,7 +68,12 @@ station PAYROLL passe intégralement) ; visuel (relancé séparément) 356 vues/
 detail-compte` (même précédent que `/circularisations`, qui sert déjà deux natures), un seul
 nouveau cas dans `atelierDeLaNature`, aucune UI neuve.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_3YA2HLubKdwJhiGJ7VhUL5cqXAVe`, cible
+production) READY, commit `827eb855f4aa12908c2097018858261554595f3e` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 07:12:11Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor 89/16/31/42
+inchangé. Aucune nouvelle lecture `/api/sante` (aucune mécanique neuve dans le service, seul un
+écran manquait).
 
 ---
 
