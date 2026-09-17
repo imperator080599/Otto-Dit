@@ -56,7 +56,11 @@ fondateur sont câblés. Suite immédiate : Priorité 2 (H-6, passe de design pr
 « jusqu'à ce que les écrans tiennent ensemble comme une épure, pas jusqu'à ce qu'un compte de
 jetons atteigne zéro »).
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_5j6qmRujjT4dZ2c5oNa9YmAr7sDg`, cible
+production) READY, commit `c5efdc840f296aea5c01bcc4f3fc8cca03ddaf58` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 09:31:35Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor 89/16/31/42
+inchangé. Aucune nouvelle lecture `/api/sante` (aucune mécanique neuve dans le service).
 
 ---
 
