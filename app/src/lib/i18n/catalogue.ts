@@ -1208,6 +1208,8 @@ export const LIBELLES = {
   'samp.rapprochementEcartExplication': { en: 'Explain the gap — written, re-readable', fr: 'Expliquer l’écart — écrit, relisible' },
   'samp.rapprochementConclure': { en: 'Conclude the reconciliation', fr: 'Conclure le rapprochement' },
   'samp.rapprochementConclu': { en: 'Reconciled', fr: 'Rapproché' },
+  'detailCompte.retourPoste': { en: '← Back to {poste}', fr: '← Retour à {poste}' },
+  'detailCompte.titreEcran': { en: '{poste} — account detail and reconciliation', fr: '{poste} — détail du compte et rapprochement' },
   'wps.draftRev01AutoFromStored': { en: 'Draft REV-01 (auto, from stored facts)', fr: 'Rédiger REV-01 (automatique, à partir des faits stockés)' },
   'wps.openNotes': { en: 'Open notes', fr: 'Notes ouvertes' },
   'wps.noWorkpapersYetCompleteTestingThen': { en: 'No workpapers yet — complete testing, then draft.', fr: 'Aucun papier — terminez le testing, puis rédigez.' },

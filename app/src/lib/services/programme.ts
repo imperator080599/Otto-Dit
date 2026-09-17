@@ -670,6 +670,19 @@ export function atelierDeLaNature(nature: NatureDeTest, fsliCode: string, base: 
      `risque_minimum` (`moyen`) sur ce dossier : non commandées, pas
      seulement non planifiées, aucun disclosed nécessaire ici. */
   if (nature === 'confirmation_externe' && fsliCode === 'PROVISIONS') return `${base}/circularisations`;
+  /* Lot 7, priorité 1 (R98, docs/BACKLOG_REPORTE.md) : PERSONNEL-DSN (PAYROLL,
+     nature `rapprochement`) était plantée (procedure_instance + papier
+     `utilisee:false`) sans AUCUN atelier atteignable — ni /circularisations
+     (nature `confirmation_externe`/`rapprochement` sur CASH seulement), ni
+     /balances-aux (union de type fermée à `clients`/`fournisseurs`, TRADE_
+     RECEIVABLES seul). `/poste/PAYROLL/detail-compte` réutilise account-detail.ts
+     et requests.ts::demanderDetailDeCompte — déjà génériques PAR fsliCode
+     depuis leur origine (le service, contrairement à l'écran /sampling qui
+     les appelait, ne connaissait jamais REVENUE en dur) : aucune mécanique
+     neuve dans le SERVICE, seul un écran manquait. Poste-agnostique PAR SA
+     CLÉ (route `[code]`), donc réutilisable pour un futur poste sans
+     mécanique neuve supplémentaire — contrairement à `/balances-aux`. */
+  if (nature === 'rapprochement' && fsliCode === 'PAYROLL') return `${base}/poste/PAYROLL/detail-compte`;
   return null;
 }
 

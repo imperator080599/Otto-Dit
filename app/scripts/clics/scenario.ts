@@ -1400,6 +1400,53 @@ export async function conduire(
     }
   });
 
+  /* Lot 7, priorité 1 (R98, docs/BACKLOG_REPORTE.md) : PERSONNEL-DSN (PAYROLL,
+     nature `rapprochement`) était plantée sans AUCUN atelier atteignable —
+     ni ce que la station ci-dessus exerce (REVENUE, /sampling), ni
+     /balances-aux (union fermée clients/fournisseurs). `/poste/PAYROLL/
+     detail-compte` réutilise les MÊMES fonctions de service (account-detail.ts
+     déjà générique par fsliCode), donc le MÊME geste : demander, importer,
+     refuser un écart non expliqué (POP-02), conclure expliqué. Le monde de
+     démo ne porte AUCUNE demande ni import PAYROLL avant cette station — au
+     contraire de REVENUE (semé déjà rapproché) — donc les DEUX boutons sont
+     exercés ici, pas seulement l'un des deux. */
+  await station('détail du compte : PAYROLL (R98, atelier neuf)', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/poste/PAYROLL/detail-compte`);
+    dire('détail du compte PAYROLL : aucune demande encore — le bouton est offert',
+      (await compte('[data-demander-detail-de-compte]')) > 0,
+      refus(p) ?? 'bouton absent');
+    await soumettre(p.locator('[data-demander-detail-de-compte]').first(), 3000);
+    dire('détail du compte PAYROLL : demander engendre une VRAIE demande — le lien remplace le bouton',
+      !refus(p) && (await compte('[data-detail-de-compte-lien]')) > 0,
+      refus(p) ?? 'lien affiché');
+    if (await compte('[data-import-detail-fichier]')) {
+      const avant = await compte('[data-rapprochement-ligne]');
+      await p.locator('[data-import-detail-fichier]').setInputFiles({
+        name: 'dsn-clics.csv', mimeType: 'text/csv',
+        buffer: Buffer.from('référence;libellé;montant\nDSN-CLIC-001;Charge du parcours cliqué;777777,77', 'utf-8'),
+      });
+      await soumettre(p.locator(`button:has-text("${L('samp.rapprochementImporterFichier')}")`).first(), 2000);
+      const apres = await compte('[data-rapprochement-ligne]');
+      dire('détail du compte PAYROLL : importer engendre une ligne RÉELLE (rapprochement.ts réutilisé, pas dupliqué)',
+        !refus(p) && apres > avant,
+        refus(p) ?? (apres > avant ? `ligne engendrée (${avant} → ${apres})` : `AUCUNE nouvelle ligne (${avant} → ${apres})`));
+      if (apres > avant) {
+        const ligne = p.locator('[data-rapprochement-ligne]').first();
+        await soumettre(ligne.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('refus : conclure le rapprochement PAYROLL SANS explication est refusé (POP-02, même règle que REVENUE)',
+          /POP-02/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — la règle n’a pas été empruntée');
+        await aller(`${eng}/poste/PAYROLL/detail-compte`);
+        const ligneApres = p.locator('[data-rapprochement-ligne]').first();
+        await ligneApres.locator('input[name=explication]').fill('DSN régularisée post-clôture, écart confirmé et documenté.');
+        await soumettre(ligneApres.locator(`button:has-text("${L('samp.rapprochementConclure')}")`).first());
+        dire('détail du compte PAYROLL : expliqué par écrit, le rapprochement se conclut',
+          !refus(p) && (await p.locator('[data-rapprochement-ligne]').first().locator('[data-rapprochement-conclu]').count()) > 0,
+          refus(p) ?? 'rapprochement conclu');
+      }
+    }
+  });
+
   await station('sondage', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/sampling`);
