@@ -1081,17 +1081,24 @@ async function corpsDeLaSonde() {
     /* H-5 tranche 1 (Lot 7, docs/REGISTRE_IDEES.md §H, ligne 273) : « un adaptateur d'import GRC
        […] importée COMME PIÈCE, jamais recréée ». `importRcm` (sox.ts) crée désormais une vraie
        ligne `import_file` (kind='rcm') et chaque `rcm_row` qu'il insère pointe dessus
-       (`import_file_id`). Cette lecture re-DÉRIVE indépendamment (règle 16) deux faits qui ne
-       DEVRAIENT jamais diverger, mais qui viennent de deux écritures séparées dans le temps (la
-       ligne `import_file` d'abord, `row_count` mis à jour ENSUITE, après la boucle qui insère
-       les `rcm_row`) : (1) aucun `rcm_row` du dossier n'est orphelin de provenance
-       (`import_file_id is null`) ; (2) le `row_count` stocké sur chaque `import_file` coïncide
-       avec un COMPTE DIRECT des `rcm_row` qui le citent réellement. Rougit sur toute dérive — un
-       `rcm_row` supprimé après coup sans mettre à jour `row_count` serait exactement ce cas.
-       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19) : elle ne revérifie pas le `sha256` stocké
-       (le contenu original du fichier n'est jamais conservé, seule son empreinte — rien à quoi
-       la comparer après coup) ni le contenu des colonnes `control`/`risk` que l'import dérive du
-       CSV, seulement l'intégrité de la PROVENANCE elle-même. */
+       (`import_file_id`). Cette lecture re-DÉRIVE indépendamment (règle 16) que le `row_count`
+       stocké sur chaque `import_file` coïncide avec un COMPTE DIRECT des `rcm_row` qui le citent
+       réellement — les deux viennent de deux écritures séparées dans le temps (la ligne
+       `import_file` d'abord, `row_count` mis à jour ENSUITE, après la boucle qui insère les
+       `rcm_row`, désormais dans UNE transaction, correctif de revue hostile). Rougit sur toute
+       dérive — un `rcm_row` supprimé après coup sans mettre à jour `row_count` serait exactement
+       ce cas.
+       CE QUE CETTE LECTURE NE VÉRIFIE PAS (règle 19), et POURQUOI — trouvé par la revue hostile
+       (voix 1) sur la PREMIÈRE version de cette lecture, qui traitait tout `rcm_row.import_file_id
+       is null` comme une erreur bloquante : `rcm_row` n'a AUCUNE colonne `created_at` (0002), donc
+       rien ne distingue une ligne légitimement ANTÉRIEURE à cette tranche (migration 0169, sans
+       provenance rétroactive — le cas normal sur tout dossier dont la RCM a été importée avant ce
+       jour) d'une ligne dont la provenance aurait été effacée après coup. Bloquer sur ce signal
+       aurait fait rougir `/api/sante` en production, immédiatement, sur TOUT dossier RCM déjà
+       semé — le silence lu comme un succès (règle 13) inversé en fausse alerte. Le compte de
+       lignes sans provenance est donc rendu INFORMATIVEMENT, jamais comme un refus — ni le
+       `sha256` stocké (le contenu original n'est jamais conservé, rien à quoi le comparer après
+       coup) ni le contenu des colonnes `control`/`risk` que l'import dérive du CSV. */
     lectures.push(await essayer('H-5 tranche 1 : la provenance RCM cohérente avec le fichier importé', async () => {
       const fichiers = await q<{ id: string; row_count: string; reel: string }>(
         `select f.id, f.row_count, count(r.id) reel
@@ -1100,22 +1107,21 @@ async function corpsDeLaSonde() {
          group by f.id, f.row_count`,
         [id],
       );
-      if (!fichiers.length) return 'aucun import RCM pour l’instant';
-      const orphelins = await q1<{ n: string }>(
+      const legacy = await q1<{ n: string }>(
         `select count(*) n from rcm_row where engagement_id = $1 and import_file_id is null`,
         [id],
       );
-      if (Number(orphelins.n) > 0) {
-        throw new Error(`${orphelins.n} ligne(s) RCM sans provenance (import_file_id NULL) — `
-          + 'une ligne importée doit toujours porter sa pièce');
-      }
+      const suffixeLegacy = Number(legacy.n) > 0
+        ? ` — ${legacy.n} ligne(s) antérieure(s) à cette tranche (migration 0169), sans provenance rétroactive`
+        : '';
+      if (!fichiers.length) return `aucun import RCM avec provenance pour l’instant${suffixeLegacy}`;
       const incoherents = fichiers.filter((f) => Number(f.reel) !== Number(f.row_count));
       if (incoherents.length > 0) {
         throw new Error(`${incoherents.length} fichier(s) RCM dont le compte stocké (row_count) `
           + 'ne correspond pas au nombre réel de lignes qui le citent');
       }
       const total = fichiers.reduce((s, f) => s + Number(f.reel), 0);
-      return `${fichiers.length} import(s) RCM, ${total} ligne(s) au total, toutes rattachées à leur pièce`;
+      return `${fichiers.length} import(s) RCM avec provenance, ${total} ligne(s) rattachée(s) à leur pièce${suffixeLegacy}`;
     }));
     /* MAT-03 (mandat 2026-09-09, §2.4) : « un ré-import qui effacerait un tirage, un papier ou un
        visa existant » doit être REFUSÉ. Recherche préalable (pas devinée, règle 18) : ni

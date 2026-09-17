@@ -3746,6 +3746,24 @@ export async function conduire(
     } else {
       await cliquer(selRcm);
       dire('dashboard : cliquer la tuile déviations ouvre /rcm', p.url().endsWith('/rcm'), p.url());
+      /* H-5, TRANCHE 1 (Lot 7, docs/REGISTRE_IDEES.md §H, ligne 273) : le vrai geste d'upload
+         RCM — ce dossier (eng/engNep) n'a AUCUN contrôle à ce point du parcours canonique (la
+         RCM d'engNep n'est importée que par enrichir.ts, jamais par demo-seed.ts), donc le
+         formulaire d'upload EST offert. Vérifié en direct par requête SQL avant d'écrire cette
+         station (règle 15/18) — jamais supposé depuis registre.ts (qui décrivait, à tort avant
+         ce correctif, ce chemin comme jamais atteignable par clics, R107/R109). */
+      const formUpload = p.locator('form:has(input[type=file])');
+      if (await formUpload.count()) {
+        await formUpload.locator('input[type=file]').setInputFiles(ds('sox', 'rcm.csv'));
+        await formUpload.locator('button').click();
+        await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+        await p.waitForTimeout(1500);
+        const nLignes = await p.locator('table.data tbody tr').count();
+        dire('rcm : l’upload réel du listing client (fichier, pas un fixture serveur) importe des contrôles',
+          !refus(p) && nLignes > 0, refus(p) ?? `${nLignes} ligne(s) affichée(s)`);
+      } else {
+        dire('rcm : le formulaire d’upload est offert quand aucun contrôle n’existe encore', false, 'formulaire absent');
+      }
       await aller(`${eng}/dashboard`);
     }
 

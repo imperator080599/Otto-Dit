@@ -83,86 +83,110 @@ export async function importRcm(
      values ($1,'rcm',$2,$3,'{}'::jsonb,'validated',0) returning id`,
     [engagementId, filename, sha256(csv)],
   );
-  const processIds = new Map<string, string>();
+  /* Correctif (revue hostile, voix 1 et 2, indépendantes — R108/R109) : la boucle entière
+     tourne désormais dans UNE transaction (`tx`, déjà importée ailleurs dans ce fichier). Sans
+     elle, un CSV qui casse à mi-parcours (un octet NUL dans `risk_desc`, une `frequency`
+     invalide — plausible sur un vrai export client mal formé) laissait un `control` COMMIS sans
+     sa `rcm_row` : orphelin PERMANENT, qu'aucun ré-import ne pouvait plus jamais réparer (le
+     garde `if (existing) continue` voit le code déjà pris). Désormais, un échec à N'IMPORTE QUEL
+     point annule TOUT ce que CET appel a produit — jamais un état intermédiaire commis. */
   let count = 0;
-  for (const line of lines.slice(1)) {
-    const p = splitCsvLine(line);
-    const get = (n: string) => p[idx(n)] ?? '';
-    const processName = get('process');
-    if (!processIds.has(processName)) {
-      const existing = await q01<{ id: string }>(`select id from process where engagement_id = $1 and name = $2`, [engagementId, processName]);
-      const pid = existing?.id ?? (await q1<{ id: string }>(`insert into process (engagement_id, name) values ($1,$2) returning id`, [engagementId, processName])).id;
-      processIds.set(processName, pid);
-    }
-    const itgc = get('itgc_area');
-    const itgcRow = itgc ? await q01<{ id: string }>(`select id from itgc_area where code = $1`, [itgc]) : null;
-    const existing = await q01<{ id: string }>(`select id from control where engagement_id = $1 and code = $2`, [engagementId, get('code')]);
-    if (existing) continue;
-    /* CTRL-01 (mandat contrôle interne, 2026-09-08) : le D&I d'un contrôle est un JUGEMENT DE
-       L'AUDITEUR — il ne vient JAMAIS du listing RCM du client (`di_status` a longtemps été une
-       colonne de ce CSV, lue directement ici ; trouvé par la revue hostile du 2026-09-08 comme
-       un défaut de modélisation, pas seulement un décor : un contrôle « effective » sans aucune
-       tâche documentée, jamais passé par `setDiStatus`, est exactement le cas que CTRL-01 existe
-       pour refuser). Chaque contrôle importé démarre donc `not_assessed`, quel que soit le
-       contenu du listing — seul `setDiStatus` (gardé par CTRL-01) peut le faire avancer. */
-    const control = await q1<{ id: string }>(
-      `insert into control (engagement_id, process_id, code, name, description, frequency, nature, effect, is_key, itgc_area_id, owner_name)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
-      [
-        engagementId, processIds.get(processName), get('code'), get('name'), get('description'),
-        get('frequency'), get('nature'), get('effect'), get('is_key') === 'yes',
-        itgcRow?.id ?? null, get('owner'),
-      ],
-    );
-    const assertionsList = (get('assertions') || '').split('|').filter(Boolean);
-    await q(
-      `insert into rcm_row (engagement_id, control_id, risk_desc, assertions, coso_component, import_file_id) values ($1,$2,$3,$4,$5,$6)`,
-      [engagementId, control.id, get('risk_desc'), assertionsList, get('coso_component'), file.id],
-    );
-    /* CTRL-02 (mandat contrôle interne, §2.4.1) : « ce facteur porte un lien vers les objets
-       risque réels, jamais du texte libre seul ». `risk_desc` ci-dessus reste le texte du
-       listing RCM (`rcm_row`, convention déjà en place, 0002) — mais chaque contrôle importé
-       reçoit AUSSI un vrai risque en base (`risk`, 0001) par assertion listée, lié par
-       `control_risk` (0150) : c'est CE lien, jamais le texte de `rcm_row`, que le facteur
-       « réponse au risque » doit citer pour ne pas être un décor. Le niveau est dérivé du seul
-       signal réellement présent dans le CSV (`is_key`) — pas une constante inventée : un
-       contrôle clé répond à un risque tenu pour `high`, sinon `medium`.
-       `source = 'rcm_import'` (règle 3 : ceci n'est PAS 'manual' — aucun humain n'a saisi ce
-       risque, il est synthétisé depuis le CSV) et l'écriture est un upsert ATOMIQUE sur
-       `unique(engagement_id, assertion, description)` (0150) — trouvé par la revue hostile du
-       2026-09-08 (voix 2) : la forme précédente (SELECT puis INSERT) était une course
-       vérification-puis-écriture, deux appels concurrents pouvant créer deux lignes `risk`
-       identiques en silence. */
-    for (const assertion of assertionsList) {
-      const risque = await q1<{ id: string }>(
-        `insert into risk (engagement_id, assertion, level, description, source) values ($1,$2,$3,$4,'rcm_import')
-         on conflict (engagement_id, assertion, description) do update set assertion = excluded.assertion
-         returning id`,
-        [engagementId, assertion, get('is_key') === 'yes' ? 'high' : 'medium', get('risk_desc')],
-      );
-      await q(
-        `insert into control_risk (engagement_id, control_id, risk_id) values ($1,$2,$3)
-         on conflict (control_id, risk_id) do nothing`,
-        [engagementId, control.id, risque.id],
-      );
-    }
-    for (const a of ATTRIBUTES_BY_CONTROL[get('code')] ?? DEFAULT_ATTRIBUTES) {
-      await q(
-        `insert into attribute_def (control_id, code, description, required) values ($1,$2,$3,$4)`,
-        [control.id, a.code, a.description, a.required],
-      );
-    }
-    count++;
+  let echec: string | null = null;
+  try {
+    count = await tx(async () => {
+      const processIds = new Map<string, string>();
+      let c = 0;
+      for (const line of lines.slice(1)) {
+        const p = splitCsvLine(line);
+        const get = (n: string) => p[idx(n)] ?? '';
+        const processName = get('process');
+        if (!processIds.has(processName)) {
+          const existing = await q01<{ id: string }>(`select id from process where engagement_id = $1 and name = $2`, [engagementId, processName]);
+          const pid = existing?.id ?? (await q1<{ id: string }>(`insert into process (engagement_id, name) values ($1,$2) returning id`, [engagementId, processName])).id;
+          processIds.set(processName, pid);
+        }
+        const itgc = get('itgc_area');
+        const itgcRow = itgc ? await q01<{ id: string }>(`select id from itgc_area where code = $1`, [itgc]) : null;
+        const existing = await q01<{ id: string }>(`select id from control where engagement_id = $1 and code = $2`, [engagementId, get('code')]);
+        if (existing) continue;
+        /* CTRL-01 (mandat contrôle interne, 2026-09-08) : le D&I d'un contrôle est un JUGEMENT DE
+           L'AUDITEUR — il ne vient JAMAIS du listing RCM du client (`di_status` a longtemps été une
+           colonne de ce CSV, lue directement ici ; trouvé par la revue hostile du 2026-09-08 comme
+           un défaut de modélisation, pas seulement un décor : un contrôle « effective » sans aucune
+           tâche documentée, jamais passé par `setDiStatus`, est exactement le cas que CTRL-01 existe
+           pour refuser). Chaque contrôle importé démarre donc `not_assessed`, quel que soit le
+           contenu du listing — seul `setDiStatus` (gardé par CTRL-01) peut le faire avancer. */
+        const control = await q1<{ id: string }>(
+          `insert into control (engagement_id, process_id, code, name, description, frequency, nature, effect, is_key, itgc_area_id, owner_name)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
+          [
+            engagementId, processIds.get(processName), get('code'), get('name'), get('description'),
+            get('frequency'), get('nature'), get('effect'), get('is_key') === 'yes',
+            itgcRow?.id ?? null, get('owner'),
+          ],
+        );
+        const assertionsList = (get('assertions') || '').split('|').filter(Boolean);
+        await q(
+          `insert into rcm_row (engagement_id, control_id, risk_desc, assertions, coso_component, import_file_id) values ($1,$2,$3,$4,$5,$6)`,
+          [engagementId, control.id, get('risk_desc'), assertionsList, get('coso_component'), file.id],
+        );
+        /* CTRL-02 (mandat contrôle interne, §2.4.1) : « ce facteur porte un lien vers les objets
+           risque réels, jamais du texte libre seul ». `risk_desc` ci-dessus reste le texte du
+           listing RCM (`rcm_row`, convention déjà en place, 0002) — mais chaque contrôle importé
+           reçoit AUSSI un vrai risque en base (`risk`, 0001) par assertion listée, lié par
+           `control_risk` (0150) : c'est CE lien, jamais le texte de `rcm_row`, que le facteur
+           « réponse au risque » doit citer pour ne pas être un décor. Le niveau est dérivé du seul
+           signal réellement présent dans le CSV (`is_key`) — pas une constante inventée : un
+           contrôle clé répond à un risque tenu pour `high`, sinon `medium`.
+           `source = 'rcm_import'` (règle 3 : ceci n'est PAS 'manual' — aucun humain n'a saisi ce
+           risque, il est synthétisé depuis le CSV) et l'écriture est un upsert ATOMIQUE sur
+           `unique(engagement_id, assertion, description)` (0150) — trouvé par la revue hostile du
+           2026-09-08 (voix 2) : la forme précédente (SELECT puis INSERT) était une course
+           vérification-puis-écriture, deux appels concurrents pouvant créer deux lignes `risk`
+           identiques en silence. */
+        for (const assertion of assertionsList) {
+          const risque = await q1<{ id: string }>(
+            `insert into risk (engagement_id, assertion, level, description, source) values ($1,$2,$3,$4,'rcm_import')
+             on conflict (engagement_id, assertion, description) do update set assertion = excluded.assertion
+             returning id`,
+            [engagementId, assertion, get('is_key') === 'yes' ? 'high' : 'medium', get('risk_desc')],
+          );
+          await q(
+            `insert into control_risk (engagement_id, control_id, risk_id) values ($1,$2,$3)
+             on conflict (control_id, risk_id) do nothing`,
+            [engagementId, control.id, risque.id],
+          );
+        }
+        for (const a of ATTRIBUTES_BY_CONTROL[get('code')] ?? DEFAULT_ATTRIBUTES) {
+          await q(
+            `insert into attribute_def (control_id, code, description, required) values ($1,$2,$3,$4)`,
+            [control.id, a.code, a.description, a.required],
+          );
+        }
+        c++;
+      }
+      return c;
+    });
+  } catch (e) {
+    echec = e instanceof Error ? e.message : String(e);
+    count = 0;
   }
-  const skipped = totalRows - count;
+  const skipped = echec ? 0 : totalRows - count;
   await q(
     `update import_file set row_count = $2, status = $3, validation_report = $4 where id = $1`,
     [
       file.id, count,
-      skipped > 0 ? 'validated_with_warnings' : 'validated',
-      JSON.stringify({ totalRows, imported: count, skippedExistingCode: skipped }),
+      echec ? 'rejected' : (skipped > 0 ? 'validated_with_warnings' : 'validated'),
+      echec
+        ? JSON.stringify({ totalRows, imported: 0, erreur: echec })
+        : JSON.stringify({ totalRows, imported: count, skippedExistingCode: skipped }),
     ],
   );
+  /* La pièce `import_file` reste — un import qui a échoué s'est quand même PRODUIT (règle 3 :
+     provenance), avec son statut 'rejected' et le motif dans `validation_report`. Mais le geste
+     lui-même doit rester un REFUS pour qui l'a déclenché (l'écran, `uploadRcmAction`) : jamais un
+     succès silencieux sur un CSV qui n'a en réalité RIEN construit. */
+  if (echec) throw new Error(`import RCM refusé (aucun contrôle importé, transaction annulée) : ${echec}`);
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
     verb: 'rcm_imported', objectType: 'import_file', objectId: file.id, payload: { controls: count, skipped },

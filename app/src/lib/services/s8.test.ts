@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { initTestDb } from '@/lib/test/setup';
-import { q, q1, repoRoot } from '@/lib/db/client';
+import { q, q01, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { bootstrapSox, runControlCycle, runPart2 } from '@/lib/flows/part2';
 import {
@@ -84,6 +84,38 @@ describe('S8 — SOX OE cycle on the same engines (PCAOB/COSO pack)', () => {
     // La pièce elle-même EXISTE et se garde — un import qui n'a rien créé n'est pas un import qui n'a jamais eu lieu.
     const rows = await q<{ n: string }>(`select count(*) n from rcm_row where import_file_id = $1`, [importFileId]);
     expect(Number(rows[0].n)).toBe(0);
+  });
+
+  it("H-5 tranche 1, cas connu mauvais (règle 17, trouvé par la revue hostile — voix 1 et 2, indépendantes) : un CSV qui casse À MI-PARCOURS ne laisse JAMAIS un contrôle orphelin de sa rcm_row — la transaction annule TOUT", async () => {
+    const { importRcm } = await import('./sox');
+    const HEADER = 'code;name;description;frequency;nature;effect;is_key;itgc_area;owner;process;risk_desc;assertions;coso_component';
+    // Une ligne valide, PUIS une ligne dont frequency viole le check constraint de `control`
+    // (avant le correctif : le premier insert control committait, la transaction n'existait pas).
+    const csv = [
+      HEADER,
+      'C-SONDE-01;Sonde valide;description;monthly;manual;preventive;yes;;Sondeur;Sonde;risque;occurrence;Control Activities',
+      'C-SONDE-02;Sonde cassée;description;FREQUENCE-INVALIDE;manual;preventive;yes;;Sondeur;Sonde;risque;occurrence;Control Activities',
+    ].join('\n');
+    const avantControls = await q1<{ n: string }>(`select count(*) n from control where engagement_id = $1`, [IDS.engSox]);
+    const avantRcmRows = await q1<{ n: string }>(`select count(*) n from rcm_row where engagement_id = $1`, [IDS.engSox]);
+
+    await expect(importRcm(IDS.engSox, csv, IDS.users.karim, 'rcm-sonde-cassee.csv')).rejects.toThrow(/import RCM refusé/);
+
+    const apresControls = await q1<{ n: string }>(`select count(*) n from control where engagement_id = $1`, [IDS.engSox]);
+    expect(Number(apresControls.n), 'ZÉRO contrôle créé par un import qui a échoué — pas même C-SONDE-01, la ligne valide').toBe(Number(avantControls.n));
+    const apresRcmRows = await q1<{ n: string }>(`select count(*) n from rcm_row where engagement_id = $1`, [IDS.engSox]);
+    expect(Number(apresRcmRows.n)).toBe(Number(avantRcmRows.n));
+    const sonde = await q01<{ id: string }>(`select id::text from control where engagement_id = $1 and code = 'C-SONDE-01'`, [IDS.engSox]);
+    expect(sonde, 'C-SONDE-01 ne doit JAMAIS exister — même la ligne AVANT la casse doit être annulée').toBeNull();
+
+    const file = await q1<{ status: string; row_count: number; validation_report: { erreur: string } }>(
+      `select status, row_count, validation_report from import_file
+       where engagement_id = $1 and filename = 'rcm-sonde-cassee.csv' order by created_at desc limit 1`,
+      [IDS.engSox],
+    );
+    expect(file.status, 'la PIÈCE reste — mais son statut dit honnêtement l’échec').toBe('rejected');
+    expect(file.row_count).toBe(0);
+    expect(file.validation_report.erreur).toBeTruthy();
   });
 
   it('D&I gate blocks OE testing on a not-assessed control', async () => {
