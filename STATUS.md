@@ -73,7 +73,13 @@ reste délibérément reporté. Suite naturelle : évaluer si une tranche H-6 su
 d'autres sélecteurs sur `--t1..--t6`, ou nommer une échelle pour les 60 déclarations restantes) a
 assez de valeur face à d'autres chantiers du registre, ou si le Lot 7 se referme ici.
 
-**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__list_deployments` (`dpl_7NJ652SK3m4fiuzguopjiXPCNueH`, cible
+production) READY, commit `144a4427cf1964c12dedbb98f982b3b548887e1e` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 02:14:03Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor 89/16/31/42
+inchangé depuis H-5. Aucune nouvelle lecture `/api/sante` pour cette tranche — une migration de
+jetons CSS pure n'a pas de fait d'audit à vérifier (la règle 22 s'applique aux tranches qui
+touchent le domaine métier, pas au design).
 
 ---
 
