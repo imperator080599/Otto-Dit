@@ -12,10 +12,18 @@ import { repoRoot } from '@/lib/db/client';
    choisies sont les bonnes — seulement que le compte de tailles encore en
    dur ne REMONTE jamais sans qu'une tranche future ne l'ait sciemment
    décidé (en baissant le seuil ici même). Il ne couvre que globals.css :
-   un `font-size` en dur dans un fichier `.tsx` (style inline) lui échappe. */
+   un `font-size` en dur dans un fichier `.tsx` (style inline) lui échappe.
+
+   Lot 7, H-6 tranche 2 (2026-09-17) : --t7 (40px) ajouté, `.kpi .v` et
+   `.epure-chiffre` unifiés dessus (même rôle sémantique — le chiffre unique
+   d'une carte-résumé — deux traitements visuels incompatibles avant cette
+   tranche : 22px/700 contre 40px/300). Seuil baissé de 60 à 58 (les deux
+   déclarations en dur convergent vers le même jeton). Ce que CE test ajoute
+   ne vérifie toujours PAS le poids (`font-weight`) : aucune échelle n'existe
+   pour lui dans ce fichier, 300 est recopié tel quel sur les deux règles. */
 
 const CSS_PATH = path.join(repoRoot(), 'app', 'src', 'app', 'globals.css');
-const SEUIL_ACTUEL = 60;
+const SEUIL_ACTUEL = 58;
 
 function compterFontSizeEnDur(texte: string): number {
   const m = texte.match(/font-size:\s*[0-9.]+px/g);
@@ -39,6 +47,18 @@ describe('globals.css : échelle typographique (Lot 7, H-6 tranche 1)', () => {
     expect(css).toMatch(/\.faint\s*\{[^}]*font-size:\s*var\(--t1\)/);
     expect(css).toMatch(/body\s*\{[^}]*font-size:\s*var\(--t4\)/s);
     expect(css).toMatch(/code,\s*\.mono\s*\{[^}]*font-size:\s*var\(--t2\)/);
+  });
+
+  it('.kpi .v et .epure-chiffre (même rôle sémantique, H-6 tranche 2) lisent le MÊME jeton --t7 et le même poids', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    const kpiV = css.match(/\.kpi \.v\s*\{([^}]*)\}/);
+    const epureChiffre = css.match(/\.epure-chiffre\s*\{([^}]*)\}/);
+    expect(kpiV).not.toBeNull();
+    expect(epureChiffre).not.toBeNull();
+    expect(kpiV![1]).toMatch(/font-size:\s*var\(--t7\)/);
+    expect(epureChiffre![1]).toMatch(/font-size:\s*var\(--t7\)/);
+    expect(kpiV![1]).toMatch(/font-weight:\s*300/);
+    expect(epureChiffre![1]).toMatch(/font-weight:\s*300/);
   });
 
   it('le compte de `font-size: Npx` en dur ne remonte jamais au-dessus du seuil gardé (règle 17 : cas connu mauvais)', () => {

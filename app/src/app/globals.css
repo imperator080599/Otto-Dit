@@ -377,7 +377,7 @@ label.fld { display: block; margin-bottom: 10px; }
 label.fld span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
 
 .kpi { display: flex; flex-direction: column; gap: 2px; }
-.kpi .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi .v { font-size: var(--t7); font-weight: 300; font-variant-numeric: tabular-nums; }
 .kpi .l { font-size: 12px; color: var(--muted); font-weight: 600; }
 
 .muted { color: var(--muted); }
@@ -602,9 +602,28 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    badges, tableaux…) restent en dur — les migrer toutes d'un coup aurait
    dépassé « petite tranche verticale » (règle 5) ; le compte exact avant/
    après est gardé par globals.css.test.ts, qui échoue si ce compte remonte
-   sans qu'une tranche future ne l'ait sciemment fait baisser davantage. */
+   sans qu'une tranche future ne l'ait sciemment fait baisser davantage.
+
+   Lot 7, H-6 tranche 2 (2026-09-17) : --t7 (40px) ajouté — la valeur de
+   `.epure-chiffre` (ligne ~785), le SEUL endroit qui l'utilisait avant cette
+   tranche. `.kpi .v` (ligne ~380) et `.epure-chiffre` portent le MÊME rôle
+   sémantique (le chiffre unique qu'un écran met en avant — recherche dédiée,
+   sous-agent, confirmée par lecture directe : les deux sont le grand nombre
+   d'une carte-résumé, sur six écrans pour `.kpi`, un seul pour
+   `.epure-chiffre`) mais affichaient deux traitements visuels incompatibles
+   (22px/700 gras contre 40px/300 léger) à un clic de rail l'un de l'autre
+   (`/eng/[id]/dashboard` contre `/eng/[id]/suivi`) — exactement le défaut
+   qu'une revue nomme « trop AI generated ». Unifié sur le traitement
+   `.epure-*` (le vocabulaire le plus récent du dépôt, marqué « premier écran
+   dans le nouveau langage » à sa création) plutôt que l'inverse : c'est la
+   direction que H-6 vise, pas un choix arbitraire. CE QUE CETTE TRANCHE NE
+   COUVRE PAS (règle 19) : aucune échelle de `font-weight` n'existe dans ce
+   fichier (poids toujours écrits en dur, partout) — en créer une aurait
+   dépassé le périmètre d'une tranche CSS ; le poids 300 est copié tel quel
+   sur les deux règles, jamais tokenisé. Les 48 écrans qui n'utilisent NI
+   `.kpi` NI `.epure-*` restent hors périmètre (rien de markup touché ici). */
 :root {
-  --t1: 12px; --t2: 12.5px; --t3: 13.5px; --t4: 14px; --t5: 15px; --t6: 24px;
+  --t1: 12px; --t2: 12.5px; --t3: 13.5px; --t4: 14px; --t5: 15px; --t6: 24px; --t7: 40px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -782,7 +801,7 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
 }
 .epure-carte + .epure-carte { margin-top: var(--e4); }
 
-.epure-chiffre { font-size: 40px; font-weight: 300; line-height: 1; color: var(--e-text); font-variant-numeric: tabular-nums; }
+.epure-chiffre { font-size: var(--t7); font-weight: 300; line-height: 1; color: var(--e-text); font-variant-numeric: tabular-nums; }
 .epure-chiffre.bloquant { color: var(--e-red); }
 .epure-chiffre.ok { color: var(--e-green); }
 
