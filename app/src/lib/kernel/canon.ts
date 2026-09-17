@@ -26,13 +26,21 @@ export function centsToStr(cents: number): string {
   return `${sign}${euros}.${rest}`;
 }
 
-/** Format cents for display (fr-style workpapers use narrow spaces; UI uses this). */
+/** Format cents for display (fr-style workpapers use narrow spaces; UI uses this).
+    L'espace avant `€` est INSÉCABLE (U+00A0) — trouvé par la revue hostile de H-6
+    tranche 2 (2026-09-17) : un espace ordinaire y laissait le navigateur couper la
+    ligne entre le montant et le symbole dès qu'une carte-résumé affichait ce texte
+    en grande taille (--t7, 40px) — `app/src/app/eng/[id]/population/page.tsx`,
+    « 5 648 676,30 » sur une ligne et « € » seul sur la suivante, confirmé par
+    capture d'écran réelle. `Intl.NumberFormat('fr-FR')` sépare déjà les milliers
+    par U+202F (espace fine insécable) — seul le séparateur MONTANT/€, ajouté ici,
+    utilisait un espace cassable. */
 export function fmtEur(cents: number, lang: 'fr' | 'en' = 'en'): string {
   const v = cents / 100;
   return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(v) + ' €';
+  }).format(v) + ' €';
 }
 
 /** FEC date AAAAMMJJ → ISO yyyy-mm-dd (throws on invalid calendar dates). */
