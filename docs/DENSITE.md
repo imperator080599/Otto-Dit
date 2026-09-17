@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run densite` — ne pas éditer à la main. -->
 # Densité mesurée — 87 écrans (build de production, base semée)
 
-Mesure prise sur le commit `3325b29`, build `QEtwDWng4vmjYB1NlvrcV`.
+Mesure prise sur le commit `0f5892b`, build `4_GtB7uGYcGk6uroJLLDH`.
 Définitions : voir l'en-tête de `app/scripts/mesures/densite.ts` (la mesure porte sa définition).
 Critère du mandat §3.D : aucun écran au-delà de **5 actions primaires** — 0 dépassement(s).
 

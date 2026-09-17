@@ -16,7 +16,7 @@ vu marcher. `prouvé` — le chemin existe et une station l’exerce (ce qui ne 
 dire que la station vérifie que le résultat est correct — voir « ce que ce registre
 ne vérifie pas » ci-dessous, et dans l’en-tête de `src/lib/semeur/registre.ts`).
 
-**Compte** : 89 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **32 non prouvé(s)** (chemin humain existant, jamais cliqué) · 41 prouvé(s).
+**Compte** : 89 objet(s)/geste(s) recensé(s) sur les cinq fichiers du semeur · **16 DÉCOR** (aucun chemin humain) · **31 non prouvé(s)** (chemin humain existant, jamais cliqué) · 42 prouvé(s).
 
 **Ce que ce registre ne vérifie PAS** : qu’une station qui clique un chemin observe
 le bon résultat derrière (« cliqué » n’est pas « prouvé correct ») ; les tables de
@@ -119,7 +119,7 @@ sous la ligne — elle ne se cache pas dans le badge.
 | rebuildFslis (SOX) | `part2.ts:29` | `scoping/page.tsx:53` | — | non prouvé |
 | matérialité proposée/validée (SOX) | `part2.ts:30` | `materiality/page.tsx:42,57` | — | non prouvé |
 | RCM du cycle importé (importRcm) | `part2.ts:31` | `rcm/page.tsx:48-51 (vrai upload de fichier, uploadRcmAction dans rcm/actions.ts — Lot 7 H-5 tranche 1, remplace l’ancien bouton-démo qui relisait dataset/sox/rcm.csv depuis le disque du serveur)` | — | non prouvé |
-| | | | | ↳ R107 (docs/BACKLOG_REPORTE.md) : le geste est désormais RÉEL (vraie provenance import_file, kind=rcm) mais toujours non cliqué — le bouton ne s’affiche que si controls.length===0, et engSox comme engNep ont déjà leur RCM importée par le semeur avant que clics ne s’exécute. |
+| | | | | ↳ R107 (docs/BACKLOG_REPORTE.md) LEVÉ le 2026-09-17 — mais SEULEMENT pour engNep (voir la ligne enrichir.ts:388 ci-dessous, désormais prouve) : CE dossier-ci est engSox, dont la RCM reste importée par bootstrapSox/runPart2 AVANT que clics ne s’exécute (demo-seed.ts l’appelle), donc controls.length>0 quand clics visite /rcm sur engSox — le bouton n’y est jamais offert. Pas le même défaut que R107 : R107 portait sur engNep, où l’énoncé était FAUX (vérifié par requête directe après db:reset && demo:seed) ; ici l’énoncé reste VRAI. |
 | lien de risque réel créé pour chaque contrôle importé — CTRL-02 (importRcm → control_risk) | `sox.ts:110-124 (appelé depuis part2.ts:31 ; mandat contrôle interne, 2026-09-08, tranche 2)` | `rcm/[cid]/page.tsx (lierRisqueAction, pour un lien SUPPLÉMENTAIRE — celui d’importRcm existe déjà à l’import)` | — | non prouvé |
 | | | | | ↳ domaine SOX entier hors du parcours cliqué (note ci-dessus) — même état que le reste de cette section, pas une régression neuve |
 | statut du walkthrough DI (setDiStatus) | `part2.ts:140` | `rcm/page.tsx:42` | — | non prouvé |
@@ -170,8 +170,8 @@ sous la ligne — elle ne se cache pas dans le badge.
 | processus importé (importerProcessus) | `enrichir.ts:366` | `processus/page.tsx:49` | `scenario.ts:638-703` | prouvé |
 | changement de processus statué (statuerChangement) | `enrichir.ts:374` | `processus/page.tsx:64` | `scenario.ts:670-677` | prouvé |
 | | | | | ↳ CORRIGÉ (constat B1, relecture hostile) : la citation d’origine (369) pointait sur importerProcessus, pas sur statuerChangement — corrigée. |
-| RCM du cycle (importRcm, revu depuis enrichir.ts) | `enrichir.ts:388` | `rcm/page.tsx:48-51 (même vrai upload que la ligne part2.ts, Lot 7 H-5 tranche 1)` | — | non prouvé |
-| | | | | ↳ R107 (docs/BACKLOG_REPORTE.md) : même route que la ligne part2.ts, même geste désormais réel, toujours non cliqué (engNep a déjà sa RCM importée par ce même semeur avant que clics ne s’exécute). |
+| RCM du cycle (importRcm, revu depuis enrichir.ts) | `enrichir.ts:388` | `rcm/page.tsx:48-51 (même vrai upload que la ligne part2.ts, Lot 7 H-5 tranche 1)` | `scenario.ts:3762 (station « R60 : les compteurs du dossier mènent quelque part », upload réel de dataset/sox/rcm.csv)` | prouvé |
+| | | | | ↳ R107 (docs/BACKLOG_REPORTE.md) LEVÉ le 2026-09-17 : l’énoncé d’origine (« jamais cliqué ») était FAUX pour engNep sur le monde LOCAL — demo-seed.ts n’appelle JAMAIS enrichirMondeDemo() (seul reconstruire.ts, production, le fait), donc engNep porte zéro contrôle à ce point du parcours canonique et le formulaire d’upload EST offert. Vérifié par requête SQL directe puis par npm run clics (F39, docs/CHASSE.md) avant d’écrire cette ligne — jamais supposé. |
 | grille calculée | `enrichir.ts:401` | `testing/page.tsx:78,87` | `scenario.ts:1324-1472 « atelier de test : la grille, les ancres, les refus, la conclusion »` | prouvé |
 | cellule disposée | `enrichir.ts:420` | `testing/actions-atelier.ts:66` | `scenario.ts:1324-1472` | prouvé |
 | ligne conclue | `enrichir.ts:416,423` | `testing/actions-atelier.ts:57` | `scenario.ts:1324-1472` | prouvé |
@@ -216,7 +216,7 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **import TB (dossier SOX)** — chemin : `imports/actions.ts:66 (même service que le NEP, dossier différent)` — recherche « engSox » et « sox » dans scenario.ts et contexte.ts : ZÉRO occurrence (vérifié directement, pas déduit) — le dossier SOX entier est hors du parcours cliqué
 - **rebuildFslis (SOX)** — chemin : `scoping/page.tsx:53`
 - **matérialité proposée/validée (SOX)** — chemin : `materiality/page.tsx:42,57`
-- **RCM du cycle importé (importRcm)** — chemin : `rcm/page.tsx:48-51 (vrai upload de fichier, uploadRcmAction dans rcm/actions.ts — Lot 7 H-5 tranche 1, remplace l’ancien bouton-démo qui relisait dataset/sox/rcm.csv depuis le disque du serveur)` — R107 (docs/BACKLOG_REPORTE.md) : le geste est désormais RÉEL (vraie provenance import_file, kind=rcm) mais toujours non cliqué — le bouton ne s’affiche que si controls.length===0, et engSox comme engNep ont déjà leur RCM importée par le semeur avant que clics ne s’exécute.
+- **RCM du cycle importé (importRcm)** — chemin : `rcm/page.tsx:48-51 (vrai upload de fichier, uploadRcmAction dans rcm/actions.ts — Lot 7 H-5 tranche 1, remplace l’ancien bouton-démo qui relisait dataset/sox/rcm.csv depuis le disque du serveur)` — R107 (docs/BACKLOG_REPORTE.md) LEVÉ le 2026-09-17 — mais SEULEMENT pour engNep (voir la ligne enrichir.ts:388 ci-dessous, désormais prouve) : CE dossier-ci est engSox, dont la RCM reste importée par bootstrapSox/runPart2 AVANT que clics ne s’exécute (demo-seed.ts l’appelle), donc controls.length>0 quand clics visite /rcm sur engSox — le bouton n’y est jamais offert. Pas le même défaut que R107 : R107 portait sur engNep, où l’énoncé était FAUX (vérifié par requête directe après db:reset && demo:seed) ; ici l’énoncé reste VRAI.
 - **lien de risque réel créé pour chaque contrôle importé — CTRL-02 (importRcm → control_risk)** — chemin : `rcm/[cid]/page.tsx (lierRisqueAction, pour un lien SUPPLÉMENTAIRE — celui d’importRcm existe déjà à l’import)` — domaine SOX entier hors du parcours cliqué (note ci-dessus) — même état que le reste de cette section, pas une régression neuve
 - **statut du walkthrough DI (setDiStatus)** — chemin : `rcm/page.tsx:42`
 - **enregistrement vidéo du walkthrough attaché (attacherWalkthrough)** — chemin : `rcm/[cid]/page.tsx (attacherWalkthroughAction)` — domaine SOX entier hors du parcours cliqué (note ci-dessus, ligne 166-167) — même état que le reste de cette section, pas une régression neuve
@@ -236,5 +236,4 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **équipe : déclaration, signature, affectation (Hugo)** — chemin : `team/page.tsx:95 (openAction), :102 (answerAction), :115 (signAction), :122 (assignAction) — boutons :216,255,274,349` — /eng/[id]/team n’apparaît dans AUCUN aller() de scenario.ts
 - **risque évalué (assessFsli, 2e poste)** — chemin : `risk/page.tsx:85-91 (assessAction, bouton risk.reAssess)` — CORRIGÉ (constat A3/A4, relecture hostile) : compté comme prouvé à tort dans la version d’origine, en confondant avec le clic de risk.arbitrate (scenario.ts:860,871) qui appelle overrideLevel — UN AUTRE SERVICE. « risk.reAssess » : zéro occurrence dans scenario.ts. part1.ts:88 le confirme dans son propre commentaire : « assessFsli n’était appelé que par le dossier N-1 ».
 - **section envoyée à quelqu’un (envoyerA)** — chemin : `app/eng/[id]/page.tsx:98-110 (envoyerAction)`
-- **RCM du cycle (importRcm, revu depuis enrichir.ts)** — chemin : `rcm/page.tsx:48-51 (même vrai upload que la ligne part2.ts, Lot 7 H-5 tranche 1)` — R107 (docs/BACKLOG_REPORTE.md) : même route que la ligne part2.ts, même geste désormais réel, toujours non cliqué (engNep a déjà sa RCM importée par ce même semeur avant que clics ne s’exécute).
 - **remettreLeMondeAZero (le geste, pas un objet)** — chemin : `app/demo/remise-a-zero/actions.ts ← app/demo/remise-a-zero/page.tsx (bouton de confirmation)` — /demo/remise-a-zero n’apparaît dans aucun aller() de scenario.ts

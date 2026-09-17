@@ -544,9 +544,9 @@
     },
     {
       "id": "R107",
-      "etat": "ouvert — le vrai geste d'upload RCM (uploadRcmAction, Lot 7 H-5 tranche 1) n'est cliqué par aucune station de npm run clics : le bouton ne s'affiche que quand controls.length===0, et les deux dossiers que le parcours visite avec un rail RCM (engNep via enrichir.ts, engSox via part2.ts) ont déjà leur RCM importée par le semeur avant que clics ne s'exécute. Le registre du décor (registre.ts) marquait déjà ce chemin non_prouve avant cette tranche (l'ancien bouton-démo non plus n'était jamais cliqué) — cette tranche a rendu le geste RÉEL (vrai fichier, vraie provenance import_file) sans changer son atteignabilité par le parcours canonique.",
+      "etat": "levée le 2026-09-17, sur le commit 0f5892b — l'énoncé d'origine était FAUX pour le monde LOCAL canonique. Trouvé par la revue hostile (voix 1) du correctif de cette même tranche, vérifié en empruntant le chemin (règle 15) : select count(*) from control where engagement_id=engNep après db:reset && demo:seed rend 0 — demo-seed.ts n'appelle JAMAIS enrichirMondeDemo(), seul reconstruire.ts (production) le fait. engNep porte donc zéro contrôle à ce point du parcours canonique local, et le formulaire d'upload EST offert. Corrigé en étendant la station clics existante « R60 : les compteurs du dossier mènent quelque part » pour y uploader réellement dataset/sox/rcm.csv via le vrai formulaire — npm run verify complet confirme la station verte (F39, docs/CHASSE.md).",
       "depuis": "2026-09-16 (Lot 7, H-5 tranche 1)",
-      "note": "non corrigé, délibérément hors du périmètre de cette tranche. Aucun défaut de LOGIQUE dans importRcm/uploadRcmAction (7 tests s8.test.ts dont 2 cas connus mauvais ; 3 tests h5-tranche1-rcm-provenance-lecture.test.ts dont 2 cas connus mauvais) — seul le clic du bouton, sur ce monde scellé, manque. À reprendre en choisissant entre un troisième dossier créé à vide pendant le parcours, ou retarder l'import RCM du semeur après la station RCM du parcours — jamais en devinant laquelle est la moins risquée, seulement après avoir mesuré le coût réel sur docs/CLICS.md."
+      "note": "levée le 2026-09-17 (Lot 7, H-5 tranche 1, correctif) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la mesure."
     }
   ]
 }

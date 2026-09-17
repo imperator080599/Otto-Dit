@@ -4,6 +4,82 @@
 
 ---
 
+## Lot 7, H-5 tranche 1 — le vrai geste d'upload RCM (import_file réel, provenance) (2026-09-17)
+
+*Suite du mandat du fondateur, enchaîné sans pause après H-4 tranche 1 (règle 32).*
+
+**Recherche préalable dédiée (un sous-agent, lecture seule)** : `docs/REGISTRE_IDEES.md` ligne 273
+(H-5) — « un adaptateur d'import GRC : matrice risques-contrôles […] importée COMME PIÈCE, jamais
+recréée ». Trouvé : la RCM native existe déjà, complète (`rcm_row` depuis 0002, tout le cycle
+ICFR déjà en ligne, migrations CTRL-01 à CTRL-07). `import_file` anticipait déjà `kind='rcm'`
+(0001), jamais employé — `importRcm` (sox.ts) lisait un fichier FIXE du disque serveur
+(`fs.readFileSync('dataset/sox/rcm.csv')`) dans une action de démo, sans créer de ligne de
+provenance, contrairement à `importTb`/`importFec`.
+
+**Implémenté** (commit `1f7f7ec`) : migration 0169 (ALTER en avant, règle 26) —
+`rcm_row.import_file_id`, nullable. `importRcm` crée une vraie ligne `import_file` (sha256,
+validation_report, status) et chaque `rcm_row` qu'il insère la cite. Le bouton-démo remplacé par
+un vrai formulaire d'upload (`rcm/actions.ts::uploadRcmAction`), même patron que
+`imports/actions.ts` (ADR-078/091 : refus capturés, jamais une page 500).
+
+**Revue hostile, DEUX réfutateurs indépendants (règle 30 : modèle de données touché — nouvelle
+migration).** Les deux ont trouvé, chacun par EXÉCUTION (pas seulement lecture), des constats
+BLOQUANTS réels :
+
+1. **Voix 2 (confirmée par voix 1)** : `importRcm` n'était pas transactionnel. Un CSV cassé à
+   mi-parcours (un octet NUL, une valeur hors contrainte) laissait un `control` COMMIS sans sa
+   `rcm_row` — orphelin PERMANENT, qu'aucun ré-import ne pouvait réparer (le garde
+   `if (existing) continue` voit le code déjà pris). **Corrigé** : toute la boucle tourne
+   désormais dans `tx()` — un échec à n'importe quel point annule TOUT. `import_file` prend
+   `status='rejected'` avec le motif, jamais le statut optimiste qui mentait. Cas connu mauvais
+   ajouté (`s8.test.ts`) : un CSV cassé à la 2e ligne ne laisse RIEN, pas même la 1ère ligne
+   valide.
+2. **Voix 1 (vérifiée par requête directe sur une base fraîche)** : la lecture `/api/sante` H-5
+   traitait tout `rcm_row.import_file_id is null` comme une erreur — mais `rcm_row` n'a AUCUNE
+   colonne `created_at` (0002), donc rien ne distingue une ligne légitimement ANTÉRIEURE à cette
+   tranche (migration 0169, sans provenance rétroactive) d'une vraie corruption. Cette lecture
+   aurait rougi `/api/sante` en PRODUCTION, immédiatement, sur tout dossier RCM déjà semé.
+   **Corrigé** : le compte de lignes sans provenance est désormais INFORMATIF, jamais un refus —
+   seul le `row_count` désynchronisé (qui ne peut venir QUE d'une mutation hors chemin gardé)
+   reste bloquant. Nouveau cas connu BON (`h5-tranche1-rcm-provenance-lecture.test.ts`) : un
+   `rcm_row` legacy sans provenance ne fait jamais rougir la lecture.
+3. **Voix 1, violation règle 10 (prouvée par une vraie requête SQL puis une vraie requête HTTP)** :
+   R107 (« le geste n'est cliqué par aucune station ») était FAUX pour le monde LOCAL canonique
+   (`db:reset && demo:seed`) — `engNep` (le dossier `eng` que clics visite) porte ZÉRO contrôle
+   après cette recette exacte (`demo-seed.ts` n'appelle jamais `enrichirMondeDemo()` ; seul
+   `reconstruire.ts`, en production, le fait). **Corrigé** : la station clics existante « R60 »
+   (qui visite déjà `/rcm` via la tuile dashboard) UPLOAD DÉSORMAIS RÉELLEMENT le fichier
+   `dataset/sox/rcm.csv` via le vrai formulaire et vérifie que des contrôles apparaissent — le
+   geste central de cette tranche est enfin conduit dans un navigateur. **R107 levé**
+   (`docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json`, `registre.ts` mis à jour :
+   `enrichir.ts:388` passe à `prouve`, citant `scenario.ts:3762`).
+
+Constat mineur non corrigé (voix 2) : messages de refus SQL bruts (non traduits) sur un CSV
+malformé — viole la convention D.6 mais préexiste déjà sur `importTb`, pas une régression de
+cette tranche. Disclosed, hors périmètre de la correction.
+
+Correctif (commit `21c6fd8`) suivi d'un re-figement de `docs/LECTURES.json` (commit `0f5892b` :
+2 lectures perdues attendues — `id` compté une fois de moins dans le formulaire, `readFileSync`
+retiré avec le bouton-démo).
+
+**Mesures finales, dans l'ORDRE canonique de `npm run verify`** (règle 34/35, chaque étape sous
+`timeout` explicite, `EXIT` lu dans le journal brut ; `db:reset && demo:seed` rejoués sur l'arbre
+du commit `0f5892b`) : `tsc` propre · **162/162 fichiers, 1207/1207 tests vitest** (dont les 3
+nouveaux cas de `h5-tranche1-rcm-provenance-lecture.test.ts` et le cas connu mauvais de la
+transaction annulée dans `s8.test.ts`) · `gardes` 47 · `semeur` à jour (89 objets, 16 décors) ·
+`langue` 0 hors catalogue, 0 libellé en dur · `lectures` 0 perdue, **93 écrans, 1990 chemins
+figés** (re-figé) · `parcours` 0 station perdue, **6/6** · `screens` **97 routes, 0 échec** ·
+`fumee` **54 routes, 0 échec** · `densite` **87 écrans, 0 dépassement** · `clics` **EXIT=1 réel,
+seul motif `#418`** (F39, VINGT-CINQUIÈME confirmation, la station « rcm : l'upload réel du
+listing client » CONFIRME des contrôles importés), clôture et archive ATTEINTES (271 étapes, 388
+clics). `visuel` (relancé séparément) : **352 vues, 0 défaut**.
+
+**SHA servi** : à confirmer dans le même geste que le push vers `main` (voir plus bas).
+
+**Lot 7, H-5 tranche 1 est COMPLÈTE.** Tranches 2/3 optionnelles de H-5 (tolérance de format
+façon export AuditBoard/ServiceNow ; « tests de la direction » comme IPE) restent à évaluer par
+ordre de valeur face à H-6 (passe de design).
+
 ## Lot 7, H-4 tranche 1 — le périmètre d'audience « comité » (2026-09-16)
 
 *Suite du mandat du fondateur, enchaîné sans pause après H-3 slice 2 (règle 32). H-3 slice 3

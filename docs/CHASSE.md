@@ -1352,3 +1352,27 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   387 clics comptés — VINGT-QUATRIÈME confirmation consécutive que `#418` est disjoint. Pas creusé
   plus loin (même discipline que F9-F37). `npm run visuel` relancé séparément (le `&&` casse sur
   l'échec de `clics`), propre (352 vues, 0 défaut).
+
+- **F39 — UN incident, sur l'arbre CORRIGÉ** (2026-09-17, Lot 7, H-5 tranche 1 — le vrai geste
+  d'upload RCM, sur l'arbre du commit `0f5892b`, APRÈS le correctif de trois constats BLOQUANTS
+  trouvés par DEUX réfutateurs indépendants — transaction manquante sur `importRcm` (control
+  orphelin permanent possible), la lecture `/api/sante` qui aurait rougi en production sur toute
+  RCM legacy (aucune colonne `created_at` sur `rcm_row` pour distinguer un legacy honnête d'une
+  vraie corruption), et R107 qui affirmait à tort le geste jamais cliqué — vérifié FAUX pour le
+  monde local canonique par une requête SQL directe après `db:reset && demo:seed` (`engNep : 0
+  contrôle`), puis corrigé en étendant la station clics existante « R60 » pour uploader RÉELLEMENT
+  `dataset/sox/rcm.csv` via le vrai formulaire). `EXIT=1` réel (journal brut, `set -o pipefail`),
+  UNE SEULE route — `/eng/70670df5-.../rcm/4075b3c6-...` (l'habituelle, `rcm/[cid]` — même
+  signature exacte, le tooltip `rail-astuce` au jeton 87, « avant la première station »). Disjoint
+  de la tranche : `rcm/[cid]/page.tsx` n'a reçu AUCUNE modification (seuls `rcm/page.tsx`,
+  `rcm/actions.ts`, `sox.ts::importRcm`, la lecture `/api/sante` et la station R60 ont bougé), et
+  les 1207 tests vitest passent tous — dont les 3 nouveaux cas connus bon/mauvais de
+  `h5-tranche1-rcm-provenance-lecture.test.ts` et le cas connu mauvais de la transaction annulée
+  dans `s8.test.ts`. La station « rcm : l'upload réel du listing client » PASSE : le formulaire
+  d'upload est offert (aucun contrôle sur engNep à ce point du parcours canonique), le fichier est
+  envoyé, des contrôles apparaissent — le geste central de la tranche est enfin conduit dans un
+  navigateur (règle 10), R107 levé (voir BACKLOG_REPORTE.md). Clôture et archive ATTEINTES
+  (240 stations figées vérifiées), 271 étapes conduites, 388 clics comptés — VINGT-CINQUIÈME
+  confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que
+  F9-F38). `npm run visuel` relancé séparément (le `&&` casse sur l'échec de `clics`), propre
+  (352 vues, 0 défaut).

@@ -1904,3 +1904,18 @@ design : chacun reste une tranche à construire.**
   après la station RCM du parcours (même classe de risque que R106 sur `demo-seed.ts`/
   `lib/flows/*`) — reprendre en choisissant l'une des deux options seulement après avoir mesuré le
   coût réel sur `docs/CLICS.md` (étapes/clics), jamais en devinant laquelle est la moins risquée.
+
+  **Levée le 2026-09-17, sur le commit `0f5892b`, par la mesure directe (requête SQL sur une base
+  fraîche `db:reset && demo:seed`, puis `npm run clics`).** L'énoncé d'origine était FAUX pour le
+  monde LOCAL canonique — trouvé par la revue hostile (voix 1) du correctif de cette même tranche,
+  qui a vérifié EN EMPRUNTANT LE CHEMIN (règle 15), pas en le lisant : `select count(*) from
+  control where engagement_id = $engNep` après la recette EXACTE de CLAUDE.md §6 rend **0**. Le
+  texte ci-dessus confondait le monde LOCAL (que `npm run clics` exerce) avec le monde de
+  PRODUCTION (bâti par `scripts/deploy/reconstruire.ts`, qui appelle `enrichir()` — LUI SEUL
+  importe la RCM d'engNep) : `demo-seed.ts` n'appelle JAMAIS `enrichirMondeDemo()`, donc `eng`
+  (engNep) porte zéro contrôle à ce point du parcours canonique, et le formulaire d'upload EST
+  offert. Corrigé en étendant la station clics existante « R60 : les compteurs du dossier mènent
+  quelque part » (qui visite déjà `/rcm` via la tuile dashboard) pour y uploader RÉELLEMENT
+  `dataset/sox/rcm.csv` via le vrai formulaire — `npm run verify` complet sur l'arbre du commit
+  `0f5892b` confirme la station verte (« rcm : l'upload réel du listing client... importe des
+  contrôles »), F39 (docs/CHASSE.md).

@@ -83,7 +83,7 @@ export async function importRcm(
      values ($1,'rcm',$2,$3,'{}'::jsonb,'validated',0) returning id`,
     [engagementId, filename, sha256(csv)],
   );
-  /* Correctif (revue hostile, voix 1 et 2, indépendantes — R108/R109) : la boucle entière
+  /* Correctif (revue hostile, voix 1 et 2, indépendantes, chacune confirmée par exécution) : la boucle entière
      tourne désormais dans UNE transaction (`tx`, déjà importée ailleurs dans ce fichier). Sans
      elle, un CSV qui casse à mi-parcours (un octet NUL dans `risk_desc`, une `frequency`
      invalide — plausible sur un vrai export client mal formé) laissait un `control` COMMIS sans
