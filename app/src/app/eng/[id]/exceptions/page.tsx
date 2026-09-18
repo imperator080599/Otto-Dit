@@ -254,12 +254,12 @@ export default async function ExceptionsPage({
                     {(x.status === 'explained' || x.status === 'open') && (
                       <details>
                         <summary className="repli-action">{t('commun.actions')}</summary>
-                        <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
+                        <form action={resolveAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 520 }}>
                           <input type="hidden" name="exception_id" value={x.id} />
                           <textarea name="explanation" rows={2} required
                             placeholder={t('commun.explicationMotPourMot')} />
                           <input name="fait" placeholder={t('exc.findingBeyondThisItemOptionalIt')} />
-                          <div className="row" style={{ gap: 4 }}>
+                          <div className="row" style={{ gap: 'var(--e1)' }}>
                             <select name="fait_nature" defaultValue="controle">
                               <option value="controle">{t('exc.control')}</option>
                               <option value="changement">{t('mot.change')}</option>
@@ -271,7 +271,7 @@ export default async function ExceptionsPage({
                           </div>
                           <textarea name="conclusion" rows={2} required
                             placeholder={t('rap.conclusion')} />
-                          <div className="row" style={{ gap: 4 }}>
+                          <div className="row" style={{ gap: 'var(--e1)' }}>
                             <select name="disposition" defaultValue="no_misstatement">
                               <option value="no_misstatement">{t('commun.aucuneAnomalie')}</option>
                               <option value="corrected">{t('rap.corrige')}</option>
@@ -352,7 +352,7 @@ export default async function ExceptionsPage({
                       {c.derniere_relance && (
                         <div className="faint">{t('exc.derniereRelance')} · {c.derniere_relance.slice(0, 10)}</div>
                       )}
-                      <form action={assignerAction} className="row" style={{ gap: 4, marginTop: 4 }}>
+                      <form action={assignerAction} className="row" style={{ gap: 'var(--e1)', marginTop: 4 }}>
                         <input type="hidden" name="item_id" value={c.item_id} />
                         <select name="owner_contact_id" defaultValue={c.owner_contact_id ?? ''} style={{ maxWidth: 140 }}>
                           <option value="">{t('exc.assignerAucun')}</option>
@@ -437,7 +437,7 @@ export default async function ExceptionsPage({
                     {m.status !== 'dismissed' && m.kind !== 'projected' && (
                       <details>
                         <summary className="repli-action">{t('exc.dismissAsAnomaly')}</summary>
-                        <form action={dismissAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 420 }}>
+                        <form action={dismissAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 420 }}>
                           <input type="hidden" name="misstatement_id" value={m.id} />
                           <textarea name="reason" rows={2} required placeholder={t('exc.extrap03Reason')} />
                           <select name="evidence_id" required defaultValue="">

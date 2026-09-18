@@ -157,7 +157,7 @@ export default async function ProcessusPage({
             <option value="n1">{t('proc.yearN1VersionCarriedForward')}</option>
           </select>
           <input type="file" name="fichier" style={{ maxWidth: 240 }} />
-          <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
             <input type="checkbox" name="remplacer" /> {t('proc.confirmer')}
           </label>
           <button className="btn">{t('proc.importer')}</button>
@@ -252,7 +252,7 @@ export default async function ProcessusPage({
                               <div className="faint">{d.reason} — {d.decideur}</div>
                             </>
                           ) : (
-                            <form action={statuerAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                            <form action={statuerAction} className="row" style={{ flexWrap: 'wrap', gap: 'var(--e1)' }}>
                               <input type="hidden" name="code" value={c.code} />
                               <span className="badge red">{t('proc.aStatuer')}</span>
                               <select name="significance" defaultValue="non_significatif">
@@ -304,7 +304,7 @@ export default async function ProcessusPage({
             <div key={i} className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
               <input name={`nom${i}`} placeholder={t('proc.participantNom', { i })} style={{ minWidth: 180 }} />
               <input name={`qualite${i}`} placeholder={t('proc.qualite')} style={{ minWidth: 140 }} />
-              <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label className="faint" style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
                 <input type="checkbox" name={`consent${i}`} /> {t('proc.consent')}
               </label>
             </div>
@@ -376,7 +376,7 @@ export default async function ProcessusPage({
                       </td>
                       <td>
                         {e.status === 'candidate' ? (
-                          <form action={ecartAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                          <form action={ecartAction} className="row" style={{ flexWrap: 'wrap', gap: 'var(--e1)' }}>
                             <input type="hidden" name="gap" value={e.id} />
                             <span className="badge red">{t('mot.candidate')}</span>
                             <button className="btn" name="decision" value="question">{t('proc.questionClient')}</button>

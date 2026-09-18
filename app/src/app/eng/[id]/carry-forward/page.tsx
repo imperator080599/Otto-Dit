@@ -95,7 +95,7 @@ export default async function CarryForwardPage({
                   </td>
                   <td>
                     {r.status === 'proposed' ? (
-                      <form action={deciderAction} className="row" style={{ gap: 4 }}>
+                      <form action={deciderAction} className="row" style={{ gap: 'var(--e1)' }}>
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="reprise_id" value={r.id} />
                         <input name="reason" placeholder={t('cf.reasonRequiredToRuleOut')} style={{ width: 200 }} />

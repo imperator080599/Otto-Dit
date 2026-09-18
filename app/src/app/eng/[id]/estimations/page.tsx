@@ -126,13 +126,13 @@ export default async function EstimationsPage({
             {ouverte.statut !== 'demandee' && (
               <form action={tirerAction} className="row mt" style={{ flexWrap: 'wrap', gap: 6 }}>
                 <input type="hidden" name="estimation_id" value={ouverte.id} />
-                <label className="row" style={{ gap: 4 }}>{t('est.couvertureSup')}
+                <label className="row" style={{ gap: 'var(--e1)' }}>{t('est.couvertureSup')}
                   <input type="number" name="cap" step="0.01" defaultValue={(capProposeCents / 100).toFixed(2)} style={{ width: 110 }} /> €
                 </label>
-                <label className="row" style={{ gap: 4 }}>{t('est.randomDraw')}
+                <label className="row" style={{ gap: 'var(--e1)' }}>{t('est.randomDraw')}
                   <input type="number" name="taille" defaultValue={3} style={{ width: 60 }} />
                 </label>
-                <label className="row" style={{ gap: 4 }}>{t('mot.seed')}
+                <label className="row" style={{ gap: 'var(--e1)' }}>{t('mot.seed')}
                   <input name="germe" defaultValue="otto-estimation-1" className="mono" style={{ width: 160 }} />
                 </label>
                 <button className="btn secondary">{t('est.drawTheBase')}</button>

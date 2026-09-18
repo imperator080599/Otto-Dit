@@ -582,7 +582,18 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    (tabular-nums sur toute cellule de tableau), l'ombre douce qui pose un
    panneau, les états au survol, au focus et à la sélection, et un mouvement
    de 120 à 200 ms qui ne porte QUE sur des changements d'état — jamais sur le
-   contenu, jamais sur la touche qui conclut. */
+   contenu, jamais sur la touche qui conclut.
+
+   Lot 7, H-6 tranche 4 (2026-09-18) : jusqu'ici ZÉRO usage de `var(--eN)` hors
+   de ce fichier — l'échelle existait mais n'était référencée nulle part dans
+   les `.tsx`. Migré : les 45 occurrences EXACTES de `gap: 4` en style inline
+   (18 fichiers) vers `gap: 'var(--e1)'` — une identité stricte (4 === 4px),
+   sans risque de cascade contrairement à `.faint`/`fontSize` (H-6 tranche 3).
+   CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : `gap: 8` (14 sites
+   candidats pour `--e2`), les `margin*`/`padding*` en dur qui matchent une
+   valeur de la palette (~49 sites restants, `.tsx`), et les ~43 déclarations
+   en dur DANS ce fichier lui-même — tranches futures, gardées par
+   `globals.css.test.ts`. */
 :root {
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
   --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);

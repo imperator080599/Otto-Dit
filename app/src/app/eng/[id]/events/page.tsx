@@ -37,7 +37,7 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
             <option value="">{verbs.length} {t('ev.distinctVerbs')}</option>
           </select>
         </div>
-        <div className="row mt" style={{ gap: 4 }}>
+        <div className="row mt" style={{ gap: 'var(--e1)' }}>
           {verbs.map((v) => (
             <Link key={v.verb} className={`badge ${verb === v.verb ? 'blue' : 'gray'}`} href={`/eng/${id}/events?verb=${v.verb}`} style={{ textDecoration: 'none' }}>
               {v.verb} ({v.n})

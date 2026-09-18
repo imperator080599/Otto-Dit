@@ -98,9 +98,9 @@ export default async function ReunionsPage({
       <div className="panel">
             <h2>{t('reun.proposeSlots')} <IaFlag>{t('reun.simulatedAvailabilityFreeBusyOnly')}</IaFlag></h2>
         <form method="get" className="row">
-          <label className="row" style={{ gap: 4 }}>du <input name="de" placeholder="AAAA-MM-JJ" defaultValue={de ?? '2026-03-02'} style={{ width: 110 }} /></label>
-          <label className="row" style={{ gap: 4 }}>au <input name="a" placeholder="AAAA-MM-JJ" defaultValue={a ?? '2026-03-06'} style={{ width: 110 }} /></label>
-          <label className="row" style={{ gap: 4 }}>{t('reun.durationMin')} <input name="duree" defaultValue={duree ?? '60'} style={{ width: 60 }} /></label>
+          <label className="row" style={{ gap: 'var(--e1)' }}>du <input name="de" placeholder="AAAA-MM-JJ" defaultValue={de ?? '2026-03-02'} style={{ width: 110 }} /></label>
+          <label className="row" style={{ gap: 'var(--e1)' }}>au <input name="a" placeholder="AAAA-MM-JJ" defaultValue={a ?? '2026-03-06'} style={{ width: 110 }} /></label>
+          <label className="row" style={{ gap: 'var(--e1)' }}>{t('reun.durationMin')} <input name="duree" defaultValue={duree ?? '60'} style={{ width: 60 }} /></label>
           <button className="btn secondary small">{t('reun.findTheCommonSlots')}</button>
         </form>
         {refusCreneaux && (() => {

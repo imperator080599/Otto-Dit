@@ -404,7 +404,7 @@ export default async function ControlDetail({
             </p>
             <details data-supprimer-walkthrough>
               <summary className="repli-action">{t('rcmc.supprimerWalkthrough')}</summary>
-              <form action={supprimerVideoWalkthroughAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+              <form action={supprimerVideoWalkthroughAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 380 }}>
                 <textarea name="raison" rows={2} required placeholder={t('rcmc.supprimerWalkthroughMotif')} />
                 <button className="btn small secondary">{t('rcmc.supprimerWalkthroughConfirmer')}</button>
               </form>
@@ -436,7 +436,7 @@ export default async function ControlDetail({
                       <td>
                         <details>
                           <summary className="repli-action">{t('commun.actions')}</summary>
-                          <form action={documenterProcedureAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 360 }} data-documenter-procedure>
+                          <form action={documenterProcedureAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 360 }} data-documenter-procedure>
                             <input type="hidden" name="task_id" value={tache.id} />
                             <select name="procedure" defaultValue="inspection">
                               <option value="inspection">{t('rcmc.procInspection')}</option>
@@ -473,7 +473,7 @@ export default async function ControlDetail({
         <Repli cle="eng.id.rcm.cid.walkthroughAnalyse" niveau={2} titre={t('rcmc.walkthroughAnalyse')} id="walkthrough-analyse">
           <p className="faint">{t('rcmc.walkthroughAnalyseQuoi')}</p>
           {!walkthroughAnalyse.transcriptDepose ? (
-            <form action={deposerTranscriptWalkthroughAction} style={{ display: 'grid', gap: 4, maxWidth: 480 }} data-deposer-transcript-walkthrough>
+            <form action={deposerTranscriptWalkthroughAction} style={{ display: 'grid', gap: 'var(--e1)', maxWidth: 480 }} data-deposer-transcript-walkthrough>
               <textarea name="contenu" rows={6} required placeholder={t('rcmc.walkthroughTranscriptPlaceholder')} />
               <button className="btn small">{t('proc.deposerTranscript')}</button>
             </form>
@@ -522,7 +522,7 @@ export default async function ControlDetail({
                               <input type="hidden" name="decision" value="question" />
                               <button className="btn small secondary" type="submit">{t('rcmc.walkthroughPoserQuestion')}</button>
                             </form>
-                            <form action={statuerEcartWalkthroughAction} style={{ display: 'grid', gap: 4 }} data-ecart-decision="dismissed">
+                            <form action={statuerEcartWalkthroughAction} style={{ display: 'grid', gap: 'var(--e1)' }} data-ecart-decision="dismissed">
                               <input type="hidden" name="gap_id" value={e.id} />
                               <input type="hidden" name="decision" value="dismissed" />
                               <input type="text" name="reason" placeholder={t('rcmc.walkthroughMotifEcart')} required />
@@ -542,7 +542,7 @@ export default async function ControlDetail({
 
       <Repli cle="eng.id.rcm.cid.design" niveau={2} titre={t('rcmc.facteursEtIuc')} id="design">
         <h3>{t('rcmc.risquesLies')}</h3>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 4 }} data-risques-lies>
+        <div className="row" style={{ flexWrap: 'wrap', gap: 'var(--e1)' }} data-risques-lies>
           {/* R61 (D.6 point 5, « A8 » de l'inventaire du 10 septembre) : le
               formulaire de liaison plus bas ne rend RIEN si le registre du
               dossier est lui-même vide — la vraie cause, jamais dite. */}
@@ -587,7 +587,7 @@ export default async function ControlDetail({
                   <td>
                     <details>
                       <summary className="repli-action">{doc ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
-                      <form action={documenterFacteurAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 420 }}>
+                      <form action={documenterFacteurAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 420 }}>
                         <input type="hidden" name="factor" value={f.cle} />
                         <textarea name="conclusion" rows={2} required defaultValue={doc?.conclusion ?? ''} />
                         <button className="btn small secondary">{t('rcmc.enregistrerConclusion')}</button>
@@ -617,7 +617,7 @@ export default async function ControlDetail({
               {iuc.description && <span className="faint">{iuc.description}</span>}
               <details>
                 <summary className="repli-action">{t('rcmc.reviser')}</summary>
-                <form action={declarerIucAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                <form action={declarerIucAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 380 }}>
                   <select name="utilisee" defaultValue={iuc.utilisee ? 'oui' : 'non'} required>
                     <option value="non">{t('rcmc.iucNonUtilisee')}</option>
                     <option value="oui">{t('rcmc.iucUtilisee')}</option>
@@ -639,7 +639,7 @@ export default async function ControlDetail({
                         <td>
                           <details>
                             <summary className="repli-action">{preuve ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
-                            <form action={documenterIucPreuveAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                            <form action={documenterIucPreuveAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 380 }}>
                               <input type="hidden" name="volet" value={volet} />
                               <textarea name="conclusion" rows={2} required defaultValue={preuve?.conclusion ?? ''} />
                               <button className="btn small secondary">{t('rcmc.enregistrerConclusion')}</button>
@@ -753,7 +753,7 @@ export default async function ControlDetail({
                         <td>
                           <details>
                             <summary className="repli-action">{doc ? t('rcmc.reviser') : t('rcmc.documenter')}</summary>
-                            <form action={documenterProcedureOeAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 380 }}>
+                            <form action={documenterProcedureOeAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 380 }}>
                               <input type="hidden" name="procedure" value={p} />
                               {p === 'inquiry' && (
                                 <input type="date" name="performed_at" defaultValue={doc?.performedAt.slice(0, 10) ?? ''} required />
@@ -869,7 +869,7 @@ export default async function ControlDetail({
                     {d.status === 'open' ? (
                       <details>
                         <summary className="repli-action">{t('commun.actions')}</summary>
-                        <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 460 }}>
+                        <form action={resolveDevAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 460 }}>
                           <input type="hidden" name="deviation_id" value={d.id} />
                           <textarea name="explanation" rows={2} required
                             placeholder={t('commun.explicationMotPourMot')} />

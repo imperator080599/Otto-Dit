@@ -106,7 +106,7 @@ export default async function TieOutPage({
                     {x.status === 'difference' && <span className="badge amber">{t('fst.differenceExplained')}</span>}
                     {(!x.status || x.status === 'open') && (
                       x.nature === 'calcul_documente' ? (
-                        <form action={documenterAction} className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                        <form action={documenterAction} className="row" style={{ gap: 'var(--e1)', flexWrap: 'wrap' }}>
                           <input type="hidden" name="engagement_id" value={id} />
                           <input type="hidden" name="ligne_id" value={x.id} />
                           <input name="explanation" placeholder={t('fst.howThisFigureIsObtained')} style={{ width: 240 }} />
@@ -117,7 +117,7 @@ export default async function TieOutPage({
                           <button className="btn secondary small">{t('col.document')}</button>
                         </form>
                       ) : (
-                        <form action={expliquerAction} className="row" style={{ gap: 4 }}>
+                        <form action={expliquerAction} className="row" style={{ gap: 'var(--e1)' }}>
                           <input type="hidden" name="engagement_id" value={id} />
                           <input type="hidden" name="ligne_id" value={x.id} />
                           <input name="explanation" placeholder={t('fst.explanationOfTheDifference')} style={{ width: 240 }} />

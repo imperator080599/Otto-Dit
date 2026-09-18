@@ -119,7 +119,7 @@ export default async function MaterialityPage({
               <form action={validateAction} className="mt">
                 <input type="hidden" name="materiality_id" value={current.id} />
                 <div className="row">
-                  <label className="row" style={{ gap: 4 }}>
+                  <label className="row" style={{ gap: 'var(--e1)' }}>
                     <input type="checkbox" name="adjust" /> {t('mat.adjustBeforeValidating')}
                   </label>
                   <select name="benchmark_code" defaultValue={current.benchmark_code}>

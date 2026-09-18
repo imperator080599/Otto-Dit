@@ -82,7 +82,7 @@ export default async function ImportsPage({
             <input type="file" name="file" accept=".txt,.csv" required />
             <ChampsIpe t={t} />
             {affected.length > 0 && (
-              <label className="row" style={{ gap: 4 }}>
+              <label className="row" style={{ gap: 'var(--e1)' }}>
                 <input type="checkbox" name="confirm_invalidation" /> {t('imp.confirmInvalidation')}
               </label>
             )}

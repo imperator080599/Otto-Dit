@@ -105,7 +105,7 @@ export default async function ClosePage({
             {membership.can_sign ? (
               <form action={cloreAction} className="row" style={{ gap: 6 }}>
                 <input type="hidden" name="engagement_id" value={id} />
-                <label className="row" style={{ gap: 4 }}>
+                <label className="row" style={{ gap: 'var(--e1)' }}>
                   {t('close.reportDate')}
                   <input name="report_date" placeholder="AAAA-MM-JJ"
                     defaultValue={rapport ?? eng?.report_date ?? ''} style={{ width: 120 }} />

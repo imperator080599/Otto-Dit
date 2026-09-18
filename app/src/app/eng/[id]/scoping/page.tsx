@@ -111,7 +111,7 @@ export default async function ScopingPage({
                      se justifie, sinon la trace ne dit pas pourquoi. */
                   <details>
                     <summary className="faint">{t('scop.confirmeRevoir')}</summary>
-                    <form action={confirmAction} className="row" style={{ gap: 4, marginTop: 4 }}>
+                    <form action={confirmAction} className="row" style={{ gap: 'var(--e1)', marginTop: 4 }}>
                       <input type="hidden" name="fsli_id" value={f.id} />
                       <select name="decision" defaultValue="in_scope">
                         <option value="in_scope">{t('scop.remettre')}</option>

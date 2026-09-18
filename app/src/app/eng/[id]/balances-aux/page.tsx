@@ -124,9 +124,9 @@ export default async function BalancesAuxPage({
           <div className="panel">
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h2>{t('bal.whatTheYearOnYearComparison')}</h2>
-              <form className="row" style={{ gap: 4 }}>
+              <form className="row" style={{ gap: 'var(--e1)' }}>
                 <input type="hidden" name="cote" value={cote} />
-                <label className="row faint" style={{ gap: 4 }}>{t('bal.shareThreshold')}
+                <label className="row faint" style={{ gap: 'var(--e1)' }}>{t('bal.shareThreshold')}
                   <input type="number" name="seuil" defaultValue={seuilPts} min={1} max={20} style={{ width: 60 }} /> {t('bal.pts')}
                 </label>
                 <button className="btn secondary small">{t('bal.recompute')}</button>

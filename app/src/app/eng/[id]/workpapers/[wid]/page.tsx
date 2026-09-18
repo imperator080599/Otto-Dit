@@ -308,11 +308,11 @@ export default async function WorkpaperDetail({
         <form action={ipeAction}>
           <input type="hidden" name="workpaper_id" value={wid} />
           <div className="row" style={{ gap: 14 }}>
-            <label className="row" style={{ gap: 4 }}>
+            <label className="row" style={{ gap: 'var(--e1)' }}>
               <input type="radio" name="utilisee" value="oui" defaultChecked={val.utilisee === true} />
               {t('wp.ipe.yes')}
             </label>
-            <label className="row" style={{ gap: 4 }}>
+            <label className="row" style={{ gap: 'var(--e1)' }}>
               <input type="radio" name="utilisee" value="non" defaultChecked={val.utilisee === false} />
               {t('wp.ipe.no')}
             </label>

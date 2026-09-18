@@ -136,3 +136,54 @@ describe('.faint + fontSize en dur dans les .tsx (Lot 7, H-6 tranche 3)', () => 
     expect(compterFaintFontSizeEnDur()).toBe(compteAvant);
   });
 });
+
+/* Lot 7, H-6 tranche 4 (2026-09-18). Recherche dédiée (sous-agent, H-6 tranche 3) : l'échelle
+   d'espacement `--e1..--e6` (ADR-125, `--e1: 4px` … `--e6: 32px`) était définie mais avait ZÉRO
+   usage de `var(--eN)` hors de `globals.css` lui-même — 94 sites `.tsx` candidats dans 36
+   fichiers, trop large pour une tranche verticale (règle 5). Sous-scopée par VALEUR plutôt que
+   par zone (le sous-agent recommandait l'inverse pour une tranche future, mais la valeur `gap: 4`
+   seule est un cas mécaniquement non ambigu — contrairement à `.faint`/`fontSize`, un `gap` en
+   style inline n'a pas de risque de cascade, la substitution `4` → `var(--e1)` = 4px est une
+   identité stricte) : les 45 occurrences EXACTES de `gap: 4` (mot entier, jamais `gap: 40` etc.)
+   dans 18 fichiers `.tsx`, migrées vers `gap: 'var(--e1)'`. CE QUE CE GARDE NE VÉRIFIE PAS
+   (règle 19), délibérément : `gap: 8` (14 sites → `--e2`), les `marginTop`/`marginLeft`/
+   `marginRight`/`paddingLeft`/`marginBottom` en dur (avec des valeurs 4/8/12/16/24px, ~49 sites
+   restants) et les ~43 déclarations en dur DANS `globals.css` lui-même — tous hors périmètre de
+   cette tranche, candidats pour une tranche future. */
+describe('gap: 4 en dur dans les .tsx (Lot 7, H-6 tranche 4)', () => {
+  const SEUIL_GAP4 = 0;
+
+  function compterGap4EnDur(): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(/gap: 4\b/g);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  it('le compte de `gap: 4` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)', () => {
+    const compteAvant = compterGap4EnDur();
+    expect(compteAvant).toBe(SEUIL_GAP4);
+
+    // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+    // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test, jamais
+    // laissé sur le disque (règle 24).
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const fichierSonde = path.join(racineApp, '__sonde_h6_tranche4__.tsx');
+    fs.writeFileSync(
+      fichierSonde,
+      `export const Sonde = () => <div className="row" style={{ gap: 4 }}>x</div>;\n`
+    );
+    try {
+      const compteAvecSonde = compterGap4EnDur();
+      expect(compteAvecSonde).toBe(compteAvant + 1);
+      expect(compteAvecSonde).toBeGreaterThan(SEUIL_GAP4);
+    } finally {
+      fs.rmSync(fichierSonde, { force: true });
+    }
+    expect(compterGap4EnDur()).toBe(compteAvant);
+  });
+});

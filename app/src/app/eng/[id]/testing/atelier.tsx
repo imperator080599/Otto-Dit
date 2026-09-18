@@ -264,7 +264,7 @@ export function Atelier({
                 {/* data-actions-item : les onglets de pièce SÉLECTIONNENT un
                     objet (une pièce parmi n) — sélection, pas action d'écran
                     (mesure de densité §3.D). */}
-                <div className="row mt" style={{ gap: 4 }} data-actions-item>
+                <div className="row mt" style={{ gap: 'var(--e1)' }} data-actions-item>
                   {sel.evidences.map((e, i) => (
                     <button key={e.id} type="button" title={e.filename}
                       className={`btn small ${i === pieceOuverte ? '' : 'secondary'}`}
@@ -325,7 +325,7 @@ export function Atelier({
                             </div>
                           )}
                           {!c.disposition && c.etat !== 'conforme' && c.etat !== 'non_recevable' && (
-                            <form action={disposer} className="row" style={{ gap: 4, marginTop: 4 }} data-disposer={c.colonne}>
+                            <form action={disposer} className="row" style={{ gap: 'var(--e1)', marginTop: 4 }} data-disposer={c.colonne}>
                               <input type="hidden" name="engagement_id" value={engId} />
                               <input type="hidden" name="sample_item_id" value={c.sampleItemId} />
                               <input type="hidden" name="cell_id" value={c.id} />

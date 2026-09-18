@@ -115,7 +115,7 @@ export default async function KanbanPage({
               {cartes.length === 0 ? (
                 <p className="epure-liste-vide">{t(CLE_VIDE_COLONNE[col])}</p>
               ) : cartes.map((x) => (
-                <div key={x.id} className="epure-liste-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }} data-carte={x.id}>
+                <div key={x.id} className="epure-liste-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--e1)' }} data-carte={x.id}>
                   <span className="epure-mono">{x.taxonomy_code}</span>
                   <span>{x.description.slice(0, 90)}{x.description.length > 90 ? '…' : ''}</span>
                   {col === 'clarification_requested' && (

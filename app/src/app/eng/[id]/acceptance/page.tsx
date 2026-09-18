@@ -92,7 +92,7 @@ export default async function AcceptancePage({
                         {a.status !== 'open' ? (
                           <span className={defavorable ? 'badge amber' : 'badge green'}>{r?.answer ?? '—'}</span>
                         ) : (
-                          <form action={repondreAction} className="row" style={{ gap: 4 }}>
+                          <form action={repondreAction} className="row" style={{ gap: 'var(--e1)' }}>
                             <input type="hidden" name="engagement_id" value={id} />
                             <input type="hidden" name="code" value={c.code} />
                             <select name="answer" defaultValue={r?.answer ?? ''}>
@@ -168,7 +168,7 @@ export default async function AcceptancePage({
                         {t('acc.computedByTheFrameworkRuleNot')}
                       </span>
                     ) : (
-                      <form action={jalonAction} className="row" style={{ gap: 4 }}>
+                      <form action={jalonAction} className="row" style={{ gap: 'var(--e1)' }}>
                         <input type="hidden" name="engagement_id" value={id} />
                         <input type="hidden" name="code" value={j.code} />
                         <input name="date" placeholder="AAAA-MM-JJ" defaultValue={j.due_date ?? ''} style={{ width: 120 }} />

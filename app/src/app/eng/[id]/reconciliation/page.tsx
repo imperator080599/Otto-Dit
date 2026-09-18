@@ -112,13 +112,13 @@ export default async function ReconciliationPage({
                         {it.status === 'open' ? (
                           <details>
                             <summary className="repli-action">{t('commun.actions')}</summary>
-                            <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 4, maxWidth: 520 }}>
+                            <form action={documentAction} style={{ margin: '6px 0', display: 'grid', gap: 'var(--e1)', maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required
                                 placeholder={t('commun.explicationMotPourMot')} />
                               <textarea name="conclusion" rows={2} required
                                 placeholder={t('rap.conclusion')} />
-                              <div className="row" style={{ gap: 4 }}>
+                              <div className="row" style={{ gap: 'var(--e1)' }}>
                                 <select name="disposition" defaultValue="no_misstatement">
                                   <option value="no_misstatement">{t('commun.aucuneAnomalie')}</option>
                                   <option value="corrected">{t('rap.corrige')}</option>
@@ -134,7 +134,7 @@ export default async function ReconciliationPage({
                                 <button className="btn small secondary">{t('rec.documentDifference')}</button>
                               </div>
                             </form>
-                            <form action={limitationAction} style={{ display: 'grid', gap: 4, maxWidth: 520 }}>
+                            <form action={limitationAction} style={{ display: 'grid', gap: 'var(--e1)', maxWidth: 520 }}>
                               <input type="hidden" name="item_id" value={it.id} />
                               <textarea name="explanation" rows={2} required
                                 placeholder={t('rec.whyTheDifferenceCannotBeCorroborated')} />
