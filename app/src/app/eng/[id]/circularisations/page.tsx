@@ -245,7 +245,7 @@ export default async function CircularisationsPage({
                         <td className="num">
                           {l.ecartCents === null ? '—' : fmtEur(l.ecartCents, 'fr')}
                           {l.etat === 'ecart' && !l.explication && (
-                            <div style={{ marginTop: 4 }}>
+                            <div style={{ marginTop: 'var(--e1)' }}>
                               <form action={expliquerAction}>
                                 <input type="hidden" name="party_id" value={l.id} />
                                 <input name="explication" placeholder={t('circ.whyThisDifference')} required style={{ width: 200 }} />
@@ -253,7 +253,7 @@ export default async function CircularisationsPage({
                               </form>
                             </div>
                           )}
-                          {l.explication && <div className="faint" style={{ marginTop: 4 }}>{l.explication}</div>}
+                          {l.explication && <div className="faint" style={{ marginTop: 'var(--e1)' }}>{l.explication}</div>}
                         </td>
                         <td>
                           {l.evidenceId

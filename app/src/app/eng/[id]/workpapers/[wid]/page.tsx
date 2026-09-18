@@ -298,7 +298,7 @@ export default async function WorkpaperDetail({
             {ipe.natureRapport && <> · {t(ipe.natureRapport === 'systeme' ? 'wp.ipe.system' : ipe.natureRapport === 'systeme_modifie' ? 'wp.ipe.systemeModifie' : 'wp.ipe.manual')}</>}
             {ipe.parametres && <div className="faint">{t('wp.ipe.rapport.parametres')} : {ipe.parametres}</div>}
             {(ipe.generePar || ipe.genereLe) && <div className="faint">{t('wp.ipe.rapport.genere')} : {ipe.generePar ?? '—'} · {ipe.genereLe ?? '—'}</div>}
-            <div className="faint" style={{ marginTop: 4 }}>{ipe.exhaustivite}</div>
+            <div className="faint" style={{ marginTop: 'var(--e1)' }}>{ipe.exhaustivite}</div>
             <div className="faint">{ipe.exactitude}</div>
           </div>
         )}

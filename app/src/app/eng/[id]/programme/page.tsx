@@ -228,13 +228,13 @@ export default async function ProgrammePage({
                                 {l.planifiee.papier.code} <span className="faint">v{l.planifiee.papier.version}</span>
                               </Link>
                             ) : (
-                              <form action={redigerAction} className="row" style={{ marginTop: 4 }}>
+                              <form action={redigerAction} className="row" style={{ marginTop: 'var(--e1)' }}>
                                 <input type="hidden" name="procedure" value={l.planifiee.id} />
                                 <button className="btn small" data-rediger={l.code}>{t('prog.rediger')}</button>
                               </form>
                             )}
                             {l.planifiee.papier && (
-                              <form action={redigerAction} className="row" style={{ marginTop: 4 }}>
+                              <form action={redigerAction} className="row" style={{ marginTop: 'var(--e1)' }}>
                                 <input type="hidden" name="procedure" value={l.planifiee.id} />
                                 {l.planifiee.vise && (
                                   <input type="text" name="motif" placeholder={t('prog.motifVisa')} style={{ minWidth: 220 }} />
@@ -250,7 +250,7 @@ export default async function ProgrammePage({
                                 une ligne fraîche, jamais visée, se déplanifie sans
                                 motif, exactement comme une nouvelle version se
                                 rédige sans motif tant que rien n'est visé. */}
-                            <form action={deplanifierAction} className="row" style={{ marginTop: 4 }}>
+                            <form action={deplanifierAction} className="row" style={{ marginTop: 'var(--e1)' }}>
                               <input type="hidden" name="procedure" value={l.planifiee.id} />
                               {l.planifiee.vise && (
                                 <input type="text" name="motif" placeholder={t('prog.motifVisa')} style={{ minWidth: 220 }} />

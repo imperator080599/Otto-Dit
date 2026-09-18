@@ -232,3 +232,51 @@ describe('gap: 8 en dur dans les .tsx (Lot 7, H-6 tranche 5)', () => {
     expect(compterGap8EnDur()).toBe(compteAvant);
   });
 });
+
+/* Lot 7, H-6 tranche 6 (2026-09-18). Premier pas dans le cluster `margin*`/`padding*` en dur
+   (identifié par la recherche de H-6 tranche 3, ~49 sites au total, hétérogène — plusieurs
+   propriétés CSS distinctes, plusieurs valeurs). Sous-scopé à la propriété+valeur la plus
+   fréquente : `marginTop: 4` (10 sites, 6 fichiers), migrée vers `marginTop: 'var(--e1)'`. Même
+   raisonnement que `gap` (identité stricte 4 === 4px, aucun risque de cascade — `marginTop` en
+   style inline n'est jamais partiellement écrasé par une règle `.faint`/`.mono` du fichier CSS).
+   CE QUE CE GARDE NE VÉRIFIE PAS (règle 19), délibérément : les autres propriétés/valeurs du
+   cluster (`marginTop: 8/12`, `marginLeft: 4/8`, `marginRight: 4`, `marginBottom: 4/8`,
+   `paddingLeft: 8/16`, ~39 sites restants) et les ~43 déclarations en dur DANS `globals.css`
+   lui-même — tranches futures. */
+describe('marginTop: 4 en dur dans les .tsx (Lot 7, H-6 tranche 6)', () => {
+  const SEUIL_MARGINTOP4 = 0;
+
+  function compterMarginTop4EnDur(): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(/marginTop: 4\b/g);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  it('le compte de `marginTop: 4` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)', () => {
+    const compteAvant = compterMarginTop4EnDur();
+    expect(compteAvant).toBe(SEUIL_MARGINTOP4);
+
+    // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+    // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test, jamais
+    // laissé sur le disque (règle 24).
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const fichierSonde = path.join(racineApp, '__sonde_h6_tranche6__.tsx');
+    fs.writeFileSync(
+      fichierSonde,
+      `export const Sonde = () => <div style={{ marginTop: 4 }}>x</div>;\n`
+    );
+    try {
+      const compteAvecSonde = compterMarginTop4EnDur();
+      expect(compteAvecSonde).toBe(compteAvant + 1);
+      expect(compteAvecSonde).toBeGreaterThan(SEUIL_MARGINTOP4);
+    } finally {
+      fs.rmSync(fichierSonde, { force: true });
+    }
+    expect(compterMarginTop4EnDur()).toBe(compteAvant);
+  });
+});

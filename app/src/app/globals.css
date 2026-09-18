@@ -601,7 +601,15 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    migrées vers `gap: 'var(--e2)'`. CE QUE CETTE TRANCHE NE COUVRE PAS
    (règle 19) : les `margin*`/`padding*` en dur restants (~49 sites, `.tsx`)
    et les ~43 déclarations en dur DANS ce fichier lui-même — tranches
-   futures, gardées par `globals.css.test.ts`. */
+   futures, gardées par `globals.css.test.ts`.
+
+   Lot 7, H-6 tranche 6 (2026-09-18) : premier pas dans le cluster
+   `margin*`/`padding*`, sous-scopé à `marginTop: 4` (le plus fréquent, 10
+   sites, 6 fichiers), migré vers `marginTop: 'var(--e1)'`. CE QUE CETTE
+   TRANCHE NE COUVRE PAS (règle 19) : les autres propriétés/valeurs du
+   cluster (`marginTop: 8/12`, `marginLeft: 4/8`, `marginRight: 4`,
+   `marginBottom: 4/8`, `paddingLeft: 8/16`, ~39 sites restants) et les ~43
+   déclarations en dur DANS ce fichier lui-même — tranches futures. */
 :root {
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
   --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);

@@ -352,7 +352,7 @@ export default async function ExceptionsPage({
                       {c.derniere_relance && (
                         <div className="faint">{t('exc.derniereRelance')} · {c.derniere_relance.slice(0, 10)}</div>
                       )}
-                      <form action={assignerAction} className="row" style={{ gap: 'var(--e1)', marginTop: 4 }}>
+                      <form action={assignerAction} className="row" style={{ gap: 'var(--e1)', marginTop: 'var(--e1)' }}>
                         <input type="hidden" name="item_id" value={c.item_id} />
                         <select name="owner_contact_id" defaultValue={c.owner_contact_id ?? ''} style={{ maxWidth: 140 }}>
                           <option value="">{t('exc.assignerAucun')}</option>
@@ -368,7 +368,7 @@ export default async function ExceptionsPage({
                           que de promettre un geste voué à l'échec (même discipline que EXTRAP-03
                           plus bas dans cet écran). */}
                       {c.owner_contact_id && c.item_status === 'pending' && (
-                        <form action={relancerAction} style={{ marginTop: 4 }}>
+                        <form action={relancerAction} style={{ marginTop: 'var(--e1)' }}>
                           <input type="hidden" name="item_id" value={c.item_id} />
                           <button className="btn small">{t('exc.relancer')}</button>
                         </form>
