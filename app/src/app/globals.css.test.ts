@@ -41,7 +41,7 @@ function listerFichiersTsx(dir: string): string[] {
    en dur, 13 occurrences, chacune une déclaration ISOLÉE dans sa règle
    (aucun raccourci CSS partagé), migrées vers `font-size: var(--t0)` — le
    même jeton, la même valeur, une identité stricte. Seuil baissé de 58 à
-   45. CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : les 27 autres sites
+   45. CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : les 36 autres sites
    à valeur unique et jeton exact (14 de `font-size` à d'autres valeurs :
    9× 12px, 3× 12.5px, 1× 15px, 1× 13.5px ; 22 d'espacement `margin*`/
    `padding*`/`gap` DANS ce fichier), ni les ~13 déclarations de police ou
