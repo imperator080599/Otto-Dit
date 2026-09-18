@@ -125,7 +125,7 @@ export default async function ScopingPage({
                   </details>
                 ) : f.scoping === 'ns_proposed' ? (
                   <div>
-                    <form action={confirmAction} className="row" style={{ marginBottom: 4 }}>
+                    <form action={confirmAction} className="row" style={{ marginBottom: 'var(--e1)' }}>
                       <input type="hidden" name="fsli_id" value={f.id} />
                       <input type="hidden" name="decision" value="ns_confirmed" />
                       <button className="btn small secondary">{t('scop.confirmNs')}</button>

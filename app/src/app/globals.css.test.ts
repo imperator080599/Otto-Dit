@@ -326,3 +326,69 @@ describe('marginLeft: 4 en dur dans les .tsx (Lot 7, H-6 tranche 7)', () => {
     expect(compterMarginLeft4EnDur()).toBe(compteAvant);
   });
 });
+
+/* Lot 7, H-6 tranche 8 (2026-09-18). Clôture du cluster `margin*`/`padding*` identifié par la
+   tranche 3 : les 8 paires propriété+valeur restantes, chacune trop petite (1 à 4 sites) pour
+   justifier sa propre tranche/son propre rituel d'expédition — batchées en UNE tranche
+   consolidée, 20 sites au total, 15 fichiers. Chaque paire garde son propre test (règle 17 :
+   chaque motif est réellement exercé par son propre cas connu mauvais, pas une seule assertion
+   groupée qui masquerait laquelle des 8 a régressé) :
+   - `marginTop: 8` → `--e2` (2 sites) · `marginTop: 12` → `--e3` (1 site, premier usage de
+     `--e3` hors `globals.css` lui-même)
+   - `marginLeft: 8` → `--e2` (2 sites)
+   - `marginRight: 4` → `--e1` (4 sites)
+   - `marginBottom: 4` → `--e1` (3 sites) · `marginBottom: 8` → `--e2` (3 sites)
+   - `paddingLeft: 8` → `--e2` (3 sites) · `paddingLeft: 16` → `--e4` (2 sites, premier usage de
+     `--e4` hors `globals.css` lui-même)
+   CE QUE CE GARDE NE VÉRIFIE PAS (règle 19) : les ~43 déclarations en dur DANS ce fichier
+   lui-même (`globals.css`) — hors périmètre de toute tranche H-6 jusqu'ici, la dernière frontière
+   du cluster margin/padding. */
+describe('cluster margin*/padding* restant en dur dans les .tsx (Lot 7, H-6 tranche 8)', () => {
+  function compterEnDur(prop: string, val: number): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const motif = new RegExp(`${prop}: ${val}\\b`, 'g');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(motif);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  const PAIRES: Array<{ prop: string; val: number }> = [
+    { prop: 'marginTop', val: 8 },
+    { prop: 'marginTop', val: 12 },
+    { prop: 'marginLeft', val: 8 },
+    { prop: 'marginRight', val: 4 },
+    { prop: 'marginBottom', val: 4 },
+    { prop: 'marginBottom', val: 8 },
+    { prop: 'paddingLeft', val: 8 },
+    { prop: 'paddingLeft', val: 16 },
+  ];
+
+  for (const { prop, val } of PAIRES) {
+    it(`le compte de \`${prop}: ${val}\` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)`, () => {
+      const compteAvant = compterEnDur(prop, val);
+      expect(compteAvant).toBe(0);
+
+      // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+      // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test,
+      // jamais laissé sur le disque (règle 24).
+      const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+      const fichierSonde = path.join(racineApp, `__sonde_h6_tranche8_${prop}_${val}__.tsx`);
+      fs.writeFileSync(
+        fichierSonde,
+        `export const Sonde = () => <div style={{ ${prop}: ${val} }}>x</div>;\n`
+      );
+      try {
+        const compteAvecSonde = compterEnDur(prop, val);
+        expect(compteAvecSonde).toBe(compteAvant + 1);
+        expect(compteAvecSonde).toBeGreaterThan(0);
+      } finally {
+        fs.rmSync(fichierSonde, { force: true });
+      }
+      expect(compterEnDur(prop, val)).toBe(compteAvant);
+    });
+  }
+});

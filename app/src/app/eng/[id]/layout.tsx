@@ -72,12 +72,12 @@ export default async function EngagementLayout({
                 <div key={c.client}>
                   <div className="faint" style={{ marginTop: 6 }}>{c.client}</div>
                   {c.entites.map((en) => (
-                    <div key={en.entity_id} style={{ paddingLeft: 8 }}>
+                    <div key={en.entity_id} style={{ paddingLeft: 'var(--e2)' }}>
                       {c.entites.length > 1 || en.entity_name !== c.client ? <div>{en.entity_name}</div> : null}
                       {en.missions.map((m) => m.id === id ? (
-                        <div key={m.id} className="faint" style={{ paddingLeft: 8 }}>▸ {m.name} · {m.period_label} {t('commun.dossierOuvert')}</div>
+                        <div key={m.id} className="faint" style={{ paddingLeft: 'var(--e2)' }}>▸ {m.name} · {m.period_label} {t('commun.dossierOuvert')}</div>
                       ) : (
-                        <form key={m.id} action={basculerAction} style={{ paddingLeft: 8 }}>
+                        <form key={m.id} action={basculerAction} style={{ paddingLeft: 'var(--e2)' }}>
                           <input type="hidden" name="vers" value={m.id} />
                           <input type="hidden" name="depuis" value={id} />
                           <button className="lien-bascule" type="submit">{m.name} · {m.period_label}</button>

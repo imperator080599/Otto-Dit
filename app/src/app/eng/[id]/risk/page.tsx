@@ -203,7 +203,7 @@ export default async function RiskPage({
                   {r.factors.length === 0 ? (
                     <span className="faint">{t('risk.noFactorObserved')}</span>
                   ) : (
-                    <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    <ul style={{ margin: 0, paddingLeft: 'var(--e4)' }}>
                       {r.factors.map((f) => (
                         <li key={f.factor_code}>
                           {f.label}
@@ -461,7 +461,7 @@ export default async function RiskPage({
             <summary>
               <strong>{excluded.length} {t('risk.procedureSRuledOut')}</strong> {t('risk.andWhy')}
             </summary>
-            <table className="data" style={{ marginTop: 8 }}>
+            <table className="data" style={{ marginTop: 'var(--e2)' }}>
               <thead>
                 <tr><th>{t('risk.procedure')}</th><th>{t('risk.assertion')}</th><th>{t('risk.niveauAtteint')}</th><th>{t('risk.minimumRequired')}</th></tr>
               </thead>

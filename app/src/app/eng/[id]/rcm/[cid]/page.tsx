@@ -427,7 +427,7 @@ export default async function ControlDetail({
                       <td className="mono faint">{tache.video_timestamp ?? '—'}</td>
                       <td>
                         {tache.procedures.map((p) => (
-                          <span key={p.procedure} className={`badge ${p.procedure === 'inquiry' ? 'gray' : 'blue'}`} title={p.notes} style={{ marginRight: 4 }}>
+                          <span key={p.procedure} className={`badge ${p.procedure === 'inquiry' ? 'gray' : 'blue'}`} title={p.notes} style={{ marginRight: 'var(--e1)' }}>
                             {p.procedure}
                           </span>
                         ))}

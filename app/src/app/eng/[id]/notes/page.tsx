@@ -80,7 +80,7 @@ export default async function NotesPage({
              fait (sur quelles pièces), reste à vérifier — pas une prose. */
           const cr = r.author_kind === 'otto' ? (r.payload as CompteRenduOtto) : null;
           return (
-            <div className={`callout${cr?.verdict === 'refuse' ? ' warn' : ''}`} key={r.id} style={{ marginTop: 8 }}>
+            <div className={`callout${cr?.verdict === 'refuse' ? ' warn' : ''}`} key={r.id} style={{ marginTop: 'var(--e2)' }}>
               <strong>{r.author_kind === 'otto' ? 'OTTO' : r.author_name}</strong>
               {cr?.verdict === 'refuse' && <span className="badge amber" style={{ marginLeft: 6 }}>{t('mot.refusal')}</span>}
               {cr?.verdict === 'execute' && <IaFlag style={{ marginLeft: 6 }}>{t('notes.executeParOtto')}</IaFlag>}

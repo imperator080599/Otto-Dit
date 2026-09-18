@@ -142,7 +142,7 @@ export default async function EstimationsPage({
             <form action={demanderAction} className="mt">
               <input type="hidden" name="estimation_id" value={ouverte.id} />
               <button className="btn">{t('est.requestSupportingDocumentsDraftL2')}</button>
-              <span className="faint" style={{ marginLeft: 8 }}>
+              <span className="faint" style={{ marginLeft: 'var(--e2)' }}>
                 {t('est.baseOfTheDrawnLinesEach')}
               </span>
             </form>

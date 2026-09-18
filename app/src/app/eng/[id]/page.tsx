@@ -229,7 +229,7 @@ export default async function VueDEnsemble({
                   <td>
                     {m.statuts.every((n) => n === 0) ? <span className="faint">—</span>
                       : ORDRE_STATUT.map((st, i) => (m.statuts[i] > 0 ? (
-                        <span key={st} className={`badge ${ECHELLE[st].classe}`} style={{ marginRight: 4 }}>
+                        <span key={st} className={`badge ${ECHELLE[st].classe}`} style={{ marginRight: 'var(--e1)' }}>
                           <span aria-hidden="true">{ECHELLE[st].repere}</span> {m.statuts[i]}
                         </span>
                       ) : null))}

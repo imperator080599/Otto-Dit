@@ -184,7 +184,7 @@ export default async function SamplingPage({
         <h2 style={{ marginTop: 0 }}>{t('samp.rapprochementTitre')}</h2>
         <p className="muted">{t('samp.rapprochementAide')}</p>
         {detailsImportes.map((d) => (
-          <div key={d.id} className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} data-rapprochement-ligne={d.id}>
+          <div key={d.id} className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--e2)' }} data-rapprochement-ligne={d.id}>
             <span>
               {t('samp.rapprochementLigne', {
                 lignes: d.rowCount, total: fmtEur(d.totalCents, 'fr'), attendu: fmtEur(d.glAttenduCents, 'fr'),

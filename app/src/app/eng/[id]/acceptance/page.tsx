@@ -119,7 +119,7 @@ export default async function AcceptancePage({
             {a.status === 'open' && (
               <>
                 {manque.length > 0 && (
-                  <div className="panel warn" style={{ marginTop: 12 }}>
+                  <div className="panel warn" style={{ marginTop: 'var(--e3)' }}>
                     <p><strong>{t('acc.whatIsMissingBeforeDeciding')}</strong></p>
                     <ul>{manque.map((m) => <li key={m.code}>{m.libelle} — {m.raison}</li>)}</ul>
                   </div>

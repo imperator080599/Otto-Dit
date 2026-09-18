@@ -108,7 +108,7 @@ export default async function ProvenancePage({
           {why && (
             <ol style={{ paddingLeft: 18 }}>
               {why.map((n, i) => (
-                <li key={i} style={{ marginBottom: 8 }}>
+                <li key={i} style={{ marginBottom: 'var(--e2)' }}>
                   <span className="badge blue">{n.kind}</span>{' '}
                   {n.href ? <Link href={n.href}>{n.label}</Link> : <strong>{n.label}</strong>}
                   {n.detail && <div className="faint">{n.detail}</div>}
@@ -169,7 +169,7 @@ export default async function ProvenancePage({
                   <strong>{x.filename}</strong> <span className="badge violet">{x.rung}</span>{' '}
                   {x.verified_by && <span className="badge green">{t('prov.humanVerified')}</span>}
                   <div className="faint mono">{t('mot.sha256')} {x.sha256.slice(0, 16)}…</div>
-                  <ul style={{ paddingLeft: 16, fontSize: 12 }}>
+                  <ul style={{ paddingLeft: 'var(--e4)', fontSize: 12 }}>
                     {x.fields.slice(0, 8).map((f) => <li key={f.name}>{f.name} = {String(f.value).slice(0, 50)} {t('prov.confiance', { c: f.confidence })}</li>)}
                   </ul>
                 </div>

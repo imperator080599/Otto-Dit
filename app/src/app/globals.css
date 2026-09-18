@@ -617,7 +617,17 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    `marginLeft: 'var(--e1)'`. CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) :
    `marginTop: 8/12`, `marginLeft: 8`, `marginRight: 4`, `marginBottom:
    4/8`, `paddingLeft: 8/16` (~32 sites restants) et les ~43 déclarations en
-   dur DANS ce fichier lui-même — tranches futures. */
+   dur DANS ce fichier lui-même — tranches futures.
+
+   Lot 7, H-6 tranche 8 (2026-09-18) : CLÔTURE du cluster `margin*`/
+   `padding*` — les 8 paires propriété+valeur restantes, chacune trop
+   petite pour son propre rituel d'expédition, batchées en une tranche
+   consolidée (20 sites, 15 fichiers) : `marginTop: 8/12` → `--e2`/`--e3`,
+   `marginLeft: 8` → `--e2`, `marginRight: 4` → `--e1`, `marginBottom: 4/8`
+   → `--e1`/`--e2`, `paddingLeft: 8/16` → `--e2`/`--e4`. CE QUE CETTE
+   TRANCHE NE COUVRE PAS (règle 19), et qui reste hors périmètre de TOUTE
+   tranche H-6 jusqu'ici : les ~43 déclarations en dur DANS ce fichier
+   lui-même. */
 :root {
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
   --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);

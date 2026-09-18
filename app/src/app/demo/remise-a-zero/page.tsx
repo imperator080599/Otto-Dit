@@ -66,7 +66,7 @@ export default async function RemiseAZero({
         {etat.aJour ? (
           <form action={remettreAZeroAction} className="mt">
             <button className="btn danger">{t('raz.faire')}</button>
-            <Link href="/" className="btn secondary" style={{ marginLeft: 8 }}>{t('col.cancel')}</Link>
+            <Link href="/" className="btn secondary" style={{ marginLeft: 'var(--e2)' }}>{t('col.cancel')}</Link>
           </form>
         ) : (
           <p className="mt">

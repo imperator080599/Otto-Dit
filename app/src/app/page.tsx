@@ -119,7 +119,7 @@ export default async function Home({
                       <td>{m.period_label}</td>
                       <td>
                         {m.packs.map((pk) => (
-                          <span key={pk} className="badge blue" style={{ marginRight: 4 }}>{pk}</span>
+                          <span key={pk} className="badge blue" style={{ marginRight: 'var(--e1)' }}>{pk}</span>
                         ))}
                       </td>
                       <td><span className={`badge ${m.status === 'locked' ? 'amber' : 'green'}`}>{m.status}</span></td>

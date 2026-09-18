@@ -58,7 +58,7 @@ export default async function AnalytiquePage({ params }: { params: Promise<{ id:
                     <td>
                       {p.revue ? (
                         <span data-revue-version={p.revue.version}>
-                          {p.revue.perimee && <span className="badge amber" style={{ marginRight: 4 }}>{t('ana.perimee')}</span>}
+                          {p.revue.perimee && <span className="badge amber" style={{ marginRight: 'var(--e1)' }}>{t('ana.perimee')}</span>}
                           {p.revue.texte.length > 180 ? `${p.revue.texte.slice(0, 180)}…` : p.revue.texte}
                           <span className="faint"> · {t('poste.analytique.redigee', { v: p.revue.version, qui: p.revue.auteur, quand: p.revue.quand.slice(0, 10) })}</span>
                         </span>

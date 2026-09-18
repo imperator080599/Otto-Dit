@@ -292,7 +292,7 @@ export function Atelier({
                 attendu, trouvé, delta SIGNÉ, tolérance, état, ancre. Cliquer
                 l'ancre dessine le rectangle sur la pièce, à sa page. */}
             <div className="bande-cellules mt" data-bande-cellules>
-              <div className="faint" style={{ marginBottom: 4 }}>
+              <div className="faint" style={{ marginBottom: 'var(--e1)' }}>
                 {grille
                   ? <>{t('atl.grille.titre', { v: grille.version, n: grille.colonnes.length, quand: grille.figeeLe.slice(0, 10), pack: grille.packId })} · <span className="mono">{t('atl.grille.empreinte', { h: grille.empreinte.slice(0, 10) })}</span></>
                   : t('atl.grille.absente')}
@@ -448,7 +448,7 @@ export function Atelier({
 
             {/* LE PAPIER SE REMPLIT SOUS MES YEUX — même formateur que le papier. */}
             <div className="papier-vivant mt">
-              <div className="faint" style={{ marginBottom: 4 }}>{t('atl.tellQuElleSortira')}</div>
+              <div className="faint" style={{ marginBottom: 'var(--e1)' }}>{t('atl.tellQuElleSortira')}</div>
               <table className="data">
                 <tbody>
                   {colonnes.map((c) => (
