@@ -154,7 +154,7 @@ code, .mono { font-family: var(--mono); font-size: var(--t2); }
   display: flex; align-items: center; gap: 16px;
   padding: 0 20px; height: 48px;
 }
-.topbar .brand { font-weight: 700; letter-spacing: 1.5px; color: var(--topbar-text); font-size: 15px; }
+.topbar .brand { font-weight: 700; letter-spacing: 1.5px; color: var(--topbar-text); font-size: var(--t5); }
 .topbar .brand small { font-weight: 400; opacity: .55; letter-spacing: 0; margin-left: 8px; }
 .topbar a { color: var(--topbar-link); }
 .topbar .spacer { flex: 1; }
@@ -241,7 +241,7 @@ label.bloc textarea { width: 100%; box-sizing: border-box; }
    n'explique pourquoi le produit est fait ainsi. */
 .etapes { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 14px; }
 .etape {
-  display: block; padding: 6px 10px; border-radius: 5px; font-size: 12.5px;
+  display: block; padding: 6px 10px; border-radius: 5px; font-size: var(--t2);
   font-weight: 600; border: 1px solid var(--border); background: var(--panel);
   border-left-width: 3px; min-width: 120px;
 }
@@ -522,7 +522,7 @@ summary.repli-action:hover { text-decoration: underline; }
    nom, date, état — et un visa périmé se lit LÀ, pas en bas de page. */
 .entete-poste { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .entete-poste h2 { margin: 0 0 4px; font-size: 18px; }
-.entete-poste-sous { font-size: 12.5px; }
+.entete-poste-sous { font-size: var(--t2); }
 .visas { display: flex; gap: 8px; flex-wrap: wrap; }
 .visa {
   display: grid; gap: 1px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
@@ -541,7 +541,7 @@ summary.repli-action:hover { text-decoration: underline; }
    un repère de forme et un mot par section, pas une couleur. */
 .ancres {
   display: flex; gap: 0 14px; flex-wrap: wrap; border-bottom: 1px solid var(--border);
-  margin: 4px 0 12px; font-size: 12.5px; position: sticky; top: 0; background: var(--bg); z-index: 2;
+  margin: 4px 0 12px; font-size: var(--t2); position: sticky; top: 0; background: var(--bg); z-index: 2;
 }
 .ancres a {
   padding: 7px 2px 6px; color: var(--muted); border-bottom: 2px solid transparent; text-decoration: none;
@@ -559,7 +559,7 @@ details.repli > summary {
   padding: 10px 14px; flex-wrap: wrap; border-radius: var(--radius);
 }
 details.repli > summary::-webkit-details-marker { display: none; }
-details.repli > summary h3 { margin: 0; font-size: 13.5px; }
+details.repli > summary h3 { margin: 0; font-size: var(--t3); }
 details.repli > summary .chevron { font-size: var(--t0); color: var(--muted); display: inline-block; transition: transform 150ms ease-out; }
 details.repli[open] > summary .chevron { transform: rotate(90deg); }
 details.repli > summary:hover { background: var(--row-hover); }

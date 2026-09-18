@@ -61,10 +61,29 @@ function listerFichiersTsx(dir: string): string[] {
    `font-size` à valeur unique et jeton exact (3× 12.5px, 1× 15px, 1×
    13.5px), les 22 sites d'espacement `margin*`/`padding*`/`gap` DANS ce
    fichier, et les déclarations sans jeton correspondant — mêmes
-   candidats que ceux nommés par la tranche 9, réduits d'autant. */
+   candidats que ceux nommés par la tranche 9, réduits d'autant.
+
+   Lot 7, H-6 tranche 11 (2026-09-18) : CLÔTURE du cluster `font-size` à
+   jeton exact DANS `globals.css` — les 3 dernières valeurs restantes,
+   chacune trop petite (1 à 3 sites) pour son propre rituel d'expédition,
+   batchées en une tranche consolidée (5 sites, 5 fichiers, même
+   raisonnement que la tranche 8 pour `margin*`/`padding*`) : `12.5px` →
+   `--t2` (3 sites : `.etape`, `.entete-poste-sous`, `.ancres`), `15px` →
+   `--t5` (1 site : `.topbar .brand`), `13.5px` → `--t3` (1 site :
+   `details.repli > summary h3`). Chacune une déclaration ISOLÉE dans sa
+   règle, aucun raccourci `font:` partagé. Seuil baissé de 36 à 31 (36 −
+   5 = 31, confirmé par le détecteur lui-même). MESURÉ APRÈS cette
+   tranche, pas supposé : les 31 déclarations `font-size` restantes DANS
+   ce fichier (13× 13px, 9× 11.5px, 5× 10px, 1× 9px, 1× 26px, 1× 18px, 1×
+   10.5px) ne correspondent plus à AUCUN jeton `--tN` existant — le
+   cluster à jeton exact est donc CLOS, ce qui reste exigerait d'inventer
+   un nouveau jeton, ce qu'aucune tranche H-6 n'a fait depuis --t0/--t7.
+   CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : les 22 sites
+   d'espacement `margin*`/`padding*`/`gap` DANS ce fichier — seul cluster
+   restant du mandat de tranche 9, candidat pour une tranche future. */
 
 const CSS_PATH = path.join(repoRoot(), 'app', 'src', 'app', 'globals.css');
-const SEUIL_ACTUEL = 36;
+const SEUIL_ACTUEL = 31;
 
 function compterFontSizeEnDur(texte: string): number {
   const m = texte.match(/font-size:\s*[0-9.]+px/g);
@@ -143,6 +162,22 @@ describe('globals.css : échelle typographique (Lot 7, H-6 tranche 1)', () => {
       const m = css.match(motif);
       expect(m, `motif introuvable : ${motif}`).not.toBeNull();
       expect(m![0]).toMatch(/font-size:\s*var\(--t1\)/);
+    }
+  });
+
+  it('les 5 sites migrés par H-6 tranche 11 (CLÔTURE du cluster font-size) lisent tous leur jeton, plus aucune valeur en dur parmi eux', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    const cas: Array<{ motif: RegExp; jeton: string }> = [
+      { motif: /\.etape\s*\{[^}]*\}/, jeton: '--t2' },
+      { motif: /\.entete-poste-sous\s*\{[^}]*\}/, jeton: '--t2' },
+      { motif: /\.ancres\s*\{[^}]*\}/, jeton: '--t2' },
+      { motif: /\.topbar \.brand\s*\{[^}]*\}/, jeton: '--t5' },
+      { motif: /details\.repli > summary h3\s*\{[^}]*\}/, jeton: '--t3' },
+    ];
+    for (const { motif, jeton } of cas) {
+      const m = css.match(motif);
+      expect(m, `motif introuvable : ${motif}`).not.toBeNull();
+      expect(m![0]).toMatch(new RegExp(`font-size:\\s*var\\(${jeton.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`));
     }
   });
 
