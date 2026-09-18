@@ -512,11 +512,19 @@ describe('cluster margin*/padding* restant en dur dans les .tsx (Lot 7, H-6 tran
    `margin-top: 8px` → `--e2`, `margin-bottom: 16px` (2 sites) → `--e4`, `row-gap: 4px` →
    `--e1`, `padding: 12px` (2 sites) → `--e3`, `gap: 12px` → `--e3`, `margin-left: 4px` →
    `--e1`, `padding: 16px` → `--e4`, `margin-bottom: 8px` → `--e2`, `padding-top: 8px` →
-   `--e2`, `margin-bottom: 12px` → `--e3`, `gap: 4px` → `--e1`. Un site (`padding: 12px 18px`,
-   ligne ~743) est un raccourci à DEUX valeurs et n'a PAS été touché — la substitution exigeait
-   une correspondance EXACTE bornée par le `;`, vérifiée en exécutant avant de committer (le
-   premier essai, sans cette borne, avait accidentellement matché ce site : corrigé avant tout
-   commit, jamais expédié).
+   `--e2`, `margin-bottom: 12px` → `--e3`, `gap: 4px` → `--e1`. DEUX sites (pas un seul —
+   correctif au constat MOYEN du réfutateur, règle 21 : le compte doit être exact) sont des
+   raccourcis à DEUX valeurs et n'ont PAS été touchés : `padding: 12px 18px` (ligne ~743,
+   `details.repli.niveau-2 > summary`) et `padding: 16px 18px` (ligne ~268, `.panel`, dont le
+   PREMIER jeton — 16px — est lui-même l'une des 15 valeurs ciblées, exactement la même classe
+   de risque que le premier). La substitution exigeait une correspondance EXACTE bornée par le
+   `;` (règle `(?<![-\w])PROP\s*:\s*VAL(?=\s*;)`), vérifiée en exécutant avant de committer (le
+   premier essai, sans cette borne, avait accidentellement matché le site de la ligne 743 :
+   corrigé avant tout commit, jamais expédié) — cette même borne protège aussi le site de la
+   ligne 268, mais SEULEMENT PAR PARTAGE de la même regex : le réfutateur a relevé, à raison,
+   que le commit d'origine ne le NOMMAIT pas et qu'aucun test dédié ne le couvrait (protection
+   incidente, pas nommée — contraire à la règle 17). Les deux ont désormais leur propre
+   assertion nommée ci-dessous.
 
    Contrairement au garde `font-size` ci-dessus (qui écrit un VRAI fichier `.tsx` pour sonder,
    parce que son détecteur scanne un RÉPERTOIRE de fichiers), ce garde sonde en injectant la
@@ -573,5 +581,13 @@ describe('cluster espacement (margin*/padding*/gap) en dur DANS globals.css (Lot
   it('le raccourci `padding: 12px 18px` (deux valeurs, ligne ~743) reste EN DUR — pas une régression, un cas hors périmètre nommé', () => {
     const css = fs.readFileSync(CSS_PATH, 'utf8');
     expect(css).toMatch(/padding:\s*12px 18px/);
+  });
+
+  it('le raccourci `padding: 16px 18px` (deux valeurs, ligne ~268, `.panel`) reste EN DUR — même classe de risque que le précédent, nommé et testé séparément (constat du réfutateur, règle 17)', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    expect(css).toMatch(/padding:\s*16px 18px/);
+    // Le PREMIER jeton (16px) est l'une des 15 valeurs ciblées par cette tranche (padding: 16px
+    // -> --e4) : vérifier explicitement qu'aucune substitution partielle ne s'est produite ici.
+    expect(css).not.toMatch(/padding:\s*var\(--e4\)\s+18px/);
   });
 });
