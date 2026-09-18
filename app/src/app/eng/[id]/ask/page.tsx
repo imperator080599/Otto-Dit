@@ -71,7 +71,7 @@ export default async function AskPage({
                   : t('ask.choixExplicite')}
             </span>
           </div>
-          <p className="faint mono" style={{ fontSize: 12 }}>
+          <p className="faint mono">
             {t('ask.requeteExecutee')}: {result.templateId}
             {result.params.map((p) => ` · ${p.label} = ${p.value}`).join('')}
           </p>
@@ -109,7 +109,7 @@ export default async function AskPage({
       {result?.status === 'refused' && (
         <Repli cle="ask.questionNonTraduite" niveau={2} titre={<>{t('ask.questionNonTraduite')} <span className="badge red">{t('commun.refuse')}</span></>}>
           <p>{result.message}</p>
-          <p className="faint mono" style={{ fontSize: 12 }}>{t('ask.motif')}: {result.reason}</p>
+          <p className="faint mono">{t('ask.motif')}: {result.reason}</p>
         </Repli>
       )}
 

@@ -135,7 +135,7 @@ export default async function CompletionPage({
                   <input name="reason" placeholder={libelle('comp.reasonForReopening')} style={{ width: 340 }} />
                   <button className="btn secondary small">{libelle('col.reopen')}</button>
                 </form>
-                <p className="faint" style={{ fontSize: 11 }}>
+                <p className="faint" style={{ fontSize: 'var(--t0)' }}>
                   {libelle('comp.aNewFactIsDealtWith')}
                 </p>
               </>

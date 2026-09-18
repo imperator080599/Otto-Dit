@@ -79,7 +79,7 @@ export default async function AcceptancePage({
                       <td>
                         <strong>{c.libelle}</strong>
                         {c.bloquant && <> <span className="badge gray">{t('mot.blocking')}</span></>}
-                        <div className="faint" style={{ fontSize: 11 }} title={c.pourquoi}>{c.question}</div>
+                        <div className="faint" style={{ fontSize: 'var(--t0)' }} title={c.pourquoi}>{c.question}</div>
                         {/* LA RAISON D'ÊTRE DU CRITÈRE NE S'AFFICHE PLUS EN
                             CONTINU (revue n°2 : les justifications pédagogiques
                             sortent du flux de travail). Elle N'EST PAS
@@ -159,12 +159,12 @@ export default async function AcceptancePage({
                   <td>
                     {j.label}
                     {j.derived && <> <span className="badge violet">{t('acc.derived')}</span></>}
-                    {j.basis && <div className="faint" style={{ fontSize: 11 }}>{j.basis}</div>}
+                    {j.basis && <div className="faint" style={{ fontSize: 'var(--t0)' }}>{j.basis}</div>}
                   </td>
                   <td>{fr(j.due_date) || <span className="faint">—</span>}</td>
                   <td>
                     {j.derived ? (
-                      <span className="faint" style={{ fontSize: 11 }}>
+                      <span className="faint" style={{ fontSize: 'var(--t0)' }}>
                         {t('acc.computedByTheFrameworkRuleNot')}
                       </span>
                     ) : (
@@ -189,7 +189,7 @@ export default async function AcceptancePage({
                         <button className="btn secondary small">{t('acc.markDone')}</button>
                       </form>
                     ) : (
-                      <span className="faint" style={{ fontSize: 11 }}>{t('acc.setTheDueDateFirst')}</span>
+                      <span className="faint" style={{ fontSize: 'var(--t0)' }}>{t('acc.setTheDueDateFirst')}</span>
                     )}
                   </td>
                 </tr>

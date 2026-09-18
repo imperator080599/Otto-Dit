@@ -103,7 +103,7 @@ export default async function LoopPage({
               <tr key={e.code} className={e.code === b.bloqueA ? 'warn' : undefined}>
                 <td>
                   <strong>{e.libelle}</strong>
-                  <div className="faint" style={{ fontSize: 11 }}>{e.quoi}</div>
+                  <div className="faint" style={{ fontSize: 'var(--t0)' }}>{e.quoi}</div>
                 </td>
                 <td className="num"><strong>{e.franchi}</strong></td>
                 <td>
@@ -155,11 +155,11 @@ export default async function LoopPage({
                     <Link href={`/eng/${id}/requests/${x.request_id}`}>
                       #{x.seq_no} {x.title}
                     </Link>
-                    <div className="faint" style={{ fontSize: 11 }}>{x.request_status}</div>
+                    <div className="faint" style={{ fontSize: 'var(--t0)' }}>{x.request_status}</div>
                   </td>
                   <td>
                     <span className="mono">{x.taxonomy_code}</span>
-                    <div className="faint" style={{ fontSize: 11, maxWidth: 380 }}>{x.description}</div>
+                    <div className="faint" style={{ fontSize: 'var(--t0)', maxWidth: 380 }}>{x.description}</div>
                   </td>
                   <td>
                     <span className={`badge ${x.exception_status === 'resolved' ? 'green' : 'amber'}`}>

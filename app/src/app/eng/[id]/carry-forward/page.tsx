@@ -88,9 +88,9 @@ export default async function CarryForwardPage({
                   </td>
                   <td>
                     {r.label}
-                    {r.detail && <div className="faint" style={{ fontSize: 11, maxWidth: 520 }}>{r.detail}</div>}
+                    {r.detail && <div className="faint" style={{ fontSize: 'var(--t0)', maxWidth: 520 }}>{r.detail}</div>}
                     {r.decision_reason && (
-                      <div className="faint" style={{ fontSize: 11 }}><em>{t('commun.motif')} {r.decision_reason}</em></div>
+                      <div className="faint" style={{ fontSize: 'var(--t0)' }}><em>{t('commun.motif')} {r.decision_reason}</em></div>
                     )}
                   </td>
                   <td>

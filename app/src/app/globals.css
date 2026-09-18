@@ -621,9 +621,29 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    fichier (poids toujours écrits en dur, partout) — en créer une aurait
    dépassé le périmètre d'une tranche CSS ; le poids 300 est copié tel quel
    sur les deux règles, jamais tokenisé. Les 48 écrans qui n'utilisent NI
-   `.kpi` NI `.epure-*` restent hors périmètre (rien de markup touché ici). */
+   `.kpi` NI `.epure-*` restent hors périmètre (rien de markup touché ici).
+
+   Lot 7, H-6 tranche 3 (2026-09-18) : --t0 (11px) ajouté — recherche dédiée
+   (sous-agent, lecture directe) sur les 25 sites `className="faint" style={{
+   fontSize: N }}` du dépôt (des overrides inline sur `.faint`, qui vaut déjà
+   `--t1` = 12px par défaut) : 15 valaient 11px (le cas dominant, aucun jeton
+   ne le couvrait), migrés vers `--t0` ; 6 valaient 12px — REDONDANTS avec
+   la valeur par défaut de `.faint`, donc le style inline lui-même est
+   supprimé sur ces six sites plutôt que tokenisé pour rien. CE QUE CETTE
+   TRANCHE NE COUVRE PAS (règle 19), délibérément : `risk/page.tsx:440,449`
+   (10px), `testing/atelier.tsx:441` (11.5px) et `testing/page.tsx:492`
+   (13px, un élément `"v faint"` qui cumule DÉJÀ trois déclarations de taille
+   en conflit — `--t7`, `--t1`, l'inline) restent en dur : aucune de ces
+   trois valeurs ne vaut 11px, les rallier à `--t0` changerait le rendu, et
+   `testing/*` est précisément le fichier où H-6 tranche 2 a cassé deux fois
+   sur `fmtEur` — y toucher dans la même tranche qui introduit un nouveau
+   jeton cumule deux risques évitables. L'échelle d'espacement `--e1..--e6`
+   (ci-dessous) reste hors périmètre : zéro usage de `var(--eN)` hors de ce
+   fichier, 94 sites candidats dans 36 fichiers .tsx — un scope qui dépasse
+   largement une tranche verticale et se redécoupera par zone fonctionnelle
+   plus tard, pas par valeur. */
 :root {
-  --t1: 12px; --t2: 12.5px; --t3: 13.5px; --t4: 14px; --t5: 15px; --t6: 24px; --t7: 40px;
+  --t0: 11px; --t1: 12px; --t2: 12.5px; --t3: 13.5px; --t4: 14px; --t5: 15px; --t6: 24px; --t7: 40px;
 }
 @media (prefers-color-scheme: dark) {
   :root {

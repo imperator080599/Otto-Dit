@@ -241,7 +241,7 @@ export default async function ProcessusPage({
                       <tr key={c.code}>
                         <td>
                           {t(c.libelle.cle, c.libelle.vars)}
-                          <div className="faint mono" style={{ fontSize: 11 }}>{c.code}</div>
+                          <div className="faint mono" style={{ fontSize: 'var(--t0)' }}>{c.code}</div>
                         </td>
                         <td>{c.avant ?? '—'}</td>
                         <td>{c.apres ?? '—'}</td>
@@ -249,7 +249,7 @@ export default async function ProcessusPage({
                           {d ? (
                             <>
                               <span className="badge gray">{d.significance === 'significatif' ? t('proc.significatif') : t('proc.nonSignificatif')}</span>
-                              <div className="faint" style={{ fontSize: 12 }}>{d.reason} — {d.decideur}</div>
+                              <div className="faint">{d.reason} — {d.decideur}</div>
                             </>
                           ) : (
                             <form action={statuerAction} className="row" style={{ flexWrap: 'wrap', gap: 4 }}>
@@ -371,8 +371,8 @@ export default async function ProcessusPage({
                       <td><span className="badge gray">{LIBELLES_ECARTS[e.kind]}</span></td>
                       <td>
                         {e.description}
-                        {e.citation && <div className="faint" style={{ fontSize: 12 }}>« {e.citation} »</div>}
-                        {e.coutUsd > 0 && <div className="faint mono" style={{ fontSize: 11 }}>{t('atl.lectureCout', { c: e.coutUsd.toFixed(4) })}</div>}
+                        {e.citation && <div className="faint">« {e.citation} »</div>}
+                        {e.coutUsd > 0 && <div className="faint mono" style={{ fontSize: 'var(--t0)' }}>{t('atl.lectureCout', { c: e.coutUsd.toFixed(4) })}</div>}
                       </td>
                       <td>
                         {e.status === 'candidate' ? (
@@ -390,7 +390,7 @@ export default async function ProcessusPage({
                               {e.status === 'question' ? t('proc.questionBrouillon')
                                 : e.status === 'factor' ? t('proc.facteurPropose') : t('proc.ecarte')}
                             </span>
-                            <div className="faint" style={{ fontSize: 12 }}>
+                            <div className="faint">
                               {e.decisionReason ? `${e.decisionReason} — ` : ''}{e.decideur}
                             </div>
                           </>

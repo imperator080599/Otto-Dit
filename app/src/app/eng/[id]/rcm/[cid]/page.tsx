@@ -500,7 +500,7 @@ export default async function ControlDetail({
                     </td>
                     <td>
                       {e.description}
-                      {e.citation && <div className="faint" style={{ fontSize: 12 }}>« {e.citation} »</div>}
+                      {e.citation && <div className="faint">« {e.citation} »</div>}
                     </td>
                     <td>
                       {e.status !== 'candidate' ? (

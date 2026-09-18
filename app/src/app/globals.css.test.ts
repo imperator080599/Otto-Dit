@@ -3,6 +3,16 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '@/lib/db/client';
 
+function listerFichiersTsx(dir: string): string[] {
+  const resultats: string[] = [];
+  for (const entree of fs.readdirSync(dir, { withFileTypes: true })) {
+    const chemin = path.join(dir, entree.name);
+    if (entree.isDirectory()) resultats.push(...listerFichiersTsx(chemin));
+    else if (entree.name.endsWith('.tsx')) resultats.push(chemin);
+  }
+  return resultats;
+}
+
 /* Lot 7, H-6 tranche 1 (2026-09-17). globals.css portait 69 déclarations
    `font-size:` en dur avant cette tranche (mesuré par grep, jamais supposé) —
    aucune échelle nommée, alors que l'espacement en a une depuis ADR-125
@@ -72,5 +82,57 @@ describe('globals.css : échelle typographique (Lot 7, H-6 tranche 1)', () => {
     const cssAvecRegression = css + `\n.sonde-h6 { font-size: 17px; }\n`.repeat(SEUIL_ACTUEL + 1 - compteReel);
     const compteApresRegression = compterFontSizeEnDur(cssAvecRegression);
     expect(compteApresRegression).toBeGreaterThan(SEUIL_ACTUEL);
+  });
+});
+
+/* Lot 7, H-6 tranche 3 (2026-09-18). Le garde ci-dessus ne couvre QUE globals.css (dit
+   explicitement à sa création, ligne 15) — un `fontSize` en dur sur `className="faint"` dans un
+   fichier .tsx (style inline, qui écrase la valeur `var(--t1)` que `.faint` porte déjà en CSS)
+   lui échappait entièrement. Recherche dédiée (sous-agent, lecture directe) : 25 sites, 17
+   fichiers, avant cette tranche. 15 valaient 11px → migrés vers le nouveau jeton `--t0` ; 6
+   valaient 12px → redondants avec la valeur par défaut de `.faint`, l'override inline est
+   supprimé. CE QUE CE GARDE NE VÉRIFIE PAS (règle 19) : les attributs SVG `fontSize="N"` (hors
+   sujet, ce ne sont pas des `style={{}}` React) ni les `fontSize` sur une classe autre que
+   `.faint` (labels, badges — hors périmètre de cette tranche). Quatre sites restent délibérément
+   en dur : `risk/page.tsx:440,449` (10px), `testing/atelier.tsx:441` (11.5px) et
+   `testing/page.tsx:492` (13px, un élément `"v faint"` qui cumule déjà trois déclarations de
+   taille en conflit) — aucune de ces valeurs ne vaut 11px ni 12px, et `testing/*` est le fichier
+   où H-6 tranche 2 a cassé deux fois sur `fmtEur` : le seuil ci-dessous les compte comme
+   acceptés, nommément, jamais comme un oubli. */
+describe('.faint + fontSize en dur dans les .tsx (Lot 7, H-6 tranche 3)', () => {
+  const SEUIL_TSX = 4;
+
+  function compterFaintFontSizeEnDur(): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(/className="[^"]*\bfaint\b[^"]*"\s+style=\{\{\s*fontSize:\s*[0-9.]+/g);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  it('le compte de `.faint` avec `fontSize` numérique en dur ne remonte jamais au-dessus du seuil gardé (règle 17 : cas connu mauvais)', () => {
+    const compteAvant = compterFaintFontSizeEnDur();
+    expect(compteAvant).toBeLessThanOrEqual(SEUIL_TSX);
+
+    // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+    // défaut doit être vu par le VRAI détecteur (`compterFaintFontSizeEnDur`, pas une copie du
+    // regex) — écrit puis supprimé dans le même test, jamais laissé sur le disque (règle 24).
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const fichierSonde = path.join(racineApp, '__sonde_h6_tranche3__.tsx');
+    fs.writeFileSync(
+      fichierSonde,
+      `export const Sonde = () => <div className="faint" style={{ fontSize: 11 }}>x</div>;\n`
+    );
+    try {
+      const compteAvecSonde = compterFaintFontSizeEnDur();
+      expect(compteAvecSonde).toBe(compteAvant + 1);
+      expect(compteAvecSonde).toBeGreaterThan(SEUIL_TSX);
+    } finally {
+      fs.rmSync(fichierSonde, { force: true });
+    }
+    expect(compterFaintFontSizeEnDur()).toBe(compteAvant);
   });
 });

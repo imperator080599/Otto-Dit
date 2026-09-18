@@ -83,14 +83,14 @@ export default async function TieOutPage({
             <tbody>
               {l.map((x) => (
                 <tr key={x.id} className={!x.status || x.status === 'open' ? 'warn' : undefined}>
-                  <td className="faint" style={{ fontSize: 11 }}>{ETATS[x.statement] ? t(ETATS[x.statement]) : x.statement}</td>
+                  <td className="faint" style={{ fontSize: 'var(--t0)' }}>{ETATS[x.statement] ? t(ETATS[x.statement]) : x.statement}</td>
                   <td>
                     <span className="mono">{x.ref}</span> {x.label}
                     {x.explanation && (
-                      <div className="faint" style={{ fontSize: 11, maxWidth: 420 }}><em>{x.explanation}</em></div>
+                      <div className="faint" style={{ fontSize: 'var(--t0)', maxWidth: 420 }}><em>{x.explanation}</em></div>
                     )}
                   </td>
-                  <td className="faint" style={{ fontSize: 11 }}>{NATURES[x.nature ?? ''] ? t(NATURES[x.nature ?? '']) : '—'}</td>
+                  <td className="faint" style={{ fontSize: 'var(--t0)' }}>{NATURES[x.nature ?? ''] ? t(NATURES[x.nature ?? '']) : '—'}</td>
                   <td className="num">{eur(x.presented)}</td>
                   <td className="num">{x.nature === 'calcul_documente' ? <span className="faint">—</span> : eur(x.computed)}</td>
                   <td className="num">
