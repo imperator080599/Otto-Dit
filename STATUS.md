@@ -41,7 +41,11 @@ de `font-size` à jeton exact DANS `globals.css` (3× 12.5px → --t2, 1× 15px 
 --t3), qui clôturerait le cluster `font-size` entier de ce fichier. Ensuite : les 22 sites
 d'espacement (`margin*`/`padding*`/`gap`) DANS `globals.css`.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_HPYf4eeqAML9uXoC1SiKwGtFLC3h`, cible
+production) READY, commit `01e5ac984bf8301859301417450b1efae0f42528` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 17:58:39Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor (semeur.ts)
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante` (tranche CSS pure).
 
 ---
 
