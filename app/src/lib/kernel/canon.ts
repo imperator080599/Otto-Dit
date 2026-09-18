@@ -36,26 +36,37 @@ export function fmtEur(cents: number, lang: 'fr' | 'en' = 'en'): string {
 }
 
 /** `fmtEur`, avec un espace INSÉCABLE (U+00A0) avant `€` au lieu d'un espace
-    cassable — réservée aux endroits qui affichent ce texte comme LE chiffre
+    cassable — pour les endroits qui affichent ce texte comme LE chiffre
     unique d'une carte-résumé (`.kpi .v`, `.epure-chiffre`), en grande taille
     (H-6, --t7 : 40px). Née d'un vrai défaut trouvé par la revue hostile de
     H-6 tranche 2 (2026-09-17, capture d'écran) : à cette taille, l'espace
     cassable laissait le navigateur couper la ligne entre le montant et le
     symbole (population/page.tsx, « 5 648 676,30 » sur une ligne, « € » seul
-    sur la suivante). Le premier correctif changeait `fmtEur` elle-même,
-    PARTOUT — un A/B direct (npm run visuel avec/sans le changement, même
-    arbre sinon) a prouvé que c'était la cause d'un SECOND défaut, réel, dans
-    une table dense et déjà tendue (/eng/[id]/testing, table.data.cellules,
-    colonnes Attendu/Trouvé) : la même espace insécable, dans une cellule de
-    tableau ordinaire, retire le seul point de coupure disponible et pousse
-    la page en débordement horizontal — deux tentatives de correctif CSS
-    structurel (table-scroll, min-width:0 sur les items de la grille
-    .atelier) n'ont RIEN changé à la mesure, prouvant que le défaut n'était
-    pas là où elles le supposaient. Scinder la fonction ferme les deux
-    défauts sans en rouvrir un troisième : `fmtEur` retrouve son comportement
-    d'origine (cassable) pour les 20+ appelants restants — tableaux denses
-    compris — et seuls les appels qui rendent VRAIMENT un `.kpi .v`/
-    `.epure-chiffre` lisent `fmtEurTitre`. */
+    sur la suivante).
+
+    CE QUE CETTE FONCTION NE COUVRE PAS, PAR EXPÉRIENCE MESURÉE, PAS PAR
+    PRÉCAUTION (règle 19) : `/eng/[id]/testing` reste sur `fmtEur` (l'espace
+    cassable) pour SES CINQ propres cartes `.kpi .v` (le récapitulatif
+    d'évaluation, known_misstatement et consorts), alors qu'elles rendent
+    bien LE chiffre unique d'une carte-résumé — le critère ci-dessus les
+    désignerait normalement. Trois A/B directs (`npm run visuel`, même
+    arbre sinon) l'ont prouvé, dans cet ordre : (1) `fmtEur` changée
+    PARTOUT fixait population mais cassait `/eng/[id]/testing` (table.data.
+    cellules, colonnes Attendu/Trouvé) — 8 défauts ; (2) deux correctifs
+    CSS structurels (table-scroll, min-width:0 sur les items de la grille
+    .atelier) n'ont RIEN changé à la mesure — toujours 8 défauts, chiffres
+    identiques au pixel près ; (3) `fmtEur`/`fmtEurTitre` scindées, MAIS les
+    cinq cartes `.kpi .v` propres à `/eng/[id]/testing` encore sur
+    `fmtEurTitre` — toujours 8 défauts (chiffres légèrement réduits, jamais
+    zéro). Seul le retour de CES CINQ appels sur `fmtEur` (plain) a rendu
+    `npm run visuel` à zéro défaut. Cette page entière (le tableau
+    `.atelier`, ET son panneau d'évaluation séparé) tient donc à 1280px
+    avec une marge proche de zéro — n'importe quel gain de quelques pixels,
+    où qu'il soit sur la page, la fait basculer en débordement. Conséquence
+    assumée, pas corrigée : les cartes `.kpi` de `/eng/[id]/testing` peuvent
+    revenir au défaut d'origine (montant sur une ligne, `€` seul sur la
+    suivante) — un défaut cosmétique que `npm run visuel` ne mesure pas,
+    préféré ici à un débordement qu'il mesure et bloque. */
 export function fmtEurTitre(cents: number, lang: 'fr' | 'en' = 'en'): string {
   const v = cents / 100;
   return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {

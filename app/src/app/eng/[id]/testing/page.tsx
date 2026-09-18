@@ -8,7 +8,7 @@ import {
   computeSampleEvaluation, concludeEvaluation, currentEvaluation, conclusionGate,
   recordEvaluationResponse, evaluationResponses, type ResponseKind,
 } from '@/lib/services/evaluation';
-import { fmtEur, fmtEurTitre } from '@/lib/kernel/canon';
+import { fmtEur } from '@/lib/kernel/canon';
 import { numToCents } from '@/lib/util/num';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -480,21 +480,21 @@ export default async function TestingPage({
                 const methodeNonVerifiee = evaluation.projection_method === 'none' && evaluation.random_misstatement_count > 0;
                 return (
                   <div className="grid cols-2">
-                    <div className="kpi"><span className="v">{fmtEurTitre(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
                     <div className="kpi">
                       {methodeNonVerifiee ? (
                         <span className="v faint" style={{ fontSize: 13 }}>{t('test.extrapolationMethodNotVerified')}</span>
                       ) : (
-                        <span className="v">{fmtEurTitre(numToCents(evaluation.projected_misstatement), 'fr')}</span>
+                        <span className="v">{fmtEur(numToCents(evaluation.projected_misstatement), 'fr')}</span>
                       )}
                       <span className="l">{t('test.projectedMisstatementMethod')} {evaluation.projection_method !== 'none' && `(${evaluation.projection_method})`}</span>
                     </div>
                     <div className="kpi">
-                      <span className="v">{fmtEurTitre(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement), 'fr')}{methodeNonVerifiee ? ' *' : ''}</span>
+                      <span className="v">{fmtEur(numToCents(evaluation.known_misstatement) + numToCents(evaluation.projected_misstatement), 'fr')}{methodeNonVerifiee ? ' *' : ''}</span>
                       <span className="l">{t('test.totalEstimatedMisstatement')}{methodeNonVerifiee ? ` — ${t('test.extrapolationMethodNotVerified')}` : ''}</span>
                     </div>
-                    <div className="kpi"><span className="v">{fmtEurTitre(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
-                    <div className="kpi"><span className="v">{fmtEurTitre(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.untested_amount), 'fr')}</span><span className="l">{t('test.untestedRemainder')}</span></div>
+                    <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.te_amount), 'fr')}</span><span className="l">{t('mat.anomalieTolRable')}</span></div>
                   </div>
                 );
               })()}
