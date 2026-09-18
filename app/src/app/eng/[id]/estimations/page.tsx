@@ -5,7 +5,7 @@ import {
   importerEstimation, tirerBase, demanderJustificatifs, listeEstimations, detailEstimation,
 } from '@/lib/services/estimations';
 import { currentMateriality } from '@/lib/services/materiality';
-import { fmtEur } from '@/lib/kernel/canon';
+import { fmtEur, fmtEurTitre } from '@/lib/kernel/canon';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { tr } from '@/lib/i18n';
@@ -111,10 +111,10 @@ export default async function EstimationsPage({
             {/* LE RAPPROCHEMENT — le montant comptabilisé est DÉRIVÉ du grand
                 livre actif à chaque lecture, jamais stocké. */}
             <div className="grid cols-2">
-              <div className="kpi"><span className="v">{fmtEur(ouverte.montantComptabiliseCents, 'fr')}</span><span className="l">{t('est.booked')}{ouverte.pieceRef}, grand livre actif)</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.declareTotalCents, 'fr')}</span><span className="l">{t('est.totalOfTheClientFile')}</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.recalculTotalCents, 'fr')}</span><span className="l">{t('est.recomputedByOttoBaseRate')}</span></div>
-              <div className="kpi"><span className="v">{fmtEur(ouverte.ecartCents, 'fr')}</span><span className="l">{t('est.differenceBookedFile')}</span></div>
+              <div className="kpi"><span className="v">{fmtEurTitre(ouverte.montantComptabiliseCents, 'fr')}</span><span className="l">{t('est.booked')}{ouverte.pieceRef}, grand livre actif)</span></div>
+              <div className="kpi"><span className="v">{fmtEurTitre(ouverte.declareTotalCents, 'fr')}</span><span className="l">{t('est.totalOfTheClientFile')}</span></div>
+              <div className="kpi"><span className="v">{fmtEurTitre(ouverte.recalculTotalCents, 'fr')}</span><span className="l">{t('est.recomputedByOttoBaseRate')}</span></div>
+              <div className="kpi"><span className="v">{fmtEurTitre(ouverte.ecartCents, 'fr')}</span><span className="l">{t('est.differenceBookedFile')}</span></div>
             </div>
             {ouverte.ecartCents !== 0 && (
               <div className="callout warn mt">

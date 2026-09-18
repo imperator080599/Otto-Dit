@@ -5,7 +5,7 @@ import { propose, validate, currentMateriality, materialityVersions } from '@/li
 import { proposeScoping, basculesMaterialite } from '@/lib/services/fsli';
 import { primaryPack, motDuPack } from '@/lib/packs';
 import { frameworkSet } from '@/lib/services/fsli';
-import { fmtEur } from '@/lib/kernel/canon';
+import { fmtEur, fmtEurTitre } from '@/lib/kernel/canon';
 import { q } from '@/lib/db/client';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { Annotable } from '@/app/annotable';
@@ -105,13 +105,13 @@ export default async function MaterialityPage({
             </p>
             <div className="grid cols-2">
               {annotable('seuil_signification', t('mat.seuilDeSignification'),
-                <div className="kpi"><span className="v">{fmtEur(numToCents(current.amount), 'fr')}</span><span className="l">Materiality ({current.benchmark_code} @ {(current.pct * 100).toFixed(1)}%)</span></div>)}
+                <div className="kpi"><span className="v">{fmtEurTitre(numToCents(current.amount), 'fr')}</span><span className="l">Materiality ({current.benchmark_code} @ {(current.pct * 100).toFixed(1)}%)</span></div>)}
               {annotable('seuil_travail', t('mat.seuilDeTravail'),
-                <div className="kpi"><span className="v">{fmtEur(numToCents(current.perf_amount), 'fr')}</span><span className="l">Performance materiality ({(current.perf_pct * 100).toFixed(0)}%)</span></div>)}
+                <div className="kpi"><span className="v">{fmtEurTitre(numToCents(current.perf_amount), 'fr')}</span><span className="l">Performance materiality ({(current.perf_pct * 100).toFixed(0)}%)</span></div>)}
               {annotable('seuil_insignifiance', t('mat.seuilInsignifiance'),
-                <div className="kpi"><span className="v">{fmtEur(numToCents(current.ctt_amount), 'fr')}</span><span className="l">Clearly trivial threshold ({(current.ctt_pct * 100).toFixed(0)}%)</span></div>)}
+                <div className="kpi"><span className="v">{fmtEurTitre(numToCents(current.ctt_amount), 'fr')}</span><span className="l">Clearly trivial threshold ({(current.ctt_pct * 100).toFixed(0)}%)</span></div>)}
               {annotable('anomalie_tolerable', t('mat.anomalieTolRable'),
-                <div className="kpi"><span className="v">{fmtEur(numToCents(current.te_amount), 'fr')}</span><span className="l">{t('mat.tolerableMisstatementSampling')}</span></div>)}
+                <div className="kpi"><span className="v">{fmtEurTitre(numToCents(current.te_amount), 'fr')}</span><span className="l">{t('mat.tolerableMisstatementSampling')}</span></div>)}
             </div>
             <h3>{t('mat.rationalePackLanguage')}</h3>
             <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{current.rationale}</p>

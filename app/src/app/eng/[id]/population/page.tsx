@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { revenuePopulation } from '@/lib/services/population';
-import { fmtEur } from '@/lib/kernel/canon';
+import { fmtEur, fmtEurTitre } from '@/lib/kernel/canon';
 import { tr } from '@/lib/i18n';
 import { separerCode } from '@/app/refus';
 
@@ -46,7 +46,7 @@ export default async function PopulationPage({ params, searchParams }: { params:
           le dit alors (« 200 premières lignes »), mais seulement là. */}
       <div className="grid cols-4">
         <a className="panel kpi" href="?view=all"><span className="v">{pop.rows.length}</span><span className="l">{t('pop.glLines70xAccounts')}</span></a>
-        <div className="panel kpi"><span className="v">{fmtEur(pop.totalCents, 'fr')}</span><span className="l">{t('pop.populationAmount')}</span></div>
+        <div className="panel kpi"><span className="v">{fmtEurTitre(pop.totalCents, 'fr')}</span><span className="l">{t('pop.populationAmount')}</span></div>
         <a className="panel kpi" href="?view=flags"><span className="v">{flagged.length}</span><span className="l">{t('pop.riskFlaggedLinesAdr003')}</span></a>
         <div className="panel kpi">
           <span className="v">{pop.gate.ok ? '✓' : '✗'}</span>

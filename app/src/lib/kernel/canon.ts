@@ -26,21 +26,42 @@ export function centsToStr(cents: number): string {
   return `${sign}${euros}.${rest}`;
 }
 
-/** Format cents for display (fr-style workpapers use narrow spaces; UI uses this).
-    L'espace avant `€` est INSÉCABLE (U+00A0) — trouvé par la revue hostile de H-6
-    tranche 2 (2026-09-17) : un espace ordinaire y laissait le navigateur couper la
-    ligne entre le montant et le symbole dès qu'une carte-résumé affichait ce texte
-    en grande taille (--t7, 40px) — `app/src/app/eng/[id]/population/page.tsx`,
-    « 5 648 676,30 » sur une ligne et « € » seul sur la suivante, confirmé par
-    capture d'écran réelle. `Intl.NumberFormat('fr-FR')` sépare déjà les milliers
-    par U+202F (espace fine insécable) — seul le séparateur MONTANT/€, ajouté ici,
-    utilisait un espace cassable. */
+/** Format cents for display (fr-style workpapers use narrow spaces; UI uses this). */
 export function fmtEur(cents: number, lang: 'fr' | 'en' = 'en'): string {
   const v = cents / 100;
   return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(v) + ' €';
+  }).format(v) + ' €';
+}
+
+/** `fmtEur`, avec un espace INSÉCABLE (U+00A0) avant `€` au lieu d'un espace
+    cassable — réservée aux endroits qui affichent ce texte comme LE chiffre
+    unique d'une carte-résumé (`.kpi .v`, `.epure-chiffre`), en grande taille
+    (H-6, --t7 : 40px). Née d'un vrai défaut trouvé par la revue hostile de
+    H-6 tranche 2 (2026-09-17, capture d'écran) : à cette taille, l'espace
+    cassable laissait le navigateur couper la ligne entre le montant et le
+    symbole (population/page.tsx, « 5 648 676,30 » sur une ligne, « € » seul
+    sur la suivante). Le premier correctif changeait `fmtEur` elle-même,
+    PARTOUT — un A/B direct (npm run visuel avec/sans le changement, même
+    arbre sinon) a prouvé que c'était la cause d'un SECOND défaut, réel, dans
+    une table dense et déjà tendue (/eng/[id]/testing, table.data.cellules,
+    colonnes Attendu/Trouvé) : la même espace insécable, dans une cellule de
+    tableau ordinaire, retire le seul point de coupure disponible et pousse
+    la page en débordement horizontal — deux tentatives de correctif CSS
+    structurel (table-scroll, min-width:0 sur les items de la grille
+    .atelier) n'ont RIEN changé à la mesure, prouvant que le défaut n'était
+    pas là où elles le supposaient. Scinder la fonction ferme les deux
+    défauts sans en rouvrir un troisième : `fmtEur` retrouve son comportement
+    d'origine (cassable) pour les 20+ appelants restants — tableaux denses
+    compris — et seuls les appels qui rendent VRAIMENT un `.kpi .v`/
+    `.epure-chiffre` lisent `fmtEurTitre`. */
+export function fmtEurTitre(cents: number, lang: 'fr' | 'en' = 'en'): string {
+  const v = cents / 100;
+  return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v) + '\u00A0€';
 }
 
 /** FEC date AAAAMMJJ → ISO yyyy-mm-dd (throws on invalid calendar dates). */
