@@ -805,3 +805,23 @@ du coût aurait créé le silence que le constat 3 dénonçait.
 chaîne ne commençait ni par « aucun » ni par « 0 », donc le prédicat de vacuité la laissait passer.
 La lecture imprimait le chiffre qu'elle prétendait surveiller sans jamais pouvoir rougir dessus —
 quatrième récidive de la famille « /api/sante braqué à côté ».
+
+**D-J3N-19 — H-3 slice 3 (« atelier de revue ligne à ligne pour MANUEL/FRAUDE », R104) N'EST
+PAS construite : la « validation explicite » que STATUS.md exigeait avant de la prendre (« à ne
+prendre qu'après validation explicite que ce n'est pas juste « finir Lot 6 » déguisé en H-3 »,
+section H-3 slice 2) tranche NÉGATIVEMENT, pas par défaut mais par lecture croisée.** La
+définition de H-3 au registre (`docs/REGISTRE_IDEES.md` §H, ligne « H-3 ») est « l'analytique en
+POPULATION COMPLÈTE à côté du sondage » — un test déterministe sur 100% du grand livre, ce que
+les slices 1 et 2 ont construit (`testExhaustifGrandLivre`, les sept règles). L'atelier MANUEL/
+FRAUDE que R104 point 1 décrit (`docs/BACKLOG_REPORTE.md`) est l'inverse structurel : un écran
+pour revoir, une par une, les écritures d'un TIRAGE (sample) déjà construit par
+`sampling-je.ts::drawJournalEntrySample` — du sondage, pas de la population complète. C'est
+exactement le chantier que Lot 6 tranche 3 avait explicitement DIFFÉRÉ sous la règle 8 (« bâtir
+l'épine dorsale [population/tirage] était le mandat ; l'atelier serait un chantier séparé »).
+Le construire sous la bannière « H-3 » aurait été la relabellisation que la note de STATUS.md
+redoutait — Lot 6 fini en disguise, pas H-3. **Conclusion : H-3 slice 3, telle que scopée dans
+STATUS.md et le todo-list de cette session, ne sera pas construite sous ce nom.** Si l'atelier
+MANUEL/FRAUDE lui-même reste une valeur réelle à construire, c'est du Lot 6 (ou un lot dédié aux
+ateliers de procédure), pas du Lot 7/H-3 — à re-proposer sous son vrai nom si le fondateur ou une
+session future le reprend. Rien de codé pour cette entrée ; c'est une décision de PÉRIMÈTRE,
+consignée pour qu'elle ne se re-pose pas en silence (règle 23).
