@@ -56,7 +56,11 @@ sites, `--e2`), les `margin*`/`padding*` en dur (~49 sites), le cluster `.faint`
 clos (tranche 3), et les ~43 déclarations en dur DANS `globals.css` lui-même. Priorité 3 (H-3
 slice 3, optionnelle) reste en file après H-6.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_38V2MgRkX46WwQiFRXJz8tFwHcro`, cible
+production) READY, commit `4cea5e4be23efb30f0ac6f35d1596036eca755f1` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 11:31:08Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante`.
 
 ---
 
