@@ -4,6 +4,74 @@
 
 ---
 
+## Lot 7, H-6 tranche 3 — jeton --t0 (11px), unifier .faint + fontSize en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches, « jusqu'à ce
+que les écrans tiennent ensemble comme une épure, pas jusqu'à ce qu'un compte de jetons atteigne
+zéro »), enchaîné sans pause après la confirmation SHA-servi de la tranche 2 (règle 32).*
+
+**Recherche préalable dédiée** (un sous-agent, lecture seule) a comparé deux candidats : (1) le
+cluster `className="faint" style={{ fontSize: N }}` en dur — 25 sites, 17 fichiers, aucun jeton ne
+les couvrant hormis 12px qui matche déjà `--t1` — contre (2) l'échelle d'espacement `--e1..--e6`,
+définie depuis ADR-125 mais avec ZÉRO usage de `var(--eN)` hors de `globals.css` lui-même et 94
+sites candidats dans 36 fichiers `.tsx`. Recommandation retenue : le candidat 1, mieux scopé pour
+une tranche verticale (règle 5) ; le candidat 2 est noté pour une tranche future, à redécouper par
+zone fonctionnelle plutôt que par valeur (le formulaire inline `<form style={{ gap: 4, ... }}>`
+concentre à lui seul 7 des 94 sites, rien qu'à `rcm/[cid]`).
+
+**Implémentation** : `--t0: 11px` ajouté au bloc `:root` typographique de `globals.css`, à côté de
+`--t1..--t7`. Des 25 sites : 15 valaient 11px (le cas dominant, aucun jeton ne le couvrait) →
+migrés vers `var(--t0)`, dans 6 fichiers (`fs-tieout`, `acceptance`, `loop`, `processus`,
+`completion`, `carry-forward`). 6 valaient 12px, REDONDANTS avec la valeur par défaut de `.faint`
+(`.faint { font-size: var(--t1) }`, déjà 12px) → le style inline lui-même est supprimé plutôt que
+tokenisé pour rien, dans 2 fichiers additionnels (`processus` ×3 encore, `ask` ×2, `rcm/[cid]` ×1).
+Total : 8 fichiers, 21 sites, 1 nouveau jeton.
+
+**Ce que cette tranche NE couvre PAS (règle 19), délibérément** : quatre sites restent en dur,
+documentés dans le commentaire `globals.css` — `risk/page.tsx:440,449` (10px), `testing/
+atelier.tsx:441` (11.5px), `testing/page.tsx:492` (13px, un élément `"v faint"` qui cumule déjà
+trois déclarations de taille en conflit — `--t7`, `--t1`, l'inline). Aucune de ces trois valeurs
+ne vaut 11px ni 12px, et `testing/*` est précisément le fichier où H-6 tranche 2 a cassé deux fois
+sur `fmtEur` — y toucher dans la même tranche qui introduit un nouveau jeton cumulerait deux
+risques évitables. L'échelle `--e1..--e6` reste hors périmètre (candidat 2 ci-dessus).
+
+**Garde neuf** (`globals.css.test.ts`) : un `describe` scanne tous les `.tsx` sous `src/app` pour
+le pattern `className="...faint..." style={{ fontSize: N }}`, seuil gardé à 4 (les quatre
+exclusions), avec un cas connu mauvais (règle 17) qui écrit puis supprime un VRAI fichier sonde
+dans l'arbre balayé (`__sonde_h6_tranche3__.tsx`, jamais laissé sur disque). CE QUE CE GARDE NE
+VÉRIFIE PAS : l'ordre inverse `style={{}} className="faint"` (zéro site actuel dans cet ordre,
+vérifié, mais un futur site ainsi écrit y échapperait en silence) — constat mineur du réfutateur,
+jugé seul, non corrigé dans cette tranche (angle mort documenté, pas bloquant).
+
+**Un réfutateur** (règle 30 : tranche CSS pure, ni données/sécurité/multi-tenant/refus, un seul
+suffit) : aucun défaut critique ni moyen. Vérifié EN EXÉCUTANT (pas seulement lu) : les 4/4 tests
+passent réellement, le détecteur `compterFaintFontSizeEnDur` ré-exécuté indépendamment du test
+retourne exactement 4, `--t1` vaut bien 12px et n'est jamais redéfini (clair comme sombre), la
+cascade `.mono`/`.faint` sur les 4 sites qui portent les deux classes confirme que `.faint` gagne
+(ordre dans la feuille : `.mono` précède `.faint`) donc les 6 suppressions étaient bien neutres,
+`tsc --noEmit` propre, aucun fichier sonde résiduel, `grep` élargi à tout `src/app` (pas seulement
+`eng/`) : zéro site oublié.
+
+**Mesures finales** (verify complet sur le commit `b454b3c`, `timeout 3600`, `set -o pipefail`) :
+`tsc --noEmit` propre ; vitest 163 fichiers/163, 1211 tests/1211 (+1 vs tranche 2 : le nouveau
+garde) ; gardes 47 propre ; semeur à jour ; plancher 1211/632 propre ; langue propre (15/15 cas
+connus mauvais dénoncés) ; lectures 6/6 ; parcours 5/5 ; screens 98 routes/0 échec ; fumee 55
+routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — SEULE cause `#418` sur
+`/eng/70670df5-.../rcm/88f6d3dc-...` (`rcm/[cid]`, l'habituelle, disjointe de cette tranche qui ne
+touche aucun fichier `rcm`), 286 étapes/403 clics/63 gestes (inchangé — pas de `scenario.ts`
+touché) — TRENTE ET UNIÈME confirmation consécutive (docs/CHASSE.md, F45) ; `npm run visuel`
+relancé séparément (avant le commit, même arbre de fichiers, chaîne `&&` s'arrête à `clics`
+sinon) : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue en tranches (prochaine candidate déjà scopée par la recherche
+de cette tranche : l'échelle `--e1..--e6`, à redécouper par zone fonctionnelle — commencer par les
+formulaires inline `rcm/[cid]` qui en concentrent 7/94). Priorité 3 (H-3 slice 3, optionnelle)
+reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 2 — unifier .kpi .v et .epure-chiffre (2026-09-17/18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches, « jusqu'à ce

@@ -1490,3 +1490,25 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   clics comptés sur 63 gestes (inchangé — cette tranche ne touche pas `scenario.ts`) —
   TRENTIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
   discipline que F9-F43). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut).
+
+- **F45 — UN incident** (2026-09-18, Lot 7, H-6 tranche 3 — jeton `--t0` (11px), unifier
+  `.faint` + `fontSize` en dur, sur l'arbre du commit `b454b3c` — un réfutateur (règle 30,
+  tranche CSS pure, ni données/sécurité/multi-tenant/refus). Le réfutateur a vérifié EN
+  EXÉCUTANT (pas seulement lu) : les 4/4 tests du nouveau garde passent, le détecteur
+  `compterFaintFontSizeEnDur` ré-exécuté indépendamment retourne exactement 4 (les quatre
+  exclusions documentées), `--t1` vaut bien 12px et n'est jamais redéfini, la cascade
+  `.mono`/`.faint` sur les 4 sites qui portent les deux classes confirme que `.faint` gagne
+  (ordre dans la feuille : `.mono` ligne 149, `.faint` ligne 384) donc les 6 suppressions de
+  style inline étaient bien redondantes, `tsc --noEmit` propre, aucun fichier sonde résiduel.
+  Un seul constat MINEUR, jugé seul (documentation) : le garde ne couvre pas l'ordre inverse
+  `style={{}} className="faint"` (zéro site actuel dans cet ordre, vérifié) — angle mort
+  documenté, non bloquant. `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route —
+  `/eng/70670df5-.../rcm/88f6d3dc-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au
+  jeton 87). Disjoint de la tranche : cette tranche touche `globals.css`, `globals.css.test.ts`
+  et huit `page.tsx` sous `eng/[id]/` (aucun n'est `rcm/[cid]`) — rien qui touche `/rcm`. Les
+  1211 tests vitest passent tous (+1 vs H-6 tranche 2 : le nouveau garde `.faint`/`fontSize`).
+  Clôture et archive ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63
+  gestes (inchangé — cette tranche ne touche pas `scenario.ts`) — TRENTE ET UNIÈME confirmation
+  consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F44).
+  `npm run visuel` relancé séparément (avant le commit, sur le même arbre de fichiers), propre
+  (356 vues, 0 défaut).
