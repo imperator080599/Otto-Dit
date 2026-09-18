@@ -280,3 +280,49 @@ describe('marginTop: 4 en dur dans les .tsx (Lot 7, H-6 tranche 6)', () => {
     expect(compterMarginTop4EnDur()).toBe(compteAvant);
   });
 });
+
+/* Lot 7, H-6 tranche 7 (2026-09-18). Suite mécanique du cluster `margin*`/`padding*` : la
+   propriété+valeur suivante par fréquence, `marginLeft: 4` (7 sites, 4 fichiers, dont un via un
+   composant — `IaFlag style={{ marginLeft: 4 }}`, dont le prop `style?: CSSProperties` est
+   forwardé tel quel, vérifié dans `ia-flag.tsx`), migrée vers `marginLeft: 'var(--e1)'`. Même
+   vérification que la tranche 6 (aucun raccourci `margin` sur le même objet de style). CE QUE CE
+   GARDE NE VÉRIFIE PAS (règle 19), délibérément : `marginTop: 8/12`, `marginLeft: 8`,
+   `marginRight: 4`, `marginBottom: 4/8`, `paddingLeft: 8/16` (~32 sites restants) et les ~43
+   déclarations en dur DANS ce fichier lui-même — tranches futures. */
+describe('marginLeft: 4 en dur dans les .tsx (Lot 7, H-6 tranche 7)', () => {
+  const SEUIL_MARGINLEFT4 = 0;
+
+  function compterMarginLeft4EnDur(): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(/marginLeft: 4\b/g);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  it('le compte de `marginLeft: 4` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)', () => {
+    const compteAvant = compterMarginLeft4EnDur();
+    expect(compteAvant).toBe(SEUIL_MARGINLEFT4);
+
+    // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+    // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test, jamais
+    // laissé sur le disque (règle 24).
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const fichierSonde = path.join(racineApp, '__sonde_h6_tranche7__.tsx');
+    fs.writeFileSync(
+      fichierSonde,
+      `export const Sonde = () => <div style={{ marginLeft: 4 }}>x</div>;\n`
+    );
+    try {
+      const compteAvecSonde = compterMarginLeft4EnDur();
+      expect(compteAvecSonde).toBe(compteAvant + 1);
+      expect(compteAvecSonde).toBeGreaterThan(SEUIL_MARGINLEFT4);
+    } finally {
+      fs.rmSync(fichierSonde, { force: true });
+    }
+    expect(compterMarginLeft4EnDur()).toBe(compteAvant);
+  });
+});

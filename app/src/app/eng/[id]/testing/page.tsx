@@ -349,7 +349,7 @@ export default async function TestingPage({
                   {grille.colonnes.map((c) => (
                     <th key={c.code} title={`${c.reference} · ${c.tolerance}`}>
                       {c.libelle}
-                      {c.origine === 'ajoutee_par' && <span className="badge gray" style={{ marginLeft: 4 }}>{t('atl.grilleVue.colonneAjoutee')}</span>}
+                      {c.origine === 'ajoutee_par' && <span className="badge gray" style={{ marginLeft: 'var(--e1)' }}>{t('atl.grilleVue.colonneAjoutee')}</span>}
                     </th>
                   ))}
                 </tr>

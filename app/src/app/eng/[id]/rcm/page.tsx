@@ -62,7 +62,7 @@ export default async function RcmPage({
                 <tr key={c.id}>
                   <td>
                     <strong className="mono">{c.code}</strong> {c.name}
-                    {c.itgc_code && <span className="badge violet" style={{ marginLeft: 4 }}>ITGC/{c.itgc_code}</span>}
+                    {c.itgc_code && <span className="badge violet" style={{ marginLeft: 'var(--e1)' }}>ITGC/{c.itgc_code}</span>}
                     <div className="faint">{c.description}</div>
                   </td>
                   <td>{c.process_name}</td>

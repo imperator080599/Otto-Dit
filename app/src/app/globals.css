@@ -609,7 +609,15 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    TRANCHE NE COUVRE PAS (règle 19) : les autres propriétés/valeurs du
    cluster (`marginTop: 8/12`, `marginLeft: 4/8`, `marginRight: 4`,
    `marginBottom: 4/8`, `paddingLeft: 8/16`, ~39 sites restants) et les ~43
-   déclarations en dur DANS ce fichier lui-même — tranches futures. */
+   déclarations en dur DANS ce fichier lui-même — tranches futures.
+
+   Lot 7, H-6 tranche 7 (2026-09-18) : suite mécanique — `marginLeft: 4` (7
+   sites, 4 fichiers, dont un via `IaFlag` — un composant dont le prop
+   `style?: CSSProperties` est forwardé tel quel, vérifié), migré vers
+   `marginLeft: 'var(--e1)'`. CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) :
+   `marginTop: 8/12`, `marginLeft: 8`, `marginRight: 4`, `marginBottom:
+   4/8`, `paddingLeft: 8/16` (~32 sites restants) et les ~43 déclarations en
+   dur DANS ce fichier lui-même — tranches futures. */
 :root {
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
   --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);

@@ -216,14 +216,14 @@ export function Atelier({
                 <td>
                   <span className={`badge ${BADGE[l.statut]}`}>{t(`atl.statut.${l.statut}` as CleLibelle)}</span>
                   {conclusions[l.sampleItemId] && (
-                    <span className={`badge ${conclusions[l.sampleItemId].perimee ? 'amber' : 'green'}`} style={{ marginLeft: 4 }} data-conclue={conclusions[l.sampleItemId].perimee ? 'perimee' : 'oui'}>
+                    <span className={`badge ${conclusions[l.sampleItemId].perimee ? 'amber' : 'green'}`} style={{ marginLeft: 'var(--e1)' }} data-conclue={conclusions[l.sampleItemId].perimee ? 'perimee' : 'oui'}>
                       {conclusions[l.sampleItemId].perimee ? t('atl.badgePerimee') : t('atl.badgeConclue')}
                     </span>
                   )}
                   {/* Une lecture en attente reste dite, même sur une ligne en
                       écart : l'écart n'efface pas l'attestation due. */}
                   {l.statut !== 'a_verifier' && l.evidences.some((e) => e.extraction?.statut === 'pending_verify') && (
-                    <span className="badge amber" title={t('atl.lectureAttend')} style={{ marginLeft: 4 }}>{t('atl.aAttester')}</span>
+                    <span className="badge amber" title={t('atl.lectureAttend')} style={{ marginLeft: 'var(--e1)' }}>{t('atl.aAttester')}</span>
                   )}
                   <div className="compare-ligne">{resumeComparaison(l)}</div>
                 </td>

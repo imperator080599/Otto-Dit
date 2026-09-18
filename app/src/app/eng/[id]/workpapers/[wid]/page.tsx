@@ -506,7 +506,7 @@ export default async function WorkpaperDetail({
                               <td key={c.id} className="faint">
                                 {t('wp.absentFromTheDocumentsReceived')}
                                 {cel.clarification_request_item_id && (
-                                  <span className="badge blue" style={{ marginLeft: 4 }}>{t('wp.clarificationProposed')}</span>
+                                  <span className="badge blue" style={{ marginLeft: 'var(--e1)' }}>{t('wp.clarificationProposed')}</span>
                                 )}
                               </td>
                             );
@@ -520,7 +520,7 @@ export default async function WorkpaperDetail({
                               {cel.evidence_id
                                 ? <a href={`/api/blob/${cel.evidence_id}`} target="_blank" title={t('wp.theDocumentCarryingTheFigure')}>{affiche}</a>
                                 : affiche}
-                              {!cel.verifie && <IaFlag style={{ marginLeft: 4 }}>{t('wp.toCheck')}</IaFlag>}
+                              {!cel.verifie && <IaFlag style={{ marginLeft: 'var(--e1)' }}>{t('wp.toCheck')}</IaFlag>}
                             </td>
                           );
                         })}
@@ -674,7 +674,7 @@ export default async function WorkpaperDetail({
               <tbody>
                 {exports.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.format}{e.supersedes_export_id && <span className="badge amber" style={{ marginLeft: 4 }}>{t('wp.supersedesPrior')}</span>}</td>
+                    <td>{e.format}{e.supersedes_export_id && <span className="badge amber" style={{ marginLeft: 'var(--e1)' }}>{t('wp.supersedesPrior')}</span>}</td>
                     <td className="mono faint">{e.content_hash.slice(0, 14)}…</td>
                     <td className="faint">{e.exported_at.slice(0, 16)}</td>
                     <td><Link href={`/api/export-file/${e.id}`}>{t('mot.download')}</Link></td>
