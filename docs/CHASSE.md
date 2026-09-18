@@ -1555,3 +1555,24 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F46). `npm run visuel`
   relancé séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0
   défaut).
+
+- **F48 — UN incident** (2026-09-18, Lot 7, H-6 tranche 6 — jeton `--e1`, unifier `marginTop: 4`
+  en dur, sur l'arbre du commit `56fda5e` — un réfutateur (règle 30, tranche CSS pure, premier
+  pas dans le cluster `margin*`/`padding*` identifié par la tranche 3). Le réfutateur a examiné
+  spécifiquement un risque que les tranches `gap` n'avaient pas : `marginTop` étant une
+  sous-propriété d'un raccourci CSS potentiel (`margin`), un objet `style={{}}` portant les deux
+  clés aurait un ordre de cascade dépendant de l'ORDRE d'écriture des clés JS — vérifié EN
+  EXÉCUTANT qu'aucun des 10 sites migrés ne porte un raccourci `margin` dans le même objet de
+  style (recherche croisée avec les numéros de ligne du diff, fichier par fichier) : le risque
+  signalé ne se matérialise nulle part. Vérifié aussi EN EXÉCUTANT : `tsc` propre, 7/7 tests du
+  garde passent, comptage par propriété (`gap`/`marginTop`) confirme exactement 55 occurrences
+  `var(--e1)` (45 + 10), `gap: 4`/`gap: 8` (tranches 4/5) non régressés, aucun fichier sonde
+  résiduel (toutes tranches confondues). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE
+  SEULE route — `/eng/70670df5-.../rcm/2bc1a1fb-...` (l'habituelle, `rcm/[cid]`, tooltip
+  `rail-astuce` au jeton 87). Disjoint de la tranche : cette tranche touche `globals.css` et 6
+  fichiers `.tsx` sous `eng/[id]/` (aucun n'est `rcm/[cid]`) — rien qui touche `/rcm`. Les 1214
+  tests vitest passent tous (+1 vs H-6 tranche 5 : le nouveau garde `marginTop: 4`). Clôture et
+  archive ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63 gestes
+  (inchangé) — TRENTE-QUATRIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus
+  loin (même discipline que F9-F47). `npm run visuel` relancé séparément (avant le commit, sur le
+  même arbre de fichiers), propre (356 vues, 0 défaut).

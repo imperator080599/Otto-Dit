@@ -4,6 +4,53 @@
 
 ---
 
+## Lot 7, H-6 tranche 6 — jeton --e1, unifier marginTop: 4 en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 5 (règle 32).*
+
+**Implémentation** : premier pas dans le cluster `margin*`/`padding*` en dur (identifié par la
+recherche de la tranche 3, ~49 sites hétérogènes au total). Sous-scopé à la propriété+valeur la
+plus fréquente : `marginTop: 4` (10 sites, 6 fichiers), migrée vers `marginTop: 'var(--e1)'` par
+la même substitution regex ciblée que les tranches 4/5. Commentaire ajouté dans `globals.css`
+documentant ce que cette tranche NE couvre PAS (règle 19) : les autres propriétés/valeurs du
+cluster (`marginTop: 8/12`, `marginLeft: 4/8`, `marginRight: 4`, `marginBottom: 4/8`,
+`paddingLeft: 8/16`, ~39 sites restants) et les ~43 déclarations en dur dans `globals.css`
+lui-même.
+
+**Risque spécifique à cette tranche, vérifié** : contrairement à `gap`, `marginTop` est une
+sous-propriété d'un raccourci CSS potentiel (`margin`). Un objet `style={{}}` portant les deux
+clés aurait un ordre de cascade dépendant de l'ORDRE d'écriture en JS. Vérifié EN EXÉCUTANT
+(recherche croisée avec les numéros de ligne du diff) : aucun des 10 sites migrés ne porte un
+raccourci `margin` dans le même objet de style — le risque ne se matérialise nulle part.
+
+**Garde neuf** (`globals.css.test.ts`) : un quatrième `describe` scanne tous les `.tsx` sous
+`src/app` pour `marginTop: 4` en dur, seuil à ZÉRO, avec un cas connu mauvais (règle 17).
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : aucun défaut critique, moyen ni mineur. Vérifié
+EN EXÉCUTANT : `tsc` propre, 7/7 tests passent, comptage par propriété confirme exactement 55
+occurrences `var(--e1)` (45 `gap` + 10 `marginTop`), `gap: 4`/`gap: 8` non régressés, aucun
+fichier sonde résiduel (toutes tranches confondues).
+
+**Mesures finales** (verify complet, sur l'arbre du commit `56fda5e`, `timeout 3600`, `set -o
+pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1214 tests/1214 (+1 vs tranche 5 :
+le nouveau garde `marginTop: 4`) ; gardes 47 propre ; semeur à jour ; plancher 1214/632 propre ;
+langue propre (15/15 cas connus mauvais dénoncés) ; lectures 6/6 ; parcours 5/5 ; screens 98
+routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1`
+— SEULE cause `#418` sur `/eng/70670df5-.../rcm/2bc1a1fb-...` (`rcm/[cid]`, l'habituelle,
+disjointe de cette tranche), 286 étapes/403 clics/63 gestes (inchangé) — TRENTE-QUATRIÈME
+confirmation consécutive (docs/CHASSE.md, F48) ; `npm run visuel` relancé séparément (avant le
+commit, même arbre de fichiers) : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue en tranches. Candidats restants : les 39 sites `margin*`/
+`padding*` restants (`marginTop: 8/12`, `marginLeft: 4/8`, `marginRight: 4`, `marginBottom:
+4/8`, `paddingLeft: 8/16`), et les ~43 déclarations en dur DANS `globals.css` lui-même. Priorité
+3 (H-3 slice 3, optionnelle) reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 5 — jeton --e2 (8px), unifier gap: 8 en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
