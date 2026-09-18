@@ -55,7 +55,15 @@ déjà migrés tranches 4-8), soit le jugement du fondateur sur l'épure termin�
 de portée de cette session — « le verdict du fondateur sur l'épure achevée vient plus tard,
 délibérément »).
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_CRgMr7gaW4RPZvjbxFVEf5HTqCNe`, cible
+production) READY, commit `35c6c7801e5d27335bfd1f7c0a49c16af96424c5` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 21:51:58Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor (semeur.ts)
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante` (tranche CSS pure). Le déploiement a
+connu un délai de file d'attente inhabituel côté Vercel (INITIALIZING puis QUEUED pendant plusieurs
+dizaines de minutes avant de construire) — confirmé par des vérifications directes répétées via
+`mcp__Vercel__get_project`/`get_deployment`, pas supposé résolu ; une préversion du même commit
+exact avait déjà construit avec succès entre-temps, confirmant que le code n'était pas en cause.
 
 ---
 
