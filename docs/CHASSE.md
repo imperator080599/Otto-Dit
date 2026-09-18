@@ -1537,3 +1537,21 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F45). `npm run visuel`
   relancé séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0
   défaut).
+
+- **F47 — UN incident** (2026-09-18, Lot 7, H-6 tranche 5 — jeton `--e2` (8px), unifier `gap: 8`
+  en dur, sur l'arbre du commit `780b301` — un réfutateur (règle 30, tranche CSS pure, suite
+  mécanique de la tranche 4). Aucun défaut hors périmètre cette fois (contrairement à la tranche
+  4) : le réfutateur a vérifié EN EXÉCUTANT (pas seulement lu) les 14 sites `var(--e2)` un à un
+  (syntaxe correcte, tous dans un `style={{}}` React), le compte exact au nombre annoncé, `gap: 8`
+  en dur totalement absent, `gap: 4` (tranche 4) non régressé, `tsc` propre, 6/6 tests du garde
+  passent, aucun fichier sonde résiduel (tranches 4 et 5 toutes deux vérifiées absentes). `EXIT=1`
+  réel (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/0970722e-...`
+  (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton 87). Disjoint de la tranche : cette
+  tranche touche `globals.css` et 9 fichiers `.tsx` (dont trois hors `eng/[id]/` : `page.tsx`,
+  `nouvelle-mission.tsx`, `methodology/import-form.tsx`) — aucun n'est `rcm/[cid]`. Les 1213 tests
+  vitest passent tous (+1 vs H-6 tranche 4 : le nouveau garde `gap: 8`). Clôture et archive
+  ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63 gestes (inchangé —
+  cette tranche ne touche pas `scenario.ts`) — TRENTE-TROISIÈME confirmation consécutive que
+  `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F46). `npm run visuel`
+  relancé séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0
+  défaut).

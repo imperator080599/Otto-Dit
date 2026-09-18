@@ -4,6 +4,47 @@
 
 ---
 
+## Lot 7, H-6 tranche 5 — jeton --e2 (8px), unifier gap: 8 en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 4 (règle 32).*
+
+**Implémentation** : suite mécanique directe de la tranche 4 — 14 occurrences EXACTES de `gap: 8`
+(mot entier), 9 fichiers (dont trois hors `eng/[id]/` : `page.tsx`, `nouvelle-mission.tsx`,
+`methodology/import-form.tsx`), migrées vers `gap: 'var(--e2)'` (`--e2` = 8px, ADR-125, jamais
+redéfini) par la même substitution regex ciblée que la tranche précédente, chaque fichier
+revérifié après coup (compte exact, `tsc`, aucune sur-transformation). Commentaire ajouté dans
+`globals.css` documentant ce que cette tranche NE couvre PAS (règle 19) : les `margin*`/`padding*`
+en dur restants (~49 sites) et les ~43 déclarations en dur dans `globals.css` lui-même.
+
+**Garde neuf** (`globals.css.test.ts`) : un troisième `describe` scanne tous les `.tsx` sous
+`src/app` pour `gap: 8` en dur, seuil à ZÉRO, avec un cas connu mauvais (règle 17) — un vrai
+fichier sonde écrit puis supprimé dans l'arbre balayé.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : aucun défaut critique, moyen ni mineur —
+contrairement à la tranche 4 (qui avait trouvé le `{{` littéral hors périmètre), cette tranche
+n'a soulevé AUCUN constat. Vérifié EN EXÉCUTANT : `tsc` propre, 6/6 tests passent, les 14
+occurrences de `var(--e2)` relues une à une, `gap: 8` en dur totalement absent, `gap: 4` (tranche
+4) non régressé, aucun fichier sonde résiduel.
+
+**Mesures finales** (verify complet, sur l'arbre du commit `780b301`, `timeout 3600`, `set -o
+pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1213 tests/1213 (+1 vs tranche 4 :
+le nouveau garde `gap: 8`) ; gardes 47 propre ; semeur à jour ; plancher 1213/632 propre ; langue
+propre (15/15 cas connus mauvais dénoncés) ; lectures 6/6 ; parcours 5/5 ; screens 98 routes/0
+échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — SEULE
+cause `#418` sur `/eng/70670df5-.../rcm/0970722e-...` (`rcm/[cid]`, l'habituelle, disjointe de
+cette tranche), 286 étapes/403 clics/63 gestes (inchangé) — TRENTE-TROISIÈME confirmation
+consécutive (docs/CHASSE.md, F47) ; `npm run visuel` relancé séparément (avant le commit, même
+arbre de fichiers) : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue en tranches. Candidats restants : les `margin*`/`padding*` en
+dur (~49 sites, `.tsx`), et les ~43 déclarations en dur DANS `globals.css` lui-même. Priorité 3
+(H-3 slice 3, optionnelle) reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 4 — jeton --e1 (4px), unifier gap: 4 en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
