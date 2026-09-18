@@ -4,6 +4,82 @@
 
 ---
 
+## Lot 7, H-6 tranche 2 — unifier .kpi .v et .epure-chiffre (2026-09-17/18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches, « jusqu'à ce
+que les écrans tiennent ensemble comme une épure, pas jusqu'à ce qu'un compte de jetons atteigne
+zéro »), enchaîné sans pause après R100 (règle 32).*
+
+**Recherche préalable dédiée** (un sous-agent, lecture seule) : plutôt que de continuer à migrer
+des déclarations `font-size:` une par une (tranche 1), la recherche a cherché la prochaine
+incohérence VISUELLEMENT significative. Trouvée : `.kpi .v` (22px/700, six écrans — dashboard,
+population, balances-aux, materiality, testing, estimations) et `.epure-chiffre` (40px/300, un
+seul écran — suivi) portent le MÊME rôle sémantique — le chiffre unique qu'une carte-résumé met
+en avant — avec deux traitements visuels incompatibles, à un clic de rail l'un de l'autre.
+Exactement le défaut qu'une revue nomme « trop AI generated ». Vérifié par lecture directe avant
+d'agir (pas seulement le rapport du sous-agent) : les deux sélecteurs confirmés dans globals.css,
+les six/un écrans confirmés par grep, le rôle sémantique confirmé en lisant un exemple de chaque.
+
+**Implémenté** (commit `9dfdba7`) : `--t7` (40px, la valeur déjà en usage par `.epure-chiffre`)
+ajouté à l'échelle typographique. `.kpi .v` migré sur `--t7`/poids 300 (au lieu de 22px/700) ;
+`.epure-chiffre` migré sur `var(--t7)` (au lieu du magic number 40px). Unifié vers le traitement
+`.epure` — le vocabulaire le plus récent du dépôt, marqué « premier écran dans le nouveau langage »
+à sa création — jamais l'inverse. `globals.css.test.ts` : seuil des déclarations `font-size:` en
+dur baissé de 60 à 58 (les deux convergent vers `--t7`) ; nouvelle assertion que `.kpi .v` et
+`.epure-chiffre` lisent le MÊME jeton et le même poids.
+
+**Un réfutateur** (règle 30) : un défaut RÉEL trouvé et confirmé par capture d'écran — la carte
+« Population amount » (`population/page.tsx`) affichait « 5 648 676,30 » sur une ligne et « € »
+seul sur la suivante (`fmtEur` joignait le montant à `' €'` avec un espace ORDINAIRE, cassable,
+alors qu'`Intl.NumberFormat('fr-FR')` sépare déjà les milliers par une espace fine insécable).
+
+**Trois rounds de correctif, chacun A/B testé par exécution, pas supposé** (commits `9151883`,
+`7d7c04d`, `d063aec`, `13b5ea8`, `1610e3b`, `e2bbb91`) :
+1. `fmtEur` changée PARTOUT (espace insécable) fixait population mais cassait `/eng/[id]/testing`
+   (`table.data.cellules`, colonnes Attendu/Trouvé) — 8 défauts `npm run visuel` NOUVEAUX.
+2. Deux tentatives de correctif CSS structurel (`table-scroll` sur la table cellules, `min-width:
+   0` sur les items de la grille `.atelier`) n'ont RIEN changé à la mesure — chiffres identiques
+   au pixel près avant/après chacune, prouvant que le défaut n'était pas là où elles le
+   supposaient.
+3. Un A/B direct (même arbre, seul `fmtEur` changé entre deux runs `npm run visuel`) a tranché :
+   0 défaut avec l'ancien `fmtEur` (espace cassable), 8 défauts avec le nouveau — la cause était
+   `fmtEur` elle-même, pas la grille. Corrigé en SCINDANT la fonction plutôt qu'en la changeant
+   globalement : `fmtEur` retrouve son comportement d'origine (20+ appelants restants, tableaux
+   denses compris) ; `fmtEurTitre` (nouvelle, espace insécable) réservée aux 9 appels qui rendent
+   VRAIMENT un `.kpi .v`/`.epure-chiffre` (population, materiality ×4, estimations ×4). Un
+   TROISIÈME A/B a ensuite trouvé que `/eng/[id]/testing` restait à 8 défauts même avec seulement
+   SES PROPRES cinq cartes `.kpi` sur `fmtEurTitre` — cette page (le tableau `.atelier` ET son
+   panneau d'évaluation séparé) tient à 1280px avec une marge proche de zéro. Isolé : reverter
+   CES CINQ appels sur `fmtEur` suffit — 0 défaut. `/eng/[id]/testing` reste donc délibérément sur
+   `fmtEur` pour ses cinq cartes, disclosed en toutes lettres dans `canon.ts` ET un commentaire
+   in situ à l'appel (règle 19, corrigé après qu'une revue hostile ait trouvé le premier manquant).
+
+**Un second réfutateur** (règle 30, sur l'état FINAL après les trois rounds) : SHIP AS-IS — appel
+site systématique (9 `fmtEurTitre` génuinement `.kpi .v`/`.epure-chiffre`, 5 `fmtEur` sur testing
+correctement exceptés, aucun oubli dans un sens ou l'autre), `canon.ts::fmtEur` byte-identique à
+l'origine, `atelier.tsx`/`globals.css` revenus exactement à leur état pré-tranche (diff net vide
+sur `atelier.tsx`), `globals.css.test.ts` réévalué correct. Un seul constat réel, non bloquant :
+`testing/page.tsx` ne portait aucun marqueur pointant vers le raisonnement de `canon.ts` —
+corrigé (commit `e2bbb91`) par un commentaire in situ avant les cinq appels.
+
+**Mesures finales, ordre CANONIQUE, sur l'arbre du commit `5b508e3`** (`npm run verify`, budget
+3600s, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163/163 fichiers (1210/1210 tests, +1
+test vs R100 — la nouvelle assertion `.kpi .v`/`.epure-chiffre`) ; gardes/semeur/plancher/langue/
+lectures/parcours propres (mêmes chiffres et dette pré-existante que les tranches précédentes) ;
+screens 98/0 ; fumee 55/0 ; densite 88/0 ; clics EXIT=1 réel (seul motif #418, F44, TRENTIÈME
+confirmation, 286 étapes/403 clics/63 gestes, inchangé — cette tranche ne touche pas
+`scenario.ts`) ; visuel (relancé séparément trois fois pendant la tranche, une dernière fois sur
+l'arbre final) 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue en tranches (prochaine candidate à scoper : le cluster de 43
+occurrences `style={{ fontSize: N }}` en dur sur `.faint`, ou l'espacement `--e1..--e6` sous-migré
+— 56 déclarations en dur contre 13 usages du jeton). Priorité 3 (H-3 slice 3, optionnelle) reste
+en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, priorité 1 (R100) — l'atelier « détail du compte » pour EQUITY (2026-09-17)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17), enchaîné sans pause après R99 (règle 32) —

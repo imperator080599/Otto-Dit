@@ -1467,3 +1467,26 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   gestes — VINGT-NEUVIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin
   (même discipline que F9-F42). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut —
   89 écrans, inchangé vs R98/R99 : même route, pas une nouvelle).
+
+- **F44 — UN incident** (2026-09-17/18, Lot 7, H-6 tranche 2 — unifier `.kpi .v` et
+  `.epure-chiffre` sur `--t7`, sur l'arbre du commit `5b508e3`, après SIX commits dans cette
+  tranche dont trois correctifs — deux réfutateurs (règle 30, l'un sur l'implémentation initiale,
+  l'un sur l'état final après les trois rounds A/B). Le PREMIER a trouvé un vrai défaut
+  (`population/page.tsx`, « 5 648 676,30 » sur une ligne, « € » seul sur la suivante, capture
+  d'écran) ; la CORRECTION de ce défaut, changeant `fmtEur` PARTOUT, en a introduit un SECOND, réel
+  lui aussi (`/eng/[id]/testing`, `table.data.cellules`, débordement horizontal à 1280px) — trouvé
+  non pas par une revue hostile mais par `npm run visuel` lui-même, sur l'arbre du PREMIER
+  correctif. Deux tentatives de correctif CSS structurel (table-scroll, min-width:0) n'ont RIEN
+  changé à la mesure (chiffres identiques au pixel près) — un A/B direct (même arbre, seul
+  `fmtEur` changé) a isolé la vraie cause, et un TROISIÈME A/B a trouvé que `/eng/[id]/testing`
+  reste marginal à 1280px même pour ses propres cartes `.kpi`. Le SECOND réfutateur (sur l'état
+  final) a trouvé un seul constat réel non bloquant — `testing/page.tsx` ne portait aucun
+  marqueur pointant vers le raisonnement de `canon.ts` — corrigé par un commentaire in situ.
+  `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../
+  rcm/aef66cb9-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton 87). Disjoint de la
+  tranche : cette tranche touche `globals.css`, `canon.ts`, quatre `page.tsx` — rien qui touche
+  `/rcm`. Les 1210 tests vitest passent tous (+1 vs R100 : la nouvelle assertion `.kpi .v`/
+  `.epure-chiffre`). Clôture et archive ATTEINTES (verify complet), 286 étapes conduites, 403
+  clics comptés sur 63 gestes (inchangé — cette tranche ne touche pas `scenario.ts`) —
+  TRENTIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
+  discipline que F9-F43). `npm run visuel` relancé séparément, propre (356 vues, 0 défaut).
