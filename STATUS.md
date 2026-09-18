@@ -47,7 +47,11 @@ commit, même arbre de fichiers) : 356 vues/0 défaut.
 4/8`, `paddingLeft: 8/16`), et les ~43 déclarations en dur DANS `globals.css` lui-même. Priorité
 3 (H-3 slice 3, optionnelle) reste en file après H-6.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_CAkg5P2PfwEPkQoKZcQZ2eq1XjwU`, cible
+production) READY, commit `e20038ad2b18fc84b340129491d485bd458492be` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 13:07:59Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante`.
 
 ---
 
