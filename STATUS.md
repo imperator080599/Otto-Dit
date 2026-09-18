@@ -68,7 +68,11 @@ de cette tranche : l'échelle `--e1..--e6`, à redécouper par zone fonctionnell
 formulaires inline `rcm/[cid]` qui en concentrent 7/94). Priorité 3 (H-3 slice 3, optionnelle)
 reste en file après H-6.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_3vY1ajipkAXTEyyWUBx3Gq6UCwHB`, cible
+production) READY, commit `b0f1b1bdda65e7ae0979b6717bd1540f60cda78c` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 10:24:55Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante`.
 
 ---
 
