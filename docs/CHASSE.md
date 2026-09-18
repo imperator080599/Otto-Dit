@@ -1774,3 +1774,51 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   tranche, le mandat ENTIER ouvert par la tranche 9 (« ~43 déclarations en dur DANS globals.css »,
   mesuré à 49 sites à jeton exact : 27 de police + 22 d'espacement) est CLOS — les deux clusters
   sont désormais migrés en totalité.
+
+- **F55 — UN incident, ZÉRO régression fonctionnelle** (2026-09-18, Lot 7, H-6 tranche 13 —
+  recherche fraîche APRÈS la clôture du mandat de la tranche 9 : 15 sites `fontSize`/`padding` en
+  dur SANS `.faint`, restés hors périmètre des tranches 1-12, dans les `.tsx`, sur l'arbre final
+  du commit `88cf415`) :
+
+  1. **Un réfutateur** (règle 30, tranche CSS pure) a trouvé UN constat MOYEN, réel : le nouveau
+     garde (regex `(?<![-\w])PROP:\s*VAL(?![.\d])`) est un balayage de texte brut sans conscience
+     des commentaires ni des chaînes — un commentaire ou une chaîne i18n contenant littéralement
+     `fontSize: 11` compterait à tort. Zéro occurrence de ce genre dans l'arbre actuel (le
+     réfutateur l'a vérifié par `grep -rnP` sur tout l'arbre `.tsx`), donc pas un défaut vivant,
+     mais règle 19 exige que le garde NOMME cet angle mort. Corrigé (`88cf415`) : phrase ajoutée
+     au commentaire d'en-tête du garde ; 39/39 tests toujours verts après l'ajout. Tout le reste
+     du réfutateur : ZÉRO défaut — les 15 substitutions vérifiées correctes par diff (aucun
+     raccourci multi-valeurs touché, aucune collision de déclaration adjacente,
+     `provenance/page.tsx:172` — `paddingLeft` déjà migré tranche 8, `fontSize` migré ici —
+     confirmé sans dommage collatéral), le garde exercé en réintroduisant `fontSize: 11` dans un
+     vrai fichier du dépôt puis en confirmant l'échec (pas seulement présent en source), aucun
+     fichier sonde résiduel, `tsc` propre.
+
+  2. **Deux bugs réels trouvés et corrigés AVANT tout commit** (règle 17 appliqué à soi-même,
+     jamais découverts après coup par un tiers) :
+     - La recherche déléguée à un sous-agent comptait 14 sites (8× `fontSize: 12`), pas 15 —
+       `provenance/page.tsx:172` avait déjà `paddingLeft: 'var(--e4)'` migré (tranche 8) mais
+       gardait `fontSize: 12` EN DUR sur la MÊME ligne ; la recherche l'avait classé « déjà
+       migré » en ne vérifiant que `paddingLeft`, pas la ligne entière. Trouvé en ÉCRIVANT le
+       nouveau garde lui-même (son propre seuil à zéro aurait échoué sinon, avant tout commit) —
+       corrigé, compte réel = 15.
+     - Le premier jet du garde utilisait `\b` comme frontière de fin de valeur — `\b` matche
+       entre un chiffre et un point, donc `fontSize: 11.5` (site délibérément hors périmètre,
+       `testing/atelier.tsx:441`, aucun jeton `--tN` exact) comptait à tort comme une occurrence
+       de `fontSize: 11`. Trouvé en EXÉCUTANT le test avant de committer (`expected 1 to be 0`,
+       jamais deviné) — corrigé en `(?![.\d])`, jamais expédié avec ce défaut.
+
+  Sur l'arbre FINAL (`88cf415`, `verify` complet, `timeout 5400`, `set -o pipefail`, premier essai
+  suffisant cette fois) : `tsc` propre, vitest 163/163 fichiers · 1246/1246 tests (+3 vs tranche
+  12 : les 3 nouvelles paires prop+valeur), gardes 47/semeur/plancher 632/langue (15/15 cas connus
+  mauvais)/lectures (0 perdue sur 1990, 6/6 cas connus mauvais)/parcours (5/5 cas connus mauvais,
+  290/347 stations figées, inchangé) tous propres, screens 98/0, fumee 55/0, densite 88/0. `clics`
+  : `EXIT=1` réel (journal brut, `set -o pipefail`) — UNE SEULE occurrence de `#418`
+  (`/eng/70670df5-.../rcm/75267037-...`, l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au
+  jeton 87) ; les 19 autres divergences du même dump sont le même bruit de normalisation déjà
+  documenté (`margin:6px 0` → `margin:6px 0px`, jamais une valeur qui change) — AUCUNE trace de
+  `var(--t0)`/`var(--t1)`/`var(--e5)` (les substitutions de cette tranche) dans le dump.
+  QUARANTE-DEUXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
+  discipline que F9-F54). `npm run visuel` relancé séparément AVANT le début de cette tranche
+  (356 vues, 0 défaut) — l'étape `visuel` intégrée au `verify` n'a jamais tourné ce coup-ci (la
+  chaîne `&&` s'arrête à `clics`, comme à chaque tranche H-6 précédente).

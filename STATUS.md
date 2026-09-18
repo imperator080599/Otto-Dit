@@ -4,6 +4,57 @@
 
 ---
 
+## Lot 7, H-6 tranche 13 — fontSize/padding en dur hors .faint, dans les .tsx (2026-09-18)
+
+*Recherche fraîche (sous-agent) après la clôture du mandat de la tranche 9 (confirmation SHA-servi
+de la tranche 12, règle 32) : le cluster `.faint` + `fontSize` de la tranche 3 avait un périmètre
+étroit (la combinaison exacte className `.faint` + fontSize) et laissait des sites en dur SANS
+`.faint`, jamais scopés par aucune tranche 1-12.*
+
+**Implémentation** : 15 sites EXACTS migrés dans 6 fichiers : `fontSize: 11` (5 sites) →
+`var(--t0)`, `fontSize: 12` (9 sites) → `var(--t1)`, `padding: 24` (1 site, `global-error.tsx`,
+valeur unique, pas de raccourci multi-valeurs) → `var(--e5)`.
+
+**Garde neuf** (`globals.css.test.ts`) : scanne tous les `.tsx` sous `src/app` pour les 3 paires
+prop+valeur, seuil à zéro, cas connu mauvais par paire (fichier sonde réel écrit puis supprimé,
+même discipline que les tranches 4-8).
+
+**Deux bugs réels trouvés et corrigés AVANT tout commit** (règle 17 appliqué à soi-même) : (1) la
+recherche déléguée comptait 14 sites, pas 15 — `provenance/page.tsx:172` avait déjà `paddingLeft`
+migré (tranche 8) mais gardait `fontSize: 12` EN DUR sur la même ligne, classé « déjà migré » par
+erreur ; trouvé en écrivant le garde lui-même. (2) le premier jet du garde utilisait `\b` comme
+frontière de valeur — `\b` matche entre un chiffre et un point, donc `fontSize: 11.5` (site
+délibérément hors périmètre) comptait à tort comme `fontSize: 11` ; trouvé en exécutant le test
+avant de committer, corrigé en `(?![.\d])`.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : UN constat RÉEL, MOYEN — le nouveau garde est un
+balayage de texte brut sans conscience des commentaires/chaînes (un commentaire ou une chaîne i18n
+contenant littéralement `fontSize: 11` compterait à tort), angle mort non nommé par le commentaire
+d'en-tête (règle 19). Zéro occurrence de ce genre dans l'arbre actuel (vérifié par le réfutateur),
+non bloquant. Corrigé (`88cf415`) : phrase ajoutée au commentaire du garde. Tout le reste : ZÉRO
+défaut — 15 substitutions vérifiées correctes par diff, garde exercé en réintroduisant `fontSize:
+11` dans un vrai fichier puis en confirmant l'échec, aucun fichier sonde résiduel, `tsc` propre.
+
+**Mesures finales** (verify complet, PREMIER essai suffisant cette fois, arbre du commit
+`88cf415`, `timeout 5400`, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163,
+1246 tests/1246 (+3 vs tranche 12) ; gardes 47 propre ; semeur à jour ; plancher 1246/632 propre ;
+langue propre (15/15 cas connus mauvais) ; lectures 0 perdue/1990 (6/6 cas connus mauvais) ;
+parcours 5/5 cas connus mauvais (290/347 stations figées, inchangé) ; screens 98 routes/0 échec ;
+fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — UNE SEULE
+occurrence de `#418`, `/eng/[id]/rcm/[cid]` (l'habituelle, jeton 87, même signature que les 41
+confirmations précédentes, les 19 autres divergences du dump étant le même bruit de normalisation
+déjà documenté, aucune trace des jetons de cette tranche) — QUARANTE-DEUXIÈME confirmation
+consécutive, 286 étapes/403 clics/63 gestes ; `npm run visuel` relancé séparément avant le début
+de la tranche : 356 vues/0 défaut.
+
+**Suite naturelle** : aucun candidat H-6 restant n'est encore scopé pour une prochaine tranche
+mécanique — même position qu'à la clôture de la tranche 12 (voir sa section ci-dessous).
+
+**SHA servi** : [à confirmer — commit d'implémentation `b76b4a9`, correctif `88cf415`, poussés sur
+`main`, déploiement Vercel pas encore vérifié à l'écriture de cette section].
+
+---
+
 ## Lot 7, H-6 tranche 12 — CLÔTURE du mandat entier DANS globals.css (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
