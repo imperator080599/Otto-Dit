@@ -44,7 +44,11 @@ restant DANS ce fichier : les 22 sites d'espacement (`margin*`/`padding*`/`gap`,
 propriété+valeur distinctes, déjà scopés en lecture seule) — clôturerait l'intégralité du mandat
 de tranche 9 (« ~43 déclarations », mesuré à 49, dont 27 de police déjà closes en tranches 9-11).
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_8Y9axxL4MiY1gEEW8KAvUTfz7sow`, cible
+production) READY, commit `eb68d0086939936239b3be7f906ac56d43ff5fa5` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 18:49:13Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor (semeur.ts)
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante` (tranche CSS pure).
 
 ---
 
