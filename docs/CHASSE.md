@@ -1576,3 +1576,22 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   (inchangé) — TRENTE-QUATRIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus
   loin (même discipline que F9-F47). `npm run visuel` relancé séparément (avant le commit, sur le
   même arbre de fichiers), propre (356 vues, 0 défaut).
+
+- **F49 — UN incident** (2026-09-18, Lot 7, H-6 tranche 7 — jeton `--e1` sur `marginLeft: 4` en
+  dur, sur l'arbre du commit `aed6d7d` — un réfutateur (règle 30, tranche CSS pure, suite du
+  cluster `margin*`/`padding*` de la tranche 6). Un des 7 sites migrés passe `style` à un
+  COMPOSANT (`IaFlag`), pas un élément DOM brut — le réfutateur a vérifié EN EXÉCUTANT (lecture
+  intégrale de `ia-flag.tsx`) que le composant applique réellement le prop reçu
+  (`<span style={style}>`), pas seulement dans sa signature de type : la migration a un effet
+  réel, pas silencieusement absorbé. Vérifié aussi EN EXÉCUTANT : `tsc` propre, 8/8 tests du
+  garde passent, `marginLeft: 4` en dur totalement absent (y compris variantes d'espacement),
+  `marginTop: 4`/`gap: 4`/`gap: 8` (tranches 4/5/6) non régressés, aucun fichier sonde résiduel
+  (toutes tranches confondues). `EXIT=1` réel (journal brut, `set -o pipefail`), UNE SEULE route
+  — `/eng/70670df5-.../rcm/93faa552-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au
+  jeton 87). Disjoint de la tranche : cette tranche touche `globals.css` et 4 fichiers `.tsx`
+  sous `eng/[id]/` (aucun n'est `rcm/[cid]`) — rien qui touche `/rcm`. Les 1215 tests vitest
+  passent tous (+1 vs H-6 tranche 6 : le nouveau garde `marginLeft: 4`). Clôture et archive
+  ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63 gestes (inchangé) —
+  TRENTE-CINQUIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
+  discipline que F9-F48). `npm run visuel` relancé séparément (avant le commit, sur le même arbre
+  de fichiers), propre (356 vues, 0 défaut).

@@ -4,6 +4,47 @@
 
 ---
 
+## Lot 7, H-6 tranche 7 — jeton --e1, unifier marginLeft: 4 en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 6 (règle 32).*
+
+**Implémentation** : suite mécanique du cluster `margin*`/`padding*` — la propriété+valeur
+suivante par fréquence, `marginLeft: 4` (7 sites, 4 fichiers), migrée vers `marginLeft:
+'var(--e1)'` par la même substitution regex ciblée que les tranches 4/5/6. Un des sites passe
+`style` à un COMPOSANT (`IaFlag`), pas un élément DOM brut — vérifié que le prop `style?:
+CSSProperties` est bien appliqué en interne (`<span style={style}>`), pas juste déclaré : la
+migration a un effet réel. Commentaire ajouté dans `globals.css` documentant ce que cette tranche
+NE couvre PAS (règle 19) : `marginTop: 8/12`, `marginLeft: 8`, `marginRight: 4`, `marginBottom:
+4/8`, `paddingLeft: 8/16` (~32 sites restants) et les ~43 déclarations en dur dans `globals.css`
+lui-même.
+
+**Garde neuf** (`globals.css.test.ts`) : un cinquième `describe`, seuil à ZÉRO, cas connu mauvais
+(règle 17).
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : aucun défaut critique, moyen ni mineur. Vérifié
+EN EXÉCUTANT : `tsc` propre, 8/8 tests passent, `IaFlag` confirmé appliquer le style forwardé,
+`marginTop: 4`/`gap: 4`/`gap: 8` (tranches 4/5/6) non régressés, aucun fichier sonde résiduel.
+
+**Mesures finales** (verify complet, sur l'arbre du commit `aed6d7d`, `timeout 3600`, `set -o
+pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1215 tests/1215 (+1 vs tranche 6 :
+le nouveau garde `marginLeft: 4`) ; gardes 47 propre ; semeur à jour ; plancher 1215/632 propre ;
+langue propre (15/15 cas connus mauvais dénoncés) ; lectures 6/6 ; parcours 5/5 ; screens 98
+routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1`
+— SEULE cause `#418` sur `/eng/70670df5-.../rcm/93faa552-...` (`rcm/[cid]`, l'habituelle,
+disjointe de cette tranche), 286 étapes/403 clics/63 gestes (inchangé) — TRENTE-CINQUIÈME
+confirmation consécutive (docs/CHASSE.md, F49) ; `npm run visuel` relancé séparément (avant le
+commit, même arbre de fichiers) : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue en tranches. Candidats restants : `marginTop: 8/12`,
+`marginLeft: 8`, `marginRight: 4`, `marginBottom: 4/8`, `paddingLeft: 8/16` (~32 sites, chacun
+plus petit que les tranches précédentes), et les ~43 déclarations en dur DANS `globals.css`
+lui-même. Priorité 3 (H-3 slice 3, optionnelle) reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 6 — jeton --e1, unifier marginTop: 4 en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
