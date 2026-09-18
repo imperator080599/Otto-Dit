@@ -30,10 +30,28 @@ function listerFichiersTsx(dir: string): string[] {
    tranche : 22px/700 contre 40px/300). Seuil baissé de 60 à 58 (les deux
    déclarations en dur convergent vers le même jeton). Ce que CE test ajoute
    ne vérifie toujours PAS le poids (`font-weight`) : aucune échelle n'existe
-   pour lui dans ce fichier, 300 est recopié tel quel sur les deux règles. */
+   pour lui dans ce fichier, 300 est recopié tel quel sur les deux règles.
+
+   Lot 7, H-6 tranche 9 (2026-09-18) : première tranche à migrer une
+   déclaration en dur DANS `globals.css` lui-même plutôt que dans un `.tsx`
+   (recherche dédiée : le cluster identifié par la tranche 8 comme « ~43
+   déclarations » mesurait en réalité 49 sites à valeur unique et jeton
+   EXACT — 22 d'espacement, 27 de taille de police, mesurés par script, pas
+   supposés). Sous-scopé au plus gros cluster homogène : `font-size: 11px`
+   en dur, 13 occurrences, chacune une déclaration ISOLÉE dans sa règle
+   (aucun raccourci CSS partagé), migrées vers `font-size: var(--t0)` — le
+   même jeton, la même valeur, une identité stricte. Seuil baissé de 58 à
+   45. CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : les 27 autres sites
+   à valeur unique et jeton exact (14 de `font-size` à d'autres valeurs :
+   9× 12px, 3× 12.5px, 1× 15px, 1× 13.5px ; 22 d'espacement `margin*`/
+   `padding*`/`gap` DANS ce fichier), ni les ~13 déclarations de police ou
+   d'espacement dont la valeur ne correspond à AUCUN jeton existant
+   (10px, 18px, 20px, 26px, etc.) — celles-ci resteraient hors périmètre
+   même après une migration complète du cluster mesuré, sauf à inventer un
+   nouveau jeton, ce qu'aucune tranche H-6 n'a fait depuis --t0/--t7. */
 
 const CSS_PATH = path.join(repoRoot(), 'app', 'src', 'app', 'globals.css');
-const SEUIL_ACTUEL = 58;
+const SEUIL_ACTUEL = 45;
 
 function compterFontSizeEnDur(texte: string): number {
   const m = texte.match(/font-size:\s*[0-9.]+px/g);
@@ -69,6 +87,30 @@ describe('globals.css : échelle typographique (Lot 7, H-6 tranche 1)', () => {
     expect(epureChiffre![1]).toMatch(/font-size:\s*var\(--t7\)/);
     expect(kpiV![1]).toMatch(/font-weight:\s*300/);
     expect(epureChiffre![1]).toMatch(/font-weight:\s*300/);
+  });
+
+  it('les 13 sites migrés par H-6 tranche 9 lisent tous var(--t0), plus aucun 11px en dur parmi eux', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    const selecteurs = [
+      /\.topbar \.demo-badge\s*\{[^}]*\}/,
+      /\.rail-lien\.grise \.raison\s*\{[^}]*\}/,
+      /\.lien-piece\s*\{[^}]*\}/,
+      /\.etape-detail\s*\{[^}]*\}/,
+      /\.ai-flag\s*\{[^}]*\}/,
+      /\.mod-flag\s*\{[^}]*\}/,
+      /\.annotable > \.puce-note\s*\{[^}]*\}/s,
+      /summary\.repli-action::before\s*\{[^}]*\}/,
+      /\.visa-quand\s*\{[^}]*\}/,
+      /details\.repli > summary \.chevron\s*\{[^}]*\}/,
+      /\.rail-defaut\s*\{[^}]*\}/,
+      /\.epure-mono\s*\{[^}]*\}/,
+      /\.epure-badge\s*\{[^}]*\}/,
+    ];
+    for (const motif of selecteurs) {
+      const m = css.match(motif);
+      expect(m, `motif introuvable : ${motif}`).not.toBeNull();
+      expect(m![0]).toMatch(/font-size:\s*var\(--t0\)/);
+    }
   });
 
   it('le compte de `font-size: Npx` en dur ne remonte jamais au-dessus du seuil gardé (règle 17 : cas connu mauvais)', () => {

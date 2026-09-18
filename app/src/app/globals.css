@@ -159,7 +159,7 @@ code, .mono { font-family: var(--mono); font-size: var(--t2); }
 .topbar a { color: var(--topbar-link); }
 .topbar .spacer { flex: 1; }
 .topbar .demo-badge {
-  background: var(--topbar-badge); color: var(--topbar-badge-text); font-size: 11px; padding: 2px 8px;
+  background: var(--topbar-badge); color: var(--topbar-badge-text); font-size: var(--t0); padding: 2px 8px;
   border-radius: 999px; letter-spacing: .5px;
 }
 
@@ -203,7 +203,7 @@ a.rail-lien.active {
 /* Le pas-encore-atteignable est GRIS avec sa raison — le gris n'est pas une
    couleur de signal, la couleur reste aux problèmes. */
 .rail-lien.grise { color: var(--faint); cursor: default; }
-.rail-lien.grise .raison { display: block; font-size: 11px; line-height: 1.3; }
+.rail-lien.grise .raison { display: block; font-size: var(--t0); line-height: 1.3; }
 .rail-tout {
   background: none; border: none; cursor: pointer; color: var(--muted);
   font-size: 12px; padding: 4px 9px; text-decoration: underline dotted; text-align: left;
@@ -224,7 +224,7 @@ a.rail-lien.active {
 .rail-astuce button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 11.5px; padding: 0; }
 
 /* LE LIEN VERS LE JUSTIFICATIF, SUR LA CELLULE qui a été lue dessus. */
-.lien-piece { font-size: 11px; text-decoration: none; opacity: .75; }
+.lien-piece { font-size: var(--t0); text-decoration: none; opacity: .75; }
 .lien-piece:hover { opacity: 1; }
 /* L'en-tête de GROUPE du tableau de testing : sélection d'un côté, travaux de
    l'autre. Le trait sépare les deux moitiés du geste. */
@@ -249,7 +249,7 @@ a.etape:hover { text-decoration: none; background: var(--row-hover); }
 .etape.green { border-left-color: var(--green); }
 .etape.amber { border-left-color: var(--amber); }
 .etape.gray { border-left-color: var(--border-strong); }
-.etape-detail { display: block; font-weight: 400; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.etape-detail { display: block; font-weight: 400; font-size: var(--t0); color: var(--muted); margin-top: 2px; }
 
 /* LE GRAPHIQUE DE STATUT — une barre empilée, et sa légende À CÔTÉ.
    La couleur n'est jamais seule (vigilance revue n°2 §4) : chaque part porte
@@ -397,11 +397,11 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
 .progressbar > div { background: var(--accent); height: 100%; }
 
 .ai-flag {
-  font-size: 11px; color: var(--violet); background: var(--violet-soft);
+  font-size: var(--t0); color: var(--violet); background: var(--violet-soft);
   padding: 1px 7px; border-radius: 999px; font-weight: 600;
 }
 .mod-flag {
-  font-size: 11px; color: var(--amber); background: var(--amber-soft);
+  font-size: var(--t0); color: var(--amber); background: var(--amber-soft);
   padding: 1px 7px; border-radius: 999px; font-weight: 600;
 }
 
@@ -415,7 +415,7 @@ label.fld span { display: block; font-size: 12px; color: var(--muted); font-weig
   opacity: 0; position: absolute; top: -6px; right: -6px; z-index: 3;
   border: 1px solid var(--amber); background: var(--panel); color: var(--amber);
   border-radius: 999px; width: 18px; height: 18px; line-height: 15px;
-  font-size: 11px; cursor: pointer; padding: 0; text-align: center;
+  font-size: var(--t0); cursor: pointer; padding: 0; text-align: center;
 }
 .annotable:hover > .puce-note, .annotable:focus-within > .puce-note { opacity: 1; }
 .annotable.a-note {
@@ -507,7 +507,7 @@ summary.repli-action {
   list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 0;
 }
 summary.repli-action::-webkit-details-marker { display: none; }
-summary.repli-action::before { content: '\25B8'; font-size: 11px; }
+summary.repli-action::before { content: '\25B8'; font-size: var(--t0); }
 details[open] > summary.repli-action::before { content: '\25BE'; }
 summary.repli-action:hover { text-decoration: underline; }
 
@@ -530,7 +530,7 @@ summary.repli-action:hover { text-decoration: underline; }
 }
 .visa-role { text-transform: uppercase; letter-spacing: .04em; font-size: 10px; color: var(--muted); }
 .visa-nom { font-weight: 600; }
-.visa-quand { font-family: var(--mono); color: var(--muted); font-size: 11px; }
+.visa-quand { font-family: var(--mono); color: var(--muted); font-size: var(--t0); }
 .visa-etat { color: var(--muted); }
 .visa.absent { border-style: dashed; }
 /* La couleur ne marque qu'un PROBLÈME (§6) : le visa périmé, rien d'autre. */
@@ -560,7 +560,7 @@ details.repli > summary {
 }
 details.repli > summary::-webkit-details-marker { display: none; }
 details.repli > summary h3 { margin: 0; font-size: 13.5px; }
-details.repli > summary .chevron { font-size: 11px; color: var(--muted); display: inline-block; transition: transform 150ms ease-out; }
+details.repli > summary .chevron { font-size: var(--t0); color: var(--muted); display: inline-block; transition: transform 150ms ease-out; }
 details.repli[open] > summary .chevron { transform: rotate(90deg); }
 details.repli > summary:hover { background: var(--row-hover); }
 details.repli > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -783,7 +783,7 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
 
 /* Le refus de mémorisation du RAIL (revue hostile n°8, constat 2) : il se lit
    sous le rail, comme celui d'une section se lit à côté de son titre. */
-.rail-defaut { font-size: 11px; color: var(--amber); padding: 2px 8px; margin: 0; line-height: 1.35; }
+.rail-defaut { font-size: var(--t0); color: var(--amber); padding: 2px 8px; margin: 0; line-height: 1.35; }
 
 /* ── L'ÉPURE — la source de jetons du langage visuel donné par le fondateur
    (mandat 2026-09-09, §5). Référence assumée : le langage visuel d'Optro.ai —
@@ -856,7 +856,7 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
 .epure-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--e-muted); }
 /* LE MONOSPACE EN CAPITALES DONNE SA FORME AU D.6 POINT 1 (§5) : la phrase en
    français d'abord, le code de refus ensuite, en petit — jamais l'inverse. */
-.epure-mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; color: var(--e-muted); }
+.epure-mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; font-size: var(--t0); color: var(--e-muted); }
 
 .epure-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--e4); margin-bottom: var(--e5); }
 
@@ -872,7 +872,7 @@ button.compte-notes { cursor: pointer; font-family: inherit; line-height: 1.4; }
 
 .epure-badge {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 600;
+  font-size: var(--t0); font-weight: 600;
 }
 .epure-badge.gris { background: var(--e-border); color: var(--e-muted); }
 .epure-badge.violet { background: var(--e-accent-soft); color: var(--e-accent); }
