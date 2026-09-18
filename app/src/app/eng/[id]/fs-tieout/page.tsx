@@ -54,7 +54,7 @@ export default async function TieOutPage({
 
       <div className="panel">
             <h2>{t('rail.pointage')}</h2>
-        <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 8 }}>
+        <form action={l.length === 0 ? chargerAction : pointerAction} className="row" style={{ gap: 'var(--e2)' }}>
           <input type="hidden" name="engagement_id" value={id} />
           <button className="btn">{l.length === 0 ? t('fst.chargerPlaquette') : t('fst.repointer')}</button>
         </form>

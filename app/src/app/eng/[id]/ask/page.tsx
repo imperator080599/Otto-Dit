@@ -45,7 +45,7 @@ export default async function AskPage({
         <p className="faint">
           {t('ask.explication')}
         </p>
-        <form action={askAction} className="row" style={{ gap: 8 }}>
+        <form action={askAction} className="row" style={{ gap: 'var(--e2)' }}>
           <input
             name="q"
             defaultValue={sp.q ?? ''}

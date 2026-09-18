@@ -593,7 +593,15 @@ details.repli > summary:focus-visible { outline: 2px solid var(--accent); outlin
    candidats pour `--e2`), les `margin*`/`padding*` en dur qui matchent une
    valeur de la palette (~49 sites restants, `.tsx`), et les ~43 déclarations
    en dur DANS ce fichier lui-même — tranches futures, gardées par
-   `globals.css.test.ts`. */
+   `globals.css.test.ts`.
+
+   Lot 7, H-6 tranche 5 (2026-09-18) : suite mécanique — les 14 occurrences
+   EXACTES de `gap: 8` (mot entier, 9 fichiers, dont trois hors `eng/[id]` :
+   `page.tsx`, `nouvelle-mission.tsx`, `methodology/import-form.tsx`),
+   migrées vers `gap: 'var(--e2)'`. CE QUE CETTE TRANCHE NE COUVRE PAS
+   (règle 19) : les `margin*`/`padding*` en dur restants (~49 sites, `.tsx`)
+   et les ~43 déclarations en dur DANS ce fichier lui-même — tranches
+   futures, gardées par `globals.css.test.ts`. */
 :root {
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px;
   --ombre-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 1px rgba(16, 24, 40, .04);

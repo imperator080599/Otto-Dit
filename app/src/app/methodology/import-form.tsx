@@ -64,7 +64,7 @@ export function ImportForm({
           style={{ width: '100%', fontSize: 12 }}
         />
       </p>
-      <p className="row" style={{ gap: 8 }}>
+      <p className="row" style={{ gap: 'var(--e2)' }}>
         <button className="btn secondary" name="intention" value="verifier" disabled={enCours}>
           {t('imp.verifierSansPublier')}
         </button>

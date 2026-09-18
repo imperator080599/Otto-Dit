@@ -187,3 +187,48 @@ describe('gap: 4 en dur dans les .tsx (Lot 7, H-6 tranche 4)', () => {
     expect(compterGap4EnDur()).toBe(compteAvant);
   });
 });
+
+/* Lot 7, H-6 tranche 5 (2026-09-18). Suite mécanique de la tranche 4 : les 14 occurrences EXACTES
+   de `gap: 8` (mot entier) dans 9 fichiers `.tsx` (dont trois hors `eng/[id]` : `page.tsx`,
+   `nouvelle-mission.tsx`, `methodology/import-form.tsx`), migrées vers `gap: 'var(--e2)'` (`--e2`
+   = 8px, ADR-125, jamais redéfini). Même raisonnement que `gap: 4` : identité stricte, aucun
+   risque de cascade. CE QUE CE GARDE NE VÉRIFIE PAS (règle 19), délibérément : les `margin*`/
+   `padding*` en dur restants (~49 sites, `.tsx`) et les ~43 déclarations en dur DANS
+   `globals.css` lui-même — candidats pour une tranche future. */
+describe('gap: 8 en dur dans les .tsx (Lot 7, H-6 tranche 5)', () => {
+  const SEUIL_GAP8 = 0;
+
+  function compterGap8EnDur(): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(/gap: 8\b/g);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  it('le compte de `gap: 8` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)', () => {
+    const compteAvant = compterGap8EnDur();
+    expect(compteAvant).toBe(SEUIL_GAP8);
+
+    // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+    // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test, jamais
+    // laissé sur le disque (règle 24).
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    const fichierSonde = path.join(racineApp, '__sonde_h6_tranche5__.tsx');
+    fs.writeFileSync(
+      fichierSonde,
+      `export const Sonde = () => <div className="row" style={{ gap: 8 }}>x</div>;\n`
+    );
+    try {
+      const compteAvecSonde = compterGap8EnDur();
+      expect(compteAvecSonde).toBe(compteAvant + 1);
+      expect(compteAvecSonde).toBeGreaterThan(SEUIL_GAP8);
+    } finally {
+      fs.rmSync(fichierSonde, { force: true });
+    }
+    expect(compterGap8EnDur()).toBe(compteAvant);
+  });
+});

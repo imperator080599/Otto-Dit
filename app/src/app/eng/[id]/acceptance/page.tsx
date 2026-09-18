@@ -129,7 +129,7 @@ export default async function AcceptancePage({
                   <p>
                     <input name="reason" placeholder={t('acc.reasonForTheDecisionRequired')} style={{ width: '100%', maxWidth: 620 }} />
                   </p>
-                  <p className="row" style={{ gap: 8 }}>
+                  <p className="row" style={{ gap: 'var(--e2)' }}>
                     <button className="btn" name="status" value="accepted">{t('acc.acceptTheEngagement')}</button>
                     <button className="btn secondary" name="status" value="declined">{t('acc.declineTheEngagement')}</button>
                   </p>

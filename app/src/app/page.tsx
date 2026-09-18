@@ -78,7 +78,7 @@ export default async function Home({
     <div className="shell">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h1>{t('col.engagements')}</h1>
-        <span className="row" style={{ gap: 8 }}>
+        <span className="row" style={{ gap: 'var(--e2)' }}>
           {/* La méthode du cabinet n'est pas un réglage d'une mission : elle est
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
           <Link href="/methodology" className="btn secondary small">{t('commun.methode')}</Link>

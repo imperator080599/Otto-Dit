@@ -83,7 +83,7 @@ export default async function CompletionPage({
                     <input name="conclusion" placeholder={libelle('comp.conclusionRequired')}
                       style={{ width: '100%', maxWidth: 680 }} />
                   </p>
-                  <p className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <p className="row" style={{ gap: 'var(--e2)', flexWrap: 'wrap' }}>
                     {x.nature === 'evenements_posterieurs' && (
                       <label className="faint">
                         {libelle('comp.proceduresCarriedThroughTo')}{' '}

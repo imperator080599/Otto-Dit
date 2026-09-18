@@ -253,9 +253,9 @@ export default async function SamplingPage({
             )}
             {sample.status === 'drawn' && (
               <>
-                <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--e2)' }}>
                   <h3>Selected items ({sample.items.length}{t('samp.coverage')} {fmtEur(numToCents(sample.coverage_amount ?? '0'), 'fr')}</h3>
-                  <div className="row" style={{ gap: 8 }}>
+                  <div className="row" style={{ gap: 'var(--e2)' }}>
                     {/* ÉTAPE 5 (plan d'autonomie, Partie B) : un bouton en un clic PAR
                         TYPE de pièce, EN LOT pour tout l'échantillon — complémentaire
                         au paquet PBC ci-dessous, jamais un remplacement (requests.ts). */}

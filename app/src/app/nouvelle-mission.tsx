@@ -27,7 +27,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
         <summary><strong>{t('nouveau.titre')}</strong></summary>
         <BandeauRefus erreur={erreur} />
         <form action={creerAction} className="mt">
-          <p className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
+          <p className="row" style={{ gap: 'var(--e2)', flexWrap: 'wrap', alignItems: 'baseline' }}>
             <label className="faint">{t('nm.client')}</label>
             <select name="entity_id" required>
               {entites.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -36,7 +36,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
             <input name="entity_name" placeholder={t('nm.nomDuClient')} style={{ minWidth: 220 }} />
             <input name="entity_currency" placeholder={t('nm.devise')} defaultValue="EUR" style={{ width: 70 }} />
           </p>
-          <p className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
+          <p className="row" style={{ gap: 'var(--e2)', flexWrap: 'wrap', alignItems: 'baseline' }}>
             <label className="faint">{t('nm.exercice')}</label>
             {/* LES EXERCICES SONT GROUPÉS PAR CLIENT : l'écran n'a pas de script
                 pour filtrer la liste selon le client choisi ; le groupe rend
@@ -58,7 +58,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
             </select>
             <input name="period_end" placeholder={t('nm.clotureLe')} style={{ width: 170 }} />
           </p>
-          <p className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
+          <p className="row" style={{ gap: 'var(--e2)', flexWrap: 'wrap', alignItems: 'baseline' }}>
             <label className="faint">{t('nm.nature')}</label>
             <select name="kind" defaultValue="statutory_audit">
               <option value="statutory_audit">{t('nm.auditLegal')}</option>
@@ -84,7 +84,7 @@ export async function NouvelleMission({ tenantId, erreur }: { tenantId: string; 
               {BENCHMARKS.map((b) => <option key={b} value={b}>{t(`nm.benchmark.${b}`)}</option>)}
             </select>
           </p>
-          <p className="row" style={{ gap: 8 }}>
+          <p className="row" style={{ gap: 'var(--e2)' }}>
             <input name="name" placeholder={t('nouveau.nom')} style={{ flex: 1, minWidth: 260 }} />
             <button className="btn">{t('nm.creer')}</button>
           </p>

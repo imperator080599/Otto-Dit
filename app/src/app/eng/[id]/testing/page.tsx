@@ -292,13 +292,13 @@ export default async function TestingPage({
       {grille && grille.colonnes.length > 0 && (
         <div className="panel" data-grille-vue>
           <h2 style={{ marginTop: 0 }}>{t('atl.grilleVue.titre')}</h2>
-          <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--e2)' }}>
             <form action={ajouterColonneAction} className="row">
               <input type="text" name="titre" placeholder={t('atl.grilleVue.ajouterPlaceholder')} style={{ minWidth: 260 }} required data-ajouter-colonne-titre />
               <button className="btn secondary small" data-ajouter-colonne>{t('atl.grilleVue.ajouterBouton')}</button>
             </form>
             {sample && sample.status === 'drawn' && typesAjoutes.length > 0 && (
-              <span className="row" style={{ gap: 8 }}>
+              <span className="row" style={{ gap: 'var(--e2)' }}>
                 {typesAjoutes.includes(EVIDENCE_TYPE_INVOICE) && (
                   <form action={demanderPiecesAjouteesEnLotAction}>
                     <input type="hidden" name="sample_id" value={sample.id} />
