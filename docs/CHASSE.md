@@ -1728,3 +1728,49 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0 défaut). Le
   cluster `font-size` DANS `globals.css` est désormais CLOS ; seul le cluster d'espacement
   (`margin*`/`padding*`/`gap`, 22 sites) reste hors périmètre de toute tranche H-6 jusqu'ici.
+
+- **F54 — DEUX incidents de budget, UN incident perte de tâche, UN constat réel, ZÉRO régression
+  fonctionnelle** (2026-09-18, Lot 7, H-6 tranche 12 — CLÔTURE du mandat entier ouvert par la
+  tranche 9 : les 22 derniers sites d'espacement DANS `globals.css`, sur l'arbre final du commit
+  `bfef46c`) :
+
+  1. **Un réfutateur** (règle 30, tranche CSS pure) a trouvé un constat RÉEL, MOYEN : le message
+     de commit d'origine ne nommait qu'UN raccourci à deux valeurs resté hors périmètre
+     (`padding: 12px 18px`, ligne ~743), alors qu'un SECOND existe de la même classe de risque
+     (`padding: 16px 18px`, ligne ~268, `.panel`, dont le PREMIER jeton — 16px — est lui-même
+     l'une des 15 valeurs ciblées). Le comportement livré était déjà SÛR (la regex bornée par le
+     `;` exclut correctement les deux, vérifié en exécutant par le réfutateur), mais le second
+     n'avait ni mention ni test dédié — protection incidente, pas nommée (règle 17). Corrigé
+     (`bfef46c`) : commentaire mis à jour (deux sites nommés), un test dédié ajouté pour le
+     second, 36/36 (+1). Tout le reste du réfutateur : ZÉRO défaut — les 22 sites vérifiés un par
+     un (ventilation `e1×3, e2×8, e3×4, e4×6, e5×1` recomptée indépendamment), les jetons `--eN`
+     jamais redéfinis, l'unique coexistence `gap`/`row-gap` de même famille (`.topbar` en media
+     query) confirmée préexistante et non aggravée (même ordre relatif qu'avant la tranche).
+
+  2. **Un `EXIT=143` sur le PREMIER essai de `verify`** (`timeout 5400`) — root-causé, pas
+     supposé : naissance-modification du journal mesurée à EXACTEMENT 5400,09 s, tué par le
+     `timeout` lui-même mi-`clics` (son propre build), pas par une cause externe. Un
+     `next-server` orphelin laissé au passage, tué avant le second essai. C'est la DEUXIÈME fois
+     dans cette série (après la tranche 9) que 5400 s s'avère insuffisant pour cet arbre — mesure
+     reprise et budget monté à `timeout 7200` pour le second essai.
+
+  3. **Le conteneur a été redémarré PENDANT le second essai** (`7200 s`), le perdant
+     intégralement — notification explicite du harnais (« That work is lost — no result or
+     further notification will arrive for it »), aucune progression fausse déclarée (règle 35).
+     Un TROISIÈME essai a été relancé (toujours `timeout 7200`), après avoir revérifié l'état du
+     dépôt (rien de perdu — seul `docs/DENSITE.md`, un sous-produit régénérable, était non
+     commité) et PGlite libre sur le conteneur frais.
+
+  Sur l'arbre FINAL (`bfef46c`, troisième essai de `verify`, `timeout 7200`, `set -o pipefail`) :
+  `tsc` propre, vitest 163/163 fichiers · 1243/1243 tests (+1 vs tranche 11 : le nouveau test du
+  second raccourci), gardes 47/semeur/plancher 632/langue (15/15 cas connus mauvais)/lectures (0
+  perdue sur 1990, 6/6 cas connus mauvais)/parcours (5/5 cas connus mauvais, 290/347 stations
+  figées, inchangé) tous propres, screens 98/0, fumee 55/0, densite 88/0. `clics` : `EXIT=1` réel
+  (journal brut, `set -o pipefail`) — UNE SEULE occurrence de `#418` (retour à la normale après
+  le doublé de la tranche 9), même signature jeton 87/`rail-astuce` que les 38 confirmations
+  précédentes, disjointe du diff CSS pur de cette tranche. QUARANTE ET UNIÈME confirmation
+  consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F53). `npm
+  run visuel` relancé séparément avant le début de la tranche : 356 vues/0 défaut. Avec cette
+  tranche, le mandat ENTIER ouvert par la tranche 9 (« ~43 déclarations en dur DANS globals.css »,
+  mesuré à 49 sites à jeton exact : 27 de police + 22 d'espacement) est CLOS — les deux clusters
+  sont désormais migrés en totalité.

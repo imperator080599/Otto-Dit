@@ -4,6 +4,61 @@
 
 ---
 
+## Lot 7, H-6 tranche 12 — CLÔTURE du mandat entier DANS globals.css (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 11 (règle 32).*
+
+**Implémentation** : dernier cluster hors périmètre du mandat ouvert par la tranche 9 — les 22
+sites d'espacement (`margin*`/`padding*`/`gap`) à valeur unique et jeton `--eN` exact DANS
+`globals.css`, en 15 paires propriété+valeur distinctes, migrés vers leurs jetons. Un raccourci à
+deux valeurs (`padding: 12px 18px`) délibérément laissé en dur — la substitution exige une
+correspondance EXACTE bornée par le `;` ; un premier essai sans cette borne avait accidentellement
+matché ce site, corrigé AVANT tout commit.
+
+**Garde neuf** (`globals.css.test.ts`) : un cluster séparé (pas d'équivalent pré-existant pour
+l'espacement), sondé EN MÉMOIRE (jamais un vrai fichier écrit sur disque, même discipline que le
+garde `font-size` d'origine). 15 cas connus mauvais, un par paire, plus un test nommant le
+raccourci hors périmètre.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : UN constat RÉEL, MOYEN — un SECOND raccourci à
+deux valeurs (`padding: 16px 18px`, `.panel`, ligne ~268, dont le premier jeton est lui-même l'une
+des 15 valeurs ciblées) partageait la même classe de risque que celui nommé, protégé PAR CHANCE
+par la même regex mais sans mention ni test dédié. Corrigé (`bfef46c`) : commentaire mis à jour,
+test dédié ajouté, 36/36 (+1). Tout le reste : ZÉRO défaut — 22 sites revérifiés un par un,
+ventilation par jeton recomptée indépendamment, jetons `--eN` jamais redéfinis, l'unique
+coexistence `gap`/`row-gap` de même famille confirmée préexistante et non aggravée.
+
+**Incidents d'infrastructure, aucun n'a affecté le code livré** (docs/CHASSE.md, F54) : (1) le
+premier essai de `verify` (`timeout 5400`) a été tué par son propre budget mi-`clics` — root-causé
+via les horodatages du journal (exactement 5400,09 s), pas supposé — deuxième fois que 5400 s
+s'avère insuffisant dans cette série ; (2) le conteneur a été redémarré PENDANT le second essai
+(`timeout 7200`), le perdant intégralement, sans fausse progression déclarée ; (3) un troisième
+essai (toujours `timeout 7200`) a complété proprement après revérification de l'état du dépôt et
+de PGlite sur le conteneur frais.
+
+**Mesures finales** (verify complet, TROISIÈME essai sur l'arbre du commit `bfef46c`, `timeout
+7200`, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1243 tests/1243 (+1
+vs tranche 11) ; gardes 47 propre ; semeur à jour ; plancher 1243/632 propre ; langue propre
+(15/15 cas connus mauvais) ; lectures 0 perdue/1990 (6/6 cas connus mauvais) ; parcours 5/5 cas
+connus mauvais (290/347 stations figées, inchangé) ; screens 98 routes/0 échec ; fumee 55
+routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — UNE SEULE occurrence de
+`#418`, `/eng/[id]/rcm/[cid]` (l'habituelle, jeton 87, même signature que les 38 confirmations
+précédentes) — QUARANTE ET UNIÈME confirmation consécutive, 286 étapes/403 clics/63 gestes
+(inchangé) ; `npm run visuel` relancé séparément avant le début de la tranche : 356 vues/0 défaut.
+
+**Le mandat entier ouvert par la tranche 9 est désormais CLOS** : les 49 sites à jeton exact DANS
+`globals.css` (27 de police + 22 d'espacement) sont migrés en totalité. Aucun candidat H-6 restant
+n'est encore scopé pour une prochaine tranche mécanique — la suite naturelle exige soit une
+recherche de scoping fraîche (p. ex. l'échelle `--eN` restante dans les `.tsx` hors des clusters
+déjà migrés tranches 4-8), soit le jugement du fondateur sur l'épure terminée (explicitement hors
+de portée de cette session — « le verdict du fondateur sur l'épure achevée vient plus tard,
+délibérément »).
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 11 — CLÔTURE du cluster font-size DANS globals.css (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
