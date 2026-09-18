@@ -61,7 +61,7 @@ export function ImportForm({
           spellCheck={false}
           rows={14}
           className="mono"
-          style={{ width: '100%', fontSize: 12 }}
+          style={{ width: '100%', fontSize: 'var(--t1)' }}
         />
       </p>
       <p className="row" style={{ gap: 'var(--e2)' }}>
@@ -84,7 +84,7 @@ export function ImportForm({
             <span className="badge amber">{t('commun.refuse')}</span>{' '}
             <strong>{t('imp.nErreurs', { n: etat.erreurs.length })}</strong> {t('imp.rienEcrit')}
           </p>
-          <ul className="mono" style={{ fontSize: 12 }}>
+          <ul className="mono" style={{ fontSize: 'var(--t1)' }}>
             {etat.erreurs.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
         </div>

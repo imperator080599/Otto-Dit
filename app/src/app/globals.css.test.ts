@@ -591,3 +591,74 @@ describe('cluster espacement (margin*/padding*/gap) en dur DANS globals.css (Lot
     expect(css).not.toMatch(/padding:\s*var\(--e4\)\s+18px/);
   });
 });
+
+/* Lot 7, H-6 tranche 13 (2026-09-18). Recherche dédiée (sous-agent, mandat de la tranche 9 CLOS
+   à ce stade) : le cluster `.faint` + `fontSize` de la tranche 3 avait un périmètre ÉTROIT
+   (uniquement la combinaison `className="...faint..." style={{ fontSize: N`, règle 19) — il
+   laissait des sites `fontSize`/`padding` en dur SANS `.faint`, jamais scopés par aucune
+   tranche 1-12. 14 sites EXACTS retrouvés dans 6 fichiers, vérifiés un par un avant migration
+   (dont `provenance/page.tsx:172`, déjà `var(--e4)`, confirmant qu'il s'agissait d'un oubli et
+   non d'une exclusion délibérée) : `fontSize: 11` (5 sites, sans `.faint`) → `var(--t0)`,
+   `fontSize: 12` (8 sites) → `var(--t1)`, `padding: 24` (1 site, `global-error.tsx`, valeur
+   unique — pas de raccourci multi-valeurs) → `var(--e5)`.
+
+   CE QUE CE GARDE NE VÉRIFIE PAS (règle 19), délibérément : `fontSize: 10`/`13`/`11.5`/`13.5`/
+   `18`/`26` (aucun jeton `--tN` exact), les raccourcis `margin`/`padding` à plusieurs valeurs
+   (p. ex. `margin: '4px 0'`, exclus par construction : ce garde ne cherche que `PROP: N` où N
+   est un nombre nu, pas une chaîne). Les 14 sites migrés ici n'incluent AUCUNE des zones déjà
+   couvertes par la tranche 3 (`.faint`) ni par les tranches 4-8 (`gap`/`margin*`/`padding*`
+   à d'autres valeurs) — vérifié par grep avant la tranche, pas supposé.
+
+   CORRECTIF avant tout commit (pas après, règle 17 appliqué à soi-même) : le compte initial de
+   la recherche déléguée (14 sites, 8× `fontSize: 12`) en oubliait un — `provenance/page.tsx:172`
+   avait déjà `paddingLeft: 'var(--e4)'` migré (tranche 8) mais gardait `fontSize: 12` EN DUR sur
+   la même ligne ; la recherche l'avait classé « déjà migré » en ne vérifiant que `paddingLeft`.
+   Trouvé en écrivant CE garde (son propre seuil à zéro aurait échoué sinon) : compte réel = 15
+   sites (5× `fontSize: 11`, 9× `fontSize: 12`, 1× `padding: 24`), 6 fichiers. */
+describe('fontSize/padding en dur, hors .faint, dans les .tsx (Lot 7, H-6 tranche 13)', () => {
+  function compterEnDur(prop: string, val: number): number {
+    const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+    // (?![.\d]) plutôt que \b : \b matche entre un chiffre et un point (« 11.5 » contient
+    // « 11 » suivi d'une frontière avant « .5 »), ce qui ferait faussement compter le site
+    // délibérément hors périmètre `fontSize: 11.5` comme une occurrence de `fontSize: 11`.
+    const motif = new RegExp(`(?<![-\\w])${prop}:\\s*${val}(?![.\\d])`, 'g');
+    let compte = 0;
+    for (const fichier of listerFichiersTsx(racineApp)) {
+      const texte = fs.readFileSync(fichier, 'utf8');
+      const m = texte.match(motif);
+      if (m) compte += m.length;
+    }
+    return compte;
+  }
+
+  const PAIRES: Array<{ prop: string; val: number }> = [
+    { prop: 'fontSize', val: 11 },
+    { prop: 'fontSize', val: 12 },
+    { prop: 'padding', val: 24 },
+  ];
+
+  for (const { prop, val } of PAIRES) {
+    it(`le compte de \`${prop}: ${val}\` numérique en dur ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)`, () => {
+      const compteAvant = compterEnDur(prop, val);
+      expect(compteAvant).toBe(0);
+
+      // CAS CONNU MAUVAIS (règle 17) : un fichier RÉEL, DANS l'arbre balayé, qui réintroduit le
+      // défaut doit être vu par le VRAI détecteur — écrit puis supprimé dans le même test,
+      // jamais laissé sur le disque (règle 24).
+      const racineApp = path.join(repoRoot(), 'app', 'src', 'app');
+      const fichierSonde = path.join(racineApp, `__sonde_h6_tranche13_${prop}_${val}__.tsx`);
+      fs.writeFileSync(
+        fichierSonde,
+        `export const Sonde = () => <div style={{ ${prop}: ${val} }}>x</div>;\n`
+      );
+      try {
+        const compteAvecSonde = compterEnDur(prop, val);
+        expect(compteAvecSonde).toBe(compteAvant + 1);
+        expect(compteAvecSonde).toBeGreaterThan(0);
+      } finally {
+        fs.rmSync(fichierSonde, { force: true });
+      }
+      expect(compterEnDur(prop, val)).toBe(compteAvant);
+    });
+  }
+});

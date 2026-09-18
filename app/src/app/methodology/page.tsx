@@ -98,7 +98,7 @@ export default async function MethodologyPage({
                 <td className="mono">{m.versions.procedures ?? '—'}</td>
                 <td className="mono">{m.versions.risque ?? '—'}</td>
                 <td className="mono">{m.versions.assertions ?? '—'}</td>
-                <td className="mono" style={{ fontSize: 11 }}>{m.content_hash.slice(0, 12)}…</td>
+                <td className="mono" style={{ fontSize: 'var(--t0)' }}>{m.content_hash.slice(0, 12)}…</td>
                 <td>{engagements.filter((e) => e.methodology_id === m.id).length}</td>
               </tr>
             ))}

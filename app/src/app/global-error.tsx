@@ -29,7 +29,7 @@ export default function ErreurGlobale({ error, reset }: { error: Error & { diges
   return (
     <html lang={l}>
       <body>
-        <div className="shell" style={{ maxWidth: 640, padding: 24 }}>
+        <div className="shell" style={{ maxWidth: 640, padding: 'var(--e5)' }}>
           <h1>{t('erreur.titre')}</h1>
           <p>{t('erreur.explication')}</p>
           {digest && (

@@ -233,7 +233,7 @@ export default async function CircularisationsPage({
                     {s.rap.lignes.map((l) => (
                       <tr key={l.id}>
                         <td>{l.nom}</td>
-                        <td className="mono" style={{ fontSize: 11 }}>{l.reference}</td>
+                        <td className="mono" style={{ fontSize: 'var(--t0)' }}>{l.reference}</td>
                         <td className="mono">{l.compte ?? '—'}</td>
                         <td><span className={ETATS[l.etat].badge}>{t(ETATS[l.etat].libelle)}</span></td>
                         <td className="num">{l.soldeComptableCents === null ? '—' : fmtEur(l.soldeComptableCents, 'fr')}</td>

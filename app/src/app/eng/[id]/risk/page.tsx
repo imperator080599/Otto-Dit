@@ -417,9 +417,9 @@ export default async function RiskPage({
                     population explicite est une intention, pas une procédure :
                     on dit sur QUOI elle porte et COMMENT on y choisit. */}
                 <td className="faint" style={{ maxWidth: 260 }}>
-                  <div className="mono" style={{ fontSize: 11 }}>{p.procedure.population.predicat}</div>
+                  <div className="mono" style={{ fontSize: 'var(--t0)' }}>{p.procedure.population.predicat}</div>
                   {Object.keys(p.procedure.population.parametres ?? {}).length > 0 && (
-                    <div style={{ fontSize: 11 }}>
+                    <div style={{ fontSize: 'var(--t0)' }}>
                       {Object.entries(p.procedure.population.parametres ?? {})
                         .map(([k, v]) => `${k} : ${String(v)}`).join(' · ')}
                     </div>

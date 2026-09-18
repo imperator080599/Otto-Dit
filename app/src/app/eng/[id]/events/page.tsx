@@ -66,7 +66,7 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
                   </td>
                   <td className="mono">{e.verb}</td>
                   <td className="faint">{e.object_type}{e.object_id ? ` ${e.object_id.slice(0, 8)}` : ''}</td>
-                  <td className="mono" style={{ fontSize: 11, maxWidth: 380, wordBreak: 'break-word' }}>
+                  <td className="mono" style={{ fontSize: 'var(--t0)', maxWidth: 380, wordBreak: 'break-word' }}>
                     {JSON.stringify(e.payload).slice(0, 220)}
                   </td>
                   <td className="mono faint">{e.hash.slice(0, 8)}</td>

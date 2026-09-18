@@ -132,7 +132,7 @@ export default async function ProvenancePage({
                 {supports.signoffs.length === 0 && <li className="faint">{t('prov.notYetSigned')}</li>}
               </ul>
               <h3>{t('prov.piecesAppui', { n: supports.evidence.length })}</h3>
-              <ul style={{ paddingLeft: 18, fontSize: 12 }}>
+              <ul style={{ paddingLeft: 18, fontSize: 'var(--t1)' }}>
                 {supports.evidence.map((e) => (
                   <li key={e.id}>
                     <a href={`/api/blob/${e.id}`} target="_blank">{e.filename}</a>{' '}
@@ -141,14 +141,14 @@ export default async function ProvenancePage({
                 ))}
               </ul>
               <h3>{t('prov.partIa', { n: supports.aiRuns.length })}</h3>
-              <ul style={{ paddingLeft: 18, fontSize: 12 }}>
+              <ul style={{ paddingLeft: 18, fontSize: 'var(--t1)' }}>
                 {supports.aiRuns.map((r, i) => <li key={i}>{r.purpose} · {r.adapter}/{r.model} · {r.created_at.slice(0, 16)}</li>)}
                 {supports.aiRuns.length === 0 && <li className="faint">{t('prov.noAiOcrRunsDeterministicRungs')}</li>}
               </ul>
               {supports.edits.length > 0 && (
                 <>
                   <h3>{t('prov.manualModifications')}</h3>
-                  <ul style={{ paddingLeft: 18, fontSize: 12 }}>
+                  <ul style={{ paddingLeft: 18, fontSize: 'var(--t1)' }}>
                     {supports.edits.map((e, i) => <li key={i}><span className="mod-flag">{e.section}</span> {e.user_name}: {e.justification}</li>)}
                   </ul>
                 </>
@@ -158,7 +158,7 @@ export default async function ProvenancePage({
           {figure && (
             <>
               <h3>{t('prov.ledgerOrigin')}</h3>
-              <p className="mono" style={{ fontSize: 12 }}>
+              <p className="mono" style={{ fontSize: 'var(--t1)' }}>
                 {figure.item.entry_no} · {figure.item.entry_date} · {t('prov.compteEtPiece', { compte: figure.item.account_no, piece: figure.item.piece_ref ?? '—' })}
                 <br />{t('prov.debitCredit', { d: figure.item.debit, c: figure.item.credit, fichier: figure.item.import_filename })}
                 <br />{t('prov.naturalKey')} {figure.item.natural_key}
@@ -169,7 +169,7 @@ export default async function ProvenancePage({
                   <strong>{x.filename}</strong> <span className="badge violet">{x.rung}</span>{' '}
                   {x.verified_by && <span className="badge green">{t('prov.humanVerified')}</span>}
                   <div className="faint mono">{t('mot.sha256')} {x.sha256.slice(0, 16)}…</div>
-                  <ul style={{ paddingLeft: 'var(--e4)', fontSize: 12 }}>
+                  <ul style={{ paddingLeft: 'var(--e4)', fontSize: 'var(--t1)' }}>
                     {x.fields.slice(0, 8).map((f) => <li key={f.name}>{f.name} = {String(f.value).slice(0, 50)} {t('prov.confiance', { c: f.confidence })}</li>)}
                   </ul>
                 </div>
@@ -177,7 +177,7 @@ export default async function ProvenancePage({
               {figure.match && (
                 <>
                   <h3>{t('prov.vouchingChecks')}</h3>
-                  <ul style={{ paddingLeft: 18, fontSize: 12 }}>
+                  <ul style={{ paddingLeft: 18, fontSize: 'var(--t1)' }}>
                     {figure.match.checks.map((c, i) => (
                       <li key={i} style={{ color: c.pass ? 'var(--green)' : 'var(--red)' }}>
                         {t('prov.attenduTrouve', { regle: c.check, attendu: c.expected, trouve: c.found })}

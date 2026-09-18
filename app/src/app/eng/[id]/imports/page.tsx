@@ -121,7 +121,7 @@ export default async function ImportsPage({
                         <summary>{violations.length} {t('imp.violationS')}</summary>
                         <ul style={{ margin: '6px 0', paddingLeft: 18 }}>
                           {violations.slice(0, 25).map((v, i) => (
-                            <li key={i} className={v.severity === 'error' ? 'mono' : 'mono muted'} style={{ fontSize: 12 }}>
+                            <li key={i} className={v.severity === 'error' ? 'mono' : 'mono muted'} style={{ fontSize: 'var(--t1)' }}>
                               [{v.severity}] {v.code}
                               {v.line ? t('imp.ligneNo', { n: v.line }) : ''}: {v.message}
                             </li>
