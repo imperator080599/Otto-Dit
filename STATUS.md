@@ -76,7 +76,11 @@ occurrences `style={{ fontSize: N }}` en dur sur `.faint`, ou l'espacement `--e1
 — 56 déclarations en dur contre 13 usages du jeton). Priorité 3 (H-3 slice 3, optionnelle) reste
 en file après H-6.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_7jBji7W9rUASMqJpaY61cC52w65r`, cible
+production) READY, commit `d4e644a74f1659f2877c91637f6ea6b5dcd30549` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 09:26:56Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante`.
 
 ---
 
