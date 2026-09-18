@@ -59,7 +59,22 @@ describe('le catalogue de libellés', () => {
     const connues = new Set(Object.keys(LIBELLES));
     const inconnues = new Set<string>();
     for (const f of fichiers) {
-      const code = fs.readFileSync(f, 'utf8');
+      /* COURSE CONTRE UN FICHIER SONDE (règle 18, prouvé par lecture du code,
+         pas supposé) : les gardes de H-6 (globals.css.test.ts) écrivent puis
+         suppriment de VRAIS fichiers `.tsx` dans cet arbre pour leur cas connu
+         mauvais (règle 17), le temps d'un seul `it()`. `vitest run` exécute
+         les fichiers de test en parallèle : la liste ci-dessus (`marcher`)
+         peut capturer un fichier sonde qui a disparu avant ce `readFileSync`.
+         Un fichier qui n'existe plus au moment de la lecture ne peut porter
+         aucune clé inconnue — l'ignorer est la sémantique correcte, pas un
+         contournement ; toute AUTRE erreur de lecture reste bloquante. */
+      let code: string;
+      try {
+        code = fs.readFileSync(f, 'utf8');
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw err;
+      }
       /* Une clé de catalogue porte un POINT (`vue.assignments`). L'exiger
          évite de confondre tout appel d'une fonction nommée `t` avec une
          traduction — la première version condamnait `t('ouvrir')` de l'écran
