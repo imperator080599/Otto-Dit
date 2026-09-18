@@ -478,6 +478,12 @@ export default async function TestingPage({
                   chiffre définitif. */}
               {(() => {
                 const methodeNonVerifiee = evaluation.projection_method === 'none' && evaluation.random_misstatement_count > 0;
+                /* Les CINQ `.kpi .v` ci-dessous lisent `fmtEur` (espace cassable),
+                   PAS `fmtEurTitre` (H-6 tranche 2, canon.ts) — délibérément : cette
+                   page est déjà marginale à 1280px (trois A/B directs, npm run
+                   visuel), et fmtEurTitre partout ailleurs la fait déborder. Ne
+                   PAS « uniformiser » avec population/materiality/estimations sans
+                   revérifier npm run visuel sur CETTE page précisément. */
                 return (
                   <div className="grid cols-2">
                     <div className="kpi"><span className="v">{fmtEur(numToCents(evaluation.known_misstatement), 'fr')}</span><span className="l">{t('test.knownMisstatement')}</span></div>
