@@ -1512,3 +1512,28 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F44).
   `npm run visuel` relancé séparément (avant le commit, sur le même arbre de fichiers), propre
   (356 vues, 0 défaut).
+
+- **F46 — UN incident** (2026-09-18, Lot 7, H-6 tranche 4 — jeton `--e1` (4px), unifier `gap: 4`
+  en dur, sur l'arbre du commit `ca60206` — un réfutateur (règle 30, tranche CSS pure). Un
+  PREMIER passage de `npm run verify` a trouvé un VRAI défaut, hors du périmètre de cette
+  tranche : `scripts/reprise.test.ts` (« le gabarit se remplit ») a rougi sur un `{{` littéral
+  dans `docs/instantanes/servi.json::mesure.par` — le texte de confirmation SHA servi de H-6
+  tranche 3 citait du JSX en prose (`style={{ fontSize: N }}`), et `scripts/reprise.ts` embarque
+  ce champ tel quel dans `docs/REPRISE.md` (ligne 263), où le garde le lit comme un gabarit non
+  rempli. Pas trouvé par le garde AU MOMENT de la tranche 3 (son propre `npm run verify` était
+  déjà vert) : le `{{` a été introduit par le commit de confirmation SHA servi APRÈS ce
+  verify-là — le prochain passage complet (celui-ci) l'a vu, exactement comme conçu (règle 30 :
+  verify complet seulement à l'expédition). Corrigé par une reformulation sans le double-accolade
+  littéral (aucun changement de sens), commit dédié `ca60206`, revérifié isolément
+  (`scripts/reprise.test.ts` 24/24) avant de relancer le verify complet. `EXIT=1` réel (journal
+  brut, `set -o pipefail`) sur ce second passage, UNE SEULE route — `/eng/70670df5-.../
+  rcm/8e5fbf20-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton 87, la valeur
+  `gap:var(--e1)` visible dans le bruit d'hydratation confirme juste que le jeton est bien rendu,
+  sans rapport avec le défaut). Disjoint de la tranche : cette tranche touche `globals.css` et 18
+  `page.tsx`/`.tsx` sous `eng/[id]/` (aucun n'est `rcm/[cid]`) — rien qui touche `/rcm`. Les 1212
+  tests vitest passent tous (+1 vs H-6 tranche 3 : le nouveau garde `gap: 4`). Clôture et archive
+  ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63 gestes (inchangé —
+  cette tranche ne touche pas `scenario.ts`) — TRENTE-DEUXIÈME confirmation consécutive que
+  `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F45). `npm run visuel`
+  relancé séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0
+  défaut).

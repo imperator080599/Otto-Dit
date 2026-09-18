@@ -4,6 +4,62 @@
 
 ---
 
+## Lot 7, H-6 tranche 4 — jeton --e1 (4px), unifier gap: 4 en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 3 (règle 32).*
+
+**Recherche** : la tranche 3 avait déjà scopé le candidat suivant — l'échelle `--e1..--e6`
+(ADR-125) était définie (`--e1: 4px` … `--e6: 32px`) mais avait ZÉRO usage de `var(--eN)` hors de
+`globals.css` lui-même : 94 sites `.tsx` candidats dans 36 fichiers, trop large pour une tranche
+verticale (règle 5). Sous-scopé cette fois par VALEUR plutôt que par zone : `gap: 4` est un cas
+mécaniquement non ambigu (identité stricte `4 === 4px`, aucun risque de cascade contrairement à
+`.faint`/`fontSize` de la tranche 3, où `.mono` pouvait l'emporter sur `.faint`).
+
+**Implémentation** : 45 occurrences EXACTES de `gap: 4` (mot entier, jamais `gap: 40` etc.),
+18 fichiers, migrées vers `gap: 'var(--e1)'` par une substitution regex ciblée (script Python,
+`gap: 4\b` → `gap: 'var(--e1)'`), chaque fichier revérifié après coup (compte exact, `tsc`,
+aucune sur-transformation par proximité — ex. `gap: 8` resté intact dans les mêmes fichiers).
+Commentaire ajouté dans `globals.css` juste avant le bloc `--e1..--e6`, documentant ce que cette
+tranche NE couvre PAS (règle 19) : `gap: 8` (14 sites, candidat `--e2`), les `margin*`/`padding*`
+en dur (~49 sites), les ~43 déclarations en dur dans `globals.css` lui-même.
+
+**Garde neuf** (`globals.css.test.ts`) : un second `describe` scanne tous les `.tsx` sous
+`src/app` pour `gap: 4` en dur, seuil à ZÉRO, avec un cas connu mauvais (règle 17) — un vrai
+fichier sonde écrit puis supprimé dans l'arbre balayé.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : aucun défaut critique ni moyen. Vérifié EN
+EXÉCUTANT : `tsc` propre, 5/5 tests passent, les 45 occurrences de `var(--e1)` relues une à une
+(syntaxe correcte, toutes dans un `style={{}}` React, aucune sur-transformation), `gap: 4` en dur
+totalement absent, `gap: 8` inchangé (14 sites), aucun fichier sonde résiduel.
+
+**Correctif trouvé par le PREMIER passage du verify complet, hors périmètre de cette tranche** :
+`scripts/reprise.test.ts` a rougi sur un `{{` littéral dans `docs/instantanes/servi.json::mesure.
+par` (introduit par le commit de confirmation SHA servi de la tranche 3, APRÈS le verify de cette
+tranche-là — donc jamais vu avant ce passage-ci). Reformulé sans le double-accolade littéral
+(aucun changement de sens), commit dédié, revérifié isolément (24/24) avant de relancer le verify
+complet dans son ensemble. Détail complet : docs/CHASSE.md, F46.
+
+**Mesures finales** (second passage du verify complet, sur l'arbre du commit `ca60206`, `timeout
+3600`, `set -o pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1212 tests/1212
+(+1 vs tranche 3 : le nouveau garde `gap: 4`) ; gardes 47 propre ; semeur à jour ; plancher
+1212/632 propre ; langue propre (15/15 cas connus mauvais dénoncés) ; lectures 6/6 ; parcours
+5/5 ; screens 98 routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du
+seuil ; clics `EXIT=1` — SEULE cause `#418` sur `/eng/70670df5-.../rcm/8e5fbf20-...` (`rcm/[cid]`,
+l'habituelle, disjointe de cette tranche qui ne touche aucun fichier `rcm`), 286 étapes/403
+clics/63 gestes (inchangé) — TRENTE-DEUXIÈME confirmation consécutive (docs/CHASSE.md, F46) ;
+`npm run visuel` relancé séparément (avant le commit, même arbre de fichiers) : 356 vues/0
+défaut.
+
+**Suite naturelle** : H-6 continue en tranches. Candidats restants déjà identifiés : `gap: 8` (14
+sites, `--e2`), les `margin*`/`padding*` en dur (~49 sites), le cluster `.faint`/`fontSize` déjà
+clos (tranche 3), et les ~43 déclarations en dur DANS `globals.css` lui-même. Priorité 3 (H-3
+slice 3, optionnelle) reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 3 — jeton --t0 (11px), unifier .faint + fontSize en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches, « jusqu'à ce
