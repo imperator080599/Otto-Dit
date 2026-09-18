@@ -502,3 +502,76 @@ describe('cluster margin*/padding* restant en dur dans les .tsx (Lot 7, H-6 tran
     });
   }
 });
+
+/* Lot 7, H-6 tranche 12 (2026-09-18). CLÔTURE du mandat entier ouvert par la tranche 9 : le
+   dernier cluster hors périmètre DANS `globals.css` lui-même — les 22 sites d'espacement
+   (`margin*`/`padding*`/`gap`) à valeur unique et jeton `--eN` exact, en 15 paires
+   propriété+valeur distinctes (jusqu'ici jamais migrées, contrairement aux mêmes propriétés
+   dans les `.tsx`, closes par les tranches 4-8). Migrées : `gap: 16px` (3 sites) → `--e4`,
+   `margin-left: 8px` → `--e2`, `gap: 24px` → `--e5`, `gap: 8px` (4 sites) → `--e2`,
+   `margin-top: 8px` → `--e2`, `margin-bottom: 16px` (2 sites) → `--e4`, `row-gap: 4px` →
+   `--e1`, `padding: 12px` (2 sites) → `--e3`, `gap: 12px` → `--e3`, `margin-left: 4px` →
+   `--e1`, `padding: 16px` → `--e4`, `margin-bottom: 8px` → `--e2`, `padding-top: 8px` →
+   `--e2`, `margin-bottom: 12px` → `--e3`, `gap: 4px` → `--e1`. Un site (`padding: 12px 18px`,
+   ligne ~743) est un raccourci à DEUX valeurs et n'a PAS été touché — la substitution exigeait
+   une correspondance EXACTE bornée par le `;`, vérifiée en exécutant avant de committer (le
+   premier essai, sans cette borne, avait accidentellement matché ce site : corrigé avant tout
+   commit, jamais expédié).
+
+   Contrairement au garde `font-size` ci-dessus (qui écrit un VRAI fichier `.tsx` pour sonder,
+   parce que son détecteur scanne un RÉPERTOIRE de fichiers), ce garde sonde en injectant la
+   ligne dans une COPIE EN MÉMOIRE du texte de `globals.css` — jamais sur disque : le
+   détecteur relit CE fichier précis, pas un répertoire, donc la sonde n'a besoin d'exister
+   que dans la chaîne testée (même discipline que le garde `font-size` original, tranche 1).
+
+   CE QUE CE GARDE NE VÉRIFIE PAS (règle 19) : les déclarations d'espacement dont la valeur
+   ne correspond à AUCUN jeton `--eN` existant (4/8/12/16/24/32px) restent hors périmètre,
+   sauf à inventer un nouveau jeton — aucune tranche H-6 ne l'a fait pour `--eN` depuis
+   ADR-125. Avec cette tranche, le mandat entier de la tranche 9 (« ~43 déclarations en dur
+   DANS globals.css », mesuré à 49 sites à jeton exact : 27 de police + 22 d'espacement) est
+   CLOS — les deux clusters à jeton exact sont désormais migrés en totalité. */
+describe('cluster espacement (margin*/padding*/gap) en dur DANS globals.css (Lot 7, H-6 tranche 12)', () => {
+  function compterEnDurSpacing(texte: string, prop: string, val: string): number {
+    const motif = new RegExp(`(?<![-\\w])${prop}\\s*:\\s*${val}(?=\\s*;)`, 'g');
+    const m = texte.match(motif);
+    return m ? m.length : 0;
+  }
+
+  const PAIRES: Array<{ prop: string; val: string }> = [
+    { prop: 'gap', val: '16px' },
+    { prop: 'margin-left', val: '8px' },
+    { prop: 'gap', val: '24px' },
+    { prop: 'gap', val: '8px' },
+    { prop: 'margin-top', val: '8px' },
+    { prop: 'margin-bottom', val: '16px' },
+    { prop: 'row-gap', val: '4px' },
+    { prop: 'padding', val: '12px' },
+    { prop: 'gap', val: '12px' },
+    { prop: 'margin-left', val: '4px' },
+    { prop: 'padding', val: '16px' },
+    { prop: 'margin-bottom', val: '8px' },
+    { prop: 'padding-top', val: '8px' },
+    { prop: 'margin-bottom', val: '12px' },
+    { prop: 'gap', val: '4px' },
+  ];
+
+  for (const { prop, val } of PAIRES) {
+    it(`le compte de \`${prop}: ${val}\` numérique en dur (limité au ";") ne remonte jamais au-dessus de zéro (règle 17 : cas connu mauvais)`, () => {
+      const css = fs.readFileSync(CSS_PATH, 'utf8');
+      const compteAvant = compterEnDurSpacing(css, prop, val);
+      expect(compteAvant).toBe(0);
+
+      // CAS CONNU MAUVAIS (règle 17) : injecté dans une COPIE EN MÉMOIRE du texte, jamais sur
+      // disque — voir le commentaire de tranche ci-dessus pour la raison.
+      const cssAvecSonde = css + `\n.sonde-h6-tranche12 { ${prop}: ${val}; }\n`;
+      const compteApresSonde = compterEnDurSpacing(cssAvecSonde, prop, val);
+      expect(compteApresSonde).toBe(compteAvant + 1);
+      expect(compteApresSonde).toBeGreaterThan(0);
+    });
+  }
+
+  it('le raccourci `padding: 12px 18px` (deux valeurs, ligne ~743) reste EN DUR — pas une régression, un cas hors périmètre nommé', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    expect(css).toMatch(/padding:\s*12px 18px/);
+  });
+});
