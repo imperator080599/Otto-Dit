@@ -4,6 +4,61 @@
 
 ---
 
+## Lot 7, H-6 tranche 9 — première migration DANS globals.css lui-même (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 8 (règle 32).*
+
+**Implémentation** : première tranche H-6 à migrer une déclaration en dur DANS `globals.css`
+lui-même, plutôt que dans un `.tsx`. Recherche dédiée (script) : le « ~43 déclarations » que la
+tranche 8 approximait mesure en réalité 49 sites à valeur unique et jeton EXACT (22 d'espacement,
+27 de taille de police). Sous-scopé au plus gros cluster homogène : `font-size: 11px` en dur, 13
+occurrences, chacune une déclaration isolée dans sa règle (aucun raccourci CSS partagé), migrées
+vers `font-size: var(--t0)` — identité stricte, le token `--t0: 11px` inchangé et jamais redéfini
+ailleurs dans le fichier (vérifié).
+
+**Garde neuf** (`globals.css.test.ts`) : seuil du cas connu mauvais de la tranche 1 baissé de 58 à
+45 (58 − 13 = 45, confirmé par le détecteur lui-même) ; nouvelle assertion listant les 13
+sélecteurs migrés et vérifiant chacun lit désormais `var(--t0)`.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : un seul constat, MINEUR, hors code — une
+arithmétique de commentaire (14+22 additionné à 27 au lieu de 36) — corrigé (`d2c262f`). Aucun
+défaut critique ni moyen : les 13 sites vérifiés un par un (aucune collision de raccourci `font:`
+— le seul du fichier, `.analytique-texte` ligne 572, est sans rapport), `--t0` confirmé unique
+dans le fichier, seuil recalculé indépendamment à 45.
+
+**Deux défauts réels trouvés par le `verify` complet lui-même, aucun dans le diff de la tranche**
+(docs/CHASSE.md, F51) : (1) une course entre le garde i18n (`i18n.test.ts`, liste-puis-lit tout
+`app/src`) et les fichiers sonde des gardes H-6 (règle 17, écrits-puis-supprimés le temps d'un
+`it()`) — `vitest run` en parallèle peut faire disparaître un fichier sonde entre le listage et sa
+lecture, `ENOENT` — latent depuis la tranche 3, jamais déclenché avant. Fixé : `catch` ciblé sur
+`ENOENT`, fichier disparu traité comme absent (sémantique correcte), toute autre erreur reste
+bloquante (`bc29616`). (2) `screens.test.ts` : un `ServeurTombe` isolé, un seul essai, jamais
+reproduit dans le `verify` final où `screens` tourne séparément du `vitest run` complet (comme
+toujours) — traité comme flake au sens de la règle 35, un seul re-lancement, pas re-creusé.
+
+**Mesures finales** (verify complet, TROISIÈME essai sur l'arbre du commit `bc29616`, `timeout
+5400` — 3600 s s'est avéré insuffisant pour cet arbre, mesuré, pas deviné — `set -o pipefail`) :
+`tsc --noEmit` propre ; vitest 163 fichiers/163, 1224 tests/1224 (+1 vs tranche 8) ; gardes 47
+propre ; semeur à jour ; plancher 1224/632 propre ; langue propre (15/15 cas connus mauvais
+dénoncés) ; lectures 0 perdue/1990 (6/6 cas connus mauvais) ; parcours 5/5 cas connus mauvais
+(290/347 stations figées, inchangé — `#418` empêche le gel complet depuis toujours) ; screens 98
+routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` —
+**DEUX** occurrences de `#418` cette fois (une première dans cette série, `docs/CHASSE.md` F51) :
+`/eng/[id]/suivi` (le harnais lui-même la signale mal étiquetée — l'erreur vient du document
+PRÉCÉDENT, `/acceptance`) et `/eng/[id]/rcm/[cid]` (l'habituelle). Les deux dumps portent la MÊME
+signature (jeton 87, `rail-astuce`) que les 36 confirmations précédentes ; aucune trace de
+`font-size: var(--t0)` dans l'un ou l'autre — TRENTE-SEPTIÈME confirmation consécutive que `#418`
+est disjoint, 286 étapes/403 clics/63 gestes (inchangé) ; `npm run visuel` relancé séparément
+avant le début de la tranche : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue — candidat suivant scopé (lecture seule, pas encore implémenté) :
+`font-size: 12px` DANS `globals.css`, 9 sites, zéro collision de raccourci `font:` confirmée.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 8 — clôturer le cluster margin*/padding* en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans

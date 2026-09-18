@@ -1619,3 +1619,65 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   gestes (inchangé) — TRENTE-SIXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé
   plus loin (même discipline que F9-F49). `npm run visuel` relancé séparément (avant le commit,
   sur le même arbre de fichiers), propre (356 vues, 0 défaut).
+
+- **F51 — DEUX incidents** (2026-09-18, Lot 7, H-6 tranche 9 — première tranche à migrer une
+  déclaration en dur DANS `globals.css` lui-même : `font-size: 11px` → `var(--t0)`, 13 sites, sur
+  l'arbre final du commit `bc29616`) — un réfutateur (règle 30, tranche CSS pure) n'a trouvé qu'un
+  constat MINEUR de commentaire (arithmétique : 14+22 additionné à 27 au lieu de 36 — corrigé,
+  `d2c262f`), mais le `verify` complet lui-même a trouvé DEUX défauts réels, ni l'un ni l'autre
+  dans le diff de la tranche :
+
+  1. **Une course entre le garde i18n et les fichiers sonde de H-6, ENOENT** (corrigée,
+     `bc29616`). Le PREMIER essai de `verify` (`timeout 3600`) a été tué par son propre budget
+     avant la fin (`EXIT=143`, naissance-modification du journal = exactement 3600 s, un
+     `next-server` orphelin laissé par `clics` tué au passage) — relancé à `timeout 5400` (mesure,
+     pas supposition : 3600 s ne suffit plus pour cet arbre). Le DEUXIÈME essai a réellement
+     atteint `vitest run` cette fois et a révélé `i18n.test.ts` en échec : `ENOENT` sur
+     `__sonde_h6_tranche8_paddingLeft_8__.tsx`. Root-caused par LECTURE du code (règle 18, pas
+     supposé) : `i18n.test.ts` liste tout `app/src` en un seul passage (`readdirSync`) puis relit
+     chaque fichier dans une boucle séparée ; les gardes H-6 (règle 17) écrivent puis suppriment de
+     VRAIS fichiers `.tsx` dans `app/src/app` pour leur cas connu mauvais, le temps d'un seul
+     `it()` ; `vitest run` exécute les fichiers de test en parallèle, donc la liste peut capturer
+     un fichier sonde qui a disparu avant le `readFileSync` qui le relit — un défaut LATENT depuis
+     la tranche 3 (premier fichier sonde de ce type), jamais déclenché avant faute d'avoir
+     réellement laissé `vitest run` tourner jusqu'au bout dans le même essai qu'un timeout
+     insuffisant l'interrompait plus tôt. Fixé : `catch` spécifiquement `ENOENT` dans la boucle de
+     lecture, `continue` (un fichier disparu entre listage et lecture ne peut porter aucune clé
+     inconnue — sémantique correcte, pas un contournement) ; toute AUTRE erreur reste bloquante.
+     Vérifié EN EXÉCUTANT : `tsc` propre, `i18n.test.ts` seul 6/6, puis le `vitest run` COMPLET
+     relancé deux fois de suite (diagnostic, puis dans le troisième essai de `verify`) sans
+     ENOENT récidivant.
+
+  2. **`screens.test.ts` : `ServeurTombe` après 86 routes, un seul essai, jamais revu** (traité
+     comme un flake au sens de la règle 35 — un seul re-lancement, jamais répété). Apparu dans le
+     `vitest run` DIAGNOSTIC (isolé, hors `verify`, lancé pour confirmer le correctif ENOENT sous
+     la vraie concurrence) — `load average` mesuré à 0,01 juste avant (aucune contention externe),
+     donc probable contention interne au pool de workers `vitest` exécutant les 163 fichiers de
+     test EN MÊME TEMPS (`screens.test.ts` lève son propre serveur Next). PGlite vérifié libre
+     avant chaque lancement (`pgrep`). Non revu depuis : le TROISIÈME essai (le `verify` complet
+     final, sur l'arbre du commit `bc29616`) a tourné avec `screens` comme étape SÉPARÉE du
+     `vitest run` (jamais les deux en même temps, exactement la composition normale de `npm run
+     verify`) et n'a PAS reproduit ce défaut (98 routes/0 échec). Un seul re-lancement, conforme à
+     la règle 35 amendée — pas re-creusé davantage.
+
+  Sur l'arbre FINAL (`bc29616`, troisième essai de `verify`, `timeout 5400`, `set -o pipefail`) :
+  `tsc` propre, vitest 163/163 fichiers · 1224/1224 tests (+1 vs tranche 8 : la nouvelle assertion
+  des 13 sites migrés), gardes 47/semeur/plancher 632/langue (15/15 cas connus mauvais)/lectures
+  (0 perdue sur 1990, 6/6 cas connus mauvais)/parcours (5/5 cas connus mauvais, 290/347 stations
+  figées — inchangé, `#418` empêche le gel complet depuis toujours) tous propres, screens 98/0,
+  fumee 55/0, densite 88/0. `clics` : `EXIT=1` réel (journal brut, `set -o pipefail`) — **DEUX**
+  occurrences de `#418` cette fois (pas une seule, une PREMIÈRE dans cette série) :
+  `/eng/e7a83891-.../suivi` (le harnais lui-même la signale MAL ÉTIQUETÉE — « l'erreur vient du
+  document PRÉCÉDENT », `/acceptance` — hypothèse H, §1) et `/eng/70670df5-.../rcm/8d494b1b-...`
+  (l'habituelle, `rcm/[cid]`). VÉRIFIÉ, pas supposé : les DEUX dumps de divergence portent la MÊME
+  signature — jeton 87, `rail-astuce`, `SERVEUR : (rien)` / `CLIENT : <div class="rail-astuce"...`
+  — identique aux 36 confirmations précédentes ; le reste des divergences de chaque dump est le
+  même bruit de normalisation déjà documenté (`margin:6px 0` → `margin:6px 0px`, jamais une valeur
+  qui change) ; AUCUNE trace de `font-size: var(--t0)` (la substitution de cette tranche) dans
+  l'un ou l'autre dump. Disjoint de la tranche : `globals.css` (CSS pur, ne participe à aucune
+  comparaison d'hydratation React) et `globals.css.test.ts` — zéro fichier `.tsx`/`rcm`/`suivi`
+  touché. TRENTE-SEPTIÈME confirmation consécutive que `#418` est disjoint (cette fois × 2 dans le
+  même run — nouvelle observation, consignée honnêtement plutôt que tue, règle 13). Pas creusé
+  plus loin (même discipline que F9-F50). `npm run visuel` relancé séparément AVANT le début de
+  cette tranche (356 vues, 0 défaut) — l'étape `visuel` intégrée au `verify` n'a jamais tourné ce
+  coup-ci (la chaîne `&&` s'arrête à `clics`, comme à chaque tranche H-6 précédente).
