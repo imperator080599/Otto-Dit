@@ -48,10 +48,23 @@ function listerFichiersTsx(dir: string): string[] {
    d'espacement dont la valeur ne correspond à AUCUN jeton existant
    (10px, 18px, 20px, 26px, etc.) — celles-ci resteraient hors périmètre
    même après une migration complète du cluster mesuré, sauf à inventer un
-   nouveau jeton, ce qu'aucune tranche H-6 n'a fait depuis --t0/--t7. */
+   nouveau jeton, ce qu'aucune tranche H-6 n'a fait depuis --t0/--t7.
+
+   Lot 7, H-6 tranche 10 (2026-09-18) : suite mécanique directe de la
+   tranche 9 — `font-size: 12px` en dur, 9 occurrences, chacune une
+   déclaration ISOLÉE dans sa règle (même vérification que la tranche 9 :
+   aucun raccourci `font:` partagé), migrées vers `font-size: var(--t1)` —
+   le même jeton, la même valeur (le token `--t1: 12px` est déjà la
+   valeur par défaut de `.faint`, inchangé par cette tranche). Seuil
+   baissé de 45 à 36 (45 − 9 = 36, confirmé par le détecteur lui-même).
+   CE QUE CETTE TRANCHE NE COUVRE PAS (règle 19) : les 5 autres sites de
+   `font-size` à valeur unique et jeton exact (3× 12.5px, 1× 15px, 1×
+   13.5px), les 22 sites d'espacement `margin*`/`padding*`/`gap` DANS ce
+   fichier, et les déclarations sans jeton correspondant — mêmes
+   candidats que ceux nommés par la tranche 9, réduits d'autant. */
 
 const CSS_PATH = path.join(repoRoot(), 'app', 'src', 'app', 'globals.css');
-const SEUIL_ACTUEL = 45;
+const SEUIL_ACTUEL = 36;
 
 function compterFontSizeEnDur(texte: string): number {
   const m = texte.match(/font-size:\s*[0-9.]+px/g);
@@ -110,6 +123,26 @@ describe('globals.css : échelle typographique (Lot 7, H-6 tranche 1)', () => {
       const m = css.match(motif);
       expect(m, `motif introuvable : ${motif}`).not.toBeNull();
       expect(m![0]).toMatch(/font-size:\s*var\(--t0\)/);
+    }
+  });
+
+  it('les 9 sites migrés par H-6 tranche 10 lisent tous var(--t1), plus aucun 12px en dur parmi eux', () => {
+    const css = fs.readFileSync(CSS_PATH, 'utf8');
+    const selecteurs = [
+      /\.rail-tout\s*\{[^}]*\}/,
+      /\.rail-bascule\s*\{[^}]*\}/,
+      /\.legende\s*\{[^}]*\}/,
+      /table\.data th\s*\{[^}]*\}/s,
+      /\.btn\.small\s*\{[^}]*\}/,
+      /label\.fld span\s*\{[^}]*\}/,
+      /\.kpi \.l\s*\{[^}]*\}/,
+      /\.note-cible\s*\{[^}]*\}/,
+      /\.repli-resume\s*\{[^}]*\}/,
+    ];
+    for (const motif of selecteurs) {
+      const m = css.match(motif);
+      expect(m, `motif introuvable : ${motif}`).not.toBeNull();
+      expect(m![0]).toMatch(/font-size:\s*var\(--t1\)/);
     }
   });
 
