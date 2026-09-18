@@ -55,7 +55,11 @@ avant le début de la tranche : 356 vues/0 défaut.
 **Suite naturelle** : H-6 continue — candidat suivant scopé (lecture seule, pas encore implémenté) :
 `font-size: 12px` DANS `globals.css`, 9 sites, zéro collision de raccourci `font:` confirmée.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__get_deployment` (`dpl_3TsNAcPxuVmswHy3REXgnty9gzqA`, cible
+production) READY, commit `ffaf1bcfd59d108d4e70061d5bfda89ea5180d10` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 17:08:25Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor (semeur.ts)
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante` (tranche CSS pure).
 
 ---
 
