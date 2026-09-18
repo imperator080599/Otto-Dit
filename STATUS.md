@@ -45,7 +45,11 @@ pour H-6 : les ~43 déclarations en dur DANS `globals.css` lui-même — jamais 
 tranche H-6 jusqu'ici, la dernière frontière de la passe de design. Priorité 3 (H-3 slice 3,
 optionnelle) reste en file après H-6.
 
-**SHA servi** : à confirmer après déploiement (voir commit suivant).
+**SHA servi CONFIRMÉ.** `mcp__Vercel__list_deployments` (`dpl_4c6q3Th9MnoguLXignF1YC9AkSnZ`, cible
+production) READY, commit `281d901752d62fd41847f760ccb0450410889522` ; `mcp__Vercel__web_fetch_vercel_url`
+sur `https://otto-dit.vercel.app/api/sante` (en-tête `date` du serveur, 14:43:49Z) : HTTP 200, sha
+identique, `identiteCoherente=true`, « toutes les lectures passent », registre du décor (semeur.ts)
+89/16/31/42 inchangé. Aucune nouvelle lecture `/api/sante` (tranche CSS pure).
 
 ---
 
