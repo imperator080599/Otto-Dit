@@ -609,6 +609,14 @@ describe('cluster espacement (margin*/padding*/gap) en dur DANS globals.css (Lot
    couvertes par la tranche 3 (`.faint`) ni par les tranches 4-8 (`gap`/`margin*`/`padding*`
    à d'autres valeurs) — vérifié par grep avant la tranche, pas supposé.
 
+   CE QUE CE GARDE NE VÉRIFIE PAS NON PLUS (constat MOYEN du réfutateur, ajouté ici plutôt que
+   corrigé en silence, règle 19) : c'est un balayage de TEXTE brut, sans conscience des
+   commentaires ni des chaînes — `// fontSize: 11 (ancienne valeur)` ou `t('fontSize: 11 est
+   trop petit')` compteraient comme une occurrence au même titre qu'un vrai `style={{}}`. Zéro
+   cas de ce genre dans l'arbre actuel (vérifié par le réfutateur), donc non bloquant
+   aujourd'hui — mais une tranche future qui ajouterait un tel commentaire ou une telle chaîne
+   ferait échouer ce garde sur un FAUX positif, pas un vrai défaut. Le garde ne le distingue pas.
+
    CORRECTIF avant tout commit (pas après, règle 17 appliqué à soi-même) : le compte initial de
    la recherche déléguée (14 sites, 8× `fontSize: 12`) en oubliait un — `provenance/page.tsx:172`
    avait déjà `paddingLeft: 'var(--e4)'` migré (tranche 8) mais gardait `fontSize: 12` EN DUR sur
