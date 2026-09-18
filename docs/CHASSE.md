@@ -1681,3 +1681,25 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   plus loin (même discipline que F9-F50). `npm run visuel` relancé séparément AVANT le début de
   cette tranche (356 vues, 0 défaut) — l'étape `visuel` intégrée au `verify` n'a jamais tourné ce
   coup-ci (la chaîne `&&` s'arrête à `clics`, comme à chaque tranche H-6 précédente).
+
+- **F52 — UN incident** (2026-09-18, Lot 7, H-6 tranche 10 — `font-size: 12px` en dur DANS
+  `globals.css`, suite mécanique directe de la tranche 9, sur l'arbre du commit `d685a25`) — un
+  réfutateur (règle 30, tranche CSS pure) : AUCUN défaut trouvé, tout confirmé EN EXÉCUTANT, pas
+  par lecture seule. Vérifié : `tsc` propre, 18/18 tests, `--t1: 12px` unique dans le fichier et
+  jamais redéfini (ni `@media (prefers-color-scheme: dark)`, ni `.epure`), 0 occurrence brute de
+  `font-size: 12px` restante, le détecteur du seuil recalculé indépendamment à 36. Les 9 sites
+  relus un par un, aucun raccourci `font:` en collision. Les 10 occurrences de `var(--t1)` (pas 9)
+  vérifiées voulues : `.faint` en portait déjà une AVANT cette tranche (confirmé par diff), exactement
+  ce que le message de commit affirme — pas un défaut. Risque de collision de sélecteur
+  spécifiquement vérifié pour `table.data th` (regex exigeant `{` immédiat, ne capture PAS
+  `table.data th.num` ni la liste `table.data td, table.data th, .mono...`) et pour `.kpi .l` vs
+  `.kpi .v` — aucune ambiguïté. Arithmétique du commentaire vérifiée correcte cette fois (45−9=36 ;
+  3+1+1=5), contrairement à la tranche 9. `EXIT=1` réel (journal brut, `set -o pipefail`, timeout
+  5400 dès le lancement — mesure de la tranche 9 reprise, pas redevinée), UNE SEULE route —
+  `/eng/70670df5-.../rcm/c520592a-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton
+  87, même signature que les 37 confirmations précédentes) — de retour à une seule occurrence après
+  le doublé de la tranche 9. Disjoint de la tranche : `globals.css` (CSS pur) et
+  `globals.css.test.ts` — zéro fichier `.tsx`/`rcm` touché. Les 1225 tests vitest passent tous (+1
+  vs tranche 9 : le nouveau garde des 9 sites). TRENTE-HUITIÈME confirmation consécutive que
+  `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F51). `npm run visuel` relancé
+  séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0 défaut).

@@ -4,6 +4,47 @@
 
 ---
 
+## Lot 7, H-6 tranche 10 — font-size: 12px en dur DANS globals.css (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 9 (règle 32).*
+
+**Implémentation** : suite mécanique directe de la tranche 9 — `font-size: 12px` en dur DANS
+`globals.css`, 9 occurrences, chacune une déclaration isolée dans sa règle (aucun raccourci
+`font:` partagé — le seul du fichier, `.analytique-texte`, est sans rapport), migrées vers
+`font-size: var(--t1)` — identité stricte (`--t1: 12px` est déjà la valeur par défaut de `.faint`,
+inchangée par cette tranche).
+
+**Garde neuf** (`globals.css.test.ts`) : seuil baissé de 45 à 36 (45 − 9 = 36, confirmé par le
+détecteur lui-même) ; nouvelle assertion listant les 9 sélecteurs migrés et vérifiant chacun lit
+désormais `var(--t1)`.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : AUCUN défaut trouvé, tout confirmé EN EXÉCUTANT.
+`tsc` propre, 18/18 tests, `--t1` unique et jamais redéfini, 0 occurrence brute restante, seuil
+recalculé indépendamment à 36, les 9 sites relus un par un sans collision. Risque de collision de
+sélecteur spécifiquement vérifié pour `table.data th` (ne capture pas `table.data th.num`) et
+`.kpi .l` vs `.kpi .v`. Arithmétique du commentaire vérifiée correcte cette fois.
+
+**Mesures finales** (verify complet, sur l'arbre du commit `d685a25`, `timeout 5400` dès le
+lancement — mesure de la tranche 9 reprise — `set -o pipefail`) : `tsc --noEmit` propre ; vitest
+163 fichiers/163, 1225 tests/1225 (+1 vs tranche 9) ; gardes 47 propre ; semeur à jour ; plancher
+1225/632 propre ; langue propre (15/15 cas connus mauvais) ; lectures 0 perdue/1990 (6/6 cas
+connus mauvais) ; parcours 5/5 cas connus mauvais (290/347 stations figées, inchangé) ; screens 98
+routes/0 échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` —
+UNE SEULE occurrence de `#418` cette fois (retour à la normale après le doublé de la tranche 9),
+`/eng/[id]/rcm/[cid]` (l'habituelle, jeton 87, même signature que les 37 confirmations
+précédentes) — TRENTE-HUITIÈME confirmation consécutive, 286 étapes/403 clics/63 gestes
+(inchangé) ; `npm run visuel` relancé séparément avant le début de la tranche : 356 vues/0 défaut.
+
+**Suite naturelle** : H-6 continue — candidat suivant scopé (lecture seule) : les 5 derniers sites
+de `font-size` à jeton exact DANS `globals.css` (3× 12.5px → --t2, 1× 15px → --t5, 1× 13.5px →
+--t3), qui clôturerait le cluster `font-size` entier de ce fichier. Ensuite : les 22 sites
+d'espacement (`margin*`/`padding*`/`gap`) DANS `globals.css`.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 9 — première migration DANS globals.css lui-même (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
