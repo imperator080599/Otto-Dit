@@ -4,6 +4,51 @@
 
 ---
 
+## Lot 7, H-6 tranche 8 — clôturer le cluster margin*/padding* en dur (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 7 (règle 32).*
+
+**Implémentation** : les 8 paires propriété+valeur restantes du cluster `margin*`/`padding*`
+(identifié par la recherche de la tranche 3), chacune trop petite (1 à 4 sites) pour son propre
+rituel d'expédition, batchées en UNE tranche consolidée — 20 sites, 15 fichiers : `marginTop:
+8/12` → `--e2`/`--e3` (premier usage de `--e3` hors `globals.css`), `marginLeft: 8` → `--e2`,
+`marginRight: 4` → `--e1`, `marginBottom: 4/8` → `--e1`/`--e2`, `paddingLeft: 8/16` →
+`--e2`/`--e4` (premier usage de `--e4` hors `globals.css`). Cette tranche CLÔTURE le cluster :
+les seules déclarations en dur restant hors périmètre de H-6 sont désormais les ~43 déclarations
+DANS `globals.css` lui-même.
+
+**Garde neuf** (`globals.css.test.ts`) : un sixième `describe` avec HUIT `it()` séparés — un par
+paire, chacun avec son propre cas connu mauvais (règle 17), jamais une assertion groupée qui
+masquerait laquelle des 8 a régressé.
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : aucun défaut critique ni moyen, malgré une
+tranche plus grande et hétérogène que les précédentes. Vérifié EN EXÉCUTANT : `tsc` propre, 16/16
+tests passent, les 20 sites relus un par un, aucune régression des tranches 4-7. Le risque signalé
+(`margin: 0` et `paddingLeft` sur le même objet, `risk/page.tsx:206`) vérifié par raisonnement de
+spec CSS (deux familles de propriétés indépendantes) — pas par exécution DOM, faute de `jsdom`
+dans ce dépôt (dit explicitement). Un constat MINEUR hors code : une erreur d'arithmétique dans
+l'énoncé de la mission du réfutateur (corrigée par le réfutateur lui-même : 96, pas 106).
+
+**Mesures finales** (verify complet, sur l'arbre du commit `2b6d64e`, `timeout 3600`, `set -o
+pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1223 tests/1223 (+8 vs tranche 7 :
+les huit nouveaux gardes) ; gardes 47 propre ; semeur à jour ; plancher 1223/632 propre ; langue
+propre (15/15 cas connus mauvais dénoncés) ; lectures 6/6 ; parcours 5/5 ; screens 98 routes/0
+échec ; fumee 55 routes/0 échec ; densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — SEULE
+cause `#418` sur `/eng/70670df5-.../rcm/6505523a-...` (`rcm/[cid]`, l'habituelle, disjointe de
+cette tranche), 286 étapes/403 clics/63 gestes (inchangé) — TRENTE-SIXIÈME confirmation
+consécutive (docs/CHASSE.md, F50) ; `npm run visuel` relancé séparément (avant le commit, même
+arbre de fichiers) : 356 vues/0 défaut.
+
+**Suite naturelle** : le cluster `margin*`/`padding*` dans les `.tsx` est CLOS. Candidat restant
+pour H-6 : les ~43 déclarations en dur DANS `globals.css` lui-même — jamais touchées par aucune
+tranche H-6 jusqu'ici, la dernière frontière de la passe de design. Priorité 3 (H-3 slice 3,
+optionnelle) reste en file après H-6.
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 7 — jeton --e1, unifier marginLeft: 4 en dur (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans

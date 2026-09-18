@@ -1595,3 +1595,27 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   TRENTE-CINQUIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même
   discipline que F9-F48). `npm run visuel` relancé séparément (avant le commit, sur le même arbre
   de fichiers), propre (356 vues, 0 défaut).
+
+- **F50 — UN incident** (2026-09-18, Lot 7, H-6 tranche 8 — CLÔTURE du cluster
+  `margin*`/`padding*` en dur, sur l'arbre du commit `2b6d64e` — un réfutateur (règle 30, tranche
+  CSS pure, plus grande et plus hétérogène que les tranches 4-7 : 8 paires propriété+valeur
+  batchées, 20 sites, 15 fichiers). Le réfutateur a vérifié EN EXÉCUTANT : `tsc` propre, 16/16
+  tests passent (8 hérités + 8 nouveaux, un par paire, chacun avec son propre cas connu mauvais —
+  règle 17, jamais une assertion groupée), les 20 sites relus un par un dans le diff, les 8
+  paires toutes confirmées absentes en dur, aucune régression des tranches 4-7, aucun fichier
+  sonde résiduel (toutes tranches confondues). Le risque signalé (un raccourci `margin: 0` et
+  `paddingLeft` sur le même objet, `risk/page.tsx:206`) vérifié PAR RAISONNEMENT de spec CSS
+  (deux familles de propriétés indépendantes, aucun conflit possible) — PAS par exécution DOM,
+  faute d'environnement `jsdom` dans ce dépôt (`vitest.config.ts` tourne en `environment:
+  'node'`), dit explicitement plutôt que fabriqué (règle 16). Un seul constat MINEUR, hors du
+  code : une erreur d'arithmétique dans l'énoncé de la mission du réfutateur lui-même (106 au
+  lieu de 96 pour la somme cumulée des tranches 4-8) — le réfutateur l'a recalculée et corrigée
+  plutôt que de la croire sur parole (règle 15 : vérifier, pas chercher un mot). `EXIT=1` réel
+  (journal brut, `set -o pipefail`), UNE SEULE route — `/eng/70670df5-.../rcm/6505523a-...`
+  (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton 87). Disjoint de la tranche : cette
+  tranche touche `globals.css` et 15 fichiers `.tsx` (aucun n'est `rcm/[cid]`) — rien qui touche
+  `/rcm`. Les 1223 tests vitest passent tous (+8 vs H-6 tranche 7 : les huit nouveaux gardes).
+  Clôture et archive ATTEINTES (verify complet), 286 étapes conduites, 403 clics comptés sur 63
+  gestes (inchangé) — TRENTE-SIXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé
+  plus loin (même discipline que F9-F49). `npm run visuel` relancé séparément (avant le commit,
+  sur le même arbre de fichiers), propre (356 vues, 0 défaut).
