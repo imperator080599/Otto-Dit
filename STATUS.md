@@ -4,6 +4,50 @@
 
 ---
 
+## Lot 7, H-6 tranche 11 — CLÔTURE du cluster font-size DANS globals.css (2026-09-18)
+
+*Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans
+pause après la confirmation SHA-servi de la tranche 10 (règle 32).*
+
+**Implémentation** : les 3 dernières valeurs restantes du cluster `font-size` à jeton exact DANS
+`globals.css` (identifié par la tranche 9), chacune trop petite (1 à 3 sites) pour son propre
+rituel d'expédition, batchées en UNE tranche consolidée (5 sites, 5 fichiers, même raisonnement
+que la tranche 8 pour `margin*`/`padding*`) : `12.5px` → `--t2` (3 sites), `15px` → `--t5` (1
+site), `13.5px` → `--t3` (1 site). MESURÉ APRÈS cette tranche : les 31 déclarations `font-size`
+restantes (13× 13px, 9× 11.5px, 5× 10px, 1× 9px, 1× 26px, 1× 18px, 1× 10.5px) ne correspondent
+plus à AUCUN jeton `--tN` existant — le cluster à jeton exact est CLOS.
+
+**Garde neuf** (`globals.css.test.ts`) : seuil baissé de 36 à 31 (36 − 5 = 31, confirmé par le
+détecteur lui-même) ; nouvelle assertion listant les 5 sélecteurs migrés avec leur jeton attendu
+(`{motif, jeton}` par site, pas un jeton unique partagé).
+
+**Un réfutateur** (règle 30 : tranche CSS pure) : AUCUN défaut trouvé, tout confirmé EN EXÉCUTANT.
+Ventilation des 31 déclarations restantes recalculée indépendamment et programmatiquement (pas un
+`grep -c` approximatif) — confirme précisément la revendication « cluster CLOS ». Les 5 regex du
+nouveau test exécutées directement sur le fichier réel, chacune confirmée capturer la bonne règle
+malgré des sélecteurs voisins piégeux (`.etape` vs la règle combinée `.panel, ..., .etape {...}`
+plus loin dans le fichier ; `.topbar .brand` vs `.topbar .brand small` ; `.ancres` vs `.ancres
+a`/`.ancres .repere`), avec le bon jeton pour chacune (aucune permutation).
+
+**Mesures finales** (verify complet, sur l'arbre du commit `9347f58`, `timeout 5400`, `set -o
+pipefail`) : `tsc --noEmit` propre ; vitest 163 fichiers/163, 1226 tests/1226 (+1 vs tranche 10) ;
+gardes 47 propre ; semeur à jour ; plancher 1226/632 propre ; langue propre (15/15 cas connus
+mauvais) ; lectures 0 perdue/1990 (6/6 cas connus mauvais) ; parcours 5/5 cas connus mauvais
+(290/347 stations figées, inchangé) ; screens 98 routes/0 échec ; fumee 55 routes/0 échec ;
+densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — UNE SEULE occurrence de `#418`,
+`/eng/[id]/rcm/[cid]` (l'habituelle, jeton 87, même signature que les 38 confirmations
+précédentes) — QUARANTIÈME confirmation consécutive, 286 étapes/403 clics/63 gestes (inchangé) ;
+`npm run visuel` relancé séparément avant le début de la tranche : 356 vues/0 défaut.
+
+**Suite naturelle** : le cluster `font-size` DANS `globals.css` est CLOS. Seul candidat H-6
+restant DANS ce fichier : les 22 sites d'espacement (`margin*`/`padding*`/`gap`, 15 paires
+propriété+valeur distinctes, déjà scopés en lecture seule) — clôturerait l'intégralité du mandat
+de tranche 9 (« ~43 déclarations », mesuré à 49, dont 27 de police déjà closes en tranches 9-11).
+
+**SHA servi** : à confirmer après déploiement (voir commit suivant).
+
+---
+
 ## Lot 7, H-6 tranche 10 — font-size: 12px en dur DANS globals.css (2026-09-18)
 
 *Suite du mandat du fondateur (ruling du 2026-09-17, Priorité 2 : H-6 en tranches), enchaîné sans

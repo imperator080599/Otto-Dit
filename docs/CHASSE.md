@@ -1703,3 +1703,28 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   vs tranche 9 : le nouveau garde des 9 sites). TRENTE-HUITIÈME confirmation consécutive que
   `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F51). `npm run visuel` relancé
   séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0 défaut).
+
+- **F53 — UN incident** (2026-09-18, Lot 7, H-6 tranche 11 — CLÔTURE du cluster `font-size` à
+  jeton exact DANS `globals.css`, sur l'arbre du commit `9347f58`) — un réfutateur (règle 30,
+  tranche CSS pure) : AUCUN défaut trouvé, tout confirmé EN EXÉCUTANT. Vérifié : `tsc` propre,
+  19/19 tests, les 3 tokens (`--t2`/`--t3`/`--t5`) uniques dans le fichier et jamais redéfinis,
+  0 occurrence brute restante pour les 3 valeurs migrées, le détecteur du seuil recalculé
+  indépendamment à 31. La ventilation des 31 déclarations `font-size` restantes recalculée de
+  façon indépendante et programmatique (pas un `grep -c` approximatif) : `{9px:1, 10.5px:1,
+  13px:13, 11.5px:9, 10px:5, 18px:1, 26px:1}`, somme 31, AUCUN recoupement avec les 8 jetons
+  `--tN` existants — la revendication « cluster CLOS » confirmée précisément, pas juste survolée.
+  Les 5 sites relus un par un, aucun raccourci `font:` en collision. Les 5 regex du nouveau test
+  exécutées directement sur le vrai fichier (pas seulement lues) : chacune capture la BONNE règle
+  malgré des sélecteurs voisins piégeux (`.etape` vs `.etapes`/`.etape.green`/`.etape-detail`/la
+  règle combinée `.panel, ..., .etape { box-shadow... }` plus loin dans le fichier ; `.topbar
+  .brand` vs `.topbar .brand small` ; `.ancres` vs `.ancres a`/`.ancres .repere`/etc.) — et chaque
+  capture porte le BON jeton (`--t2`/`--t2`/`--t2`/`--t5`/`--t3`, aucune permutation). `EXIT=1`
+  réel (journal brut, `set -o pipefail`, timeout 5400), UNE SEULE route — `/eng/70670df5-.../rcm/
+  98f90ccb-...` (l'habituelle, `rcm/[cid]`, tooltip `rail-astuce` au jeton 87, même signature que
+  les 38 confirmations précédentes). Disjoint de la tranche : `globals.css` (CSS pur) et
+  `globals.css.test.ts` — zéro fichier `.tsx`/`rcm` touché. Les 1226 tests vitest passent tous (+1
+  vs tranche 10 : le nouveau garde des 5 sites). TRENTE-NEUVIÈME confirmation consécutive que
+  `#418` est disjoint. Pas creusé plus loin (même discipline que F9-F52). `npm run visuel` relancé
+  séparément (avant le commit, sur le même arbre de fichiers), propre (356 vues, 0 défaut). Le
+  cluster `font-size` DANS `globals.css` est désormais CLOS ; seul le cluster d'espacement
+  (`margin*`/`padding*`/`gap`, 22 sites) reste hors périmètre de toute tranche H-6 jusqu'ici.
