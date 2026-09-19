@@ -69,12 +69,29 @@ export async function contexte(): Promise<Contexte> {
      from control c
      where c.di_walkthrough_evidence_id is not null order by c.code limit 1`);
 
+  /* CONSTAT MOYEN DU RÉFUTATEUR (inventaire de clôture §3, réfutateur du commit 6fd6427) :
+     `enrichir.ts:388` importe le MÊME `rcm.csv` dans engNep dès que sa RCM est vide — vrai à
+     chaque `npm run demo` (`demo-enrichir.ts`) et à chaque reconstruction de production
+     (`scripts/deploy/reconstruire.ts`). Un contrôle vierge (`di_walkthrough_evidence_id is
+     null`) existe alors potentiellement dans DEUX engagements sous le MÊME code — non scopé
+     par engagement, `order by c.code limit 1` devient un pari sur l'ordre de retour de la
+     base. Scopé sur l'engagement du contrôle qui PORTE un walkthrough (`walkthrough.eng_id`,
+     ci-dessus) — c'est la SEULE requête de ce fichier qui identifie de façon fiable le
+     dossier SOX, puisque seul `runControlCycle` (part2.ts, jamais appelé pour engNep) attache
+     un walkthrough. Si `walkthrough` est absent (aucun contrôle cyclé nulle part), on retombe
+     sans filtre — même comportement qu'avant, sur un monde qui de toute façon ne permettrait
+     aucune des stations qui en dépendent. */
   const pristine = async (frequency: string) => q01<{ eng_id: string; control_id: string; code: string }>(
-    `select c.engagement_id::text eng_id, c.id::text control_id, c.code
-     from control c
-     where c.di_walkthrough_evidence_id is null and c.frequency = $1
-     order by c.code limit 1`,
-    [frequency],
+    walkthrough
+      ? `select c.engagement_id::text eng_id, c.id::text control_id, c.code
+         from control c
+         where c.di_walkthrough_evidence_id is null and c.frequency = $1 and c.engagement_id = $2
+         order by c.code limit 1`
+      : `select c.engagement_id::text eng_id, c.id::text control_id, c.code
+         from control c
+         where c.di_walkthrough_evidence_id is null and c.frequency = $1
+         order by c.code limit 1`,
+    walkthrough ? [frequency, walkthrough.eng_id] : [frequency],
   );
   const pristineMensuel = await pristine('monthly');
   const pristineAdhoc = await pristine('adhoc');
