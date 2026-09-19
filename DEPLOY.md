@@ -13,8 +13,13 @@ les implémente** (règle 13). C'est corrigé :
 - `OTTO_STORAGE=db` → les pièces vivent dans la table `blob_store` (le disque serverless
   est éphémère, DA-08) ; défaut `fs` en local. Tout autre mode **refuse**.
 - Sur Vercel (`VERCEL=1`), tout déploiement EST la démo publique (DA-10) : bandeau
-  « données fictives » permanent, `noindex`, les trois fabriques d'adaptateurs FORCÉES au
-  rejeu — aucune clé requise, aucune clé lue, quoi que disent les variables.
+  « données fictives » permanent, `noindex`, les QUATRE fabriques d'adaptateurs (OCR,
+  transcript, walkthrough, query planner) FORCÉES au rejeu — aucune clé requise, aucune
+  clé lue, quoi que disent les variables. **Décision du fondateur (2026-09-19,
+  ADR-109 pt 6) : ceci reste NON levé sur l'hébergé** — l'URL est publique et non
+  authentifiée, et un plafond de dépense ne protège rien tant que les deux variables de
+  prix ci-dessous ne sont pas posées (`cost_usd` resterait à 0). La démonstration d'IA
+  réelle se fait localement (`VERCEL` non posé) ; voir `docs/GESTES_FONDATEUR.md`.
 - La commande de build (`vercel.json` **à la racine** — DA-11 : une seule configuration,
   `app/vercel.json` est supprimé) enchaîne `npm run deploy:reconstruire` puis `next build` :
   migrations appliquées, monde de démonstration semé **s'il est vide**, puis **tentative de
@@ -126,11 +131,17 @@ et aucune clé de modèle n'est requise ni lue.
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Auth + Storage |
 | `OTTO_STORAGE=supabase` | switch the blob store from the local filesystem |
 | `OTTO_OCR_ADAPTER` | `mock` (default, record/replay) · `anthropic` (written and unit-tested) · any other name → refuses to run |
-| `OTTO_EXTRACT_MODEL` | model id for the `anthropic` extraction adapter (default `claude-sonnet-4-5`) |
+| `OTTO_EXTRACT_MODEL` | model id for the `anthropic` extraction adapter (default `claude-opus-5`, `extraction/adapters.ts`) |
+| `OTTO_TRANSCRIPT_ADAPTER` | `mock` (default, record/replay) · `anthropic` — the interview-transcript analyst (`entretiens-analyste.ts`) |
+| `OTTO_TRANSCRIPT_MODEL` | model id for the `anthropic` transcript adapter (default `claude-sonnet-5`) |
+| `OTTO_WALKTHROUGH_ADAPTER` | `mock` (default, record/replay) · `anthropic` — the SOX walkthrough analyst, independent of the selector above (§4 pt 3) |
+| `OTTO_WALKTHROUGH_MODEL` | model id for the `anthropic` walkthrough adapter (default `OTTO_TRANSCRIPT_MODEL`, itself `claude-sonnet-5`) |
 | `OTTO_QUERY_PLANNER` | `disabled` (default) · `anthropic` — the « Interroger » fallback planner (ADR-017); the deterministic rules planner works with it disabled |
 | `OTTO_QUERY_MODEL` | model id for the query planner |
 | `ANTHROPIC_API_KEY` *or* Bedrock/Vertex credentials | extraction, planning, drafting (only if enabled) |
 | `OTTO_PRICE_IN_PER_MTOK`, `OTTO_PRICE_OUT_PER_MTOK` | today's token prices, USD per million. **Unset ⇒ `cost_usd` is 0 and `npm run cost:measure` refuses to run** — prices are never hardcoded (ADR-019) |
+| `OTTO_BUDGET_USD` | cumulative spend ceiling compared against `sum(ai_run.cost_usd)` (`gardeBudget()`, `extraction/budget.ts`) — **unset ⇒ defaults to 5, but stays inert regardless unless the two price variables above are also set** (a ceiling that never sees a nonzero cost never refuses) |
+| **The budget guard itself, IA-BUDGET-01** | a SEPARATE gesture, not an env var: one row in `app_state` under key `'ia_vivante_budget'` (`{actif, plafondUsd, activePar, activeLe}`), posed directly in SQL — no admin screen writes it. `assertBudgetActifEnBase()` refuses any real call while the row is absent or incomplete. Full recipe (never hand-written, generated from the code that reads it): `docs/GESTES_FONDATEUR.md`, Geste 2. |
 | `MISTRAL_API_KEY` / `AZURE_DI_KEY`+`AZURE_DI_ENDPOINT` | reserved: a dedicated-OCR adapter is a deployment task, not shipped code — no adapter is written for a provider that could not be executed and verified during the build (ADR-019) |
 | `OTTO_INFERENCE_REGION` | `eu` → Bedrock EU / Vertex EU (zero-retention); `us` → US inference |
 | `OTTO_INBOUND_SECRET` | shared secret for the inbound-email webhook |

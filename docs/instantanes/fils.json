@@ -565,6 +565,12 @@
       "etat": "ouvert — CAPITAUX-PV (EQUITY, nature sondage_pieces, R100) n'a AUCUN atelier, même situation que CLIENTS-AVOIRS/IMMO_COR-ACQ/FOURN-SUL/FOURN-FNP (R92/R95/R96) ; CAPITAUX-VAR (même poste, nature rapprochement) EST câblée sur /poste/EQUITY/detail-compte.",
       "depuis": "2026-09-17 (Lot 7, priorité 1, R100)",
       "note": "non corrigé, délibérément : la population de CAPITAUX-PV elle-même porte predicat:\"non_implemente\" dans methodology/procedures.json (source : registre des assemblées, pas le grand livre) — même la SOURCE des données à échantillonner n'existe encore nulle part dans ce dépôt, hors du périmètre d'une tranche de câblage d'atelier (règle 9)."
+    },
+    {
+      "id": "R111",
+      "etat": "recherche menée, non implémentée — EXTRAP-01 n'est PAS débloquée par la réutilisation espérée des misstatements de « résolution des écarts » : computeSampleEvaluation filtre sur selection_reason='random', et les trois runs clics de la tranche du 2026-09-19 montrent random_misstatement_count=0 dans l'évaluation observée (le message EXTRAP-04 n'apparaît jamais malgré une méthode sciemment non posée). Reste NON OBSERVÉE tant qu'un geste NOUVEAU ne crée pas réellement un écart sur un sample_item selection_reason='random' du tirage REV-SUBST.",
+      "depuis": "2026-09-19 (mandat de clôture §3)",
+      "note": "non corrigé, délibérément : aucune implémentation à moitié laissée (l'essai de variable anomaliesChiffrees a été inséré PUIS retiré une fois l'hypothèse réfutée) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la recherche."
     }
   ]
 }
