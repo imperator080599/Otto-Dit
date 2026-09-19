@@ -41,12 +41,16 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
   });
 
   it('depasseLePlafond : prend le pack déjà résolu — éprouvée contre un plafond RÉEL sous L2 (règle 17)', () => {
-    /* CAS CONNU MAUVAIS : ni nep-fr ni pcaob-sox ne posent aujourd'hui de
-       plafond sous L2 — une version qui résolvait le pack par le registre
-       réel (comme la toute première forme de cette lecture) ne pouvait donc
-       JAMAIS être éprouvée contre un dépassement authentique, seulement
-       contre le cas trivial « L2 contre L2 » (revue hostile du 2026-09-14,
-       voix 1 ET 2, même constat). Un pack FICTIF, ici, pose le plafond bas. */
+    /* CAS CONNU MAUVAIS : à l'écriture de cette lecture (2026-09-14), ni
+       nep-fr ni pcaob-sox ne posaient de plafond sous L2 — une version qui
+       résolvait le pack par le registre réel (comme la toute première forme
+       de cette lecture) ne pouvait donc JAMAIS être éprouvée contre un
+       dépassement authentique, seulement contre le cas trivial « L2 contre
+       L2 » (revue hostile du 2026-09-14, voix 1 ET 2, même constat). Un pack
+       FICTIF, ici, pose le plafond bas — INCHANGÉ depuis : pcaob-sox pose
+       désormais L1 en réalité (tranche AUTO-01, 2026-09-19, pour rendre le
+       refus observable par un clic), mais ce test continue d'éprouver la
+       fonction PURE, isolée de ce que le registre pose ou non aujourd'hui. */
     expect(depasseLePlafond('L2', { automationLevel: 'L1' })).toBe(true);
     expect(depasseLePlafond('L1', { automationLevel: 'L1' })).toBe(false);
     expect(depasseLePlafond('L0', { automationLevel: 'L1' })).toBe(false);

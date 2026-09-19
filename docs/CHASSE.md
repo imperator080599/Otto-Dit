@@ -1907,3 +1907,25 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   (déjà visité par la station précédente), AUCUNE nouvelle visite à `/rcm/[cid]` — le compte à
   quatre reste inchangé, comme attendu. QUARANTE-CINQUIÈME confirmation consécutive que `#418` est
   disjoint. Pas creusé plus loin (même discipline que F9-F57).
+
+- **F59 — QUATRE occurrences de `#418`, ZÉRO régression fonctionnelle** (2026-09-19, mandat de
+  clôture, réexamen post-geste-2 — station AUTO-01, arbre du commit `3281067`) : `npm run verify`
+  complet (`timeout 5400`, `set -o pipefail`, premier essai suffisant), rougi une seule fois SUR
+  UN DÉFAUT RÉEL SANS RAPPORT (vitest : `docs/instantanes/fils.json` sans état pour R111, corrigé,
+  reconfirmé par `reprise.test.ts` seul, puis la chaîne complète relancée depuis le début, règle
+  34). Sur cette chaîne complète : `tsc` propre, vitest 163/163 fichiers/1246/1246 tests, gardes
+  47, semeur/plancher/langue (15/15 cas connus mauvais)/lectures (0 perdue sur 1990, 6/6 cas
+  connus mauvais)/parcours (5/5 cas connus mauvais, 380 déclarées/290 figées, 90 nouvelles —
+  attendu, cette tranche ajoute 3 assertions neuves) tous propres, screens 98/0, fumee 55/0,
+  densite 88/0. `clics` : `EXIT=1` réel (`&&` du script `npm run verify` arrête la chaîne AVANT
+  `visuel`, comme à chaque occurrence du flake depuis F56 — `npm run visuel` relancé séparément
+  ensuite, 356 vues/0 défaut) — QUATRE occurrences de `#418`, même signature (jeton 87) lue dans
+  le dump, pas seulement comptée ; les trois nouvelles assertions AUTO-01 sont TOUTES LES TROIS
+  vertes, dont deux bloquantes (le refus réel citant L1/pcaob-sox, et l'acceptation réelle) —
+  vraiment passées, pas un cas connu mauvais qui n'a jamais échoué. La nouvelle station visite
+  `/eng/[id]/team` (déjà visité par la station « équipe » en tout début de parcours), AUCUNE
+  nouvelle visite à `/rcm/[cid]` — le compte à quatre reste inchangé, comme attendu. Revue hostile
+  DEUX voix indépendantes (règle 30 : tranche = code de refus) — aucun défaut réel des deux côtés,
+  un seul constat mineur (commentaire périmé dans `automatisation.test.ts`, corrigé). QUARANTE-
+  SIXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline
+  que F9-F58).

@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-19 · 67 gestes · **441 clics** au total.
+Parcours du 2026-09-19 · 68 gestes · **443 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -80,4 +80,5 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois | 28 |
 | contrôle interne : CTRL-05, la demande de population as_needed créée par un clic | 1 |
 | contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) | 4 |
+| AUTO-01 : le niveau d’automatisation de la mission ne dépasse jamais le plafond du pack | 2 |
 | clôture et archive scellée | 1 |

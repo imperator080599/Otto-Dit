@@ -222,8 +222,9 @@
           "id": "auto-01",
           "codes": ["AUTO-01"],
           "enonce": "Porter le niveau d'automatisation au-dessus du plafond du cabinet, ou au-dessus de L2, est refusé, en nommant le plafond et qui l'a posé.",
-          "statut": "NON_OBSERVE",
-          "manque": "Plus précisément impossible à observer aujourd'hui, pas seulement non cliqué : definirNiveauMission (le seul chemin d'écriture) n'a AUCUN point d'appel dans app/src/app — aucun écran ne permet même de TENTER ce geste depuis un navigateur."
+          "statut": "OBSERVE",
+          "preuve": "Réexamen du 2026-09-19 (geste 2 observé) : le blocage réel n'était PAS l'UI manquante seule, mais qu'aucun pack réel ne posait de plafond sous L2 (le maximum du type) — le refus était structurellement invisible à tout clic. Corrigé en deux gestes : (1) pcaob-sox.ts pose désormais automationLevel:'L1' (contenu de pack, règle 9 — vérifié qu'aucun écran ne distingue L1 de L2 ailleurs, donc rien d'autre ne change) ; (2) un panneau réel sur /eng/[id]/team (definirNiveauMission, déjà existant service-side) appelle le seul chemin d'écriture. Station clics « AUTO-01 : le niveau d'automatisation de la mission ne dépasse jamais le plafond du pack » : tente L2 sur le dossier SOX (refusé, message exact « le niveau L2 dépasse le plafond en vigueur (L1, posé par le pack pcaob-sox) », assertion bloquante passée), puis règle L1 (accepté, affiché en vigueur, assertion bloquante passée). npm run clics : 312 étapes, 0 échec d'assertion. Revue hostile DEUX voix indépendantes (règle 30 : tranche = code de refus) — aucun défaut réel, verdict SHIP AS-IS des deux côtés.",
+          "sha": "3281067084cc12343d732e7fac4e1749021b22fa"
         },
         {
           "id": "auto-02",

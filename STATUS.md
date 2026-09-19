@@ -4,6 +4,101 @@
 
 ---
 
+## Mandat de clôture — geste 2 observé, réexamen, AUTO-01 fermée (21/9/2, 66 %) (2026-09-19)
+
+*Suite du mandat `docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md` (commité verbatim,
+avec `docs/MANDATS/2026-09-18_changement_de_regime.md` — règle 33, aucun des deux n'était dans
+le dépôt avant cette tranche, retrouvés verbatim depuis le journal de session, jamais reconstruits
+de mémoire). Geste 2 (garde de budget en base + trois variables Vercel) fait et observé par le
+fondateur ; demoPublique() confirmé NON levé, décision (ADR-109 pt 6/7). Réexamen de
+docs/CLOTURE.md contre cet état, une ligne fermée (AUTO-01), deux dispositions corrigées
+(auto-budget-independance et une nouvelle ligne ia-budget-01-appel-reel, toutes deux SANS_OBJET
+pour la même raison architecturale que le réexamen a établie, PAS pour l'UI manquante).*
+
+**Commits `2162e09`/`66cf654`/`7e77bac` (rule 33 + ADR + réexamen léger, docs/données pures,
+pas de chaîne verify dédiée) puis `3281067`/`7665a25`/mesures ci-dessous (AUTO-01, code réel).**
+
+**Réexamen — trois lignes dispositionnées, code-vérifiées, pas accordées sur parole :**
+- `ia-budget-01-appel-reel` (NOUVELLE, absente de l'inventaire initial — §0 du mandat du
+  18 septembre) : SANS_OBJET. demoPublique() coupe tout appel réel avant que la garde ne soit
+  consultée ; le guard lui-même a été observé dans ses deux états réels (fermée puis ACTIVE).
+- `auto-budget-independance` : NON_OBSERVE → SANS_OBJET. CONTREDIT l'attente initiale du
+  fondateur (« reachable with the budget row now posted ») — vérifié aux quatre sites d'appel
+  réels (entretiens.ts:173, ladder.ts:126, ask.ts:149, walkthrough-analyse.ts:100) que les trois
+  gardes (assertNiveauOuvert/assertBudgetActifEnBase/gardeBudget) ne s'exécutent QUE si
+  `adapter.name !== 'mock'` — toujours mock sur l'hébergé (demoPublique()). Le geste 2 (la ligne
+  de budget) ne change donc rien à cette épreuve précise ; même cause architecturale que
+  IA-BUDGET-01, pas une UI manquante.
+- `auto-01` : fermée pour de vrai — voir ci-dessous. NI le geste 2 ni demoPublique() ne la
+  bloquaient : `definirNiveauMission` (le refus « dépasse le plafond ») est une validation à
+  l'ÉCRITURE, jamais gardée par `adapter.name` — un mécanisme complètement différent de
+  `assertNiveauOuvert` (le guard AVANT un appel réel, lui bien bloqué par demoPublique()).
+- `auto-02` reste NON_OBSERVE, inchangée : structurellement impossible via TOUT chemin, pour
+  toujours (NOT NULL + TypeScript sur `ai_run.niveau_automatisation`), aucun rapport avec
+  demoPublique() ni avec le geste 2.
+
+**AUTO-01 fermée (commit `3281067`, mesures `7665a25` + ci-dessous).** Le blocage réel n'était
+pas seulement l'UI absente : NI nep-fr.ts NI pcaob-sox.ts ne posaient de plafond sous L2 (le
+maximum du type `NiveauAutomatisation`) — le refus était donc structurellement invisible à tout
+clic contre un cabinet réel, quel que soit l'écran construit. Corrigé en deux gestes :
+1. `pcaob-sox.ts` pose désormais `automationLevel: 'L1'` — contenu de pack (règle 9), vérifié
+   avant d'écrire la ligne qu'aucun autre comportement d'écran ne distingue L1 de L2 aujourd'hui
+   (automatisation.ts, commentaire du fichier lui-même).
+2. Un panneau réel sur `/eng/[id]/team` (« Automatisation de l'IA (AUTO-01) ») affiche le niveau
+   en vigueur et le plafond, et appelle `definirNiveauMission` (déjà existant, déjà testé
+   service-side) via l'`executer` GÉNÉRIQUE de `@/app/refus` (pas l'`executer` local de la page,
+   plus étroit — aliasé `executerRefus` pour éviter toute collision).
+
+Station clics « AUTO-01 : le niveau d'automatisation de la mission ne dépasse jamais le plafond
+du pack », sur le dossier SOX : tente L2 (refusé, message exact « le niveau L2 dépasse le plafond
+en vigueur (L1, posé par le pack pcaob-sox) », assertion BLOQUANTE passée), puis règle L1 (accepté,
+affiché en vigueur, assertion BLOQUANTE passée) — deux assertions qui auraient pu casser tout le
+parcours si l'équipe SOX n'avait pas eu accès à `/eng/{sox}/team` ou si le message avait différé
+d'un caractère ; vraiment passées, pas des cas connus mauvais jamais éprouvés.
+
+**Validation.** Premier `npm run verify` complet a rougi sur un défaut RÉEL de sa propre garde
+(règle 23) : R111 (ajouté à `docs/BACKLOG_REPORTE.md` plus tôt cette même session) sans état dans
+`docs/instantanes/fils.json`. Corrigé, `reprise.test.ts` reconfirmé seul, puis la chaîne COMPLÈTE
+relancée depuis `db:reset` (règle 34 : le premier run avait déjà TERMINÉ, rien tué en vol — l'arbre
+n'a plus bougé après le correctif). Second passage : `tsc` propre, vitest 163/163/1246/1246,
+gardes/semeur/plancher/langue/lectures/parcours tous propres, screens 98/0, fumee 55/0, densite
+88/0, `clics` 312 étapes/0 échec d'assertion (`EXIT=1` réel : 4 occurrences de `#418`, même
+signature depuis F9, `&&` du script arrête la chaîne avant `visuel` comme à chaque occurrence du
+flake), `npm run visuel` relancé séparément : 356 vues/0 défaut. Détail complet :
+`docs/CHASSE.md` F59 (46ᵉ confirmation consécutive que `#418` est disjoint).
+
+**Revue hostile, DEUX voix indépendantes** (règle 30 : tranche = code de refus). Chaque voix a
+vérifié en MARCHANT le chemin (seed.ts pour la co-appartenance d'équipe NEP/SOX, les quatre sites
+d'appel réels pour l'effet du plafond L1, la migration 0164 pour la contrainte CHECK, `refus.ts`
+pour la sémantique `executer`/`executerRefus`, le texte exact du message de refus reconstruit
+depuis `automatisation.ts`) — aucun défaut réel des deux côtés. Un seul constat mineur, non
+bloquant (commentaire d'`automatisation.test.ts:44-45` devenu factuellement périmé depuis que
+pcaob-sox pose réellement L1) — corrigé.
+
+`DEPLOY.md` complété dans ce même suivi (règle du mandat : pas de ritual à part) :
+`OTTO_TRANSCRIPT_ADAPTER`/`OTTO_WALKTHROUGH_ADAPTER` et leurs modèles, `OTTO_BUDGET_USD`, la
+garde de budget geste 2 (toutes absentes avant), `OTTO_EXTRACT_MODEL` corrigé (`claude-opus-5`,
+pas `claude-sonnet-4-5`), « trois fabriques » → « quatre », décision ADR-109 pt 6 ajoutée au
+paragraphe qui décrivait déjà le comportement Vercel.
+
+**SHA servi à confirmer dans le prochain suivi**, discipline de coût du mandat — plusieurs
+commits depuis la dernière confirmation (`c61c5c0`) restent à vérifier d'un coup une fois le
+déploiement de cette tranche disponible : `0eb13b3`, `2162e09`, `66cf654`, `7e77bac`, `3281067`,
+`7665a25`, et le commit de mesures qui suit celui-ci.
+
+**Reste NON OBSERVÉES (9 lignes) après ce réexamen** : `MAT-03` (deuxième import mid-journey,
+risque déjà établi de perturber le parcours canonique près de la clôture) ; `VID-01` rétention
+(report_date n'est posé QUE par la clôture/verrouillage du dossier — le compte à rebours ne peut
+démarrer qu'au moment même où le dossier devient non-inscriptible) ; `EXTRAP-01` (R111 : recherche
+menée, hypothèse du raccourci réfutée — nécessite un geste nouveau créant un écart réel sur la
+strate sondée `random`) ; `EXTRAP-02` (écart de fond avec la lettre du mandat, pas juste un clic
+manquant) ; `EXTRAP-04` (la lecture existe, l'invariant reste à faire tenir dans le monde semé) ;
+`AUTO-02` (structurellement impossible pour toujours, NOT NULL + TypeScript) ; les trois lignes
+R87 (notif-carte-id/notif-role/notif-disparition — nécessite de câbler `/notifications`, jamais
+branché à un écran).
+
+---
+
 ## Mandat de clôture, §3 — EXTRAP-03 fermée (20/11/0, 65 %) (2026-09-19)
 
 *Suite immédiate de la tranche précédente (ctrl-semeur + extrap-trois-nombres, `237244e`).
