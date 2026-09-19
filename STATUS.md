@@ -4,6 +4,86 @@
 
 ---
 
+## Mandat de clôture, §3 — CTRL-01..07/VID-01/annexe sourcée observés par un clic réel (2026-09-19)
+
+*Ouvert par le mandat de clôture du fondateur (2026-09-19) : H-6 gelé, §2 a produit
+`docs/CLOTURE.md` (31 épreuves des mandats 08/09/10/14 septembre, 5 OBSERVÉES au départ — 16 %).
+§3 demande de fermer les lignes NON OBSERVÉ, la moins chère d'abord, un rituel d'expédition par
+ligne — ce rituel en ferme DOUZE d'un coup, toutes de la même famille (le domaine SOX/ICFR,
+`/rcm/[cid]`, jamais visité par le parcours cliqué depuis sa construction).*
+
+**Constat qui a rendu ce rituel possible** : le RCM importe SEPT contrôles
+(`dataset/sox/rcm.csv`), le semeur (`part2.ts::runPart2`) n'en cycle que DEUX (C-BR-01, C-REV-01)
+— déjà entièrement conclus, donc aucun refus CTRL-0X ne peut plus s'y observer. Les CINQ autres
+restent vierges (`di_walkthrough_evidence_id is null`, `di_status='not_assessed'`) : exactement
+l'état requis pour PROVOQUER chaque refus, un par un, en retirant la cause qui vient de le
+déclencher avant de passer au suivant — jamais un refus démontré sur un monde construit exprès
+pour qu'il tienne (règle 17 appliquée au parcours cliqué lui-même).
+
+**Implémentation** (`contexte.ts` étendu : trois contrôles vierges résolus par fréquence —
+mensuel, adhoc, quotidien ; trois nouvelles stations dans `scenario.ts`) :
+- **La ladder CTRL-01/02/03** (contrôle mensuel vierge, C-REV-03) : refus observé pour CHAQUE
+  forme — CTRL-01 sans aucune tâche, CTRL-01 avec une tâche documentée par la seule inquiry,
+  CTRL-02 avec les quatre facteurs vides, CTRL-03 sans IUC, CTRL-03 avec IUC utilisée sans preuve
+  (nommant les deux volets) — chacune levée par le geste réel avant de passer à la suivante ; la
+  conclusion RÉUSSIT enfin une fois les trois levées. Puis VID-01 : suppression tracée (qui,
+  quand, motif) et ré-attachement, jamais un cul-de-sac. Puis CTRL-04 : le message « non
+  rapprochée » avant, le formulaire de tirage après.
+- **CTRL-05** (contrôle adhoc vierge, C-REV-04) : la demande de population est créée par UN clic
+  réel, visible dans l'espace de demandes — corrige au passage un DÉCOR relevé par la recherche
+  du 2026-09-19 (le semeur créait cette même demande par un INSERT SQL brut).
+- **CTRL-07 et l'annexe sourcée** (contrôle quotidien vierge, C-TR-01, population dérivée > 200) :
+  le message CTRL-07 s'affiche après rapprochement, nommant les trois jugements de cabinet non
+  posés. La phrase verbatim de l'annexe du 10 septembre (« these are suggested minimum sample
+  sizes... », absente de tout `app/src` avant cette tranche) est ajoutée au type du pack
+  (`TableEchantillonnageAttribut.minimaCaveat`), portée par `pcaob-sox.ts`, propagée par
+  `tailleEchantillonOe` (`sox.ts`) et rendue sous la taille affichée dans les DEUX branches —
+  observée sur le contrôle mensuel (population ≤ 200, bande minima).
+- **CTRL-06 et §1.5 (extrapolation, tests de contrôles)** (contrôle DÉJÀ cyclé, C-BR-01) : révision
+  de l'inquiry OE en y sélectionnant la pièce du walkthrough D&I lui-même — refusé, nommant le
+  contrôle. La phrase « aucune projection sur un test de contrôles » (ISA 530 §A20) est lue à
+  l'écran sur ce même contrôle, déjà testé par le semeur.
+
+**Un réfutateur** (règle 30 : aucun code de refus nouveau, aucun modèle de données au sens
+strict) : UN constat RÉEL, MOYEN — `pristine()` n'était pas scopée par engagement, alors que
+`enrichir.ts` importe le même RCM dans `engNep` à chaque `npm run demo`/reconstruction de
+production, risquant une résolution ambiguë sur le monde enrichi (jamais mesuré, le run de clics
+validé n'utilisant que `db:reset && demo:seed`). Corrigé (`e1c1a0f`) : scopée sur l'engagement du
+contrôle qui porte un walkthrough. Tout le reste : ZÉRO défaut, vérifié en exécutant (préconditions
+de chaque refus confirmées réelles par lecture directe, `minimaCaveat` confirmé ne fuite jamais
+dans la branche >200, chaque regex vérifiée caractère pour caractère contre le texte réel des
+refus, aucun identifiant de modèle neuf, aucun `{{` littéral, aucun fichier sonde résiduel).
+
+**Incident de règle 34, pas d'infrastructure** : le premier essai de `verify` a été TUÉ
+immédiatement (pas attendu) parce que le correctif du constat MOYEN a été écrit PENDANT qu'il
+tournait — relancé sur l'arbre corrigé, jamais mesuré sur l'arbre qui bougeait. Un redémarrage de
+conteneur a ensuite interrompu `npm run visuel` (relancé séparément après `verify`, la chaîne `&&`
+s'arrêtant à `clics` comme à chaque tranche précédente) — rien perdu, relancé identiquement.
+
+**Mesures finales** (verify complet, second essai sur l'arbre du commit `e1c1a0f`, `timeout 7200`,
+`set -o pipefail`) : `tsc` propre ; vitest 163 fichiers/163, 1246 tests/1246 (inchangé — cette
+tranche ajoute des stations clics, pas des tests vitest) ; gardes 47 ; semeur à jour ; plancher
+1246/632 propre ; langue propre (15/15 cas connus mauvais) ; lectures 0 perdue/1990 (6/6 cas
+connus mauvais) ; parcours 5/5 cas connus mauvais (371 déclarées/290 figées, 81 nouvelles — les 17
+vérifications ajoutées, 0 station perdue) ; screens 98 routes/0 échec ; fumee 55 routes/0 échec ;
+densite 88 écrans/0 au-delà du seuil ; clics `EXIT=1` — QUATRE occurrences de `#418` (au lieu
+d'une habituellement, attendu : ces stations quadruplent les visites à `/rcm/[cid]`, la classe de
+route où `#418` s'est toujours manifesté), même signature jeton 87/`rail-astuce` vérifiée sur les
+quatre dumps — QUARANTE-TROISIÈME confirmation consécutive (docs/CHASSE.md, F56) ; les 17
+assertions nouvelles TOUTES vertes, sur deux runs de clics indépendants. `npm run visuel` (relancé
+séparément après le redémarrage de conteneur) : 356 vues/0 défaut.
+
+**docs/CLOTURE.md, après ce rituel** : 17 OBSERVÉES / 14 NON OBSERVÉES / 0 SANS OBJET sur 31 (55 %,
+contre 16 % avant). Les 14 lignes restantes : `mat-03`, les trois sous-parties de `vid-01-retention`
+(compteur de conservation), `ctrl-semeur` (SEMEUR_VS_CHEMIN.md pas encore régénéré depuis cette
+tranche), et les neuf lignes du mandat du 14 septembre (extrapolation/automatisation/notifications)
+— dont `auto-01`, structurellement impossible à observer aujourd'hui sans construire un nouvel
+écran (`definirNiveauMission` n'a AUCUN point d'appel dans `app/src/app`).
+
+**SHA servi** : [à confirmer].
+
+---
+
 ## Lot 7, H-6 tranche 13 — fontSize/padding en dur hors .faint, dans les .tsx (2026-09-18)
 
 *Recherche fraîche (sous-agent) après la clôture du mandat de la tranche 9 (confirmation SHA-servi

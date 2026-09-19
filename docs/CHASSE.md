@@ -1822,3 +1822,62 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   discipline que F9-F54). `npm run visuel` relancé séparément AVANT le début de cette tranche
   (356 vues, 0 défaut) — l'étape `visuel` intégrée au `verify` n'a jamais tourné ce coup-ci (la
   chaîne `&&` s'arrête à `clics`, comme à chaque tranche H-6 précédente).
+
+- **F56 — QUATRE occurrences de `#418`, ZÉRO régression fonctionnelle** (2026-09-19, mandat de
+  clôture §3 — provoquer par un clic réel CTRL-01/02/03/04/05/06/07, VID-01 (dépôt+suppression) et
+  la phrase verbatim de l'annexe sourcée, sur l'arbre final du commit `e1c1a0f`) :
+
+  1. **Un réfutateur** (règle 30 : ni modèle de données au sens strict — un champ TypeScript
+     optionnel — ni sécurité ni multi-tenant ni code de refus NOUVEAU, les sept CTRL-0X existent
+     déjà inchangés) a trouvé UN constat RÉEL, MOYEN : `contexte.ts::pristine(frequency)`
+     n'était pas scopée par `engagement_id` — `enrichir.ts:388` importe le MÊME `rcm.csv` dans
+     `engNep` dès que sa RCM est vide (vrai à chaque `npm run demo` et à chaque reconstruction de
+     production), ce qui peut créer un contrôle vierge homonyme dans DEUX engagements. Le run de
+     `clics` déjà validé (db:reset && demo:seed seul, jamais `enrichir`) n'a pas été touché, mais
+     un futur run contre le monde enrichi l'aurait pu être. Corrigé (`e1c1a0f`) : `pristine()`
+     scopée sur l'engagement du contrôle qui PORTE un walkthrough (`walkthrough.eng_id`) — la
+     seule requête du fichier qui identifie fiablement le dossier SOX, puisque seul
+     `runControlCycle` (jamais appelé pour `engNep`) attache un walkthrough. Tout le reste du
+     réfutateur : ZÉRO défaut — les préconditions de chaque forme de CTRL-01/03 vérifiées réelles
+     par lecture directe (pas mises en scène), `minimaCaveat` confirmé ne fuiter jamais dans la
+     branche >200 non concernée, chaque regex de `scenario.ts` vérifiée caractère pour caractère
+     contre le texte réel des refus de `sox.ts`, aucun identifiant de modèle neuf, aucun `{{`
+     littéral, aucun fichier sonde résiduel, le fichier vidéo placeholder confirmé synthétique.
+
+  2. **Un `EXIT=144` sur le PREMIER essai de `verify`** — pas un incident d'infrastructure cette
+     fois : le correctif du constat MOYEN ci-dessus a été ÉCRIT PENDANT que ce premier essai
+     tournait (vitest venait de démarrer). Règle 34 appliquée à la lettre : le run a été TUÉ
+     immédiatement (pas attendu), sans mesure prise sur son résultat, et relancé sur l'arbre
+     corrigé.
+
+  3. **Le conteneur a été redémarré PENDANT `npm run visuel`** (relancé séparément après le
+     `verify` complet, la chaîne `&&` s'étant arrêtée à `clics` comme à chaque tranche
+     H-6/clôture précédente) — perdu sans fausse progression déclarée (règle 35), état du dépôt
+     et de PGlite revérifiés sur le conteneur frais (rien de perdu : le commit du correctif et les
+     mises à jour de `docs/instantanes/cloture.json`/`docs/CLOTURE.md` étaient déjà sur disque),
+     `visuel` relancé identiquement.
+
+  Sur l'arbre FINAL (`e1c1a0f`, `verify` complet, `timeout 7200`, `set -o pipefail`, second essai
+  après le run tué par la règle 34) : `tsc` propre, vitest 163/163 fichiers · 1246/1246 tests
+  (inchangé — cette tranche n'ajoute aucun test, elle ajoute des STATIONS clics),
+  gardes 47/semeur/plancher 632/langue (15/15 cas connus mauvais)/lectures (0 perdue sur 1990,
+  6/6 cas connus mauvais)/parcours (5/5 cas connus mauvais, 371 déclarées/290 figées, 81
+  nouvelles — attendu, cette tranche ajoute 17 vérifications neuves ; 0 station perdue) tous
+  propres, screens 98/0, fumee 55/0, densite 88/0. `clics` : `EXIT=1` réel (journal brut,
+  `set -o pipefail`) — QUATRE occurrences de `#418` (au lieu d'une habituellement) : les QUATRE
+  premières divergences de chaque dump portent la MÊME signature établie — jeton 87,
+  `rail-astuce`, `SERVEUR : (rien)` / `CLIENT : <div class="rail-astuce"...` — vérifié en lisant
+  les quatre dumps un par un, pas supposé du nombre seul. Le reste de chaque dump est le bruit de
+  cascade déjà documenté (les nouveaux libellés de cette tranche — « Delete the recording »,
+  « Revise », « Document » — y apparaissent comme POSITION structurelle après la désynchronisation
+  du jeton 87, jamais comme une VALEUR qui diffère). Le quadruplement (1 → 4) est attendu et
+  disjoint de cette tranche : les trois nouvelles stations quadruplent le nombre de visites à
+  `/rcm/[cid]`, exactement la classe de route où `#418` s'est toujours manifesté depuis F9 —
+  même relation déjà observée à plus petite échelle en F51 (doublé). QUARANTE-TROISIÈME
+  confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline que
+  F9-F55). `npm run visuel` relancé séparément après un redémarrage de conteneur (point 3
+  ci-dessus) — résultat consigné dans les mesures finales de STATUS.md une fois disponible.
+
+  Les 17 assertions nouvelles de scenario.ts (CTRL-01 à 07, VID-01 dépôt/suppression, la phrase
+  verbatim de l'annexe, la phrase §1.5) sont TOUTES vertes — 0 échec parmi elles, sur DEUX runs de
+  `clics` indépendants (le run exploratoire avant le premier `verify`, et ce run-ci).

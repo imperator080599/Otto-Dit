@@ -3,39 +3,39 @@
 
 Recherche menée le 2026-09-19. Méthode : Quatre sous-agents indépendants, un par mandat, chacun cherchant une preuve cliquée (station de app/scripts/clics/scenario.ts confirmée par docs/CLICS.md, jamais un test vitest seul) pour chaque épreuve listée ci-dessous, avant de conclure OBSERVE/NON_OBSERVE/SANS_OBJET.
 
-**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 5 OBSERVÉE(S), 26 NON OBSERVÉE(S), 0 SANS OBJET (16 % observé).**
+**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 17 OBSERVÉE(S), 14 NON OBSERVÉE(S), 0 SANS OBJET (55 % observé).**
 
 OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle dans `docs/CLICS.md`. Un test vitest, aussi rigoureux soit-il, ne suffit PAS seul : c'est la distinction qui a trouvé le blocage NOTIF-01 (seule voie qui l'a vu), et c'est pourquoi cet inventaire l'applique partout, sans exception de confort.
 
 ---
 ## Mandat du 2026-09-08 — `docs/MANDATS/2026-09-08_mandat_controle_interne.md`, §6
 
-- **NON OBSERVÉ** (`CTRL-01`) — Une tâche documentée par la seule inquiry ne se conclut pas.
-  Manque : Garde implémentée et vitest-testée (sox.ts:435-440,692-701) mais aucune station de scenario.ts ne visite /rcm/[cid] pour le flux de documentation D&I — STATUS.md le dit lui-même explicitement.
+- **OBSERVÉ** (`CTRL-01`) — Une tâche documentée par la seule inquiry ne se conclut pas.
+  Preuve : Station « contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois » (scenario.ts), sur un contrôle vierge (C-REV-03, jamais cyclé par le semeur) : refus observé DEUX fois (sans aucune tâche, puis avec une tâche documentée par la seule inquiry), levé en documentant une procédure hors inquiry. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-02`) — Un contrôle dont un des quatre facteurs de design est vide ne se conclut pas.
-  Manque : Garde implémentée (sox.ts:709-716) ; docs/SEMEUR_VS_CHEMIN.md marque « facteur de design documenté » non prouvé — chemin humain existant, jamais cliqué.
+- **OBSERVÉ** (`CTRL-02`) — Un contrôle dont un des quatre facteurs de design est vide ne se conclut pas.
+  Preuve : Même station, même contrôle vierge : refus observé avant que les quatre facteurs ne soient documentés, levé après. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-03`) — Une IUC déclarée sans exactitude, ou sans exhaustivité, est refusée en nommant laquelle manque.
-  Manque : Garde implémentée (sox.ts:717-723) ; la seule vérification cliquée connue est un script Playwright jetable, supprimé après usage — pas une station durable de scenario.ts.
+- **OBSERVÉ** (`CTRL-03`) — Une IUC déclarée sans exactitude, ou sans exhaustivité, est refusée en nommant laquelle manque.
+  Preuve : Même station : refus observé DEUX fois (aucune IUC déclarée, puis IUC utilisée sans preuve — le refus nomme les deux volets), levé en documentant les deux preuves. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-05`) — Un contrôle as_needed n'atteint pas le tirage d'OE sans une demande client de la population, créée par un clic.
-  Manque : Le bouton réel existe (demanderPopulationAction, rcm/[cid]/page.tsx) mais scenario.ts ne le clique jamais. Pire : le monde semé crée cette demande par un INSERT SQL brut plutôt que par le geste réel — docs/SEMEUR_VS_CHEMIN.md marque cet objet précis DÉCOR.
+- **OBSERVÉ** (`CTRL-05`) — Un contrôle as_needed n'atteint pas le tirage d'OE sans une demande client de la population, créée par un clic.
+  Preuve : Station « contrôle interne : CTRL-05, la demande de population as_needed créée par un clic » sur un contrôle adhoc vierge (C-REV-04) : le bouton de demande est cliqué, une VRAIE demande client_request naît, visible et cliquable dans l'espace de demandes. Corrige au passage le DÉCOR relevé par la recherche du 2026-09-19 (le semeur créait cette même demande par un INSERT SQL brut). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-04`) — Une population d'occurrences non rapprochée ne se tire pas.
-  Manque : Garde implémentée (sox.ts:1064-1071), aucune station cliquée ne la traverse.
+- **OBSERVÉ** (`CTRL-04`) — Une population d'occurrences non rapprochée ne se tire pas.
+  Preuve : Station de la ladder CTRL-01/02/03 (C-REV-03) : après dérivation de la population, le message « non rapprochée » s'affiche et aucun formulaire de tirage n'est offert ; après rapprochement, le formulaire apparaît. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-07`) — Aucune taille d'échantillon ne s'affiche tant que la table du cabinet est vide.
-  Manque : Garde implémentée (sox.ts:1083-1091, table livrée vide comme le mandat l'exige), aucune station cliquée ne la traverse.
+- **OBSERVÉ** (`CTRL-07`) — Aucune taille d'échantillon ne s'affiche tant que la table du cabinet est vide.
+  Preuve : RÉINTERPRÉTÉ (règle 19, écrit plutôt que tu) : la table n'est plus jamais littéralement vide depuis l'annexe du 10 septembre — le comportement observable équivalent (aucune taille ne s'affiche tant qu'un jugement de cabinet manque) est observé sur le contrôle quotidien vierge (C-TR-01, population > 200) : voir ctrl-07-table-pleine, même mécanisme de code (tailleEchantillonOe), même écran. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-06`) — L'inquiry de l'OE refuse de réutiliser l'enregistrement du D&I, et porte sa propre date, postérieure.
-  Manque : Garde implémentée et confirmée par mutation-testing vitest (sox.ts:1255-1282), jamais par une station cliquée.
+- **OBSERVÉ** (`CTRL-06`) — L'inquiry de l'OE refuse de réutiliser l'enregistrement du D&I, et porte sa propre date, postérieure.
+  Preuve : Station « contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) » : sur le contrôle déjà cyclé C-BR-01, révision de l'inquiry OE en y sélectionnant la pièce du walkthrough D&I lui-même — refusé, en nommant le contrôle. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
 - **OBSERVÉ** — Un test échoue si une seule carte du kanban des écarts ne se résout pas à l'identifiant d'un objet réel.
   Preuve : Station « kanban des écarts : chaque carte se résout à un écart réel » (app/scripts/clics/scenario.ts:3777-3811), présente dans docs/CLICS.md parmi les 63 gestes du dernier run réel. Le run échoue si idsCartes.length===0 ou si un id de carte n'a pas d'ancre #x-<id> correspondante sur /exceptions. SHA `1f1a9a5f2ee80764ff0d626fcaa4169307cb724c`.
 
 - **NON OBSERVÉ** — Chaque objet nouveau de ce mandat (contrôle, walkthrough, tâche, IUC, occurrence) porte son chemin humain cliqué (SEMEUR_VS_CHEMIN).
-  Manque : docs/SEMEUR_VS_CHEMIN.md (engendré, dernière régénération 2026-09-17) marque la quasi-totalité des objets de ce mandat « non prouvé » (chemin humain existant, jamais cliqué), et un — la demande de population as_needed — « DÉCOR » (aucun chemin humain réel, même le semeur la contourne). Aucun objet de ce mandat n'est dans le seau « prouvé ».
+  Manque : docs/SEMEUR_VS_CHEMIN.md reste à régénérer depuis l'arbre de ce commit (dernière régénération 2026-09-17, antérieure à cette tranche) — les objets exercés par les trois nouvelles stations (tâche, procédure de tâche, facteur de design, IUC, preuve IUC, demande de population, rapprochement, inquiry OE) devraient y basculer en « prouvé » une fois régénéré, mais ce document ne l'affirme pas avant que le script ne l'ait mesuré. Reste NON OBSERVÉ tant que non régénéré.
 
 ---
 
@@ -53,11 +53,11 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 - **NON OBSERVÉ** (`MAT-03`) — Un ré-import sur un poste déjà testé ne détruit rien : le tirage, les papiers et les visas sont toujours là après.
   Manque : Le ré-import lui-même EST cliqué (station « import du grand livre définitif », scenario.ts:594-622) mais l'invariant MAT-03 proprement dit (tirage/papiers/visas encore présents après) n'est asserté par aucune station — STATUS.md attribue cette preuve à retirage.test.ts, un test vitest, pas un clic.
 
-- **NON OBSERVÉ** (`VID-01`) — Le dépôt manuel d'une vidéo de walkthrough fonctionne par un clic réel, la vidéo rangée comme une pièce du dossier avec sa provenance.
-  Manque : Aucune station de scenario.ts ne dépose de vidéo de walkthrough. La station « walkthrough » existante dépose un TRANSCRIPT texte pour l'analyse d'écarts (§4 point 3/R74) — une fonctionnalité distincte de la vidéo d'inquiry du §3.
+- **OBSERVÉ** (`VID-01`) — Le dépôt manuel d'une vidéo de walkthrough fonctionne par un clic réel, la vidéo rangée comme une pièce du dossier avec sa provenance.
+  Preuve : Station de la ladder CTRL-01/02/03 (C-REV-03) : dépôt réel d'un fichier (dataset/sox/walkthrough-video-placeholder.txt, synthétique) via le formulaire [data-attacher-walkthrough], accepté et affiché avec provenance ([data-walkthrough-attache]). Ré-attachement après suppression confirmé aussi (étape 8). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`VID-01`) — La suppression manuelle d'une vidéo fonctionne par un clic réel, toujours tracée (qui, quand, pourquoi).
-  Manque : STATUS.md décrit une passe de vérification manuelle au navigateur (script jetable, supprimé), jamais intégrée à scenario.ts ni présente dans docs/CLICS.md.
+- **OBSERVÉ** (`VID-01`) — La suppression manuelle d'une vidéo fonctionne par un clic réel, toujours tracée (qui, quand, pourquoi).
+  Preuve : Même station, étape 8 : suppression réelle via [data-supprimer-walkthrough] (motif requis), la mention de suppression tracée (qui, quand, motif) s'affiche à l'écran ([data-walkthrough-supprime]). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
 - **NON OBSERVÉ** (`VID-01`) — Le compte à rebours de conservation ne démarre que lorsque rapport signé ET notes de revue closes sont réunis.
   Manque : L'arithmétique (calculerConservationVideo) n'est unit-testée qu'après un constat hostile ; aucune station ne signe un rapport, ne clôt les notes de revue, puis n'observe le compteur réagir.
@@ -66,11 +66,11 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 
 ## Mandat du 2026-09-10 — `docs/MANDATS/2026-09-10_annexe_echantillonnage.md`, annexe entière
 
-- **NON OBSERVÉ** — La table de tailles d'échantillon est remplie depuis une source publique citée (HUD Handbook 2000.04 REV-2 CHG-10, Appendix A), jamais de mémoire, avec la phrase verbatim sur les minima suggérés affichée à l'écran.
-  Manque : La table EST réellement sourcée avec la citation exacte (app/src/lib/packs/pcaob-sox.ts:43-67, valeurs numériques conformes à l'annexe) et affichée avec son texte de source (rcm/[cid]/page.tsx:699-711). Mais la phrase verbatim « these are suggested minimum sample sizes... » n'apparaît nulle part dans app/src (grep vide sur tout l'arbre), et aucune station cliquée n'atteint le formulaire de tirage OE pour la confirmer visuellement.
+- **OBSERVÉ** — La table de tailles d'échantillon est remplie depuis une source publique citée (HUD Handbook 2000.04 REV-2 CHG-10, Appendix A), jamais de mémoire, avec la phrase verbatim sur les minima suggérés affichée à l'écran.
+  Preuve : La phrase verbatim (« these are suggested minimum sample sizes... ») a été ajoutée cette tranche (TableEchantillonnageAttribut.minimaCaveat, pcaob-sox.ts, sox.ts, rcm/[cid]/page.tsx) et observée à l'écran par la station de la ladder CTRL-01/02/03 (C-REV-03, population ≤ 200, bande minima) — assertion dédiée dans scenario.ts, résultat imprimé dans le journal de clics. SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** (`CTRL-07`) — CTRL-07 refuse toujours sans les jugements de cabinet (niveau de confiance, taux tolérable, importance de l'attribut), même la table désormais remplie.
-  Manque : Le refus est réel et vitest-testé (sox.ts:965-999,1031-1092) mais aucune station cliquée ne soumet un tirage sans ces jugements pour confirmer, devant un utilisateur, que le refus tient malgré la table pleine.
+- **OBSERVÉ** (`CTRL-07`) — CTRL-07 refuse toujours sans les jugements de cabinet (niveau de confiance, taux tolérable, importance de l'attribut), même la table désormais remplie.
+  Preuve : Station « contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) » sur le contrôle quotidien vierge (C-TR-01, population dérivée ≈ 365 > 200, table pleine) : après rapprochement, le message CTRL-07 s'affiche, nommant les trois jugements de cabinet non posés (niveau de confiance, taux tolérable, importance). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
 ---
 
@@ -88,8 +88,8 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 - **NON OBSERVÉ** (`EXTRAP-04`) — Aucune projection ne s'affiche tant que la méthode du cabinet n'est pas posée.
   Manque : scenario.ts visite /testing (station « re-exécution et évaluation ») mais ne lit jamais le bloc qui affirmerait la suppression de la projection.
 
-- **NON OBSERVÉ** — Un test de contrôles n'affiche jamais de projection, et le dit en une phrase.
-  Manque : La station walkthrough existante visite la même page (rcm/[cid]) mais n'exerce jamais cette phrase précise (rcmc.noProjectionTestsOfControls).
+- **OBSERVÉ** — Un test de contrôles n'affiche jamais de projection, et le dit en une phrase.
+  Preuve : Station « contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) », sur le contrôle déjà testé C-BR-01 : la phrase « Tests of controls never show a projection (ISA 530 §A20)... » est lue à l'écran (assertion dédiée, regex sur le texte de la page). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
 - **NON OBSERVÉ** — Écart connu, écart projeté et écart total estimé sont trois nombres distincts à l'écran, chacun avec sa provenance.
   Manque : Aucune station ne lit les clés du bloc KPI concerné dans testing/page.tsx.
