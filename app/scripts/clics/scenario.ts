@@ -2784,6 +2784,68 @@ export async function conduire(
       resolus + anomalies > 0, `${resolus} résolu(s), ${anomalies} porté(s) en anomalie`);
   });
 
+  // ── 14 bis. EXTRAP-03 (mandat 2026-09-14, §1.4) : écarter un écart chiffré
+  //    (misstatement) comme anomalie exige une preuve SUPPLÉMENTAIRE obtenue
+  //    exprès (ISA 530 §13, « extremely rare », « high degree of certainty »)
+  //    — refusé sans elle, puis un vrai écartement avec une pièce DISTINCTE
+  //    de celle qui a déjà servi à constater l'écart d'origine.
+  await station('EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel', async () => {
+    await devenir(c.reviewer.id);
+    await aller(`${eng}/exceptions`);
+    const forme = p.locator('form:has(input[name=misstatement_id])').first();
+    if (!(await forme.count())) {
+      dire('EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier', true,
+        'aucune ligne de misstatement (kind ≠ projected, non déjà écartée) — rien à disposer ici');
+      return;
+    }
+    /* REFUS D'ABORD, TOUJOURS. La pièce n'est PAS choisie (l'option par
+       défaut du <select required> est désactivée et vide) — même discipline
+       que le lien manquant de la station « résolution des écarts » : on
+       désactive la validation HTML pour laisser le SERVICE refuser, pas
+       seulement le champ. */
+    await deplier(forme);
+    await forme.evaluate((el) => { (el as HTMLFormElement).noValidate = true; });
+    await forme.locator('textarea[name=reason]').fill(
+      'Contexte inhabituel mentionné par le client, à documenter.');
+    await forme.locator(`button:has-text("${L('exc.dismissAsAnomaly')}")`).click();
+    await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await p.waitForTimeout(2000);
+    dire('EXTRAP-03 : écarter un écart comme anomalie SANS preuve supplémentaire est refusé, en citant §13',
+      Boolean(refus(p)) && /EXTRAP-03|§13/.test(refus(p) ?? ''), refus(p) ?? 'passé — défaut');
+
+    /* …puis le vrai geste : une pièce DISTINCTE de celle qui a déjà servi à
+       constater l'écart d'origine. Le formulaire n'a aucun moyen de savoir
+       LAQUELLE des pièces du dossier est « la même » (§13 : une preuve
+       supplémentaire, jamais relue) — on essaie donc chaque option jusqu'à
+       ce que le service accepte, sans le présumer. */
+    await aller(`${eng}/exceptions`);
+    const formeVals = p.locator('form:has(input[name=misstatement_id])').first();
+    let vals: string[] = [];
+    if (await formeVals.count()) {
+      await deplier(formeVals);
+      vals = await formeVals.locator('select[name=evidence_id] option').evaluateAll(
+        (els) => els.map((e) => (e as HTMLOptionElement).value).filter(Boolean));
+    }
+    let ecarte = false;
+    for (const v of vals) {
+      await aller(`${eng}/exceptions`);
+      const f = p.locator('form:has(input[name=misstatement_id])').first();
+      if (!(await f.count())) break;
+      await deplier(f);
+      await f.locator('textarea[name=reason]').fill(
+        'Le client a confirmé un incident isolé et hors norme, distinct de la cause habituelle des '
+        + 'écarts de ce dossier — pièce jointe obtenue exprès pour corroborer ce caractère '
+        + 'exceptionnel (ISA 530 §13).');
+      await f.locator('select[name=evidence_id]').selectOption(v);
+      await f.locator(`button:has-text("${L('exc.dismissAsAnomaly')}")`).click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2000);
+      if (!refus(p)) { ecarte = true; break; }
+    }
+    dire('EXTRAP-03 : écarté comme anomalie avec une preuve DISTINCTE — le compte d’anomalies écartées monte',
+      ecarte, ecarte ? 'écartement enregistré' : (refus(p) ?? `aucune des ${vals.length} pièce(s) disponible(s) n’a été acceptée`));
+  });
+
   // ── 15. RE-EXÉCUTION EN AVEUGLE ET ÉVALUATION DE L'ÉCHANTILLON
   await station('re-exécution et évaluation', async () => {
     await devenir(c.reviewer.id);
