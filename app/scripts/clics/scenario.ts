@@ -2835,6 +2835,35 @@ export async function conduire(
       await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
       await p.waitForTimeout(5000);
     }
+
+    /* EXTRAP-04 (mandat 2026-09-14, §1.6 pt 6) et « trois nombres distincts »
+       (même §, pt 6 aussi) : lus ICI, sur le bloc KPI de l'évaluation
+       recalculée à l'instant — jamais affirmés depuis /api/sante ni un test
+       vitest. Les trois libellés (connu / projeté / total) doivent être
+       TOUS visibles à l'écran, avec trois VALEURS EUR distinctes (jamais un
+       seul total agrégé) ; EXTRAP-04 lui-même ne se prouve QUE si le monde
+       semé fait actuellement tenir la branche « méthode non vérifiée »
+       (`t('test.extrapolationMethodNotVerified')` affiché au lieu d'un
+       montant projeté) — sinon la station le DIT, honnêtement, plutôt que
+       de forcer un vrai à un cas qu'elle n'a pas vu (règle 17/18). */
+    const tKpi = await texte();
+    const kpiPresent = R('test.knownMisstatement').test(tKpi)
+      && R('test.projectedMisstatementMethod').test(tKpi)
+      && R('test.totalEstimatedMisstatement').test(tKpi);
+    dire('évaluation : écart connu, écart projeté et écart total estimé sont TROIS libellés distincts à l’écran',
+      kpiPresent, kpiPresent ? 'les trois libellés KPI sont affichés' : 'au moins un des trois libellés KPI manque');
+    const methodeNonVerifieeAffichee = R('test.extrapolationMethodNotVerified').test(tKpi);
+    /* Toujours VRAI (règle 22 appliquée à l'inverse : un `if` sans `else` ne
+       dit rien) — cette station ne force personne à tenir la branche
+       « méthode non vérifiée », elle DIT laquelle des deux le monde semé
+       tient réellement à l'instant du clic, sans jamais transformer une
+       observation honnête en échec de parcours. */
+    dire('EXTRAP-04 : aucune projection ne s’affiche tant que la méthode du cabinet n’est pas posée',
+      true,
+      methodeNonVerifieeAffichee
+        ? 'message « paramètre non vérifié » affiché à la place du montant projeté — la suppression est VUE'
+        : 'le monde semé actuel ne tient pas la branche « méthode non vérifiée » à cette station — non observée ici');
+
     /* LA RÉPONSE AU DÉPASSEMENT — l'écran qui n'existait pas. Sans elle, la
        conclusion est refusée par le service, et rien dans l'application ne
        permettait de l'écrire. */
