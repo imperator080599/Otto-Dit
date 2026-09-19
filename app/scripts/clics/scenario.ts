@@ -591,8 +591,29 @@ export async function conduire(
   });
 
   // ── 3. IMPORT DU FEC DÉFINITIF (ADR-016 : un ré-import se confirme)
+  /* MAT-03 (mandat 2026-09-09, §2.4, R87 de docs/instantanes/cloture.json) : LE RÉ-IMPORT
+     LUI-MÊME était déjà cliqué, mais l'invariant (« le tirage, les papiers et les visas sont
+     toujours là après ») n'était asserté par aucune station — seulement par
+     `retirage.test.ts`, un vitest. `npm run demo:seed` a déjà signé REV-01 sur le grand livre
+     PROVISOIRE (visible dans sa propre sortie : « REV-01 signed and exported ») avant que ce
+     parcours ne démarre — donc un papier RÉEL, VISÉ, existe déjà ici (même précondition que
+     `retirage.test.ts`, règle 17 : sans lui, « rien ne disparaît » serait trivialement vrai).
+     La mesure AVANT est prise en lisant `/eng/[id]/workpapers` (`signoff_count` par ligne,
+     colonne « Sign-offs », déjà affichée à l'écran — pas une requête SQL du harnais, règle 15) —
+     juste avant le geste qui pourrait détruire, sur le même dossier, avant que rien d'autre ne
+     bouge. */
+  let avantReimportWp = { lignes: 0, rev01Statut: '', rev01Visas: 0 };
   await station('import du grand livre définitif', async () => {
     await devenir(c.preparateur.id);
+    await aller(`${eng}/workpapers`);
+    avantReimportWp.lignes = await compte('table.data tbody tr');
+    const ligneRev01Avant = p.locator('table.data tbody tr:has-text("REV-01")').first();
+    avantReimportWp.rev01Statut = (await ligneRev01Avant.locator('.badge').first().innerText().catch(() => '')).trim();
+    avantReimportWp.rev01Visas = Number(await ligneRev01Avant.locator('td.num').first().innerText().catch(() => '0')) || 0;
+    dire('MAT-03 : avant le ré-import, REV-01 existe déjà, SIGNÉ (le papier réel dont la survie va être mesurée)',
+      avantReimportWp.lignes > 0 && avantReimportWp.rev01Statut === 'signed' && avantReimportWp.rev01Visas > 0,
+      `${avantReimportWp.lignes} papier(s), REV-01 « ${avantReimportWp.rev01Statut} », ${avantReimportWp.rev01Visas} visa(s)`);
+
     await aller(`${eng}/imports`);
     const fecDef = ds('definitif', '999888777FEC20251231.txt');
     const avecCase = await compte('form:has(input[name=confirm_invalidation])');
@@ -619,6 +640,20 @@ export async function conduire(
     await p.waitForTimeout(12000);
     dire('import : le FEC DÉFINITIF entre, invalidation confirmée',
       !refus(p), refus(p) ?? 'importé');
+
+    /* MAT-03, LA MESURE APRÈS — comparée à `avantReimportWp`, jamais à une valeur supposée
+       (règle 28 : un recalcul ne détruit ni n'invalide jamais en silence du travail humain). */
+    await aller(`${eng}/workpapers`);
+    const apresLignes = await compte('table.data tbody tr');
+    const ligneRev01Apres = p.locator('table.data tbody tr:has-text("REV-01")').first();
+    const apresStatut = (await ligneRev01Apres.locator('.badge').first().innerText().catch(() => '')).trim();
+    const apresVisas = Number(await ligneRev01Apres.locator('td.num').first().innerText().catch(() => '0')) || 0;
+    dire('MAT-03 : après le ré-import, AUCUN papier ne disparaît (le compte ne peut que monter ou tenir)',
+      apresLignes >= avantReimportWp.lignes,
+      `${avantReimportWp.lignes} → ${apresLignes}`);
+    dire('MAT-03 : après le ré-import, REV-01 reste SIGNÉ — son visa ne disparaît pas',
+      apresStatut === 'signed' && apresVisas >= avantReimportWp.rev01Visas,
+      `statut « ${avantReimportWp.rev01Statut} » → « ${apresStatut} », visas ${avantReimportWp.rev01Visas} → ${apresVisas}`);
   });
 
   // ── 4. RAPPROCHEMENT : c'est LUI, propre, qui lève le drapeau « provisoire »
@@ -1557,6 +1592,17 @@ export async function conduire(
       dire('sondage : le tirage est déterministe, et il est fait',
         !refus(p), refus(p) ?? 'tirage effectué');
     }
+    /* MAT-03 (suite, R87) : LE RE-TIRAGE — celui-là même que le ré-import du FEC définitif
+       vient d'exiger (ADR-016, ADR-133) — produit bien de VRAIES lignes, pas un tirage vide qui
+       laisserait croire à une perte. La station « re-tirage : ce qui sort du tirage ne
+       disparaît pas », plus loin dans ce parcours, prouve l'AUTRE moitié de l'invariant : les
+       lignes de l'ANCIEN tirage que le nouveau ne reprend pas ne s'effacent pas, elles se
+       statuent — deux moitiés d'un même invariant, deux stations. */
+    const selectionAffichee = await texte();
+    const nSelection = Number(selectionAffichee.match(/Selected items \((\d+)\)/)?.[1] ?? 'NaN');
+    dire('MAT-03 : le nouveau tirage (post ré-import) porte de vraies lignes sélectionnées',
+      Number.isFinite(nSelection) && nSelection > 0,
+      Number.isFinite(nSelection) ? `${nSelection} ligne(s) sélectionnée(s)` : '« Selected items (N) » non affiché');
     const t = await texte();
     dire('sondage : la sélection tirée est affichée avec sa méthode et son germe',
       /seed|germe|monetary|coverage|couverture/i.test(t) && t.length > 300,
