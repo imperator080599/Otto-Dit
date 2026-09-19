@@ -1187,6 +1187,16 @@ design : chacun reste une tranche à construire.**
   OU sans preuve, puis écartement réussi avec preuve distincte) une fois `npm run clics` de nouveau
   fiable (R80).
 
+  **LEVÉE le 2026-09-19, sur le SHA `013bd6d` (mandat de clôture §3).** `npm run clics` s'est révélé
+  fiable deux fois dans cette même tranche (307 puis 309 étapes, 0 échec d'assertion à chaque fois) —
+  la station « EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel » a été ajoutée
+  après « résolution des écarts » : refus RÉEL (bypass du `required` HTML, le service refuse sans
+  pièce, cite §13) puis écartement réussi avec une pièce essayée jusqu'à être acceptée comme
+  DISTINCTE de celle de l'écart d'origine — les deux assertions BLOQUANTES, vraiment passées
+  (`docs/instantanes/cloture.json`, épreuve `extrap-03`, désormais OBSERVÉE). R82 (la limite
+  structurelle pour les exceptions sans `evidence_id`) n'est PAS touchée par cette fermeture — elle
+  reste ouverte, distincte.
+
 - **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
   pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
   plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,

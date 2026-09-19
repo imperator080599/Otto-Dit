@@ -4,6 +4,64 @@
 
 ---
 
+## Mandat de clôture, §3 — EXTRAP-03 fermée (20/11/0, 65 %) (2026-09-19)
+
+*Suite immédiate de la tranche précédente (ctrl-semeur + extrap-trois-nombres, `237244e`).
+Cheapest-first : R81 (mandat 2026-09-14, §1.4) disait le chemin humain EXTRAP-03 déjà existant,
+seule sa station `clics` manquait, reportée par prudence faute d'un `clics` fiable ce jour-là
+(R80). `clics` s'est montré fiable DEUX fois dans les deux rituels précédents de cette même
+tranche — plus de raison de reporter.*
+
+**Ligne fermée — `extrap-03` (20/11/0, 65 %), commit `013bd6d` (station) + mesures ci-dessous.**
+Nouvelle station « EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel »,
+insérée après « résolution des écarts » : réutilise les 1-2 `misstatement` déjà créés par cette
+station précédente (kind `factual`, via `escalateToMisstatement`). Deux `dire()`, TOUTES DEUX
+bloquantes (pas de garde-fou « non observée ici » cette fois — les préconditions étaient déjà
+connues tenir, contrairement à EXTRAP-04) :
+
+- Refus RÉEL sans pièce : `required` HTML contourné (`form.noValidate`, même discipline que le
+  lien manquant de « résolution des écarts »), le SERVICE refuse
+  (`dismissMisstatementAsAnomaly`, `matching.ts:757`) en citant §13 — message lu à l'écran,
+  regex `/EXTRAP-03|§13/`.
+- Écartement réel avec preuve DISTINCTE : le formulaire ne sait pas, à l'avance, laquelle des
+  pièces du dossier est « la même » que celle de l'écart d'origine (le service, lui, le sait —
+  `matching.ts:790-798`) — la station essaie donc chaque option du `<select>` jusqu'à
+  acceptation, sans le présumer.
+
+**Validation.** `tsc --noEmit` propre. `npm run db:reset && npm run demo:seed && npm run clics`
+(bornée, `timeout 1800`, monde re-semé) sur l'arbre du commit `013bd6d` : 309 étape(s) conduites,
+**0 échec d'assertion** — les deux `dire()` neuves comprises, toutes deux VRAIMENT passées (pas
+un cas connu mauvais qui n'a jamais échoué : une hard assertion qui aurait pu casser tout le
+parcours si `evidencesPourEcartement` avait été vide ou si toutes les options avaient été
+refusées comme « même pièce »). 441 clics, `docs/CLICS.md` écrit. `EXIT=1` réel de `npm run
+clics` : QUATRE occurrences de `#418`, même signature (jeton 87) que F56/F57, aucune nouvelle
+visite à `/rcm/[cid]` ajoutée par cette station (elle visite `/exceptions`, déjà visité) — compte
+inchangé, comme attendu. Détail : `docs/CHASSE.md` F58 (45ᵉ confirmation consécutive que `#418`
+est disjoint). Pas de `verify` complet dédié (discipline de coût : changement additif de script
+de clics, aucun code d'application touché).
+
+`docs/BACKLOG_REPORTE.md` : R81 marquée LEVÉE sur le SHA `013bd6d`. R82 (la limite structurelle
+pour les exceptions sans `evidence_id` — `manual_journal_flag`, `verification_disagreement`,
+`reconciliation_diff`) n'est PAS touchée par cette fermeture, reste ouverte, distincte.
+
+**SHA servi à confirmer dans le prochain suivi**, par discipline de coût du mandat (« confirme le
+SHA servi dans le MÊME suivi que les mesures suivantes, jamais un commit séparé ») — trois
+commits de cette tranche restent à confirmer servis d'un coup : `237244e` (ctrl-semeur +
+extrap-trois-nombres) et le commit de mesures ci-dessous pour `extrap-03`.
+
+**Restent NON OBSERVÉES (10 lignes), cheapest-first pour la suite** : `MAT-03` (deuxième import
+à insérer après que tirage/papiers/visas existent, risque de perturber le parcours canonique) ;
+`VID-01` rétention (rapport signé + notes closes, état gardé plus lourd) ; `EXTRAP-01` (R80,
+lecture sante + test d'intégration seulement) ; `EXTRAP-02` (écart de fond avec la lettre du
+mandat — exclusion structurelle plutôt qu'un message nommant la strate, pas juste un clic
+manquant) ; `EXTRAP-04` (la lecture existe désormais, l'invariant lui-même reste à faire tenir
+dans le monde semé) ; `AUTO-01` (aucun point d'entrée écran, structurellement impossible
+aujourd'hui) ; `AUTO-02` et le test des deux gardes indépendantes (disclosed, structurellement
+plus difficiles) ; les trois lignes R87 (notif-carte-id/notif-role/notif-disparition — nécessite
+de câbler `/notifications`, jamais branché à un écran, lift plus lourd).
+
+---
+
 ## Mandat de clôture, §3 — deux lignes de plus fermées, cheapest first (2026-09-19)
 
 *Suite de la tranche précédente (CTRL-01..07/VID-01/annexe, 12 lignes fermées, `2d4ae73`).

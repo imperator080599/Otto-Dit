@@ -3,7 +3,7 @@
 
 Recherche menée le 2026-09-19. Méthode : Quatre sous-agents indépendants, un par mandat, chacun cherchant une preuve cliquée (station de app/scripts/clics/scenario.ts confirmée par docs/CLICS.md, jamais un test vitest seul) pour chaque épreuve listée ci-dessous, avant de conclure OBSERVE/NON_OBSERVE/SANS_OBJET.
 
-**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 19 OBSERVÉE(S), 12 NON OBSERVÉE(S), 0 SANS OBJET (61 % observé).**
+**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 20 OBSERVÉE(S), 11 NON OBSERVÉE(S), 0 SANS OBJET (65 % observé).**
 
 OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle dans `docs/CLICS.md`. Un test vitest, aussi rigoureux soit-il, ne suffit PAS seul : c'est la distinction qui a trouvé le blocage NOTIF-01 (seule voie qui l'a vu), et c'est pourquoi cet inventaire l'applique partout, sans exception de confort.
 
@@ -82,8 +82,8 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 - **NON OBSERVÉ** (`EXTRAP-02`) — Une projection tentée sur la strate exhaustive est refusée, en nommant la strate.
   Manque : Le mécanisme réel (kernel/projection.ts) est une EXCLUSION STRUCTURELLE, pas un message de refus nommant la strate — un écart avec la lettre du mandat. Testé seulement comme invariant (kernel.test.ts), jamais cliqué.
 
-- **NON OBSERVÉ** (`EXTRAP-03`) — Une anomalie déclarée sans preuve supplémentaire obtenue exprès est refusée, en citant §13 (extremely rare, high degree of certainty).
-  Manque : Le chemin humain existe (formulaire, exceptions/page.tsx) mais STATUS.md dit explicitement que npm run clics n'a pas été étendu à EXTRAP-03 (R81) — sa preuve cliquée manque encore.
+- **OBSERVÉ** (`EXTRAP-03`) — Une anomalie déclarée sans preuve supplémentaire obtenue exprès est refusée, en citant §13 (extremely rare, high degree of certainty).
+  Preuve : Station « EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel » (scenario.ts, après « résolution des écarts ») : refus RÉEL observé (bypass du required HTML, le SERVICE refuse sans pièce — message lu à l'écran citant §13, assertion bloquante passée), puis un vrai écartement avec une pièce essayée jusqu'à acceptation comme DISTINCTE de celle de l'écart d'origine (assertion bloquante passée aussi — 0 échec sur les deux). npm run clics, monde re-semé : 309 étape(s), 0 échec d'assertion. SHA `013bd6d2a0c3b4d6ed3b375f23fe5673e7f70584`.
 
 - **NON OBSERVÉ** (`EXTRAP-04`) — Aucune projection ne s'affiche tant que la méthode du cabinet n'est pas posée.
   Manque : scenario.ts lit désormais le bloc (station « re-exécution et évaluation », SHA 227003e) et NOMME laquelle des deux branches il voit — mais mesuré en direct (npm run clics, monde re-semé) : le monde semé actuel ne fait PAS tenir la branche « méthode non vérifiée » à cette station (evaluation.projection_method reste renseigné). La lecture existe, honnête, jamais forcée à un vrai qu'elle n'a pas vu (règle 17/18) ; il manque encore un geste du monde semé qui produise réellement une strate sondée avec écart et méthode non vérifiée à cet instant précis du parcours.

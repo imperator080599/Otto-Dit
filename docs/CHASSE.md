@@ -1896,3 +1896,14 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   déjà visité) — le compte à quatre est donc inchangé par rapport à F56, comme attendu (aucune
   route nouvelle de la classe touchée). QUARANTE-QUATRIÈME confirmation consécutive que `#418`
   est disjoint. Pas creusé plus loin (même discipline que F9-F56).
+
+- **F58 — QUATRE occurrences de `#418`, ZÉRO régression fonctionnelle** (2026-09-19, mandat de
+  clôture §3 — station EXTRAP-03, arbre du commit `013bd6d`) : `npm run clics` seul (même
+  justification que F57 — changement additif, une station neuve après « résolution des écarts »,
+  aucun code d'application touché) — 309 étape(s) conduites, 0 échec d'assertion (les deux `dire()`
+  d'EXTRAP-03 comprises, TOUTES DEUX bloquantes : le refus sans preuve cité §13, et l'écartement
+  réel avec une pièce distincte, vraiment passées). QUATRE occurrences de `#418`, même signature
+  (jeton 87) lue dans le dump, pas seulement comptée. La nouvelle station visite `/exceptions`
+  (déjà visité par la station précédente), AUCUNE nouvelle visite à `/rcm/[cid]` — le compte à
+  quatre reste inchangé, comme attendu. QUARANTE-CINQUIÈME confirmation consécutive que `#418` est
+  disjoint. Pas creusé plus loin (même discipline que F9-F57).

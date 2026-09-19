@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-19 · 66 gestes · **436 clics** au total.
+Parcours du 2026-09-19 · 67 gestes · **441 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -58,6 +58,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | testing : le second passage sur les pièces arrivées après coup | 3 |
 | estimation : le fichier de calcul de la cliente | 9 |
 | résolution des écarts | 26 |
+| EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel | 5 |
 | re-exécution et évaluation | 4 |
 | papier de travail et visas | 40 |
 | poste : l’anatomie — visas en haut, leadsheet N/N-1, revue analytique, sections repliées mémorisées | 6 |
