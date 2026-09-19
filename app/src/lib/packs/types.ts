@@ -171,6 +171,11 @@ export interface TableEchantillonnageAttribut {
   sourceText: string;
   minimaPopulationsFaibles: MinimumPopulationFaible[];
   grillePopulationsElevees: LigneGrilleAttribut[];
+  /** Annexe §2.2, citée mot pour mot dans le même paragraphe que les minima : « As noted above,
+   *  these are suggested minimum sample sizes... ». Le mandat exige qu'elle soit « reprise à
+   *  l'écran, sous la taille affichée » — jamais un nombre lu comme un verdict. Optionnel pour
+   *  ne pas casser un pack qui ne l'aurait pas encore fournie ; `pcaob-sox.ts` la porte. */
+  minimaCaveat?: string;
 }
 
 /** L'échelle d'automatisation (mandat 2026-09-14, §2.1) — FERMÉE : `L3` n'y figure

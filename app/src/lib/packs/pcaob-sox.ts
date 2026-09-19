@@ -56,6 +56,11 @@ export const pcaobSox: AssurancePack = {
       { min: 20, max: 49, valeur: 5, texte: '(3) 5 items when the population being tested contains between 20 and 49 items' },
       { min: 0, max: 19, valeur: null, texte: '(4) Fewer than 5 items for smaller populations' },
     ],
+    // §2.2, MÊME paragraphe que les quatre minima ci-dessus, citée mot pour mot (annexe §2.2) :
+    // le mandat exige qu'elle soit « reprise à l'écran, sous la taille affichée » — ce ne sont
+    // que des minima SUGGÉRÉS, jamais un verdict.
+    minimaCaveat: 'As noted above, these are suggested minimum sample sizes, and there may be '
+      + 'quantitative factors used to determine the sample size to be used.',
     // §2.1 : les quatre lignes publiées, verbatim. Aucune autre combinaison n'existe dans la
     // source (faible+95%, élevée+90%, etc. ne sont PAS publiées — une population dont le cabinet
     // choisirait une telle combinaison reste non vérifiée, jamais devinée par interpolation).

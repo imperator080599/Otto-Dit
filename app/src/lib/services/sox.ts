@@ -935,10 +935,13 @@ export async function rapprocherPopulationControle(controlId: string, userId: st
 // ---------- S8b: attribute sampling → evidence request → testing → deviations ----------
 
 export type TailleEchantillonOe =
-  | { valeur: number; verifie: true; texteSource?: string }
+  | { valeur: number; verifie: true; texteSource?: string; caveat?: string }
   /** pourquoi `verifie` est false — jamais deviné, toujours un motif nommé (règle 19). `texteSource` :
-   *  le texte exact de la source, quand la bande ≤ 200 publie un minimum textuel sans nombre exact. */
-  | { valeur: null; verifie: false; motif: string; texteSource?: string };
+   *  le texte exact de la source, quand la bande ≤ 200 publie un minimum textuel sans nombre exact.
+   *  `caveat` : la phrase de l'annexe §2.2 (« these are suggested minimum sample sizes... »),
+   *  posée UNIQUEMENT quand la bande ≤ 200 a été consultée — le mandat l'exige « reprise à
+   *  l'écran, sous la taille affichée », jamais lue comme un verdict. */
+  | { valeur: null; verifie: false; motif: string; texteSource?: string; caveat?: string };
 
 type PackEchantillonnage = {
   attributeSamplingTable?: TableEchantillonnageAttribut;
@@ -972,11 +975,11 @@ export function tailleEchantillonOe(pack: PackEchantillonnage, population: numbe
     }
     if (bande.valeur === null) {
       return {
-        valeur: null, verifie: false, texteSource: bande.texte,
+        valeur: null, verifie: false, texteSource: bande.texte, caveat: table.minimaCaveat,
         motif: 'la source ne publie qu’un minimum textuel pour cette population (annexe §2.2), jamais un nombre exact',
       };
     }
-    return { valeur: bande.valeur, verifie: true, texteSource: bande.texte };
+    return { valeur: bande.valeur, verifie: true, texteSource: bande.texte, caveat: table.minimaCaveat };
   }
   const { attributeSampleConfidenceLevel: confiance, attributeSampleTolerableRate: taux, attributeImportance: importance } = pack;
   if (!confiance || !taux || !importance) {

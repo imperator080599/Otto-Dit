@@ -1,0 +1,5 @@
+Walkthrough recording placeholder — synthetic demonstration data only.
+No real video, no real person, no real control. Used by app/scripts/clics/scenario.ts
+to exercise the real "attach walkthrough" upload form on a pristine (never-cycled)
+control, so CTRL-01..07 and VID-01 can be observed refusing/succeeding through a
+real click rather than only through a vitest unit test (closing inventory, 2026-09-19).

@@ -18,6 +18,14 @@ export interface Contexte {
    *  (`kind = 'sox_component'`) est un AUTRE engagement que `eng` ci-dessus : le parcours ne
    *  l'avait jamais résolu avant cette tranche. */
   controleWalkthrough: { engId: string; controlId: string; code: string } | null;
+  /** Inventaire de clôture (2026-09-19), lignes CTRL-01..07/VID-01/table-sourcee : trois
+   *  contrôles ENCORE VIERGES (`di_walkthrough_evidence_id is null`, semés par `bootstrapSox`
+   *  mais jamais cyclés par `runControlCycle` — RCM importe sept contrôles, seuls deux sont
+   *  cyclés) — le seul état qui permet d'observer un refus CTRL-0X en le PROVOQUANT par un
+   *  clic, plutôt que de lire un contrôle déjà entièrement conclu par le semeur. */
+  controlePristineMensuel: { engId: string; controlId: string; code: string } | null;
+  controlePristineAdhoc: { engId: string; controlId: string; code: string } | null;
+  controlePristineQuotidien: { engId: string; controlId: string; code: string } | null;
 }
 
 export async function contexte(): Promise<Contexte> {
@@ -61,10 +69,27 @@ export async function contexte(): Promise<Contexte> {
      from control c
      where c.di_walkthrough_evidence_id is not null order by c.code limit 1`);
 
+  const pristine = async (frequency: string) => q01<{ eng_id: string; control_id: string; code: string }>(
+    `select c.engagement_id::text eng_id, c.id::text control_id, c.code
+     from control c
+     where c.di_walkthrough_evidence_id is null and c.frequency = $1
+     order by c.code limit 1`,
+    [frequency],
+  );
+  const pristineMensuel = await pristine('monthly');
+  const pristineAdhoc = await pristine('adhoc');
+  const pristineQuotidien = await pristine('daily');
+
   return {
     eng: eng.id,
     preparateur: senior, reviewer: manager, associe: partner,
     jeton: contact.jeton,
     controleWalkthrough: walkthrough ? { engId: walkthrough.eng_id, controlId: walkthrough.control_id, code: walkthrough.code } : null,
+    controlePristineMensuel: pristineMensuel
+      ? { engId: pristineMensuel.eng_id, controlId: pristineMensuel.control_id, code: pristineMensuel.code } : null,
+    controlePristineAdhoc: pristineAdhoc
+      ? { engId: pristineAdhoc.eng_id, controlId: pristineAdhoc.control_id, code: pristineAdhoc.code } : null,
+    controlePristineQuotidien: pristineQuotidien
+      ? { engId: pristineQuotidien.eng_id, controlId: pristineQuotidien.control_id, code: pristineQuotidien.code } : null,
   };
 }

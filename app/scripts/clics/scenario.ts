@@ -4092,6 +4092,206 @@ export async function conduire(
     });
   }
 
+  /* INVENTAIRE DE CLÔTURE (2026-09-19), §3 — CTRL-01/02/03/04/05/06/07, VID-01, l'annexe
+     sourcée. Les deux contrôles déjà cyclés par le semeur (C-BR-01/C-REV-01,
+     `controleWalkthrough` ci-dessus) sont déjà entièrement conclus : aucun refus CTRL-0X ne
+     peut plus s'y observer, la seule fenêtre où un refus existe est AVANT que le geste ne soit
+     posé — donc sur un contrôle ENCORE VIERGE. Le RCM importe SEPT contrôles
+     (dataset/sox/rcm.csv), le semeur n'en cycle que DEUX (part2.ts:266-267) : les cinq autres
+     restent `not_assessed`, sans tâche ni facteur ni IUC ni population — exactement l'état
+     requis pour PROVOQUER chaque refus, un par un, en retirant la cause qui vient de le
+     déclencher avant de passer au suivant. Jamais un refus démontré sur un monde construit
+     exprès pour qu'il tienne (règle 17 du dépôt appliquée à ce parcours lui-même) : ce monde
+     vierge existe déjà dans le monde semé, `contexte()` le résout, cette station le clique. */
+  if (c.controlePristineMensuel) {
+    await station('contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois', async () => {
+      await devenir(c.preparateur.id);
+      const engSox = `${base}/eng/${c.controlePristineMensuel!.engId}`;
+      const cid = c.controlePristineMensuel!.controlId;
+      const code = c.controlePristineMensuel!.code;
+      const ligne = p.locator(`tr:has(strong:text-is("${code}"))`);
+      const tenterConclure = async () => {
+        await aller(`${engSox}/rcm`);
+        await ligne.locator('input[name=conclusion]').fill('Walkthrough performed (démonstration, inventaire de clôture).');
+        await soumettre(ligne.locator(`button:has-text("${L('rcm.assessEffective')}")`));
+      };
+
+      // 1. AUCUNE tâche documentée : tenter de conclure refuse — CTRL-01, première forme.
+      await tenterConclure();
+      dire('CTRL-01 : conclure un D&I sans AUCUNE tâche documentée est refusé',
+        Boolean(refus(p)) && /CTRL-01/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — défaut');
+
+      // 2. Attacher le walkthrough (VID-01 : dépôt manuel réel, pièce rangée avec provenance).
+      await aller(`${engSox}/rcm/${cid}`);
+      await p.locator('[data-attacher-walkthrough] input[type=file]').setInputFiles(ds('sox', 'walkthrough-video-placeholder.txt'));
+      await soumettre(p.locator('[data-attacher-walkthrough] button'));
+      dire('VID-01 : le dépôt manuel de la vidéo de walkthrough est accepté et rangé comme une pièce du dossier',
+        !refus(p) && (await compte('[data-walkthrough-attache]')) > 0, refus(p) ?? 'vidéo attachée');
+
+      // 3. Une tâche, SEULE l'inquiry la documente encore : refuse — CTRL-01, seconde forme.
+      await p.locator('[data-ajouter-tache] input[name=description]').fill(`Exécution de ${code} observée au walkthrough`);
+      await soumettre(p.locator('[data-ajouter-tache] button'));
+      dire('CTRL-01 : la tâche ajoutée porte le badge « documentée par la seule inquiry »',
+        (await compte('[data-ctrl-01-manquant]')) > 0, `${await compte('[data-ctrl-01-manquant]')} badge(s)`);
+      await tenterConclure();
+      dire('CTRL-01 : une tâche documentée par la seule inquiry refuse toujours de conclure',
+        Boolean(refus(p)) && /CTRL-01/.test(refus(p) ?? '') && /inquiry/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — défaut');
+
+      // 4. Documenter une procédure hors inquiry pour la tâche — lève CTRL-01, découvre CTRL-02.
+      await aller(`${engSox}/rcm/${cid}`);
+      const ligneTache = p.locator('[data-taches-controle] tbody tr[data-tache="1"]');
+      await ligneTache.locator('summary.repli-action').click();
+      await ligneTache.locator('[data-documenter-procedure] textarea[name=notes]')
+        .fill('Pièce de la période précédente inspectée pendant le walkthrough (démonstration).');
+      await soumettre(ligneTache.locator('[data-documenter-procedure] button'));
+      await tenterConclure();
+      dire('CTRL-02 : les quatre facteurs de design vides refusent de conclure, la tâche seule ne suffit plus',
+        Boolean(refus(p)) && /CTRL-02/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — défaut');
+
+      // 5. Documenter les quatre facteurs — lève CTRL-02, découvre CTRL-03.
+      await aller(`${engSox}/rcm/${cid}`);
+      for (const facteur of ['reponse_risque', 'autorite_competence', 'frequence_constance', 'seuil_investigation']) {
+        const ligneFacteur = p.locator(`[data-facteur="${facteur}"]`);
+        await ligneFacteur.locator('summary.repli-action').click();
+        await ligneFacteur.locator('textarea[name=conclusion]').fill(`Conclusion du facteur ${facteur} (démonstration, inventaire de clôture).`);
+        await soumettre(ligneFacteur.locator('button'));
+      }
+      dire('CTRL-02 : les quatre facteurs de design portent désormais leur conclusion écrite',
+        (await compte('[data-facteur-conclusion]')) === 4, `${await compte('[data-facteur-conclusion]')}/4`);
+      await tenterConclure();
+      dire('CTRL-03 : aucune IUC déclarée refuse de conclure, les facteurs seuls ne suffisent pas',
+        Boolean(refus(p)) && /CTRL-03/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — défaut');
+
+      // 6. Déclarer une IUC utilisée SANS preuve — CTRL-03, seconde forme (nomme les volets).
+      await aller(`${engSox}/rcm/${cid}`);
+      await p.locator('[data-declarer-iuc] select[name=utilisee]').selectOption('oui');
+      await p.locator('[data-declarer-iuc] input[name=description]').fill('Rapprochement bancaire système (démonstration, inventaire de clôture).');
+      await soumettre(p.locator('[data-declarer-iuc] button'));
+      await tenterConclure();
+      dire('CTRL-03 : une IUC utilisée sans preuve d’exactitude ni d’exhaustivité refuse, en nommant les deux volets',
+        Boolean(refus(p)) && /CTRL-03/.test(refus(p) ?? '') && /exactitude/.test(refus(p) ?? '') && /exhaustiv/.test(refus(p) ?? ''),
+        refus(p) ?? 'aucun refus — défaut');
+
+      // 7. Documenter les deux preuves IUC — lève CTRL-03, la conclusion RÉUSSIT enfin.
+      await aller(`${engSox}/rcm/${cid}`);
+      for (const volet of ['exactitude', 'exhaustivite']) {
+        const lignePreuve = p.locator(`[data-iuc-preuves] tr[data-volet="${volet}"]`);
+        await lignePreuve.locator('summary.repli-action').click();
+        await lignePreuve.locator('textarea[name=conclusion]').fill(`Preuve de ${volet} documentée (démonstration, inventaire de clôture).`);
+        await soumettre(lignePreuve.locator('button'));
+      }
+      await tenterConclure();
+      dire('CTRL-01/02/03 tous levés : le D&I se conclut enfin, sans aucun refus',
+        !refus(p) && (await compte(`tr:has(strong:text-is("${code}")) .badge.green`)) > 0, refus(p) ?? 'conclu effective');
+
+      // 8. VID-01 : supprimer la vidéo (tracée qui/quand/motif), puis la ré-attacher.
+      await aller(`${engSox}/rcm/${cid}`);
+      await p.locator('[data-supprimer-walkthrough] summary').click();
+      await p.locator('[data-supprimer-walkthrough] textarea[name=raison]')
+        .fill('Contrôle qualité — ré-attachement pour l’inventaire de clôture (démonstration).');
+      await soumettre(p.locator('[data-supprimer-walkthrough] button'));
+      dire('VID-01 : la suppression manuelle de la vidéo est tracée (qui, quand, motif) à l’écran',
+        (await compte('[data-walkthrough-supprime]')) > 0, `${await compte('[data-walkthrough-supprime]')} mention(s)`);
+      await p.locator('[data-attacher-walkthrough] input[type=file]').setInputFiles(ds('sox', 'walkthrough-video-placeholder.txt'));
+      await soumettre(p.locator('[data-attacher-walkthrough] button'));
+      dire('VID-01 : un nouvel enregistrement se rattache après suppression, jamais un cul-de-sac',
+        !refus(p) && (await compte('[data-walkthrough-attache]')) > 0, refus(p) ?? 'vidéo re-attachée');
+
+      // 9. Population dérivable (mensuel) — CTRL-04 avant/après rapprochement, puis l'annexe sourcée.
+      const deriver = p.locator(`form:has(button:has-text("${L('rcmc.deriverPopulation')}"))`);
+      if (await deriver.count()) {
+        await soumettre(deriver.locator('button'));
+        dire('CTRL-04 : la population dérivée ne se tire PAS tant qu’elle n’est pas rapprochée',
+          (await compte('[data-ctrl04-non-rapprochee]')) > 0,
+          `${await compte('[data-ctrl04-non-rapprochee]')} mention(s), aucun formulaire de tirage`);
+        await p.locator('[data-rapprocher-population] textarea[name=conclusion]')
+          .fill(`Population dérivée de ${code} revue et retenue (démonstration, inventaire de clôture).`);
+        await soumettre(p.locator('[data-rapprocher-population] button'));
+        dire('CTRL-04 : rapprochée, la population ouvre enfin le formulaire de tirage',
+          (await compte('[data-population-rapprochee]')) > 0, `${await compte('[data-population-rapprochee]')} mention(s)`);
+        const nCaveat = await compte('[data-minima-caveat]');
+        dire('annexe §2.2 : la phrase « minima suggérés, jamais un verdict » est reprise sous la taille affichée',
+          nCaveat > 0, nCaveat > 0 ? (await p.locator('[data-minima-caveat]').first().innerText()).slice(0, 90) : 'absente');
+      } else {
+        dire('CTRL-04 : population dérivable non offerte — état inattendu du contrôle vierge', false, 'formulaire de dérivation absent');
+      }
+    });
+  }
+
+  if (c.controlePristineAdhoc) {
+    await station('contrôle interne : CTRL-05, la demande de population as_needed créée par un clic', async () => {
+      await devenir(c.preparateur.id);
+      const engSox = `${base}/eng/${c.controlePristineAdhoc!.engId}`;
+      const cid = c.controlePristineAdhoc!.controlId;
+      await aller(`${engSox}/rcm/${cid}`);
+      const demander = p.locator(`form:has(button:has-text("${L('rcmc.demanderPopulation')}"))`);
+      const nDeriver = await compte(`form:has(button:has-text("${L('rcmc.deriverPopulation')}"))`);
+      dire('CTRL-05 : un contrôle as_needed n’offre PAS de dérivation automatique, seulement la demande',
+        nDeriver === 0, nDeriver === 0 ? 'aucun bouton de dérivation automatique' : `${nDeriver} bouton(s) de dérivation — inattendu`);
+      if (await demander.count()) {
+        await soumettre(demander.locator('button'));
+        dire('CTRL-05 : la demande de population est créée par UN clic, visible dans l’espace de demandes',
+          !refus(p) && (await compte(`a[href*="/requests/"]`)) > 0, refus(p) ?? 'demande créée, lien visible');
+      } else {
+        dire('CTRL-05 : bouton de demande de population absent — état inattendu du contrôle vierge', false, 'formulaire absent');
+      }
+    });
+  }
+
+  if (c.controlePristineQuotidien) {
+    await station('contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve)', async () => {
+      await devenir(c.preparateur.id);
+      const engSox = `${base}/eng/${c.controlePristineQuotidien!.engId}`;
+      const cid = c.controlePristineQuotidien!.controlId;
+      await aller(`${engSox}/rcm/${cid}`);
+      const deriver = p.locator(`form:has(button:has-text("${L('rcmc.deriverPopulation')}"))`);
+      if (await deriver.count()) {
+        await soumettre(deriver.locator('button'));
+        await p.locator('[data-rapprocher-population] textarea[name=conclusion]')
+          .fill('Population quotidienne dérivée, revue et retenue (démonstration, inventaire de clôture).');
+        await soumettre(p.locator('[data-rapprocher-population] button'));
+        const t2 = await texte();
+        dire('CTRL-07 : population > 200 SANS les trois jugements de cabinet refuse d’afficher une taille',
+          /CTRL-07/.test(t2) && /(niveau de confiance|confidence level)/i.test(t2), t2.match(/CTRL-07[^\n]{0,160}/)?.[0] ?? 'mention absente');
+      } else {
+        dire('CTRL-07 : population quotidienne non dérivable — état inattendu du contrôle vierge', false, 'formulaire de dérivation absent');
+      }
+
+      /* CTRL-06, sur le contrôle DÉJÀ conclu par le semeur (C-BR-01/C-REV-01,
+         `controleWalkthrough`) : réviser l'inquiry OE en y attachant la pièce du walkthrough
+         D&I LUI-MÊME — la seule façon d'observer le refus sans reconstruire tout un cycle OE
+         sur un contrôle vierge. */
+      if (c.controleWalkthrough) {
+        const engWalkthrough = `${base}/eng/${c.controleWalkthrough.engId}`;
+        await aller(`${engWalkthrough}/rcm/${c.controleWalkthrough.controlId}`);
+        const ligneInquiry = p.locator('[data-oe-procedure="inquiry"]');
+        if (await ligneInquiry.count()) {
+          await ligneInquiry.locator('summary.repli-action').click();
+          const select = ligneInquiry.locator('select[name=evidence_id]');
+          const optionWalkthrough = select.locator(`option:has-text("walkthrough-${c.controleWalkthrough.code}")`);
+          if (await optionWalkthrough.count()) {
+            await select.selectOption({ label: await optionWalkthrough.first().innerText() });
+            await ligneInquiry.locator('textarea[name=notes]').fill('Tentative de réutilisation de la pièce D&I (inventaire de clôture, cas connu mauvais).');
+            await soumettre(ligneInquiry.locator('button'));
+            dire('CTRL-06 : réutiliser la pièce du walkthrough D&I comme inquiry OE est refusé',
+              Boolean(refus(p)) && /CTRL-06/.test(refus(p) ?? ''), refus(p) ?? 'aucun refus — défaut');
+          } else {
+            dire('CTRL-06 : la pièce du walkthrough D&I n’apparaît pas dans les pièces sélectionnables', false, 'option absente du select');
+          }
+        } else {
+          dire('CTRL-06 : aucune ligne d’inquiry OE sur le contrôle déjà cyclé — état inattendu', false, 'ligne absente');
+        }
+
+        // EXTRAP-CONTROLES (mandat 2026-09-14, §1.5) : un test de contrôles n'affiche
+        // jamais de projection, et le dit en une phrase — déjà visible sur ce même écran
+        // puisque le contrôle est entièrement testé (grid.length > 0, semé par part2.ts).
+        const t3 = await texte();
+        dire('§1.5 : un test de contrôles n’affiche jamais de projection, et le dit en une phrase (ISA 530 §A20)',
+          /never show a projection|n’affichent jamais de projection/.test(t3), t3.match(/(Tests of controls never[^\n]{0,120}|Les tests de contrôles[^\n]{0,120})/)?.[0] ?? 'phrase absente');
+      }
+    });
+  }
+
   await station('clôture et archive scellée', async () => {
     /* CLORE, C'EST SIGNER : la station le DIT au lieu d'hériter de l'identité
        laissée par la précédente. Ce couplage caché a mordu dès qu'une station
