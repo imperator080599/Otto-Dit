@@ -1739,6 +1739,9 @@ export const LIBELLES = {
   'team.honoraires': { en: 'Audit fees: {audit} · non-audit services: {sacc}.', fr: 'Honoraires d’audit : {audit} · services non-audit : {sacc}.' },
   'team.plafondRetenu': { en: 'Ceiling applied: {v} % — {pourquoi}', fr: 'Plafond retenu : {v} % — {pourquoi}' },
   'team.plafondNonVerifie': { en: 'Ceiling drawn from {sources}, whose primary text could not be reached — it is applied, and said to be unverified.', fr: 'Plafond tiré de {sources}, dont le texte primaire n’a pas pu être atteint — il est appliqué, et dit non vérifié.' },
+  'team.automationLevel': { en: 'AI automation level (AUTO-01)', fr: 'Niveau d’automatisation de l’IA (AUTO-01)' },
+  'team.automationLevelEffective': { en: 'In effect on this mission: {niveau} (firm ceiling: {plafond}, pack {pack})', fr: 'En vigueur sur cette mission : {niveau} (plafond du cabinet : {plafond}, pack {pack})' },
+  'team.automationLevelSet': { en: 'Set the mission level', fr: 'Régler le niveau de la mission' },
   'wp.provenanceMoteur': { en: 'Performed by OTTO engine run {run} — facts hash {h}… — language {langue}.', fr: 'Exécuté par le moteur OTTO, run {run} — empreinte des faits {h}… — langue {langue}.' },
 
   'mat.seuilDeSignification': { en: 'Materiality threshold', fr: 'Seuil de signification' },

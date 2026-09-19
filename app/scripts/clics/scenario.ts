@@ -4383,6 +4383,44 @@ export async function conduire(
     });
   }
 
+  // ── AUTO-01 (mandat 2026-09-14, §2.2 ; réexamen du 2026-09-19) : porter le
+  //    niveau d'automatisation de la mission au-dessus du plafond du pack est
+  //    refusé, en nommant le plafond et le pack qui l'a posé — puis un vrai
+  //    réglage, valide, est accepté. pcaob-sox.ts pose désormais L1 (au lieu du
+  //    défaut L2), précisément pour que ce refus soit observable contre un
+  //    cabinet réel plutôt que seulement un pack fictif de test.
+  if (c.controleWalkthrough) {
+    await station('AUTO-01 : le niveau d’automatisation de la mission ne dépasse jamais le plafond du pack', async () => {
+      await devenir(c.associe.id);
+      await aller(`${base}/eng/${c.controleWalkthrough!.engId}/team`);
+      const f = p.locator('form:has(select[name=niveau])');
+      if (!(await f.count())) {
+        dire('AUTO-01 : le réglage du niveau d’automatisation est offert sur l’écran équipe', false, 'formulaire absent');
+        return;
+      }
+      const tAvant = await texte();
+      dire('AUTO-01 : le niveau en vigueur et le plafond du pack sont affichés',
+        /L1|L2/.test(tAvant), tAvant.match(/plafond[^\n]{0,80}/i)?.[0] ?? 'texte du plafond non trouvé');
+
+      await f.locator('select[name=niveau]').selectOption('L2');
+      await f.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(1500);
+      dire('AUTO-01 : dépasser le plafond du pack (L2 contre un plafond L1) est refusé, en nommant le plafond et le pack',
+        Boolean(refus(p)) && /L1/.test(refus(p) ?? '') && /pcaob-sox/.test(refus(p) ?? ''), refus(p) ?? 'passé — défaut');
+
+      await aller(`${base}/eng/${c.controleWalkthrough!.engId}/team`);
+      const f2 = p.locator('form:has(select[name=niveau])');
+      await f2.locator('select[name=niveau]').selectOption('L1');
+      await f2.locator('button').click();
+      await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(1500);
+      const tApres = await texte();
+      dire('AUTO-01 : un réglage qui respecte le plafond (L1) est accepté, et l’écran le montre en vigueur',
+        !refus(p) && /L1/.test(tApres), refus(p) ?? tApres.match(/plafond[^\n]{0,80}/i)?.[0] ?? '(non lu)');
+    });
+  }
+
   await station('clôture et archive scellée', async () => {
     /* CLORE, C'EST SIGNER : la station le DIT au lieu d'hériter de l'identité
        laissée par la précédente. Ce couplage caché a mordu dès qu'une station

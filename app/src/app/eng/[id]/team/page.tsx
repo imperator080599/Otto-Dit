@@ -13,6 +13,11 @@ import {
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { Repli } from '@/app/repli';
+import { executer as executerRefus } from '@/app/refus';
+import { definirNiveauMission, niveauEffectif, plafondDuPack } from '@/lib/services/automatisation';
+import { frameworkSet } from '@/lib/services/fsli';
+import { primaryPack } from '@/lib/packs';
+import type { NiveauAutomatisation } from '@/lib/packs/types';
 
 // Équipe et indépendance. L'écran ne porte AUCUNE règle : il montre celles du
 // service, et il montre surtout ce qu'elles refusent. « Ce qui manque pour
@@ -66,6 +71,16 @@ export default async function TeamPage({
   const missing = missingForSignature(cat, mine);
   const obstacles = await independenceObstacles(id);
   const ratio = await feeRatio(id);
+  const niveauMission = await niveauEffectif(id);
+  const packMission = primaryPack((await frameworkSet(id)) as never);
+  const plafondMission = plafondDuPack(packMission);
+  async function definirNiveauAction(formData: FormData) {
+    'use server';
+    return executerRefus(`/eng/${id}/team`, async () => {
+      const { user: u } = await requireMember(id);
+      await definirNiveauMission(id, String(formData.get('niveau')) as NiveauAutomatisation, u.id);
+    });
+  }
   /* L'ancienneté et la rotation se COMPTENT : les deux seuils étaient déclarés
      dans la méthode et rien ne les calculait. Un paramètre déclaré que
      personne n'évalue est du silence lu comme un succès. */
@@ -409,6 +424,23 @@ export default async function TeamPage({
           <button className="btn small secondary">{t('mot.save')}</button>
         </form>
 
+      </div>
+
+      <div className="panel">
+        <h2>{t('team.automationLevel')}</h2>
+        <p className="muted">
+          {t('team.automationLevelEffective', {
+            niveau: niveauMission, plafond: plafondMission, pack: packMission.id,
+          })}
+        </p>
+        <form action={definirNiveauAction} className="row">
+          <select name="niveau" defaultValue={niveauMission}>
+            <option value="L0">L0</option>
+            <option value="L1">L1</option>
+            <option value="L2">L2</option>
+          </select>
+          <button className="btn small secondary">{t('team.automationLevelSet')}</button>
+        </form>
       </div>
     </div>
   );

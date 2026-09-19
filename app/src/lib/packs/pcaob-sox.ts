@@ -22,6 +22,18 @@ export const pcaobSox: AssurancePack = {
   id: 'pcaob-sox',
   name: 'PCAOB AS / SOX 404 + COSO 2013 (ICFR)',
   language: 'en',
+  /* AUTO-01 (mandat 2026-09-14, §2.2 ; réexamen du 2026-09-19,
+     docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md) : NI ce pack NI nep-fr.ts ne posaient
+     de plafond sous L2 (automatisation.ts:20-22) — le défaut sûr. Sans un pack qui pose
+     RÉELLEMENT un plafond en dessous du maximum du type, le refus AUTO-01 ne pouvait JAMAIS être
+     observé contre un cabinet réel : L2 est le maximum de `NiveauAutomatisation`, donc aucune
+     valeur du formulaire ne peut jamais le « dépasser ». Posé à L1 ici — jamais nep-fr.ts, plus
+     large surface d'usage — pour rendre ce refus RÉELLEMENT observable, cliqué, sur le dossier
+     SOX. CE QUE CE POSAGE NE CHANGE NULLE PART AILLEURS (règle 19, vérifié en lisant
+     automatisation.ts avant d'écrire cette ligne) : « il ne distingue pas encore L1 de L2 à
+     l'exécution — aucun écran ne consomme L1 aujourd'hui » — le seul effet observable de cette
+     ligne est le plafond lui-même, jamais un comportement d'écran existant. */
+  automationLevel: 'L1',
   vocabulaire: {
     materialite: 'Matérialité',
     scoping: 'Scoping',
