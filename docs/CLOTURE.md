@@ -3,7 +3,7 @@
 
 Recherche menée le 2026-09-19. Méthode : Quatre sous-agents indépendants, un par mandat, chacun cherchant une preuve cliquée (station de app/scripts/clics/scenario.ts confirmée par docs/CLICS.md, jamais un test vitest seul) pour chaque épreuve listée ci-dessous, avant de conclure OBSERVE/NON_OBSERVE/SANS_OBJET.
 
-**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 17 OBSERVÉE(S), 14 NON OBSERVÉE(S), 0 SANS OBJET (55 % observé).**
+**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 18 OBSERVÉE(S), 13 NON OBSERVÉE(S), 0 SANS OBJET (58 % observé).**
 
 OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle dans `docs/CLICS.md`. Un test vitest, aussi rigoureux soit-il, ne suffit PAS seul : c'est la distinction qui a trouvé le blocage NOTIF-01 (seule voie qui l'a vu), et c'est pourquoi cet inventaire l'applique partout, sans exception de confort.
 
@@ -34,8 +34,8 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 - **OBSERVÉ** — Un test échoue si une seule carte du kanban des écarts ne se résout pas à l'identifiant d'un objet réel.
   Preuve : Station « kanban des écarts : chaque carte se résout à un écart réel » (app/scripts/clics/scenario.ts:3777-3811), présente dans docs/CLICS.md parmi les 63 gestes du dernier run réel. Le run échoue si idsCartes.length===0 ou si un id de carte n'a pas d'ancre #x-<id> correspondante sur /exceptions. SHA `1f1a9a5f2ee80764ff0d626fcaa4169307cb724c`.
 
-- **NON OBSERVÉ** — Chaque objet nouveau de ce mandat (contrôle, walkthrough, tâche, IUC, occurrence) porte son chemin humain cliqué (SEMEUR_VS_CHEMIN).
-  Manque : docs/SEMEUR_VS_CHEMIN.md reste à régénérer depuis l'arbre de ce commit (dernière régénération 2026-09-17, antérieure à cette tranche) — les objets exercés par les trois nouvelles stations (tâche, procédure de tâche, facteur de design, IUC, preuve IUC, demande de population, rapprochement, inquiry OE) devraient y basculer en « prouvé » une fois régénéré, mais ce document ne l'affirme pas avant que le script ne l'ait mesuré. Reste NON OBSERVÉ tant que non régénéré.
+- **OBSERVÉ** — Chaque objet nouveau de ce mandat (contrôle, walkthrough, tâche, IUC, occurrence) porte son chemin humain cliqué (SEMEUR_VS_CHEMIN).
+  Preuve : app/src/lib/semeur/registre.ts : six entrées basculées à etat:'prouve' avec citation clique:'scenario.ts:4107-4221' (setDiStatus, attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, documenterFacteurDesign, declarerIuc) — les gestes exercés par les trois nouvelles stations CTRL-01..07/VID-01, dont le clic réel a été mesuré au SHA ci-dessous. docs/SEMEUR_VS_CHEMIN.md régénéré par `npm run semeur -- --figer` sur cet arbre : 89 objet(s)/geste(s), 16 DÉCOR, 25 non prouvé(s), 48 prouvé(s) (contre 42 avant cette tranche) — le script a mesuré le passage, jamais affirmé de mémoire. SHA `2d4ae73092a6e10905ff742cbc3f9f8a7542de6e`.
 
 ---
 

@@ -78,8 +78,9 @@
           "id": "ctrl-semeur",
           "codes": [],
           "enonce": "Chaque objet nouveau de ce mandat (contrôle, walkthrough, tâche, IUC, occurrence) porte son chemin humain cliqué (SEMEUR_VS_CHEMIN).",
-          "statut": "NON_OBSERVE",
-          "manque": "docs/SEMEUR_VS_CHEMIN.md reste à régénérer depuis l'arbre de ce commit (dernière régénération 2026-09-17, antérieure à cette tranche) — les objets exercés par les trois nouvelles stations (tâche, procédure de tâche, facteur de design, IUC, preuve IUC, demande de population, rapprochement, inquiry OE) devraient y basculer en « prouvé » une fois régénéré, mais ce document ne l'affirme pas avant que le script ne l'ait mesuré. Reste NON OBSERVÉ tant que non régénéré."
+          "statut": "OBSERVE",
+          "preuve": "app/src/lib/semeur/registre.ts : six entrées basculées à etat:'prouve' avec citation clique:'scenario.ts:4107-4221' (setDiStatus, attacherWalkthrough, ajouterTacheControle, documenterProcedureTache, documenterFacteurDesign, declarerIuc) — les gestes exercés par les trois nouvelles stations CTRL-01..07/VID-01, dont le clic réel a été mesuré au SHA ci-dessous. docs/SEMEUR_VS_CHEMIN.md régénéré par `npm run semeur -- --figer` sur cet arbre : 89 objet(s)/geste(s), 16 DÉCOR, 25 non prouvé(s), 48 prouvé(s) (contre 42 avant cette tranche) — le script a mesuré le passage, jamais affirmé de mémoire.",
+          "sha": "2d4ae73092a6e10905ff742cbc3f9f8a7542de6e"
         }
       ]
     },
