@@ -4,6 +4,77 @@
 
 ---
 
+## Mandat de clôture, §3 — deux lignes de plus fermées, cheapest first (2026-09-19)
+
+*Suite de la tranche précédente (CTRL-01..07/VID-01/annexe, 12 lignes fermées, `2d4ae73`).
+§3 du mandat de clôture : « ferme les lignes NON OBSERVÉ, cheapest first, un rituel d'expédition
+par ligne ». Deux lignes fermées ici, chacune sans toucher au code d'application — mesure pure.*
+
+**SHA servi confirmé pour la tranche précédente, dans ce même suivi (discipline de coût du
+mandat : « confirme le SHA servi dans le MÊME suivi que les mesures, jamais un commit séparé »)** :
+`mcp__Vercel__get_deployment` sur `dpl_HQuYskP8kd5D2AyHmtKAFWbrcJPZ` (cible production) → READY,
+commit `2d4ae73092a6e10905ff742cbc3f9f8a7542de6e` ; `mcp__Vercel__web_fetch_vercel_url` sur
+`https://otto-dit.vercel.app/api/sante` → HTTP 200, `identiteCoherente:true`,
+`sha`/`version.sha`/`version.shaExecution` tous `2d4ae73092a6e10905ff742cbc3f9f8a7542de6e`,
+toutes les lectures `ok:true` (registre du décor : 42 prouvé(s), avant l'addendum ci-dessous).
+
+**Ligne 1 — `ctrl-semeur` (18/13/0, 58 %), commit `2ab4057`.** Les six gestes exercés par les
+trois nouvelles stations CTRL-01..07/VID-01 de la tranche précédente (`setDiStatus`,
+`attacherWalkthrough`, `ajouterTacheControle`, `documenterProcedureTache`,
+`documenterFacteurDesign`, `declarerIuc`) étaient déjà cliqués et validés — seul le registre
+manuel `app/src/lib/semeur/registre.ts` n'avait pas encore basculé leur `etat` à `'prouve'`.
+Corrigé (six entrées), `docs/SEMEUR_VS_CHEMIN.md` régénéré (`npm run semeur -- --figer`) :
+48 prouvé(s), contre 42 avant (89 objets, 16 décor, 25 non prouvé inchangés). `tsc --noEmit`
+propre. Validation : changement purement descriptif/citationnel sur du TypeScript source, aucun
+comportement d'exécution modifié — pas de chaîne verify dédiée pour cet addendum, conformément à
+la discipline de coût du mandat (« un commit de mesure ne paie pas sa propre chaîne »).
+
+**Ligne 2 — `extrap-trois-nombres` OBSERVÉE, `extrap-04` reste NON OBSERVÉE mais sa preuve/manque
+est désormais MESURÉE, pas supposée (19/12/0, 61 %), commit `227003e`.** La station existante
+« re-exécution et évaluation » (`scenario.ts`, `/testing` après le recompute) lit désormais le
+bloc KPI de l'évaluation : deux `dire()` ajoutées, aucun code d'application touché.
+
+- **`extrap-trois-nombres`** (écart connu / projeté / total, trois libellés distincts) :
+  assertion BLOQUANTE — les trois libellés (`test.knownMisstatement`,
+  `test.projectedMisstatementMethod`, `test.totalEstimatedMisstatement`) doivent TOUS être
+  présents. Passée réellement sur le monde re-semé (`npm run clics`, 307 étape(s), 0 échec
+  d'assertion) — un seul libellé manquant aurait fait échouer tout le parcours. → OBSERVÉE.
+- **`EXTRAP-04`** (aucune projection ne s'affiche tant que la méthode du cabinet n'est pas
+  posée) : assertion délibérément NON bloquante (règle 17/18 — ne jamais forcer un vrai qu'on n'a
+  pas vu), qui NOMME laquelle des deux branches le monde semé tient réellement à cet instant.
+  Mesuré : le monde semé actuel ne fait PAS tenir la branche « méthode non vérifiée » à cette
+  station (`evaluation.projection_method` reste renseigné) — la lecture existe et est honnête,
+  mais l'invariant lui-même reste NON OBSERVÉ tant qu'aucun geste du monde semé ne produit
+  réellement une strate sondée avec écart ET méthode non vérifiée à cet instant précis du
+  parcours. `docs/instantanes/cloture.json` et `docs/CLOTURE.md` disent exactement cela, pas plus
+  (règle 13 : ne jamais affirmer plus que ce qu'on vérifie).
+
+**Validation.** `tsc --noEmit` propre. `npm run db:reset && npm run demo:seed && npm run clics`
+(bornée, `timeout 1800`) sur l'arbre du commit `227003e` : 307 étape(s) conduites, **0 échec
+d'assertion** (`etapes.filter(e => !e.ok)` vide — les deux `dire()` neuves comprises), 436 clics,
+`docs/CLICS.md` écrit. `npm run clics` rend `EXIT=1` réel (`durs.length` non nul) à cause de
+QUATRE occurrences de `#418` — le flake tracé depuis F9, à la MÊME signature (jeton 87,
+`SERVEUR : (rien)` / `CLIENT : <div class="rail-astuce"...>`), lue dump par dump, pas seulement
+comptée (règle 15). Cette tranche n'ajoute AUCUNE visite à `/rcm/[cid]` (les deux `dire()`
+ajoutées lisent `/testing`, déjà visité) : le compte à quatre est identique à la tranche
+précédente (F56), comme attendu. Détail complet : `docs/CHASSE.md` F57 (44ᵉ confirmation
+consécutive que `#418` est disjoint du produit). Pas de `verify` complet dédié à cette tranche
+(discipline de coût : changement purement additif de lecture, sur du script de clics, aucun code
+d'application touché — `npm run clics` + `tsc --noEmit` en sont la preuve proportionnée).
+
+**Restent NON OBSERVÉES (11 lignes), cheapest-first pour la suite** : `MAT-03` (le ré-import
+lui-même est cliqué, mais aucune assertion ne capture tirage/papiers/visas avant/après — nécessite
+un DEUXIÈME import inséré APRÈS que tirage/papiers/visas existent déjà dans le parcours, risque de
+perturber le parcours canonique) ; `VID-01` rétention (nécessite rapport signé + notes de revue
+closes, état gardé plus lourd à atteindre) ; `EXTRAP-01/02/03` (R80/R81, clics non étendu) ;
+`EXTRAP-04` (ci-dessus — la lecture existe, l'invariant reste à faire tenir) ; `AUTO-01`
+(structurellement impossible aujourd'hui — aucun point d'entrée écran) ; `AUTO-02` et le test des
+deux gardes indépendantes (structurellement plus difficiles, disclosed) ; les trois lignes R87
+(notif-carte-id/notif-role/notif-disparition — nécessite de câbler `/notifications`, jamais
+branché à un écran, lift plus lourd).
+
+---
+
 ## Mandat de clôture, §3 — CTRL-01..07/VID-01/annexe sourcée observés par un clic réel (2026-09-19)
 
 *Ouvert par le mandat de clôture du fondateur (2026-09-19) : H-6 gelé, §2 a produit

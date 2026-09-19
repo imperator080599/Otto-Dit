@@ -3,7 +3,7 @@
 
 Recherche menée le 2026-09-19. Méthode : Quatre sous-agents indépendants, un par mandat, chacun cherchant une preuve cliquée (station de app/scripts/clics/scenario.ts confirmée par docs/CLICS.md, jamais un test vitest seul) pour chaque épreuve listée ci-dessous, avant de conclure OBSERVE/NON_OBSERVE/SANS_OBJET.
 
-**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 18 OBSERVÉE(S), 13 NON OBSERVÉE(S), 0 SANS OBJET (58 % observé).**
+**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 19 OBSERVÉE(S), 12 NON OBSERVÉE(S), 0 SANS OBJET (61 % observé).**
 
 OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle dans `docs/CLICS.md`. Un test vitest, aussi rigoureux soit-il, ne suffit PAS seul : c'est la distinction qui a trouvé le blocage NOTIF-01 (seule voie qui l'a vu), et c'est pourquoi cet inventaire l'applique partout, sans exception de confort.
 
@@ -86,13 +86,13 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
   Manque : Le chemin humain existe (formulaire, exceptions/page.tsx) mais STATUS.md dit explicitement que npm run clics n'a pas été étendu à EXTRAP-03 (R81) — sa preuve cliquée manque encore.
 
 - **NON OBSERVÉ** (`EXTRAP-04`) — Aucune projection ne s'affiche tant que la méthode du cabinet n'est pas posée.
-  Manque : scenario.ts visite /testing (station « re-exécution et évaluation ») mais ne lit jamais le bloc qui affirmerait la suppression de la projection.
+  Manque : scenario.ts lit désormais le bloc (station « re-exécution et évaluation », SHA 227003e) et NOMME laquelle des deux branches il voit — mais mesuré en direct (npm run clics, monde re-semé) : le monde semé actuel ne fait PAS tenir la branche « méthode non vérifiée » à cette station (evaluation.projection_method reste renseigné). La lecture existe, honnête, jamais forcée à un vrai qu'elle n'a pas vu (règle 17/18) ; il manque encore un geste du monde semé qui produise réellement une strate sondée avec écart et méthode non vérifiée à cet instant précis du parcours.
 
 - **OBSERVÉ** — Un test de contrôles n'affiche jamais de projection, et le dit en une phrase.
   Preuve : Station « contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) », sur le contrôle déjà testé C-BR-01 : la phrase « Tests of controls never show a projection (ISA 530 §A20)... » est lue à l'écran (assertion dédiée, regex sur le texte de la page). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
-- **NON OBSERVÉ** — Écart connu, écart projeté et écart total estimé sont trois nombres distincts à l'écran, chacun avec sa provenance.
-  Manque : Aucune station ne lit les clés du bloc KPI concerné dans testing/page.tsx.
+- **OBSERVÉ** — Écart connu, écart projeté et écart total estimé sont trois nombres distincts à l'écran, chacun avec sa provenance.
+  Preuve : Station « re-exécution et évaluation » (scenario.ts, /testing après le recompute) : assertion dédiée (bloquante, pas informative) vérifiant que les trois libellés KPI — connu (test.knownMisstatement), projeté (test.projectedMisstatementMethod), total (test.totalEstimatedMisstatement) — sont TOUS présents à l'écran, chacun sous son propre libellé de provenance. Passée réellement (npm run clics, monde re-semé, 307 étape(s), 0 échec d'assertion) — pas déclarée : un seul libellé manquant aurait fait échouer tout le parcours. SHA `227003ed021e929977ea34417e34c5f76d272f4c`.
 
 - **NON OBSERVÉ** (`AUTO-01`) — Porter le niveau d'automatisation au-dessus du plafond du cabinet, ou au-dessus de L2, est refusé, en nommant le plafond et qui l'a posé.
   Manque : Plus précisément impossible à observer aujourd'hui, pas seulement non cliqué : definirNiveauMission (le seul chemin d'écriture) n'a AUCUN point d'appel dans app/src/app — aucun écran ne permet même de TENTER ce geste depuis un navigateur.

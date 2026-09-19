@@ -199,7 +199,7 @@
           "codes": ["EXTRAP-04"],
           "enonce": "Aucune projection ne s'affiche tant que la méthode du cabinet n'est pas posée.",
           "statut": "NON_OBSERVE",
-          "manque": "scenario.ts visite /testing (station « re-exécution et évaluation ») mais ne lit jamais le bloc qui affirmerait la suppression de la projection."
+          "manque": "scenario.ts lit désormais le bloc (station « re-exécution et évaluation », SHA 227003e) et NOMME laquelle des deux branches il voit — mais mesuré en direct (npm run clics, monde re-semé) : le monde semé actuel ne fait PAS tenir la branche « méthode non vérifiée » à cette station (evaluation.projection_method reste renseigné). La lecture existe, honnête, jamais forcée à un vrai qu'elle n'a pas vu (règle 17/18) ; il manque encore un geste du monde semé qui produise réellement une strate sondée avec écart et méthode non vérifiée à cet instant précis du parcours."
         },
         {
           "id": "extrap-controles",
@@ -213,8 +213,9 @@
           "id": "extrap-trois-nombres",
           "codes": [],
           "enonce": "Écart connu, écart projeté et écart total estimé sont trois nombres distincts à l'écran, chacun avec sa provenance.",
-          "statut": "NON_OBSERVE",
-          "manque": "Aucune station ne lit les clés du bloc KPI concerné dans testing/page.tsx."
+          "statut": "OBSERVE",
+          "preuve": "Station « re-exécution et évaluation » (scenario.ts, /testing après le recompute) : assertion dédiée (bloquante, pas informative) vérifiant que les trois libellés KPI — connu (test.knownMisstatement), projeté (test.projectedMisstatementMethod), total (test.totalEstimatedMisstatement) — sont TOUS présents à l'écran, chacun sous son propre libellé de provenance. Passée réellement (npm run clics, monde re-semé, 307 étape(s), 0 échec d'assertion) — pas déclarée : un seul libellé manquant aurait fait échouer tout le parcours.",
+          "sha": "227003ed021e929977ea34417e34c5f76d272f4c"
         },
         {
           "id": "auto-01",

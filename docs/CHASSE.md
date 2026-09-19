@@ -1881,3 +1881,18 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   Les 17 assertions nouvelles de scenario.ts (CTRL-01 à 07, VID-01 dépôt/suppression, la phrase
   verbatim de l'annexe, la phrase §1.5) sont TOUTES vertes — 0 échec parmi elles, sur DEUX runs de
   `clics` indépendants (le run exploratoire avant le premier `verify`, et ce run-ci).
+
+- **F57 — QUATRE occurrences de `#418`, ZÉRO régression fonctionnelle** (2026-09-19, mandat de
+  clôture §3 — addendum ctrl-semeur + lecture du bloc KPI de « re-exécution et évaluation » pour
+  EXTRAP-04/trois-nombres, arbre du commit `227003e`) : `npm run clics` seul (pas de `verify`
+  complet — changement purement additif, deux `dire()` de lecture sur une station déjà visitée,
+  aucun code d'application touché) — 307 étape(s) conduites, 0 échec d'assertion (les deux
+  nouvelles dire() comprises : la lecture des trois libellés KPI, bloquante, et la lecture
+  EXTRAP-04, volontairement non bloquante — voir §2 de STATUS.md pour le détail de pourquoi).
+  QUATRE occurrences de `#418`, sonde d'hydratation lue dump par dump (pas seulement comptée,
+  règle 15) : les quatre premières divergences portent la MÊME signature établie depuis F9 —
+  jeton 87, `rail-bascule`/`rail-astuce`, `SERVEUR : (rien)` / `CLIENT : <div...`. Cette tranche
+  n'ajoute AUCUNE nouvelle visite à `/rcm/[cid]` (les deux dire() ajoutées lisent `/testing`,
+  déjà visité) — le compte à quatre est donc inchangé par rapport à F56, comme attendu (aucune
+  route nouvelle de la classe touchée). QUARANTE-QUATRIÈME confirmation consécutive que `#418`
+  est disjoint. Pas creusé plus loin (même discipline que F9-F56).
