@@ -4,6 +4,80 @@
 
 ---
 
+## Clôture — R87/NOTIF-01 fermée (24/6/2, 75 %) : trois cartes cliquées, SHA `eafe6d2` (2026-09-19)
+
+**Les trois lignes NOTIF-01 restantes** (`notif-carte-id`, `notif-role`, `notif-disparition` —
+disclosed comme prouvées SEULEMENT par `notifications.test.ts`, R87 dans
+`docs/BACKLOG_REPORTE.md`) **sont OBSERVÉES**, par deux stations neuves dans
+`app/scripts/clics/scenario.ts`, placées juste avant « obstacles au visa » sur le dossier NEP.
+
+**Constat structurel, mesuré avant d'écrire une seule ligne (règle 15)** : sur ce monde semé,
+AUCUNE des quatre familles d'`elementsIaNonValides()` n'est jamais naturellement en attente à un
+point que le parcours cliqué puisse observer — la matérialité est déjà VALIDÉE au semis
+(`part1.ts`), la déficience et l'écart de walkthrough n'existent que sur le dossier SOX (jamais
+sur le dossier NEP), et cette version du monde de démonstration NE PRODUIT JAMAIS d'extraction
+`pending_verify` (échelons déterministes — une station existante l'affirme elle-même : « rien à
+attester ici »). Une première rédaction de cette tranche le supposait (plaçait les stations juste
+avant le passage « second passage sur les pièces arrivées après coup ») et échouait à l'exécution
+(0 carte, 0 réponse client) — corrigé en observant le fait plutôt qu'en le supposant, et déplacé.
+
+Les deux stations créent donc leur PROPRE carte, avec le geste réel déjà exposé à l'écran
+(« Proposer (L3) », `mat.proposeL3`, jamais une écriture en base par le harnais) :
+- **notif-carte-id** : la carte de matérialité apparaît dès la proposition posée ; son lien mène à
+  `/materiality`, où LE MÊME identifiant (`materiality_id`) se retrouve dans le formulaire de
+  validation — pas seulement « un » formulaire quelconque.
+- **notif-disparition** : la proposition se valide depuis l'écran atteint par la carte, sans
+  refus ; revenue sur `/notifications` dans le MÊME geste, la carte a disparu, sans tâche de
+  nettoyage séparée.
+- **notif-role** : une seconde carte compare le badge « ce que je dois approuver » sur `/travaux`
+  entre Karim (préparateur, senior, `can_sign=false` sur ce dossier — `seed.ts` : `can_sign = role
+  !== 'senior'`) et Léa (reviewer, manager, `can_sign=true`, MÊME dossier) : 0 pour Karim,
+  strictement positif pour Léa.
+
+**Défaut réel trouvé et corrigé en chemin** : `/eng/[id]/materiality` n'offrait AUCUN chemin de
+validation pour une proposition plus récente qu'une validation déjà en place —
+`currentMateriality()` préfère TOUJOURS la ligne `validated`, quelle que soit sa version
+(`materiality.ts:158`). Une carte NOTIF-01 réelle, sans lecture qui l'atteigne (règle 13) —
+exactement la classe de défaut que cette tranche existe à fermer. Corrigé par un second
+formulaire sur la page, keyé sur `materialityVersions()[0]` (la version maximale) plutôt que sur
+`current`, sans toucher `currentMateriality()` elle-même (utilisée ailleurs — estimations,
+circularisations — où préférer la version validée est le bon choix).
+
+**Revue hostile, deux voix indépendantes (règle 30 : tranche touche le mécanisme de refus/visa)
+— SHIP AS-IS des deux côtés.** Aucun défaut confirmé dans le diff lui-même. Une voix (voix 2) a
+tracé et confirmé, indépendamment, que le compte de Léa n'est pas gonflé par du bruit résiduel
+(deficiency décidée au semis, walkthroughGap créé plus tard dans le parcours) — la différence
+Karim/Léa est bien attribuable à la carte que la station vient de poser. La même voix a trouvé un
+défaut MINEUR non déclenché par ces stations : `materiality.ts::propose()` n'a aucune garde contre
+un second appel avant validation (deux lignes `'proposed'` simultanées, la page ne peut valider
+que la plus récente) — consigné **R112** (`docs/BACKLOG_REPORTE.md`, `docs/instantanes/fils.json`),
+non corrigé, hors périmètre minimal de cette fermeture (règle 14).
+
+**Mesuré, pas supposé** : `npm run clics` (deux passages complets sur cette tranche, plus un
+troisième après le correctif de placement) — 322 étapes conduites, **0 échec de station** (les
+9 nouvelles assertions toutes vertes), 4 occurrences de la signature #418 connue et disjointe
+(F59, `docs/CHASSE.md`), clôture et archive scellée atteintes normalement. `npm run verify`
+complet lancé deux fois : le premier passage a rencontré un `ServeurTombe`/R58 ISOLÉ sur
+`screens.test.ts` (`/eng/[id]/team (SOX)`) — la classe de flake de concurrence déjà documentée des
+dizaines de fois dans `docs/CHASSE.md`, jamais reproduite au second passage (vitest 1246/1246 les
+deux fois hors ce point isolé). Second passage complet : tsc, vitest (1246/1246), gardes, semeur,
+plancher, langue(+épreuve), lectures(+épreuve), parcours(+épreuve), screens, fumee, densite, clics
+(322/0, comme ci-dessus) tous verts ; `npm run visuel` relancé séparément après le flake #418
+disjoint de `clics` (même patron F56-F59) — **356 vues, 0 défaut**.
+
+`docs/CLOTURE.md` régénéré (`npm run cloture`) : **24 OBSERVÉE / 6 NON_OBSERVE / 2 SANS_OBJET
+(75 % observé)**, contre 21/9/2 (66 %) avant cette tranche. Les 6 lignes NON_OBSERVE restantes :
+`mat-03`, `vid-01-retention`, `extrap-01`, `extrap-02`, `extrap-04` (déjà confirmées
+structurellement dures/reportées, réexamen du 2026-09-19), `auto-02` (structurellement impossible
+tant que `demoPublique()` tient — même motif qu'`auto-budget-independance`/`ia-budget-01-appel-reel`).
+
+**Commit d'implémentation** : `eafe6d2` (scenario.ts, materiality/page.tsx, catalogue.ts,
+docs/CLICS.md, docs/DENSITE.md engendrés, R112 dans BACKLOG_REPORTE.md/fils.json). Poussé sur
+`claude/otto-session-resume-zimig9`. **SHA servi à confirmer** dans le tour suivant (règle 36,
+option 1 — enchaîner sans attendre dans ce tour).
+
+---
+
 ## Clôture — SHA servi confirmé (7f8ae0e) ; EXTRAP-01/EXTRAP-02 : structurellement dures, reportées (2026-09-19)
 
 **SHA servi confirmé pour la tranche AUTO-01** (`mcp__Vercel__get_deployment` sur
