@@ -4,6 +4,23 @@
 
 ---
 
+## SHA servi confirmé — `808a472` (MAT-03 + R113 inclus) (2026-09-19)
+
+**`808a472` est servi en PRODUCTION, mesuré** (réveil programmé, pas une attente dans le tour qui
+a poussé) — `mcp__Vercel__list_deployments` (cible production) : `dpl_HP9GEnJQcqzZpGU3aEqY4zFa219A`
+→ READY (le déploiement de `f0d339b` lui-même a été CANCELED, remplacé par celui de `808a472`, son
+descendant direct — comportement normal de Vercel sur des pushes rapprochés, rien n'est perdu :
+`808a472` porte tout le contenu de `f0d339b`). `mcp__Vercel__web_fetch_vercel_url` sur `/api/sante`
+→ HTTP 200, `sha`/`version.sha`/`shaExecution` = `808a472ce54e4d461d0f2ab0a4c4c01a2461aa82`,
+`identiteCoherente:true`, verdict « toutes les lectures passent », MAT-03 lue « aucun tirage ne
+pointe une écriture disparue » (16 lignes, 0 orpheline) sur la base de PRODUCTION.
+
+**Les trois tranches de cette session sont donc toutes servies** : NOTIF-01 (`d8d75d0`, confirmé
+précédemment), MAT-03 (`7eb3bed`, inclus dans `808a472`), et la recherche VID-01-RETENTION/R113
+(`f0d339b`, inclus dans `808a472`).
+
+---
+
 ## SHA servi confirmé — NOTIF-01 (`d8d75d0`) ; MAT-03/VID-01-recherche en cours de déploiement (2026-09-19)
 
 **`d8d75d0` (mesures finales NOTIF-01) est servi en PRODUCTION, mesuré** — `mcp__Vercel__get_deployment`
