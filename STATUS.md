@@ -4,6 +4,55 @@
 
 ---
 
+## Clôture — MAT-03 fermée (25/5/2, 78 %), SHA `466b459` (2026-09-19)
+
+**MAT-03 est OBSERVÉE** : « un ré-import sur un poste déjà testé ne détruit rien : le tirage, les
+papiers et les visas sont toujours là après. » Le ré-import lui-même était déjà cliqué (station
+« import du grand livre définitif ») ; l'invariant proprement dit n'était prouvé que par
+`retirage.test.ts` (vitest, comptes SQL avant/après). Fermé SANS toucher un seul fichier de code
+produit — les deux stations lisent ce que l'écran affiche déjà :
+
+- **avant** le ré-import : `/eng/[id]/workpapers` — REV-01 (drafté et signé par `npm run
+  demo:seed`, AVANT que ce parcours ne démarre — un papier réel, pas une fixture triviale, règle
+  17) est listé, statut « signed », un compte de visas > 0.
+- **après** le ré-import : même écran relu — le compte de papiers ne peut que monter ou tenir,
+  REV-01 reste « signed », son compte de visas ne baisse jamais (règle 28 : rien ne s'invalide en
+  silence).
+- **le re-tirage** que le ré-import exige (station « sondage ») affiche désormais « Selected
+  items (N) » avec N > 0 après le tirage — de vraies lignes, pas un tirage vide. La moitié
+  complémentaire de l'invariant (les lignes SORTIES de l'ancien tirage se STATUENT plutôt que de
+  s'effacer) était déjà couverte par la station existante « re-tirage : ce qui sort du tirage ne
+  disparaît pas », inchangée par cette tranche — deux moitiés, deux stations.
+
+**Revue hostile, une seule voix (règle 30 : cette tranche ne touche ni modèle de données, ni
+sécurité, ni multi-tenant, ni code de refus — lecture pure de deux écrans déjà en production).
+SHIP AS-IS** : sélecteurs vérifiés sans collision possible (REV-01 vs C-REV-01, sur un AUTRE
+engagement), aucun chemin de succès vacuous identifié, précondition REV-01/`signoff_count=3`
+vérifiée indépendamment contre `demo-seed.ts`. Le niveau DB (comptes exacts `sample_item`/
+`workpaper`/`signoff`) reste la preuve de `retirage.test.ts`, non dupliqué ici — disclosed, pas
+tu (règle 19).
+
+**Mesuré** : `npm run clics` — 326 étapes conduites, **0 échec de station** (4 occurrences #418
+connues et disjointes, mêmes signatures que d'habitude), clôture et archive scellée atteintes.
+`npm run verify` complet lancé sur l'arbre figé : tsc, vitest (**1246/1246**, aucun
+ServeurTombe/R58 cette fois), gardes, semeur, plancher, langue(+épreuve), lectures(+épreuve),
+parcours(+épreuve), screens, fumee, densite, clics (326/0 comme ci-dessus) — tous verts ;
+`npm run visuel` relancé séparément après le flake #418 disjoint de `clics` (patron F56-F59
+habituel) — **356 vues, 0 défaut**.
+
+`docs/CLOTURE.md` régénéré (`npm run cloture`) : **25 OBSERVÉE / 5 NON_OBSERVE / 2 SANS_OBJET
+(78 % observé)**, contre 24/6/2 (75 %) avant cette tranche. Les 5 lignes NON_OBSERVE restantes :
+`vid-01-retention` (établie dure — le compte à rebours ne démarre qu'à la réunion rapport
+signé + notes closes, jamais rejouée par un clic), `extrap-01`, `extrap-02`, `extrap-04`
+(confirmées structurellement dures au réexamen du 2026-09-19, non forcées), `auto-02`
+(structurellement impossible tant que `demoPublique()` tient).
+
+**Commit d'implémentation** : `466b459` (scenario.ts, docs/DENSITE.md engendré). Poussé sur
+`claude/otto-session-resume-zimig9`. **SHA servi à confirmer** dans le tour suivant (règle 36,
+option 1 — enchaîner sans attendre dans ce tour).
+
+---
+
 ## Clôture — R87/NOTIF-01 fermée (24/6/2, 75 %) : trois cartes cliquées, SHA `eafe6d2` (2026-09-19)
 
 **Les trois lignes NOTIF-01 restantes** (`notif-carte-id`, `notif-role`, `notif-disparition` —

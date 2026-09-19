@@ -117,8 +117,9 @@
           "id": "mat-03",
           "codes": ["MAT-03"],
           "enonce": "Un ré-import sur un poste déjà testé ne détruit rien : le tirage, les papiers et les visas sont toujours là après.",
-          "statut": "NON_OBSERVE",
-          "manque": "Le ré-import lui-même EST cliqué (station « import du grand livre définitif », scenario.ts:594-622) mais l'invariant MAT-03 proprement dit (tirage/papiers/visas encore présents après) n'est asserté par aucune station — STATUS.md attribue cette preuve à retirage.test.ts, un test vitest, pas un clic."
+          "statut": "OBSERVE",
+          "preuve": "Fermé (2026-09-19). Deux stations existantes portent désormais l'invariant, sans code produit touché — lecture de ce que l'écran affiche déjà. « import du grand livre définitif » lit /eng/[id]/workpapers AVANT le ré-import (REV-01, déjà signé au semis npm run demo:seed, et son compte de visas), puis RE-lit après : le compte de papiers ne baisse jamais, REV-01 reste 'signed', son compte de visas ne baisse jamais (assertions bloquantes). « sondage » (le re-tirage qu'exige le ré-import) lit « Selected items (N) » après le tirage : de vraies lignes, pas un tirage vide. La moitié complémentaire — les lignes SORTIES de l'ancien tirage se statuent au lieu de s'effacer — reste couverte par la station déjà existante « re-tirage : ce qui sort du tirage ne disparaît pas », inchangée. Revue hostile (une voix, rule 30 : aucun modèle de données/sécurité/multi-tenant/code de refus touché) : SHIP AS-IS, précondition REV-01/signoff_count=3 vérifiée indépendamment contre demo-seed.ts. npm run clics : 326 étapes, 0 échec de station (4 occurrences #418 connues). Verify complet par ailleurs vert (vitest 1246/1246, visuel 356/0). Le niveau DB (compte exact de sample_item/workpaper/signoff) reste la preuve de retirage.test.ts — non dupliqué ici, disclosed.",
+          "sha": "466b45982668e1f41289496a56f831eab2e36df0"
         },
         {
           "id": "vid-01-upload",
