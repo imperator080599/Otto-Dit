@@ -4,6 +4,46 @@
 
 ---
 
+## Mandat de clôture : terminé (2026-09-19)
+
+**Décision du fondateur** (`docs/MANDATS/2026-09-19_decision_sans_objet_cloture_terminee.md`,
+commité verbatim, règle 33) : les cinq dernières lignes NON_OBSERVE de `docs/instantanes/cloture.json`
+passent à SANS_OBJET. `docs/CLOTURE.md` (régénéré, `npm run cloture`) : **25 OBSERVÉE / 0 NON_OBSERVE
+/ 7 SANS_OBJET (32 épreuves, 78 % observé)**. Le mandat de clôture ouvert le 8 septembre 2026 n'a
+plus de ligne à statuer.
+
+**Les sept lignes SANS_OBJET, motif en une ligne chacune :**
+- **`auto-budget-independance`** — `demoPublique()` force le mock aux quatre fabriques d'adaptateur ;
+  les trois gardes (niveau, budget) ne s'exécutent jamais, quel que soit leur réglage (ADR-109 pt 6).
+- **`ia-budget-01-appel-reel`** — même motif architectural ; la garde a déjà été observée dans ses
+  deux états réels sur la base de production (fermée puis ACTIVE), ce que le mandat demandait vraiment.
+- **`vid-01-retention`** — le compte à rebours ne peut jamais démarrer dans ce parcours : le dossier
+  SOX, où il s'affiche, n'est jamais clos par `scenario.ts` ; fermer la ligne exigerait un second
+  chantier de clôture de dossier entier (R113).
+- **`extrap-01`** — fermer la ligne exigerait de fabriquer un écart dans la strate sondée, avec des
+  effets en cascade sur les totaux et les obstacles au visa en aval ; sa lecture `/api/sante` ne passe
+  que de façon VACUEUSE (`random_misstatement_count` toujours 0, R111) — jamais une observation.
+- **`extrap-02`** — motif propre, différent des autres : `projectMisstatement` exclut structurellement
+  la strate exhaustive de son entrée, donc aucun chemin de refus n'existe nulle part à observer.
+- **`extrap-04`** — même blocage structurel qu'`extrap-01` (même strate sondée, propre par
+  construction du monde semé) ; la lecture existe et est honnête, jamais forcée à un vrai qu'elle n'a
+  pas vu.
+- **`auto-02`** — le refus existe en code (cas connu mauvais vitest) mais n'est cliqué nulle part, et
+  le centre de notifications affiche un niveau « L2 » codé en dur, jamais branché sur l'horodatage
+  réel par élément — deux gestes manquent, pas un.
+
+**Ce qui reste délibérément HORS de cet inventaire, et reste FOUNDER-ONLY :**
+1. **Le verdict du fondateur sur l'épure** — différé par lui depuis le 9 septembre 2026, jamais
+   redemandé par une session.
+2. **Le mandat de méthodologie R108** ("tests de la direction" importés comme IPE,
+   `docs/REGISTRE_IDEES.md`) — jamais écrit.
+3. **Un run local pour l'IA vivante** (`demoPublique()`, ADR-109) — le geste 2 (budget) est posé et
+   observé ; l'appel réel lui-même reste un geste local, jamais sur l'hébergé (interdit permanent).
+
+Le mandat de clôture est terminé.
+
+---
+
 ## SHA servi confirmé — `808a472` (MAT-03 + R113 inclus) (2026-09-19)
 
 **`808a472` est servi en PRODUCTION, mesuré** (réveil programmé, pas une attente dans le tour qui
