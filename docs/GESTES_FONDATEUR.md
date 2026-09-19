@@ -73,7 +73,24 @@ jour où le constat ci-dessus est levé.
 
 ## Geste 2 — la garde de budget EN BASE
 
-**Réponse à la question posée : (a) — construite, sous un NOM et une FORME différents de
+**FAIT ET OBSERVÉ le 2026-09-19T10:35:35Z, par le fondateur** (`docs/MANDATS/
+2026-09-19_geste2_observe_et_reexamen.md` — mesuré, pas déclaré). `app_state.ia_vivante_budget =
+{"actif": true, "plafondUsd": 2, "activePar": "Tuan", "activeLe":
+"2026-09-19T10:35:35.092106+00:00"}` ; `OTTO_BUDGET_USD=2`, `OTTO_PRICE_IN_PER_MTOK=5`,
+`OTTO_PRICE_OUT_PER_MTOK=25` posées sur Vercel (production ET preview). `/api/sante`, ligne
+IA-BUDGET-01, lue dans les DEUX états (« fermée » puis « ACTIVE »). Détail complet et RLS
+vérifiée : `docs/DECISIONS.md`, ADR-109 point 7.
+
+**Piège pour un futur lecteur — un second schéma, `demo_instantane`, mesuré par le fondateur et
+absent de la première version de ce document.** Il MIROIR les 124 tables `public`, mais son propre
+`app_state` ne porte QUE `clock_offset` — aucun `ia_vivante_budget`. Si le monde de démonstration
+est un jour restauré DEPUIS cet instantané, la ligne posée ci-dessus disparaît et la garde
+IA-BUDGET-01 revient à « fermée » — pas silencieusement au sens d'un mensonge (la lecture
+`/api/sante` continue à dire l'état réel), mais silencieusement au sens où rien n'AVERTIT avant la
+restauration. Reposer ce geste (recette ci-dessous) fait partie de toute restauration depuis
+`demo_instantane`, pas une étape à part.
+
+**Réponse à la question posée le 18 septembre : (a) — construite, sous un NOM et une FORME différents de
 `ia_vivante_budget` en tant que TABLE.** Ce n'est pas une table. C'est une LIGNE dans `app_state`
 (table déjà existante depuis `0005_app_state.sql` — `key text primary key, value jsonb not null,
 updated_at timestamptz not null default now()`), sous la clé `'ia_vivante_budget'`.
@@ -179,7 +196,9 @@ OTTO_PRICE_OUT_PER_MTOK=<prix réel, $/million tokens de sortie>
 **Résumé Geste 2 — trois réglages, pas un seul, pour que « 2 $ » soit une vraie limite observée :**
 la ligne `app_state.ia_vivante_budget` (le droit de tenter), `OTTO_BUDGET_USD=2` (le plafond
 comparé au cumul), et les deux prix (sans lesquels le cumul reste 0 pour toujours). Et même les
-trois réunis restent inertes sur Vercel tant que le constat en tête de ce document n'est pas levé.
+trois réunis restent inertes sur Vercel tant que le constat en tête de ce document n'est pas levé
+— **décision du fondateur, pas un report : il ne le sera PAS** (ADR-109 point 6). La démonstration
+d'IA réelle se fait localement.
 
 ---
 

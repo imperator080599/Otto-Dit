@@ -4025,6 +4025,54 @@ vérifiée SAUF si `OTTO_DB_CA_CERT` est posée (dit dans le code — à poser e
 réelle) ; le RLS côté application reste la défense active (l'app se connecte en
 propriétaire) — la politique mord pour tout NON-propriétaire, prouvé à chaque build.
 
+6. **`demoPublique()` (point 4 ci-dessus) N'EST PAS LEVÉ, et c'est une DÉCISION, pas un
+   report (mandat de clôture, geste 2 observé et réexamen, 2026-09-19, décision du
+   fondateur — `docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md`).** Deux raisons,
+   les deux suffisantes seules :
+   1. `otto-dit.vercel.app` est publique et non authentifiée. Lever la garde
+      laisserait n'importe qui tenant le lien dépenser de l'argent réel sur la clé
+      Anthropic posée en production (geste 1, fait le 2026-09-18).
+   2. Le plafond de 2 $ posé par geste 2 (§4 ci-dessous) N'AURAIT PAS protégé contre
+      cela, AVANT que les deux variables de prix ne soient posées (voir §4) :
+      `costUsd()` (`lib/core/pricing.ts`) rend 0 tant qu'`OTTO_PRICE_IN_PER_MTOK` et
+      `OTTO_PRICE_OUT_PER_MTOK` sont absentes — `cost_usd` serait resté à 0 pour
+      toujours, le compteur cumulé n'aurait jamais atteint le plafond, et
+      `gardeBudget()` n'aurait jamais refusé, pendant que la facture RÉELLE chez le
+      fournisseur, elle, montait. **Un plafond qui ne peut pas refuser n'est pas un
+      plafond.** C'est ce constat qui a décidé du refus de lever la garde — pas
+      seulement la première raison.
+   La démonstration d'IA réelle se fait donc LOCALEMENT (`VERCEL` non posé, les quatre
+   fabriques lisent leurs sélecteurs normalement) — rien d'hébergé n'a besoin de changer
+   pour cela. Ne pas rouvrir ce point sans un mandat écrit qui le nomme (règle 33).
+
+7. **Geste 2 (la garde de budget EN BASE) est FAIT et OBSERVÉ** (même mandat,
+   2026-09-19, 10:35:35Z) : `app_state.ia_vivante_budget = {"actif": true,
+   "plafondUsd": 2, "activePar": "Tuan", "activeLe": "2026-09-19T10:35:35.092106+00:00"}`,
+   posé directement en SQL par le fondateur (RLS vérifiée : la politique
+   `app_state_applicatif` est `FOR ALL / USING true / WITH CHECK true`, et `otto_app`
+   n'a pas `rolbypassrls` — la ligne est lisible par l'application, aucun piège
+   silencieux). `OTTO_BUDGET_USD=2`, `OTTO_PRICE_IN_PER_MTOK=5`,
+   `OTTO_PRICE_OUT_PER_MTOK=25` posées sur Vercel (production ET preview) — les deux
+   prix sont le tarif publié de `claude-opus-5` ($5 / $25 par MTok), le défaut de
+   `adapters.ts:87`, sourcés et non inventés. `/api/sante`, ligne IA-BUDGET-01, lue dans
+   les DEUX états (« fermée » avant le geste, « ACTIVE » après) — ce que le §2.4 du
+   mandat du 14 septembre demande de cette garde précise est donc satisfait. **AUCUN des
+   quatre sélecteurs d'adaptateur n'est posé** — délibérément ; le point 4 ci-dessus les
+   coupe de toute façon tant que `demoPublique()` tient.
+
+   **Piège à noter pour un futur lecteur, mesuré et absent de `docs/GESTES_FONDATEUR.md`
+   (constat du fondateur, 2026-09-19) : un second schéma, `demo_instantane`, MIROIR des
+   124 tables `public`, existe et son `app_state` ne porte QUE `clock_offset`.** Si le
+   monde de démonstration est un jour RESTAURÉ depuis cet instantané, la ligne
+   `ia_vivante_budget` disparaît et la garde IA-BUDGET-01 revient silencieusement à
+   « fermée » — silencieusement au sens où RIEN ne le signale à l'avance, mais PAS
+   indétectable : la lecture `/api/sante` elle-même redirait honnêtement « fermée » à la
+   prochaine mesure (elle ne ment jamais, voir §4). Le risque n'est donc pas une garde
+   qui mentirait, mais un lecteur qui s'attendrait à la trouver ACTIVE sans revérifier
+   après une restauration. Si `demo_instantane` sert un jour à restaurer, reposer le
+   geste 2 (recette dans `docs/GESTES_FONDATEUR.md`) fait partie de la restauration, pas
+   une étape optionnelle.
+
 ## ADR-110 — Mes travaux : le point d'origine qui manquait, et une mesure qui REFUSE de conclure
 
 **Contexte.** La tranche 9 (§3.D du mandat : densité, navigation, lexique) s'était close
