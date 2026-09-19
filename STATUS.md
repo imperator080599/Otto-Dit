@@ -4,6 +4,21 @@
 
 ---
 
+## SHA servi confirmé — NOTIF-01 (`d8d75d0`) ; MAT-03/VID-01-recherche en cours de déploiement (2026-09-19)
+
+**`d8d75d0` (mesures finales NOTIF-01) est servi en PRODUCTION, mesuré** — `mcp__Vercel__get_deployment`
+(`dpl_HDFjqe1QZpa5rha4SMSbmXAf2r2n`, cible production → READY) ; `mcp__Vercel__web_fetch_vercel_url`
+sur `/api/sante` → HTTP 200, `identiteCoherente:true`, `sha`/`version.sha` = `d8d75d0874c22519ae
+cfe7bc99723f77240ae952`, verdict « toutes les lectures passent », NOTIF-01 lu VIDE (aucun élément
+IA non validé sur la base servie — cohérent, le dossier de démo publique ne porte pas les cartes
+synthétiques que le parcours cliqué fabrique lui-même).
+
+**`7eb3bed` (MAT-03) et `f0d339b` (recherche VID-01-RETENTION/R113) étaient BUILDING/QUEUED au
+moment de la mesure** (`mcp__Vercel__list_deployments`) — non encore confirmés servis. Pas
+d'attente dans ce tour (règle 36, option 1) : un réveil est programmé pour la mesure suivante.
+
+---
+
 ## Clôture — R113 : VID-01-RETENTION confirmée structurellement dure (25/5/2, 78 %, inchangé)
 
 **Recherche menée après la fermeture de MAT-03, non implémentée, R113 (docs/BACKLOG_REPORTE.md,
