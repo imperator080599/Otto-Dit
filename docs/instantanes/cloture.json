@@ -178,7 +178,7 @@
           "codes": ["EXTRAP-01"],
           "enonce": "Un poste sondé avec un écart ne se conclut pas sans projection à la population.",
           "statut": "NON_OBSERVE",
-          "manque": "Prouvé seulement par s5s6.test.ts (intégration PGlite) et une lecture /api/sante (SHA 021e867) ; STATUS.md note explicitement que npm run clics n'a pas pu être conduit à son terme pour cette tranche (R80)."
+          "manque": "R80 (npm run clics non fiable) est levé — clics tourne proprement depuis (trois runs cette tranche). Mais recherche dédiée (2026-09-19, R111 dans BACKLOG_REPORTE.md) réfute l'hypothèse d'un raccourci gratuit : random_misstatement_count est à 0 dans l'évaluation observée aux trois runs (le message EXTRAP-04 n'apparaît jamais malgré extrapolationMethod sciemment non posé) — la strate SONDÉE du tirage REV-SUBST est propre dans le monde semé actuel. EXTRAP-01 exige un geste NOUVEAU qui crée un écart réel sur un sample_item selection_reason='random', pas seulement une lecture de plus sur la station existante."
         },
         {
           "id": "extrap-02",

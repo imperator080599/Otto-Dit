@@ -1197,6 +1197,31 @@ design : chacun reste une tranche à construire.**
   structurelle pour les exceptions sans `evidence_id`) n'est PAS touchée par cette fermeture — elle
   reste ouverte, distincte.
 
+- **R111 — EXTRAP-01 n'était PAS aussi bon marché qu'espéré ; recherche menée, non implémentée,
+  consignée pour ne pas la refaire (2026-09-19, même tranche).** Hypothèse testée : les 1-2
+  `misstatement` créés par la station « résolution des écarts » (branche chiffrable,
+  `escalateToMisstatement`) pourraient nourrir `sample_evaluation.random_misstatement_count` et
+  donc prouver EXTRAP-01 (« aucune évaluation conclue sans projection quand la strate sondée porte
+  un écart ») au même endroit que la lecture déjà ajoutée pour EXTRAP-04/trois-nombres. FAUSSE,
+  vérifiée par lecture directe (règle 15) : `computeSampleEvaluation` (evaluation.ts:55-63) filtre
+  `mis` sur `si.selection_reason = 'random'` — rien ne dit que les écarts résolus par cette station
+  proviennent de la strate `random` de l'échantillon REV-SUBST plutôt que de `high_value`/
+  `risk_flag`. Confirmé PAR L'OBSERVATION RÉELLE des trois runs `clics` de cette tranche : le
+  message « paramètre non vérifié » (EXTRAP-04) n'apparaît JAMAIS malgré `extrapolationMethod`
+  sciemment non posé dans `nep-fr.ts` (donc `projection_method` reste toujours `'none'`) — la
+  SEULE explication cohérente est `random_misstatement_count === 0` à chaque fois : la strate
+  SONDÉE de cette évaluation-là est PROPRE dans le monde semé actuel, quels que soient les écarts
+  résolus ailleurs. EXTRAP-01 reste donc structurellement NON OBSERVABLE à cette station sans un
+  geste NOUVEAU qui crée réellement un écart sur un `sample_item` de selection_reason `'random'` du
+  tirage REV-SUBST — par exemple une soumission de re-exécution en aveugle délibérément en désaccord
+  (`test.submitBlind`, aujourd'hui alignée sur les fixtures pour toujours concorder), ou une
+  résolution d'écart CHIFFRABLE ciblée sur une ligne du tirage aléatoire précisément. Reporté :
+  construire ce geste, PUIS vérifier par un clic réel que la station affiche alors le placeholder
+  EXTRAP-04 ET qu'une conclusion échoue tant que la méthode n'est pas fournie (cas connu mauvais),
+  avant de la faire réussir. `app/scripts/clics/scenario.ts` inchangé par cette recherche —
+  aucune ligne écrite ni laissée à moitié (l'essai de variable `anomaliesChiffrees` a été inséré
+  PUIS retiré une fois l'hypothèse réfutée, règle : pas d'implémentation à moitié).
+
 - **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
   pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
   plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,

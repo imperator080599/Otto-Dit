@@ -77,7 +77,7 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 ## Mandat du 2026-09-14 — `docs/MANDATS/2026-09-14_mandat_extrapolation_automatisation_notifications.md`, §1.6, §2.4, §3.4
 
 - **NON OBSERVÉ** (`EXTRAP-01`) — Un poste sondé avec un écart ne se conclut pas sans projection à la population.
-  Manque : Prouvé seulement par s5s6.test.ts (intégration PGlite) et une lecture /api/sante (SHA 021e867) ; STATUS.md note explicitement que npm run clics n'a pas pu être conduit à son terme pour cette tranche (R80).
+  Manque : R80 (npm run clics non fiable) est levé — clics tourne proprement depuis (trois runs cette tranche). Mais recherche dédiée (2026-09-19, R111 dans BACKLOG_REPORTE.md) réfute l'hypothèse d'un raccourci gratuit : random_misstatement_count est à 0 dans l'évaluation observée aux trois runs (le message EXTRAP-04 n'apparaît jamais malgré extrapolationMethod sciemment non posé) — la strate SONDÉE du tirage REV-SUBST est propre dans le monde semé actuel. EXTRAP-01 exige un geste NOUVEAU qui crée un écart réel sur un sample_item selection_reason='random', pas seulement une lecture de plus sur la station existante.
 
 - **NON OBSERVÉ** (`EXTRAP-02`) — Une projection tentée sur la strate exhaustive est refusée, en nommant la strate.
   Manque : Le mécanisme réel (kernel/projection.ts) est une EXCLUSION STRUCTURELLE, pas un message de refus nommant la strate — un écart avec la lettre du mandat. Testé seulement comme invariant (kernel.test.ts), jamais cliqué.
