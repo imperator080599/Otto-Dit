@@ -4,6 +4,48 @@
 
 ---
 
+## Clôture — SHA servi confirmé (7f8ae0e) ; EXTRAP-01/EXTRAP-02 : structurellement dures, reportées (2026-09-19)
+
+**SHA servi confirmé pour la tranche AUTO-01** (`mcp__Vercel__get_deployment` sur
+`dpl_6TDKCAQUN1U2JHKV5xW2fvPr86rn`, cible production → READY ; `mcp__Vercel__web_fetch_vercel_url`
+sur `/api/sante` → HTTP 200, `identiteCoherente:true`, `sha`/`version.sha` = `7f8ae0e`, IA-BUDGET-01
+lu « ACTIVE — plafond 2 $, posée par Tuan le 2026-09-19T10:35:35... » sur la base de PRODUCTION —
+le geste 2 du fondateur est donc confirmé vu en production, pas seulement en local).
+
+**EXTRAP-01 puis EXTRAP-02, réexaminées comme demandé (docs/MANDATS/
+2026-09-19_geste2_observe_et_reexamen.md) — les DEUX confirmées structurellement dures, pas
+forcées.** Recherche menée avant tout code, comme demandé.
+
+- **EXTRAP-02** relue à neuf (kernel/projection.ts) : le mécanisme reste une EXCLUSION
+  STRUCTURELLE — `projectMisstatement` ne reçoit même pas les montants de la strate exhaustive,
+  donc AUCUN chemin ne peut les projeter par erreur et il n'existe nulle part un message de refus
+  à cliquer. L'énoncé du mandat (« une projection tentée... est refusée, en nommant la strate »)
+  ne correspond à AUCUN comportement du dépôt — construire un tel refus exigerait d'inventer un
+  chemin d'écriture qui n'existe pas, pour re-simuler un refus qu'une garde structurelle rend déjà
+  impossible (l'inverse de règle 9). Reste NON OBSERVÉE, disposition confirmée inchangée.
+- **EXTRAP-01** : confirmé EMPIRIQUEMENT (requête SQL directe sur la base locale re-semée, sonde
+  temporaire supprimée avant ce commit, règle 24) que la strate `random` du tirage REV-SUBST ne
+  porte que 4 `sample_item`, et qu'AUCUNE des 24 `exception` du monde semé n'y est liée — la
+  strate sondée est propre PAR CONSTRUCTION du monde semé, pas par accident d'un run. Fermer cette
+  ligne exigerait de fabriquer délibérément un écart sur l'une de ces 4 lignes (re-exécution en
+  aveugle volontairement fausse, ou résolution chiffrable ciblée) — contrairement au plafond
+  `automationLevel` posé pour AUTO-01 (vérifié SANS AUCUN autre effet), un tel écart changerait
+  RÉELLEMENT les totaux connu/projeté, la comparaison au TE, le gate « réponse au dépassement » et
+  les comptes d'obstacles au visa dont PLUSIEURS stations en aval du parcours dépendent déjà —
+  même ordre de risque que MAT-03. R111 (docs/BACKLOG_REPORTE.md) et le champ `manque` d'
+  `extrap-01`/`etat` de `docs/instantanes/fils.json` mis à jour avec cette confirmation empirique.
+  Reste NON OBSERVÉE, reportée plutôt que forcée.
+
+Aucun code d'application touché par ce réexamen — mesure/recherche pure (une sonde temporaire,
+créée et supprimée dans le même tour). Pas de chaîne verify dédiée.
+
+**Reste NON OBSERVÉES (9 lignes), cheapest-first pour la suite** : d'après le mandat, la prochaine
+ligne est « les trois lignes NOTIF-01 » (R87 : notif-carte-id/notif-role/notif-disparition —
+nécessite de câbler `/notifications`, jamais branché à un écran). Les autres (MAT-03, VID-01
+rétention, EXTRAP-04, AUTO-02) restent dans le même état que la tranche précédente.
+
+---
+
 ## Mandat de clôture — geste 2 observé, réexamen, AUTO-01 fermée (21/9/2, 66 %) (2026-09-19)
 
 *Suite du mandat `docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md` (commité verbatim,

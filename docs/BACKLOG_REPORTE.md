@@ -1222,6 +1222,22 @@ design : chacun reste une tranche à construire.**
   aucune ligne écrite ni laissée à moitié (l'essai de variable `anomaliesChiffrees` a été inséré
   PUIS retiré une fois l'hypothèse réfutée, règle : pas d'implémentation à moitié).
 
+  **Confirmé EMPIRIQUEMENT le 2026-09-19 (suite, réexamen post-geste-2), par requête SQL directe
+  sur la base locale re-semée (sonde temporaire, supprimée avant ce commit, règle 24) : la strate
+  `random` du tirage REV-SUBST ne porte QUE 4 lignes (`sample_item` : 9 `high_value`, 4
+  `risk_flag`, 4 `random`), et sur les 24 `exception` du monde semé, AUCUNE n'est liée à l'une de
+  ces 4 lignes — toutes les exceptions portent sur `high_value`/`risk_flag`. La strate sondée est
+  donc PROPRE par construction du monde semé, pas par accident d'un run particulier. Fermer
+  EXTRAP-01 exigerait de fabriquer délibérément un écart sur l'une des 4 lignes `random` (une
+  soumission de re-exécution en aveugle volontairement fausse, ou une résolution CHIFFRABLE ciblée
+  sur cette ligne précise) — un geste qui, contrairement au plafond `automationLevel` posé pour
+  AUTO-01 (vérifié SANS AUCUN autre effet observable), changerait RÉELLEMENT les totaux connu/
+  projeté, la comparaison au TE, le gate « réponse au dépassement », et les comptes d'obstacles au
+  visa que PLUSIEURS stations en aval du parcours dépendent déjà — le même ordre de risque
+  qu'identifié pour MAT-03 (règle : nothing that is not on the cheapest-first list forces a
+  fragile implementation). Reste donc reportée, pour une raison désormais MESURÉE et non plus
+  seulement déduite du code.
+
 - **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
   pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
   plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,

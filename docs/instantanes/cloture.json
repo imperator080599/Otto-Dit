@@ -178,14 +178,14 @@
           "codes": ["EXTRAP-01"],
           "enonce": "Un poste sondé avec un écart ne se conclut pas sans projection à la population.",
           "statut": "NON_OBSERVE",
-          "manque": "R80 (npm run clics non fiable) est levé — clics tourne proprement depuis (trois runs cette tranche). Mais recherche dédiée (2026-09-19, R111 dans BACKLOG_REPORTE.md) réfute l'hypothèse d'un raccourci gratuit : random_misstatement_count est à 0 dans l'évaluation observée aux trois runs (le message EXTRAP-04 n'apparaît jamais malgré extrapolationMethod sciemment non posé) — la strate SONDÉE du tirage REV-SUBST est propre dans le monde semé actuel. EXTRAP-01 exige un geste NOUVEAU qui crée un écart réel sur un sample_item selection_reason='random', pas seulement une lecture de plus sur la station existante."
+          "manque": "R80 (npm run clics non fiable) est levé. Recherche dédiée (2026-09-19, R111 dans BACKLOG_REPORTE.md), réfutation confirmée EMPIRIQUEMENT par requête SQL directe sur la base re-semée : la strate 'random' du tirage REV-SUBST ne porte que 4 sample_item, et AUCUNE des 24 exception du monde semé n'y est liée — la strate sondée est propre PAR CONSTRUCTION du monde semé, pas par accident. Fermer cette ligne exigerait de fabriquer délibérément un écart sur l'une des 4 lignes random, un geste qui (contrairement au plafond posé pour AUTO-01, sans AUCUN autre effet) changerait réellement les totaux connu/projeté, le TE, et les comptes d'obstacles au visa que plusieurs stations en aval dépendent déjà — même ordre de risque que MAT-03. Reportée, pas forcée."
         },
         {
           "id": "extrap-02",
           "codes": ["EXTRAP-02"],
           "enonce": "Une projection tentée sur la strate exhaustive est refusée, en nommant la strate.",
           "statut": "NON_OBSERVE",
-          "manque": "Le mécanisme réel (kernel/projection.ts) est une EXCLUSION STRUCTURELLE, pas un message de refus nommant la strate — un écart avec la lettre du mandat. Testé seulement comme invariant (kernel.test.ts), jamais cliqué."
+          "manque": "Relu à neuf le 2026-09-19 (réexamen post-geste-2) : inchangé. Le mécanisme réel (kernel/projection.ts:1-16, projectMisstatement) est une EXCLUSION STRUCTURELLE — la fonction ne reçoit même pas les montants de la strate exhaustive, donc aucun chemin ne peut les projeter par erreur, et il n'existe donc AUCUNE tentative à observer ni AUCUN message de refus nommant la strate nulle part dans le dépôt : un écart avec la lettre du mandat (« une projection tentée... est refusée »), pas seulement un manque de clic. Construire un tel message exigerait d'INVENTER un chemin d'écriture qui n'existe pas, pour re-créer artificiellement un refus qu'une garde structurelle rend déjà impossible — l'inverse de ce que règle 9 demande. Testé seulement comme invariant (kernel.test.ts)."
         },
         {
           "id": "extrap-03",

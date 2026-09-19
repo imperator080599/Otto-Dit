@@ -568,7 +568,7 @@
     },
     {
       "id": "R111",
-      "etat": "recherche menée, non implémentée — EXTRAP-01 n'est PAS débloquée par la réutilisation espérée des misstatements de « résolution des écarts » : computeSampleEvaluation filtre sur selection_reason='random', et les trois runs clics de la tranche du 2026-09-19 montrent random_misstatement_count=0 dans l'évaluation observée (le message EXTRAP-04 n'apparaît jamais malgré une méthode sciemment non posée). Reste NON OBSERVÉE tant qu'un geste NOUVEAU ne crée pas réellement un écart sur un sample_item selection_reason='random' du tirage REV-SUBST.",
+      "etat": "recherche menée, non implémentée — confirmé EMPIRIQUEMENT (requête SQL directe, sonde supprimée) : la strate 'random' du tirage REV-SUBST ne porte que 4 sample_item, et AUCUNE des 24 exception du monde semé n'y est liée — la strate sondée est propre PAR CONSTRUCTION, pas par accident d'un run. Fermer EXTRAP-01 exigerait de fabriquer un écart sur l'une de ces 4 lignes, un geste qui changerait réellement les totaux connu/projeté/TE et les comptes d'obstacles au visa dont plusieurs stations en aval dépendent déjà (même ordre de risque que MAT-03) — reste donc reportée, pas forcée.",
       "depuis": "2026-09-19 (mandat de clôture §3)",
       "note": "non corrigé, délibérément : aucune implémentation à moitié laissée (l'essai de variable anomaliesChiffrees a été inséré PUIS retiré une fois l'hypothèse réfutée) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la recherche."
     }
