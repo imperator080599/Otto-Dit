@@ -1218,6 +1218,7 @@ export const LIBELLES = {
   'evi.forRequestItem': { en: 'For request item', fr: 'Pour la ligne de demande' },
   'evi.nothingReceivedYet': { en: 'Nothing received yet.', fr: 'Rien de reçu pour l’instant.' },
   'mat.proposeL3': { en: 'Propose (L3)', fr: 'Proposer (L3)' },
+  'mat.newerProposalPending': { en: 'Newer proposal awaiting validation', fr: 'Proposition plus récente en attente de validation' },
   'mat.noProposalYet': { en: 'No proposal yet.', fr: 'Aucune proposition.' },
 
   'prov.packEtEmpreinte': { en: '(pack {pack}) — facts hash {h}…', fr: '(pack {pack}) — empreinte des faits {h}…' },

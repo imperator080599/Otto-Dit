@@ -4024,6 +4024,101 @@ export async function conduire(
     }
   });
 
+  // ── 21e. NOTIF-01 (R87) : LE CENTRE DE NOTIFICATIONS LUI-MÊME — jamais
+  //    visité par ce parcours avant cette tranche. Les trois épreuves du
+  //    mandat (§3.4 points 1, 2, 4) n'étaient prouvées que par
+  //    notifications.test.ts — le dépôt le disclosed lui-même (cloture.json,
+  //    R87). PLACÉE ICI, JUSTE AVANT « obstacles au visa » (qui exige
+  //    `restants === 0`, commentaire de la station suivante : « à ce stade
+  //    tout est visé ») : sur `c.eng`, à AUCUN point de ce parcours une des
+  //    quatre familles ne reste naturellement en attente — la matérialité
+  //    est déjà VALIDÉE au semis (part1.ts), la déficience et l'écart de
+  //    walkthrough n'existent que sur le dossier SOX, et CETTE VERSION DU
+  //    MONDE DE DÉMONSTRATION NE PRODUIT JAMAIS D'EXTRACTION
+  //    `pending_verify` — mesuré, pas supposé : la station « testing :
+  //    l'atelier », plus haut, l'affirme elle-même (« rien à attester ici,
+  //    échelons déterministes »). Une première rédaction de cette tranche le
+  //    supposait et échouait à l'exécution (0 carte) — corrigé en
+  //    l'observant. Écrit tel quel, pas caché (règle 19 : une règle nomme où
+  //    elle cesse de regarder). La station crée donc SA PROPRE carte, avec
+  //    le geste RÉEL déjà exposé à l'écran (`mat.proposeL3`, toujours
+  //    offert, jamais une écriture en base par le harnais) — puis la RÉSOUT
+  //    dans le même souffle, pour que `restants` retombe à 0 avant la
+  //    station suivante.
+  await station('NOTIF-01 : chaque carte mène à l’objet réel, et sa validation la retire du même geste', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/materiality`);
+    await cliquer(`form button:has-text("${L('mat.proposeL3')}")`, 900);
+    dire('matérialité : une nouvelle proposition se pose depuis l’écran, sans refus',
+      !refus(p), refus(p) ?? 'proposée');
+
+    await aller(`${eng}/notifications`);
+    const cible = await p.locator('tr[data-notification-nature="materialite"]').first()
+      .getAttribute('data-notification');
+    dire('notif-carte-id : la carte de matérialité apparaît dès la proposition posée',
+      cible !== null, cible ? `carte ${cible}` : 'aucune carte de matérialité');
+    if (!cible) return;
+
+    /* LA CARTE MÈNE EN UN CLIC À L'OBJET RÉEL — /materiality, où le MÊME
+       IDENTIFIANT (pas seulement « un » formulaire) se retrouve dans le
+       formulaire de validation. */
+    const href = await p.locator(`tr[data-notification="${cible}"] a`).getAttribute('href');
+    dire('notif-carte-id : la carte porte un lien réel vers /materiality',
+      (href ?? '').includes('/materiality'), href ?? 'lien absent');
+    await aller(base + (href ?? `${eng}/materiality`));
+    const midValeur = await p.locator('input[name=materiality_id]').first().getAttribute('value').catch(() => null);
+    dire('notif-carte-id : la navigation aboutit sur L’OBJET RÉEL — le même identifiant, pas un autre',
+      midValeur === cible, `carte=${cible}, formulaire=${midValeur ?? 'absent'}`);
+
+    /* LA DISPARITION SE PROUVE DANS LE MÊME GESTE (§3.4 point 4). */
+    const boutonValider = p.locator(`button:has-text("${L('mat.validateComputesThresholdsProposesScopin')}")`).first();
+    const offert = await boutonValider.count();
+    if (offert) await cliquer(`button:has-text("${L('mat.validateComputesThresholdsProposesScopin')}")`, 900);
+    dire('notif-disparition : la proposition se VALIDE depuis l’écran atteint par la carte, sans refus',
+      offert > 0 && !refus(p), refus(p) ?? (offert ? 'validée' : 'bouton de validation absent'));
+
+    await aller(`${eng}/notifications`);
+    const encore = await compte(`tr[data-notification="${cible}"]`);
+    dire('notif-disparition : l’élément validé a disparu de la file, sans tâche de nettoyage séparée',
+      encore === 0, encore === 0 ? 'carte disparue' : 'carte encore présente');
+  });
+
+  // ── 21f. NOTIF-01 (R87) : LE COMPTE CHANGE SELON LE RÔLE — même dossier,
+  //    deux personnes, can_sign tranche seul (`notifications.ts`,
+  //    `notificationsPourApprobation`). Karim (préparateur, senior) n’a
+  //    JAMAIS can_sign=true sur ce dossier (seed.ts) ; Léa (reviewer,
+  //    manager) l’a. Une SECONDE proposition, laissée délibérément NON
+  //    validée le temps de la comparaison — reprise et résolue à la fin de
+  //    la même station, pour ne rien laisser en attente avant « obstacles
+  //    au visa ».
+  await station('NOTIF-01 : « ce que je dois approuver » change selon le rôle, deux personnes, même dossier', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/materiality`);
+    await cliquer(`form button:has-text("${L('mat.proposeL3')}")`, 900);
+    dire('notif-role : une carte à comparer existe, posée depuis l’écran, sans refus',
+      !refus(p), refus(p) ?? 'proposée');
+
+    await aller(`${base}/travaux`);
+    const compteKarim = Number((await p.locator('[data-notifications] .badge').first().innerText()).trim()) || 0;
+    dire('notif-role : Karim (senior, can_sign=false sur ce dossier) ne voit rien compté comme sien',
+      compteKarim === 0, `${compteKarim} affiché(s)`);
+
+    await devenir(c.reviewer.id);
+    await aller(`${base}/travaux`);
+    const compteLea = Number((await p.locator('[data-notifications] .badge').first().innerText()).trim()) || 0;
+    dire('notif-role : Léa (manager, can_sign=true), même dossier, voit un compte réel et différent',
+      compteLea > compteKarim, `Karim=${compteKarim}, Léa=${compteLea}`);
+
+    /* RÉSOLUE AVANT DE QUITTER LA STATION — rien ne doit rester en attente
+       artificiellement au-delà de ce que la comparaison exigeait. */
+    await aller(`${eng}/materiality`);
+    const boutonValider = p.locator(`button:has-text("${L('mat.validateComputesThresholdsProposesScopin')}")`).first();
+    const offert = await boutonValider.count();
+    if (offert) await cliquer(`button:has-text("${L('mat.validateComputesThresholdsProposesScopin')}")`, 900);
+    dire('notif-role : la proposition utilisée pour la comparaison est validée avant de continuer',
+      offert > 0 && !refus(p), refus(p) ?? (offert ? 'validée' : 'bouton de validation absent'));
+  });
+
   // ── 22. OBSTACLES AU VISA
   let restants = 0;
   await station('obstacles au visa', async () => {

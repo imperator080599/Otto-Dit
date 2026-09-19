@@ -1238,6 +1238,27 @@ design : chacun reste une tranche à construire.**
   fragile implementation). Reste donc reportée, pour une raison désormais MESURÉE et non plus
   seulement déduite du code.
 
+- **R112 — `materiality.ts::propose()` n'a aucune garde contre un second appel avant qu'une
+  première proposition ne soit validée : deux lignes `'proposed'` simultanées, et la page ne peut
+  jamais valider que la plus RÉCENTE (2026-09-19, tranche R87/NOTIF-01).** Trouvé par la revue
+  hostile de cette tranche (voix 2, MINEUR — non bloquant, non déclenché par les nouvelles stations
+  du parcours). `currentMateriality()`/`materialityVersions()` prouvent (règle 15, lu directement,
+  pas supposé) qu'une ligne `'proposed'` NON maximale ne peut jamais devenir « la » proposition que
+  `/eng/[id]/materiality` propose de valider — ni le formulaire principal (gate `current.status`,
+  et `current` est toujours la version maximale parmi les lignes `'proposed'` quand aucune n'est
+  `'validated'`) ni le second formulaire ajouté par cette tranche (gate `versions[0]`, la version
+  maximale). Un double clic sur « Proposer (L3) », ou deux onglets, avant toute validation,
+  laisserait donc la proposition la PLUS ANCIENNE des deux comme une carte NOTIF-01 permanente,
+  sans aucun chemin de résolution — exactement le défaut que cette tranche existe à corriger
+  (règle 13), mais sur un déclencheur différent (deux propositions non résolues, pas une
+  re-proposition après validation). `elementsIaNonValides()` (notifications.ts) n'a pas de `limit`
+  sur sa requête `materiality` et listerait bien les DEUX cartes — c'est spécifiquement le CHEMIN DE
+  VALIDATION qui manque pour la plus ancienne. Non corrigé cette tranche (jamais déclenché par les
+  deux stations `scenario.ts` ajoutées : chacune valide avant de reproposer). Reporté : soit garder
+  `propose()` contre un appel alors qu'une ligne `'proposed'` existe déjà sur le dossier (refus
+  explicite plutôt qu'un empilement silencieux), soit étendre l'écran de matérialité pour énumérer
+  et offrir un chemin de validation à CHAQUE ligne `'proposed'`, pas seulement la plus récente.
+
 - **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
   pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
   plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,

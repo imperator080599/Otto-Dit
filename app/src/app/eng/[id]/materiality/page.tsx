@@ -137,6 +137,26 @@ export default async function MaterialityPage({
             )}
           </>
         )}
+        {/* UNE RE-PROPOSITION APRÈS UNE VALIDATION DÉJÀ EN PLACE (NOTIF-01,
+            R87) : `currentMateriality` PRÉFÈRE TOUJOURS LA VERSION VALIDÉE,
+            quel que soit son numéro de version (`materiality.ts:158`) — c'est
+            le bon choix pour QUI UTILISE le seuil (estimations,
+            circularisations) mais ça laissait la proposition la PLUS RÉCENTE
+            sans AUCUN chemin de validation dès qu'une validée existait déjà :
+            un objet créé (et compté par NOTIF-01) qu'aucune lecture n'atteint
+            (règle 13). `versions` est déjà triée par version DESCENDANTE
+            (`materialityVersions`) : sa première ligne est la plus récente,
+            indépendamment de `current`. */}
+        {versions.length > 0 && versions[0].status === 'proposed' && versions[0].id !== current?.id && (
+          <form action={validateAction} className="panel warn mt">
+            <input type="hidden" name="materiality_id" value={versions[0].id} />
+            <p>
+              <span className="badge amber">{t('mat.newerProposalPending')}</span>{' '}
+              v{versions[0].version} · {fmtEur(numToCents(versions[0].amount), 'fr')}
+            </p>
+            <button className="btn">{t('mat.validateComputesThresholdsProposesScopin')}</button>
+          </form>
+        )}
       </div>
       <Repli cle="mat.versions" niveau={2} titre={t('mat.versions')}>
         <table className="data">

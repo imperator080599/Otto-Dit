@@ -571,6 +571,12 @@
       "etat": "recherche menée, non implémentée — confirmé EMPIRIQUEMENT (requête SQL directe, sonde supprimée) : la strate 'random' du tirage REV-SUBST ne porte que 4 sample_item, et AUCUNE des 24 exception du monde semé n'y est liée — la strate sondée est propre PAR CONSTRUCTION, pas par accident d'un run. Fermer EXTRAP-01 exigerait de fabriquer un écart sur l'une de ces 4 lignes, un geste qui changerait réellement les totaux connu/projeté/TE et les comptes d'obstacles au visa dont plusieurs stations en aval dépendent déjà (même ordre de risque que MAT-03) — reste donc reportée, pas forcée.",
       "depuis": "2026-09-19 (mandat de clôture §3)",
       "note": "non corrigé, délibérément : aucune implémentation à moitié laissée (l'essai de variable anomaliesChiffrees a été inséré PUIS retiré une fois l'hypothèse réfutée) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la recherche."
+    },
+    {
+      "id": "R112",
+      "etat": "ouvert — materiality.ts::propose() n'a aucune garde contre un second appel avant qu'une première proposition ne soit validée ; deux lignes 'proposed' simultanées, et la page (formulaire principal ni le second ajouté par R87/NOTIF-01) ne peut jamais offrir de chemin de validation à la plus ANCIENNE des deux, seulement à la version maximale — trouvé par la revue hostile (voix 2) de la tranche R87/NOTIF-01, non déclenché par ses deux nouvelles stations (chacune valide avant de reproposer).",
+      "depuis": "2026-09-19 (revue hostile, tranche R87/NOTIF-01)",
+      "note": "non corrigé, délibérément : mineur, non bloquant, hors du périmètre minimal de la tranche qui l'a trouvé (règle 14) — voir docs/BACKLOG_REPORTE.md pour le détail complet."
     }
   ]
 }
