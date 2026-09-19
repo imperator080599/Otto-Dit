@@ -236,8 +236,8 @@
           "id": "auto-budget-independance",
           "codes": [],
           "enonce": "Les deux gardes (niveau d'automatisation, budget) sont indépendantes : niveau ouvert + budget fermé ⇒ refus ; niveau fermé + budget ouvert ⇒ refus.",
-          "statut": "NON_OBSERVE",
-          "manque": "Le test exact existe (automatisation.test.ts:148-157, vitest) mais aucun équivalent cliqué n'existe. Nature du test : il exige de mal configurer deux gardes indépendantes à la fois, ce qui rend un équivalent cliqué structurellement plus difficile qu'ailleurs — disclosed ici plutôt que forcé en OBSERVÉ."
+          "statut": "SANS_OBJET",
+          "decision": "Réexaminé le 2026-09-19 après le geste 2 (mandat docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md) : PAS débloqué par le geste, pour une raison plus profonde que l'UI manquante. Vérifié par lecture directe (règle 15) : les trois gardes de cette épreuve (assertNiveauOuvert, assertBudgetActifEnBase, gardeBudget) ne s'exécutent QUE si `adapter.name !== 'mock'` — vérifié aux QUATRE sites d'appel réels (entretiens.ts:173, extraction/ladder.ts:126, query/ask.ts:149, walkthrough-analyse.ts:100). Sur l'hébergé, demoPublique() force le mock aux quatre fabriques (ADR-109 pt 4) : adapter.name est TOUJOURS 'mock', donc ces trois gardes ne s'exécutent JAMAIS, quel que soit le réglage d'automatisation ou l'état du budget. Décision du fondateur (ADR-109 pt 6) : demoPublique() reste non levé — même motif structurel, même disposition que ia-budget-01-appel-reel ci-dessous. Observable localement (VERCEL non posé), hors de cet inventaire."
         },
         {
           "id": "notif-carte-id",
@@ -267,6 +267,20 @@
           "enonce": "Un élément validé disparaît de la file de notifications dans le même geste qui le valide, sans tâche de nettoyage séparée.",
           "statut": "NON_OBSERVE",
           "manque": "Même lacune R87, prouvé seulement par notifications.test.ts."
+        }
+      ]
+    },
+    {
+      "date": "2026-09-18",
+      "fichier": "docs/MANDATS/2026-09-18_changement_de_regime.md",
+      "section": "§0",
+      "epreuves": [
+        {
+          "id": "ia-budget-01-appel-reel",
+          "codes": ["IA-BUDGET-01"],
+          "enonce": "IA-BUDGET-01 est VU refuser un vrai appel IA au moins une fois, sur le premier plafond de 2 $.",
+          "statut": "SANS_OBJET",
+          "decision": "Décision du fondateur (docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md) : sur l'hébergé, architecturalement impossible — demoPublique() (ADR-109 pt 4) coupe TOUT appel réel aux quatre fabriques d'adaptateur AVANT même que la garde IA-BUDGET-01 ne soit consultée (elle-même gardée derrière `adapter.name !== 'mock'` — vérifié aux quatre sites d'appel). L'équivalent appartient à un run LOCAL (VERCEL non posé), hors de cet inventaire. Ce que le mandat du 14 septembre §2.4 demande de CETTE garde précise EST satisfait : elle a été observée dans ses deux états réels sur la base de production (« fermée » avant le geste 2, « ACTIVE » après, /api/sante, 2026-09-19T10:39Z) — le refus d'un appel réel n'ajoute rien de plus que ces deux états ne disent déjà."
         }
       ]
     }

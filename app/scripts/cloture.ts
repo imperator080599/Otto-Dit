@@ -7,8 +7,10 @@
  * nommant le manque), ou SANS OBJET (la décision du fondateur qui l'a écartée). « Rien n'est
  * déclaré. Tout est mesuré. »
  *
- * CE QU'IL LIT : docs/instantanes/cloture.json — les 31 épreuves des quatre mandats
- * (2026-09-08, 09, 10, 14), chacune avec son énoncé, son statut, et sa preuve ou son manque.
+ * CE QU'IL LIT : docs/instantanes/cloture.json — les épreuves des mandats du fondateur listés
+ * dans ce fichier (initialement quatre : 2026-09-08, 09, 10, 14 ; un addendum du §0 du mandat de
+ * clôture lui-même, 2026-09-19, peut s'y ajouter), chacune avec son énoncé, son statut, et sa
+ * preuve ou son manque.
  * Ce fichier de données a été peuplé par une recherche adverse dédiée (quatre sous-agents
  * indépendants, un par mandat, cherchant une preuve CLIQUÉE — une station de
  * app/scripts/clics/scenario.ts confirmée par docs/CLICS.md — jamais un test vitest seul,
@@ -100,6 +102,17 @@ export function engendrer(): string {
   }
 
   const tauxObserve = total > 0 ? Math.round((observe / total) * 100) : 0;
+  /* JAMAIS « quatre mandats » écrit en dur (règle 21) : compté depuis les
+     données, pour qu'un mandat de plus (ou de moins) ne rende pas ce texte
+     faux en silence — c'est exactement ce qui serait arrivé le jour où le
+     §0 du mandat de clôture lui-même (2026-09-18) a apporté sa propre
+     épreuve (IA-BUDGET-01, addendum du 2026-09-19). */
+  const nbMandats = data.mandats.length;
+  const motNombre: Record<number, string> = {
+    1: 'un mandat', 2: 'deux mandats', 3: 'trois mandats', 4: 'quatre mandats',
+    5: 'cinq mandats', 6: 'six mandats',
+  };
+  const datesMandats = data.mandats.map((m) => m.date.slice(8, 10)).join(', ');
 
   const en_tete = [
     '<!-- ENGENDRÉ par `cd app && npm run cloture` — ne pas éditer à la main. -->',
@@ -107,7 +120,8 @@ export function engendrer(): string {
     '',
     `Recherche menée le ${data.recherche.quand}. Méthode : ${data.recherche.methode}`,
     '',
-    `**${total} épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — `
+    `**${total} épreuves recensées dans ${motNombre[nbMandats] ?? `${nbMandats} mandats`} `
+    + `(${datesMandats} septembre 2026) — `
     + `${observe} OBSERVÉE(S), ${nonObserve} NON OBSERVÉE(S), ${sansObjet} SANS OBJET `
     + `(${tauxObserve} % observé).**`,
     '',

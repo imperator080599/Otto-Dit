@@ -3,7 +3,7 @@
 
 Recherche menée le 2026-09-19. Méthode : Quatre sous-agents indépendants, un par mandat, chacun cherchant une preuve cliquée (station de app/scripts/clics/scenario.ts confirmée par docs/CLICS.md, jamais un test vitest seul) pour chaque épreuve listée ci-dessous, avant de conclure OBSERVE/NON_OBSERVE/SANS_OBJET.
 
-**31 épreuves recensées dans les quatre mandats (08, 09, 10, 14 septembre 2026) — 20 OBSERVÉE(S), 11 NON OBSERVÉE(S), 0 SANS OBJET (65 % observé).**
+**32 épreuves recensées dans cinq mandats (08, 09, 10, 14, 18 septembre 2026) — 20 OBSERVÉE(S), 10 NON OBSERVÉE(S), 2 SANS OBJET (63 % observé).**
 
 OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle dans `docs/CLICS.md`. Un test vitest, aussi rigoureux soit-il, ne suffit PAS seul : c'est la distinction qui a trouvé le blocage NOTIF-01 (seule voie qui l'a vu), et c'est pourquoi cet inventaire l'applique partout, sans exception de confort.
 
@@ -100,8 +100,8 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 - **NON OBSERVÉ** (`AUTO-02`) — Un élément préparé par l'IA sans son niveau d'automatisation horodaté est refusé.
   Manque : Le chemin POSITIF (l'horodatage réel pendant une vraie analyse IA) EST cliqué (station walkthrough, un vrai ai_run écrit), mais le REFUS lui-même n'est testé que par un cas connu mauvais vitest. Constat additionnel, disclosed plutôt que tu : le centre de notifications affiche un niveau CONSTANT « L2 » codé en dur (notifications.ts), jamais branché sur le vrai niveau horodaté de chaque ai_run — écrit dans le code du fichier lui-même, jamais repris au registre.
 
-- **NON OBSERVÉ** — Les deux gardes (niveau d'automatisation, budget) sont indépendantes : niveau ouvert + budget fermé ⇒ refus ; niveau fermé + budget ouvert ⇒ refus.
-  Manque : Le test exact existe (automatisation.test.ts:148-157, vitest) mais aucun équivalent cliqué n'existe. Nature du test : il exige de mal configurer deux gardes indépendantes à la fois, ce qui rend un équivalent cliqué structurellement plus difficile qu'ailleurs — disclosed ici plutôt que forcé en OBSERVÉ.
+- **SANS OBJET** — Les deux gardes (niveau d'automatisation, budget) sont indépendantes : niveau ouvert + budget fermé ⇒ refus ; niveau fermé + budget ouvert ⇒ refus.
+  Décision : Réexaminé le 2026-09-19 après le geste 2 (mandat docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md) : PAS débloqué par le geste, pour une raison plus profonde que l'UI manquante. Vérifié par lecture directe (règle 15) : les trois gardes de cette épreuve (assertNiveauOuvert, assertBudgetActifEnBase, gardeBudget) ne s'exécutent QUE si `adapter.name !== 'mock'` — vérifié aux QUATRE sites d'appel réels (entretiens.ts:173, extraction/ladder.ts:126, query/ask.ts:149, walkthrough-analyse.ts:100). Sur l'hébergé, demoPublique() force le mock aux quatre fabriques (ADR-109 pt 4) : adapter.name est TOUJOURS 'mock', donc ces trois gardes ne s'exécutent JAMAIS, quel que soit le réglage d'automatisation ou l'état du budget. Décision du fondateur (ADR-109 pt 6) : demoPublique() reste non levé — même motif structurel, même disposition que ia-budget-01-appel-reel ci-dessous. Observable localement (VERCEL non posé), hors de cet inventaire.
 
 - **NON OBSERVÉ** — Un test échoue si une seule carte de notification ne se résout pas à l'identifiant d'un objet réel.
   Manque : Prouvé par notifications.test.ts seulement ; aucune station ne visite /notifications — le dépôt lui-même le disclosed (R87).
@@ -114,3 +114,10 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 
 - **NON OBSERVÉ** — Un élément validé disparaît de la file de notifications dans le même geste qui le valide, sans tâche de nettoyage séparée.
   Manque : Même lacune R87, prouvé seulement par notifications.test.ts.
+
+---
+
+## Mandat du 2026-09-18 — `docs/MANDATS/2026-09-18_changement_de_regime.md`, §0
+
+- **SANS OBJET** (`IA-BUDGET-01`) — IA-BUDGET-01 est VU refuser un vrai appel IA au moins une fois, sur le premier plafond de 2 $.
+  Décision : Décision du fondateur (docs/MANDATS/2026-09-19_geste2_observe_et_reexamen.md) : sur l'hébergé, architecturalement impossible — demoPublique() (ADR-109 pt 4) coupe TOUT appel réel aux quatre fabriques d'adaptateur AVANT même que la garde IA-BUDGET-01 ne soit consultée (elle-même gardée derrière `adapter.name !== 'mock'` — vérifié aux quatre sites d'appel). L'équivalent appartient à un run LOCAL (VERCEL non posé), hors de cet inventaire. Ce que le mandat du 14 septembre §2.4 demande de CETTE garde précise EST satisfait : elle a été observée dans ses deux états réels sur la base de production (« fermée » avant le geste 2, « ACTIVE » après, /api/sante, 2026-09-19T10:39Z) — le refus d'un appel réel n'ajoute rien de plus que ces deux états ne disent déjà.
