@@ -1259,6 +1259,26 @@ design : chacun reste une tranche à construire.**
   explicite plutôt qu'un empilement silencieux), soit étendre l'écran de matérialité pour énumérer
   et offrir un chemin de validation à CHAQUE ligne `'proposed'`, pas seulement la plus récente.
 
+- **R113 — VID-01-RETENTION n'est PAS aussi bon marché qu'espéré : le compte à rebours ne peut
+  jamais démarrer sur le dossier SOX DANS CE PARCOURS, parce que le dossier SOX lui-même n'est
+  JAMAIS clos (2026-09-19, recherche menée après la fermeture de MAT-03, non implémentée).**
+  `compteurConservationVideo` (sox.ts:337-356) exige `eligible = rapportSigne && notesClosesToutes` ;
+  `rapportSigne` vient de `engagement.report_date !== null`, posé UNIQUEMENT par `closeFile()`
+  (retention.ts:43-89, le service derrière le bouton « close.closeTheFileAndSealThe »). Vérifié par
+  lecture directe (règle 15) : ce bouton n'est cliqué qu'UNE fois dans tout `scenario.ts`
+  (ligne ~4584), sur `eng` = `c.eng` — le dossier NEP — jamais sur `c.controleWalkthrough.engId`,
+  le dossier SOX où `compteurConservationVideo` est affiché (`/eng/[id]/rcm/[cid]`, le seul appelant,
+  `src/app/eng/[id]/rcm/[cid]/page.tsx`). Fermer VID-01-RETENTION exigerait donc de CLORE UN SECOND
+  DOSSIER dans le parcours — pas une lecture d'écran comme MAT-03/NOTIF-01, mais un geste métier
+  entier et nouveau (ses propres obstacles au visa, jamais exercés sur ce dossier dans
+  `scenario.ts`, dont rien ne dit aujourd'hui qu'ils sont déjà tous levés). Même ordre de risque
+  que MAT-03 AVANT sa fermeture — sauf que MAT-03 réutilisait deux écrans déjà lus par le parcours,
+  alors que celui-ci demanderait un chantier de fermeture complet sur un dossier que le parcours ne
+  ferme jamais. Reporté : soit construire ce second chantier de clôture (hors périmètre d'une
+  tranche de lecture d'écran, § une décision du fondateur), soit accepter que cette ligne reste
+  structurellement hors d'atteinte tant que le dossier SOX n'a pas son propre geste de clôture dans
+  ce parcours.
+
 - **R82 — le contrôle « preuve supplémentaire DISTINCTE » d'EXTRAP-03 est structurellement inerte
   pour toute exception qui ne pose jamais `evidence_id`** (`manual_journal_flag`, la famille la
   plus à risque — écriture manuelle atypique un week-end, montant rond — `verification_disagreement`,

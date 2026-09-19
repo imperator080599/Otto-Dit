@@ -142,7 +142,7 @@
           "codes": ["VID-01"],
           "enonce": "Le compte à rebours de conservation ne démarre que lorsque rapport signé ET notes de revue closes sont réunis.",
           "statut": "NON_OBSERVE",
-          "manque": "L'arithmétique (calculerConservationVideo) n'est unit-testée qu'après un constat hostile ; aucune station ne signe un rapport, ne clôt les notes de revue, puis n'observe le compteur réagir."
+          "manque": "Confirmé structurellement dur (R113, docs/BACKLOG_REPORTE.md, 2026-09-19, recherche après la fermeture de MAT-03) : compteurConservationVideo (sox.ts) exige report_date non nul sur l'engagement affiché — posé UNIQUEMENT par closeFile(), cliqué UNE fois dans tout scenario.ts, sur le dossier NEP (c.eng), jamais sur le dossier SOX (c.controleWalkthrough.engId) où ce compteur s'affiche (/eng/[id]/rcm/[cid]). Fermer cette ligne exigerait un second chantier de clôture complet sur le dossier SOX (obstacles au visa jamais exercés là), pas une lecture d'écran comme MAT-03/NOTIF-01 — reportée, pas forcée."
         }
       ]
     },

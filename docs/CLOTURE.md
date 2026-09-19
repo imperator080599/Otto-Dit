@@ -60,7 +60,7 @@ OBSERVÉ signifie observé en CONDUISANT le vrai parcours dans le monde semé �
   Preuve : Même station, étape 8 : suppression réelle via [data-supprimer-walkthrough] (motif requis), la mention de suppression tracée (qui, quand, motif) s'affiche à l'écran ([data-walkthrough-supprime]). SHA `e1c1a0f76d97c01aa17ef924739aa2814ff96933`.
 
 - **NON OBSERVÉ** (`VID-01`) — Le compte à rebours de conservation ne démarre que lorsque rapport signé ET notes de revue closes sont réunis.
-  Manque : L'arithmétique (calculerConservationVideo) n'est unit-testée qu'après un constat hostile ; aucune station ne signe un rapport, ne clôt les notes de revue, puis n'observe le compteur réagir.
+  Manque : Confirmé structurellement dur (R113, docs/BACKLOG_REPORTE.md, 2026-09-19, recherche après la fermeture de MAT-03) : compteurConservationVideo (sox.ts) exige report_date non nul sur l'engagement affiché — posé UNIQUEMENT par closeFile(), cliqué UNE fois dans tout scenario.ts, sur le dossier NEP (c.eng), jamais sur le dossier SOX (c.controleWalkthrough.engId) où ce compteur s'affiche (/eng/[id]/rcm/[cid]). Fermer cette ligne exigerait un second chantier de clôture complet sur le dossier SOX (obstacles au visa jamais exercés là), pas une lecture d'écran comme MAT-03/NOTIF-01 — reportée, pas forcée.
 
 ---
 

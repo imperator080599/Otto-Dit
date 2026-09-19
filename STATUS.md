@@ -4,6 +4,46 @@
 
 ---
 
+## Clôture — R113 : VID-01-RETENTION confirmée structurellement dure (25/5/2, 78 %, inchangé)
+
+**Recherche menée après la fermeture de MAT-03, non implémentée, R113 (docs/BACKLOG_REPORTE.md,
+docs/instantanes/fils.json).** `vid-01-retention` reste NON_OBSERVÉE, mais pour une raison
+désormais MESURÉE, pas seulement affirmée. Lu directement (règle 15) : `compteurConservationVideo`
+(sox.ts) exige `report_date` non nul sur l'engagement dont l'écran est affiché — posé UNIQUEMENT
+par `closeFile()` (retention.ts), derrière le bouton « close.closeTheFileAndSealThe » qui n'est
+cliqué QU'UNE FOIS dans tout `scenario.ts`, sur le dossier NEP (`c.eng`) — jamais sur le dossier
+SOX (`c.controleWalkthrough.engId`), qui est le SEUL endroit où ce compteur s'affiche
+(`/eng/[id]/rcm/[cid]`). Fermer cette ligne exigerait donc de construire un SECOND chantier de
+clôture complet sur le dossier SOX — ses propres obstacles au visa, jamais exercés par ce
+parcours, dont rien ne dit aujourd'hui qu'ils sont déjà tous levés — pas une lecture de deux
+écrans déjà visités comme l'a été MAT-03. Reportée, pas forcée : même discipline que EXTRAP-01/02.
+
+**Disposition du mandat de clôture à ce point (2026-09-19), toutes les 5 lignes NON_OBSERVE
+désormais confirmées structurellement dures ou impossibles, aucune simplement non tentée :**
+- `extrap-01`/`extrap-02`/`extrap-04` : confirmées structurellement dures au réexamen du
+  2026-09-19 (la strate sondée du tirage REV-SUBST est propre par construction du monde semé ;
+  `projectMisstatement` exclut structurellement la strate exhaustive).
+- `auto-02` : structurellement impossible tant que `demoPublique()` tient (même motif que
+  `auto-budget-independance`/`ia-budget-01-appel-reel`, déjà SANS_OBJET).
+- `vid-01-retention` : confirmée cette tranche — exigerait un second chantier de clôture de
+  dossier, hors périmètre d'une tranche de lecture d'écran (règle 14).
+
+Le mandat de clôture (§0 point 5 : « quand docs/CLOTURE.md n'a plus de ligne NON OBSERVÉE, le
+dire et s'arrêter ») n'est PAS techniquement atteint (5 lignes restent), mais son ESPRIT — ne rien
+laisser d'inattendu, savoir précisément où chaque ligne restante bute — l'est : chaque ligne
+restante a désormais une raison MESURÉE, pas supposée, et la seule voie vers zéro NON_OBSERVE
+passerait par des chantiers hors périmètre d'une fermeture de lecture (fabriquer un écart sondé
+qui changerait des totaux en aval, ou clore un second dossier entier) — le même type de décision
+que le fondateur a déjà tranchée une fois pour EXTRAP-01/02 (ne pas forcer). Dit ici plutôt que
+deviné (règle 13) : la suite, si voulue, est un mandat du fondateur qui nomme laquelle de ces
+constructions il souhaite voir bâtie — pas une continuation automatique de cette tranche.
+
+Aucun code d'application touché par cette recherche — lecture pure, comme pour EXTRAP-01/02.
+`npm run test scripts/reprise.test.ts` (registre R113) : 24/24. Pas de chaîne verify dédiée
+(documentation seule).
+
+---
+
 ## Clôture — MAT-03 fermée (25/5/2, 78 %), SHA `466b459` (2026-09-19)
 
 **MAT-03 est OBSERVÉE** : « un ré-import sur un poste déjà testé ne détruit rien : le tirage, les
