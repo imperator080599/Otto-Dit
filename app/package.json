@@ -52,7 +52,8 @@
     "screens:garde": "tsx scripts/screens/run.ts --garde",
     "reprise": "tsx scripts/reprise.ts",
     "semeur": "tsx scripts/semeur-vs-chemin.ts",
-    "semeur:figer": "tsx scripts/semeur-vs-chemin.ts --figer"
+    "semeur:figer": "tsx scripts/semeur-vs-chemin.ts --figer",
+    "cloture": "tsx scripts/cloture.ts"
   },
   "keywords": [],
   "author": "",
