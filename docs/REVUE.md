@@ -19,12 +19,12 @@ OBSERVÉE signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 **NON OBSERVÉE**
 Manque : non commencé — confirmé et généralisé par l'audit (AUD-22) : traduire() ne dénonce pas une variable manquante, le gabarit {nom} de proc.diagramme fuit à l'écran aujourd'hui.
 
-### AUD-16 — `npm run verify` n'est plus vert d'un tenant (#418, sommeils) (AUDIT — tâche(s) `P0-01`, `P0-02`, `P0-05`)
+### AUD-16 — `npm run verify` n'est plus vert d'un tenant (#418, sommeils) (AUDIT — tâche(s) `P0-04`, `P0-05`, `P0-06`, `P0-07`, `P0-08`)
 
 Épreuve : `set -o pipefail; timeout 7200 npm run verify | tee v.log; echo EXIT=$?` rend EXIT=0 ; docs/PARCOURS.json porte ≥ 320 conduites datées du jour ; corriger S-1 sans toucher la station la fait rougir, puis vert une fois la station corrigée.
 
 **NON OBSERVÉE**
-Manque : P0-01 livré et mesuré (7ab4700) : le marqueur d'hydratation fonctionne (0 repli de grâce sur 177 aller(), docs/CHASSE.md F60) mais #418 persiste (5 occurrences/run, classe /rcm/[cid]) — l'acceptation P0-01 seule n'est pas atteinte. P0-02 (avertissement compté, plafond figé) et P0-05 (traducteur, EPURE-01) restent à livrer avant que EXIT=0 soit atteignable ; le figé du parcours reste impossible tant que clics sort en échec.
+Manque : P0-01 livré et mesuré (7ab4700) : le marqueur d'hydratation fonctionne (0 repli de grâce sur 177 aller(), docs/CHASSE.md F60) mais #418 persiste (classe /rcm/[cid]). P0-02 livré et mesuré VERT (1666736, docs/CHASSE.md F61) : `npm run clics -- --figer` réussit (326 étapes, 0 échec, rail-astuce-hydratation : 4 admis au plafond, docs/PARCOURS.json figé à 325 stations) — deux revues hostiles indépendantes ont corrigé une course d'ordre (HIGH) et une lacune sur les propriétés CSS sans unité (MEDIUM) avant le push. `npm run clics` seul n'est cependant pas `npm run verify` : P0-05 (traducteur, EPURE-01) et les tâches P0-04/06/07/08 restent à livrer avant que `EXIT=0` sur la chaîne complète soit atteignable.
 
 ---
 

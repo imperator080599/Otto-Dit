@@ -1972,3 +1972,32 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   est disjoint de tout ce que ce dépôt touche** (aucune des cinq occurrences ne porte sur du
   contenu touché par P0-01/P0-03 : le harnais lui-même, jamais une page). Pas creusé plus loin ici
   — le chemin suivant est P0-02, pas une neuvième variante du marqueur.
+
+- **F61 — P0-02 mesuré VERT : `npm run clics -- --figer` réussit, la classification tient contre**
+  **trois runs mal-préparés qui la faisaient croire fausse.** (2026-09-20, Phase 2, P0-02 —
+  `set -o pipefail; timeout 1200 npm run clics -- --figer`, base fraîche, `db:reset && demo:seed`
+  juste avant, arbre du commit `1666736`.) **Résultat mesuré : 326 étapes conduites, 0 échec,
+  447 clics, `rail-astuce-hydratation : 4` avertissements admis (au plafond, jamais au-dessus),
+  `docs/PARCOURS.json` figé à 325 stations.** Trois runs précédents dans la même session avaient
+  fait croire, à tort, à une régression réelle (186 puis 300 étapes, dizaines d'échecs) : les deux
+  premiers manquaient `npm run demo:seed` (le `db:reset` seul ne pose PAS le papier REV-01 signé
+  ni le reste du monde `demo-seed.ts` — confondu une fois avec « base assez seedée » parce que son
+  propre journal dit aussi « seed: … »), le troisième réutilisait une base déjà JOUÉE après un
+  échec de build (§7, « des stations rougissent pour rien sur une base déjà jouée »). Les trois
+  ont été REJETÉS avant d'être crus (règle 18 : rejouer, jamais conclure sur un seul run douteux),
+  pas cachés — voir STATUS.md pour le détail. **Ce que la mesure VERTE confirme, cette fois avec
+  la bonne préparation** : les quatre occurrences `#418` connues (`rail-astuce`, jeton 87) portent
+  chacune, en plus, 9 à 20 divergences de bruit F11 (re-sérialisation CSS des raccourcis par le
+  CSSOM, `margin:6px 0` → `margin:6px 0px`) — jamais une seule divergence isolée, contrairement à
+  ce qu'un premier correctif (`ecarts.length === 1`, trouvé insuffisant EN MESURE, pas en lecture)
+  supposait. `classifierIncident` (src/lib/parcours.ts) classe désormais un incident quand TOUTES
+  ses divergences sont expliquées (motif connu OU bruit F11 structurel) ET qu'au moins une porte
+  le motif — jamais sur la première d'une liste, jamais un incident purement F11 sans motif connu.
+  Deux revues hostiles indépendantes ont ensuite trouvé, avant le push, un défaut HIGH réel (course
+  entre l'ordre de survenue des `pageerror` et l'ordre de résolution async de `sonde.incidents`,
+  scripts/clics/hydratation.ts — corrigé par réservation synchrone de l'index + `sonde.attendre()`)
+  et, convergentes, un défaut MEDIUM (le normaliseur CSS ne distinguait pas les propriétés SANS
+  UNITÉ — `opacity`, `z-index` — où un `0px` serait une vraie corruption, pas du bruit ; corrigé
+  par `PROPRIETES_LONGUEUR`, une liste fermée). **Chaîne complète, mesurée, pas supposée** : P0-01
+  (marqueur d'hydratation, vérifié fonctionner) → P0-03 (assertions vides retirées) → P0-02
+  (classification, deux revues hostiles, mesure verte) — Phase 0 continue avec P0-04.

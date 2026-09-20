@@ -4,6 +4,64 @@
 
 ---
 
+## Phase 2, Phase 0 — P0-02 livré et MESURÉ VERT (2026-09-20)
+
+**`npm run clics -- --figer` RÉUSSIT** (`set -o pipefail; timeout 1200 npm run clics -- --figer`,
+base fraîche, `db:reset && demo:seed` juste avant, arbre `1666736`) : **326 étapes conduites, 0
+échec, 447 clics, `rail-astuce-hydratation : 4` avertissements admis (au plafond, jamais
+au-dessus), `docs/PARCOURS.json` figé à 325 stations**. Voir `docs/CHASSE.md` F61 pour la mesure
+complète.
+
+**Trois runs, dans cette même session, ont d'abord fait croire à une régression réelle** —
+REJETÉS avant d'être crus, pas cachés (règle 18) : le premier et le deuxième manquaient
+`npm run demo:seed` (le `db:reset` seul ne pose pas le papier REV-01 signé ni le reste du monde
+`demo-seed.ts` — son propre journal affichant aussi « seed: … » a trompé une première lecture) ;
+le troisième réutilisait une base déjà JOUÉE après un échec de build à mi-chemin (§7 : « sur une
+base déjà jouée, des stations rougissent pour rien »). Un `EXIT=143` (« build… » qui ne termine
+jamais) est aussi apparu une fois — flake déjà documenté dans ce dépôt, résolu par une relance
+propre, pas creusé davantage (règle 30, proportionnalité).
+
+**Ce que la mesure verte confirme** : les quatre occurrences `#418` connues (`rail-astuce`, jeton
+87) portent chacune, EN PLUS, 9 à 20 divergences de bruit F11 (re-sérialisation CSS des
+raccourcis par le CSSOM navigateur — `margin:6px 0` devient `margin:6px 0px`, aucun changement de
+substance) — jamais une seule divergence isolée. Un premier correctif (`ecarts.length === 1`,
+posé pour fermer un défaut HIGH d'une première revue hostile — ne lire que `ecarts[0]`) classait
+donc ZÉRO incident en mesure réelle, rendant P0-02 sans effet malgré des tests unitaires verts.
+`classifierIncident` (`app/src/lib/parcours.ts`) classe désormais un incident quand TOUTES ses
+divergences sont expliquées (motif connu OU bruit F11 structurel, `estBruitCssRaccourci`) ET
+qu'au moins une porte le motif retenu — jamais sur la première d'une liste, jamais un incident
+purement F11 sans motif connu.
+
+**Deux revues hostiles indépendantes** (règle 30 : ce correctif touche un code de refus), lancées
+en parallèle avant le push, sur la version `ecarts.length === 1` :
+- **Finding HIGH (une voix, confirmée par lecture directe du code)** : `incidents.push(...)`
+  (`scripts/clics/hydratation.ts`) prenait son index APRÈS deux `await page.evaluate()` — l'ordre
+  de `incidents[]` dépendait de la durée du round-trip, jamais de l'ordre réel des `pageerror`.
+  Deux incidents #418 proches dans le temps auraient pu s'inverser par rapport à `pageerrors[]`
+  et faire classer un vrai défaut sous les divergences bénignes d'un autre incident. **Corrigé** :
+  l'index se réserve synchroniquement avant tout `await` ; `sonde.attendre()` (nouveau) est appelé
+  avant la fermeture du navigateur.
+- **Finding MEDIUM (DEUX voix indépendantes convergentes — « confirmé par réfutation », règle
+  30)** : le normaliseur CSS ne distinguait pas les propriétés SANS UNITÉ (`opacity`, `z-index`…)
+  où le navigateur n'ajoute jamais « px » — un vrai `opacity:0px` serait une corruption, pas du
+  bruit. **Corrigé** : `PROPRIETES_LONGUEUR`, une liste fermée de propriétés où `0 ≡ 0px` est
+  réellement vrai en CSS.
+
+Tests : 26 dans `parcours.test.ts` (dont 5 nouveaux : bruit F11 seul non classé, une divergence
+non expliquée noyée dans du bruit bloque tout, `opacity:0px` jamais masqué, deux incidents #418
+dans un run appariés correctement dans les deux ordres).
+
+**R133** (`docs/BACKLOG_REPORTE.md`) reste ouvert, inchangé par cette mesure : la preuve
+unitaire couvre exhaustivement la logique nouvelle, mais aucun mécanisme d'injection RÉELLE
+(un `throw` dans une page de test, comme le demande le plan maître) n'existe encore pour prouver
+le câblage de bout en bout par un défaut délibérément introduit. **R132** reste ouvert de même :
+`plafond` n'a toujours aucun ratchet automatisé, seulement la revue humaine du diff.
+
+**SHA à pousser** : ce tour (`d171a38`, `1666736`, plus ce commit de mesure/documentation) sur
+`main` et `claude/otto-session-resume-zimig9`. **SHA servi à confirmer** dans le tour suivant.
+
+---
+
 ## Phase 2, Phase 0 — P0-00 livré, P0-01/P0-03 mesurés (2026-09-20)
 
 **P0-00 — `docs/REVUE.md` engendré** (SHA `6261b22`) : 46 lignes (R-F1..22, S-1..6, AUD-01..18),

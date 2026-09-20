@@ -121,6 +121,10 @@
       "gabarit": false
     },
     {
+      "nom": "MAT-03 : avant le ré-import, REV-01 existe déjà, SIGNÉ (le papier réel dont la survie va être mesurée)",
+      "gabarit": false
+    },
+    {
       "nom": "import : ré-importer le grand livre SANS confirmer l’invalidation est refusé",
       "gabarit": false
     },
@@ -130,6 +134,14 @@
     },
     {
       "nom": "import : le FEC DÉFINITIF entre, invalidation confirmée",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : après le ré-import, AUCUN papier ne disparaît (le compte ne peut que monter ou tenir)",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : après le ré-import, REV-01 reste SIGNÉ — son visa ne disparaît pas",
       "gabarit": false
     },
     {
@@ -273,15 +285,15 @@
       "gabarit": false
     },
     {
-      "nom": "risque : aucun formulaire de questionnaire à l’écran",
-      "gabarit": false
-    },
-    {
       "nom": "risque : une réponse au questionnaire ne s’enregistre pas",
       "gabarit": false
     },
     {
       "nom": "risque : la réponse au questionnaire est REFUSÉE",
+      "gabarit": false
+    },
+    {
+      "nom": "risque : aucun formulaire de questionnaire à l’écran",
       "gabarit": false
     },
     {
@@ -349,6 +361,66 @@
       "gabarit": false
     },
     {
+      "nom": "détail du compte PAYROLL : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : importer engendre une ligne RÉELLE (rapprochement.ts réutilisé, pas dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement PAYROLL SANS explication est refusé (POP-02, même règle que REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : importer engendre une ligne RÉELLE (le MÊME atelier que PAYROLL, jamais dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement INVENTORY SANS explication est refusé (POP-02, même règle que PAYROLL/REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : importer engendre une ligne RÉELLE (le MÊME atelier que PAYROLL/INVENTORY, jamais dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement EQUITY SANS explication est refusé (POP-02, même règle que PAYROLL/INVENTORY/REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },
@@ -358,6 +430,10 @@
     },
     {
       "nom": "sondage : le tirage est déterministe, et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : le nouveau tirage (post ré-import) porte de vraies lignes sélectionnées",
       "gabarit": false
     },
     {
@@ -525,6 +601,30 @@
       "gabarit": false
     },
     {
+      "nom": "^R62 étape 1 — atteindre Mes travaux en ≤ [\\s\\S]* clic\\(s\\) depuis l’accueil$",
+      "gabarit": true
+    },
+    {
+      "nom": "^R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 \\(≤ [\\s\\S]*\\)$",
+      "gabarit": true
+    },
+    {
+      "nom": "R62 étape 3 — un chemin vers l’atelier existe depuis Mes travaux",
+      "gabarit": false
+    },
+    {
+      "nom": "^R62 étape 3a — atteindre l’atelier en ≤ [\\s\\S]* clic\\(s\\) cumulés depuis l’accueil$",
+      "gabarit": true
+    },
+    {
+      "nom": "R62 étape 3b — conclure une ligne d’échantillon",
+      "gabarit": false
+    },
+    {
+      "nom": "^R62 étape 3b — conclure une ligne d’échantillon en ≤ [\\s\\S]* clic\\(s\\) cumulés depuis l’accueil \\(≤ [\\s\\S]* lignes essayées\\)$",
+      "gabarit": true
+    },
+    {
       "nom": "étape 7 : le formulaire d’ajout de colonne est visible dès que la grille existe",
       "gabarit": false
     },
@@ -625,6 +725,66 @@
       "gabarit": false
     },
     {
+      "nom": "constat vs point d’action client : aucun point d’action PENDING à assigner ici",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : au moins un contact client existe pour assigner",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : assigner un propriétaire/échéance ne bloque pas, et le dossier ne bouge pas",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : le propriétaire assigné apparaît à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : aucun point d’action à relancer ici",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : relancer ne bloque pas",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : la dernière relance apparaît à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : le lien depuis l’analytique existe",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : la navigation atteint bien l’écran dédié",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : la couverture (100% des écritures actives) est affichée",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : les SEPT règles portent chacune leur disclosure de couverture",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : le lien depuis le dashboard existe",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : la navigation atteint bien l’écran dédié",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : le compte de papiers signés est affiché",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : un badge de statut (visa possible ou obstacles) est affiché",
+      "gabarit": false
+    },
+    {
       "nom": "portail : le client répond aux clarifications, et clôt sa demande",
       "gabarit": false
     },
@@ -677,6 +837,18 @@
       "gabarit": false
     },
     {
+      "nom": "EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "EXTRAP-03 : écarter un écart comme anomalie SANS preuve supplémentaire est refusé, en citant §13",
+      "gabarit": false
+    },
+    {
+      "nom": "EXTRAP-03 : écarté comme anomalie avec une preuve DISTINCTE — le compte d’anomalies écartées monte",
+      "gabarit": false
+    },
+    {
       "nom": "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
       "gabarit": false
     },
@@ -686,6 +858,14 @@
     },
     {
       "nom": "re-exécution : les contrôles en aveugle sont soumis depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : écart connu, écart projeté et écart total estimé sont TROIS libellés distincts à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "EXTRAP-04 : aucune projection ne s’affiche tant que la méthode du cabinet n’est pas posée",
       "gabarit": false
     },
     {
@@ -1109,6 +1289,102 @@
       "gabarit": false
     },
     {
+      "nom": "R61 kanban : au moins une colonne est vide (sinon la station n’éprouve rien)",
+      "gabarit": false
+    },
+    {
+      "nom": "R61 kanban : les colonnes vides portent des textes DISTINCTS (jamais le générique retiré)",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile « pièces reçues » a un lien réel vers le suivi de la demande (même page)",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile « pièces lues » a un lien réel vers /evidence",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile écarts a un lien réel vers /exceptions",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : cliquer la tuile écarts ouvre /exceptions",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile déviations a un lien réel vers /rcm",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : cliquer la tuile déviations ouvre /rcm",
+      "gabarit": false
+    },
+    {
+      "nom": "rcm : l’upload réel du listing client (fichier, pas un fixture serveur) importe des contrôles",
+      "gabarit": false
+    },
+    {
+      "nom": "rcm : le formulaire d’upload est offert quand aucun contrôle n’existe encore",
+      "gabarit": false
+    },
+    {
+      "nom": "population : la tuile « lignes signalées » a un lien réel (?view=flags)",
+      "gabarit": false
+    },
+    {
+      "nom": "balances-aux : les tuiles tiers apparus/disparus/déplacements ont un lien réel",
+      "gabarit": false
+    },
+    {
+      "nom": "imports : l’avertissement de ré-import mène à /sampling",
+      "gabarit": false
+    },
+    {
+      "nom": "imports : aucun avertissement de ré-import pour l’instant (rien à invalider)",
+      "gabarit": false
+    },
+    {
+      "nom": "matérialité : une nouvelle proposition se pose depuis l’écran, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la carte de matérialité apparaît dès la proposition posée",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la carte porte un lien réel vers /materiality",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la navigation aboutit sur L’OBJET RÉEL — le même identifiant, pas un autre",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-disparition : la proposition se VALIDE depuis l’écran atteint par la carte, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-disparition : l’élément validé a disparu de la file, sans tâche de nettoyage séparée",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : une carte à comparer existe, posée depuis l’écran, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : Karim (senior, can_sign=false sur ce dossier) ne voit rien compté comme sien",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : Léa (manager, can_sign=true), même dossier, voit un compte réel et différent",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : la proposition utilisée pour la comparaison est validée avant de continuer",
+      "gabarit": false
+    },
+    {
       "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
       "gabarit": false
     },
@@ -1139,6 +1415,146 @@
     {
       "nom": "^mes travaux : [\\s\\S]* ligne\\(s\\), et l’objet s’atteint en [\\s\\S]* clic\\(s\\) — le critère est de 3$",
       "gabarit": true
+    },
+    {
+      "nom": "walkthrough : le transcript déposé est accepté",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : l’analyse (rejeu) est acceptée et produit des écarts",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : le rejeu retrouve les écarts ENREGISTRÉS de la fixture (2)",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : chaque écart candidat porte le marqueur structurel « préparé par l’IA »",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : « en faire une tâche » ajoute une VRAIE ligne à la table des tâches",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : « poser une question » crée une demande BROUILLON (L2, rien ne part sans approbation)",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : les deux écarts sont désormais statués, aucun ne reste candidat",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : conclure un D&I sans AUCUNE tâche documentée est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : le dépôt manuel de la vidéo de walkthrough est accepté et rangé comme une pièce du dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : la tâche ajoutée porte le badge « documentée par la seule inquiry »",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : une tâche documentée par la seule inquiry refuse toujours de conclure",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-02 : les quatre facteurs de design vides refusent de conclure, la tâche seule ne suffit plus",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-02 : les quatre facteurs de design portent désormais leur conclusion écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-03 : aucune IUC déclarée refuse de conclure, les facteurs seuls ne suffisent pas",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-03 : une IUC utilisée sans preuve d’exactitude ni d’exhaustivité refuse, en nommant les deux volets",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01/02/03 tous levés : le D&I se conclut enfin, sans aucun refus",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : la suppression manuelle de la vidéo est tracée (qui, quand, motif) à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : un nouvel enregistrement se rattache après suppression, jamais un cul-de-sac",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-04 : la population dérivée ne se tire PAS tant qu’elle n’est pas rapprochée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-04 : rapprochée, la population ouvre enfin le formulaire de tirage",
+      "gabarit": false
+    },
+    {
+      "nom": "annexe §2.2 : la phrase « minima suggérés, jamais un verdict » est reprise sous la taille affichée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-04 : population dérivable non offerte — état inattendu du contrôle vierge",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-05 : un contrôle as_needed n’offre PAS de dérivation automatique, seulement la demande",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-05 : la demande de population est créée par UN clic, visible dans l’espace de demandes",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-05 : bouton de demande de population absent — état inattendu du contrôle vierge",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-07 : population > 200 SANS les trois jugements de cabinet refuse d’afficher une taille",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-07 : population quotidienne non dérivable — état inattendu du contrôle vierge",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-06 : réutiliser la pièce du walkthrough D&I comme inquiry OE est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-06 : la pièce du walkthrough D&I n’apparaît pas dans les pièces sélectionnables",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-06 : aucune ligne d’inquiry OE sur le contrôle déjà cyclé — état inattendu",
+      "gabarit": false
+    },
+    {
+      "nom": "§1.5 : un test de contrôles n’affiche jamais de projection, et le dit en une phrase (ISA 530 §A20)",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : le réglage du niveau d’automatisation est offert sur l’écran équipe",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : le niveau en vigueur et le plafond du pack sont affichés",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : dépasser le plafond du pack (L2 contre un plafond L1) est refusé, en nommant le plafond et le pack",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : un réglage qui respecte le plafond (L1) est accepté, et l’écran le montre en vigueur",
+      "gabarit": false
     },
     {
       "nom": "clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte",
@@ -1259,11 +1675,23 @@
       "gabarit": false
     },
     {
+      "nom": "MAT-03 : avant le ré-import, REV-01 existe déjà, SIGNÉ (le papier réel dont la survie va être mesurée)",
+      "gabarit": false
+    },
+    {
       "nom": "import : ré-importer le grand livre SANS confirmer l’invalidation est refusé",
       "gabarit": false
     },
     {
       "nom": "import : le FEC DÉFINITIF entre, invalidation confirmée",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : après le ré-import, AUCUN papier ne disparaît (le compte ne peut que monter ou tenir)",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : après le ré-import, REV-01 reste SIGNÉ — son visa ne disparaît pas",
       "gabarit": false
     },
     {
@@ -1443,6 +1871,66 @@
       "gabarit": false
     },
     {
+      "nom": "détail du compte PAYROLL : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : importer engendre une ligne RÉELLE (rapprochement.ts réutilisé, pas dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement PAYROLL SANS explication est refusé (POP-02, même règle que REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte PAYROLL : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : importer engendre une ligne RÉELLE (le MÊME atelier que PAYROLL, jamais dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement INVENTORY SANS explication est refusé (POP-02, même règle que PAYROLL/REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte INVENTORY : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : aucune demande encore — le bouton est offert",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : demander engendre une VRAIE demande — le lien remplace le bouton",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : importer engendre une ligne RÉELLE (le MÊME atelier que PAYROLL/INVENTORY, jamais dupliqué)",
+      "gabarit": false
+    },
+    {
+      "nom": "refus : conclure le rapprochement EQUITY SANS explication est refusé (POP-02, même règle que PAYROLL/INVENTORY/REVENUE)",
+      "gabarit": false
+    },
+    {
+      "nom": "détail du compte EQUITY : expliqué par écrit, le rapprochement se conclut",
+      "gabarit": false
+    },
+    {
       "nom": "sondage : les paramètres sont PROPOSÉS avec leur justification",
       "gabarit": false
     },
@@ -1452,6 +1940,10 @@
     },
     {
       "nom": "sondage : le tirage est déterministe, et il est fait",
+      "gabarit": false
+    },
+    {
+      "nom": "MAT-03 : le nouveau tirage (post ré-import) porte de vraies lignes sélectionnées",
       "gabarit": false
     },
     {
@@ -1603,6 +2095,22 @@
       "gabarit": false
     },
     {
+      "nom": "^R62 étape 1 — atteindre Mes travaux en ≤ [\\s\\S]* clic\\(s\\) depuis l’accueil$",
+      "gabarit": true
+    },
+    {
+      "nom": "^R62 étape 2 — comprendre ce qui empêche de signer, sans clic au-delà de l’étape 1 \\(≤ [\\s\\S]*\\)$",
+      "gabarit": true
+    },
+    {
+      "nom": "^R62 étape 3a — atteindre l’atelier en ≤ [\\s\\S]* clic\\(s\\) cumulés depuis l’accueil$",
+      "gabarit": true
+    },
+    {
+      "nom": "^R62 étape 3b — conclure une ligne d’échantillon en ≤ [\\s\\S]* clic\\(s\\) cumulés depuis l’accueil \\(≤ [\\s\\S]* lignes essayées\\)$",
+      "gabarit": true
+    },
+    {
       "nom": "étape 7 : le formulaire d’ajout de colonne est visible dès que la grille existe",
       "gabarit": false
     },
@@ -1679,6 +2187,46 @@
       "gabarit": false
     },
     {
+      "nom": "constat vs point d’action client : aucun point d’action PENDING à assigner ici",
+      "gabarit": false
+    },
+    {
+      "nom": "constat vs point d’action client : aucun point d’action à relancer ici",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : le lien depuis l’analytique existe",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : la navigation atteint bien l’écran dédié",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : la couverture (100% des écritures actives) est affichée",
+      "gabarit": false
+    },
+    {
+      "nom": "grand livre : les SEPT règles portent chacune leur disclosure de couverture",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : le lien depuis le dashboard existe",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : la navigation atteint bien l’écran dédié",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : le compte de papiers signés est affiché",
+      "gabarit": false
+    },
+    {
+      "nom": "comité : un badge de statut (visa possible ou obstacles) est affiché",
+      "gabarit": false
+    },
+    {
       "nom": "portail : le client répond aux clarifications, et clôt sa demande",
       "gabarit": false
     },
@@ -1727,11 +2275,27 @@
       "gabarit": false
     },
     {
+      "nom": "EXTRAP-03 : écarter un écart comme anomalie SANS preuve supplémentaire est refusé, en citant §13",
+      "gabarit": false
+    },
+    {
+      "nom": "EXTRAP-03 : écarté comme anomalie avec une preuve DISTINCTE — le compte d’anomalies écartées monte",
+      "gabarit": false
+    },
+    {
       "nom": "re-exécution : aucun sous-échantillon à tirer sur cet écran",
       "gabarit": false
     },
     {
       "nom": "re-exécution : les contrôles en aveugle sont soumis depuis l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "évaluation : écart connu, écart projeté et écart total estimé sont TROIS libellés distincts à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "EXTRAP-04 : aucune projection ne s’affiche tant que la méthode du cabinet n’est pas posée",
       "gabarit": false
     },
     {
@@ -2095,6 +2659,82 @@
       "gabarit": false
     },
     {
+      "nom": "R61 kanban : les colonnes vides portent des textes DISTINCTS (jamais le générique retiré)",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile « pièces reçues » a un lien réel vers le suivi de la demande (même page)",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : la tuile « pièces lues » a un lien réel vers /evidence",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : cliquer la tuile écarts ouvre /exceptions",
+      "gabarit": false
+    },
+    {
+      "nom": "dashboard : cliquer la tuile déviations ouvre /rcm",
+      "gabarit": false
+    },
+    {
+      "nom": "rcm : l’upload réel du listing client (fichier, pas un fixture serveur) importe des contrôles",
+      "gabarit": false
+    },
+    {
+      "nom": "population : la tuile « lignes signalées » a un lien réel (?view=flags)",
+      "gabarit": false
+    },
+    {
+      "nom": "balances-aux : les tuiles tiers apparus/disparus/déplacements ont un lien réel",
+      "gabarit": false
+    },
+    {
+      "nom": "imports : l’avertissement de ré-import mène à /sampling",
+      "gabarit": false
+    },
+    {
+      "nom": "matérialité : une nouvelle proposition se pose depuis l’écran, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la carte de matérialité apparaît dès la proposition posée",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la carte porte un lien réel vers /materiality",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-carte-id : la navigation aboutit sur L’OBJET RÉEL — le même identifiant, pas un autre",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-disparition : la proposition se VALIDE depuis l’écran atteint par la carte, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-disparition : l’élément validé a disparu de la file, sans tâche de nettoyage séparée",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : une carte à comparer existe, posée depuis l’écran, sans refus",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : Karim (senior, can_sign=false sur ce dossier) ne voit rien compté comme sien",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : Léa (manager, can_sign=true), même dossier, voit un compte réel et différent",
+      "gabarit": false
+    },
+    {
+      "nom": "notif-role : la proposition utilisée pour la comparaison est validée avant de continuer",
+      "gabarit": false
+    },
+    {
       "nom": "obstacles : le compte annoncé et les obstacles listés se recoupent",
       "gabarit": false
     },
@@ -2109,6 +2749,122 @@
     {
       "nom": "^mes travaux : [\\s\\S]* ligne\\(s\\), et l’objet s’atteint en [\\s\\S]* clic\\(s\\) — le critère est de 3$",
       "gabarit": true
+    },
+    {
+      "nom": "walkthrough : le transcript déposé est accepté",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : l’analyse (rejeu) est acceptée et produit des écarts",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : le rejeu retrouve les écarts ENREGISTRÉS de la fixture (2)",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : chaque écart candidat porte le marqueur structurel « préparé par l’IA »",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : « en faire une tâche » ajoute une VRAIE ligne à la table des tâches",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : « poser une question » crée une demande BROUILLON (L2, rien ne part sans approbation)",
+      "gabarit": false
+    },
+    {
+      "nom": "walkthrough : les deux écarts sont désormais statués, aucun ne reste candidat",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : conclure un D&I sans AUCUNE tâche documentée est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : le dépôt manuel de la vidéo de walkthrough est accepté et rangé comme une pièce du dossier",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : la tâche ajoutée porte le badge « documentée par la seule inquiry »",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01 : une tâche documentée par la seule inquiry refuse toujours de conclure",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-02 : les quatre facteurs de design vides refusent de conclure, la tâche seule ne suffit plus",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-02 : les quatre facteurs de design portent désormais leur conclusion écrite",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-03 : aucune IUC déclarée refuse de conclure, les facteurs seuls ne suffisent pas",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-03 : une IUC utilisée sans preuve d’exactitude ni d’exhaustivité refuse, en nommant les deux volets",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-01/02/03 tous levés : le D&I se conclut enfin, sans aucun refus",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : la suppression manuelle de la vidéo est tracée (qui, quand, motif) à l’écran",
+      "gabarit": false
+    },
+    {
+      "nom": "VID-01 : un nouvel enregistrement se rattache après suppression, jamais un cul-de-sac",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-04 : la population dérivée ne se tire PAS tant qu’elle n’est pas rapprochée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-04 : rapprochée, la population ouvre enfin le formulaire de tirage",
+      "gabarit": false
+    },
+    {
+      "nom": "annexe §2.2 : la phrase « minima suggérés, jamais un verdict » est reprise sous la taille affichée",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-05 : un contrôle as_needed n’offre PAS de dérivation automatique, seulement la demande",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-05 : la demande de population est créée par UN clic, visible dans l’espace de demandes",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-07 : population > 200 SANS les trois jugements de cabinet refuse d’afficher une taille",
+      "gabarit": false
+    },
+    {
+      "nom": "CTRL-06 : réutiliser la pièce du walkthrough D&I comme inquiry OE est refusé",
+      "gabarit": false
+    },
+    {
+      "nom": "§1.5 : un test de contrôles n’affiche jamais de projection, et le dit en une phrase (ISA 530 §A20)",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : le niveau en vigueur et le plafond du pack sont affichés",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : dépasser le plafond du pack (L2 contre un plafond L1) est refusé, en nommant le plafond et le pack",
+      "gabarit": false
+    },
+    {
+      "nom": "AUTO-01 : un réglage qui respecte le plafond (L1) est accepté, et l’écran le montre en vigueur",
+      "gabarit": false
     },
     {
       "nom": "clôture : le dossier se CLÔT et l’archive est scellée",
@@ -2136,22 +2892,30 @@
     "périmètre : aucun poste décidé à revoir",
     "risque : aucune assertion à arbitrer — la table du risque est VIDE",
     "risque : une seule valeur dans l’échelle — rien à arbitrer",
-    "risque : aucun formulaire de questionnaire à l’écran",
     "risque : une réponse au questionnaire ne s’enregistre pas",
     "risque : la réponse au questionnaire est REFUSÉE",
+    "risque : aucun formulaire de questionnaire à l’écran",
     "refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)",
     "refus : déplanifier un papier VISÉ sans motif écrit est refusé par le serveur (PROG-07)",
     "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
     "ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)",
     "refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)",
     "refus : aucune ligne avec une cellule non conforme à disposer — les refus TEST-03/TEST-04 n’ont pas pu être observés ici",
+    "R62 étape 3 — un chemin vers l’atelier existe depuis Mes travaux",
+    "R62 étape 3b — conclure une ligne d’échantillon",
     "étape 7, en lot : bouton absent alors que deux colonnes ajoutées de type facture existent",
     "atelier clavier : au moins deux lignes à parcourir",
     "atelier : Entrée ATTESTE la lecture ouverte — le clavier suffit à travailler une ligne",
     "atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer",
     "atelier : aucune ligne à grouper",
     "la boucle : les clarifications sont émises PUIS approuvées avant de partir",
+    "constat vs point d’action client : au moins un contact client existe pour assigner",
+    "constat vs point d’action client : assigner un propriétaire/échéance ne bloque pas, et le dossier ne bouge pas",
+    "constat vs point d’action client : le propriétaire assigné apparaît à l’écran",
+    "constat vs point d’action client : relancer ne bloque pas",
+    "constat vs point d’action client : la dernière relance apparaît à l’écran",
     "écarts : aucun écart ouvert à résoudre",
+    "EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier",
     "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
     "évaluation : aucun dépassement à répondre sur cet écran",
     "évaluation : déjà conclue",
@@ -2168,10 +2932,21 @@
     "suivi : la carte obstacles a un lien réel vers /obstacles",
     "kanban : au moins une carte est posée (le monde de démonstration porte des écarts)",
     "kanban : le geste de lot (rédiger la clarification) crée une VRAIE demande",
+    "R61 kanban : au moins une colonne est vide (sinon la station n’éprouve rien)",
+    "dashboard : la tuile écarts a un lien réel vers /exceptions",
+    "dashboard : la tuile déviations a un lien réel vers /rcm",
+    "rcm : le formulaire d’upload est offert quand aucun contrôle n’existe encore",
+    "imports : aucun avertissement de ré-import pour l’instant (rien à invalider)",
     "mes travaux : un papier existe pour y ancrer une note",
     "mes travaux : la conclusion du papier est annotable",
     "mes travaux : le clic droit ouvre la pose de note",
     "mes travaux : la note adressée APPARAÎT dans la liste de travail",
+    "CTRL-04 : population dérivable non offerte — état inattendu du contrôle vierge",
+    "CTRL-05 : bouton de demande de population absent — état inattendu du contrôle vierge",
+    "CTRL-07 : population quotidienne non dérivable — état inattendu du contrôle vierge",
+    "CTRL-06 : la pièce du walkthrough D&I n’apparaît pas dans les pièces sélectionnables",
+    "CTRL-06 : aucune ligne d’inquiry OE sur le contrôle déjà cyclé — état inattendu",
+    "AUTO-01 : le réglage du niveau d’automatisation est offert sur l’écran équipe",
     "clôture : tant qu’un obstacle subsiste, la clôture n’est pas offerte",
     "clôture : le dossier n’est PAS scellé à la fin du parcours"
   ]
