@@ -636,8 +636,8 @@ export async function conduire(
       dire('import : ré-importer le grand livre SANS confirmer l’invalidation est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
     } else {
-      dire('import : aucune sélection en aval, la confirmation n’est pas demandée', avecCase === 0,
-        'rien à invalider');
+      dire('import : aucune sélection en aval, la confirmation n’est pas demandée',
+        (await compte('form:has(input[name=confirm_invalidation])')) === 0, 'rien à invalider');
     }
 
     await aller(`${eng}/imports`);
@@ -2487,7 +2487,8 @@ export async function conduire(
       dire('la boucle : les clarifications sont émises PUIS approuvées avant de partir',
         envoyees > 0, `${envoyees} demande(s) de clarification envoyée(s)`);
     } else {
-      dire('la boucle : aucun écart ouvert ne réclame de clarification', boutonClarifications === 0, 'rien à émettre');
+      dire('la boucle : aucun écart ouvert ne réclame de clarification',
+        (await compte(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`)) === 0, 'rien à émettre');
     }
   });
 
@@ -2921,7 +2922,8 @@ export async function conduire(
          (défaut n°22). On ne prétend pas que la re-exécution a eu lieu : on dit
          ce qu'on a VU — l'écran ne l'offre pas ici. */
       dire('re-exécution : aucun sous-échantillon à tirer sur cet écran',
-        boutonTirage === 0, 'le bouton n’est pas offert — rien n’a été re-performé à cette station');
+        (await compte(`button:has-text("${L('test.drawSubsample')}")`)) === 0,
+        'le bouton n’est pas offert — rien n’a été re-performé à cette station');
     }
     /* La re-exécution est EN AVEUGLE : le résultat machine reste caché tant que
        le vérificateur n'a pas soumis le sien. On lit donc les valeurs dans le
@@ -3006,7 +3008,7 @@ export async function conduire(
         !refus(p), refus(p) ?? 'réponse enregistrée');
     } else {
       dire('évaluation : aucun dépassement à répondre sur cet écran',
-        fRepPresent === 0, 'le formulaire de réponse n’est pas offert — rien n’a été statué à cette station');
+        (await fRep.count()) === 0, 'le formulaire de réponse n’est pas offert — rien n’a été statué à cette station');
     }
     const fConc = p.locator('form:has(textarea[name=basis])');
     if (await fConc.count()) {
@@ -4085,7 +4087,7 @@ export async function conduire(
         lienEchantillon, lienEchantillon ? 'lien présent' : 'lien absent dans l’avertissement');
     } else {
       dire('imports : aucun avertissement de ré-import pour l’instant (rien à invalider)',
-        avertissementPresent === 0, '0 échantillon affecté');
+        (await p.locator('.callout.warn').count()) === 0, '0 échantillon affecté');
     }
   });
 

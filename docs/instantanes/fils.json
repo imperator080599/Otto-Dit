@@ -685,6 +685,12 @@
       "etat": "ouvert — registre P3 de l'audit (R3-10) : attribuerAction exportée jamais importée ; VuePoste.boucle calculé jamais rendu.",
       "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
       "note": "non corrigé — même famille qu'AUD-19 (/loop orphelin), un calcul sans chemin de lecture ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R131",
+      "etat": "ouvert — P0-01/P0-03 (marqueur d'hydratation, retrait des assertions vides du parcours) n'ont pas ajouté de lecture /api/sante le jour de leur livraison (règle 22), trouvé par la revue hostile de la tranche.",
+      "depuis": "2026-09-20 (revue hostile, Phase 0 P0-01/P0-03)",
+      "note": "non corrigé, délibérément — les deux tâches ne touchent que le harnais de test, aucun état de production pertinent à surveiller n'a été identifié ; voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

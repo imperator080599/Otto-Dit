@@ -2193,3 +2193,15 @@ aucune phase, mais ne sont pas oubliés (règle 23).
 
 - **R130 — `attribuerAction` exportée jamais importée ; `VuePoste.boucle` calculé jamais rendu,
   registre P3 R3-10.** Même famille qu'AUD-19 (`/loop` orphelin) — un calcul sans chemin de lecture.
+
+- **R131 — P0-01/P0-03 (Phase 2, marqueur d'hydratation et retrait des assertions vides du
+  parcours) n'ont pas ajouté de lecture `/api/sante` le jour de leur livraison, contrairement à la
+  règle 22.** Trouvé par la revue hostile de la tranche (2026-09-20). Les deux tâches ne touchent
+  que le harnais de test (`scripts/clics/scenario.ts`, `src/app/hydrate-marqueur.tsx`,
+  `src/lib/parcours.ts`) — aucun état de PRODUCTION nouveau à surveiller n'existe encore pour
+  elles (le marqueur d'hydratation est un fait du navigateur au moment du clic, pas une donnée en
+  base ; l'absence d'assertion vide est une propriété du CODE du harnais, pas de l'état d'un
+  dossier). Reporté plutôt que forcée une lecture qui ne rougirait sur rien de réel : à reprendre
+  si une session future trouve un état de production pertinent à surveiller pour l'un des deux
+  (par exemple, si le plafond du cliquet `direVide`/`revue-plafond.json` devait un jour être lu
+  par `/api/sante`).
