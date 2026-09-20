@@ -88,6 +88,24 @@ export function jamaisAtteintes(fige: Station[], conduites: string[]): Station[]
 }
 
 /**
+ * P0-03 (AUD-17). Une assertion `dire(nom, true, …)` ne teste RIEN : son
+ * deuxième argument est le littéral JavaScript `true`, jamais un état lu à
+ * l'écran — elle passe même quand le produit est cassé. Cette garde dénonce
+ * chaque site, par le nom de la station qui le porte, pour que `npm run
+ * parcours` (donc `npm run verify`) refuse d'en laisser un s'introduire.
+ * N'attrape QUE le littéral `true` — un booléen calculé (`enAttente === 0`,
+ * `envoyees > 0`) n'est jamais dénoncé, quelle que soit sa valeur au moment
+ * du run : c'est la forme du code qui est jugée, pas le résultat.
+ */
+export function direVide(code: string): string[] {
+  const out: string[] = [];
+  for (const m of code.matchAll(/\bdire\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1\s*,\s*true\s*,/gs)) {
+    out.push(denoter(m[2]).trim());
+  }
+  return out;
+}
+
+/**
  * L'empreinte des noms CONDUITS, à figer. Un nom qui correspond exactement à
  * une station littérale se fige tel quel ; sinon, et seulement sinon, on
  * cherche le gabarit qui l'accepte. L'ordre compte : l'inverse laisserait un

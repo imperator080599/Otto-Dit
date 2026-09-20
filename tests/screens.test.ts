@@ -25,6 +25,8 @@ import path from 'node:path';
 import { routes, auditeur, baseSemee, parametres } from '../app/scripts/screens/routes';
 import { closeDb } from '../app/src/lib/db/client';
 import { balayer, causeServeur, erreursServeur, ServeurTombe } from '../app/scripts/screens/sweep';
+import { chromium } from 'playwright';
+import { cheminChromium } from '../app/scripts/lib/portable.mjs';
 
 const PORT = Number(process.env.SCREENS_TEST_PORT ?? 3299);
 const BASE = `http://localhost:${PORT}`;
@@ -187,4 +189,32 @@ describe('tous les écrans rendent', () => {
        laissé six formulaires inertes en production une tranche entière. */
     expect(erreursServeur(journal.join('')), 'exceptions côté serveur pendant le balayage').toEqual([]);
   }, 900000);
+
+  /* P0-01 (AUD-16, hypothèse H du #418) : le marqueur d'hydratation
+     (`src/app/hydrate-marqueur.tsx`) n'existe PAS dans le HTML servi par le
+     serveur — il n'est posé qu'après le montage React, côté client, jamais
+     rendu par le composant (il retourne `null`). Naviguer avant qu'il
+     n'apparaisse est précisément la course qui produit le #418 ; ce test
+     prouve les deux bouts : absent au rendu serveur, présent après
+     hydratation. CAS CONNU MAUVAIS (règle 17) : sans `useEffect` dans
+     `MarqueurHydratation`, ce test échouerait sur son second `expect` (jamais
+     posé) — vérifié en le retirant temporairement pendant l'écriture de ce
+     test, avant de le restaurer. */
+  it('le marqueur d’hydratation est absent du HTML serveur et présent après hydratation', async () => {
+    const html = await (await fetch(BASE + '/', { signal: AbortSignal.timeout(5000) })).text();
+    expect(html).not.toContain('data-hydrated');
+
+    const navigateur = await chromium.launch({ executablePath: cheminChromium() });
+    try {
+      const page = await navigateur.newPage();
+      await page.goto(BASE + '/', { waitUntil: 'load' });
+      const hydrate = await page
+        .waitForFunction(() => document.documentElement.dataset.hydrated === '1', undefined, { timeout: 8000 })
+        .then(() => true)
+        .catch(() => false);
+      expect(hydrate, 'html[data-hydrated="1"] jamais posé après le chargement').toBe(true);
+    } finally {
+      await navigateur.close();
+    }
+  }, 60000);
 });

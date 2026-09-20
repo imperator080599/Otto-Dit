@@ -6,6 +6,7 @@ import { locale, traduire } from '@/lib/i18n';
 import { FournisseurLocale } from '@/lib/i18n/client';
 import { FournisseurReplis } from './replis-contexte';
 import { lireReplis } from '@/lib/services/replis';
+import { MarqueurHydratation } from './hydrate-marqueur';
 
 /* LE TITRE D'ONGLET SUIT LA LANGUE SERVIE. `metadata` est statique ; c'est
    `generateMetadata` qui peut lire la locale du cabinet. Un titre figé en
@@ -29,6 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={l}>
       <body>
+        <MarqueurHydratation />
         <FournisseurLocale locale={l}>
         <FournisseurReplis replis={replis} connecte={Boolean(user)}>
         <div className="topbar">

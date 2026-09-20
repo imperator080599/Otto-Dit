@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { stationsDe, disparues, type Fige, type Station } from '../src/lib/parcours';
+import { stationsDe, disparues, direVide, type Fige, type Station } from '../src/lib/parcours';
 
 // npm run parcours [-- --figer] : LA GARDE STATIQUE DU PARCOURS (défaut n°22).
 //
@@ -17,7 +17,19 @@ const ici = path.dirname(fileURLToPath(import.meta.url));
 const SCENARIO = path.join(ici, 'clics', 'scenario.ts');
 const FIGE = path.join(ici, '..', '..', 'docs', 'PARCOURS.json');
 
-const courant = stationsDe(fs.readFileSync(SCENARIO, 'utf8'));
+const CODE_SCENARIO = fs.readFileSync(SCENARIO, 'utf8');
+const courant = stationsDe(CODE_SCENARIO);
+
+/* P0-03 (AUD-17) : une assertion `dire(nom, true, …)` ne teste rien — elle
+   bloque avant `--figer` comme après, un plafond figé n'a rien à voir avec
+   une forme interdite en toutes circonstances. */
+const vides = direVide(CODE_SCENARIO);
+if (vides.length) {
+  console.error(`${vides.length} assertion(s) \`dire(nom, true, …)\` vide(s) de sens — refusé :`);
+  for (const nom of vides) console.error(`  · ${nom}`);
+  console.error('\nChaque assertion doit porter un prédicat qui peut être faux (`compte === 0`, `envoyees > 0`…).');
+  process.exit(1);
+}
 
 if (process.argv.includes('--figer')) {
   /* LE FIGÉ STATIQUE NE RÉÉCRIT QUE LES DÉCLARÉES. Les conduites ET la liste

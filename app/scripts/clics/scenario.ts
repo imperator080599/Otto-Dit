@@ -125,28 +125,35 @@ export async function conduire(
      strict et ne peut pas devenir un faux vert — mais il peut rougir pour un
      mot présent ailleurs dans le même formulaire. Dit ici plutôt que supposé. */
   const compteAbsent = (sel: string, cle: CleLibelle) => p.locator(sel, { hasText: R(cle) }).count();
-  /* `load` ne suffit PAS : l'hydratation et la fin du flux RSC arrivent
-     APRÈS, et naviguer à cet instant coupe le flux — l'erreur d'hydratation
-     (#418) part alors sur la page SUIVANTE, mal étiquetée (fil n°7 de
-     STATUS.md). On attend le silence réseau, comme après une action. */
-  const aller = async (url: string) => {
-    await p.goto(url, { waitUntil: 'load' });
-    /* LE DÉPASSEMENT SE DIT, IL NE SE MASQUE PAS. L'ancien `.catch(() =>
-       undefined)` avalait le cas « le réseau ne se calme jamais en 8 s » —
-       et on naviguait ensuite sur un flux encore ouvert : c'est le mécanisme
-       le plus probable des #418 erratiques du fil n°7 (l'exception coupée
-       s'étiquette sur la page SUIVANTE). Quand ça arrive, on le journalise
-       et on accorde une grâce fixe avant de continuer. */
-    const calme = await p.waitForLoadState('networkidle', { timeout: 8000 })
-      .then(() => true).catch(() => false);
-    if (!calme) {
-      console.log(`  (réseau jamais calme sur ${url} — grâce de 1500 ms)`);
+  /* P0-01 (AUD-16, hypothèse H du #418 ÉPROUVÉE). `load` ne suffit PAS :
+     l'hydratation arrive APRÈS, et naviguer à cet instant coupe le flux —
+     l'erreur d'hydratation (#418) part alors sur la page SUIVANTE, mal
+     étiquetée (fil n°7 de STATUS.md). On n'attend plus une grâce fixe : on
+     attend le FAIT — `html[data-hydrated="1"]`, posé par
+     `src/app/hydrate-marqueur.tsx` une fois React monté côté client. Effacé
+     avant chaque `goto` pour qu'une navigation qui ne remonterait pas (même
+     URL, cas dégénéré) ne lise pas un marqueur laissé par la page
+     précédente. */
+  const attendreHydratation = async (contexte: string, delaiMs = 8000): Promise<void> => {
+    const hydrate = await p
+      .waitForFunction(() => document.documentElement.dataset.hydrated === '1', undefined, { timeout: delaiMs })
+      .then(() => true)
+      .catch(() => false);
+    if (!hydrate) {
+      console.log(`  (marqueur d'hydratation absent après ${delaiMs} ms sur ${contexte} — grâce de 1500 ms)`);
       await p.waitForTimeout(1500);
     }
+  };
+  const aller = async (url: string) => {
+    await p.evaluate(() => { delete document.documentElement.dataset.hydrated; }).catch(() => undefined);
+    await p.goto(url, { waitUntil: 'load' });
+    await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => undefined);
+    await attendreHydratation(url);
   };
   const cliquer = async (sel: string, attente = 2000) => {
     await p.locator(sel).first().click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await attendreHydratation(sel, 4000);
     await p.waitForTimeout(attente);
   };
   /* SOUMETTRE, PUIS ATTENDRE QUE L'ACTION AIT VRAIMENT FINI.
@@ -183,6 +190,7 @@ export async function conduire(
   const soumettre = async (bouton: Locator, apres = 600) => {
     await bouton.click();
     await p.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    await attendreHydratation('soumettre()', 4000);
     await p.waitForTimeout(apres);
   };
 
@@ -284,7 +292,7 @@ export async function conduire(
     if (p.url().includes('/acceptance')) {
       engNeuf = p.url().match(/\/eng\/([^/]+)/)![1];
       dire('création : le dossier créé s’ouvre sur son acceptation — donc il est ATTEIGNABLE',
-        true, engNeuf);
+        p.url().includes('/acceptance'), engNeuf);
       return;
     }
     /* REJOUABLE : la règle du doublon refuse la seconde exécution, à raison. Le
@@ -376,7 +384,8 @@ export async function conduire(
        assertions ont été conduites (revue hostile n°4). Le refus du doublon
        est une règle : il se vérifie sous son propre nom. */
     if (motif && /existe déjà|already exists/i.test(motif)) {
-      dire('création : rejeu — le client de nuit existe déjà, et le formulaire le dit', true, motif);
+      dire('création : rejeu — le client de nuit existe déjà, et le formulaire le dit',
+        /existe déjà|already exists/i.test(motif), motif);
       return;
     }
     const ok = p.url().includes('/acceptance') && (await compte('[data-classe="eip"]')) === 1;
@@ -396,7 +405,8 @@ export async function conduire(
     await cliquer(`form button:has-text("${L('nm.creer')}")`, 2500);
     const motif = refus(p);
     if (motif && /chevauche|overlap|existe déjà|already exists/i.test(motif)) {
-      dire('création : rejeu — l’exercice suivant existe déjà, et le formulaire le dit', true, motif);
+      dire('création : rejeu — l’exercice suivant existe déjà, et le formulaire le dit',
+        /chevauche|overlap|existe déjà|already exists/i.test(motif), motif);
       return;
     }
     const lien = p.locator('[data-n1]');
@@ -486,8 +496,8 @@ export async function conduire(
       dire('acceptation : décider AVEC motif et critères complets est accepté',
         !refus(p) && R('acc.accepted').test(await texte()), refus(p) ?? 'acceptée');
     } else {
-      dire('acceptation : décision déjà prise (rejeu)', true,
-        (await texte()).match(/(acceptée|refusée)[^\n]{0,60}/i)?.[0] ?? '');
+      const etat = (await texte()).match(/(acceptée|refusée)[^\n]{0,60}/i);
+      dire('acceptation : décision déjà prise (rejeu)', etat !== null, etat?.[0] ?? 'aucun état trouvé');
     }
 
     /* Le jalon DÉRIVÉ ne se refuse pas : il ne s'OFFRE pas. Une action
@@ -626,7 +636,7 @@ export async function conduire(
       dire('import : ré-importer le grand livre SANS confirmer l’invalidation est refusé',
         Boolean(refus(p)), refus(p) ?? 'passé — défaut');
     } else {
-      dire('import : aucune sélection en aval, la confirmation n’est pas demandée', true,
+      dire('import : aucune sélection en aval, la confirmation n’est pas demandée', avecCase === 0,
         'rien à invalider');
     }
 
@@ -1745,8 +1755,10 @@ export async function conduire(
   await station('demande au client', async () => {
     await devenir(c.preparateur.id);
     const envoyees = await approuverToutes();
+    await aller(`${eng}/requests`);
+    const restantes = await compte(`button:has-text("${L('req.approveAndSendL2')}")`);
     dire('demande : rien ne part au client sans qu’une personne l’approuve',
-      true, `${envoyees} demande(s) approuvée(s) et envoyée(s)`);
+      restantes === 0, `${envoyees} demande(s) approuvée(s) et envoyée(s), ${restantes} restante(s) sans approbation`);
   });
 
   // ── 10. PORTAIL CLIENT : déposer les pièces, répondre aux explications
@@ -1880,7 +1892,7 @@ export async function conduire(
     }
     if (atteste > 0) {
       dire('atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule',
-        true, `${atteste} attestation(s), sans recharger l’écran`);
+        atteste > 0, `${atteste} attestation(s), sans recharger l’écran`);
     } else {
       const badgesAmber = await compte('.atelier-liste .badge.amber') + await compte('h2 .badge.amber');
       dire('atelier : rien à attester ici (échelons déterministes), et AUCUN badge ne prétend le contraire',
@@ -2387,7 +2399,7 @@ export async function conduire(
     const enAttente = await compte(`.atelier form:has(button:has-text("${L('atl.attester')}"))`);
     if (enAttente === 0) {
       dire('atelier clavier : aucune lecture en attente ICI — Entrée est éprouvée par `npm run mesure:testing`',
-        true, 'monde du parcours : pièces lues par échelons déterministes, rien à attester');
+        enAttente === 0, 'monde du parcours : pièces lues par échelons déterministes, rien à attester');
       return;
     }
     await p.keyboard.press('Enter');
@@ -2402,7 +2414,8 @@ export async function conduire(
     await aller(`${eng}/testing`);
     const ligneEcart = p.locator('.atelier-liste tbody tr:has(.badge.red)').first();
     if (!(await ligneEcart.count())) {
-      dire('atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer', true, 'rien à suivre');
+      dire('atelier : aucun écart au tirage — l’aller-retour n’a rien à montrer',
+        (await ligneEcart.count()) === 0, 'rien à suivre');
       return;
     }
     await ligneEcart.click();
@@ -2439,7 +2452,7 @@ export async function conduire(
     await aller(`${eng}/testing`);
     const cases = p.locator('.atelier-liste tbody input[type=checkbox]');
     if (!(await cases.count())) {
-      dire('atelier : aucune ligne à grouper', true, 'tirage vide');
+      dire('atelier : aucune ligne à grouper', (await cases.count()) === 0, 'tirage vide');
       return;
     }
     await cases.first().check();
@@ -2467,13 +2480,14 @@ export async function conduire(
   await station('la boucle : émettre les clarifications', async () => {
     await devenir(c.preparateur.id);
     await aller(`${eng}/loop`);
-    if (await compte(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`)) {
+    const boutonClarifications = await compte(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`);
+    if (boutonClarifications > 0) {
       await cliquer(`button:has-text("${L('loop.issueTheClarificationsOwedOnOpen')}")`, 6000);
       const envoyees = await approuverToutes();
       dire('la boucle : les clarifications sont émises PUIS approuvées avant de partir',
-        true, `${envoyees} demande(s) de clarification envoyée(s)`);
+        envoyees > 0, `${envoyees} demande(s) de clarification envoyée(s)`);
     } else {
-      dire('la boucle : aucun écart ouvert ne réclame de clarification', true, 'rien à émettre');
+      dire('la boucle : aucun écart ouvert ne réclame de clarification', boutonClarifications === 0, 'rien à émettre');
     }
   });
 
@@ -2499,7 +2513,7 @@ export async function conduire(
       .filter({ has: p.locator('td:nth-child(3) span.badge:has-text("pending")') });
     if (!(await lignePending.count())) {
       dire('constat vs point d’action client : aucun point d’action PENDING à assigner ici',
-        true, 'rien à assigner');
+        (await lignePending.count()) === 0, 'rien à assigner');
       return;
     }
     const f = lignePending.first().locator(`form:has(button:has-text("${L('exc.assigner')}"))`);
@@ -2542,7 +2556,7 @@ export async function conduire(
     const f = p.locator(`form:has(button:has-text("${L('exc.relancer')}"))`).first();
     if (!(await f.count())) {
       dire('constat vs point d’action client : aucun point d’action à relancer ici',
-        true, 'rien à relancer');
+        (await f.count()) === 0, 'rien à relancer');
       return;
     }
     await soumettre(f.locator(`button:has-text("${L('exc.relancer')}")`), 2000);
@@ -2622,7 +2636,7 @@ export async function conduire(
       }
     }
     dire('portail : le client répond aux clarifications, et clôt sa demande',
-      true, `${repondu} réponse(s)`);
+      repondu > 0, `${repondu} réponse(s)`);
   });
 
   // ── 13bis. TESTING, SECOND PASSAGE : les pièces arrivées ENTRE-TEMPS
@@ -2727,7 +2741,7 @@ export async function conduire(
     const f = p.locator(`form:has(button:has-text("${L('col.resolve')}"))`).first();
     if (await f.count()) await deplier(f);
     if (!(await f.count())) {
-      dire('écarts : aucun écart ouvert à résoudre', true, 'rien à disposer');
+      dire('écarts : aucun écart ouvert à résoudre', (await f.count()) === 0, 'rien à disposer');
       return;
     }
     /* CE QUE LA RÈGLE REFUSE VRAIMENT — et où le navigateur s'interpose.
@@ -2840,7 +2854,7 @@ export async function conduire(
     await aller(`${eng}/exceptions`);
     const forme = p.locator('form:has(input[name=misstatement_id])').first();
     if (!(await forme.count())) {
-      dire('EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier', true,
+      dire('EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier', (await forme.count()) === 0,
         'aucune ligne de misstatement (kind ≠ projected, non déjà écartée) — rien à disposer ici');
       return;
     }
@@ -2896,7 +2910,8 @@ export async function conduire(
   await station('re-exécution et évaluation', async () => {
     await devenir(c.reviewer.id);
     await aller(`${eng}/testing`);
-    if (await compte(`button:has-text("${L('test.drawSubsample')}")`)) {
+    const boutonTirage = await compte(`button:has-text("${L('test.drawSubsample')}")`);
+    if (boutonTirage > 0) {
       await deplier(p.locator(`button:has-text("${L('test.drawSubsample')}")`).first());
       await cliquer(`button:has-text("${L('test.drawSubsample')}")`, 5000);
       dire('re-exécution : un sous-échantillon est tiré pour re-performer en aveugle',
@@ -2906,7 +2921,7 @@ export async function conduire(
          (défaut n°22). On ne prétend pas que la re-exécution a eu lieu : on dit
          ce qu'on a VU — l'écran ne l'offre pas ici. */
       dire('re-exécution : aucun sous-échantillon à tirer sur cet écran',
-        true, 'le bouton n’est pas offert — rien n’a été re-performé à cette station');
+        boutonTirage === 0, 'le bouton n’est pas offert — rien n’a été re-performé à cette station');
     }
     /* La re-exécution est EN AVEUGLE : le résultat machine reste caché tant que
        le vérificateur n'a pas soumis le sien. On lit donc les valeurs dans le
@@ -2961,13 +2976,14 @@ export async function conduire(
     dire('évaluation : écart connu, écart projeté et écart total estimé sont TROIS libellés distincts à l’écran',
       kpiPresent, kpiPresent ? 'les trois libellés KPI sont affichés' : 'au moins un des trois libellés KPI manque');
     const methodeNonVerifieeAffichee = R('test.extrapolationMethodNotVerified').test(tKpi);
-    /* Toujours VRAI (règle 22 appliquée à l'inverse : un `if` sans `else` ne
-       dit rien) — cette station ne force personne à tenir la branche
-       « méthode non vérifiée », elle DIT laquelle des deux le monde semé
-       tient réellement à l'instant du clic, sans jamais transformer une
-       observation honnête en échec de parcours. */
+    /* Le prédicat n'est PAS « toujours vrai » (règle 22 appliquée à l'inverse :
+       un `if` sans `else` ne dit rien) — cette station ne force personne à
+       tenir la branche « méthode non vérifiée », elle DIT laquelle des deux le
+       monde semé tient réellement à l'instant du clic ; mais elle rougit si le
+       bloc KPI lui-même (`kpiPresent`, ci-dessus) n'a pas rendu, ce qui rend
+       l'observation honnête ET falsifiable au lieu de vacuously vraie. */
     dire('EXTRAP-04 : aucune projection ne s’affiche tant que la méthode du cabinet n’est pas posée',
-      true,
+      kpiPresent,
       methodeNonVerifieeAffichee
         ? 'message « paramètre non vérifié » affiché à la place du montant projeté — la suppression est VUE'
         : 'le monde semé actuel ne tient pas la branche « méthode non vérifiée » à cette station — non observée ici');
@@ -2976,7 +2992,8 @@ export async function conduire(
        conclusion est refusée par le service, et rien dans l'application ne
        permettait de l'écrire. */
     const fRep = p.locator('form:has(select[name=kind]):has(input[name=rationale])');
-    if (await fRep.count()) {
+    const fRepPresent = await fRep.count();
+    if (fRepPresent > 0) {
       await fRep.locator('select[name=kind]').selectOption('revise_strategy');
       await fRep.locator('input[name=rationale]').fill(
         'Les anomalies relevées dépassent l’anomalie tolérable : l’échantillon ne fournit plus '
@@ -2989,7 +3006,7 @@ export async function conduire(
         !refus(p), refus(p) ?? 'réponse enregistrée');
     } else {
       dire('évaluation : aucun dépassement à répondre sur cet écran',
-        true, 'le formulaire de réponse n’est pas offert — rien n’a été statué à cette station');
+        fRepPresent === 0, 'le formulaire de réponse n’est pas offert — rien n’a été statué à cette station');
     }
     const fConc = p.locator('form:has(textarea[name=basis])');
     if (await fConc.count()) {
@@ -3003,7 +3020,7 @@ export async function conduire(
       dire('évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)',
         !refus(p), refus(p) ?? 'conclusion enregistrée');
     } else {
-      dire('évaluation : déjà conclue', true, 'conclusion présente');
+      dire('évaluation : déjà conclue', (await fConc.count()) === 0, 'conclusion présente');
     }
   });
 
@@ -3943,7 +3960,8 @@ export async function conduire(
       dire('kanban : le geste de lot (rédiger la clarification) crée une VRAIE demande',
         /\/requests\//.test(p.url()), p.url());
     } else {
-      dire('kanban : aucun écart ouvert à rédiger en lot pour l’instant (colonne vide)', true, '0 écart ouvert');
+      dire('kanban : aucun écart ouvert à rédiger en lot pour l’instant (colonne vide)',
+        (await boutonLot.count()) === 0, '0 écart ouvert');
     }
   });
 
@@ -4066,7 +4084,8 @@ export async function conduire(
       dire('imports : l’avertissement de ré-import mène à /sampling',
         lienEchantillon, lienEchantillon ? 'lien présent' : 'lien absent dans l’avertissement');
     } else {
-      dire('imports : aucun avertissement de ré-import pour l’instant (rien à invalider)', true, '0 échantillon affecté');
+      dire('imports : aucun avertissement de ré-import pour l’instant (rien à invalider)',
+        avertissementPresent === 0, '0 échantillon affecté');
     }
   });
 
