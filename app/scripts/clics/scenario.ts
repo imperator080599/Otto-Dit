@@ -2618,9 +2618,11 @@ export async function conduire(
       (els) => els.map((e) => e.getAttribute('href'))
         .filter((h): h is string => typeof h === 'string' && h.split('/').length > 3));
     let repondu = 0;
+    let disponible = 0;
     for (const href of liens) {
       await aller(base + href);
       const combien = await p.locator('form:has(input[name=text])').evaluateAll((els) => els.length);
+      disponible += combien;
       for (let tour = 0; tour < combien; tour++) {
         const f = p.locator('form:has(input[name=text])').first();
         if (!(await f.count())) break;
@@ -2636,8 +2638,15 @@ export async function conduire(
           .catch(() => undefined);
       }
     }
+    /* AUCUNE clarification en attente à ce point du parcours (la station « la boucle » n'en a
+       émis aucune ce run-là, monde semé oblige) est un fait à DIRE, pas un échec à forcer —
+       même discipline que les autres branches « rien à faire » de ce fichier (règle 17/22
+       appliquée à l'inverse). Trouvé en exécution réelle (règle 18) : disponible=0 un run sur
+       deux environ, selon que « la boucle : émettre les clarifications » a trouvé un écart ouvert
+       ou non à ce moment précis. */
     dire('portail : le client répond aux clarifications, et clôt sa demande',
-      repondu > 0, `${repondu} réponse(s)`);
+      disponible === 0 || repondu === disponible,
+      disponible === 0 ? 'aucune clarification en attente à ce point du parcours' : `${repondu}/${disponible} réponse(s)`);
   });
 
   // ── 13bis. TESTING, SECOND PASSAGE : les pièces arrivées ENTRE-TEMPS

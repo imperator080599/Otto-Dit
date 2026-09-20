@@ -4,6 +4,54 @@
 
 ---
 
+## Phase 2, Phase 0 — P0-00 livré, P0-01/P0-03 mesurés (2026-09-20)
+
+**P0-00 — `docs/REVUE.md` engendré** (SHA `6261b22`) : 46 lignes (R-F1..22, S-1..6, AUD-01..18),
+0 OBSERVÉE / 46 NON OBSERVÉE / 0 SANS OBJET à l'ouverture de la phase 2 — aucune tranche
+d'exécution encore livrée à ce moment. `app/scripts/revue.ts` (patron de `cloture.ts`) refuse
+toute ligne OBSERVEE sans station et SHA nommés ; cliquet `revue:figer` posé à 46. AUD-19..25 (P2)
+et le registre P3 de l'audit routés vers `docs/BACKLOG_REPORTE.md` comme R114..R130.
+
+**P0-01 — marqueur d'hydratation (`html[data-hydrated="1"]`), MESURÉ, PAS FERMÉ.**
+`src/app/hydrate-marqueur.tsx` pose le marqueur une fois React monté côté client, jamais avant ;
+`aller()`/`cliquer()`/`soumettre()` l'attendent au lieu d'une grâce fixe. **Le mécanisme
+fonctionne** : sur le run mesuré (`set -o pipefail; timeout 1200 npm run clics`, base fraîche,
+arbre `7ab4700`), le repli de grâce (1500 ms) n'a été déclenché AUCUNE fois sur les 177 appels
+`aller()` — vérifié par `grep -c` sur le journal brut, pas supposé. **L'acceptation P0-01 (« trois
+runs consécutifs, 0 #418 ») N'EST PAS ATTEINTE** : CINQ occurrences de `#418` sur ce run (326
+étapes, 447 clics) — QUATRE sur `/rcm/[cid]` (même signature jeton 87/`rail-astuce` que les 46
+confirmations précédentes F9-F59, aucune divergence structurelle) et UNE mal étiquetée en tout
+début de parcours. Voir `docs/CHASSE.md` F60 pour la mesure complète et ce qu'elle élimine
+(l'hypothèse « grâce trop courte ») et ce qu'elle n'élimine pas (une course propre aux transitions
+côté client sur cette page précise, hors de portée d'un marqueur racine posé une fois par
+session). **Conclusion, écrite plutôt que devinée** : la hausse H tient toujours pour la course
+qu'elle décrivait (navigation dure avant la fin de l'hydratation SSR), et ce marqueur la ferme —
+mais elle n'explique pas, à elle seule, la classe `/rcm/[cid]`. P0-02 (avertissement compté, plafond
+figé sur la signature connue) est la suite prévue par le plan lui-même pour exactement cette
+situation, pas une neuvième tentative de fermer #418 à zéro.
+
+**P0-03 — les 23 `dire(nom, true, …)` du parcours portent un prédicat réel**, plus cinq
+tautologies-par-construction trouvées par la revue hostile et corrigées séparément (`avecCase`,
+`boutonClarifications`, `boutonTirage`, `fRepPresent`, `avertissementPresent` — relisaient une
+variable au lieu de re-observer l'écran). Garde statique `direVide` (`src/lib/parcours.ts`),
+câblée dans `npm run parcours`, refuse toute réapparition. **Un vrai défaut trouvé au passage par
+le nouveau prédicat, et corrigé** : la station « portail : réponses aux clarifications » asserte
+maintenant `disponible === 0 || repondu === disponible` (au lieu de `repondu > 0`, qui échouait à
+tort quand aucun écart ouvert n'existait à ce point du parcours — un cas légitime, pas un échec,
+la station « la boucle » l'a confirmé sur ce même run : 0 écart ouvert à cet instant précis).
+
+**Revue hostile** : une voix (règle 30, harnais seul touché, aucun code de refus/modèle/sécurité).
+Verdict : « ship with named fixes » — les cinq tautologies nommées ci-dessus, corrigées avant
+push. R131 (`docs/BACKLOG_REPORTE.md`) : ni P0-01 ni P0-03 n'ajoutent de lecture `/api/sante` le
+jour de leur livraison (règle 22) — aucun état de production pertinent identifié pour un harnais
+de test seul, reporté plutôt qu'une lecture qui ne rougirait sur rien de réel.
+
+**SHA poussé** : `7ab4700` (P0-01/P0-03) sur `main` et `claude/otto-session-resume-zimig9`. **SHA
+servi à confirmer** dans le tour suivant (règle 36, option 1). Un troisième commit portant le
+correctif du prédicat `portail` et la mesure F60 suit dans le même mouvement, sans attendre.
+
+---
+
 ## Mandat de clôture : terminé (2026-09-19)
 
 **Décision du fondateur** (`docs/MANDATS/2026-09-19_decision_sans_objet_cloture_terminee.md`,

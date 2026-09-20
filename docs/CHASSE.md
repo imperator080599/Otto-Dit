@@ -1929,3 +1929,46 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   un seul constat mineur (commentaire périmé dans `automatisation.test.ts`, corrigé). QUARANTE-
   SIXIÈME confirmation consécutive que `#418` est disjoint. Pas creusé plus loin (même discipline
   que F9-F58).
+
+- **F60 — Le marqueur d'hydratation (P0-01) FONCTIONNE, et `#418` PERSISTE quand même : la
+  hausse H, telle que testée, n'explique pas la classe `/rcm/[cid]`.** (2026-09-20, Phase 2, P0-01
+  — `set -o pipefail; timeout 1200 npm run clics 2>&1 | tee /tmp/clics-p0-01-run1.log`, base
+  fraîche, `db:reset && demo:seed` juste avant, arbre du commit `7ab4700`.) `aller()`/`cliquer()`/
+  `soumettre()` attendent désormais `html[data-hydrated="1"]` (`src/app/hydrate-marqueur.tsx`,
+  posé par un `useEffect` de layout racine, jamais avant) plutôt qu'une grâce fixe — voir P0-01,
+  `docs/REVUE.md`. **Le mécanisme a été vérifié FONCTIONNER sur ce run précis, pas seulement
+  supposé** : `grep -c "marqueur d'hydratation absent" /tmp/clics-p0-01-run1.log` = 0 — le
+  repli de grâce (1500 ms, jamais atteint) n'a été déclenché AUCUNE fois sur les 177 appels
+  `aller()` du scénario ; le marqueur est donc apparu en moins de 8 s à CHAQUE navigation dure de
+  ce run, y compris sur `/rcm/[cid]` (229 321 octets, plusieurs `Repli` clients). **`#418` s'est
+  quand même produit CINQ fois** (326 étapes, 6 échec(s) de station — voir STATUS.md pour le
+  détail des échecs), au lieu des QUATRE occurrences stables mesurées 46 fois de suite (F9-F59,
+  toujours la même signature, jeton 87, `rail-astuce`/`rail-bascule`) : QUATRE sur `/rcm/[cid]`
+  (deux `cid` distincts, `123ba720…` ×2 et `70f6c4a6…` ×2 — même signature `rail-astuce`
+  jeton 87 que F9-F59, aucune divergence structurelle nouvelle après lecture des dumps) et UNE
+  au tout début du parcours, MAL ÉTIQUETÉE (`memePage=faux`, le document relevé —
+  `/eng/fe891171…/events`, la création du « Client de nuit » — appartient à une AUTRE mission que
+  la page où l'erreur est rapportée, `/eng/e7a83891…` — Altiverre ; cohérent avec la lecture déjà
+  posée en tête de ce fichier : `onRecoverableError` peut rapporter tard, sur un document qui
+  n'est plus le même que celui où la course a eu lieu).
+  **Ce que cela élimine et ce que cela n'élimine pas.** Éliminé : l'hypothèse que la grâce fixe de
+  l'ancien `aller()` (réseau calme + 1500 ms) était TROP COURTE pour `/rcm/[cid]` — le nouveau
+  mécanisme attend un FAIT (le marqueur), jamais un délai, et le fait est arrivé à temps toutes les
+  fois. Donc la course décrite par l'hypothèse H **au niveau du document racine** (naviguer avant
+  la fin de L'HYDRATATION SSR du document précédent) est bien fermée par ce marqueur — et pourtant
+  `/rcm/[cid]` continue de produire la MÊME signature. **Non prouvé, seulement compatible avec les
+  faits** (règle 18, ne pas conclure plus qu'observé) : la course qui produit `#418` sur cette page
+  précise n'est peut-être PAS une hydratation SSR au sens où le marqueur racine la voit — un
+  marqueur posé UNE SEULE FOIS par session (le `useEffect` du layout racine ne se remonte jamais
+  lors d'une navigation CÔTÉ CLIENT dans l'App Router) ne dit rien de l'état de RENDU d'un
+  segment de route atteint par un clic (`cliquer()`), seulement de l'hydratation initiale du
+  document entier — si la course a lieu à l'intérieur d'une transition RSC côté client sur cette
+  page (plusieurs panneaux `Repli`, composants clients, chacun avec son propre montage), le
+  marqueur racine ne peut structurellement pas l'observer, qu'il soit bien posé ou non. **Pas une
+  piste nouvelle construite ici** (construire un marqueur PAR SEGMENT dépasserait le périmètre de
+  P0-01, qui visait la course documentée par F4) — consigné pour que P0-02 (classification en
+  avertissement compté, plafond figé) parte d'un compte RÉEL (quatre à cinq occurrences par run
+  complet, stable), pas d'un zéro espéré. **QUARANTE-SEPTIÈME confirmation consécutive que `#418`
+  est disjoint de tout ce que ce dépôt touche** (aucune des cinq occurrences ne porte sur du
+  contenu touché par P0-01/P0-03 : le harnais lui-même, jamais une page). Pas creusé plus loin ici
+  — le chemin suivant est P0-02, pas une neuvième variante du marqueur.

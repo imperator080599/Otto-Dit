@@ -459,7 +459,7 @@
       "titre": "`npm run verify` n'est plus vert d'un tenant (#418, sommeils)",
       "epreuve": "`set -o pipefail; timeout 7200 npm run verify | tee v.log; echo EXIT=$?` rend EXIT=0 ; docs/PARCOURS.json porte ≥ 320 conduites datées du jour ; corriger S-1 sans toucher la station la fait rougir, puis vert une fois la station corrigée.",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — clics sort en EXIT=1 (#418 ×4) et casse le && de verify avant visuel ; le figé du parcours est impossible ; l'hypothèse H (course hydratation) n'a jamais été éprouvée. Exit critère de la Phase 0 (ouvre Phase 1).",
+      "manque": "P0-01 livré et mesuré (7ab4700) : le marqueur d'hydratation fonctionne (0 repli de grâce sur 177 aller(), docs/CHASSE.md F60) mais #418 persiste (5 occurrences/run, classe /rcm/[cid]) — l'acceptation P0-01 seule n'est pas atteinte. P0-02 (avertissement compté, plafond figé) et P0-05 (traducteur, EPURE-01) restent à livrer avant que EXIT=0 soit atteignable ; le figé du parcours reste impossible tant que clics sort en échec.",
       "tache": ["P0-01", "P0-02", "P0-05"],
       "phase": 0
     },
