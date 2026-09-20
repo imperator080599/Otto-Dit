@@ -156,16 +156,37 @@ export interface Avertissements { signatures: SignatureAvertissement[] }
 /**
  * F11 (docs/CHASSE.md) : le CSSOM du navigateur RE-SÉRIALISE les raccourcis CSS d'un attribut
  * `style` servi par le serveur — `margin:6px 0` devient `margin:6px 0px` côté client, sans AUCUN
- * changement de substance (mesuré, structurel, jamais une supposition). Normalise un `0` NU dans
- * un attribut `style="…"` (précédé de `:`/`;`/espace, suivi de `;`/fin/espace) en `0px`, puis
- * compare : si le SERVEUR normalisé égale le CLIENT tel quel, la divergence n'est QUE cette
- * re-sérialisation. Portée volontairement ÉTROITE (un attribut `style="…"`, un `0` isolé) : ne
- * touche jamais le texte hors balise, jamais un `0` qui fait partie d'un nombre plus long
- * (`60`, `100`) grâce aux ancres `(^|[:;\s])` / `(?=[;\s]|$)`.
+ * changement de substance (mesuré, structurel, jamais une supposition) — mais SEULEMENT pour une
+ * propriété de LONGUEUR. Deux revues hostiles indépendantes (2026-09-20) ont nommé la même limite,
+ * absente de la première version : une propriété SANS UNITÉ (`opacity`, `z-index`, `flex-grow`,
+ * `order`…) ne gagne JAMAIS « px » lors d'une vraie re-sérialisation — un `opacity:0px` serait un
+ * signe de CORRUPTION, pas de bruit. `PROPRIETES_LONGUEUR` liste donc SEULEMENT les propriétés où
+ * `0` et `0px` sont, en CSS, la même valeur ; toute propriété absente de cette liste (`line-height`
+ * compris — ambigu, tantôt un multiplicateur SANS unité, tantôt une longueur — donc exclue par
+ * prudence) n'est JAMAIS normalisée, et un `0`→`0px` dessus reste une divergence NON expliquée.
  */
+const PROPRIETES_LONGUEUR = new Set([
+  'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+  'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'gap', 'row-gap', 'column-gap',
+  'width', 'height', 'max-width', 'max-height', 'min-width', 'min-height',
+  'top', 'right', 'bottom', 'left', 'inset',
+  'border-width', 'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+  'border-radius', 'outline-width', 'text-indent', 'letter-spacing',
+]);
+
 function normaliserRaccourcisCss(html: string): string {
-  return html.replace(/style="([^"]*)"/g, (_, style: string) =>
-    `style="${style.replace(/(^|[:;\s])0(?=[;\s]|$)/g, '$10px')}"`);
+  return html.replace(/style="([^"]*)"/g, (_, style: string) => {
+    const declarations = style.split(';').map((decl) => {
+      const i = decl.indexOf(':');
+      if (i === -1) return decl;
+      const propriete = decl.slice(0, i).trim().toLowerCase();
+      if (!PROPRIETES_LONGUEUR.has(propriete)) return decl;
+      const valeur = decl.slice(i + 1).replace(/(^|\s)0(?=\s|$)/g, '$10px');
+      return decl.slice(0, i + 1) + valeur;
+    });
+    return `style="${declarations.join(';')}"`;
+  });
 }
 
 function estBruitCssRaccourci(ecart: { serveur: string; client: string }): boolean {

@@ -67,11 +67,21 @@ export interface Sonde {
   incidents: Incident[];
   station: (nom: string) => void;
   rapport: () => string[];
+  /**
+   * REVUE HOSTILE (2026-09-20, P0-02, finding #1, confirmée par DEUX voix indépendantes) : chaque
+   * incident se construit derrière deux `await page.evaluate()` — sans ce point d'attente, rien ne
+   * garantissait que tous aient RÉSOLU avant que `run.ts` ne lise `sonde.incidents`, seulement
+   * qu'ils avaient été DÉCLENCHÉS. À appeler avant toute lecture de `incidents` (et avant de fermer
+   * la page — un `page.evaluate()` sur une page fermée échoue, dégradant l'incident au lieu de le
+   * perdre).
+   */
+  attendre: () => Promise<void>;
 }
 
 export function poserLaSonde(page: Page, base: string, dossier: string): Sonde {
   fs.mkdirSync(dossier, { recursive: true });
   const incidents: Incident[] = [];
+  const enCours: Promise<void>[] = [];
   let station = '(avant la première station)';
   let dernier: { url: string; html: string; complet: boolean } | null = null;
 
@@ -97,17 +107,26 @@ export function poserLaSonde(page: Page, base: string, dossier: string): Sonde {
     if (![418, 419, 422, 423, 425].includes(code)) return;
     const urlErreur = page.url();
     const vu = dernier;
-    void (async () => {
+    /* INDEX RÉSERVÉ ICI, AVANT TOUT `await` (revue hostile 2026-09-20, finding #1, deux voix
+       indépendantes convergentes). Le lire APRÈS les `await` ci-dessous — comme avant ce
+       correctif — faisait dépendre l'ordre de `incidents[]` de la durée du round-trip
+       `page.evaluate()`, jamais de l'ordre RÉEL de survenue des `pageerror`. Deux incidents #418
+       proches dans le temps (mesuré : docs/CHASSE.md, deux occurrences sur le même `cid` dans un
+       seul run) pouvaient donc s'INVERSER dans `incidents[]` par rapport à `pageerrors[]`
+       (run.ts) — `classerPageerrors` (src/lib/parcours.ts), qui les apparie par POSITION,
+       aurait alors pu classer un vrai défaut sous les divergences bénignes d'un AUTRE incident. */
+    const n = incidents.length;
+    incidents.length = n + 1;
+    enCours.push((async () => {
       /* Capté au plus tôt : chaque milliseconde de plus laisse les effets
          réécrire le DOM et salir le diff. */
       const client = await page.evaluate(() => document.documentElement.outerHTML).catch(() => '');
       const lang = await page.evaluate(() => document.documentElement.lang).catch(() => null);
-      const n = incidents.length;
       const fServeur = path.join(dossier, `${n}-serveur.html`);
       const fClient = path.join(dossier, `${n}-client.html`);
       fs.writeFileSync(fServeur, vu?.html ?? '');
       fs.writeFileSync(fClient, client);
-      incidents.push({
+      incidents[n] = {
         code,
         genre: ARGS.exec(e.message)?.[1] ?? '(absent)',
         urlErreur: urlErreur.replace(base, '') || '/',
@@ -121,13 +140,14 @@ export function poserLaSonde(page: Page, base: string, dossier: string): Sonde {
         fichierClient: fClient,
         ecarts: divergences(vu?.html ?? '', client),
         pile: (e.stack ?? '').split('\n').slice(0, 8).join('\n'),
-      });
-    })();
+      };
+    })());
   });
 
   return {
     incidents,
     station: (nom: string) => { station = nom; },
+    attendre: async () => { await Promise.all(enCours); },
     rapport: () => {
       if (!incidents.length) return ['sonde d’hydratation : aucun incident'];
       const l: string[] = [`sonde d’hydratation : ${incidents.length} incident(s)`];

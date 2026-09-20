@@ -147,6 +147,11 @@ async function main() {
     page.on('response', (r) => { if (r.status() >= 500) durs.push(`HTTP ${r.status()} ${r.url()}`); });
     try {
       ({ etapes, gestes } = await conduire(page, ctx, `http://localhost:${PORT}`, c));
+      /* REVUE HOSTILE (2026-09-20, P0-02, finding #1) : sans cette attente, `sonde.incidents`
+         pouvait être lu avant que tous ses incidents en cours ne soient résolus — attendre ICI,
+         page encore ouverte, avant `nav.close()` (un `page.evaluate()` sur une page fermée
+         dégraderait l'incident au lieu de le compléter). */
+      if (sonde) await sonde.attendre();
     } finally {
       await nav.close();
     }

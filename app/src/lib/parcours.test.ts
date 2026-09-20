@@ -117,6 +117,15 @@ describe('classifierIncident', () => {
     const ecarts = [railAstuce, bruitCss, uneVraieDivergence, bruitCss];
     expect(classifierIncident(ecarts, sigs)).toBeNull();
   });
+
+  it('CAS CONNU MAUVAIS (deux revues hostiles indépendantes, 2026-09-20) : un « 0px » sur une propriété SANS UNITÉ (opacity) n’est JAMAIS lu comme du bruit F11', () => {
+    const corruption = {
+      serveur: '<div style="opacity:0;margin:6px 0">',
+      client: '<div style="opacity:0px;margin:6px 0px">',
+    };
+    const ecarts = [railAstuce, corruption];
+    expect(classifierIncident(ecarts, sigs)).toBeNull();
+  });
 });
 
 describe('classerPageerrors', () => {
@@ -153,6 +162,26 @@ describe('classerPageerrors', () => {
     const r = classerPageerrors(pageerrors, pageerrors, [incidentConnu], []);
     expect(r.avertissementsComptes).toEqual({});
     expect(r.dursReels).toEqual(pageerrors);
+  });
+
+  it('DEUX incidents #418 dans le même run (mesuré, docs/CHASSE.md) restent appariés par POSITION, un connu et un inconnu ne se confondent pas', () => {
+    const pageerrors = [
+      'EXCEPTION sur /rcm/a : Minified React error #418; …',
+      'EXCEPTION sur /rcm/b : Minified React error #418; …',
+    ];
+    const r = classerPageerrors(pageerrors, pageerrors, [incidentConnu, incidentInconnu], sigs);
+    expect(r.avertissementsComptes).toEqual({ 'rail-astuce-hydratation': 1 });
+    expect(r.dursReels).toEqual(['EXCEPTION sur /rcm/b : Minified React error #418; …']);
+  });
+
+  it('DEUX incidents #418, ordre INVERSÉ (l’inconnu en premier), chacun classé pour ce qu’il est', () => {
+    const pageerrors = [
+      'EXCEPTION sur /rcm/a : Minified React error #418; …',
+      'EXCEPTION sur /rcm/b : Minified React error #418; …',
+    ];
+    const r = classerPageerrors(pageerrors, pageerrors, [incidentInconnu, incidentConnu], sigs);
+    expect(r.avertissementsComptes).toEqual({ 'rail-astuce-hydratation': 1 });
+    expect(r.dursReels).toEqual(['EXCEPTION sur /rcm/a : Minified React error #418; …']);
   });
 });
 
