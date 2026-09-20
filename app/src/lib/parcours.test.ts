@@ -56,22 +56,37 @@ describe('direVide', () => {
 });
 
 /**
- * P0-02 (AUD-16). `classifierIncident` ne classe une erreur en avertissement que si l'incident
- * tient en UNE SEULE divergence dont le motif connu apparaît CÔTÉ CLIENT et JAMAIS côté serveur —
- * jamais « toute erreur #418 », jamais une signature qui matcherait par accident une vraie
- * divergence de contenu, et jamais sur la PREMIÈRE d'une liste plus longue (revue hostile
- * 2026-09-20 : la version initiale ne lisait que `ecarts[0]`, exactement le défaut que
- * `divergences()` — `src/lib/core/hydratation.ts` — existe pour refuser). Cas connus mauvais
- * (règle 17) : un motif absent, présent DES DEUX côtés, ou porté par un incident à PLUSIEURS
- * divergences (même si la première matche), ne doit jamais être classé.
+ * P0-02 (AUD-16). `classifierIncident` ne classe une erreur en avertissement que si TOUTES ses
+ * divergences sont EXPLIQUÉES — soit par le motif d'une signature connue côté client (absent côté
+ * serveur), soit par le bruit structurel F11 (re-sérialisation CSS des raccourcis) — et qu'AU
+ * MOINS UNE porte le motif retenu. Jamais « toute erreur #418 », jamais un motif qui matcherait
+ * par accident une vraie divergence de contenu, et jamais sur la seule PREMIÈRE divergence d'une
+ * liste plus longue (revue hostile 2026-09-20, finding #1 : la version initiale ne lisait que
+ * `ecarts[0]`, exactement le défaut que `divergences()` — `src/lib/core/hydratation.ts` — existe
+ * pour refuser). Un correctif intermédiaire exigeait `ecarts.length === 1` — mesuré FAUX à
+ * l'usage (F60 puis re-mesure du 2026-09-20 : les quatre incidents réels portent chacun UNE
+ * divergence `rail-astuce` PLUS 9 à 20 divergences F11, jamais une seule) : classait zéro
+ * incident, rendant P0-02 sans effet. Cas connus mauvais (règle 17) : un motif absent, présent
+ * DES DEUX côtés, un incident purement F11 SANS aucune divergence de motif connu, ou UNE SEULE
+ * divergence non expliquée noyée parmi du bruit par ailleurs légitime, ne doivent jamais être
+ * classés.
  */
 describe('classifierIncident', () => {
   const sigs: SignatureAvertissement[] = [
     { id: 'rail-astuce-hydratation', motif: 'rail-astuce', plafond: 4, raison: 'r', depuis: '2026-09-20' },
   ];
+  const railAstuce = { serveur: '(rien)', client: '<div class="rail-astuce">…</div>' };
+  const bruitCss = {
+    serveur: '<form style="margin:6px 0;display:grid;gap:var(--e1);max-width:380px">',
+    client: '<form style="margin:6px 0px;display:grid;gap:var(--e1);max-width:380px">',
+  };
 
   it('classe un incident À UNE SEULE divergence dont le motif est côté client seul', () => {
-    const ecarts = [{ serveur: '(rien)', client: '<div class="rail-astuce">…</div>' }];
+    expect(classifierIncident([railAstuce], sigs)).toBe('rail-astuce-hydratation');
+  });
+
+  it('MESURE RÉELLE (F60 puis 2026-09-20) : classe un incident rail-astuce + bruit F11 (1 + 10 à 20 divergences dans les runs mesurés)', () => {
+    const ecarts = [railAstuce, bruitCss, bruitCss, bruitCss];
     expect(classifierIncident(ecarts, sigs)).toBe('rail-astuce-hydratation');
   });
 
@@ -90,15 +105,16 @@ describe('classifierIncident', () => {
   });
 
   it('sans signature connue (fichier absent/vide), rien ne se classe jamais', () => {
-    const ecarts = [{ serveur: '(rien)', client: '<div class="rail-astuce">…</div>' }];
-    expect(classifierIncident(ecarts, [])).toBeNull();
+    expect(classifierIncident([railAstuce], [])).toBeNull();
   });
 
-  it('CAS CONNU MAUVAIS (revue hostile) : ne classe PAS un incident à PLUSIEURS divergences même si la première matche une signature connue', () => {
-    const ecarts = [
-      { serveur: '(rien)', client: '<div class="rail-astuce">…</div>' },
-      { serveur: '<div>montant : 100</div>', client: '<div>montant : 999</div>' },
-    ];
+  it('CAS CONNU MAUVAIS : un incident PUREMENT F11 (bruit CSS, aucune divergence de motif connu) ne se classe jamais', () => {
+    expect(classifierIncident([bruitCss, bruitCss], sigs)).toBeNull();
+  });
+
+  it('CAS CONNU MAUVAIS (le défaut que la revue hostile a trouvé) : UNE SEULE divergence non expliquée, noyée dans du bruit par ailleurs légitime, bloque TOUT l’incident', () => {
+    const uneVraieDivergence = { serveur: '<div>montant : 100</div>', client: '<div>montant : 999</div>' };
+    const ecarts = [railAstuce, bruitCss, uneVraieDivergence, bruitCss];
     expect(classifierIncident(ecarts, sigs)).toBeNull();
   });
 });

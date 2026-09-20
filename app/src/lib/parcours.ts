@@ -154,27 +154,55 @@ export interface SignatureAvertissement {
 export interface Avertissements { signatures: SignatureAvertissement[] }
 
 /**
+ * F11 (docs/CHASSE.md) : le CSSOM du navigateur RE-SÉRIALISE les raccourcis CSS d'un attribut
+ * `style` servi par le serveur — `margin:6px 0` devient `margin:6px 0px` côté client, sans AUCUN
+ * changement de substance (mesuré, structurel, jamais une supposition). Normalise un `0` NU dans
+ * un attribut `style="…"` (précédé de `:`/`;`/espace, suivi de `;`/fin/espace) en `0px`, puis
+ * compare : si le SERVEUR normalisé égale le CLIENT tel quel, la divergence n'est QUE cette
+ * re-sérialisation. Portée volontairement ÉTROITE (un attribut `style="…"`, un `0` isolé) : ne
+ * touche jamais le texte hors balise, jamais un `0` qui fait partie d'un nombre plus long
+ * (`60`, `100`) grâce aux ancres `(^|[:;\s])` / `(?=[;\s]|$)`.
+ */
+function normaliserRaccourcisCss(html: string): string {
+  return html.replace(/style="([^"]*)"/g, (_, style: string) =>
+    `style="${style.replace(/(^|[:;\s])0(?=[;\s]|$)/g, '$10px')}"`);
+}
+
+function estBruitCssRaccourci(ecart: { serveur: string; client: string }): boolean {
+  return normaliserRaccourcisCss(ecart.serveur) === ecart.client;
+}
+
+/**
  * REVUE HOSTILE (2026-09-20, P0-02) : la première version ne lisait QUE `ecarts[0]` — exactement
  * le défaut que `divergences()` (`src/lib/core/hydratation.ts`) existe pour refuser (son propre
  * en-tête : le 2026-09-03, la première divergence était le bruit `rail-astuce` connu et MASQUAIT
- * un vrai défaut injecté plus loin dans le même incident). Corrigé : un incident n'est classé QUE
- * si l'incident tient en UNE SEULE divergence (`ecarts.length === 1`) ET qu'elle correspond à une
- * signature connue — jamais sur la première d'une liste plus longue. C'est délibérément PLUS
- * ÉTROIT que ce que les mesures montrent (F60, docs/CHASSE.md : deux des quatre incidents connus
- * portent 10 à 21 divergences, toutes lues comme du bruit F11 après relecture manuelle) : sous-
- * classer laisse un incident réel en échec bloquant (règle 25, le défaut sûr) ; sur-classer
- * masquerait un vrai défaut derrière un bruit toléré (règle 17/18, le défaut qu'on refuse). Élargir
- * à la famille F11 (re-sérialisation CSS des raccourcis) exige sa propre signature, structurelle,
- * pas une extension de celle-ci — non fait ici, hors périmètre de P0-02.
+ * un vrai défaut injecté plus loin dans le même incident). Un premier correctif exigeait
+ * `ecarts.length === 1` — mesuré FAUX à l'usage (F60 puis cette mesure-ci, `set -o pipefail;
+ * timeout 1200 npm run clics -- --figer`, base fraîche) : les QUATRE incidents réels mesurés
+ * portent chacun UNE divergence `rail-astuce` (jeton 87) PLUS 9 à 20 divergences F11 — jamais
+ * UNE SEULE divergence seule. Exiger `length === 1` classait ZÉRO incident, rendant P0-02 sans
+ * effet. Corrigé : un incident est classé QUAND TOUTES ses divergences sont EXPLIQUÉES — soit par
+ * le motif d'une signature connue (`s.motif` côté client, absent côté serveur), soit par le bruit
+ * structurel F11 (`estBruitCssRaccourci`, ci-dessus) — et qu'AU MOINS UNE porte le motif de la
+ * signature retenue (sinon un incident 100 % F11, sans aucun `rail-astuce`, se classerait sous
+ * un id qui n'a rien vu). Une seule divergence NON expliquée — motif absent, ET pas du bruit CSS —
+ * fait échouer TOUT l'incident (règle 25, le défaut sûr) : c'est exactement le cas qui aurait dû
+ * bloquer le 2026-09-03 et qui bloque toujours ici.
  */
 export function classifierIncident(
   ecarts: { serveur: string; client: string }[] | undefined,
   signatures: SignatureAvertissement[],
 ): string | null {
-  if (!ecarts || ecarts.length !== 1) return null;
-  const [seule] = ecarts;
+  if (!ecarts || ecarts.length === 0) return null;
   for (const s of signatures) {
-    if (seule.client.includes(s.motif) && !seule.serveur.includes(s.motif)) return s.id;
+    const aUneCorrespondance = ecarts.some(
+      (e) => e.client.includes(s.motif) && !e.serveur.includes(s.motif),
+    );
+    if (!aUneCorrespondance) continue;
+    const touteExpliquee = ecarts.every(
+      (e) => (e.client.includes(s.motif) && !e.serveur.includes(s.motif)) || estBruitCssRaccourci(e),
+    );
+    if (touteExpliquee) return s.id;
   }
   return null;
 }
