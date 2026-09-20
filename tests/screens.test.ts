@@ -201,7 +201,11 @@ describe('tous les écrans rendent', () => {
      posé) — vérifié en le retirant temporairement pendant l'écriture de ce
      test, avant de le restaurer. */
   it('le marqueur d’hydratation est absent du HTML serveur et présent après hydratation', async () => {
-    const html = await (await fetch(BASE + '/', { signal: AbortSignal.timeout(5000) })).text();
+    /* 20 s, pas 5 : ce test suit immédiatement le balayage de toutes les routes (~500 s), et un
+       CI sous charge (mesuré : TimeoutError en CI, jamais reproduit en local) peut mettre
+       plusieurs secondes à répondre à la première requête suivante — la marge d'origine était
+       trop courte pour l'ENVIRONNEMENT, pas pour le produit. */
+    const html = await (await fetch(BASE + '/', { signal: AbortSignal.timeout(20000) })).text();
     expect(html).not.toContain('data-hydrated');
 
     const navigateur = await chromium.launch({ executablePath: cheminChromium() });
