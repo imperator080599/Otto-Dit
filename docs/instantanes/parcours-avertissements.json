@@ -1,0 +1,12 @@
+{
+  "_note": "P0-02 (AUD-16). Une signature d'erreur navigateur #418 connue, jamais une carte blanche : `motif` doit apparaître côté CLIENT ET être absent côté SERVEUR sur une incident à UNE SEULE divergence (app/src/lib/parcours.ts::classifierIncident) pour être comptée en avertissement plutôt qu'en échec bloquant. CE QUE `run.ts` GARDE VRAIMENT (revue hostile 2026-09-20, constat #3, non réfuté) : un COMPTE MESURÉ au-dessus du `plafond` ÉCRIT ICI fait rougir le run (`depassementsDePlafond`) — CE N'EST PAS un ratchet sur la VALEUR de `plafond` elle-même. Rien n'empêche aujourd'hui une édition manuelle de ce fichier qui relèverait `plafond` sans justification ; la seule garde est la revue humaine du diff (une hausse de `plafond` se voit dans `git diff`, comme toute autre édition de ce fichier). Relever `plafond` exige une `raison` et un `depuis` datés PAR CONVENTION, non par un mécanisme automatisé — accepté comme limitation nommée de ce premier jet P0-02 (R132, docs/BACKLOG_REPORTE.md), jamais un `--figer` silencieux en tout cas (`--figer` ne touche que `docs/PARCOURS.json`, jamais ce fichier).",
+  "signatures": [
+    {
+      "id": "rail-astuce-hydratation",
+      "motif": "rail-astuce",
+      "plafond": 4,
+      "raison": "La bulle d'astuce du rail (`nav.tsx`, rendue dans un `useEffect`, jamais servie par le serveur) est la SEULE divergence de chaque incident #418 sur /rcm/[cid] depuis F9 (docs/CHASSE.md §1) — bruit d'hydratation connu, jamais un défaut de produit, confirmé disjoint de tout changement de ce dépôt 47 fois de suite (F9-F60). Plafond mesuré sur `set -o pipefail; timeout 1200 npm run clics`, base fraîche, arbre 7ab4700, P0-01 (marqueur d'hydratation posé et vérifié fonctionner — le repli de grâce n'a été déclenché aucune fois) : QUATRE occurrences classées sur 326 étapes (F60, docs/CHASSE.md). Cette même mesure a vu une CINQUIÈME `#418`, au tout début du parcours, sans lien avec le rail — non classée par cette signature (`classifierIncident` l'a jugée à raison, motif absent), restée un échec bloquant, non expliquée davantage à ce jour (F60 : hypothèse compatible avec une course de transition côté client hors de portée du marqueur, non prouvée). Cette signature ne couvre QUE le rail-astuce ; toute autre `#418` reste bloquante par construction.",
+      "depuis": "2026-09-20"
+    }
+  ]
+}

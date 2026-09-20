@@ -2205,3 +2205,33 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   si une session future trouve un état de production pertinent à surveiller pour l'un des deux
   (par exemple, si le plafond du cliquet `direVide`/`revue-plafond.json` devait un jour être lu
   par `/api/sante`).
+
+- **R132 — `plafond` (`docs/instantanes/parcours-avertissements.json`, P0-02) n'a aucun ratchet
+  automatisé, seulement la revue humaine du diff.** Trouvé par la seconde revue hostile de la
+  tranche (2026-09-20, constat #3, non réfuté par une seconde voix — harnais seul, une voix
+  suffit règle 30). `app/scripts/clics/run.ts::depassementsDePlafond` garde un COMPTE MESURÉ
+  au-dessus du `plafond` ÉCRIT dans le fichier ; rien n'empêche aujourd'hui d'éditer ce fichier à
+  la main pour relever `plafond` sans justification réelle — la seule garde est qu'une telle
+  hausse est visible dans `git diff` et donc dans toute revue humaine du commit qui la porte. La
+  `_note` du fichier a été corrigée le même jour pour ne plus prétendre à une garde automatique
+  qui n'existe pas (règle 13 : n'affirme jamais plus que ce que tu vérifies). Construire un
+  ratchet réel (un fichier `-plafond.json` séparé, sur le modèle de `revue-plafond.json` ou
+  `TESTS_PLANCHER.json`, qui refuserait toute hausse sans `--figer` explicite) reste à faire ;
+  accepté comme limitation nommée de ce premier jet, pas comme un défaut caché.
+
+- **R133 — P0-02 n'a que la preuve UNITAIRE (règle 17) de son cas connu mauvais, pas la preuve
+  DE BOUT EN BOUT que le plan lui-même demande.** Le plan maître (docs/MANDATS/2026-09-20_plan_
+  maitre_phase2.md, §P0-02, « Tests ») demande : « une `pageerror` inventée (`throw` dans une
+  page de test) rougit le run » — un défaut RÉEL, injecté dans un vrai navigateur, exercé par
+  `npm run clics` lui-même, pour prouver que le CÂBLAGE dans `run.ts` (pas seulement les
+  fonctions pures `classifierIncident`/`classerPageerrors`) bloque bien une erreur de signature
+  inconnue. Ce qui EXISTE : cinq cas connus mauvais unitaires dans `src/lib/parcours.test.ts`
+  (motif absent, motif des deux côtés, incident à plusieurs divergences, signatures vides,
+  incident sans divergence) — ils couvrent la LOGIQUE de classification, exhaustivement. Ce qui
+  MANQUE : un mécanisme d'injection réelle (une page de test qui lance un `throw` à la demande)
+  n'existe nulle part dans le harnais aujourd'hui (vérifié : aucun site de ce genre dans
+  `scripts/clics/` ni `src/app/testing`) — le construire est un geste de harnais séparé, non fait
+  ici faute de temps dans cette tranche. Reporté, pas oublié : la preuve unitaire couvre déjà la
+  logique nouvelle avec cinq cas mauvais distincts (règle 17 tenue au niveau unitaire) ; la preuve
+  de bout en bout du câblage reste à construire avant que P0-02 ne soit dit COMPLET au sens du
+  plan.

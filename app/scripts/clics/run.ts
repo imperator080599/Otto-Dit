@@ -8,7 +8,10 @@ import { getDb } from '../../src/lib/db/client';
 import { baseSemee } from '../screens/routes';
 import { contexte } from './contexte';
 import { conduire, type Etape, type Geste } from './scenario';
-import { stationsDe, jamaisAtteintes, empreintes, type Fige } from '../../src/lib/parcours';
+import {
+  stationsDe, jamaisAtteintes, empreintes, classerPageerrors, depassementsDePlafond,
+  type Fige, type Avertissements,
+} from '../../src/lib/parcours';
 import type { Station } from '../../src/lib/parcours';
 import { poserLaSonde } from './hydratation';
 
@@ -107,6 +110,11 @@ async function main() {
   let etapes: Etape[] = [];
   let gestes: Geste[] = [];
   const durs: string[] = [];
+  /* P0-02 (AUD-16) : les `pageerror` seules — jamais `console`/HTTP 5xx —, DANS L'ORDRE de
+     survenue, pour être corrélées positionnellement à `sonde.incidents` après coup (les deux
+     écoutent le même événement, la sonde en async — la corrélation ne peut se faire qu'une fois
+     le navigateur fermé, quand tout a fini de résoudre). */
+  const pageerrors: string[] = [];
   let sonde: import('./hydratation').Sonde | null = null;
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
@@ -122,10 +130,15 @@ async function main() {
        lire est une panne qu'on impute au mauvais changement. */
     const ou = () => page.url().replace(`http://localhost:${PORT}`, '') || '(page inconnue)';
     /* LA SONDE D'HYDRATATION (fil n°7). Elle N'ENLÈVE RIEN : l'exception reste
-       comptée en dur ci-dessous. Elle ajoute ce qui manquait pour conclure —
-       le HTML SERVI et le DOM au moment de l'erreur, côte à côte. */
+       comptée en dur ci-dessous (sauf classification P0-02 explicite, plus bas).
+       Elle ajoute ce qui manquait pour conclure — le HTML SERVI et le DOM au
+       moment de l'erreur, côte à côte. */
     sonde = poserLaSonde(page, `http://localhost:${PORT}`, path.join(process.cwd(), '.hydratation'));
-    page.on('pageerror', (e) => durs.push(`EXCEPTION sur ${ou()} : ${e.message}`));
+    page.on('pageerror', (e) => {
+      const ligne = `EXCEPTION sur ${ou()} : ${e.message}`;
+      durs.push(ligne);
+      pageerrors.push(ligne);
+    });
     page.on('console', (m) => {
       if (m.type() === 'error' && !/Failed to load resource|DevTools/.test(m.text())) {
         durs.push(`CONSOLE sur ${ou()} : ${m.text()}`);
@@ -144,6 +157,18 @@ async function main() {
   for (const e of etapes) console.log(`  ${e.ok ? 'ok  ' : 'ÉCHEC'}  ${e.nom}\n         ${e.detail}`);
   if (sonde) for (const l of sonde.rapport()) console.log(l);
 
+  /* P0-02 (AUD-16) : classer les `pageerror` de signature CONNUE en avertissement compté, sous
+     plafond figé — jamais « toute erreur navigateur », seulement celles que `classifierIncident`
+     reconnaît sur leur PREMIÈRE divergence d'hydratation. Corrélation par POSITION : `pageerrors`
+     (toutes) et `sonde.incidents` (uniquement les codes 418/419/422/423/425) avancent au même
+     rythme, dans le même ordre — un `pageerror` qui ne correspond à aucun de ces codes n'a jamais
+     d'entrée dans `sonde.incidents` et reste donc, à raison, non classable. */
+  const { dursReels, avertissementsComptes } = classerErreursNavigateur(durs, pageerrors, sonde?.incidents ?? []);
+  if (Object.keys(avertissementsComptes).length) {
+    console.log('\nAvertissements de signature connue (P0-02) :');
+    for (const [id, n] of Object.entries(avertissementsComptes)) console.log(`  · ${id} : ${n}`);
+  }
+
   /* LE HARNAIS NE DOIT PAS POUVOIR SE TAIRE. Zéro étape conduite est une panne
      du harnais, pas un parcours réussi. Un SEUIL ne suffit pas — il dit combien,
      jamais LESQUELLES : la garde nominative est plus bas (défaut n°22). */
@@ -152,10 +177,18 @@ async function main() {
     process.exit(1);
   }
   ecrireClics(gestes);
+  const depassements = plafondsDepasses(avertissementsComptes);
+  if (depassements.length) {
+    console.log('\nPlafond d’avertissement DÉPASSÉ (P0-02) :');
+    for (const d of depassements) console.log(`  · ${d}`);
+  }
   /* FIGER N'EST PAS UN EFFET DE BORD : un parcours qui figerait tout seul ce
      qu'il vient d'atteindre accepterait sa propre maigreur. On ne fige que sur
-     demande explicite, et seulement si tout est vert. */
-  const figeMaintenant = process.argv.includes('--figer') && etapes.every((e) => e.ok) && durs.length === 0;
+     demande explicite, et seulement si tout est vert — les avertissements de
+     signature connue, SOUS leur plafond, sont admis (P0-02) ; les dépasser ne
+     l'est jamais. */
+  const figeMaintenant = process.argv.includes('--figer') && etapes.every((e) => e.ok)
+    && dursReels.length === 0 && depassements.length === 0;
   if (figeMaintenant) figer(etapes);
 
   const echecs = etapes.filter((e) => !e.ok);
@@ -187,20 +220,46 @@ async function main() {
       + '`npm run clics -- --figer`.\n');
     process.exit(1);
   }
-  if (durs.length) { console.log('\nErreurs côté navigateur :'); for (const d of durs.slice(0, 12)) console.log('  ' + d); }
+  if (dursReels.length) { console.log('\nErreurs côté navigateur (non classées) :'); for (const d of dursReels.slice(0, 12)) console.log('  ' + d); }
   const total = gestes.reduce((n, g) => n + g.clics, 0);
-  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + durs.length} échec(s) · ${total} clics comptés sur ${gestes.length} gestes · docs/CLICS.md écrit\n`);
+  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + dursReels.length} échec(s) · ${total} clics comptés sur ${gestes.length} gestes · docs/CLICS.md écrit\n`);
 
   if (eteintes.length) {
     console.log(`\n${eteintes.length} station(s) FIGÉE(S) MAIS JAMAIS ATTEINTE(S) — le parcours vérifie moins qu'hier :`);
     for (const st of eteintes) console.log(`  · ${st.nom}`);
     console.log('Si l’extinction est voulue, refigez sur un parcours vert : `npm run clics -- --figer`.\n');
   }
-  if (echecs.length || durs.length || eteintes.length) {
+  if (echecs.length || dursReels.length || depassements.length || eteintes.length) {
     const err = journal.join('').split('\n').filter((l) => /Error:|at async|at [A-Z]/.test(l)).slice(0, 30);
     if (err.length) console.log('Journal du serveur :\n' + err.join('\n') + '\n');
     process.exit(1);
   }
+}
+
+/**
+ * P0-02 (AUD-16). Sépare les `pageerror` en deux : celles de signature connue (comptées, jamais
+ * retirées de `durs` pour la lecture brute, mais retirées de ce qui bloque) et le reste
+ * (`dursReels`, ce qui reste bloquant : `console`, HTTP 5xx, et toute `pageerror` non classée).
+ * Le calcul lui-même vit dans `src/lib/parcours.ts` (pur, testable) ; ce module ne fait que lire
+ * le fichier des signatures connues et le lui passer.
+ */
+function classerErreursNavigateur(
+  durs: string[],
+  pageerrors: string[],
+  incidents: { ecarts: { serveur: string; client: string }[] }[],
+): { dursReels: string[]; avertissementsComptes: Record<string, number> } {
+  return classerPageerrors(durs, pageerrors, incidents, lireAvertissements().signatures);
+}
+
+function lireAvertissements(): Avertissements {
+  /* Même discipline que FIGE ci-dessous : le chemin ne dépend pas d'où l'on lance. */
+  const chemin = path.join(APP, '..', 'docs', 'instantanes', 'parcours-avertissements.json');
+  if (!fs.existsSync(chemin)) return { signatures: [] };
+  return JSON.parse(fs.readFileSync(chemin, 'utf8')) as Avertissements;
+}
+
+function plafondsDepasses(comptes: Record<string, number>): string[] {
+  return depassementsDePlafond(comptes, lireAvertissements().signatures);
 }
 
 /**

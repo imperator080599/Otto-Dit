@@ -691,6 +691,18 @@
       "etat": "ouvert — P0-01/P0-03 (marqueur d'hydratation, retrait des assertions vides du parcours) n'ont pas ajouté de lecture /api/sante le jour de leur livraison (règle 22), trouvé par la revue hostile de la tranche.",
       "depuis": "2026-09-20 (revue hostile, Phase 0 P0-01/P0-03)",
       "note": "non corrigé, délibérément — les deux tâches ne touchent que le harnais de test, aucun état de production pertinent à surveiller n'a été identifié ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R132",
+      "etat": "ouvert — `plafond` (docs/instantanes/parcours-avertissements.json, P0-02) n'a aucun ratchet automatisé, seulement la revue humaine du diff ; la `_note` du fichier prétendait à tort le contraire, corrigée le même jour.",
+      "depuis": "2026-09-20 (seconde revue hostile, Phase 0 P0-02)",
+      "note": "non corrigé, délibérément — accepté comme limitation nommée d'un premier jet ; un vrai ratchet (fichier -plafond.json séparé, --figer explicite) reste à construire. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R133",
+      "etat": "ouvert — P0-02 n'a que la preuve unitaire (5 cas connus mauvais, src/lib/parcours.test.ts) du nouveau classifieur, pas la preuve de bout en bout par injection réelle que le plan maître demande (§P0-02, Tests).",
+      "depuis": "2026-09-20 (Phase 0 P0-02)",
+      "note": "non corrigé — aucun mécanisme d'injection de pageerror réelle n'existe dans le harnais (scripts/clics/, src/app/testing) ; à construire séparément avant de dire P0-02 complet au sens du plan. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

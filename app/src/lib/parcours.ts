@@ -131,3 +131,94 @@ export function empreintes(noms: string[], declarees: Station[]): Station[] {
   }
   return out;
 }
+
+/**
+ * P0-02 (AUD-16). Une `pageerror` #418 de SIGNATURE CONNUE (docs/instantanes/parcours-
+ * avertissements.json) est comptée en avertissement plutôt qu'en échec bloquant — mais SEULEMENT
+ * la signature nommée, jamais « toute erreur navigateur ». Une signature se juge sur la PREMIÈRE
+ * divergence d'hydratation de l'incident (`Ecart`, `src/lib/core/hydratation.ts`) : le côté
+ * CLIENT doit porter le motif nommé, et le côté SERVEUR ne doit PAS le porter (sinon une vraie
+ * divergence de contenu qui contiendrait par hasard le même mot serait classée à tort). Une
+ * incident sans première divergence connue (SANS sonde, ou dont le message ne correspond à AUCUNE
+ * signature) n'est JAMAIS classé — il reste un échec bloquant, ce qui est le comportement par
+ * défaut si `docs/instantanes/parcours-avertissements.json` est absent ou vide.
+ */
+export interface SignatureAvertissement {
+  id: string;
+  motif: string;
+  plafond: number;
+  raison: string;
+  depuis: string;
+}
+
+export interface Avertissements { signatures: SignatureAvertissement[] }
+
+/**
+ * REVUE HOSTILE (2026-09-20, P0-02) : la première version ne lisait QUE `ecarts[0]` — exactement
+ * le défaut que `divergences()` (`src/lib/core/hydratation.ts`) existe pour refuser (son propre
+ * en-tête : le 2026-09-03, la première divergence était le bruit `rail-astuce` connu et MASQUAIT
+ * un vrai défaut injecté plus loin dans le même incident). Corrigé : un incident n'est classé QUE
+ * si l'incident tient en UNE SEULE divergence (`ecarts.length === 1`) ET qu'elle correspond à une
+ * signature connue — jamais sur la première d'une liste plus longue. C'est délibérément PLUS
+ * ÉTROIT que ce que les mesures montrent (F60, docs/CHASSE.md : deux des quatre incidents connus
+ * portent 10 à 21 divergences, toutes lues comme du bruit F11 après relecture manuelle) : sous-
+ * classer laisse un incident réel en échec bloquant (règle 25, le défaut sûr) ; sur-classer
+ * masquerait un vrai défaut derrière un bruit toléré (règle 17/18, le défaut qu'on refuse). Élargir
+ * à la famille F11 (re-sérialisation CSS des raccourcis) exige sa propre signature, structurelle,
+ * pas une extension de celle-ci — non fait ici, hors périmètre de P0-02.
+ */
+export function classifierIncident(
+  ecarts: { serveur: string; client: string }[] | undefined,
+  signatures: SignatureAvertissement[],
+): string | null {
+  if (!ecarts || ecarts.length !== 1) return null;
+  const [seule] = ecarts;
+  for (const s of signatures) {
+    if (seule.client.includes(s.motif) && !seule.serveur.includes(s.motif)) return s.id;
+  }
+  return null;
+}
+
+/**
+ * Sépare les `pageerror` (toutes, dans l'ordre) en avertissements comptés (signature connue) et
+ * `dursReels` (tout le reste : les autres lignes de `durs` — `console`/HTTP 5xx —, ET toute
+ * `pageerror` non classée). Corrélation par POSITION entre `pageerrors` et `incidents` : la
+ * sonde d'hydratation (`scripts/clics/hydratation.ts`) ne capture QUE les codes 418/419/422/423/
+ * 425, dans le même ordre que les `pageerror` surviennent — un `pageerror` d'un autre code n'a
+ * jamais d'entrée dans `incidents` et n'avance donc jamais l'index correspondant : il reste, à
+ * raison, non classable.
+ */
+export function classerPageerrors(
+  durs: string[],
+  pageerrors: string[],
+  incidents: { ecarts: { serveur: string; client: string }[] }[],
+  signatures: SignatureAvertissement[],
+): { dursReels: string[]; avertissementsComptes: Record<string, number> } {
+  const CODE_SONDE = /Minified React error #(418|419|422|423|425)\b/;
+  const nonPageerror = durs.filter((d) => !pageerrors.includes(d));
+  const dursReels: string[] = [...nonPageerror];
+  const avertissementsComptes: Record<string, number> = {};
+  let iIncident = 0;
+  for (const ligne of pageerrors) {
+    if (!CODE_SONDE.test(ligne)) { dursReels.push(ligne); continue; }
+    const incident = incidents[iIncident];
+    iIncident++;
+    const id = classifierIncident(incident?.ecarts, signatures);
+    if (id) avertissementsComptes[id] = (avertissementsComptes[id] ?? 0) + 1;
+    else dursReels.push(ligne);
+  }
+  return { dursReels, avertissementsComptes };
+}
+
+/** Un plafond DÉPASSÉ (jamais atteint pile — le plafond mesuré lui-même est admis) rougit le run. */
+export function depassementsDePlafond(
+  comptes: Record<string, number>,
+  signatures: SignatureAvertissement[],
+): string[] {
+  const out: string[] = [];
+  for (const [id, n] of Object.entries(comptes)) {
+    const sig = signatures.find((s) => s.id === id);
+    if (sig && n > sig.plafond) out.push(`${id} : ${n} > plafond ${sig.plafond}`);
+  }
+  return out;
+}
