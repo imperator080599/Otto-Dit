@@ -53,7 +53,9 @@
     "reprise": "tsx scripts/reprise.ts",
     "semeur": "tsx scripts/semeur-vs-chemin.ts",
     "semeur:figer": "tsx scripts/semeur-vs-chemin.ts --figer",
-    "cloture": "tsx scripts/cloture.ts"
+    "cloture": "tsx scripts/cloture.ts",
+    "revue": "tsx scripts/revue.ts",
+    "revue:figer": "tsx scripts/revue.ts --figer"
   },
   "keywords": [],
   "author": "",

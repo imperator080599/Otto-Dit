@@ -2094,3 +2094,102 @@ design : chacun reste une tranche à construire.**
   EQUITY n'ouvre plus sur RIEN pour sa procédure principale (CAPITAUX-VAR), mais CAPITAUX-PV reste
   un décor tant qu'une tranche future construit son dépôt de procès-verbaux ; à reprendre si le
   fondateur juge cette procédure prioritaire face au reste du registre.
+
+## Constats de l'audit technique de la phase 2 (docs/AUDIT.md, P2 et registre P3)
+
+Les 46 lignes P0/P1 de l'audit (AUD-01..18) et les 22 remarques du fondateur (R-F1..22, S-1..6)
+vivent dans `docs/REVUE.md` (mandat 2026-09-20 §5.1, tâche P0-00), pas ici. Les constats P2
+(AUD-19..25) et le registre P3 de l'audit (R3-01..R3-10) sont reportés ci-dessous, un par
+constat, citant `docs/AUDIT.md` (SHA audité `5336095`) — hors de l'inventaire, ils ne bloquent
+aucune phase, mais ne sont pas oubliés (règle 23).
+
+- **R114 — Trois tableaux de bord juxtaposés ; /dashboard et /provenance orphelins ; /loop
+  atteignable par un obstacle seul ; une garde de couverture satisfaite par une liste que la page
+  ne tient pas (AUD-19, P2, taille M).** `/eng/[id]`, `/suivi` et `/dashboard` recalculent les
+  mêmes objets (`obstaclesAuVisa` ×2, sections, demandes) ; aucun `href` ne mène à `/dashboard` ni
+  `/provenance` ; `destinationsDuPoste` déclare des routes que la page de poste ne lie pas et
+  `rail.test.ts` les compte comme atteintes à tort. Correctif esquissé par l'audit : un seul
+  tableau de bord absorbant /suivi et /dashboard, /provenance et /loop en blocs de section,
+  `rail.test.ts` corrigé pour lire les `href` réellement rendus. Voir `docs/AUDIT.md` AUD-19.
+
+- **R115 — Duplications de saisie : trois chemins de rédaction de papier, deux écrans « détail du
+  compte », deux tables du même écart, deux vocabulaires de demande de pièce ; /sampling et
+  /population figés sur REVENUE (AUD-20, P2, taille M).** `draftRevenueWorkpaper`,
+  `redigerPapierDeProcedure` et `draftWpAction` rédigent des papiers par trois voies distinctes ;
+  /exceptions affiche deux tables du même objet et /kanban une troisième vue. Se referme
+  naturellement avec R-F11/R-F20 (Phase 4, sous-sections de poste) : Sampling et Testing
+  deviennent des sous-sections paramétrées par le poste. Voir `docs/AUDIT.md` AUD-20.
+
+- **R116 — États et titres incohérents entre écrans : « ouverte » a quatre définitions, les
+  couleurs trois, deux panneaux portent le titre d'un autre, « My assignments » montre le même
+  objet trois fois (AUD-21, P2, taille S).** Une note « adressée » est comptée close sur un écran,
+  ouverte sur un autre ; les notes du papier sont titrées « Colonnes ajoutées au tableau de
+  testing » au lieu de « Review notes ». Correctif esquissé : module `etats.ts` (statut → libellé,
+  classe, par objet), clés de titre corrigées. Recoupe R-F4/R-F8/R-F18 (mêmes symptômes, déjà dans
+  `docs/REVUE.md`) ; ce qui reste hors inventaire est la correction SYSTÉMATIQUE (`etats.ts`) au-delà
+  des écrans nommément cités par le fondateur. Voir `docs/AUDIT.md` AUD-21.
+
+- **R117 — S-1 confirmé et généralisé : gabarit `{nom}` fui, traducteur muet, import JSON
+  acceptant tout cycle, harnais `visuel` aveugle au texte et au statut HTTP (AUD-22, P2, taille S).**
+  Déjà repris comme S-1 dans `docs/REVUE.md` (tâche P0-05) pour sa part garde mécanique
+  (`traduire` dénonce, `visuel` refuse un statut ≥ 400 et lit `innerText`). Ce qui reste hors
+  inventaire : l'import JSON qui accepte n'importe quel `cycle` (retiré de l'UI par R-F15, mais le
+  mécanisme lui-même n'est pas corrigé pour le semeur). Voir `docs/AUDIT.md` AUD-22.
+
+- **R118 — Intégrité référentielle et documentation du modèle : trois liens de provenance sans FK,
+  195 FK et 32 `engagement_id` sans index, cascades contraires au doc, R66 faux, 04_DATA_MODEL
+  décalé (AUD-23, P2, taille S).** `extraction.ai_run_id`, `wp_extra_column.ai_run_id`,
+  `materiality.proposed_by_ai_run` n'ont pas de FK ; R66 (déjà au registre ci-dessus, ligne
+  `procedure_instance.control_id`) affirme une FK absente qui existe en réalité depuis 0002:416 —
+  à corriger dans le même geste que la migration `index_et_fk` proposée par l'audit.
+  `docs/04_DATA_MODEL.md` à régénérer depuis la DDL par script. Voir `docs/AUDIT.md` AUD-23.
+
+- **R119 — Instantanés et registres périmés ou faux : verify.json au 7 septembre, plancher 632
+  pour 1246 tests, GUARDS.md faux sur quatre lignes, DEPLOY.md contradictoire et dangereux, bandes
+  de migrations jamais construites (AUD-24, P2, taille S).** Recoupe directement AUD-16
+  (`docs/REVUE.md`, tâche P0-01/02/05, Phase 0) : une fois la chaîne `verify` reconduite verte,
+  `scripts/verify.ts` doit écrire une entrée par maillon dans `verify.json` pour que ce constat ne
+  se reproduise pas. DEPLOY.md §1-2, MIGRATIONS_BANDES.md et CLAUDE.md §5 (« dernière : 0142 »,
+  faux — la dernière est 0169) à corriger dans la même tranche que la fermeture d'AUD-16. Voir
+  `docs/AUDIT.md` AUD-24.
+
+- **R120 — Magasin de pièces empoisonnable et politiques `true` : insertion libre dans blob_store
+  + « premier arrivé garde le chemin » + BLOB-01 = déni de preuve irréparable ; app_state
+  inscriptible par tout locataire (AUD-25, P2, taille S).** `blob_store` accepte toute insertion
+  (`with check (true)`) et `saveBlob` fait `on conflict (storage_path) do nothing` : un locataire
+  qui connaît le sha256 d'une pièce attendue peut pré-insérer d'autres octets et rendre la pièce
+  légitime illisible, sans recours. Correctif esquissé : comparer le sha256 sur conflit et refuser
+  (BLOB-02) si les octets diffèrent. Le jour de l'étape 3 de PLAN_RLS (interdite sans mandat), ce
+  sera ce qui manque. Voir `docs/AUDIT.md` AUD-25.
+
+- **R121 — `keyFingerprint()` imprime les quatre derniers caractères de la clé
+  (`app/src/lib/core/env.ts:35`), lu strictement contre l'interdit « la clé jamais imprimée »
+  (registre P3, R3-01).** Réduire à la longueur seule. Voir `docs/AUDIT.md` §5.
+
+- **R122 — `depenseCumuleeUsd` est globale, pas par locataire (`extraction/budget.ts`), registre
+  P3 R3-02.** Un plafond par cabinet le jour d'un second locataire.
+
+- **R123 — TLS de la base : `rejectUnauthorized: false` sans `OTTO_DB_CA_CERT`
+  (`db/client.ts`), registre P3 R3-03.** Exiger le certificat en production.
+
+- **R124 — `section_visit` (9 416 lignes) écrite à chaque rendu, jamais purgée, registre P3
+  R3-04.** Rétention ou agrégat à construire.
+
+- **R125 — `/api/reunion-ics` lit l'invitation avant `requireMember`, registre P3 R3-05.**
+  L'existence d'un identifiant se devine avant que l'appartenance ne soit vérifiée.
+
+- **R126 — Douze fichiers d'actions hors `executer()` (try/catch maison, sans `withTenant`),
+  registre P3 R3-06.** À rabattre sur `executer()` avant l'étape 3 de PLAN_RLS (interdite sans
+  mandat écrit).
+
+- **R127 — `reconciliation.ts` n'écrit jamais d'`engine_run` malgré la colonne (migration 0006),
+  registre P3 R3-07.** À écrire pour que la provenance du rapprochement soit complète.
+
+- **R128 — Verbes d'événement doublonnés (`engagement.created` / `engagement_created`), registre
+  P3 R3-08.** À unifier avec le registre des verbes prévu par AUD-12 (`docs/REVUE.md`).
+
+- **R129 — Kinds d'ancre `ecran` et `deviation` sans écran (`notes/ancres.ts`), registre P3
+  R3-09.** À retirer ou à donner un écran, dans le même geste qu'AUD-02 (`docs/REVUE.md`).
+
+- **R130 — `attribuerAction` exportée jamais importée ; `VuePoste.boucle` calculé jamais rendu,
+  registre P3 R3-10.** Même famille qu'AUD-19 (`/loop` orphelin) — un calcul sans chemin de lecture.

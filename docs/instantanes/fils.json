@@ -583,6 +583,108 @@
       "etat": "recherche menée, non implémentée — VID-01-RETENTION ne peut jamais démarrer son compte à rebours DANS CE PARCOURS car le dossier SOX (où le compteur s'affiche, /eng/[id]/rcm/[cid]) n'est JAMAIS clos par scenario.ts — le seul clic sur closeFile()/report_date porte sur le dossier NEP (c.eng), jamais sur c.controleWalkthrough.engId. Fermer cette ligne exigerait de construire un second chantier de clôture complet sur le dossier SOX (ses propres obstacles au visa, jamais exercés), pas une simple lecture d'écran comme MAT-03/NOTIF-01.",
       "depuis": "2026-09-19 (recherche après la fermeture de MAT-03)",
       "note": "non corrigé, délibérément : hors du périmètre minimal d'une tranche de lecture d'écran (règle 14) — voir docs/BACKLOG_REPORTE.md pour le détail complet de la recherche."
+    },
+    {
+      "id": "R114",
+      "etat": "ouvert — AUD-19 (audit phase 2, P2) : trois tableaux de bord juxtaposés (/eng/[id], /suivi, /dashboard) recalculent les mêmes objets ; /dashboard et /provenance orphelins (aucun href) ; /loop atteignable par un obstacle seul ; rail.test.ts compte des routes déclarées, jamais liées, comme atteintes.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, hors de l'inventaire docs/REVUE.md (P2, pas P0/P1) — voir docs/BACKLOG_REPORTE.md pour le détail complet."
+    },
+    {
+      "id": "R115",
+      "etat": "ouvert — AUD-20 (audit phase 2, P2) : trois chemins de rédaction de papier, deux écrans « détail du compte », deux tables du même écart plus le kanban, deux vocabulaires de demande de pièce ; /sampling et /population figés sur REVENUE.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, hors de l'inventaire docs/REVUE.md (P2) — se referme naturellement avec R-F11/R-F20 (Phase 4) ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R116",
+      "etat": "ouvert — AUD-21 (audit phase 2, P2) : états et titres incohérents entre écrans (« ouverte » a quatre définitions, les couleurs trois), deux panneaux portent le titre d'un autre, My assignments montre le même objet trois fois.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, hors de l'inventaire docs/REVUE.md (P2) — recoupe R-F4/R-F8/R-F18 déjà dans l'inventaire ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R117",
+      "etat": "ouvert — AUD-22 (audit phase 2, P2) : S-1 confirmé et généralisé (gabarit {nom} fui), traducteur muet, import JSON de processus acceptant tout cycle, harnais visuel aveugle au texte et au statut HTTP.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — la part garde mécanique est reprise comme S-1 dans docs/REVUE.md (tâche P0-05) ; le reste (import JSON acceptant tout cycle) hors inventaire ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R118",
+      "etat": "ouvert — AUD-23 (audit phase 2, P2) : trois liens de provenance sans FK, 195 FK et 32 engagement_id sans index, cascades contraires à la doc, R66 (registre ci-dessus) affirme une FK absente qui existe depuis 0002:416, 04_DATA_MODEL décalé.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, hors de l'inventaire docs/REVUE.md (P2) — voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R119",
+      "etat": "ouvert — AUD-24 (audit phase 2, P2) : instantanés et registres périmés ou faux (verify.json au 7 septembre, plancher 632 pour 1246 tests, GUARDS.md faux sur quatre lignes, DEPLOY.md contradictoire et dangereux, bandes de migrations jamais construites).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — recoupe directement AUD-16 (docs/REVUE.md, Phase 0) ; se referme dans la même tranche que la chaîne verify reconduite verte ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R120",
+      "etat": "ouvert — AUD-25 (audit phase 2, P2) : magasin de pièces empoisonnable (blob_store with check (true), premier arrivé garde le chemin, BLOB-01 = déni de preuve irréparable) ; app_state inscriptible par tout locataire.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, hors de l'inventaire docs/REVUE.md (P2) — pertinent le jour de l'étape 3 de PLAN_RLS (interdite sans mandat) ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R121",
+      "etat": "ouvert — registre P3 de l'audit (R3-01) : keyFingerprint() imprime les quatre derniers caractères de la clé (env.ts:35), lu strictement contre l'interdit « la clé jamais imprimée ».",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur — réduire à la longueur seule ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R122",
+      "etat": "ouvert — registre P3 de l'audit (R3-02) : depenseCumuleeUsd est globale, pas par locataire (extraction/budget.ts).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur — un plafond par cabinet le jour d'un second locataire ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R123",
+      "etat": "ouvert — registre P3 de l'audit (R3-03) : TLS de la base rejectUnauthorized: false sans OTTO_DB_CA_CERT (db/client.ts).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur — exiger le certificat en production ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R124",
+      "etat": "ouvert — registre P3 de l'audit (R3-04) : section_visit (9 416 lignes) écrite à chaque rendu, jamais purgée.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur — rétention ou agrégat à construire ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R125",
+      "etat": "ouvert — registre P3 de l'audit (R3-05) : /api/reunion-ics lit l'invitation avant requireMember, l'existence d'un identifiant se devine.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R126",
+      "etat": "ouvert — registre P3 de l'audit (R3-06) : douze fichiers d'actions hors executer() (try/catch maison, sans withTenant).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — à rabattre sur executer() avant l'étape 3 de PLAN_RLS (interdite sans mandat écrit) ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R127",
+      "etat": "ouvert — registre P3 de l'audit (R3-07) : reconciliation.ts n'écrit jamais d'engine_run malgré la colonne (migration 0006).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé, mineur — à écrire pour compléter la provenance du rapprochement ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R128",
+      "etat": "ouvert — registre P3 de l'audit (R3-08) : verbes d'événement doublonnés (engagement.created / engagement_created).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — à unifier avec le registre des verbes prévu par AUD-12 (docs/REVUE.md) ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R129",
+      "etat": "ouvert — registre P3 de l'audit (R3-09) : kinds d'ancre ecran et deviation sans écran (notes/ancres.ts).",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — à retirer ou à donner un écran, dans le même geste qu'AUD-02 (docs/REVUE.md) ; voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R130",
+      "etat": "ouvert — registre P3 de l'audit (R3-10) : attribuerAction exportée jamais importée ; VuePoste.boucle calculé jamais rendu.",
+      "depuis": "2026-09-20 (audit technique phase 2, docs/AUDIT.md)",
+      "note": "non corrigé — même famille qu'AUD-19 (/loop orphelin), un calcul sans chemin de lecture ; voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }
