@@ -250,7 +250,11 @@ async function main() {
       : stationFiltre
         ? `\ngarde du parcours : NON vérifiée — run filtré --station=${stationFiltre} (${figees} station(s) dans le figé, non comparées).`
         : `\ngarde du parcours : ${figees} station(s) figée(s) vérifiée(s).`);
-  if (figees === 0 && !process.argv.includes('--figer')) {
+  /* Un run filtré ne peut jamais satisfaire cette garde (il ne fige jamais, voir ci-dessus) : la
+     lui appliquer ferait échouer À TORT tout `--station=` tant que le figé existant est vide —
+     un cas aujourd'hui impossible (docs/PARCOURS.json en porte 325) mais latent (revue hostile,
+     Phase 0). La garde reste réservée au run complet. */
+  if (!stationFiltre && figees === 0 && !process.argv.includes('--figer')) {
     console.log('LA GARDE D’EXÉCUTION NE VÉRIFIE RIEN — figez un parcours vert : '
       + '`npm run clics -- --figer`.\n');
     process.exit(1);

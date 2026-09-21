@@ -2252,3 +2252,14 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   et pourrait servir de condition). Tant que non fermé : ne jamais lancer `npx vitest run` puis
   `npm run screens`/`clics`/`visuel` MANUELLEMENT sur la même base sans un `db:reset && demo:seed`
   entre les deux.
+
+- **R135 — `restants` (scenario.ts, station « obstacles au visa » → « clôture et archive**
+  **scellée ») n'a pas le garde-fou de `engNeuf`, trouvé par revue hostile de P0-04.** Un
+  `npm run clics -- --station=clôture` isolé (ou tout préfixe qui ne sélectionne pas « obstacles
+  au visa ») lit `restants === 0` (la valeur par défaut, jamais mise à jour) au lieu d'un échec
+  déclaré — le détail imprimé (« 0 obstacle(s) au visa subsistent ») peut se lire comme une
+  mesure alors que ce n'en est pas une (règle 31). Corriger la station existante (ajouter un
+  garde-fou analogue à `if (!engNeuf) { dire(…); return }`, ou lui donner une précondition dans
+  `preconditions.ts` qui repose `restants` par service) est repoussé à P6-03 (migration des
+  stations existantes), comme prévu par le plan pour P0-04 — la limite est documentée dans
+  `scripts/clics/preconditions.ts` (en-tête) plutôt que laissée à découvrir.

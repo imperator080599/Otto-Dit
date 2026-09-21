@@ -709,6 +709,12 @@
       "etat": "ouvert — `npx vitest run` peut vider les tables transactionnelles de la base semée sur disque (evidence, export_record, control, workpaper, request, fsli), reproduit de façon fiable par un doublet minimal de deux fichiers de test ; racine exacte non trouvée (hypothèse nommée : globalThis.__ottoDb qui survit à l'isolation des modules par fichier de Vitest).",
       "depuis": "2026-09-21 (Phase 0, mesure de sortie — docs/CHASSE.md F62)",
       "note": "mitigé, pas corrigé — scripts/verify.ts et .github/workflows/verifier.yml (job local) réordonnés pour que vitest tourne en dernier, après tout maillon qui a besoin de la base semée intacte. Racine non instrumentée. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R135",
+      "etat": "ouvert — `restants` (scenario.ts, posé par la station « obstacles au visa », lu par « clôture et archive scellée ») n'a pas le garde-fou que `engNeuf` porte ; un `--station=clôture` isolé peut imprimer un compte stale (0) au lieu d'un échec déclaré.",
+      "depuis": "2026-09-21 (Phase 0 P0-04, revue hostile)",
+      "note": "non corrigé, délibérément — repoussé à P6-03 (migration des stations existantes) comme le reste ; la limite est documentée dans scripts/clics/preconditions.ts. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

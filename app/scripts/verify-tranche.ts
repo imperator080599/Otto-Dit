@@ -22,12 +22,16 @@ const testsArgs = process.argv.slice(2).filter((a) => !a.startsWith('--routes=')
 
 interface Maillon { nom: string; commande: string[] }
 
+/* F62 (docs/CHASSE.md, R134) : TOUT lancement de Vitest peut vider les tables transactionnelles
+   de la base semée SUR DISQUE — `vitest run` COMME `vitest list` (racine non trouvée). `vitest`
+   tourne donc EN DERNIER ici aussi, après screens/clics/visuel, qui ont tous besoin de la base
+   semée intacte (même discipline que scripts/verify.ts, corrigée le même jour). */
 const CHAINE: Maillon[] = [
   { nom: 'tsc', commande: ['npx', 'tsc', '--noEmit'] },
-  { nom: 'vitest (ciblé)', commande: ['npx', 'vitest', 'run', ...testsArgs] },
   ...(routes ? [{ nom: 'screens --routes', commande: ['npm', 'run', 'screens', '--', `--routes=${routes}`] }] : []),
   ...(station ? [{ nom: 'clics --station', commande: ['npm', 'run', 'clics', '--', `--station=${station}`] }] : []),
   ...(routes ? [{ nom: 'visuel --routes', commande: ['npm', 'run', 'visuel', '--', `--routes=${routes}`] }] : []),
+  { nom: 'vitest (ciblé)', commande: ['npx', 'vitest', 'run', ...testsArgs] },
 ];
 
 async function lancer(m: Maillon): Promise<number> {

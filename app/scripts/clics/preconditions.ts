@@ -6,14 +6,19 @@ import { currentMateriality, propose, validate } from '../../src/lib/services/ma
 // stations qu'on saute), avant que le serveur `next start` ne prenne la base (PGlite n'admet
 // qu'un écrivain — `run.ts` ferme la connexion juste après avoir appelé ces fonctions, donc elles
 // tournent ICI, jamais depuis `conduire()`). CE QUE CE REGISTRE NE FAIT PAS : il ne peut rien pour
-// une station qui lit une variable LOCALE posée par une station SAUTÉE (`engNeuf`, posé par
-// « création : … » dans `scenario.ts`) — une précondition tourne dans le processus du script,
-// avant que le navigateur n'existe, donc elle ne peut écrire QUE dans la base, jamais dans une
-// fermeture (closure) de `conduire()`. Les stations qui dépendent d'`engNeuf` (« rail », « acceptation
-// du dossier neuf ») gardent leur garde-fou existant (`if (!engNeuf) { … return }`) et n'ont donc
-// besoin d'AUCUNE précondition pour rester rejouables seules — un échec correctement DÉCLARÉ, pas
-// un crash. Les nouvelles stations de la Phase 2 DOIVENT déclarer la leur ici ; les stations
-// existantes ne sont pas migrées maintenant (P6-03).
+// une station qui lit une variable LOCALE posée par une station SAUTÉE — une précondition tourne
+// dans le processus du script, avant que le navigateur n'existe, donc elle ne peut écrire QUE dans
+// la base, jamais dans une fermeture (closure) de `conduire()`. `engNeuf` (posé par « création :
+// … ») EN EST UN CAS, mais pas le seul : les deux stations qui la lisent (« rail », « acceptation
+// du dossier neuf ») portent chacune leur propre garde-fou (`if (!engNeuf) { … return }`), donc un
+// run filtré sur l'une d'elles seule échoue PROPREMENT, pas en silence. `restants` (posé par
+// « obstacles au visa », lu par « clôture et archive scellée ») N'A PAS ce garde-fou — trouvé par
+// revue hostile (Phase 0) — un `--station=clôture` isolé lit `restants === 0` par défaut et peut
+// imprimer un compte STALE (« 0 obstacle(s) au visa subsistent ») au lieu d'un échec déclaré.
+// Corriger la station existante est repoussé à P6-03 comme les autres migrations ; le dire ici,
+// jamais le laisser lire comme une garantie générale qu'aucune variable inter-stations n'échappe
+// au filtre — voir R-nn (docs/BACKLOG_REPORTE.md). Les nouvelles stations de la Phase 2 DOIVENT
+// déclarer leur précondition ici.
 
 export type Precondition = (ctx: Contexte) => Promise<void>;
 
@@ -46,7 +51,16 @@ export const PRECONDITIONS: Record<string, Precondition> = {
       console.log(`  précondition « sondage » : matérialité déjà validée (v${m.version}) — rien à poser`);
       return;
     }
-    console.log('  précondition « sondage » : matérialité absente ou non validée — proposée puis validée par service');
+    /* Une version déjà PROPOSÉE (jamais validée — `validate()` aurait levé, ou une session
+       précédente s'est arrêtée entre les deux) se valide TELLE QUELLE : la reproposer laisserait
+       la première orpheline pour toujours (`validate()` ne supersède que les lignes `validated`,
+       jamais les `proposed`) — un débris que règle 28 interdit de créer en silence. */
+    if (m && m.status === 'proposed') {
+      console.log(`  précondition « sondage » : matérialité déjà PROPOSÉE (v${m.version}) — validée par service, pas reproposée`);
+      await validate(m.id, ctx.reviewer.id);
+      return;
+    }
+    console.log('  précondition « sondage » : matérialité absente — proposée puis validée par service');
     const id = await propose(ctx.eng, ctx.associe.id);
     await validate(id, ctx.reviewer.id);
   },
