@@ -1703,6 +1703,132 @@
       "quand": "2026-09-21T20:59:03.156Z",
       "resultat": "ÉCHEC — code 1 (89.3s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:15:58.059Z",
+      "resultat": "ok (5.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:10.029Z",
+      "resultat": "ok (12.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:13.093Z",
+      "resultat": "ok (3.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:13.567Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:14.031Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:14.565Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:15.926Z",
+      "resultat": "ok (1.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:16.390Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:16.971Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:17.449Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:16:19.878Z",
+      "resultat": "ok (2.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:17:52.564Z",
+      "resultat": "ok (92.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:18:01.566Z",
+      "resultat": "ok (9.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:19:19.834Z",
+      "resultat": "ok (78.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:36:06.019Z",
+      "resultat": "ok (1006.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:39:07.473Z",
+      "resultat": "ok (181.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:39:53.891Z",
+      "resultat": "ok (46.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "c2e3bec549de371edda601a27dce40d800467f6b",
+      "quand": "2026-09-21T21:50:32.336Z",
+      "resultat": "ok (638.4s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
