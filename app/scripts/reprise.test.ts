@@ -5,6 +5,7 @@ import {
   chaineVerify, filsDuBacklog, tableFils, tableVerify, rendre, sectionsChasse,
   TransfertIncomplet, type Entrees, type Verify,
 } from './reprise';
+import { NOMS as CHAINE_VERIFY } from './verify';
 
 /**
  * L'ENGENDREUR DE docs/REPRISE.md, ÉPROUVÉ CONTRE SES CAS CONNUS MAUVAIS (règle 17).
@@ -65,13 +66,17 @@ describe('la chaîne verify est lue dans package.json, pas recopiée', () => {
     const c = chaineVerify('npm run db:reset && npm run demo:seed && tsc --noEmit && vitest run && npm run gardes');
     expect(c).toEqual(['db:reset', 'demo:seed', 'tsc', 'vitest', 'gardes']);
   });
-  it('le vrai package.json : la chaîne finit par le parcours cliqué et la revue visuelle', () => {
+  it('le vrai package.json pointe sur le wrapper, dont la chaîne finit par le parcours cliqué et la revue visuelle', () => {
+    /* P0-07 : `npm run verify` invoque désormais `scripts/verify.ts` (un wrapper qui chronomètre
+       chaque maillon et écrit docs/instantanes/verify.json), pas un texte `&&` que ce parseur
+       pourrait lire — la chaîne DÉCLARÉE vit dans `scripts/verify.ts::NOMS`, importée ici
+       directement plutôt que reconstruite depuis package.json. */
     const pkg = JSON.parse(lire('app/package.json')) as { scripts: Record<string, string> };
-    const c = chaineVerify(pkg.scripts.verify);
-    expect(c.length).toBeGreaterThanOrEqual(15);
-    expect(c).toContain('clics');
-    expect(c).toContain('visuel');
-    expect(c[0]).toBe('db:reset');
+    expect(pkg.scripts.verify).toMatch(/scripts\/verify\.ts/);
+    expect(CHAINE_VERIFY.length).toBeGreaterThanOrEqual(15);
+    expect(CHAINE_VERIFY).toContain('clics');
+    expect(CHAINE_VERIFY).toContain('visuel');
+    expect(CHAINE_VERIFY[0]).toBe('db:reset');
   });
 });
 

@@ -6,19 +6,21 @@ import { fileURLToPath } from 'node:url';
 // P0-07 (AUD-24). `npm run verify` chaînait ses maillons par `&&`, sans aucune trace de CE QUI a
 // tourné, combien de temps, ni sur quel arbre — une livraison qui citait « verify vert » n'avait
 // que sa mémoire pour preuve (règle 12 : une vérification que personne ne peut rejouer est une
-// affirmation). Ce wrapper lance chaque maillon sous son propre chronométrage, capture son code
-// de sortie, et écrit `docs/instantanes/verify.json` — le SHA et l'heure de la mesure, la liste
-// ORDONNÉE des maillons avec leur statut, et le premier échec qui a arrêté la chaîne (fail-fast,
-// comme le `&&` d'origine : aucune raison de laisser tourner `clics`/`visuel` après un `tsc`
-// rouge). CE QUE CE FICHIER NE FAIT PAS : il ne pose pas de budget global — c'est le rôle du
-// `timeout` externe (règle 35, forme opérative), jamais dupliqué ici.
+// affirmation). Ce wrapper lance chaque maillon sous son propre chronométrage et APPEND une ligne
+// par maillon à `docs/instantanes/verify.json` — le format `Verify` (`scripts/reprise.ts`,
+// `{executions, precedent}`) que `docs/REPRISE.md` lit déjà : un historique de `Execution`
+// (`commande, sha, quand, resultat, source`), jamais un instantané à un seul étage qui écraserait
+// les runs précédents. `precedent` (la continuité d'un rapport à l'autre) est PRÉSERVÉ tel quel —
+// ce script ne le connaît pas, ce n'est pas son rôle de l'inventer. CE QUE CE FICHIER NE FAIT PAS :
+// il ne pose pas de budget global — c'est le rôle du `timeout` externe (règle 35, forme
+// opérative), jamais dupliqué ici.
 
 const APP = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const REPO = path.dirname(APP);
 
 interface Maillon { nom: string; commande: string[] }
 
-const CHAINE: Maillon[] = [
+export const CHAINE: Maillon[] = [
   { nom: 'db:reset', commande: ['npm', 'run', 'db:reset'] },
   { nom: 'demo:seed', commande: ['npm', 'run', 'demo:seed'] },
   { nom: 'tsc', commande: ['npx', 'tsc', '--noEmit'] },
@@ -39,15 +41,19 @@ const CHAINE: Maillon[] = [
   { nom: 'visuel', commande: ['npm', 'run', 'visuel'] },
 ];
 
-interface ResultatMaillon {
-  nom: string;
+/** Les NOMS seuls, dans l'ordre — ce que `scripts/reprise.ts` lit comme la chaîne `verify`
+ *  déclarée (remplace le parsing du texte `&&` de `package.json`, disparu avec ce wrapper). */
+export const NOMS = CHAINE.map((m) => m.nom);
+
+interface Execution {
   commande: string;
-  demarre: string;
-  termine: string;
-  duree_ms: number;
-  code_sortie: number | null;
-  ok: boolean;
+  sha: string;
+  quand: string;
+  resultat: string;
+  source: string;
+  variante?: string;
 }
+interface VerifyJson { executions: Execution[]; precedent: { source: string; nonExecutees: string[] } }
 
 function sha(): string {
   try {
@@ -57,54 +63,56 @@ function sha(): string {
   }
 }
 
-async function lancer(m: Maillon): Promise<ResultatMaillon> {
-  const demarre = new Date();
+async function lancer(m: Maillon): Promise<{ code: number | null; dureeMs: number }> {
+  const demarre = Date.now();
   const [bin, ...args] = m.commande;
   const code = await new Promise<number | null>((resolve) => {
     const p = spawn(bin, args, { cwd: APP, stdio: 'inherit', shell: process.platform === 'win32' });
     p.on('close', (c) => resolve(c));
     p.on('error', () => resolve(-1));
   });
-  const termine = new Date();
-  return {
-    nom: m.nom,
-    commande: m.commande.join(' '),
-    demarre: demarre.toISOString(),
-    termine: termine.toISOString(),
-    duree_ms: termine.getTime() - demarre.getTime(),
-    code_sortie: code,
-    ok: code === 0,
-  };
+  return { code, dureeMs: Date.now() - demarre };
+}
+
+function lireExistant(chemin: string): VerifyJson {
+  if (!fs.existsSync(chemin)) return { executions: [], precedent: { source: '(aucun rapport précédent)', nonExecutees: [] } };
+  try {
+    return JSON.parse(fs.readFileSync(chemin, 'utf8')) as VerifyJson;
+  } catch {
+    return { executions: [], precedent: { source: '(aucun rapport précédent — fichier illisible)', nonExecutees: [] } };
+  }
 }
 
 async function main() {
-  const cible = process.env.VERIFY_ARBRE ?? 'complet';
-  console.log(`\nverify (${cible}) — ${CHAINE.length} maillon(s), arbre ${sha()}\n`);
+  const arbre = sha();
+  console.log(`\nverify — ${CHAINE.length} maillon(s), arbre ${arbre}\n`);
 
-  const resultats: ResultatMaillon[] = [];
+  const cheminSortie = path.join(REPO, 'docs', 'instantanes', 'verify.json');
+  const donnees = lireExistant(cheminSortie);
+
   let echecA: string | null = null;
+  let executees = 0;
 
   for (const m of CHAINE) {
     console.log(`\n── ${m.nom} ${'─'.repeat(Math.max(1, 60 - m.nom.length))}\n`);
-    const r = await lancer(m);
-    resultats.push(r);
-    console.log(`\n  ${r.ok ? 'ok  ' : 'ÉCHEC'}  ${m.nom} (${(r.duree_ms / 1000).toFixed(1)}s, code ${r.code_sortie})\n`);
-    if (!r.ok) { echecA = m.nom; break; }
+    const { code, dureeMs } = await lancer(m);
+    const ok = code === 0;
+    donnees.executions.push({
+      commande: m.nom,
+      sha: arbre,
+      quand: new Date().toISOString(),
+      resultat: ok ? `ok (${(dureeMs / 1000).toFixed(1)}s)` : `ÉCHEC — code ${code} (${(dureeMs / 1000).toFixed(1)}s)`,
+      source: 'scripts/verify.ts',
+    });
+    console.log(`\n  ${ok ? 'ok  ' : 'ÉCHEC'}  ${m.nom} (${(dureeMs / 1000).toFixed(1)}s, code ${code})\n`);
+    executees++;
+    if (!ok) { echecA = m.nom; break; }
   }
 
-  const nonExecutes = CHAINE.slice(resultats.length).map((m) => m.nom);
-  const rapport = {
-    sha: sha(),
-    quand: new Date().toISOString(),
-    cible,
-    echecA,
-    maillons: resultats,
-    nonExecutes,
-  };
-  const cheminSortie = path.join(REPO, 'docs', 'instantanes', 'verify.json');
-  fs.writeFileSync(cheminSortie, `${JSON.stringify(rapport, null, 2)}\n`);
-  console.log(`\ndocs/instantanes/verify.json écrit — ${resultats.length}/${CHAINE.length} maillon(s) exécuté(s)` +
-    (nonExecutes.length ? `, ${nonExecutes.length} non exécuté(s) : ${nonExecutes.join(', ')}` : '') + '\n');
+  fs.writeFileSync(cheminSortie, `${JSON.stringify(donnees, null, 2)}\n`);
+  const nonExecutes = NOMS.slice(executees);
+  console.log(`\ndocs/instantanes/verify.json écrit — ${executees}/${CHAINE.length} maillon(s) exécuté(s) sur cet arbre` +
+    (nonExecutes.length ? `, ${nonExecutes.length} non exécuté(s) cette fois : ${nonExecutes.join(', ')}` : '') + '\n');
 
   if (echecA) {
     console.log(`verify ROUGE — arrêté au maillon « ${echecA} ».\n`);

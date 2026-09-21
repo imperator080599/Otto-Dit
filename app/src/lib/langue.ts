@@ -289,6 +289,7 @@ export const HORS_LIBELLE: Record<string, string> = {
   'db/sans-locataire.ts': 'la liste écrite des chemins légitimement sans locataire (PLAN_RLS A.4) : `raison` s’adresse au développeur qui ajoute un chemin, dans le message d’un refus technique (LOC-01/LOC-02) — jamais à un utilisateur, jamais sur un écran',
   'flows/enrichir.ts': 'étiquettes d’ancre des notes SEMÉES : contenu du monde de démonstration, figé à la pose comme le texte des notes (ADR-097) — jamais un libellé d’écran',
   'semeur/registre.ts': 'titres de section du registre R44, rendus dans docs/SEMEUR_VS_CHEMIN.md par `npm run semeur` — un document engendré, jamais un écran (même statut que gardes/registre.ts ci-dessus)',
+  'epure.ts': 'la raison DOCUMENTAIRE de chaque motif interdit (P0-06) — s’adresse au développeur qui lit `MOTIFS_INTERDITS`, jamais rendue par `visuel/run.ts` (qui ne lit que `m.id`) ni par aucun écran : même statut que `raison` dans db/sans-locataire.ts ci-dessus',
 };
 
 const PROPS_LIBELLE = /\b(libelle|label|titre|phrase|raison|detail|resume|description|quoi)\s*:\s*(['"`])((?:\\.|(?!\2)[^\\])*)\2/g;

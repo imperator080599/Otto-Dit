@@ -36,6 +36,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { NOMS as CHAINE_VERIFY } from './verify';
 
 export interface Fil { id: string; etat: string; titre?: string; depuis?: string; note?: string }
 export interface Execution {
@@ -340,7 +341,6 @@ if (process.argv[1]?.endsWith('reprise.ts')) {
   const racine = path.resolve(import.meta.dirname, '..', '..');
   const lire = (p: string): string => fs.readFileSync(path.join(racine, p), 'utf8');
   try {
-    const pkg = JSON.parse(lire('app/package.json')) as { scripts: Record<string, string> };
     const e: Entrees = {
       date: new Date().toISOString(),
       git: etatGit(racine),
@@ -348,7 +348,7 @@ if (process.argv[1]?.endsWith('reprise.ts')) {
       fils: (JSON.parse(lire('docs/instantanes/fils.json')) as { fils: Fil[] }).fils,
       backlog: lire('docs/BACKLOG_REPORTE.md'),
       verify: JSON.parse(lire('docs/instantanes/verify.json')) as Verify,
-      chaine: chaineVerify(pkg.scripts.verify),
+      chaine: CHAINE_VERIFY,
       processus: processusEnCours(),
       chasse: lire('docs/CHASSE.md'),
       gabarit: lire('docs/reprise.src.md'),
