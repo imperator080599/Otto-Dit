@@ -2,9 +2,11 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { binaireDe, groupeDetache, tuerArbre, cheminChromium, conseilChromium } from '../lib/portable.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
 import { getDb } from '../../src/lib/db/client';
 import { routes, auditeur, baseSemee } from '../screens/routes';
+import { verifierEpure } from '../../src/lib/epure';
 
 // npm run visuel : la revue VISUELLE, en clair et en sombre, en large et à 390 px.
 //
@@ -20,8 +22,24 @@ import { routes, auditeur, baseSemee } from '../screens/routes';
 const PORT = Number(process.env.VISUEL_PORT ?? 3214);
 const NAVIGATEUR = cheminChromium();
 const SORTIE = process.env.VISUEL_SORTIE ?? path.join(process.cwd(), '.visuel');
+/* LE CHEMIN NE DÉPEND PAS D'OÙ L'ON LANCE (même leçon que scripts/clics/run.ts). */
+const APP = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 
 interface Defaut { route: string; vue: string; quoi: string; detail: string }
+
+/**
+ * P0-06 (EPURE-01). Les motifs interdits (src/lib/epure.ts) sont comptés en AVERTISSEMENT sous
+ * un plafond figé PAR MOTIF — jamais un refus bloquant ici (ça, c'est P5-05). Le fichier des
+ * plafonds n'existe pas encore à la première exécution : dans ce cas, AUCUN plafond n'existe et
+ * tout dépassement (même 1) bloque — jamais une carte blanche silencieuse.
+ */
+interface PlafondsEpure { plafonds: Record<string, number> }
+
+function lirePlafondsEpure(): PlafondsEpure {
+  const chemin = path.join(APP, '..', 'docs', 'instantanes', 'visuel-avertissements.json');
+  if (!fs.existsSync(chemin)) return { plafonds: {} };
+  return JSON.parse(fs.readFileSync(chemin, 'utf8')) as PlafondsEpure;
+}
 
 /** Le débordement horizontal, et QUI déborde. « La page déborde » sans le
  *  coupable oblige à tout rouvrir à la main. */
@@ -177,6 +195,7 @@ async function main() {
 
   const serveur = lancer(dev ? ['dev', '-p', String(PORT)] : ['start', '-p', String(PORT)]);
   const defauts: Defaut[] = [];
+  const epureParMotif = new Map<string, Set<string>>();
   let vues = 0;
   try {
     await attendre(`http://localhost:${PORT}/`, serveur);
@@ -199,13 +218,38 @@ async function main() {
           }
           const page = await ctx.newPage();
           for (const r of lot) {
-            await page.goto(`http://localhost:${PORT}${r.url}`, { waitUntil: 'load', timeout: 30000 }).catch(() => undefined);
+            const reponse = await page.goto(`http://localhost:${PORT}${r.url}`, { waitUntil: 'load', timeout: 30000 }).catch(() => null);
             await page.waitForTimeout(200);
             vues++;
+            /* P0-06 : un statut >= 400 est un échec RÉEL — jamais un défaut visuel compté, jamais
+               une capture qui prétendrait avoir « regardé » un écran qui a refusé de rendre. UN
+               404 DÉCLARÉ (`route.attendu`, screens/routes.ts) reste légitime : le lien de
+               démonstration qui n'existe que sur la démo publique, le dossier scellé absent —
+               même discipline que scripts/screens/sweep.ts, jamais une seconde règle qui les
+               contredirait. */
+            const statutOk = r.attendu !== undefined
+              ? reponse?.status() === r.attendu
+              : !!reponse && reponse.status() < 400;
+            if (!statutOk) {
+              const note = r.attendu !== undefined ? ` (${r.attendu} attendu — ${r.pourquoi})` : '';
+              defauts.push({ route: r.pattern, vue: vue.nom, quoi: 'statut', detail: `HTTP ${reponse?.status() ?? '(aucune réponse)'}${note}` });
+              continue;
+            }
             const nom = r.pattern.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '') || 'accueil';
             await page.screenshot({ path: path.join(SORTIE, `${vue.nom}__${nom}.png`), fullPage: false });
             for (const d of await debordements(page)) defauts.push({ route: r.pattern, vue: vue.nom, quoi: 'débordement', detail: d });
             for (const c of await contrastes(page)) defauts.push({ route: r.pattern, vue: vue.nom, quoi: 'contraste', detail: c });
+            /* P0-06 (EPURE-01, S-1) : le TEXTE rendu, jamais le HTML — un motif interdit qui vit
+               dans un attribut invisible (aria-label dupliqué, title) n'atteint pas l'œil de
+               l'auditeur, donc ne compte pas ici. Une route peut être vue plusieurs fois (quatre
+               vues : clair/sombre × large/390) ; un motif compte une fois PAR ROUTE, jamais une
+               fois par vue — le texte ne change pas avec le viewport, et le multiplier par 4
+               gonflerait le plafond sans rien mesurer de réel. */
+            const texte = await page.evaluate(() => document.body.innerText).catch(() => '');
+            for (const id of verifierEpure(texte)) {
+              if (!epureParMotif.has(id)) epureParMotif.set(id, new Set());
+              epureParMotif.get(id)!.add(r.pattern);
+            }
           }
           await ctx.close();
         };
@@ -226,8 +270,30 @@ async function main() {
     process.exit(1);
   }
   for (const d of defauts) console.log(`  ${d.quoi.padEnd(12)} ${d.vue.padEnd(13)} ${d.route.padEnd(34)} ${d.detail}`);
+
+  /* P0-06 (EPURE-01) : le compte par motif s'imprime TOUJOURS, même à zéro dépassement — un
+     harnais qui ne dit rien de ce qu'il a compté est le silence que la règle 13 nomme. */
+  const { plafonds } = lirePlafondsEpure();
+  const depassements: string[] = [];
+  if (epureParMotif.size) {
+    console.log('\nMotifs interdits (EPURE-01, S-1) — comptés par ROUTE distincte :');
+    for (const [id, routesTouchees] of [...epureParMotif.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const n = routesTouchees.size;
+      const plafond = plafonds[id];
+      const etat = plafond === undefined ? 'AUCUN PLAFOND CONNU' : n > plafond ? `DÉPASSE le plafond ${plafond}` : `≤ plafond ${plafond}`;
+      console.log(`  · ${id} : ${n} route(s) — ${etat}`);
+      if (plafond === undefined || n > plafond) depassements.push(`${id} : ${n} route(s) (${[...routesTouchees].join(', ')})`);
+    }
+  }
+
   console.log(`\n${vues} vues regardées · ${defauts.length} défaut(s) · captures dans ${SORTIE}\n`);
-  if (defauts.length) process.exit(1);
+  if (defauts.length || depassements.length) {
+    if (depassements.length) {
+      console.log('Dépassements EPURE-01 :');
+      for (const d of depassements) console.log(`  · ${d}`);
+    }
+    process.exit(1);
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
