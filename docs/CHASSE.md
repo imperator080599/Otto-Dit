@@ -2052,3 +2052,18 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   seul, suivi d'un `npm run screens`/`clics`/`visuel` MANUEL sur la même base, reste un piège** —
   toujours refaire `db:reset && demo:seed` entre les deux, jamais supposer la base intacte après
   la suite complète.
+
+  **Correctif du même jour, mesuré, pas seulement mitigé au premier réordonnancement.** Le premier
+  réordonnancement (vitest EN DERNIER dans `scripts/verify.ts`) n'a PAS suffi : un second `verify`
+  complet, sur le SHA de ce réordonnancement, est retombé sur les MÊMES 10 échecs à `screens` —
+  AVANT que `vitest` (le maillon explicite) n'ait tourné. Bissection directe, maillon par maillon,
+  sur base fraîche à chaque fois : `gardes` seul propre, `semeur` seul propre, mais
+  **`npm run plancher` SEUL suffit à reproduire** — `scripts/plancher.ts` lance `npx vitest list`
+  (`spawnSync`, ligne 54) pour COMPTER les tests, jamais pour les exécuter, et cette collecte SEULE
+  vide la base sur disque. La racine reste la même inconnue (pourquoi une collecte Vitest touche le
+  disque, aucun `beforeAll`/`it` ne devrait s'exécuter en mode `list`), mais l'EMPRISE est plus
+  large que le doublet de fichiers de test initialement isolé : **tout lancement de Vitest, `run`
+  ou `list`, est suspect.** `scripts/verify.ts` et `verifier.yml` (job `local`) corrigés une seconde
+  fois : `plancher` déplacé en fin de chaîne, juste avant `vitest`, aux côtés de tout ce qui a
+  besoin de la base semée intacte en amont (gardes/semeur/langue/lectures/parcours restent
+  inchangés — aucun des trois derniers n'invoque Vitest, vérifié par `grep`).

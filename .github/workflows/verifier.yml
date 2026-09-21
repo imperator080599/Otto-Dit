@@ -70,19 +70,21 @@ jobs:
       # la machine était neuve, la base aussi). Même geste que `npm run verify`.
       - name: base locale semée (PGlite sur disque)
         run: npm run db:setup && npm run demo:seed
-      # F62 (docs/CHASSE.md, R134) : `npx vitest run` peut vider les tables transactionnelles de
-      # la base semée SUR DISQUE (racine non encore trouvée — un doublet minimal de deux fichiers
-      # de test la reproduit de façon fiable). `gardes`/`semeur` lisent cette base : ils tournent
-      # AVANT `vitest`, jamais après, tant que le doublet n'est pas fermé (même discipline que
-      # scripts/verify.ts).
+      # F62 (docs/CHASSE.md, R134) : TOUT lancement de Vitest — `run` COMME `list` (`plancher`
+      # l'utilise pour COMPTER les tests, jamais pour les exécuter) — peut vider les tables
+      # transactionnelles de la base semée SUR DISQUE ; mesuré (`npm run plancher` seul suffit),
+      # racine non trouvée. `gardes`/`semeur` lisent cette base : ils tournent AVANT `plancher` ET
+      # `vitest`, qui tournent tous deux en dernier (même discipline que scripts/verify.ts).
       - name: langue — 0 chaîne hors catalogue, et l'épreuve
-        run: npm run gardes && npm run plancher && npm run langue && npm run langue:epreuve
+        run: npm run gardes && npm run langue && npm run langue:epreuve
       - name: lectures — 0 lecture perdue, et l'épreuve
         run: npm run lectures && npm run lectures:epreuve
       - name: parcours — 0 station perdue, et l'épreuve
         run: npm run parcours && npm run parcours:epreuve
       - name: semeur vs chemin — docs/SEMEUR_VS_CHEMIN.md engendré (règle 20)
         run: npm run semeur
+      - name: plancher — le plancher de tests ne peut que monter
+        run: npm run plancher
       - name: tests (PGlite, zéro réseau)
         run: npx vitest run
 

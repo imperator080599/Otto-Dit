@@ -20,20 +20,23 @@ const REPO = path.dirname(APP);
 
 interface Maillon { nom: string; commande: string[] }
 
-/* F62 (docs/CHASSE.md) : `npx vitest run` peut VIDER les tables transactionnelles de la base
-   semée SUR DISQUE (evidence, export_record, control, workpaper, request, fsli…) — reproduit de
-   façon fiable via un doublet minimal de deux fichiers de test, racine non encore trouvée
-   (hypothèse : un singleton `globalThis.__ottoDb`, db/client.ts, qui survit à l'isolation des
-   modules par fichier de Vitest). `vitest` tourne donc EN DERNIER ici, après tout maillon qui a
-   besoin de la base semée INTACTE (gardes/semeur lisent son contenu ; screens/clics/visuel/fumee/
-   densite la servent par HTTP) — une mitigation, pas une correction (R134, BACKLOG_REPORTE.md). */
+/* F62 (docs/CHASSE.md) : TOUT lancement de Vitest — `npx vitest run` COMME `npx vitest list`
+   (utilisé par `plancher.ts` pour compter les tests, JAMAIS pour les exécuter) — peut VIDER les
+   tables transactionnelles de la base semée SUR DISQUE (evidence, export_record, control,
+   workpaper, request, fsli…). Mesuré directement, pas supposé : `npm run plancher` SEUL, sur une
+   base fraîchement semée et rien d'autre exécuté avant, suffit à reproduire — la racine exacte
+   (pourquoi `vitest list`, une collecte qui ne doit exécuter ni `beforeAll` ni `it`, touche le
+   disque) reste NON TROUVÉE (R134, BACKLOG_REPORTE.md). `plancher` ET `vitest` tournent donc TOUS
+   LES DEUX en fin de chaîne, après tout maillon qui a besoin de la base semée INTACTE (gardes/
+   semeur lisent son contenu ; langue/lectures/parcours sont de purs balayages de texte, sans
+   Vitest ; screens/clics/visuel/fumee/densite la servent par HTTP) — une mitigation, pas une
+   correction. */
 export const CHAINE: Maillon[] = [
   { nom: 'db:reset', commande: ['npm', 'run', 'db:reset'] },
   { nom: 'demo:seed', commande: ['npm', 'run', 'demo:seed'] },
   { nom: 'tsc', commande: ['npx', 'tsc', '--noEmit'] },
   { nom: 'gardes', commande: ['npm', 'run', 'gardes'] },
   { nom: 'semeur', commande: ['npm', 'run', 'semeur'] },
-  { nom: 'plancher', commande: ['npm', 'run', 'plancher'] },
   { nom: 'langue', commande: ['npm', 'run', 'langue'] },
   { nom: 'langue:epreuve', commande: ['npm', 'run', 'langue:epreuve'] },
   { nom: 'lectures', commande: ['npm', 'run', 'lectures'] },
@@ -45,6 +48,7 @@ export const CHAINE: Maillon[] = [
   { nom: 'densite', commande: ['npm', 'run', 'densite'] },
   { nom: 'clics', commande: ['npm', 'run', 'clics'] },
   { nom: 'visuel', commande: ['npm', 'run', 'visuel'] },
+  { nom: 'plancher', commande: ['npm', 'run', 'plancher'] },
   { nom: 'vitest', commande: ['npx', 'vitest', 'run'] },
 ];
 
