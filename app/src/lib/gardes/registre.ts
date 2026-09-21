@@ -530,7 +530,14 @@ export const GARDES: Garde[] = [
     enonce: 'BLOB-01 — une pièce ne se sert que si son CONTENU rend l’adresse par laquelle on l’a demandée.',
     point: 'core/storage.ts → readBlob / verifierAdresse (le magasin est adressé par contenu : le chemin EST le sha256)',
     rayon: 'Substitution de preuve dans un fichier d’audit, sans une ligne de journal. `saveBlob` fait `on conflict (storage_path) do nothing` : le PREMIER qui dépose un chemin le tient, et `readBlob` ne revérifiait rien. Sous otto_app (étape 3), un cabinet pouvait pré-insérer un couple chemin/octets et faire relire SES octets à la place de la facture d’un autre (revue hostile n°9, constat 9).',
-    stops_looking: 'Ne protège que la LECTURE d’une pièce donnée, jamais la lecture CROISÉE : la politique de blob_store reste `using (true)`, donc sous otto_app un `select bytes from blob_store` rend les pièces de tous les cabinets — dette nommée dans 0140. Ne vérifie pas un chemin qui ne suit pas la convention `aa/sha256` (magasins d’avant 0028), et le dit.',
+    /* P0-07 : ce texte disait la lecture croisée toujours ouverte (dette 0140) — VÉRIFIÉ faux
+       aujourd'hui, pas supposé (règle 15) : la politique `blob_store_par_reference` (0141)
+       scope désormais `using (...)` par engagement (et par jeton portail) — un `select bytes
+       from blob_store` sous otto_app ne rend plus que ce que le cabinet courant possède. Ce qui
+       RESTE ouvert, et c'est réel : `with check (true)` sur la même politique, donc une INSERTION
+       directe sous otto_app peut encore écrire un couple chemin/octets pour n'importe quel
+       cabinet — fermé seulement à P2-05 (règle 14, mécanique gelée jusque-là). */
+    stops_looking: 'Ne protège que la LECTURE d’une pièce donnée, jamais la CRÉATION : la politique blob_store_par_reference (0141) ferme la lecture croisée par engagement, mais garde `with check (true)` — sous otto_app, une insertion directe peut encore écrire pour un autre cabinet, fermé seulement à P2-05. Ne vérifie pas un chemin qui ne suit pas la convention `aa/sha256` (magasins d’avant 0028), et le dit.',
     attaque: async () => {
       const { saveBlob, readBlob } = await import('@/lib/core/storage');
       const { q } = await import('@/lib/db/client');
@@ -581,16 +588,22 @@ export const GARDES: Garde[] = [
 
   /* ── Gardes DÉCLARÉES : la preuve vit ailleurs, ou n'existe pas ────────── */
   ...([
-    ['acceptation', 'obst.missionNonAcceptee', null],
+    /* P0-07 : trois familles disaient « aucune » (`preuve: null`) alors qu'un test les éprouve
+       RÉELLEMENT — lu ligne par ligne, pas supposé (règle 15) : `obstacles.test.ts` assert
+       `l[0].famille === 'acceptation'` (G-50) et `famille === 'programme'` (G-55, via un poste
+       retenu sans procédure) ; `tests/parcours.test.ts` assert `famille === 'evaluation'` (G-59,
+       via le FEC provisoire). Les trois manquaient un FAUX POSITIF nommé (comme les familles
+       « aucune » restantes) — corrigé ici à la lettre du test, pas à celle du souvenir. */
+    ['acceptation', 'obst.missionNonAcceptee', 'obstacles.test.ts:41'],
     ['independance', 'obst.declarationNonSignee / obst.rotationDue', 'team.test.ts'],
     ['reprise', 'obst.repriseNonStatuee', 'carryforward.test.ts'],
     ['questionnaire', 'obst.facteursNonStatues / obst.ouiSansPrecision / obst.questionsSectionSansReponse', 'services/questionnaire.test.ts'],
     ['processus', 'obst.processusChangementsNonStatues / obst.entretienEcartsCandidats', 'processus.test.ts, entretiens.test.ts'],
-    ['programme', 'obst.posteSansProcedure', null],
+    ['programme', 'obst.posteSansProcedure', 'obstacles.test.ts:93'],
     ['boucle', 'obstacles de loop.ts (b.obstacles[].cle)', 'loop.test.ts'],
     ['pointage', 'obst.pointageEcart', 'tieout.test.ts'],
     ['tirage', 'obst.ligneSortieDuTirage', 'services/retirage.test.ts'],
-    ['evaluation', 'obst.evaluation', null],
+    ['evaluation', 'obst.evaluation', 'tests/parcours.test.ts:186'],
     ['achevement', 'obst.achevementNonConclu', 'completion.test.ts'],
     ['circularisation', 'obst.circEcartNonExplique', 'circularisations.test.ts'],
     ['ipe', 'obst.ipeQuestionNonPosee', 'ipe.test.ts'],

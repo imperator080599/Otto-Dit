@@ -419,16 +419,20 @@ commande, jamais seulement dans la tête de l'agent :
 
 ```
 set -o pipefail
-timeout 3600 npm run verify 2>&1 | tee /tmp/verify-<tranche>.log ; echo "EXIT=$?"
+timeout 7200 npm run verify 2>&1 | tee /tmp/verify-<tranche>.log ; echo "EXIT=$?"
 ```
 
 Un `EXIT=124` dit que `timeout` a tué le run — mort par le budget, pas par un vrai résultat ; à
-distinguer d'un `EXIT` de la commande elle-même. Choisir le budget sur une mesure déjà connue de
-ce dépôt (`npm run verify` complet : environ 60 minutes mesurées à plusieurs reprises cette
-session — un `timeout` de 3600 s laisse la marge normale sans laisser tourner neuf heures pour
-rien), jamais une estimation inventée. Ceci ne remplace pas la lecture du disque (log qui
-grossit, `mtime`) pendant l'attente — les deux se combinent : le shell garantit une fin, la
-lecture du disque dit si le run est VIVANT avant cette fin.
+distinguer d'un `EXIT` de la commande elle-même. Le budget est passé de 3600 s à 7200 s (P0-07,
+2026-09-21) : la suite `vitest` seule est passée de ~111 tests (2026-09-08, quand 3600 s a été
+choisi) à 1279 tests aujourd'hui — mesuré cette session (`npx vitest run`), pas deviné — et
+`verify` enchaîne encore `gardes`, `semeur`, `plancher`, `langue`(`:epreuve`), `lectures`
+(`:epreuve`), `parcours`(`:epreuve`), `screens`, `fumee`, `densite`, `clics`, `visuel` derrière.
+3600 s ne laissait plus la marge qu'il visait à l'origine. Le chiffre EXACT du `verify` complet
+se lit dans `docs/instantanes/verify.json` (P0-07, `app/scripts/verify.ts`) après sa propre
+mesure de sortie de Phase 0 — jamais une estimation écrite ici à sa place. Ceci ne remplace pas la
+lecture du disque (log qui grossit, `mtime`) pendant l'attente — les deux se combinent : le shell
+garantit une fin, la lecture du disque dit si le run est VIVANT avant cette fin.
 
 **`set -o pipefail` N'EST PAS DÉCORATIF, RÉCIDIVE DU 2026-09-08 (Lot 4, tranche 3).** La forme
 ci-dessus, TELLE QU'ÉCRITE SANS `pipefail`, rend `$?` INUTILISABLE : dans un pipe `cmd | tee
@@ -489,7 +493,7 @@ formes armée.
   migrate, assertions de rôle), `src/app` (écrans), `scripts/` (harnais : clics, screens, fumee,
   accept, visuel, gardes, langue, lectures, parcours, deploiement, reprise).
 - `supabase/migrations/` — migrations SQL (PGlite en local, Supabase en production). Bandes :
-  130–999 « colonne vertébrale » ; dernière : 0142. Ne jamais éditer une migration appliquée.
+  130–999 « colonne vertébrale » ; dernière : 0169, prochaines 0170+. Ne jamais éditer une migration appliquée.
 - `methodology/` — LA MÉTHODE DU CABINET EST DE LA DONNÉE (procedures, risque, assertions,
   questionnaire, papier, acceptation, independance), validée par `valider.mjs`.
 - `tests/` — tests transverses (parcours de bout en bout, balayage des écrans).
@@ -513,7 +517,8 @@ formes armée.
 - Gardes : `npm run gardes` (et `-- --figer` après en avoir ajouté une). Langue : `npm run langue`,
   `langue:epreuve`. Lectures : `npm run lectures`, `lectures:epreuve`. Parcours figé :
   `npm run parcours`, `parcours:epreuve`. Plancher : `npm run plancher`.
-- Tout : `cd app && npm run verify` (~60 min). Une livraison nomme celles qui n'ont pas tourné.
+- Tout : `cd app && npm run verify` (budget 7200 s, règle 35 ; durée exacte dans
+  `docs/instantanes/verify.json` après sa mesure). Une livraison nomme celles qui n'ont pas tourné.
 - Déploiement : `npx tsx scripts/deploiement/atteint.ts <url> <sha> --minutes=15`.
 
 ## 7. Ce qu'une session apprend à ses dépens — écrit pour qu'elle ne le réapprenne pas
