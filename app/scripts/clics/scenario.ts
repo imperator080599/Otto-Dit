@@ -47,6 +47,16 @@ const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 let locServie: Locale = 'en';
 const L = (cle: CleLibelle) => traduire(locServie, cle);
 
+/* P0-04 (AUD-17) : `--station=<préfixe>` — une station se rejoue SEULE, sur une base déjà semée,
+   sans conduire les cent quatre-vingts autres. AUCUN refactor de `conduire()` : chaque station
+   est déjà enveloppée par `station(nom, fn)` ci-dessous ; le filtre lit `nom.startsWith(préfixe)`
+   et rend la main SANS exécuter `fn` quand il ne correspond pas — enregistrée comme « ignorée »,
+   jamais silencieusement absente du rapport. CE QUE CE FILTRE NE FAIT PAS : il ne pose aucun état
+   — une station qui dépendait d'une variable posée par une station SAUTÉE (`engNeuf`, posé par
+   « création : … ») retombe sur son propre garde-fou existant (`if (!engNeuf) { dire(…); return }`
+   — voir `preconditions.ts` pour ce que le registre peut, et ne peut pas, réparer sans y toucher. */
+const STATION_FILTRE = process.argv.find((a) => a.startsWith('--station='))?.slice('--station='.length);
+
 /* UNE ASSERTION DE PARCOURS NE DOIT PAS DÉPENDRE DE LA LANGUE SERVIE. `R`
    accepte le libellé dans L'UNE OU L'AUTRE locale : le parcours passe que le
    cabinet de démonstration soit anglais (défaut du produit) ou français, et il
@@ -201,6 +211,10 @@ export async function conduire(
      harnais qui s'arrête au premier problème mesure le premier problème, pas le
      produit. L'échec est ENREGISTRÉ, avec sa cause, et le parcours continue. */
   const station = async (nom: string, fn: () => Promise<void>): Promise<void> => {
+    if (STATION_FILTRE && !nom.startsWith(STATION_FILTRE)) {
+      dire(nom, true, `ignorée — --station=${STATION_FILTRE} ne la sélectionne pas`);
+      return;
+    }
     const avant = etapes.length;
     const clicsAvant = await clicsCumules();
     const coutDuGeste = async () => {

@@ -8,6 +8,7 @@ import { getDb } from '../../src/lib/db/client';
 import { baseSemee } from '../screens/routes';
 import { contexte } from './contexte';
 import { conduire, type Etape, type Geste } from './scenario';
+import { preconditionDe } from './preconditions';
 import {
   stationsDe, jamaisAtteintes, empreintes, classerPageerrors, depassementsDePlafond,
   type Fige, type Avertissements,
@@ -72,6 +73,11 @@ async function attendre(url: string, enfant: ChildProcess, secondes = 150): Prom
 
 async function main() {
   const dev = process.argv.includes('--dev');
+  /* P0-04 (AUD-17). `--station=<préfixe>` : une station se rejoue seule (voir le filtre dans
+     `scenario.ts`, `station()`). Le registre de préconditions (`preconditions.ts`) tourne ICI,
+     PENDANT que le script tient encore la base — jamais dans `conduire()`, où le serveur (donc
+     un AUTRE processus) l'aurait déjà prise (PGlite n'admet qu'un écrivain). */
+  const stationFiltre = process.argv.find((a) => a.startsWith('--station='))?.slice('--station='.length);
 
   if (!(await baseSemee())) {
     throw new Error('base vide : lancez `npm run db:setup && npm run demo:seed`. '
@@ -87,6 +93,15 @@ async function main() {
   /* Tout ce dont le parcours a besoin est lu AVANT que le serveur ne prenne la
      base : PGlite n'admet qu'un écrivain. */
   const c = await contexte();
+  if (stationFiltre) {
+    const precondition = preconditionDe(stationFiltre);
+    if (precondition) {
+      console.log(`  précondition « ${stationFiltre} » : posée par service (voir preconditions.ts)…`);
+      await precondition(c);
+    } else {
+      console.log(`  aucune précondition déclarée pour « ${stationFiltre} » — la base semée par défaut est le seul état posé.`);
+    }
+  }
   await (await getDb()).close();
 
   console.log(`\nParcours cliqué — mode ${dev ? 'développement' : 'PRODUCTION'}, dossier ${c.eng}`);
@@ -181,7 +196,11 @@ async function main() {
     console.log(`\nseulement ${etapes.length} étape(s) conduites — le parcours s'est interrompu\n`);
     process.exit(1);
   }
-  ecrireClics(gestes);
+  /* UN RUN FILTRÉ (`--station=`) N'EST PAS LA SOURCE DE VÉRITÉ DE docs/CLICS.md : il n'a conduit
+     qu'une poignée de gestes, et l'écrire écraserait le compte du parcours ENTIER par une mesure
+     partielle qui se lirait comme le tout (règle 16 : une preuve empruntée). Seul un run complet
+     l'engendre. */
+  if (!stationFiltre) ecrireClics(gestes);
   const depassements = plafondsDepasses(avertissementsComptes);
   if (depassements.length) {
     console.log('\nPlafond d’avertissement DÉPASSÉ (P0-02) :');
@@ -192,7 +211,10 @@ async function main() {
      demande explicite, et seulement si tout est vert — les avertissements de
      signature connue, SOUS leur plafond, sont admis (P0-02) ; les dépasser ne
      l'est jamais. */
-  const figeMaintenant = process.argv.includes('--figer') && etapes.every((e) => e.ok)
+  /* Un run filtré ne fige jamais : les stations hors filtre n'y figurent que sous leur entrée
+     « ignorée », et les y figer écrirait un figé qui ne distingue plus « conduite » de
+     « sautée ». Figer reste le geste d'un parcours COMPLET, jamais d'une tranche. */
+  const figeMaintenant = !stationFiltre && process.argv.includes('--figer') && etapes.every((e) => e.ok)
     && dursReels.length === 0 && depassements.length === 0;
   if (figeMaintenant) figer(etapes);
 
@@ -203,8 +225,14 @@ async function main() {
      voit que la clôture n'est plus vérifiée. On compare donc les stations
      CONDUITES à celles d'une exécution verte figée dans docs/PARCOURS.json —
      ce que la garde statique (`npm run parcours`) ne peut pas voir, puisqu'elle
-     lit le code et non ce qui a été atteint. */
-  const eteintes = manquantes(etapes);
+     lit le code et non ce qui a été atteint.
+     UN RUN FILTRÉ (`--station=`) NE PEUT PAS PASSER CETTE GARDE, ET C'EST ATTENDU, PAS UN DÉFAUT :
+     le figé porte les `dire(...)` INDIVIDUELS (plus fins que le nom du `station(nom, fn)` extérieur
+     — une seule station « rail » en déclare cinq), et l'entrée « ignorée » posée par le filtre n'en
+     couvre qu'UN, sous le nom extérieur. Comparer un run partiel au figé d'un run COMPLET dirait
+     à tort que tout le reste s'est éteint. La garde reste donc réservée au run NON filtré — dit
+     ici, jamais tue en silence (règle 19 : une garde qui cesse de regarder le dit). */
+  const eteintes = stationFiltre ? [] : manquantes(etapes);
   /* UNE GARDE QUI NE VÉRIFIE RIEN DOIT LE DIRE. Avec un figé vide — première
      exécution, fichier absent, mauvais répertoire de lancement — `jamais-
      Atteintes` rend une liste vide et se laisse lire comme un succès. C'est le
@@ -219,7 +247,9 @@ async function main() {
     ? `\ngarde du parcours : ${figees} station(s) FIGÉES à l’instant — rien n’a été vérifié contre elles.`
     : process.argv.includes('--figer')
       ? `\ngarde du parcours : parcours ROUGE, RIEN n’a été figé — le figé précédent (${figees} station(s)) est inchangé.`
-      : `\ngarde du parcours : ${figees} station(s) figée(s) vérifiée(s).`);
+      : stationFiltre
+        ? `\ngarde du parcours : NON vérifiée — run filtré --station=${stationFiltre} (${figees} station(s) dans le figé, non comparées).`
+        : `\ngarde du parcours : ${figees} station(s) figée(s) vérifiée(s).`);
   if (figees === 0 && !process.argv.includes('--figer')) {
     console.log('LA GARDE D’EXÉCUTION NE VÉRIFIE RIEN — figez un parcours vert : '
       + '`npm run clics -- --figer`.\n');
@@ -227,7 +257,8 @@ async function main() {
   }
   if (dursReels.length) { console.log('\nErreurs côté navigateur (non classées) :'); for (const d of dursReels.slice(0, 12)) console.log('  ' + d); }
   const total = gestes.reduce((n, g) => n + g.clics, 0);
-  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + dursReels.length} échec(s) · ${total} clics comptés sur ${gestes.length} gestes · docs/CLICS.md écrit\n`);
+  console.log(`\n${etapes.length} étapes conduites · ${echecs.length + dursReels.length} échec(s) · ${total} clics comptés sur ${gestes.length} gestes · `
+    + (stationFiltre ? `docs/CLICS.md NON écrit (run filtré --station=${stationFiltre})\n` : 'docs/CLICS.md écrit\n'));
 
   if (eteintes.length) {
     console.log(`\n${eteintes.length} station(s) FIGÉE(S) MAIS JAMAIS ATTEINTE(S) — le parcours vérifie moins qu'hier :`);

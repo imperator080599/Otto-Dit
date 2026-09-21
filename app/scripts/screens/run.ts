@@ -81,6 +81,19 @@ async function attendre(url: string, enfant: ChildProcess, secondes = 120): Prom
   throw new Error(`le serveur n'est pas debout après ${secondes}s sur ${url}`);
 }
 
+/* P0-04 (AUD-17). `--routes=<motif>[,<motif>…]` : ne balaye que les routes dont le `pattern`
+   (`/eng/[id]/risk`, tel qu'écrit sur le disque) CONTIENT l'un des motifs donnés — un filtre de
+   sous-chaîne, pas une expression régulière. Sert `verify:tranche` (une tranche ne balaye pas les
+   soixante routes pour vérifier les deux qu'elle a touchées). Sans l'option, comportement inchangé
+   — toutes les routes prêtes. Un motif qui ne touche AUCUNE route fait échouer le balayage (« aucune
+   route ouverte ») : un filtre qui ne filtre rien de réel doit se voir, jamais passer en silence. */
+function filtrerRoutes<T extends { pattern: string }>(rs: T[]): T[] {
+  const motif = process.argv.find((a) => a.startsWith('--routes='))?.slice('--routes='.length);
+  if (!motif) return rs;
+  const motifs = motif.split(',').map((m) => m.trim()).filter(Boolean);
+  return rs.filter((r) => motifs.some((m) => r.pattern.includes(m)));
+}
+
 async function main() {
   const dev = process.argv.includes('--dev');
 
@@ -99,11 +112,12 @@ async function main() {
     );
   }
 
-  const { pretes, nonResolues } = await routes();
+  const { pretes: toutesLesRoutes, nonResolues } = await routes();
+  const pretes = filtrerRoutes(toutesLesRoutes);
   const cookie = await auditeur();
   await (await getDb()).close();
 
-  console.log(`\nBalayage des écrans — ${pretes.length} routes, mode ${dev ? 'développement' : 'PRODUCTION'}\n`);
+  console.log(`\nBalayage des écrans — ${pretes.length} routes${pretes.length === toutesLesRoutes.length ? '' : ` sur ${toutesLesRoutes.length}`}, mode ${dev ? 'développement' : 'PRODUCTION'}\n`);
 
   if (!dev) {
     console.log('  build…');

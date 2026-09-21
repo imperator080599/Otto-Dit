@@ -35,6 +35,7 @@
     "clics:dev": "tsx scripts/clics/run.ts -- --dev",
     "visuel": "tsx scripts/visuel/run.ts",
     "verify": "tsx scripts/verify.ts",
+    "verify:tranche": "tsx scripts/verify-tranche.ts",
     "dataset:balances-aux": "tsx scripts/dataset/balances-aux.ts",
     "langue": "tsx scripts/langue.ts",
     "langue:epreuve": "tsx scripts/langue-epreuve.ts",

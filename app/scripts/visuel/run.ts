@@ -159,6 +159,15 @@ async function attendre(url: string, enfant: ChildProcess, secondes = 150): Prom
   throw new Error(`le serveur n'est pas debout après ${secondes}s`);
 }
 
+/* P0-04 (AUD-17). Même filtre que `screens/run.ts` : `--routes=<motif>[,<motif>…]` limite la
+   revue visuelle aux routes dont `pattern` contient l'un des motifs — sous-chaîne, pas regex. */
+function filtrerRoutes<T extends { pattern: string }>(rs: T[]): T[] {
+  const motif = process.argv.find((a) => a.startsWith('--routes='))?.slice('--routes='.length);
+  if (!motif) return rs;
+  const motifs = motif.split(',').map((m) => m.trim()).filter(Boolean);
+  return rs.filter((r) => motifs.some((m) => r.pattern.includes(m)));
+}
+
 const VUES = [
   { nom: 'clair-large', largeur: 1280, hauteur: 900, schema: 'light' as const },
   { nom: 'sombre-large', largeur: 1280, hauteur: 900, schema: 'dark' as const },
@@ -172,7 +181,8 @@ async function main() {
   if (!(await portLibre(PORT))) {
     throw new Error(`le port ${PORT} est occupé — la revue REFUSE de regarder un serveur qu'elle n'a pas lancé.`);
   }
-  const { pretes, nonResolues } = await routes();
+  const { pretes: toutesLesRoutes, nonResolues } = await routes();
+  const pretes = filtrerRoutes(toutesLesRoutes);
   const cookie = await auditeur();
   await (await getDb()).close();
   if (nonResolues.length) throw new Error('routes non résolues : ' + nonResolues.join(', '));
