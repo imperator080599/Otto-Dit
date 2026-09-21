@@ -1,0 +1,15 @@
+{
+  "_note": "P0-06 (EPURE-01, S-1). Un motif interdit (app/src/lib/epure.ts::MOTIFS_INTERDITS) est compté en avertissement plutôt qu'en échec bloquant — mais SEULEMENT sous ce plafond, par motif, compté en NOMBRE DE ROUTES DISTINCTES où le motif apparaît (jamais par vue : le texte ne change pas selon le viewport clair/sombre/large/390). `plafond` ne peut QUE baisser — le relever exige d'éditer ce fichier à la main avec une raison et une date, jamais un geste automatisé. Régime Phase 0→4 : avertissement compté ; Phase 5 (P5-05) : plafond 0, bloquant. Un motif absent de cette liste (donc `plafonds[id] === undefined`) n'a AUCUNE tolérance : toute occurrence bloque, par construction (app/scripts/visuel/run.ts).",
+  "mesure": "set -o pipefail; timeout 900 npm run visuel — base fraîche (db:reset && demo:seed), arbre d5285ee, 356 vues regardées (89 écrans × 4 vues), 0 défaut (débordement/contraste/statut).",
+  "depuis": "2026-09-21",
+  "plafonds": {
+    "counted-whole-file": 1,
+    "deterministe-fr": 1,
+    "deterministic-en": 8,
+    "niveau-parenthese": 7,
+    "niveau-ponctuation": 1,
+    "not-a-copy": 1,
+    "pas-un-jugement": 1,
+    "propose-l3": 4
+  }
+}
