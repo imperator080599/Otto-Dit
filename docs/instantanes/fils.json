@@ -703,6 +703,12 @@
       "etat": "ouvert — P0-02 n'a que la preuve unitaire (5 cas connus mauvais, src/lib/parcours.test.ts) du nouveau classifieur, pas la preuve de bout en bout par injection réelle que le plan maître demande (§P0-02, Tests).",
       "depuis": "2026-09-20 (Phase 0 P0-02)",
       "note": "non corrigé — aucun mécanisme d'injection de pageerror réelle n'existe dans le harnais (scripts/clics/, src/app/testing) ; à construire séparément avant de dire P0-02 complet au sens du plan. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R134",
+      "etat": "ouvert — `npx vitest run` peut vider les tables transactionnelles de la base semée sur disque (evidence, export_record, control, workpaper, request, fsli), reproduit de façon fiable par un doublet minimal de deux fichiers de test ; racine exacte non trouvée (hypothèse nommée : globalThis.__ottoDb qui survit à l'isolation des modules par fichier de Vitest).",
+      "depuis": "2026-09-21 (Phase 0, mesure de sortie — docs/CHASSE.md F62)",
+      "note": "mitigé, pas corrigé — scripts/verify.ts et .github/workflows/verifier.yml (job local) réordonnés pour que vitest tourne en dernier, après tout maillon qui a besoin de la base semée intacte. Racine non instrumentée. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

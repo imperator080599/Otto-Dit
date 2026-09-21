@@ -20,11 +20,17 @@ const REPO = path.dirname(APP);
 
 interface Maillon { nom: string; commande: string[] }
 
+/* F62 (docs/CHASSE.md) : `npx vitest run` peut VIDER les tables transactionnelles de la base
+   semée SUR DISQUE (evidence, export_record, control, workpaper, request, fsli…) — reproduit de
+   façon fiable via un doublet minimal de deux fichiers de test, racine non encore trouvée
+   (hypothèse : un singleton `globalThis.__ottoDb`, db/client.ts, qui survit à l'isolation des
+   modules par fichier de Vitest). `vitest` tourne donc EN DERNIER ici, après tout maillon qui a
+   besoin de la base semée INTACTE (gardes/semeur lisent son contenu ; screens/clics/visuel/fumee/
+   densite la servent par HTTP) — une mitigation, pas une correction (R134, BACKLOG_REPORTE.md). */
 export const CHAINE: Maillon[] = [
   { nom: 'db:reset', commande: ['npm', 'run', 'db:reset'] },
   { nom: 'demo:seed', commande: ['npm', 'run', 'demo:seed'] },
   { nom: 'tsc', commande: ['npx', 'tsc', '--noEmit'] },
-  { nom: 'vitest', commande: ['npx', 'vitest', 'run'] },
   { nom: 'gardes', commande: ['npm', 'run', 'gardes'] },
   { nom: 'semeur', commande: ['npm', 'run', 'semeur'] },
   { nom: 'plancher', commande: ['npm', 'run', 'plancher'] },
@@ -39,6 +45,7 @@ export const CHAINE: Maillon[] = [
   { nom: 'densite', commande: ['npm', 'run', 'densite'] },
   { nom: 'clics', commande: ['npm', 'run', 'clics'] },
   { nom: 'visuel', commande: ['npm', 'run', 'visuel'] },
+  { nom: 'vitest', commande: ['npx', 'vitest', 'run'] },
 ];
 
 /** Les NOMS seuls, dans l'ordre — ce que `scripts/reprise.ts` lit comme la chaîne `verify`

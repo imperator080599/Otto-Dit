@@ -2235,3 +2235,20 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   logique nouvelle avec cinq cas mauvais distincts (règle 17 tenue au niveau unitaire) ; la preuve
   de bout en bout du câblage reste à construire avant que P0-02 ne soit dit COMPLET au sens du
   plan.
+
+- **R134 — `npx vitest run` peut VIDER la base semée SUR DISQUE, racine non trouvée (voir**
+  **docs/CHASSE.md F62).** Reproduit de façon fiable (doublet minimal : `scripts/deploy/
+  reconstruire-methodologie-perimee.test.ts` + `scripts/reprise.test.ts`, dans cet ordre — aucun
+  des deux seul ne corrompt), mais la mécanique exacte (soupçonnée : `globalThis.__ottoDb`,
+  `db/client.ts:38-39`, survit à l'isolation des modules par fichier de Vitest et repasse par
+  l'état non-armé entre les deux fichiers, ouvrant le PGlite SUR DISQUE par défaut) n'a PAS été
+  instrumentée ni confirmée — hypothèse nommée, pas diagnostic (règle 18). Mitigé pour P0-07/
+  Phase 0 en réordonnant `scripts/verify.ts` (`vitest` en dernier maillon, après tout ce qui lit
+  la base semée), ce qui protège `npm run verify` sans fermer le doublet. Reste à faire : (1)
+  instrumenter `g.__ottoDb`/`g.__ottoDbReady` dans les deux fichiers suspects pour confirmer ou
+  réfuter l'hypothèse ; (2) fermer le doublet — probablement un `afterAll(() => closeDb())`
+  manquant dans `reconstruire-methodologie-perimee.test.ts`, ou une garde dans `getDb()` qui
+  refuse le disque pendant une exécution Vitest (`process.env.VITEST` est posé par Vitest lui-même
+  et pourrait servir de condition). Tant que non fermé : ne jamais lancer `npx vitest run` puis
+  `npm run screens`/`clics`/`visuel` MANUELLEMENT sur la même base sans un `db:reset && demo:seed`
+  entre les deux.

@@ -2001,3 +2001,54 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   par `PROPRIETES_LONGUEUR`, une liste fermée). **Chaîne complète, mesurée, pas supposée** : P0-01
   (marqueur d'hydratation, vérifié fonctionner) → P0-03 (assertions vides retirées) → P0-02
   (classification, deux revues hostiles, mesure verte) — Phase 0 continue avec P0-04.
+
+- **F62 — `npx vitest run` VIDE les tables transactionnelles de la base semée SUR DISQUE (evidence,**
+  **export_record, meeting_invitation, control, workpaper, request, fsli), racine NON ENCORE**
+  **TROUVÉE — mitigé par réordonnancement, pas corrigé.** (2026-09-21, Phase 0, mesure de sortie —
+  `set -o pipefail; timeout 7200 npm run verify | tee /tmp/verify-p0.log`, arbre `2d149a7`.) Le
+  premier `verify` complet de sortie de phase est tombé au maillon `screens` : 10 routes
+  « paramètre non résolu » (`evidenceId`, `exportId`, `cid`, `wid`, `code`, `rid`, `iid`) sur une
+  base que `demo:seed` venait de peupler dans le MÊME run. **Bissection EMPIRIQUE (rejouée à
+  chaque étape sur `db:reset && demo:seed` frais, jamais supposée) :** `npm run screens` seul,
+  juste après le seed, rend 98/98 routes vertes — la corruption naît donc ENTRE `demo:seed` et
+  `screens` dans la chaîne. `npx vitest run` (1288 tests) seul, entre les deux mêmes commandes,
+  REPRODUIT exactement les 10 échecs. Dichotomie sur les 166 fichiers de test (moitiés, quarts,
+  huitièmes, chaque round rejoué sur base fraîche) a isolé un groupe de SIX fichiers
+  (`scripts/audit/ia-flag-source.test.ts`, `ia-vivante.test.ts`, `scripts/deploiement/
+  atteint.test.ts`, `scripts/deploy/reconstruire-methodologie-perimee.test.ts`,
+  `scripts/reprise.test.ts`, `scripts/revue.test.ts`) qui, ENSEMBLE, reproduisent — puis un
+  DOUBLET minimal, `reconstruire-methodologie-perimee.test.ts` + `reprise.test.ts` (dans cet
+  ordre), qui reproduit SEUL, à chaque fois, en ~10 s. **Chacun des deux fichiers, seul, est
+  propre** (mesuré séparément, deux fois) — la corruption n'existe qu'à leur COMBINAISON.
+  Requête directe (pas via `screens`/HTTP) après reproduction : `engagement` (3 lignes,
+  identifiants fixes attendus), `app_user` (4), `client_contact` (2), `firm_methodology` (1)
+  INTACTS ; `evidence`, `export_record`, `meeting_invitation`, `control`, `workpaper`, `request`,
+  `fsli` à **ZÉRO** — la signature exacte d'un `bootstrapNep()` rejoué sur la base RÉELLE (qui ne
+  reconstruit que le squelette Part 1 NEP, jamais l'échantillonnage/l'extraction/le RCM), pas
+  d'une base vide. `reconstruire-methodologie-perimee.test.ts` appelle bien `bootstrapNep()` dans
+  son `beforeAll`, APRÈS `initTestDb()` — et **seul, ce fichier ne corrompt rien** (mesuré,
+  `screens` reste vert juste après). `reprise.test.ts` n'importe AUCUN module de base (vérifié :
+  aucun `getDb`/`q`/`db/client` dans le fichier, et l'entrée CLI de `reprise.ts` qu'il importe est
+  gardée par `if (process.argv[1]?.endsWith('reprise.ts'))` — jamais déclenchée à l'import).
+  **Hypothèse retenue, NON ENCORE ÉPROUVÉE** (règle 18 : nommée comme hypothèse, pas comme
+  diagnostic) : `g = globalThis` porte le singleton `__ottoDb` (`db/client.ts:38-39`) — un objet
+  qui SURVIT à l'isolation des modules par fichier de Vitest (`isolate: true` réinitialise le
+  registre des modules, pas `globalThis`) si deux fichiers partagent le même processus forké
+  (`pool: 'forks'`) ; `reconstruire…test.ts` ne ferme jamais sa base mémoire (`closeDb()` absent
+  de tout `afterAll`), et quelque chose dans l'ordre d'évaluation des imports ou des hooks entre
+  les deux fichiers referait passer `g.__ottoDb` par l'état non-armé (`undefined`) au moment où
+  UN DES DEUX rappelle `getDb()` — ouvrant alors, par défaut, le fichier PGlite SUR DISQUE au lieu
+  de la mémoire. **Non éprouvée** : je n'ai pas instrumenté `g.__ottoDb` en direct pour le
+  confirmer — l'effort de cette session s'est arrêté à la reproduction fiable du doublet minimal,
+  pas à la preuve du mécanisme exact. **Mitigation appliquée, pas une correction** :
+  `scripts/verify.ts` réordonné pour que `vitest` tourne EN DERNIER dans la chaîne (après
+  `screens`/`clics`/`visuel`/`fumee`/`densite`/`semeur`, qui ont tous besoin de la base semée
+  intacte), au lieu d'en second — ce qui protège `npm run verify` sans expliquer ni fermer le
+  doublet. **Reste à faire (R-nn, voir BACKLOG_REPORTE.md)** : instrumenter `g.__ottoDb`/
+  `g.__ottoDbReady` directement dans les deux fichiers suspects pour confirmer ou réfuter
+  l'hypothèse ci-dessus, puis fermer le doublet (probablement un `afterAll(closeDb)` manquant
+  dans `reconstruire-methodologie-perimee.test.ts`, ou une garde dans `getDb()` qui refuse
+  d'ouvrir le disque pendant une exécution Vitest). Tant que ce n'est pas fait, **`npx vitest run`
+  seul, suivi d'un `npm run screens`/`clics`/`visuel` MANUEL sur la même base, reste un piège** —
+  toujours refaire `db:reset && demo:seed` entre les deux, jamais supposer la base intacte après
+  la suite complète.
