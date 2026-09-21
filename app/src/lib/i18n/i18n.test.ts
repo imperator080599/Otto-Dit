@@ -43,6 +43,29 @@ describe('le catalogue de libellés', () => {
     expect(traduire('en', 'rail.aVenir', { n: 3 })).toBe('3 not yet available');
   });
 
+  /* P0-05 (AUD-22, S-1) : une variable manquante ne doit jamais laisser un
+     gabarit cassé passer inaperçu — en test, elle LÈVE ; en production, elle
+     se marque `⟨cle:var⟩`, visible et grep-able. */
+  it('CAS CONNU MAUVAIS (règle 17) : traduire une clé à variable SANS la variable échoue en test', () => {
+    expect(() => traduire('en', 'rail.aVenir')).toThrow(/variable manquante/);
+  });
+
+  it('avec la variable fournie, aucune levée — la garde ne bloque que l’absence réelle', () => {
+    expect(() => traduire('en', 'rail.aVenir', { n: 3 })).not.toThrow();
+  });
+
+  it('hors test (production simulée), la variable manquante se MARQUE, jamais un `{n}` littéral', () => {
+    const avant = process.env.NODE_ENV;
+    try {
+      // @ts-expect-error — NODE_ENV est en lecture seule en TypeScript, jamais à l'exécution.
+      process.env.NODE_ENV = 'production';
+      expect(traduire('en', 'rail.aVenir')).toBe('⟨rail.aVenir:n⟩ not yet available');
+    } finally {
+      // @ts-expect-error — idem, restauration après le test.
+      process.env.NODE_ENV = avant;
+    }
+  });
+
   it('aucune clé appelée dans le code n’est absente du catalogue', () => {
     /* Le typage l'empêche déjà à la compilation ; ce test le vérifie sur le
        TEXTE, parce qu'un `t('...' as CleLibelle)` contournerait le typage. */

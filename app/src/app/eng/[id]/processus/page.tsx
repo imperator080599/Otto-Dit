@@ -170,8 +170,8 @@ export default async function ProcessusPage({
       </div>
 
       {montre && diagramme && (
-        <Repli cle="proc.diagramme" niveau={2} titre={<>{t('proc.diagramme')} — {montre.nom} ({NOM_EXERCICE[montre.exercice]})</>}>
-            <div className="table-scroll">
+        <Repli cle="proc.diagramme" niveau={2} titre={<>{t('proc.diagramme', { nom: montre.nom })} ({NOM_EXERCICE[montre.exercice]})</>}>
+            <div className="table-scroll" data-diagramme={montre.nom}>
             <svg width={diagramme.w} height={diagramme.h} viewBox={`0 0 ${diagramme.w} ${diagramme.h}`} role="img"
               aria-label={t('proc.diagramme', { nom: montre.nom })} style={{ maxWidth: 'none' }}>
               {diagramme.fleches.map((f, i) => (

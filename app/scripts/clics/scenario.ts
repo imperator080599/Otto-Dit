@@ -774,10 +774,15 @@ export async function conduire(
       await p.locator('input[type=file]').setInputFiles(ds('processus', fichier));
       await soumettre(p.locator(`button:has-text("${L('proc.importer')}")`).first(), 1500);
     }
-    let t = await texte();
+    /* P0-05 (AUD-22, S-1) : `R('proc.diagramme')` sans variable ne prouve plus rien — depuis le
+       correctif de `traduire()`, une clé à variable appelée sans elle rend `⟨cle:var⟩` en
+       production, jamais le texte du libellé. La station lit désormais l'attribut
+       `[data-diagramme]` posé par la page (le nom RÉEL du processus importé), la seule preuve
+       honnête que le libellé affiché porte le vrai nom et non un gabarit cassé. */
+    const nomDiagramme = await p.locator('[data-diagramme]').getAttribute('data-diagramme');
     dire('processus : le diagramme est GÉNÉRÉ depuis les données — le flowchart client n’est qu’une corroboration',
-      (await compte('svg[role=img] rect')) >= 6 && R('proc.diagramme').test(t),
-      `${await compte('svg[role=img] rect')} boîtes dessinées`);
+      (await compte('svg[role=img] rect')) >= 6 && !!nomDiagramme && nomDiagramme.length > 0,
+      `${await compte('svg[role=img] rect')} boîtes dessinées, data-diagramme="${nomDiagramme}"`);
 
     /* Ré-importer sans confirmer est REFUSÉ : rien ne s'écrase en silence. */
     await p.locator('select[name=exercice]').selectOption('n');
@@ -807,7 +812,7 @@ export async function conduire(
       await rang.locator('input[name=reason]').fill('Changement d’exécution sans déplacement du risque.');
       await soumettre(rang.locator(`button:has-text("${L('proc.decide')}")`).first(), 1500);
     }
-    t = await texte();
+    let t = await texte();
     dire('processus : tout est statué — le significatif porte « facteur proposé au registre »',
       (await compteAbsent('button', 'proc.decide')) === 0 && R('proc.facteurPropose').test(t),
       'cinq décisions écrites, un facteur proposé');

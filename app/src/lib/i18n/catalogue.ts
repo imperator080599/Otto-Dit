@@ -2012,7 +2012,14 @@ export type CleLibelle = keyof typeof LIBELLES;
  *  phrase composée porterait la clé brute à l'écran. */
 export type Variable = string | number | { cle: CleLibelle; vars?: Record<string, Variable> };
 
-/** Le libellé, dans la locale demandée, avec ses variables. */
+/**
+ * P0-05 (AUD-22, S-1). Une variable MANQUANTE laissait `{nom}` littéral dans le texte rendu —
+ * un gabarit cassé, jamais dénoncé (règle 13 : le silence lu comme un succès). En PRODUCTION,
+ * le marqueur `⟨cle:variable⟩` remplace le gabarit non rempli — visible, grep-able, jamais un
+ * texte qui a l'air fini et ne l'est pas. Sous `NODE_ENV=test`, la même situation LÈVE : un test
+ * qui traduit une clé à variable sans fournir la variable doit ÉCHOUER, pas produire un texte
+ * à l'air innocent que personne ne relit.
+ */
 export function traduire(locale: Locale, cle: CleLibelle, vars: Record<string, Variable> = {}): string {
   const e = (LIBELLES as Record<string, Entree>)[cle];
   /* UNE CLÉ INCONNUE NE PLANTE PAS L'ÉCRAN — elle se dénonce. Un `[cle][locale]`
@@ -2020,7 +2027,12 @@ export function traduire(locale: Locale, cle: CleLibelle, vars: Record<string, V
      un refus rendu en page 500 est le silence que la règle 13 nomme. */
   if (!e) return `⟨${cle}⟩`;
   return e[locale].replace(/\{(\w+)\}/g, (m, k) => {
-    if (!(k in vars)) return m;
+    if (!(k in vars)) {
+      if (process.env.NODE_ENV === 'test') {
+        throw new Error(`traduire(${JSON.stringify(cle)}) : variable manquante "{${k}}"`);
+      }
+      return `⟨${cle}:${k}⟩`;
+    }
     const v = vars[k];
     return typeof v === 'object' && v !== null && 'cle' in v ? traduire(locale, v.cle, v.vars ?? {}) : String(v);
   });
