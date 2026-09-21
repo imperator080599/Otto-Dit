@@ -1514,6 +1514,104 @@
       "quand": "2026-09-07T12:20:31Z",
       "resultat": "vert — 312 vues regardées, 0 défaut",
       "source": "local, session Claude, chaîne verify complète (verify-lot3-final.log), arbre GELÉ pendant toute l'exécution, sur le SHA du second hotfix (2de6d84) déjà confirmé servi en production (CI deploye, run 34118461946, job 101730889633) avant ce lancement — clôture de Lot 3 tranche 1 après l'incident de production (hotfixes daf18e0/2de6d84, voir STATUS.md) — borne haute : mtime du journal (fin de chaîne)."
+    },
+    {
+      "commande": "db:reset",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:26:58.545Z",
+      "resultat": "ok (5.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:27:10.783Z",
+      "resultat": "ok (12.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:27:13.827Z",
+      "resultat": "ok (3.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:00.882Z",
+      "resultat": "ok (707.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:01.406Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:01.875Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:55.454Z",
+      "resultat": "ok (53.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:56.042Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:57.768Z",
+      "resultat": "ok (1.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:58.382Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:59.019Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:39:59.508Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:40:02.212Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "2d149a7917692a626558c0142b180a7a2157a4cf",
+      "quand": "2026-09-21T19:41:52.939Z",
+      "resultat": "ÉCHEC — code 1 (110.7s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
