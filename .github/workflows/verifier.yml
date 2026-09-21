@@ -36,7 +36,7 @@ on:
       url:
         description: "URL déployée à balayer (vide = la production)"
         required: false
-        default: "https://otto-dit-imperator080599.vercel.app"
+        default: "https://otto-dit.vercel.app"
 
 concurrency:
   group: verifier-${{ github.event_name }}-${{ github.ref }}-${{ github.event.deployment_status.environment_url || 'x' }}
@@ -78,6 +78,8 @@ jobs:
         run: npm run lectures && npm run lectures:epreuve
       - name: parcours — 0 station perdue, et l'épreuve
         run: npm run parcours && npm run parcours:epreuve
+      - name: semeur vs chemin — docs/SEMEUR_VS_CHEMIN.md engendré (règle 20)
+        run: npm run semeur
 
   url:
     # Vercel pousse un deployment_status par déploiement ; on ne balaye que

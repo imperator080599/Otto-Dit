@@ -1,0 +1,59 @@
+# CE QUE CE TRAVAIL VÉRIFIE (P0-08) : le balayage de PRODUCTION (`npm run screens`, chaque route
+# ouverte dans Chromium sur le build `next build` local) ET le parcours cliqué (`npm run clics`,
+# les gestes d'un auditeur menés jusqu'à la clôture) — sur une base FRAÎCHE et SEMÉE, chaque nuit,
+# indépendamment de tout push. `verifier.yml` (`local`) ne conduit ni l'un ni l'autre : il tourne à
+# chaque pousse mais reste sur `vitest` et les gardes statiques, et `npm run verify` (le
+# harnais complet, règle 35) ne tourne qu'à l'expédition d'une tranche, sur la machine de l'agent —
+# jamais sur une machine qui n'est pas la mienne, à intervalle régulier, indépendamment d'un push.
+# CE QU'IL NE VÉRIFIE PAS : rien de l'URL déployée (`verifier.yml` → `url`/`deploye` s'en chargent) ;
+# ce travail construit et sert SA PROPRE instance locale, comme `npm run verify` le fait sur la
+# machine de l'agent — un build de production ici n'est pas le déploiement Vercel.
+name: parcours
+
+on:
+  schedule:
+    # Nuit (UTC) — indépendant de tout push, comme `alias-suit-production` dans verifier.yml.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: parcours-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  nocturne:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: chromium (screens et clics ouvrent chaque route dans un navigateur)
+        run: npx playwright install --with-deps chromium
+      - name: base fraîche et semée
+        run: npm run db:setup && npm run demo:seed
+      - name: balayage de production — chaque route, un build next build local
+        run: npm run screens
+      - name: parcours cliqué — jusqu'à la clôture, sur le monde semé ci-dessus
+        run: npm run clics
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hydratation-${{ github.run_id }}
+          path: app/.hydratation/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clics-${{ github.run_id }}
+          path: docs/CLICS.md
+          if-no-files-found: ignore
