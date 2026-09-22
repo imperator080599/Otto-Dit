@@ -73,6 +73,7 @@ describe('la mission entière, de l’acceptation à l’export scellé', () => 
       await importerProcessus({
         engagementId: IDS.engNep, exercice, filename: fichier,
         contenu: new Uint8Array(fs.readFileSync(ds('processus', fichier))), userId: IDS.users.karim,
+        fsliCode: 'REVENUE',
       });
     }
     const diff = await diffProcessus(IDS.engNep, 'REVENUE');
