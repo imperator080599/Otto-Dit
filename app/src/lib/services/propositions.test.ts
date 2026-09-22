@@ -118,6 +118,22 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
     await perimer(propId2, LEA, 'recalcul fictif de sonde');
     const p2 = (await parObjet('deficiency', d2)).find((x) => x.id === propId2)!;
     expect(p2.status).toBe('perimee');
+    /* La contrainte normative (0171, decided_by non nul dès que le statut n'est plus « proposee »,
+       perimee compris) n'est pas qu'une contrainte SQL muette — perimer() la tient réellement. */
+    expect(p2.decidedBy).toBe(LEA);
+    expect(p2.decidedAt).not.toBeNull();
+    expect(p2.decisionReason).toBe('recalcul fictif de sonde');
+  });
+
+  it('perimer() refuse un acteur d’un autre cabinet (ETANCH-01), avant de charger la ligne — trouvé manquant par la revue hostile', async () => {
+    const { deficiencyId: d } = await nouvelleDeficience('PERIMER-ETANCH');
+    const propId = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d, valeur: { severity: 'deficiency' } });
+    /* HUGO est du même cabinet mais pas de l'équipe d'IDS.engNep (même fixture que le test
+       enAttente() plus bas) — ETANCH-03, la même famille de refus que perimer() doit lever
+       AVANT toute lecture de la proposition. */
+    await expect(perimer(propId, IDS.users.hugo, 'motif fictif')).rejects.toThrow(/ETANCH-03/);
+    const p = (await parObjet('deficiency', d)).find((x) => x.id === propId)!;
+    expect(p.status).toBe('proposee'); // inchangée : le refus a bien précédé toute écriture
   });
 
   it('PROP-03 — un type catalogué mais non branché refuse nommément, jamais une écriture devinée', async () => {

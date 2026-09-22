@@ -4,6 +4,7 @@ import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 import { engagementCtx } from './imports';
 import { APPLICATEURS } from './propositions/applicateurs';
 import type { ObjectType } from './propositions/types';
+import { NIVEAU_ACTUEL } from './notifications';
 
 // P1-01 (AUD-01, docs/MANDATS/2026-09-20_plan_maitre_phase2.md §426-433). LE MÉCANISME
 // GÉNÉRIQUE : « un seul motif pour toute proposition » (P3-01) commence ici, par la table et
@@ -161,13 +162,23 @@ export async function proposer(opts: {
     );
   }
   const ctx = await engagementCtx(opts.engagementId);
+  // Piège relevé par la revue hostile (voix 1, correctif 0171, LOW) : si un futur appelant passe
+  // À LA FOIS aiRunId ET engineRunId sans sourceKind explicite, cette dérivation choisit 'ai_run'
+  // sans le dire — aucun des quatre appelants d'aujourd'hui ne fait les deux à la fois (vérifié),
+  // mais un futur cinquième type devra passer `sourceKind` explicitement s'il porte les deux ids.
   const sourceKind = opts.sourceKind ?? (opts.aiRunId ? 'ai_run' : 'engine_run');
   const row = await q1<{ id: string }>(
     `insert into proposition (engagement_id, tenant_id, object_type, object_id, field, valeur_proposee,
-       ai_run_id, engine_run_id, source_kind)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id::text`,
+       ai_run_id, engine_run_id, source_kind, niveau_automatisation)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id::text`,
     [opts.engagementId, ctx.tenant_id, opts.objectType, opts.objectId, opts.field ?? null,
-      JSON.stringify(opts.valeur ?? {}), opts.aiRunId ?? null, opts.engineRunId ?? null, sourceKind],
+      JSON.stringify(opts.valeur ?? {}), opts.aiRunId ?? null, opts.engineRunId ?? null, sourceKind,
+      /* NIVEAU_ACTUEL, pas la valeur DEFAULT de la colonne (revue hostile, voix 2, correctif 0171) :
+         le défaut SQL et cette constante TS étaient deux sources de vérité DÉCOUPLÉES pour le même
+         fait — un futur changement de NIVEAU_ACTUEL (AUTO-02) n'aurait rien changé ici, silencieusement
+         (règle 31 : une valeur qui a l'air mesurée sans l'être). Le DEFAULT SQL reste un filet, jamais
+         la source. */
+      NIVEAU_ACTUEL],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: opts.engagementId, actorKind: 'system', actorId: null,
@@ -288,19 +299,28 @@ export async function refuser(propositionId: string, userId: string, motif: stri
  * (§7.1 : `decided_by` non nul dès que `status <> 'proposee'`) l'exige, et un moteur qui invalide
  * sait toujours PAR QUI il a été relancé (même doctrine que `materiality.propose()`, qui porte
  * déjà un `requestedBy` sur un chemin système).
+ *
+ * `assertMembreDe` D'ABORD, `charger()` ENSUITE — CORRIGÉ (revue hostile, voix 1, sur ce même
+ * correctif 0171) : la version précédente chargeait la ligne ENTIÈRE (`charger()`) avant de
+ * vérifier l'appartenance, contrairement à `accepter`/`modifier`/`refuser` (qui résolvent par
+ * `assertMembreDe` en premier). Deux défauts en résultaient : un identifiant inexistant levait
+ * l'erreur générique de `q1()` (« expected a row : … »), jamais un refus ETANCH nommé — un refus
+ * rendu en exception brute plutôt qu'en refus reconnu (règle 13) — ET un identifiant existant
+ * mais étranger faisait lire TOUTE la ligne (valeur proposée, retenue, motif compris) avant que
+ * `assertMembre` ne lève, exactement le trou que `core/membre.ts` (ETANCH-04) existe pour fermer.
  */
 export async function perimer(propositionId: string, userId: string, motif: string): Promise<void> {
+  const engagementId = await assertMembreDe('proposition', propositionId, userId, 'périmer une proposition');
   const p = await charger(propositionId);
-  await assertMembre(p.engagementId, userId, 'périmer une proposition');
   const claim = await q<{ id: string }>(
     `update proposition set status = 'perimee', decision_reason = $2, decided_by = $3, decided_at = now()
        where id = $1 and status = 'proposee' returning id`,
     [propositionId, motif, userId],
   );
   if (claim.length === 0) return;
-  const ctx = await engagementCtx(p.engagementId);
+  const ctx = await engagementCtx(engagementId);
   await logEvent({
-    tenantId: ctx.tenant_id, engagementId: p.engagementId, actorKind: 'system', actorId: userId,
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'system', actorId: userId,
     verb: 'proposition.perimee', objectType: 'proposition', objectId: propositionId,
     payload: { objectType: p.objectType, objectId: p.objectId, motif },
   });

@@ -20,7 +20,16 @@
 --     déjà écrites (aucune jointure fiable n'existe entre une `proposition` déjà posée et
 --     l'`engine_run` qui l'a produite — `propositions.ts::proposer()` ne recevait pas cet
 --     identifiant avant ce correctif) : NULL sur l'historique, jamais un lien deviné par
---     approximation temporelle. `propositions.ts` le pose désormais pour toute nouvelle ligne.
+--     approximation temporelle. CORRIGÉ (revue hostile, voix 2) — `propositions.ts` ne le pose
+--     PAS pour TOUTE nouvelle ligne, contrairement à ce qu'une première version de ce commentaire
+--     affirmait (règle 13, jamais plus que ce qui est vérifié) : `materiality.ts`/`sox.ts`
+--     (moteurs de règles, `insert into engine_run` réel) le passent bel et bien ; ni
+--     `walkthrough-analyse.ts` ni `extraction/ladder.ts` ne créent JAMAIS de ligne `engine_run`
+--     aujourd'hui (vérifié : aucun `insert into engine_run` dans ces deux fichiers, sur les treize
+--     sites d'écriture d'`engine_run` du dépôt) — `engine_run_id` reste NULL pour `walkthrough_gap`
+--     et `extraction_field`, pas « en attente d'une tranche future » comme `section_id`/`note_id`,
+--     mais structurellement : ces deux pipelines n'ont rien à y lier tant qu'ils ne créent pas
+--     leur propre `engine_run`.
 --   · `niveau_automatisation` — normatif, NOT NULL DEFAULT 'L2' : PAS une valeur inventée pour
 --     paraître mesurée (règle 31) — 'L2' est la SEULE valeur que ce dépôt ait jamais posée nulle
 --     part (`notifications.ts::NIVEAU_ACTUEL`, vérifié, pas supposé) ; AUD-02/AUTO-02 (le niveau
@@ -51,7 +60,11 @@
 --     `propositions.ts`/`propositions/applicateurs.ts` est un geste plus risqué qu'un ajout de
 --     colonne, pour un bénéfice qui ne sert aucun type branché aujourd'hui (un futur type à clé
 --     composite pourra encoder sa clé dans `field`, ou motiver alors une vraie migration de
---     type). Reporté, nommé : R139 (docs/BACKLOG_REPORTE.md).
+--     type). Reporté, nommé : R139 (docs/BACKLOG_REPORTE.md). Relevé par la revue hostile (voix 1,
+--     LOW) : `object_type`, lui, PORTE DÉJÀ un CHECK fermé sur les treize valeurs du catalogue
+--     (0170, `check (object_type in (...))`) — c'est `object_id` seul, une clé libre vers l'objet
+--     DÉSIGNÉ par ce type, que cette entrée discute ; les deux colonnes ne portent pas la même
+--     garantie et ne sont pas interchangeables dans ce commentaire.
 --   · La contrainte `proposition_decision_coherente` de l'esquisse (`(status='proposee') =
 --     (decided_by is null)`) exigerait un `decided_by` NON NUL même pour `'perimee'` — une
 --     invalidation par un MOTEUR (ré-import, recalcul), jamais un geste humain par construction
@@ -96,6 +109,18 @@ alter table proposition rename column motif to decision_reason;
 -- contrainte de 0170 (`proposition_decision_is_whole`) autorisait `decided_by is null` sur
 -- `'perimee'` — exactement l'ancien comportement qu'on vient de corriger. Remplacée par la forme
 -- normative du plan (§7.1 : `decided_by` non nul dès que le statut n'est plus « proposee »).
+--
+-- CETTE CONTRAINTE EST PLUS STRICTE QUE L'ANCIENNE SUR `'perimee'`, ET `ADD CONSTRAINT` LA VALIDE
+-- CONTRE LES LIGNES EXISTANTES (pas de `NOT VALID` ici) — trouvé à vérifier, pas à supposer, par
+-- la revue hostile (voix 1) sur ce même correctif : une ligne `'perimee'` déjà écrite avec
+-- `decided_by is null` (légale sous 0170) ferait échouer cette instruction sur toute base qui la
+-- porterait. VÉRIFIÉ AVANT D'ÉCRIRE CETTE LIGNE, PAS SUPPOSÉ : `perimer()` n'a JAMAIS eu
+-- d'appelant hors de son propre test (`propositions.test.ts`) — ni dans `app/src` (grep sur
+-- `perimer(`), ni dans le semeur, ni dans aucun flux — depuis sa création par 0170 jusqu'à ce
+-- correctif. Aucun chemin de ce dépôt n'a donc jamais pu écrire une ligne `'perimee'` en dehors
+-- d'une base de test éphémère (une par fichier vitest, jamais le disque partagé, règle §7 de
+-- CLAUDE.md) : aucune ligne `'perimee'` à `decided_by` nul ne peut exister sur une base qui
+-- persiste entre deux sessions (locale gardée, réseau de démonstration, réseau de production).
 alter table proposition drop constraint proposition_decision_is_whole;
 alter table proposition add constraint proposition_decision_coherente check (
   (status = 'proposee' and decided_by is null and decided_at is null)

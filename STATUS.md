@@ -40,6 +40,55 @@ changement de code ; disjonction vérifiée par lecture des imports (pas suppos�
 **Expédié** : `82b9f6a`, fusion rapide sur `main` (`572e9d9..82b9f6a`). SHA servi à confirmer en
 tête du prochain tour (règle 36).
 
+### P1-01 correctif — alignement sur le DDL normatif §7.1 (migration 0171, 2026-09-22)
+
+**Trou de procédure trouvé en recherchant P1-02, pas signalé par le fondateur** : `docs/MANDATS/
+2026-09-20_plan_maitre_phase2.md` §7 dit l'esquisse SQL de chaque tranche 017x « normative pour
+les noms et les contraintes » — 0170 avait été écrite depuis la description de tâche (§426-433)
+seule, jamais croisée avec §7.1 avant expédition. **R139** (docs/BACKLOG_REPORTE.md) : la leçon
+vaut pour toute tranche 0172-0178 à venir — lire le §7.x exact AVANT d'écrire le SQL, jamais après.
+
+**`0171_proposition_alignement_spec.sql`** (ALTER en avant, 0170 jamais réédité — règle 26) :
+ajoute `section_id`/`note_id` (toujours NULL, tranches futures), `source_kind`/`engine_run_id`
+(rétro-remplis pour materiality/deficiency, structurellement NULL pour walkthrough_gap/
+extraction_field — ces pipelines ne créent jamais de ligne `engine_run`), `niveau_automatisation`
+(NOT NULL DEFAULT `'L2'`, la seule valeur jamais posée, vérifiée contre `notifications.ts::
+NIVEAU_ACTUEL`), `tenant_id` (rétro-rempli par jointure, RLS non réécrite — prouvée équivalente à
+`otto_engagements()`) ; renomme `motif`→`decision_reason` ; remplace `proposition_decision_is_whole`
+par `proposition_decision_coherente` (exige désormais `decided_by`/`decided_at` sur TOUTE sortie
+de `'proposee'`, `'perimee'` comprise) — `perimer()` exige donc maintenant un `userId` réel.
+`object_id` reste `uuid` (pas `text`), reporté et argumenté dans l'en-tête de la migration, pas
+corrigé en silence (règle 13).
+
+**Deux réfutateurs indépendants** (règle 30, modèle de données), un second rituel sur ce même
+correctif :
+- **Voix 1** : finding HIGH — `perimer()`, dans un premier correctif, chargeait la ligne AVANT
+  de vérifier l'appartenance (`charger()` puis `assertMembre`), contredisant le doctrine
+  ETANCH-04 (« résoudre puis vérifier, jamais charger puis vérifier ») que `accepter`/`modifier`/
+  `refuser` respectent déjà — corrigé (`assertMembreDe` en premier). Finding MEDIUM-HIGH — la
+  nouvelle contrainte `proposition_decision_coherente` valide contre les lignes existantes sans
+  argument écrit de sécurité — corrigé (en-tête de migration : `perimer()` n'a jamais eu
+  d'appelant hors de son propre test, vérifié par grep, donc aucune ligne `'perimee'` à
+  `decided_by` nul ne peut exister sur une base persistante). Finding LOW-MEDIUM — le test
+  `perimer()` ne testait pas ce que son nouveau paramètre permet — corrigé (assertions
+  `decidedBy`/`decidedAt`/`decisionReason` renforcées, nouveau test ETANCH-03 dédié). Deux
+  findings LOW non corrigés (documentation seulement, jugés non prioritaires) : le piège
+  d'auto-dérivation de `sourceKind`, et l'absence de mention du CHECK sur `object_type` à côté
+  de `object_id` dans la liste des différences conservées.
+- **Voix 2** : finding — `niveau_automatisation` reposait uniquement sur le DEFAULT SQL, découplé
+  de `notifications.ts::NIVEAU_ACTUEL` — corrigé (`proposer()` le passe désormais explicitement).
+  Finding — l'en-tête de la migration affirmait `engine_run_id` rétro-lié pour les QUATRE
+  familles, faux pour walkthrough_gap/extraction_field (vérifié : aucun `insert into engine_run`
+  dans ces deux fichiers, sur treize sites d'écriture au total) — corrigé (en-tête réécrit).
+  Findings restants : un risque à terme (perimer() sans appelant aujourd'hui reste un risque
+  documentaire, pas actionnable maintenant) et cette entrée STATUS.md elle-même (finding
+  informationnel — fermé par le paragraphe que vous lisez).
+
+**Suite ciblée** (14 fichiers, 170/170 tests, `set -o pipefail; timeout 300 npx vitest run …`) et
+suite complète `src/lib` : les deux VERTES sur l'arbre du correctif (mesure exacte au moment de
+l'expédition, voir le commit qui suit). `npm run verify` complet à courir avant la fusion sur
+`main`, per règle 30/35.
+
 ---
 
 ## Phase 2, Phase 0 — P0-02 livré et MESURÉ VERT (2026-09-20)
