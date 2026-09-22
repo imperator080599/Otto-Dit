@@ -4,6 +4,44 @@
 
 ---
 
+## Phase 1 — P1-00 et P1-01 livrés et MESURÉS VERTS (2026-09-22)
+
+**Phase 0 expédiée** (`572e9d9`, fusion rapide sur `main`) : SHA servi confirmé par le job CI
+`deploye` (« le SHA poussé doit être servi dans les 15 minutes », réussi 07:59:22Z–08:02:35Z).
+
+**P1-00** (`c32e268`) — `migrate()` transactionnel par fichier, sur les deux pilotes (PGlite
+`.exec()` natif, node-postgres via une connexion dédiée) : un second ordre qui échoue n'applique
+ni le premier ni la ligne `_migrations` (cas connu mauvais, `migrate.test.ts`).
+
+**P1-01** (`ea98c68` puis correctifs `22f93dc`) — `proposition` (migration 0170) : table +
+verrou + RLS + `valeur_proposee` figée + backfill SQL des quatre familles déjà connues de
+`notifications.ts` (materiality/deficiency/walkthrough_gap/extraction_field). Service générique
+(`proposer`/`accepter`/`modifier`/`refuser`/`perimer`/`enAttente`/`parObjet`), quatre applicateurs
+branchés sur les fonctions de décision existantes, neuf types catalogués non branchés (PROP-03,
+R136). Lecture `/api/sante` « propositions » : parité mesurée contre NOTIF-01.
+
+**Deux réfutateurs indépendants** (rule 30, modèle de données) ont trouvé, entre eux, un défaut
+CRITIQUE (la lecture `/api/sante` ne pouvait jamais rougir sur son propre défaut de régression —
+`resoudreParObjet()` corrige, câblée dans les QUATRE fonctions de DÉCISION, pas seulement les
+quatre de CRÉATION), une course (TOCTOU sur `accepter/modifier/refuser`, fermée par une
+réclamation atomique `where status='proposee'` avant l'applicateur), un rôle manquant sur
+`refuser()`, un risque de FK sur le backfill, et un trou d'étanchéité que l'instrument automatique
+(`etancheite-executee.test.ts`) a lui-même trouvé dans le correctif du premier défaut — tous
+corrigés, R137/R138 consignés pour les limites qui restent (frontière de confiance documentée,
+pas gardée par une fonction tierce sans exploitant réel).
+
+**`npm run verify` — deux passages complets** : le premier a rougi sur `vitest`
+(`tests/screens.test.ts`, « le serveur est tombé après 97 route(s), à `/eng/[id]/workpapers
+(SOX)` ») — le défaut R58 déjà documenté onze fois (docs/BACKLOG_REPORTE.md), jamais tracé à un
+changement de code ; disjonction vérifiée par lecture des imports (pas supposée), isolé
+`tests/screens.test.ts` seul PASSE (1/1, 461,5 s). Le second passage complet, sur le même arbre :
+**VERT — 18/18 maillons, 167/167 fichiers, 1307/1307 tests** (`docs/instantanes/verify.json`).
+
+**Expédié** : `82b9f6a`, fusion rapide sur `main` (`572e9d9..82b9f6a`). SHA servi à confirmer en
+tête du prochain tour (règle 36).
+
+---
+
 ## Phase 2, Phase 0 — P0-02 livré et MESURÉ VERT (2026-09-20)
 
 **`npm run clics -- --figer` RÉUSSIT** (`set -o pipefail; timeout 1200 npm run clics -- --figer`,
