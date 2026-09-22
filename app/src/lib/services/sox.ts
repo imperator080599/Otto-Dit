@@ -1678,6 +1678,8 @@ export async function proposeDeficiency(
     objectId: row.id,
     valeur: { severity: proposal.severity },
     aiRunId: null, // moteur de règles (`engine_run`), pas un appel IA
+    engineRunId: run.id,
+    sourceKind: 'engine_run',
   });
   return row.id;
 }

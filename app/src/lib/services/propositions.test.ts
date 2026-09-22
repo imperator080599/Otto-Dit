@@ -99,7 +99,7 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
     await refuser(propId, LEA, 'motif fictif de sonde');
     const p = (await parObjet('deficiency', d)).find((x) => x.id === propId)!;
     expect(p.status).toBe('refusee');
-    expect(p.motif).toBe('motif fictif de sonde');
+    expect(p.decisionReason).toBe('motif fictif de sonde');
     /* refuser() ne touche pas l'objet porteur — c'est ce qui la distingue d'accepter/modifier. */
     const dd = await q1<{ status: string }>(`select status from deficiency where id = $1`, [d]);
     expect(dd.status).toBe('proposed');
@@ -109,13 +109,13 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
     const { deficiencyId: d } = await nouvelleDeficience('PERIMER');
     const propId = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d, valeur: { severity: 'deficiency' } });
     await accepter(propId, LEA);
-    await perimer(propId, 'recalcul fictif de sonde');
+    await perimer(propId, LEA, 'recalcul fictif de sonde');
     const p = (await parObjet('deficiency', d)).find((x) => x.id === propId)!;
     expect(p.status).toBe('acceptee'); // inchangée, pas 'perimee'
 
     const { deficiencyId: d2 } = await nouvelleDeficience('PERIMER2');
     const propId2 = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d2, valeur: { severity: 'deficiency' } });
-    await perimer(propId2, 'recalcul fictif de sonde');
+    await perimer(propId2, LEA, 'recalcul fictif de sonde');
     const p2 = (await parObjet('deficiency', d2)).find((x) => x.id === propId2)!;
     expect(p2.status).toBe('perimee');
   });
@@ -307,7 +307,7 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
     await statuerEcartWalkthrough({ gapId, decision: 'dismissed', reason: 'motif fictif (chemin direct)', userId: LEA });
     const p = (await parObjet('walkthrough_gap', gapId)).find((x) => x.id === propId)!;
     expect(p.status).toBe('refusee');
-    expect(p.motif).toBe('motif fictif (chemin direct)');
+    expect(p.decisionReason).toBe('motif fictif (chemin direct)');
   });
 
   it('CAS CONNU MAUVAIS — verifyExtraction() appelé DIRECTEMENT referme quand même la proposition', async () => {

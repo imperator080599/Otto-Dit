@@ -178,8 +178,9 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
        modifier/refuser` atteignent leur garde (`assertMembre`) au lieu de « expected a row »
        (`charger()`, REFUSÉ-AUTRE) — même principe que les autres objets d'épreuve ci-dessus. */
     const prop = await q1<{ id: string }>(
-      `insert into proposition (engagement_id, object_type, object_id, valeur_proposee)
-       values ($1, 'deficiency', $2, '{"severity":"deficiency"}'::jsonb) returning id::text`, [E, defi.id]);
+      `insert into proposition (engagement_id, tenant_id, object_type, object_id, valeur_proposee, source_kind)
+       values ($1, (select tenant_id from engagement where id = $1), 'deficiency', $2,
+               '{"severity":"deficiency"}'::jsonb, 'engine_run') returning id::text`, [E, defi.id]);
     const itv = await q1<{ id: string }>(
       `insert into process_interview (engagement_id, cycle_ref, date_entretien, sujet, support, created_by)
        values ($1, 'REVENUE', '2025-06-02', 'Entretien d’épreuve', 'notes', $2) returning id::text`, [E, karim]);

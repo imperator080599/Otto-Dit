@@ -78,39 +78,51 @@ import type { ObjectType } from './propositions/types';
 // un raccourci de lisibilité — le refus RÉEL, celui qui tient sous concurrence, est
 // TOUJOURS le compte de lignes rendu par cet UPDATE.
 
+export type SourceKind = 'ai_run' | 'engine_run' | 'regle';
+
 export interface PropositionRow {
   id: string;
   engagementId: string;
+  tenantId: string;
   objectType: ObjectType;
   objectId: string;
   field: string | null;
   valeurProposee: unknown;
   valeurRetenue: unknown | null;
   status: 'proposee' | 'acceptee' | 'modifiee' | 'refusee' | 'perimee';
+  sourceKind: SourceKind;
   aiRunId: string | null;
+  engineRunId: string | null;
+  niveauAutomatisation: string;
+  sectionId: string | null;
+  noteId: string | null;
   decidedBy: string | null;
   decidedAt: string | null;
-  motif: string | null;
+  decisionReason: string | null;
   createdAt: string;
 }
 
 interface RowSql {
-  id: string; engagement_id: string; object_type: ObjectType; object_id: string; field: string | null;
+  id: string; engagement_id: string; tenant_id: string; object_type: ObjectType; object_id: string; field: string | null;
   valeur_proposee: unknown; valeur_retenue: unknown | null; status: PropositionRow['status'];
-  ai_run_id: string | null; decided_by: string | null; decided_at: string | null; motif: string | null;
+  source_kind: SourceKind; ai_run_id: string | null; engine_run_id: string | null;
+  niveau_automatisation: string; section_id: string | null; note_id: string | null;
+  decided_by: string | null; decided_at: string | null; decision_reason: string | null;
   created_at: string;
 }
 
-const COLONNES = `id::text, engagement_id::text, object_type, object_id::text, field,
-  valeur_proposee, valeur_retenue, status, ai_run_id::text, decided_by::text, decided_at::text,
-  motif, created_at::text`;
+const COLONNES = `id::text, engagement_id::text, tenant_id::text, object_type, object_id::text, field,
+  valeur_proposee, valeur_retenue, status, source_kind, ai_run_id::text, engine_run_id::text,
+  niveau_automatisation, section_id::text, note_id::text, decided_by::text, decided_at::text,
+  decision_reason, created_at::text`;
 
 function mapRow(r: RowSql): PropositionRow {
   return {
-    id: r.id, engagementId: r.engagement_id, objectType: r.object_type, objectId: r.object_id,
+    id: r.id, engagementId: r.engagement_id, tenantId: r.tenant_id, objectType: r.object_type, objectId: r.object_id,
     field: r.field, valeurProposee: r.valeur_proposee, valeurRetenue: r.valeur_retenue,
-    status: r.status, aiRunId: r.ai_run_id, decidedBy: r.decided_by, decidedAt: r.decided_at,
-    motif: r.motif, createdAt: r.created_at,
+    status: r.status, sourceKind: r.source_kind, aiRunId: r.ai_run_id, engineRunId: r.engine_run_id,
+    niveauAutomatisation: r.niveau_automatisation, sectionId: r.section_id, noteId: r.note_id,
+    decidedBy: r.decided_by, decidedAt: r.decided_at, decisionReason: r.decision_reason, createdAt: r.created_at,
   };
 }
 
@@ -130,6 +142,11 @@ export async function proposer(opts: {
   field?: string | null;
   valeur: unknown;
   aiRunId?: string | null;
+  engineRunId?: string | null;
+  /** Déduit de `aiRunId` quand omis (§7.1 du plan maître : 'ai_run' si un `ai_run_id` accompagne
+   *  la proposition, sinon 'engine_run' — les quatre familles branchées aujourd'hui n'ont aucune
+   *  occurrence de 'regle', jamais devinée). */
+  sourceKind?: SourceKind;
 }): Promise<string> {
   const existante = await q01<{ id: string }>(
     `select id::text from proposition
@@ -143,12 +160,15 @@ export async function proposer(opts: {
       + 'elle ne se double pas ; périmez-la (perimer) avant d’en proposer une autre',
     );
   }
-  const row = await q1<{ id: string }>(
-    `insert into proposition (engagement_id, object_type, object_id, field, valeur_proposee, ai_run_id)
-     values ($1,$2,$3,$4,$5,$6) returning id::text`,
-    [opts.engagementId, opts.objectType, opts.objectId, opts.field ?? null, JSON.stringify(opts.valeur ?? {}), opts.aiRunId ?? null],
-  );
   const ctx = await engagementCtx(opts.engagementId);
+  const sourceKind = opts.sourceKind ?? (opts.aiRunId ? 'ai_run' : 'engine_run');
+  const row = await q1<{ id: string }>(
+    `insert into proposition (engagement_id, tenant_id, object_type, object_id, field, valeur_proposee,
+       ai_run_id, engine_run_id, source_kind)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id::text`,
+    [opts.engagementId, ctx.tenant_id, opts.objectType, opts.objectId, opts.field ?? null,
+      JSON.stringify(opts.valeur ?? {}), opts.aiRunId ?? null, opts.engineRunId ?? null, sourceKind],
+  );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: opts.engagementId, actorKind: 'system', actorId: null,
     verb: 'proposition.creee', objectType: 'proposition', objectId: row.id,
@@ -241,7 +261,7 @@ export async function refuser(propositionId: string, userId: string, motif: stri
   const applicateur = APPLICATEURS[p.objectType];
   if (applicateur?.verifierRole) await applicateur.verifierRole(engagementId, userId);
   const claim = await q<{ id: string }>(
-    `update proposition set status = 'refusee', motif = $2, decided_by = $3, decided_at = now()
+    `update proposition set status = 'refusee', decision_reason = $2, decided_by = $3, decided_at = now()
        where id = $1 and status = 'proposee' returning id`,
     [propositionId, motif.trim(), userId],
   );
@@ -262,17 +282,25 @@ export async function refuser(propositionId: string, userId: string, motif: stri
  * recalcul ne détruit ni n'invalide jamais en silence du travail humain) ; une proposition déjà
  * décidée reste ce qu'elle est, silencieusement ignorée ici (`where status = 'proposee'` : même
  * garde de ligne que `statuer`/`refuser`, jamais une lecture-puis-écriture séparée).
+ *
+ * `userId` EXIGÉ, DEPUIS LE CORRECTIF 0171 — QUI a déclenché le recalcul invalidant (celui qui a
+ * relancé le ré-import, pas un « système » sans visage) : la contrainte normative du plan
+ * (§7.1 : `decided_by` non nul dès que `status <> 'proposee'`) l'exige, et un moteur qui invalide
+ * sait toujours PAR QUI il a été relancé (même doctrine que `materiality.propose()`, qui porte
+ * déjà un `requestedBy` sur un chemin système).
  */
-export async function perimer(propositionId: string, motif: string): Promise<void> {
+export async function perimer(propositionId: string, userId: string, motif: string): Promise<void> {
   const p = await charger(propositionId);
+  await assertMembre(p.engagementId, userId, 'périmer une proposition');
   const claim = await q<{ id: string }>(
-    `update proposition set status = 'perimee', motif = $2 where id = $1 and status = 'proposee' returning id`,
-    [propositionId, motif],
+    `update proposition set status = 'perimee', decision_reason = $2, decided_by = $3, decided_at = now()
+       where id = $1 and status = 'proposee' returning id`,
+    [propositionId, motif, userId],
   );
   if (claim.length === 0) return;
   const ctx = await engagementCtx(p.engagementId);
   await logEvent({
-    tenantId: ctx.tenant_id, engagementId: p.engagementId, actorKind: 'system', actorId: null,
+    tenantId: ctx.tenant_id, engagementId: p.engagementId, actorKind: 'system', actorId: userId,
     verb: 'proposition.perimee', objectType: 'proposition', objectId: propositionId,
     payload: { objectType: p.objectType, objectId: p.objectId, motif },
   });
@@ -298,13 +326,18 @@ export async function perimer(propositionId: string, motif: string): Promise<voi
  * proposé se décide exactement comme avant P1-01) ni si elle a déjà été réclamée entre-temps
  * (même garde `where status = 'proposee'` que `statuer`/`refuser` — la seconde fermeture, qu'elle
  * vienne d'ici ou de `propositions.accepter/modifier`, ne trouve rien).
+ *
+ * `userId` EST NON NULLABLE depuis le correctif 0171 (§7.1 : `decided_by` non nul dès que
+ * `status <> 'proposee'`) — les quatre fonctions de décision qui appellent cette fonction
+ * reçoivent TOUJOURS un acteur réel (jamais un chemin système anonyme) ; vérifié sur les quatre
+ * sites, pas supposé.
  */
 export async function resoudreParObjet(
   engagementId: string,
   objectType: ObjectType,
   objectId: string,
   statutFinal: 'acceptee' | 'modifiee' | 'refusee',
-  userId: string | null,
+  userId: string,
   valeurRetenue?: unknown,
   motif?: string,
 ): Promise<void> {
@@ -322,7 +355,7 @@ export async function resoudreParObjet(
   );
   if (!existante) return;
   const claim = await q<{ id: string; engagement_id: string; object_id: string }>(
-    `update proposition set status = $2, valeur_retenue = coalesce($3, valeur_proposee), motif = $5,
+    `update proposition set status = $2, valeur_retenue = coalesce($3, valeur_proposee), decision_reason = $5,
         decided_by = $4, decided_at = now()
        where id = $1 and status = 'proposee'
        returning id::text, engagement_id::text, object_id::text`,
@@ -332,7 +365,7 @@ export async function resoudreParObjet(
   const row = claim[0];
   const ctx = await engagementCtx(row.engagement_id);
   await logEvent({
-    tenantId: ctx.tenant_id, engagementId: row.engagement_id, actorKind: userId ? 'user' : 'system', actorId: userId,
+    tenantId: ctx.tenant_id, engagementId: row.engagement_id, actorKind: 'user', actorId: userId,
     verb: statutFinal === 'acceptee' ? 'proposition.acceptee' : statutFinal === 'modifiee' ? 'proposition.modifiee' : 'proposition.refusee',
     objectType: 'proposition', objectId: row.id,
     payload: { objectType, objectId: row.object_id, viaResoudreParObjet: true },

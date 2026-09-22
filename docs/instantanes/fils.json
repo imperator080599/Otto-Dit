@@ -733,6 +733,12 @@
       "etat": "ouvert — propositions.ts::proposer()/parObjet() ne vérifient eux-mêmes aucune appartenance ; frontière de confiance documentée dans l'en-tête du fichier, jamais gardée par une fonction tierce aujourd'hui.",
       "depuis": "2026-09-22 (Phase 1 P1-01, revue hostile voix 1 finding 2)",
       "note": "non corrigé, délibérément — proposer() n'est appelé qu'après assertMembre/assertMembreDe par les 4 sites de création (vérifié) ; parObjet() n'a aucun appelant hors tests. À garder au moment où P3-01 (ou une tranche ultérieure) les expose réellement à un écran. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R139",
+      "etat": "ouvert — proposition.object_id reste uuid, jamais text comme le porte l'esquisse normative du plan maître (§7.1).",
+      "depuis": "2026-09-22 (Phase 1, correctif 0171 après expédition de 0170)",
+      "note": "non corrigé, délibérément — les quatre types branchés aujourd'hui portent tous un vrai UUID ; changer le type d'une colonne déjà indexée et jointe est plus risqué qu'un ajout de colonne pour un bénéfice qui ne sert personne aujourd'hui. À revoir si un futur type à clé composite l'exige. Voir docs/BACKLOG_REPORTE.md (même entrée : le trou de procédure qui a manqué le DDL normatif de 0170 avant expédition)."
     }
   ]
 }

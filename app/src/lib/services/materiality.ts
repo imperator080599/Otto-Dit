@@ -104,6 +104,8 @@ export async function propose(engagementId: string, userId: string): Promise<str
     objectId: row.id,
     valeur: { benchmarkCode: p.benchmarkCode, pct: p.pct },
     aiRunId: null, // moteur déterministe — `proposed_by_ai_run` n'est jamais posé ici, vérifié plus haut dans ce fichier
+    engineRunId: run.id,
+    sourceKind: 'engine_run',
   });
   return row.id;
 }

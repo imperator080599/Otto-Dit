@@ -2341,3 +2341,23 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   — objet par objet, avec le bon `ObjetFils` — se fait au moment où P3-01 ou une tranche
   ultérieure les expose réellement à un écran, jamais avant, pour ne pas deviner une forme de
   garde que l'usage réel n'a pas encore dictée.
+
+- **R139 — un trou de procédure trouvé APRÈS l'expédition de 0170 : le DDL normatif de**
+  **`proposition` (plan maître §7.1) n'a jamais été lu avant d'écrire la migration.** P1-01 a été
+  construite depuis la description de tâche (§426-433 du plan), jamais croisée avec l'annexe « 7.
+  Modèle de données cible » qui porte, pour CHAQUE migration de la bande 0170+, une esquisse SQL
+  dite explicitement normative pour les noms et les contraintes (§7, en-tête : « Les esquisses
+  ci-dessous sont normatives… »). 0170 divergeait sur plusieurs points (`tenant_id`, `section_id`,
+  `source_kind`, `engine_run_id`, `niveau_automatisation`, `note_id` absents ; `motif` au lieu de
+  `decision_reason` ; la contrainte `decided_by` plus permissive sur `perimee`). Corrigé par
+  `0171_proposition_alignement_spec.sql` (ALTER en avant — 0170 ne s'édite jamais, règle 26),
+  détaillé dans l'en-tête de cette migration. **Ce qui reste délibérément différent de
+  l'esquisse**, argumenté plutôt que corrigé en silence : `proposition.object_id` reste `uuid`
+  (l'esquisse porte `text`) — les quatre types branchés aujourd'hui portent tous un vrai UUID,
+  changer le TYPE d'une colonne déjà indexée et jointe par `propositions.ts`/
+  `propositions/applicateurs.ts` est un geste plus risqué qu'un ajout de colonne pour un bénéfice
+  qui ne sert aucun type branché aujourd'hui ; à revoir si un futur type à clé composite l'exige
+  réellement. **La leçon, pour toute tranche future qui touche la bande 0170-0181** : lire §7 EN
+  ENTIER (l'esquisse DE LA migration en cours, pas seulement la description de tâche) AVANT
+  d'écrire le SQL, pas après — ce correctif coûte une migration ALTER supplémentaire (0171) et un
+  second tour de revue hostile qu'une lecture complète aurait évités.
