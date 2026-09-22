@@ -2081,6 +2081,132 @@
       "quand": "2026-09-22T10:23:44.403Z",
       "resultat": "ok (767.6s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T10:59:44.292Z",
+      "resultat": "ok (5.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T10:59:59.553Z",
+      "resultat": "ok (15.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:03.625Z",
+      "resultat": "ok (4.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:04.174Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:04.742Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:05.400Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:07.030Z",
+      "resultat": "ok (1.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:07.626Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:08.332Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:08.831Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:00:11.686Z",
+      "resultat": "ok (2.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:02:14.862Z",
+      "resultat": "ok (123.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:02:25.644Z",
+      "resultat": "ok (10.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:03:53.435Z",
+      "resultat": "ok (87.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:21:21.791Z",
+      "resultat": "ok (1048.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:24:49.678Z",
+      "resultat": "ok (207.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:25:44.550Z",
+      "resultat": "ok (54.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "734bd8d1b97b3c74e8c1312b95cf78b64c05efc8",
+      "quand": "2026-09-22T11:38:15.661Z",
+      "resultat": "ÉCHEC — code 1 (751.1s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
