@@ -741,6 +741,12 @@
       "note": "non corrigé, délibérément — les quatre types branchés aujourd'hui portent tous un vrai UUID ; changer le type d'une colonne déjà indexée et jointe est plus risqué qu'un ajout de colonne pour un bénéfice qui ne sert personne aujourd'hui. À revoir si un futur type à clé composite l'exige. Voir docs/BACKLOG_REPORTE.md (même entrée : le trou de procédure qui a manqué le DDL normatif de 0170 avant expédition)."
     },
     {
+      "id": "R140",
+      "etat": "non fermé — clics : la station « mes travaux : le bandeau y mène depuis n'importe quel écran, en 1 clic » a rougi une fois seule (1/325) sur deux passages complets indépendants (88a42eb, 7ca23a6), jamais ailleurs ; disjonction de code établie par diff (les fichiers touchés par le correctif 0171 sont byte pour byte identiques à l'arbre où clics passait 447/447).",
+      "depuis": "2026-09-21 (Phase 1, correctif 0171, ronde 2)",
+      "note": "expédié malgré cette station rouge (rule 30 : effort de vérification proportionné) — piste retenue mais non vérifiée : sensibilité de timing préexistante (networkidle + délai fixe, quatorze sites identiques dans scenario.ts). Reste à rendre la station plus robuste ou à profiler la cause exacte. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
       "id": "R141",
       "etat": "ouvert — trois décisions de périmètre de P1-02 (AUD-02) consignées : NOTE-01 sans chemin cliqué atteignable aujourd'hui, notesPourEcran garde sa propre clé (pas fusionnée avec hrefDeNote), sections.ts reste scopée poste/papier pour mesSections/sectionsDuDossier/avancement.",
       "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172)",
