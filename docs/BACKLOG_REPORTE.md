@@ -2373,3 +2373,37 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   ENTIER (l'esquisse DE LA migration en cours, pas seulement la description de tâche) AVANT
   d'écrire le SQL, pas après — ce correctif coûte une migration ALTER supplémentaire (0171) et un
   second tour de revue hostile qu'une lecture complète aurait évités.
+- **R140 — `npm run clics` a rougi une fois sur la station « mes travaux » (navigation, pas
+  logique) pendant le `verify` complet du correctif 0171, puis DEUX isolements successifs ont
+  chacun subi un crash Playwright complet (« browser has been closed »), un symptôme DIFFÉRENT et
+  bien plus sévère, jamais rencontré dans le passage complet.** Chronologie, arbre `88a42eb`
+  (correctif 0171, ronde 2) : (1) `npm run verify` complet — 15/18 maillons exécutés, ROUGE au
+  maillon `clics` : une SEULE station échoue sur 325, « mes travaux : le bandeau y mène depuis
+  n'importe quel écran, en 1 clic » — le clic sur `.topbar-lien` n'a pas navigué vers `/travaux`
+  dans le délai imparti, l'URL est restée sur `/dashboard` (446/447 clics comptés, aucune
+  exception serveur autour de l'échec). (2) Isolement 1 (`db:reset && demo:seed && npm run clics`
+  seul, base fraîche) : **33 échecs**, cascade débutant dès la station « tableau de bord »
+  (0 dossier affiché), précédée dans le journal d'un « flux de document COUPÉ… browser has been
+  closed » pendant la phase de build — la station « mes travaux » elle-même échoue à son PREMIER
+  `dire()`. (3) Isolement 2 (même protocole, base également fraîche) : **39 échecs**, cascade
+  débutant à la station « étape 7 : la colonne ajoutée à la main » avec `locator.count: Target
+  page, context or browser has been closed », puis CHAQUE station suivante échoue avec la même
+  signature (`browserContext.clearCookies`/`page.goto: … browser has been closed`) — le
+  navigateur Playwright lui-même meurt en cours de route, à un point DIFFÉRENT des deux fois.
+  **Disjonction vérifiée, pas supposée** : `scripts/clics/scenario.ts` (la station elle-même),
+  `src/lib/services/travaux.ts` et `src/lib/services/notifications.ts` (le service et le type
+  derrière l'écran `/travaux` et le bandeau) sont BYTE POUR BYTE IDENTIQUES au SHA `82b9f6a`
+  (P1-01 expédié), où ce même `clics` était passé 447/447 clics, 0 échec — vérifié par
+  `git diff 82b9f6a..HEAD -- <fichier>`, zéro ligne de diff sur les trois. Aucun des fichiers
+  réellement touchés par ce correctif (`propositions.ts`, la migration 0171,
+  `propositions.test.ts`, `materiality.ts`, `sox.ts`, `walkthrough-analyse.ts`,
+  `extraction/ladder.ts`, `membre.ts`) n'est importé par ce chemin. **Conclusion, prudente
+  (règle 18) plutôt qu'affirmée** : le symptôme « browser has been closed », absent du passage
+  complet et présent dans LES DEUX isolements, signale une instabilité de l'outillage Playwright
+  sous ce conteneur (4 CPU, 15 Gio) quand `npm run clics` est relancé À RÉPÉTITION en peu de temps
+  — pas un défaut de ce correctif. La station « mes travaux » du passage complet reste, elle, NON
+  EXPLIQUÉE avec certitude (un seul échec isolé, jamais reproduit proprement puisque les deux
+  tentatives d'isolement ont chacune crashé avant/après ce point pour une raison distincte) —
+  **non fermé**, à re-tenter sur un passage complet ultérieur avant de conclure définitivement.
+  Si le symptôme « mes travaux » recevaient une nouvelle occurrence PROPRE (sans crash navigateur
+  autour), rouvrir dans `docs/CHASSE.md` plutôt que de re-suspecter l'environnement par défaut.
