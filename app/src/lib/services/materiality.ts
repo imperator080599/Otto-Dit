@@ -154,6 +154,13 @@ export async function validate(
     objectId: materialityId,
     payload: { version: row.version, adjusted: !!adjust },
   });
+  /* P1-01 (AUD-01) — referme la proposition en attente, qu'on soit venu ici PAR
+     `propositions.accepter/modifier` (l'applicateur — elle est déjà refermée, rien à faire) ou
+     DIRECTEMENT par l'écran existant (`/eng/[id]/materiality`, le seul chemin aujourd'hui).
+     Import différé : cycle avec `propositions/applicateurs.ts`, qui importe `validate`. */
+  const { resoudreParObjet } = await import('./propositions');
+  await resoudreParObjet(row.engagement_id, 'materiality', materialityId, adjust ? 'modifiee' : 'acceptee', userId,
+    adjust ? { benchmarkCode: adjust.benchmarkCode, pct: adjust.pct } : undefined);
 }
 
 export async function currentMateriality(engagementId: string) {

@@ -253,12 +253,101 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
   it('enAttente() ne rend que les propositions « proposee » du dossier, et refuse un non-membre', async () => {
     const { deficiencyId: d } = await nouvelleDeficience('ENATTENTE');
     await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d, valeur: { severity: 'deficiency' } });
-    const liste = await enAttente(IDS.engNep, { userId: LEA });
+    const liste = await enAttente(IDS.engNep, LEA);
     expect(liste.some((p) => p.objectId === d)).toBe(true);
     for (const p of liste) expect(p.status).toBe('proposee');
     /* HUGO est du même cabinet mais pas de l'équipe d'IDS.engNep (même fixture que
        notifications.test.ts, « un dossier dont on n'est pas membre ne rend rien ») — ETANCH-03. */
     const hugo = IDS.users.hugo;
-    await expect(enAttente(IDS.engNep, { userId: hugo })).rejects.toThrow(/ETANCH-03/);
+    await expect(enAttente(IDS.engNep, hugo)).rejects.toThrow(/ETANCH-03/);
+  });
+
+  /* CAS CONNU MAUVAIS — LE DÉFAUT LE PLUS GRAVE TROUVÉ PAR LA REVUE HOSTILE (voix 1, finding 1).
+     Aucun écran ne passe par `propositions.ts` en Phase 1 : ils appellent TOUJOURS la fonction de
+     décision du domaine directement (`decideDeficiency`, `materialityValidate`,
+     `statuerEcartWalkthrough`, `verifyExtraction`). Sans `resoudreParObjet()`, la proposition
+     restait « proposee » indéfiniment — et la lecture /api/sante ne pouvait plus jamais rougir
+     sur son propre défaut de régression, l'excédent ne faisant QUE croître. */
+  it('CAS CONNU MAUVAIS — decideDeficiency() appelé DIRECTEMENT (jamais via accepter/modifier) referme quand même la proposition', async () => {
+    const { deficiencyId: d } = await nouvelleDeficience('DIRECT-DEF');
+    const propId = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d, valeur: { severity: 'deficiency' } });
+    const { decideDeficiency } = await import('./sox');
+    await decideDeficiency(d, LEA, 'deficiency');
+    const p = (await parObjet('deficiency', d)).find((x) => x.id === propId)!;
+    expect(p.status).toBe('acceptee');
+    expect(p.decidedBy).toBe(LEA);
+
+    /* Variante « modifiee » : la sévérité RETENUE diffère de celle PROPOSÉE. */
+    const { deficiencyId: d2 } = await nouvelleDeficience('DIRECT-DEF-MOD');
+    const propId2 = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d2, valeur: { severity: 'deficiency' } });
+    await decideDeficiency(d2, LEA, 'significant_deficiency', 'aggravée (sonde, chemin direct)');
+    const p2 = (await parObjet('deficiency', d2)).find((x) => x.id === propId2)!;
+    expect(p2.status).toBe('modifiee');
+    expect(p2.valeurRetenue).toMatchObject({ severity: 'significant_deficiency' });
+  });
+
+  it('CAS CONNU MAUVAIS — statuerEcartWalkthrough() appelé DIRECTEMENT referme quand même la proposition (accepté→modifiee, écarté→refusee)', async () => {
+    const control = (await q1<{ id: string }>(
+      `insert into control (engagement_id, code, name, description, frequency, nature, effect, di_status)
+       values ($1,'C-PROP-DIRECT-GAP','Contrôle de sonde (gap direct)','fictif','monthly','manual','preventive','not_assessed')
+       returning id::text`,
+      [IDS.engNep],
+    )).id;
+    const gapId = (await q1<{ id: string }>(
+      `insert into control_walkthrough_gap (engagement_id, control_id, seq, kind, citation, description)
+       values ($1,$2,1,'omission_doc','citation fictive','écart fictif de sonde (direct)')
+       returning id::text`,
+      [IDS.engNep, control],
+    )).id;
+    const propId = await proposer({
+      engagementId: IDS.engNep, objectType: 'walkthrough_gap', objectId: gapId,
+      valeur: { kind: 'omission_doc', citation: 'citation fictive', description: 'écart fictif de sonde (direct)' },
+    });
+    const { statuerEcartWalkthrough } = await import('./walkthrough-analyse');
+    await statuerEcartWalkthrough({ gapId, decision: 'dismissed', reason: 'motif fictif (chemin direct)', userId: LEA });
+    const p = (await parObjet('walkthrough_gap', gapId)).find((x) => x.id === propId)!;
+    expect(p.status).toBe('refusee');
+    expect(p.motif).toBe('motif fictif (chemin direct)');
+  });
+
+  it('CAS CONNU MAUVAIS — verifyExtraction() appelé DIRECTEMENT referme quand même la proposition', async () => {
+    const evidenceId = (await q1<{ id: string }>(
+      `insert into evidence (engagement_id, filename, mime, sha256, storage_path, source, uploaded_by_kind)
+       values ($1,'piece-de-sonde-directe.pdf','application/pdf','sha-fictif-sonde-directe','blob://fictif/sonde-directe','auditor','app_user')
+       returning id::text`,
+      [IDS.engNep],
+    )).id;
+    const extractionId = (await q1<{ id: string }>(
+      `insert into extraction (evidence_id, rung, status, fields)
+       values ($1,'ocr','pending_verify','[{"name":"amount","value":"100","confidence":0.4}]'::jsonb)
+       returning id::text`,
+      [evidenceId],
+    )).id;
+    const propId = await proposer({
+      engagementId: IDS.engNep, objectType: 'extraction_field', objectId: extractionId,
+      valeur: { fields: [{ name: 'amount', value: '100', confidence: 0.4 }] },
+    });
+    const { verifyExtraction } = await import('./extraction/ladder');
+    await verifyExtraction(extractionId, LEA);
+    const p = (await parObjet('extraction_field', extractionId)).find((x) => x.id === propId)!;
+    expect(p.status).toBe('acceptee');
+    expect(p.decidedBy).toBe(LEA);
+  });
+
+  /* CAS CONNU MAUVAIS — LA COURSE (revue hostile, voix 2, finding 1). Deux `accepter()` sur la
+     MÊME proposition : un seul doit exécuter l'applicateur (la déficience ne se décide qu'UNE
+     fois), l'autre doit refuser PROP-02, jamais réussir en silence en écrasant la première
+     décision. */
+  it('CAS CONNU MAUVAIS — deux accepter() sur la MÊME proposition : un seul exécute l’applicateur', async () => {
+    const { deficiencyId: d } = await nouvelleDeficience('COURSE');
+    const propId = await proposer({ engagementId: IDS.engNep, objectType: 'deficiency', objectId: d, valeur: { severity: 'deficiency' } });
+    const resultats = await Promise.allSettled([accepter(propId, LEA), accepter(propId, LEA)]);
+    const reussis = resultats.filter((r) => r.status === 'fulfilled');
+    const echoues = resultats.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    expect(reussis).toHaveLength(1);
+    expect(echoues).toHaveLength(1);
+    expect(echoues[0].reason).toBeInstanceOf(PropositionDejaStatuee);
+    const dd = await q1<{ status: string }>(`select status from deficiency where id = $1`, [d]);
+    expect(dd.status).toBe('confirmed');
   });
 });

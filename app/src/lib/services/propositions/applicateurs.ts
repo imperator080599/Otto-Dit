@@ -24,6 +24,15 @@ import type { ObjectType } from './types';
 // `types.ts` et R136 (docs/BACKLOG_REPORTE.md).
 
 export interface Applicateur {
+  /**
+   * Le rôle, PAR TYPE, au-delà de l'appartenance à l'équipe (`assertMembre`, déjà vérifiée par
+   * `propositions.ts` avant d'atteindre ce fichier). Optionnel : « tout membre » (le défaut du
+   * mandat pour tout type qui ne le définit pas) n'a rien à ajouter ici. Appelé par
+   * `accepter`/`modifier` ET `refuser` — trouvé manquant sur `refuser` par la revue hostile
+   * (voix 2, P1-01) : sans cet appel là aussi, un membre sans droit de signer pouvait REFUSER une
+   * proposition de matérialité qu'il n'aurait pas eu le droit d'accepter.
+   */
+  verifierRole?(engagementId: string, userId: string): Promise<void>;
   appliquer(engagementId: string, objectId: string, userId: string, valeurRetenue: unknown): Promise<void>;
 }
 
@@ -41,8 +50,10 @@ async function assertRoleSignataireOuManager(engagementId: string, userId: strin
 
 export const APPLICATEURS: Partial<Record<ObjectType, Applicateur>> = {
   materiality: {
-    async appliquer(engagementId, objectId, userId, valeurRetenue) {
-      await assertRoleSignataireOuManager(engagementId, userId, 'valider une proposition de matérialité');
+    async verifierRole(engagementId, userId) {
+      await assertRoleSignataireOuManager(engagementId, userId, 'statuer sur une proposition de matérialité');
+    },
+    async appliquer(_engagementId, objectId, userId, valeurRetenue) {
       if (valeurRetenue === undefined) {
         await materialityValidate(objectId, userId);
         return;

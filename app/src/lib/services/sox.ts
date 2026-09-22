@@ -1715,6 +1715,12 @@ export async function decideDeficiency(
     verb: 'deficiency_decided', objectType: 'deficiency', objectId: deficiencyId,
     payload: { severity, proposed: d.severity_proposed, reduction: isReduction, rationale: rationale ?? null },
   });
+  /* P1-01 (AUD-01) — referme la proposition en attente (applicateur OU écran existant, voir le
+     commentaire jumeau dans materiality.ts::validate). Import différé : cycle avec
+     `propositions/applicateurs.ts`, qui importe `decideDeficiency`. */
+  const { resoudreParObjet } = await import('./propositions');
+  await resoudreParObjet(d.engagement_id, 'deficiency', deficiencyId, severity === d.severity_proposed ? 'acceptee' : 'modifiee', userId,
+    { severity, rationale: rationale ?? undefined });
 }
 
 export async function listDeficiencies(engagementId: string) {

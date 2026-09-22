@@ -721,6 +721,18 @@
       "etat": "ouvert — neuf des treize object_type de `proposition` (propositions/types.ts) sont catalogués mais leur applicateur n'est pas branché (propositions/applicateurs.ts) ; proposer()/accepter()/modifier() dessus lèvent PROP-03 nommément.",
       "depuis": "2026-09-22 (Phase 1 P1-01)",
       "note": "non corrigé, délibérément — seuls materiality/deficiency/walkthrough_gap/extraction_field sont branchés (les quatre familles déjà backfillées, notifications.ts). extraction_field/assertion_risk/process_step sont nommément dus à P1-06/P1-07/Phase 4 par le plan maître. Les six autres ont une fonction cible qui existe déjà pour la plupart (entretiens.statuerEcart, fsli.confirmScoping, carryforward.deciderReprise, tieout.documenter — vérifié) sauf fsli_analytique et wp_extra_cell. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R137",
+      "etat": "ouvert — propositions.ts::proposer()/resoudreParObjet() écrivent après l'objet porteur (materiality/deficiency/walkthrough_gap/extraction) sur les 8 sites de création ET de décision, jamais dans la même transaction que lui.",
+      "depuis": "2026-09-22 (Phase 1 P1-01)",
+      "note": "borné, jamais silencieux — un échec laisserait l'objet porteur orphelin d'une proposition à jour (jamais l'inverse), et la lecture /api/sante « propositions » rougit exactement sur cet écart. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R138",
+      "etat": "ouvert — propositions.ts::proposer()/parObjet() ne vérifient eux-mêmes aucune appartenance ; frontière de confiance documentée dans l'en-tête du fichier, jamais gardée par une fonction tierce aujourd'hui.",
+      "depuis": "2026-09-22 (Phase 1 P1-01, revue hostile voix 1 finding 2)",
+      "note": "non corrigé, délibérément — proposer() n'est appelé qu'après assertMembre/assertMembreDe par les 4 sites de création (vérifié) ; parObjet() n'a aucun appelant hors tests. À garder au moment où P3-01 (ou une tranche ultérieure) les expose réellement à un écran. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

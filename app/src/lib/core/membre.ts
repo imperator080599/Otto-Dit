@@ -116,6 +116,7 @@ export type ObjetFils =
   | 'estimation' | 'evidence' | 'exception' | 'extraction' | 'independence_declaration'
   | 'control_walkthrough_gap'
   | 'ipe_rapport' | 'meeting_invitation' | 'misstatement' | 'process_interview' | 'reconciliation_item'
+  | 'proposition'
   | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'sample_item'
   | 'transcript_gap'
   | 'workpaper' | 'wp_extra_column';
@@ -146,6 +147,7 @@ const RESOLUTION: Record<ObjetFils, string> = {
   meeting_invitation: `select engagement_id::text e from meeting_invitation where id = $1`,
   misstatement: `select engagement_id::text e from misstatement where id = $1`,
   process_interview: `select engagement_id::text e from process_interview where id = $1`,
+  proposition: `select engagement_id::text e from proposition where id = $1`,
   reconciliation_item: `select r.engagement_id::text e from reconciliation_item i
      join reconciliation r on r.id = i.reconciliation_id where i.id = $1`,
   request: `select engagement_id::text e from request where id = $1`,

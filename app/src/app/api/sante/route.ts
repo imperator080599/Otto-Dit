@@ -146,7 +146,20 @@ async function corpsDeLaSonde() {
        dérive de ces colonnes — un engin qui crée une déficience/un écart/une extraction/une
        matérialité SANS passer par `propositions.proposer()` romprait l'invariant en silence
        sinon (règle 13). Elle jette explicitement (au lieu de rendre une phrase) : `essayer()`
-       ne marque `ok:false` que sur une exception. */
+       ne marque `ok:false` que sur une exception.
+
+       CORRIGÉ APRÈS REVUE HOSTILE (voix 1, finding 1, CRITIQUE) : cette lecture ne pouvait
+       JAMAIS rougir sur son propre défaut. Cette tranche câblait `proposer()` dans les QUATRE
+       sites de CRÉATION mais AUCUN site de DÉCISION (`decideDeficiency`, `validate`,
+       `statuerEcartWalkthrough`, `verifyExtraction`) — exactement les fonctions que TOUS les
+       écrans existants appellent (Phase 1 n'en touche aucun). Chaque décision déjà prise par le
+       produit (le semeur y compris) laissait sa `proposition` bloquée « proposee » pour
+       toujours : `n` ne pouvait que CROÎTRE, et un excédent qui ne fait que croître ne rougit
+       jamais sur `n < notif.length`. Corrigé par `propositions.ts::resoudreParObjet()`,
+       maintenant appelée par les QUATRE fonctions de décision elles-mêmes (qu'elles soient
+       atteintes par `propositions.accepter/modifier` ou DIRECTEMENT par un écran) — l'excédent
+       encore toléré ci-dessous (extractions sans ligne courante résolue) est désormais le SEUL
+       écart structurel, pas un symptôme masqué par des décisions jamais refermées. */
     lectures.push(await essayer('propositions (parité avec NOTIF-01, AUD-01)', async () => {
       const { elementsIaNonValides } = await import('@/lib/services/notifications');
       const notif = await elementsIaNonValides(id);

@@ -2291,3 +2291,37 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   tranche P1 ultérieure ou à P3-01 (qui migre les douze sites d'écran vers `<Proposition>` et a
   donc besoin de chacun) plutôt que fait en silence ici, hors du périmètre annoncé de P1-01
   (règle 13 : jamais plus que ce qui est construit et mesuré dans CETTE tranche).
+
+- **R137 — P1-01 : `proposer()`/`resoudreParObjet()` écrivent APRÈS l'objet porteur, jamais dans**
+  **la même transaction que lui.** `app/src/lib/services/propositions.ts`, les quatre sites de
+  création (`materiality.propose`, `sox.ts` proposition de déficience, `walkthrough-analyse.ts::
+  analyserWalkthrough`, `extraction/ladder.ts::extractEvidence`) et les quatre sites de décision
+  (`materiality.validate`, `sox.decideDeficiency`, `statuerEcartWalkthrough`, `verifyExtraction`)
+  appellent tous `propositions.ts` APRÈS avoir déjà commis leur propre écriture + `event_log`. Un
+  échec de `proposer()`/`resoudreParObjet()` (improbable — les deux ne font qu'une lecture et une
+  écriture simples sur `proposition`, sans dépendance externe) laisserait donc l'objet porteur
+  orphelin d'une proposition à jour, jamais l'inverse (aucune proposition fantôme sur un objet qui
+  n'existe pas). Borné, jamais silencieux : la lecture `/api/sante` « propositions » (route.ts)
+  compte exactement cet écart et ROUGIT s'il existe — et depuis le correctif de la revue hostile
+  (voix 1, finding 1 : `resoudreParObjet()` câblée dans les QUATRE fonctions de DÉCISION, pas
+  seulement les quatre de création), cette lecture peut de nouveau rougir sur une vraie
+  régression, l'excédent structurel restant (extractions sans ligne courante résolue) étant le
+  SEUL écart qu'elle tolère désormais. Enrober les deux écritures dans une transaction commune à
+  quatre endroits différents (chacun avec sa propre forme d'écriture — `q()`/`q1()` simples ici,
+  pas de `tx()` déjà ouvert) est un geste de refactor plus large que ce que cette tranche exigeait
+  ; reporté, pas oublié.
+
+- **R138 — P1-01 : `proposer()` et `parObjet()` ne vérifient eux-mêmes aucune appartenance —**
+  **frontière de confiance documentée, jamais gardée par une fonction tierce aujourd'hui.**
+  Trouvé par la revue hostile (voix 1, finding 2). `propositions.ts::proposer()` est un geste de
+  MOTEUR (jamais un bouton qu'un écran expose, dans aucune phase du plan) : les quatre sites de
+  création l'appellent APRÈS avoir déjà vérifié `assertMembre`/`assertMembreDe` — vérifié par
+  lecture directe des quatre fichiers, pas supposé. `parObjet()` est une lecture SANS acteur, sans
+  appelant aujourd'hui en dehors des tests. Les deux portent désormais, dans l'en-tête de
+  `propositions.ts`, un avertissement explicite : un futur site qui les appellerait sans avoir
+  lui-même vérifié l'appartenance rouvrirait le trou que `core/membre.ts` documente dans son
+  propre en-tête (« onze gestes sur treize acceptés depuis un autre cabinet »). Ajouter une garde
+  à `proposer()`/`parObjet()` aujourd'hui serait redondant (rien ne l'exploite) ; le geste correct
+  — objet par objet, avec le bon `ObjetFils` — se fait au moment où P3-01 ou une tranche
+  ultérieure les expose réellement à un écran, jamais avant, pour ne pas deviner une forme de
+  garde que l'usage réel n'a pas encore dictée.

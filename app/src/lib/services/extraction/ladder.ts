@@ -279,4 +279,10 @@ export async function verifyExtraction(extractionId: string, userId: string, cor
     objectId: extractionId,
     payload: { corrected: corrected !== undefined },
   });
+  /* P1-01 (AUD-01) — referme la proposition en attente (applicateur OU écran existant, voir le
+     commentaire jumeau dans materiality.ts::validate). Import différé : cycle avec
+     `propositions/applicateurs.ts`, qui importe `verifyExtraction`. */
+  const { resoudreParObjet } = await import('../propositions');
+  await resoudreParObjet(ev.engagement_id, 'extraction_field', extractionId, corrected !== undefined ? 'modifiee' : 'acceptee', userId,
+    corrected !== undefined ? { fields } : undefined);
 }

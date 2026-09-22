@@ -254,4 +254,16 @@ export async function statuerEcartWalkthrough(opts: {
     verb: 'walkthrough_gap_decided', objectType: 'control_walkthrough_gap', objectId: opts.gapId,
     payload: { decision: opts.decision, kind: g.kind, requestId, taskId },
   });
+  /* P1-01 (AUD-01) — referme la proposition en attente (applicateur OU écran existant, voir le
+     commentaire jumeau dans materiality.ts::validate). Un écart de walkthrough n'a jamais de
+     valeur « telle que proposée » à accepter (PROP-05, applicateurs.ts) : « écarté » se lit
+     comme un refus (le motif EST la raison d'écarter) ; « question »/« tâche » comme une
+     décision (une correction posée sur un fait informatif, jamais un simple accepter). Import
+     différé : cycle avec `propositions/applicateurs.ts`, qui importe `statuerEcartWalkthrough`. */
+  const { resoudreParObjet } = await import('./propositions');
+  if (opts.decision === 'dismissed') {
+    await resoudreParObjet(engagementId, 'walkthrough_gap', opts.gapId, 'refusee', opts.userId, undefined, motif);
+  } else {
+    await resoudreParObjet(engagementId, 'walkthrough_gap', opts.gapId, 'modifiee', opts.userId, { decision: opts.decision, reason: motif || undefined });
+  }
 }
