@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-22 · 70 gestes · **236 clics** au total.
+Parcours du 2026-09-22 · 70 gestes · **219 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -19,7 +19,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | rail : l'état du dossier, pas le catalogue | 1 |
 | création : un client NEUF et son exercice, en un écran | 2 |
 | création : l’exercice suivant se relie au précédent, et l’en-tête montre N-1 | 3 |
-| tableau de bord : ce qui attend l’associé, hors rail, et le clic direct | 1 |
+| tableau de bord : ce qui attend l’associé, hors rail, et le clic direct | 2 |
 | acceptation du dossier neuf | 9 |
 | équipe et indépendance | 12 |
 | import du grand livre définitif | 3 |
@@ -39,22 +39,22 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | détail du compte : EQUITY (R100, atelier réutilisé) | 4 |
 | sondage | 4 |
 | étape 5 : les pièces, une par une et en lot | 4 |
-| re-tirage : ce qui sort du tirage ne disparaît pas | 0 |
+| re-tirage : ce qui sort du tirage ne disparaît pas | 5 |
 | demande au client | 15 |
 | portail client | 67 |
 | testing : l’atelier | 2 |
 | atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
 | R62 : le parcours découverte, chronométré en clics (D.6 point 6) | 4 |
-| étape 7 : la colonne ajoutée à la main | 8 |
+| étape 7 : la colonne ajoutée à la main | 0 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
-| atelier : l’aller-retour écart ↔ synthèse | 3 |
-| atelier : la clarification en lot | 5 |
+| atelier : l’aller-retour écart ↔ synthèse | 0 |
+| atelier : la clarification en lot | 0 |
 | la boucle : émettre les clarifications | 0 |
 | constat vs point d’action client : assigner un propriétaire | 0 |
 | constat vs point d’action client : relancer | 0 |
-| grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà | 1 |
-| comité : la synthèse de gouvernance agrège ce que le dossier sait déjà | 1 |
-| portail : réponses aux clarifications | 5 |
+| grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà | 0 |
+| comité : la synthèse de gouvernance agrège ce que le dossier sait déjà | 0 |
+| portail : réponses aux clarifications | 0 |
 | testing : le second passage sur les pièces arrivées après coup | 0 |
 | estimation : le fichier de calcul de la cliente | 0 |
 | résolution des écarts | 0 |
