@@ -160,7 +160,7 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
       return { etat: row ? 'present' : 'retire', cibles: row ? [a.ref] : [] };
     }
     case 'process_model': {
-      /* `cycle_ref|exercice` — la clé unique du modèle (0027). */
+      /* `cycle_ref:exercice` — la clé unique du modèle (0027). */
       const [cycleRef, exercice] = decoupeRef(a.ref);
       const row = await q01<{ id: string }>(
         `select id::text id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3`,
@@ -169,7 +169,7 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
       return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
     }
     case 'process_step': {
-      /* `cycle_ref|exercice|code_etape` — l'étape est stable d'une version à
+      /* `cycle_ref:exercice:code_etape` — l'étape est stable d'une version à
          l'autre du modèle (0027, commentaire de `process_step.code`). */
       const parts = a.ref.split(':');
       const [cycleRef, exercice, codeEtape] = parts.length === 3 ? parts : ['', '', ''];

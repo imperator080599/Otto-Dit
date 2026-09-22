@@ -1,6 +1,7 @@
-import { q } from '@/lib/db/client';
+import { q, q1 } from '@/lib/db/client';
 import { addReviewNote, type OptionsNote } from '../workpapers/lifecycle';
 import type { Ancre } from './ancres';
+import { assertMembre } from '@/lib/core/membre';
 
 // P1-02 (AUD-02) : LE POINT D'ENTRÉE NOMMÉ PAR LE PLAN (§7.2). `poserNote()` délègue à
 // `addReviewNote()` (workpapers/lifecycle.ts) — le même chemin, la même dérivation de
@@ -38,8 +39,14 @@ export interface NoteDeSection {
 
 /** Les notes d'UNE section, les plus récentes d'abord — le panneau de section les lit ici,
  *  jamais par une re-résolution d'ancre à chaque écran (P3-02 construira le panneau ;
- *  cette lecture existe dès maintenant pour que rien ne la précède). */
-export async function notesDeSection(sectionId: string): Promise<NoteDeSection[]> {
+ *  cette lecture existe dès maintenant pour que rien ne la précède).
+ *  ETANCH-04 : `section_state.id` n'est PAS namespacé par dossier — résolu PUIS vérifié
+ *  AVANT toute lecture des notes, jamais après (revue hostile, voix 1, finding MEDIUM :
+ *  sans ce geste, n'importe quel id de section d'un autre cabinet rendrait ses notes). */
+export async function notesDeSection(sectionId: string, userId: string): Promise<NoteDeSection[]> {
+  const s = await q1<{ engagement_id: string }>(
+    `select engagement_id::text "engagement_id" from section_state where id = $1`, [sectionId]);
+  await assertMembre(s.engagement_id, userId, 'lire les notes d’une section');
   return q<NoteDeSection>(
     `select id::text, text texte, status, note_type "noteType", author_id::text "authorId",
             assignee_id::text "assigneeId", anchor_kind "ancreKind", anchor_ref "ancreRef",

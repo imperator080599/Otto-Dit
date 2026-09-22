@@ -163,9 +163,18 @@ describe('poserNote / hrefDeNote (P1-02)', () => {
   });
 
   it('notesDeSection lit les notes d’une section, les plus récentes d’abord', async () => {
+    /* Pose SA PROPRE note plutôt que de compter sur l'effet de bord d'un test antérieur du même
+       fichier (revue hostile, voix 2, finding LOW : `it.only` sur ce seul test aurait échoué
+       sans cette ligne — la preuve doit tenir seule, pas par ordre d'exécution). */
+    await addReviewNote(IDS.engNep, wpId, IDS.users.lea, IDS.users.karim, 'Pour notesDeSection, seule.');
     const sectionId = await sectionPourNote(IDS.engNep, wpId, null);
-    const notes = await notesDeSection(sectionId);
+    const notes = await notesDeSection(sectionId, IDS.users.lea);
     expect(notes.length).toBeGreaterThan(0);
     expect(notes.every((n) => n.id)).toBe(true);
+  });
+
+  it('notesDeSection refuse un acteur d’un autre cabinet (ETANCH, revue hostile voix 1)', async () => {
+    const sectionId = await sectionPourNote(IDS.engNep, wpId, null);
+    await expect(notesDeSection(sectionId, IDS.users.hugo)).rejects.toThrow(/ETANCH/);
   });
 });

@@ -159,7 +159,12 @@ export async function addReviewNote(
   let ancre = opts.ancre ?? null;
   if (portee === 'audit' && !ancre) {
     if (!workpaperId) throw new Error('NOTE-01 : une note d’audit se pose sur une ancre ou sur un papier de travail — jamais sans aucun des deux');
-    const wp = await q1<{ code: string }>(`select code from workpaper where id = $1`, [workpaperId]);
+    /* Scopé par engagementId, même argument que sectionPourNote (revue hostile, voix 2,
+       finding HIGH) : workpaperId peut venir d'un champ de formulaire soumis par le
+       navigateur — jamais fait confiance sans vérifier qu'il appartient à ce dossier. */
+    const wp = await q01<{ code: string }>(
+      `select code from workpaper where id = $1 and engagement_id = $2`, [workpaperId, engagementId]);
+    if (!wp) throw new Error('ETANCH : le papier désigné n’appartient pas à ce dossier');
     ancre = { kind: 'papier', ref: workpaperId, field: null, label: wp.code };
   }
   const sectionId = portee === 'audit' ? await sectionPourNote(engagementId, workpaperId, ancre) : null;

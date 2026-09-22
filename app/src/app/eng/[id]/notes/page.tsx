@@ -35,7 +35,7 @@ function ecranPorteur(engId: string, n: NoteAncree): { href: string; libelle: Cl
     analytique: 'notes.openTheAnalysis', process_model: 'notes.openTheProcess',
     process_step: 'notes.openTheProcess', transcript: 'notes.openTheProcess',
     control: 'notes.openTheControl', control_task: 'notes.openTheControl',
-    fs_line: 'notes.openTheFsLine',
+    fs_line: 'notes.openTheFsLine', proposition: 'notes.openTheProposals',
   };
   return { href, libelle: (n.anchor_kind ? LIBELLE[n.anchor_kind] : undefined) ?? 'notes.openTheWorkpapers' };
 }

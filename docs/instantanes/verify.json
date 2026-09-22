@@ -2445,6 +2445,62 @@
       "quand": "2026-09-22T14:22:17.523Z",
       "resultat": "ÉCHEC — code 1 (0.7s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:08.360Z",
+      "resultat": "ok (6.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:23.440Z",
+      "resultat": "ok (15.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:27.497Z",
+      "resultat": "ok (4.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:28.043Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:28.600Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:29.236Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:31.044Z",
+      "resultat": "ok (1.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "bd5abab8c63e4b1d72e059814ec0014a9a9193be",
+      "quand": "2026-09-22T14:23:31.733Z",
+      "resultat": "ÉCHEC — code 1 (0.7s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {

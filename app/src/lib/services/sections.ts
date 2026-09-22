@@ -177,7 +177,15 @@ export function sectionsDuPoste(code: string): { kind: SectionKind; ref: string 
  */
 export async function sectionPourNote(engagementId: string, workpaperId: string | null, ancre: Ancre | null): Promise<string> {
   if (workpaperId) {
-    const wp = await q1<{ code: string }>(`select code from workpaper where id = $1`, [workpaperId]);
+    /* SCOPÉ PAR engagement_id, PAS SEULEMENT PAR id (revue hostile, voix 2, finding HIGH) : un
+       `workpaper_id` vient d'un champ caché de formulaire (`workpapers/[wid]/page.tsx`), donc
+       soumis par le NAVIGATEUR — jamais fait confiance sans vérifier qu'il appartient au dossier
+       déclaré. Sans ce filtre, un membre du dossier A pouvait soumettre le `workpaper_id` d'un
+       papier du dossier B (voire d'un autre cabinet) et faire fuiter son code dans la section/la
+       note créées côté A. Un miss est un REFUS, jamais une résolution silencieuse. */
+    const wp = await q01<{ code: string }>(
+      `select code from workpaper where id = $1 and engagement_id = $2`, [workpaperId, engagementId]);
+    if (!wp) throw new Error('ETANCH : le papier désigné n’appartient pas à ce dossier');
     return cleDeSection(engagementId, 'papier', workpaperId, wp.code);
   }
   if (ancre?.kind === 'compte') {

@@ -53,7 +53,10 @@
 --   c. Les notes d'audit FLOTTANTES (workpaper attaché, toujours sans ancre après a/b) sont
 --      ré-ancrées `papier`/le workpaper — jamais supprimées (règle 28).
 --   d. `section_id` dérivé pour CHAQUE note d'audit, par nature d'ancre (voir le bloc SQL) :
---      papier (workpaper_id posé, quelle qu'en soit la nature) → `papier`/l'id du workpaper ;
+--      papier (workpaper_id posé, quelle qu'en soit la nature — `workpaper_section` COMPRISE :
+--      une note de cette nature porte TOUJOURS un workpaper_id, vérifié dans `enrichir.ts` et
+--      `workpapers/[wid]/page.tsx`, donc la branche « workpaper attaché prime » la couvre sans
+--      cas particulier, jamais par oubli) → `papier`/l'id du workpaper ;
 --      `compte` → `poste.leadsheet`/le code de poste PORTÉ PAR L'ANCRE ELLE-MÊME (`anchor_ref`
 --      s'écrit `<code>|<numéro>`, aucune jointure de méthode n'est nécessaire — vérifié dans
 --      `notes/ancres.ts::resoudreAncre`, cas `compte`) ; `sample_item` → `poste.testing`/`REVENUE`
@@ -91,6 +94,22 @@ alter table section_state add constraint section_state_kind_check check (kind in
 ));
 
 alter table review_note add column section_id uuid references section_state(id) on delete restrict;
+
+-- anchor_kind : les 8 natures d'origine moins ecran/deviation, plus les 10 neuves du plan — POSÉ
+-- ICI, AVANT LA MIGRATION DE DONNÉES (a)/(b)/(c) CI-DESSOUS, PAS APRÈS. Trouvé par la revue
+-- hostile (voix 2, CRITIQUE) : une première version de ce fichier posait ce CHECK élargi APRÈS
+-- les UPDATE qui écrivent `anchor_kind = 'papier'` (une valeur que l'ANCIEN CHECK, hérité de
+-- 0131, n'admettait pas) — inoffensif sur une base FRAÎCHE (aucune ligne review_note n'existe
+-- encore quand les migrations tournent, avant demo:seed), mais un échec CERTAIN sur toute base
+-- qui porterait déjà une note flottante réelle (locale gardée entre deux sessions, réseau de
+-- démonstration, réseau de production — règle 26, « appliquée » ne veut pas dire « base fraîche
+-- de session »). Reproduit par la revue hostile elle-même (PGlite direct) avant d'être corrigé ici.
+alter table review_note drop constraint review_note_anchor_kind_check;
+alter table review_note add constraint review_note_anchor_kind_check check (anchor_kind in (
+  'sample_item','workpaper_section','questionnaire_answer','materiality_param','exception','compte',
+  'papier','analytique','process_model','process_step','control','control_task','assertion_risk',
+  'transcript','proposition','fs_line'
+));
 
 -- (a) deviation → exception (label du nom seulement — voir en-tête, aucune ligne réelle affectée).
 update review_note set anchor_kind = 'exception' where anchor_kind = 'deviation';
@@ -169,14 +188,6 @@ where r.section_id is null and s.engagement_id = r.engagement_id and (
   or (r.workpaper_id is null and r.anchor_kind is null and s.kind = 'mission.vue' and s.ref = '')
 );
 
--- anchor_kind : les 8 natures d'origine moins ecran/deviation, plus les 10 neuves du plan.
-alter table review_note drop constraint review_note_anchor_kind_check;
-alter table review_note add constraint review_note_anchor_kind_check check (anchor_kind in (
-  'sample_item','workpaper_section','questionnaire_answer','materiality_param','exception','compte',
-  'papier','analytique','process_model','process_step','control','control_task','assertion_risk',
-  'transcript','proposition','fs_line'
-));
-
 -- scope='produit' n'exige plus anchor_kind='ecran' (retiré) — voir l'en-tête. Une note produit
 -- n'a plus d'ancre du tout désormais ; addReviewNote() (lifecycle.ts) est corrigé dans le même
 -- commit pour ne plus l'exiger non plus.
@@ -193,3 +204,8 @@ alter table review_note add constraint review_note_audit_ancree
 
 create index review_note_section_status on review_note (section_id, status);
 create index review_note_eng_status on review_note (engagement_id, status);
+
+-- `review_note_ecran_idx` (0032, partiel sur anchor_kind='ecran') ne peut plus jamais être
+-- satisfait par aucune ligne — le CHECK ci-dessus interdit désormais cette valeur — poids mort
+-- silencieux sinon (revue hostile, voix 1, finding LOW).
+drop index if exists review_note_ecran_idx;

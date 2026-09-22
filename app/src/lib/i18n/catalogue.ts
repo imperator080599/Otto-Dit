@@ -1146,6 +1146,7 @@ export const LIBELLES = {
   'notes.openTheProcess': { en: 'open the process', fr: 'ouvrir le processus' },
   'notes.openTheControl': { en: 'open the control matrix', fr: 'ouvrir la matrice des contrôles' },
   'notes.openTheFsLine': { en: 'open the financial statement tie-out', fr: 'ouvrir le pointage des états financiers' },
+  'notes.openTheProposals': { en: 'open the pending items', fr: 'ouvrir les éléments en attente' },
   'notes.theAnchoredObjectNoLongerExists': { en: 'the anchored object no longer exists in the current state of the file', fr: 'l\'objet ancré n\'existe plus dans l\'état actuel du dossier' },
   'notes.unassigned': { en: 'unassigned', fr: 'non attribuée' },
 
