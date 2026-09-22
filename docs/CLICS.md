@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-22 · 69 gestes · **444 clics** au total.
+Parcours du 2026-09-22 · 69 gestes · **442 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -73,7 +73,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | suivi de mission : le tableau de bord mène quelque part | 1 |
 | kanban des écarts : chaque carte se résout à un écart réel | 0 |
 | R61 : chaque colonne vide du kanban porte SON état, pas un texte générique | 0 |
-| R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux) | 2 |
+| R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux) | 0 |
 | NOTIF-01 : chaque carte mène à l’objet réel, et sa validation la retire du même geste | 0 |
 | NOTIF-01 : « ce que je dois approuver » change selon le rôle, deux personnes, même dossier | 0 |
 | obstacles au visa | 0 |
