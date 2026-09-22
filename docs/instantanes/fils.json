@@ -753,6 +753,12 @@
       "note": "corrigé au bon niveau sans attendre la cause exacte : section_visit::visiter() avale désormais l'échec d'écriture (.catch(), console.error serveur, jamais propagé) — un journal de consultation (explicitement pas event_log) ne doit jamais faire tomber une page. Cause exacte de la collision toujours non établie. Voir docs/BACKLOG_REPORTE.md."
     },
     {
+      "id": "R143",
+      "etat": "corrigé — 0170_proposition.sql avait été éditée en place après application (règle 26) : ea98c68 crée 0170, un déploiement d'aperçu l'applique à la base réseau de démonstration, 22f93dc édite ensuite ce même fichier (sécurisation FK du backfill materiality) — exactement l'erreur 0153/0154. Trouvé par le build Vercel lui-même (migrate() a refusé de continuer), pas par un harnais local.",
+      "depuis": "2026-09-22 (Phase 1, découvert en poussant P1-02 sur main à 94116c7)",
+      "note": "0170 restauré octet pour octet à ea98c68 (git diff vide) ; le correctif de sécurité FK re-porté en avant dans 0173_proposition_ai_run_fk_safety.sql, UPDATE idempotente et défensive — jamais une réparation d'un défaut observé, l'insert original non sécurisé ayant réussi sur la base réseau (preuve qu'aucune valeur orpheline n'existait). Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
       "id": "R141",
       "etat": "ouvert — trois décisions de périmètre de P1-02 (AUD-02) consignées : NOTE-01 sans chemin cliqué atteignable aujourd'hui, notesPourEcran garde sa propre clé (pas fusionnée avec hrefDeNote), sections.ts reste scopée poste/papier pour mesSections/sectionsDuDossier/avancement.",
       "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172)",

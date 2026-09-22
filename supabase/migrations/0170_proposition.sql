@@ -85,17 +85,10 @@ end $$;
 
 -- ===== backfill (idempotent : chaque insert exclut ce qui existe déjà) =====
 
--- `materiality.proposed_by_ai_run` N'A JAMAIS PORTÉ DE CONTRAINTE FK (0001_core.sql) — rien ne
--- garantit qu'une valeur qui s'y trouve pointe encore vers une ligne `ai_run` réelle (une valeur
--- écrite par un chemin ancien, une réparation manuelle...). `proposition.ai_run_id`, LUI, EST
--- contraint (`references ai_run(id)`, plus haut dans ce fichier) : insérer la colonne brute sans
--- vérifier romprait la migration sur toute base qui porterait une valeur orpheline — jamais
--- rejouable ensuite (règle 26). `ar.id` (le LEFT JOIN, déjà présent pour dater la ligne) est donc
--- la valeur insérée : NULL si `proposed_by_ai_run` ne résout à rien, jamais une FK qui échoue.
 insert into proposition (engagement_id, object_type, object_id, valeur_proposee, ai_run_id, created_at)
 select m.engagement_id, 'materiality', m.id,
        jsonb_build_object('benchmarkCode', m.benchmark_code, 'pct', m.pct),
-       ar.id,
+       m.proposed_by_ai_run,
        coalesce(ar.created_at, ev.created_at, now())
 from materiality m
 left join ai_run ar on ar.id = m.proposed_by_ai_run

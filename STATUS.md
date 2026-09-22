@@ -213,6 +213,26 @@ plus la suite ciblée répétée, avec R140 (pré-existant, déjà expédié une
 tracé à cette tranche par un mécanisme identifié, malgré une recherche directe (diff de code,
 worktree isolé, test de concurrence dédié).
 
+### Correctif immédiat post-push — R143 : violation règle 26 trouvée par le déploiement lui-même
+
+Après la fusion sur `main` (`94116c7`), le déploiement de PRODUCTION Vercel s'est mis à
+`BUILDING` pendant qu'un déploiement d'APERÇU du MÊME commit (branche de travail) rougissait :
+`migrate()` refusait avec « 1 migration(s) ÉDITÉE(S) APRÈS APPLICATION : 0170_proposition.sql » —
+exactement le garde-fou de règle 26 qui fonctionne. Chronologie reconstituée (`git log --follow`,
+jamais supposée) : `ea98c68` crée 0170 (P1-01) ; un déploiement d'aperçu antérieur l'applique à
+la base RÉSEAU de démonstration ; `22f93dc` (revue hostile, toujours P1-01, avant expédition)
+édite ce MÊME fichier en place pour sécuriser une valeur FK du backfill `materiality` — l'erreur
+0153/0154 que règle 26 documente déjà, reproduite une seconde fois, cette fois sur `proposition`.
+
+**Corrigé dans le même mouvement, avant que la production ne serve un mauvais SHA** :
+`0170_proposition.sql` restauré OCTET POUR OCTET à `ea98c68` (`git diff ea98c68 --` vide) ; le
+correctif de sécurité FK re-porté en AVANT dans `0173_proposition_ai_run_fk_safety.sql` — une
+UPDATE idempotente et défensive, jamais une réparation d'un défaut observé (l'INSERT original non
+sécurisé a RÉUSSI sur la base réseau, ce qui PROUVE qu'aucune valeur orpheline n'existait :
+`proposition.ai_run_id` porte une vraie contrainte FK, une valeur orpheline aurait fait échouer
+tout l'INSERT). Vérifié : `db:reset` propre (0173 s'applique), `tsc --noEmit` propre, 5 fichiers
+de tests ciblés dont `propositions.test.ts`/`migrate.test.ts` (42/42). R143 (docs/BACKLOG_REPORTE.md).
+
 **Expédié** : voir le commit qui suit pour le SHA de fusion sur `main`.
 
 ---

@@ -2498,3 +2498,24 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   de journal manquée. **Reste NON fermé** : établir la cause exacte (profilage direct du serveur
   `next dev` sous charge, pas une hypothèse) si le symptôme réapparaît sous une forme qui, elle,
   ne serait pas couverte par ce filet (une écriture différente, un autre bigserial).
+- **R143 — CORRIGÉ. Violation règle 26 trouvée par le déploiement lui-même (pas par un harnais
+  local) : `0170_proposition.sql` avait été éditée EN PLACE après application.** Découverte au
+  moment de pousser P1-02 sur `main` (94116c7) : le build Vercel de la branche de travail (le
+  même commit, déployé en APERÇU juste avant) a échoué avec « 1 migration(s) ÉDITÉE(S) APRÈS
+  APPLICATION : 0170_proposition.sql » — `migrate()` faisant exactement ce que règle 26 lui
+  demande. Chronologie reconstituée par `git log --follow` (jamais supposée) : `ea98c68` crée
+  0170 (le backfill `materiality` insère `m.proposed_by_ai_run` brut) ; un déploiement d'APERÇU
+  antérieur à ce commit (ou à ce commit lui-même, avant la ronde 2) applique 0170 à la base
+  RÉSEAU de démonstration, y écrivant son empreinte ; `22f93dc` (« correctifs de la revue
+  hostile », toujours P1-01, avant expédition) édite ce MÊME fichier en place pour sécuriser
+  l'insert contre une valeur orpheline (`ar.id` au lieu de `m.proposed_by_ai_run`) — exactement
+  l'erreur qu'un incident précédent (0153/0154, CLAUDE.md règle 26) a déjà coûté trois
+  déploiements. **Corrigé, dans le même commit qui l'a trouvée** : `0170_proposition.sql` restauré
+  OCTET POUR OCTET à son contenu `ea98c68` (vérifié par `git diff ea98c68 -- <fichier>`, vide) ;
+  le correctif de sécurité FK re-porté en AVANT dans `0173_proposition_ai_run_fk_safety.sql`, une
+  UPDATE idempotente et défensive (jamais une réparation d'un défaut observé — l'INSERT original,
+  non sécurisé, a RÉUSSI sur la base réseau, ce qui PROUVE qu'aucune valeur orpheline n'existait
+  à ce moment : une valeur orpheline aurait fait échouer l'INSERT entier, jamais laissé une ligne
+  invalide en place, `proposition.ai_run_id` portant une vraie contrainte FK). Vérifié : `db:reset`
+  propre (0173 s'applique), `tsc --noEmit` propre, 5 fichiers de tests ciblés (42/42, dont
+  `propositions.test.ts` et `migrate.test.ts`) verts.
