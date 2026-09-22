@@ -721,6 +721,18 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   toutes les occurrences isolées précédentes. Chaîne complète rejouée une fois de plus avant
   expédition (voir STATUS.md pour le résultat mesuré).
 
+  **Nouvelle occurrence (`verify-0171-round2.log`, 2026-09-22, correctif P1-01/0171, arbre
+  `734bd8d`)** : `le serveur est tombé après 82 route(s), à « /eng/[id]/obstacles (SOX) »` — une
+  ONZIÈME route distincte, cohérent avec l'hypothèse 1 (pression mémoire/CPU cumulée, jamais un
+  point de déclenchement fixe). Aucun processus parasite (`ps aux --sort=-%mem`, vide). Disjonction
+  vérifiée par lecture, pas supposée : `obstacles/page.tsx` et son service `obstacles.ts`
+  n'importent aucun des fichiers touchés par ce correctif (`propositions.ts`, la migration 0171,
+  `propositions.test.ts`) — zéro occurrence de `proposition|notification|materiality|sox|
+  walkthrough|ladder` dans les imports d'`obstacles.ts`. Isolé, `npx vitest run
+  tests/screens.test.ts` seul : **PASSE, 1/1, 2/2 tests** — même conclusion que toutes les
+  occurrences isolées précédentes (onze sur onze). Chaîne complète rejouée une fois de plus avant
+  expédition (voir STATUS.md pour le résultat mesuré).
+
 - **R59 — D.6 point 2 (le rail par défaut) reste NON traité.** Mandat
   `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, §D.6 : « Le rail n'ouvre par défaut que les
   groupes portant du travail sur ce dossier ; un test compte les destinations visibles au premier
