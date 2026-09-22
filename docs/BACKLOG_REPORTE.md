@@ -2530,3 +2530,38 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   `readyState: "READY"`, `target: "production"`, aliasé sur `otto-dit.vercel.app` et
   `otto-dit-imperator080599.vercel.app`, `aliasError: null`. P1-00, P1-01 ET P1-02 sont donc TOUS
   LES TROIS servis en production pour la première fois avec ce SHA.
+- **R144 — ouvert, quatre décisions de périmètre et un correctif de garde de P1-03 (AUD-03)
+  consignées, sur le patron de R141.**
+  (1) **Pas de seconde colonne `systeme` sur `process_step`.** Le plan (ligne 230) liste « +
+  systeme text (ERP nommé) » à la suite de `proposition_id` — mais `process_step.system_name`
+  (migration 0027, `not null`) porte déjà exactement cette information, vérifié en lisant le
+  schéma ET les données réelles (`dataset/processus/revenus_2025.json` : `"systeme": "Vela ERP"`
+  ↔ `system_name`, déjà consommé par `processus.ts::EtapeProcessus.systeme`). Lu comme une
+  redondance de rédaction du plan, pas une colonne à ajouter. `pictogramme`, lui, EST nouveau et
+  EST ajouté (migration 0174).
+  (2) **`process_interview` remplacé par `interview_participant` dans la liste des cinq tables
+  passées en `on delete restrict`.** Le plan (ligne 234) nomme littéralement « process_step,
+  process_ctrl, process_interview, interview_transcript, transcript_gap » — mais
+  `process_interview` lui-même n'a aucune FK `on delete cascade` (sa seule FK, vers `engagement`,
+  est déjà `restrict` depuis 0027) : rien à y changer. Le compte de cinq ne colle qu'en lisant
+  `interview_participant` à sa place — la seule table cascadant réellement depuis
+  `process_interview` que le plan omet. Traité comme une coquille, pas une instruction à suivre
+  contre le schéma réel (même raisonnement que la décision (1)).
+  (3) **`FSLI_DU_CYCLE` (constante TS) retirée, remplacée par `fsliCode` en paramètre explicite.**
+  L'ancienne constante devinait le poste depuis le cycle en dur dans le code TypeScript ; le plan
+  demande que le rattachement poste↔processus soit un fait de données (`process_model.fsli_code`,
+  `control_fsli`), jamais deviné par une table de correspondance figée dans le code. Toute
+  fonction qui en dépendait (`importerProcessus`, `statuerChangement`, la branche `factor` de
+  `entretiens.ts`) prend désormais `fsliCode`/le lit via `fsliDuCycle()` (nouvelle fonction,
+  lecture en base) — jamais une valeur codée en dur, hormis les deux sites d'appel du semeur
+  (`enrichir.ts`, `part2.ts`, la seule REVENUE) et l'écran `processus/page.tsx` (le sélecteur réel
+  de poste est explicitement différé à Phase 4, commenté comme tel).
+  (4) **Gap RLS `control_fsli` trouvé par `rls-couverture.test.ts`, corrigé dans la même
+  migration, jamais après coup.** La nouvelle table ne porte pas son propre `engagement_id`
+  (seulement `control_id`) — l'instrument de garde (règle 17 : un instrument qui n'a jamais rien
+  refusé n'est pas une garde) a fait exactement son travail en refusant la migration telle
+  qu'écrite d'abord. Corrigé par une policy RLS sautant vers le parent `control`, même patron que
+  `attribute_def`/`control_instance`/`control_test` (0029).
+  Documenté en tête de migration 0174 pour (1)/(2)/(4) ; consigné ici en plus, comme R141 l'a
+  établi comme patron pour P1-02, pour que ce ne soit jamais qu'un commentaire de code qui vivrait
+  et mourrait avec le fichier.

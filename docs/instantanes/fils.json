@@ -763,6 +763,12 @@
       "etat": "ouvert — trois décisions de périmètre de P1-02 (AUD-02) consignées : NOTE-01 sans chemin cliqué atteignable aujourd'hui, notesPourEcran garde sa propre clé (pas fusionnée avec hrefDeNote), sections.ts reste scopée poste/papier pour mesSections/sectionsDuDossier/avancement.",
       "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172)",
       "note": "non corrigé, délibérément — voir docs/BACKLOG_REPORTE.md pour le détail de chaque décision et son argument."
+    },
+    {
+      "id": "R144",
+      "etat": "ouvert — quatre décisions de périmètre et un correctif de garde de P1-03 (AUD-03) consignées, sur le patron de R141 : pas de seconde colonne systeme sur process_step (déjà porté par system_name, 0027) ; process_interview remplacé par interview_participant dans la liste des cinq tables passées en restrict (coquille du plan, aucune FK cascade sur process_interview lui-même) ; FSLI_DU_CYCLE (constante TS) retirée, remplacée par fsliCode en paramètre explicite / fsliDuCycle() lu en base ; gap RLS control_fsli trouvé par rls-couverture.test.ts et corrigé dans la même migration (policy sautant vers le parent control, patron 0029).",
+      "depuis": "2026-09-22 (Phase 1, P1-03, migration 0174)",
+      "note": "non corrigé, délibérément, pour (1)/(2)/(3) ; (4) est un correctif déjà appliqué dans 0174, consigné ici pour mémoire (règle 17 : la garde a fait son travail). Voir docs/BACKLOG_REPORTE.md pour le détail de chaque décision et son argument."
     }
   ]
 }
