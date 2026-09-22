@@ -2963,6 +2963,132 @@
       "quand": "2026-09-22T22:03:28.771Z",
       "resultat": "ÉCHEC — code 1 (787.3s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:06.227Z",
+      "resultat": "ok (5.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:19.460Z",
+      "resultat": "ok (13.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:23.168Z",
+      "resultat": "ok (3.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:23.660Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:24.170Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:24.782Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:26.285Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:26.879Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:27.576Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:28.105Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:14:30.819Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:16:32.445Z",
+      "resultat": "ok (121.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:16:42.431Z",
+      "resultat": "ok (10.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:18:06.738Z",
+      "resultat": "ok (84.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:35:18.836Z",
+      "resultat": "ok (1032.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:38:40.689Z",
+      "resultat": "ok (201.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:39:33.416Z",
+      "resultat": "ok (52.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "d6ec94aa5a7cae38326e7cb18ce9f69f4955e968",
+      "quand": "2026-09-22T22:50:37.306Z",
+      "resultat": "ÉCHEC — code 1 (663.9s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {

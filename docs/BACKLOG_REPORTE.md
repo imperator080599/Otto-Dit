@@ -2498,6 +2498,22 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   de journal manquée. **Reste NON fermé** : établir la cause exacte (profilage direct du serveur
   `next dev` sous charge, pas une hypothèse) si le symptôme réapparaît sous une forme qui, elle,
   ne serait pas couverte par ce filet (une écriture différente, un autre bigserial).
+  **Réapparition du 22 septembre (P1-03), exactement sous la forme non couverte que cette
+  entrée prédisait.** Deux passages complets de `verify` sur l'arbre P1-03 (après le correctif
+  `tests/parcours.test.ts` ci-dessous) ont chacun rougi UNE SEULE FOIS sur `tests/screens.test.ts`
+  avec un `ServeurTombe`, mais à DEUX ROUTES DIFFÉRENTES : `/eng/[id]/suivi (SOX)` après 94
+  route(s) au premier passage, `/eng/[id]/testing` après 52 route(s) au second — ni la même route,
+  ni le même compte. **Disjonction établie, pas supposée** : un passage ISOLÉ de
+  `tests/screens.test.ts` seul (`npx vitest run ../tests/screens.test.ts`, aucun autre harnais en
+  parallèle) passe VERT (2/2, 462 s) sur ce même arbre. Aucune des deux routes de crash n'importe
+  quoi que ce soit touché par P1-03 (`/suivi` importe `sox.ts::listDeviations`, une fonction
+  non modifiée par cette tranche ; `/testing` n'importe ni `processus.ts` ni `sox.ts` ni
+  `poste.ts`). Le mécanisme exact reste NON établi (toujours hors du périmètre proportionné,
+  règle 30) mais la POSITION ALÉATOIRE du crash à travers deux tranches sans rapport (P1-02,
+  P1-03) et trois routes sans rapport (`poste/CASH`, `suivi (SOX)`, `testing`) confirme la nature
+  du défaut : une dégradation sous charge du serveur `next dev` pendant le balayage complet
+  (concurrence avec les autres fichiers vitest de la suite), jamais un défaut d'une route ou
+  d'une tranche précise. **Reste NON fermé**, toujours pour la même raison qu'en P1-02.
 - **R143 — CORRIGÉ. Violation règle 26 trouvée par le déploiement lui-même (pas par un harnais
   local) : `0170_proposition.sql` avait été éditée EN PLACE après application.** Découverte au
   moment de pousser P1-02 sur `main` (94116c7) : le build Vercel de la branche de travail (le

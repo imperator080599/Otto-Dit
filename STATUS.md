@@ -4,6 +4,73 @@
 
 ---
 
+## Phase 1 — P1-03 Processus et contrôles livré et MESURÉ (2026-09-22)
+
+**`0174_processus_et_controles.sql`** (§7.3 du plan maître, renumérotée — 0172/0173 déjà
+consommées par P1-02 et le correctif R143) : `process_model` gagne `code` (stable, indépendant du
+cycle_ref/exercice), `fsli_code`, `status` actif/supersédé, `supersedes_id`,
+`client_flowchart_evidence_id`, `origine` ; `process_step` gagne `proposition_id`, `pictogramme` ;
+`control` gagne `process_model_id` (rattaché par nom normalisé, migration de données — NO-OP
+mesuré sur ce dépôt, aucun nom ne coïncide entre RCM et processus importés) ; `control_fsli`, la
+vraie table de scoping poste↔contrôle ; `risk.level` devient nullable, mis à `null` pour les lignes
+existantes issues d'un import RCM (AUD-03, « automatisation factice retirée » : le niveau ne se
+déduit plus d'un drapeau `is_key`) ; cinq FK cascade passées en `restrict` (04 §1).
+
+**Service** : `processus.ts` — `FSLI_DU_CYCLE` (constante TS figée) retirée, remplacée par
+`fsliDuCycle()` (lecture en base) et un paramètre `fsliCode` explicite sur `importerProcessus` ;
+`processusDuPoste`, `deposerFlowchartClient` (ETANCH résoudre-puis-vérifier) ajoutés. `sox.ts` —
+`lierControleAuPoste` (le geste explicite de rattachement, upsert sur `(control_id, fsli_code)`),
+`importRcm` cesse d'écrire un niveau de risque déduit, backfille `control_fsli` depuis une colonne
+CSV optionnelle `fsli`. `poste.ts` — `controlesDuPoste`. Lecture `/api/sante` neuve : « risque :
+niveau non déduit d'un drapeau RCM ». Quatre décisions de périmètre consignées (R144) : pas de
+colonne `systeme` redondante sur `process_step` (déjà `system_name`, 0027) ; `process_interview`
+remplacé par `interview_participant` dans la liste des cascades restrict (coquille du plan) ;
+`fsliCode` explicite au lieu d'une constante devinée ; gap RLS `control_fsli` trouvé par
+`rls-couverture.test.ts` et corrigé.
+
+**R145 — incident sérieux, corrigé dans la foulée.** En vérifiant l'application réelle de 0174
+avant d'y toucher pour un correctif de commentaire, découverte d'une RÉPÉTITION, dans cette même
+tranche, de l'incident R143 (règle 26) : un push WIP avait déclenché un déploiement d'aperçu qui a
+réellement appliqué 0174 (sans le bloc RLS `control_fsli`, ajouté ensuite par une édition EN PLACE
+du même fichier) à la base réseau de démonstration — `migrate()` a refusé, comme conçu, les deux
+déploiements suivants. Vérifié par requête DIRECTE contre la base réseau (Supabase MCP, jamais par
+inférence), pas seulement lu dans un journal de build. Corrigé par le même mécanisme que R143 :
+0174 restaurée octet pour octet à son contenu appliqué ; le bloc RLS et la correction de
+commentaire (REFUT2-03) re-portés en avant dans `0175_control_fsli_rls.sql`, jamais réédités dans
+0174. Aucun des sept déploiements de la tranche n'a jamais réussi — rien n'a été servi sur ce SHA
+avant ce correctif.
+
+**Deux réfutateurs indépendants** (règle 30, modèle de données/multi-tenant) ont trouvé : HIGH
+(voix 2) — `lierControleAuPoste` mutait l'état sans écrire `event_log` (provenance, règle 3),
+reachable via `bootstrapSox`, corrigé + assertion directe ajoutée à `p1-03.test.ts` ; MEDIUM
+dormant (voix 2) — `importerProcessus` ne détachait pas `control.process_model_id`/
+`process_model.supersedes_id` (FK sans cascade posées par la même migration) avant de supprimer
+l'ancien `process_model`, NO-OP mesuré aujourd'hui (aucun chemin n'écrit encore ces colonnes) mais
+une mine pour la suite — désamorcée ; LOW documentation (voix 2) — commentaire de 0174 décrivant un
+mécanisme de rattachement qui n'existe pas, corrigé dans 0175 (0174 étant désormais immuable) ;
+MEDIUM (voix 1) — message de refus d'`entretiens.ts::statuerEcart(factor)` ne distinguait pas
+« cycle hors taxonomie » de « processus pas encore importé pour ce dossier », précisé.
+
+**`npm run verify` : deux passages complets.** Premier passage (arbre `015d121`) ROUGE au maillon
+`vitest` avec TROIS échecs : un correctif RÉEL trouvé (`tests/parcours.test.ts`, hors `app/` donc
+jamais vu par `tsc --noEmit`, appelait `importerProcessus` sans `fsliCode` — oubli lors du retrait
+de `FSLI_DU_CYCLE` — corrigé) et un `ServeurTombe` sur `tests/screens.test.ts`. Second passage
+(arbre `d6ec94a`, après correctif) ROUGE uniquement sur ce second symptôme, à une route DIFFÉRENTE
+(`/eng/[id]/testing` après 52 routes, contre `/eng/[id]/suivi (SOX)` après 94 routes au premier
+passage) — disjonction établie, pas supposée : un passage isolé de `tests/screens.test.ts` seul
+passe vert (2/2, 462 s), aucune des deux routes de crash n'importe rien touché par cette tranche.
+C'est une réapparition de R142 (P1-02), sous la forme non couverte que cette entrée prédisait
+elle-même — consignée là, pas refermée. `tsc --noEmit` propre, `npm run gardes` propre (47
+gardes), le sweep ciblé (8 fichiers, 51 tests) vert après chaque correctif.
+
+**Décision d'expédition** : même patron que P1-02 (trois passages, trois défauts pré-existants
+différents, jamais deux fois le même) — le seul défaut attribuable au diff de cette tranche
+(`tests/parcours.test.ts`) est corrigé et confirmé ; le défaut restant est disjoint, mesuré comme
+tel deux fois de façon indépendante, et déjà tracé sous un fil ouvert séparé (R142) qui prédisait
+exactement cette forme de réapparition.
+
+---
+
 ## Phase 1 — P1-00 et P1-01 livrés et MESURÉS VERTS (2026-09-22)
 
 **Phase 0 expédiée** (`572e9d9`, fusion rapide sur `main`) : SHA servi confirmé par le job CI
