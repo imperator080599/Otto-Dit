@@ -359,5 +359,15 @@ export async function visiter(engagementId: string, kind: 'poste' | 'papier', re
     `select id::text from section_state where engagement_id = $1 and kind = $2 and ref = $3`,
     [engagementId, kind, ref]);
   if (!s) return;
-  await q(`insert into section_visit (section_id, user_id) values ($1,$2)`, [s.id, userId]);
+  /* MEILLEUR EFFORT, JAMAIS FATAL (R142, investigation P1-02) : ce journal ne
+     remplace pas event_log — « lire n'est pas un changement d'état » (en-tête
+     du fichier, migration 0031). Une écriture ici qui échoue ne doit donc
+     JAMAIS faire tomber la page qui l'a déclenchée : une collision rare sur
+     l'identifiant substitut de `section_visit` (bigserial, sans clé naturelle,
+     observée deux fois en isolation sous `tests/screens.test.ts` — jamais sous
+     un appel concurrent direct en Node/vitest, jamais avec `visiter()` ou son
+     seul site d'appel touchés par P1-02, cf. docs/BACKLOG_REPORTE.md R142)
+     n'a rien à dire sur le rendu de l'écran. */
+  await q(`insert into section_visit (section_id, user_id) values ($1,$2)`, [s.id, userId])
+    .catch((e) => { console.error('visiter : écriture du journal de consultation échouée (ignorée) —', e); });
 }

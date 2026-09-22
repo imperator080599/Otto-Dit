@@ -747,6 +747,12 @@
       "note": "expédié malgré cette station rouge (rule 30 : effort de vérification proportionné) — piste retenue mais non vérifiée : sensibilité de timing préexistante (networkidle + délai fixe, quatorze sites identiques dans scenario.ts). Reste à rendre la station plus robuste ou à profiler la cause exacte. Voir docs/BACKLOG_REPORTE.md."
     },
     {
+      "id": "R142",
+      "etat": "non fermé — tests/screens.test.ts a rougi deux fois (reproductible en isolation) sur /eng/[id]/poste/[code] (CASH) : duplicate key value violates unique constraint \"section_visit_pkey\", disjoint du diff P1-02 (visiter() et son seul site d'appel byte-identiques à 0e94f77 ; passe vert sur un worktree isolé à ce commit ; un appel concurrent direct à visiter() en Node/vitest pur ne reproduit pas la collision — l'hypothèse de course applicative simple est fausse, pas seulement non vérifiée).",
+      "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172, après expédition)",
+      "note": "corrigé au bon niveau sans attendre la cause exacte : section_visit::visiter() avale désormais l'échec d'écriture (.catch(), console.error serveur, jamais propagé) — un journal de consultation (explicitement pas event_log) ne doit jamais faire tomber une page. Cause exacte de la collision toujours non établie. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
       "id": "R141",
       "etat": "ouvert — trois décisions de périmètre de P1-02 (AUD-02) consignées : NOTE-01 sans chemin cliqué atteignable aujourd'hui, notesPourEcran garde sa propre clé (pas fusionnée avec hrefDeNote), sections.ts reste scopée poste/papier pour mesSections/sectionsDuDossier/avancement.",
       "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172)",

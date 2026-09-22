@@ -2463,3 +2463,38 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   `poste`/`papier`** — documenté dans l'en-tête de la migration 0172, pas ici en double, mais
   listé pour mémoire : les 33 natures neuves de section n'ont pas de statut dérivable par ces
   vues et ne sont pas exposées dedans.
+- **R142 — `tests/screens.test.ts` a rougi deux fois, de façon reproductible, sur
+  `/eng/[id]/poste/[code]` (CASH) : `duplicate key value violates unique constraint
+  "section_visit_pkey"`, DISJOINT du diff P1-02 par vérification directe, cause exacte NON
+  établie — corrigé en le rendant NON FATAL, jamais en le faisant taire ailleurs.**
+  Chronologie : un premier passage complet de `verify` (arbre `31a91fc`) a rougi au maillon
+  `vitest`, avec DEUX symptômes dans `tests/screens.test.ts` : cette collision sur `poste/CASH`
+  ET une ressource 500 sur `/eng/.../testing` (blob manquant), suivis d'un `ServeurTombe` (le
+  serveur meurt) à la station `/eng/[id]/suivi (SOX)`. Un passage ISOLÉ (`npx vitest run
+  ../tests/screens.test.ts` seul, aucun autre harnais en parallèle) a reproduit UNIQUEMENT la
+  collision `section_visit_pkey` sur `poste/CASH`, sans le second symptôme ni le crash serveur —
+  cohérent avec une transaction PGlite laissée avortée après le premier échec non rattrapé, qui
+  dégraderait les requêtes suivantes jusqu'à faire tomber le serveur (hypothèse plausible, pas
+  vérifiée davantage : le bénéfice de creuser plus loin n'était pas proportionné, règle 30, une
+  fois le symptôme racine rendu non fatal).
+  **Disjonction établie, pas supposée** : `git diff 0e94f77..HEAD` sur `sections.ts` (avant
+  correctif), `workpapers/lifecycle.ts`, `poste.ts` et l'arbre `app/src/app/eng/[id]/poste/`
+  entier est VIDE pour `visiter()` et son unique site d'appel (`poste/[code]/page.tsx:69`) — ni
+  la fonction ni son appelant ne font partie de ce que P1-02 a touché. Le MÊME test, sur le MÊME
+  arbre de départ SAUF les commits P1-02 (worktree isolé à `0e94f77`, `db:reset` + `demo:seed` +
+  `npx vitest run ../tests/screens.test.ts` propres), passe VERT (2/2). Un test unitaire dédié
+  (deux appels concurrents à `visiter()` sur la même section via `Promise.allSettled`, en
+  Node/vitest pur, sans navigateur ni `next dev`) NE reproduit PAS la collision — l'hypothèse
+  d'une course applicative simple sur `nextval()` est donc FAUSSE, pas seulement non vérifiée.
+  Le mécanisme exact (une vraie requête HTTP dupliquée sous `next dev`+Playwright ? un autre
+  effet propre à cet environnement précis ?) reste NON ÉTABLI.
+  **Corrigé sans attendre l'explication complète, par le bon niveau** : `section_visit` est un
+  « journal de consultation », explicitement PAS `event_log` (en-tête de la migration 0031 :
+  « lire n'est pas un changement d'état ») — une écriture non critique n'a AUCUNE raison de faire
+  échouer le rendu de la page qui l'a déclenchée, quelle qu'en soit la cause, rare ou non.
+  `sections.ts::visiter()` avale désormais cette écriture en cas d'échec (`.catch()`, un
+  `console.error` serveur, jamais propagé à l'écran) — un renforcement légitime même si la cause
+  précise n'est jamais élucidée : aucun visiteur réel ne doit jamais voir un 500 pour une ligne
+  de journal manquée. **Reste NON fermé** : établir la cause exacte (profilage direct du serveur
+  `next dev` sous charge, pas une hypothèse) si le symptôme réapparaît sous une forme qui, elle,
+  ne serait pas couverte par ce filet (une écriture différente, un autre bigserial).
