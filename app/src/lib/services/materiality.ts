@@ -94,6 +94,17 @@ export async function propose(engagementId: string, userId: string): Promise<str
     objectId: row.id,
     payload: { version, benchmark: p.benchmarkCode, amount: centsToNum(p.amountCents), engineRun: run.id, requestedBy: userId },
   });
+  /* P1-01 (AUD-01) — import différé : `propositions.ts` importe `applicateurs.ts`, qui importe
+     CE fichier (`materiality.validate`) ; un import statique ici ferait un cycle. Même patron
+     que `notifications.ts` (`await import('./workpapers/atelier')`). */
+  const { proposer } = await import('./propositions');
+  await proposer({
+    engagementId,
+    objectType: 'materiality',
+    objectId: row.id,
+    valeur: { benchmarkCode: p.benchmarkCode, pct: p.pct },
+    aiRunId: null, // moteur déterministe — `proposed_by_ai_run` n'est jamais posé ici, vérifié plus haut dans ce fichier
+  });
   return row.id;
 }
 

@@ -2263,3 +2263,31 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   `preconditions.ts` qui repose `restants` par service) est repoussé à P6-03 (migration des
   stations existantes), comme prévu par le plan pour P0-04 — la limite est documentée dans
   `scripts/clics/preconditions.ts` (en-tête) plutôt que laissée à découvrir.
+
+- **R136 — P1-01 : neuf `object_type` de `proposition` sont catalogués mais leur applicateur**
+  **n'est pas branché** (`app/src/lib/services/propositions/applicateurs.ts`, `types.ts`).
+  Seuls `materiality`, `deficiency`, `walkthrough_gap`, `extraction_field` ont un applicateur
+  réel — les quatre familles que `notifications.ts` (`elementsIaNonValides`) connaît déjà
+  aujourd'hui, et les seules pour lesquelles P1-01 backfille des lignes
+  (`0170_proposition.sql`). Les neuf autres — `fsli_analytique`, `assertion_risk`,
+  `transcript_gap`, `process_step`, `wp_extra_cell`, `scoping`, `carry_forward`, `risk_factor`,
+  `fs_tie` — sont acceptés par la colonne `object_type` (la contrainte `check` les liste toutes,
+  pour que la bande 0170+ n'ait jamais besoin d'un `ALTER` le jour où l'une d'elles se branche)
+  mais `proposer()/accepter()/modifier()` dessus lèvent PROP-03 nommément (`propositions.ts`,
+  `ApplicateurNonBranche`) plutôt que d'échouer en silence ou d'inventer un geste. Trois d'entre
+  elles sont déjà NOMMÉMENT dues à une tâche future par le plan maître lui-même : `extraction_field`
+  bascule sur une nouvelle ligne `rung='human'` en P1-06 (aujourd'hui son applicateur appelle
+  `verifyExtraction` en place, qui EST déjà branché — seule la future bascule reste à faire, pas
+  le branchement initial) ; `assertion_risk` en P1-07 (`risk.overrideLevel` EXISTE déjà,
+  vérifié — le brancher est un geste court, non fait ici faute de temps dans cette tranche) ;
+  `process_step` en Phase 4 (`processus.appliquerDifference` n'existe pas encore). Les six
+  autres (`fsli_analytique`, `transcript_gap`, `wp_extra_cell`, `scoping`, `carry_forward`,
+  `risk_factor`, `fs_tie`) ont chacune une fonction cible qui EXISTE déjà en base de code
+  (`entretiens.statuerEcart`, `fsli.confirmScoping`, `carryforward.deciderReprise`,
+  `tieout.documenter` — vérifié par lecture directe, pas supposé) sauf `fsli_analytique` et
+  `wp_extra_cell`, dont la fonction cible (`analytique.enregistrer`, `workpapers.confirmerCellule`)
+  n'existe pas encore. Brancher les applicateurs déjà réalisables (`transcript_gap`, `scoping`,
+  `carry_forward`, `fs_tie`, `assertion_risk`) est un geste MÉCANIQUE court, repoussé à une
+  tranche P1 ultérieure ou à P3-01 (qui migre les douze sites d'écran vers `<Proposition>` et a
+  donc besoin de chacun) plutôt que fait en silence ici, hors du périmètre annoncé de P1-01
+  (règle 13 : jamais plus que ce qui est construit et mesuré dans CETTE tranche).

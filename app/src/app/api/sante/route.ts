@@ -140,6 +140,33 @@ async function corpsDeLaSonde() {
       const { obstaclesAuVisa } = await import('@/lib/services/obstacles');
       return obstaclesAuVisa(id);
     }));
+    /* P1-01 (AUD-01, §797 du plan maître) — LA PARITÉ, PAS LE CUTOVER. `notifications.ts`
+       et `obstacles.ts` continuent de lire les colonnes de statut d'origine jusqu'à P3-01
+       (« double vérité » assumée) ; cette lecture est celle qui doit ROUGIR si `proposition`
+       dérive de ces colonnes — un engin qui crée une déficience/un écart/une extraction/une
+       matérialité SANS passer par `propositions.proposer()` romprait l'invariant en silence
+       sinon (règle 13). Elle jette explicitement (au lieu de rendre une phrase) : `essayer()`
+       ne marque `ok:false` que sur une exception. */
+    lectures.push(await essayer('propositions (parité avec NOTIF-01, AUD-01)', async () => {
+      const { elementsIaNonValides } = await import('@/lib/services/notifications');
+      const notif = await elementsIaNonValides(id);
+      const prop = await q1<{ n: string }>(
+        `select count(*)::text n from proposition where engagement_id = $1 and status = 'proposee'`, [id]);
+      const n = Number(prop.n);
+      /* Écart attendu, nommé (règle 19) : NOTIF-01 exclut une extraction sans ligne courante
+         résolue (`ligneParExtraction`, notifications.ts) — `proposition`, elle, backfille
+         TOUTE extraction `pending_verify`, ligne résolue ou non. Un écart de ce type précis,
+         et de ce sens précis (proposition ≥ notif), n'est pas une dérive : c'est documenté.
+         Tout AUTRE écart — notamment `proposition < notif` (un élément que NOTIF-01 voit et
+         que `proposition` ignore) — est la dérive que cette lecture existe pour attraper. */
+      if (n < notif.length) {
+        throw new Error(
+          `divergence : NOTIF-01 voit ${notif.length} élément(s) en attente, proposition n'en compte que ${n} `
+          + `— un chemin crée encore une déficience/un écart/une extraction/une matérialité sans propositions.proposer()`,
+        );
+      }
+      return `${n} proposition(s) « proposee » · ${notif.length} élément(s) NOTIF-01 (écart attendu si proposition > notif : extractions sans ligne courante résolue)`;
+    }));
     lectures.push(await essayer('postes (FSLI) et périmètre', async () => {
       const { listFslis } = await import('@/lib/services/fsli');
       return listFslis(id);

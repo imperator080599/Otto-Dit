@@ -715,6 +715,12 @@
       "etat": "ouvert — `restants` (scenario.ts, posé par la station « obstacles au visa », lu par « clôture et archive scellée ») n'a pas le garde-fou que `engNeuf` porte ; un `--station=clôture` isolé peut imprimer un compte stale (0) au lieu d'un échec déclaré.",
       "depuis": "2026-09-21 (Phase 0 P0-04, revue hostile)",
       "note": "non corrigé, délibérément — repoussé à P6-03 (migration des stations existantes) comme le reste ; la limite est documentée dans scripts/clics/preconditions.ts. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R136",
+      "etat": "ouvert — neuf des treize object_type de `proposition` (propositions/types.ts) sont catalogués mais leur applicateur n'est pas branché (propositions/applicateurs.ts) ; proposer()/accepter()/modifier() dessus lèvent PROP-03 nommément.",
+      "depuis": "2026-09-22 (Phase 1 P1-01)",
+      "note": "non corrigé, délibérément — seuls materiality/deficiency/walkthrough_gap/extraction_field sont branchés (les quatre familles déjà backfillées, notifications.ts). extraction_field/assertion_risk/process_step sont nommément dus à P1-06/P1-07/Phase 4 par le plan maître. Les six autres ont une fonction cible qui existe déjà pour la plupart (entretiens.statuerEcart, fsli.confirmScoping, carryforward.deciderReprise, tieout.documenter — vérifié) sauf fsli_analytique et wp_extra_cell. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

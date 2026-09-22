@@ -154,6 +154,20 @@ export async function extractEvidence(evidenceId: string, userId: string | null)
   }
   const id = await insertExtraction(evidenceId, res.rung, res.status, res.fields, aiRunId);
   await logExtract(ctx.tenant_id, ev.engagement_id, evidenceId, res.rung, res.status, userId);
+  if (res.status === 'pending_verify') {
+    /* P1-01 (AUD-01) — seule l'extraction qui ATTEND une vérification humaine est une
+       proposition (`extraction.status = 'complete'` n'en est pas une, même patron que
+       `notifications.ts`). Import différé : `propositions.ts` → `applicateurs.ts` →
+       `extraction/ladder.ts` (`verifyExtraction`) — un import statique ici ferait un cycle. */
+    const { proposer } = await import('../propositions');
+    await proposer({
+      engagementId: ev.engagement_id,
+      objectType: 'extraction_field',
+      objectId: id,
+      valeur: { fields: res.fields },
+      aiRunId,
+    });
+  }
   return { extractionId: id, rung: res.rung, status: res.status, docType: res.docType, fieldCount: res.fields.length };
 }
 

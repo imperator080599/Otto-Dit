@@ -124,13 +124,24 @@ export async function analyserWalkthrough(controlId: string, userId: string): Pr
     latencyMs: reponse.latencyMs,
     niveauAutomatisation: niveau,
   });
+  /* P1-01 (AUD-01) — import différé : `propositions.ts` importe `applicateurs.ts`, qui importe
+     `walkthrough-analyse.ts` (`statuerEcartWalkthrough`) ; un import statique ici ferait un
+     cycle. Même patron que `notifications.ts` (`await import('./workpapers/atelier')`). */
+  const { proposer } = await import('./propositions');
   for (let i = 0; i < reponse.ecarts.length; i++) {
     const e = reponse.ecarts[i];
-    await q(
+    const g = await q1<{ id: string }>(
       `insert into control_walkthrough_gap (engagement_id, control_id, seq, kind, citation, description, ai_run_id)
-       values ($1,$2,$3,$4,$5,$6,$7)`,
+       values ($1,$2,$3,$4,$5,$6,$7) returning id::text`,
       [engagementId, controlId, i + 1, e.kind, e.citation, e.description, aiRunId],
     );
+    await proposer({
+      engagementId,
+      objectType: 'walkthrough_gap',
+      objectId: g.id,
+      valeur: { kind: e.kind, citation: e.citation, description: e.description },
+      aiRunId,
+    });
   }
   await logEvent({
     tenantId: ctx.tenant_id, engagementId,

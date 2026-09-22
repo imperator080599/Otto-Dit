@@ -1669,6 +1669,16 @@ export async function proposeDeficiency(
       engineRun: run.id, requestedBy: userId,
     },
   });
+  /* P1-01 (AUD-01) — import différé : `propositions.ts` importe `applicateurs.ts`, qui importe
+     CE fichier (`sox.decideDeficiency`) ; un import statique ici ferait un cycle. */
+  const { proposer } = await import('./propositions');
+  await proposer({
+    engagementId: c.engagement_id,
+    objectType: 'deficiency',
+    objectId: row.id,
+    valeur: { severity: proposal.severity },
+    aiRunId: null, // moteur de règles (`engine_run`), pas un appel IA
+  });
   return row.id;
 }
 

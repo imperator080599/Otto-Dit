@@ -174,6 +174,12 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
     const defi = await q1<{ id: string }>(
       `insert into deficiency (engagement_id, control_id, severity_proposed, narrative)
        values ($1, $2, 'deficiency', 'déficience d’épreuve (fictive)') returning id::text`, [E, ctrl.id]);
+    /* P1-01 (AUD-01) — une proposition réelle, EN ATTENTE, pour que `propositions.ts::accepter/
+       modifier/refuser` atteignent leur garde (`assertMembre`) au lieu de « expected a row »
+       (`charger()`, REFUSÉ-AUTRE) — même principe que les autres objets d'épreuve ci-dessus. */
+    const prop = await q1<{ id: string }>(
+      `insert into proposition (engagement_id, object_type, object_id, valeur_proposee)
+       values ($1, 'deficiency', $2, '{"severity":"deficiency"}'::jsonb) returning id::text`, [E, defi.id]);
     const itv = await q1<{ id: string }>(
       `insert into process_interview (engagement_id, cycle_ref, date_entretien, sujet, support, created_by)
        values ($1, 'REVENUE', '2025-06-02', 'Entretien d’épreuve', 'notes', $2) returning id::text`, [E, karim]);
@@ -238,6 +244,7 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
       clientContactId: contact, contactId: contact,
       engineRunId: await unDe('engine_run'), aiRunId: await unDe('ai_run'),
       evaluationResponseId: await unDe('sample_evaluation'),
+      propositionId: prop.id,
     });
   }, 900000);
 
