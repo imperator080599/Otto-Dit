@@ -128,6 +128,24 @@ export interface VuePoste {
 const n = (v: unknown) => Number(v ?? 0);
 const OUVERT = `status not in ('resolved','scope_limitation')`;
 
+export interface ControleDuPoste {
+  id: string; code: string; nom: string; diStatus: string; assertions: string[];
+}
+
+/** Les contrôles rattachés à CE poste — le lien vit dans `control_fsli` (P1-03), jamais
+ *  déduit d'un compte de dossier (AUD-03 : « plus de comptes de dossier »). Un contrôle sans
+ *  poste rattaché ne rend rien ici — il reste visible dans la RCM de mission (`/rcm`). */
+export async function controlesDuPoste(engagementId: string, fsliCode: string): Promise<ControleDuPoste[]> {
+  return q<ControleDuPoste>(
+    `select c.id::text, c.code, c.name nom, c.di_status "diStatus", cf.assertions
+     from control_fsli cf
+     join control c on c.id = cf.control_id
+     where c.engagement_id = $1 and cf.fsli_code = $2
+     order by c.code`,
+    [engagementId, fsliCode],
+  );
+}
+
 /**
  * Les destinations qu'un poste ouvre — la liste que le garde de couverture
  * interroge. Un écran atteignable UNIQUEMENT depuis un poste doit être ici,

@@ -4,7 +4,7 @@ import { recordAiRun } from '@/lib/core/airuns';
 import { engagementCtx } from './imports';
 import { nextSeq } from './requests';
 import { raiseFactor } from './questionnaire';
-import { lireProcessus, FSLI_DU_CYCLE } from './processus';
+import { lireProcessus, fsliDuCycle } from './processus';
 import { getAnalyste, normaliserTranscript, type GenreEcart } from './entretiens-analyste';
 import { gardeBudget, assertBudgetActifEnBase } from './extraction/budget';
 import { motif, type Motif } from './motif';
@@ -321,15 +321,15 @@ export async function statuerEcart(opts: {
   }
 
   if (opts.decision === 'factor') {
-    const cibles = FSLI_DU_CYCLE[g.cycle_ref];
-    if (!cibles) throw new Error(`entretien : aucun poste n'est rattaché au cycle « ${g.cycle_ref} »`);
+    const fsliCode = await fsliDuCycle(g.engagement_id, g.cycle_ref);
+    if (!fsliCode) throw new Error(`entretien : aucun poste n'est rattaché au cycle « ${g.cycle_ref} »`);
     await raiseFactor({
       engagementId: g.engagement_id,
       source: 'manual',
       sourceRef: `entretien:${g.interview_id}:${g.seq}`,
       nature: 'controle',
       description: `${g.description} (entretien du ${g.date_entretien}${g.citation ? `, « ${g.citation} »` : ''})`,
-      targets: cibles,
+      targets: [{ fsli: fsliCode, assertions: ['realite', 'exhaustivite'] }],
       actorUserId: opts.userId,
     });
   }

@@ -46,12 +46,17 @@ export default async function ProcessusPage({
       const { user } = await requireMember(id);
       const fichier = formData.get('fichier') as File;
       if (!fichier || !fichier.size) throw new Error('processus : choisissez le fichier de description structurée (JSON)');
+      /* Phase 1 (P1-03) ne touche aucun écran (règle de phase, plan maître §12) — `fsliCode`
+         reste donc câblé sur REVENUE, le seul cycle que cet écran sait décrire aujourd'hui,
+         plutôt que d'ajouter un sélecteur neuf ici. Une vraie saisie viendra avec l'écran
+         processus de Phase 4 (R-F13/14/16). */
       await importerProcessus({
         engagementId: id,
         exercice: String(formData.get('exercice')) as 'n' | 'n1',
         filename: fichier.name,
         contenu: new Uint8Array(await fichier.arrayBuffer()),
         userId: user.id,
+        fsliCode: 'REVENUE',
         confirmerRemplacement: formData.get('remplacer') === 'on',
       });
       revalidatePath(`/eng/${id}/processus`);

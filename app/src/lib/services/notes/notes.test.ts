@@ -81,8 +81,8 @@ describe('poserNote / hrefDeNote (P1-02)', () => {
        returning id::text`,
       [IDS.engNep]);
     const proc = await q1<{ id: string }>(
-      `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by)
-       values ($1, 'REVENUE', 'n', 'Ventes', $2, $3) returning id::text`,
+      `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code)
+       values ($1, 'REVENUE', 'n', 'Ventes', $2, $3, 'REVENUE-1', 'REVENUE') returning id::text`,
       [IDS.engNep, ev.id, IDS.users.lea]);
     const step = await q1<{ id: string; code: string }>(
       `insert into process_step (process_id, code, seq, label, actor_name, system_name)

@@ -363,10 +363,10 @@ export async function enrichirMondeDemo(): Promise<RapportEnrichissement> {
   await conduireEtape('processus ventes décrit (N-1 et N), changements statués', async () => {
       const avant = await lireProcessus(ENG, 'REVENUE');
       if (!avant.n1) {
-        await importerProcessus({ engagementId: ENG, exercice: 'n1', filename: 'revenus_2024.json', contenu: fs.readFileSync(ds('processus', 'revenus_2024.json')), userId: karim });
+        await importerProcessus({ engagementId: ENG, exercice: 'n1', filename: 'revenus_2024.json', contenu: fs.readFileSync(ds('processus', 'revenus_2024.json')), userId: karim, fsliCode: 'REVENUE' });
       }
       if (!avant.n) {
-        await importerProcessus({ engagementId: ENG, exercice: 'n', filename: 'revenus_2025.json', contenu: fs.readFileSync(ds('processus', 'revenus_2025.json')), userId: karim });
+        await importerProcessus({ engagementId: ENG, exercice: 'n', filename: 'revenus_2025.json', contenu: fs.readFileSync(ds('processus', 'revenus_2025.json')), userId: karim, fsliCode: 'REVENUE' });
       }
       const diff = await diffProcessus(ENG, 'REVENUE');
       let statues = 0;

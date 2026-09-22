@@ -24,23 +24,23 @@ describe('processus en données structurées (ADR-108)', () => {
     await bootstrapNep();
     await importerProcessus({
       engagementId: IDS.engNep, exercice: 'n1', filename: 'revenus_2024.json',
-      contenu: lire('revenus_2024.json'), userId: IDS.users.karim,
+      contenu: lire('revenus_2024.json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     });
     await importerProcessus({
       engagementId: IDS.engNep, exercice: 'n', filename: 'revenus_2025.json',
-      contenu: lire('revenus_2025.json'), userId: IDS.users.karim,
+      contenu: lire('revenus_2025.json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     });
   }, 180000);
 
   it('l\'import refuse : JSON illisible, champ vide NOMMÉ, contrôle rattaché à une étape inconnue', async () => {
     await expect(importerProcessus({
       engagementId: IDS.engSox, exercice: 'n', filename: 'x.json',
-      contenu: octets('pas du json'), userId: IDS.users.karim,
+      contenu: octets('pas du json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     })).rejects.toThrow(/JSON lisible/);
     await expect(importerProcessus({
       engagementId: IDS.engSox, exercice: 'n', filename: 'x.json',
       contenu: octets(JSON.stringify({ cycle: 'REVENUE', nom: 'x', etapes: [{ code: 'A', libelle: 'a', acteur: '', systeme: 's' }] })),
-      userId: IDS.users.karim,
+      userId: IDS.users.karim, fsliCode: 'REVENUE',
     })).rejects.toThrow(/étape 1 \(A\), l'acteur/);
     await expect(importerProcessus({
       engagementId: IDS.engSox, exercice: 'n', filename: 'x.json',
@@ -49,18 +49,18 @@ describe('processus en données structurées (ADR-108)', () => {
         etapes: [{ code: 'A', libelle: 'a', acteur: 'b', systeme: 's' }],
         controles: [{ code: 'C1', etape: 'ZZ', libelle: 'c', frequence: 'f', proprietaire: 'p' }],
       })),
-      userId: IDS.users.karim,
+      userId: IDS.users.karim, fsliCode: 'REVENUE',
     })).rejects.toThrow(/ZZ.*n'existe pas/);
   });
 
   it('le remplacement d\'une version décrite se CONFIRME — rien ne s\'écrase en silence', async () => {
     await expect(importerProcessus({
       engagementId: IDS.engNep, exercice: 'n', filename: 'revenus_2025.json',
-      contenu: lire('revenus_2025.json'), userId: IDS.users.karim,
+      contenu: lire('revenus_2025.json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     })).rejects.toThrow(/se CONFIRME/);
     await importerProcessus({
       engagementId: IDS.engNep, exercice: 'n', filename: 'revenus_2025.json',
-      contenu: lire('revenus_2025.json'), userId: IDS.users.karim, confirmerRemplacement: true,
+      contenu: lire('revenus_2025.json'), userId: IDS.users.karim, fsliCode: 'REVENUE', confirmerRemplacement: true,
     });
   });
 

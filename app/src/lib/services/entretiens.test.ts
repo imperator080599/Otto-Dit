@@ -34,11 +34,11 @@ describe('entretiens et écarts candidats (ADR-108)', () => {
     await bootstrapNep();
     await importerProcessus({
       engagementId: IDS.engNep, exercice: 'n1', filename: 'revenus_2024.json',
-      contenu: lireDs('revenus_2024.json'), userId: IDS.users.karim,
+      contenu: lireDs('revenus_2024.json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     });
     await importerProcessus({
       engagementId: IDS.engNep, exercice: 'n', filename: 'revenus_2025.json',
-      contenu: lireDs('revenus_2025.json'), userId: IDS.users.karim,
+      contenu: lireDs('revenus_2025.json'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     });
     itvId = await creerEntretien({
       engagementId: IDS.engNep, cycle: 'REVENUE', date: '2026-01-12',

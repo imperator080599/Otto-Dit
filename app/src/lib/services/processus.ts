@@ -28,14 +28,6 @@ export interface VersionProcessus {
   etapes: EtapeProcessus[]; controles: ControleProcessus[];
 }
 
-/** Les postes qu'un changement significatif de CE cycle concerne. */
-export const FSLI_DU_CYCLE: Record<string, { fsli: string; assertions: string[] }[]> = {
-  REVENUE: [
-    { fsli: 'REVENUE', assertions: ['realite', 'exhaustivite'] },
-    { fsli: 'TRADE_RECEIVABLES', assertions: ['evaluation'] },
-  ],
-};
-
 function champTexte(brut: unknown, ou: string): string {
   if (typeof brut !== 'string' || !brut.trim()) {
     throw new Error(`processus : ${ou} est vide ou manquant`);
@@ -52,6 +44,11 @@ export async function importerProcessus(opts: {
   filename: string;
   contenu: Uint8Array;
   userId: string;
+  /** Le poste que ce processus sert — explicite (P1-03, AUD-03 : plus de mapping deviné en
+   *  mémoire, `FSLI_DU_CYCLE` retirée). Un cycle peut n'avoir qu'un poste rattaché ici ; un
+   *  second poste concerné par le même cycle se lie par `control_fsli` (les contrôles), pas
+   *  par `process_model` lui-même. */
+  fsliCode: string;
   confirmerRemplacement?: boolean;
 }): Promise<string> {
   await assertMembre(opts.engagementId, opts.userId, 'importer une description de processus');
@@ -122,11 +119,21 @@ export async function importerProcessus(opts: {
     audience: 'internal',
     uploadedBy: { kind: 'app_user', id: opts.userId },
   });
-  if (deja) await q(`delete from process_model where id = $1`, [deja.id]);
+  /* `process_step`/`process_ctrl` sont `on delete restrict` depuis P1-03 (AUD-03, 04 §1) — le
+     `delete` de `process_model` ne cascade plus, donc les filles doivent être vidées d'abord.
+     Comportement INCHANGÉ (le remplacement supprimait déjà tout, via la cascade) : c'est le
+     MÉCANISME qui devient explicite, pas la sémantique. La vraie supersede (jamais de suppression,
+     `status='superseded'`, `supersedes_id`) est P1-06 (§7.6 du plan) — ce correctif se limite à
+     garder ce chemin FONCTIONNEL sous la contrainte plus stricte, sans anticiper ce lot. */
+  if (deja) {
+    await q(`delete from process_ctrl where process_id = $1`, [deja.id]);
+    await q(`delete from process_step where process_id = $1`, [deja.id]);
+    await q(`delete from process_model where id = $1`, [deja.id]);
+  }
   const modele = await q1<{ id: string }>(
-    `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by)
-     values ($1,$2,$3,$4,$5,$6) returning id`,
-    [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId],
+    `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code)
+     values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
+    [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId, `${cycle}-1`, opts.fsliCode],
   );
   for (const e of etapes) {
     await q(
@@ -310,15 +317,15 @@ export async function statuerChangement(opts: {
     [opts.engagementId, opts.changeCode, opts.significance, opts.reason.trim(), opts.userId],
   );
   if (opts.significance === 'significatif') {
-    const cibles = FSLI_DU_CYCLE[opts.cycle];
-    if (!cibles) throw new Error(`processus : aucun poste n'est rattaché au cycle « ${opts.cycle} » — le rattachement se déclare, il ne se devine pas`);
+    const fsliCode = await fsliDuCycle(opts.engagementId, opts.cycle);
+    if (!fsliCode) throw new Error(`processus : aucun poste n'est rattaché au cycle « ${opts.cycle} » — le rattachement se déclare, il ne se devine pas`);
     await raiseFactor({
       engagementId: opts.engagementId,
       source: 'manual',
       sourceRef: opts.changeCode,
       nature: 'changement',
       description: `${c.libelle}${c.avant !== null && c.apres !== null ? ` (« ${c.avant} » → « ${c.apres} »)` : ''} — changement de processus statué significatif : ${opts.reason.trim()}`,
-      targets: cibles,
+      targets: [{ fsli: fsliCode, assertions: ['realite', 'exhaustivite'] }],
       actorUserId: opts.userId,
     });
   }
@@ -385,4 +392,50 @@ export async function obstaclesProcessus(engagementId: string): Promise<Motif[]>
     }
   }
   return out;
+}
+
+/** Le poste rattaché à CE cycle (version N), lu depuis `process_model.fsli_code` — le
+ *  rattachement se déclare, il ne se devine pas d'une constante (P1-03 : `FSLI_DU_CYCLE`
+ *  retirée). Partagé par `statuerChangement` (ce fichier) et `entretiens.ts::statuerEcart`. */
+export async function fsliDuCycle(engagementId: string, cycleRef: string): Promise<string | null> {
+  const modele = await q01<{ fsli_code: string | null }>(
+    `select fsli_code from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = 'n'`,
+    [engagementId, cycleRef],
+  );
+  return modele?.fsli_code ?? null;
+}
+
+export interface ProcessusDuPoste { id: string; code: string; nom: string; cycleRef: string; exercice: 'n' | 'n1' }
+
+/** Les processus (actifs) rattachés à CE poste — le lien poste↔cycle vit dans
+ *  `process_model.fsli_code` (P1-03), lu ici, jamais deviné. */
+export async function processusDuPoste(engagementId: string, fsliCode: string): Promise<ProcessusDuPoste[]> {
+  return q<ProcessusDuPoste>(
+    `select id::text, code, name nom, cycle_ref "cycleRef", exercice
+     from process_model where engagement_id = $1 and fsli_code = $2 and status = 'active'
+     order by cycle_ref, exercice desc`,
+    [engagementId, fsliCode],
+  );
+}
+
+/** Déposer le flowchart FOURNI PAR LE CLIENT — une pièce de corroboration, jamais la
+ *  source (l'en-tête du fichier le dit : la plateforme GÉNÈRE le diagramme depuis les
+ *  données structurées). Réclamation atomique, scopée par (id, engagement_id) en un seul
+ *  aller — jamais un SELECT puis un UPDATE séparés (ETANCH-04). */
+export async function deposerFlowchartClient(
+  engagementId: string, processId: string, evidenceId: string, userId: string,
+): Promise<void> {
+  await assertMembre(engagementId, userId, 'déposer le flowchart du client');
+  const row = await q01<{ id: string }>(
+    `update process_model set client_flowchart_evidence_id = $1
+     where id = $2 and engagement_id = $3 returning id`,
+    [evidenceId, processId, engagementId],
+  );
+  if (!row) throw new Error('processus : ce processus n\'appartient pas à ce dossier');
+  const ctx = await engagementCtx(engagementId);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'process_flowchart_client_depose', objectType: 'process_model', objectId: processId,
+    payload: { evidenceId },
+  });
 }

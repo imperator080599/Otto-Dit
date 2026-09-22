@@ -135,9 +135,11 @@ export async function importRcm(
            listing RCM (`rcm_row`, convention déjà en place, 0002) — mais chaque contrôle importé
            reçoit AUSSI un vrai risque en base (`risk`, 0001) par assertion listée, lié par
            `control_risk` (0150) : c'est CE lien, jamais le texte de `rcm_row`, que le facteur
-           « réponse au risque » doit citer pour ne pas être un décor. Le niveau est dérivé du seul
-           signal réellement présent dans le CSV (`is_key`) — pas une constante inventée : un
-           contrôle clé répond à un risque tenu pour `high`, sinon `medium`.
+           « réponse au risque » doit citer pour ne pas être un décor.
+           `level = null` (AUD-03, P1-03) : le niveau `high`/`medium` déduit du seul drapeau
+           `is_key` du CSV était une automatisation FACTICE (un jugement d'auditeur imité par un
+           booléen client) — retiré, pas remplacé par une autre devinette. `null` se dit à l'écran
+           tel quel, jamais maquillé en niveau réel (règle 8/13).
            `source = 'rcm_import'` (règle 3 : ceci n'est PAS 'manual' — aucun humain n'a saisi ce
            risque, il est synthétisé depuis le CSV) et l'écriture est un upsert ATOMIQUE sur
            `unique(engagement_id, assertion, description)` (0150) — trouvé par la revue hostile du
@@ -146,15 +148,26 @@ export async function importRcm(
            identiques en silence. */
         for (const assertion of assertionsList) {
           const risque = await q1<{ id: string }>(
-            `insert into risk (engagement_id, assertion, level, description, source) values ($1,$2,$3,$4,'rcm_import')
+            `insert into risk (engagement_id, assertion, level, description, source) values ($1,$2,null,$3,'rcm_import')
              on conflict (engagement_id, assertion, description) do update set assertion = excluded.assertion
              returning id`,
-            [engagementId, assertion, get('is_key') === 'yes' ? 'high' : 'medium', get('risk_desc')],
+            [engagementId, assertion, get('risk_desc')],
           );
           await q(
             `insert into control_risk (engagement_id, control_id, risk_id) values ($1,$2,$3)
              on conflict (control_id, risk_id) do nothing`,
             [engagementId, control.id, risque.id],
+          );
+        }
+        /* CONTROL_FSLI (P1-03, AUD-03) : colonne `fsli` OPTIONNELLE du CSV — un contrôle sans
+           poste rattaché s'affiche dans la RCM de MISSION (plan §7.3) et se lie par un geste
+           (`lierControleAuPoste`) plutôt que d'inventer un rattachement absent du listing. */
+        const fsliCode = get('fsli');
+        if (fsliCode) {
+          await q(
+            `insert into control_fsli (control_id, fsli_code, assertions, created_by) values ($1,$2,$3,$4)
+             on conflict (control_id, fsli_code) do update set assertions = excluded.assertions`,
+            [control.id, fsliCode, assertionsList, userId],
           );
         }
         for (const a of ATTRIBUTES_BY_CONTROL[get('code')] ?? DEFAULT_ATTRIBUTES) {
@@ -192,6 +205,23 @@ export async function importRcm(
     verb: 'rcm_imported', objectType: 'import_file', objectId: file.id, payload: { controls: count, skipped },
   });
   return { importFileId: file.id, count };
+}
+
+/** Lier un contrôle à un poste — le geste explicite qui remplace un rattachement deviné
+ *  (P1-03, AUD-03, §7.3 : « un contrôle sans poste se lie par un geste »). Upsert sur la clé
+ *  primaire `(control_id, fsli_code)` : reposer le même lien met juste les assertions à jour,
+ *  jamais un doublon muet. */
+export async function lierControleAuPoste(
+  engagementId: string, controlId: string, fsliCode: string, assertions: string[], userId: string,
+): Promise<void> {
+  await assertMembre(engagementId, userId, 'lier un contrôle à un poste');
+  const c = await q01<{ id: string }>(`select id from control where id = $1 and engagement_id = $2`, [controlId, engagementId]);
+  if (!c) throw new Error('sox : ce contrôle n\'appartient pas à ce dossier');
+  await q(
+    `insert into control_fsli (control_id, fsli_code, assertions, created_by) values ($1,$2,$3,$4)
+     on conflict (control_id, fsli_code) do update set assertions = excluded.assertions`,
+    [controlId, fsliCode, assertions, userId],
+  );
 }
 
 export async function listControls(engagementId: string) {
