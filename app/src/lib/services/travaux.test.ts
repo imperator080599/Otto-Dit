@@ -34,18 +34,20 @@ describe('mes travaux — la liste se DÉRIVE', () => {
     const wp = await papier('W-NOTE', 'in_review');
     // trois notes : pour Karim (ouverte), pour Karim (close), pour Léa
     await q(
-      `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type)
-       values ($1,$2,$3,$4,'open','Reprendre la conclusion.','a_corriger'),
-              ($1,$2,$3,$4,'closed','Note déjà close.','question'),
-              ($1,$2,$4,$3,'open','Pour Léa.','a_documenter')`,
-      [IDS.engNep, wp, LEA, KARIM]);
+      `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type,
+                                anchor_kind, anchor_ref, anchor_label)
+       values ($1,$2,$3,$4,'open','Reprendre la conclusion.','a_corriger','papier',$5,'papier'),
+              ($1,$2,$3,$4,'closed','Note déjà close.','question','papier',$5,'papier'),
+              ($1,$2,$4,$3,'open','Pour Léa.','a_documenter','papier',$5,'papier')`,
+      [IDS.engNep, wp, LEA, KARIM, wp]);
     // et trois notes ouvertes plus anciennes, pour l'ancienneté : 15 j, 45 j, 8 j
     await q(
-      `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type, created_at)
-       values ($1,$2,$3,$4,'open','Quinze jours.','question', now() - interval '15 days'),
-              ($1,$2,$3,$4,'open','Quarante-cinq jours.','question', now() - interval '45 days'),
-              ($1,$2,$3,$4,'open','Huit jours.','question', now() - interval '8 days')`,
-      [IDS.engNep, wp, LEA, KARIM]);
+      `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type, created_at,
+                                anchor_kind, anchor_ref, anchor_label)
+       values ($1,$2,$3,$4,'open','Quinze jours.','question', now() - interval '15 days','papier',$5,'papier'),
+              ($1,$2,$3,$4,'open','Quarante-cinq jours.','question', now() - interval '45 days','papier',$5,'papier'),
+              ($1,$2,$3,$4,'open','Huit jours.','question', now() - interval '8 days','papier',$5,'papier')`,
+      [IDS.engNep, wp, LEA, KARIM, wp]);
 
     // un papier au premier visa manquant, un autre où le préparateur a signé
     const w1 = await papier('W-VISA-1', 'draft');
@@ -225,7 +227,9 @@ describe('mes travaux — la liste se DÉRIVE', () => {
        returning id::text`, [autre.id, ent.id, per.id]);
     await q(`insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on) values ($1, $2, 'partner', false, current_date)`,
       [eng.id, KARIM]);
-    await q(`insert into review_note (engagement_id, author_id, assignee_id, status, text, note_type) values ($1, $2, $2, 'open', 'Note étrangère.', 'question')`,
+    await q(`insert into review_note (engagement_id, author_id, assignee_id, status, text, note_type,
+                                      anchor_kind, anchor_ref, anchor_label)
+             values ($1, $2, $2, 'open', 'Note étrangère.', 'question', 'materiality_param', 'sonde', 'sonde')`,
       [eng.id, KARIM]);
     const tb = await tableauDeBord(KARIM);
     expect(tb.obstacles.some((x) => x.engagementId === eng.id)).toBe(false);

@@ -93,10 +93,16 @@ async function papier(run: Requete, ctx: Contexte, code = 'G-WP'): Promise<strin
 }
 
 async function note(run: Requete, ctx: Contexte, wp: string, status = 'open', closedBy: string | null = null): Promise<string> {
+  /* `anchor_kind`/`anchor_ref` = 'papier'/le workpaper : même auto-ancrage que
+     `addReviewNote()` pour une note flottante (P1-02, migration 0172) — une
+     fixture d'attaque n'a pas besoin d'un service complet, mais elle respecte
+     la même contrainte `review_note_audit_ancree` que le vrai chemin. */
   const r = await run<{ id: string }>(
-    `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type, closed_by)
-     values ($1, $2, $3, $4, $5, 'Note d’attaque.', 'question', $6) returning id::text`,
-    [ctx.engagementId, wp, ctx.reviseur, ctx.preparateur, status, closedBy]);
+    `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, status, text, note_type, closed_by,
+                              anchor_kind, anchor_ref, anchor_label)
+     values ($1, $2, $3, $4, $5, 'Note d’attaque.', 'question', $6, 'papier', $7, 'papier')
+     returning id::text`,
+    [ctx.engagementId, wp, ctx.reviseur, ctx.preparateur, status, closedBy, wp]);
   return r.rows[0].id;
 }
 

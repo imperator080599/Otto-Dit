@@ -268,7 +268,8 @@ describe('walkthrough : suppression manuelle, provenance, garde VID-01, compteur
       // Rapport signé, mais une note de revue reste OUVERTE : toujours non éligible.
       await q(`update engagement set report_date = current_date where id = $1`, [IDS.engSox]);
       noteId = (await q1<{ id: string }>(
-        `insert into review_note (engagement_id, author_id, status, text) values ($1,$2,'open','à corriger — sonde VID-01') returning id::text`,
+        `insert into review_note (engagement_id, author_id, status, text, anchor_kind, anchor_ref, anchor_label)
+         values ($1,$2,'open','à corriger — sonde VID-01','materiality_param','sonde','sonde') returning id::text`,
         [IDS.engSox, IDS.users.karim],
       )).id;
       compteur = await compteurConservationVideo(IDS.engSox);

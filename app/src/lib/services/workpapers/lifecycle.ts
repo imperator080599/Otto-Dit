@@ -6,6 +6,7 @@ import { joursOuvresEntre } from '@/lib/core/jours';
 import { engagementCtx } from '../imports';
 import type { WpSection } from './draft';
 import { assertMembre } from '@/lib/core/membre';
+import { sectionPourNote } from '../sections';
 
 // S7 lifecycle: visible-flag edits with mandatory justification (idea #14), review notes
 // (human-only, idea #17), dated immutable sign-offs; re-draft after sign-off ⇒ new version
@@ -140,24 +141,41 @@ export async function addReviewNote(
   const portee: PorteeNote = opts.portee ?? 'audit';
   /* LES TROIS REFUS DU CLOISONNEMENT, DITS ICI ET TENUS EN BASE. Les répéter
      dans le service n'est pas une redondance : la base rend un message de
-     contrainte, l'écran a besoin d'une phrase. */
+     contrainte, l'écran a besoin d'une phrase.
+     `ecran` a été retiré (P1-02, migration 0172) : une note produit n'a plus
+     d'ancre du tout — elle porte sur la plateforme, jamais sur un objet du
+     dossier, donc aucune ancre ne pourrait de toute façon la désigner. */
   if (portee === 'produit') {
     if (workpaperId) throw new Error('une note de produit ne s’attache pas à un papier de travail — elle n’entre pas au dossier');
-    if (opts.ancre?.kind !== 'ecran') throw new Error('une note de produit s’ancre sur un ÉCRAN, jamais sur un objet du dossier');
+    if (opts.ancre) throw new Error('une note de produit ne s’ancre pas sur un objet du dossier');
     if (noteType === 'a_corriger') throw new Error('une note de produit ne bloque pas le visa — le dossier ne dépend pas d’un avis sur la plateforme');
   }
+  /* NOTE-01 (P1-02) : une note d'AUDIT sans ancre ET sans papier ne pointe
+     nulle part — refusée. Une note d'audit sans ancre MAIS attachée à un
+     papier n'est pas refusée : elle s'ancre automatiquement sur ce papier
+     (« flottante » devient « papier », même règle que le backfill de 0172,
+     en-tête). Une note produit ne passe jamais ici (jamais de workpaperId,
+     jamais d'ancre, vérifié juste au-dessus). */
+  let ancre = opts.ancre ?? null;
+  if (portee === 'audit' && !ancre) {
+    if (!workpaperId) throw new Error('NOTE-01 : une note d’audit se pose sur une ancre ou sur un papier de travail — jamais sans aucun des deux');
+    const wp = await q1<{ code: string }>(`select code from workpaper where id = $1`, [workpaperId]);
+    ancre = { kind: 'papier', ref: workpaperId, field: null, label: wp.code };
+  }
+  const sectionId = portee === 'audit' ? await sectionPourNote(engagementId, workpaperId, ancre) : null;
   const row = await q1<{ id: string }>(
     `insert into review_note (engagement_id, workpaper_id, author_id, assignee_id, text,
-                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind, note_type, scope)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning id`,
+                              anchor_kind, anchor_ref, anchor_field, anchor_label, assignee_kind, note_type, scope,
+                              section_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id`,
     [engagementId, workpaperId, authorId, assigneeId, text,
-     opts.ancre?.kind ?? null, opts.ancre?.ref ?? null, opts.ancre?.field ?? null,
-     opts.ancre?.label ?? null, assigneeKind, noteType, portee],
+     ancre?.kind ?? null, ancre?.ref ?? null, ancre?.field ?? null,
+     ancre?.label ?? null, assigneeKind, noteType, portee, sectionId],
   );
   await logEvent({
     tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: authorId,
     verb: 'review_note_added', objectType: 'review_note', objectId: row.id,
-    payload: { workpaperId, assigneeId, assigneeKind, noteType, portee, ancre: opts.ancre ?? null },
+    payload: { workpaperId, assigneeId, assigneeKind, noteType, portee, ancre, sectionId },
   });
   return row.id;
 }

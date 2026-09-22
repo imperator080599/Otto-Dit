@@ -10,7 +10,9 @@ import { missionN1 } from '../engagement';
 // stocké, parce qu'un drapeau stocké mentirait au recalcul suivant.
 
 export type AncreKind = 'sample_item' | 'workpaper_section' | 'questionnaire_answer'
-  | 'materiality_param' | 'exception' | 'deviation' | 'ecran' | 'compte';
+  | 'materiality_param' | 'exception' | 'compte' | 'papier' | 'analytique' | 'process_model'
+  | 'process_step' | 'control' | 'control_task' | 'assertion_risk' | 'transcript' | 'proposition'
+  | 'fs_line';
 
 export interface Ancre {
   kind: AncreKind;
@@ -39,20 +41,26 @@ export const KINDS: Record<AncreKind, string> = {
   questionnaire_answer: 'réponse de questionnaire',
   materiality_param: 'paramètre de seuils',
   exception: 'écart (exception)',
-  deviation: 'déviation de contrôle',
-  /* L'ÉCRAN LUI-MÊME (revue n°3 §2). Les six autres ancres visent un objet
-     métier, et c'est la bonne règle : « ligne 12 colonne 4 » se casse au
-     prochain tirage. Mais elle laissait sans recours la remarque qui porte sur
-     l'écran — « cette colonne est illisible », « ce bouton manque ici » — et
-     une remarque qui n'a nulle part où aller se dit à l'oral, puis se perd.
-     La référence est la ROUTE, pas un pixel : elle survit à une refonte de
-     mise en page. Le champ, s'il est donné, est une SECTION de la page. */
-  ecran: 'écran',
   /* LA CELLULE DE LEADSHEET (mandat de la soirée, §2.2 et §5) : un compte dans
      son poste — « 706000, solde N ». L'identité est le code du poste et le
      numéro de compte, jamais la ligne du tableau ; le champ dit quelle
      colonne (solde, solde N-1, variation). */
   compte: 'compte de la leadsheet',
+  /* LE PAPIER LUI-MÊME (P1-02, AUD-02, migration 0172). Remplace `ecran` —
+     retiré, jamais atteignable par aucun écran de ce dépôt (vérifié avant
+     retrait, en-tête de 0172_sections_et_notes.sql). Une note flottante
+     (aucune ancre métier, un papier de travail attaché) s'ancre désormais ICI
+     plutôt que de rester sans ancre — `addReviewNote` le fait automatiquement. */
+  papier: 'papier de travail',
+  analytique: 'revue analytique du poste',
+  process_model: 'modèle de processus',
+  process_step: 'étape de processus',
+  control: 'contrôle interne',
+  control_task: 'tâche de contrôle',
+  assertion_risk: 'risque par assertion',
+  transcript: 'transcript d\'entretien',
+  proposition: 'proposition (IA/moteur)',
+  fs_line: 'ligne des états financiers',
 };
 
 /**
@@ -128,19 +136,108 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
       );
       return { etat: rows.length ? 'present' : 'retire', cibles: rows.map((r) => r.id) };
     }
-    case 'deviation': {
+    case 'papier': {
+      /* Le papier lui-même (remplace `ecran`, retiré — 0172) : présent tant
+         que le workpaper existe et n'est pas dépassé (une version outdated
+         reste lisible, mais n'est plus la section de travail — même doctrine
+         que `sections.ts::SANS_PAPIER_DEPASSE`). */
+      const wp = await q01<{ id: string }>(
+        `select id::text id from workpaper where engagement_id = $1 and id::text = $2 and status <> 'outdated'`,
+        [engagementId, a.ref],
+      );
+      return { etat: wp ? 'present' : 'retire', cibles: wp ? [wp.id] : [] };
+    }
+    case 'analytique': {
+      /* La revue analytique d'un poste (0130) : présente tant qu'au moins une
+         version existe pour ce poste — la ref est le CODE du poste, jamais un
+         id de version (une nouvelle version ne retire pas la note, elle
+         change ce que « la revue analytique » désigne, migration 0130). */
       const row = await q01<{ id: string }>(
-        `select id::text id from deviation where engagement_id = $1 and id::text = $2`,
-        [engagementId, a.ref.startsWith('id|') ? a.ref.slice(3) : a.ref],
+        `select id::text id from fsli_analytique where engagement_id = $1 and fsli_code = $2
+         order by version desc limit 1`,
+        [engagementId, a.ref],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [a.ref] : [] };
+    }
+    case 'process_model': {
+      /* `cycle_ref|exercice` — la clé unique du modèle (0027). */
+      const [cycleRef, exercice] = decoupeRef(a.ref);
+      const row = await q01<{ id: string }>(
+        `select id::text id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3`,
+        [engagementId, cycleRef, exercice],
       );
       return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
     }
-    case 'ecran': {
-      /* UN ÉCRAN EXISTE TANT QUE SA ROUTE EXISTE. Il n'y a pas d'état du
-         dossier à interroger : c'est ce qui distingue cette ancre des six
-         autres, et c'est pourquoi elle ne peut porter que des notes qui ne
-         prétendent rien sur le dossier. La cible est la route elle-même. */
-      return { etat: 'present', cibles: [a.field ? `${a.ref}#${a.field}` : a.ref] };
+    case 'process_step': {
+      /* `cycle_ref|exercice|code_etape` — l'étape est stable d'une version à
+         l'autre du modèle (0027, commentaire de `process_step.code`). */
+      const parts = a.ref.split(':');
+      const [cycleRef, exercice, codeEtape] = parts.length === 3 ? parts : ['', '', ''];
+      const row = await q01<{ id: string }>(
+        `select ps.id::text id from process_step ps join process_model pm on pm.id = ps.process_id
+         where pm.engagement_id = $1 and pm.cycle_ref = $2 and pm.exercice = $3 and ps.code = $4`,
+        [engagementId, cycleRef, exercice, codeEtape],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'control': {
+      /* Le code du contrôle (`control(engagement_id, code)` unique, 0002) —
+         le même identifiant que le catalogue RCM affiche partout ailleurs. */
+      const row = await q01<{ id: string }>(
+        `select id::text id from control where engagement_id = $1 and code = $2`,
+        [engagementId, a.ref],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'control_task': {
+      /* `code_controle:seq_no` — la tâche d'un contrôle (0148). */
+      const [codeControle, seq] = decoupeRef(a.ref);
+      const row = await q01<{ id: string }>(
+        `select ct.id::text id from control_task ct join control c on c.id = ct.control_id
+         where c.engagement_id = $1 and c.code = $2 and ct.seq_no = $3::int`,
+        [engagementId, codeControle, seq],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'assertion_risk': {
+      /* `fsli_code:assertion` — la paire, pas l'id : le niveau est RE-DÉRIVÉ à
+         chaque évaluation (0012, commentaire de `computed_level`), l'identité
+         métier survit à une ré-évaluation, un id de ligne n'y survivrait pas. */
+      const [fsliCode, assertion] = decoupeRef(a.ref);
+      const row = await q01<{ id: string }>(
+        `select id::text id from fsli_assertion_risk where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+        [engagementId, fsliCode, assertion],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [a.ref] : [] };
+    }
+    case 'transcript': {
+      /* Le transcript d'entretien (0027) — identifié par l'entretien
+         (`interview_id`, unique sur `interview_transcript`). */
+      const row = await q01<{ id: string }>(
+        `select id::text id from interview_transcript where interview_id = $1
+         and interview_id in (select id from process_interview where engagement_id = $2)`,
+        [a.ref, engagementId],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'proposition': {
+      /* La ligne `proposition` elle-même (0170) — un id direct : cette table
+         n'est jamais recalculée en place, une nouvelle proposition est une
+         nouvelle ligne (`propositions.ts`, ETANCH-04). */
+      const row = await q01<{ id: string }>(
+        `select id::text id from proposition where engagement_id = $1 and id::text = $2`,
+        [engagementId, a.ref],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
+    }
+    case 'fs_line': {
+      /* `statement:ref` — la clé unique de la ligne (0019). */
+      const [statement, ref] = decoupeRef(a.ref);
+      const row = await q01<{ id: string }>(
+        `select id::text id from fs_line where engagement_id = $1 and statement = $2 and ref = $3`,
+        [engagementId, statement, ref],
+      );
+      return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
     }
     case 'compte': {
       /* Présent tant que le compte figure sur une balance ACTIVE du dossier (N
