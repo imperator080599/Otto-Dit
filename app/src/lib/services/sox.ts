@@ -222,6 +222,11 @@ export async function lierControleAuPoste(
      on conflict (control_id, fsli_code) do update set assertions = excluded.assertions`,
     [controlId, fsliCode, assertions, userId],
   );
+  const ctx = await engagementCtx(engagementId);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'control_fsli_lie', objectType: 'control_fsli', objectId: controlId, payload: { fsliCode, assertions },
+  });
 }
 
 export async function listControls(engagementId: string) {

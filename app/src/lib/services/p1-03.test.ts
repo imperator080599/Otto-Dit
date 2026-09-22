@@ -53,6 +53,16 @@ describe('P1-03 : processus et contrôles (AUD-03)', () => {
     expect(ligne.assertions).toEqual(['realite']);
   });
 
+  it('lierControleAuPoste écrit une ligne event_log — provenance (règle 3, REFUT2-01)', async () => {
+    const c = await q1<{ id: string }>(`select id from control where engagement_id = $1 and code = 'C-REV-02'`, [IDS.engSox]);
+    await lierControleAuPoste(IDS.engSox, c.id, 'REVENUE', ['exhaustivite'], IDS.users.karim);
+    const trace = await q1<{ n: string }>(
+      `select count(*)::text n from event_log where engagement_id = $1 and object_type = 'control_fsli' and object_id = $2 and verb = 'control_fsli_lie'`,
+      [IDS.engSox, c.id],
+    );
+    expect(Number(trace.n)).toBeGreaterThanOrEqual(1);
+  });
+
   it('deux process_model ACTIFS sur le même cycle (codes distincts) sont acceptés — AUD-03', async () => {
     await bootstrapNep();
     const ev1 = await ingestEvidence({

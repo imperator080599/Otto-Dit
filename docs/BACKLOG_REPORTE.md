@@ -2562,6 +2562,51 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   refusé n'est pas une garde) a fait exactement son travail en refusant la migration telle
   qu'écrite d'abord. Corrigé par une policy RLS sautant vers le parent `control`, même patron que
   `attribute_def`/`control_instance`/`control_test` (0029).
-  Documenté en tête de migration 0174 pour (1)/(2)/(4) ; consigné ici en plus, comme R141 l'a
+  Documenté en tête de migration 0174 pour (1)/(2) ; consigné ici en plus, comme R141 l'a
   établi comme patron pour P1-02, pour que ce ne soit jamais qu'un commentaire de code qui vivrait
   et mourrait avec le fichier.
+  **Correction du 22 septembre (soir), après R145 : le point (4) ne vit plus dans l'en-tête de
+  0174.** 0174 a dû être restaurée à son contenu appliqué (voir R145 ci-dessous) — le bloc RLS
+  `control_fsli` et son commentaire vivent désormais dans `0175_control_fsli_rls.sql`, une
+  migration séparée, en avant. Le FAIT (l'instrument a trouvé le gap, il est corrigé) reste vrai ;
+  seul son EMPLACEMENT dans le dépôt a changé.
+- **R145 — CORRIGÉ. Répétition, dans la MÊME tranche, de l'incident même que R143 vient de
+  documenter : `0174_processus_et_controles.sql` éditée EN PLACE après application (règle 26).**
+  Trouvée par la même méthode que R143 aurait dû m'alerter à éviter — cette fois découverte en
+  vérifiant, AVANT d'éditer la migration pour corriger REFUT2-03 (revue hostile P1-03, voix 2),
+  si elle avait déjà été appliquée quelque part : `list_deployments` (Vercel, filtré par branche)
+  montrait QUATRE déploiements ERROR sur les commits WIP de P1-03, dont le premier (`84f3123`,
+  celui qui introduit 0174) avait un journal de build montrant `migrate()` avoir RÉELLEMENT
+  appliqué `0174_processus_et_controles.sql` à la base RÉSEAU de démonstration (« migrations
+  nouvelles : 0174_processus_et_controles.sql ») avant d'échouer PLUS LOIN dans le script de
+  déploiement (`deploy:reconstruire`, sur un garde de couverture RLS — 2 défauts, dont
+  `control_fsli` sans politique). Un commit SUIVANT (`f336d85`) avait ensuite ajouté le bloc RLS
+  manquant DANS LE MÊME FICHIER 0174 — exactement le mécanisme 0153/0154 et R143.
+  **Vérifié par requête DIRECTE contre la base réseau (Supabase MCP), jamais par inférence depuis
+  un statut de déploiement (règle 26 elle-même l'exige)** : `select empreinte from _migrations
+  where name = '0174_processus_et_controles.sql'` rend `787fb257...b43b6`, IDENTIQUE à l'empreinte
+  calculée du fichier au commit `84f3123` — confirmant que 0174 est bien appliquée, dans sa forme
+  D'ORIGINE (sans le bloc RLS). `migrate()` a d'ailleurs refusé, EXACTEMENT comme conçu, les DEUX
+  déploiements suivants (`f336d85`, `4512776`) avec « 1 migration(s) ÉDITÉE(S) APRÈS APPLICATION :
+  0174_processus_et_controles.sql » (mesuré dans leurs journaux de build Vercel) — jamais rejoué
+  en silence, jamais servi en production : les sept déploiements de cette tranche sont TOUS
+  restés ERROR, rien n'a jamais atteint l'alias de production sur ce SHA. Vérifié aussi
+  directement (pas supposé) : `control_fsli` sur la base réseau porte `relrowsecurity=false`,
+  `relforcerowsecurity=false`, 0 ligne dans `pg_policies` — le gap RLS existait réellement dans le
+  schéma partagé, sans jamais avoir été SERVI (aucun déploiement de cette tranche n'a réussi).
+  **Corrigé, dans le même commit qui l'a trouvée, par le même mécanisme que R143** : 0174 restaurée
+  OCTET POUR OCTET à son contenu `84f3123` (empreinte revérifiée identique à celle de
+  `_migrations`) ; le bloc RLS et sa correction de commentaire (REFUT2-03) re-portés EN AVANT dans
+  `0175_control_fsli_rls.sql`, jamais réédités dans 0174. Vérifié : `db:reset` propre (0174 puis
+  0175 s'appliquent), `tsc --noEmit` propre, `npm run gardes` propre (47 gardes), le sweep ciblé de
+  8 fichiers P1-03 (51 tests) vert.
+  **Leçon, au-delà du correctif** : la garde de règle 26 a fonctionné exactement comme conçue —
+  elle a refusé silencieusement RIEN, elle a bloqué SEPT déploiements consécutifs plutôt que de
+  laisser une base incohérente servir. Ce qui a manqué n'est pas la garde mais une VÉRIFICATION
+  PRÉALABLE avant d'éditer un fichier de migration pendant une tranche encore en WIP : push sur
+  une branche de travail = déploiement d'APERÇU = application réelle à la base réseau PARTAGÉE
+  (§1 règle 26 le dit depuis l'incident 0153/0154 et R143 vient de le redire) — « ce n'est qu'un
+  commit WIP sur ma branche » n'est PAS une garantie de non-application. Avant tout futur correctif
+  de commentaire ou de contenu sur UNE MIGRATION DÉJÀ POUSSÉE, même sur une branche de travail,
+  même dans la même session : vérifier par requête directe (`_migrations`, empreinte) avant
+  d'éditer, jamais après.

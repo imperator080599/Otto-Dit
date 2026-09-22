@@ -322,7 +322,12 @@ export async function statuerEcart(opts: {
 
   if (opts.decision === 'factor') {
     const fsliCode = await fsliDuCycle(g.engagement_id, g.cycle_ref);
-    if (!fsliCode) throw new Error(`entretien : aucun poste n'est rattaché au cycle « ${g.cycle_ref} »`);
+    /* M1 (revue hostile P1-03, voix 1) : un entretien peut naître AVANT l'import du processus
+       structuré (il sert justement à le comprendre) — ce refus n'est donc pas une anomalie mais
+       un ORDRE DE DÉPENDANCE nouveau introduit par P1-03 (le rattachement se lit désormais en
+       base, jamais dans une constante). Le message le dit, pour ne pas être confondu avec un
+       cycle hors taxonomie. */
+    if (!fsliCode) throw new Error(`entretien : aucun poste n'est rattaché au cycle « ${g.cycle_ref} » — importez d'abord la description du processus pour ce cycle`);
     await raiseFactor({
       engagementId: g.engagement_id,
       source: 'manual',

@@ -124,8 +124,16 @@ export async function importerProcessus(opts: {
      Comportement INCHANGÉ (le remplacement supprimait déjà tout, via la cascade) : c'est le
      MÉCANISME qui devient explicite, pas la sémantique. La vraie supersede (jamais de suppression,
      `status='superseded'`, `supersedes_id`) est P1-06 (§7.6 du plan) — ce correctif se limite à
-     garder ce chemin FONCTIONNEL sous la contrainte plus stricte, sans anticiper ce lot. */
+     garder ce chemin FONCTIONNEL sous la contrainte plus stricte, sans anticiper ce lot.
+     `control.process_model_id` et `process_model.supersedes_id` référencent aussi `process_model(id)`
+     (même migration 0174, sans `on delete cascade`) : aujourd'hui AUCUN chemin applicatif n'écrit
+     l'un ou l'autre (le seul écrivain est le backfill de 0174 lui-même, mesuré NO-OP sur ce dépôt)
+     donc ceci est un NO-OP mesuré, pas une réparation d'un défaut observé — mais laisser la
+     suppression dépendre de ce silence serait une violation FK brute (page 500, règle 13) le jour
+     où l'un des deux sera réellement peuplé. Détaché avant le `delete`, jamais après. */
   if (deja) {
+    await q(`update control set process_model_id = null where process_model_id = $1`, [deja.id]);
+    await q(`update process_model set supersedes_id = null where supersedes_id = $1`, [deja.id]);
     await q(`delete from process_ctrl where process_id = $1`, [deja.id]);
     await q(`delete from process_step where process_id = $1`, [deja.id]);
     await q(`delete from process_model where id = $1`, [deja.id]);
