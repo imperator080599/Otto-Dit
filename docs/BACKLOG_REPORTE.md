@@ -705,6 +705,22 @@ avec ce qui l'avait écartée. Les numéros R1–R23 sont ceux du plan (`OTTO_Pl
   été bloquée, seul l'instrument reste à construire (capturer `vmstat`/stdout serveur PENDANT la
   prochaine occurrence, avant de relancer).
 
+  **Nouvelle occurrence (`verify-p101.log`/2b8fe50, 2026-09-22, Phase 1 P1-01, table
+  `proposition`)** : `le serveur est tombé après 97 route(s), à « /eng/[id]/workpapers (SOX) »`
+  — une DIXIÈME route distincte au total (loop, workpapers [déjà vue le 2026-09-08], testing,
+  rcm, population, exceptions, reunions, risk, travaux, provenance, fs-tieout, requests,
+  processus), cohérent avec l'hypothèse 1. Aucun processus parasite (`ps aux --sort=-%mem`,
+  vide). Disjonction vérifiée par lecture, pas supposée : `/eng/[id]/workpapers` (page et
+  `workpapers/lifecycle.ts`) n'importe aucun des fichiers touchés par cette tranche
+  (`propositions.ts`, `materiality.ts`, `sox.ts`, `walkthrough-analyse.ts`,
+  `extraction/ladder.ts`, `membre.ts`) — le seul lien indirect (`workpapers/atelier.ts` importe
+  `latestExtraction` d'`extraction/ladder.ts`) est un import de LECTURE, jamais appelé sur ce
+  chemin, et le module se charge sans erreur (aucune exception JS dans le journal, silence
+  complet — signature identique aux dix occurrences précédentes, jamais une pile d'appel). Isolé,
+  `npx vitest run tests/screens.test.ts` seul : **PASSE, 1/1, 461,50 s** — même conclusion que
+  toutes les occurrences isolées précédentes. Chaîne complète rejouée une fois de plus avant
+  expédition (voir STATUS.md pour le résultat mesuré).
+
 - **R59 — D.6 point 2 (le rail par défaut) reste NON traité.** Mandat
   `docs/MANDATS/2026-09-05_plan_autonomie_complet.md`, §D.6 : « Le rail n'ouvre par défaut que les
   groupes portant du travail sur ce dossier ; un test compte les destinations visibles au premier
