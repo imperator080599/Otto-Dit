@@ -97,4 +97,32 @@ describe('la garde des migrations éditées', () => {
     expect(Number(apres[0].n), 'le registre est vide : les deux fonctions du portail ne sont pas inscrites')
       .toBeGreaterThanOrEqual(2);
   });
+
+  /* P1-00 (AUD-18, annexe A-3). CAS CONNU MAUVAIS : une migration qui échoue à son DEUXIÈME
+     ordre ne doit laisser NI le premier ordre appliqué NI de ligne dans `_migrations` — sinon
+     un déploiement suivant la croirait appliquée (par son nom) alors que son schéma est à
+     moitié posé. Un fichier JETABLE est écrit dans supabase/migrations/ (nom hors bande, trié
+     après toutes les vraies migrations) puis retiré dans `finally`, comme mesure_testing.ts
+     construit son monde par service plutôt que par fixture statique. */
+  it('CAS CONNU MAUVAIS — un second ordre qui échoue n’applique ni le premier ni la ligne _migrations (transaction, AUD-18 A-3)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { repoRoot } = await import('@/lib/db/client');
+    const nom = '9999_jetable_p1_00_transaction.sql';
+    const chemin = path.join(repoRoot(), 'supabase', 'migrations', nom);
+    fs.writeFileSync(chemin,
+      'create table p1_00_jamais_persistee (id int);\nselect 1/0; -- échoue exprès, second ordre');
+    try {
+      await expect(migrate()).rejects.toThrow();
+      const table = await q<{ n: string }>(
+        `select count(*)::text n from information_schema.tables where table_name = 'p1_00_jamais_persistee'`);
+      expect(Number(table[0].n), 'le premier ordre a survécu à l’échec du second — pas de transaction').toBe(0);
+      const ligne = await q(`select 1 from _migrations where name = $1`, [nom]);
+      expect(ligne.length, '_migrations porte une migration qui n’a pas fini de s’appliquer').toBe(0);
+    } finally {
+      fs.rmSync(chemin, { force: true });
+    }
+    /* La fixture est retirée : un `migrate()` derrière ne la revoit plus. */
+    await expect(migrate()).resolves.toEqual([]);
+  });
 });

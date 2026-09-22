@@ -76,13 +76,22 @@ export async function migrate(db?: OttoDb): Promise<string[]> {
     console.log(`migrations sans empreinte (appliquées avant la garde, non vérifiables) : ${sansEmpreinte.length}`);
   }
 
+  /* P1-00 (AUD-18, annexe A-3). `exec(sql)` PUIS `insert into _migrations` — dans CETTE
+     transaction, jamais une après l'autre : la bande 0170+ s'applique sur la base PUBLIQUE à
+     chaque build Vercel, et un arrêt à mi-migration y laissait un schéma à moitié appliqué,
+     rejoué au déploiement suivant. Une transaction PAR FICHIER, pas une pour tout le lot : une
+     migration déjà commise doit RESTER commise même si la suivante échoue (`_migrations` la
+     connaît par son nom, règle 26 — la rejouer romprait l'idempotence que la garde ci-dessus
+     protège). */
   const applied: string[] = [];
   for (const f of files) {
     if (deja.has(f)) continue;
     const sql = fs.readFileSync(path.join(dir, f), 'utf8');
-    await conn.exec(sql);
-    await conn.query('insert into _migrations(name, empreinte) values ($1, $2)',
-      [f, empreinteMigration(sql)]);
+    await conn.transaction(async (t) => {
+      await t.exec(sql);
+      await t.query('insert into _migrations(name, empreinte) values ($1, $2)',
+        [f, empreinteMigration(sql)]);
+    });
     applied.push(f);
   }
   return applied;

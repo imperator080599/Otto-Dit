@@ -31,7 +31,13 @@ export function estUnSignalDeControleDeFlux(e: unknown): boolean {
 export interface OttoDb {
   query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
   exec(sql: string): Promise<unknown>;
-  transaction<T>(fn: (t: { query<R>(sql: string, params?: unknown[]) : Promise<{ rows: R[] }> }) => Promise<T>): Promise<T | undefined>;
+  /* `t.exec` (P1-00, AUD-18 annexe A-3) : le protocole SIMPLE, plusieurs ordres dans une seule
+     chaîne, DANS la transaction — ce que `migrate()` a besoin d'annuler d'un bloc. `t.query`
+     seul ne suffit pas : passer des paramètres (même `[]`) bascule node-postgres sur le
+     protocole ÉTENDU, qui n'admet qu'UN ordre par appel. PGlite le porte nativement sur son
+     objet `Transaction` ; `openPg` ci-dessous l'ajoute à la main, sur la MÊME connexion dédiée
+     que `t.query` (jamais `pool.query`, qui ouvrirait une connexion HORS transaction). */
+  transaction<T>(fn: (t: { query<R>(sql: string, params?: unknown[]) : Promise<{ rows: R[] }>; exec(sql: string): Promise<unknown> }) => Promise<T>): Promise<T | undefined>;
   close(): Promise<void>;
 }
 
@@ -146,7 +152,7 @@ async function brancher(url: string): Promise<OttoDb> {
       // protocole simple : plusieurs ordres dans une seule chaîne (migrations)
       await pool.query(sql);
     },
-    async transaction<T>(fn: (t: { query<R>(sql: string, params?: unknown[]): Promise<{ rows: R[] }> }) => Promise<T>) {
+    async transaction<T>(fn: (t: { query<R>(sql: string, params?: unknown[]): Promise<{ rows: R[] }>; exec(sql: string): Promise<unknown> }) => Promise<T>) {
       const client = await pool.connect();
       try {
         await client.query('begin');
@@ -155,6 +161,8 @@ async function brancher(url: string): Promise<OttoDb> {
             const r = await client.query(sql, params as never[]);
             return { rows: r.rows as R[] };
           },
+          // protocole simple, SUR LA CONNEXION DÉDIÉE de cette transaction (jamais `pool.query`).
+          async exec(sql: string) { return client.query(sql); },
         });
         await client.query('commit');
         return out;
