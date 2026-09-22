@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-22 · 70 gestes · **447 clics** au total.
+Parcours du 2026-09-22 · 70 gestes · **446 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -77,7 +77,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | NOTIF-01 : chaque carte mène à l’objet réel, et sa validation la retire du même geste | 2 |
 | NOTIF-01 : « ce que je dois approuver » change selon le rôle, deux personnes, même dossier | 2 |
 | obstacles au visa | 0 |
-| mes travaux : le point d’origine, et les clics comptés | 3 |
+| mes travaux : le point d’origine, et les clics comptés | 2 |
 | walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74) | 6 |
 | contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois | 28 |
 | contrôle interne : CTRL-05, la demande de population as_needed créée par un clic | 1 |
