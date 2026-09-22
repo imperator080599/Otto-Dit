@@ -754,9 +754,9 @@
     },
     {
       "id": "R143",
-      "etat": "corrigé — 0170_proposition.sql avait été éditée en place après application (règle 26) : ea98c68 crée 0170, un déploiement d'aperçu l'applique à la base réseau de démonstration, 22f93dc édite ensuite ce même fichier (sécurisation FK du backfill materiality) — exactement l'erreur 0153/0154. Trouvé par le build Vercel lui-même (migrate() a refusé de continuer), pas par un harnais local.",
+      "etat": "corrigé et SHA servi confirmé — 0170_proposition.sql avait été éditée en place après application (règle 26) : ea98c68 crée 0170, un déploiement d'aperçu l'applique à la base réseau de démonstration, 22f93dc édite ensuite ce même fichier (sécurisation FK du backfill materiality) — exactement l'erreur 0153/0154. Trouvé par le build Vercel lui-même (migrate() a refusé de continuer), pas par un harnais local. Portée réelle mesurée par l'API Vercel : bloquait la production depuis le ship de P1-01 (82b9f6a, EN ERROR), pas seulement depuis P1-02 — P1-00 et P1-01 n'avaient jamais été réellement servis.",
       "depuis": "2026-09-22 (Phase 1, découvert en poussant P1-02 sur main à 94116c7)",
-      "note": "0170 restauré octet pour octet à ea98c68 (git diff vide) ; le correctif de sécurité FK re-porté en avant dans 0173_proposition_ai_run_fk_safety.sql, UPDATE idempotente et défensive — jamais une réparation d'un défaut observé, l'insert original non sécurisé ayant réussi sur la base réseau (preuve qu'aucune valeur orpheline n'existait). Voir docs/BACKLOG_REPORTE.md."
+      "note": "0170 restauré octet pour octet à ea98c68 (git diff vide) ; le correctif de sécurité FK re-porté en avant dans 0173_proposition_ai_run_fk_safety.sql, UPDATE idempotente et défensive — jamais une réparation d'un défaut observé, l'insert original non sécurisé ayant réussi sur la base réseau (preuve qu'aucune valeur orpheline n'existait). SHA servi confirmé : ec17511, readyState READY, target production, aliasé otto-dit.vercel.app (get_deployment Vercel). Voir docs/BACKLOG_REPORTE.md."
     },
     {
       "id": "R141",

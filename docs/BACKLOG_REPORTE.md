@@ -2519,3 +2519,14 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   invalide en place, `proposition.ai_run_id` portant une vraie contrainte FK). Vérifié : `db:reset`
   propre (0173 s'applique), `tsc --noEmit` propre, 5 fichiers de tests ciblés (42/42, dont
   `propositions.test.ts` et `migrate.test.ts`) verts.
+  **Portée réelle, plus large qu'estimée d'abord — vérifiée par l'API Vercel, jamais supposée** :
+  CE défaut bloquait le déploiement de PRODUCTION depuis le ship de P1-01 lui-même, pas seulement
+  depuis P1-02. `list_deployments` (Vercel, filtré par SHA) montre `82b9f6a` (ship de P1-01) EN
+  ERROR sur `main`, avec le MÊME message — la production n'a plus reçu de déploiement RÉUSSI
+  depuis `572e9d9` (Phase 0), donc P1-00 ET P1-01 n'ont jamais été réellement SERVIS malgré leurs
+  propres confirmations « expédié » (règle 27 : un SHA poussé et non servi n'existe pas pour le
+  fondateur — celui-ci ne l'a jamais été, silencieusement, jusqu'à cette vérification). **SHA servi
+  CONFIRMÉ, mesuré, pas supposé** : `ec17511` (ce correctif) — `get_deployment` (Vercel) rend
+  `readyState: "READY"`, `target: "production"`, aliasé sur `otto-dit.vercel.app` et
+  `otto-dit-imperator080599.vercel.app`, `aliasError: null`. P1-00, P1-01 ET P1-02 sont donc TOUS
+  LES TROIS servis en production pour la première fois avec ce SHA.

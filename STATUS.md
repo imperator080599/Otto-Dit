@@ -233,6 +233,17 @@ sécurisé a RÉUSSI sur la base réseau, ce qui PROUVE qu'aucune valeur orpheli
 tout l'INSERT). Vérifié : `db:reset` propre (0173 s'applique), `tsc --noEmit` propre, 5 fichiers
 de tests ciblés dont `propositions.test.ts`/`migrate.test.ts` (42/42). R143 (docs/BACKLOG_REPORTE.md).
 
+**Portée réelle, mesurée par l'API Vercel, pas supposée** : ce défaut bloquait la production
+depuis le ship de P1-01 LUI-MÊME (`82b9f6a`, EN ERROR sur `main`, même message), pas seulement
+depuis P1-02 — la production n'avait plus reçu de déploiement RÉUSSI depuis `572e9d9` (Phase 0).
+P1-00 et P1-01 n'ont donc jamais été réellement SERVIS malgré leurs confirmations « expédié »
+respectives, silencieusement, jusqu'à cette vérification.
+
+**SHA servi CONFIRMÉ** (règle 27) : `ec17511` — `get_deployment` (Vercel) rend `readyState:
+"READY"`, `target: "production"`, aliasé sur `otto-dit.vercel.app` et
+`otto-dit-imperator080599.vercel.app`, `aliasError: null`. P1-00, P1-01 et P1-02 sont donc tous
+les trois servis en production pour la première fois avec ce SHA.
+
 **Expédié** : voir le commit qui suit pour le SHA de fusion sur `main`.
 
 ---
