@@ -2438,3 +2438,28 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   qu'un `networkidle` + délai fixe — cohérent avec les quatorze autres sites identiques, donc pas
   spécifique à cette station), soit établir, avec un profilage direct (pas une hypothèse), la
   cause exacte de ce nouveau ralentissement.
+- **R141 — P1-02 (AUD-02) : décisions de périmètre consignées plutôt que devinées.**
+  (1) **NOTE-01 n'a AUCUN chemin cliqué qui puisse l'atteindre, aujourd'hui.** Vérifié avant
+  d'écrire cette ligne, pas supposé : `notes/actions.ts::poserNoteAncreeAction` construit
+  TOUJOURS un objet `ancre` depuis le formulaire (même vide, `kind: ''`) — un tel objet est
+  TRUTHY en JS, donc `addReviewNote` l'envoie à `assertAncrePosable`, qui refuse AVANT NOTE-01
+  (« ancre : type « » inconnu ») si le formulaire n'a rien posé. `workpapers/[wid]/page.tsx`
+  fournit toujours un `workpaperId`. Aucun chemin existant ne peut donc atteindre l'état
+  « ni ancre ni papier » que NOTE-01 protège — c'est un filet de sécurité au niveau service
+  (un futur appelant qui oublierait les deux), pas un refus qu'un auditeur voit aujourd'hui.
+  Règle 37 (« ce refus ne bloque pas à tort ») est donc satisfaite PAR CONSTRUCTION : aucune
+  station existante ne peut jamais entrer dans l'état qui le déclenche — un `npm run clics`
+  complet le confirme (aucune régression), sans qu'une station dédiée à NOTE-01 soit nécessaire
+  ou honnête à construire (elle inventerait un chemin que le produit n'offre pas).
+  (2) **`notesPourEcran` (lifecycle.ts) garde sa propre clé** (`${anchor_kind}|${cible}[|field]`),
+  PAS `hrefDeNote()` : les deux servent des besoins différents — l'une une clé de LOOKUP pour
+  placer un marqueur sur un champ précis déjà rendu par un écran, l'autre une URL de NAVIGATION
+  pour la carte d'une note. Le plan (§7.2) les nomme dans la même phrase (« remplace ecranPorteur
+  ... et la clé d'écran de lifecycle.ts:291 ») ; lu à la lettre, ceci suggère une fusion — mais
+  aucun écran consommant `notesPourEcran` n'a été audité pour vérifier qu'un changement de format
+  de clé ne le casserait pas, et le bénéfice n'était pas clair. Reporté, pas deviné : un futur
+  chantier qui touche `notesPourEcran`/ses consommateurs peut réévaluer avec ce contexte.
+  (3) **`sections.ts` (`mesSections`/`sectionsDuDossier`/`avancement`) reste scopée à
+  `poste`/`papier`** — documenté dans l'en-tête de la migration 0172, pas ici en double, mais
+  listé pour mémoire : les 33 natures neuves de section n'ont pas de statut dérivable par ces
+  vues et ne sont pas exposées dedans.

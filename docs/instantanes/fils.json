@@ -739,6 +739,12 @@
       "etat": "ouvert — proposition.object_id reste uuid, jamais text comme le porte l'esquisse normative du plan maître (§7.1).",
       "depuis": "2026-09-22 (Phase 1, correctif 0171 après expédition de 0170)",
       "note": "non corrigé, délibérément — les quatre types branchés aujourd'hui portent tous un vrai UUID ; changer le type d'une colonne déjà indexée et jointe est plus risqué qu'un ajout de colonne pour un bénéfice qui ne sert personne aujourd'hui. À revoir si un futur type à clé composite l'exige. Voir docs/BACKLOG_REPORTE.md (même entrée : le trou de procédure qui a manqué le DDL normatif de 0170 avant expédition)."
+    },
+    {
+      "id": "R141",
+      "etat": "ouvert — trois décisions de périmètre de P1-02 (AUD-02) consignées : NOTE-01 sans chemin cliqué atteignable aujourd'hui, notesPourEcran garde sa propre clé (pas fusionnée avec hrefDeNote), sections.ts reste scopée poste/papier pour mesSections/sectionsDuDossier/avancement.",
+      "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172)",
+      "note": "non corrigé, délibérément — voir docs/BACKLOG_REPORTE.md pour le détail de chaque décision et son argument."
     }
   ]
 }
