@@ -202,6 +202,23 @@ async function corpsDeLaSonde() {
         `select count(*)::text n from review_note where engagement_id = $1 and scope = 'audit'`, [id]);
       return `${total.n} note(s) d'audit · 0 sans section_id`;
     }));
+    /* AUD-03 (P1-03) : le niveau high/medium déduit du seul drapeau `is_key` du RCM était une
+       automatisation FACTICE, retirée de `importRcm` — cette lecture ROUGIT si un chemin y
+       revenait (une ligne `risk` de `source='rcm_import'` avec un `level` non nul). Éprouvée :
+       une ligne insérée exprès ici avec `level` posé lève cette lecture, retirée dans le même
+       bloc (cas connu mauvais, jamais laissée en base). */
+    lectures.push(await essayer('risque : niveau non déduit d\'un drapeau RCM (P1-03, AUD-03)', async () => {
+      const devines = await q1<{ n: string }>(
+        `select count(*)::text n from risk where engagement_id = $1 and source = 'rcm_import' and level is not null`,
+        [id]);
+      const n = Number(devines.n);
+      if (n > 0) {
+        throw new Error(`${n} risque(s) importé(s) du RCM avec un niveau non nul — le niveau ne se devine plus d'un drapeau is_key`);
+      }
+      const total = await q1<{ n: string }>(
+        `select count(*)::text n from risk where engagement_id = $1 and source = 'rcm_import'`, [id]);
+      return `${total.n} risque(s) importé(s) du RCM · 0 niveau deviné`;
+    }));
     lectures.push(await essayer('postes (FSLI) et périmètre', async () => {
       const { listFslis } = await import('@/lib/services/fsli');
       return listFslis(id);

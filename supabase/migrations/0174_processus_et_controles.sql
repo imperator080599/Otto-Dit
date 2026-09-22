@@ -95,6 +95,19 @@ create table control_fsli (
   primary key (control_id, fsli_code)
 );
 
+-- RLS (ADR-109) : `control_fsli` ne porte pas son propre `engagement_id` — même patron que
+-- `attribute_def`/`control_instance`/`control_test` (0029), un saut vers le parent `control` au
+-- périmètre. Trouvé par `rls-couverture.test.ts` (règle 17 : l'instrument mesure, il n'a pas
+-- besoin d'être averti à l'avance — c'est justement ce qu'il existe pour attraper).
+do $$
+begin
+  execute 'alter table control_fsli enable row level security';
+  execute 'alter table control_fsli force row level security';
+  execute 'create policy control_fsli_eng on control_fsli using (exists (
+    select 1 from control p where p.id = control_fsli.control_id
+      and p.engagement_id in (select otto_engagements())))';
+end $$;
+
 -- MIGRATION DE DONNÉES : depuis `rcm_row` — mais `rcm_row` (0002) ne porte AUJOURD'HUI aucune
 -- colonne de poste (vérifié : `risk_desc text, assertions text[], coso_component text,
 -- import_file_id`, rien d'autre) et `dataset/sox/rcm.csv` ne porte pas non plus de colonne

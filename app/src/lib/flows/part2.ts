@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { q, q1, repoRoot } from '@/lib/db/client';
+import { q, q01, q1, repoRoot } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb } from '@/lib/services/imports';
 import { rebuildFslis } from '@/lib/services/fsli';
@@ -10,6 +10,7 @@ import {
   proposeDeficiency, decideDeficiency, listDeviations, extendToFullPopulation,
   attacherWalkthrough, ajouterTacheControle, documenterProcedureTache,
   documenterFacteurDesign, declarerIuc, rapprocherPopulationControle, documenterProcedureOe,
+  lierControleAuPoste,
 } from '@/lib/services/sox';
 import { approveSend, requestDetail, nextSeq } from '@/lib/services/requests';
 import { ingestEvidence } from '@/lib/services/evidence';
@@ -29,6 +30,19 @@ export async function bootstrapSox(): Promise<void> {
   await rebuildFslis(IDS.engSox, IDS.users.karim);
   await validate(await propose(IDS.engSox, IDS.users.lea), IDS.users.lea);
   await importRcm(IDS.engSox, fs.readFileSync(ds('sox', 'rcm.csv'), 'utf8'), IDS.users.karim, 'rcm.csv');
+  /* CONTROL_FSLI (P1-03, AUD-03) : `rcm.csv` ne porte pas de colonne `fsli` — le rattachement
+     poste↔contrôle se pose donc ici, GESTE EXPLICITE du semeur, jamais deviné d'un préfixe de
+     code (« C-REV » n'est pas une convention garantie par le modèle, seulement par CE jeu de
+     données) : seuls les contrôles réellement liés au cycle ventes (revenue) le sont, les
+     autres (trésorerie, ITGC) restent dans la RCM de mission. */
+  for (const code of ['C-REV-01', 'C-REV-02', 'C-REV-03', 'C-REV-04']) {
+    const control = await q01<{ id: string; assertions: string[] }>(
+      `select c.id, r.assertions from control c join rcm_row r on r.control_id = c.id
+       where c.engagement_id = $1 and c.code = $2`,
+      [IDS.engSox, code],
+    );
+    if (control) await lierControleAuPoste(IDS.engSox, control.id, 'REVENUE', control.assertions, IDS.users.karim);
+  }
 }
 
 /** Population listing request (standing item) → client provides the listing → import. */
