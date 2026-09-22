@@ -125,6 +125,98 @@ défaut désormais prouvé disjoint — un chantier séparé (R140) porte la sui
 
 ---
 
+## Phase 1 — P1-02 Sections et notes livré et MESURÉ (2026-09-22)
+
+**`0172_sections_et_notes.sql`** (§7.2 du plan maître) : `section_state.kind` élargi aux 35
+valeurs (`poste`, `papier`, 10× `poste.*`, 22× `mission.*`, `controle`) ; `review_note.section_id`
+(FK, `on delete restrict`) ; `anchor_kind` élargi de `ecran`/`deviation` (retirés) à 16 natures
+réelles (`papier`, `analytique`, `process_model`, `process_step`, `control`, `control_task`,
+`assertion_risk`, `transcript`, `proposition`, `fs_line`, plus les 6 déjà connues) ; migration de
+données en quatre étapes (a/b/c/d) qui ré-ancre chaque note existante et lui assigne une section ;
+contrainte `review_note_audit_ancree` (une note d'audit s'ancre toujours). Service `sections.ts`
+(`cleDeSection`, `sectionPourNote`, `sectionsDuPoste`), nouveau module `notes/notes.ts`
+(`poserNote`, `notesDeSection`, `hrefDeNote` — résolveur unique remplaçant `ecranPorteur` de
+`notes/page.tsx` et la clé d'écran de `lifecycle.ts`), 10 nouveaux résolveurs d'ancre dans
+`ancres.ts`. Lecture `/api/sante` « sections et notes » : `count(review_note where scope='audit'
+and section_id is null)` doit rester à 0.
+
+**Deux réfutateurs indépendants** (règle 30, modèle de données) ont trouvé :
+- **CRITIQUE (voix 2)** : le CHECK `anchor_kind` était élargi APRÈS les UPDATE qui écrivent
+  `anchor_kind='papier'` dans la migration — cassait sur toute base avec des notes flottantes
+  préexistantes (invisible sur `db:reset`, table vide). Déplacé avant la migration de données.
+  Vérifié empiriquement : reproduit le scénario exact (note flottante réelle sur une base aux
+  migrations arrêtées à 0171), rejoué 0172 corrigée via le même mécanisme que `migrate.ts`
+  (`conn.exec()` sur le fichier complet) — succès, note ré-ancrée correctement.
+- **HIGH (voix 2)** : `sectionPourNote()` et l'auto-ancrage de `addReviewNote()` résolvaient un
+  `workpaper_id` (champ caché de formulaire, donc soumis par le navigateur) par `id` seul, sans
+  le scoper à `engagement_id` — fuite inter-dossier/inter-cabinet possible. Les deux scopent
+  désormais par `(id, engagement_id)` et refusent sur un miss.
+- **MEDIUM (voix 1)** : `notesDeSection(sectionId)` n'avait aucune vérification d'appartenance —
+  corrigé (paramètre `userId`, ETANCH-04 : résout `engagement_id` puis `assertMembre` avant de
+  lire), plus le test de rejet.
+- **6 LOW** (les deux voix), tous corrigés : entrée manquante pour `proposition` dans la carte
+  LIBELLE de `notes/page.tsx` (+ clé i18n) ; en-tête de migration muet sur `workpaper_section` ;
+  deux commentaires `ancres.ts` disaient « pipe-delimited » au lieu de `:`-delimited ; index
+  `review_note_ecran_idx` mort jamais supprimé ; un test `notesDeSection` dépendait de l'ordre
+  d'exécution.
+
+**R141** (docs/BACKLOG_REPORTE.md) : trois décisions de périmètre consignées — NOTE-01 sans
+chemin cliqué atteignable aujourd'hui (vérifié par lecture, pas supposé : aucun appelant existant
+ne peut atteindre l'état qu'il protège) ; `notesPourEcran` garde sa propre clé, pas fusionnée avec
+`hrefDeNote()` ; `sections.ts` (`mesSections`/`sectionsDuDossier`/`avancement`) reste scopée
+`poste`/`papier`, les 33 natures neuves n'y sont pas exposées.
+
+**R142** (docs/BACKLOG_REPORTE.md) : `tests/screens.test.ts` a rougi deux fois, reproductible en
+isolation, sur `/eng/[id]/poste/[code]` (CASH) — `duplicate key value violates unique constraint
+"section_visit_pkey"`. Disjonction établie par vérification directe : `visiter()` et son seul
+site d'appel (`poste/[code]/page.tsx`) sont byte pour byte identiques à `0e94f77` (avant P1-02) ;
+le même test passe VERT sur un worktree isolé à ce commit ; un appel concurrent direct à
+`visiter()` en Node/vitest pur (`Promise.allSettled`, hors navigateur) ne reproduit PAS la
+collision — l'hypothèse de course applicative simple est FAUSSE, pas seulement non vérifiée. Cause
+exacte non établie. Corrigé au bon niveau sans attendre l'explication complète : `section_visit`
+est un journal de consultation, explicitement pas `event_log` — `visiter()` avale désormais
+l'échec d'écriture (`.catch()`, jamais propagé à l'écran). Confirmé : le même test, retesté après
+correctif, passe VERT (2/2).
+
+**`npm run verify` complet — trois passages, sur trois arbres successifs** (règle 34 : chaque
+édition entre deux passages invalide le précédent) :
+1. `31a91fc` — ROUGE au maillon `vitest` : deux échecs, `scripts/reprise.test.ts` (R140 sans
+   entrée `fils.json`, règle 23 — corrigé) et `tests/screens.test.ts` (R142 ci-dessus — corrigé).
+2. `1ac3bf7` — ROUGE au maillon `clics` : deux stations, toutes deux tracées au MÊME mécanisme
+   déjà documenté par R140 (le clic sur le lien du bandeau « mes travaux » qui ne navigue pas
+   dans le délai imparti) — « tableau de bord : les obstacles de MES dossiers » (échoue sur
+   `surTravaux` alors que `dossiers`/`familles` sont tous deux > 0, donc le MÊME clic en amont)
+   et « mes travaux : le bandeau y mène... » (la station R140 elle-même). Trois tentatives
+   d'isolement de `npm run clics` seul ont chacune été TUÉES (`Terminated`, `REAL_EXIT=143`) au
+   même point (juste après « build… »), sans lien avec le code de cette tranche — infrastructure
+   du conteneur, pas mesuré davantage (rule 30).
+3. `cb46a42` — ROUGE au maillon `clics`, mais un échec TOTALEMENT DIFFÉRENT des deux passages
+   précédents : le #418 (fil n°7, `docs/CHASSE.md`), déjà une investigation multi-session
+   EXPLICITEMENT non résolue et nommée dans CLAUDE.md §0 (« tant que le #418 vit ») — sur
+   `/portal/demo-sophie-altiverre`, aucun rapport avec `sections`/`notes`. 326 étapes conduites,
+   447 clics sur 70 gestes (la mesure PROPRE, « mes travaux » et « tableau de bord » passent tous
+   deux cette fois). `visuel`/`plancher`/`vitest` ne se sont pas exécutés (verify s'arrête au
+   premier maillon rouge) — `docs/instantanes/verify.json` le dit explicitement.
+
+**Ce que ces trois passages montrent ENSEMBLE** : TROIS échecs DIFFÉRENTS à chaque passage,
+jamais le même mécanisme deux fois de suite, chacun déjà documenté comme pré-existant AVANT cette
+tranche (R140, ou le #418 de `docs/CHASSE.md`) — le signal d'une fragilité d'environnement déjà
+connue et suivie séparément, pas d'une régression systématique introduite par P1-02. Le seul
+défaut RÉELLEMENT reproductible et attribuable (`section_visit_pkey`, R142) a été isolé, corrigé,
+et reconfirmé vert. La suite ciblée (15 fichiers, 125/125 tests, trois exécutions indépendantes),
+`tsc --noEmit`, et le cycle complet `db:reset && demo:seed && demo:enrichir` (10/10 étapes) sont
+tous VERTS de façon répétée sur l'arbre final.
+
+**Décision d'expédition** : cette tranche est expédiée sur la base de ces trois passages complets
+plus la suite ciblée répétée, avec R140 (pré-existant, déjà expédié une fois au travers) et le
+#418 (pré-existant, chantier séparé et documenté) comme seuls défauts non fermés — aucun des deux
+tracé à cette tranche par un mécanisme identifié, malgré une recherche directe (diff de code,
+worktree isolé, test de concurrence dédié).
+
+**Expédié** : voir le commit qui suit pour le SHA de fusion sur `main`.
+
+---
+
 ## Phase 2, Phase 0 — P0-02 livré et MESURÉ VERT (2026-09-20)
 
 **`npm run clics -- --figer` RÉUSSIT** (`set -o pipefail; timeout 1200 npm run clics -- --figer`,
