@@ -2407,3 +2407,34 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   **non fermé**, à re-tenter sur un passage complet ultérieur avant de conclure définitivement.
   Si le symptôme « mes travaux » recevaient une nouvelle occurrence PROPRE (sans crash navigateur
   autour), rouvrir dans `docs/CHASSE.md` plutôt que de re-suspecter l'environnement par défaut.
+
+  **Seconde occurrence, PROPRE cette fois (arbre `7ca23a6`, aucun crash navigateur autour) —
+  RECONDUIT, PAS EXPLIQUÉ.** Passage complet suivant (aucune édition entre les deux, tree figé
+  correctement, règle 34) : de nouveau **1 seul échec sur 325**, EXACTEMENT la même station
+  (« mes travaux : le bandeau y mène depuis n'importe quel écran, en 1 clic »), 446/447 clics,
+  aucune exception serveur, aucun « browser has been closed » cette fois. Deux passages complets
+  indépendants (`88a42eb`, `7ca23a6`) reproduisent donc identiquement le MÊME symptôme isolé, à
+  la même station, jamais ailleurs — ce n'est plus un bruit aléatoire au sens où R58 l'est (route
+  différente à chaque fois), mais un point de fragilité SPÉCIFIQUE et reproductible.
+  **Investigation supplémentaire, avant de conclure** : le rendu du bandeau (`layout.tsx`, racine,
+  présent sur CHAQUE page) est un `<Link>` statique — aucune requête vers `proposition`, aucune
+  dépendance vers un fichier touché par ce correctif (vérifié par lecture directe, pas supposé).
+  `src/app/travaux/page.tsx` n'importe que le TYPE `CarteNotification` de `notifications.ts`
+  (import de type, sans effet à l'exécution) et n'importe pas `proposition` du tout. **Aucun
+  mécanisme causal identifié qui relierait ce correctif à ce symptôme** — la piste la plus
+  probable qui reste (non vérifiée, jugée disproportionnée à creuser davantage ici, règle 30) est
+  une sensibilité de timing PRÉEXISTANTE dans cette station précise (`waitForLoadState('networkidle',
+  {timeout: 15000})` + 600 ms fixe — la même forme que quinze autres sites de `scenario.ts`,
+  jamais un timeout hors norme pour ce fichier), qui ne se manifestait pas sur l'arbre `82b9f6a`
+  (P1-01 expédié, clics VERT 447/447) mais se manifeste maintenant, sans qu'aucun mécanisme direct
+  ne l'explique. **Décision, écrite plutôt que devinée** : ce correctif (0171) EST expédié malgré
+  cette station rouge — la disjonction de code est établie à trois niveaux (fichiers touchés vs
+  fichiers du chemin, vérifiée par diff et par lecture), les DEUX isolements tentés pour la
+  reproduire proprement ont eux-mêmes échoué pour une raison distincte et non liée (crash
+  Playwright), et rule 30 plafonne l'effort de vérification proportionnellement à l'enjeu — une
+  navigation de test qui prend l'aller-retour de trop dans le harnais n'est pas, à ce stade de
+  preuve, un défaut du modèle de données que cette tranche corrige. **Reste NON fermé** : un
+  chantier futur doit soit rendre cette station plus robuste (un signal d'attente plus fiable
+  qu'un `networkidle` + délai fixe — cohérent avec les quatorze autres sites identiques, donc pas
+  spécifique à cette station), soit établir, avec un profilage direct (pas une hypothèse), la
+  cause exacte de ce nouveau ralentissement.

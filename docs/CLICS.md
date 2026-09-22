@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-22 · 70 gestes · **219 clics** au total.
+Parcours du 2026-09-22 · 70 gestes · **446 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -45,42 +45,42 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | testing : l’atelier | 2 |
 | atelier de test : la grille, les ancres, les refus, la conclusion | 17 |
 | R62 : le parcours découverte, chronométré en clics (D.6 point 6) | 4 |
-| étape 7 : la colonne ajoutée à la main | 0 |
+| étape 7 : la colonne ajoutée à la main | 8 |
 | atelier au clavier : ↓ déplace, ↑ revient, Entrée atteste | 0 |
-| atelier : l’aller-retour écart ↔ synthèse | 0 |
-| atelier : la clarification en lot | 0 |
+| atelier : l’aller-retour écart ↔ synthèse | 3 |
+| atelier : la clarification en lot | 5 |
 | la boucle : émettre les clarifications | 0 |
 | constat vs point d’action client : assigner un propriétaire | 0 |
 | constat vs point d’action client : relancer | 0 |
-| grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà | 0 |
-| comité : la synthèse de gouvernance agrège ce que le dossier sait déjà | 0 |
-| portail : réponses aux clarifications | 0 |
-| testing : le second passage sur les pièces arrivées après coup | 0 |
-| estimation : le fichier de calcul de la cliente | 0 |
-| résolution des écarts | 0 |
-| EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel | 0 |
-| re-exécution et évaluation | 0 |
-| papier de travail et visas | 0 |
-| poste : l’anatomie — visas en haut, leadsheet N/N-1, revue analytique, sections repliées mémorisées | 0 |
-| bascule entre missions du groupe | 0 |
-| réunions : créneaux, ordre des copies, envoi simulé | 0 |
+| grand livre : le test exhaustif rend visible ce qu’ADR-003 calcule déjà | 1 |
+| comité : la synthèse de gouvernance agrège ce que le dossier sait déjà | 1 |
+| portail : réponses aux clarifications | 5 |
+| testing : le second passage sur les pièces arrivées après coup | 3 |
+| estimation : le fichier de calcul de la cliente | 9 |
+| résolution des écarts | 26 |
+| EXTRAP-03 : écarter un écart comme anomalie, refus puis geste réel | 5 |
+| re-exécution et évaluation | 4 |
+| papier de travail et visas | 40 |
+| poste : l’anatomie — visas en haut, leadsheet N/N-1, revue analytique, sections repliées mémorisées | 6 |
+| bascule entre missions du groupe | 2 |
+| réunions : créneaux, ordre des copies, envoi simulé | 6 |
 | la boucle | 0 |
-| reprise N-1 | 0 |
-| pointage des états financiers | 0 |
-| circularisation des banques : complétude, envoi, écart, explication | 0 |
-| achèvement | 0 |
-| jalons | 0 |
-| suivi de mission : le tableau de bord mène quelque part | 0 |
+| reprise N-1 | 23 |
+| pointage des états financiers | 4 |
+| circularisation des banques : complétude, envoi, écart, explication | 8 |
+| achèvement | 7 |
+| jalons | 9 |
+| suivi de mission : le tableau de bord mène quelque part | 1 |
 | kanban des écarts : chaque carte se résout à un écart réel | 0 |
 | R61 : chaque colonne vide du kanban porte SON état, pas un texte générique | 0 |
-| R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux) | 0 |
-| NOTIF-01 : chaque carte mène à l’objet réel, et sa validation la retire du même geste | 0 |
-| NOTIF-01 : « ce que je dois approuver » change selon le rôle, deux personnes, même dossier | 0 |
+| R60 : les compteurs du dossier mènent quelque part (dashboard, population, balances-aux) | 3 |
+| NOTIF-01 : chaque carte mène à l’objet réel, et sa validation la retire du même geste | 2 |
+| NOTIF-01 : « ce que je dois approuver » change selon le rôle, deux personnes, même dossier | 2 |
 | obstacles au visa | 0 |
-| mes travaux : le point d’origine, et les clics comptés | 0 |
-| walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74) | 0 |
-| contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois | 0 |
-| contrôle interne : CTRL-05, la demande de population as_needed créée par un clic | 0 |
-| contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) | 0 |
-| AUTO-01 : le niveau d’automatisation de la mission ne dépasse jamais le plafond du pack | 0 |
-| clôture et archive scellée | 0 |
+| mes travaux : le point d’origine, et les clics comptés | 2 |
+| walkthrough : dépôt du transcript, analyse (rejeu), écarts décidés (§4 point 3, R74) | 6 |
+| contrôle interne : la ladder de refus CTRL-01/02/03, un geste à la fois | 28 |
+| contrôle interne : CTRL-05, la demande de population as_needed créée par un clic | 1 |
+| contrôle interne : CTRL-07 (population > 200) et CTRL-06 (inquiry OE neuve) | 4 |
+| AUTO-01 : le niveau d’automatisation de la mission ne dépasse jamais le plafond du pack | 2 |
+| clôture et archive scellée | 1 |

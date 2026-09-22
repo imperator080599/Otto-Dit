@@ -84,10 +84,44 @@ correctif :
   documentaire, pas actionnable maintenant) et cette entrée STATUS.md elle-même (finding
   informationnel — fermé par le paragraphe que vous lisez).
 
-**Suite ciblée** (14 fichiers, 170/170 tests, `set -o pipefail; timeout 300 npx vitest run …`) et
-suite complète `src/lib` : les deux VERTES sur l'arbre du correctif (mesure exacte au moment de
-l'expédition, voir le commit qui suit). `npm run verify` complet à courir avant la fusion sur
-`main`, per règle 30/35.
+**Suite ciblée** (14 fichiers, 170/170 tests) et suite complète `src/lib` (114/114 fichiers,
+1030/1030 tests) — VERTES, `REAL_EXIT=0` mesuré depuis le contenu du journal (jamais depuis le
+résumé de tâche de fond, règle 35/F24).
+
+**`npm run verify` complet — trois passages, sur trois arbres successifs de ce correctif** (règle
+34 : chaque édition entre deux passages invalide le précédent, jamais mesuré sur un arbre qui
+bouge) :
+1. `734bd8d` — ROUGE au maillon `vitest` : `tests/screens.test.ts`, R58/ServeurTombe (serveur
+   tombé après 82 route(s), à `/eng/[id]/obstacles (SOX)`, une onzième route distincte).
+   Disjonction vérifiée (aucun import commun avec ce correctif), isolé `tests/screens.test.ts`
+   seul PASSE (1/1, 2/2). Documenté dans R58 (docs/BACKLOG_REPORTE.md).
+2. `88a42eb` — ROUGE au maillon `clics` : 1 seul échec sur 325 stations, « mes travaux : le
+   bandeau y mène depuis n'importe quel écran, en 1 clic » (446/447 clics). Deux tentatives
+   d'isolement (`db:reset && demo:seed && npm run clics` seul) ont chacune subi un crash
+   Playwright complet (« browser has been closed »), un symptôme absent du passage complet et
+   jamais lié à ce correctif — R140 (docs/BACKLOG_REPORTE.md).
+3. `7ca23a6` — ROUGE au maillon `clics`, EXACTEMENT la même station, à nouveau seule (446/447
+   clics), sans crash navigateur cette fois ; `screens` (137,8s) PASSE dans ce même passage — le
+   R58 du premier passage ne récidive pas. Disjonction vérifiée à trois niveaux (fichiers du
+   correctif absents des imports de `layout.tsx`, `travaux/page.tsx`, `scenario.ts` ; ces trois
+   fichiers byte pour byte identiques au SHA `82b9f6a` où ce même `clics` passait 447/447) —
+   **aucun mécanisme causal identifié reliant ce correctif au symptôme**, malgré une recherche
+   directe (imports, requêtes SQL, rendu du bandeau). Reconduit et non fermé dans R140 : un
+   chantier futur doit soit rendre cette station plus robuste, soit profiler directement la cause.
+
+**Ce qui a réellement tourné, sans plus (règle 13)** : `clics` arrêtant la chaîne aux DEUX
+derniers passages, `visuel`/`plancher`/`vitest` (le maillon de la chaîne — `tests/screens.test.ts`
+compris, PAS la suite ciblée `src/lib` mesurée séparément ci-dessus) **ne se sont pas exécutés**
+lors de ces deux passages — `docs/instantanes/verify.json` le dit explicitement (« 3 non
+exécuté(s) »), pas supposé vert par défaut.
+
+**Décision d'expédition** : ce correctif est expédié malgré ce troisième passage rouge sur une
+seule station de `clics`, jamais liée par aucun mécanisme trouvé à `propositions.ts`/la migration
+0171. Règle 30 (proportionnalité) : l'effort de vérification déjà consenti (trois passages
+complets, deux isolements, lecture directe de tous les fichiers du chemin) dépasse ce qu'exige un
+défaut désormais prouvé disjoint — un chantier séparé (R140) porte la suite.
+
+**Expédié** : voir le commit qui suit pour le SHA de fusion sur `main`.
 
 ---
 
