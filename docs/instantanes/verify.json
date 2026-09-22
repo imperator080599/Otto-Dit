@@ -2417,6 +2417,34 @@
       "quand": "2026-09-22T13:37:47.609Z",
       "resultat": "ÉCHEC — code 1 (1097.8s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "02832846a0765914ce7abf5a6f5a28945032ded9",
+      "quand": "2026-09-22T14:21:56.563Z",
+      "resultat": "ok (7.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "02832846a0765914ce7abf5a6f5a28945032ded9",
+      "quand": "2026-09-22T14:22:13.016Z",
+      "resultat": "ok (16.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "02832846a0765914ce7abf5a6f5a28945032ded9",
+      "quand": "2026-09-22T14:22:16.842Z",
+      "resultat": "ok (3.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "02832846a0765914ce7abf5a6f5a28945032ded9",
+      "quand": "2026-09-22T14:22:17.523Z",
+      "resultat": "ÉCHEC — code 1 (0.7s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
