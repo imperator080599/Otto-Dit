@@ -1141,6 +1141,11 @@ export const LIBELLES = {
   'notes.openTheRisk': { en: 'open the risk', fr: 'ouvrir le risque' },
   'notes.openTheThresholds': { en: 'open the thresholds', fr: 'ouvrir les seuils' },
   'notes.openTheWorkpapers': { en: 'open the workpapers', fr: 'ouvrir les papiers' },
+  'notes.openTheException': { en: 'open the exception', fr: 'ouvrir l’écart' },
+  'notes.openTheAnalysis': { en: 'open the analytical review', fr: 'ouvrir la revue analytique' },
+  'notes.openTheProcess': { en: 'open the process', fr: 'ouvrir le processus' },
+  'notes.openTheControl': { en: 'open the control matrix', fr: 'ouvrir la matrice des contrôles' },
+  'notes.openTheFsLine': { en: 'open the financial statement tie-out', fr: 'ouvrir le pointage des états financiers' },
   'notes.theAnchoredObjectNoLongerExists': { en: 'the anchored object no longer exists in the current state of the file', fr: 'l\'objet ancré n\'existe plus dans l\'état actuel du dossier' },
   'notes.unassigned': { en: 'unassigned', fr: 'non attribuée' },
 

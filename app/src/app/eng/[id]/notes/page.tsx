@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { notesDeLaMission, listReplies, NOTE_TYPES, type NoteAncree, type NoteType } from '@/lib/services/workpapers/lifecycle';
+import { hrefDeNote } from '@/lib/services/notes/notes';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { repondreNoteAction, transitionNoteAction, executerNoteOttoAction } from './actions';
 import type { CompteRenduOtto } from '@/lib/services/notes/otto';
@@ -21,14 +22,22 @@ const STATUT: Record<string, { badge: string; libelle: CleLibelle }> = {
   closed: { badge: 'green', libelle: 'notes.statut.closed' },
 };
 
+/* LE HREF VIENT DE `hrefDeNote()` (P1-02, §7.2) — résolveur unique, partagé avec
+   `notesPourEcran` (lifecycle.ts). Cette fonction ne garde que le LIBELLÉ, une paire
+   {kind → phrase} qui n'a pas sa place dans le résolveur de routes lui-même. */
 function ecranPorteur(engId: string, n: NoteAncree): { href: string; libelle: CleLibelle } {
-  if (n.workpaper_id) return { href: `/eng/${engId}/workpapers/${n.workpaper_id}`, libelle: 'notes.openTheWorkpaper' };
-  switch (n.anchor_kind) {
-    case 'questionnaire_answer': return { href: `/eng/${engId}/risk`, libelle: 'notes.openTheRisk' };
-    case 'materiality_param': return { href: `/eng/${engId}/materiality`, libelle: 'notes.openTheThresholds' };
-    case 'compte': return { href: `/eng/${engId}/poste/${encodeURIComponent((n.anchor_ref ?? '').split('|')[0])}`, libelle: 'notes.openThePoste' };
-    default: return { href: `/eng/${engId}/workpapers`, libelle: 'notes.openTheWorkpapers' };
-  }
+  const href = hrefDeNote(engId, n);
+  if (n.workpaper_id) return { href, libelle: 'notes.openTheWorkpaper' };
+  const LIBELLE: Partial<Record<string, CleLibelle>> = {
+    questionnaire_answer: 'notes.openTheRisk', assertion_risk: 'notes.openTheRisk',
+    materiality_param: 'notes.openTheThresholds', compte: 'notes.openThePoste',
+    sample_item: 'notes.openThePoste', exception: 'notes.openTheException',
+    analytique: 'notes.openTheAnalysis', process_model: 'notes.openTheProcess',
+    process_step: 'notes.openTheProcess', transcript: 'notes.openTheProcess',
+    control: 'notes.openTheControl', control_task: 'notes.openTheControl',
+    fs_line: 'notes.openTheFsLine',
+  };
+  return { href, libelle: (n.anchor_kind ? LIBELLE[n.anchor_kind] : undefined) ?? 'notes.openTheWorkpapers' };
 }
 
 export default async function NotesPage({

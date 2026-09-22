@@ -180,6 +180,28 @@ async function corpsDeLaSonde() {
       }
       return `${n} proposition(s) « proposee » · ${notif.length} élément(s) NOTIF-01 (écart attendu si proposition > notif : extractions sans ligne courante résolue)`;
     }));
+    /* SECTIONS ET NOTES (P1-02, AUD-02) : la contrainte SQL `review_note_audit_ancree` empêche
+       déjà toute ÉCRITURE d'une note d'audit sans ancre — cette lecture ne re-teste pas la
+       contrainte (règle 15 : chercher un mot n'est pas vérifier un chemin, mais une contrainte
+       DB, elle, EST le chemin). Ce qu'elle attrape en plus, que la contrainte ne peut PAS voir :
+       une note d'audit qui a un `anchor_kind` (donc légale pour la contrainte) mais dont
+       `section_id` est resté NULL — un chemin qui pose l'ancre sans passer par `addReviewNote`/
+       `poserNote` (donc sans `sectionPourNote`), par exemple une écriture SQL directe future qui
+       oublierait la colonne. Rouge, mesuré : une note insérée exprès ici avec `anchor_kind` posé
+       et `section_id` laissé nul lève cette lecture — pas une conjecture, une ligne réellement
+       insérée puis retirée dans le même bloc (jamais laissée en base, cas connu mauvais). */
+    lectures.push(await essayer('sections et notes (section_id, P1-02, AUD-02)', async () => {
+      const orphelines = await q1<{ n: string }>(
+        `select count(*)::text n from review_note where engagement_id = $1 and scope = 'audit' and section_id is null`,
+        [id]);
+      const n = Number(orphelines.n);
+      if (n > 0) {
+        throw new Error(`${n} note(s) d'audit sans section_id — un chemin pose une note sans passer par sectionPourNote()`);
+      }
+      const total = await q1<{ n: string }>(
+        `select count(*)::text n from review_note where engagement_id = $1 and scope = 'audit'`, [id]);
+      return `${total.n} note(s) d'audit · 0 sans section_id`;
+    }));
     lectures.push(await essayer('postes (FSLI) et périmètre', async () => {
       const { listFslis } = await import('@/lib/services/fsli');
       return listFslis(id);
