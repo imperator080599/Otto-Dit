@@ -36,16 +36,23 @@ describe('couverture du verrou générique (AUD-08, 0177)', () => {
     expect(proposees.map((r) => r.table_name)).toEqual([]);
   });
 
-  it('tout verdict « garde » porte réellement un déclencheur <table>_lock_guard', async () => {
+  it('tout verdict « garde » porte réellement un déclencheur <table>_lock_guard SUR CETTE TABLE', async () => {
     const gardees = await q<{ table_name: string }>(
       `select table_name from engagement_lock_verdict where verdict = 'garde' order by 1`);
-    const avecDeclencheur = new Set((await q<{ tgname: string }>(
-      `select g.tgname from pg_trigger g join pg_class r on r.oid = g.tgrelid
-       where g.tgname like '%\\_lock_guard' escape '\\'`)).map((r) => r.tgname));
+    /* JOINT r.relname = table_name — pas seulement « un déclencheur de ce NOM existe quelque
+       part » (revue hostile de P1-05, voix 1 : la version précédente aurait laissé passer
+       `foo_lock_guard` posé par erreur sur la table `bar` tant que `foo` porte un verdict
+       `garde`). */
+    const parTable = new Map<string, string>();
+    for (const r of await q<{ tgname: string; relname: string }>(
+      `select g.tgname, r.relname from pg_trigger g join pg_class r on r.oid = g.tgrelid
+       where g.tgname like '%\\_lock_guard' escape '\\'`)) {
+      parTable.set(r.relname, r.tgname);
+    }
     const sansDeclencheur = gardees
       .map((r) => r.table_name)
-      .filter((t) => !avecDeclencheur.has(`${t}_lock_guard`));
-    expect(sansDeclencheur, 'verdict « garde » sans déclencheur réel — le registre ment').toEqual([]);
+      .filter((t) => parTable.get(t) !== `${t}_lock_guard`);
+    expect(sansDeclencheur, 'verdict « garde » sans déclencheur réel SUR CETTE TABLE — le registre ment').toEqual([]);
   });
 
   it('les 16 tables filles ajoutées par 0177 (sans colonne engagement_id directe) sont bien gardées', async () => {
@@ -58,9 +65,13 @@ describe('couverture du verrou générique (AUD-08, 0177)', () => {
       'reconciliation_item', 'fs_tie', 'process_step', 'process_ctrl',
       'interview_transcript', 'transcript_gap',
     ];
-    const avecDeclencheur = new Set((await q<{ tgname: string }>(
-      `select tgname from pg_trigger where tgname like '%\\_lock_guard' escape '\\'`)).map((r) => r.tgname));
-    const manquantes = filles.filter((t) => !avecDeclencheur.has(`${t}_lock_guard`));
+    const parTable = new Map<string, string>();
+    for (const r of await q<{ tgname: string; relname: string }>(
+      `select g.tgname, r.relname from pg_trigger g join pg_class r on r.oid = g.tgrelid
+       where g.tgname like '%\\_lock_guard' escape '\\'`)) {
+      parTable.set(r.relname, r.tgname);
+    }
+    const manquantes = filles.filter((t) => parTable.get(t) !== `${t}_lock_guard`);
     expect(manquantes).toEqual([]);
   });
 });

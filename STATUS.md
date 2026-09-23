@@ -4,6 +4,83 @@
 
 ---
 
+## Phase 1 — P1-05 Verrou générique livré (2026-09-23)
+
+**`0177_verrou_generique.sql`** (§7.5 du plan maître, renumérotée) : confirme les 21 tables
+`garde_proposee` de 0042 (jamais confirmées depuis le 2026-09-03) + `verification_check`
+(`journal` → `garde` : append-only depuis 0003, mais un dossier scellé pouvait encore recevoir un
+relevé de vérification NEUF — deux refus distincts sur la même table, `reason` du registre
+réécrite pour le dire) — 22 tables, même fonction `assert_engagement_unlocked()` (0003, inchangée),
+même patron de boucle `do $$ ... $$`. Étend la discipline à une catégorie que 0042 n'avait jamais
+vue : 16 tables FILLES sans colonne `engagement_id` directe (`signoff.workpaper_id`,
+`match.sample_item_id`, etc.), gardées par une fonction NEUVE `assert_engagement_unlocked_via()`
+(`tg_argv[0]` = colonne FK, `tg_argv[1]` = requête paramétrée résolvant `engagement_id`) — 16
+lignes neuves au registre, jamais vues par l'audit d'origine.
+
+**Gardes** : G-32 (`match`, résolution à DEUX sauts — sample_item → sample → engagement, le cas le
+plus complexe du mécanisme neuf) et G-33 (`signoff` — l'INSERT restait ouvert sur un dossier scellé
+malgré `forbid_mutation` sur UPDATE/DELETE) ; G-09 (existante, 0003) mise à jour pour nommer 0177.
+`couverture-verrou.test.ts` (NOUVEAU, séparé de `rls-couverture.test.ts` — sujet SANS RAPPORT
+malgré le mot commun « couverture », voir décision de périmètre ci-dessous) : toute table à
+`engagement_id` a un verdict, aucun verdict ne reste `garde_proposee`, tout `garde` porte un
+déclencheur réel SUR CETTE TABLE. Lecture `/api/sante` neuve : « verrou : tables couvertes = tables
+à couvrir ».
+
+**Revue hostile, deux voix indépendantes (règle 30 — modèle de données + sécurité) :**
+- **CONFIRMÉ, HAUTE, CORRIGÉ.** Le premier jet de `0177_verrou_generique.sql` et de
+  `couverture-verrou.test.ts` affirmaient tous deux « décision consignée dans STATUS.md (P1-05) »
+  AVANT que cette entrée n'existe — une affirmation non vérifiée (règle 13). Cette entrée EST
+  cette consignation ; l'affirmation est maintenant vraie.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ.** `couverture-verrou.test.ts` vérifiait qu'un déclencheur de ce
+  NOM existait QUELQUE PART dans la base (`pg_trigger` sans jointure sur la table cible) — jamais
+  qu'il était posé sur LA BONNE table. Un `foo_lock_guard` posé par erreur sur `bar` aurait fait
+  passer un verdict `garde` sur `foo` sans déclencheur réel. Sans conséquence aujourd'hui (les 38
+  déclencheurs de 0177 sont soit engendrés par `format()` avec le même identifiant des deux côtés,
+  soit écrits à la main et relus un par un), mais le test affirmait plus qu'il ne vérifiait. Les
+  deux `it()` de couverture rejoignent maintenant `r.relname` au `table_name` attendu.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ.** Le `reason` d'origine de `verification_check` (0042 : « ajout
+  seul ») restait affiché tel quel après le passage à `garde` — vrai pour `forbid_mutation`
+  (UPDATE/DELETE), mais plus toute la vérité une fois l'INSERT aussi fermé. Réécrit pour nommer
+  les deux refus.
+- **CONFIRMÉ, BASSE, CORRIGÉ.** `assert_engagement_unlocked_via()` ne documentait pas son
+  comportement quand la colonne FK est NULL (elle laisse passer, comme `assert_engagement_unlocked()`
+  le fait déjà pour `engagement_id` absent) — mort aujourd'hui (les 16 colonnes utilisées sont
+  toutes `not null`, vérifié une par une contre le DDL réel par les deux voix, indépendamment),
+  mais non nommé (règle 19). Commentaire ajouté dans la fonction.
+- **CONFIRMÉ, MOYENNE, ACCEPTÉ SANS CORRECTIF (proportionnalité, règle 30).** Les 22 tables
+  confirmées par le premier bloc (fonction inchangée depuis 0003, déjà prouvée par G-09) et 14 des
+  16 tables filles ne sont éprouvées par AUCUNE garde du registre — seulement par la PRÉSENCE de
+  leur déclencheur (`couverture-verrou.test.ts`), jamais par un REFUS réel (règle 17). Les deux
+  voix, indépendamment, jugent le risque marginal faible (même fonction déjà prouvée, noms de
+  table vérifiés un par un contre le schéma par les deux voix) et le disent honnêtement dans
+  `stops_looking` — étendre le nombre de gardes au-delà de G-32/G-33 est reporté, pas oublié.
+- **CONFIRMÉ, MOYENNE, DÉCISION CONSIGNÉE (pas un correctif de code).** Les 37 lignes touchées par
+  0177 (21 mises à jour + 16 insérées) passent directement à `verdict='garde'` avec un déclencheur
+  RÉEL posé dans LA MÊME migration, mais `confirmed_by`/`confirmed_at` restent NULL — le chemin de
+  confirmation humaine que 0042 avait prévu (une UI de revue qui n'existe pas encore) n'est pas
+  emprunté. La contrainte `lock_verdict_confirmation_is_whole` n'est pas violée (NULL/NULL est une
+  paire valide) et le plan du fondateur (§7.5) demande LITTÉRALEMENT `confirmed_by = null` pour
+  cette opération — lu comme : la migration elle-même, commitée sous mandat, EST la confirmation ;
+  sa provenance vit dans git (l'auteur, la date, le mandat cité), pas dans ces deux colonnes.
+  Aucun chemin de lecture ne pourra jamais dire QUI a confirmé PAR CE CHAMP pour ces 37 lignes —
+  une limite réelle, désormais écrite ici plutôt que silencieuse.
+
+Décision de périmètre (déjà citée par le code avant cette entrée, règle 13 corrigée ci-dessus) :
+le texte du plan §7.5 suggérait de renommer/réutiliser `rls-couverture.test.ts` pour ce sujet —
+jugé être une coquille après lecture intégrale du fichier (RLS policies, aucun rapport avec un
+verrou de dossier) par les deux voix, indépendamment. `rls-couverture.test.ts` reste intact ;
+`couverture-verrou.test.ts` est un fichier séparé.
+
+**Mesuré** : `tsc --noEmit` propre ; `db:reset` propre (0177 s'applique, rejouable — vérifié sans
+collision de nom de déclencheur contre TOUTE la base de migrations par la voix 2) ; `demo:seed` +
+`demo:enrichir` verts sur base fraîche (aucun dossier verrouillé dans ces flux, donc pas de faux
+refus — confirmé) ; suite `vitest` complète (1347 tests) passée avec un seul échec SANS RAPPORT
+(cohérence backlog/fils.json — R146 manquait dans `docs/instantanes/fils.json`, corrigé) ; sweep
+ciblé post-corrections (couverture-verrou, gardes, reprise, rls-couverture) : 77/77 verts, G-32/G-33
+prouvées en deux passes.
+
+---
+
 ## Phase 1 — P1-04 Visa livré (2026-09-23)
 
 **`0176_visa.sql`** (§7.4 du plan maître, renumérotée — bande 0170+ déjà consommée par P1-01/02/03

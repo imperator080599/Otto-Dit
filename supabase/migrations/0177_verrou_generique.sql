@@ -40,6 +40,13 @@ declare
   eng uuid;
   eng_status text;
 begin
+  /* OÙ CETTE FONCTION CESSE DE REGARDER (règle 19, revue hostile de P1-05, voix 1) : si la
+     colonne nommée par tg_argv[0] est NULL sur cette ligne, la garde LAISSE PASSER sans lever —
+     exactement le même choix que assert_engagement_unlocked() (0003) pour engagement_id absent.
+     Vérifié aujourd'hui (règle 15, chemin tracé, pas supposé) : les 16 colonnes réellement
+     passées par 0177 sont TOUTES `not null` dans leur table — ce chemin est mort à l'écriture de
+     cette migration. Il resterait un trou si une FUTURE table fille utilisait cette fonction
+     avec une colonne NULLABLE : sa ligne échapperait au verrou tant que la FK n'est pas posée. */
   ref_id := (to_jsonb(coalesce(new, old)) ->> id_col)::uuid;
   if ref_id is null then
     return coalesce(new, old);
@@ -89,8 +96,12 @@ update engagement_lock_verdict
     'risk_factor_declared','risk_factor_observed','risk_question_answer'
  ) and verdict = 'garde_proposee';
 
+-- Le `reason` d'origine (0042) dit « ajout seul » — vrai pour forbid_mutation (UPDATE/DELETE),
+-- mais un verdict 'garde' interdit maintenant aussi l'INSERT après scellé : laisser le texte
+-- d'origine mentirait sur POURQUOI cette ligne est gardée (règle 13, revue hostile de P1-05).
 update engagement_lock_verdict
-   set verdict = 'garde'
+   set verdict = 'garde',
+       reason = 'ajout seul (0003, forbid_mutation sur UPDATE/DELETE) ET, depuis 0177, aucun NOUVEAU relevé de vérification n’entre non plus sur un dossier scellé — deux refus distincts sur la même table'
  where table_name = 'verification_check' and verdict = 'journal';
 
 -- ===== les 16 tables FILLES, jamais vues par 0042 (pas de colonne engagement_id) : chacune
