@@ -3516,6 +3516,139 @@
       "quand": "2026-09-23T19:51:49.746Z",
       "resultat": "ok (508.5s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:56:56.917Z",
+      "resultat": "ok (4.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:09.760Z",
+      "resultat": "ok (12.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:12.604Z",
+      "resultat": "ok (2.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:13.019Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:13.423Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:13.874Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:15.109Z",
+      "resultat": "ok (1.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:15.525Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:16.033Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:16.396Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:57:18.528Z",
+      "resultat": "ok (2.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:58:59.924Z",
+      "resultat": "ok (101.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T20:59:08.591Z",
+      "resultat": "ok (8.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:00:27.590Z",
+      "resultat": "ok (79.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:18:07.773Z",
+      "resultat": "ok (1060.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:21:11.425Z",
+      "resultat": "ok (183.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:21:57.164Z",
+      "resultat": "ok (45.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens:test",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:28:14.243Z",
+      "resultat": "ok (377.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "7ece4622107ae8ca79d89e5e6ce89e3505777783",
+      "quand": "2026-09-23T21:36:57.622Z",
+      "resultat": "ok (523.4s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
