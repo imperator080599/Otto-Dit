@@ -4,6 +4,103 @@
 
 ---
 
+## Phase 1 — P1-07 Risque livré (2026-09-23)
+
+**`0179_risque.sql`** (§7.7 du plan maître, AUD-11) porte l'échelle de risque à quatre niveaux
+et rend chaque décision de risque rejouable dans le temps :
+1. **Échelle** : `faible/moyen/eleve` → `nrpmm/lower/higher/significant` — renommage
+   STRUCTUREMENT pur (règle 8 : mêmes seuils, aucune constante réécrite de mémoire) sur trois
+   niveaux, plus **`nrpmm`** (« non raisonnablement possible qu'elle soit d'importance ») qui
+   est VRAIMENT neuf : jamais calculé par le moteur, accessible seulement par dérogation
+   humaine motivée (**RISK-01**).
+2. **`fsli_assertion_risk_decision`** (append-only, `supersedes_id`, verrouillage par ligne
+   `for update` sur la ligne parente) porte désormais CHAQUE dérogation avec sa `justification`
+   — l'historique complet reste lisible, jamais écrasé (règle 28), au lieu d'un simple champ
+   muté en place sur `fsli_assertion_risk`.
+3. **RISK-01** : choisir `nrpmm` sans `justification` non vide est refusé — le formulaire
+   (`risk/page.tsx`) porte le même texte comme motif du refus G-07 ET comme justification
+   RISK-01, pour qu'aucun choix de l'écran ne produise un refus insatisfaisable (règle 37).
+4. **SAMP-01** : la taille d'échantillon proposée (`sampling.ts::proposeRevenueSample`) est
+   désormais pilotée par le niveau de risque retenu de l'assertion « realite » du chiffre
+   d'affaires, lue dans `methodology/risque.json` (contenu de pack, règle 9 — `coverageCapPctOfPm`
+   et les tailles par niveau ont quitté `packs/nep-fr.ts` en TypeScript pour devenir du contenu) ;
+   aucune évaluation de risque retenue pour cette assertion refuse la proposition (SAMP-01) au
+   lieu de proposer un tirage sans fondement.
+
+**Revue hostile, deux voix indépendantes (règle 30 — modèle de données, colonne neuve,
+contrainte levée, deux codes de refus neufs), SANS chevauchement entre les deux voix :**
+
+- **CONFIRMÉ, HAUTE, CORRIGÉ (voix 1).** `overrideLevel()` lisait la ligne parente PUIS
+  écrivait hors transaction — deux dérogations concurrentes sur la même assertion (double clic,
+  deux onglets) pouvaient faire bifurquer la chaîne `supersedes_id` (deux lignes filles du même
+  parent, aucune ne « courante » de façon univoque). La lecture est désormais DANS la
+  transaction, verrouillée (`select … for update`) sur la ligne parente ; un test de course
+  (`Promise.allSettled`, `p1-07.test.ts`) prouve que la chaîne ne bifurque jamais. Non
+  reproductible sous PGlite (connexion WASM unique) — la garantie tient par construction du
+  verrou, pas par un test qui aurait fait échouer une vraie course locale.
+- **CRITIQUE, CORRIGÉ (voix 2).** `poste.ts` comptait les risques « élevés » par comparaison de
+  NOM de niveau (`level === 'higher' || level === 'significant'`) au lieu du rang dans
+  `firm_methodology`. `firm_methodology` est immuable par construction (ADR-075 : « une méthode
+  publiée ne se modifie jamais ») — une mission désignée sous une méthode publiée AVANT ce
+  renommage porte encore l'ancien vocabulaire dans son propre `cat.risque.niveaux`, et la
+  comparaison codée en dur y comptait FAUX en silence (règle 13), sans qu'aucune erreur ne se
+  déclare. Corrigé par comparaison ORDINALE contre `cat.risque.niveaux` de la mission
+  (`rangNiveau`, déjà l'idiome de `risk.ts`/`risk/page.tsx`), scale-agnostic par construction.
+- **CONFIRMÉ, HAUTE, CORRIGÉ (voix 2).** `risk/page.tsx::badge()` peignait `'lower'` (le
+  plancher RÉEL désormais que `niveaux[0]` est `'nrpmm'`, jamais calculé) de la même couleur
+  ambre que `'higher'` — régression directe du renommage à 4 niveaux. Corrigé : gris pour
+  `nrpmm` et pour le plancher calculé, ambre pour le reste sauf le sommet (rouge).
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (voix 1).** Le message de refus SAMP-01 mélangeait anglais et
+  français. Traduit intégralement.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (voix 1).** Le commentaire de `methodology/valider.mjs` sur
+  `parametresEchantillonnage` affirmait qu'aucun chemin ne consommait ces deux nombres — faux
+  pour `coverageCapPctOfPm`, consommé sans condition par `proposeRevenueSample` ; seul
+  `randomSizeDefault` est réellement mort (supersédé par le tirage piloté par le risque).
+  Commentaire corrigé pour distinguer les deux, et pour noter que les indicateurs `*Verifie`
+  (règle 8) ne sont encore affichés sur aucun écran — un manque dormant, un seul pack réel
+  existant à ce jour.
+- **CONFIRMÉ, BASSE, CORRIGÉ (voix 1).** `assessFsli` omettait `justification` de sa lecture ET
+  de son écriture UPSERT sur la ligne de risque — une justification déjà posée disparaissait
+  silencieusement au recalcul suivant. Corrigé en miroir de `override_reason`, déjà traité
+  correctement.
+
+**Trouvé en cours de route, sans rapport avec cette tranche (règle 13) :**
+- **R147** (`docs/BACKLOG_REPORTE.md`) : `scripts/dataset/generate.ts` vide tout `dataset/` par
+  `fs.rmSync(recursive:true)` avant de régénérer, mais plusieurs sous-dossiers rédigés à la main
+  (`balances_aux/`, `circularisations/`, `entretiens/`, `estimations/`, `processus/`,
+  `pieces_neuves/`, `fixtures/walkthroughs.json`, `fixtures/entretiens.json`,
+  `sox/walkthrough-video-placeholder.txt`) n'ont aucun générateur pour les recréer. Restaurés
+  par `git checkout` deux fois cette tranche (rien perdu, rien corrigé) — danger réel, non
+  fixé, reporté.
+- **R148** : `procedures.json` porte un décalage cycle/poste préexistant sur `CA-EXHAUST`
+  (hors périmètre de cette tranche). Reporté.
+- **Recalibrage du tirage démo** : la taille d'échantillon synthétique proposée pour le chiffre
+  d'affaires est passée à 15 (niveau `higher`, mesuré depuis le vrai `bootstrapNep()` qui
+  importe le bilan N-1 et déclenche le facteur de variation) — une première mesure locale
+  incomplète avait donné 6 (`lower`) et cassé quatre suites qui dépendaient du monde démo réel ;
+  corrigé, et les bootstraps locaux de `s3s4.test.ts`/`s5s6.test.ts`/`retirage.test.ts`
+  importent désormais aussi le N-1 pour rester alignés sur le monde démo partagé.
+
+**#418 — F18 (`docs/CHASSE.md`)** : le premier passage `verify` de cette tranche a capté cinq
+incidents d'hydratation en une seule exécution (le plus haut compte jamais enregistré) — quatre
+sur `/eng/.../rcm/<cid>` (bruit déjà connu, familles E5/F11), un sur `/portal/...` (même famille
+que F9/F10/F13/F16, zéro divergence textuelle mesurable après normalisation). Vérifié par lecture
+réelle des imports (règle 15, pas un grep) : aucune des deux pages ne touche le diff de cette
+tranche. Non creusé plus loin (hors mandat). Un second passage sur l'arbre figé (aucune édition,
+règle 34) est repassé entièrement propre — 0 incident.
+
+**Mesuré** : `tsc --noEmit` propre ; `db:reset` propre (0179 s'applique, rejouable) ; `demo:seed`
+vert sur base fraîche ; suite `vitest` complète (176 fichiers, 1377 tests, incluant
+`p1-07.test.ts` — RISK-01 connu-mauvais, SAMP-01 connu-mauvais, chaîne `supersedes_id` sous
+course concurrente) ; `npm run verify` COMPLET vert — **19/19 maillons** (db:reset, demo:seed,
+tsc, gardes, semeur, plancher, langue(:epreuve), lectures(:epreuve), parcours(:epreuve), screens,
+fumee, densite, clics — 326 étapes, 0 échec — visuel — 356 vues, 0 défaut —, screens:test,
+vitest) sur l'arbre `be56148` (rejoué propre après les correctifs de revue, log
+`/tmp/verify-p1-07-replay.log`). Le parcours cliqué complet (station de clôture comprise, règle
+37 : cette tranche ajoute RISK-01 et SAMP-01) passe sans blocage.
+
+---
+
 ## Phase 1 — P1-06 Supersede livré (2026-09-23)
 
 **`0178_supersede.sql`** (§7.6 du plan maître) ferme trois chemins qui DÉTRUISAIENT ou
