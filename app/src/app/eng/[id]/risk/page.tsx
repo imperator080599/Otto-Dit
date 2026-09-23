@@ -156,9 +156,17 @@ export default async function RiskPage({
     });
   }
 
+  /* CORRECTIF (revue hostile P1-07, voix 2, HAUTE) : ce badge lisait `niveaux[0]` comme « le
+     plancher » — vrai tant que l'échelle n'avait que des niveaux CALCULÉS (0=faible). Depuis
+     AUD-11, niveaux[0] est « nrpmm », jamais calculé (override humain seul) : « lower », le
+     vrai plancher du calcul, tombait dans la branche `else` — même couleur ambre qu'un
+     risque « higher », sur l'écran conçu précisément pour rendre le risque visible. `nrpmm`
+     lui-même (« aucune anomalie raisonnablement possible ») lit aussi comme gris — c'est la
+     classification la plus bénigne de l'échelle, pas moins grise que le plancher calculé. */
+  const planchers = cat.risque.niveaux.filter((n) => n.toLowerCase() !== 'nrpmm');
   const badge = (l: string) =>
     l === cat.risque.niveaux[cat.risque.niveaux.length - 1] ? 'red'
-      : l === cat.risque.niveaux[0] ? 'gray' : 'amber';
+      : l.toLowerCase() === 'nrpmm' || l === planchers[0] ? 'gray' : 'amber';
 
   return (
     <div className="stack">

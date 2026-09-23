@@ -1,6 +1,8 @@
 import { q, q01 } from '@/lib/db/client';
 import { motif, type Motif } from './motif';
 import { risksFor, type AssertionRisk } from './risk';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { rangNiveau } from '@/lib/methodology/catalogue';
 import { boucle, type Boucle } from './loop';
 import { obstaclesProcessus } from './processus';
 import { leadsheetDuPoste, lireAnalytique, type LigneSoldes, type OrigineN1, type RevueAnalytique } from './analytique';
@@ -231,11 +233,21 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
      `fsli_assertion_risk`, methodology/risque.json) à un littéral 'high' — le vocabulaire de
      l'AUTRE table, `risk` (SOX/RCM, low/medium/high/significant, jamais lue ici). La
      comparaison ne pouvait donc JAMAIS matcher : ce compte rendait 0 sur tout dossier, en
-     silence (règle 13). Corrigé pour comparer contre le vocabulaire RÉEL de `risksFor`
-     (« higher »/« significant », methodology/risque.json). */
+     silence (règle 13).
+     CORRECTIF 2 (revue hostile P1-07, voix 2) : un premier correctif comparait contre les
+     noms littéraux « higher »/« significant » du renommage AUD-11 — mais `firm_methodology`
+     est IMMUABLE (ADR-075) : une mission qui désigne une méthode publiée AVANT ce renommage
+     porte encore l'ancienne échelle à trois noms (« faible »/« moyen »/« eleve »), et ce
+     compte serait retombé à 0, en silence, pour CETTE mission-là — le même bogue, déplacé.
+     Comparer par RANG ORDINAL sur L'ÉCHELLE DE LA MISSION (même patron que
+     `risk/page.tsx::badge`, scale-agnostic) survit à un renommage ou à un nombre de niveaux
+     différent : « élevé » = les deux rangs les plus hauts de CETTE échelle, quels que soient
+     leurs noms. nrpmm (rang le plus bas, jamais calculé) n'y entre jamais. */
+  const cat = await catalogueDeLaMission(engagementId);
+  const seuilEleve = cat.risque.niveaux.length - 2;
   const risques = await risksFor(engagementId, code);
   const arbitres = risques.filter((r) => r.retained_level !== null).length;
-  const eleves = risques.filter((r) => r.level === 'higher' || r.level === 'significant').length;
+  const eleves = risques.filter((r) => rangNiveau(cat, r.level) >= seuilEleve).length;
 
   /* ÉCHANTILLON ET TESTING — par les procédures de CE poste. */
   const ech = await q01<{ pop: string; tire: string; items: string; testes: string }>(
