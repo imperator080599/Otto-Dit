@@ -126,6 +126,28 @@ async function corpsDeLaSonde() {
     return eng ? (await catalogueDeLaMission(eng.id)).procedures.length : 'aucune mission';
   }));
 
+  /* VERROU : tables couvertes = tables à couvrir (P1-05, AUD-08, migration 0177). Invariant de
+     SCHÉMA, pas de mission — lu une fois, jamais sous `if (eng)`. Rougit sur le cas qu'elle
+     surveille : une table à `engagement_id` sans verdict (l'oubli d'origine, 0042) OU un verdict
+     encore « garde_proposee » (jamais confirmé) fait échouer cette lecture, pas seulement un
+     compteur affiché. */
+  lectures.push(await essayer('verrou : tables couvertes = tables à couvrir', async () => {
+    const avecColonne = await q1<{ n: string }>(
+      `select count(*)::text n from information_schema.columns
+       where table_schema = 'public' and column_name = 'engagement_id'`);
+    const auRegistre = await q1<{ n: string }>(`select count(*)::text n from engagement_lock_verdict`);
+    const sansVerdict = await q1<{ n: string }>(
+      `select count(*)::text n from information_schema.columns c
+       where c.table_schema = 'public' and c.column_name = 'engagement_id'
+         and not exists (select 1 from engagement_lock_verdict v where v.table_name = c.table_name)`);
+    const proposees = await q1<{ n: string }>(
+      `select count(*)::text n from engagement_lock_verdict where verdict = 'garde_proposee'`);
+    if (Number(sansVerdict.n) > 0 || Number(proposees.n) > 0) {
+      throw new Error(`${sansVerdict.n} table(s) à engagement_id sans verdict, ${proposees.n} verdict(s) encore « garde_proposee »`);
+    }
+    return `${auRegistre.n} table(s) au registre, ${avecColonne.n} table(s) à engagement_id, 0 manquante, 0 proposée non confirmée`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

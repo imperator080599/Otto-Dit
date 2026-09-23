@@ -231,7 +231,7 @@ export const GARDES: Garde[] = [
     enonce: 'Un dossier scellé n’accepte plus d’écriture hors du flux d’amendement justifié.',
     point: 'déclencheurs <table>_lock_guard (0003) → assert_engagement_unlocked()',
     rayon: 'Un dossier archivé modifié après coup : le scellé ne scelle rien.',
-    stops_looking: 'Ne couvre que les tables portant engagement_id listées en 0003/0021/0022/0023 ; une table nouvelle sans garde de verrou n’est pas vue ici (rls-couverture.test.ts compte les tables, pas les gardes).',
+    stops_looking: 'Ne couvre que les tables portant engagement_id EN DIRECT, listées en 0003/0021/0022/0023/0177 — celles qui l’atteignent par jointure (0177, assert_engagement_unlocked_via, G-32/G-33) sont éprouvées à part. Une table nouvelle sans verdict au registre est vue par couverture-verrou.test.ts (colonne engagement_id directe) ; une table fille future ne l’est par AUCUN instrument générique (règle 19).',
     attaque: async (run, ctx) => {
       const wp = await papier(run, ctx);
       await run(`update engagement set status = 'locked' where id = $1`, [ctx.engagementId]);
@@ -495,6 +495,34 @@ export const GARDES: Garde[] = [
     },
     rejet: /EQUIPE-01/,
     neutraliser: 'alter table engagement_member disable trigger equipe01_acteur_manager_partner',
+  },
+  {
+    nature: 'sql', code: 'G-32',
+    enonce: 'VERROU (fille, deux jointures) — un dossier scellé refuse un nouveau rapprochement de ligne d’échantillon, même si la table ne porte pas engagement_id en direct.',
+    point: 'déclencheur match_lock_guard (0177) → assert_engagement_unlocked_via(\'sample_item_id\', … sample_item → sample → engagement)',
+    rayon: 'La preuve la plus complexe du mécanisme générique (0177) : si LA RÉSOLUTION à deux sauts se trompe (mauvaise colonne, mauvaise jointure), cette garde échoue à neutraliser OU à refuser — et aucune des 16 tables filles n’est plus fiable que celle-ci ne le prouve.',
+    stops_looking: 'N’éprouve QUE match — attribute_result partage la même résolution (sample_item_id) mais n’est pas rejouée ici séparément ; les 14 autres tables filles ne sont vérifiées que par leur PRÉSENCE (couverture-verrou.test.ts), jamais par leur REFUS (règle 17, limite assumée pour tenir la revue adverse proportionnée — règle 30).',
+    attaque: async (run, ctx) => {
+      const { item } = await ligneDeGrille(run, ctx);
+      await run(`update engagement set status = 'locked' where id = $1`, [ctx.engagementId]);
+      await run(`insert into match (sample_item_id) values ($1)`, [item]);
+    },
+    rejet: /writes rejected/,
+    neutraliser: 'alter table match disable trigger match_lock_guard',
+  },
+  {
+    nature: 'sql', code: 'G-33',
+    enonce: 'VERROU (fille, un saut) — un dossier scellé refuse un NOUVEAU visa, pas seulement sa modification.',
+    point: 'déclencheur signoff_lock_guard (0177) → assert_engagement_unlocked_via(\'workpaper_id\', … workpaper → engagement)',
+    rayon: 'signoff est append-only (0003, forbid_mutation) : UPDATE et DELETE étaient déjà fermés, mais RIEN ne fermait l’INSERT avant 0177 — un dossier scellé pouvait recevoir un visa neuf. L’ajout-seul et le verrou sont deux questions distinctes, et seule celle-ci tient la seconde.',
+    stops_looking: 'Ne regarde pas VISA-01/02/03 (G-28..30, garde différente, même table) — seulement que le verrou de dossier referme l’INSERT que forbid_mutation ne fermait pas.',
+    attaque: async (run, ctx) => {
+      const wp = await papier(run, ctx, 'G-33');
+      await run(`update engagement set status = 'locked' where id = $1`, [ctx.engagementId]);
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'preparer_validator')`, [wp, ctx.preparateur]);
+    },
+    rejet: /writes rejected/,
+    neutraliser: 'alter table signoff disable trigger signoff_lock_guard',
   },
   {
     nature: 'service', code: 'G-23',
