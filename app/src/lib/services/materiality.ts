@@ -1,4 +1,4 @@
-import { q, q01, q1 } from '@/lib/db/client';
+import { q, q01, q1, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { hashObject } from '@/lib/core/hash';
 import { primaryPack } from '@/lib/packs';
@@ -138,35 +138,53 @@ export async function validate(
   const fs = await frameworkSet(row.engagement_id);
   const pack = primaryPack(fs as never);
 
+  /* CORRECTIF DE REVUE HOSTILE (P1-06, voix 1, CONFIRMÉ HAUTE, V1-04) : la lecture `row` ci-dessus
+     ne CLAME rien — deux appels concurrents sur la MÊME proposition (double clic, deux onglets)
+     passaient tous deux `status !== 'proposed'` avant que l'un des deux n'écrive. Chacun créait sa
+     propre version validée puis supersédait TOUTE AUTRE ligne validée, y compris celle que l'autre
+     venait de poser : l'entrelacement pouvait laisser ZÉRO ligne `validated` au dossier — plus
+     aucun seuil pour le sondage ni le scoping. Le CLAIM (l'UPDATE conditionnel `where status =
+     'proposed'`) est désormais la PREMIÈRE écriture, atomique, et le reste de la séquence est
+     regroupé dans UNE transaction (`tx()`) — un appel qui perd la course s'arrête ici, avec un
+     refus clair, avant d'avoir rien écrit d'autre. */
   let finalId = materialityId;
-  if (adjust) {
-    const tb = await tbRows(row.engagement_id);
-    const agg = benchmarkAggregates(tb);
-    const base =
-      adjust.benchmarkCode === 'pbt' ? agg.pbtCents :
-      adjust.benchmarkCode === 'revenue' ? agg.revenueCents :
-      adjust.benchmarkCode === 'total_assets' ? agg.totalAssetsCents : agg.equityCents;
-    const p = computeMateriality(adjust.benchmarkCode, base, adjust.pct, pack, agg, `manually adjusted by validator (${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)}%)`);
-    const nouvelle = await q1<{ id: string }>(
-      `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
-         amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status,
-         supersedes_id, validated_by, validated_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'validated',$14,$15,now()) returning id`,
-      [
-        row.engagement_id, row.version + 1, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct,
-        centsToNum(p.amountCents), row.perf_pct, centsToNum(p.perfAmountCents), row.ctt_pct,
-        centsToNum(p.cttAmountCents), row.te_pct, centsToNum(p.teAmountCents),
-        row.rationale + `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
-        materialityId, userId,
-      ],
-    );
-    finalId = nouvelle.id;
-    await q(`update materiality set status = 'superseded' where id = $1`, [materialityId]);
-  }
-  await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated' and id <> $2`, [row.engagement_id, finalId]);
-  if (!adjust) {
-    await q(`update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1`, [materialityId, userId]);
-  }
+  await tx(async () => {
+    if (adjust) {
+      const tb = await tbRows(row.engagement_id);
+      const agg = benchmarkAggregates(tb);
+      const base =
+        adjust.benchmarkCode === 'pbt' ? agg.pbtCents :
+        adjust.benchmarkCode === 'revenue' ? agg.revenueCents :
+        adjust.benchmarkCode === 'total_assets' ? agg.totalAssetsCents : agg.equityCents;
+      const p = computeMateriality(adjust.benchmarkCode, base, adjust.pct, pack, agg, `manually adjusted by validator (${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)}%)`);
+      /* LE CLAIM : bascule l'originale en `superseded` SEULEMENT si elle est encore `proposed`.
+         Aucune ligne rendue → une autre validation a gagné la course entre-temps. */
+      const claimee = await q01<{ id: string }>(`update materiality set status = 'superseded' where id = $1 and status = 'proposed' returning id`, [materialityId]);
+      if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
+      const nouvelle = await q1<{ id: string }>(
+        `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
+           amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status,
+           supersedes_id, validated_by, validated_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'validated',$14,$15,now()) returning id`,
+        [
+          row.engagement_id, row.version + 1, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct,
+          centsToNum(p.amountCents), row.perf_pct, centsToNum(p.perfAmountCents), row.ctt_pct,
+          centsToNum(p.cttAmountCents), row.te_pct, centsToNum(p.teAmountCents),
+          row.rationale + `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
+          materialityId, userId,
+        ],
+      );
+      finalId = nouvelle.id;
+    } else {
+      /* LE CLAIM, forme « tel quel » : la validation elle-même EST l'écriture conditionnelle. */
+      const claimee = await q01<{ id: string }>(
+        `update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1 and status = 'proposed' returning id`,
+        [materialityId, userId],
+      );
+      if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
+    }
+    await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated' and id <> $2`, [row.engagement_id, finalId]);
+  });
   await logEvent({
     tenantId: ctx.tenant_id,
     engagementId: row.engagement_id,

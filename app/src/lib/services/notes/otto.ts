@@ -190,7 +190,12 @@ export async function executerNoteOtto(noteId: string): Promise<{ verdict: 'exec
                       (select count(distinct x.evidence_id) from extraction x join evidence e on e.id = x.evidence_id
                         join request_item ri on ri.id = e.request_item_id
                         where ri.sample_item_id = si.id)::text extraites,
-                      (select count(*) from extraction x join evidence e on e.id = x.evidence_id
+                      /* Même raison que « extraites » ci-dessus (revue hostile P1-06, voix 1,
+                         V1-05/V1-06) : count(distinct evidence_id), jamais count(*) — une
+                         extraction vérifiée deux fois sur la même pièce (garde ajoutée à
+                         verifyExtraction, mais une ligne déjà en base avant ce correctif
+                         resterait) ne doit compter qu'une pièce vérifiée, pas deux. */
+                      (select count(distinct x.evidence_id) from extraction x join evidence e on e.id = x.evidence_id
                         join request_item ri on ri.id = e.request_item_id
                         where ri.sample_item_id = si.id and x.status = 'verified')::text verifiees,
                       (select m.status from match m where m.sample_item_id = si.id) statut

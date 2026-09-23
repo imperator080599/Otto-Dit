@@ -22,13 +22,23 @@
 -- CE QUE CETTE MIGRATION NE FAIT PAS (règle 19) : `fsli.rebuildFslis` (passage en UPSERT
 -- préservant scoping/scoping_basis/confirmed_by/confirmed_at) et `processus.ts::remplacerProcessus`
 -- (arrêt du delete+recreate, utilisation de `process_model.status`/`supersedes_id`, DÉJÀ posés par
--- 0172/0174 — P1-03) sont des changements de SERVICE PUR, sans DDL neuf : `fsli(engagement_id,
--- code)` porte déjà son unique (0001), `process_model` porte déjà `status`/`supersedes_id` (0172),
+-- 0174 — P1-03) sont des changements de SERVICE PUR, sans DDL neuf : `fsli(engagement_id,
+-- code)` porte déjà son unique (0001), `process_model` porte déjà `status`/`supersedes_id` (0174),
 -- rien à ajouter ici.
+--
+-- AJOUTÉ APRÈS REVUE HOSTILE (P1-06, deux voix indépendantes, CONFIRMÉ) : `extraction_supersedes_once`
+-- ci-dessous. Sans elle, deux appels concurrents de `verifyExtraction` sur la même ligne d'origine
+-- (double clic, deux onglets, une page restée ouverte) passaient tous deux la lecture
+-- `status = 'pending_verify'` avant que le premier n'écrive — chacun insérait sa propre ligne
+-- « verified » qui supersède la MÊME originale, laissant deux versions concurrentes sans qu'aucune
+-- ne soit jamais rejetée. L'index partiel refuse la SECONDE INSERT au niveau base (23505), rattrapée
+-- par le service avec un message clair — même patron que `test_column` (0145, `ajouterColonneGrille`).
 
 alter table extraction add column supersedes_extraction_id uuid references extraction(id);
 create trigger extraction_append_only before update or delete on extraction
   for each row execute function forbid_mutation();
+create unique index extraction_supersedes_once on extraction (supersedes_extraction_id)
+  where supersedes_extraction_id is not null;
 
 alter table materiality add column supersedes_id uuid references materiality(id);
 

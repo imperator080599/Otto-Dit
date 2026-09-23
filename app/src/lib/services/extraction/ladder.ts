@@ -264,28 +264,61 @@ export async function pendingVerifications(engagementId: string) {
  *
  *  P1-06 (AUD-10) : `extraction` est append-only (0178, forbid_mutation) — vérifier n'édite plus
  *  la ligne d'origine (la valeur BRUTE, avant correction humaine, disparaissait sinon). Une ligne
- *  NEUVE `rung='human'`, `status='verified'` est insérée, `supersedes_extraction_id` pointant vers
- *  l'originale. `latestExtraction()` n'a besoin d'AUCUN changement : son tri (verified > complete
+ *  NEUVE, `status='verified'`, est insérée, `supersedes_extraction_id` pointant vers l'originale.
+ *  `latestExtraction()` n'a besoin d'AUCUN changement : son tri (verified > complete
  *  > pending_verify, puis created_at desc) préfère déjà la ligne la plus récente au bon statut —
- *  la nouvelle ligne verified, plus récente, gagne naturellement. */
+ *  la nouvelle ligne verified, plus récente, gagne naturellement.
+ *
+ *  `rung` PORTÉ DEPUIS L'ORIGINALE (revue hostile P1-06, voix 2, CONFIRMÉ MOYENNE — un
+ *  premier jet le posait littéralement à `'human'`) : dans l'échelle (`runLadder`), `human`
+ *  désigne le CINQUIÈME échelon — une pièce saisie ENTIÈREMENT à la main, sans aucun concours
+ *  automatisé — pas « un humain a vérifié ». Une pièce lue par OCR (`rung='ocr'`) puis vérifiée
+ *  reste `rung='ocr'` : c'est `status='verified'`/`verified_by` qui porte l'acte de vérification
+ *  L2, un axe distinct. Écraser `rung` en 'human' mentait sur la provenance (P7, « d'où vient ce
+ *  chiffre ? ») partout où `rung` est lu (atelier.tsx, workpapers/draft.ts, provenance.ts) — et
+ *  se contredisait avec `ai_run_id`, porté juste en dessous, sur la même ligne. */
 export async function verifyExtraction(extractionId: string, userId: string, corrected?: ExtractedField[]): Promise<void> {
   await assertMembreDe('extraction', extractionId, userId, 'vérifier une extraction');
-  const x = await q1<{ id: string; evidence_id: string; rung: string; fields: ExtractedField[]; ai_run_id: string | null }>(
-    `select id, evidence_id, rung, fields, ai_run_id from extraction where id = $1`,
+  const x = await q1<{ id: string; evidence_id: string; rung: string; status: string; fields: ExtractedField[]; ai_run_id: string | null }>(
+    `select id, evidence_id, rung, status, fields, ai_run_id from extraction where id = $1`,
     [extractionId],
   );
+  /* CORRECTIF DE REVUE HOSTILE (P1-06, voix 1, CONFIRMÉ MOYENNE-BASSE, V1-05) : sans ce refus,
+     vérifier deux fois la MÊME ligne d'origine (double clic, deux onglets, un écran resté
+     ouvert après qu'un autre auditeur a déjà statué) insérait deux lignes `verified`
+     concurrentes qui la supersèdent toutes deux — `latestExtraction()` en gardait une au hasard
+     de l'ordre, l'autre restant une correction humaine orpheline, jamais dite.
+     `x.status` NE SERT PAS DE GARDE ICI (piège trouvé en écrivant le test de ce chemin, pas
+     deviné) : `extraction` est append-only depuis 0178 — la ligne D'ORIGINE garde
+     `status = 'pending_verify'` POUR TOUJOURS, qu'elle ait été supersédée ou non. Le seul fait
+     qui distingue « déjà vérifiée » de « encore à vérifier » est l'EXISTENCE d'une ligne qui la
+     supersède. Le pré-contrôle nomme le cas courant (séquentiel) ; l'index
+     `extraction_supersedes_once` (0178) rattrape la vraie COURSE en dessous (23505), au cas où
+     deux requêtes passeraient ce SELECT avant que l'une des deux n'écrive — même patron que
+     `ajouterColonneGrille` (COL-01, migration 0145). */
+  const dejaSuperseedee = await q01<{ id: string }>(`select id from extraction where supersedes_extraction_id = $1`, [extractionId]);
+  if (dejaSuperseedee) {
+    throw new Error(`cette extraction n'attend plus de vérification — déjà vérifiée par ailleurs.`);
+  }
   const ev = await q1<{ engagement_id: string }>(`select engagement_id from evidence where id = $1`, [x.evidence_id]);
   const ctx = await engagementCtx(ev.engagement_id);
   const fields = (corrected ?? x.fields).map((f) => ({ ...f, confidence: 1 }));
-  const row = await q1<{ id: string }>(
-    /* `ai_run_id` PORTÉ : la ligne vérifiée reste traçable au run qui l'a produite (P7, « d'où
-       vient ce chiffre ? ») — le perdre romprait la provenance d'une extraction humainement
-       corrigée. `overall_confidence` à 1 (tous les champs le sont désormais), jamais laissé NULL
-       — une confiance non posée se lirait comme non mesurée, alors qu'elle est MAXIMALE ici. */
-    `insert into extraction (evidence_id, rung, status, fields, overall_confidence, ai_run_id, verified_by, verified_at, supersedes_extraction_id)
-     values ($1,'human','verified',$2,1,$3,$4,now(),$5) returning id`,
-    [x.evidence_id, JSON.stringify(fields), x.ai_run_id, userId, extractionId],
-  );
+  let row: { id: string };
+  try {
+    row = await q1<{ id: string }>(
+      /* `ai_run_id` PORTÉ : la ligne vérifiée reste traçable au run qui l'a produite (P7, « d'où
+         vient ce chiffre ? ») — le perdre romprait la provenance d'une extraction humainement
+         corrigée. `overall_confidence` à 1 (tous les champs le sont désormais), jamais laissé NULL
+         — une confiance non posée se lirait comme non mesurée, alors qu'elle est MAXIMALE ici. */
+      `insert into extraction (evidence_id, rung, status, fields, overall_confidence, ai_run_id, verified_by, verified_at, supersedes_extraction_id)
+       values ($1,$2,'verified',$3,1,$4,$5,now(),$6) returning id`,
+      [x.evidence_id, x.rung, JSON.stringify(fields), x.ai_run_id, userId, extractionId],
+    );
+  } catch (e) {
+    const code = (e as { code?: string } | null)?.code;
+    if (code === '23505') throw new Error(`cette extraction vient d'être vérifiée par ailleurs (course concurrente) — rechargez avant de rejouer.`);
+    throw e;
+  }
   await logEvent({
     tenantId: ctx.tenant_id,
     engagementId: ev.engagement_id,

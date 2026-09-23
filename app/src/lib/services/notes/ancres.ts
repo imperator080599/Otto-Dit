@@ -160,22 +160,28 @@ export async function resoudreAncre(engagementId: string, a: Ancre): Promise<Anc
       return { etat: row ? 'present' : 'retire', cibles: row ? [a.ref] : [] };
     }
     case 'process_model': {
-      /* `cycle_ref:exercice` — la clé unique du modèle (0027). */
+      /* `cycle_ref:exercice` — la clé unique du modèle VIVANT (0027 ; P1-06/AUD-10, 0178 :
+         une supersede laisse l'ancienne version en base, `status = 'superseded'` — sans ce
+         filtre, `q01` pouvait rendre l'UNE OU L'AUTRE des deux lignes au hasard de l'ordre SQL
+         dès qu'un cycle avait été remplacé une fois. */
       const [cycleRef, exercice] = decoupeRef(a.ref);
       const row = await q01<{ id: string }>(
-        `select id::text id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3`,
+        `select id::text id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3 and status = 'active'`,
         [engagementId, cycleRef, exercice],
       );
       return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };
     }
     case 'process_step': {
       /* `cycle_ref:exercice:code_etape` — l'étape est stable d'une version à
-         l'autre du modèle (0027, commentaire de `process_step.code`). */
+         l'autre du modèle (0027, commentaire de `process_step.code`). Même filtre que
+         `process_model` ci-dessus, même raison (P1-06/AUD-10) : une étape de l'ANCIENNE
+         version porte le même code que celle de la nouvelle, sans distinction possible sans
+         `status = 'active'`. */
       const parts = a.ref.split(':');
       const [cycleRef, exercice, codeEtape] = parts.length === 3 ? parts : ['', '', ''];
       const row = await q01<{ id: string }>(
         `select ps.id::text id from process_step ps join process_model pm on pm.id = ps.process_id
-         where pm.engagement_id = $1 and pm.cycle_ref = $2 and pm.exercice = $3 and ps.code = $4`,
+         where pm.engagement_id = $1 and pm.cycle_ref = $2 and pm.exercice = $3 and ps.code = $4 and pm.status = 'active'`,
         [engagementId, cycleRef, exercice, codeEtape],
       );
       return { etat: row ? 'present' : 'retire', cibles: row ? [row.id] : [] };

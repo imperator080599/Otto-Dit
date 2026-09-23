@@ -1,4 +1,4 @@
-import { q, q01, q1 } from '@/lib/db/client';
+import { q, q01, q1, tx } from '@/lib/db/client';
 import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { logEvent } from '@/lib/core/events';
 import { engagementCtx } from './imports';
@@ -138,32 +138,46 @@ export async function importerProcessus(opts: {
      (inchangé par cette tranche, voir plus bas) et l'index partiel `process_model_actif`
      n'admet qu'UNE ligne active par (engagement_id, code, exercice) — insérer la nouvelle
      ligne active pendant que l'ancienne l'est ENCORE violerait cet index (trouvé en écrivant
-     le test de ce chemin, pas deviné). */
-  if (deja) {
-    await q(`update process_model set status = 'superseded' where id = $1`, [deja.id]);
-  }
-  const modele = await q1<{ id: string }>(
-    `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code, supersedes_id)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
-    [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId, `${cycle}-1`, opts.fsliCode, deja?.id ?? null],
-  );
-  if (deja) {
-    await q(`update control set process_model_id = $2 where process_model_id = $1`, [deja.id, modele.id]);
-  }
-  for (const e of etapes) {
-    await q(
-      `insert into process_step (process_id, code, seq, label, actor_name, system_name, inputs, outputs)
-       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [modele.id, e.code, e.seq, e.libelle, e.acteur, e.systeme, e.entrees, e.sorties],
+     le test de ce chemin, pas deviné).
+
+     CORRECTIF DE REVUE HOSTILE (P1-06, deux voix indépendantes, CONFIRMÉ MOYENNE, V1-04/F5) :
+     toute la séquence (bascule de l'ancienne, insertion de la neuve, réaccrochage des
+     contrôles, étapes, contrôles) est désormais UNE transaction (`tx()`) — une panne à
+     mi-chemin (connexion coupée, fonction serverless qui expire) laissait auparavant le cycle
+     SANS AUCUNE version active (l'ancienne déjà superseded, la neuve jamais insérée), un état
+     pire que l'ancien `delete`-puis-recreate. Le CLAIM (`where status = 'active'` sur la bascule)
+     protège aussi contre deux imports concurrents du même remplacement : le second, dont
+     `deja` visait la même ligne déjà supersédée par le premier, s'arrête ici plutôt que de
+     heurter l'index partiel à l'INSERT suivant avec une erreur SQL brute. */
+  const modele = await tx(async () => {
+    if (deja) {
+      const claimee = await q01<{ id: string }>(`update process_model set status = 'superseded' where id = $1 and status = 'active' returning id`, [deja.id]);
+      if (!claimee) throw new Error(`processus : la version ${opts.exercice === 'n' ? 'N' : 'N-1'} du cycle ${cycle} vient d’être remplacée par ailleurs (course concurrente) — rechargez avant de rejouer.`);
+    }
+    const m = await q1<{ id: string }>(
+      `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code, supersedes_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+      [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId, `${cycle}-1`, opts.fsliCode, deja?.id ?? null],
     );
-  }
-  for (const c of controles) {
-    await q(
-      `insert into process_ctrl (process_id, step_code, code, label, frequency, owner_name)
-       values ($1,$2,$3,$4,$5,$6)`,
-      [modele.id, c.etape, c.code, c.libelle, c.frequence, c.proprietaire],
-    );
-  }
+    if (deja) {
+      await q(`update control set process_model_id = $2 where process_model_id = $1`, [deja.id, m.id]);
+    }
+    for (const e of etapes) {
+      await q(
+        `insert into process_step (process_id, code, seq, label, actor_name, system_name, inputs, outputs)
+         values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [m.id, e.code, e.seq, e.libelle, e.acteur, e.systeme, e.entrees, e.sorties],
+      );
+    }
+    for (const c of controles) {
+      await q(
+        `insert into process_ctrl (process_id, step_code, code, label, frequency, owner_name)
+         values ($1,$2,$3,$4,$5,$6)`,
+        [m.id, c.etape, c.code, c.libelle, c.frequence, c.proprietaire],
+      );
+    }
+    return m;
+  });
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: opts.engagementId,
     actorKind: 'user', actorId: opts.userId,

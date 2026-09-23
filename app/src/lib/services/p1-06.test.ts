@@ -7,6 +7,7 @@ import { pendingVerifications, verifyExtraction } from './extraction/ladder';
 import { propose, validate } from './materiality';
 import { rebuildFslis, listFslis, confirmScoping } from './fsli';
 import { importerProcessus } from './processus';
+import { resoudreAncre } from './notes/ancres';
 
 // P1-06 (AUD-10, §7.6 du plan maître) : la VRAIE supersede — jamais de `delete`, jamais
 // une mutation en place d'une ligne déjà vérifiée/validée/importée. Chaque bloc ci-dessous
@@ -77,6 +78,48 @@ describe('P1-06 : extraction — append-only (0178)', () => {
     expect(apres.some((p) => p.id === original.id)).toBe(false);
     expect(apres.some((p) => p.evidence_id === ev.id)).toBe(false);
   });
+
+  it('verifyExtraction refuse une ligne déjà vérifiée (pas « pending_verify »)', async () => {
+    const ev = await q1<{ id: string }>(
+      `insert into evidence (engagement_id, filename, mime, sha256, size_bytes, storage_path, source, audience, uploaded_by_kind)
+       values ($1,'sonde-p1-06-deja-verifiee.pdf','application/pdf','sha-sonde-p1-06-deja-verifiee',1,'sonde/inexistant','auditor','internal','app_user')
+       returning id::text`,
+      [IDS.engNep],
+    );
+    const original = await q1<{ id: string }>(
+      `insert into extraction (evidence_id, rung, status, fields, overall_confidence)
+       values ($1,'ocr','pending_verify','[]'::jsonb,0.4) returning id::text`,
+      [ev.id],
+    );
+    await verifyExtraction(original.id, IDS.users.karim);
+    await expect(verifyExtraction(original.id, IDS.users.karim)).rejects.toThrow(/n'attend plus de vérification/);
+  });
+
+  it('CORRECTIF DE REVUE HOSTILE (règle 17, V1-05) — deux verifyExtraction concurrents sur la MÊME ligne : un seul gagne, une seule ligne « verified » derrière', async () => {
+    const ev = await q1<{ id: string }>(
+      `insert into evidence (engagement_id, filename, mime, sha256, size_bytes, storage_path, source, audience, uploaded_by_kind)
+       values ($1,'sonde-p1-06-course.pdf','application/pdf','sha-sonde-p1-06-course',1,'sonde/inexistant','auditor','internal','app_user')
+       returning id::text`,
+      [IDS.engNep],
+    );
+    const original = await q1<{ id: string }>(
+      `insert into extraction (evidence_id, rung, status, fields, overall_confidence)
+       values ($1,'ocr','pending_verify','[]'::jsonb,0.4) returning id::text`,
+      [ev.id],
+    );
+    /* SANS le CLAIM (revue hostile P1-06, voix 1, V1-05), les deux appels passaient tous deux
+       la lecture initiale et inséraient chacun une ligne « verified » qui supersède la MÊME
+       originale — deux corrections humaines concurrentes, `latestExtraction()` n'en gardant
+       qu'une au hasard de l'ordre, l'autre orpheline et jamais dite. */
+    const resultats = await Promise.allSettled([
+      verifyExtraction(original.id, IDS.users.karim, [{ name: 'total_ht', value: 'A', confidence: 1, page: 1 }]),
+      verifyExtraction(original.id, IDS.users.lea, [{ name: 'total_ht', value: 'B', confidence: 1, page: 1 }]),
+    ]);
+    expect(resultats.filter((r) => r.status === 'fulfilled').length).toBe(1);
+    expect(resultats.filter((r) => r.status === 'rejected').length).toBe(1);
+    const verifiees = await q<{ id: string }>(`select id::text from extraction where supersedes_extraction_id = $1`, [original.id]);
+    expect(verifiees.length).toBe(1);
+  });
 });
 
 describe('P1-06 : materiality — l’ajustement crée une version, jamais une mutation de la proposition', () => {
@@ -114,6 +157,36 @@ describe('P1-06 : materiality — l’ajustement crée une version, jamais une m
 
     const validees = await q1<{ n: string }>(`select count(*)::text n from materiality where engagement_id = $1 and status = 'validated'`, [IDS.engNep]);
     expect(validees.n).toBe('1'); // l'invariant « au plus une validée » tient après un ajustement
+  });
+
+  it('CORRECTIF DE REVUE HOSTILE (règle 17) — deux validate(adjust) concurrents sur la MÊME proposition : un seul gagne, l’autre est refusé, jamais deux versions validées', async () => {
+    const v = await propose(IDS.engNep, IDS.users.lea);
+    const resultats = await Promise.allSettled([
+      validate(v, IDS.users.lea, { benchmarkCode: 'revenue', pct: 0.01 }),
+      validate(v, IDS.users.karim, { benchmarkCode: 'total_assets', pct: 0.02 }),
+    ]);
+    const reussis = resultats.filter((r) => r.status === 'fulfilled');
+    const refuses = resultats.filter((r) => r.status === 'rejected');
+    expect(reussis.length, 'exactement un des deux appels concurrents doit réussir').toBe(1);
+    expect(refuses.length).toBe(1);
+    expect((refuses[0] as PromiseRejectedResult).reason.message).toMatch(/course concurrente|only a proposed version/);
+    const compte = await q1<{ n: string }>(`select count(*)::text n from materiality where engagement_id = $1 and status = 'validated'`, [IDS.engNep]);
+    expect(compte.n, 'jamais zéro (la course trouvée par la revue hostile), jamais deux — exactement une').toBe('1');
+  });
+
+  it('CORRECTIF DE REVUE HOSTILE (règle 17) — deux validate(adjust) concurrents sur DEUX propositions distinctes : jamais zéro ligne validée à la fin', async () => {
+    const b = await propose(IDS.engNep, IDS.users.lea);
+    const c = await propose(IDS.engNep, IDS.users.lea);
+    await Promise.allSettled([
+      validate(b, IDS.users.lea, { benchmarkCode: 'revenue', pct: 0.01 }),
+      validate(c, IDS.users.karim, { benchmarkCode: 'total_assets', pct: 0.02 }),
+    ]);
+    /* LA COURSE TROUVÉE PAR LA REVUE HOSTILE (voix 1, V1-04, CONFIRMÉ HAUTE) : sans le CLAIM
+       atomique, l'entrelacement pouvait laisser ZÉRO ligne validée (chacune des deux insertions
+       supersédait l'AUTRE avant que sa propre transaction ne commette) — plus aucun seuil pour
+       le sondage ni le scoping. */
+    const compte = await q1<{ n: string }>(`select count(*)::text n from materiality where engagement_id = $1 and status = 'validated'`, [IDS.engNep]);
+    expect(Number(compte.n)).toBe(1);
   });
 });
 
@@ -216,6 +289,21 @@ describe('P1-06 : process_model — vraie supersede (jamais de delete)', () => {
     const lu = await lireProcessus(IDS.engNep, 'REVENUE');
     expect(lu.n!.id).toBe(v2);
     expect(lu.n!.nom).toBe('Cycle ventes v2');
+
+    /* CORRECTIF DE REVUE HOSTILE (P1-06, deux voix indépendantes, CONFIRMÉ MOYENNE, V1-03/F6) :
+       une note ancrée sur `process_model` (ADR-097) doit résoudre vers la version ACTIVE,
+       jamais l'ancienne — et une note ancrée sur une ÉTAPE de l'ancienne version (CMD/FACT
+       existent dans les deux ici, donc pas de cas ; c'est le CODE de contrôle qui distingue
+       la v1) doit rester résolue tant que le code d'étape existe encore dans la version
+       active. Sans le filtre `status = 'active'`, `resoudreAncre` pouvait rendre l'id de la
+       ligne SUPERSÉDÉE (v1) au hasard de l'ordre SQL. */
+    const ancreModele = await resoudreAncre(IDS.engNep, { kind: 'process_model', ref: 'REVENUE:n', field: null, label: 'sonde' });
+    expect(ancreModele.etat).toBe('present');
+    expect(ancreModele.cibles).toEqual([v2]);
+    const ancreEtape = await resoudreAncre(IDS.engNep, { kind: 'process_step', ref: 'REVENUE:n:CMD', field: null, label: 'sonde' });
+    expect(ancreEtape.etat).toBe('present');
+    const etapeV2 = await q1<{ id: string }>(`select id::text from process_step where process_id = $1 and code = 'CMD'`, [v2]);
+    expect(ancreEtape.cibles).toEqual([etapeV2.id]); // jamais l'id de l'étape v1, homonyme
   });
 
   it('un troisième import refuse sans confirmerRemplacement, comme avant P1-06', async () => {
@@ -223,5 +311,29 @@ describe('P1-06 : process_model — vraie supersede (jamais de delete)', () => {
       engagementId: IDS.engNep, exercice: 'n', filename: 'processus-v3.json',
       contenu: processusJson('v3'), userId: IDS.users.karim, fsliCode: 'REVENUE',
     })).rejects.toThrow(/déjà décrite/);
+  });
+
+  it('CORRECTIF DE REVUE HOSTILE (règle 17) — deux remplacements concurrents du MÊME cycle : un seul gagne, une seule ligne active à la fin', async () => {
+    await importerProcessus({
+      engagementId: IDS.engNep, exercice: 'n1', filename: 'processus-course-v1.json',
+      contenu: processusJson('course-v1'), userId: IDS.users.karim, fsliCode: 'REVENUE',
+    });
+    const resultats = await Promise.allSettled([
+      importerProcessus({
+        engagementId: IDS.engNep, exercice: 'n1', filename: 'processus-course-v2.json',
+        contenu: processusJson('course-v2'), userId: IDS.users.karim, fsliCode: 'REVENUE', confirmerRemplacement: true,
+      }),
+      importerProcessus({
+        engagementId: IDS.engNep, exercice: 'n1', filename: 'processus-course-v3.json',
+        contenu: processusJson('course-v3'), userId: IDS.users.lea, fsliCode: 'REVENUE', confirmerRemplacement: true,
+      }),
+    ]);
+    expect(resultats.filter((r) => r.status === 'fulfilled').length).toBe(1);
+    expect(resultats.filter((r) => r.status === 'rejected').length).toBe(1);
+    const actifs = await q1<{ n: string }>(
+      `select count(*)::text n from process_model where engagement_id = $1 and cycle_ref = 'REVENUE' and exercice = 'n1' and status = 'active'`,
+      [IDS.engNep],
+    );
+    expect(actifs.n).toBe('1'); // jamais zéro, jamais deux — l'index partiel + le claim tiennent sous la course
   });
 });

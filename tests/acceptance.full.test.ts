@@ -124,13 +124,29 @@ describe('ACCEPTANCE — every seeded anomaly and deviation surfaces through the
       expect(chain.ok, `chain broken on ${eng}`).toBe(true);
       expect(chain.count).toBeGreaterThan(20);
     }
-    // every AI/OCR output is registered
+    /* every AI/OCR output is registered.
+       P1-06 (AUD-10, 0178) : `extraction` est append-only — vérifier une extraction OCR insère
+       une ligne NEUVE qui porte le MÊME `rung` que l'originale (0178, ladder.ts::verifyExtraction,
+       revue hostile) sans créer de nouvel `ai_run` (`ai_run_id` est PORTÉ, pas régénéré). Compter
+       `rung = 'ocr'` sans exclure les lignes supersédées compterait CHAQUE pièce vérifiée deux
+       fois (l'originale ET la vérifiée), cassant la comparaison contre `ai_run` (un seul run par
+       pièce). Même exclusion que partout ailleurs dans cette tranche : ne compter que la ligne
+       COURANTE de chaque lignée. */
     const aiRuns = await q<{ n: string }>(`select count(*) n from ai_run`, []);
-    const ocrExtractions = await q<{ n: string }>(`select count(*) n from extraction where rung = 'ocr'`, []);
+    const ocrExtractions = await q<{ n: string }>(
+      `select count(*) n from extraction x where x.rung = 'ocr'
+         and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)`,
+      [],
+    );
     expect(Number(aiRuns[0].n)).toBeGreaterThanOrEqual(Number(ocrExtractions[0].n));
-    // no OCR-rung extraction was used without human verification (ADR-012)
+    /* no OCR-rung extraction was used without human verification (ADR-012).
+       Même raison : la ligne ORIGINALE d'une pièce vérifiée garde `status = 'pending_verify'`
+       POUR TOUJOURS (elle n'est plus jamais mutée) — c'est la ligne NEUVE, qui la supersède, qui
+       porte `status = 'verified'`. Sans l'exclusion, chaque pièce vérifiée compterait comme
+       « non vérifiée » via sa ligne d'origine. */
     const unverified = await q<{ n: string }>(
-      `select count(*) n from extraction where rung in ('ocr','llm') and status <> 'verified'`,
+      `select count(*) n from extraction x where x.rung in ('ocr','llm') and x.status <> 'verified'
+         and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)`,
       [],
     );
     expect(Number(unverified[0].n)).toBe(0);

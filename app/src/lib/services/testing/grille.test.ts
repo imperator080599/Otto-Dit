@@ -396,6 +396,33 @@ describe('grille — le dossier de démonstration entier', () => {
     const compte = await q1<{ n: string }>(
       `select count(*)::text n from test_cell where sample_item_id = $1 and column_code = $2`, [itemId, colBl!.code]);
     expect(compte.n).toBe('1');
+
+    /* CORRECTIF DE REVUE HOSTILE (P1-06, deux voix indépendantes, CONFIRMÉ HAUTE, V1-01/F1) :
+       la cellule orpheline ne doit JAMAIS gater une conclusion — ni l'empêcher, ni exiger
+       qu'on la « redispose » (un geste qui ne changeait rien, avant ce correctif : la cellule
+       restait orpheline pour toujours, et TEST-04 la bloquait pour toujours). Toutes les AUTRES
+       cellules non conformes de la ligne sont d'abord disposées (même patron que le test
+       « la disposition écrite lève TEST-04 » plus haut) — seule la cellule ORPHELINE reste sans
+       disposition couvrante, et ELLE SEULE doit être sans effet sur la conclusion. */
+    const autres = (await cellulesDuDossier(IDS.engNep)).cellules[itemId].filter((x) => x.id !== cellule.id && x.etat !== 'conforme' && !x.disposition);
+    for (const a of autres) {
+      await disposerCellule(IDS.engNep, a.id, IDS.users.karim, `Écart vu et accepté (fixture P1-06, données synthétiques) — ${a.colonne}.`);
+    }
+    await expect(conclureLigne(IDS.engNep, itemId, IDS.users.karim), 'une cellule orpheline ne doit plus jamais bloquer la conclusion — c’était le défaut NOTIF-01 (règle 37)').resolves.not.toThrow();
+
+    /* Le BL redevient requis (la demande retrouve un texte reconnu) : `couvre_encore` doit
+       repasser à `true` (V1-02/F2) — sinon l'écran continuerait de dire « ne fait plus partie
+       du tirage courant » sur une cellule pourtant à nouveau vivante (un mensonge, règle 13). */
+    await q(
+      `update request_item set description = 'Bon de livraison — sonde P1-06'
+       where sample_item_id = $1 and kind = 'document' and description = 'Sonde P1-06 — BL non requis'`,
+      [itemId],
+    );
+    await calculerGrille(IDS.engNep, IDS.users.karim);
+    const revenue = (await cellulesDuDossier(IDS.engNep)).cellules[itemId].find((x) => x.id === cellule.id)!;
+    expect(revenue.orpheline, 'la colonne est de nouveau applicable : plus orpheline').toBeNull();
+    const couvreEncore = await q1<{ couvre_encore: boolean }>(`select couvre_encore from cell_disposition where cell_id = $1`, [cellule.id]);
+    expect(couvreEncore.couvre_encore).toBe(true);
   });
 
   it('§0.3 — une version NEUVE de la grille n’efface pas une conclusion : elle la nomme périmée, cause « grille », et le journal la liste', async () => {

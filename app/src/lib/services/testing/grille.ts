@@ -584,6 +584,19 @@ export async function calculerGrille(engagementId: string, userId: string | null
       });
       cellules++;
     }
+    /* CORRECTIF DE REVUE HOSTILE (P1-06, voix 1 ET voix 2, CONFIRMÉ HAUTE, indépendamment) :
+       une colonne ORPHELINE qui REDEVIENT applicable (le BL redemandé, par exemple) doit lever
+       `couvre_encore` — sinon la cellule reste marquée « ne fait plus partie du tirage courant »
+       alors qu'elle est de nouveau VIVANTE (un mensonge à l'écran, règle 13), et bloquait la
+       conclusion de la ligne sans qu'aucun geste ne puisse la lever (le même défaut que NOTIF-01,
+       règle 37). L'UPSERT ci-dessus réutilise le MÊME id de cellule (`on conflict (grid_id,
+       sample_item_id, column_code)`) : toute cellule qui vient d'être (ré)écrite porte
+       `engine_run_id = run.id` — sa disposition, si elle était orpheline, ne l'est plus. */
+    ecritures.push({
+      sql: `update cell_disposition set couvre_encore = true where couvre_encore = false and cell_id in (
+              select id from test_cell where grid_id = $1 and sample_item_id = $2 and engine_run_id = $3)`,
+      params: [grille.id, it.id, run.id],
+    });
     /* P1-06 (AUD-10) : une colonne qui ne s'applique plus (le BL n'est plus requis) ne détruit
        PLUS une décision humaine (règle 28). Une disposition déjà posée ne couvre plus la cellule
        qui a disparu — `couvre_encore` le dit, elle reste lisible (0178). Seules les cellules
@@ -745,10 +758,13 @@ export async function disposerCellule(engagementId: string, cellId: string, user
   if (c.state === 'conforme') throw new Error(`La cellule « ${c.column_code} » est conforme : rien à disposer.`);
   const ctx = await engagementCtx(c.engagement_id);
   await q(
-    `insert into cell_disposition (engagement_id, cell_id, reason, state_at_decision, delta_at_decision, decided_by)
-     values ($1, $2, $3, $4, $5, $6)
+    /* `couvre_encore = true` PORTÉ ICI AUSSI (revue hostile P1-06, voix 1 et 2, défense en
+       profondeur au-delà du reset déjà posé dans `calculerGrille`) : un humain qui dispose une
+       cellule EN CE MOMENT la voit forcément vivante — jamais orpheline depuis SON écran. */
+    `insert into cell_disposition (engagement_id, cell_id, reason, state_at_decision, delta_at_decision, decided_by, couvre_encore)
+     values ($1, $2, $3, $4, $5, $6, true)
      on conflict (cell_id) do update set reason = excluded.reason, state_at_decision = excluded.state_at_decision,
-       delta_at_decision = excluded.delta_at_decision, decided_by = excluded.decided_by, decided_at = now()`,
+       delta_at_decision = excluded.delta_at_decision, decided_by = excluded.decided_by, decided_at = now(), couvre_encore = true`,
     [c.engagement_id, cellId, motif.trim(), c.state, c.delta_signed, userId]);
   await logEvent({
     tenantId: ctx.tenant_id, engagementId: c.engagement_id, actorKind: 'user', actorId: userId,
@@ -771,11 +787,19 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
   const { cellules } = await cellulesDuDossier(engagementId);
   const mes = cellules[sampleItemId] ?? [];
   if (mes.length === 0) throw new Error('TEST-04 : la ligne ne se conclut pas — aucune cellule calculée (lancez le calcul de la grille).');
-  const identite = mes.find((c) => c.etat === 'non_recevable');
+  /* P1-06 (AUD-10) — CORRECTIF DE REVUE HOSTILE (voix 2, CONFIRMÉ HAUTE, motif NOTIF-01/règle
+     37) : une cellule ORPHELINE (`c.orpheline` non nul — sa colonne ne s'applique plus au
+     tirage courant, 0178) n'appartient plus au calcul ACTUEL de cette ligne. Elle reste lisible
+     pour mémoire (règle 28), mais `disposition` y est TOUJOURS nul par construction
+     (`cellulesDuDossier`) : la laisser gater TEST-02/TEST-04 créait un refus qu'AUCUN geste ne
+     pouvait lever — redisposer la cellule ne change rien, elle reste orpheline. Exclue ici des
+     deux gardes, exactement comme si elle n'existait plus pour cette conclusion. */
+  const vivantes = mes.filter((c) => !c.orpheline);
+  const identite = vivantes.find((c) => c.etat === 'non_recevable');
   if (identite) {
     throw new Error(`TEST-02 : la ligne ne se conclut pas — l’attribut d’identité « ${identite.libelle} » diverge (grand livre « ${identite.attendu ?? ''} », pièce « ${identite.trouve ?? ''} ») : la preuve n’est pas recevable.`);
   }
-  const ouverte = mes.find((c) => c.etat !== 'conforme' && !c.disposition);
+  const ouverte = vivantes.find((c) => c.etat !== 'conforme' && !c.disposition);
   if (ouverte) {
     throw new Error(`TEST-04 : la ligne ne se conclut pas — la cellule « ${ouverte.libelle} » est ${ouverte.etat.replace('_', ' ')}${ouverte.delta ? ` (delta ${ouverte.delta})` : ''} sans disposition écrite${ouverte.dispositionPerimee ? ' (la disposition existante portait sur une autre valeur)' : ''}.`);
   }
