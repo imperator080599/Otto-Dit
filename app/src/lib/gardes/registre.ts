@@ -434,6 +434,69 @@ export const GARDES: Garde[] = [
     neutraliser: 'alter table ui_repli drop constraint ui_repli_cle_valide',
   },
   {
+    nature: 'sql', code: 'G-28',
+    enonce: 'VISA-01 — un même rôle ne vise pas deux fois le même papier.',
+    point: 'déclencheur visa01_unicite (0176) → assert_visa01_unicite()',
+    rayon: 'Un second visa preparer_validator sur le même papier : le compte de visas ne dit plus qui a réellement revu quoi.',
+    stops_looking: 'Ne regarde pas QUI vise, ni si la personne a le droit de tenir ce rôle (VISA-03 le tient) — seulement l’UNICITÉ du rôle sur ce papier.',
+    attaque: async (run, ctx) => {
+      // DEUX personnes distinctes (préparateur puis réviseur) sur le MÊME rôle : sinon le
+      // second insert trippe AUSSI visa02_utilisateur_distinct (même user_id, peu importe le
+      // rôle) et neutraliser visa01_unicite seul ne suffit plus à faire passer l'écriture —
+      // trouvé en éprouvant cette garde (gardes.test.ts), pas supposé.
+      const wp = await papier(run, ctx, 'G-28');
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'preparer_validator')`, [wp, ctx.preparateur]);
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'preparer_validator')`, [wp, ctx.reviseur]);
+    },
+    rejet: /VISA-01/,
+    neutraliser: 'alter table signoff disable trigger visa01_unicite',
+  },
+  {
+    nature: 'sql', code: 'G-29',
+    enonce: 'VISA-02 — la même personne ne vise pas deux rôles sur le même papier.',
+    point: 'déclencheur visa02_utilisateur_distinct (0176) → assert_visa02_utilisateur_distinct()',
+    rayon: 'Un préparateur qui se revoit lui-même : la séparation des rôles du visa devient un décor.',
+    stops_looking: 'Ne regarde pas L’ORDRE des rôles (signoff_order_guard, 0009, le tient) ni le DROIT au rôle (VISA-03) — seulement que la personne diffère d’un rôle à l’autre.',
+    attaque: async (run, ctx) => {
+      // LA MÊME personne pour les deux rôles, mais une personne qui tient DÉJÀ le droit
+      // reviewer (réviseur = manager) : sinon visa03_role (garde séparée, jamais neutralisée
+      // ici) bloque le second insert AVANT que visa02_utilisateur_distinct n'ait sa chance —
+      // trouvé en éprouvant cette garde, pas supposé.
+      const wp = await papier(run, ctx, 'G-29');
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'preparer_validator')`, [wp, ctx.reviseur]);
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'reviewer')`, [wp, ctx.reviseur]);
+    },
+    rejet: /VISA-02/,
+    neutraliser: 'alter table signoff disable trigger visa02_utilisateur_distinct',
+  },
+  {
+    nature: 'sql', code: 'G-30',
+    enonce: 'VISA-03 — un visa reviewer exige un rôle manager ou partner ; un visa partner exige le droit de signature.',
+    point: 'déclencheur visa03_role (0176) → assert_visa03_role()',
+    rayon: 'Un préparateur (staff/senior) qui se donne un visa reviewer : la hiérarchie de revue n’est plus tenue par personne.',
+    stops_looking: 'Ne regarde pas SI la personne est membre de LA mission par ailleurs (assertMembre, côté service, le fait) — seulement son eng_role/can_sign une fois membre trouvé.',
+    attaque: async (run, ctx) => {
+      const wp = await papier(run, ctx, 'G-30');
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'preparer_validator')`, [wp, ctx.reviseur]);
+      await run(`insert into signoff (workpaper_id, user_id, sign_role) values ($1, $2, 'reviewer')`, [wp, ctx.preparateur]);
+    },
+    rejet: /VISA-03/,
+    neutraliser: 'alter table signoff disable trigger visa03_role',
+  },
+  {
+    nature: 'sql', code: 'G-31',
+    enonce: 'EQUIPE-01 — le rôle ou le droit de signature d’un membre ne change que sous un acteur manager ou partner déclaré (otto.acteur_role).',
+    point: 'déclencheur equipe01_acteur_manager_partner (0176) → assert_equipe01_acteur()',
+    rayon: 'Un update direct de eng_role/can_sign, hors withActeur() : n’importe quel chemin d’écriture pourrait promouvoir un membre sans qu’aucun manager ni partner n’ait agi.',
+    stops_looking: 'Ne vérifie pas que la VALEUR posée dans otto.acteur_role est honnête — un appelant qui mentirait sur son propre rôle contournerait ce garde (limite nommée dans lib/db/acteur.ts). Ne regarde pas non plus l’INSERT (première affectation) CÔTÉ BASE — seul l’UPDATE d’un membre déjà affecté est gardé par CE déclencheur (04 §1 littéral). L’INSERT est gardé ailleurs, CÔTÉ SERVICE (team.ts::assignMember : manager/partner exigé, sauf la toute première affectation d’un dossier encore sans équipe, posée par la personne elle-même) — trouvé absent puis fermé par la revue hostile de P1-04 ; cette garde-ci ne l’exerce donc pas, G-31 ne teste que le déclencheur SQL.',
+    attaque: async (run, ctx) => {
+      await run(`update engagement_member set eng_role = 'manager' where engagement_id = $1 and user_id = $2`,
+        [ctx.engagementId, ctx.preparateur]);
+    },
+    rejet: /EQUIPE-01/,
+    neutraliser: 'alter table engagement_member disable trigger equipe01_acteur_manager_partner',
+  },
+  {
     nature: 'service', code: 'G-23',
     enonce: 'REPLI-03 — le locataire d’un rangement vient de la PERSONNE : aucune écriture ne peut le poser au nom d’un autre cabinet.',
     point: 'memoriserRepli (services/replis.ts) : la ligne est insérée par jointure sur app_user, le locataire n’est pas un paramètre',

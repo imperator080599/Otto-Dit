@@ -2649,3 +2649,29 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   de commentaire ou de contenu sur UNE MIGRATION DÉJÀ POUSSÉE, même sur une branche de travail,
   même dans la même session : vérifier par requête directe (`_migrations`, empreinte) avant
   d'éditer, jamais après.
+
+- **R146 — REPORTÉ, gravité moyenne, non exploitée aujourd'hui.** Revue hostile P1-04 (voix 1,
+  jugement seul sur ce point précis — non repris par la voix 2, donc « jugé par une voix, non
+  réfuté » au sens de la règle 30) : `signWorkpaper` (`workpapers/lifecycle.ts:384-445`) n'est PAS
+  enveloppée dans `tx()`. Deux défauts liés, chemin tracé :
+  (1) **TOCTOU sur `sections_hash`** : `wp.sections` est lu en tête de fonction, puis plusieurs
+  `await` (appartenance, contexte, visas existants, notes ouvertes) séparent cette lecture du
+  `hashObject(wp.sections)` final. Un `editSection` concurrent, qui ne garde que sur le COMPTE de
+  signoff (jamais sur `status`), pourrait passer VISA-04 et modifier `sections` dans cette
+  fenêtre — le hash posé au visa daterait alors d'une version déjà périmée sans que rien ne le
+  démasque.
+  (2) **Non-atomicité insert-signoff / update-status** : les deux écritures (`insert into
+  signoff`, `update workpaper set status`) sont deux instructions séparées, non transactionnelles ;
+  une panne entre les deux laisserait un signoff sans statut cohérent.
+  **Pourquoi reporté plutôt que corrigé dans cette tranche** : `sections_hash` n'est LU nulle part
+  aujourd'hui (vérifié par grep : seuls `/api/sante` teste sa non-nullité et le backfill ponctuel
+  y écrivent — personne ne le COMPARE encore, `etatDuVisa` compare `based_on_hash`, jamais
+  `sections_hash`) — le champ est écrit mais pas encore consommé, donc la fenêtre de course n'a
+  aujourd'hui aucun effet observable. Un correctif correct exige plus qu'un simple `tx()` : il faut
+  un verrou de ligne (`select … for update`) posé en tête à LA FOIS dans `signWorkpaper` et dans
+  `editSection` (un `tx()` seul ne suffit pas — la décision VISA-04 d'`editSection` se prend sur
+  une lecture non verrouillée AVANT son propre `update`, qui bloquerait mais ne referait pas la
+  vérification). Correctif à faire quand `sections_hash` gagne un premier lecteur réel (Phase 3,
+  « Papiers & visas », §8 du plan maître : STALE dérivé de l'empreinte) — pas avant, pour ne pas
+  poser un verrou dont rien ne prouve aujourd'hui l'utilité par un test qui l'exercerait
+  réellement (règle 15).

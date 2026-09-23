@@ -3,8 +3,10 @@ import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { type Ancre, assertAncrePosable, resoudreAncre, KINDS } from '../notes/ancres';
 import { logEvent } from '@/lib/core/events';
 import { joursOuvresEntre } from '@/lib/core/jours';
+import { hashObject } from '@/lib/core/hash';
 import { engagementCtx } from '../imports';
 import type { WpSection } from './draft';
+import { currentBasedOnHashRevenue } from './draft';
 import { assertMembre } from '@/lib/core/membre';
 import { sectionPourNote } from '../sections';
 
@@ -48,7 +50,11 @@ export async function editSection(workpaperId: string, userId: string, sectionKe
   /* LE PAPIER DIT SON DOSSIER (revue hostile n°9, constat 4 : un cabinet
      étranger a RÉÉCRIT le contenu d'un papier de travail, trace au journal). */
   await assertMembre(wp.engagement_id, userId, 'réécrire une section de papier');
-  if (wp.status === 'signed') throw new Error('signed workpaper — redraft to a new version first');
+  /* VISA-04 (migration 0176) : DÈS qu'un visa existe (même le premier des trois — status
+     'in_review', pas seulement 'signed'), une édition de section exige une nouvelle version.
+     Éditer un papier déjà partiellement revu changerait ce qu'un visa a couvert sans le dire. */
+  const dejaVise = await q1<{ n: string }>(`select count(*) n from signoff where workpaper_id = $1`, [workpaperId]);
+  if (Number(dejaVise.n) > 0) throw new Error('VISA-04 : signed workpaper — redraft to a new version first');
   const ctx = await engagementCtx(wp.engagement_id);
   const sections = wp.sections.map((s) => (s.key === sectionKey ? { ...s, body: newBody } : s));
   const before = wp.sections.find((s) => s.key === sectionKey)?.body ?? '';
@@ -376,8 +382,8 @@ export async function listNotes(workpaperId: string) {
 const SIGN_ORDER = ['preparer_validator', 'reviewer', 'partner'] as const;
 
 export async function signWorkpaper(workpaperId: string, userId: string, role: (typeof SIGN_ORDER)[number]): Promise<void> {
-  const wp = await q1<{ id: string; engagement_id: string; status: string }>(
-    `select id, engagement_id, status from workpaper where id = $1`,
+  const wp = await q1<{ id: string; engagement_id: string; status: string; sections: WpSection[] }>(
+    `select id, engagement_id, status, sections from workpaper where id = $1`,
     [workpaperId],
   );
   /* LE VISA — le plafond HITL L2 lui-même. Il n'était gardé par aucune règle
@@ -391,11 +397,24 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
   );
   if (!member) throw new Error('not a member of this engagement');
   if (role === 'partner' && !member.can_sign) throw new Error('partner sign-off requires signing rights');
+  /* VISA-03 (migration 0176) : côté service, avec un message nommé, AVANT le
+     déclencheur SQL qui porte le même refus en dernier rang. */
+  if (role === 'reviewer' && member.eng_role !== 'manager' && member.eng_role !== 'partner') {
+    throw new Error('VISA-03 : reviewer sign-off requires manager or partner role');
+  }
   const existing = await q<{ sign_role: string; user_id: string }>(
     `select sign_role, user_id from signoff where workpaper_id = $1`,
     [workpaperId],
   );
-  if (existing.some((s) => s.sign_role === role)) throw new Error(`${role} already signed this version`);
+  /* VISA-01 (migration 0176) : côté service, avec le même préfixe nommé que ses trois
+     voisins (VISA-02/03/04) — `app/refus.ts::separerCode` lit la forme « CODE : phrase » pour
+     mettre le code en petit à l'écran ; sans le préfixe, ce refus y échappait (revue hostile,
+     divergence entre l'en-tête de 0176 et le code réel). */
+  if (existing.some((s) => s.sign_role === role)) throw new Error(`VISA-01 : ${role} already signed this version`);
+  /* VISA-02 (migration 0176) : la même personne ne vise pas deux rôles sur le même papier. */
+  if (existing.some((s) => s.user_id === userId)) {
+    throw new Error('VISA-02 : the same person cannot sign two roles on this workpaper version');
+  }
   if (role === 'reviewer' && existing.every((s) => s.sign_role !== 'preparer_validator')) {
     throw new Error('reviewer signs after the preparer/validator');
   }
@@ -412,7 +431,14 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
     );
     if (Number(openNotes.n) > 0) throw new Error('open review notes must be addressed before review sign-off');
   }
-  await q(`insert into signoff (workpaper_id, user_id, sign_role) values ($1,$2,$3)`, [workpaperId, userId, role]);
+  /* signoff.sections_hash (migration 0176) : l'empreinte canonique de workpaper.sections AU
+     MOMENT de CE visa — même formule (hashObject) que les autres hachages du dépôt
+     (controlPopulationHash, etc.). Sert etatDuVisa() à détecter une péremption « hash amont »
+     sans dépendre d'une comparaison directe des sections (VISA-04 bloque déjà leur édition dès
+     qu'un visa existe). */
+  const sectionsHash = hashObject(wp.sections);
+  await q(`insert into signoff (workpaper_id, user_id, sign_role, sections_hash) values ($1,$2,$3,$4)`,
+    [workpaperId, userId, role, sectionsHash]);
   const newStatus = role === 'partner' ? 'signed' : role === 'reviewer' ? 'reviewed' : 'in_review';
   await q(`update workpaper set status = $2 where id = $1`, [workpaperId, newStatus]);
   await logEvent({
@@ -420,6 +446,47 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
     verb: 'workpaper_signed', objectType: 'workpaper', objectId: workpaperId,
     payload: { role, newStatus },
   });
+}
+
+export interface EtatVisa { signe: boolean; perime: boolean; motif: string }
+
+/**
+ * L'état du visa d'un papier — UNE lecture unique, jamais recalculée à la main sur chaque écran
+ * (P1-04, AUD-09 partie modèle). `perime` compare le hash amont figé au tirage
+ * (`workpaper.based_on_hash`, déjà posé par `draftRevenueWorkpaper`) au hash amont RECALCULÉ
+ * maintenant — les mêmes faits (tirage, écarts, évaluation, matérialité) que draft.ts hache déjà
+ * à la génération. Un papier peut donc devenir périmé SANS aucune édition de ses sections (VISA-04
+ * les bloque dès qu'un visa existe) : résoudre un écart après le visa suffit.
+ *
+ * OÙ CETTE LECTURE S'ARRÊTE (règle 19) : `perime` n'est mesurable que pour REV-01 (le seul code
+ * de papier dont le hash amont est aujourd'hui recalculable — `currentBasedOnHashRevenue`) ;
+ * pour tout autre code, elle retombe sur `workpaper.status === 'outdated'`, un signal plus
+ * grossier (une nouvelle VERSION existe), pas une comparaison de faits amont.
+ */
+export async function etatDuVisa(workpaperId: string): Promise<EtatVisa> {
+  const wp = await q1<{ id: string; engagement_id: string; code: string; version: number; status: string; based_on_hash: string | null }>(
+    `select id, engagement_id, code, version, status, based_on_hash from workpaper where id = $1`,
+    [workpaperId],
+  );
+  if (wp.status !== 'signed') return { signe: false, perime: false, motif: 'pas encore visé au niveau partner' };
+  if (wp.code !== 'REV-01') {
+    const plusRecent = await q1<{ n: string }>(
+      `select count(*) n from workpaper where engagement_id = $1 and code = $2 and version > $3`,
+      [wp.engagement_id, wp.code, wp.version],
+    );
+    const perime = Number(plusRecent.n) > 0;
+    return { signe: true, perime, motif: perime ? 'une version plus récente de ce papier existe' : 'visé, à jour' };
+  }
+  const actuel = await currentBasedOnHashRevenue(wp.engagement_id);
+  if (actuel === null) return { signe: true, perime: false, motif: 'visé — repères amont indisponibles pour ce dossier' };
+  const perime = actuel !== wp.based_on_hash;
+  return {
+    signe: true,
+    perime,
+    motif: perime
+      ? 'les faits amont (tirage, écarts, évaluation, matérialité) ont changé depuis le visa'
+      : 'visé, à jour',
+  };
 }
 
 export async function listSignoffs(workpaperId: string) {

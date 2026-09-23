@@ -142,6 +142,28 @@ export function champsLigneEchantillon(o: {
   };
 }
 
+/** Le hash amont du papier REV-01, recalculable à tout moment SANS redraft (P1-04, etatDuVisa
+ *  dans lifecycle.ts) — la même formule qu'au moment du tirage ci-dessous : si le résultat
+ *  diffère de `workpaper.based_on_hash`, les faits amont (tirage, écarts, évaluation,
+ *  matérialité) ont bougé depuis que ce hash a été figé. `null` quand un des repères amont
+ *  n'existe pas encore (avant tirage/matérialité validée) — jamais une exception : etatDuVisa()
+ *  n'appelle cette fonction que sur un papier DÉJÀ signé, donc ces repères existaient au moins
+ *  une fois, mais un monde de test minimal peut les avoir supprimés depuis. */
+export async function currentBasedOnHashRevenue(engagementId: string): Promise<string | null> {
+  const mat = await currentMateriality(engagementId);
+  const sample = await currentRevenueSample(engagementId);
+  if (!mat || !sample) return null;
+  const exceptions = await listExceptions(engagementId);
+  const evaluation = await currentEvaluation(engagementId);
+  return hashObject({
+    sampleId: sample.id,
+    items: sample.items.map((i) => i.id),
+    exceptions: exceptions.map((x) => [x.id, x.status]),
+    evaluation: evaluation ? [evaluation.id, evaluation.status] : null,
+    materiality: mat.id,
+  });
+}
+
 export async function draftRevenueWorkpaper(engagementId: string, userId: string): Promise<string> {
   await assertMembre(engagementId, userId, 'draftRevenueWorkpaper');
   const ctx = await engagementCtx(engagementId);

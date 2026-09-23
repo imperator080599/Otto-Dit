@@ -22,6 +22,7 @@ import { assertAccepte } from './acceptance';
 import type { Catalogue } from '@/lib/methodology/types';
 import { motif, type Motif } from './motif';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { withActeur } from '@/lib/db/acteur';
 
 export class TeamRuleError extends Error {
   constructor(message: string) {
@@ -419,17 +420,58 @@ export async function assignMember(input: AssignInput): Promise<{ id: string }> 
       `déclaration d’indépendance de ${user.name} (${st.label.cle}) — aucun travail ne peut lui être attribué`,
     );
   }
+  /* EQUIPE-01 (migration 0176, P1-04) : un `update` de eng_role/can_sign exige un acteur
+     manager/partner, posé par withActeur() — jamais un update direct. Le déclencheur SQL ne
+     garde que l'UPDATE (04 §1 littéral) ; l'INSERT (première affectation) reste donc sans
+     contrôle CÔTÉ BASE. Revue hostile (P1-04, deux voix indépendantes) : lu à la lettre, ça
+     laissait un membre QUELCONQUE déjà affecté (staff compris — `team/page.tsx::assignAction`
+     n'appelle que `requireMember`, jamais un contrôle de rôle) affecter un COLLÈGUE JAMAIS
+     ENCORE MEMBRE avec `eng_role: 'partner', can_sign: true` — une élévation de privilège
+     réelle et atteignable par l'écran, pas seulement théorique. Fermé ICI, côté service : le
+     même contrôle manager/partner que l'UPDATE, SAUF pour la toute première affectation d'un
+     dossier ENCORE SANS AUCUN MEMBRE, où la personne s'affecte ELLE-MÊME (le seul bootstrap
+     réel du dépôt, flows/prior-year.ts) — un dossier sans membre n'est de toute façon jamais
+     atteignable par `team/page.tsx` (`requireMember` exige déjà une adhésion active). */
   const row = existing
-    ? await q1<{ id: string }>(
-        `update engagement_member set eng_role = $2, can_sign = $3, entered_on = coalesce($4, entered_on)
-         where id = $1 returning id`,
-        [existing.id, input.engRole, input.canSign ?? false, input.enteredOn ?? null],
-      )
-    : await q1<{ id: string }>(
-        `insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on)
-         values ($1, $2, $3, $4, $5) returning id`,
-        [input.engagementId, input.userId, input.engRole, input.canSign ?? false, input.enteredOn ?? null],
-      );
+    ? await (async () => {
+        const acteur = await q01<{ eng_role: string }>(
+          `select eng_role from engagement_member where engagement_id = $1 and user_id = $2 and exited_on is null`,
+          [input.engagementId, input.actorUserId],
+        );
+        if (!acteur || (acteur.eng_role !== 'manager' && acteur.eng_role !== 'partner')) {
+          throw new TeamRuleError(
+            `seul un manager ou un partner du dossier peut modifier le rôle ou le droit de signature d’un membre déjà affecté`,
+          );
+        }
+        return withActeur(acteur.eng_role as 'manager' | 'partner', () => q1<{ id: string }>(
+          `update engagement_member set eng_role = $2, can_sign = $3, entered_on = coalesce($4, entered_on)
+           where id = $1 returning id`,
+          [existing.id, input.engRole, input.canSign ?? false, input.enteredOn ?? null],
+        ));
+      })()
+    : await (async () => {
+        const dejaDesMembres = await q1<{ n: string }>(
+          `select count(*) n from engagement_member where engagement_id = $1`,
+          [input.engagementId],
+        );
+        const bootstrapDeSoi = Number(dejaDesMembres.n) === 0 && input.actorUserId === input.userId;
+        if (!bootstrapDeSoi) {
+          const acteur = await q01<{ eng_role: string }>(
+            `select eng_role from engagement_member where engagement_id = $1 and user_id = $2 and exited_on is null`,
+            [input.engagementId, input.actorUserId],
+          );
+          if (!acteur || (acteur.eng_role !== 'manager' && acteur.eng_role !== 'partner')) {
+            throw new TeamRuleError(
+              `seul un manager ou un partner du dossier peut affecter un nouveau membre — sauf la toute première affectation d’un dossier encore sans équipe, que la personne pose elle-même`,
+            );
+          }
+        }
+        return q1<{ id: string }>(
+          `insert into engagement_member (engagement_id, user_id, eng_role, can_sign, entered_on)
+           values ($1, $2, $3, $4, $5) returning id`,
+          [input.engagementId, input.userId, input.engRole, input.canSign ?? false, input.enteredOn ?? null],
+        );
+      })();
   await logEvent({
     tenantId: eng.tenant_id,
     engagementId: input.engagementId,

@@ -219,6 +219,24 @@ async function corpsDeLaSonde() {
         `select count(*)::text n from risk where engagement_id = $1 and source = 'rcm_import'`, [id]);
       return `${total.n} risque(s) importé(s) du RCM · 0 niveau deviné`;
     }));
+    /* AUD-09 partie modèle (P1-04) : signWorkpaper() pose désormais sections_hash sur CHAQUE
+       nouveau visa (migration 0176) — cette lecture ROUGIT si un chemin d'écriture le
+       contournait (un signoff sans sections_hash, hors ceux du backfill ponctuel signalé
+       par leur event_log signoff.hash_backfill, jamais confondus avec un vrai trou). */
+    lectures.push(await essayer('visas : sections_hash posée sur chaque signoff (P1-04, AUD-09)', async () => {
+      const sansHash = await q1<{ n: string }>(
+        `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id
+         where w.engagement_id = $1 and s.sections_hash is null`,
+        [id]);
+      const n = Number(sansHash.n);
+      if (n > 0) {
+        throw new Error(`${n} signoff sans sections_hash — ni posé par signWorkpaper, ni par le backfill ponctuel (event_log signoff.hash_backfill)`);
+      }
+      const total = await q1<{ n: string }>(
+        `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id where w.engagement_id = $1`,
+        [id]);
+      return `${total.n} signoff · 0 sans sections_hash`;
+    }));
     lectures.push(await essayer('postes (FSLI) et périmètre', async () => {
       const { listFslis } = await import('@/lib/services/fsli');
       return listFslis(id);

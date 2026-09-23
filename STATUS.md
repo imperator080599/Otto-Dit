@@ -4,6 +4,76 @@
 
 ---
 
+## Phase 1 — P1-04 Visa livré (2026-09-23)
+
+**`0176_visa.sql`** (§7.4 du plan maître, renumérotée — bande 0170+ déjà consommée par P1-01/02/03
+et leurs correctifs ; contenu et ordre du plan conservés, seul le numéro glisse, règle 26) :
+`signoff` gagne `sections_hash` ; trois déclencheurs `before insert on signoff` (VISA-01 unicité
+`(workpaper_id, sign_role)`, VISA-02 `user_id` distinct des visas déjà posés, VISA-03 rôle —
+`reviewer` exige `eng_role in ('manager','partner')`, `partner` exige `can_sign`) ; `engagement_member`
+gagne le déclencheur EQUIPE-01 (`before update of eng_role, can_sign` exige
+`otto.acteur_role in ('manager','partner')`, posé par `withActeur()` — nouveau, `lib/db/acteur.ts`,
+même patron que `withTenant`).
+
+**Service** : `workpapers/lifecycle.ts::signWorkpaper` — VISA-01/02/03 côté service (refus nommés,
+AVANT le déclencheur SQL), calcule `sections_hash` à chaque visa ; `etatDuVisa(workpaperId)` →
+`{signe, perime, motif}`, une lecture unique (REV-01 : hash amont recalculé vs `based_on_hash` ;
+autres codes : signal plus grossier, `version` plus récente) ; `editSection` refuse (VISA-04) dès
+qu'un signoff existe, pas seulement `status === 'signed'`. `workpapers/draft.ts::
+currentBasedOnHashRevenue` — extrait de `draftRevenueWorkpaper`, calcule le hash amont sans
+redraft. `team.ts::assignMember`, `retention.ts::closeFile` — voir revue hostile ci-dessous.
+`scripts/backfill-signoff-hash.ts` (ponctuel, jamais dans `migrate()`) pour les lignes `signoff`
+antérieures sur la base réseau. Lecture `/api/sante` neuve : « visas : sections_hash posée sur
+chaque signoff ». Quatre gardes neuves (G-28..G-31, `gardes/registre.ts`), chacune en deux passes
+(attaque + neutralisation ciblée) — deux itérations avant que G-28/G-29 isolent correctement leur
+déclencheur (la première version de chaque attaque trippait un déclencheur VOISIN, jamais celui
+visé ; corrigé en choisissant soigneusement quels acteurs signent dans chaque attaque). 12 tests
+`p1-04.test.ts`.
+
+**Revue hostile, deux voix indépendantes (règle 30 — tranche modèle de données + sécurité +
+multi-tenant + code de refus) :**
+- **CONFIRMÉ, HAUTE, CORRIGÉ.** Élévation de privilège réelle et atteignable par l'écran :
+  le déclencheur EQUIPE-01 ne garde que l'UPDATE (04 §1 littéral) — l'INSERT (première affectation)
+  restait sans AUCUN contrôle de rôle, et `team/page.tsx::assignAction` n'appelle que
+  `requireMember` (appartenance, jamais rôle). N'importe quel membre actif (staff compris) pouvait
+  affecter un COLLÈGUE JAMAIS ENCORE MEMBRE en `partner`+`can_sign`. Fermé dans
+  `team.ts::assignMember` : le même contrôle manager/partner que l'UPDATE s'applique désormais à
+  l'INSERT, SAUF le bootstrap d'un dossier encore sans aucun membre où la personne s'affecte
+  elle-même (le seul cas réel, `flows/prior-year.ts` — jamais atteignable par l'écran, qui exige
+  déjà une adhésion active). Testé (`p1-04.test.ts`, nouveau cas), revalidé par `demo:seed` +
+  `demo:enrichir` intégralement verts sur base fraîche.
+- **CONFIRMÉ, HAUTE, CORRIGÉ.** `etatDuVisa()` était un objet mort : calculée mais rendue nulle
+  part (`grep` sous `src/app` : zéro appelant). Câblée dans
+  `eng/[id]/workpapers/[wid]/page.tsx` — un badge rouge « visé — périmé (motif) » apparaît quand
+  `signe && perime`. Confirmé vivant par la mesure, pas supposé : le monde réenrichi affiche
+  désormais « A-05 → perime … 1 visa(s) périmé(s) en en-tête » dans la sortie de
+  `demo:enrichir`.
+- **CONFIRMÉ, FAIBLE, CORRIGÉ.** VISA-01 (unicité de rôle, refus service) n'avait pas le préfixe
+  `VISA-0X :` que portent ses trois voisins — `app/refus.ts::separerCode` ne le mettait donc pas en
+  petit à l'écran comme les autres. Préfixé.
+- **CONFIRMÉ, MOYENNE, REPORTÉ (R146).** `signWorkpaper` n'est pas transactionnelle : fenêtre
+  TOCTOU entre la lecture de `sections` et l'insertion du signoff, non-atomicité insert/update.
+  Sans impact aujourd'hui (`sections_hash` n'a encore aucun lecteur qui le COMPARE — seul `/api/sante`
+  teste sa non-nullité) ; le correctif correct (verrou de ligne des deux côtés, `editSection`
+  compris) attend un premier lecteur réel du champ (Phase 3, plan maître §8). Détail complet dans
+  `docs/BACKLOG_REPORTE.md`.
+- Rien trouvé (les deux voix, indépendamment) : fuite tenant/engagement, contournement de
+  `workpaper.status` hors `signWorkpaper`, idempotence du backfill, cohérence `security invoker`,
+  régression sur `editSection`.
+
+Décision de périmètre : `team.ts::assignMember` était déjà nommé dans le plan §7.4 (wiring
+`withActeur()`) — construit dans cette tranche plutôt que reporté à P2-02, la revue hostile ayant
+montré que différer aurait laissé le trou d'élévation ouvert un tour de plus.
+
+**Mesuré** : `tsc --noEmit` propre ; sweep ciblé 155/155 tests verts (p1-04, team, workpapers,
+retention, gardes, retardataires, obstacles, carryforward, acceptance) ; `db:reset` propre (0176
+s'applique) ; `demo:seed` + `demo:enrichir` intégralement verts sur base fraîche, 10/10 étapes.
+`npm run clics` (règle 37 — un code de refus neuf n'est clos qu'après le parcours cliqué complet)
+en cours au moment d'écrire cette entrée ; son résultat suit dans le prochain tour si non encore
+mesuré ici.
+
+---
+
 ## Mandat 2026-09-23 — trois corrections permanentes (règle 26 mécanique, R142 fermé), avant P1-04
 
 **Correction 1 (ADR-137) : cause mécanique de R143/R145 corrigée à la racine.** Les déploiements

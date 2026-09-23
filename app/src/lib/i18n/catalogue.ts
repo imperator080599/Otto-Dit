@@ -1177,6 +1177,7 @@ export const LIBELLES = {
   'test.conclusionGate': { en: 'Conclusion gate:', fr: 'Verrou de conclusion :' },
   'wp.notFound': { en: 'Not found.', fr: 'Introuvable.' },
   'wp.modifiedJustified': { en: 'modified — justified', fr: 'modifié — justifié' },
+  'wp.visePerime': { en: 'signed off — stale ({motif})', fr: 'visé — périmé ({motif})' },
   'wp.exporterPdfExcel': { en: 'Exporter (PDF, Excel)', fr: 'Export (PDF, Excel)' },
   'wp.exportPdf': { en: 'Export PDF', fr: 'Export PDF' },
   'wp.exportExcel': { en: 'Export Excel', fr: 'Export Excel' },

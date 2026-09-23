@@ -46,6 +46,14 @@ export async function fileDeadlines(engagementId: string, reportDate?: string): 
 export async function closeFile(engagementId: string, userId: string, reportDate: string): Promise<FileDeadlines & {
   archive: { sha256: string; fileCount: number } }> {
   await assertMembre(engagementId, userId, 'closeFile');
+  /* P1-04 (AUD-09 partie modèle) : sceller le dossier pose la signature qui démarre les deux
+     horloges (règle de rétention) — seul un partner avec droit de signature le fait, jamais
+     un membre ordinaire du dossier (assertMembre ne vérifie que l'appartenance, pas le rôle). */
+  const acteur = await q01<{ can_sign: boolean }>(
+    `select can_sign from engagement_member where engagement_id = $1 and user_id = $2 and exited_on is null`,
+    [engagementId, userId],
+  );
+  if (!acteur?.can_sign) throw new Error('closeFile requires signing rights (can_sign)');
   const ctx = await engagementCtx(engagementId);
   const d = await fileDeadlines(engagementId, reportDate);
 

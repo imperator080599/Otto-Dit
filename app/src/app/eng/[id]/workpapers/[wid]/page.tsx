@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { requireMember } from '@/lib/core/auth';
 import { q } from '@/lib/db/client';
-import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs, NOTE_TYPES, type NoteType } from '@/lib/services/workpapers/lifecycle';
+import { getWorkpaper, editSection, listEdits, listNotes, addReviewNote, transitionNote, signWorkpaper, listSignoffs, etatDuVisa, NOTE_TYPES, type NoteType } from '@/lib/services/workpapers/lifecycle';
 import { exportWorkpaper, listExports } from '@/lib/services/workpapers/render';
 import { notesPourEcran } from '@/lib/services/workpapers/lifecycle';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
@@ -55,6 +55,11 @@ export default async function WorkpaperDetail({
   const annexes = await annexesDuPapier(wid);
   const notes = await listNotes(wid);
   const signoffs = await listSignoffs(wid);
+  /* etatDuVisa (P1-04, lifecycle.ts) : jusqu'ici calculée mais rendue nulle part — un objet
+     créé qu'aucun chemin de lecture n'atteint (règle 13/16/20, revue hostile). Le seul écran
+     qui affiche le statut d'un papier est celui-ci : le badge « signed » ne dit rien de la
+     péremption (hash amont changé depuis le visa) tant que cette lecture n'y est pas jointe. */
+  const visa = await etatDuVisa(wid);
   const exports = await listExports(wid);
   const ipe = await lireIpe(wid);
   const pieces = await piecesDisponibles(id);
@@ -217,7 +222,10 @@ export default async function WorkpaperDetail({
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h2>
             {wp.title} <span className="badge gray">v{wp.version}</span>{' '}
-            <span className={`badge ${WP_BADGE[wp.status]}`}>{wp.status}</span>
+            <span className={`badge ${WP_BADGE[wp.status]}`}>{wp.status}</span>{' '}
+            {visa.signe && visa.perime && (
+              <span className="badge red">{t('wp.visePerime', { motif: visa.motif })}</span>
+            )}
             {edits.length > 0 && <span className="mod-flag" style={{ marginLeft: 6 }}>{t('wp.modifiedJustified')}</span>}
           </h2>
           <details>
