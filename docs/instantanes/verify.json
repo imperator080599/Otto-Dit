@@ -3649,6 +3649,244 @@
       "quand": "2026-09-23T21:36:57.622Z",
       "resultat": "ok (523.4s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T21:59:48.155Z",
+      "resultat": "ok (4.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:01.111Z",
+      "resultat": "ok (13.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:03.864Z",
+      "resultat": "ok (2.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:04.288Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:04.719Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:05.244Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:06.485Z",
+      "resultat": "ok (1.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:07.037Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:07.607Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:08.043Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:00:10.257Z",
+      "resultat": "ok (2.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:01:49.058Z",
+      "resultat": "ok (98.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:01:57.746Z",
+      "resultat": "ok (8.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:03:15.566Z",
+      "resultat": "ok (77.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "8e97fd7a8df8a79216c3c4b9ae4afb6d91987d3d",
+      "quand": "2026-09-23T22:20:54.659Z",
+      "resultat": "ÉCHEC — code 1 (1059.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:37.085Z",
+      "resultat": "ok (4.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:49.806Z",
+      "resultat": "ok (12.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:52.785Z",
+      "resultat": "ok (3.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:53.196Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:53.561Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:54.012Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:55.145Z",
+      "resultat": "ok (1.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:55.567Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:56.109Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:56.524Z",
+      "resultat": "ok (0.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:22:58.606Z",
+      "resultat": "ok (2.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:24:28.791Z",
+      "resultat": "ok (90.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:24:37.276Z",
+      "resultat": "ok (8.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:25:56.024Z",
+      "resultat": "ok (78.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:43:31.046Z",
+      "resultat": "ok (1055.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:46:33.878Z",
+      "resultat": "ok (182.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:47:19.969Z",
+      "resultat": "ok (46.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens:test",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T22:53:33.309Z",
+      "resultat": "ok (373.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "be5614858c41b33f92c37ebb58d51b0e4edd87d6",
+      "quand": "2026-09-23T23:02:06.247Z",
+      "resultat": "ok (512.9s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
