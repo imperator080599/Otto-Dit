@@ -59,7 +59,9 @@ Ne rien commencer avant d'avoir lu 1 à 4. Ne rien annoncer comme fait avant de 
    Nouveau référentiel ou nouveau cycle = du contenu de pack, pas de l'architecture.
 10. **Tout écran neuf est conduit dans un navigateur avant d'être annoncé.** Un écran qui compile
     n'est pas un écran qui rend, et un écran qui rend n'est pas un écran qui marche. `npm test`
-    inclut le balayage de toutes les routes ; `npm run screens` le refait sur un build de
+    n'inclut PLUS le balayage de toutes les routes depuis P0-09 (2026-09-23) — `tests/screens.test.ts`
+    en est exclu (R142 : deux vitest en parallèle font tomber le serveur du balayage) et tourne
+    désormais seul, sous `npm run screens:test` ; `npm run screens` le refait sur un build de
     PRODUCTION et `npm run clics` y CLIQUE, et ce sont ces deux-là qui doivent passer avant une
     livraison (ADR-076, ADR-078, ADR-090).
 11. **Un test vert sur un chemin que la production n'emprunte pas ne prouve rien.** Vitest et le
@@ -506,7 +508,9 @@ formes armée.
   démonstration → serveur ; chaque étape qui peut échouer dit quoi faire, ADR-095).
 - Développer : `cd app && npm install && npm run db:setup && npm run dev`.
 - Reprise : `cd app && npm run reprise` → engendre `docs/REPRISE.md`.
-- Tests : `cd app && npm test` (Vitest, zéro réseau ; inclut le balayage des écrans, ~7 min).
+- Tests : `cd app && npm test` (Vitest, zéro réseau). Depuis P0-09 (2026-09-23), le balayage des
+  écrans (`tests/screens.test.ts`) n'y est plus inclus (R142 : deux vitest en parallèle font
+  tomber le serveur du balayage) — `npm run screens:test` le lance seul, ~7 min.
 - Écrans en production : `npm run screens` ; avec le garde de locataire ARMÉ dans le serveur :
   `npm run screens:garde`.
 - Parcours cliqué en production : `npm run clics` (ne re-sème PAS ; base semée requise :

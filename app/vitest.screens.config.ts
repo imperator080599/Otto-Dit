@@ -20,5 +20,14 @@ export default defineConfig({
     globalSetup: ['./src/lib/test/global-setup.ts'],
     pool: 'forks',
     fileParallelism: false,
+    /* F1 (revue hostile P0-09) : sans ce bloc, un `screens:test` lancé en mode réseau
+       (OTTO_CI_DATABASE_URL posée) ferait tourner `next dev` contre la PGlite locale au
+       lieu du pooler réseau — silencieusement, aucune erreur, juste le mauvais moteur.
+       tests/screens.test.ts ne passe JAMAIS par initTestDb() (il spawn next dev
+       directement) : c'est exactement le test que vitest.config.ts:26-31 nomme comme
+       raison d'être de ce bloc — repris ici à l'identique, jamais oublié une seconde fois. */
+    env: process.env.OTTO_CI_DATABASE_URL
+      ? { DATABASE_URL: process.env.OTTO_CI_DATABASE_URL, OTTO_CI_BASE_JETABLE: process.env.OTTO_CI_BASE_JETABLE ?? '' }
+      : {},
   },
 });

@@ -20,6 +20,19 @@ const routes = arg('routes');
 const station = arg('station');
 const testsArgs = process.argv.slice(2).filter((a) => !a.startsWith('--routes=') && !a.startsWith('--station='));
 
+/* F4 (revue hostile P0-09, 2026-09-23) : tests/screens.test.ts est exclu du config vitest
+   général (vitest.config.ts, R142) — le cibler nommément ici échouait ("No test files found"),
+   cassant le seul outil de vérification CIBLÉE (règle 30) pour exactement ce fichier. Détecté
+   par son nom, jamais deviné : redirigé vers vitest.screens.config.ts, le SEUL config qui
+   l'inclut. Un mélange de ce fichier et d'un autre (rare : verify-tranche cible un fichier à la
+   fois en pratique) n'est pas géré — refusé plutôt que silencieusement à moitié exécuté. */
+const cibleScreens = testsArgs.some((a) => a.replace(/^\.\.\//, '') === 'tests/screens.test.ts');
+if (cibleScreens && testsArgs.length > 1) {
+  console.error('verify:tranche : tests/screens.test.ts ne peut pas être ciblé avec un autre fichier '
+    + '(config Vitest séparée, vitest.screens.config.ts) — lancez-le seul.');
+  process.exit(1);
+}
+
 interface Maillon { nom: string; commande: string[] }
 
 /* F62 (docs/CHASSE.md, R134) : TOUT lancement de Vitest peut vider les tables transactionnelles
@@ -31,7 +44,9 @@ const CHAINE: Maillon[] = [
   ...(routes ? [{ nom: 'screens --routes', commande: ['npm', 'run', 'screens', '--', `--routes=${routes}`] }] : []),
   ...(station ? [{ nom: 'clics --station', commande: ['npm', 'run', 'clics', '--', `--station=${station}`] }] : []),
   ...(routes ? [{ nom: 'visuel --routes', commande: ['npm', 'run', 'visuel', '--', `--routes=${routes}`] }] : []),
-  { nom: 'vitest (ciblé)', commande: ['npx', 'vitest', 'run', ...testsArgs] },
+  cibleScreens
+    ? { nom: 'vitest (ciblé) — screens', commande: ['npm', 'run', 'screens:test'] }
+    : { nom: 'vitest (ciblé)', commande: ['npx', 'vitest', 'run', ...testsArgs] },
 ];
 
 async function lancer(m: Maillon): Promise<number> {
