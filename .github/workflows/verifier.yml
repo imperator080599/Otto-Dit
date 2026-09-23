@@ -85,6 +85,12 @@ jobs:
         run: npm run semeur
       - name: plancher — le plancher de tests ne peut que monter
         run: npm run plancher
+      # P0-09 (mandat 2026-09-23) : tests/screens.test.ts exclu du `vitest run` général
+      # (vitest.config.ts) — deux vitest en parallèle font tomber le serveur du
+      # balayage (R142, CLAUDE.md §7). Son propre maillon, seul, juste avant, pendant
+      # que le monde semé est encore intact (F62 — même discipline que scripts/verify.ts).
+      - name: tests/screens.test.ts — seul, sans parallélisme
+        run: npm run screens:test
       - name: tests (PGlite, zéro réseau)
         run: npx vitest run
 

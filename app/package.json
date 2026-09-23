@@ -18,6 +18,7 @@
     "accept:temoin": "tsx scripts/accept/temoin.ts",
     "mesure:testing": "tsx scripts/clics/mesure-testing.ts",
     "test": "vitest run",
+    "screens:test": "vitest run --config vitest.screens.config.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

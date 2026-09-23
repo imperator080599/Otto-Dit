@@ -49,6 +49,14 @@ export const CHAINE: Maillon[] = [
   { nom: 'clics', commande: ['npm', 'run', 'clics'] },
   { nom: 'visuel', commande: ['npm', 'run', 'visuel'] },
   { nom: 'plancher', commande: ['npm', 'run', 'plancher'] },
+  /* P0-09 (mandat 2026-09-23, correction §2) : tests/screens.test.ts SEUL, hors du
+     `vitest run` général qui suit (exclu de vitest.config.ts) — R142/CLAUDE.md §7 :
+     deux vitest en parallèle font tomber le serveur du balayage. Placé ICI, juste
+     avant le maillon `vitest`, pour que le monde semé soit encore intact (F62) — le
+     même emplacement que `screens` occupait dans l'ordre logique, mais exécuté par
+     Vitest (next dev + Playwright), pas par `scripts/screens/run.ts` (qui, lui,
+     tourne contre un build de PRODUCTION, un balayage différent). */
+  { nom: 'screens:test', commande: ['npm', 'run', 'screens:test'] },
   { nom: 'vitest', commande: ['npx', 'vitest', 'run'] },
 ];
 
