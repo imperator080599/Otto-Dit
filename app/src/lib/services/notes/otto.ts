@@ -183,7 +183,11 @@ export async function executerNoteOtto(noteId: string): Promise<{ verdict: 'exec
               `select si.id::text id,
                       (select count(*) from evidence e join request_item ri on ri.id = e.request_item_id
                         where ri.sample_item_id = si.id and e.quarantined = false)::text pieces,
-                      (select count(*) from extraction x join evidence e on e.id = x.evidence_id
+                      /* P1-06 (AUD-10) : count(DISTINCT evidence_id), jamais count(*) — depuis que
+                         extraction est append-only (0178), une pièce vérifiée porte DEUX lignes
+                         (l'originale + celle qui la supersède) ; count(*) aurait compté cette
+                         pièce deux fois, dépassant le nombre réel de pièces. */
+                      (select count(distinct x.evidence_id) from extraction x join evidence e on e.id = x.evidence_id
                         join request_item ri on ri.id = e.request_item_id
                         where ri.sample_item_id = si.id)::text extraites,
                       (select count(*) from extraction x join evidence e on e.id = x.evidence_id

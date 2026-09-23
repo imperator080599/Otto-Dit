@@ -148,6 +148,34 @@ async function corpsDeLaSonde() {
     return `${auRegistre.n} table(s) au registre, ${avecColonne.n} table(s) à engagement_id, 0 manquante, 0 proposée non confirmée`;
   }));
 
+  /* SUPERSEDE (P1-06, AUD-10, migration 0178) : les quatre familles supersédées (extraction,
+     materiality, process_model, cell_disposition) partagent le même invariant de fond — au
+     plus UNE version « courante » à la fois, jamais mutée en place, l'ancienne conservée
+     (règle 28). Invariant de SCHÉMA, pas de mission — lu une fois, comme le verrou ci-dessus.
+     Deux formes concrètes, choisies parce qu'un bogue dans `validate()`/`importerProcessus`
+     pourrait les rompre SANS que la contrainte SQL (l'index partiel `process_model_actif`) ne
+     s'applique — `materiality.status` n'a AUCUNE contrainte d'unicité en base, l'invariant
+     « au plus une validée » vit entièrement dans le service. CE QUE CETTE LECTURE NE VÉRIFIE
+     PAS (règle 19) : que `extraction`/`cell_disposition` restent lisibles correctement depuis
+     les écrans — ça, c'est `dashboard`/`notes/otto`/`notifications`/`query/catalog`, déjà
+     couverts par leurs propres tests ciblés, pas relu ici. */
+  lectures.push(await essayer('supersede (P1-06, AUD-10) : au plus une version courante à la fois', async () => {
+    const materialiteDoublons = await q<{ engagement_id: string; n: string }>(
+      `select engagement_id::text, count(*)::text n from materiality where status = 'validated' group by engagement_id having count(*) > 1`);
+    if (materialiteDoublons.length > 0) {
+      throw new Error(`${materialiteDoublons.length} dossier(s) avec plus d'une matérialité « validated » simultanée — l'invariant supersede (materiality.ts::validate) est rompu`);
+    }
+    const processusDoublons = await q<{ ck: string; n: string }>(
+      `select engagement_id::text || ':' || code || ':' || exercice ck, count(*)::text n
+       from process_model where status = 'active' group by 1 having count(*) > 1`);
+    if (processusDoublons.length > 0) {
+      throw new Error(`${processusDoublons.length} (dossier, code, exercice) avec plus d'un process_model actif — l'index partiel process_model_actif aurait dû l'empêcher`);
+    }
+    const validees = await q1<{ n: string }>(`select count(*)::text n from materiality where status = 'validated'`);
+    const actifs = await q1<{ n: string }>(`select count(*)::text n from process_model where status = 'active'`);
+    return `${validees.n} matérialité(s) validée(s) · ${actifs.n} process_model actif(s) · 0 doublon`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

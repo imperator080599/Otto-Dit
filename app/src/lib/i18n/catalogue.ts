@@ -358,6 +358,7 @@ export const LIBELLES = {
   'atl.cel.motifDisposition': { en: 'reason — a person decides, in writing', fr: 'motif — une personne décide, par écrit' },
   'atl.cel.disposee': { en: 'disposed by {qui} · {motif}', fr: 'disposée par {qui} · {motif}' },
   'atl.cel.dispositionPerimee': { en: 'earlier disposition by {qui} (« {motif} ») covered ANOTHER value — the cell changed since; dispose it again', fr: 'disposition antérieure par {qui} (« {motif} ») sur une AUTRE valeur — la cellule a changé depuis ; à redisposer' },
+  'atl.cel.orpheline': { en: 'disposed by {qui} (« {motif} ») — this cell no longer belongs to the current grid (column removed by a recalculation); kept for the record only', fr: 'disposée par {qui} (« {motif} ») — cette cellule ne fait plus partie du tirage courant (colonne retirée par un recalcul) ; conservée pour mémoire uniquement' },
   'atl.cel.nonDisposable': { en: 'an identity attribute that diverges is not disposed: obtain the right document', fr: 'un attribut d’identité qui diverge ne se dispose pas : obtenez la bonne pièce' },
   'atl.conclure': { en: 'Conclude the line (V)', fr: 'Conclure la ligne (V)' },
   'atl.conclureTitre': { en: 'V concludes the open line — refused while an identity attribute diverges or a cell is not conforming without a written disposition', fr: 'V conclut la ligne ouverte — refusé tant qu’un attribut d’identité diverge ou qu’une cellule non conforme n’a pas de disposition écrite' },

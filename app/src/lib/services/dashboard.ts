@@ -55,10 +55,16 @@ export async function dashboard(engagementId: string, tenantId: string): Promise
      from workpaper w where w.engagement_id = $1 and w.status <> 'outdated' order by w.code`,
     [engagementId],
   );
+  /* P1-06 (AUD-10) : `extraction` est append-only depuis 0178 — un vieux `pending_verify`
+     survit à côté de la ligne `verified` qui l'a supersédé (`supersedes_extraction_id`). Sans
+     l'exclusion, une pièce déjà vérifiée compterait DEUX FOIS : « extraite » ET « en attente ». */
   const evid = await q1<{ total: string; extracted: string; pending: string }>(
     `select count(*) total,
             count(*) filter (where exists (select 1 from extraction x where x.evidence_id = e.id and x.status in ('complete','verified'))) extracted,
-            count(*) filter (where exists (select 1 from extraction x where x.evidence_id = e.id and x.status = 'pending_verify')) pending
+            count(*) filter (where exists (
+              select 1 from extraction x where x.evidence_id = e.id and x.status = 'pending_verify'
+                and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)
+            )) pending
      from evidence e where e.engagement_id = $1`,
     [engagementId],
   );

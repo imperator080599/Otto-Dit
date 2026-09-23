@@ -324,6 +324,14 @@ export function Atelier({
                               {t('atl.cel.dispositionPerimee', { qui: c.dispositionPerimee.par, motif: c.dispositionPerimee.motif })}
                             </div>
                           )}
+                          {/* LA CELLULE ELLE-MÊME A DISPARU DU TIRAGE COURANT (colonne retirée par
+                              un recalcul) : la disposition ne couvre plus rien de vivant — distinct
+                              d'une disposition périmée par changement de valeur (règle 28, 0178). */}
+                          {c.orpheline && (
+                            <div className="faint" data-disposition-orpheline>
+                              {t('atl.cel.orpheline', { qui: c.orpheline.par, motif: c.orpheline.motif })}
+                            </div>
+                          )}
                           {!c.disposition && c.etat !== 'conforme' && c.etat !== 'non_recevable' && (
                             <form action={disposer} className="row" style={{ gap: 'var(--e1)', marginTop: 'var(--e1)' }} data-disposer={c.colonne}>
                               <input type="hidden" name="engagement_id" value={engId} />

@@ -203,9 +203,13 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
 
   /* PROCESSUS — ce qui est décrit sur le dossier, et les changements N/N-1 non
      statués : un changement non statué est un travail qui reste. */
+  /* P1-06 : `status = 'active'` sur le compte de modèles — une supersede (0178) garde l'ancienne
+     version en base (règle 28) mais ce compte est ce que l'écran affiche comme « versions
+     décrites » ; sans le filtre, il grossirait à chaque remplacement au lieu de refléter ce qui
+     compte aujourd'hui. */
   const proc = await q01<{ modeles: string; cycles: string }>(
-    `select (select count(*) from process_model where engagement_id = $1)::text modeles,
-            (select count(distinct cycle_ref) from process_model where engagement_id = $1)::text cycles`,
+    `select (select count(*) from process_model where engagement_id = $1 and status = 'active')::text modeles,
+            (select count(distinct cycle_ref) from process_model where engagement_id = $1 and status = 'active')::text cycles`,
     [engagementId],
   );
   /* Ce qui RESTE à faire sur le processus est déjà calculé ailleurs — la même

@@ -242,6 +242,10 @@ export async function latestExtraction(evidenceId: string) {
 }
 
 export async function pendingVerifications(engagementId: string) {
+  /* P1-06 (AUD-10) : `extraction` est append-only depuis 0178 — une ligne vérifiée n'est plus
+     mise à jour, une ligne NEUVE la supersède (`supersedes_extraction_id`). Sans l'exclusion
+     ci-dessous, une pièce déjà vérifiée réapparaîtrait ICI pour toujours : la ligne d'origine
+     garde `status = 'pending_verify'` puisque rien ne la modifie plus jamais. */
   return q<{ id: string; evidence_id: string; rung: string; fields: ExtractedField[]; overall_confidence: number | null; filename: string; doc_type: string | null; item_description: string | null }>(
     `select x.id, x.evidence_id, x.rung, x.fields, x.overall_confidence::float, e.filename, e.doc_type,
             i.description item_description
@@ -249,25 +253,38 @@ export async function pendingVerifications(engagementId: string) {
      join evidence e on e.id = x.evidence_id
      left join request_item i on i.id = e.request_item_id
      where e.engagement_id = $1 and x.status = 'pending_verify'
+       and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)
      order by x.overall_confidence asc nulls first`,
     [engagementId],
   );
 }
 
 /** L2 verification act (ADR-012): validator sees evidence + fields side-by-side and
- *  attests, correcting fields where needed. */
+ *  attests, correcting fields where needed.
+ *
+ *  P1-06 (AUD-10) : `extraction` est append-only (0178, forbid_mutation) — vérifier n'édite plus
+ *  la ligne d'origine (la valeur BRUTE, avant correction humaine, disparaissait sinon). Une ligne
+ *  NEUVE `rung='human'`, `status='verified'` est insérée, `supersedes_extraction_id` pointant vers
+ *  l'originale. `latestExtraction()` n'a besoin d'AUCUN changement : son tri (verified > complete
+ *  > pending_verify, puis created_at desc) préfère déjà la ligne la plus récente au bon statut —
+ *  la nouvelle ligne verified, plus récente, gagne naturellement. */
 export async function verifyExtraction(extractionId: string, userId: string, corrected?: ExtractedField[]): Promise<void> {
   await assertMembreDe('extraction', extractionId, userId, 'vérifier une extraction');
-  const x = await q1<{ id: string; evidence_id: string; fields: ExtractedField[] }>(
-    `select id, evidence_id, fields from extraction where id = $1`,
+  const x = await q1<{ id: string; evidence_id: string; rung: string; fields: ExtractedField[]; ai_run_id: string | null }>(
+    `select id, evidence_id, rung, fields, ai_run_id from extraction where id = $1`,
     [extractionId],
   );
   const ev = await q1<{ engagement_id: string }>(`select engagement_id from evidence where id = $1`, [x.evidence_id]);
   const ctx = await engagementCtx(ev.engagement_id);
-  const fields = corrected ?? x.fields;
-  await q(
-    `update extraction set fields = $2, status = 'verified', verified_by = $3, verified_at = now() where id = $1`,
-    [extractionId, JSON.stringify(fields.map((f) => ({ ...f, confidence: 1 }))), userId],
+  const fields = (corrected ?? x.fields).map((f) => ({ ...f, confidence: 1 }));
+  const row = await q1<{ id: string }>(
+    /* `ai_run_id` PORTÉ : la ligne vérifiée reste traçable au run qui l'a produite (P7, « d'où
+       vient ce chiffre ? ») — le perdre romprait la provenance d'une extraction humainement
+       corrigée. `overall_confidence` à 1 (tous les champs le sont désormais), jamais laissé NULL
+       — une confiance non posée se lirait comme non mesurée, alors qu'elle est MAXIMALE ici. */
+    `insert into extraction (evidence_id, rung, status, fields, overall_confidence, ai_run_id, verified_by, verified_at, supersedes_extraction_id)
+     values ($1,'human','verified',$2,1,$3,$4,now(),$5) returning id`,
+    [x.evidence_id, JSON.stringify(fields), x.ai_run_id, userId, extractionId],
   );
   await logEvent({
     tenantId: ctx.tenant_id,
@@ -276,12 +293,13 @@ export async function verifyExtraction(extractionId: string, userId: string, cor
     actorId: userId,
     verb: 'extraction_verified',
     objectType: 'extraction',
-    objectId: extractionId,
-    payload: { corrected: corrected !== undefined },
+    objectId: row.id,
+    payload: { corrected: corrected !== undefined, supersedes: extractionId },
   });
   /* P1-01 (AUD-01) — referme la proposition en attente (applicateur OU écran existant, voir le
-     commentaire jumeau dans materiality.ts::validate). Import différé : cycle avec
-     `propositions/applicateurs.ts`, qui importe `verifyExtraction`. */
+     commentaire jumeau dans materiality.ts::validate). La proposition a été posée sous l'id
+     ORIGINAL (extractionId) — c'est CET id qu'il faut résoudre, jamais le nouveau. Import
+     différé : cycle avec `propositions/applicateurs.ts`, qui importe `verifyExtraction`. */
   const { resoudreParObjet } = await import('../propositions');
   await resoudreParObjet(ev.engagement_id, 'extraction_field', extractionId, corrected !== undefined ? 'modifiee' : 'acceptee', userId,
     corrected !== undefined ? { fields } : undefined);

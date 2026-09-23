@@ -102,7 +102,7 @@ export async function importerProcessus(opts: {
   });
 
   const deja = await q01<{ id: string }>(
-    `select id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3`,
+    `select id from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = $3 and status = 'active'`,
     [opts.engagementId, cycle, opts.exercice],
   );
   if (deja && !opts.confirmerRemplacement) {
@@ -119,30 +119,37 @@ export async function importerProcessus(opts: {
     audience: 'internal',
     uploadedBy: { kind: 'app_user', id: opts.userId },
   });
-  /* `process_step`/`process_ctrl` sont `on delete restrict` depuis P1-03 (AUD-03, 04 §1) — le
-     `delete` de `process_model` ne cascade plus, donc les filles doivent être vidées d'abord.
-     Comportement INCHANGÉ (le remplacement supprimait déjà tout, via la cascade) : c'est le
-     MÉCANISME qui devient explicite, pas la sémantique. La vraie supersede (jamais de suppression,
-     `status='superseded'`, `supersedes_id`) est P1-06 (§7.6 du plan) — ce correctif se limite à
-     garder ce chemin FONCTIONNEL sous la contrainte plus stricte, sans anticiper ce lot.
-     `control.process_model_id` et `process_model.supersedes_id` référencent aussi `process_model(id)`
-     (même migration 0174, sans `on delete cascade`) : aujourd'hui AUCUN chemin applicatif n'écrit
-     l'un ou l'autre (le seul écrivain est le backfill de 0174 lui-même, mesuré NO-OP sur ce dépôt)
-     donc ceci est un NO-OP mesuré, pas une réparation d'un défaut observé — mais laisser la
-     suppression dépendre de ce silence serait une violation FK brute (page 500, règle 13) le jour
-     où l'un des deux sera réellement peuplé. Détaché avant le `delete`, jamais après. */
+  /* P1-06 (AUD-10, §7.6 du plan) : la VRAIE supersede, plus de `delete`. `process_step`/
+     `process_ctrl` de l'ANCIENNE version restent attachés à sa ligne `process_model`, intacts,
+     pour l'historique (règle 28 — un recalcul ne détruit ni n'invalide en silence du travail
+     humain, et une description de processus déjà important porte des `process_change_decision`
+     signées qui se lisent contre elle par `change_code like 'proc:<cycle>:%'`, indépendant de
+     l'id du modèle). L'index partiel `process_model_actif (engagement_id, code, exercice) where
+     status = 'active'` (0174) admet déjà les deux lignes en même temps — seule la contrainte
+     d'unicité PLEINE que ce chemin respectait par construction (`delete` avant `insert`)
+     changeait ; elle n'existe plus depuis 0174, donc rien à préparer ici. La nouvelle ligne
+     porte `supersedes_id` vers l'ancienne ; l'ancienne bascule `status = 'superseded'`, jamais
+     supprimée. `control.process_model_id` (aujourd'hui NO-OP mesuré — aucun chemin applicatif
+     ne l'écrit encore, seul le backfill de 0174) est réaccroché à la NOUVELLE version active :
+     un contrôle rattaché au cycle doit suivre la version courante, pas rester pointé sur une
+     version périmée.
+     ORDRE OBLIGATOIRE — l'ancienne bascule `superseded` AVANT que la nouvelle ligne ne
+     s'insère, jamais après : `code` reste littéralement `${cycle}-1` d'une version à l'autre
+     (inchangé par cette tranche, voir plus bas) et l'index partiel `process_model_actif`
+     n'admet qu'UNE ligne active par (engagement_id, code, exercice) — insérer la nouvelle
+     ligne active pendant que l'ancienne l'est ENCORE violerait cet index (trouvé en écrivant
+     le test de ce chemin, pas deviné). */
   if (deja) {
-    await q(`update control set process_model_id = null where process_model_id = $1`, [deja.id]);
-    await q(`update process_model set supersedes_id = null where supersedes_id = $1`, [deja.id]);
-    await q(`delete from process_ctrl where process_id = $1`, [deja.id]);
-    await q(`delete from process_step where process_id = $1`, [deja.id]);
-    await q(`delete from process_model where id = $1`, [deja.id]);
+    await q(`update process_model set status = 'superseded' where id = $1`, [deja.id]);
   }
   const modele = await q1<{ id: string }>(
-    `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code)
-     values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
-    [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId, `${cycle}-1`, opts.fsliCode],
+    `insert into process_model (engagement_id, cycle_ref, exercice, name, evidence_id, created_by, code, fsli_code, supersedes_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+    [opts.engagementId, cycle, opts.exercice, nom, evidenceId, opts.userId, `${cycle}-1`, opts.fsliCode, deja?.id ?? null],
   );
+  if (deja) {
+    await q(`update control set process_model_id = $2 where process_model_id = $1`, [deja.id, modele.id]);
+  }
   for (const e of etapes) {
     await q(
       `insert into process_step (process_id, code, seq, label, actor_name, system_name, inputs, outputs)
@@ -169,10 +176,13 @@ export async function importerProcessus(opts: {
 export async function lireProcessus(engagementId: string, cycle: string): Promise<Partial<Record<'n' | 'n1', VersionProcessus>>> {
   const out: Partial<Record<'n' | 'n1', VersionProcessus>> = {};
   for (const exercice of ['n', 'n1'] as const) {
+    /* P1-06 : `status = 'active'` — une version supersédée reste en base (règle 28) mais ne
+       doit plus jamais être la lecture par défaut d'un cycle/exercice, sous peine de rendre le
+       diff N/N-1 et l'écran contre une version périmée au hasard de l'ordre de retour SQL. */
     const m = await q01<{ id: string; name: string; filename: string }>(
       `select m.id::text id, m.name, e.filename from process_model m
        join evidence e on e.id = m.evidence_id
-       where m.engagement_id = $1 and m.cycle_ref = $2 and m.exercice = $3`,
+       where m.engagement_id = $1 and m.cycle_ref = $2 and m.exercice = $3 and m.status = 'active'`,
       [engagementId, cycle, exercice],
     );
     if (!m) continue;
@@ -407,7 +417,7 @@ export async function obstaclesProcessus(engagementId: string): Promise<Motif[]>
  *  retirée). Partagé par `statuerChangement` (ce fichier) et `entretiens.ts::statuerEcart`. */
 export async function fsliDuCycle(engagementId: string, cycleRef: string): Promise<string | null> {
   const modele = await q01<{ fsli_code: string | null }>(
-    `select fsli_code from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = 'n'`,
+    `select fsli_code from process_model where engagement_id = $1 and cycle_ref = $2 and exercice = 'n' and status = 'active'`,
     [engagementId, cycleRef],
   );
   return modele?.fsli_code ?? null;

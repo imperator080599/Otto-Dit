@@ -110,14 +110,26 @@ export async function propose(engagementId: string, userId: string): Promise<str
   return row.id;
 }
 
-/** Validate the proposal as-is, or adjust benchmark/% first (L3). */
+/** Validate the proposal as-is, or adjust benchmark/% first (L3).
+ *
+ *  P1-06 (AUD-10) : ajuster ne MUTE plus la version proposée en place — l'écart entre la
+ *  proposition ORIGINALE du moteur (déterministe, L0) et la décision AJUSTÉE de l'auditeur
+ *  (L3) devenait illisible après coup, la ligne « proposée » ayant elle-même changé de valeur.
+ *  L'ajustement crée désormais la version N+1, `status='validated'`, `supersedes_id` vers la
+ *  proposition ; la version proposée elle-même passe à `superseded`, INCHANGÉE dans son contenu
+ *  d'origine. Valider TEL QUEL (sans ajustement) continue de muter la même ligne en place — rien
+ *  n'y est perdu puisque rien n'y change. */
 export async function validate(
   materialityId: string,
   userId: string,
   adjust?: { benchmarkCode: string; pct: number },
 ): Promise<void> {
-  const row = await q1<{ id: string; engagement_id: string; version: number; status: string }>(
-    `select id, engagement_id, version, status from materiality where id = $1`,
+  const row = await q1<{
+    id: string; engagement_id: string; version: number; status: string; rationale: string;
+    perf_pct: number; ctt_pct: number; te_pct: number;
+  }>(
+    `select id, engagement_id, version, status, rationale, perf_pct::float, ctt_pct::float, te_pct::float
+     from materiality where id = $1`,
     [materialityId],
   );
   await assertMembre(row.engagement_id, userId, 'valider une matérialité');
@@ -126,6 +138,7 @@ export async function validate(
   const fs = await frameworkSet(row.engagement_id);
   const pack = primaryPack(fs as never);
 
+  let finalId = materialityId;
   if (adjust) {
     const tb = await tbRows(row.engagement_id);
     const agg = benchmarkAggregates(tb);
@@ -134,18 +147,26 @@ export async function validate(
       adjust.benchmarkCode === 'revenue' ? agg.revenueCents :
       adjust.benchmarkCode === 'total_assets' ? agg.totalAssetsCents : agg.equityCents;
     const p = computeMateriality(adjust.benchmarkCode, base, adjust.pct, pack, agg, `manually adjusted by validator (${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)}%)`);
-    await q(
-      `update materiality set benchmark_code=$2, benchmark_amount=$3, pct=$4, amount=$5,
-        perf_amount=$6, ctt_amount=$7, te_amount=$8, rationale = rationale || $9 where id = $1`,
+    const nouvelle = await q1<{ id: string }>(
+      `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
+         amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status,
+         supersedes_id, validated_by, validated_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'validated',$14,$15,now()) returning id`,
       [
-        materialityId, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct, centsToNum(p.amountCents),
-        centsToNum(p.perfAmountCents), centsToNum(p.cttAmountCents), centsToNum(p.teAmountCents),
-        `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
+        row.engagement_id, row.version + 1, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct,
+        centsToNum(p.amountCents), row.perf_pct, centsToNum(p.perfAmountCents), row.ctt_pct,
+        centsToNum(p.cttAmountCents), row.te_pct, centsToNum(p.teAmountCents),
+        row.rationale + `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
+        materialityId, userId,
       ],
     );
+    finalId = nouvelle.id;
+    await q(`update materiality set status = 'superseded' where id = $1`, [materialityId]);
   }
-  await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated'`, [row.engagement_id]);
-  await q(`update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1`, [materialityId, userId]);
+  await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated' and id <> $2`, [row.engagement_id, finalId]);
+  if (!adjust) {
+    await q(`update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1`, [materialityId, userId]);
+  }
   await logEvent({
     tenantId: ctx.tenant_id,
     engagementId: row.engagement_id,
@@ -153,13 +174,15 @@ export async function validate(
     actorId: userId,
     verb: 'materiality_validated',
     objectType: 'materiality',
-    objectId: materialityId,
-    payload: { version: row.version, adjusted: !!adjust },
+    objectId: finalId,
+    payload: { version: row.version, adjusted: !!adjust, supersedes: adjust ? materialityId : undefined },
   });
   /* P1-01 (AUD-01) — referme la proposition en attente, qu'on soit venu ici PAR
      `propositions.accepter/modifier` (l'applicateur — elle est déjà refermée, rien à faire) ou
-     DIRECTEMENT par l'écran existant (`/eng/[id]/materiality`, le seul chemin aujourd'hui).
-     Import différé : cycle avec `propositions/applicateurs.ts`, qui importe `validate`. */
+     DIRECTEMENT par l'écran existant (`/eng/[id]/materiality`, le seul chemin aujourd'hui). La
+     proposition a été posée sous l'id ORIGINAL (materialityId) — c'est CET id qu'il faut
+     résoudre, jamais le nouveau (même patron que verifyExtraction). Import différé : cycle avec
+     `propositions/applicateurs.ts`, qui importe `validate`. */
   const { resoudreParObjet } = await import('./propositions');
   await resoudreParObjet(row.engagement_id, 'materiality', materialityId, adjust ? 'modifiee' : 'acceptee', userId,
     adjust ? { benchmarkCode: adjust.benchmarkCode, pct: adjust.pct } : undefined);

@@ -352,6 +352,52 @@ describe('grille — le dossier de démonstration entier', () => {
       'la disposition ne couvre plus une valeur pourtant remise à l’identique').not.toBeNull();
   });
 
+  it('P1-06 (AUD-10, 0178) — une colonne qui disparaît au recalcul (BL non requis) garde sa disposition (règle 28) : couvre_encore=false, orpheline visible, ni disposition ni dispositionPerimee', async () => {
+    const g = (await grilleDuDossier(IDS.engNep))!;
+    const colBl = g.colonnes.find((c) => c.document === 'delivery_note');
+    expect(colBl, 'le pack REV-SUBST commande une colonne BL — sinon ce test ne prouve rien').toBeTruthy();
+    const fraiches = await cellulesDuDossier(IDS.engNep);
+    const entree = Object.entries(fraiches.cellules).find(([, cs]) => cs.some((c) => c.colonne === colBl!.code));
+    expect(entree, 'aucune ligne du tirage n’a requis de BL cette session — le monde semé doit en produire au moins une').toBeTruthy();
+    const [itemId, cs] = entree!;
+    const cellule = cs.find((c) => c.colonne === colBl!.code)!;
+    /* La rendre disposable, quel que soit son état de départ (fixture, même patron que la
+       ligne « TEST-02 » plus haut) : `disposerCellule` refuse une cellule déjà conforme ou
+       non recevable. */
+    if (cellule.etat === 'conforme' || cellule.etat === 'non_recevable') {
+      await q(`update test_cell set state = 'hors_tolerance', delta_signed = 1 where id = $1`, [cellule.id]);
+    }
+    await disposerCellule(IDS.engNep, cellule.id, IDS.users.karim, 'Écart BL vu et accepté (fixture P1-06, données synthétiques).');
+    const disposee = (await cellulesDuDossier(IDS.engNep)).cellules[itemId].find((x) => x.id === cellule.id)!;
+    expect(disposee.disposition).not.toBeNull();
+    expect(disposee.orpheline).toBeNull();
+
+    /* Le BL n'est plus requis pour cette ligne : la demande garde sa ligne (rien n'est
+       supprimé), seul son texte ne correspond plus au motif que `calculerGrille` reconnaît
+       (`~* 'livraison|delivery'`) — assez pour que la colonne ne produise plus de cellule
+       ici, sans toucher à aucune contrainte de clé étrangère (evidence en dépend). */
+    const renommee = await q1<{ n: string }>(
+      `update request_item set description = 'Sonde P1-06 — BL non requis'
+       where sample_item_id = $1 and kind = 'document' and description ~* 'livraison|delivery'
+       returning 1::text n`,
+      [itemId],
+    );
+    expect(renommee).toBeTruthy();
+    await calculerGrille(IDS.engNep, IDS.users.karim);
+
+    const relu = (await cellulesDuDossier(IDS.engNep)).cellules[itemId]?.find((x) => x.id === cellule.id);
+    expect(relu, 'la cellule disposée orpheline DOIT rester en base (règle 28) — jamais supprimée').toBeTruthy();
+    expect(relu!.disposition, 'une cellule orpheline ne couvre plus rien de vivant — pas une disposition ordinaire').toBeNull();
+    expect(relu!.dispositionPerimee, 'orpheline ≠ périmée : ce n’est pas la valeur qui a changé, c’est la cellule qui a disparu du tirage').toBeNull();
+    expect(relu!.orpheline, 'couvre_encore=false doit se lire comme orpheline, pas comme silencieusement absent').not.toBeNull();
+    expect(relu!.orpheline!.motif).toContain('BL');
+
+    /* Une seule ligne test_cell, jamais recréée ni dupliquée par le recalcul suivant. */
+    const compte = await q1<{ n: string }>(
+      `select count(*)::text n from test_cell where sample_item_id = $1 and column_code = $2`, [itemId, colBl!.code]);
+    expect(compte.n).toBe('1');
+  });
+
   it('§0.3 — une version NEUVE de la grille n’efface pas une conclusion : elle la nomme périmée, cause « grille », et le journal la liste', async () => {
     const lu = await cellulesDuDossier(IDS.engNep);
     const conclue = Object.keys(lu.conclusions)[0];

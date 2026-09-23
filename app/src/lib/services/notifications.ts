@@ -144,11 +144,14 @@ export async function elementsIaNonValides(engagementId: string): Promise<Elemen
     });
   }
 
+  /* P1-06 (AUD-10) : même exclusion que pendingVerifications() (extraction/ladder.ts) — une
+     ligne pending_verify déjà supersédée par une vérification humaine ne doit plus notifier. */
   const extractions = await q<{ id: string; created_at: string; filename: string }>(
     `select x.id::text, x.created_at::text, e.filename
      from extraction x
      join evidence e on e.id = x.evidence_id
      where e.engagement_id = $1 and x.status = 'pending_verify'
+       and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)
      order by x.created_at asc`,
     [engagementId],
   );

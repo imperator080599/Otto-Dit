@@ -55,14 +55,26 @@ export async function rebuildFslis(engagementId: string, userId: string | null):
     [engagementId],
   );
   const keep = new Map(existing.map((e) => [e.code, e]));
-  await q(`delete from fsli where engagement_id = $1`, [engagementId]);
+  /* P1-06 (AUD-10) : UPSERT au lieu d'un delete-puis-insert. L'ancienne forme reconstruisait
+     chaque ligne à neuf, ce qui remettait `confirmed_at` à NULL à CHAQUE reconstruction — même
+     sur une ligne confirmée, dont `confirmed_by` SURVIVAIT (recopié depuis `keep`) mais
+     `confirmed_at` non : un état incohérent (un confirmateur sans date), bogue préexistant.
+     Aucune table ne référence `fsli.id` par clé étrangère (tout est dénormalisé en
+     `fsli_code text` ailleurs), donc stabiliser l'id à travers les reconstructions ne casse
+     rien. `on conflict ... do update` n'écrit jamais `confirmed_at` : sa valeur, posée par
+     `confirmerScoping`, survit intacte à tout recalcul. */
+  const codesRetenus: string[] = [];
   for (const def of map.fslis) {
     const bal = balances.get(def.code) ?? 0;
     if (bal === 0 && !keep.has(def.code)) continue;
     const prev = keep.get(def.code);
+    codesRetenus.push(def.code);
     await q(
       `insert into fsli (engagement_id, code, name, statement, balance, scoping, scoping_basis, confirmed_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
+       on conflict (engagement_id, code) do update set
+         balance = excluded.balance, name = excluded.name, statement = excluded.statement,
+         scoping = excluded.scoping, scoping_basis = excluded.scoping_basis, confirmed_by = excluded.confirmed_by`,
       [
         engagementId,
         def.code,
@@ -75,6 +87,10 @@ export async function rebuildFslis(engagementId: string, userId: string | null):
       ],
     );
   }
+  /* Un code qui n'est plus dans le catalogue du pack (le framework_set de l'engagement ne
+     change jamais en pratique après figeage, mais si le cas se présentait) : encore supprimé,
+     exactement comme avant l'upsert (l'ancien wipe complet ne le réinsérait pas non plus). */
+  await q(`delete from fsli where engagement_id = $1 and code <> all($2::text[])`, [engagementId, codesRetenus]);
   await logEvent({
     tenantId: ctx.tenant_id,
     engagementId,

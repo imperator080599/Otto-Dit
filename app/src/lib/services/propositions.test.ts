@@ -184,10 +184,17 @@ describe('propositions — le mécanisme générique (P1-01, AUD-01)', () => {
       valeur: { fields: [{ name: 'amount', value: '100', confidence: 0.4 }] },
     });
     await accepter(propId, LEA);
-    const x = await q1<{ status: string; verified_by: string }>(
+    /* P1-06 (AUD-10, 0178) : `extraction` est append-only — accepter() n'édite plus la ligne
+       d'origine (elle reste `pending_verify` pour toujours), elle insère une ligne NEUVE,
+       `verified`, qui la supersède. */
+    const origine = await q1<{ status: string; verified_by: string | null }>(
       `select status, verified_by from extraction where id = $1`, [extractionId]);
-    expect(x.status).toBe('verified');
-    expect(x.verified_by).toBe(LEA);
+    expect(origine.status).toBe('pending_verify');
+    expect(origine.verified_by).toBeNull();
+    const neuve = await q1<{ status: string; verified_by: string }>(
+      `select status, verified_by from extraction where supersedes_extraction_id = $1`, [extractionId]);
+    expect(neuve.status).toBe('verified');
+    expect(neuve.verified_by).toBe(LEA);
   });
 
   it('materiality — accepter() exige un signataire (can_sign) ou un manager/partner (PROP-04)', async () => {

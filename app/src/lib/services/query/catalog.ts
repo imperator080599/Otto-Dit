@@ -182,9 +182,12 @@ export const CATALOG: QueryTemplate[] = [
       { key: 'overall_confidence', label: { fr: 'Confiance', en: 'Confidence' } },
       { key: 'doc_type', label: { fr: 'Type', en: 'Type' }, kind: 'badge' },
     ],
+    /* P1-06 (AUD-10) : exclut les lignes déjà supersédées par une vérification humaine
+       (extraction append-only depuis 0178) — même garde que pendingVerifications(). */
     sql: `select x.id, e.filename, x.rung, x.overall_confidence::text, e.doc_type
           from extraction x join evidence e on e.id = x.evidence_id
           where e.engagement_id = $1 and x.status = 'pending_verify'
+            and not exists (select 1 from extraction x2 where x2.supersedes_extraction_id = x.id)
           order by x.overall_confidence nulls first`,
     link: (_r, eng) => `/eng/${eng}/testing`,
   },

@@ -98,6 +98,14 @@ export interface Cellule {
   disposition: { motif: string; par: string; quand: string } | null;
   /** Une disposition existe mais portait sur une AUTRE valeur : elle ne couvre plus rien. */
   dispositionPerimee: { motif: string; par: string; quand: string; etat: EtatCellule; delta: number | null } | null;
+  /** La cellule n'appartient plus au calcul courant de la grille (colonne retirée par un
+   *  recalcul) mais une disposition humaine l'a gardée (règle 28, `couvre_encore=false`, 0178) —
+   *  ses valeurs sont FIGÉES au dernier calcul, jamais recalculées depuis. Distinct de
+   *  `dispositionPerimee` (la cellule existe encore mais sa valeur a changé) : ici c'est la
+   *  cellule elle-même qui a disparu du tirage courant, pas sa valeur. Porte la disposition qui
+   *  ne couvre plus qu'une cellule orpheline — jamais confondue avec `disposition` (encore
+   *  active) ni `dispositionPerimee` (valeur changée sur une cellule toujours active). */
+  orpheline: { motif: string; par: string; quand: string } | null;
 }
 
 export interface ConclusionLigne {
@@ -576,15 +584,19 @@ export async function calculerGrille(engagementId: string, userId: string | null
       });
       cellules++;
     }
-    /* Une colonne qui ne s'applique plus (le BL n'est plus requis) disparaît —
-       avec sa disposition, qui ne couvre plus rien, et le journal le dit. */
+    /* P1-06 (AUD-10) : une colonne qui ne s'applique plus (le BL n'est plus requis) ne détruit
+       PLUS une décision humaine (règle 28). Une disposition déjà posée ne couvre plus la cellule
+       qui a disparu — `couvre_encore` le dit, elle reste lisible (0178). Seules les cellules
+       purement CALCULÉES, jamais décidées par personne, sont encore supprimées : rien n'y est
+       perdu puisqu'aucune décision n'y était attachée. */
     ecritures.push({
-      sql: `delete from cell_disposition where cell_id in (
+      sql: `update cell_disposition set couvre_encore = false where couvre_encore = true and cell_id in (
               select id from test_cell where grid_id = $1 and sample_item_id = $2 and engine_run_id is distinct from $3)`,
       params: [grille.id, it.id, run.id],
     });
     ecritures.push({
-      sql: `delete from test_cell where grid_id = $1 and sample_item_id = $2 and engine_run_id is distinct from $3`,
+      sql: `delete from test_cell where grid_id = $1 and sample_item_id = $2 and engine_run_id is distinct from $3
+              and not exists (select 1 from cell_disposition cd where cd.cell_id = test_cell.id)`,
       params: [grille.id, it.id, run.id],
     });
   }
@@ -623,10 +635,12 @@ export async function cellulesDuDossier(engagementId: string): Promise<{
     delta_signed: string | null; delta_unit: UniteDelta | null; tolerance: string; state: EtatCellule;
     evidence_id: string | null; page: number | null; rect: Rect | null; field_name: string | null;
     motif: string | null; par: string | null; quand: string | null; etat_decide: EtatCellule | null; delta_decide: string | null;
+    couvre_encore: boolean | null;
   }>(
     `select c.id::text, c.sample_item_id::text, c.column_code, c.expected, c.found, c.delta_signed::text, c.delta_unit,
             c.tolerance, c.state, c.evidence_id::text, c.page, c.rect, c.field_name,
-            d.reason motif, u.name par, d.decided_at::text quand, d.state_at_decision etat_decide, d.delta_at_decision::text delta_decide
+            d.reason motif, u.name par, d.decided_at::text quand, d.state_at_decision etat_decide, d.delta_at_decision::text delta_decide,
+            d.couvre_encore
      from test_cell c
      left join cell_disposition d on d.cell_id = c.id
      left join app_user u on u.id = d.decided_by
@@ -646,10 +660,14 @@ export async function cellulesDuDossier(engagementId: string): Promise<{
       delta: formaterDelta(brut, r.delta_unit, lang), deltaBrut: brut, unite: r.delta_unit,
       tolerance: r.tolerance, etat: r.state, identite: col?.identite ?? false,
       evidenceId: r.evidence_id, page: r.page, rect: r.rect, champ: r.field_name,
-      disposition: r.motif && dispositionCouvre(r) ? { motif: r.motif, par: r.par ?? '—', quand: r.quand ?? '' } : null,
-      dispositionPerimee: r.motif && !dispositionCouvre(r)
+      disposition: r.motif && r.couvre_encore !== false && dispositionCouvre(r) ? { motif: r.motif, par: r.par ?? '—', quand: r.quand ?? '' } : null,
+      dispositionPerimee: r.motif && r.couvre_encore !== false && !dispositionCouvre(r)
         ? { motif: r.motif, par: r.par ?? '—', quand: r.quand ?? '', etat: r.etat_decide ?? 'absent', delta: r.delta_decide === null ? null : Number(r.delta_decide) }
         : null,
+      /* couvre_encore=false : la colonne n'a plus cours dans le calcul actuel (0178) — ni
+         `disposition` (elle ne s'applique plus à rien de vivant) ni `dispositionPerimee`
+         (la valeur n'a pas changé, c'est la cellule qui a disparu du tirage). */
+      orpheline: r.motif && r.couvre_encore === false ? { motif: r.motif, par: r.par ?? '—', quand: r.quand ?? '' } : null,
     });
   }
   for (const l of Object.values(cellules)) l.sort((a, b) => (ordre.get(a.colonne) ?? 99) - (ordre.get(b.colonne) ?? 99));
