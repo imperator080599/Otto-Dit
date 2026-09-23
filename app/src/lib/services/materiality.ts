@@ -154,7 +154,7 @@ export async function validate(
        PARTIELLE différée) refuse désormais IMMÉDIATEMENT toute seconde ligne `validated`, y
        compris de façon transitoire DANS cette même transaction. L'ordre d'origine (valider LA
        NOUVELLE ligne, puis démoter l'ancienne) laissait les deux `validated` à la fois pendant
-       l'instant entre les deux requêtes — l'index le refuse maintenant, cassant la validation
+       l'instant entre les deux écritures — l'index le refuse maintenant, cassant la validation
        normale (trouvé par le cas connu mauvais de supersede-lecture.test.ts, règle 17, en
        s'auto-testant). Démoter D'ABORD élimine la fenêtre : au pire une transition
        validated→superseded, jamais deux `validated` en même temps, même transitoirement. */
