@@ -5,7 +5,7 @@ Mandat du 2026-09-20 — `docs/MANDATS/2026-09-20_mandat_revue_fondateur_phase2.
 
 **46 lignes — 0 OBSERVÉE(S), 46 NON OBSERVÉE(S), 0 SANS OBJET (0 % observé).**
 
-**12/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
+**13/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
 
 Cet instantané a été ENGENDRÉ à l'ouverture de la Phase 2 (2026-09-20), quand les 46 lignes étaient NON_OBSERVEE par construction — aucune tranche n'avait encore été livrée. Depuis, des tâches ont été poussées sur main (voir « tâches livrées » ci-dessus et sur chaque ligne concernée) SANS que cela fasse encore passer une ligne à OBSERVEE : une ligne ne passe à OBSERVEE que lorsqu'une station cliquée la prouve, avec sa station et son SHA nommés (règle 12/15/37, acceptation P0-00) — livrée n'est pas observée, les deux comptes restent distincts et se lisent l'un à côté de l'autre, jamais confondus.
 
@@ -247,7 +247,8 @@ Tâches livrées : `P1-03` `dad1111`
 Épreuve : Ordre : questions d'entité (une zone de texte par question, sauvegarde implicite, un bouton Demander au client par question) puis risques par assertion (deux colonnes : assertion, niveau parmi NRPMM / Lower / Higher / Significant). Un niveau NRPMM sans justification écrite refuse de se sauvegarder (RISK-01, en toutes lettres). Provenance au survol (§0.1), aucune colonne de plus.
 
 **NON OBSERVÉE**
-Manque : non commencé — trois vocabulaires de niveau coexistent (AUD-11) ; RISK-01 n'existe pas encore ; les colonnes Computed/Retained/What Produced It/Arbitrate sont toujours affichées. Deux réfutateurs requis (mandat §5.4).
+Manque : P1-07 livré (échelle nrpmm/lower/higher/significant, RISK-01, décisions versionnées) — pas encore observé par un clic dédié à CETTE épreuve précise (l'écran /risk n'a pas encore les questions d'entité ni l'épuration des colonnes Computed/Retained/What Produced It/Arbitrate, P4-08 reste à ouvrir).
+Tâches livrées : `P1-07` `345dcf2`
 
 ### R-F20 — Le rapprochement de l'échantillon (mandat §1 — tâche(s) `P4-06`)
 
@@ -261,7 +262,8 @@ Manque : non commencé — l'étape 2 (« step 2 reconciliation ») n'affiche pa
 Épreuve : Titre : Sampling. Une étape Methodology expose la méthode (aléatoire / unités monétaires) et la taille, chacune avec sa source de pack ou son « paramètre non vérifié » (CTRL-07, annexe du 10 septembre). Ni L0, ni L3, ni deterministic, ni Drawn à l'écran (EPURE-01).
 
 **NON OBSERVÉE**
-Manque : non commencé — le titre porte encore « Revenue sampling — propose (L3) → validate → draw (L0, deterministic) » ; la taille commandée par le risque ne commande rien (randomSize=4 codé en dur, AUD-11).
+Manque : P1-07 livré (SAMP-01 : la taille est désormais pilotée par le niveau de risque retenu, methodology/risque.json) — pas encore observé par un clic dédié : le titre de l'écran /risk porte encore « Revenue sampling — propose (L3) → validate → draw (L0, deterministic) » (EPURE-01, P4-06 reste à ouvrir).
+Tâches livrées : `P1-07` `345dcf2`
 
 ### S-5 — Le même objet répété (mandat §2 — tâche(s) `P4-09`)
 
@@ -282,7 +284,8 @@ Manque : non commencé — même ligne que R-F15, le bouton est toujours présen
 Épreuve : Enregistrer NRPMM sans texte → refus RISK-01 en toutes lettres ; changer le niveau sur /risk change la taille proposée dans Sampling › Methodology, qui affiche source ou « paramètre non vérifié » ; « Demander au client » → brouillon visible sur /requests.
 
 **NON OBSERVÉE**
-Manque : non commencé — risk.level / fsli_assertion_risk / rcm_row.risk_desc coexistent sans échelle commune ; RISK-01 n'existe pas ; randomSize=4 codé en dur, non commandé par le risque.
+Manque : P1-07 livré (échelle unique nrpmm/lower/higher/significant sur fsli_assertion_risk ; RISK-01 refuse un NRPMM sans justification ; tirage piloté par le risque, SAMP-01) — rcm_row.risk_desc (SOX) reste un vocabulaire séparé, hors périmètre de cette tranche (pack gelé, règle 14) ; pas encore observé par un clic dédié, P4-06/P4-08 restent à ouvrir pour porter cette échelle jusqu'aux écrans Sampling et « Demander au client ».
+Tâches livrées : `P1-07` `345dcf2`
 
 ---
 

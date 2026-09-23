@@ -277,10 +277,13 @@
       "titre": "L'évaluation des risques",
       "epreuve": "Ordre : questions d'entité (une zone de texte par question, sauvegarde implicite, un bouton Demander au client par question) puis risques par assertion (deux colonnes : assertion, niveau parmi NRPMM / Lower / Higher / Significant). Un niveau NRPMM sans justification écrite refuse de se sauvegarder (RISK-01, en toutes lettres). Provenance au survol (§0.1), aucune colonne de plus.",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — trois vocabulaires de niveau coexistent (AUD-11) ; RISK-01 n'existe pas encore ; les colonnes Computed/Retained/What Produced It/Arbitrate sont toujours affichées. Deux réfutateurs requis (mandat §5.4).",
+      "manque": "P1-07 livré (échelle nrpmm/lower/higher/significant, RISK-01, décisions versionnées) — pas encore observé par un clic dédié à CETTE épreuve précise (l'écran /risk n'a pas encore les questions d'entité ni l'épuration des colonnes Computed/Retained/What Produced It/Arbitrate, P4-08 reste à ouvrir).",
       "tache": [
         "P1-07",
         "P4-08"
+      ],
+      "tachesLivrees": [
+        { "tache": "P1-07", "sha": "345dcf2" }
       ],
       "phase": 4
     },
@@ -321,10 +324,13 @@
       "titre": "Le vocabulaire de l'échantillonnage",
       "epreuve": "Titre : Sampling. Une étape Methodology expose la méthode (aléatoire / unités monétaires) et la taille, chacune avec sa source de pack ou son « paramètre non vérifié » (CTRL-07, annexe du 10 septembre). Ni L0, ni L3, ni deterministic, ni Drawn à l'écran (EPURE-01).",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — le titre porte encore « Revenue sampling — propose (L3) → validate → draw (L0, deterministic) » ; la taille commandée par le risque ne commande rien (randomSize=4 codé en dur, AUD-11).",
+      "manque": "P1-07 livré (SAMP-01 : la taille est désormais pilotée par le niveau de risque retenu, methodology/risque.json) — pas encore observé par un clic dédié : le titre de l'écran /risk porte encore « Revenue sampling — propose (L3) → validate → draw (L0, deterministic) » (EPURE-01, P4-06 reste à ouvrir).",
       "tache": [
         "P1-07",
         "P4-06"
+      ],
+      "tachesLivrees": [
+        { "tache": "P1-07", "sha": "345dcf2" }
       ],
       "phase": 4
     },
@@ -594,11 +600,14 @@
       "titre": "Trois vocabulaires de niveau de risque, NRPMM sans justification possible",
       "epreuve": "Enregistrer NRPMM sans texte → refus RISK-01 en toutes lettres ; changer le niveau sur /risk change la taille proposée dans Sampling › Methodology, qui affiche source ou « paramètre non vérifié » ; « Demander au client » → brouillon visible sur /requests.",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — risk.level / fsli_assertion_risk / rcm_row.risk_desc coexistent sans échelle commune ; RISK-01 n'existe pas ; randomSize=4 codé en dur, non commandé par le risque.",
+      "manque": "P1-07 livré (échelle unique nrpmm/lower/higher/significant sur fsli_assertion_risk ; RISK-01 refuse un NRPMM sans justification ; tirage piloté par le risque, SAMP-01) — rcm_row.risk_desc (SOX) reste un vocabulaire séparé, hors périmètre de cette tranche (pack gelé, règle 14) ; pas encore observé par un clic dédié, P4-06/P4-08 restent à ouvrir pour porter cette échelle jusqu'aux écrans Sampling et « Demander au client ».",
       "tache": [
         "P1-07",
         "P4-06",
         "P4-08"
+      ],
+      "tachesLivrees": [
+        { "tache": "P1-07", "sha": "345dcf2" }
       ],
       "phase": 4
     },
