@@ -5456,3 +5456,47 @@ candidat naturel — l'arbitrage se referait alors, pas en la réanimant en sile
 (Partie 4 du mandat, après le Lot 8) ni de la donnée personnelle qu'une vidéo réelle porterait
 (les deux décisions du fondateur nommées au mandat, §4, non prises ici — le monde de
 démonstration reste synthétique, aucune vidéo réelle).
+
+## ADR-137
+
+**Les déploiements d'APERÇU Vercel sont désarmés sur toute branche sauf `main` — cause mécanique
+de R143 ET R145 (règle 26, deux fois le même jour), corrigée à la racine, pas au symptôme.**
+(Mandat `docs/MANDATS/2026-09-23_mandat_continuation_phase1_corrections.md`, §1 ; plan maître
+§20, AUD-18.)
+
+**LE MÉCANISME QUI A COÛTÉ CHER, DEUX FOIS.** `scripts/deploy/reconstruire.ts` (le build command
+Vercel, `DEPLOY.md`) appelle `migrate()` contre la base RÉSEAU de démonstration à CHAQUE
+déploiement — d'aperçu comme de production, sans distinction (le seul garde qu'il porte est
+`OTTO_DEMO_PUBLIC=1` ou `VERCEL=1`, jamais la cible du déploiement). Une session qui pousse un
+commit WIP (règle 24 dit que la revue vient AVANT le push, mais rien n'empêchait mécaniquement
+qu'un push arrive avant que le fichier de migration soit dans sa forme finale) déclenche un
+déploiement d'APERÇU sur GitHub → Vercel, qui exécute `migrate()`, qui écrit l'empreinte du
+fichier TEL QU'IL ÉTAIT à ce commit dans `_migrations` de la base PARTAGÉE. Un correctif
+ultérieur du MÊME fichier de migration, même purement local en apparence (« ce n'est qu'un commit
+sur ma branche »), est alors une édition d'une migration déjà appliquée — règle 26, refusée par
+`migrate()` lui-même, mais seulement APRÈS que le mal soit fait (le premier commit WIP a déjà
+écrit dans la base partagée). C'est arrivé identiquement pour 0170 (R143, P1-01) et pour 0174
+(R145, P1-03), le second jour même où le premier avait été diagnostiqué et corrigé.
+
+**LA DÉCISION.** Le projet Vercel `otto-dit` porte désormais une commande « Ignored Build Step » :
+```
+[ "$VERCEL_GIT_COMMIT_REF" != "main" ]
+```
+(exit 0 → déploiement annulé ; sur `main`, le test est faux → exit 1 → le build tourne). Posée par
+`mcp__Vercel__update_project` (`commandForIgnoringBuildStep`), et VÉRIFIÉE PAR LE COMPORTEMENT
+RÉEL, pas seulement par la lecture de la configuration en retour (l'API de lecture ne réexpose pas
+ce champ dans la forme résumée que l'outil de session rend) : un commit docs-only poussé sur
+`claude/otto-session-resume-zimig9` (a0fe395, 2026-09-23T06:24:50Z) a produit un déploiement
+`CANCELED` (`dpl_BuKGH9wetMubLnmYzXNwwjHz6rua`), dont le journal de build montre exactement
+`Running "[ "$VERCEL_GIT_COMMIT_REF" != "main" ]"` puis `The deployment was canceled because the
+Ignored Build Step command returned exit code 0.` — ARRÊTÉ avant `npm install`, avant
+`deploy:reconstruire`, avant tout `migrate()` : la base réseau n'est plus jamais touchée par un
+push de branche.
+
+**CE QUE ÇA NE CHANGE PAS.** Seule la commande d'ignorance de build est posée ; rien d'autre dans
+le projet Vercel n'est touché (domaines, variables d'environnement, protections — interdit de
+CLAUDE.md §2 sur toute variable de production, respecté). Un déploiement de PRODUCTION (push sur
+`main`) continue de tourner exactement comme avant — vérifié le même jour par le ship de P1-03
+(`dad1111`, `dpl_7Ka8QuxwJCUcDkTdpJxBxC7NbuVq`, READY, target production). La discipline règle 24
+(revue hostile avant le push, jamais après) reste la protection de PREMIER RANG ; ce garde
+Vercel est la seconde, mécanique, qui ne dépend plus de la discipline de la session.
