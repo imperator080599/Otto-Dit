@@ -4,6 +4,98 @@
 
 ---
 
+## Phase 1 — P1-06 Supersede livré (2026-09-23)
+
+**`0178_supersede.sql`** (§7.6 du plan maître) ferme trois chemins qui DÉTRUISAIENT ou
+MUTAIENT un fait déjà écrit au lieu d'écrire une ligne NEUVE à côté (règle 28) :
+1. **`extraction`** devient append-only (`forbid_mutation`, 0003) — `verifyExtraction()`
+   (ladder.ts) insère désormais une ligne NEUVE (`supersedes_extraction_id` vers l'originale)
+   au lieu de muter la ligne en place ; l'originale garde son `rung` d'origine et
+   `status='pending_verify'` pour toujours (append-only), une valeur avant correction humaine
+   qui n'était plus lisible autrement. `pendingVerifications()` exclut les lignes supersédées ;
+   cinq autres lecteurs (`dashboard.ts`, `notes/otto.ts`, `notifications.ts`, `query/catalog.ts`,
+   deux tests d'acceptation) audités et corrigés pour la même exclusion.
+2. **`materiality.validate(adjust)`** crée désormais la version N+1 validée
+   (`supersedes_id` vers la proposition) au lieu de muter la proposition en place — l'écart
+   entre la proposition déterministe du moteur et l'ajustement L3 de l'auditeur redevient
+   lisible après coup. Invariant tenu : au plus une ligne `validated` par dossier.
+3. **`testing/grille.ts::calculerGrille()`** ne supprime plus `cell_disposition` quand une
+   colonne cesse de s'appliquer (recalcul) — `couvre_encore=false` la marque orpheline, gardée
+   pour mémoire ; seules les cellules purement calculées, jamais décidées par personne, sont
+   encore supprimées. `cellulesDuDossier()` expose un champ `orpheline` distinct de
+   `dispositionPerimee` (valeur changée) et de `disposition` (encore active).
+
+**Hors DDL neuf (service pur)** : `fsli.rebuildFslis()` passe en UPSERT
+(`on conflict (engagement_id, code) do update`), corrigeant un bogue préexistant qui remettait
+silencieusement `confirmed_at` à NULL à chaque reconstruction (`confirmed_by` était préservé,
+pas `confirmed_at` — un état incohérent). `processus.ts::importerProcessus()` supersède
+réellement `process_model` (l'ancienne version bascule `superseded`, jamais supprimée ; ses
+`process_step`/`process_ctrl` restent intacts pour l'historique ; `control.process_model_id`
+est réaccroché à la version active) au lieu de `delete`-puis-recreate.
+
+**Revue hostile, deux voix indépendantes (règle 30 — modèle de données), CONVERGENTES sans
+coordination sur les deux mêmes défauts critiques :**
+
+- **CONFIRMÉ, HAUTE, CORRIGÉ (V1-01/F1, trouvé indépendamment par les deux voix).** Une
+  cellule orpheline (`couvre_encore=false`) restait comptée par `conclureLigne` comme « non
+  conforme sans disposition » — `disposition` y est TOUJOURS nul par construction, donc AUCUN
+  geste (redisposer, recalculer) ne pouvait jamais lever ce refus : exactement le défaut
+  NOTIF-01 que la règle 37 existe pour attraper. `conclureLigne` exclut désormais les cellules
+  orphelines de ses deux gardes (TEST-02, TEST-04) — une colonne qui a disparu du tirage
+  courant ne doit plus jamais gater une conclusion nouvelle.
+- **CONFIRMÉ, HAUTE, CORRIGÉ (V1-02/F2, trouvé indépendamment par les deux voix).**
+  `couvre_encore` ne repassait jamais à `true` quand la colonne redevenait applicable (le BL
+  re-demandé, par exemple) — l'écran continuait de dire « ne fait plus partie du tirage
+  courant » sur une cellule pourtant vivante (règle 13). `calculerGrille()` réactive
+  désormais `couvre_encore` pour toute cellule réécrite par le run courant ; `disposerCellule`
+  le pose à `true` en défense en profondeur.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (V1-04, voix 1).** `materiality.validate()` et
+  `processus.ts::importerProcessus()` lisaient puis écrivaient sans CLAIM atomique — deux
+  appels concurrents (double clic, deux onglets) pouvaient laisser respectivement ZÉRO ligne
+  `validated` au dossier (plus aucun seuil pour le sondage/scoping) ou un cycle SANS AUCUNE
+  version active de processus. Les deux séquences sont désormais un CLAIM (`update … where
+  status = 'proposed'/'active' returning id`, refusé si 0 ligne) dans une transaction (`tx()`).
+  Trois tests de course (`Promise.allSettled`) le prouvent.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (F3, voix 2).** `verifyExtraction` posait `rung='human'` en
+  dur sur la ligne neuve au lieu de porter l'échelon d'origine — `human` désigne dans l'échelle
+  une pièce saisie ENTIÈREMENT à la main (5e échelon), pas « un humain a vérifié » ; une pièce
+  OCR vérifiée mentait sur sa provenance (P7) partout où `rung` est lu, et se contredisait avec
+  `ai_run_id` porté sur la même ligne. Corrigé (`rung` porté depuis l'originale) — a cassé deux
+  assertions d'acceptation qui comptaient `rung='ocr'`/`status<>'verified'` SANS exclure les
+  lignes supersédées (`s8.test.ts`, `tests/acceptance.full.test.ts`), corrigées avec la même
+  exclusion que le reste de la tranche.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (V1-03/F6, voix 1).** `notes/ancres.ts` (les cas
+  `process_model`/`process_step`) ne filtrait pas `status='active'` — une note ancrée pouvait
+  résoudre vers la version SUPERSÉDÉE au hasard de l'ordre SQL dès qu'un cycle avait été
+  remplacé une fois.
+- **CONFIRMÉ, BASSE, CORRIGÉ (V1-05, voix 1).** `verifyExtraction` acceptait de vérifier une
+  ligne déjà supersédée (le statut de la ligne d'origine ne change jamais, donc un contrôle
+  naïf sur `x.status` ne peut PAS le détecter — piège trouvé en écrivant le test de ce chemin) :
+  refus ajouté sur l'existence d'une ligne qui la supersède déjà, plus un index unique
+  `extraction_supersedes_once` (0178) comme filet contre la vraie course.
+- **CONFIRMÉ, BASSE, CORRIGÉ.** `notes/otto.ts` comptait les lignes « vérifiées » par
+  `count(*)` au lieu de `count(distinct evidence_id)` — même bogue que celui déjà corrigé pour
+  « extraites », découvert par la même revue.
+
+**Trouvé en cours de route, sans rapport avec cette tranche, corrigé au passage (règle 13) :**
+`docs/GUARDS.md` avait divergé de `src/lib/gardes/registre.ts` depuis les commits P1-04/P1-05
+(G-28 à G-33 jamais re-figés dans le fichier commité) — le maillon `gardes` de `verify` était
+rouge sur `main` avant même cette tranche. Régénéré (`npm run gardes -- --figer`), rien d'autre
+touché.
+
+**Mesuré** : `tsc --noEmit` propre ; `db:reset` propre (0178 s'applique, rejouable) ;
+`demo:seed` vert sur base fraîche ; suite `vitest` complète (174 fichiers, 1365 tests, incluant
+`p1-06.test.ts` — extraction append-only + trigger connu-mauvais, materiality adjust-supersede,
+fsli upsert-confirmed_at, process_model supersede + réaccrochage de contrôle, et cinq tests de
+course) ; `npm run verify` COMPLET vert — **19/19 maillons** (db:reset, demo:seed, tsc, gardes,
+semeur, plancher, langue(:epreuve), lectures(:epreuve), parcours(:epreuve), screens, fumee,
+densite, clics — 326 étapes, 0 échec — visuel — 356 vues, 0 défaut —, screens:test, vitest) sur
+l'arbre `7a14b0d`. Le parcours cliqué complet (station de clôture comprise, règle 37 : cette
+tranche change deux codes de refus existants — TEST-02/TEST-04 — et en ajoute trois nouveaux
+liés à la course concurrente) passe sans blocage.
+
+---
+
 ## Phase 1 — P1-05 Verrou générique livré (2026-09-23)
 
 **`0177_verrou_generique.sql`** (§7.5 du plan maître, renumérotée) : confirme les 21 tables
