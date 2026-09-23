@@ -68,9 +68,21 @@ montré que différer aurait laissé le trou d'élévation ouvert un tour de plu
 **Mesuré** : `tsc --noEmit` propre ; sweep ciblé 155/155 tests verts (p1-04, team, workpapers,
 retention, gardes, retardataires, obstacles, carryforward, acceptance) ; `db:reset` propre (0176
 s'applique) ; `demo:seed` + `demo:enrichir` intégralement verts sur base fraîche, 10/10 étapes.
-`npm run clics` (règle 37 — un code de refus neuf n'est clos qu'après le parcours cliqué complet)
-en cours au moment d'écrire cette entrée ; son résultat suit dans le prochain tour si non encore
-mesuré ici.
+
+**`npm run clics` (règle 37) — deux faux négatifs avant la mesure correcte, cause trouvée, pas
+devinée.** Un premier passage (base `db:reset` + `demo:seed` + `demo:enrichir`) a rendu 12 échecs
+dispersés sur des stations SANS RAPPORT avec P1-04 (notes, processus, rcm) en plus de la station
+visa elle-même — un second passage identique en a rendu bien plus (cascade). §6 de ce fichier dit
+littéralement la précondition de `clics` : « `db:reset && demo:seed` d'abord » — SANS
+`demo:enrichir`. En ajoutant `demo:enrichir` (utile pour valider le service, fait plus haut), la
+base portait déjà des descriptions de processus et des décisions que le PROPRE scénario de `clics`
+s'attend à poser lui-même — la station « processus : la différence N/N-1... » trouvait 0
+changement à statuer (déjà statués par `enrichir.ts`) et la cascade suivait. **Troisième passage,
+précondition EXACTE (`db:reset` + `demo:seed`, sans enrichir) : 0 échec, 326 étapes conduites, 325
+stations figées vérifiées, aucune station figée non atteinte.** La station « papier : les trois
+visas se posent dans l'ordre de la hiérarchie de revue » — celle qui exerce VISA-01..03 par le
+produit — passe (`ok`). `docs/CLICS.md` regénéré, identique au précédent (aucune nouvelle
+gestuelle cliquée par P1-04).
 
 ---
 
