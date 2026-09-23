@@ -144,4 +144,51 @@ describe('P1-07 : RISK-01 et les décisions versionnées (0179)', () => {
     expect(rows[1].retained_level).toBeNull();
     expect(rows[1].supersedes_id).toBeTruthy();
   });
+
+  it('CORRECTIF DE REVUE HOSTILE (règle 17/30) — deux surcharges CONCURRENTES sur LA MÊME assertion : la chaîne supersedes_id ne forke jamais', async () => {
+    /* SANS le verrou de ligne (`for update`) posé sur `fsli_assertion_risk` dans
+       `overrideLevel`, les deux appels pouvaient tous deux lire la MÊME « précédente »
+       décision (aucune n'existait encore ici) avant qu'aucun des deux n'ait écrit — chacun
+       insérerait alors une ligne de décision avec `supersedes_id = null`, et la ligne mère
+       ne refléterait que la DERNIÈRE à valider, l'autre devenant une décision fantôme,
+       jamais visible depuis la mère et sans successeur (le même défaut que P1-06 avait déjà
+       corrigé pour `materiality.ts::validate`, par un CLAIM plutôt qu'un verrou — ici la
+       ligne « courante » vit sur la mère, pas sur la décision, d'où la forme différente). */
+    await overrideLevel(IDS.engNep, 'REVENUE', 'exhaustivite', 'higher',
+      'Concurrence A.', IDS.users.lea);
+    await overrideLevel(IDS.engNep, 'REVENUE', 'exhaustivite', null, '', IDS.users.lea);
+    const risk = await q1<{ id: string }>(
+      `select id from fsli_assertion_risk where engagement_id = $1 and fsli_code = 'REVENUE' and assertion = 'exhaustivite'`,
+      [IDS.engNep],
+    );
+    const avant = await q<{ id: string }>(
+      `select id from fsli_assertion_risk_decision where fsli_assertion_risk_id = $1`, [risk.id]);
+    const compteAvant = avant.length; // état de départ MESURÉ, pas supposé — pour isoler la course qui suit
+
+    const resultats = await Promise.allSettled([
+      overrideLevel(IDS.engNep, 'REVENUE', 'exhaustivite', 'significant', 'Concurrence B.', IDS.users.lea),
+      overrideLevel(IDS.engNep, 'REVENUE', 'exhaustivite', 'higher', 'Concurrence C.', IDS.users.karim),
+    ]);
+    // le verrou SÉRIALISE, il ne fait échouer personne : les deux surcharges réussissent.
+    expect(resultats.every((r) => r.status === 'fulfilled')).toBe(true);
+
+    const decisions = await q<{ id: string; supersedes_id: string | null; retained_level: string | null }>(
+      `select id, supersedes_id, retained_level from fsli_assertion_risk_decision
+       where fsli_assertion_risk_id = $1 order by decided_at asc`, [risk.id]);
+    // deux de plus qu'avant la course — une par appel concurrent, jamais un fork (qui en
+    // laisserait aussi deux, mais toutes deux pointant vers la MÊME précédente).
+    expect(decisions).toHaveLength(compteAvant + 2);
+    const [avantDerniere, derniere] = decisions.slice(-2);
+    // LE CŒUR DE LA PREUVE : la dernière décision supersède l'AVANT-dernière. Un fork
+    // produirait autre chose : les DEUX décisions de la course auraient lu la MÊME
+    // « précédente » (la ligne d'avant la course) et pointeraient donc toutes deux vers
+    // ELLE — `derniere.supersedes_id` égalerait `avantDerniere.supersedes_id`, jamais
+    // `avantDerniere.id`.
+    expect(derniere.supersedes_id).toBe(avantDerniere.id);
+
+    // et la ligne mère reflète exactement la DERNIÈRE décision de la chaîne — jamais les deux.
+    const mere = await q1<{ retained_level: string | null }>(
+      `select retained_level from fsli_assertion_risk where id = $1`, [risk.id]);
+    expect(mere.retained_level).toBe(derniere.retained_level);
+  });
 });

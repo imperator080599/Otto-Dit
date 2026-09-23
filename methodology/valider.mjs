@@ -641,10 +641,18 @@ function assembler(contenu, schemas){
                     predicats:schemaR.predicats_facteur,
                     formules:schemaR.formules_taille,
                     /* AUD-11 (P1-07) : optionnel côté contenu (une méthode plus ancienne ou
-                       une fixture de test peut ne pas le porter) — repli EXPLICITE, jamais
-                       lu comme une valeur du cabinet : aucun chemin qui consomme ces deux
-                       nombres (sampling.ts::proposeRevenueSample) n'est exercé par les
-                       méthodes qui omettent ce bloc. */
+                       une fixture de test peut ne pas le porter) — repli EXPLICITE, marqué
+                       `verifie:false`. CORRECTIF (revue hostile P1-07) : cette note affirmait
+                       à tort qu'« aucun chemin ne consomme ces deux nombres » — c'est vrai de
+                       `randomSizeDefault` (mort depuis que la taille suit le risque calculé,
+                       voir la note de risque.json), FAUX de `coverageCapPctOfPm` :
+                       `sampling.ts::proposeRevenueSample` le LIT sans condition à chaque
+                       appel réussi (calcul du plafond de couverture). Aujourd'hui dormant
+                       SEULEMENT parce que la seule méthode réelle du dépôt porte ce bloc — un
+                       second pack de cabinet qui l'omettrait recevrait ce défaut en silence,
+                       le drapeau `verifie:false` n'étant affiché sur AUCUN écran (règle 8 :
+                       « se dit à l'écran » pas encore honoré pour ce cas, faute d'un second
+                       pack pour l'exiger aujourd'hui). */
                     parametresEchantillonnage: risq.parametres_echantillonnage
                       ? { coverageCapPctOfPm: risq.parametres_echantillonnage.coverage_cap_pct_of_pm,
                           coverageCapPctOfPmVerifie: !!risq.parametres_echantillonnage.coverage_cap_pct_of_pm_verifie,

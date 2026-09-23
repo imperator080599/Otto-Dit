@@ -100,7 +100,7 @@ export async function proposeRevenueSample(engagementId: string, userId: string)
   const detail = requises.find((r) => r.procedure.code === 'DETAIL');
   if (!detail || detail.sampleSize === null) {
     throw new SamplingRuleError(
-      "SAMP-01 : sample size not set by the firm's method for this risk level — "
+      "SAMP-01 : aucune taille d'échantillon fixée par la méthode du cabinet pour ce niveau de risque — "
       + "évaluez le risque de l'assertion « realite » du chiffre d'affaires avant de proposer un tirage "
       + '(procédure DETAIL introuvable ou sans taille pour ce niveau).',
     );

@@ -295,8 +295,8 @@ export async function assessFsli(
   for (const a of [...assertions].sort()) {
     const factors = active.get(a) ?? [];
     const computed = levelForCount(cat, factors.length);
-    const existing = await q01<{ retained_level: string | null; override_reason: string | null; decided_by: string | null }>(
-      `select retained_level, override_reason, decided_by from fsli_assertion_risk
+    const existing = await q01<{ retained_level: string | null; override_reason: string | null; justification: string | null; decided_by: string | null }>(
+      `select retained_level, override_reason, justification, decided_by from fsli_assertion_risk
        where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
       [engagementId, fsliCode, a],
     );
@@ -305,20 +305,26 @@ export async function assessFsli(
        l'afficher comme telle ferait croire à un arbitrage qui n'existe plus. */
     const retained = existing?.retained_level === computed ? null : existing?.retained_level ?? null;
     await q(
+      /* `justification` RANGÉE COMME `override_reason` (correctif, revue hostile P1-07) :
+         omise ici à l'origine, elle survivait EN SILENCE à un ralliement au calcul — une
+         ligne pouvait afficher retained_level=null, override_reason=null MAIS une
+         justification d'un arbitrage qui n'existe plus (règle 13). */
       `insert into fsli_assertion_risk
          (engagement_id, fsli_code, assertion, computed_level, factor_count,
-          retained_level, override_reason, decided_by, decided_at, methodology_version, computed_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,
-               case when $6::text is null then null else now() end, $9, now())
+          retained_level, override_reason, justification, decided_by, decided_at, methodology_version, computed_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,
+               case when $6::text is null then null else now() end, $10, now())
        on conflict (engagement_id, fsli_code, assertion) do update set
          computed_level = excluded.computed_level,
          factor_count = excluded.factor_count,
          retained_level = excluded.retained_level,
          override_reason = case when excluded.retained_level is null then null else fsli_assertion_risk.override_reason end,
+         justification = case when excluded.retained_level is null then null else fsli_assertion_risk.justification end,
          methodology_version = excluded.methodology_version,
          computed_at = now()`,
       [engagementId, fsliCode, a, computed, factors.length,
        retained, retained === null ? null : existing?.override_reason ?? null,
+       retained === null ? null : existing?.justification ?? null,
        retained === null ? null : existing?.decided_by ?? null, cat.risque.version],
     );
     out.push({
@@ -424,25 +430,38 @@ export async function overrideLevel(
   await assertMembre(engagementId, actorUserId, 'overrideLevel');
   const cat = await catalogueDeLaMission(engagementId);
   const eng = await engagementContext(engagementId);
-  const row = await q01<{ id: string; computed_level: string }>(
-    `select id, computed_level from fsli_assertion_risk
-     where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
-    [engagementId, fsliCode, assertion],
-  );
-  if (!row) throw new RiskRuleError('cette assertion n’a pas encore été évaluée sur ce poste');
-  if (level !== null) {
-    rank(cat, level); // lève si le niveau n'est pas de l'échelle du cabinet
-    if (level !== row.computed_level && !reason.trim()) {
-      throw new RiskRuleError('une surcharge de niveau sans motif écrit n’est pas une surcharge');
-    }
-  }
-  const niveauEffectif = (level ?? row.computed_level).toLowerCase();
-  if (niveauEffectif === 'nrpmm' && !justification.trim()) {
-    throw new RiskRuleError(
-      'RISK-01 : nrpmm (anomalie significative jugée non raisonnablement possible) exige une justification écrite — c’est la décision la plus lourde de conséquence de ce module (elle retire tout travail substantif sur l’assertion), la seule que rien ne calcule à sa place.',
-    );
-  }
+  let computedLevel = '';
   await tx(async () => {
+    /* VERROU DE LIGNE (correctif, revue hostile P1-07 — règle 30) : lire « précédente »
+       SANS verrou laisserait deux surcharges CONCURRENTES sur LA MÊME assertion lire la
+       même décision précédente et FORKER la chaîne supersedes_id — les deux lignes de
+       décision existeraient, mais une seule resterait visible depuis la ligne mère, l'autre
+       devenant une décision fantôme, invisible et sans successeur (règle 3 : « d'où vient
+       ce chiffre ? » ne répondrait plus). MÊME défaut, même correctif que P1-06 avait déjà
+       posé pour `materiality.ts::validate` (CLAIM atomique) — ici la forme est un verrou de
+       ligne (`for update`) plutôt qu'un CLAIM par changement de statut, parce que la ligne
+       « courante » vit sur la ligne MÈRE (`fsli_assertion_risk`), pas sur la décision elle-
+       même : verrouiller la mère sérialise toute paire de surcharges concurrentes sur cette
+       assertion, la seconde attendant que la première ait validé avant de lire à son tour. */
+    const row = await q01<{ id: string; computed_level: string }>(
+      `select id, computed_level from fsli_assertion_risk
+       where engagement_id = $1 and fsli_code = $2 and assertion = $3 for update`,
+      [engagementId, fsliCode, assertion],
+    );
+    if (!row) throw new RiskRuleError('cette assertion n’a pas encore été évaluée sur ce poste');
+    if (level !== null) {
+      rank(cat, level); // lève si le niveau n'est pas de l'échelle du cabinet
+      if (level !== row.computed_level && !reason.trim()) {
+        throw new RiskRuleError('une surcharge de niveau sans motif écrit n’est pas une surcharge');
+      }
+    }
+    const niveauEffectif = (level ?? row.computed_level).toLowerCase();
+    if (niveauEffectif === 'nrpmm' && !justification.trim()) {
+      throw new RiskRuleError(
+        'RISK-01 : nrpmm (anomalie significative jugée non raisonnablement possible) exige une justification écrite — c’est la décision la plus lourde de conséquence de ce module (elle retire tout travail substantif sur l’assertion), la seule que rien ne calcule à sa place.',
+      );
+    }
+    computedLevel = row.computed_level;
     const precedente = await q01<{ id: string }>(
       `select id from fsli_assertion_risk_decision where fsli_assertion_risk_id = $1
        order by decided_at desc limit 1`,
@@ -456,10 +475,10 @@ export async function overrideLevel(
     );
     await q(
       `update fsli_assertion_risk
-         set retained_level = $4, override_reason = $5, justification = $6, decided_by = $7,
-             decided_at = case when $4::text is null then null else now() end
-       where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
-      [engagementId, fsliCode, assertion, level, level === null ? null : reason.trim(),
+         set retained_level = $2, override_reason = $3, justification = $4, decided_by = $5,
+             decided_at = case when $2::text is null then null else now() end
+       where id = $1`,
+      [row.id, level, level === null ? null : reason.trim(),
        level === null ? null : (justification.trim() || null), level === null ? null : actorUserId],
     );
   });
@@ -471,7 +490,7 @@ export async function overrideLevel(
     verb: level === null ? 'risk.override.cleared' : 'risk.override.set',
     objectType: 'fsli_assertion_risk',
     objectId: `${fsliCode}/${assertion}`,
-    payload: { computed: row.computed_level, retained: level, reason: reason.trim(), justification: justification.trim() },
+    payload: { computed: computedLevel, retained: level, reason: reason.trim(), justification: justification.trim() },
   });
 }
 
