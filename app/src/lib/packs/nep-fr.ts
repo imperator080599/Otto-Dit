@@ -31,8 +31,6 @@ export const nepFr: AssurancePack = {
     tePctDefault: 0.75, // TE = performance materiality by default (Gate 2)
   },
   substantive: {
-    coverageCapPctOfPM: 1.0, // every item ≥ 100% of PM is covered individually
-    randomSizeDefault: 4,
     seedDefault: 'otto-demo-rev-1',
     tolerances: { amountAbs: 1, amountPct: 0.005, dateDays: 5, pricePct: 0.01, qtyAbs: 0 },
     // EXTRAP-04 (mandat 2026-09-14, §1.3) : `extrapolationMethod` reste NON POSÉ, sciemment —

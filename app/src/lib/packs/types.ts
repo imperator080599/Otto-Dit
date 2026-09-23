@@ -49,9 +49,11 @@ export interface VouchingTolerances {
 
 export interface SubstantiveConfig {
   // High-value coverage: every item ≥ coverageCapPctOfPM × performance materiality is
-  // selected; random remainder of randomSizeDefault items from the rest (Q3).
-  coverageCapPctOfPM: number;
-  randomSizeDefault: number;
+  // selected (Q3). coverageCapPctOfPM and randomSizeDefault moved to
+  // methodology/risque.json (AUD-11, P1-07, règle 9 : un paramètre de méthode est du
+  // contenu, jamais une bifurcation de code) — coverageCapPctOfPM lu depuis
+  // cat.risque.parametresEchantillonnage.coverageCapPctOfPm, randomSizeDefault remplacé par
+  // requiredProcedures(...).sampleSize (la taille suit le risque de l'assertion testée).
   seedDefault: string; // deterministic pack default, overridable at L3
   tolerances: VouchingTolerances;
   /* EXTRAP-04 (mandat 2026-09-14, §1.3) : ISA 530 EXIGE la projection (§14) mais NE DONNE

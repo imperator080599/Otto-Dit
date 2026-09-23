@@ -104,7 +104,7 @@ describe('la méthode d’un cabinet est à lui', () => {
   it('deux cabinets, deux échelles — chacun voit la sienne', async () => {
     const vermeil = await catalogueDeLaMission(IDS.engNep);
     const lambert = await catalogueDeLaMission(LAMBERT.engagement);
-    expect(vermeil.risque.niveaux).toEqual(['faible', 'moyen', 'eleve']);
+    expect(vermeil.risque.niveaux).toEqual(['nrpmm', 'lower', 'higher', 'significant']);
     expect(lambert.risque.niveaux).toEqual(['surveille', 'approfondi']);
     // Et le contenu ne fuit pas : aucun niveau de l'un n'apparaît chez l'autre.
     for (const n of lambert.risque.niveaux) expect(vermeil.risque.niveaux).not.toContain(n);
@@ -158,7 +158,7 @@ describe('la méthode d’un cabinet est à lui', () => {
     });
     // la mission qui refusait de charger charge maintenant, et c'est CELLE-LÀ
     const cat = await catalogueDeLaMission(LAMBERT.engagementNu);
-    expect(cat.risque.niveaux).toEqual(['faible', 'moyen', 'eleve']);   // le contenu du dépôt
+    expect(cat.risque.niveaux).toEqual(['nrpmm', 'lower', 'higher', 'significant']);   // le contenu du dépôt
     const row = await q01<{ methodology_id: string }>(
       `select methodology_id from engagement where id = $1`, [LAMBERT.engagementNu]);
     expect(row?.methodology_id).toBe(seconde.id);

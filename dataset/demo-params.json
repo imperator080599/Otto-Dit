@@ -15,7 +15,7 @@
   "revenueSampling": {
     "seed": "otto-demo-rev-1",
     "coverageCapCents": 2700000,
-    "randomSize": 4
+    "randomSize": 15
   },
   "soxSampling": {
     "seed": "otto-demo-sox-1",

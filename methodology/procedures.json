@@ -85,7 +85,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -109,7 +109,7 @@
       "sources": [
         "ISA-520"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "revue_analytique_substantive"
     },
@@ -165,7 +165,7 @@
         "ISA-500",
         "PRAT-SENS"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "justificatifs_par_cycle": {
         "CA": [
@@ -401,7 +401,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Unidirectionnel : ne couvre que les opérations comptabilisées en N dont le fait générateur relève de N+1. Le sens inverse exige le grand livre de l'exercice suivant.",
       "nature": "sondage_pieces"
@@ -448,7 +448,7 @@
       "sources": [
         "ISA-240"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -472,7 +472,7 @@
       "sources": [
         "PRAT-SENS"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "test_exhaustif"
     },
@@ -518,7 +518,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -570,7 +570,7 @@
       "sources": [
         "ISA-505"
       ],
-      "risque_minimum": "eleve",
+      "risque_minimum": "significant",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -594,7 +594,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "eleve",
+      "risque_minimum": "significant",
       "echantillonnee": false,
       "nature": "observation_documentee"
     },
@@ -644,7 +644,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -691,7 +691,7 @@
       "sources": [
         "ISA-240"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -715,7 +715,7 @@
       "sources": [
         "ISA-500"
       ],
-      "risque_minimum": "eleve",
+      "risque_minimum": "significant",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -790,7 +790,7 @@
         "PRAT-SUL",
         "PRAT-SENS"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "exceptions": [
         "fait générateur antérieur ou égal à la clôture sans dette comptabilisée au passif",
@@ -861,7 +861,7 @@
       "sources": [
         "PRAT-SUL"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -901,7 +901,7 @@
         "PRAT-SUL",
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Exige le journal des réceptions du client, qui n'est pas dans le fichier des écritures comptables.",
       "nature": "sondage_pieces"
@@ -940,7 +940,7 @@
       "sources": [
         "ISA-505"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -964,7 +964,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -1033,7 +1033,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1071,7 +1071,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -1125,7 +1125,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "note": "Exige le tableau des immobilisations détaillé du client, absent du fichier des écritures.",
       "nature": "recalcul_parametre"
@@ -1180,7 +1180,7 @@
         "PRAT-IMMO",
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1204,7 +1204,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": false,
       "nature": "test_exhaustif"
     },
@@ -1228,7 +1228,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -1297,7 +1297,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1335,7 +1335,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -1389,7 +1389,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "note": "Exige le tableau des immobilisations détaillé du client, absent du fichier des écritures.",
       "nature": "recalcul_parametre"
@@ -1444,7 +1444,7 @@
         "PRAT-IMMO",
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1468,7 +1468,7 @@
       "sources": [
         "PRAT-IMMO"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": false,
       "nature": "test_exhaustif"
     },
@@ -1508,7 +1508,7 @@
         "PCAOB-AS2510",
         "PRAT-STOCKS"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "note": "Exige la présence physique et les feuilles de comptage : hors du périmètre d'un fichier d'écritures.",
       "nature": "observation_documentee"
@@ -1547,7 +1547,7 @@
       "sources": [
         "PRAT-STOCKS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Exige l'état de stock valorisé du client.",
       "nature": "recalcul_parametre"
@@ -1594,7 +1594,7 @@
       "sources": [
         "PRAT-STOCKS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Exige la comptabilité analytique du client.",
       "nature": "recalcul_parametre"
@@ -1633,7 +1633,7 @@
       "sources": [
         "PRAT-STOCKS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -1673,7 +1673,7 @@
         "PRAT-STOCKS",
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1713,7 +1713,7 @@
         "ISA-505",
         "PRAT-STOCKS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -1737,7 +1737,7 @@
       "sources": [
         "PRAT-CLIENTS"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -1775,7 +1775,7 @@
       "sources": [
         "PRAT-CLIENTS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -1814,7 +1814,7 @@
         "ISA-505",
         "PRAT-CLIENTS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -1866,7 +1866,7 @@
         "ISA-505",
         "PRAT-CLIENTS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1923,7 +1923,7 @@
         "PRAT-CLIENTS",
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -1961,7 +1961,7 @@
       "sources": [
         "PRAT-SENS"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Exige le journal des expéditions du client, absent du fichier des écritures.",
       "nature": "sondage_pieces"
@@ -2008,7 +2008,7 @@
       "sources": [
         "PRAT-PAIE-FR"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "note": "[UNVERIFIED] Les obligations déclaratives françaises (DSN, URSSAF) n'ont pas pu être vérifiées sur le texte.",
       "nature": "rapprochement"
@@ -2055,7 +2055,7 @@
       "sources": [
         "PRAT-PAIE-FR"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -2101,7 +2101,7 @@
       "sources": [
         "PRAT-PAIE-FR"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "[UNVERIFIED] Les barèmes de cotisations n'ont pas pu être vérifiés sur le texte.",
       "nature": "recalcul_parametre"
@@ -2126,7 +2126,7 @@
       "sources": [
         "PRAT-CAPITAUX"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": false,
       "nature": "rapprochement"
     },
@@ -2172,7 +2172,7 @@
       "sources": [
         "PRAT-CAPITAUX"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "sondage_pieces"
     },
@@ -2196,7 +2196,7 @@
       "sources": [
         "PRAT-CAPITAUX"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": false,
       "note": "[UNVERIFIED] Le régime des conventions réglementées relève du code de commerce, inaccessible depuis cet environnement. Aucun article n'est cité.",
       "nature": "test_exhaustif"
@@ -2243,7 +2243,7 @@
       "sources": [
         "PRAT-DETTES"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -2281,7 +2281,7 @@
       "sources": [
         "PRAT-DETTES"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -2319,7 +2319,7 @@
       "sources": [
         "PRAT-DETTES"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -2366,7 +2366,7 @@
         "ISA-505",
         "PRAT-DETTES"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -2414,7 +2414,7 @@
         "ISA-505",
         "PCAOB-AS2505"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -2452,7 +2452,7 @@
       "sources": [
         "PRAT-CAPITAUX"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "recalcul_parametre"
     },
@@ -2490,7 +2490,7 @@
       "sources": [
         "ISA-505"
       ],
-      "risque_minimum": "faible",
+      "risque_minimum": "lower",
       "echantillonnee": true,
       "nature": "confirmation_externe"
     },
@@ -2536,7 +2536,7 @@
       "sources": [
         "PRAT-DETTES"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "nature": "rapprochement"
     },
@@ -2582,7 +2582,7 @@
       "sources": [
         "PRAT-PAIE-FR"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "[UNVERIFIED] Les règles de TVA n'ont pas pu être vérifiées sur le texte.",
       "nature": "rapprochement"
@@ -2622,7 +2622,7 @@
         "PRAT-SENS",
         "PRAT-SUL"
       ],
-      "risque_minimum": "moyen",
+      "risque_minimum": "higher",
       "echantillonnee": true,
       "note": "Exige le journal des réceptions du client.",
       "nature": "sondage_pieces"

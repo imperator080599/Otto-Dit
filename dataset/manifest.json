@@ -145,7 +145,7 @@
       "populationHash": "pophash-v1:489420a8686886179af7ddbf22723fd0c1611f28f06b5fe78c2761031acfed62",
       "populationSize": 713,
       "coverageCapCents": 2700000,
-      "randomSize": 4,
+      "randomSize": 15,
       "seed": "otto-demo-rev-1",
       "selectedUnits": [
         "OD|OD-2025-0001|2",
@@ -163,7 +163,18 @@
         "VE|VE-2025-0477|2",
         "VE|VE-2025-0481|2",
         "VE|VE-2025-0145|2",
-        "VE|VE-2025-0060|2"
+        "VE|VE-2025-0060|2",
+        "VE|VE-2025-0654|2",
+        "VE|VE-2025-0046|2",
+        "VE|VE-2025-0440|2",
+        "VE|VE-2025-0445|2",
+        "VE|VE-2025-0469|2",
+        "VE|VE-2025-0040|2",
+        "VE|VE-2025-0505|2",
+        "VE|VE-2025-0489|2",
+        "VE|VE-2025-0062|2",
+        "VE|VE-2025-0109|2",
+        "VE|VE-2025-0591|2"
       ]
     },
     "bankRec": {

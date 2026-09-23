@@ -146,10 +146,10 @@ describe('catalogue méthodologique', () => {
   it('n’exige une procédure qu’au niveau de risque qu’elle déclare', () => {
     /* 'FOURN' -> 'TRADE_PAYABLES' le 2026-09-15 (Lot 5, poste 4 — Fournisseurs) : même
        correctif de correspondance cycle↔fsli.code que les tranches précédentes. */
-    const requises = (n: 'faible' | 'moyen' | 'eleve') =>
+    const requises = (n: 'lower' | 'higher' | 'significant') =>
       proceduresRequises(cat, 'TRADE_PAYABLES', () => n).map((p) => p.code);
-    const bas = requises('faible');
-    const haut = requises('eleve');
+    const bas = requises('lower');
+    const haut = requises('significant');
     expect(haut.length).toBeGreaterThan(bas.length);
     for (const c of bas) expect(haut).toContain(c);
     expect(bas).toContain('FOURN-SUL'); // la procédure centrale du cycle, à tout niveau

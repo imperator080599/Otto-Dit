@@ -135,8 +135,15 @@ export async function answerQuestion(input: {
 }
 
 /**
- * Le facteur créé par un « oui ». Il naît CONFIRMÉ : la réponse EST la décision
- * humaine — la faire re-statuer reviendrait à demander deux fois la même chose.
+ * Le facteur créé par un « oui ». CORRECTIF (AUD-11, P1-07) : il naissait
+ * `confirmed` — un commentaire ici affirmait que « la réponse EST la décision
+ * humaine », mais DEMO_APP.md §8 dit le contraire depuis toujours : « Elle ne
+ * coche rien : elle crée un facteur au registre... Confirmez-le : il monte le
+ * niveau. Laissez-le proposé : il ne compte pas. » Répondre au questionnaire
+ * et confirmer un facteur sont deux gestes distincts (`decideFactor`,
+ * ci-dessous) — le naître confirmé sautait le second, silencieusement (règle
+ * 13). Il naît donc `proposed` ; `questionnaireObstacles` bloque déjà le visa
+ * tant qu'il le reste (`obst.facteursNonStatues`, inchangé par ce correctif).
  * Une question d'entité vise tous les postes retenus au périmètre.
  */
 async function upsertQuestionFactor(
@@ -156,12 +163,19 @@ async function upsertQuestionFactor(
 
   const ref = `${question.code}${fsliCode ? '/' + fsliCode : ''}`;
   const description = `${question.question} — répondu OUI.${detail ? ' ' + detail : ''} ${question.effet}`.trim();
+  /* CORRECTIF (0179, P1-07, règle 13) : SANS cible, « on conflict do nothing »
+     ne rencontre jamais de conflit (la seule clé de la table est `id`, neuf à
+     chaque ligne) — chaque « oui » créait donc une NOUVELLE ligne plutôt que
+     d'en réutiliser une, invisible tant que tout naissait `confirmed`, un
+     doublon silencieux devenu bloquant depuis que le facteur naît `proposed`.
+     L'index partiel `risk_factor_declared_questionnaire_unique` donne enfin
+     une cible à ce conflit. */
   await q(
     `insert into risk_factor_declared
-       (engagement_id, source, source_ref, nature, description, targets, status, decided_by, decided_at)
-     values ($1, 'questionnaire', $2, $3, $4, $5::jsonb, 'confirmed', $6, now())
-     on conflict do nothing`,
-    [engagementId, ref, question.nature, description, JSON.stringify(targets), actorUserId],
+       (engagement_id, source, source_ref, nature, description, targets, status)
+     values ($1, 'questionnaire', $2, $3, $4, $5::jsonb, 'proposed')
+     on conflict (engagement_id, source_ref) where source = 'questionnaire' do nothing`,
+    [engagementId, ref, question.nature, description, JSON.stringify(targets)],
   );
   await q(
     `update risk_factor_declared set description = $3, targets = $4::jsonb

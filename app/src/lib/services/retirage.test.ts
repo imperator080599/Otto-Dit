@@ -7,6 +7,7 @@ import { IDS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from './imports';
 import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconciliation';
 import { rebuildFslis } from './fsli';
+import { assessFsli } from './risk';
 import { propose, validate } from './materiality';
 import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from './sampling';
 import { generatePbcFromSample, approveSend } from './requests';
@@ -51,6 +52,13 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
       engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2025.csv',
       content: tb, mapping: detectTbMapping(tb.split('\n')[0]), periodKind: 'current',
     });
+    // AUD-11 (P1-07) : le TB N-1 doit être importé pour que « variation N/N-1 » se mesure —
+    // sans lui, la taille du tirage risque-driven diverge de celle que dataset/ porte réellement.
+    const tbPrior = fs.readFileSync(ds('tb_2024.csv'), 'utf8');
+    await importTb({
+      engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2024.csv',
+      content: tbPrior, mapping: detectTbMapping(tbPrior.split('\n')[0]), periodKind: 'prior',
+    });
     await importFec({
       engagementId: IDS.engNep, userId: IDS.users.karim,
       filename: '999888777FEC20251231.txt', bytes: fs.readFileSync(ds('999888777FEC20251231.txt')),
@@ -64,6 +72,8 @@ describe('le re-tirage ne fait pas disparaître le travail humain', () => {
     }
     await rebuildFslis(IDS.engNep, IDS.users.karim);
     await validate(await propose(IDS.engNep, IDS.users.lea), IDS.users.lea);
+    // AUD-11 (P1-07) : proposeRevenueSample source sa taille du risque évalué — SAMP-01
+    await assessFsli(IDS.engNep, 'REVENUE', IDS.users.karim);
 
     /* 1. LE TIRAGE SUR LE GRAND LIVRE PROVISOIRE, la demande, et la pièce du client. */
     await reconcilierDetailRevenueSemeur(IDS.engNep); // POP-01 : rapprochement requis avant propose

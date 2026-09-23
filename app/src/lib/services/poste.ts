@@ -226,10 +226,16 @@ export async function vuePoste(engagementId: string, code: string): Promise<VueP
     [engagementId],
   );
 
-  /* RISQUES — par assertion, sur CE poste. */
+  /* RISQUES — par assertion, sur CE poste.
+     CORRECTIF (revue AUD-11/P1-07) : ce compte comparait `r.level` (l'échelle NEP/ISA de
+     `fsli_assertion_risk`, methodology/risque.json) à un littéral 'high' — le vocabulaire de
+     l'AUTRE table, `risk` (SOX/RCM, low/medium/high/significant, jamais lue ici). La
+     comparaison ne pouvait donc JAMAIS matcher : ce compte rendait 0 sur tout dossier, en
+     silence (règle 13). Corrigé pour comparer contre le vocabulaire RÉEL de `risksFor`
+     (« higher »/« significant », methodology/risque.json). */
   const risques = await risksFor(engagementId, code);
   const arbitres = risques.filter((r) => r.retained_level !== null).length;
-  const eleves = risques.filter((r) => r.level === 'high' || r.level === 'significant').length;
+  const eleves = risques.filter((r) => r.level === 'higher' || r.level === 'significant').length;
 
   /* ÉCHANTILLON ET TESTING — par les procédures de CE poste. */
   const ech = await q01<{ pop: string; tire: string; items: string; testes: string }>(

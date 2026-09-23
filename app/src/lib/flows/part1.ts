@@ -671,7 +671,8 @@ export async function planifierTresorerie(): Promise<void> {
  * (rapprochement, atelier `/balances-aux`) et CLIENTS-DEPREC (recalcul_parametre,
  * atelier `/estimations`). CLIENTS-CIRC n'est PAS planifiée ici : mesuré par
  * exécution avant d'écrire cette fonction (assessFsli + risksFor), l'assertion
- * `realite` de TRADE_RECEIVABLES est `faible` — sous le `risque_minimum: "moyen"`
+ * `realite` de TRADE_RECEIVABLES est `lower` (`faible` avant le renommage AUD-11/P1-07)
+ * — sous le `risque_minimum: "higher"`
  * de CLIENTS-CIRC. La planifier quand même aurait été une décision inventée,
  * pas une procédure commandée par le risque (règle 14, « les procédures
  * commandées PAR LE RISQUE »). CLIENTS-AVOIRS (sondage_pieces) EST commandée

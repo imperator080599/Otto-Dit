@@ -636,9 +636,22 @@ function assembler(contenu, schemas){
                           parametres:ind.parametres, naturesSacc:ind.natures_sacc },
            risque:{ version:risq.version, facteurs:risq.facteurs_observes,
                     niveaux:risq.echelle.niveaux, paliers:risq.echelle.paliers,
+                    libelles: risq.echelle.libelles ?? {},
                     tailles:sansNotes(risq.tailles_echantillon),
                     predicats:schemaR.predicats_facteur,
-                    formules:schemaR.formules_taille },
+                    formules:schemaR.formules_taille,
+                    /* AUD-11 (P1-07) : optionnel côté contenu (une méthode plus ancienne ou
+                       une fixture de test peut ne pas le porter) — repli EXPLICITE, jamais
+                       lu comme une valeur du cabinet : aucun chemin qui consomme ces deux
+                       nombres (sampling.ts::proposeRevenueSample) n'est exercé par les
+                       méthodes qui omettent ce bloc. */
+                    parametresEchantillonnage: risq.parametres_echantillonnage
+                      ? { coverageCapPctOfPm: risq.parametres_echantillonnage.coverage_cap_pct_of_pm,
+                          coverageCapPctOfPmVerifie: !!risq.parametres_echantillonnage.coverage_cap_pct_of_pm_verifie,
+                          randomSizeDefault: risq.parametres_echantillonnage.random_size_default,
+                          randomSizeDefaultVerifie: !!risq.parametres_echantillonnage.random_size_default_verifie }
+                      : { coverageCapPctOfPm: 1, coverageCapPctOfPmVerifie: false,
+                          randomSizeDefault: 4, randomSizeDefaultVerifie: false } },
            assertions:{ version:asrt.version, liste:asrt.assertions },
            papier:{ version:pap.version, papiers:sansNotes(pap.papiers),
                     annexes:pap.annexes, mentions:pap.mentions, entete:pap.entete,

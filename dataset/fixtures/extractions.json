@@ -1077,6 +1077,955 @@
     ]
   },
   {
+    "filename": "evidence/FA2025-0654.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0654",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-12-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Atelier Lumière & Verre EURL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "48000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "9600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "57600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Étude technique et calepinage (forfait)\",\"qty\":1,\"unitPriceCents\":48000,\"netCents\":48000}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0046.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0046",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-02-07",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "479660",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "95932",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "575592",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage acoustique 44.2/16/10 (m²)\",\"qty\":29,\"unitPriceCents\":16540,\"netCents\":479660}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0030",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0030.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0030",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-02-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0046",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "29",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0440.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0440",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-09-03",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1124720",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "224944",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1349664",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage acoustique 44.2/16/10 (m²)\",\"qty\":68,\"unitPriceCents\":16540,\"netCents\":1124720}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0288",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0288.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0288",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-09-01",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0440",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "68",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0445.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0445",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-09-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Négoce Vitrages Réunis SARL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "285200",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "57040",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "342240",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":46,\"unitPriceCents\":6200,\"netCents\":285200}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0469.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0469",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-09-08",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1426800",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "285360",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1712160",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage trempé sécurit 10mm (m²)\",\"qty\":120,\"unitPriceCents\":11890,\"netCents\":1426800}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0306",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0306.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0306",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-09-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0469",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "120",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0040.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0040",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-01-13",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Négoce Vitrages Réunis SARL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1546560",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "309312",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1855872",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Triple vitrage argon 4/12/4/12/4 (m²)\",\"qty\":108,\"unitPriceCents\":14320,\"netCents\":1546560}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0025",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0025.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0025",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-01-11",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0040",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "108",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Négoce Vitrages Réunis SARL",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0505.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0505",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-09-24",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1955000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "391000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "2346000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage coupe-feu EI30 (m²)\",\"qty\":68,\"unitPriceCents\":28750,\"netCents\":1955000}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0334",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0334.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0334",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-09-22",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0505",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "68",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0489.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0489",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-09-12",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "717950",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "143590",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "861540",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage isolant double 4/16/4 (m²)\",\"qty\":83,\"unitPriceCents\":8650,\"netCents\":717950}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0321",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0321.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0321",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-09-10",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0489",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "83",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0062.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0062",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-02-10",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "570900",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "114180",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "685080",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage isolant double 4/16/4 (m²)\",\"qty\":66,\"unitPriceCents\":8650,\"netCents\":570900}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0041",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0041.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0041",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-02-08",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0062",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "66",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0109.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0109",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-03-13",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Promoteurs du Forez SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "48000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "9600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "57600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Étude technique et calepinage (forfait)\",\"qty\":1,\"unitPriceCents\":48000,\"netCents\":48000}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0591.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0591",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-11-12",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "529280",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "105856",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "635136",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage acoustique 44.2/16/10 (m²)\",\"qty\":32,\"unitPriceCents\":16540,\"netCents\":529280}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0398",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0398.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0398",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-11-10",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0591",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "32",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
     "filename": "evidence/FA2025-0329.pdf",
     "docType": "invoice",
     "rungExpected": "text_layer",
@@ -1420,6 +2369,869 @@
       {
         "name": "buyerName",
         "value": "Verrería del Sur SL",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0689.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0689",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-12-04",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "297250",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "59450",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "356700",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage trempé sécurit 10mm (m²)\",\"qty\":25,\"unitPriceCents\":11890,\"netCents\":297250}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0462",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0462.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0462",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-12-02",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0689",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "25",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Menuiseries Chartier SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0692.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0692",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-12-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Tertiaire Bâtir SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1628930",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "325786",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1954716",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage trempé sécurit 10mm (m²)\",\"qty\":137,\"unitPriceCents\":11890,\"netCents\":1628930}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0464",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0464.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0464",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-12-03",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0692",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "137",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Tertiaire Bâtir SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0312.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0312",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-06-05",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "860080",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "172016",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1032096",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage acoustique 44.2/16/10 (m²)\",\"qty\":52,\"unitPriceCents\":16540,\"netCents\":860080}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0213",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0213.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0213",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-06-03",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0312",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "52",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0254.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0254",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-05-19",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Serres & Vérandas Alpines SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1985630",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "397126",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "2382756",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage trempé sécurit 10mm (m²)\",\"qty\":167,\"unitPriceCents\":11890,\"netCents\":1985630}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0174",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0174.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0174",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-05-17",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0254",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "167",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Serres & Vérandas Alpines SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0201.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0201",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-04-04",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Serres & Vérandas Alpines SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "415400",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "83080",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "498480",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":67,\"unitPriceCents\":6200,\"netCents\":415400}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0698.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0698",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-12-15",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "117800",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "23560",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "141360",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":19,\"unitPriceCents\":6200,\"netCents\":117800}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0623.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0623",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-11-06",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1438690",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "287738",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "1726428",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage trempé sécurit 10mm (m²)\",\"qty\":121,\"unitPriceCents\":11890,\"netCents\":1438690}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0418",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0418.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0418",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-11-04",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0623",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "121",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Groupe Immovance SA",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0373.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0373",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-07-21",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Bâtiplace SARL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "601400",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "120280",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "721680",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":97,\"unitPriceCents\":6200,\"netCents\":601400}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0610.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0610",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-11-24",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "1782500",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "356500",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "2139000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Vitrage coupe-feu EI30 (m²)\",\"qty\":62,\"unitPriceCents\":28750,\"netCents\":1782500}",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryNoteRef",
+        "value": "BL2025-0408",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/BL2025-0408.pdf",
+    "docType": "delivery_note",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "deliveryNoteNumber",
+        "value": "BL2025-0408",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "deliveryDate",
+        "value": "2025-11-22",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceRef",
+        "value": "FA2025-0610",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "qtyTotal",
+        "value": "62",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Constructions Peyrelle SAS",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0160.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0160",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-04-18",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Atelier Lumière & Verre EURL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "48000",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "9600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "57600",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Étude technique et calepinage (forfait)\",\"qty\":1,\"unitPriceCents\":48000,\"netCents\":48000}",
+        "confidence": 1,
+        "page": 1
+      }
+    ]
+  },
+  {
+    "filename": "evidence/FA2025-0132.pdf",
+    "docType": "invoice",
+    "rungExpected": "text_layer",
+    "fields": [
+      {
+        "name": "invoiceNumber",
+        "value": "FA2025-0132",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "invoiceDate",
+        "value": "2025-03-17",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "buyerName",
+        "value": "Atelier Lumière & Verre EURL",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "sellerName",
+        "value": "Altiverre SAS",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalNetCents",
+        "value": "644800",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "vatCents",
+        "value": "128960",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "totalGrossCents",
+        "value": "773760",
+        "confidence": 1,
+        "page": 1
+      },
+      {
+        "name": "line1",
+        "value": "{\"description\":\"Prestation de pose et calage (h)\",\"qty\":104,\"unitPriceCents\":6200,\"netCents\":644800}",
         "confidence": 1,
         "page": 1
       }

@@ -139,13 +139,18 @@ export default async function RiskPage({
     return executer(`/eng/${id}/risk?fsli=${code}`, async () => {
       const { user } = await requireMember(id);
       const level = String(formData.get('level') ?? '');
+      const reason = String(formData.get('reason') ?? '');
       await overrideLevel(
         id,
         String(formData.get('fsli')),
         String(formData.get('assertion')),
         level === '' ? null : level,
-        String(formData.get('reason') ?? ''),
+        reason,
         user.id,
+        /* RISK-01 (0179, P1-07) : pas encore de champ dédié à l'écran (P4-08) — le motif
+           d'écart sert aussi de justification nrpmm tant que ce second champ n'existe pas,
+           pour ne jamais rendre ce refus impossible à satisfaire depuis cet écran (règle 37). */
+        reason,
       );
       revalidatePath(`/eng/${id}/risk`);
     });

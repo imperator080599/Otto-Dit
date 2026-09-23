@@ -2675,3 +2675,41 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   « Papiers & visas », §8 du plan maître : STALE dérivé de l'empreinte) — pas avant, pour ne pas
   poser un verrou dont rien ne prouve aujourd'hui l'utilité par un test qui l'exercerait
   réellement (règle 15).
+
+- **R147 — REPORTÉ, gravité moyenne, trouvé en régénérant le jeu de données pour P1-07/AUD-11.**
+  `app/scripts/dataset/generate.ts:64` fait `fs.rmSync(outDir, { recursive: true, force: true })`
+  sur `dataset/` EN ENTIER avant d'écrire — mais plusieurs sous-répertoires n'ont AUCUN générateur
+  qui les réécrit ensuite : `balances_aux/`, `circularisations/`, `entretiens/`, `estimations/`,
+  `processus/`, `pieces_neuves/`, `fixtures/walkthroughs.json`, `fixtures/entretiens.json`,
+  `sox/walkthrough-video-placeholder.txt` (vérifié : aucun script sous `app/scripts/dataset/` ne
+  les touche ; `pieces-neuves.ts` EXISTE mais n'est appelé par AUCUN script `package.json`, donc
+  jamais exécuté par `npm run dataset:generate`). Un `npm run dataset:generate` normal EFFACE donc
+  ces fichiers SANS LES RECRÉER — synthétique, pas de donnée client, mais du contenu de dépôt perdu
+  en silence (règle 13) si personne ne restaure par `git checkout` avant de commiter. Découvert et
+  contourné cette session (`git checkout` a restauré les neuf chemins avant tout commit — vérifié
+  par `git status`, rien de perdu ici) ; NON corrigé dans cette tranche (hors périmètre P1-07,
+  et corriger correctement exige de savoir CE QUE ces répertoires devraient redevenir : hand-écrits
+  à garder tels quels — auquel cas le générateur devrait les exclure du `rmSync` — ou générés par un
+  script disparu/jamais committé — auquel cas il en manque un). **Vigilance requise avant tout futur
+  `npm run dataset:generate` : `git status dataset/` après coup, restaurer ce qui n'aurait pas dû
+  disparaître, AVANT de commiter.**
+  Trouvé au même moment, sans lien avec le générateur lui-même : `dataset/sox/rcm.csv` committé
+  était DÉJÀ en dérive par rapport à ce que `generate.ts` produit aujourd'hui (colonne `di_status`
+  absente du fichier committé, présente dans la sortie fraîche — une tranche CTRL antérieure a dû
+  faire évoluer le générateur sans regénérer/commiter ce fichier). Restauré à sa version committée
+  pour cette tranche (hors périmètre P1-07) ; à régénérer et commiter séparément un jour, pas ici.
+
+- **R148 — REPORTÉ, gravité faible, trouvé en travaillant sur AUD-11 (P1-07).**
+  `methodology/procedures.json` porte une procédure du cycle chiffre d'affaires, `CA-EXHAUST`,
+  avec `cycle: "CA"` — mais le vrai code FSLI du poste est `REVENUE` (voir `poste.code`,
+  `fsli.code`). `proceduresDuCycle(cat, 'REVENUE')` (catalogue.ts) filtre EXACTEMENT sur
+  `p.cycle === fsliCode`, donc `CA-EXHAUST` n'est JAMAIS repris par aucune assertion de poste
+  REVENUE — même défaut de correspondance cycle↔code déjà trouvé et corrigé pour TRESO→CASH
+  (Lot 5, amendement du 14 septembre à la règle 14) et pour FOURN→TRADE_PAYABLES (Lot 5,
+  Fournisseurs) mais jamais recherché systématiquement sur TOUT le catalogue. Non corrigé ici :
+  hors périmètre explicite d'AUD-11/P1-07 (qui porte l'échelle de risque et RISK-01, pas le
+  catalogue de procédures), et corriger un `cycle` dans `procedures.json` est un changement de
+  CONTENU DE MÉTHODE qui mérite sa propre revue (une procédure qui entre soudain dans les requises
+  d'un poste change ce qu'un dossier réel doit produire). À reprendre : balayer TOUT
+  `procedures.json` pour tout `cycle` qui ne correspond à AUCUN `fsli.code` réel du pack, pas
+  seulement au cas par cas découvert en ouvrant chaque poste du Lot 5.

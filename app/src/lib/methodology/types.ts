@@ -239,6 +239,17 @@ export interface Risque {
   predicats: string[];
   /** Formules de taille que le moteur sait calculer, énumérées par le schéma. */
   formules: Record<string, FormuleTaille>;
+  /** Libellés bilingues par niveau (AUD-11, P1-07) — contenu, pas encore consommé par un
+   *  écran (P4-08) ; absent d'une méthode plus ancienne, d'où le défaut à `{}`. */
+  libelles: Record<string, { en: string; fr: string }>;
+  /** Paramètres d'échantillonnage du cabinet, déplacés hors du pack TypeScript (AUD-11,
+   *  P1-07, règle 9) — `verifie:false` tant qu'aucun cabinet ne les a confirmés. */
+  parametresEchantillonnage: {
+    coverageCapPctOfPm: number;
+    coverageCapPctOfPmVerifie: boolean;
+    randomSizeDefault: number;
+    randomSizeDefaultVerifie: boolean;
+  };
 }
 
 /* ── acceptation, maintien, jalons ────────────────────────────────────── */

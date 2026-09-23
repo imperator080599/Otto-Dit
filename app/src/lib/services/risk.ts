@@ -18,7 +18,7 @@
 // — sans quoi le facteur serait silencieusement toujours inactif, le risque
 // sous-évalué, l'étendue réduite, et rien ne le dirait.
 
-import { q, q1, q01 } from '@/lib/db/client';
+import { q, q1, q01, tx } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { assertAccepte } from './acceptance';
@@ -397,6 +397,20 @@ export async function risksFor(engagementId: string, fsliCode: string): Promise<
  * Surcharger un niveau. SANS MOTIF ÉCRIT, C'EST REFUSÉ — descendre un risque
  * sans dire pourquoi est précisément le geste qu'un dossier doit rendre
  * impossible. La contrainte de base le refuse aussi.
+ *
+ * RISK-01 (0179, P1-07) — quand le niveau EFFECTIF (retenu, sinon calculé)
+ * est « nrpmm », `justification` est obligatoire, EN PLUS du motif ci-dessus
+ * (une contrainte distincte, le même prédicat que `risk01_nrpmm_justifie` en
+ * base — refusée ici AVANT l'aller-retour SQL, jamais seulement par le 23514
+ * générique, règle 13). `justification` est optionnel par défaut (chaîne
+ * vide) pour ne pas casser les appelants existants qui ne visent jamais
+ * nrpmm ; tout appelant qui propose nrpmm doit la fournir.
+ *
+ * Chaque appel qui touche une assertion déjà évaluée écrit une ligne
+ * append-only dans `fsli_assertion_risk_decision` (`supersedes_id` chaîné à
+ * la précédente décision de CETTE assertion) — la ligne mère
+ * (`fsli_assertion_risk`) ne reflète que la DERNIÈRE, mais aucune décision
+ * n'est jamais effacée (règle 28).
  */
 export async function overrideLevel(
   engagementId: string,
@@ -405,12 +419,13 @@ export async function overrideLevel(
   level: Level | null,
   reason: string,
   actorUserId: string,
+  justification = '',
 ): Promise<void> {
   await assertMembre(engagementId, actorUserId, 'overrideLevel');
   const cat = await catalogueDeLaMission(engagementId);
   const eng = await engagementContext(engagementId);
-  const row = await q01<{ computed_level: string }>(
-    `select computed_level from fsli_assertion_risk
+  const row = await q01<{ id: string; computed_level: string }>(
+    `select id, computed_level from fsli_assertion_risk
      where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
     [engagementId, fsliCode, assertion],
   );
@@ -421,14 +436,33 @@ export async function overrideLevel(
       throw new RiskRuleError('une surcharge de niveau sans motif écrit n’est pas une surcharge');
     }
   }
-  await q(
-    `update fsli_assertion_risk
-       set retained_level = $4, override_reason = $5, decided_by = $6,
-           decided_at = case when $4::text is null then null else now() end
-     where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
-    [engagementId, fsliCode, assertion, level, level === null ? null : reason.trim(),
-     level === null ? null : actorUserId],
-  );
+  const niveauEffectif = (level ?? row.computed_level).toLowerCase();
+  if (niveauEffectif === 'nrpmm' && !justification.trim()) {
+    throw new RiskRuleError(
+      'RISK-01 : nrpmm (anomalie significative jugée non raisonnablement possible) exige une justification écrite — c’est la décision la plus lourde de conséquence de ce module (elle retire tout travail substantif sur l’assertion), la seule que rien ne calcule à sa place.',
+    );
+  }
+  await tx(async () => {
+    const precedente = await q01<{ id: string }>(
+      `select id from fsli_assertion_risk_decision where fsli_assertion_risk_id = $1
+       order by decided_at desc limit 1`,
+      [row.id],
+    );
+    await q(
+      `insert into fsli_assertion_risk_decision
+         (fsli_assertion_risk_id, retained_level, justification, decided_by, supersedes_id)
+       values ($1, $2, $3, $4, $5)`,
+      [row.id, level, justification.trim() || null, actorUserId, precedente?.id ?? null],
+    );
+    await q(
+      `update fsli_assertion_risk
+         set retained_level = $4, override_reason = $5, justification = $6, decided_by = $7,
+             decided_at = case when $4::text is null then null else now() end
+       where engagement_id = $1 and fsli_code = $2 and assertion = $3`,
+      [engagementId, fsliCode, assertion, level, level === null ? null : reason.trim(),
+       level === null ? null : (justification.trim() || null), level === null ? null : actorUserId],
+    );
+  });
   await logEvent({
     tenantId: eng.tenant_id,
     engagementId,
@@ -437,7 +471,7 @@ export async function overrideLevel(
     verb: level === null ? 'risk.override.cleared' : 'risk.override.set',
     objectType: 'fsli_assertion_risk',
     objectId: `${fsliCode}/${assertion}`,
-    payload: { computed: row.computed_level, retained: level, reason: reason.trim() },
+    payload: { computed: row.computed_level, retained: level, reason: reason.trim(), justification: justification.trim() },
   });
 }
 

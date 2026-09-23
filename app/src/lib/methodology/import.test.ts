@@ -41,7 +41,7 @@ async function fautifs(): Promise<{ nom: string; paquet: Paquet; motif: RegExp }
   const echelleTrouee = JSON.parse(JSON.stringify(base['risque.json'])) as {
     echelle: { niveaux: string[]; paliers: { facteurs_min: number; niveau: string }[] };
   };
-  echelleTrouee.echelle.niveaux = ['leger', 'lourd'];   // les procédures exigent encore faible/moyen/eleve
+  echelleTrouee.echelle.niveaux = ['leger', 'lourd'];   // les procédures exigent encore nrpmm/lower/higher/significant
 
   return [
     { nom: 'un schéma glissé dans le paquet', motif: /schéma\(s\) dans le paquet/,
@@ -59,7 +59,7 @@ async function fautifs(): Promise<{ nom: string; paquet: Paquet; motif: RegExp }
       motif: /prédicat « flair_de_l_associe » inconnu du moteur \(connus :/,
       paquet: { ...base, 'risque.json': risqueFautif } },
     { nom: 'une échelle qui ne couvre pas les niveaux exigés',
-      motif: /risque_minimum « faible » absent de l’échelle du cabinet \(leger \| lourd\)/,
+      motif: /risque_minimum « lower » absent de l’échelle du cabinet \(leger \| lourd\)/,
       paquet: { ...base, 'risque.json': echelleTrouee } },
   ];
 }

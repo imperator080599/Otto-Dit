@@ -74,13 +74,16 @@ describe('risque par assertion — il commande, il ne décore pas', () => {
 
   /* ═══ 2. l'échelle ════════════════════════════════════════════════════ */
 
-  it('l’échelle vient de la méthode : 0 → faible, 1 → moyen, 2 et plus → élevé', async () => {
+  it('l’échelle vient de la méthode : 0 → lower, 1 → higher, 2 et plus → significant', async () => {
     const cat = await chargerCatalogue();
-    expect(levelForCount(cat, 0)).toBe('faible');
-    expect(levelForCount(cat, 1)).toBe('moyen');
-    expect(levelForCount(cat, 2)).toBe('eleve');
-    expect(levelForCount(cat, 9)).toBe('eleve');
-    expect(rank(cat, 'faible')).toBeLessThan(rank(cat, 'eleve'));
+    expect(levelForCount(cat, 0)).toBe('lower');
+    expect(levelForCount(cat, 1)).toBe('higher');
+    expect(levelForCount(cat, 2)).toBe('significant');
+    expect(levelForCount(cat, 9)).toBe('significant');
+    expect(rank(cat, 'lower')).toBeLessThan(rank(cat, 'significant'));
+    // nrpmm existe dans l'échelle (rang le plus bas) mais n'est JAMAIS calculé
+    // par comptage de facteurs (P1-07, AUD-11) — seul un humain l'atteint.
+    expect(rank(cat, 'nrpmm')).toBeLessThan(rank(cat, 'lower'));
     expect(() => rank(cat, 'catastrophique')).toThrow(/absent de l’échelle/);
   });
 
@@ -126,7 +129,10 @@ describe('risque par assertion — il commande, il ne décore pas', () => {
     // On rend la main au calcul (« séparation » y est au plancher) : elles sortent.
     await overrideLevel(IDS.engNep, 'REVENUE', 'separation', null, '', IDS.users.lea);
     const bottom = (await levelFor(IDS.engNep, 'REVENUE', 'separation'))!;
-    expect(bottom).toBe(cat.risque.niveaux[0]);
+    // niveaux[0] est « nrpmm » (P1-07, AUD-11) — jamais un niveau CALCULÉ, donc
+    // jamais celui que rend le plancher du calcul par comptage de facteurs ;
+    // niveaux[1] est le plancher réel, « lower ».
+    expect(bottom).toBe(cat.risque.niveaux[1]);
     const lowered = await requiredProcedures(IDS.engNep, 'REVENUE');
 
     const sepRaised = raised.filter((p) => p.assertion === 'separation').map((p) => p.procedure.code);
@@ -291,26 +297,26 @@ describe('la taille d’échantillon par formule', () => {
 
   it('la formule est NOMMÉE par la méthode et CALCULÉE par le code', async () => {
     const cat = await chargerCatalogue();
-    const f = formuleDeTaille(cat, 'eleve');
+    const f = formuleDeTaille(cat, 'significant');
     expect(f?.nom).toBe('mus_intervalle_au_seuil');
     expect(f?.calcul).toMatch(/facteur_confiance/);
-    // et le niveau faible reste une table : les deux formes cohabitent
-    expect(formuleDeTaille(cat, 'faible')).toBeNull();
-    expect(sampleSize(cat, 'faible')).toBe(6);
+    // et le niveau lower reste une table : les deux formes cohabitent
+    expect(formuleDeTaille(cat, 'lower')).toBeNull();
+    expect(sampleSize(cat, 'lower')).toBe(6);
   });
 
   it('le calcul est celui qui est écrit, pas un autre', async () => {
     const cat = await chargerCatalogue();
     // 12 000 000 € × 3 / 300 000 € = 120 → borné à 80
-    expect(sampleSize(cat, 'eleve', {
+    expect(sampleSize(cat, 'significant', {
       valeurPopulationCents: 1_200_000_000, seuilPlanificationCents: 30_000_000,
     })).toBe(80);
     // 800 000 € × 3 / 300 000 € = 8 → relevé au minimum 20
-    expect(sampleSize(cat, 'eleve', {
+    expect(sampleSize(cat, 'significant', {
       valeurPopulationCents: 80_000_000, seuilPlanificationCents: 30_000_000,
     })).toBe(20);
     // 4 000 000 € × 3 / 300 000 € = 40 → dans les bornes, donc tel quel
-    expect(sampleSize(cat, 'eleve', {
+    expect(sampleSize(cat, 'significant', {
       valeurPopulationCents: 400_000_000, seuilPlanificationCents: 30_000_000,
     })).toBe(40);
   });
@@ -319,14 +325,14 @@ describe('la taille d’échantillon par formule', () => {
     /* Le défaut qu'on interdit : rendre une valeur par défaut. Un chiffre
        affiché qui ne sait pas dire d'où il vient est pire qu'une absence. */
     const cat = await chargerCatalogue();
-    expect(sampleSize(cat, 'eleve')).toBeNull();
+    expect(sampleSize(cat, 'significant')).toBeNull();
   });
 
   it('une population nulle ou un seuil nul LÈVENT au lieu de rendre zéro', async () => {
     const cat = await chargerCatalogue();
-    expect(() => sampleSize(cat, 'eleve', { valeurPopulationCents: 0, seuilPlanificationCents: 30_000_000 }))
+    expect(() => sampleSize(cat, 'significant', { valeurPopulationCents: 0, seuilPlanificationCents: 30_000_000 }))
       .toThrow(/population n’est pas évaluée/);
-    expect(() => sampleSize(cat, 'eleve', { valeurPopulationCents: 1_000, seuilPlanificationCents: 0 }))
+    expect(() => sampleSize(cat, 'significant', { valeurPopulationCents: 1_000, seuilPlanificationCents: 0 }))
       .toThrow(/seuil de planification n’est pas fixé/);
   });
 
@@ -360,7 +366,7 @@ describe('la taille d’échantillon par formule', () => {
     /* SANS CETTE ASSERTION, LA BOUCLE CI-DESSOUS PASSERAIT À VIDE si aucune
        assertion n'atteignait le niveau qui porte la formule. On force donc le
        niveau élevé sur une assertion, et on vérifie qu'il y a bien matière. */
-    await overrideLevel(IDS.engNep, 'REVENUE', 'realite', 'eleve',
+    await overrideLevel(IDS.engNep, 'REVENUE', 'realite', 'significant',
       'Test : vérifier que la formule s’applique réellement.', IDS.users.claire);
     const reqs2 = await requiredProcedures(IDS.engNep, 'REVENUE');
     const parFormule = reqs2.filter((r) => r.taille.origine === 'formule');

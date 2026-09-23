@@ -207,7 +207,7 @@ export const GARDES: Garde[] = [
     attaque: async (run, ctx) => {
       await run(
         `insert into fsli_assertion_risk (engagement_id, fsli_code, assertion, computed_level, retained_level, methodology_version)
-         values ($1, 'ATTAQUE', 'realite', 'eleve', 'faible', 'v-attaque')`,
+         values ($1, 'ATTAQUE', 'realite', 'significant', 'lower', 'v-attaque')`,
         [ctx.engagementId]);
     },
     rejet: /override_needs_a_written_reason/,

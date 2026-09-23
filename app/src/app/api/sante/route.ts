@@ -176,6 +176,30 @@ async function corpsDeLaSonde() {
     return `${validees.n} matérialité(s) validée(s) · ${actifs.n} process_model actif(s) · 0 doublon`;
   }));
 
+  /* RISK-01 ET LES DÉCISIONS VERSIONNÉES (P1-07, AUD-11, migration 0179) : la contrainte
+     `risk01_nrpmm_justifie` REFUSE déjà toute écriture directe, mais cette lecture existe pour
+     ROUGIR si elle était un jour contournée (RLS désactivée, un chemin qui écrit hors service) —
+     un niveau EFFECTIF « nrpmm » (retenu, sinon calculé — mais le calcul ne produit jamais
+     nrpmm) sans justification écrite serait la décision la plus lourde de conséquence du module
+     prise sans motif (règle 22 : cette lecture doit pouvoir rougir sur le cas qu'elle surveille).
+     CE QU'ELLE NE VÉRIFIE PAS (règle 19) : que la chaîne `supersedes_id` de
+     `fsli_assertion_risk_decision` est correctement ordonnée par date (garanti par le service,
+     pas rejoué ici) ni que l'écran `/risk` affiche ces décisions (couvert par ses propres tests
+     ciblés et par `npm run clics`). */
+  lectures.push(await essayer('risque : RISK-01 et les décisions versionnées (P1-07, AUD-11)', async () => {
+    const nrpmmSansJustif = await q<{ id: string }>(
+      `select id::text from fsli_assertion_risk
+       where lower(coalesce(retained_level, computed_level)) = 'nrpmm'
+         and btrim(coalesce(justification, '')) = ''`);
+    if (nrpmmSansJustif.length > 0) {
+      throw new Error(`${nrpmmSansJustif.length} risque(s) à nrpmm sans justification — RISK-01 (risk01_nrpmm_justifie) est rompu`);
+    }
+    const decisions = await q1<{ n: string }>(`select count(*)::text n from fsli_assertion_risk_decision`);
+    const nrpmmRetenus = await q1<{ n: string }>(
+      `select count(*)::text n from fsli_assertion_risk where lower(coalesce(retained_level, '')) = 'nrpmm'`);
+    return `${decisions.n} décision(s) versionnée(s) · ${nrpmmRetenus.n} assertion(s) retenue(s) à nrpmm · 0 sans justification`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

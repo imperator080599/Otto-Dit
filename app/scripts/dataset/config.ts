@@ -55,7 +55,24 @@ export const VAT_RATE = 0.2;
 // these values; the generator computes the draw with them. Emitted to
 // dataset/demo-params.json with the computed materiality amounts.
 export const DEMO_SAMPLING = {
-  revenue: { seed: 'otto-demo-rev-1', randomSize: 4 }, // coverageCapCents = PM (computed)
+  /* randomSize = 15, mesuré CONTRE LE VRAI bootstrapNep() (pas un fixture de
+     test simplifié), pas deviné (AUD-11, P1-07) : depuis que
+     `proposeRevenueSample` (app/src/lib/services/sampling.ts) source sa
+     taille du risque évalué — `requiredProcedures(...).sampleSize` de la
+     procédure DETAIL — plutôt que d'un défaut de pack fixe, la taille de la
+     strate aléatoire suit le NIVEAU RÉEL de l'assertion « realite » du
+     chiffre d'affaires. Sur le monde de démonstration réel (les DEUX
+     exercices importés, TB courant ET TB N-1), le facteur « variation N/N-1
+     au-dessus du seuil » est ACTIF (153 597 € de variation contre 27 000 €
+     de seuil de planification) : 1 facteur ⇒ niveau « higher » ⇒
+     `methodology/risque.json`'s `tailles_echantillon.higher` = 15. Mesuré
+     une fois par un run réel de `bootstrapNep()` + `risksFor()` +
+     `requiredProcedures()`, jamais réinventé ici (règle 8/31). Ce générateur
+     n'importe PAS risque.json (ADR-015 : germé/pinné, pas recalculé) — la
+     valeur DOIT rester alignée à la main avec ce que l'app calcule
+     réellement, ou le générateur produirait des pièces pour un tirage que
+     l'app ne reproduit plus. */
+  revenue: { seed: 'otto-demo-rev-1', randomSize: 15 }, // coverageCapCents = PM (computed)
   sox: { seed: 'otto-demo-sox-1' },
   verification: { seed: 'otto-demo-verif-1', rate: 0.1, min: 3 },
 };

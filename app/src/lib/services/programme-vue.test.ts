@@ -125,8 +125,13 @@ describe('le programme de travail', () => {
        test descendait donc les assertions au niveau le plus HAUT en croyant
        faire l'inverse. L'échelle du cabinet est ordonnée du plus faible au plus
        élevé, et c'est elle qui répond. */
+    /* niveaux[0] EST « nrpmm » DEPUIS P1-07 (AUD-11) — un niveau atteignable
+       SEULEMENT par surcharge humaine avec justification (RISK-01), JAMAIS un
+       plancher de calcul : aucune procédure du catalogue n'a
+       `risque_minimum: 'nrpmm'`. Le plancher RÉEL, celui que le calcul par
+       comptage de facteurs peut rendre, est niveaux[1] (« lower »). */
     const cat = await catalogueDeLaMission(IDS.engNep);
-    const plusBas = cat.risque.niveaux[0];
+    const plusBas = cat.risque.niveaux[1];
 
     /* ET LA PROCÉDURE CHOISIE DOIT POUVOIR SORTIR. Le premier jet prenait la
        première planifiée : c'était DETAIL, dont le minimum est le niveau le

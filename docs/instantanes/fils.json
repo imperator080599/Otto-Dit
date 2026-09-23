@@ -781,6 +781,18 @@
       "etat": "reporté, gravité moyenne, non exploité aujourd'hui — signWorkpaper (workpapers/lifecycle.ts) n'est pas transactionnelle : fenêtre TOCTOU entre la lecture de sections et l'insertion du signoff (sections_hash peut dater d'une version déjà périmée par un editSection concurrent), et non-atomicité insert-signoff/update-status.",
       "depuis": "2026-09-23 (Phase 1, P1-04, revue hostile voix 1 — jugée seule sur ce point, non reprise par la voix 2)",
       "note": "non corrigé délibérément : sections_hash n'a aujourd'hui aucun lecteur qui le COMPARE (seul /api/sante teste sa non-nullité, etatDuVisa compare based_on_hash) — la fenêtre de course n'a aucun effet observable tant que rien ne consomme le champ. Le correctif correct (verrou de ligne select…for update des deux côtés, signWorkpaper ET editSection — un tx() seul ne suffit pas) attend le premier lecteur réel (Phase 3, plan maître §8, STALE dérivé de l'empreinte). Voir docs/BACKLOG_REPORTE.md pour le détail complet."
+    },
+    {
+      "id": "R147",
+      "etat": "reporté, gravité moyenne — scripts/dataset/generate.ts (générateur du jeu de données synthétique) efface dataset/ EN ENTIER (fs.rmSync récursif) avant d'écrire, mais plusieurs sous-répertoires (balances_aux/, circularisations/, entretiens/, estimations/, processus/, pieces_neuves/, fixtures/walkthroughs.json, fixtures/entretiens.json, sox/walkthrough-video-placeholder.txt) n'ont AUCUN générateur qui les recrée — un npm run dataset:generate normal les efface donc sans les remplacer.",
+      "depuis": "2026-09-23 (Phase 1, P1-07, AUD-11) — trouvé en régénérant dataset/ pour recalibrer la taille du tirage revenue sur le risque évalué",
+      "note": "restauré cette session par git checkout avant tout commit (rien perdu, vérifié par git status) ; non corrigé dans cette tranche (hors périmètre P1-07 — corriger exige de savoir si ces répertoires sont hand-écrits à préserver ou générés par un script disparu). Trouvé au même moment, sans lien avec le générateur : dataset/sox/rcm.csv committé était déjà en dérive (colonne di_status manquante) par rapport à ce que generate.ts produit aujourd'hui ; restauré à sa version committée, à régénérer séparément un jour. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R148",
+      "etat": "reporté, gravité faible — methodology/procedures.json porte CA-EXHAUST avec cycle: \"CA\", mais le vrai code FSLI du poste est REVENUE ; proceduresDuCycle(cat, 'REVENUE') ne la reprend donc jamais (même défaut de correspondance cycle↔code déjà trouvé et corrigé pour TRESO→CASH et FOURN→TRADE_PAYABLES au Lot 5, jamais balayé sur tout le catalogue).",
+      "depuis": "2026-09-23 (Phase 1, P1-07, AUD-11) — trouvé en lisant procedures.json pour sourcer la taille d'échantillon depuis la procédure DETAIL",
+      "note": "non corrigé : hors périmètre explicite d'AUD-11/P1-07 (échelle de risque et RISK-01, pas le catalogue de procédures), et changer un cycle est un changement de CONTENU DE MÉTHODE qui mérite sa propre revue (une procédure qui entre soudain dans les requises d'un poste change ce qu'un dossier réel doit produire). À reprendre : balayer TOUT procedures.json pour tout cycle sans fsli.code correspondant, pas seulement au cas par cas. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

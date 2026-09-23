@@ -7,9 +7,10 @@ import { IDS, PORTAL_TOKENS } from '@/lib/seed';
 import { detectTbMapping, importTb, importFec } from './imports';
 import { computeTbGl, latestTbGl, noteReconciliationLimitation } from './reconciliation';
 import { rebuildFslis } from './fsli';
+import { assessFsli, overrideLevel } from './risk';
 import { propose, validate } from './materiality';
 import { revenuePopulation } from './population';
-import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample } from './sampling';
+import { proposeRevenueSample, validateSampleParams, drawRevenueSample, currentRevenueSample, SamplingRuleError } from './sampling';
 import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, listRequests, demanderDetailDeCompte, derniereDemandeDetailDeCompte } from './requests';
 import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 import { populationDuDetailRapproche, attenduGlPourPoste } from './account-detail';
@@ -24,6 +25,13 @@ const ds = (...p: string[]) => path.join(repoRoot(), 'dataset', ...p);
 async function bootstrapNepEngagement(): Promise<void> {
   const tb = fs.readFileSync(ds('tb_2025.csv'), 'utf8');
   await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2025.csv', content: tb, mapping: detectTbMapping(tb.split('\n')[0]), periodKind: 'current' });
+  /* AUD-11 (P1-07) : le TB N-1 doit être importé POUR QUE le facteur « variation N/N-1 » se
+     mesure — sans lui, `realite` calcule « lower » plutôt que le « higher » réel du dossier
+     (1 facteur actif, mesuré contre le vrai `bootstrapNep()` de part1.ts), et `proposeRevenueSample`
+     tirerait un échantillon d'une taille différente de celle que `dataset/` porte réellement
+     (le générateur, `scripts/dataset/config.ts`, est calibré sur le VRAI bootstrap, pas sur celui-ci). */
+  const tbPrior = fs.readFileSync(ds('tb_2024.csv'), 'utf8');
+  await importTb({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: 'tb_2024.csv', content: tbPrior, mapping: detectTbMapping(tbPrior.split('\n')[0]), periodKind: 'prior' });
   await importFec({ engagementId: IDS.engNep, userId: IDS.users.karim, filename: '999888777FEC20251231.txt', bytes: fs.readFileSync(ds('999888777FEC20251231.txt')) });
   await computeTbGl(IDS.engNep, IDS.users.karim);
   const latest = await latestTbGl(IDS.engNep);
@@ -36,6 +44,10 @@ async function bootstrapNepEngagement(): Promise<void> {
   await rebuildFslis(IDS.engNep, IDS.users.karim);
   const mid = await propose(IDS.engNep, IDS.users.lea);
   await validate(mid, IDS.users.lea);
+  /* AUD-11 (P1-07) : proposeRevenueSample source désormais sa taille du risque
+     évalué (requiredProcedures(...).sampleSize, procédure DETAIL) — SAMP-01
+     refuse tant qu'aucune évaluation n'existe. */
+  await assessFsli(IDS.engNep, 'REVENUE', IDS.users.karim);
 }
 
 let manifest: {
@@ -296,5 +308,23 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
       attachments: [],
     });
     expect(unknown.quarantined).toBe(true);
+  });
+
+  /* SAMP-01 (AUD-11, P1-07) — CAS CONNU MAUVAIS (règle 17) : quand l'assertion « realite »
+     est retenue à « nrpmm » (justifiée, RISK-01), DETAIL sort des procédures requises
+     (rang(nrpmm) < rang(lower), le plancher de TOUTE procédure du catalogue) — donc
+     `proposeRevenueSample` n'a plus de taille à lire et refuse, plutôt que de retomber en
+     silence sur une constante de pack. */
+  it('SAMP-01 : plus de procédure DETAIL requise (realite retenue à nrpmm) → refus, pas une taille de pack', async () => {
+    await overrideLevel(IDS.engNep, 'REVENUE', 'realite', 'nrpmm',
+      'Épreuve SAMP-01 : retrait temporaire du travail substantif sur realite.', IDS.users.lea,
+      'Assertion jugée sans risque raisonnablement possible pour cette épreuve.');
+    try {
+      await expect(proposeRevenueSample(IDS.engNep, IDS.users.karim)).rejects.toThrow(SamplingRuleError);
+      await expect(proposeRevenueSample(IDS.engNep, IDS.users.karim)).rejects.toThrow(/SAMP-01/);
+    } finally {
+      // on rend la main au calcul, pour ne pas fausser un test qui suivrait dans ce fichier
+      await overrideLevel(IDS.engNep, 'REVENUE', 'realite', null, '', IDS.users.lea);
+    }
   });
 });

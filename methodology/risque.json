@@ -67,33 +67,43 @@
   ],
   "echelle": {
     "_note": "Combien de facteurs actifs font quel niveau. La règle est délibérément grossière : elle se relit, elle se conteste, et l'auditeur la surcharge avec un motif écrit. Un modèle plus fin donnerait une fausse précision sur des facteurs binaires.",
+    "_note_nrpmm": "AUD-11 (P1-07) — remplace l'échelle à trois niveaux (faible/moyen/eleve) par le vocabulaire à quatre niveaux NRPMM/Lower/Higher/Significant, RENOMMAGE MÉCANIQUE des trois niveaux calculés (faible→lower, moyen→higher, eleve→significant — les MÊMES seuils `facteurs_min`, aucune valeur de méthode réinterprétée, règle 8) PLUS un niveau NOUVEAU, « nrpmm » (Not Reasonably Possible [risk of] Material Misstatement). NRPMM N'A DÉLIBÉRÉMENT AUCUN PALIER : le calcul mécanique par comptage de facteurs ne peut jamais conclure qu'une anomalie significative est IMPOSSIBLE — ça, c'est un jugement professionnel, jamais un compte. NRPMM n'est donc atteignable QUE par une surcharge humaine explicite (`retained_level`), jamais par `computed_level` — et c'est exactement pourquoi RISK-01 (justification écrite obligatoire) porte sur ce niveau précis : la décision la plus lourde de conséquence (aucun travail substantif) est aussi la seule que rien ne calcule à sa place.",
     "niveaux": [
-      "faible",
-      "moyen",
-      "eleve"
+      "nrpmm",
+      "lower",
+      "higher",
+      "significant"
     ],
+    "libelles": {
+      "nrpmm": { "en": "NRPMM (not reasonably possible material misstatement)", "fr": "NRPMM (anomalie significative jugée non raisonnablement possible)" },
+      "lower": { "en": "Lower risk", "fr": "Risque faible" },
+      "higher": { "en": "Higher risk", "fr": "Risque élevé" },
+      "significant": { "en": "Significant risk", "fr": "Risque significatif" }
+    },
     "paliers": [
       {
         "facteurs_min": 0,
-        "niveau": "faible"
+        "niveau": "lower"
       },
       {
         "facteurs_min": 1,
-        "niveau": "moyen"
+        "niveau": "higher"
       },
       {
         "facteurs_min": 2,
-        "niveau": "eleve"
+        "niveau": "significant"
       }
     ]
   },
   "tailles_echantillon": {
     "_note": "La taille suit l'assertion TESTÉE, jamais le risque le plus élevé du poste : une procédure répond à UNE assertion. Appliquer le maximum du poste revient à traiter la séparation des exercices comme l'exhaustivité sous prétexte qu'elles partagent un compte. Une section porte donc des échantillons de tailles différentes — c'est la conséquence normale, pas une incohérence.",
     "_note_formule": "Un niveau porte SOIT un nombre, SOIT une formule NOMMÉE. La frontière est la même que pour les prédicats : la méthode nomme « mus_intervalle_au_seuil » et fixe ses paramètres, le code sait le calculer. Une formule inconnue arrête l'assemblage ; une formule implémentée et jamais nommée aussi.",
-    "faible": 6,
-    "moyen": 15,
-    "eleve": {
-      "_pourquoi": "Au niveau élevé, une taille fixe ignore la taille de la population : trente lignes sur un chiffre d'affaires de 12 M€ ne couvrent pas la même chose que trente lignes sur 800 k€. La formule ramène l'intervalle de sondage au seuil de planification.",
+    "_note_nrpmm": "« nrpmm » porte 1 (le minimum entier positif que le validateur admet, methodology/valider.mjs) — un PLACEHOLDER STRUCTUREL, jamais une taille réellement tirée : aucune procédure du catalogue n'a de risque_minimum inférieur à « lower », donc rang(nrpmm) < rang(risque_minimum) pour TOUTE procédure — `requiredProcedures` exclut donc systématiquement toutes les procédures dès qu'une assertion est retenue à nrpmm (c'est le sens même du niveau : aucun travail substantif). Cette taille n'est donc jamais lue par aucun chemin applicatif ; elle existe seulement parce que le schéma exige une entrée par niveau déclaré.",
+    "nrpmm": 1,
+    "lower": 6,
+    "higher": 15,
+    "significant": {
+      "_pourquoi": "Au niveau significatif, une taille fixe ignore la taille de la population : trente lignes sur un chiffre d'affaires de 12 M€ ne couvrent pas la même chose que trente lignes sur 800 k€. La formule ramène l'intervalle de sondage au seuil de planification.",
       "formule": "mus_intervalle_au_seuil",
       "parametres": {
         "facteur_confiance": 3.0,
@@ -101,5 +111,12 @@
         "maximum": 80
       }
     }
+  },
+  "parametres_echantillonnage": {
+    "_note": "AUD-11 (P1-07) : coverageCapPctOfPM et randomSizeDefault vivaient en dur dans packs/nep-fr.ts (TypeScript) — une bifurcation de code portant un paramètre de méthode (règle 9 : un pack de référentiel est du contenu, jamais du code). Déplacés ici TELS QUELS (mêmes valeurs numériques, rien réinterprété) et marqués `verifie:false` : ni l'un ni l'autre n'a jamais été confirmé par un cabinet réel — ce sont les valeurs du pack de démonstration, jamais écrites de mémoire comme si elles l'étaient (règle 8). `randomSizeDefault` n'est plus lu par `proposeRevenueSample` depuis que la taille de la strate aléatoire suit le risque calculé (`requiredProcedures(...).sampleSize`, AUD-11) — conservé ici pour mémoire, pas pour usage actif.",
+    "coverage_cap_pct_of_pm": 1.0,
+    "coverage_cap_pct_of_pm_verifie": false,
+    "random_size_default": 4,
+    "random_size_default_verifie": false
   }
 }

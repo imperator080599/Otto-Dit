@@ -30,7 +30,9 @@ describe('S7 — workpaper engine (draft, edits, notes, sign-offs, exports)', ()
     expect(keys).toEqual(attendu.sections.map((s) => s.bloc));
     expect(sections.map((s) => s.title)).toEqual(attendu.sections.map((s) => s.titre));
     const sampleTable = sections.find((s) => s.key === 'tableau_echantillon')!;
-    expect(sampleTable.table!.rows.length).toBe(16);
+    // AUD-11 (P1-07) : la taille suit désormais le risque évalué (27 = 9 haute valeur +
+    // 3 signalées + 15 aléatoires au niveau « higher » — mesuré, cf. scripts/dataset/config.ts).
+    expect(sampleTable.table!.rows.length).toBe(27);
     // every row with evidence carries click-through refs (P7)
     const withRefs = sampleTable.table!.rows.filter((r) => (r.refs?.evidenceIds?.length ?? 0) > 0);
     expect(withRefs.length).toBeGreaterThan(10);

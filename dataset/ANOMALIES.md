@@ -49,5 +49,5 @@ Substantive anomalies A1–A5 sit in the 100%-coverage stratum (each ≥ 1.1 × 
 
 Revenue population: 713 GL lines on 70x accounts,
 population_hash `pophash-v1:489420a8686886179af7ddbf22723fd0c1611f28f06b5fe78c2761031acfed62`; coverage cap 27,000.00 €;
-random size 4; seed `otto-demo-rev-1`;
-16 units selected.
+random size 15; seed `otto-demo-rev-1`;
+27 units selected.

@@ -10,6 +10,25 @@ import { validatedThresholds } from './materiality';
 import { revenuePopulation } from './population';
 import { populationDuDetailRapproche } from './account-detail';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { catalogueDeLaMission } from '@/lib/methodology/depot';
+import { requiredProcedures } from './risk';
+
+/**
+ * SAMP-01 (AUD-11, P1-07) — la taille de la strate aléatoire du sondage
+ * revenue vient désormais du RISQUE de l'assertion testée
+ * (`requiredProcedures(...).sampleSize`, la procédure `DETAIL`, la seule du
+ * catalogue dont `nature === 'sondage_pieces'`), jamais d'une constante de
+ * pack. Refusé quand la méthode du cabinet n'a pas de taille pour ce niveau
+ * (`sampleSize === null` — un niveau `echantillonnee: false` ou une formule
+ * en obstacle, cf. `contexteTaille`) : proposer un tirage sans taille SERAIT
+ * une taille inventée en silence (règle 8).
+ */
+export class SamplingRuleError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SamplingRuleError';
+  }
+}
 
 // S3 sampling flows: propose (L3, pack defaults + rationale) → validate (human, may edit)
 // → draw (L0, kernel, engine_run recorded). Deterministic given (population, seed, params).
@@ -72,17 +91,33 @@ export async function proposeRevenueSample(engagementId: string, userId: string)
     );
   }
   const procedureId = await ensureRevenueProcedure(engagementId);
-  const coverageCapCents = Math.round(thresholds.perfCents * sub.coverageCapPctOfPM);
+  /* SAMP-01 : la taille suit le risque de l'assertion « realite » du chiffre
+     d'affaires — la procédure DETAIL (nature sondage_pieces, la seule du
+     catalogue universel qui a cette nature) porte la taille du niveau retenu
+     ou calculé. Aucune taille => refus, jamais une taille de pack inventée. */
+  const cat = await catalogueDeLaMission(engagementId);
+  const requises = await requiredProcedures(engagementId, 'REVENUE');
+  const detail = requises.find((r) => r.procedure.code === 'DETAIL');
+  if (!detail || detail.sampleSize === null) {
+    throw new SamplingRuleError(
+      "SAMP-01 : sample size not set by the firm's method for this risk level — "
+      + "évaluez le risque de l'assertion « realite » du chiffre d'affaires avant de proposer un tirage "
+      + '(procédure DETAIL introuvable ou sans taille pour ce niveau).',
+    );
+  }
+  const coverageCapPctOfPm = cat.risque.parametresEchantillonnage.coverageCapPctOfPm;
+  const coverageCapCents = Math.round(thresholds.perfCents * coverageCapPctOfPm);
   const params = {
     coverageCapCents,
-    randomSize: sub.randomSizeDefault,
+    randomSize: detail.sampleSize,
     seed: sub.seedDefault,
   };
   const rationale =
     `Méthode : couverture exhaustive des éléments ≥ seuil de planification (${centsToNum(coverageCapCents)} €, ` +
-    `${(sub.coverageCapPctOfPM * 100).toFixed(0)} % du seuil de planification), sélection de tous les éléments ` +
+    `${(coverageCapPctOfPm * 100).toFixed(0)} % du seuil de planification), sélection de tous les éléments ` +
     `porteurs d'indicateurs de risque (week-end, montant rond, OD manuelle, avoirs récurrents), puis tirage aléatoire ` +
-    `de ${sub.randomSizeDefault} éléments (germe déterministe « ${sub.seedDefault} », reproductible). ` +
+    `de ${detail.sampleSize} éléments (risque « ${detail.level} » sur l'assertion réalité, germe déterministe ` +
+    `« ${sub.seedDefault} », reproductible). ` +
     `Anomalie tolérable : ${centsToNum(thresholds.teCents)} € (évaluation par projection sur la strate aléatoire).`;
 
   await q(`update sample set status = 'superseded' where engagement_id = $1 and procedure_id = $2 and status = 'proposed'`, [engagementId, procedureId]);

@@ -83,7 +83,7 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
 
   /* ═══ 2. LE QUESTIONNAIRE NE COCHE RIEN ═══════════════════════════════ */
 
-  it('une réponse « oui » CRÉE un facteur au registre, avec sa source et son texte', async () => {
+  it('une réponse « oui » CRÉE un facteur au registre, PROPOSÉ — la réponse n’est pas la décision', async () => {
     await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'SI',
       answer: 'oui', detail: 'Migration de l’outil de facturation en juin 2025 ; reprise des en-cours vérifiée par sondage.',
       actorUserId: IDS.users.karim });
@@ -92,7 +92,10 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
     const f = reg.find((x) => x.source_ref === 'SI/REVENUE')!;
     expect(f).toBeDefined();
     expect(f.source).toBe('questionnaire');
-    expect(f.status).toBe('confirmed');           // la réponse EST la décision
+    // AUD-11 (P1-07) : répondre et confirmer sont deux gestes distincts
+    // (DEMO_APP.md §8) — le facteur naît « proposed », il ne compte pas tant
+    // que personne ne l'a confirmé (`obst.facteursNonStatues`).
+    expect(f.status).toBe('proposed');
     expect(f.description).toContain('Migration de l’outil de facturation');
     expect(f.description).toContain('répondu OUI');
     expect(f.targets).toEqual([{ fsli: 'REVENUE', assertions: ['exhaustivite'] }]);
@@ -102,10 +105,14 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
     await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'SI',
       answer: 'non', actorUserId: IDS.users.karim });
     expect((await register(IDS.engNep)).find((x) => x.source_ref === 'SI/REVENUE')).toBeUndefined();
-    // on le remet pour la suite
+    // on le remet pour la suite, et on le confirme : sans quoi il resterait
+    // proposé et bloquerait (`obst.facteursNonStatues`) tous les tests qui
+    // suivent dans ce fichier, y compris ceux qui n'ont rien à voir avec lui.
     await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'SI',
       answer: 'oui', detail: 'Migration de l’outil de facturation en juin 2025.',
       actorUserId: IDS.users.karim });
+    const f = (await register(IDS.engNep)).find((x) => x.source_ref === 'SI/REVENUE')!;
+    await decideFactor(IDS.engNep, f.id, 'confirmed', 'Retenu : migration confirmée par le contrôleur de gestion.', IDS.users.lea);
   });
 
   it('le périmètre n’est pas vide — sans quoi les tests d’entité passeraient à vide', async () => {
@@ -129,6 +136,10 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
     expect(inScope.length).toBeGreaterThan(0);
     expect(f.targets.map((t) => t.fsli).sort()).toEqual(inScope.map((x) => x.code).sort());
     expect(f.targets.every((t) => t.assertions.includes('realite'))).toBe(true);
+    // confirmé ici : la suite (circulation, obstacles) compte sur un facteur
+    // qui pèse déjà, et un facteur « proposed » ne circule pas (déclaré,
+    // AUD-11) — un facteur non statué resterait un obstacle au visa partout.
+    await decideFactor(IDS.engNep, f.id, 'confirmed', 'Retenu : covenant testé, marge faible.', IDS.users.lea);
   });
 
   /* ═══ 3. LE FACTEUR DÉCLARÉ COMMANDE, COMME UN FAIT CALCULÉ ═══════════ */
@@ -235,6 +246,12 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
       actorUserId: IDS.users.karim });
     const apres = await questionnaireObstacles(IDS.engNep, 'REVENUE');
     expect(apres.some((x) => x.cle === 'obst.ouiSansPrecision')).toBe(false);
+    // préciser lève CET obstacle, mais le facteur créé par la réponse reste
+    // « proposed » (AUD-11) — un obstacle distinct (`obst.facteursNonStatues`)
+    // tant que personne ne l'a statué. On le confirme pour ne pas laisser
+    // trainer un facteur non statué devant les tests qui suivent.
+    const f = (await register(IDS.engNep)).find((x) => x.source_ref === 'LITIGE/REVENUE')!;
+    await decideFactor(IDS.engNep, f.id, 'confirmed', 'Retenu : litige documenté.', IDS.users.lea);
   });
 
   it('un facteur non statué est un obstacle au visa', async () => {
@@ -244,6 +261,22 @@ describe('questionnaire résiduel et registre des facteurs déclarés', () => {
     expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => x.cle === 'obst.facteursNonStatues')).toBe(true);
     await decideFactor(IDS.engNep, r.id, 'confirmed', 'Retenu.', IDS.users.lea);
     expect((await questionnaireObstacles(IDS.engNep, 'REVENUE')).some((x) => x.cle === 'obst.facteursNonStatues')).toBe(false);
+  });
+
+  it('répondre « oui » deux fois à la même question ne double pas le facteur (0179)', async () => {
+    // Le défaut connu MAUVAIS (règle 17) : sans index unique ciblé par « on
+    // conflict », chaque « oui » créait une ligne DE PLUS — un doublon
+    // silencieux qui restait « proposed » pour toujours après qu'on a
+    // confirmé « l'autre » ligne, bloquant le visa sans qu'aucun écran ne le
+    // montre. On répond deux fois de suite et on vérifie une seule ligne.
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'NOUVEAU',
+      answer: 'oui', detail: 'Nouveau canal de vente en ligne ouvert en octobre 2025.', actorUserId: IDS.users.karim });
+    await answerQuestion({ engagementId: IDS.engNep, fsliCode: 'REVENUE', questionCode: 'NOUVEAU',
+      answer: 'oui', detail: 'Nouveau canal de vente en ligne ouvert en octobre 2025 — précision reformulée.',
+      actorUserId: IDS.users.karim });
+    const rows = (await register(IDS.engNep)).filter((x) => x.source_ref === 'NOUVEAU/REVENUE');
+    expect(rows).toHaveLength(1);
+    await decideFactor(IDS.engNep, rows[0].id, 'confirmed', 'Retenu.', IDS.users.lea);
   });
 
   it('répondre à TOUT lève les obstacles de la section', async () => {
