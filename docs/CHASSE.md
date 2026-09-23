@@ -230,6 +230,26 @@
   servi ni la fusion… mais il est consigné ici plutôt que tu ») : expédié sur `verify-full-5.log`
   SANS passage à zéro incident — voir STATUS.md, mesures citées avec leur SHA et leur heure.
 
+- **F18 — CINQ incidents dans UN SEUL run, `/tmp/verify-p1-07-final.log`** (2026-09-23, chaîne
+  verify complète pour P1-07/AUD-11 après les correctifs de la revue hostile à deux voix, arbre
+  `8e97fd7`, 326 étapes) : le plus grand nombre d'incidents capturés par la sonde dans UN run à ce
+  jour (F11 et F17 en portaient 2). Quatre sur cinq sont sur `/eng/<id>/rcm/<cid>` (domaine SOX,
+  10 à 21 divergences chacun, TOUTES de la famille F11 déjà nommée — `margin:6px 0` (serveur) /
+  `margin: 6px 0px` (client), re-sérialisation CSSOM — et la bulle `rail-astuce`, E5, jeton 87 sur
+  chacun) ; ces quatre-là n'ont PAS fait échouer de station (`sonde d'hydratation : 5 incident(s)`
+  est un résumé DIAGNOSTIC de fin de run, distinct du compteur d'échecs). Le CINQUIÈME —
+  `/portal/demo-sophie-altiverre/0a3ddc63-…`, MÊME famille de page que F9/F10/F13/F16 — est celui
+  qui a fait échouer `clics` (« 326 étapes conduites · 1 échec(s) »), et porte **« aucune
+  divergence textuelle après normalisation »** : zéro trace mesurable, plus bénin encore que
+  F11(b) (qui portait du bruit CSS avant filtrage à la main). Page NON touchée par cette tranche —
+  vérifié par LECTURE DES IMPORTS (pas un grep, règle 15) : `git diff --name-only 7ece462 8e97fd7
+  -- app/src` ne touche qu'un seul fichier de page (`eng/[id]/risk/page.tsx`) et aucun fichier
+  SOX/RCM ; les imports de `portal/[token]/[rid]/page.tsx` (auth, portal.ts, evidence.ts, refus,
+  bandeau-refus, deux-langues, i18n/catalogue, tenant.ts) ne recoupent AUCUN fichier du diff de
+  cette tranche. **Pas creusé plus loin ici** (même discipline que F9-F17) — la chaîne officielle
+  a été REJOUÉE sur le MÊME arbre (aucune édition entre les deux passages, règle 34) ; voir
+  STATUS.md pour le résultat du passage suivant, cité avec son heure et sa durée mesurées.
+
 ### Hypothèses ÉLIMINÉES — et par quoi
 
 | # | Hypothèse | Éliminée par | Portée de l'élimination |
