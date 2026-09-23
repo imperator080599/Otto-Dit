@@ -30,6 +30,11 @@ import { repoRoot } from '@/lib/db/client';
 
 type Etat = 'OBSERVEE' | 'NON_OBSERVEE' | 'SANS_OBJET';
 
+interface TacheLivree {
+  tache: string;
+  sha: string;
+}
+
 interface Ligne {
   id: string;
   source: string;
@@ -41,6 +46,7 @@ interface Ligne {
   manque?: string;
   decision?: string;
   tache: string[];
+  tachesLivrees?: TacheLivree[];
   phase: number;
 }
 
@@ -86,6 +92,16 @@ function validerLigne(l: Ligne): void {
   }
 }
 
+/** Le champ « tâches livrées » (mandat du 2026-09-23, autonomie continue) : la tâche du plan
+ *  est SHIPPÉE (poussée sur `main`, SHA mesuré) — ce n'est PAS l'épreuve OBSERVÉE elle-même, qui
+ *  reste strictement réservée à une station cliquée avec SHA (règle 15/37). Une tâche livrée sans
+ *  la ligne encore NON_OBSERVEE dit : « le code existe, personne ne l'a encore prouvé au clic » —
+ *  la distinction reste visible, jamais confondue. */
+function tachesLivreesMd(l: Ligne): string | null {
+  if (!l.tachesLivrees || l.tachesLivrees.length === 0) return null;
+  return `Tâches livrées : ${l.tachesLivrees.map((t) => `\`${t.tache}\` \`${t.sha}\``).join(' ; ')}`;
+}
+
 function ligneMd(l: Ligne): string {
   const tache = l.tache.length > 0 ? ` — tâche(s) \`${l.tache.join('`, `')}\`` : '';
   const out = [`### ${l.id} — ${l.titre} (${l.source}${tache})`, '', `Épreuve : ${l.epreuve}`, ''];
@@ -97,7 +113,26 @@ function ligneMd(l: Ligne): string {
   } else {
     out.push(`Décision : ${l.decision}`);
   }
+  const livrees = tachesLivreesMd(l);
+  if (livrees) out.push(livrees);
   return out.join('\n');
+}
+
+/** Le dénominateur vient du PLAN LUI-MÊME (règle 21/31 : jamais un chiffre tapé de mémoire) —
+ *  compté à chaque rendu sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md`, jamais figé. */
+function compterTachesDuPlan(): number {
+  const chemin = path.join(repoRoot(), 'docs', 'MANDATS', '2026-09-20_plan_maitre_phase2.md');
+  const texte = fs.readFileSync(chemin, 'utf8');
+  const ids = new Set((texte.match(/^#### P\d+-\d+/gm) ?? []).map((m) => m.replace(/^#### /, '')));
+  return ids.size;
+}
+
+function compterTachesLivrees(data: Revue): number {
+  const vues = new Set<string>();
+  for (const l of data.lignes) {
+    for (const t of l.tachesLivrees ?? []) vues.add(t.tache);
+  }
+  return vues.size;
 }
 
 export function rendre(data: Revue): string {
@@ -110,6 +145,8 @@ export function rendre(data: Revue): string {
   }
   const total = data.lignes.length;
   const tauxObserve = total > 0 ? Math.round((observee / total) * 100) : 0;
+  const tachesDuPlan = compterTachesDuPlan();
+  const tachesLivrees = compterTachesLivrees(data);
 
   const parPhase = new Map<number, Ligne[]>();
   for (const l of data.lignes) {
@@ -130,6 +167,11 @@ export function rendre(data: Revue): string {
     '',
     `**${total} lignes — ${observee} OBSERVÉE(S), ${nonObservee} NON OBSERVÉE(S), `
     + `${sansObjet} SANS OBJET (${tauxObserve} % observé).**`,
+    '',
+    `**${tachesLivrees}/${tachesDuPlan} tâches du plan livrées** — comptées en direct sur `
+    + '`docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre '
+    + 'fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose '
+    + 'qu\'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).',
     '',
     data.ouvertureDePhase.note,
     '',

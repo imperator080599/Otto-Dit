@@ -5,7 +5,9 @@ Mandat du 2026-09-20 — `docs/MANDATS/2026-09-20_mandat_revue_fondateur_phase2.
 
 **46 lignes — 0 OBSERVÉE(S), 46 NON OBSERVÉE(S), 0 SANS OBJET (0 % observé).**
 
-Cet instantané est engendré à l'ouverture de la Phase 2, avant toute tâche d'exécution (P0-01 et suivantes). Les 46 lignes de l'inventaire sont donc NON_OBSERVEE par construction : aucune tranche n'a encore été livrée. Une ligne ne passe à OBSERVEE que lorsque sa tâche est effectivement expédiée, avec sa station et son SHA nommés (règle 12, acceptation P0-00).
+**11/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
+
+Cet instantané a été ENGENDRÉ à l'ouverture de la Phase 2 (2026-09-20), quand les 46 lignes étaient NON_OBSERVEE par construction — aucune tranche n'avait encore été livrée. Depuis, des tâches ont été poussées sur main (voir « tâches livrées » ci-dessus et sur chaque ligne concernée) SANS que cela fasse encore passer une ligne à OBSERVEE : une ligne ne passe à OBSERVEE que lorsqu'une station cliquée la prouve, avec sa station et son SHA nommés (règle 12/15/37, acceptation P0-00) — livrée n'est pas observée, les deux comptes restent distincts et se lisent l'un à côté de l'autre, jamais confondus.
 
 OBSERVÉE signifie observé en CONDUISANT le vrai parcours dans le monde semé — une station de `app/scripts/clics/scenario.ts`, confirmée par une exécution réelle, avec son SHA (règle 15/37 : un balayage de texte n'est pas une garde, chercher un mot n'est pas vérifier un chemin).
 
@@ -18,6 +20,7 @@ OBSERVÉE signifie observé en CONDUISANT le vrai parcours dans le monde semé �
 
 **NON OBSERVÉE**
 Manque : non commencé — confirmé et généralisé par l'audit (AUD-22) : traduire() ne dénonce pas une variable manquante, le gabarit {nom} de proc.diagramme fuit à l'écran aujourd'hui.
+Tâches livrées : `P0-05` `04266c6`
 
 ### AUD-16 — `npm run verify` n'est plus vert d'un tenant (#418, sommeils) (AUDIT — tâche(s) `P0-04`, `P0-05`, `P0-06`, `P0-07`, `P0-08`)
 
@@ -25,6 +28,7 @@ Manque : non commencé — confirmé et généralisé par l'audit (AUD-22) : tra
 
 **NON OBSERVÉE**
 Manque : P0-01 livré et mesuré (7ab4700) : le marqueur d'hydratation fonctionne (0 repli de grâce sur 177 aller(), docs/CHASSE.md F60) mais #418 persiste (classe /rcm/[cid]). P0-02 livré et mesuré VERT (1666736, docs/CHASSE.md F61) : `npm run clics -- --figer` réussit (326 étapes, 0 échec, rail-astuce-hydratation : 4 admis au plafond, docs/PARCOURS.json figé à 325 stations) — deux revues hostiles indépendantes ont corrigé une course d'ordre (HIGH) et une lacune sur les propriétés CSS sans unité (MEDIUM) avant le push. `npm run clics` seul n'est cependant pas `npm run verify` : P0-05 (traducteur, EPURE-01) et les tâches P0-04/06/07/08 restent à livrer avant que `EXIT=0` sur la chaîne complète soit atteignable.
+Tâches livrées : `P0-04` `2d149a7` ; `P0-05` `04266c6` ; `P0-06` `091d046` ; `P0-07` `4b87c64` ; `P0-08` `c833c23`
 
 ---
 
@@ -36,6 +40,7 @@ Manque : P0-01 livré et mesuré (7ab4700) : le marqueur d'hydratation fonctionn
 
 **NON OBSERVÉE**
 Manque : non commencé — la table `proposition` (P0, taille L, refonte) et le service propositions.ts n'existent pas. Deux réfutateurs requis (colonne vertébrale du modèle).
+Tâches livrées : `P1-01` `82b9f6a`
 
 ### AUD-02 — Les notes de revue n'ont pas de notion de section (AUDIT — tâche(s) `P1-02`)
 
@@ -43,6 +48,7 @@ Manque : non commencé — la table `proposition` (P0, taille L, refonte) et le 
 
 **NON OBSERVÉE**
 Manque : non commencé — `review_note.section_id` n'existe pas ; les ancres sont figées dans un CHECK et un switch. Deux réfutateurs requis (colonne vertébrale du modèle).
+Tâches livrées : `P1-02` `94116c7`
 
 ### AUD-03 — Le contrôle interne « d'un poste » n'existe pas dans le modèle (AUDIT — tâche(s) `P1-03`)
 
@@ -50,6 +56,7 @@ Manque : non commencé — `review_note.section_id` n'existe pas ; les ancres so
 
 **NON OBSERVÉE**
 Manque : non commencé — process (0002) et process_model (0027) coexistent sans lien, l'unicité par cycle bloque N processus par poste, aucun lien contrôle → poste. Deux réfutateurs requis (colonne vertébrale du modèle, taille L, refonte).
+Tâches livrées : `P1-03` `dad1111`
 
 ### AUD-10 — Les propositions sont écrasées, des décisions humaines détruites (AUDIT — tâche(s) `P1-06`)
 
@@ -75,6 +82,7 @@ Manque : non commencé — answerExplanation/ingestEvidence écrivent l'objet de
 
 **NON OBSERVÉE**
 Manque : non commencé — assignMember n'exige aucun rôle pour poser partner/can_sign ; rien n'empêche la même personne de viser deux rôles du même papier. Deux réfutateurs requis (sécurité).
+Tâches livrées : `P1-04` `e85418a`
 
 ### AUD-07 — Session et surface publique non gardées (AUDIT — tâche(s) `P2-03`)
 
@@ -89,6 +97,7 @@ Manque : non commencé — cookie otto_user non signé, remise à zéro sans ses
 
 **NON OBSERVÉE**
 Manque : non commencé — 21 tables restent en garde_proposee, ~45 tables filles hors de portée du verrou, aucun flux d'amendement justifié n'existe. Deux réfutateurs requis (sécurité, provenance).
+Tâches livrées : `P1-05` `bd2e9b3`
 
 ---
 
@@ -100,6 +109,7 @@ Manque : non commencé — 21 tables restent en garde_proposee, ~45 tables fille
 
 **NON OBSERVÉE**
 Manque : non commencé — la remarque la plus importante du mandat (déjà faite une fois, non suivie) ; review_note n'a pas de section_id (AUD-02), le panneau par section n'existe pas. Deux réfutateurs requis (mandat §5.4).
+Tâches livrées : `P1-02` `94116c7`
 
 ### R-F8 — Les signatures (mandat §1 — tâche(s) `P1-04`, `P3-04`)
 
@@ -107,6 +117,7 @@ Manque : non commencé — la remarque la plus importante du mandat (déjà fait
 
 **NON OBSERVÉE**
 Manque : non commencé — les cartes de signature actuelles citent encore l'indicatif du papier (REV-xx) et STALE n'est pas un fait dérivé fiable (AUD-09, S-2).
+Tâches livrées : `P1-04` `e85418a`
 
 ### R-F9 — Les références croisées (mandat §1 — tâche(s) `P3-04`)
 
@@ -128,6 +139,7 @@ Manque : non commencé — les boutons « Save the analytical review » / « Pro
 
 **NON OBSERVÉE**
 Manque : non commencé — les colonnes/sections « Arbitrate » existent encore à plusieurs endroits ; le modèle proposition unifié (AUD-01) qui porterait la trace n'existe pas.
+Tâches livrées : `P1-01` `82b9f6a`
 
 ### S-2 — Les cartes de signature sont incohérentes entre elles (mandat §2 — tâche(s) `P1-04`, `P3-04`)
 
@@ -135,6 +147,7 @@ Manque : non commencé — les colonnes/sections « Arbitrate » existent encore
 
 **NON OBSERVÉE**
 Manque : non commencé — confirmé par AUD-09 : le visa n'est lié ni à un contenu ni à une version stable, STALE n'est jamais recalculé, la carte de poste agrège des visas de papiers différents.
+Tâches livrées : `P1-04` `e85418a`
 
 ### AUD-09 — Le visa n'est lié ni à un contenu ni à une version stable (AUDIT — tâche(s) `P1-04`, `P3-04`)
 
@@ -142,6 +155,7 @@ Manque : non commencé — confirmé par AUD-09 : le visa n'est lié ni à un co
 
 **NON OBSERVÉE**
 Manque : non commencé — signoff n'a pas d'empreinte de contenu, STALE n'est jamais recalculé, aucune unicité (workpaper_id, sign_role).
+Tâches livrées : `P1-04` `e85418a`
 
 ---
 
@@ -202,6 +216,7 @@ Manque : non commencé — le bouton « Open process » redirige toujours vers /
 
 **NON OBSERVÉE**
 Manque : non commencé — process_model est unique par (engagement, cycle_ref, exercice) : la contrainte refuse structurellement un second processus (AUD-03). Aucune légende de pictogrammes.
+Tâches livrées : `P1-03` `dad1111`
 
 ### R-F14 — L'ordre des sous-sections de contrôle interne, et le transcript (mandat §1 — tâche(s) `P1-03`, `P4-03`)
 
@@ -209,6 +224,7 @@ Manque : non commencé — process_model est unique par (engagement, cycle_ref, 
 
 **NON OBSERVÉE**
 Manque : non commencé — le transcript n'est lu par aucun écran (AUD-03) ; l'ordre actuel des sous-sections ne suit pas la logique de mission décidée.
+Tâches livrées : `P1-03` `dad1111`
 
 ### R-F15 — Le fondateur ne comprend pas l'import JSON (mandat §1 — tâche(s) `P4-04`)
 
@@ -223,6 +239,7 @@ Manque : non commencé — le bouton « Import the description » (JSON) est tou
 
 **NON OBSERVÉE**
 Manque : non commencé — la page de poste compte tous les processus et contrôles du dossier sans lien poste ↔ contrôle (AUD-03) ; la mini-RCM du poste n'existe pas. Deux réfutateurs requis (mandat §5.4).
+Tâches livrées : `P1-03` `dad1111`
 
 ### R-F18 — L'évaluation des risques (mandat §1 — tâche(s) `P1-07`, `P4-08`)
 
@@ -283,6 +300,7 @@ Manque : non commencé — seule exception au gel H-6 nommée par le mandat ; le
 
 **NON OBSERVÉE**
 Manque : non commencé — l'agent de walkthrough du Lot 8 spécifié par le fondateur (comparer transcript ↔ flowchart client, différences surlignées) n'existe pas ; 0027 décide même explicitement de NE PAS lire le flowchart client (AUD-03). Deux réfutateurs requis (mandat §5.4).
+Tâches livrées : `P1-03` `dad1111`
 
 ### R-F22 — La langue (mandat §1 — tâche(s) `P5-03`)
 
@@ -350,6 +368,7 @@ Manque : non commencé — editSection fait lecture-modification-écriture du js
 
 **NON OBSERVÉE**
 Manque : non commencé — 103 waitForTimeout + 33 cliquer(ms) + 51 soumettre(ms), 21 assertions `dire(nom, true, …)`, aucune station ciblable seule, cadence de rituel 2h30-3h par ligne.
+Tâches livrées : `P0-03` `c9a9c58` ; `P0-04` `2d149a7`
 
 ### AUD-18 — Chaque build Vercel écrit sur la base de démonstration, migrate non transactionnel (AUDIT — tâche(s) `P0-08`, `P5-01`, `P6-02`)
 
@@ -357,6 +376,7 @@ Manque : non commencé — 103 waitForTimeout + 33 cliquer(ms) + 51 soumettre(ms
 
 **NON OBSERVÉE**
 Manque : non commencé — reconstruire.ts applique sur la base publique pour chaque déploiement (aperçus compris) ; migrate() n'est pas transactionnel ; verifier.yml ne conduit ni semeur, ni screens (production), ni clics, ni visuel. Geste H-2/H-3 requis (base d'aperçu séparée, OTTO_CI_DATABASE_URL — en attente du fondateur, voir section §20 ci-dessous).
+Tâches livrées : `P0-08` `c833c23`
 
 ---
 
