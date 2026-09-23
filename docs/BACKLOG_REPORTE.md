@@ -2513,7 +2513,30 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   P1-03) et trois routes sans rapport (`poste/CASH`, `suivi (SOX)`, `testing`) confirme la nature
   du défaut : une dégradation sous charge du serveur `next dev` pendant le balayage complet
   (concurrence avec les autres fichiers vitest de la suite), jamais un défaut d'une route ou
-  d'une tranche précise. **Reste NON fermé**, toujours pour la même raison qu'en P1-02.
+  d'une tranche précise. Restait NON fermé pour la même raison qu'en P1-02.
+
+  **FERMÉ le 2026-09-23 (P0-09, mandat `docs/MANDATS/2026-09-23_mandat_continuation_phase1_corrections.md`,
+  §2) — corrigé à la RACINE, pas au symptôme, cette fois.** CLAUDE.md §7 nommait déjà la cause
+  depuis longtemps (« deux vitest en parallèle font tomber le serveur du balayage ») sans qu'elle
+  soit jamais traitée structurellement — chaque tranche qui la rencontrait la disait disjointe et
+  passait outre (P1-02, P1-03), au lieu de désarmer le mécanisme. `tests/screens.test.ts` exclu du
+  `vitest run` général (`app/vitest.config.ts`, `exclude`) ; un second fichier de config dédié
+  (`app/vitest.screens.config.ts`) porte son `include` exclusif (Vitest applique `exclude` même à
+  un fichier ciblé en ligne de commande — vérifié, pas supposé) ; nouveau script npm
+  `screens:test` ; nouveau maillon dans `scripts/verify.ts` (juste après `plancher`, avant le
+  `vitest` général) et dans `.github/workflows/verifier.yml` (même place). Revue hostile une seule
+  voix (règle 30 : changement de harnais) — cinq constats réels trouvés et corrigés (F1 : le
+  bloc `env` réseau manquant dans le config séparé ; F2 : `role-production.yml` perdait
+  silencieusement sa couverture réseau du fichier ; F3 : CLAUDE.md affirmait encore que `npm test`
+  couvre le balayage, faux depuis ce commit — corrigé dans le même, règle 1 ; F4 :
+  `verify-tranche.ts` cassait pour exactement ce fichier ; F5 : précision de commentaire).
+  **Mesuré, pas déclaré** : DEUX passages complets de `npm run verify` consécutifs, chacun 19/19
+  maillons verts (le nouveau `screens:test` inclus), aucune ligne « aléa connu ». Le fichier
+  continue de tourner (399s, 2/2 vert à chaque fois mesuré séparément) — il n'est plus jamais
+  concurrent avec le reste de la suite, donc la classe de défaut que R142 nommait ne peut plus se
+  produire PAR CE MÉCANISME. Si un `ServeurTombe` réapparaît un jour sur `screens.test.ts` lancé
+  SEUL (comme dans ce commit), ce serait un défaut RÉEL et NOUVEAU du fichier ou de l'écran testé
+  — jamais plus « l'aléa connu R142 ».
 - **R143 — CORRIGÉ. Violation règle 26 trouvée par le déploiement lui-même (pas par un harnais
   local) : `0170_proposition.sql` avait été éditée EN PLACE après application.** Découverte au
   moment de pousser P1-02 sur `main` (94116c7) : le build Vercel de la branche de travail (le

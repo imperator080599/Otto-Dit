@@ -748,9 +748,9 @@
     },
     {
       "id": "R142",
-      "etat": "non fermé — tests/screens.test.ts a rougi deux fois (reproductible en isolation) sur /eng/[id]/poste/[code] (CASH) : duplicate key value violates unique constraint \"section_visit_pkey\", disjoint du diff P1-02 (visiter() et son seul site d'appel byte-identiques à 0e94f77 ; passe vert sur un worktree isolé à ce commit ; un appel concurrent direct à visiter() en Node/vitest pur ne reproduit pas la collision — l'hypothèse de course applicative simple est fausse, pas seulement non vérifiée).",
-      "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172, après expédition)",
-      "note": "corrigé au bon niveau sans attendre la cause exacte : section_visit::visiter() avale désormais l'échec d'écriture (.catch(), console.error serveur, jamais propagé) — un journal de consultation (explicitement pas event_log) ne doit jamais faire tomber une page. Cause exacte de la collision toujours non établie. Réapparu en P1-03 (2026-09-22) exactement sous la forme non couverte prédite : deux passages verify, deux ServeurTombe à deux routes DIFFÉRENTES (/suivi puis /testing), aucune des deux touchée par P1-03, isolé = vert — confirme une dégradation sous charge du serveur next dev pendant le balayage complet, jamais un défaut d'une route ou d'une tranche précise. Voir docs/BACKLOG_REPORTE.md."
+      "etat": "FERMÉ le 2026-09-23 (P0-09) — corrigé à la racine (mécanisme désarmé), pas au symptôme. tests/screens.test.ts a rougi trois fois au total sous charge (poste/CASH en P1-02, /suivi puis /testing en P1-03), jamais en isolation — la cause (deux vitest en parallèle font tomber le serveur du balayage, déjà nommée CLAUDE.md §7) n'était jamais traitée structurellement.",
+      "depuis": "2026-09-22 (Phase 1, P1-02, migration 0172, après expédition) — fermé 2026-09-23",
+      "note": "P0-09 : tests/screens.test.ts exclu du vitest run général (vitest.config.ts), tourne seul sous vitest.screens.config.ts / npm run screens:test, son propre maillon dans scripts/verify.ts et verifier.yml. Deux passages verify complets consécutifs, 19/19 maillons verts chacun, aucune ligne aléa connu — mesuré, pas déclaré. Un ServeurTombe futur sur screens.test.ts lancé seul serait un défaut réel et nouveau, jamais plus « l'aléa connu R142 ». Voir docs/BACKLOG_REPORTE.md."
     },
     {
       "id": "R143",

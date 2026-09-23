@@ -4,6 +4,36 @@
 
 ---
 
+## Mandat 2026-09-23 — trois corrections permanentes (règle 26 mécanique, R142 fermé), avant P1-04
+
+**Correction 1 (ADR-137) : cause mécanique de R143/R145 corrigée à la racine.** Les déploiements
+d'APERÇU Vercel appliquaient `migrate()` à la base réseau partagée sur CHAQUE push, WIP compris —
+exactement ce qui a fait éditer 0170 (R143) puis 0174 (R145) après application, le même jour. Le
+projet `otto-dit` porte désormais un « Ignored Build Step » (`[ "$VERCEL_GIT_COMMIT_REF" !=
+"main" ]`), posé par `mcp__Vercel__update_project` et VÉRIFIÉ par le comportement réel : un
+commit docs-only poussé sur la branche de session a produit un déploiement `CANCELED`, arrêté
+avant `npm install`/`migrate()` (journal de build lu, pas supposé).
+
+**Correction 2 (P0-09) : R142 fermé, pas seulement re-disjoint une quatrième fois.** `tests/
+screens.test.ts` (le crash intermittent déjà rencontré en P1-02 et deux fois en P1-03, toujours
+« disjoint » mais jamais réparé) est désormais exclu du `vitest run` général et tourne seul, sous
+`vitest.screens.config.ts`/`npm run screens:test`, son propre maillon dans `scripts/verify.ts` et
+`verifier.yml`. Revue hostile une voix (harnais, règle 30) : cinq constats réels (F1-F5, détaillés
+dans le commit), tous corrigés — dont CLAUDE.md lui-même, qui affirmait encore que `npm test`
+couvre le balayage. **Deux passages `verify` complets consécutifs, 19/19 maillons verts chacun,
+aucune ligne « aléa connu »** — mesuré, pas déclaré. R142 fermé dans le registre.
+
+**Correction 3 : les numéros de migration du plan restent indicatifs.** Consigné, pas de code à
+ce sujet — la bande 0170+ glisse d'autant que les correctifs d'urgence la consomment (0171/0173/
+0175 déjà pris), jamais renuméroté après application.
+
+Mandat commité verbatim : `docs/MANDATS/2026-09-23_mandat_continuation_phase1_corrections.md`.
+SHA servi de P1-03 (`dad1111`) confirmé en tête de ce tour via `/api/sante` (règle 27) ; le gap de
+`docs/instantanes/servi.json` pour `ec17511` (R143) comblé au passage, sans horodatage inventé
+(règle 31).
+
+---
+
 ## Phase 1 — P1-03 Processus et contrôles livré et MESURÉ (2026-09-22)
 
 **`0174_processus_et_controles.sql`** (§7.3 du plan maître, renumérotée — 0172/0173 déjà
