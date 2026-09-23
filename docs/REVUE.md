@@ -5,7 +5,7 @@ Mandat du 2026-09-20 — `docs/MANDATS/2026-09-20_mandat_revue_fondateur_phase2.
 
 **46 lignes — 0 OBSERVÉE(S), 46 NON OBSERVÉE(S), 0 SANS OBJET (0 % observé).**
 
-**11/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
+**12/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
 
 Cet instantané a été ENGENDRÉ à l'ouverture de la Phase 2 (2026-09-20), quand les 46 lignes étaient NON_OBSERVEE par construction — aucune tranche n'avait encore été livrée. Depuis, des tâches ont été poussées sur main (voir « tâches livrées » ci-dessus et sur chaque ligne concernée) SANS que cela fasse encore passer une ligne à OBSERVEE : une ligne ne passe à OBSERVEE que lorsqu'une station cliquée la prouve, avec sa station et son SHA nommés (règle 12/15/37, acceptation P0-00) — livrée n'est pas observée, les deux comptes restent distincts et se lisent l'un à côté de l'autre, jamais confondus.
 
@@ -63,7 +63,8 @@ Tâches livrées : `P1-03` `dad1111`
 Épreuve : Vérifier une extraction corrigée → deux lignes (ocr, human), l'UPDATE direct de la première est refusé ; valider avec ajustement → deux lignes materiality ; disposer une cellule, recalculer → la disposition est encore lisible ; ré-importer la balance → fsli.confirmed_at inchangé.
 
 **NON OBSERVÉE**
-Manque : non commencé — verifyExtraction réécrit en place, la validation de matérialité écrase la valeur proposée, le recalcul de grille supprime des cell_disposition, rebuildFslis détruit et recrée fsli.
+Manque : livré (P1-06, 0178), pas encore observé par un clic dédié à CETTE épreuve précise (le parcours cliqué général l'a traversé sans y échouer, ce n'est pas la même preuve) — OBSERVEE reste distinct de « livrée », voir tachesLivrees.
+Tâches livrées : `P1-06` `c5fcff7`
 
 ---
 
