@@ -200,6 +200,38 @@ async function corpsDeLaSonde() {
     return `${decisions.n} décision(s) versionnée(s) · ${nrpmmRetenus.n} assertion(s) retenue(s) à nrpmm · 0 sans justification`;
   }));
 
+  /* INDEX PARTIELS UNIQUES (P1-08, AUD-15 partie modèle, migration 0180) : trois des quatre
+     index posés par cette tranche — `tb_snapshot_active_unique`, `sample_drawn_unique`,
+     `workpaper_code_actif_unique` REFUSENT déjà l'écriture qui violerait l'unicité (au plus une
+     ligne « courante » à la fois), mais comme la lecture RISK-01 ci-dessus, cette lecture existe
+     pour ROUGIR si l'index était un jour contourné (RLS désactivée, un chemin SQL direct). Le
+     quatrième, `materiality_validated_unique`, double exactement l'invariant déjà surveillé par
+     la lecture « supersede (P1-06) » ci-dessus — non répété ici pour ne pas lire deux fois la
+     même chose. CE QU'ELLE NE VÉRIFIE PAS (règle 19) : que `workpaper.row_version` est
+     effectivement incrémenté à chaque écriture — la colonne existe depuis cette migration, le
+     `where row_version = $n` applicatif (verrou optimiste) reste une tranche à venir. */
+  lectures.push(await essayer('index partiels uniques (P1-08, AUD-15) : au plus une ligne courante', async () => {
+    const tbDoublons = await q<{ ck: string; n: string }>(
+      `select engagement_id::text || ':' || period_kind ck, count(*)::text n
+       from tb_snapshot where status = 'active' group by 1 having count(*) > 1`);
+    if (tbDoublons.length > 0) {
+      throw new Error(`${tbDoublons.length} (dossier, période) avec plus d'un tb_snapshot actif — tb_snapshot_active_unique est rompu`);
+    }
+    const sampleDoublons = await q<{ procedure_id: string; n: string }>(
+      `select procedure_id::text, count(*)::text n from sample where status = 'drawn' group by 1 having count(*) > 1`);
+    if (sampleDoublons.length > 0) {
+      throw new Error(`${sampleDoublons.length} procédure(s) avec plus d'un sample « drawn » — sample_drawn_unique est rompu`);
+    }
+    const wpDoublons = await q<{ ck: string; n: string }>(
+      `select engagement_id::text || ':' || code ck, count(*)::text n
+       from workpaper where status <> 'outdated' group by 1 having count(*) > 1`);
+    if (wpDoublons.length > 0) {
+      throw new Error(`${wpDoublons.length} (dossier, code) avec plus d'un workpaper non périmé — workpaper_code_actif_unique est rompu`);
+    }
+    const actifs = await q1<{ n: string }>(`select count(*)::text n from tb_snapshot where status = 'active'`);
+    return `${actifs.n} tb_snapshot actif(s) · 0 doublon sur les trois index`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

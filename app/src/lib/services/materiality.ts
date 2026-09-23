@@ -149,6 +149,16 @@ export async function validate(
      refus clair, avant d'avoir rien écrit d'autre. */
   let finalId = materialityId;
   await tx(async () => {
+    /* DÉMOTION AVANT VALIDATION (P1-08, migration 0180) : `materiality_validated_unique`
+       (index partiel unique, jamais différable — Postgres n'autorise pas de contrainte unique
+       PARTIELLE différée) refuse désormais IMMÉDIATEMENT toute seconde ligne `validated`, y
+       compris de façon transitoire DANS cette même transaction. L'ordre d'origine (valider LA
+       NOUVELLE ligne, puis démoter l'ancienne) laissait les deux `validated` à la fois pendant
+       l'instant entre les deux requêtes — l'index le refuse maintenant, cassant la validation
+       normale (trouvé par le cas connu mauvais de supersede-lecture.test.ts, règle 17, en
+       s'auto-testant). Démoter D'ABORD élimine la fenêtre : au pire une transition
+       validated→superseded, jamais deux `validated` en même temps, même transitoirement. */
+    await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated'`, [row.engagement_id]);
     if (adjust) {
       const tb = await tbRows(row.engagement_id);
       const agg = benchmarkAggregates(tb);
@@ -183,7 +193,6 @@ export async function validate(
       );
       if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
     }
-    await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated' and id <> $2`, [row.engagement_id, finalId]);
   });
   await logEvent({
     tenantId: ctx.tenant_id,

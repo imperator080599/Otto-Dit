@@ -44,10 +44,14 @@ describe('supersede (P1-06, AUD-10) : la lecture /api/sante', () => {
        une seconde PAR LE CHEMIN NORMAL (v2), puis on la force ENSUITE à 'validated' EN SQL
        DIRECT, hors service : c'est exactement le bogue que la lecture doit attraper — un
        chemin d'écriture qui contournerait `validate()` et laisserait deux lignes « validated »
-       à la fois. */
+       à la fois. Depuis P1-08 (migration 0180), `materiality_validated_unique` REFUSE déjà ce
+       contournement au niveau SQL — index retiré ici, comme risk01-lecture.test.ts le fait pour
+       sa contrainte, pour reproduire le cas que la LECTURE (défense en profondeur) doit encore
+       attraper si l'index était un jour contourné. */
     const v2 = await propose(IDS.engNep, IDS.users.lea);
     await validate(v2, IDS.users.lea); // tel quel — supersède v1 normalement, invariant intact ici
     const v3 = await propose(IDS.engNep, IDS.users.lea);
+    await q(`drop index materiality_validated_unique`);
     await q(`update materiality set status = 'validated' where id = $1`, [v3]); // le contournement, exprès
     try {
       const doublons = await q1<{ n: string }>(
@@ -61,6 +65,7 @@ describe('supersede (P1-06, AUD-10) : la lecture /api/sante', () => {
       expect(rouge.status).toBe(500);
     } finally {
       await q(`update materiality set status = 'superseded' where id = $1`, [v3]);
+      await q(`create unique index materiality_validated_unique on materiality(engagement_id) where status = 'validated'`);
     }
   });
 });

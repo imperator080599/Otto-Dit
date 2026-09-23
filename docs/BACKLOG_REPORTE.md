@@ -850,20 +850,18 @@ design : chacun reste une tranche à construire.**
   pas le dire au produit. Non bloquant pour cette tranche. Corrigé le jour où un écran de
   gestion des risques (hors périmètre de CTRL-02) expose `risk.level` en édition.
 
-- **R66 — `procedure_instance.control_id` (0001_core.sql:279) n'a aucune contrainte de clé
-  étrangère**, contrairement à `control_test.control_id`/`control_task.control_id` et aux autres
-  (tous `references control(id) on delete restrict`). Trouvé par la revue hostile du 2026-09-09
-  (voix 2), lot contrôle interne, tranche 3 (CTRL-07) : en théorie, un `control` supprimé pendant
-  qu'un `procedure_instance`/`sample` orphelin subsiste disparaîtrait silencieusement des
-  jointures `join control` des lectures `/api/sante` (CTRL-01 à CTRL-07 en dépendent toutes) — un
-  vrai tirage-violation qui ne rougirait plus. PRÉ-EXISTANT, pas introduit par cette tranche.
-  Non exploitable par un chemin de production actuel : aucun code applicatif ne supprime jamais
-  `control`, et tout tirage passé par le vrai chemin (`drawAttributeSample`) insère aussi une
-  ligne `control_test`, qui EST protégée par `on delete restrict` — le trou n'existe qu'en
-  combinant un `procedure_instance` posé par SQL direct ET une suppression de `control` par SQL
-  direct, comme le font seulement les fichiers de sonde de la revue hostile. Non bloquant pour
-  cette tranche. Corrigé le jour où un chemin de suppression de contrôle apparaît, ou en ajoutant
-  la contrainte manquante par sa propre migration (jamais en éditant 0001, règle 26).
+- **R66 — LEVÉ le 2026-09-23 (P1-08, AUD-23) : le constat était FAUX.** L'énoncé d'origine
+  affirmait que `procedure_instance.control_id` (posé sans contrainte par `0001_core.sql:279`)
+  n'avait aucune FK. C'est inexact : `0002_testing.sql:416` ajoute
+  `alter table procedure_instance add constraint procedure_control_fk foreign key (control_id)
+  references control(id)` — vérifié par lecture directe du fichier ET par une requête
+  `pg_constraint` sur une base fraîchement migrée (règle 15 : chercher un mot n'est pas vérifier
+  un chemin), pas supposé depuis l'énoncé d'origine. AUD-23 (2026-09-20) l'avait déjà repéré («
+  R66 affirme une FK absente qui existe ») ; ce registre ne l'avait pas encore répercuté. Texte
+  d'origine conservé ci-dessous pour mémoire, jamais réédité en place (règle 21) :
+  *« `procedure_instance.control_id` (0001_core.sql:279) n'a aucune contrainte de clé étrangère,
+  contrairement à `control_test.control_id`/`control_task.control_id` et aux autres. Trouvé par
+  la revue hostile du 2026-09-09 (voix 2), lot contrôle interne, tranche 3 (CTRL-07). »*
 
 - **R67 — `LEGACY_AVANT_CTRL07` (`app/src/app/api/sante/route.ts`) est une exemption permanente,
   et doit porter un identifiant de registre avec sa condition de retrait — sinon un carve-out géré

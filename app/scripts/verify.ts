@@ -35,6 +35,7 @@ export const CHAINE: Maillon[] = [
   { nom: 'db:reset', commande: ['npm', 'run', 'db:reset'] },
   { nom: 'demo:seed', commande: ['npm', 'run', 'demo:seed'] },
   { nom: 'tsc', commande: ['npx', 'tsc', '--noEmit'] },
+  { nom: 'docs:modele:epreuve', commande: ['npm', 'run', 'docs:modele:epreuve'] },
   { nom: 'gardes', commande: ['npm', 'run', 'gardes'] },
   { nom: 'semeur', commande: ['npm', 'run', 'semeur'] },
   { nom: 'langue', commande: ['npm', 'run', 'langue'] },

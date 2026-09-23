@@ -58,7 +58,9 @@
     "semeur:figer": "tsx scripts/semeur-vs-chemin.ts --figer",
     "cloture": "tsx scripts/cloture.ts",
     "revue": "tsx scripts/revue.ts",
-    "revue:figer": "tsx scripts/revue.ts --figer"
+    "revue:figer": "tsx scripts/revue.ts --figer",
+    "docs:modele": "tsx scripts/docs/data-model.ts -- --figer",
+    "docs:modele:epreuve": "tsx scripts/docs/data-model.ts"
   },
   "keywords": [],
   "author": "",
