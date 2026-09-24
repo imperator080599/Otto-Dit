@@ -93,4 +93,20 @@ describe('estUnePanneTechnique', () => {
     expect(estUnePanneTechnique(new Error('cette proposition est déjà « acceptée » — une décision se revoit, elle ne s’écrase pas'))).toBe(false);
     expect(estUnePanneTechnique(new Error('reviewer signs after the preparer/validator'))).toBe(false);
   });
+
+  it('cas connu BON (règle 17, revue hostile — voix 1 ET voix 2, convergence exacte) : une sous-classe '
+    + 'métier du dépôt (SamplingRuleError, RiskRuleError, PropositionDejaStatuee…) n’est PAS une panne', () => {
+    /* CONFIRMÉ PAR RÉFUTATION (règle 30) — les deux réfuteurs indépendants de P1-09 ont trouvé,
+       chacun de son côté, la MÊME régression sur la première version de cette frontière
+       (`e.constructor !== Error`) : elle classait TOUTE sous-classe d'erreur du dépôt — pas
+       seulement les vrais bogues JS — comme une panne. Voix 2 l'a prouvée EN VIE, pas
+       seulement plausible : `sampling.ts::proposeRevenueSample` lève `SamplingRuleError`,
+       atteint par `executer()` PARTAGÉ (app/refus.ts) depuis `/eng/[id]/sampling`, tout comme
+       `risk.ts::overrideAction` avec `RiskRuleError`. Reproduites ici sans dépendre de ces
+       classes réelles (pas d'import croisé service↔test) — la FORME suffit : n'importe quelle
+       classe qui étend `Error` sans être l'un des six sous-types natifs de bogue. */
+    class UneErreurMetierDuDepot extends Error {}
+    const e = new UneErreurMetierDuDepot('SAMP-01 : aucune taille d’échantillon fixée avant le tirage');
+    expect(estUnePanneTechnique(e)).toBe(false);
+  });
 });

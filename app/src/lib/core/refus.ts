@@ -114,8 +114,17 @@ export class Refus extends Error {
          orthographié ou un code neuf jamais ajouté au registre serait sinon
          une PANNE muette (aucune trace de quel refus a été VOULU), au lieu
          d'un signal clair au moment où on l'écrit, pas au moment où un
-         auditeur clique dessus. */
-      throw new Error(
+         auditeur clique dessus.
+
+         `TypeError`, PAS `Error` NU (revue hostile, voix 1, P1-09) : un
+         `new Error(...)` ordinaire ici tombait dans le seau « refus historique
+         non codé » d'`estUnePanneTechnique` (app/refus.ts) et fuyait ce
+         message INTERNE (le chemin du fichier compris) tel quel à l'écran —
+         exactement ce que D.6 interdit, pour une erreur qui n'a RIEN d'un
+         refus métier. `TypeError` est un des six sous-types natifs que
+         `estUnePanneTechnique` reconnaît explicitement : ce cas devient une
+         PANNE (message générique + `server_error`), jamais le texte brut. */
+      throw new TypeError(
         `refus() : code « ${code} » absent de REGISTRE_REFUS (lib/core/refus.ts) — `
         + `l'ajouter avant de lever ce refus, jamais un code inconnu du registre.`,
       );

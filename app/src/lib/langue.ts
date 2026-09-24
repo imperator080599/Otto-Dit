@@ -31,10 +31,22 @@ import path from 'node:path';
      `new Error` de chaque fichier lu — et dix refus rédigés dans des `page.tsx`
      remontent bel et bien à l'utilisateur par `?erreur=`. La règle ne les
      juge pas ; elle les COMPTE, et cette phrase dit désormais la vérité sur son
-     périmètre plutôt que de le rétrécir sur le papier. */
+     périmètre plutôt que de le rétrécir sur le papier.
+   · `app/refus.ts` (P1-09, AUD-14) : MÊME RAISON QUE `*actions*.ts` ci-dessus,
+     pas une exception nouvelle. Ce fichier n'affiche rien lui-même (c'est
+     `bandeau-refus.tsx` qui rend l'écran) — il ASSEMBLE le paramètre `?erreur=`
+     à partir d'un `Refus` (déjà traduit, préfixe de CODE — la même forme
+     que `CTRL-01 : phrase`, jamais jugée ici parce qu'elle vit dans les
+     services) ou d'une PANNE (préfixe littéral « PANNE : » + un message DÉJÀ
+     traduit via le catalogue `refus.panne`, plus un suffixe `[dev] …` qui ne
+     s'affiche JAMAIS en production — `NODE_ENV==='development'` seulement).
+     Aucun de ces littéraux n'est un mot que l'auditeur lit sans être déjà
+     passé par `t()` ou par un code — la règle ne perd rien à ne pas les
+     compter deux fois. */
 export function ecarte(p: string): boolean {
   return /(^|\/)api\//.test(p) || /route\.ts$/.test(p)
-    || /actions[\w-]*\.ts$/.test(p) || /-actions\.ts$/.test(p);
+    || /actions[\w-]*\.ts$/.test(p) || /-actions\.ts$/.test(p)
+    || /(^|\/)refus\.ts$/.test(p);
 }
 
 const ATTR_TECH = /\s(?:className|style|href|src|id|key|name|type|action|method|accept|rel|target|role|htmlFor|colSpan|rowSpan|width|height|d|viewBox|fill|stroke|data-[\w-]+)=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})/g;

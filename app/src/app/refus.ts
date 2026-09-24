@@ -53,10 +53,24 @@ const CLE_REFUS = 'erreur';
  *
  * DONC : un rejet EST une panne (message technique jamais montré, ligne
  * `server_error`, référence à l'écran) s'il n'est PAS une `Error` (une chaîne,
- * `undefined`, un objet jeté à la main), OU si sa CLASSE n'est pas `Error`
- * exactement (un `TypeError`/`RangeError` est un vrai bogue — son message
- * parle du moteur JS, jamais de l'audit), OU s'il porte un `.code` au format
- * SQLSTATE (l'erreur vient du pilote PostgreSQL, jamais du service).
+ * `undefined`, un objet jeté à la main), OU si c'est un SOUS-TYPE NATIF de JS
+ * qui signale un vrai bogue (`TypeError`, `RangeError`, `ReferenceError`,
+ * `SyntaxError`, `EvalError`, `URIError` — leur message parle du moteur JS,
+ * jamais de l'audit), OU s'il porte un `.code` au format SQLSTATE (l'erreur
+ * vient du pilote PostgreSQL, jamais du service).
+ *
+ * CORRIGÉ APRÈS REVUE HOSTILE (voix 1, P1-09) : la première version testait
+ * `e.constructor !== Error` — trop large. Le dépôt définit ses PROPRES
+ * sous-classes d'erreur pour des refus métier légitimes, au corps vide
+ * (`class PropositionDejaStatuee extends Error {}`, `propositions.ts`) : leur
+ * message porte la même forme « CODE : phrase » qu'un `new Error(...)` nu,
+ * mais `e.constructor !== Error` les aurait classées PANNE à tort — un refus
+ * bien formé, jamais affiché, remplacé par le message générique. Encore
+ * dormant en Phase 1 (aucun écran n'appelle `propositions.accepter/modifier/
+ * refuser` avant P3-01), mais une mine pour cette tranche future si non
+ * corrigé maintenant. La liste EXPLICITE des six sous-types natifs remplace
+ * le test structurel : elle attrape les VRAIS bogues JS sans toucher aux
+ * classes métier du dépôt, quel que soit leur nom.
  *
  * CE QUE CETTE FRONTIÈRE NE FAIT PAS (règle 19) : un `new Error('phrase')`
  * SANS ces deux signaux passe pour un refus « historique » — `erreur =
@@ -67,9 +81,10 @@ const CLE_REFUS = 'erreur';
  * correctement avant cette tranche — un régression bien pire que le gap
  * disclosed. Cet audit-là (coder ou filtrer les 304) est un chantier séparé,
  * consigné R152 (docs/BACKLOG_REPORTE.md), pas fait à moitié en silence ici. */
+const SOUS_TYPES_NATIFS_DE_BOGUE = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
 export function estUnePanneTechnique(e: unknown): boolean {
   if (!(e instanceof Error)) return true;
-  if (e.constructor !== Error) return true;
+  if (SOUS_TYPES_NATIFS_DE_BOGUE.some((C) => e instanceof C)) return true;
   const code = (e as { code?: unknown }).code;
   if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return true;
   return false;

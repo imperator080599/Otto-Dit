@@ -23,6 +23,10 @@ describe('refus() / Refus', () => {
       refus('CODE-QUI-N-EXISTE-PAS', 'x');
     } catch (e) {
       expect(e).not.toBeInstanceOf(Refus);
+      /* Revue hostile (voix 1, P1-09) : ce cas doit être un TypeError, pas un
+         Error nu — sinon `estUnePanneTechnique` (app/refus.ts) le classe comme
+         un refus « historique » et fuit ce message INTERNE brut à l'écran. */
+      expect(e).toBeInstanceOf(TypeError);
     }
   });
 
