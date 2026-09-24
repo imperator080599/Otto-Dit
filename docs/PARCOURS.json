@@ -485,6 +485,14 @@
       "gabarit": false
     },
     {
+      "nom": "ETANCH : portail — au moins deux demandes avec une explication en attente sont nécessaires",
+      "gabarit": false
+    },
+    {
+      "nom": "ETANCH : portail — un item forgé d’une AUTRE demande (PORTAIL-01) est refusé, jamais accepté",
+      "gabarit": false
+    },
+    {
       "nom": "portail : le client voit ses demandes sans compte ni mot de passe",
       "gabarit": false
     },
@@ -1995,6 +2003,10 @@
       "gabarit": false
     },
     {
+      "nom": "ETANCH : portail — un item forgé d’une AUTRE demande (PORTAIL-01) est refusé, jamais accepté",
+      "gabarit": false
+    },
+    {
       "nom": "portail : le client voit ses demandes sans compte ni mot de passe",
       "gabarit": false
     },
@@ -2897,6 +2909,7 @@
     "risque : aucun formulaire de questionnaire à l’écran",
     "refus : dépasser un papier VISÉ sans motif écrit est refusé par le serveur (PROG-06)",
     "refus : déplanifier un papier VISÉ sans motif écrit est refusé par le serveur (PROG-07)",
+    "ETANCH : portail — au moins deux demandes avec une explication en attente sont nécessaires",
     "atelier : chaque relevé est attesté par une personne, et la ligne suivante s’ouvre seule",
     "ancre : aucune cellule ancrée sur cette ligne (aucune ancre à montrer)",
     "refus : un attribut d’identité qui diverge rend la preuve NON RECEVABLE — V refusé (TEST-02)",

@@ -46,7 +46,11 @@ const MODULES = (import.meta as unknown as {
 interface Param { nom: string; type: string; opt: boolean }
 interface Fonction { rel: string; nom: string; params: Param[] }
 
-const ACTEURS = new Set(['userId', 'actorUserId', 'authorId', 'byUserId', 'actorId']);
+/* P2-01 (AUD-04) : `verifierId` (submitBlindCheck) et `contactId` (answerExplanation,
+ * markAllSubmitted) ajoutés — le même trou que `couverture-etancheite.test.ts` avait,
+ * ici aussi : ces deux noms n'étaient reconnus par AUCUN des deux instruments, donc les
+ * trois fonctions n'étaient JAMAIS appelées par cette épreuve d'exécution. */
+const ACTEURS = new Set(['userId', 'actorUserId', 'authorId', 'byUserId', 'actorId', 'verifierId', 'contactId']);
 
 /** Découper une liste de paramètres au PREMIER niveau (les objets ne comptent pas). */
 function decouper(sig: string): string[] {
@@ -118,7 +122,7 @@ function surface(): Fonction[] {
       const sig = s.slice(i + 1, fin);
       const ps = params(sig);
       const aUnActeur = ps.some((p) => ACTEURS.has(p.nom))
-        || /\b(userId|actorUserId|authorId|byUserId|actorId)\s*[:;?]/.test(sig);
+        || /\b(userId|actorUserId|authorId|byUserId|actorId|verifierId|contactId)\s*[:;?]/.test(sig);
       if (!aUnActeur) continue;
       /* Les GARDES elles-mêmes ne sont pas des gestes : les appeler
          éprouverait la garde par la garde. */
@@ -304,6 +308,8 @@ describe('l’étanchéité, EXÉCUTÉE fonction par fonction', () => {
       'reunions.ts::declarerContactCle': 'garde d’isolation par ENTITÉ (« ce contact appartient à une autre entité »)',
       'reunions.ts::declarerContactDomaine': 'garde d’isolation par ENTITÉ',
       'team.ts::openDeclaration': 'assertSameFirm — la déclaration précède l’affectation, donc la garde est le CABINET, pas l’équipe',
+      'evidence.ts::answerExplanation': 'garde de portail propre (PORTAIL-01, P2-01/AUD-04) — même refus, autre code : l’intrus n’est même pas une ligne client_contact, la jointure ne résout personne',
+      'evidence.ts::markAllSubmitted': 'garde de portail propre (PORTAIL-01, P2-01/AUD-04) — même refus, autre code, même raison qu’answerExplanation',
     };
     /* CE QUI PORTE SUR LA PERSONNE ELLE-MÊME, et n'entre donc dans le dossier de
        personne. L'acteur n'y est pas l'AUTEUR d'un geste sur un objet d'autrui :

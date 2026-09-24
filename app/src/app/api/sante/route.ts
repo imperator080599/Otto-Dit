@@ -283,6 +283,26 @@ async function corpsDeLaSonde() {
     return `${recents.length} événement(s) relu(s) · 0 verbe hors registre`;
   }));
 
+  /* LA COUVERTURE DES GARDES D'ÉTANCHÉITÉ, REJOUÉE ICI (P2-01, AUD-04). Même balayage
+     EXACTEMENT que `couverture-etancheite.test.ts` — extrait dans `core/couverture-
+     etancheite.ts` pour que les deux appelants ne puissent jamais diverger. CE QU'ELLE NE
+     VÉRIFIE PAS (règle 19) : que la garde s'exécute correctement sur le bon dossier — un
+     balayage de texte constate qu'un appel FIGURE, jamais qu'il protège (règle 15) ; la
+     preuve d'exécution vit dans `etancheite-executee.test.ts`, hors de portée d'une lecture
+     HTTP sans base de test dédiée. */
+  lectures.push(await essayer('fonctions à acteur sans garde d’étanchéité (P2-01, AUD-04) = 0', async () => {
+    const { inventaire, PAR_PERSONNE } = await import('@/lib/core/couverture-etancheite');
+    const { gardees, nues } = inventaire();
+    if (gardees.length + nues.length === 0) {
+      throw new Error('aucune fonction à acteur trouvée — le balayage mesure à côté (chemin lib/services introuvable ?)');
+    }
+    const fautives = nues.filter((n) => !(n in PAR_PERSONNE));
+    if (fautives.length > 0) {
+      throw new Error(`${fautives.length} fonction(s) de service prenant un acteur SANS garde : ${fautives.join(', ')}`);
+    }
+    return `${gardees.length} fonction(s) gardée(s), ${nues.length - fautives.length} par-personne déclarée(s) · 0 fautive`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

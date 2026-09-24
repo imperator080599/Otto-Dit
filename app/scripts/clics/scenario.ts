@@ -1780,6 +1780,50 @@ export async function conduire(
       restantes === 0, `${envoyees} demande(s) approuvée(s) et envoyée(s), ${restantes} restante(s) sans approbation`);
   });
 
+  /* ── 9bis. ETANCH : PORTAIL (P2-01, AUD-04) — un POST forgé avec l'item d'une AUTRE
+     demande doit être REFUSÉ (PORTAIL-01), jamais accepté. AVANT la station « portail
+     client » (10) : celle-ci répond à TOUTES les explications en attente, et cette
+     station a besoin d'en trouver au moins deux encore ouvertes pour forger le test.
+     Le formulaire pose `item_id` en champ caché ; ce test le RÉÉCRIT par JS avant
+     l'envoi — exactement ce qu'un POST forgé ferait — et observe le refus, pas
+     seulement la présence d'un appel de garde dans le code (règle 15). */
+  await station('ETANCH : portail', async () => {
+    await ctx.clearCookies();
+    await aller(`${base}/portal/${c.jeton}`);
+    const liens = await p.locator('a[href*="/portal/"]').evaluateAll(
+      (els) => els.map((e) => e.getAttribute('href'))
+        .filter((h): h is string => typeof h === 'string' && h.split('/').length > 3));
+    /* Un item d'EXPLICATION par demande visitée — seul le champ texte est requis,
+       jamais un fichier, donc rien d'autre que le forgeage ne peut faire échouer
+       l'envoi. */
+    const parDemande: { lien: string; itemId: string }[] = [];
+    for (const lien of liens) {
+      await aller(base + lien);
+      const forme = p.locator('form:has(input[name=text])').first();
+      if (!(await forme.count())) continue;
+      const itemId = await forme.locator('input[name=item_id]').getAttribute('value');
+      if (itemId) parDemande.push({ lien, itemId });
+      if (parDemande.length >= 2) break;
+    }
+    if (parDemande.length < 2) {
+      dire('ETANCH : portail — au moins deux demandes avec une explication en attente sont nécessaires',
+        false, `${parDemande.length} demande(s) utilisable(s) — station non concluante sur ce monde`);
+      return;
+    }
+    const [etrangere, cible] = parDemande;
+    await aller(base + cible.lien);
+    const forme = p.locator('form:has(input[name=text])').first();
+    await forme.evaluate((el, valeur) => {
+      (el as HTMLFormElement).noValidate = true;
+      const champ = el.querySelector('input[name=item_id]') as HTMLInputElement | null;
+      if (champ) champ.value = valeur as string;
+    }, etrangere.itemId);
+    await forme.locator('input[name=text]').fill('Réponse envoyée avec un item forgé (sonde ETANCH).');
+    await soumettre(forme.locator('button').first(), 1200);
+    dire('ETANCH : portail — un item forgé d’une AUTRE demande (PORTAIL-01) est refusé, jamais accepté',
+      Boolean(refus(p)), refus(p) ?? 'PASSÉ — défaut : la réponse a été acceptée sans appartenir à cette demande');
+  });
+
   // ── 10. PORTAIL CLIENT : déposer les pièces, répondre aux explications
   await station('portail client', async () => {
     await ctx.clearCookies();                      // le client n'est pas un auditeur
