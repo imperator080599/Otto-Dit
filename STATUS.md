@@ -2,6 +2,75 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 2 — P2-01 Étanchéité : portail, tirage du run de fiabilité, activeMembership (2026-09-24, AUD-04)
+
+**Migration `0182_verification_run_selected.sql`** (nouvelle, jamais une édition d'une
+migration appliquée) : `verification_run.selected jsonb` devient la source de vérité des
+items tirés par un run — `startVerificationRun` l'écrit, `currentVerificationRun` le relit
+directement (avant : re-requête de `event_log`), `submitBlindCheck` refuse (**VERIF-01**) un
+item qui n'a jamais été tiré par CE run précis, après une garde de membre
+(`assertMembreDe('verification_run', …)`, `core/membre.ts` élargi).
+
+**`evidence.ts`/`portal.ts`** : deux nouvelles gardes privées (`assertRequestDeLEntite`,
+`assertItemDeLaDemandeEtDeLEntite`) devant `answerExplanation`/`markAllSubmitted` ; le portail
+(`uploadAction`) vérifie désormais qu'un `item_id` de formulaire caché appartient bien à la
+demande désignée par l'URL avant d'écrire (**PORTAIL-01**) — trouvé en lisant le code du
+portail : un POST forgé avec l'id d'un élément d'une AUTRE demande était accepté tel quel.
+
+**`api/blob`, `api/archive`, `api/tracker`** : remplacent une vérification d'appartenance
+JOIN inline (sans filtre `exited_on is null`) par `activeMembership()` (préexistante, testée,
+`core/auth.ts`) — un membre d'équipe SORTI d'un dossier pouvait encore lire son blob, son
+archive, son tracker.
+
+**`core/couverture-etancheite.ts`** (nouveau, extrait d'un test) : le scanner statique
+`inventaire()` partagé entre `couverture-etancheite.test.ts` et une nouvelle lecture
+`/api/sante` (« fonctions à acteur sans garde d'étanchéité = 0 ») — regex `ACTEUR` élargie
+(`verifierId`, `contactId`), regex `GARDE` élargie. `etancheite-executee.test.ts` (preuve par
+EXÉCUTION réelle, mécanisme indépendant) élargi en parallèle. Nouvelle station clics « ETANCH :
+portail » (`scripts/clics/scenario.ts`) : forge une soumission avec l'`item_id` d'une autre
+demande, vérifie le refus.
+
+**Deux voix hostiles indépendantes (règle 30 — la tranche touche `core/membre.ts`, une
+migration, et 3 correctifs de sécurité sur des routes)** : voix 1 (sécurité/profondeur), voix 2
+(largeur/compatibilité), lancées en parallèle, sans lecture partagée l'une de l'autre.
+- **V1-01, BLOQUANT, CORRIGÉ (SHA `e7b7dce`)** : la garde `run.selected.includes(…)` de
+  `submitBlindCheck` n'avait jamais été exercée en NÉGATIF par un test — les deux appels
+  existants ne passaient que des items déjà tirés. Règle 17 : « une garde qui n'a jamais rien
+  refusé n'est pas une garde. » Corrigé par un nouveau cas dans `s5s6.test.ts` : un item réel
+  du même dossier hors tirage, ET un id inexistant, tous deux refusés (VERIF-01).
+- **V1-02, non bloquant, trou pré-existant hérité (R157, reporté)** : la clause SQL
+  `e.entity_id = c.entity_id` des nouvelles gardes portail n'est jamais exercée avec deux
+  entités authentiques distinctes — le schéma est correct (vérifié dans `0001_core.sql`),
+  `portalRequestGuard` offre déjà une défense en profondeur, mais la clause elle-même reste
+  non prouvée par exécution. Porté par le code neuf, pas causé par lui.
+- **V1-03, non bloquant, documentation (R158, reporté)** : le scanner d'étanchéité ne couvre
+  que `lib/services/`, pas les routes API ni les pages — le libellé `/api/sante` ne le dit que
+  dans les commentaires de code.
+- **V2-01, non bloquant, CORRIGÉ (cette entrée)** : STATUS.md n'avait encore aucune entrée pour
+  P2-01.
+- **V2-02, jugé seul (règle 30 : un seul relecteur sur ce qui est lu et corrigé à l'œil,
+  ici purement informationnel), non bloquant, aucune action requise** : `currentVerificationRun`
+  expose désormais `selected` en clé top-level de son retour — aucun appelant existant n'en
+  souffre, noté pour un futur sérialiseur.
+- Rien d'autre de bloquant : tous les call-sites de `answerExplanation`/`markAllSubmitted`/
+  `submitBlindCheck`/`ingestEvidence` du dépôt entier relus un par un (ordre d'arguments
+  retracé jusqu'à leur définition), migration 0182 confirmée additive pure, aucune fuite
+  403/404, aucun code mort laissé par les 3 routes centralisées.
+
+**R156** (déjà disclosed en construisant) reste reporté : le remplacement complet du critère
+« par-acteur » par un critère « par-écriture » n'a pas été fait dans cette tranche.
+
+**Verify complet mesuré VERT sur l'arbre commité `693ceec71806558cc3bd04c256d3e1e665bff540`**
+(21/21 maillons, `clics` : 327 étapes conduites, 0 échec, 499 clics comptés — 5e tentative de
+la chaîne complète sur cet arbre ; les 4 précédentes ont toutes buté sur la même assertion
+pré-existante et sans rapport, « mes travaux : le bandeau… », le flake #418 déjà documenté de
+longue date dans `docs/CHASSE.md` F1-F63 — jamais sur le code de cette tranche, la nouvelle
+station « ETANCH : portail » passant proprement à chaque tentative). Détail dans
+`docs/instantanes/verify.json` et `docs/CHASSE.md`. **SHA servi non confirmé** — à mesurer via
+`/api/sante` une fois le déploiement Vercel terminé (règle 27), pas supposé ici.
+
+---
+
 ## Phase 1, clôture (2026-09-24)
 
 Phase 1 (P1-01 à P1-10) livrée, chaque tranche poussée directement sur `main` par
