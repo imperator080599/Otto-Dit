@@ -303,6 +303,29 @@ async function corpsDeLaSonde() {
     return `${gardees.length} fonction(s) gardée(s), ${nues.length - fautives.length} par-personne déclarée(s) · 0 fautive`;
   }));
 
+  /* LE DÉCLENCHEUR SQL EQUIPE-01, REJOUÉ ICI (P2-02, AUD-05). `assignMember` refuse déjà
+     côté service (règle 30, `refus('EQUIPE-01', …)`) qu'un acteur autre que manager/partner
+     modifie `eng_role`/`can_sign` — mais le FILET LE PLUS BAS est le déclencheur PostgreSQL
+     posé par la migration 0176 (`equipe01_acteur_manager_partner`, `assert_equipe01_acteur`),
+     qui refuse tout `update` de ces deux colonnes fait hors `withActeur()`. Cette lecture
+     ROUGIT si ce déclencheur disparaissait ou était désactivé (une migration future qui le
+     recrée mal, une commande manuelle en production) — le même filet que la lecture
+     « index partiels uniques » (P1-08) pour ses propres contraintes. CE QU'ELLE NE VÉRIFIE
+     PAS (règle 19) : que le SERVICE appelle bien `withActeur` avec le VRAI rôle de l'acteur
+     (`db/acteur.ts` le dit dans son propre en-tête — un appelant qui mentirait sur son rôle
+     contournerait ce déclencheur comme tous les autres) ; ni que l'écran cache bien la case
+     « may sign off » aux non-manager/partner (couvert par `npm run clics`, station dédiée). */
+  lectures.push(await essayer('déclencheur EQUIPE-01 sur engagement_member (P2-02, AUD-05)', async () => {
+    const trig = await q01<{ tgenabled: string }>(
+      `select t.tgenabled::text from pg_trigger t join pg_class c on c.oid = t.tgrelid
+       where c.relname = 'engagement_member' and t.tgname = 'equipe01_acteur_manager_partner'`,
+    );
+    if (!trig) throw new Error('déclencheur equipe01_acteur_manager_partner ABSENT de engagement_member — EQUIPE-01 n’est plus gardé côté base');
+    if (trig.tgenabled === 'D') throw new Error('déclencheur equipe01_acteur_manager_partner DÉSACTIVÉ sur engagement_member');
+    const canSignActifs = await q1<{ n: string }>(`select count(*)::text n from engagement_member where can_sign`);
+    return `déclencheur actif · ${canSignActifs.n} membre(s) avec can_sign=true`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {
