@@ -2143,3 +2143,32 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   fois : `plancher` déplacé en fin de chaîne, juste avant `vitest`, aux côtés de tout ce qui a
   besoin de la base semée intacte en amont (gardes/semeur/langue/lectures/parcours restent
   inchangés — aucun des trois derniers n'invoque Vitest, vérifié par `grep`).
+
+- **F63 — Fréquence élevée sur P2-01 (AUD-04) : 4 rouges sur 6 tentatives `npm run clics --
+  --figer` (2026-09-24), sans hypothèse nouvelle.** Chaque tentative précédée d'un `db:reset &&
+  demo:seed` frais (le piège F61 — base mal préparée — exclu à chaque fois, vérifié). La nouvelle
+  station « ETANCH : portail » (P2-01) passe PROPRE dans les 6/6 tentatives — jamais la cause. Le
+  point d'échec dominant (3 occurrences identiques, même numéro de ligne du scénario) : `mes
+  travaux : le bandeau y mène depuis n'importe quel écran, en 1 clic` — une assertion de
+  navigation post-clic (`networkidle` + 600 ms, `p.url().includes('/travaux')`), sensible par
+  construction à la MÊME course que F4/F8 (le moment où le contenu existe). Deux occurrences
+  supplémentaires du `#418` lui-même, sur des pages SANS RAPPORT avec P2-01 (`/eng/.../kanban`,
+  `/travaux`) — cohérent avec F1-F11 (le #418 se déplace, jamais localisé). Rejoue F61 au trait
+  près : sur 6 tentatives, 2 sont sorties VERTES (0 échec, `docs/PARCOURS.json` figé aux deux) —
+  rejouer jusqu'à un passage propre a suffi, comme à chaque occurrence précédente. Aucune
+  hypothèse nouvelle sur la CAUSE ; le nombre de tentatives nécessaires ce jour (6, contre 1 à 4
+  dans les épisodes précédemment consignés) est noté sans être expliqué — pas assez de points
+  pour distinguer un vrai alourdissement d'une simple variance du même flake.
+
+  **Suite (même jour) — la même panne rejoue dans la chaîne `verify` COMPLÈTE, pas seulement dans
+  la boucle `clics` isolée ci-dessus.** Deux tentatives supplémentaires de `npm run verify` sur
+  l'arbre P2-01 (arbre `cebea72`, re-semé à chaque fois) se sont arrêtées toutes deux au maillon
+  `clics`, sur la MÊME assertion : `mes travaux : le bandeau y mène depuis n'importe quel écran,
+  en 1 clic`, 1 échec sur 327 étapes à chaque fois (logs `verify-p2-01-d.log` : ligne 1288,
+  1097,2 s ; `verify-p2-01-e.log` : ligne 1283, 1088,9 s). Une tentative antérieure du même arbre
+  (`verify-p2-01-c.log`) s'était arrêtée plus tôt, au maillon `lectures` — un vrai défaut de cette
+  tranche (11 lectures perdues dans `api/archive` et `api/blob` après le passage à
+  `activeMembership()`), corrigé et refigé (`npm run lectures:figer`), sans rapport avec le #418.
+  Aucune hypothèse nouvelle : les deux échecs `clics` de la chaîne complète confirment F63 au lieu
+  de le contredire — la nouvelle station « ETANCH : portail » n'est jamais en cause (elle passe
+  chaque fois), et le point de rupture reste le même flake pré-existant, jamais localisé.

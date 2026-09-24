@@ -1440,6 +1440,7 @@ Politiques RLS : `verification_check_eng` (ALL, {public})
 | machine_passed_count | integer | non | — |
 | drawn_count | integer | non | — |
 | created_at | timestamp with time zone | non | now() |
+| selected | jsonb | non | '[]'::jsonb |
 
 FK : `engagement_id` → `engagement(id)` on delete restrict ; `engine_run_id` → `engine_run(id)` on delete no action ; `procedure_id` → `procedure_instance(id)` on delete no action
 

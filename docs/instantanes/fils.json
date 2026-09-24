@@ -835,6 +835,24 @@
       "etat": "LEVÉE le 2026-09-24 sur le SHA 876fa85 par la lecture /api/sante « registre des verbes (P1-10, AUD-12) » (app/src/app/api/sante/route.ts) — relit les 500 derniers event_log, rougit si un verbe hors registre y figure.",
       "depuis": "2026-09-24 (Phase 1, P1-10, AUD-12)",
       "note": "corrigée le jour même de sa découverte (règle 22), pas laissée en dette. Cas connu mauvais : verbes-registre-lecture.test.ts (insertion directe hors de logEvent, event_log append-only). Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R156",
+      "etat": "reporté, gravité basse — le plan maître Phase 2 (P2-01, AUD-04) demandait de remplacer le critère par-acteur de couverture-etancheite.test.ts par un critère par-écriture (façon ecriture-nue.test.ts) ; non fait, trop large pour cette tranche sans mesure séparée de son effet sur ~150 fonctions. Le trou réel trouvé (contactId, verifierId invisibles au regex ACTEUR) est fermé en élargissant ce regex, désormais partagé (core/couverture-etancheite.ts) entre le test et /api/sante.",
+      "depuis": "2026-09-24 (Phase 2, P2-01, AUD-04)",
+      "note": "disclosed par construction (règle 19), décision explicite prise en construisant, pas trouvée après coup. À reprendre : mesurer le critère par-écriture avant de le construire, dans une tranche dédiée. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R157",
+      "etat": "reporté, gravité basse — trou de test PRÉ-EXISTANT hérité par du code neuf, pas causé par lui (revue hostile voix 1 de P2-01, constat V1-02). assertRequestDeLEntite/assertItemDeLaDemandeEtDeLEntite (evidence.ts) portent une clause SQL e.entity_id = c.entity_id jamais exercée avec deux entités authentiques ; le seul test à preuve exécutée disponible déclenche le refus par une autre voie (contact inexistant, pas mauvaise entité). Le schéma SQL est correct (vérifié dans 0001_core.sql).",
+      "depuis": "2026-09-24 (Phase 2, P2-01, AUD-04)",
+      "note": "portalRequestGuard porte la même lacune de longue date (pas une régression de P2-01). À reprendre : cas de test dédié avec deux contacts/entités synthétiques réels dans le monde semé. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R158",
+      "etat": "reporté, gravité basse, documentation seulement (revue hostile voix 1 de P2-01, constat V1-03). core/couverture-etancheite.ts (et sa lecture /api/sante) ne balaie que app/src/lib/services/ (limitation préexistante) — les 3 routes API corrigées par P2-01 (blob/archive/tracker) et la page portail ne sont couvertes par aucun instrument automatique, seulement par la relecture humaine qui les a trouvées.",
+      "depuis": "2026-09-24 (Phase 2, P2-01, AUD-04)",
+      "note": "le périmètre du scanner n'est dit que dans les commentaires de code, pas à l'écran — un lecteur pressé pourrait lire la lecture /api/sante comme une couverture totale. À reprendre : élargir le scanner à app/src/app/, ou rendre le périmètre explicite dans le libellé affiché. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

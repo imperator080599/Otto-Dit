@@ -2826,3 +2826,44 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   et rougit si un verbe hors registre y figure, éprouvée contre un cas connu mauvais
   (`verbes-registre-lecture.test.ts`, insertion directe hors de `logEvent`, `event_log`
   étant append-only aucun retour au vert n'y est testable dans le même fichier).
+
+- **R156 — REPORTÉ, gravité basse, décision explicite prise en construisant P2-01
+  (AUD-04).** Le plan maître (`docs/MANDATS/2026-09-20_plan_maitre_phase2.md`, §P2-01)
+  demandait de remplacer le critère « par-acteur » de `couverture-etancheite.test.ts`
+  (une fonction qui prend un paramètre nommé `userId`/`actorId`/etc. doit se garder) par
+  un critère « par-écriture » (toute fonction qui écrit — insert/update/delete — doit se
+  garder, façon `ecriture-nue.test.ts` de P1-10). Non fait dans cette tranche : un tel
+  remplacement toucherait la totalité de `lib/services` (~150 fonctions déjà classées)
+  d'un coup, sans mesure séparée de son effet, dans une tranche qui avait déjà deux
+  fonctions neuves à garder. Le trou RÉEL que P2-01 a trouvé (`answerExplanation::
+  contactId`, `markAllSubmitted::contactId`, `submitBlindCheck::verifierId` invisibles
+  aux deux instruments faute de vocabulaire) est fermé en élargissant le regex `ACTEUR`
+  existant (`core/couverture-etancheite.ts`, partagé par le test et par `/api/sante`) —
+  disclosed, pas contourné. À reprendre : mesurer d'abord combien de fonctions le critère
+  par-écriture ajouterait/retirerait avant de le construire, dans une tranche dédiée.
+
+- **R157 — REPORTÉ, gravité basse (trou de test PRÉ-EXISTANT, hérité par du code neuf, pas
+  causé par lui), trouvé par la revue hostile voix 1 de P2-01 (constat V1-02).**
+  `assertRequestDeLEntite`/`assertItemDeLaDemandeEtDeLEntite` (`app/src/lib/services/
+  evidence.ts`) portent une clause SQL `e.entity_id = c.entity_id` jamais exercée avec DEUX
+  entités authentiques (une vraie `requestId` de l'entité A, un vrai `contactId` de l'entité
+  B) — le seul test à preuve exécutée disponible (`etancheite-executee.test.ts`, fabrication
+  générique de l'« intrus ») passe un `app_user.id` comme `contactId`, qui ne résout AUCUNE
+  ligne `client_contact` : le refus PORTAIL-01 s'y déclenche par « le contact n'existe pas »,
+  jamais par « le contact existe mais dans la mauvaise entité ». Le schéma SQL est correct
+  (vérifié directement dans `0001_core.sql`), et `portalRequestGuard` (préexistant) offre déjà
+  une défense en profondeur pour les deux seuls appelants réels — mais la clause elle-même
+  reste non prouvée par exécution. `portalRequestGuard` porte la même lacune de longue date
+  (pas une régression de P2-01). À reprendre : un cas de test dédié avec deux contacts/entités
+  synthétiques réels dans le monde semé.
+
+- **R158 — REPORTÉ, gravité basse, documentation seulement, trouvé par la revue hostile
+  voix 1 de P2-01 (constat V1-03).** Le scanner `core/couverture-etancheite.ts` (et sa
+  lecture `/api/sante` « fonctions à acteur sans garde d'étanchéité ») ne balaie QUE
+  `app/src/lib/services/` (limitation préexistante, pas neuve à cette tranche) — les 3
+  routes API corrigées par P2-01 (`blob`, `archive`, `tracker`) et la page portail ne sont
+  couvertes par AUCUN instrument automatique, seulement par la relecture humaine qui les a
+  trouvées. Le libellé de la lecture `/api/sante` ne dit ce périmètre que dans les
+  commentaires de code, pas à l'écran — un lecteur pressé pourrait le lire comme une
+  couverture totale de l'étanchéité. À reprendre : soit élargir le scanner à `app/src/app/`,
+  soit rendre le périmètre explicite dans le libellé affiché.
