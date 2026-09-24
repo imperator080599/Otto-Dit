@@ -2867,3 +2867,15 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   commentaires de code, pas à l'écran — un lecteur pressé pourrait le lire comme une
   couverture totale de l'étanchéité. À reprendre : soit élargir le scanner à `app/src/app/`,
   soit rendre le périmètre explicite dans le libellé affiché.
+
+- **R159 — REPORTÉ, gravité basse, décision explicite prise en construisant P2-02
+  (AUD-05).** Le plan maître (`docs/MANDATS/2026-09-20_plan_maitre_phase2.md`, §P2-02) liste
+  dans son acceptation une station « visa : la même personne ne vise pas deux rôles » (VISA-02
+  observé) en plus de la station EQUIPE-01. VISA-02 est un code PRÉ-EXISTANT (P1-04, migration
+  0176), déjà testé au niveau service (`p1-04.test.ts`) et déjà gardé par un déclencheur SQL —
+  **non touché par cette tranche**, donc pas exigé par la règle 37 (qui ne mande un
+  `npm run clics` que pour un code de refus AJOUTÉ ou CHANGÉ). Non construit dans cette
+  tranche, faute de temps face au reste du périmètre (EQUIPE-01/02 côté service, l'écran qui
+  suit le service, la lecture `/api/sante`, la station EQUIPE-01 elle-même). À reprendre : une
+  station qui signe un papier en reviewer puis tente de le signer en partner avec la MÊME
+  personne, et observe le refus VISA-02 à l'écran.
