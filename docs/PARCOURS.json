@@ -2299,11 +2299,11 @@
       "gabarit": false
     },
     {
-      "nom": "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
+      "nom": "évaluation : aucun dépassement à répondre sur cet écran",
       "gabarit": false
     },
     {
-      "nom": "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
+      "nom": "évaluation : déjà conclue",
       "gabarit": false
     },
     {
@@ -2917,8 +2917,8 @@
     "écarts : aucun écart ouvert à résoudre",
     "EXTRAP-03 : aucun écart chiffré à écarter sur ce dossier",
     "re-exécution : un sous-échantillon est tiré pour re-performer en aveugle",
-    "évaluation : aucun dépassement à répondre sur cet écran",
-    "évaluation : déjà conclue",
+    "évaluation : la réponse au dépassement de l’anomalie tolérable s’enregistre à l’écran",
+    "évaluation : la conclusion sur l’échantillon est enregistrée (L4, jugement humain)",
     "papier : aucun papier de travail dans le dossier",
     "papier : le formulaire d’édition de section existe avant les visas",
     "note ancrée : la conclusion du papier est annotable",

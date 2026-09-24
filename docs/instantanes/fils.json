@@ -799,6 +799,12 @@
       "etat": "reporté, gravité basse — materiality.ts::validate() porte désormais un filet (catch sur 23505, message traduit) pour deux PROPOSITIONS DIFFÉRENTES du même dossier validées par deux transactions vraiment concurrentes (heurtant materiality_validated_unique, 0180) ; aucun test local ne peut déclencher ce chemin, PGlite (seule base des tests) sérialise entièrement toutes les transactions (confirmé par une expérience pg_sleep) — limite d'infrastructure, pas spécifique à cette tranche.",
       "depuis": "2026-09-23 (Phase 1, P1-08, AUD-15) — trouvé indépendamment par les deux voix de la revue hostile, convergentes sans coordination",
       "note": "le correctif (catch/traduction) est posé et livré ; seule la preuve par une vraie course reste hors de portée en local. À reprendre : un harnais contre un vrai Postgres réseau (CI role-production, OTTO_CI_DATABASE_URL) pourrait exercer une vraie collision à deux connexions. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R150",
+      "etat": "ouvert, gravité HAUTE (produit-facing) — /eng/<id>/testing, bouton Recompute du panneau d'évaluation d'échantillon : réussit côté serveur (SSR vérifié correct par requête fraîche hors client React) mais le contenu principal devient VIDE côté navigateur après la navigation qui suit, reproduit deux fois de façon déterministe par npm run clics et une troisième fois en pilotage manuel. Meilleure reproduction à ce jour de l'hypothèse H du #418 (docs/CHASSE.md F19). Vérifié NON causé par P1-08 (aucun fichier touché n'entre dans la chaîne d'import de cette page).",
+      "depuis": "2026-09-24 (Phase 1, P1-08, clôture règle 37 — npm run clics)",
+      "note": "docs/PARCOURS.json refigé pour retirer les deux stations concernées, mais le défaut sous-jacent N'EST PAS corrigé — un auditeur réel verrait vraisemblablement le même écran vide. À reprendre : la prochaine investigation #418 devrait partir de cette reproduction précise (recette exacte dans docs/CHASSE.md F19). Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

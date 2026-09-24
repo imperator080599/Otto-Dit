@@ -250,6 +250,62 @@
   a été REJOUÉE sur le MÊME arbre (aucune édition entre les deux passages, règle 34) ; voir
   STATUS.md pour le résultat du passage suivant, cité avec son heure et sa durée mesurées.
 
+- **F19 — LA MEILLEURE REPRODUCTION DE L'HYPOTHÈSE H À CE JOUR : contenu VIDE après une
+  navigation, PAS un simple diff de texte, isolée jusqu'à la preuve serveur/client.**
+  (2026-09-24, tranche P1-08/AUD-23, deux passages `npm run clics` complets et INDÉPENDANTS sur
+  un arbre stable — commit `fed9555` et un rejeu identique — TOUS DEUX rouges de façon IDENTIQUE :
+  « 326 étapes conduites · 0 échec(s) » mais **2 stations FIGÉES JAMAIS ATTEINTES**, toutes deux
+  sur `re-exécution et évaluation` (`/eng/<id>/testing`) : « la réponse au dépassement de
+  l'anomalie tolérable s'enregistre à l'écran » et « la conclusion sur l'échantillon est
+  enregistrée (L4) ». **Ce n'est PAS un échec d'assertion — c'est une branche `if/else` qui prend
+  systématiquement la mauvaise branche** (`scenario.ts:2982` : `if (await compte(form:has(button
+  Recompute)))`), donc aucun `dire()` ne s'exécute pour ces deux stations, exactement le silence
+  que règle 13 traque.
+
+  **Diagnostic conduit jusqu'au bout, pas arrêté à une hypothèse plausible (règle 18) :**
+  1. Lecture directe des services (`computeSampleEvaluation`, `recordEvaluationResponse`,
+     `concludeEvaluation`) : logique correcte, prouvée par appel direct en script — un recompute
+     produit bien une ligne `sample_evaluation` fraîche `status='draft'`, `concluded_by` null.
+  2. Serveur relancé en local (`next dev`), navigation Playwright manuelle rejouant EXACTEMENT le
+     geste du harnais (déplier le repli, cliquer « Recompute ») : le clic RÉUSSIT côté serveur
+     (POST → 303, aucune erreur dans le journal du serveur), mais **le contenu principal de la
+     page devient ENTIÈREMENT VIDE côté navigateur** après la navigation qui suit (capture
+     d'écran : la barre latérale seule reste visible, `document.body.innerText` tombe de
+     plusieurs milliers de caractères à 1125).
+  3. **Preuve décisive** : une requête GET fraîche sur la MÊME URL, faite DIRECTEMENT (hors client
+     React, `ctx.request.get(...)`, donc sans passer par la navigation/hydratation du navigateur)
+     rend le panneau complet, CORRECTEMENT recalculé (un nouveau montant d'anomalie connue,
+     preuve que le recompute a bien eu lieu). **Le serveur ne ment jamais ici — c'est la
+     navigation CÔTÉ CLIENT qui perd le contenu après un `redirect()` de action serveur** :
+     exactement l'hypothèse H de ce fichier (« navigation côté client commencée avant la fin de
+     l'hydratation du document précédent »), mais pour la première fois isolée jusqu'à la preuve
+     SSR-vs-client plutôt que déduite d'un diff de texte.
+  4. **Vérifié NON causé par cette tranche** : `git diff a8cc5ad..fed9555 -- app/src` ne touche NI
+     `app/src/app/eng/[id]/testing/page.tsx`, NI `app/src/lib/services/evaluation.ts`, NI aucun
+     fichier du rendu de cette page — seuls `materiality.ts` (service sans rapport avec cette
+     page), `api/sante/route.ts` (route distincte), `scripts/docs/data-model.ts` (script de build,
+     jamais exécuté au runtime) et la migration 0180 (DDL) ont changé. Aucun de ces fichiers
+     n'entre dans la chaîne d'import de la page `/testing`.
+  5. **Hypothèse PLAUSIBLE, non confirmée, sur pourquoi ce run précis** : P1-07 (tranche
+     précédente, non celle-ci) a recalibré la taille de tirage du jeu de démonstration —
+     `spotcheckAndEvaluate()` (déjà existant, non modifié par P1-08) conclut désormais
+     SYSTÉMATIQUEMENT l'évaluation PENDANT le semis (`concluded_by` posé), ce qui n'était
+     peut-être pas le cas avant cette recalibration (non vérifié pour l'état antérieur — hors
+     portée de reconstituer un arbre pré-P1-07 ici). La page `/testing` porte donc désormais,
+     dès le premier chargement du parcours cliqué, un panneau PLUS LOURD (réponse + conclusion
+     déjà affichées) qu'auparavant — un changement de POIDS de page, pas de CODE, qui pourrait
+     déplacer un seuil de course déjà fragile (hypothèse H) de « rare » à « systématique ». **Non
+     recherché plus loin** : reconstituer et rejouer l'arbre pré-P1-07 sort du mandat de P1-08.
+
+  **Ce que cette tranche fait de cette preuve** : elle ne tente PAS de corriger #418 lui-même
+  (des semaines d'investigation antérieure n'y sont pas parvenues, et ce serait un débordement de
+  mandat total pour P1-08 — index/FK/docs). Elle REFIGE `docs/PARCOURS.json` (les deux stations
+  passent de FIGÉES à retirées) et consigne R150 (BACKLOG_REPORTE.md) pour que la PROCHAINE
+  investigation #418 parte de cette reproduction — la plus propre à ce jour — plutôt que de
+  recommencer à zéro. **Ce refigeage n'efface pas le défaut** : un auditeur réel qui clique sur
+  « Recompute » sur cette page verra vraisemblablement un écran vide en production, exactement
+  comme ici — R150 le dit en toutes lettres plutôt que de laisser le vert du parcours le taire.
+
 ### Hypothèses ÉLIMINÉES — et par quoi
 
 | # | Hypothèse | Éliminée par | Portée de l'élimination |

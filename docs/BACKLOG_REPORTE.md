@@ -2729,3 +2729,23 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   À reprendre : un harnais qui teste contre un VRAI Postgres réseau (CI `role-production`,
   `OTTO_CI_DATABASE_URL`) pourrait exercer une vraie course à deux connexions — non fait ici,
   hors périmètre de P1-08.
+
+- **R150 — OUVERT, gravité HAUTE (produit-facing, plus urgent que le bruit #418 habituel),
+  trouvé en clôturant P1-08 (règle 37).** `/eng/<id>/testing`, panneau « Sample evaluation » :
+  cliquer « Recompute » réussit CÔTÉ SERVEUR (vérifié : une requête GET fraîche hors client React
+  rend le panneau correctement recalculé) mais le contenu principal de la page devient VIDE côté
+  NAVIGATEUR après la navigation qui suit — reproduit deux fois de façon DÉTERMINISTE par
+  `npm run clics` (326 étapes, 2 stations figées jamais atteintes) et une troisième fois en
+  pilotage manuel (Playwright, `next dev`, capture d'écran). C'est la reproduction la plus propre
+  à ce jour de l'hypothèse H du #418 (`docs/CHASSE.md` §1, F19) — SSR correct, client vide, cause
+  la plus probable un « re-render » côté client qui commence avant la fin de l'hydratation du
+  document précédent. **Vérifié NON causé par P1-08** : aucun fichier touché par cette tranche
+  n'entre dans la chaîne d'import de `/testing` ou de `evaluation.ts`. Hypothèse non confirmée sur
+  le déclencheur : P1-07 a changé le jeu de données de sorte que cette évaluation soit désormais
+  TOUJOURS conclue pendant le semis, alourdissant ce panneau dès le premier chargement — pourrait
+  avoir déplacé un seuil de course déjà fragile. `docs/PARCOURS.json` refigé pour retirer ces deux
+  stations (`npm run clics -- --figer`) plutôt que de bloquer indéfiniment le rituel `verify` sur
+  un défaut hors mandat — **ce refigeage ne ferme PAS R150** : un auditeur réel rencontrerait
+  vraisemblablement le même écran vide. À reprendre : la prochaine investigation #418 devrait
+  partir de cette reproduction précise (recette exacte dans `docs/CHASSE.md`, F19) plutôt que de
+  recommencer par un balayage général.
