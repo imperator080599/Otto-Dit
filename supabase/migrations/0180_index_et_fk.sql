@@ -8,8 +8,10 @@
 -- sans index dont il est la colonne de tête — pas 32 comme l'annonçait AUD-23 (audit du
 -- 2026-09-20, avant P1-06/P1-07 qui ont ajouté des tables déjà indexées à leur création). Le
 -- chiffre exact vient d'une requête sur pg_index/pg_attribute rejouée avant d'écrire cette
--- migration, pas de l'audit. `event_log(engagement_id, id)` et `procedure_instance(engagement_id)`
--- déjà présents (0002, 0006) ne sont pas répétés ici.
+-- migration, pas de l'audit. Corrigé après revue hostile (voix 1) : `event_log(engagement_id, id)`
+-- existe déjà (`event_log_eng_idx`, 0003) et n'est pas répété ici ; `procedure_instance` n'avait
+-- PAS d'index sur `engagement_id` avant cette migration — il fait partie des 30 créés en §2,
+-- pas d'une exclusion. Le commentaire d'origine l'affirmait à tort, sans l'avoir vérifié.
 
 -- 1. FK manquantes vers ai_run (AUD-23).
 alter table extraction add constraint extraction_ai_run_fk
@@ -68,8 +70,7 @@ begin
     from (select engagement_id, count(*) as n from materiality where status = 'validated'
           group by engagement_id having count(*) > 1) d;
   if doublons is not null then
-    raise exception 'P1-08 : % dossier(s) porte(nt) plus d''une materiality validated — %',
-      'refus de créer materiality_validated_unique tant que ces doublons subsistent', doublons;
+    raise exception 'P1-08 : plus d''une materiality validated pour le(s) dossier(s) — %', doublons;
   end if;
 end $$;
 create unique index if not exists materiality_validated_unique

@@ -31,7 +31,7 @@ const TABLES_SECTION_1_4 = new Set([
   'tenant', 'app_user', 'entity', 'corp_group', 'component', 'referral_instruction', 'period',
   'engagement', 'engagement_member', 'client_contact',
   'import_file', 'tb_snapshot', 'account', 'gl_entry', 'coa_map_rule', 'fsli', 'reconciliation',
-  'materiality', 'risk', 'procedure',
+  'materiality', 'risk',
   'request', 'request_item', 'reminder', 'inbound_email', 'evidence', 'extraction',
   'procedure_instance',
 ]);
@@ -184,7 +184,22 @@ export async function engendrer(): Promise<string> {
     (t) => !TABLES_SECTION_1_4.has(t) && !Object.values(GROUPES).some((g) => g.includes(t)),
   );
 
-  const enTete = fs.readFileSync(CIBLE, 'utf8').split(/\n(?=## 5\. )/)[0];
+  /* GARDE (revue hostile, voix 1, HAUTE) : sans cette vérification, un titre « ## 5. » qui
+     change un jour (reformulation, tiret cadratin, renumérotation) ferait avaler TOUT le
+     fichier par `enTete` — §1 à §10 inclus — et le corps fraîchement engendré serait ajouté EN
+     DESSOUS, dupliquant le document ; comme le corps régénéré porte lui-même un « ## 5. » bien
+     formé, `docs:modele:epreuve` redeviendrait « à jour » dès le passage suivant et la
+     corruption ne se reverrait plus. Reproduit avant correctif (une copie en mémoire du
+     fichier, jamais le fichier du dépôt). Refuser fort plutôt que devenir silencieux. */
+  const texteActuel = fs.readFileSync(CIBLE, 'utf8');
+  if (!/^## 5\. /m.test(texteActuel)) {
+    throw new Error(
+      `docs/04_DATA_MODEL.md ne porte plus de titre « ## 5. » en tête de ligne — le générateur `
+      + `refuse de deviner où finit §1–§4 (règle 13 : mieux vaut refuser que tout avaler). `
+      + `Restaurer le titre, ou adapter l'ancre dans scripts/docs/data-model.ts.`,
+    );
+  }
+  const enTete = texteActuel.split(/\n(?=## 5\. )/)[0];
 
   const corps: string[] = [];
   for (const [titre, tabs] of Object.entries(GROUPES)) {

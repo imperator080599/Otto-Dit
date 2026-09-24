@@ -147,53 +147,69 @@ export async function validate(
      'proposed'`) est désormais la PREMIÈRE écriture, atomique, et le reste de la séquence est
      regroupé dans UNE transaction (`tx()`) — un appel qui perd la course s'arrête ici, avec un
      refus clair, avant d'avoir rien écrit d'autre. */
+  /* CORRECTIF DE REVUE HOSTILE (P1-08, HAUTE/MOYENNE, convergé indépendamment par les deux
+     voix — jugé par lecture de code, ni l'une ni l'autre n'a pu le reproduire : PGlite sérialise
+     toutes les transactions, aucune vraie course n'est possible en local). Deux PROPOSITIONS
+     DIFFÉRENTES du même dossier, validées quasi simultanément (l'écran affiche bien un second
+     panneau « nouvelle proposition en attente » pendant qu'une validation est en cours,
+     materiality/page.tsx), peuvent désormais heurter `materiality_validated_unique` — pas le
+     CLAIM conditionnel ci-dessus (qui protège la MÊME proposition), un vrai doublon d'index entre
+     deux lignes DIFFÉRENTES. Sans ce filet, l'erreur Postgres brute (23505) remonterait telle
+     quelle jusqu'au bandeau de refus (`app/refus.ts::executer()` l'affiche verbatim) — même
+     patron que `ladder.ts::verifyExtraction` pour `extraction_supersedes_once`. */
   let finalId = materialityId;
-  await tx(async () => {
-    /* DÉMOTION AVANT VALIDATION (P1-08, migration 0180) : `materiality_validated_unique`
-       (index partiel unique, jamais différable — Postgres n'autorise pas de contrainte unique
-       PARTIELLE différée) refuse désormais IMMÉDIATEMENT toute seconde ligne `validated`, y
-       compris de façon transitoire DANS cette même transaction. L'ordre d'origine (valider LA
-       NOUVELLE ligne, puis démoter l'ancienne) laissait les deux `validated` à la fois pendant
-       l'instant entre les deux écritures — l'index le refuse maintenant, cassant la validation
-       normale (trouvé par le cas connu mauvais de supersede-lecture.test.ts, règle 17, en
-       s'auto-testant). Démoter D'ABORD élimine la fenêtre : au pire une transition
-       validated→superseded, jamais deux `validated` en même temps, même transitoirement. */
-    await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated'`, [row.engagement_id]);
-    if (adjust) {
-      const tb = await tbRows(row.engagement_id);
-      const agg = benchmarkAggregates(tb);
-      const base =
-        adjust.benchmarkCode === 'pbt' ? agg.pbtCents :
-        adjust.benchmarkCode === 'revenue' ? agg.revenueCents :
-        adjust.benchmarkCode === 'total_assets' ? agg.totalAssetsCents : agg.equityCents;
-      const p = computeMateriality(adjust.benchmarkCode, base, adjust.pct, pack, agg, `manually adjusted by validator (${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)}%)`);
-      /* LE CLAIM : bascule l'originale en `superseded` SEULEMENT si elle est encore `proposed`.
-         Aucune ligne rendue → une autre validation a gagné la course entre-temps. */
-      const claimee = await q01<{ id: string }>(`update materiality set status = 'superseded' where id = $1 and status = 'proposed' returning id`, [materialityId]);
-      if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
-      const nouvelle = await q1<{ id: string }>(
-        `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
-           amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status,
-           supersedes_id, validated_by, validated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'validated',$14,$15,now()) returning id`,
-        [
-          row.engagement_id, row.version + 1, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct,
-          centsToNum(p.amountCents), row.perf_pct, centsToNum(p.perfAmountCents), row.ctt_pct,
-          centsToNum(p.cttAmountCents), row.te_pct, centsToNum(p.teAmountCents),
-          row.rationale + `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
-          materialityId, userId,
-        ],
-      );
-      finalId = nouvelle.id;
-    } else {
-      /* LE CLAIM, forme « tel quel » : la validation elle-même EST l'écriture conditionnelle. */
-      const claimee = await q01<{ id: string }>(
-        `update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1 and status = 'proposed' returning id`,
-        [materialityId, userId],
-      );
-      if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
-    }
-  });
+  try {
+    await tx(async () => {
+      /* DÉMOTION AVANT VALIDATION (P1-08, migration 0180) : `materiality_validated_unique`
+         (index partiel unique, jamais différable — Postgres n'autorise pas de contrainte unique
+         PARTIELLE différée) refuse désormais IMMÉDIATEMENT toute seconde ligne `validated`, y
+         compris de façon transitoire DANS cette même transaction. L'ordre d'origine (valider LA
+         NOUVELLE ligne, puis démoter l'ancienne) laissait les deux `validated` à la fois pendant
+         l'instant entre les deux écritures — l'index le refuse maintenant, cassant la validation
+         normale (trouvé par le cas connu mauvais de supersede-lecture.test.ts, règle 17, en
+         s'auto-testant). Démoter D'ABORD élimine la fenêtre : au pire une transition
+         validated→superseded, jamais deux `validated` en même temps, même transitoirement. */
+      await q(`update materiality set status = 'superseded' where engagement_id = $1 and status = 'validated'`, [row.engagement_id]);
+      if (adjust) {
+        const tb = await tbRows(row.engagement_id);
+        const agg = benchmarkAggregates(tb);
+        const base =
+          adjust.benchmarkCode === 'pbt' ? agg.pbtCents :
+          adjust.benchmarkCode === 'revenue' ? agg.revenueCents :
+          adjust.benchmarkCode === 'total_assets' ? agg.totalAssetsCents : agg.equityCents;
+        const p = computeMateriality(adjust.benchmarkCode, base, adjust.pct, pack, agg, `manually adjusted by validator (${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)}%)`);
+        /* LE CLAIM : bascule l'originale en `superseded` SEULEMENT si elle est encore `proposed`.
+           Aucune ligne rendue → une autre validation a gagné la course entre-temps. */
+        const claimee = await q01<{ id: string }>(`update materiality set status = 'superseded' where id = $1 and status = 'proposed' returning id`, [materialityId]);
+        if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
+        const nouvelle = await q1<{ id: string }>(
+          `insert into materiality (engagement_id, version, benchmark_code, benchmark_amount, pct,
+             amount, perf_pct, perf_amount, ctt_pct, ctt_amount, te_pct, te_amount, rationale, status,
+             supersedes_id, validated_by, validated_at)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'validated',$14,$15,now()) returning id`,
+          [
+            row.engagement_id, row.version + 1, p.benchmarkCode, centsToNum(p.benchmarkAmountCents), p.pct,
+            centsToNum(p.amountCents), row.perf_pct, centsToNum(p.perfAmountCents), row.ctt_pct,
+            centsToNum(p.cttAmountCents), row.te_pct, centsToNum(p.teAmountCents),
+            row.rationale + `\n[Ajusté par le validateur : ${adjust.benchmarkCode} @ ${(adjust.pct * 100).toFixed(2)} %]`,
+            materialityId, userId,
+          ],
+        );
+        finalId = nouvelle.id;
+      } else {
+        /* LE CLAIM, forme « tel quel » : la validation elle-même EST l'écriture conditionnelle. */
+        const claimee = await q01<{ id: string }>(
+          `update materiality set status = 'validated', validated_by = $2, validated_at = now() where id = $1 and status = 'proposed' returning id`,
+          [materialityId, userId],
+        );
+        if (!claimee) throw new Error('cette proposition vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
+      }
+    });
+  } catch (e) {
+    const code = (e as { code?: string } | null)?.code;
+    if (code === '23505') throw new Error('une autre proposition de ce dossier vient d’être validée par ailleurs (course concurrente) — rechargez avant de rejouer.');
+    throw e;
+  }
   await logEvent({
     tenantId: ctx.tenant_id,
     engagementId: row.engagement_id,

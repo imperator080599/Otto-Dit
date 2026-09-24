@@ -793,6 +793,12 @@
       "etat": "reporté, gravité faible — methodology/procedures.json porte CA-EXHAUST avec cycle: \"CA\", mais le vrai code FSLI du poste est REVENUE ; proceduresDuCycle(cat, 'REVENUE') ne la reprend donc jamais (même défaut de correspondance cycle↔code déjà trouvé et corrigé pour TRESO→CASH et FOURN→TRADE_PAYABLES au Lot 5, jamais balayé sur tout le catalogue).",
       "depuis": "2026-09-23 (Phase 1, P1-07, AUD-11) — trouvé en lisant procedures.json pour sourcer la taille d'échantillon depuis la procédure DETAIL",
       "note": "non corrigé : hors périmètre explicite d'AUD-11/P1-07 (échelle de risque et RISK-01, pas le catalogue de procédures), et changer un cycle est un changement de CONTENU DE MÉTHODE qui mérite sa propre revue (une procédure qui entre soudain dans les requises d'un poste change ce qu'un dossier réel doit produire). À reprendre : balayer TOUT procedures.json pour tout cycle sans fsli.code correspondant, pas seulement au cas par cas. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R149",
+      "etat": "reporté, gravité basse — materiality.ts::validate() porte désormais un filet (catch sur 23505, message traduit) pour deux PROPOSITIONS DIFFÉRENTES du même dossier validées par deux transactions vraiment concurrentes (heurtant materiality_validated_unique, 0180) ; aucun test local ne peut déclencher ce chemin, PGlite (seule base des tests) sérialise entièrement toutes les transactions (confirmé par une expérience pg_sleep) — limite d'infrastructure, pas spécifique à cette tranche.",
+      "depuis": "2026-09-23 (Phase 1, P1-08, AUD-15) — trouvé indépendamment par les deux voix de la revue hostile, convergentes sans coordination",
+      "note": "le correctif (catch/traduction) est posé et livré ; seule la preuve par une vraie course reste hors de portée en local. À reprendre : un harnais contre un vrai Postgres réseau (CI role-production, OTTO_CI_DATABASE_URL) pourrait exercer une vraie collision à deux connexions. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

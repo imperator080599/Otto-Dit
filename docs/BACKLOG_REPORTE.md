@@ -2711,3 +2711,21 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   d'un poste change ce qu'un dossier réel doit produire). À reprendre : balayer TOUT
   `procedures.json` pour tout `cycle` qui ne correspond à AUCUN `fsli.code` réel du pack, pas
   seulement au cas par cas découvert en ouvrant chaque poste du Lot 5.
+
+- **R149 — REPORTÉ, gravité basse, trouvé par revue hostile de P1-08 (deux voix, CONVERGENTES
+  sans coordination — jugées par lecture de code, ni l'une ni l'autre n'a pu reproduire
+  empiriquement).** `materiality.ts::validate()` porte désormais un filet (`catch` sur le code
+  Postgres `23505`, message traduit) pour le cas où DEUX PROPOSITIONS DIFFÉRENTES du même dossier
+  seraient validées par deux transactions VRAIMENT concurrentes — heurtant
+  `materiality_validated_unique` (0180) entre deux lignes différentes, pas la même course déjà
+  protégée par le CLAIM P1-06. Le correctif est posé, mais **aucun test local ne peut le
+  déclencher** : PGlite (la seule base des tests, `npm test`) tient une connexion UNIQUE et
+  sérialise entièrement toutes les transactions — confirmé par une expérience directe
+  (`pg_sleep` dans une transaction, une requête concurrente n'est même pas DISPATCHÉE avant la
+  fin de la première). Ce n'est pas spécifique à cette tranche : TOUT test de course du dépôt
+  (matérialité, `fsli_assertion_risk_decision` de P1-07, etc.) ne prouve que la correction
+  SÉQUENTIELLE, jamais une vraie collision SQL — une limite d'infrastructure de test, pas un
+  défaut de cette tranche, mais qui borne ce qu'on peut affirmer avoir vérifié (règle 12/13).
+  À reprendre : un harnais qui teste contre un VRAI Postgres réseau (CI `role-production`,
+  `OTTO_CI_DATABASE_URL`) pourrait exercer une vraie course à deux connexions — non fait ici,
+  hors périmètre de P1-08.
