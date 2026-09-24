@@ -2,6 +2,63 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 2 — P2-02 Rôles et séparation des tâches (2026-09-24, AUD-05)
+
+**`team.ts::assignMember`** portait déjà la garde manager/partner sur `eng_role`/`can_sign`
+(l'élévation de privilège trouvée par la revue hostile de P1-04) mais la levait en
+`TeamRuleError` — une classe locale, sans code enregistré. Migré vers `refus('EQUIPE-01', …)`,
+le même code que le déclencheur SQL `equipe01_acteur_manager_partner` (migration 0176, P1-04) :
+un senior ne peut ni modifier le rôle/visa d'un membre déjà affecté, ni affecter un nouveau
+collègue à un rôle quelconque (sauf le bootstrap d'un dossier ENCORE SANS ÉQUIPE, inatteignable
+par l'écran — `requireMember` exige déjà une adhésion active). **`retention.ts::closeFile`**
+portait le même défaut sur `can_sign` — migré vers `refus('EQUIPE-02', …)` (défense en
+profondeur ; `close/actions.ts` fait déjà le même contrôle en amont).
+
+**`team/page.tsx`** : la case « may sign off » n'est plus rendue que pour un acteur
+manager/partner du dossier (l'écran suit le service, jamais l'inverse — `peutAttribuerSignature`,
+calculé depuis le rôle COURANT de l'acteur en base). L'`executer()` local de la page catche
+désormais `Refus` en plus de `TeamRuleError` — corrige au passage un défaut PRÉ-EXISTANT trouvé
+par la revue hostile (voix 1, W1-03) : `answerAction`/`signAction`/`exitAction` pouvaient déjà
+lever un `Refus` (ETANCH-0X) sur un identifiant forgé, jamais rattrapé avant cette tranche.
+
+**Nouvelle lecture `/api/sante`** : « déclencheur EQUIPE-01 sur engagement_member » — interroge
+`pg_trigger` pour confirmer que le déclencheur SQL PRÉ-EXISTANT (migration 0176) est toujours
+présent et actif, rougit sinon. Cas connu mauvais (règle 17) : le test désactive RÉELLEMENT le
+déclencheur dans la base (`alter table … disable trigger`), jamais par mock.
+
+**Nouvelle station clics** « équipe : un senior ne s'attribue pas le droit de signer » : bascule
+sur le préparateur (senior/staff), vérifie l'absence de la case `can_sign` dans le DOM, puis
+soumet le formulaire d'affectation TEL QUEL (rien à forger, la garde est déjà côté service) et
+observe le refus EQUIPE-01. `docs/PARCOURS.json`/`docs/CLICS.md` refigés (règle 37).
+
+**Deux voix hostiles indépendantes (règle 30 — la tranche touche une garde de sécurité/élévation
+de privilège)**, lancées en parallèle, sans lecture partagée l'une de l'autre : **aucun constat
+bloquant.**
+- Voix 1 (sécurité/profondeur) : quatre constats non bloquants, tous confirmés SAINS — le
+  bootstrap est bien inatteignable par l'écran (W1-02), le second `insert` de `engagement.ts`
+  n'a rien de variable à garder (W1-01), le correctif de `executer()` corrige un défaut
+  pré-existant pour les six actions de la page (W1-03, signalé pour traçabilité), le texte
+  anglais de `closeFile` a bien disparu partout (W1-04). Exécution réelle des suites ciblées :
+  31/31 + 13/13 + 2/2 verts.
+- Voix 2 (largeur/compat) : un seul constat, **corrigé par cette entrée elle-même** (W2-01,
+  `docs/instantanes/verify.json` et STATUS.md ne prouvaient encore rien sur l'arbre P2-02 au
+  moment de son passage) ; cinq constats non bloquants, tous confirmés sains (aucun appelant
+  cassé par la migration EQUIPE-01/02, aucun texte anglais oublié, la station clics bien
+  CONDUITE pas seulement déclarée, le cas connu mauvais désactive le vrai déclencheur, `tsc`
+  relancé à 0 erreur).
+
+**R159** (déjà disclosed en construisant) reste reporté : la station clics VISA-02 citée par le
+plan (code pré-existant, non touché par cette tranche, donc non exigée par la règle 37) n'a pas
+été construite ici.
+
+**Verify complet mesuré VERT sur l'arbre commité `12a678bbd5316533b729c6dadc579350faebdf51`**
+(21/21 maillons, `clics` : 329 étapes conduites, 0 échec, 500 clics comptés — 1re tentative
+propre sur cet arbre, aucune récidive du flake #418 cette fois). Détail dans
+`docs/instantanes/verify.json`. **SHA servi non confirmé** — à mesurer via `/api/sante` une fois
+le déploiement Vercel terminé (règle 27), pas supposé ici.
+
+---
+
 ## Phase 2 — P2-01 Étanchéité : portail, tirage du run de fiabilité, activeMembership (2026-09-24, AUD-04)
 
 **Migration `0182_verification_run_selected.sql`** (nouvelle, jamais une édition d'une
