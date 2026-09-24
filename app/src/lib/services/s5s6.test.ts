@@ -173,7 +173,7 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     for (const item of detail!.items) {
       const nk = item.sample_item_id ? nkBySampleItem.get(item.sample_item_id) : undefined;
       const anomaly = manifest.substantiveAnomalies.find((a) => nk && a.units.includes(nk));
-      await answerExplanation(item.id, IDS.contacts.theo, answers[anomaly?.id ?? 'A1'] ?? 'Réponse du client.');
+      await answerExplanation(clarifId, item.id, IDS.contacts.theo, answers[anomaly?.id ?? 'A1'] ?? 'Réponse du client.');
     }
     const exceptions = await listExceptions(IDS.engNep);
     expect(exceptions.filter((x) => x.status === 'clarification_requested').length).toBe(0);
@@ -299,6 +299,42 @@ describe('S5/S6 — extraction ladder, matching, exceptions, verification, evalu
     });
     // append-only: verification checks cannot be updated
     await expect(q(`update verification_check set result = 'agree'`)).rejects.toThrow(/append-only/);
+  });
+
+  it('P2-01 (AUD-04) : submitBlindCheck refuse (VERIF-01) un item qui n’a jamais été tiré par CE run', async () => {
+    /* Revue hostile P2-01, constat V1-01 (BLOQUANT) : la garde `run.selected.includes(...)`
+       n'était exercée par AUCUN test en NÉGATIF — les deux appels existants ci-dessus ne
+       passent que des `sampleItemId` déjà présents dans `run.items` (donc déjà `selected`).
+       Un vérificateur bien membre du dossier (`assertMembreDe` passe), mais soumettant un
+       item RÉEL du même dossier qui n'a jamais été tiré par ce run précis, doit être refusé
+       — sinon la règle 17 du dépôt s'applique mot pour mot : « une garde qui n'a jamais rien
+       refusé n'est pas une garde. » */
+    const runId = await startVerificationRun(IDS.engNep, IDS.users.lea);
+    const run = await currentVerificationRun(IDS.engNep);
+    const drawn = new Set(run!.items.map((i) => i.sample_item_id));
+    // un sample_item RÉEL du même dossier, machine-passé, mais hors du tirage de CE run
+    const notDrawn = await q1<{ id: string }>(
+      `select si.id from sample_item si
+       join sample s on s.id = si.sample_id
+       join match m on m.sample_item_id = si.id
+       where s.engagement_id = $1 and s.status = 'drawn' and m.status = 'matched'
+         and si.id != all($2::uuid[])
+       limit 1`,
+      [IDS.engNep, [...drawn]],
+    );
+    await expect(submitBlindCheck({
+      verificationRunId: runId,
+      sampleItemId: notDrawn.id,
+      verifierId: IDS.users.lea,
+      blind: { totalNetCents: 0, invoiceDate: '2025-01-01' },
+    })).rejects.toThrow(/VERIF-01/);
+    // et bien sûr un id qui n'existe même pas comme sample_item
+    await expect(submitBlindCheck({
+      verificationRunId: runId,
+      sampleItemId: '00000000-0000-0000-0000-000000000000',
+      verifierId: IDS.users.lea,
+      blind: { totalNetCents: 0, invoiceDate: '2025-01-01' },
+    })).rejects.toThrow(/VERIF-01/);
   });
 
   it('sample evaluation: the breach blocks the conclusion until a response is recorded', async () => {
