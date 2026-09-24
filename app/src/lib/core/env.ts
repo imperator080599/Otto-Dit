@@ -28,9 +28,11 @@ export function loadEnvLocal(): void {
   }
 }
 
-/** Redacted echo for logs and reports — never print a secret, only its shape. */
-export function keyFingerprint(): string {
-  const k = process.env.ANTHROPIC_API_KEY;
+/** Redacted echo for logs and reports — never print a secret, only its shape.
+ *  P2-03a (AUD-07) : généralisée à toute variable (`OTTO_SESSION_SECRET` compris),
+ *  `ANTHROPIC_API_KEY` reste le défaut pour ne rien changer aux appelants existants. */
+export function keyFingerprint(nomVariable = 'ANTHROPIC_API_KEY'): string {
+  const k = process.env[nomVariable];
   if (!k) return 'absent';
   return `present (${k.length} chars, …${k.slice(-4)})`;
 }

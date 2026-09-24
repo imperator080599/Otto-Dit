@@ -326,6 +326,42 @@ async function corpsDeLaSonde() {
     return `déclencheur actif · ${canSignActifs.n} membre(s) avec can_sign=true`;
   }));
 
+  /* SESSION SIGNÉE (P2-03a, AUD-07). Le cookie `otto_user` porte désormais une
+     signature HMAC (`core/session-jeton.ts`) — mais SANS `OTTO_SESSION_SECRET`
+     posé, la signature retombe sur une constante FIXE connue de quiconque lit
+     le dépôt : une protection de FORME (contre un cookie mal formé), jamais de
+     FOND. Cette lecture ROUGIT quand ça compte — sur VERCEL (la démonstration
+     PUBLIQUE réellement DÉPLOYÉE) sans le secret posé — et se contente de
+     DIRE l'état ailleurs.
+
+     POURQUOI `VERCEL==='1'` ET PAS `demoPublique()` (ce dernier est la bonne
+     garde PARTOUT ailleurs dans ce dépôt, ADR-109) : `demoPublique()` vaut
+     aussi `true` sous `OTTO_DEMO_PUBLIC=1` SANS être sur Vercel — exactement
+     ce que pose `scripts/fumee/run.ts` pour tester localement le chemin de la
+     démonstration publique (`?comme=`), sans jamais être déployé. Une
+     première version de cette lecture utilisait `demoPublique()` : elle
+     rougissait `npm run fumee` (et donc `verify`) sur TOUT arbre local, secret
+     ou pas — mesuré, pas supposé (verify-p2-03a-d.log, ÉCHEC `/api/sante`
+     statut 500 pendant `fumee`). `VERCEL==='1'` est posée par la plateforme
+     elle-même (comme dans `demoPublique()`), jamais par un harnais de test.
+
+     CE QU'ELLE NE VÉRIFIE PAS (règle 19) : un auto-hébergement RÉEL qui
+     poserait `OTTO_DEMO_PUBLIC=1` sans être sur Vercel resterait non protégé
+     sans que cette lecture ne rougisse — gap NOMMÉ, disclosed avec R160
+     (`docs/BACKLOG_REPORTE.md`, qui porte déjà la tension VERCEL/OTTO_DEMO_PUBLIC
+     dans `demoPublique()` elle-même) plutôt que corrigé ici en devinant une
+     forme qui casserait le harnais local. Elle ne vérifie pas non plus que le
+     secret posé est vraiment IMPRÉVISIBLE (32 octets aléatoires, comme demandé
+     au geste fondateur H-1) — seulement qu'une valeur existe. */
+  lectures.push(await essayer('session signée : oui/non (P2-03a, AUD-07)', async () => {
+    const { secretDeSessionPose } = await import('@/lib/core/session-jeton');
+    const pose = secretDeSessionPose();
+    if (!pose && process.env.VERCEL === '1') {
+      throw new Error('OTTO_SESSION_SECRET absent sur une instance Vercel — le cookie de session n’est protégé que par une constante connue de tous');
+    }
+    return pose ? 'oui — OTTO_SESSION_SECRET posé' : 'non — secret absent (attendu en local, à corriger sur toute instance publique)';
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {
