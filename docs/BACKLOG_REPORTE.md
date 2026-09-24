@@ -2815,15 +2815,14 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   `logEvent` sur ces deux fonctions en premier si la liste figée doit baisser ; les douze
   autres restent des candidates à une exception PERMANENTE, à trancher au cas par cas.
 
-- **R155 — REPORTÉ, gravité basse, trouvé par la revue hostile voix 1 de P1-10 (AUD-12,
-  registre des verbes) — un choix assumé, pas un silence caché.** `lib/core/events.ts::logEvent`
-  refuse (lève) un verbe hors du registre `VERBES`/`ALIAS_VERBES`/`VERBES_SONDE_TEST` en
-  `NODE_ENV==='test'`, mais se contente d'un `console.warn` en production : l'événement
-  s'écrit quand même, avec le verbe fautif tel quel, et RIEN ne surveille ce cas en production
-  — ni compteur, ni lecture `/api/sante`. Le commentaire du registre le dit lui-même en toutes
-  lettres (« la faute se corrige au prochain déploiement, pas en bloquant l'auditeur ») : ce
-  n'est donc pas un défaut introduit sans le dire, mais un typo de registre en production
-  resterait invisible jusqu'à ce qu'une session le cherche à la main. À reprendre : une lecture
-  `/api/sante` qui compte les lignes `event_log` récentes dont le verbe n'est pas au registre
-  (une requête directe suffit, pas besoin de modifier `logEvent`), pour que ce silence-là
-  puisse ROUGIR (règle 22) au lieu de rester tacite.
+- **R155 — LEVÉE le 2026-09-24 sur le SHA `876fa85` par la lecture `/api/sante` « registre
+  des verbes (P1-10, AUD-12) » (`app/src/app/api/sante/route.ts`).** Trouvé par la revue
+  hostile voix 1 de P1-10 (AUD-12, registre des verbes) — un choix assumé, pas un silence
+  caché : `lib/core/events.ts::logEvent` refuse (lève) un verbe hors du registre
+  `VERBES`/`ALIAS_VERBES`/`VERBES_SONDE_TEST` en `NODE_ENV==='test'`, mais se contentait
+  d'un `console.warn` en production sans qu'aucune lecture ne surveille le cas. Rule 22
+  exige que toute tranche livrée ajoute sa lecture `/api/sante` le jour même — corrigé dans
+  la même journée plutôt que laissé en dette : la lecture relit les 500 derniers `event_log`
+  et rougit si un verbe hors registre y figure, éprouvée contre un cas connu mauvais
+  (`verbes-registre-lecture.test.ts`, insertion directe hors de `logEvent`, `event_log`
+  étant append-only aucun retour au vert n'y est testable dans le même fichier).

@@ -832,9 +832,9 @@
     },
     {
       "id": "R155",
-      "etat": "reporté, gravité basse — logEvent (lib/core/events.ts, P1-10) refuse un verbe hors du registre VERBES/ALIAS_VERBES en NODE_ENV=test, mais seulement console.warn en production : l'événement s'écrit quand même avec le verbe fautif, sans compteur ni lecture /api/sante pour le voir. Trouvé par la revue hostile voix 1 de P1-10 (rule 30), pas caché : le commentaire du registre l'assume déjà en toutes lettres.",
+      "etat": "LEVÉE le 2026-09-24 sur le SHA 876fa85 par la lecture /api/sante « registre des verbes (P1-10, AUD-12) » (app/src/app/api/sante/route.ts) — relit les 500 derniers event_log, rougit si un verbe hors registre y figure.",
       "depuis": "2026-09-24 (Phase 1, P1-10, AUD-12)",
-      "note": "disclosed par construction (règle 19), pas trouvé après coup. À reprendre : une lecture /api/sante qui compte les lignes event_log récentes au verbe hors registre, pour que ce silence rougisse (règle 22). Voir docs/BACKLOG_REPORTE.md."
+      "note": "corrigée le jour même de sa découverte (règle 22), pas laissée en dette. Cas connu mauvais : verbes-registre-lecture.test.ts (insertion directe hors de logEvent, event_log append-only). Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }
