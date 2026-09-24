@@ -2,6 +2,11 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+**2026-09-24** : PR #1 (P1-07, P1-08) fusionnée sur `main` par `git push origin HEAD:main`
+(le gate a laissé passer cette fois — pas de permission refusée). `main` à `e5fd721`. **SHA
+servi non confirmé** — à mesurer via `/api/sante` dès que le déploiement Vercel a eu le temps
+de tourner (règle 27), pas supposé ici.
+
 ---
 
 ## Phase 1 — P1-08 Index/FK/docs 04 engendré livré (2026-09-24)
