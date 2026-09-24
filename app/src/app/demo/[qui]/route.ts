@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { sansLocataire } from '@/lib/db/sans-locataire';
+import { signerIdentite } from '@/lib/core/session-jeton';
 
 // LE LIEN DE DÉMONSTRATION — `/demo/claire?vers=/eng/<id>/testing`.
 //
@@ -60,6 +61,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ qui: string }> 
      Next — un test qui ne peut pas appeler le code ne le vérifie pas. */
   const res = NextResponse.redirect(
     new URL(destination(new URL(req.url).searchParams.get('vers')), req.url), 303);
-  res.cookies.set('otto_user', u.id, { httpOnly: true, sameSite: 'lax', path: '/' });
+  res.cookies.set('otto_user', await signerIdentite(u.id), { httpOnly: true, sameSite: 'lax', path: '/' });
   return res;
 }

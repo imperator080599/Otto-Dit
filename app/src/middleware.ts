@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { demoPublique } from '@/lib/core/demo-public';
+import { signerIdentite } from '@/lib/core/session-jeton';
 
 // LE LIEN QUI OUVRE UN ÉCRAN, SANS REDIRECTION — `?comme=<identifiant>`.
 //
@@ -29,14 +30,19 @@ export function identiteDeLUrl(valeur: string | null, publique: boolean): string
   return UUID.test(valeur) ? valeur : null;
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const id = identiteDeLUrl(req.nextUrl.searchParams.get('comme'), demoPublique());
   if (!id) return NextResponse.next();
+  /* P2-03a (AUD-07) : le cookie posé ici doit porter la MÊME signature que
+     celui de `auth.ts::getSessionUser` (`session-jeton.ts`, Web Crypto — la
+     seule API de signature qui tourne aussi bien dans le runtime Edge du
+     middleware que dans le runtime Node des actions serveur). */
+  const signe = await signerIdentite(id);
   /* Poser le cookie sur la REQUÊTE fait voir l'identité à la page rendue
      maintenant ; le poser sur la RÉPONSE la garde pour les suivantes. */
-  req.cookies.set('otto_user', id);
+  req.cookies.set('otto_user', signe);
   const res = NextResponse.next({ request: { headers: req.headers } });
-  res.cookies.set('otto_user', id, { httpOnly: true, sameSite: 'lax', path: '/' });
+  res.cookies.set('otto_user', signe, { httpOnly: true, sameSite: 'lax', path: '/' });
   return res;
 }
 

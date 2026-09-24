@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { q01 } from '@/lib/db/client';
 import { sansLocataire, enregistrerPoseurDeLocataire } from '@/lib/db/sans-locataire';
+import { verifierIdentite } from '@/lib/core/session-jeton';
 
 // Demo auth (ADR-006): auditor side = dev user switcher setting an httpOnly cookie;
 // client side = per-contact magic token in the portal URL. Authorization (engagement
@@ -17,7 +18,11 @@ export interface SessionUser {
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const store = await cookies();
-  const id = store.get('otto_user')?.value;
+  /* P2-03a (AUD-07) : le cookie porte `<uuid>.<signature>` (session-jeton.ts) —
+     un cookie forgé (id nu, signature absente ou fausse) rend `null` ICI, jamais
+     une exception : même doctrine que le reste de ce fichier (jamais un 500 sur
+     une session absente). */
+  const id = await verifierIdentite(store.get('otto_user')?.value);
   if (!id) return null;
   /* SANS LOCATAIRE, ET C'EST L'ORDRE DES CHOSES : c'est en lisant cette ligne
      qu'on APPREND de quel cabinet est la personne. Poser le locataire avant
@@ -31,6 +36,22 @@ export async function requireUser(): Promise<SessionUser> {
   const u = await getSessionUser();
   if (!u) redirect('/');
   return u;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** P2-03a (AUD-07) : `page.tsx::loginAction` recevait n'importe quelle chaîne
+ *  comme identité — l'EXISTENCE se vérifie avant de poser le cookie, sous la
+ *  même dérogation « choix-identite » que la liste des identités (aucune
+ *  session encore posée à ce point). La FORME se vérifie AVANT la requête :
+ *  une chaîne qui n'est même pas un uuid ferait lever `id = $1` — une PANNE
+ *  Postgres (« invalid input syntax for type uuid »), jamais un simple
+ *  « non trouvé » (règle 13 : aucun message technique brut à l'écran). */
+export async function identifiantExisteEnBase(id: string): Promise<boolean> {
+  if (!UUID.test(id)) return false;
+  const row = await sansLocataire('choix-identite', () =>
+    q01<{ id: string }>(`select id from app_user where id = $1`, [id]));
+  return Boolean(row);
 }
 
 export interface Membership {

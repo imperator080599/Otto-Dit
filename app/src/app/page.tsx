@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { q } from '@/lib/db/client';
-import { getSessionUser } from '@/lib/core/auth';
+import { getSessionUser, identifiantExisteEnBase } from '@/lib/core/auth';
+import { signerIdentite } from '@/lib/core/session-jeton';
 import { PORTAL_TOKENS } from '@/lib/seed';
 import { missionsParClient } from '@/lib/services/bascule';
 import { demoPublique } from '@/lib/core/demo-public';
@@ -15,9 +16,14 @@ import { sansLocataire } from '@/lib/db/sans-locataire';
 async function loginAction(formData: FormData) {
   'use server';
   const userId = String(formData.get('user_id') ?? '');
-  if (userId) {
+  /* P2-03a (AUD-07) : le POST acceptait n'importe quelle chaîne comme identité —
+     `userId` vient maintenant DES BOUTONS ci-dessous (la liste réelle des
+     `app_user`), mais un POST forgé pouvait en envoyer une autre. L'EXISTENCE
+     se vérifie avant de poser le cookie, sous la même dérogation « choix-identite »
+     que la liste elle-même (aucune session encore posée à ce point). */
+  if (userId && (await identifiantExisteEnBase(userId))) {
     const store = await cookies();
-    store.set('otto_user', userId, { httpOnly: true, sameSite: 'lax', path: '/' });
+    store.set('otto_user', await signerIdentite(userId), { httpOnly: true, sameSite: 'lax', path: '/' });
   }
   redirect('/');
 }
@@ -83,7 +89,12 @@ export default async function Home({
               au-dessus d'elles toutes, et c'est pour ça qu'elle est ici. */}
           <Link href="/methodology" className="btn secondary small">{t('commun.methode')}</Link>
           {/* LE GESTE, PAS LA VARIABLE D'ENVIRONNEMENT. Il n'existe que sur la
-              démonstration publique : ailleurs, aucun écran ne rase un dossier. */}
+              démonstration publique : ailleurs, aucun écran ne rase un dossier.
+              P2-03a (AUD-07) : le bouton reste offert à tout auditeur connecté
+              (comme avant) — le SERVICE (DEMO-01) refuse déjà tout acteur
+              autre qu'admin/partner ; le garder cliquable ici, plutôt que le
+              cacher, est ce qui permet au parcours cliqué d'observer le refus
+              pour de vrai, pas seulement l'absence d'un bouton. */}
           {demoPublique() && (
             <Link href="/demo/remise-a-zero" className="btn secondary small">
               {t('raz.titre')}
