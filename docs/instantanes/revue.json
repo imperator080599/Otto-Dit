@@ -655,10 +655,13 @@
       "titre": "Concurrence : aucun verrou optimiste, verrou consultatif tenu trop longtemps",
       "epreuve": "Deux editSection concurrents sur deux sections : les deux corps subsistent ; insert d'une seconde matérialité validée → refus d'unicité ; un scellé n'immobilise pas une note de revue posée pendant son rendu.",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — editSection fait lecture-modification-écriture du jsonb entier ; aucun index partiel unique ; row_version jamais construit ; appels IA dans la même transaction que le reste.",
+      "manque": "P1-08 livré (partie modèle) : quatre index partiels uniques posés — insert d'une seconde matérialité validée refuse bien désormais (materiality_validated_unique, 0180), de même pour tb_snapshot active/sample drawn/workpaper actif ; workpaper.row_version posé (colonne seule, le verrou optimiste applicatif where row_version = $n reste à construire). Restent non commencés : editSection (lecture-modification-écriture du jsonb entier), les appels IA dans la même transaction que le reste, et le scellé/note de revue (P6-01) — pas encore observé par un clic dédié.",
       "tache": [
         "P1-08",
         "P6-01"
+      ],
+      "tachesLivrees": [
+        { "tache": "P1-08", "sha": "b4ab276" }
       ],
       "phase": 6
     },

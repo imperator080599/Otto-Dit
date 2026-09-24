@@ -5,7 +5,7 @@ Mandat du 2026-09-20 — `docs/MANDATS/2026-09-20_mandat_revue_fondateur_phase2.
 
 **46 lignes — 0 OBSERVÉE(S), 46 NON OBSERVÉE(S), 0 SANS OBJET (0 % observé).**
 
-**13/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
+**14/54 tâches du plan livrées** — comptées en direct sur `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` (en-têtes `#### PN-NN`), jamais un chiffre fixe (règle 31). « Livrée » veut dire poussée sur `main`, SHA mesuré — PAS la même chose qu'OBSERVÉE ci-dessus (une tâche livrée peut encore attendre sa station cliquée).
 
 Cet instantané a été ENGENDRÉ à l'ouverture de la Phase 2 (2026-09-20), quand les 46 lignes étaient NON_OBSERVEE par construction — aucune tranche n'avait encore été livrée. Depuis, des tâches ont été poussées sur main (voir « tâches livrées » ci-dessus et sur chaque ligne concernée) SANS que cela fasse encore passer une ligne à OBSERVEE : une ligne ne passe à OBSERVEE que lorsqu'une station cliquée la prouve, avec sa station et son SHA nommés (règle 12/15/37, acceptation P0-00) — livrée n'est pas observée, les deux comptes restent distincts et se lisent l'un à côté de l'autre, jamais confondus.
 
@@ -364,7 +364,8 @@ Manque : non commencé — 24 écritures sans logEvent, 149 verbes libres, chaî
 Épreuve : Deux editSection concurrents sur deux sections : les deux corps subsistent ; insert d'une seconde matérialité validée → refus d'unicité ; un scellé n'immobilise pas une note de revue posée pendant son rendu.
 
 **NON OBSERVÉE**
-Manque : non commencé — editSection fait lecture-modification-écriture du jsonb entier ; aucun index partiel unique ; row_version jamais construit ; appels IA dans la même transaction que le reste.
+Manque : P1-08 livré (partie modèle) : quatre index partiels uniques posés — insert d'une seconde matérialité validée refuse bien désormais (materiality_validated_unique, 0180), de même pour tb_snapshot active/sample drawn/workpaper actif ; workpaper.row_version posé (colonne seule, le verrou optimiste applicatif where row_version = $n reste à construire). Restent non commencés : editSection (lecture-modification-écriture du jsonb entier), les appels IA dans la même transaction que le reste, et le scellé/note de revue (P6-01) — pas encore observé par un clic dédié.
+Tâches livrées : `P1-08` `b4ab276`
 
 ### AUD-17 — Le parcours cliqué est monolithique (326 étapes, sommeils fixes, assertions `true`) (AUDIT — tâche(s) `P0-03`, `P0-04`, `P6-03`)
 
