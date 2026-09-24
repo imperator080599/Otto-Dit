@@ -2172,3 +2172,16 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   Aucune hypothèse nouvelle : les deux échecs `clics` de la chaîne complète confirment F63 au lieu
   de le contredire — la nouvelle station « ETANCH : portail » n'est jamais en cause (elle passe
   chaque fois), et le point de rupture reste le même flake pré-existant, jamais localisé.
+
+  **Suite (même jour, arbre COMMITÉ `693ceec`) — DEUX tentatives de plus, même assertion, même
+  échec.** Après commit des quatre tranches P2-01 (`4f4f256`, `d3d48b0`, `e7b7dce`, `693ceec`,
+  aucune ne touche `scripts/clics/scenario.ts` près de la station « mes travaux », ni le
+  bandeau de navigation, ni son timing), deux tentatives supplémentaires de `npm run verify`
+  re-semées (`verify-p2-01-final.log`, `verify-p2-01-final2.log`) se sont arrêtées TOUTES DEUX
+  au maillon `clics`, sur exactement la même assertion : `mes travaux : le bandeau y mène depuis
+  n'importe quel écran, en 1 clic`, 1 échec sur 326-327 étapes. Compte du jour : 4 tentatives
+  ROUGES d'affilée sur cette même assertion (attempts d, e, final, final2), aucune sur le code
+  de P2-01 lui-même — cohérent avec F1-F11 (le #418 se déplace, jamais localisé, jamais causé
+  par la tranche qui le rencontre). Aucune hypothèse nouvelle sur la CAUSE ; la fréquence
+  observée aujourd'hui (6 rouges sur les 8 tentatives comptées depuis le début de P2-01, contre
+  2 vertes) est notée sans être expliquée, au-delà de ce que F63 disait déjà.

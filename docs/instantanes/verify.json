@@ -4699,6 +4699,923 @@
       "quand": "2026-09-24T10:13:21.716Z",
       "resultat": "ok (588.6s)",
       "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T13:59:33.580Z",
+      "resultat": "ok (6.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T13:59:48.131Z",
+      "resultat": "ok (14.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T13:59:52.408Z",
+      "resultat": "ok (4.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T13:59:57.780Z",
+      "resultat": "ÉCHEC — code 1 (5.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:20.763Z",
+      "resultat": "ok (6.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:34.652Z",
+      "resultat": "ok (13.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:38.339Z",
+      "resultat": "ok (3.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:43.536Z",
+      "resultat": "ok (5.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:44.046Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:44.520Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:00:45.105Z",
+      "resultat": "ÉCHEC — code 1 (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:11.772Z",
+      "resultat": "ok (6.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:26.353Z",
+      "resultat": "ok (14.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:30.167Z",
+      "resultat": "ok (3.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:35.597Z",
+      "resultat": "ok (5.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:36.117Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:36.605Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:37.186Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:38.686Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:39.179Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:02:39.683Z",
+      "resultat": "ÉCHEC — code 1 (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:24.508Z",
+      "resultat": "ok (7.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:38.726Z",
+      "resultat": "ok (14.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:42.370Z",
+      "resultat": "ok (3.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:47.739Z",
+      "resultat": "ok (5.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:48.256Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:48.770Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:49.422Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:50.975Z",
+      "resultat": "ok (1.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:51.508Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:52.041Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:52.751Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:53.247Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:03:55.919Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:05:46.755Z",
+      "resultat": "ok (110.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:05:57.086Z",
+      "resultat": "ok (10.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:07:22.092Z",
+      "resultat": "ok (85.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:25:39.267Z",
+      "resultat": "ÉCHEC — code 1 (1097.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:25:58.054Z",
+      "resultat": "ok (6.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:12.377Z",
+      "resultat": "ok (14.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:16.103Z",
+      "resultat": "ok (3.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:21.150Z",
+      "resultat": "ok (5.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:21.674Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:22.215Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:22.803Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:24.344Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:24.836Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:25.321Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:25.968Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:26.447Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:26:29.029Z",
+      "resultat": "ok (2.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:28:15.472Z",
+      "resultat": "ok (106.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:28:25.487Z",
+      "resultat": "ok (10.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:29:48.221Z",
+      "resultat": "ok (82.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:47:57.155Z",
+      "resultat": "ÉCHEC — code 1 (1088.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:52:41.833Z",
+      "resultat": "ok (6.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:52:55.652Z",
+      "resultat": "ok (13.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:52:59.196Z",
+      "resultat": "ok (3.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:04.320Z",
+      "resultat": "ok (5.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:04.803Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:05.292Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:05.889Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:07.521Z",
+      "resultat": "ok (1.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:08.018Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:08.544Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:09.242Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:09.739Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:53:12.405Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:54:59.185Z",
+      "resultat": "ok (106.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:55:09.536Z",
+      "resultat": "ok (10.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T14:56:32.635Z",
+      "resultat": "ok (83.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T15:14:43.443Z",
+      "resultat": "ok (1090.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T15:18:10.076Z",
+      "resultat": "ok (206.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T15:19:08.003Z",
+      "resultat": "ok (57.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens:test",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T15:26:49.139Z",
+      "resultat": "ok (461.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "cebea72fbc14e857d8cf720f52e4f189c4e40996",
+      "quand": "2026-09-24T15:37:02.413Z",
+      "resultat": "ok (613.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:34.904Z",
+      "resultat": "ok (6.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:48.763Z",
+      "resultat": "ok (13.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:52.555Z",
+      "resultat": "ok (3.8s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:57.804Z",
+      "resultat": "ok (5.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:58.306Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:58.775Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:46:59.320Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:00.841Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:01.317Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:01.799Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:02.463Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:03.004Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:47:05.684Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:49:03.311Z",
+      "resultat": "ok (117.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:49:13.504Z",
+      "resultat": "ok (10.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T15:50:37.536Z",
+      "resultat": "ok (84.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:08:48.745Z",
+      "resultat": "ÉCHEC — code 1 (1091.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:30.279Z",
+      "resultat": "ok (5.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:44.170Z",
+      "resultat": "ok (13.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:47.818Z",
+      "resultat": "ok (3.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:52.746Z",
+      "resultat": "ok (4.9s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:53.263Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:53.818Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:54.361Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:55.829Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:56.352Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:56.839Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:57.463Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:09:57.943Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:10:00.617Z",
+      "resultat": "ok (2.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:11:49.347Z",
+      "resultat": "ok (108.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:11:59.679Z",
+      "resultat": "ok (10.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:13:24.246Z",
+      "resultat": "ok (84.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:31:32.724Z",
+      "resultat": "ÉCHEC — code 1 (1088.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "db:reset",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:30.089Z",
+      "resultat": "ok (6.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "demo:seed",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:44.050Z",
+      "resultat": "ok (14.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "tsc",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:47.637Z",
+      "resultat": "ok (3.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "docs:modele:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:52.727Z",
+      "resultat": "ok (5.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "gardes",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:53.267Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "semeur",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:53.728Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:54.287Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:55.816Z",
+      "resultat": "ok (1.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "langue-refus",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:56.390Z",
+      "resultat": "ok (0.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:56.893Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "lectures:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:57.550Z",
+      "resultat": "ok (0.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:32:58.092Z",
+      "resultat": "ok (0.5s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "parcours:epreuve",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:33:00.682Z",
+      "resultat": "ok (2.6s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:34:45.862Z",
+      "resultat": "ok (105.2s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "fumee",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:34:55.934Z",
+      "resultat": "ok (10.1s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "densite",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:36:18.306Z",
+      "resultat": "ok (82.4s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "clics",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:54:34.626Z",
+      "resultat": "ok (1096.3s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "visuel",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:58:00.356Z",
+      "resultat": "ok (205.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "plancher",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T16:58:56.323Z",
+      "resultat": "ok (56.0s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "screens:test",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T17:06:50.070Z",
+      "resultat": "ok (473.7s)",
+      "source": "scripts/verify.ts"
+    },
+    {
+      "commande": "vitest",
+      "sha": "693ceec71806558cc3bd04c256d3e1e665bff540",
+      "quand": "2026-09-24T17:16:57.239Z",
+      "resultat": "ok (607.2s)",
+      "source": "scripts/verify.ts"
     }
   ],
   "precedent": {
