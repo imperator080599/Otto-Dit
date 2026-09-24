@@ -211,7 +211,7 @@ export async function seedBase(): Promise<void> {
       tenantId: IDS.tenant,
       engagementId: engId,
       actorKind: 'system',
-      verb: 'engagement_created',
+      verb: 'engagement.created',
       objectType: 'engagement',
       objectId: engId,
       payload: { seeded: true },
