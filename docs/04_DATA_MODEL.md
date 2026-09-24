@@ -1664,8 +1664,9 @@ Politiques RLS : `fs_line_eng` (ALL, {public})
 | tied_by | uuid | oui | — |
 | tied_at | timestamp with time zone | oui | — |
 | created_at | timestamp with time zone | non | now() |
+| engine_run_id | uuid | oui | — |
 
-FK : `evidence_id` → `evidence(id)` on delete no action ; `fs_line_id` → `fs_line(id)` on delete restrict ; `tied_by` → `app_user(id)` on delete no action
+FK : `engine_run_id` → `engine_run(id)` on delete no action ; `evidence_id` → `evidence(id)` on delete no action ; `fs_line_id` → `fs_line(id)` on delete restrict ; `tied_by` → `app_user(id)` on delete no action
 
 Index : `fs_tie_fs_line_id_key`
 

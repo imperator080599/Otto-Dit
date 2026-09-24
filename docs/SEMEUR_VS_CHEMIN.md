@@ -62,8 +62,8 @@ sous la ligne — elle ne se cache pas dans le badge.
 | | | | | ↳ recherche exhaustive : SEUL seed.ts:196 insère cette table dans tout app/src ; ailleurs elle n’est que lue ou jointe (reunions.ts) |
 | itgc_area (référentiel de contrôle général IT) | `seed.ts:203-207` | — | — | **DÉCOR** |
 | | | | | ↳ table de référence : assertions-role.ts la réserve à des rôles techniques, pas à un geste d’écran |
-| event_log « engagement_created » | `seed.ts:210-218` | — | — | **DÉCOR** |
-| | | | | ↳ logEvent a de nombreux appelants humains, mais aucun avec CE verbe hors du semeur |
+| event_log « engagement.created » | `seed.ts:210-218` | — | — | **DÉCOR** |
+| | | | | ↳ CORRIGÉ (P1-10, AUD-12, registre des verbes) : seed.ts émettait `engagement_created` (un second nom du même fait, corrigé pour émettre directement le verbe canonique `engagement.created`) — désormais LE MÊME verbe que le chemin humain réel (services/engagement.ts:331, creerMission). La ligne reste « décor » : ces deux missions de démonstration sont créées par un insert direct du semeur (seed.ts, payload `{seeded:true}`), jamais en passant par creerMission() lui-même — aucun clic ne produit CETTE ligne précise, seulement une ligne au même verbe. |
 
 ## `src/lib/flows/part1.ts` — Le cycle chiffre d’affaires (dossier NEP)
 
@@ -193,7 +193,7 @@ sous la ligne — elle ne se cache pas dans le badge.
 - **referral_instruction** (`seed.ts:85-90`) — aucune lecture ni écriture hors semeur trouvée
 - **client_contact** (`seed.ts:196-200`) — recherche exhaustive : SEUL seed.ts:196 insère cette table dans tout app/src ; ailleurs elle n’est que lue ou jointe (reunions.ts)
 - **itgc_area (référentiel de contrôle général IT)** (`seed.ts:203-207`) — table de référence : assertions-role.ts la réserve à des rôles techniques, pas à un geste d’écran
-- **event_log « engagement_created »** (`seed.ts:210-218`) — logEvent a de nombreux appelants humains, mais aucun avec CE verbe hors du semeur
+- **event_log « engagement.created »** (`seed.ts:210-218`) — CORRIGÉ (P1-10, AUD-12, registre des verbes) : seed.ts émettait `engagement_created` (un second nom du même fait, corrigé pour émettre directement le verbe canonique `engagement.created`) — désormais LE MÊME verbe que le chemin humain réel (services/engagement.ts:331, creerMission). La ligne reste « décor » : ces deux missions de démonstration sont créées par un insert direct du semeur (seed.ts, payload `{seeded:true}`), jamais en passant par creerMission() lui-même — aucun clic ne produit CETTE ligne précise, seulement une ligne au même verbe.
 - **ledger_is_provisional (le grand livre est déclaré PROVISOIRE)** (`part1.ts:346-352 (update engagement set ledger_is_provisional = true)`) — CONSTAT D1, relecture hostile — trouvé, pas dans le premier recensement. Les seuls écrivains de cette colonne dans app/src : part1.ts:347 (met à TRUE) et reconciliation.ts:95 (la remet à FALSE une fois le rapprochement propre). Aucun chemin humain ne la met à TRUE. Elle est LUE et infléchit le verdict de evaluation.ts:267 et reconciliation.ts:93 — un état que seul le semeur produit, avec un effet visible au dossier (règle 20 telle quelle).
 - **courrier entrant traité (processInbound)** (`part1.ts:135,160`) — aucune route API ni écran appelant trouvé dans app/src/app ; seuls appelants hors semeur : scripts/demo-email.ts (script) et un test
 - **pièce triée sur une ligne (attachEvidenceToItem)** (`part1.ts:142`) — aucun appelant dans app/src/app trouvé

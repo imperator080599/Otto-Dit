@@ -106,8 +106,8 @@ export const SECTIONS: SectionSemeur[] = [
         note: 'recherche exhaustive : SEUL seed.ts:196 insère cette table dans tout app/src ; ailleurs elle n’est que lue ou jointe (reunions.ts)' },
       { objet: 'itgc_area (référentiel de contrôle général IT)', semeur: 'seed.ts:203-207', cheminHumain: null, clique: null, etat: 'decor',
         note: 'table de référence : assertions-role.ts la réserve à des rôles techniques, pas à un geste d’écran' },
-      { objet: 'event_log « engagement_created »', semeur: 'seed.ts:210-218', cheminHumain: null, clique: null, etat: 'decor',
-        note: 'logEvent a de nombreux appelants humains, mais aucun avec CE verbe hors du semeur' },
+      { objet: 'event_log « engagement.created »', semeur: 'seed.ts:210-218', cheminHumain: null, clique: null, etat: 'decor',
+        note: 'CORRIGÉ (P1-10, AUD-12, registre des verbes) : seed.ts émettait `engagement_created` (un second nom du même fait, corrigé pour émettre directement le verbe canonique `engagement.created`) — désormais LE MÊME verbe que le chemin humain réel (services/engagement.ts:331, creerMission). La ligne reste « décor » : ces deux missions de démonstration sont créées par un insert direct du semeur (seed.ts, payload `{seeded:true}`), jamais en passant par creerMission() lui-même — aucun clic ne produit CETTE ligne précise, seulement une ligne au même verbe.' },
     ],
   },
   {
