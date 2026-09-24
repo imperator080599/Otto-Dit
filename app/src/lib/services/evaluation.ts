@@ -7,6 +7,7 @@ import { validatedThresholds } from './materiality';
 import { frameworkSet } from './fsli';
 import { primaryPack } from '@/lib/packs';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // Gate 2 (audit partner): sample evaluation inside the procedure workpaper — known +
 // projected misstatement vs tolerable misstatement, computed L0, concluded L4. The
@@ -226,8 +227,9 @@ export async function concludeEvaluation(evaluationId: string, userId: string, b
   // sondée ET que la méthode reste non vérifiée — une strate sondée propre (compte nul), ou une
   // méthode déjà vérifiée, reste conclûable sans ce refus.
   if (e.random_misstatement_count > 0 && e.projection_method === 'none') {
-    throw new Error(
-      'EXTRAP-01 : la strate sondée de ce poste porte un écart mais aucune projection à la '
+    throw refus(
+      'EXTRAP-01',
+      'la strate sondée de ce poste porte un écart mais aucune projection à la '
       + 'population n\'a été calculée — la méthode d\'extrapolation du cabinet '
       + '(SubstantiveConfig.extrapolationMethod) n\'est pas encore vérifiée (EXTRAP-04). '
       + 'Impossible de conclure sans elle.',

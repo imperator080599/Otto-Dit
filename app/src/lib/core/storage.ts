@@ -3,6 +3,7 @@ import path from 'node:path';
 import { dataDir, q, q01 } from '@/lib/db/client';
 import { sha256 } from './hash';
 import { demoPublique } from './demo-public';
+import { refus } from '@/lib/core/refus';
 
 // Content-addressed evidence blob store (docs/04 §9.2): blobs never mutate; re-upload of
 // identical content maps to the same blob (dedupe is detected at the evidence layer and
@@ -92,8 +93,9 @@ export function verifierAdresse(storagePath: string, bytes: Uint8Array): void {
   if (!/^[0-9a-f]{64}$/.test(attendu)) return;
   const reel = sha256(bytes);
   if (reel !== attendu) {
-    throw new Error(
-      `BLOB-01 : la pièce « ${storagePath} » ne rend pas son adresse — le magasin est adressé par CONTENU, `
+    throw refus(
+      'BLOB-01',
+      `la pièce « ${storagePath} » ne rend pas son adresse — le magasin est adressé par CONTENU, `
       + `et le contenu lu a pour empreinte ${reel.slice(0, 12)}…. Contenu substitué, ou magasin corrompu : `
       + `la pièce n’est pas servie.`);
   }

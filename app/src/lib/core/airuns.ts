@@ -1,6 +1,7 @@
 import { q, q1 } from '@/lib/db/client';
 import { sha256 } from './hash';
 import type { NiveauAutomatisation } from '@/lib/packs/types';
+import { refus } from '@/lib/core/refus';
 
 // Every LLM/OCR call writes an ai_run row (CLAUDE.md rule 3; docs/06 §6.2).
 // Adapters MUST go through recordAiRun — the LlmClient/OcrAdapter implementations refuse
@@ -33,8 +34,9 @@ export interface AiRunInput {
 
 export async function recordAiRun(r: AiRunInput): Promise<string> {
   if (!r.niveauAutomatisation) {
-    throw new Error(
-      'AUTO-02 : un élément préparé par l’IA ne peut pas être enregistré sans le niveau '
+    throw refus(
+      'AUTO-02',
+      'un élément préparé par l’IA ne peut pas être enregistré sans le niveau '
       + 'd’automatisation en vigueur à l’instant de sa production (mandat 2026-09-14, §2.3).',
     );
   }

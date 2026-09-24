@@ -54,12 +54,19 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   'ETANCH-05': { cle: 'refus.ETANCH-05', famille: 'etancheite' },
   'ETANCH-06': { cle: 'refus.ETANCH-06', famille: 'etancheite' },
   'ETANCH-07': { cle: 'refus.ETANCH-07', famille: 'etancheite' },
-  // SOX / contrôle interne (sox.ts).
+  // SOX / contrôle interne (sox.ts). CTRL-05/CTRL-07 et le second site de CTRL-01/CTRL-04
+  // (`throw new Error(\n  \`CODE : ...\`)`, code et backtick sur des lignes séparées) ont été
+  // RATÉS par le balayage d'origine de P1-09 — son regex exigeait la même ligne que
+  // `throw new Error(`. Corrigé le jour même (règle 13/31) : le balayage et la migration sont
+  // désormais multi-lignes, et `npm run langue-refus` a été refait sur cette base corrigée.
   'CTRL-01': { cle: 'refus.CTRL-01', famille: 'sox' },
   'CTRL-02': { cle: 'refus.CTRL-02', famille: 'sox' },
   'CTRL-03': { cle: 'refus.CTRL-03', famille: 'sox' },
   'CTRL-04': { cle: 'refus.CTRL-04', famille: 'sox' },
+  'CTRL-05': { cle: 'refus.CTRL-05', famille: 'sox' },
   'CTRL-06': { cle: 'refus.CTRL-06', famille: 'sox' },
+  'CTRL-07': { cle: 'refus.CTRL-07', famille: 'sox' },
+  'VID-01': { cle: 'refus.VID-01', famille: 'sox' },
   // Programme de procédures (programme.ts).
   'PROG-01': { cle: 'refus.PROG-01', famille: 'programme' },
   'PROG-02': { cle: 'refus.PROG-02', famille: 'programme' },
@@ -94,12 +101,27 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   'PROP-02R': { cle: 'refus.PROP-02R', famille: 'propositions' },
   'PROP-03': { cle: 'refus.PROP-03', famille: 'propositions' },
   'PROP-03B': { cle: 'refus.PROP-03B', famille: 'propositions' },
+  'PROP-04': { cle: 'refus.PROP-04', famille: 'propositions' },
+  'PROP-05': { cle: 'refus.PROP-05', famille: 'propositions' },
   // Replis mémorisés (replis.ts).
   'REPLI-01': { cle: 'refus.REPLI-01', famille: 'repli' },
   'REPLI-04': { cle: 'refus.REPLI-04', famille: 'repli' },
   // Revue analytique (analytique.ts).
   'ANA-01': { cle: 'refus.ANA-01', famille: 'analytique' },
   'ANA-02': { cle: 'refus.ANA-02', famille: 'analytique' },
+  // Degré d'automatisation (automatisation.ts, core/airuns.ts — P1-10/AUD-12).
+  'AUTO-01': { cle: 'refus.AUTO-01', famille: 'automatisation' },
+  'AUTO-02': { cle: 'refus.AUTO-02', famille: 'automatisation' },
+  'AUTO-03': { cle: 'refus.AUTO-03', famille: 'automatisation' },
+  // Budget IA (extraction/budget.ts).
+  'IA-BUDGET-01': { cle: 'refus.IA-BUDGET-01', famille: 'budget-ia' },
+  // Extrapolation des anomalies (evaluation.ts, matching.ts).
+  'EXTRAP-01': { cle: 'refus.EXTRAP-01', famille: 'extrapolation' },
+  'EXTRAP-03': { cle: 'refus.EXTRAP-03', famille: 'extrapolation' },
+  // Étanchéité de la connexion (db/sans-locataire.ts) — sécurité, filet le plus bas du dépôt.
+  'LOC-01': { cle: 'refus.LOC-01', famille: 'etancheite' },
+  // Magasin de pièces adressé par contenu (core/storage.ts).
+  'BLOB-01': { cle: 'refus.BLOB-01', famille: 'stockage' },
 };
 
 export class Refus extends Error {

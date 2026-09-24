@@ -1,4 +1,5 @@
 import { q, q01, q1 } from '@/lib/db/client';
+import { refus } from '@/lib/core/refus';
 
 // LA GARDE DE BUDGET DU MODE « IA RÉELLE » (point 12, ADR-105). Quand
 // l'adaptateur d'extraction est vivant, chaque lecture coûte de l'argent réel
@@ -119,8 +120,9 @@ export async function gardeBudgetEnBase(): Promise<GardeBudgetEnBase> {
 export async function assertBudgetActifEnBase(): Promise<GardeBudgetEnBase> {
   const g = await gardeBudgetEnBase();
   if (!g.actif || g.plafondUsd === null || g.plafondUsd <= 0 || !g.activePar || !g.activeLe) {
-    throw new Error(
-      'IA-BUDGET-01 : le mode IA vivant reste fermé — aucune garde de budget active et complète '
+    throw refus(
+      'IA-BUDGET-01',
+      'le mode IA vivant reste fermé — aucune garde de budget active et complète '
       + `en base (app_state.${CLE_APP_STATE_BUDGET} : plafond positif ET provenance qui/quand). `
       + 'Ce chemin ne s\'active JAMAIS depuis le code — seul le fondateur, par un accès direct à '
       + 'la base de production, peut le poser (mandat du 9 septembre, §4 ; CLAUDE.md, interdits).',

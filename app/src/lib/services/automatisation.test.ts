@@ -68,9 +68,9 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
     const original = nepFr.automationLevel;
     nepFr.automationLevel = 'L1';
     try {
-      await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.karim)).rejects.toThrow(/AUTO-01/);
+      await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.claire)).rejects.toThrow(/AUTO-01/);
       expect(await niveauEffectif(IDS.engNep)).toBe('L1');   // rien écrit, le refus a bien eu lieu AVANT l'update
-      await expect(definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim)).resolves.toBeUndefined();
+      await expect(definirNiveauMission(IDS.engNep, 'L1', IDS.users.claire)).resolves.toBeUndefined();
       expect(await niveauEffectif(IDS.engNep)).toBe('L1');
     } finally {
       nepFr.automationLevel = original;
@@ -91,35 +91,35 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
        du type NiveauAutomatisation ne le dépasse (L3 n'existe même pas dans
        le type) — cette épreuve porte donc sur les BORNES valides elles-mêmes,
        toutes acceptées jusqu'au plafond. */
-    await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.karim)).resolves.toBeUndefined();
+    await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.claire)).resolves.toBeUndefined();
     expect(await niveauEffectif(IDS.engNep)).toBe('L2');
   });
 
   it('definirNiveauMission : une mission peut se rendre plus prudente que son cabinet (L0/L1), et le redire plus tard', async () => {
-    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.claire);
     expect(await niveauEffectif(IDS.engNep)).toBe('L0');
-    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.claire);
     expect(await niveauEffectif(IDS.engNep)).toBe('L1');
     /* §2.2 : « vers le bas UNIQUEMENT » ne veut pas dire monotone dans le
        temps — une mission reste libre de remonter jusqu'au plafond de son
        cabinet, jamais au-delà. */
-    await definirNiveauMission(IDS.engNep, 'L2', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L2', IDS.users.claire);
     expect(await niveauEffectif(IDS.engNep)).toBe('L2');
   });
 
   it('definirNiveauMission : un dossier d’un AUTRE cabinet refuse — l’appartenance d’abord', async () => {
     const autre = await q<{ id: string }>(`insert into tenant (name) values ('Autre cabinet (fictif, sonde auto)') returning id::text`);
-    await expect(definirNiveauMission(autre[0].id, 'L1', IDS.users.karim)).rejects.toThrow();
+    await expect(definirNiveauMission(autre[0].id, 'L1', IDS.users.claire)).rejects.toThrow();
   });
 
   it('assertNiveauOuvert : L0 refuse (AUTO-01) — l’agent est éteint pour ce périmètre', async () => {
-    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.claire);
     await expect(assertNiveauOuvert(IDS.engNep)).rejects.toThrow(/AUTO-01/);
   });
 
   it('assertNiveauOuvert : L1/L2 laissent passer', async () => {
     await expect(assertNiveauOuvert(IDS.engNep)).resolves.toBe('L2');
-    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.claire);
     await expect(assertNiveauOuvert(IDS.engNep)).resolves.toBe('L1');
   });
 
@@ -135,7 +135,7 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
   });
 
   it('AUTO-02 : un ai_run bien formé porte réellement son niveau, immuable', async () => {
-    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L1', IDS.users.claire);
     const id = await recordAiRun({
       tenantId: IDS.tenant, engagementId: IDS.engNep, purpose: 'ocr', adapter: 'mock',
       model: 'mock', promptId: 'sonde', promptVersion: 'v1', input: 'x', output: '[]',
@@ -144,7 +144,7 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
     const row = await q<{ niveau_automatisation: string }>(`select niveau_automatisation from ai_run where id = $1`, [id]);
     expect(row[0].niveau_automatisation).toBe('L1');
     /* Baisser le niveau APRÈS coup ne réécrit jamais l'histoire (§2.3). */
-    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.karim);
+    await definirNiveauMission(IDS.engNep, 'L0', IDS.users.claire);
     const encore = await q<{ niveau_automatisation: string }>(`select niveau_automatisation from ai_run where id = $1`, [id]);
     expect(encore[0].niveau_automatisation).toBe('L1');
   });
@@ -160,7 +160,7 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
     });
 
     it('niveau FERMÉ + budget OUVERT ⇒ refus (par le niveau, pas par le budget)', async () => {
-      await definirNiveauMission(IDS.engNep, 'L0', IDS.users.karim);
+      await definirNiveauMission(IDS.engNep, 'L0', IDS.users.claire);
       await q(
         `insert into app_state (key, value) values ('ia_vivante_budget', $1)`,
         [JSON.stringify({ actif: true, plafondUsd: 5, activePar: IDS.users.claire, activeLe: new Date().toISOString() })],
@@ -169,6 +169,50 @@ describe('le degré d’automatisation (mandat 2026-09-14, §2)', () => {
       await expect(assertBudgetActifEnBase()).resolves.toEqual(
         expect.objectContaining({ actif: true, plafondUsd: 5 }),
       );
+    });
+  });
+
+  /* P1-10 (AUD-12) : definirNiveauMission écrivait SANS AUCUNE trace — trouvé par le
+     balayage ecriture-nue.test.ts. Deux ajouts, chacun son propre cas connu mauvais. */
+  describe('P1-10 : rôle et journal de definirNiveauMission', () => {
+    it('cas connu mauvais (règle 17) : un senior ne règle PAS le niveau d’automatisation (AUTO-03)', async () => {
+      await expect(definirNiveauMission(IDS.engNep, 'L1', IDS.users.karim)).rejects.toThrow(/AUTO-03/);
+      // rien n'a été écrit : le refus a eu lieu AVANT toute mutation.
+      expect(await niveauEffectif(IDS.engNep)).toBe('L2');
+    });
+
+    it('un manager règle le niveau tout autant qu’un partner', async () => {
+      await expect(definirNiveauMission(IDS.engNep, 'L1', IDS.users.lea)).resolves.toBeUndefined();
+      expect(await niveauEffectif(IDS.engNep)).toBe('L1');
+    });
+
+    it('un réglage RÉUSSI écrit event_log automation_level.changed {de, vers}', async () => {
+      await definirNiveauMission(IDS.engNep, 'L1', IDS.users.claire);
+      await definirNiveauMission(IDS.engNep, 'L0', IDS.users.claire);
+      const lignes = await q<{ payload: { de: string | null; vers: string } }>(
+        `select payload from event_log where engagement_id = $1 and verb = 'automation_level.changed'
+         order by id desc limit 1`,
+        [IDS.engNep],
+      );
+      expect(lignes).toHaveLength(1);
+      expect(lignes[0].payload).toEqual({ de: 'L1', vers: 'L0' });
+    });
+
+    it('cas connu mauvais (règle 17) : un refus AUTO-01 (plafond dépassé) n’écrit AUCUNE ligne d’événement', async () => {
+      const original = nepFr.automationLevel;
+      nepFr.automationLevel = 'L1';
+      try {
+        const avant = await q<{ n: string }>(
+          `select count(*)::text n from event_log where engagement_id = $1 and verb = 'automation_level.changed'`,
+          [IDS.engNep]);
+        await expect(definirNiveauMission(IDS.engNep, 'L2', IDS.users.claire)).rejects.toThrow(/AUTO-01/);
+        const apres = await q<{ n: string }>(
+          `select count(*)::text n from event_log where engagement_id = $1 and verb = 'automation_level.changed'`,
+          [IDS.engNep]);
+        expect(apres[0].n).toBe(avant[0].n);
+      } finally {
+        nepFr.automationLevel = original;
+      }
     });
   });
 });

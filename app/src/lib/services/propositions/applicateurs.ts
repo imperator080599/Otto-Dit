@@ -43,8 +43,9 @@ async function assertRoleSignataireOuManager(engagementId: string, userId: strin
     [engagementId, userId],
   );
   if (!r || !(r.can_sign || r.eng_role === 'manager' || r.eng_role === 'partner')) {
-    throw new Error(
-      `PROP-04 : ${geste} — seul un signataire (can_sign) ou un manager/partner de ce dossier peut statuer sur une proposition de matérialité`,
+    throw refus(
+      'PROP-04',
+      `${geste} — seul un signataire (can_sign) ou un manager/partner de ce dossier peut statuer sur une proposition de matérialité`,
     );
   }
 }
@@ -93,8 +94,9 @@ export const APPLICATEURS: Partial<Record<ObjectType, Applicateur>> = {
   walkthrough_gap: {
     async appliquer(_engagementId, objectId, userId, valeurRetenue) {
       if (valeurRetenue === undefined) {
-        throw new Error(
-          'PROP-05 : un écart de walkthrough n’a pas de valeur par défaut à accepter — statuez la décision '
+        throw refus(
+          'PROP-05',
+          'un écart de walkthrough n’a pas de valeur par défaut à accepter — statuez la décision '
           + '(question, tâche ou écarté) avec modifier(), jamais un accepter() nu',
         );
       }

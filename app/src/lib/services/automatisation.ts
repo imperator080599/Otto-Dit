@@ -1,7 +1,10 @@
 import { q, q01 } from '@/lib/db/client';
 import { assertMembre } from '@/lib/core/membre';
+import { logEvent } from '@/lib/core/events';
+import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { primaryPack } from '@/lib/packs';
+import { refus } from '@/lib/core/refus';
 import type { NiveauAutomatisation } from '@/lib/packs/types';
 
 // LE DEGRÉ D'AUTOMATISATION DE L'AGENT IA — mandat 2026-09-14, §2.
@@ -92,21 +95,48 @@ export async function niveauEffectif(engagementId: string): Promise<NiveauAutoma
 }
 
 /** LE SEUL CHEMIN qui écrit `engagement.automation_level`. AUTO-01 (§2.2) :
- *  une mission ne peut jamais être plus permissive que son cabinet. */
+ *  une mission ne peut jamais être plus permissive que son cabinet.
+ *
+ *  P1-10 (AUD-12) : ce chemin écrivait SANS AUCUNE trace — une écriture nue
+ *  (règle 3), trouvée par le balayage `ecriture-nue.test.ts`. Deux ajouts,
+ *  chacun avec son propre refus, jamais confondus l'un avec l'autre :
+ *    · AUTO-03 — SEUL manager/partner règle le niveau d'une mission (le plan
+ *      le nomme explicitement) ; `assertMembre` garde déjà le CABINET et
+ *      L'ÉQUIPE, mais pas le RÔLE — un senior ne relève pas le plafond de sa
+ *      propre mission.
+ *    · `automation_level.changed {de, vers}` — l'ancien ET le nouveau
+ *      niveau, dans CET ORDRE, pour qu'une relecture distingue un
+ *      resserrement d'un assouplissement sans requêter l'historique. */
 export async function definirNiveauMission(
   engagementId: string, niveau: NiveauAutomatisation, userId: string,
 ): Promise<void> {
   await assertMembre(engagementId, userId, 'définir le niveau d’automatisation de la mission');
+  const acteur = await q01<{ eng_role: string }>(
+    `select eng_role from engagement_member where engagement_id = $1 and user_id = $2 and exited_on is null`,
+    [engagementId, userId]);
+  if (!acteur || (acteur.eng_role !== 'manager' && acteur.eng_role !== 'partner')) {
+    throw refus('AUTO-03', 'le niveau d’automatisation d’une mission se règle par un manager ou un partner — '
+      + 'pas par un rôle plus junior.');
+  }
   const fs = await frameworkSet(engagementId);
   const pack = primaryPack(fs as never);
   if (depasseLePlafond(niveau, pack)) {
-    throw new Error(
-      `AUTO-01 : le niveau ${niveau} dépasse le plafond en vigueur (${plafondDuPack(pack)}, posé par `
+    throw refus(
+      'AUTO-01',
+      `le niveau ${niveau} dépasse le plafond en vigueur (${plafondDuPack(pack)}, posé par `
       + `le pack ${pack.id}) — une mission peut être plus prudente que son cabinet, jamais plus `
       + 'permissive (mandat 2026-09-14, §2.2).',
     );
   }
+  const avant = await q01<{ automation_level: NiveauAutomatisation | null }>(
+    `select automation_level from engagement where id = $1`, [engagementId]);
   await q(`update engagement set automation_level = $2 where id = $1`, [engagementId, niveau]);
+  const ctx = await engagementCtx(engagementId);
+  await logEvent({
+    tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: userId,
+    verb: 'automation_level.changed', objectType: 'engagement', objectId: engagementId,
+    payload: { de: avant?.automation_level ?? null, vers: niveau },
+  });
 }
 
 /** À appeler AVANT toute tentative d'appel IA réel, au même titre que
@@ -127,8 +157,9 @@ export async function definirNiveauMission(
 export async function assertNiveauOuvert(engagementId: string, niveauDejaLu?: NiveauAutomatisation): Promise<NiveauAutomatisation> {
   const niveau = niveauDejaLu ?? await niveauEffectif(engagementId);
   if (niveau === 'L0') {
-    throw new Error(
-      'AUTO-01 : l’agent IA est éteint (niveau L0) sur ce dossier — aucun appel ne part '
+    throw refus(
+      'AUTO-01',
+      'l’agent IA est éteint (niveau L0) sur ce dossier — aucun appel ne part '
       + '(mandat 2026-09-14, §2.1).',
     );
   }

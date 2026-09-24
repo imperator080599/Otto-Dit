@@ -8,14 +8,22 @@ import { fileURLToPath } from 'node:url';
 // traquer (des tests qui disparaissent) ; ICI, UN COMPTE QUI MONTE L'EST — chaque
 // `throw new Error('CODE : phrase')` dans src/lib/services ou src/lib/core est un
 // refus qui devrait passer par `refus()` (lib/core/refus.ts, le REGISTRE_REFUS) mais
-// ne le fait pas encore. La migration mécanique de P1-09 a ramené ce compte à 0 (66
-// sites migrés — 7 dans membre.ts, 59 ailleurs, plus 3 codes à suffixe lettre que la
-// première mesure du jour avait ratés : PROP-02R, PROP-03B, ETANCH — règle 31, la
-// mesure d'origine du mandat, « 52 codes », ne les comptait pas). Le plafond gèle ce
-// zéro : un futur `throw new Error('NOUVEAU-01 : ...')` qui contourne le registre fait
-// ROUGIR cette commande plutôt que de rouvrir en silence le trou que `Refus` ferme
-// (D.6 : aucun code technique en tête d'un message vu par un auditeur, sans passer par
-// le registre qui sait le traduire et le cataloguer).
+// ne le fait pas encore. Le plafond gèle ce zéro : un futur `throw new
+// Error('NOUVEAU-01 : ...')` qui contourne le registre fait ROUGIR cette commande
+// plutôt que de rouvrir en silence le trou que `Refus` ferme (D.6 : aucun code
+// technique en tête d'un message vu par un auditeur, sans passer par le registre qui
+// sait le traduire et le cataloguer).
+//
+// CORRIGÉ LE JOUR MÊME (P1-10, règle 13/31) : la PREMIÈRE version de ce balayage
+// (et de la migration P1-09 elle-même) testait `throw new Error(` et le CODE sur
+// LA MÊME LIGNE — un `throw new Error(\n  \`CODE : ...\`)` (code et backtick sur la
+// ligne SUIVANTE, un style d'écriture courant dans ce dépôt pour les messages
+// longs) lui échappait entièrement. Le plafond « 0 » posé par P1-09 était donc
+// FAUX : 20 sites réels, dans 9 fichiers, avaient survécu à la migration sans
+// qu'aucun harnais ne le voie — trouvé en travaillant P1-10 (automatisation.ts),
+// pas par une revue qui aurait re-vérifié le compte. Corrigé : le balayage lit
+// désormais le CONTENU ENTIER de chaque fichier (pas ligne par ligne), et le motif
+// tolère un saut de ligne entre la parenthèse ouvrante et le code.
 //
 // CE QUE CE PLAFOND NE COUVRE PAS (règle 19) : les ~304 `throw new Error('phrase sans
 // code')` déjà dans ces mêmes dossiers, disclosed dans app/refus.ts (R152,
@@ -34,6 +42,9 @@ const EXCLUS = new Set([
   // affiché via executer(), une panique de sonde qui doit rester brute pour
   // que /api/sante puisse ROUGIR dessus (règle 22).
   'SANTE-TENANT', 'SANTE-TENANT-VIDE',
+  // Référence à une décision (docs/DECISIONS.md), pas un code de refus — la forme
+  // « ADR-016: phrase » ressemble à un code mais nomme un ADR, pas une famille.
+  'ADR-016',
 ]);
 
 const ici = path.dirname(fileURLToPath(import.meta.url));
@@ -54,11 +65,17 @@ function fichiers(dir: string, out: string[] = []): string[] {
 const sites: string[] = [];
 for (const f of fichiers(LIB)) {
   const rel = path.relative(RACINE, f).split(path.sep).join('/');
-  const lignes = fs.readFileSync(f, 'utf8').split('\n');
-  lignes.forEach((ligne, i) => {
-    const m = ligne.match(/throw new Error\((`|')([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*)\s?:/);
-    if (m && !EXCLUS.has(m[2])) sites.push(`${rel}:${i + 1} → ${m[2]}`);
-  });
+  const code = fs.readFileSync(f, 'utf8');
+  /* MULTI-LIGNES, EXPRÈS (voir l'en-tête) : le code peut suivre la parenthèse
+     ouvrante sur la ligne SUIVANTE. Le numéro de ligne rapporté est celui du
+     MATCH (donc de la parenthèse), pas celui du code — suffisant pour retrouver
+     le site, jamais utilisé pour autre chose qu'un message d'erreur humain. */
+  for (const m of code.matchAll(/throw new Error\(\s*\n?\s*(`|')([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*)\s?:/g)) {
+    const c = m[2];
+    if (EXCLUS.has(c)) continue;
+    const ligne = code.slice(0, m.index).split('\n').length;
+    sites.push(`${rel}:${ligne} → ${c}`);
+  }
 }
 
 if (process.argv.includes('--figer')) {

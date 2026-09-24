@@ -714,8 +714,9 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
   if (c.di_walkthrough_evidence_id) {
     const ev = await q1<{ deleted_at: string | null }>(`select deleted_at::text from evidence where id = $1`, [c.di_walkthrough_evidence_id]);
     if (ev.deleted_at) {
-      throw new Error(
-        'VID-01 : la vidéo d’inquiry du walkthrough a été supprimée, sans qu’une autre preuve d’inquiry '
+      throw refus(
+        'VID-01',
+        'la vidéo d’inquiry du walkthrough a été supprimée, sans qu’une autre preuve d’inquiry '
         + 'la remplace — attachez un nouvel enregistrement avant de conclure le design et l’implémentation.',
       );
     }
@@ -733,8 +734,9 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
       [t.id],
     );
     if (!preuve) {
-      throw new Error(
-        `CTRL-01 : la tâche « ${t.description} » n’est documentée que par l’inquiry — au moins une inspection, `
+      throw refus(
+        'CTRL-01',
+        `la tâche « ${t.description} » n’est documentée que par l’inquiry — au moins une inspection, `
         + 'observation ou ré-exécution est requise avant de conclure.',
       );
     }
@@ -1089,8 +1091,9 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   if (!FREQUENCES_DERIVABLES.includes(c.frequency)) {
     const demande = await derniereDemandePopulationControle(controlId);
     if (!demande) {
-      throw new Error(
-        `CTRL-05 : aucune demande client de la population n’existe pour ${c.code} (fréquence `
+      throw refus(
+        'CTRL-05',
+        `aucune demande client de la population n’existe pour ${c.code} (fréquence `
         + `« ${c.frequency} » — sa population se demande, elle ne se dérive pas, mandat §3.1). `
         + 'Demandez la population avant de tirer un échantillon.',
       );
@@ -1102,8 +1105,9 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
      population est rapprochée (CTRL-04), puis on peut chiffrer combien en tirer (CTRL-07). */
   const rapprochee = await populationControleRapprochee(controlId);
   if (!rapprochee) {
-    throw new Error(
-      `CTRL-04 : on ne tire pas sur une population d’occurrences non rapprochée pour ${c.code} `
+    throw refus(
+      'CTRL-04',
+      `on ne tire pas sur une population d’occurrences non rapprochée pour ${c.code} `
       + '(mandat §3.1, miroir de POP-01) — concluez le rapprochement de la population avant de '
       + 'tirer un échantillon.',
     );
@@ -1121,8 +1125,9 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
   } else {
     tableUtilisee = tailleEchantillonOe(pack, rapprochee.rowCount);
     if (!tableUtilisee.verifie) {
-      throw new Error(
-        `CTRL-07 : aucune taille d’échantillon vérifiée pour une population de ${rapprochee.rowCount} `
+      throw refus(
+        'CTRL-07',
+        `aucune taille d’échantillon vérifiée pour une population de ${rapprochee.rowCount} `
         + `occurrence(s) — ${tableUtilisee.motif} (annexe du 10 septembre, mandat §3.2). Saisissez une `
         + 'taille avec sa justification écrite en attendant (ADR-010).',
       );
@@ -1142,8 +1147,9 @@ export async function drawAttributeSample(controlId: string, userId: string, ove
    * Seul le chemin par TABLE est concerné (l'override choisit sa taille sans consulter la table) :
    * un import concurrent pendant un tirage par dérogation ne pose aucun problème de cohérence. */
   if (overrideSize === undefined && instances.length !== rapprochee.rowCount) {
-    throw new Error(
-      `CTRL-04 : la population a changé depuis le rapprochement (${rapprochee.rowCount} → `
+    throw refus(
+      'CTRL-04',
+      `la population a changé depuis le rapprochement (${rapprochee.rowCount} → `
       + `${instances.length} occurrence(s)) — concluez un nouveau rapprochement avant de tirer `
       + 'un échantillon sur la population à jour.',
     );
@@ -1317,8 +1323,9 @@ export async function documenterProcedureOe(
       [controlId],
     );
     if (derniereInquiryDi?.quand && quand.slice(0, 10) <= derniereInquiryDi.quand) {
-      throw new Error(
-        `CTRL-06 : la date de l’inquiry OE (${quand.slice(0, 10)}) doit être POSTÉRIEURE à la dernière inquiry D&I `
+      throw refus(
+        'CTRL-06',
+        `la date de l’inquiry OE (${quand.slice(0, 10)}) doit être POSTÉRIEURE à la dernière inquiry D&I `
         + `(${derniereInquiryDi.quand}) de ${c.code} — elle atteste que rien n’a changé DEPUIS.`,
       );
     }

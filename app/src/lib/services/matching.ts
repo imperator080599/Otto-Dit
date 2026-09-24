@@ -12,6 +12,7 @@ import { currentRevenueSample } from './sampling';
 import { latestExtraction } from './extraction/ladder';
 import { fieldsToInvoice, fieldsToDelivery } from './extraction/fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // S6 — deterministic vouching over the drawn sample (L0, engine_run recorded), typed
 // exceptions with lifecycle, risk-flag exceptions (manual JE, credit-note pattern),
@@ -759,14 +760,16 @@ export async function dismissMisstatementAsAnomaly(
 ): Promise<void> {
   await assertMembreDe('misstatement', misstatementId, userId, 'écarter un écart comme anomalie (EXTRAP-03)');
   if (!opts.reason?.trim()) {
-    throw new Error(
-      'EXTRAP-03 : écarter un écart comme anomalie exige une justification écrite — ISA 530 §13, '
+    throw refus(
+      'EXTRAP-03',
+      'écarter un écart comme anomalie exige une justification écrite — ISA 530 §13, '
       + '« extremely rare », « high degree of certainty ». Impossible de l’écarter sans elle.',
     );
   }
   if (!opts.evidenceId) {
-    throw new Error(
-      'EXTRAP-03 : écarter un écart comme anomalie exige une preuve SUPPLÉMENTAIRE obtenue exprès '
+    throw refus(
+      'EXTRAP-03',
+      'écarter un écart comme anomalie exige une preuve SUPPLÉMENTAIRE obtenue exprès '
       + '(ISA 530 §13) — un degré élevé de certitude ne se déclare pas, il se corrobore. Rattachez '
       + 'la pièce.',
     );
@@ -776,8 +779,9 @@ export async function dismissMisstatementAsAnomaly(
   );
   if (m.status === 'dismissed') throw new Error('cet écart est déjà écarté comme anomalie');
   if (m.kind === 'projected') {
-    throw new Error(
-      'EXTRAP-03 : une ligne PROJETÉE (l’extrapolation de la strate sondée à sa population, ISA 530 '
+    throw refus(
+      'EXTRAP-03',
+      'une ligne PROJETÉE (l’extrapolation de la strate sondée à sa population, ISA 530 '
       + '§14) n’est pas un écart « découvert dans l’échantillon » (§5(e)/§13) — elle ne peut pas être '
       + 'écartée comme anomalie. Écartez, le cas échéant, les écarts INDIVIDUELS qui l’alimentent.',
     );
@@ -790,8 +794,9 @@ export async function dismissMisstatementAsAnomaly(
   if (m.exception_id) {
     const x = await q01<{ evidence_id: string | null }>(`select evidence_id from exception where id = $1`, [m.exception_id]);
     if (x?.evidence_id && x.evidence_id === opts.evidenceId) {
-      throw new Error(
-        'EXTRAP-03 : la pièce rattachée est celle qui a DÉJÀ servi à constater l’écart — ISA 530 §13 '
+      throw refus(
+        'EXTRAP-03',
+        'la pièce rattachée est celle qui a DÉJÀ servi à constater l’écart — ISA 530 §13 '
         + 'exige une preuve SUPPLÉMENTAIRE, obtenue exprès, pas la même pièce relue.',
       );
     }

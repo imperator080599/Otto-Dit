@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { refus } from '@/lib/core/refus';
 
 // LES CHEMINS LÉGITIMEMENT SANS LOCATAIRE, ÉCRITS (docs/PLAN_RLS.md, addendum
 // A.4 ; mandat du jour n°3, §1.1). Ce fichier est la liste, et il est aussi le
@@ -235,8 +236,9 @@ export function tableVisee(sql: string): string {
 export function assertLocataire(sql: string): void {
   if (!arme) return;
   if (contexte.getStore()) return;
-  throw new Error(
-    `LOC-01 : requête sans locataire sur « ${tableVisee(sql)} ». Sous un rôle sans BYPASSRLS, `
+  throw refus(
+    'LOC-01',
+    `requête sans locataire sur « ${tableVisee(sql)} ». Sous un rôle sans BYPASSRLS, `
     + `elle rendrait ZÉRO LIGNE en silence. Enveloppez l’appel dans withTenant(<cabinet>, …), `
     + `ou — si ce chemin s’exécute légitimement avant toute session — inscrivez-le dans `
     + `app/src/lib/db/sans-locataire.ts et conduisez-le par sansLocataire('<clé>', …).`);
