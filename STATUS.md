@@ -2,6 +2,103 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 2 — P2-03a Session signée et remise à zéro du monde public gardée (2026-09-24, AUD-07)
+
+**`session-jeton.ts`** (nouveau) : le cookie `otto_user` portait l'identifiant NU — n'importe
+qui pouvait forger une session pour n'importe quel utilisateur en lisant son UUID sur l'écran
+de sélection d'identité (le sélecteur sans mot de passe, CLAUDE.md règle 29). Signé désormais
+`<uuid>.<hmac-sha256 base64url>`, calculé avec `crypto.subtle` — la seule API de signature
+disponible IDENTIQUEMENT dans le runtime Edge de `middleware.ts` et le runtime Node des actions
+serveur, ce qui évite une double implémentation. Comparaison à temps constant, forme UUID
+vérifiée avant tout calcul, cookie absent/forgé/tronqué rend `null` plutôt qu'une exception.
+**Sans `OTTO_SESSION_SECRET` posé** (jamais le cas en local, pas encore fait en production), la
+signature retombe sur une constante fixe documentée en clair dans le code : une protection de
+FORME (contre un cookie mal formé), jamais de FOND tant que le geste fondateur H-1 n'est pas
+fait. `middleware.ts`, `demo/[qui]/route.ts` et `page.tsx::loginAction` signent à la pose ;
+`auth.ts::getSessionUser` vérifie à la lecture. `identifiantExisteEnBase` (nouvelle, `auth.ts`)
+vérifie que l'id soumis au login existe réellement avant de signer un cookie pour lui — un
+pré-contrôle de forme UUID, ajouté après qu'un test à moi-même écrit a exposé une vraie panne
+SQL brute sur une entrée non-UUID (règle 17 : le cas connu mauvais a trouvé un défaut réel).
+
+**DEMO-01 — la faille la plus sévère de cette tranche.** `remettreAZeroAction` (le geste RÉEL,
+atteignable par un POST direct sur son endpoint Next — le header `Next-Action`, sans jamais
+passer par l'écran) ne lisait la session qu'avec `getSessionUser()` et TOLÉRAIT son absence
+(`userId: user?.id ?? null`) : un POST sans cookie tronquait quand même TOUT le monde de
+démonstration, pour TOUS les cabinets. Corrigé : `requireUser()` (redirige si absent, avant même
+que `userId` n'existe) puis `assertPeutRemettreAZero(user.firm_role)` (`monde-demo.ts`, extraite
+pour être éprouvée directement) refusent désormais tout rôle hors admin/partner sous le nouveau
+code `DEMO-01`. Le bouton de l'écran reste offert à tout auditeur connecté — l'écran suit le
+service, jamais l'inverse (précédent EQUIPE-01/P2-02).
+
+**`/api/sante` — nouvelle lecture « session signée : oui/non ».** Rouge sur une instance Vercel
+sans `OTTO_SESSION_SECRET` posé ; dit l'état sans rougir ailleurs. Une première version vérifiait
+`demoPublique()` au lieu de `VERCEL==='1'` (suggestion d'une voix hostile, plausible en lecture
+seule) : MESURÉE, pas supposée, comme rougissant `npm run fumee` — et donc toute la chaîne
+`verify` — sur TOUT arbre local, secret ou pas, parce que `scripts/fumee/run.ts` pose
+`OTTO_DEMO_PUBLIC=1` (sans VERCEL) pour tester localement le chemin de la démonstration publique.
+Revenue à la forme originale, avec le motif écrit dans le code plutôt que retenté en silence.
+
+**Harnais** : `clics/scenario.ts::devenir()`, `clics/mesure-testing.ts`,
+`clics/sonde-hydratation.ts`, `fumee/run.ts` et `screens/routes.ts::auditeur()` posent le cookie
+signé — `auditeur()` est le point unique dont dépendent aussi `visuel/run.ts`,
+`screens/sweep.ts` et `mesures/densite.ts` (aucune édition nécessaire sur ces trois-là).
+
+**Ce qui n'a PAS de station clics : DEMO-01.** Le bouton « remettre à zéro » ne se rend que si
+`etatInstantane().aJour`, qui ne peut JAMAIS valoir `true` en local/CI — l'instantané n'est posé
+que par `scripts/deploy/reconstruire.ts` (un script de DÉPLOIEMENT), jamais par `demo:seed`.
+Limite structurelle NOMMÉE (R162, `docs/BACKLOG_REPORTE.md`), pas un manque : la garde est
+éprouvée par 6 cas connus mauvais directement contre `assertPeutRemettreAZero`
+(`monde-demo.test.ts`) — partner/admin passent, senior/manager/staff/chaîne vide/forgée refusés.
+
+**Deux voix hostiles indépendantes (règle 30 — la tranche touche l'authentification de session
+et une faille d'accès sévère)**, lancées en parallèle, sans lecture partagée l'une de l'autre.
+- **Voix 1 (sécurité/profondeur)** : aucun constat bloquant dans le mécanisme cryptographique ni
+  dans la garde DEMO-01 (les deux couvrent les cas connus mauvais et tous les chemins de
+  production identifiables — grep exhaustif des appelants de `remettreLeMondeAZero`, un seul en
+  code de production). **V1-01** (à corriger, coût trivial) : la lecture `/api/sante` devrait
+  suivre `demoPublique()` plutôt que `VERCEL==='1'` pour rester fidèle à sa propre prétention —
+  **appliqué puis REVERTÉ après avoir mesuré la régression réelle sur `fumee`** (voir ci-dessus) ;
+  le residual gap (un auto-hébergé `OTTO_DEMO_PUBLIC=1` sans Vercel resterait non protégé) est
+  disclosed (R160 addendum) plutôt que corrigé en devinant une forme qui casse le harnais local.
+- **Voix 2 (largeur/compatibilité)** : aucun consommateur orphelin du cookie `otto_user` (grep
+  exhaustif, chaque poseur/lecteur passe par `signerIdentite`/`verifierIdentite`, directement ou
+  via `auditeur()`). **V2-01** (bloquant sur le moment, résolu par la suite de cette tranche) : le
+  dernier `npm run clics` mesuré à ce moment avait échoué, non disclosed — résolu en continuant
+  jusqu'à un `clics` propre (voir la chaîne ci-dessous) et en l'écrivant ici. **V2-02/03/05**
+  (artefacts périmés par le même run raté) : résolus par le même geste — `docs/CLICS.md` et
+  `docs/instantanes/verify.json` régénérés par la mesure finale, `vitest` exécuté et cité.
+  **V2-04** (référence `R161` au lieu de `R162` dans deux commentaires) : corrigé. **V2-06**
+  (généralisation de `keyFingerprint` sans site d'appel réel) : non nuisible, laissé tel quel.
+
+**Le flake `#418` a occupé le gros du temps de cette tranche, exactement comme documenté
+(`docs/CHASSE.md` F63) pour P2-01.** `scenario.ts::devenir()` signe désormais le cookie juste
+avant l'assertion « mes travaux : le bandeau y mène… en 1 clic » — une causalité par la tranche
+était donc une hypothèse RAISONNABLE (règle 18), pas écartée par principe. Éprouvée sur 4
+tentatives `npm run verify` complètes, arbre identique à chaque fois (règle 34) : la station a
+PASSÉ (2×) puis ÉCHOUÉ (2×) avec le MÊME code — un défaut déterministe aurait échoué 4/4, pas
+2/4 ; les autres rougeurs portaient le `#418` lui-même sur des pages sans rapport
+(`/portal/demo-sophie-altiverre/…`, `/eng/.../requests/…`). `clics` rejoué SEUL (hors chaîne,
+pour itérer plus vite) est ensuite passé PROPRE : 329 étapes, 0 échec, 500 clics.
+
+**Verify complet mesuré VERT sur l'arbre commité `1a20e894e718786ab3b7af8ae30f03cf9e0f2098`**
+(21/21 maillons — `clics` compris : 329 étapes conduites, 0 échec, 500 clics comptés, 1079,9 s ;
+`vitest` : 187 fichiers, 1438 tests ; `screens:test` : 2/2 ; `visuel` : 356 vues, 0 défaut ;
+`plancher` : 1438 collectés, 1328 plancher, 0 forme éteinte ou isolée). Détail dans
+`docs/instantanes/verify.json` et `docs/CHASSE.md` (F63, suite P2-03a). **SHA servi non
+confirmé** — à mesurer via `/api/sante` une fois le déploiement Vercel terminé (règle 27), pas
+supposé ici.
+
+**R160/R161/R162** restent reportés (`docs/BACKLOG_REPORTE.md`) : R160 porte désormais
+l'addendum ci-dessus, R161 scope P2-03b/P2-03c en tranches séparées, R162 documente l'absence
+structurelle de station clics pour DEMO-01.
+
+**Le geste fondateur H-1/H-8 (mandat `docs/MANDATS/2026-09-20_ouverture_phase_c.md`) reste à
+exercer** : créer `OTTO_SESSION_SECRET` (32 octets aléatoires, base64) et `OTTO_SANTE_TOKEN` sur
+Vercel (production + preview), jamais imprimés ni committés — code vérifié et expédié en
+premier, comme prévu.
+
+---
+
 ## Phase 2 — P2-02 Rôles et séparation des tâches (2026-09-24, AUD-05)
 
 **`team.ts::assignMember`** portait déjà la garde manager/partner sur `eng_role`/`can_sign`
