@@ -2879,3 +2879,62 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   suit le service, la lecture `/api/sante`, la station EQUIPE-01 elle-même). À reprendre : une
   station qui signe un papier en reviewer puis tente de le signer en partner avec la MÊME
   personne, et observe le refus VISA-02 à l'écran.
+
+- **R160 — REPORTÉ, gravité basse, décision explicite prise en construisant P2-03a
+  (AUD-07).** `docs/AUDIT.md` (AUD-07) et le plan maître demandent que `demoPublique()`
+  (`core/demo-public.ts`) priorise `OTTO_DEMO_PUBLIC` explicite sur `VERCEL==='1'` (« `'0'`
+  éteint »). **Non fait dans cette tranche, en CONFLIT identifié avec ADR-109** : le
+  commentaire de `demo-public.ts` dit explicitement que `VERCEL==='1'` doit rester la garde de
+  dernier recours, JAMAIS contournable par une variable « posée par accident » — précisément
+  pour empêcher l'IA payante ou des données réelles de se réactiver sur une instance hébergée
+  par erreur (l'interdit CLAUDE.md §2 sur le mode IA vivant en dépend). Inverser la priorité
+  comme le texte du plan le demande littéralement permettrait à un `OTTO_DEMO_PUBLIC=0` posé
+  par erreur sur Vercel de désactiver le bac à sable sur une VRAIE instance hébergée — l'exact
+  scénario qu'ADR-109 a été écrit pour empêcher. CLAUDE.md §0 point 5 : en cas de conflit entre
+  le plan et CLAUDE.md, CLAUDE.md prime. Non résolu unilatéralement ici — disclosed, pas
+  contourné. À reprendre : clarifier avec le fondateur si une variable EXPLICITE (nommée
+  différemment, ex. `OTTO_INSTANCE_REELLE=1`) plutôt qu'une inversion de priorité sur
+  `OTTO_DEMO_PUBLIC` serait la forme sûre de ce que l'audit demande.
+
+  **Addendum du même jour (P2-03a, revue hostile V1-01) — la même tension a été ÉPROUVÉE,
+  pas seulement lue, sur un consommateur en aval.** La lecture « session signée » de
+  `/api/sante` (P2-03a, AUD-07) a d'abord été écrite avec `demoPublique()` au lieu de
+  `VERCEL==='1'` (suggestion d'une voix hostile, plausible en lecture seule). MESURÉ ensuite
+  par un `npm run verify` complet : ce choix rougit `npm run fumee` — et donc toute la chaîne
+  `verify` — sur TOUT arbre local, secret ou pas, parce que `scripts/fumee/run.ts` pose
+  `OTTO_DEMO_PUBLIC=1` (sans VERCEL) pour exercer localement le chemin de la démonstration
+  publique. Revenu à `VERCEL==='1'` pour cette lecture précise, avec le motif écrit dans le
+  code (`src/app/api/sante/route.ts`, commentaire au-dessus de la lecture « session signée »).
+  **Pour une session future qui reprendrait R160** : la forme demandée par le plan
+  (`OTTO_DEMO_PUBLIC` prioritaire) romprait probablement ce même harnais local de la même
+  façon — à rejouer `npm run fumee` avant de conclure, pas seulement relire le code.
+
+- **R161 — REPORTÉ, gravité moyenne (sécurité, mais périmètre déjà large pour une seule
+  tranche), P2-03b/P2-03c non construites.** Le plan maître groupe SEPT surfaces sous « P2-03 »
+  (AUD-07) : session signée, remise à zéro gardée, mode démo explicite, **jeton du portail
+  client haché et expirant** (`client_contact.portal_token` reste en clair et perpétuel,
+  `supabase/migrations/0001_core.sql:104` — aucune colonne `expires_at`), et **`/api/sante`/
+  `/api/erreur` bornés** (pas de cache, pas de limite de fréquence, corps public non réduit, pas
+  de garde `X-Otto-Sante`). P2-03a (cette tranche) ferme le trou le plus grave nommé par l'audit
+  (la remise à zéro anonyme) et pose la session signée dont les deux autres dépendraient. Les
+  deux tranches restantes sont scopées, prêtes à construire séparément (chacune son propre
+  rituel verify + deux réfutateurs, règle 30 — sécurité) : **P2-03b** (migration nouvelle sur
+  `client_contact`, `portal_token_hash` + `expires_at`, refus `PORTAIL-02`) et **P2-03c**
+  (cache mémoire + `Cache-Control` sur `/api/sante`, corps public réduit, en-tête
+  `X-Otto-Sante`/`OTTO_SANTE_TOKEN` pour le détail, même garde sur `/api/erreur`).
+
+- **R162 — LIMITE STRUCTURELLE NOMMÉE (pas un manque à corriger), trouvée en construisant
+  P2-03a (AUD-07).** Le code de refus `DEMO-01` (`monde-demo.ts::assertPeutRemettreAZero`)
+  n'a AUCUNE station `npm run clics` qui l'observe en cliquant, contrairement à EQUIPE-01
+  (P2-02) et PORTAIL-01 (P2-01). Une première tentative de station (basculer sur un acteur
+  senior, cliquer « remettre à zéro », observer le refus) a été construite PUIS RETIRÉE : le
+  bouton de `/demo/remise-a-zero` ne se rend que si `etatInstantane().aJour`, et cet
+  indicateur vaut TOUJOURS `false` en local/CI — `instantanerLeMonde()` (le seul geste qui
+  pose l'instantané que ce test compare) n'est appelé que par `scripts/deploy/
+  reconstruire.ts`, un script de DÉPLOIEMENT, jamais par `npm run demo:seed`. Le bouton n'est
+  donc atteignable par AUCUN parcours cliqué local, quel que soit l'acteur — pas une question
+  d'ordre de station ni de monde semé, une impossibilité structurelle de l'environnement de
+  test. La garde elle-même reste éprouvée directement (règle 17, cas connu mauvais,
+  `monde-demo.test.ts`) : un partner/admin passe, un senior/manager/staff/chaîne vide/forgée
+  est refusé (DEMO-01). À reprendre seulement si une future tranche fait exister un instantané
+  en local (ex. un mode `--avec-instantane` de `demo:seed`) — hors périmètre ici.

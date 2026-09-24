@@ -859,6 +859,24 @@
       "etat": "reporté, gravité basse — décision explicite prise en construisant P2-02 (AUD-05). Le plan liste une station VISA-02 en plus d'EQUIPE-01 dans son acceptation ; VISA-02 est un code PRÉ-EXISTANT (P1-04), non touché par cette tranche, donc pas exigé par la règle 37. Non construit faute de temps face au reste du périmètre.",
       "depuis": "2026-09-24 (Phase 2, P2-02, AUD-05)",
       "note": "À reprendre : une station qui signe un papier en reviewer puis tente de le signer en partner avec la MÊME personne, observe VISA-02 à l'écran. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R160",
+      "etat": "reporté, gravité basse — décision explicite prise en construisant P2-03a (AUD-07). Le plan demande d'inverser la priorité de demoPublique() (OTTO_DEMO_PUBLIC explicite prime sur VERCEL==1) ; en CONFLIT avec ADR-109 (VERCEL doit rester le dernier filet, jamais contournable par une variable posée par erreur — l'interdit CLAUDE.md sur le mode IA vivant en dépend). Non résolu unilatéralement.",
+      "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
+      "note": "CLAUDE.md §0 point 5 : en cas de conflit entre le plan et CLAUDE.md, CLAUDE.md prime. À reprendre : clarifier avec le fondateur si une variable EXPLICITE différente (ex. OTTO_INSTANCE_REELLE) serait la forme sûre. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R161",
+      "etat": "reporté, gravité moyenne (sécurité) — P2-03b (jeton portail haché + expirant, migration nouvelle sur client_contact, refus PORTAIL-02) et P2-03c (/api/sante et /api/erreur bornés : cache, corps public réduit, en-tête X-Otto-Sante) non construites dans cette tranche. P2-03a (session signée + remise à zéro gardée + mode démo) ferme le trou le plus grave nommé par AUD-07 en premier.",
+      "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
+      "note": "Les deux tranches restantes sont scopées et prêtes à construire séparément, chacune son propre rituel verify + deux réfutateurs (règle 30, sécurité). Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R162",
+      "etat": "limite structurelle nommée, pas un manque — DEMO-01 (monde-demo.ts::assertPeutRemettreAZero) n'a aucune station clics : le bouton de /demo/remise-a-zero ne se rend que si etatInstantane().aJour, qui vaut TOUJOURS false en local/CI (l'instantané n'est posé que par scripts/deploy/reconstruire.ts, jamais par demo:seed). Une première station a été construite puis retirée après avoir échoué pour cette raison structurelle.",
+      "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
+      "note": "La garde reste éprouvée directement (règle 17, cas connu mauvais, monde-demo.test.ts). À reprendre seulement si une future tranche fait exister un instantané en local. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

@@ -2185,3 +2185,25 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   par la tranche qui le rencontre). Aucune hypothèse nouvelle sur la CAUSE ; la fréquence
   observée aujourd'hui (6 rouges sur les 8 tentatives comptées depuis le début de P2-01, contre
   2 vertes) est notée sans être expliquée, au-delà de ce que F63 disait déjà.
+
+  **Suite (2026-09-24, P2-03a/AUD-07) — MÊME assertion, taux comparable, tracée station par
+  station (règle 18) avant d'être attribuée au flake.** P2-03a modifie `scripts/clics/
+  scenario.ts::devenir()` pour signer le cookie (`await signerIdentite(id)` au lieu de l'id nu) —
+  exactement la fonction appelée juste avant CETTE assertion (elle change d'identité puis clique
+  le bandeau « mes travaux »). Une causalité par la tranche était donc une hypothèse RAISONNABLE,
+  pas écartée par principe. Éprouvée sur 4 tentatives `npm run verify` complètes, arbre identique
+  à chaque fois (aucune édition entre elles, règle 34), chacune re-semée : la station a PASSÉ
+  (attempts e et g) puis ÉCHOUÉ (attempts f et h) avec le MÊME code — un défaut déterministe
+  introduit par `signerIdentite()` aurait échoué 4/4, pas 2/4. Les deux autres rougeurs
+  (attempts e et g) portaient le `#418` lui-même sur `/portal/demo-sophie-altiverre/…` (MÊME
+  famille de page que F9/F10/F13/F16, sans rapport avec la signature de cookie) ; l'attempt h
+  portait EN PLUS une exception non classée sur `/eng/.../requests/…`. Verdict : cohérent avec
+  F63, pas une régression de P2-03a. Les 4 maillons que `clics` bloque dans la chaîne automatisée
+  (`visuel`, `plancher`, `screens:test`, `vitest`) ont d'abord été rejoués À LA MAIN, hors chaîne,
+  pendant que `clics` restait rouge : tous verts (`vitest` 1438/1438, `plancher` 1438
+  collectés/1328 plancher/0 forme éteinte, `screens:test` 2/2, `visuel` 356 vues/0 défaut).
+  **`clics` REJOUÉ SEUL (tentative i, hors chaîne) : PROPRE — 329 étapes, 0 échec, 500 clics** —
+  exactement le même schéma que F63 (2 vertes sur 8 tentatives y avaient suffi ; ici la 5ᵉ
+  tentative valide a suffi). **Chaîne `verify` COMPLÈTE rejouée une dernière fois pour une mesure
+  cohérente en un seul run (tentative j)** : **21/21 maillons VERTS**, `clics` compris (329
+  étapes, 0 échec, 1079,9 s) — voir STATUS.md pour le SHA committé et l'heure exacte.
