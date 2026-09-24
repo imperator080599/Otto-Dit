@@ -2782,3 +2782,21 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   aux messages produits par `q1()`/`tx()` elles-mêmes plutôt qu'aux seuls appelants) — hors
   périmètre mécanique de P1-09 (« les 52 codes » nommés par le mandat, devenus 45 après
   correction de la mesure d'origine).
+
+- **R153 — REPORTÉ, gravité basse, trouvé en vérifiant P1-09 (AUD-14), NON causé par cette
+  tranche.** `npm run verify` a rougi UNE FOIS sur `src/lib/client-serveur.test.ts` :
+  `ENOENT: no such file or directory, open '…/src/app/_sonde-ai-flag-brut.tsx'`. Root-causé, pas
+  seulement supposé (règle 18) : `scripts/audit/ia-flag-source.test.ts` (R59/ADR-103, antérieur à
+  P1-09, ni lu ni modifié par cette tranche) écrit un fichier de sonde DIRECTEMENT dans
+  `src/app/` puis le supprime dans un `finally` — pendant qu'un `vitest run` complet fait tourner
+  `client-serveur.test.ts` en parallèle, qui BALAIE ce même dossier (`fichiers(SRC)` puis
+  `fs.readFileSync` sur chaque fichier trouvé). Une course : le balayage voit le fichier au
+  `readdirSync`, la sonde est déjà supprimée au `readFileSync`. Confirmé comme course, pas comme
+  bogue déterministe : trois relances isolées des deux fichiers ensemble (hors du `vitest run`
+  complet, donc hors de la fenêtre de course réelle) passent systématiquement ; un second
+  `npm run verify` complet, sur le même arbre après un correctif SANS RAPPORT (R151/R152 dans
+  `docs/instantanes/fils.json`), est passé VERT sans reproduire — cohérent avec une course rare,
+  pas avec une cause qui aurait dû se reproduire à l'identique. À reprendre : faire écrire les
+  sondes de `ia-flag-source.test.ts` dans un dossier temporaire HORS de `src/app` (ou faire
+  ignorer par `client-serveur.test.ts` tout chemin commençant par `_sonde-`), pour fermer la
+  fenêtre de course plutôt que compter sur sa rareté.

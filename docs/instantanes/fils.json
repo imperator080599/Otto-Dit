@@ -817,6 +817,12 @@
       "etat": "reporté, gravité MOYENNE (UX potentielle, pas une fuite de sécurité) — la migration de P1-09 n'a touché que les throw new Error('CODE : phrase') déjà codés (66 sites, migrés vers Refus) ; environ 304 throw new Error('phrase sans code') restent dans src/lib/services et src/lib/core, traités par executer() exactement comme avant cette tranche (erreur = e.message) sauf s'ils portent la signature d'une panne technique reconnue (estUnePanneTechnique). Gap connu : q1() → `expected a row: <SQL tronqué>` (lib/db/client.ts) est un new Error plain qui fuirait jusqu'à 120 caractères de SQL brut s'il atteignait executer() — comportement inchangé depuis avant P1-09, pas nouvellement introduit.",
       "depuis": "2026-09-24 (Phase 1, P1-09, AUD-14)",
       "note": "disclosed par construction (règle 19), pas trouvé après coup. À reprendre : un audit séparé des ~304 sites, classant chacun en (a) un vrai refus métier méritant un code neuf, ou (b) un signal technique à router vers estUnePanneTechnique. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R153",
+      "etat": "reporté, gravité basse, NON causé par P1-09 — npm run verify a rougi une fois sur src/lib/client-serveur.test.ts (ENOENT sur src/app/_sonde-ai-flag-brut.tsx). Root-causé : scripts/audit/ia-flag-source.test.ts (R59/ADR-103, antérieur, ni lu ni modifié par P1-09) écrit une sonde directement dans src/app/ puis la supprime, pendant qu'un vitest run complet fait tourner client-serveur.test.ts en parallèle, qui balaie ce même dossier — une course rare entre readdirSync et readFileSync.",
+      "depuis": "2026-09-24 (Phase 1, P1-09, AUD-14 — trouvé en vérifiant, pas causé)",
+      "note": "confirmé comme course (pas un bogue déterministe) : trois relances isolées passent systématiquement, un second npm run verify complet sur le même arbre est passé vert sans reproduire. À reprendre : écrire les sondes de ia-flag-source.test.ts hors de src/app, ou faire ignorer par client-serveur.test.ts tout chemin _sonde-. Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

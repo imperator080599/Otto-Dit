@@ -9,6 +9,70 @@ de tourner (règle 27), pas supposé ici.
 
 ---
 
+## Phase 1 — P1-09 Classe Refus, registre des codes, executer() panne vs refus (2026-09-24, AUD-14)
+
+**`lib/core/refus.ts`** : classe `Refus extends Error` + `REGISTRE_REFUS` (45 codes — mesuré par
+balayage direct du dépôt, pas le « 52 » cité de mémoire par le mandat, règle 31 ; la première
+mesure ratait deux codes à suffixe lettre, `PROP-02R`/`PROP-03B`, et un code sans numéro,
+`ETANCH`) + `refus(code, detail, vars?)`, qui refuse tout code non catalogué (lève un
+`TypeError`, jamais un `Error` nu — voir le correctif de revue ci-dessous). 66 sites réels
+migrés de `throw new Error('CODE : ...')` vers `throw refus('CODE', ...)` dans 14 fichiers :
+`lib/core/membre.ts` (les 7 sites ETANCH-*, à la main — sécurité, étanchéité entre cabinets) et
+13 fichiers de service (`sox.ts` 17, `programme.ts` 11, `testing/grille.ts` 9,
+`workpapers/lifecycle.ts` 6, et huit autres plus petits), migrés par un script mécanique puis
+vérifiés fichier par fichier.
+
+**`app/refus.ts::executer()`** distingue désormais trois cas : un `Refus` s'affiche EXACTEMENT
+comme avant (`separerCode`/`BandeauRefus` inchangés, zéro régression sur les 9 tests
+existants) ; une PANNE technique (`estUnePanneTechnique` : erreur PostgreSQL par SQLSTATE, ou
+l'un des six sous-types natifs de bogue JS — `TypeError`/`RangeError`/`ReferenceError`/
+`SyntaxError`/`EvalError`/`URIError`) écrit une ligne `server_error` et affiche un message
+générique traduit (`refus.panne`) plutôt que le texte technique brut ; tout le reste — environ
+304 `throw new Error('phrase sans code')` déjà dans les services — s'affiche EXACTEMENT comme
+avant cette tranche (disclosed R152, docs/BACKLOG_REPORTE.md, plutôt que régressé en masse).
+
+**Plafond `npm run langue-refus`** (nouveau, dans la chaîne `verify`) figé à 0 refus codé non
+migré, `docs/instantanes/langue-refus.json`. **Lecture `/api/sante`** « registre des refus »
+(REGISTRE_REFUS vs. catalogue i18n), avec cas connu mauvais (`vi.doMock`). Tests unitaires pour
+`Refus`/`estUnePanneTechnique`.
+
+**Revue hostile, deux voix indépendantes (règle 30 — sécurité, tenant isolation, codes de
+refus) — UN CONSTAT CONFIRMÉ PAR CONVERGENCE EXACTE, trouvé indépendamment par les deux voix
+sans coordination :**
+
+- **CONFIRMÉ, HAUTE, CORRIGÉ (voix 1 ET voix 2, convergence exacte, prouvé EN VIE par voix 2).**
+  La première version d'`estUnePanneTechnique` testait `e.constructor !== Error` — trop large :
+  elle classait aussi TOUTE sous-classe d'erreur métier du dépôt (`SamplingRuleError`,
+  `RiskRuleError`, `PropositionDejaStatuee`, etc. — pas seulement les vrais bogues JS) comme une
+  panne générique. Voix 2 a prouvé que ce n'était PAS dormant : `sampling.ts::proposeRevenueSample`
+  et `risk.ts::overrideAction` sont tous deux atteints par l'`executer()` PARTAGÉ depuis des
+  écrans déjà câblés en Phase 1 (`/eng/[id]/sampling`, `/eng/[id]/risk`). Corrigé : la frontière
+  teste désormais une liste EXPLICITE des six sous-types natifs de bogue, confirmée directement
+  contre `SamplingRuleError`/`RiskRuleError` réels (pas seulement une classe de sonde).
+- **CONFIRMÉ, BASSE, CORRIGÉ (voix 1).** `refus()` sur un code non catalogué levait un `Error`
+  nu — classé comme refus « historique » par la frontière panne/refus, fuyant un message
+  INTERNE (chemin de fichier compris) brut à l'écran. Corrigé : lève un `TypeError`, désormais
+  reconnu comme panne par construction.
+- **CONFIRMÉ, CLEAN (voix 1 ET voix 2).** Migration des 66 sites (dont `membre.ts`) vérifiée
+  fichier par fichier : texte préservé mot pour mot, ordre des conditions inchangé (ETANCH-01
+  avant ETANCH-03), aucun import auto-inséré cassé — sauf une exception trouvée et corrigée EN
+  COURS de tranche (`programme.ts`, import scindé au milieu d'un bloc multi-ligne).
+
+**Défaut trouvé en vérifiant, NON causé par cette tranche (R153) :** `npm run verify` a rougi
+UNE FOIS sur `client-serveur.test.ts` (`ENOENT` sur un fichier de sonde de
+`ia-flag-source.test.ts`, R59/ADR-103, ni lu ni modifié ici) — une course entre deux fichiers de
+test qui touchent `src/app/` en parallèle sous `vitest run`. Root-causée (règle 18), pas
+seulement supposée : confirmée comme course rare (trois relances isolées passent, un second
+`verify` complet sur le même arbre est passé vert sans reproduire), disclosed R153.
+
+**`npm run verify` : VERT, 21/21 maillons, 1391 tests, arbre `eb8e4e6`** (le second passage
+complet, après le correctif de revue hostile et l'ajout des états R151/152/153 dans
+`docs/instantanes/fils.json`). Commande : `cd app && npm run verify` (budget 7200 s).
+
+**SHA servi non confirmé** — à mesurer via `/api/sante` une fois poussé et déployé (règle 27).
+
+---
+
 ## Phase 1 — P1-08 Index/FK/docs 04 engendré livré (2026-09-24)
 
 **`0180_index_et_fk.sql`** (§7.8 du plan maître, AUD-23 et AUD-15 partie modèle) ferme
