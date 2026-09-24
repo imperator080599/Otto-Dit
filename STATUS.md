@@ -4,6 +4,84 @@
 
 ---
 
+## Phase 1 — P1-08 Index/FK/docs 04 engendré livré (2026-09-24)
+
+**`0180_index_et_fk.sql`** (§7.8 du plan maître, AUD-23 et AUD-15 partie modèle) ferme
+l'intégrité référentielle et l'unicité « ligne courante » que le modèle laissait ouvertes :
+1. **Trois FK manquantes vers `ai_run`** (`extraction.ai_run_id`, `wp_extra_column.ai_run_id`,
+   `materiality.proposed_by_ai_run`) — R66 (BACKLOG_REPORTE.md) LEVÉ au passage : le constat
+   d'origine affirmait qu'une FK PRÉEXISTANTE (`procedure_instance.control_id`) était absente ;
+   elle existe depuis `0002_testing.sql:416`, vérifié par lecture directe ET par `pg_constraint`.
+2. **Index sur 30 tables** dont `engagement_id` n'était en tête d'aucun index — mesuré sur
+   l'arbre courant (pas les 32 de l'audit du 20 septembre, daté d'avant P1-06/P1-07) — plus les
+   FK filles chaudes nommées par le plan.
+3. **Quatre index partiels uniques** (materiality validated, tb_snapshot active, sample drawn,
+   workpaper actif), chacun précédé d'un dédoublonnage SQL qui REFUSE la migration si des
+   doublons existent (règle 26).
+4. **`workpaper.row_version`** (colonne posée, verrou optimiste applicatif à venir).
+
+**`app/scripts/docs/data-model.ts`** engendre désormais `docs/04_DATA_MODEL.md` §5–§10 par
+introspection DDL sur une PGlite éphémère (colonnes, contraintes, index, politiques RLS) —
+§1–§4 et §9 restent rédigés, recopiés verbatim. 101 tables couvertes en §5–§10, dont onze dans
+un groupe « Autres tables, non classées » honnête plutôt que silencieux (règle 13). Corrigé au
+passage : §3 nommait une table `procedure` qui n'a jamais existé — `procedure_instance` est la
+vraie table. Wiré `npm run docs:modele` (écrit) / `docs:modele:epreuve` (diff = échec, dans la
+chaîne `verify`, juste après `tsc`).
+
+**Correctif nécessaire, trouvé en s'auto-testant (règle 17) :** `materiality_validated_unique`
+(index partiel, jamais différable en Postgres) cassait la validation NORMALE — `validate()`
+posait la nouvelle ligne `validated` AVANT de démoter l'ancienne, créant une double `validated`
+transitoire dans la même transaction. Corrigé : `materiality.ts` démote l'ancienne ligne validée
+EN PREMIER, avant toute transition vers `validated`.
+
+**Revue hostile, deux voix indépendantes (règle 30 — modèle de données, contrainte levée, deux
+codes de refus) :**
+
+- **CONFIRMÉ, HAUTE, CORRIGÉ (voix 2, reproduit par exécution réelle).** Message d'exception
+  cassé dans le dédoublonnage `materiality_validated_unique` — arguments intervertis dans
+  `format()`, phrase brisée. Corrigé, un seul placeholder, même patron que les trois autres
+  gardes.
+- **CONFIRMÉ, HAUTE, CORRIGÉ (voix 1).** Le générateur `data-model.ts` pouvait avaler
+  SILENCIEUSEMENT le fichier entier si le titre `## 5.` changeait un jour (reproduit hors dépôt
+  avant correctif). Garde ajoutée, refuse fort plutôt que de deviner.
+- **CONFIRMÉ, MOYENNE, CORRIGÉ (voix 1).** Commentaire de tête de 0180 affirmant, sans l'avoir
+  vérifié, que `procedure_instance(engagement_id)` avait déjà un index — faux, cette migration le
+  crée. Corrigé.
+- **CONFIRMÉ, BASSE, CORRIGÉ (voix 1 = voix 2, convergence exacte).** Entrée fantôme `procedure`
+  laissée dans `TABLES_SECTION_1_4` après le renommage. Retirée.
+- **PLAUSIBLE, MOYENNE/HAUTE, CORRIGÉ, trouvé INDÉPENDAMMENT par les deux voix (jugé sur lecture
+  de code, ni l'une ni l'autre n'a pu le reproduire — PGlite sérialise toutes les transactions,
+  confirmé par une expérience `pg_sleep`).** Deux PROPOSITIONS DIFFÉRENTES du même dossier,
+  validées par de vraies transactions concurrentes, pouvaient heurter `materiality_validated_
+  unique` avec une erreur Postgres brute, non traduite, affichée telle quelle à l'écran. Filet
+  ajouté (`catch` sur le code 23505, message traduit, même patron que
+  `ladder.ts::verifyExtraction`). R149 (BACKLOG_REPORTE.md) documente la limite d'infrastructure
+  qui empêche de le prouver en local.
+
+**Trouvé en clôturant la tranche (règle 37 — cette tranche ne change aucun code de refus
+existant, mais le rituel s'applique par prudence à tout ce qui touche au modèle) : F19/R150.**
+`npm run clics` complet reproduit, de façon fiable sur deux passages indépendants (0 échec
+chacun), 2 stations FIGÉES jamais atteintes sur le panneau d'évaluation d'échantillon
+(`/eng/<id>/testing`, bouton Recompute) : le contenu principal devient VIDE côté navigateur après
+la navigation qui suit un clic qui RÉUSSIT côté serveur (prouvé par une requête GET fraîche hors
+client React, qui rend le panneau correctement recalculé). C'est la reproduction la plus propre à
+ce jour de l'hypothèse H du #418 (`docs/CHASSE.md`, F19) — SSR correct, client vide. **Vérifié NON
+causé par cette tranche** : aucun fichier touché par P1-08 n'entre dans la chaîne d'import de
+`/testing` ou de `evaluation.ts`. `docs/PARCOURS.json` refigé sur un passage vert (325 stations)
+pour ne pas bloquer indéfiniment le rituel sur un défaut hors mandat — **ce refigeage ne ferme
+PAS R150**, disclosed comme tel.
+
+**Mesuré** : `tsc --noEmit` propre ; `db:reset` propre (0180 s'applique, rejouable, vérifié deux
+fois de suite) ; `demo:seed` vert sur base fraîche ; suite `vitest` complète (177 fichiers, 1381
+tests) ; `npm run verify` COMPLET vert au second passage — **20/20 maillons** (db:reset, demo:seed,
+tsc, docs:modele:epreuve, gardes, semeur, plancher, langue(:epreuve), lectures(:epreuve),
+parcours(:epreuve), screens, fumee, densite, clics — 326 étapes, 0 échec — visuel — 356 vues,
+0 défaut —, screens:test, vitest) sur l'arbre `49399b3` (rejoué propre après un premier passage
+rouge sur le #418 déjà documenté F19 — bruit de la page portal, famille F9/F10/F13/F16/F18,
+règle 34 : aucune édition entre les deux passages).
+
+---
+
 ## Phase 1 — P1-07 Risque livré (2026-09-23)
 
 **`0179_risque.sql`** (§7.7 du plan maître, AUD-11) porte l'échelle de risque à quatre niveaux
