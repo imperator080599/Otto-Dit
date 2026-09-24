@@ -258,6 +258,31 @@ async function corpsDeLaSonde() {
     return `${Object.keys(REGISTRE_REFUS).length} code(s) de refus catalogués · 0 entrée manquante`;
   }));
 
+  /* LE REGISTRE DES VERBES, CONTRE CE QUI EST RÉELLEMENT ÉCRIT (P1-10, AUD-12, R155).
+     `logEvent` (lib/core/events.ts) refuse un verbe hors du registre en test (`throw`),
+     mais seulement en avertit en production (`console.warn`) — l'événement s'écrit quand
+     même, avec le verbe fautif tel quel. Sans cette lecture, un typo de registre en
+     production resterait invisible jusqu'à ce qu'une session le cherche à la main
+     (disclosed R155, docs/BACKLOG_REPORTE.md). Cette lecture relit les 500 dernières
+     lignes d'`event_log` (toutes tenants — sonde sans locataire, comme le reste de cette
+     route) et vérifie chaque verbe contre `verbeConnu()`. CE QU'ELLE NE VÉRIFIE PAS
+     (règle 19) : les lignes plus anciennes que la fenêtre des 500 dernières (un typo
+     ancien, déjà hors fenêtre, ne ROUGIT plus ici) ; elle ne corrige rien, elle nomme. */
+  lectures.push(await essayer('registre des verbes (P1-10, AUD-12) : 500 derniers événements, tous au registre', async () => {
+    const { verbeConnu } = await import('@/lib/core/verbes');
+    const recents = await q<{ verb: string }>(
+      `select verb from event_log order by id desc limit 500`);
+    const inconnus = new Map<string, number>();
+    for (const r of recents) {
+      if (!verbeConnu(r.verb)) inconnus.set(r.verb, (inconnus.get(r.verb) ?? 0) + 1);
+    }
+    if (inconnus.size > 0) {
+      const detail = [...inconnus.entries()].map(([v, n]) => `« ${v} » ×${n}`).join(', ');
+      throw new Error(`${inconnus.size} verbe(s) hors registre parmi les 500 derniers événements : ${detail}`);
+    }
+    return `${recents.length} événement(s) relu(s) · 0 verbe hors registre`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {
