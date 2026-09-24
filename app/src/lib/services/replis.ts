@@ -1,4 +1,5 @@
 import { q } from '@/lib/db/client';
+import { refus } from '@/lib/core/refus';
 
 // LA MÉMOIRE DES REPLIS (mandat de nuit n°2, 1.2 ; migration 0132). Une section
 // repliée l'est par la PERSONNE, et la suit d'un poste de travail à l'autre :
@@ -35,7 +36,7 @@ export async function lireReplis(userId: string): Promise<Record<string, boolean
 
 export async function memoriserRepli(p: { userId: string; cle: string; ouvert: boolean }): Promise<void> {
   if (!CLE_REPLI.test(p.cle)) {
-    throw new Error(`REPLI-01 : clé de repli hors format « ${p.cle.slice(0, 40)} » — lettres, chiffres, . _ : - (120 au plus)`);
+    throw refus('REPLI-01', `clé de repli hors format « ${p.cle.slice(0, 40)} » — lettres, chiffres, . _ : - (120 au plus)`);
   }
   /* REPLI-04 : le nombre de rangements d'une personne est BORNÉ. Sans borne,
      une boucle cliquée écrit sans fin et la charge part dans le rendu de
@@ -43,7 +44,7 @@ export async function memoriserRepli(p: { userId: string; cle: string; ouvert: b
   const n = await q<{ n: string }>(`select count(*)::text n from ui_repli where user_id = $1`, [p.userId]);
   const deja = await q<{ cle: string }>(`select cle from ui_repli where user_id = $1 and cle = $2`, [p.userId, p.cle]);
   if (deja.length === 0 && Number(n[0]?.n ?? 0) >= PLAFOND_REPLIS) {
-    throw new Error(`REPLI-04 : ${PLAFOND_REPLIS} rangements mémorisés pour cette personne, c'est le plafond — les replis suivants tiennent le temps de la visite, sans être retenus`);
+    throw refus('REPLI-04', `${PLAFOND_REPLIS} rangements mémorisés pour cette personne, c'est le plafond — les replis suivants tiennent le temps de la visite, sans être retenus`);
   }
   await q(
     `insert into ui_repli (tenant_id, user_id, cle, ouvert)

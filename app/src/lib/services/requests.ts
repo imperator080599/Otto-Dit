@@ -5,6 +5,7 @@ import { engagementCtx } from './imports';
 import { frameworkSet, fsliAccounts } from './fsli';
 import { getAccountingMap } from '@/lib/packs';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // S4 request engine: PBC generation from the sample (per-tested-unit items) + standing
 // items; L2 send gate; statuses; lazy reminder cadence (Q8) against the demo clock.
@@ -336,7 +337,7 @@ function descriptionDeLaPiece(evidenceTypeCode: string, l: LigneClassee, fr: boo
  *  est hors périmètre de cette tranche (R48, BACKLOG_REPORTE.md). */
 function assertTypeDePieceConnu(evidenceTypeCode: string): void {
   if (!EVIDENCE_TYPES_CONNUS.has(evidenceTypeCode)) {
-    throw new Error(`REQ-01 : type de pièce inconnu ou absent (« ${evidenceTypeCode} ») — une demande porte toujours un type de pièce reconnu.`);
+    throw refus('REQ-01', `type de pièce inconnu ou absent (« ${evidenceTypeCode} ») — une demande porte toujours un type de pièce reconnu.`);
   }
 }
 

@@ -19,6 +19,7 @@ import { assertMembre } from '@/lib/core/membre';
 import type { EtatCellule } from './etat-cellule';
 import { CHAMPS_LISIBLES, interpreterTitre } from '../workpapers/colonne';
 import { piecesDemandeesParLigne } from '../requests';
+import { refus } from '@/lib/core/refus';
 
 // L'ATELIER DE TEST — LA GRILLE (mandat du jour, W1).
 //
@@ -152,7 +153,7 @@ export async function ajouterColonneGrille(engagementId: string, titre: string, 
   const existe = await q01<{ id: string }>(
     `select id from test_column where engagement_id = $1 and procedure_code = 'REV-SUBST' and field_code = $2`,
     [engagementId, champ.champ]);
-  if (existe) throw new Error(`COL-01 : « ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
+  if (existe) throw refus('COL-01', `« ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
   /* LA VÉRIFICATION CI-DESSUS N'EMPÊCHE PAS LA COURSE (revue hostile du
      2026-09-07, convergée par deux réviseurs indépendants) : deux ajouts
      simultanés de la même donnée peuvent tous deux passer le SELECT avant
@@ -173,7 +174,7 @@ export async function ajouterColonneGrille(engagementId: string, titre: string, 
       [engagementId, champ.docType, champ.champ, champ.libelle, 'présente dans la pièce reçue', userId]);
   } catch (e) {
     const code = (e as { code?: string } | null)?.code;
-    if (code === '23505') throw new Error(`COL-01 : « ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
+    if (code === '23505') throw refus('COL-01', `« ${champ.libelle} » est déjà une colonne de la grille — pas de doublon.`);
     throw e;
   }
   await logEvent({
@@ -750,10 +751,10 @@ export async function disposerCellule(engagementId: string, cellId: string, user
   if (!c) throw new Error('Cellule inconnue sur ce dossier.');
   await refuserSiScelle(c.engagement_id);
   if (!motif || !motif.trim()) {
-    throw new Error(`TEST-03 : une disposition porte un motif écrit — la cellule « ${c.column_code} » reste ${c.state}.`);
+    throw refus('TEST-03', `une disposition porte un motif écrit — la cellule « ${c.column_code} » reste ${c.state}.`);
   }
   if (c.state === 'non_recevable') {
-    throw new Error(`TEST-02 : l’attribut d’identité « ${c.column_code} » diverge — cela ne se dispose pas, la preuve n’est pas recevable ; obtenez la bonne pièce.`);
+    throw refus('TEST-02', `l’attribut d’identité « ${c.column_code} » diverge — cela ne se dispose pas, la preuve n’est pas recevable ; obtenez la bonne pièce.`);
   }
   if (c.state === 'conforme') throw new Error(`La cellule « ${c.column_code} » est conforme : rien à disposer.`);
   const ctx = await engagementCtx(c.engagement_id);
@@ -783,10 +784,10 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
   await assertMembre(engagementId, userId, 'conclure une ligne');
   await refuserSiScelle(engagementId);
   const grille = await grilleDuDossier(engagementId);
-  if (!grille) throw new Error('TEST-04 : la ligne ne se conclut pas — aucune grille calculée (lancez le calcul de la grille).');
+  if (!grille) throw refus('TEST-04', 'la ligne ne se conclut pas — aucune grille calculée (lancez le calcul de la grille).');
   const { cellules } = await cellulesDuDossier(engagementId);
   const mes = cellules[sampleItemId] ?? [];
-  if (mes.length === 0) throw new Error('TEST-04 : la ligne ne se conclut pas — aucune cellule calculée (lancez le calcul de la grille).');
+  if (mes.length === 0) throw refus('TEST-04', 'la ligne ne se conclut pas — aucune cellule calculée (lancez le calcul de la grille).');
   /* P1-06 (AUD-10) — CORRECTIF DE REVUE HOSTILE (voix 2, CONFIRMÉ HAUTE, motif NOTIF-01/règle
      37) : une cellule ORPHELINE (`c.orpheline` non nul — sa colonne ne s'applique plus au
      tirage courant, 0178) n'appartient plus au calcul ACTUEL de cette ligne. Elle reste lisible
@@ -797,11 +798,11 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
   const vivantes = mes.filter((c) => !c.orpheline);
   const identite = vivantes.find((c) => c.etat === 'non_recevable');
   if (identite) {
-    throw new Error(`TEST-02 : la ligne ne se conclut pas — l’attribut d’identité « ${identite.libelle} » diverge (grand livre « ${identite.attendu ?? ''} », pièce « ${identite.trouve ?? ''} ») : la preuve n’est pas recevable.`);
+    throw refus('TEST-02', `la ligne ne se conclut pas — l’attribut d’identité « ${identite.libelle} » diverge (grand livre « ${identite.attendu ?? ''} », pièce « ${identite.trouve ?? ''} ») : la preuve n’est pas recevable.`);
   }
   const ouverte = vivantes.find((c) => c.etat !== 'conforme' && !c.disposition);
   if (ouverte) {
-    throw new Error(`TEST-04 : la ligne ne se conclut pas — la cellule « ${ouverte.libelle} » est ${ouverte.etat.replace('_', ' ')}${ouverte.delta ? ` (delta ${ouverte.delta})` : ''} sans disposition écrite${ouverte.dispositionPerimee ? ' (la disposition existante portait sur une autre valeur)' : ''}.`);
+    throw refus('TEST-04', `la ligne ne se conclut pas — la cellule « ${ouverte.libelle} » est ${ouverte.etat.replace('_', ' ')}${ouverte.delta ? ` (delta ${ouverte.delta})` : ''} sans disposition écrite${ouverte.dispositionPerimee ? ' (la disposition existante portait sur une autre valeur)' : ''}.`);
   }
   /* REQ-02 : une colonne AJOUTÉE ne se conclut pas sans qu'on ait au moins
      DEMANDÉ la pièce qui la fonde (piecesDemandeesParLigne, étape 5) — même
@@ -822,7 +823,7 @@ export async function conclureLigne(engagementId: string, sampleItemId: string, 
       const demandees = await piecesDemandeesParLigne(engagementId, sampleRow.sample_id, type);
       if (!demandees.has(sampleItemId)) {
         const libelles = ajoutees.filter((c) => c.document === type).map((c) => c.libelle).join(', ');
-        throw new Error(`REQ-02 : la ligne ne se conclut pas — la pièce « ${type} » n’a jamais été demandée pour la colonne ajoutée « ${libelles} » (utilisez le bouton Demander).`);
+        throw refus('REQ-02', `la ligne ne se conclut pas — la pièce « ${type} » n’a jamais été demandée pour la colonne ajoutée « ${libelles} » (utilisez le bouton Demander).`);
       }
     }
   }

@@ -9,6 +9,7 @@ import type { WpSection } from './draft';
 import { currentBasedOnHashRevenue } from './draft';
 import { assertMembre } from '@/lib/core/membre';
 import { sectionPourNote } from '../sections';
+import { refus } from '@/lib/core/refus';
 
 // S7 lifecycle: visible-flag edits with mandatory justification (idea #14), review notes
 // (human-only, idea #17), dated immutable sign-offs; re-draft after sign-off ⇒ new version
@@ -54,7 +55,7 @@ export async function editSection(workpaperId: string, userId: string, sectionKe
      'in_review', pas seulement 'signed'), une édition de section exige une nouvelle version.
      Éditer un papier déjà partiellement revu changerait ce qu'un visa a couvert sans le dire. */
   const dejaVise = await q1<{ n: string }>(`select count(*) n from signoff where workpaper_id = $1`, [workpaperId]);
-  if (Number(dejaVise.n) > 0) throw new Error('VISA-04 : signed workpaper — redraft to a new version first');
+  if (Number(dejaVise.n) > 0) throw refus('VISA-04', 'signed workpaper — redraft to a new version first');
   const ctx = await engagementCtx(wp.engagement_id);
   const sections = wp.sections.map((s) => (s.key === sectionKey ? { ...s, body: newBody } : s));
   const before = wp.sections.find((s) => s.key === sectionKey)?.body ?? '';
@@ -164,13 +165,13 @@ export async function addReviewNote(
      jamais d'ancre, vérifié juste au-dessus). */
   let ancre = opts.ancre ?? null;
   if (portee === 'audit' && !ancre) {
-    if (!workpaperId) throw new Error('NOTE-01 : une note d’audit se pose sur une ancre ou sur un papier de travail — jamais sans aucun des deux');
+    if (!workpaperId) throw refus('NOTE-01', 'une note d’audit se pose sur une ancre ou sur un papier de travail — jamais sans aucun des deux');
     /* Scopé par engagementId, même argument que sectionPourNote (revue hostile, voix 2,
        finding HIGH) : workpaperId peut venir d'un champ de formulaire soumis par le
        navigateur — jamais fait confiance sans vérifier qu'il appartient à ce dossier. */
     const wp = await q01<{ code: string }>(
       `select code from workpaper where id = $1 and engagement_id = $2`, [workpaperId, engagementId]);
-    if (!wp) throw new Error('ETANCH : le papier désigné n’appartient pas à ce dossier');
+    if (!wp) throw refus('ETANCH', 'le papier désigné n’appartient pas à ce dossier');
     ancre = { kind: 'papier', ref: workpaperId, field: null, label: wp.code };
   }
   const sectionId = portee === 'audit' ? await sectionPourNote(engagementId, workpaperId, ancre) : null;
@@ -400,7 +401,7 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
   /* VISA-03 (migration 0176) : côté service, avec un message nommé, AVANT le
      déclencheur SQL qui porte le même refus en dernier rang. */
   if (role === 'reviewer' && member.eng_role !== 'manager' && member.eng_role !== 'partner') {
-    throw new Error('VISA-03 : reviewer sign-off requires manager or partner role');
+    throw refus('VISA-03', 'reviewer sign-off requires manager or partner role');
   }
   const existing = await q<{ sign_role: string; user_id: string }>(
     `select sign_role, user_id from signoff where workpaper_id = $1`,
@@ -410,10 +411,10 @@ export async function signWorkpaper(workpaperId: string, userId: string, role: (
      voisins (VISA-02/03/04) — `app/refus.ts::separerCode` lit la forme « CODE : phrase » pour
      mettre le code en petit à l'écran ; sans le préfixe, ce refus y échappait (revue hostile,
      divergence entre l'en-tête de 0176 et le code réel). */
-  if (existing.some((s) => s.sign_role === role)) throw new Error(`VISA-01 : ${role} already signed this version`);
+  if (existing.some((s) => s.sign_role === role)) throw refus('VISA-01', `${role} already signed this version`);
   /* VISA-02 (migration 0176) : la même personne ne vise pas deux rôles sur le même papier. */
   if (existing.some((s) => s.user_id === userId)) {
-    throw new Error('VISA-02 : the same person cannot sign two roles on this workpaper version');
+    throw refus('VISA-02', 'the same person cannot sign two roles on this workpaper version');
   }
   if (role === 'reviewer' && existing.every((s) => s.sign_role !== 'preparer_validator')) {
     throw new Error('reviewer signs after the preparer/validator');

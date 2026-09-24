@@ -2749,3 +2749,36 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   vraisemblablement le même écran vide. À reprendre : la prochaine investigation #418 devrait
   partir de cette reproduction précise (recette exacte dans `docs/CHASSE.md`, F19) plutôt que de
   recommencer par un balayage général.
+
+- **R151 — REPORTÉ, gravité basse, disclosed par construction (règle 19) à P1-09 (AUD-14).**
+  Les 45 codes de `REGISTRE_REFUS` (`app/src/lib/core/refus.ts`) pointent chacun une entrée
+  `refus.<CODE>` du catalogue i18n (`app/src/lib/i18n/catalogue.ts`) qui est un **PASSE-PLAT**
+  (`{en: '{detail}', fr: '{detail}'}`) : le détail reste dans la langue où le service l'a écrit
+  (français pour la plupart, anglais pour VISA-01..04/NOTE-01) quelle que soit la locale de
+  session — `executer()` (`app/src/app/refus.ts`) affiche encore `e.message` brut pour un
+  `Refus`, pas `t(e.cle, e.vars)`. Une vraie traduction bilingue se pose CODE PAR CODE, le jour
+  où un besoin réel se présente sur CE code précis : remplacer son entrée du catalogue par un
+  texte propre à chaque locale, puis faire lire `e.cle`/`e.vars` à `executer()` pour ce chemin
+  (les deux champs existent déjà sur `Refus`, non consommés).
+
+- **R152 — REPORTÉ, gravité MOYENNE (UX potentielle, pas une fuite de sécurité), disclosed par
+  construction (règle 19) à P1-09 (AUD-14).** La migration de P1-09 n'a touché que les
+  `throw new Error('CODE : phrase')` DÉJÀ codés (66 sites, migrés vers `Refus`) — mesuré par
+  balayage direct (node, pas un `grep` de surface, règle 15) : **environ 304** `throw new
+  Error('phrase sans code')` restent dans `src/lib/services` et `src/lib/core` (hors tests).
+  `executer()` les traite comme AVANT cette tranche (`erreur = e.message`, montré tel quel) SAUF
+  s'ils portent la signature d'une panne technique reconnue (`estUnePanneTechnique`,
+  `app/src/app/refus.ts` : pas une `Error` exacte — `TypeError` etc. inclus —, ou un `.code`
+  SQLSTATE 5 caractères façon pilote PostgreSQL) — un choix DÉLIBÉRÉ pour ne PAS régresser ces
+  304 messages métier existants en les faisant tomber dans le message générique « une panne est
+  survenue » (voir l'en-tête de `estUnePanneTechnique`). **Le gap connu et non fermé** : un
+  message comme `q1()` → `` `expected a row: ${sql.slice(0, 120)}` `` (`lib/db/client.ts:306`)
+  est un `new Error` PLAIN (pas de `.code`, classe `Error` exacte) qui fuit jusqu'à 120
+  caractères de SQL brut si jamais il atteint `executer()` sans être intercepté avant — exactement
+  le défaut que D.6 interdit, mais PAS nouvellement introduit par cette tranche (le même
+  comportement existait avant P1-09). À reprendre : un audit séparé des ~304 sites, classant
+  chacun en (a) un vrai refus métier méritant un code neuf dans `REGISTRE_REFUS`, ou (b) un
+  signal technique à router vers `estUnePanneTechnique` (par exemple, en élargissant sa détection
+  aux messages produits par `q1()`/`tx()` elles-mêmes plutôt qu'aux seuls appelants) — hors
+  périmètre mécanique de P1-09 (« les 52 codes » nommés par le mandat, devenus 45 après
+  correction de la mesure d'origine).

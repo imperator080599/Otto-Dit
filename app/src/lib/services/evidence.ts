@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { saveBlob } from '@/lib/core/storage';
 import { engagementCtx } from './imports';
 import { assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // S4 evidence engine: intake with provenance; sha256 dedupe FLAGS duplicates (a duplicate
 // invoice is audit information, never merged); quarantine is a structural/manual flag
@@ -85,7 +86,7 @@ export async function attachEvidenceToItem(evidenceId: string, requestItemId: st
   const engRattache = await assertMembreDe('evidence', evidenceId, userId, 'rattacher une pièce à un élément de demande');
   const engElement = await assertMembreDe('request_item', requestItemId, userId, 'rattacher une pièce à un élément de demande');
   if (engRattache !== engElement) {
-    throw new Error('ETANCH-06 : rattacher une pièce à un élément de demande — la pièce et l’élément ne sont pas du même dossier');
+    throw refus('ETANCH-06', 'rattacher une pièce à un élément de demande — la pièce et l’élément ne sont pas du même dossier');
   }
   const ev = await q1<{ id: string; engagement_id: string; filename: string; quarantined: boolean }>(
     `select id, engagement_id, filename, quarantined from evidence where id = $1`,

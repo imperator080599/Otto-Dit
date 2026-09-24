@@ -5,6 +5,7 @@ import { engagementCtx } from './imports';
 import { APPLICATEURS } from './propositions/applicateurs';
 import type { ObjectType } from './propositions/types';
 import { NIVEAU_ACTUEL } from './notifications';
+import { refus } from '@/lib/core/refus';
 
 // P1-01 (AUD-01, docs/MANDATS/2026-09-20_plan_maitre_phase2.md §426-433). LE MÉCANISME
 // GÉNÉRIQUE : « un seul motif pour toute proposition » (P3-01) commence ici, par la table et
@@ -265,7 +266,7 @@ export async function modifier(propositionId: string, userId: string, valeurRete
  */
 export async function refuser(propositionId: string, userId: string, motif: string): Promise<void> {
   if (!motif?.trim()) {
-    throw new Error('PROP-02R : refuser une proposition sans motif écrit ne se relit pas — motif requis');
+    throw refus('PROP-02R', 'refuser une proposition sans motif écrit ne se relit pas — motif requis');
   }
   const engagementId = await assertMembreDe('proposition', propositionId, userId, 'refuser une proposition');
   const p = await charger(propositionId);

@@ -5,6 +5,7 @@ import { ingestEvidence } from './evidence';
 import { fsliAccounts } from './fsli';
 import { derniereDemandeDetailDeCompte } from './requests';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // Plan d'autonomie, Partie B, étapes 2 ET 3 : LE RAPPROCHEMENT, puis LA
 // POPULATION dérivée de ce rapprochement. Même mécanique que
@@ -168,12 +169,12 @@ export async function rapprocherDetailDeCompte(importId: string, userId: string,
   const imp = await q1<{ ecart_cents: string; rapprochee: boolean }>(
     `select ecart_cents::text, rapprochee from account_detail_import where id = $1`, [importId]);
   if (imp.rapprochee) {
-    throw new Error('POP-03 : ce rapprochement est déjà conclu — une décision se revoit, elle ne s\'écrase pas.');
+    throw refus('POP-03', 'ce rapprochement est déjà conclu — une décision se revoit, elle ne s\'écrase pas.');
   }
   const ecart = Number(imp.ecart_cents);
   const motif = explication?.trim() || null; // '' (formulaire sans écart) ET undefined valent NULL — jamais '' stocké
   if (ecart !== 0 && (!motif || motif.length < 10)) {
-    throw new Error('POP-02 : une explication d\'écart se rédige — « RAS » n\'explique rien à qui relira le dossier.');
+    throw refus('POP-02', 'une explication d\'écart se rédige — « RAS » n\'explique rien à qui relira le dossier.');
   }
   const ctx = await engagementCtx(engagementId);
   await q(

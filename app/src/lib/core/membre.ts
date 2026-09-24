@@ -1,4 +1,5 @@
 import { q01 } from '@/lib/db/client';
+import { refus } from '@/lib/core/refus';
 
 // L'ÉTANCHÉITÉ ENTRE CABINETS, TENUE DANS LES SERVICES (mandat du jour n°3,
 // §1.1 — trouvée par `core/etancheite.test.ts`, qui montrait ONZE gestes sur
@@ -63,10 +64,10 @@ export async function assertMembre(engagementId: string, userId: string | null |
   if (userId === null || userId === undefined) return;
   const s = await situation(engagementId, userId);
   if (!s.cabinetDuDossier || s.cabinetDeLaPersonne !== s.cabinetDuDossier) {
-    throw new Error(`ETANCH-01 : ${geste} — ce dossier n’est pas de ce cabinet`);
+    throw refus('ETANCH-01', `${geste} — ce dossier n’est pas de ce cabinet`);
   }
   if (s.equipe > 0 && s.mien === 0) {
-    throw new Error(`ETANCH-03 : ${geste} — cette personne n’est pas de l’équipe de ce dossier`);
+    throw refus('ETANCH-03', `${geste} — cette personne n’est pas de l’équipe de ce dossier`);
   }
 }
 
@@ -75,7 +76,7 @@ export async function assertDestinataire(engagementId: string, userId: string | 
   if (userId === null || userId === undefined) return;
   const s = await situation(engagementId, userId);
   if (!s.cabinetDuDossier || s.cabinetDeLaPersonne !== s.cabinetDuDossier || (s.equipe > 0 && s.mien === 0)) {
-    throw new Error(`ETANCH-02 : ${geste} — on ne confie pas un travail à quelqu’un qui n’est pas sur la mission`);
+    throw refus('ETANCH-02', `${geste} — on ne confie pas un travail à quelqu’un qui n’est pas sur la mission`);
   }
 }
 
@@ -168,7 +169,7 @@ const RESOLUTION: Record<ObjetFils, string> = {
 export async function engagementDe(kind: ObjetFils, id: string): Promise<string | null> {
   const sql = RESOLUTION[kind];
   if (!sql) {
-    throw new Error(`ETANCH-05 : type d\u2019objet « ${kind} » inconnu du catalogue de résolution `
+    throw refus('ETANCH-05', `type d\u2019objet « ${kind} » inconnu du catalogue de résolution `
       + `(app/src/lib/core/membre.ts). Ajoutez-le AVEC sa requête, ou l\u2019écriture n\u2019est gardée par rien.`);
   }
   if (!id) return null;
@@ -192,7 +193,7 @@ export async function assertMembreDe(
 ): Promise<string> {
   const engagementId = await engagementDe(kind, id);
   if (!engagementId) {
-    throw new Error(`ETANCH-04 : ${geste} — cet objet n\u2019appartient à aucun dossier de ce cabinet`);
+    throw refus('ETANCH-04', `${geste} — cet objet n\u2019appartient à aucun dossier de ce cabinet`);
   }
   if (opts.equipe === false) await assertCabinet(engagementId, userId, geste);
   else await assertMembre(engagementId, userId, geste);
@@ -204,7 +205,7 @@ export async function assertCabinet(engagementId: string, userId: string | null 
   if (userId === null || userId === undefined) return;
   const s = await situation(engagementId, userId);
   if (!s.cabinetDuDossier || s.cabinetDeLaPersonne !== s.cabinetDuDossier) {
-    throw new Error(`ETANCH-01 : ${geste} — ce dossier n\u2019est pas de ce cabinet`);
+    throw refus('ETANCH-01', `${geste} — ce dossier n\u2019est pas de ce cabinet`);
   }
 }
 
@@ -225,6 +226,6 @@ export async function assertCabinetDuLocataire(tenantId: string, userId: string 
   if (userId === null || userId === undefined) return;
   const r = await q01<{ t: string | null }>(`select tenant_id::text t from app_user where id = $1`, [userId]);
   if (!tenantId || r?.t !== tenantId) {
-    throw new Error(`ETANCH-07 : ${geste} — cette personne n\u2019est pas de ce cabinet`);
+    throw refus('ETANCH-07', `${geste} — cette personne n\u2019est pas de ce cabinet`);
   }
 }

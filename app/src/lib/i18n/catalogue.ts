@@ -2011,6 +2011,67 @@ export const LIBELLES = {
   'gov.aucunJalonEnRetard': { en: 'no milestone overdue', fr: 'aucun jalon en retard' },
   'gov.prochainJalon': { en: 'Next milestone', fr: 'Prochain jalon' },
   'gov.aucunJalonAVenir': { en: 'none scheduled', fr: 'aucun à venir' },
+
+  // ── Refus (P1-09, AUD-14) ────────────────────────────────────────────────
+  // UN PASSE-PLAT, PAS ENCORE UNE TRADUCTION (règle 19 : où ce fichier cesse
+  // de regarder) : `{detail}` est la phrase française d'origine, préservée
+  // mot pour mot au moment de la migration mécanique (`refus.ts`) — elle
+  // s'affiche donc identique en 'en' et en 'fr' tant qu'aucune traduction
+  // anglaise réelle n'a été écrite pour ce code précis (R151,
+  // docs/BACKLOG_REPORTE.md). Un jour de bilinguisme réel sur UN code donné
+  // remplace SA seule entrée ici, jamais les 42 d'un coup.
+  'refus.ETANCH': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-01': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-02': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-03': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-04': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-05': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-06': { en: '{detail}', fr: '{detail}' },
+  'refus.ETANCH-07': { en: '{detail}', fr: '{detail}' },
+  'refus.CTRL-01': { en: '{detail}', fr: '{detail}' },
+  'refus.CTRL-02': { en: '{detail}', fr: '{detail}' },
+  'refus.CTRL-03': { en: '{detail}', fr: '{detail}' },
+  'refus.CTRL-04': { en: '{detail}', fr: '{detail}' },
+  'refus.CTRL-06': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-01': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-02': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-03': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-04': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-05': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-06': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-07': { en: '{detail}', fr: '{detail}' },
+  'refus.PROG-08': { en: '{detail}', fr: '{detail}' },
+  'refus.COL-01': { en: '{detail}', fr: '{detail}' },
+  'refus.TEST-02': { en: '{detail}', fr: '{detail}' },
+  'refus.TEST-03': { en: '{detail}', fr: '{detail}' },
+  'refus.TEST-04': { en: '{detail}', fr: '{detail}' },
+  'refus.TIRAGE-02': { en: '{detail}', fr: '{detail}' },
+  'refus.TIRAGE-03': { en: '{detail}', fr: '{detail}' },
+  'refus.TIRAGE-04': { en: '{detail}', fr: '{detail}' },
+  'refus.POP-02': { en: '{detail}', fr: '{detail}' },
+  'refus.POP-03': { en: '{detail}', fr: '{detail}' },
+  'refus.VISA-01': { en: '{detail}', fr: '{detail}' },
+  'refus.VISA-02': { en: '{detail}', fr: '{detail}' },
+  'refus.VISA-03': { en: '{detail}', fr: '{detail}' },
+  'refus.VISA-04': { en: '{detail}', fr: '{detail}' },
+  'refus.NOTE-01': { en: '{detail}', fr: '{detail}' },
+  'refus.REQ-01': { en: '{detail}', fr: '{detail}' },
+  'refus.REQ-02': { en: '{detail}', fr: '{detail}' },
+  'refus.PROP-02': { en: '{detail}', fr: '{detail}' },
+  'refus.PROP-02R': { en: '{detail}', fr: '{detail}' },
+  'refus.PROP-03': { en: '{detail}', fr: '{detail}' },
+  'refus.PROP-03B': { en: '{detail}', fr: '{detail}' },
+  'refus.REPLI-01': { en: '{detail}', fr: '{detail}' },
+  'refus.REPLI-04': { en: '{detail}', fr: '{detail}' },
+  'refus.ANA-01': { en: '{detail}', fr: '{detail}' },
+  'refus.ANA-02': { en: '{detail}', fr: '{detail}' },
+  // Générique : une PANNE (ni un code métier ni un refus catalogué) — le
+  // message technique reste hors écran (D.6) ; `ref` identifie la ligne
+  // `server_error` pour un rejeu par le fondateur.
+  'refus.panne': {
+    en: 'Something went wrong on our side — nothing was recorded. Reference: {ref}',
+    fr: 'Une panne technique est survenue — rien n’a été enregistré. Référence : {ref}',
+  },
 } satisfies Record<string, Entree>;
 
 export type CleLibelle = keyof typeof LIBELLES;

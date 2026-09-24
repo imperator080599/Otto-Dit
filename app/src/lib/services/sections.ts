@@ -3,6 +3,7 @@ import { logEvent } from '@/lib/core/events';
 import { postesRetenus } from './rail';
 import { assertMembre, assertDestinataire } from '@/lib/core/membre';
 import type { Ancre } from './notes/ancres';
+import { refus } from '@/lib/core/refus';
 
 // LES SECTIONS DU DOSSIER — détenir, répondre de, suivre, avoir ouvert
 // (revue utilisateur n°2, §4 et §5).
@@ -185,7 +186,7 @@ export async function sectionPourNote(engagementId: string, workpaperId: string 
        note créées côté A. Un miss est un REFUS, jamais une résolution silencieuse. */
     const wp = await q01<{ code: string }>(
       `select code from workpaper where id = $1 and engagement_id = $2`, [workpaperId, engagementId]);
-    if (!wp) throw new Error('ETANCH : le papier désigné n’appartient pas à ce dossier');
+    if (!wp) throw refus('ETANCH', 'le papier désigné n’appartient pas à ce dossier');
     return cleDeSection(engagementId, 'papier', workpaperId, wp.code);
   }
   if (ancre?.kind === 'compte') {

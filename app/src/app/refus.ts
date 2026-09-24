@@ -4,6 +4,9 @@ import { conduire } from '@/lib/core/sonde';
 import { getSessionUser } from '@/lib/core/auth';
 import { withTenant } from '@/lib/db/tenant';
 import { estUnSignalDeControleDeFlux } from '@/lib/db/client';
+import { Refus } from '@/lib/core/refus';
+import { ecrireErreur, empreinte } from '@/lib/erreurs-serveur';
+import { tr } from '@/lib/i18n';
 
 // UN REFUS S'AFFICHE — IL NE TOMBE PAS EN 500.
 //
@@ -37,6 +40,40 @@ export const estUnSignalDeNext = estUnSignalDeControleDeFlux;
 
 /** Le paramètre d'URL qui porte le refus — lu par BandeauRefus et par les harnais. */
 const CLE_REFUS = 'erreur';
+
+/* P1-09 (AUD-14) — LA FRONTIÈRE PANNE/REFUS SUR LES ~370 `throw new Error` NON
+ * MIGRÉS VERS `Refus` (`grep -c` mesuré à la migration : 304 dans lib/services+core
+ * hors tests, 66 codés migrés vers `Refus` dans cette même tranche). CE FICHIER
+ * NE PEUT PAS DISTINGUER À COUP SÛR « une phrase française écrite exprès » d'
+ * « un message technique » par la SEULE forme d'un `Error` — les deux sont
+ * `instanceof Error`. La démonstration que ce n'est PAS un choix arbitraire :
+ * `grille.ts` traite déjà `(e as {code?:string})?.code === '23505'` comme LE
+ * signal d'une violation de contrainte PostgreSQL (SQLSTATE, 5 caractères) —
+ * c'est le même signal qu'on généralise ici, pas un nouveau.
+ *
+ * DONC : un rejet EST une panne (message technique jamais montré, ligne
+ * `server_error`, référence à l'écran) s'il n'est PAS une `Error` (une chaîne,
+ * `undefined`, un objet jeté à la main), OU si sa CLASSE n'est pas `Error`
+ * exactement (un `TypeError`/`RangeError` est un vrai bogue — son message
+ * parle du moteur JS, jamais de l'audit), OU s'il porte un `.code` au format
+ * SQLSTATE (l'erreur vient du pilote PostgreSQL, jamais du service).
+ *
+ * CE QUE CETTE FRONTIÈRE NE FAIT PAS (règle 19) : un `new Error('phrase')`
+ * SANS ces deux signaux passe pour un refus « historique » — `erreur =
+ * e.message`, EXACTEMENT le comportement d'avant P1-09 — même si cette phrase
+ * fuit un détail technique (`q1()` : `expected a row: <SQL tronqué>` en est un
+ * exemple connu, non corrigé ici). Traiter TOUT non-`Refus` comme panne
+ * générique CASSERAIT les ~304 messages métier non codés qui s'affichaient
+ * correctement avant cette tranche — un régression bien pire que le gap
+ * disclosed. Cet audit-là (coder ou filtrer les 304) est un chantier séparé,
+ * consigné R152 (docs/BACKLOG_REPORTE.md), pas fait à moitié en silence ici. */
+export function estUnePanneTechnique(e: unknown): boolean {
+  if (!(e instanceof Error)) return true;
+  if (e.constructor !== Error) return true;
+  const code = (e as { code?: unknown }).code;
+  if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return true;
+  return false;
+}
 
 /* D.6 point 1 (mandat, épreuve de l'épure) : « Aucun identifiant technique en
    première position d'un message vu par un auditeur. Le refus dit la chose en
@@ -78,8 +115,46 @@ export async function executer(chemin: string, fn: () => Promise<unknown>): Prom
     /* On attrape TOUT : ces services lèvent des `Error` nues autant que des
        classes dédiées, et n'attraper « que les bonnes » revient à laisser les
        autres tomber en 500 — c'est-à-dire à recréer le défaut pour les cas
-       qu'on n'a pas prévus, qui sont précisément ceux qui comptent. */
-    erreur = e instanceof Error ? e.message : String(e);
+       qu'on n'a pas prévus, qui sont précisément ceux qui comptent.
+
+       P1-09 (AUD-14) : depuis `Refus` (`lib/core/refus.ts`), on distingue
+       désormais un REFUS MÉTIER (l'utilisateur doit changer quelque chose)
+       d'une PANNE (SQL, réseau, bogue). Un `Refus` garde EXACTEMENT le format
+       d'avant — `e.message` est déjà « CODE : détail » (le constructeur de
+       `Refus` le construit ainsi) — donc `separerCode` et `BandeauRefus`
+       n'ont besoin d'AUCUN changement pour ce chemin ; les 9 tests de
+       `refus.test.ts`, rejoués tels quels, le confirment. Une PANNE, elle,
+       n'affiche JAMAIS le message technique brut à l'écran (D.6) : une ligne
+       `server_error` garde la trace complète (mêmes `ecrireErreur`/
+       `empreinte` que le chemin de rendu Next, `lib/erreurs-serveur.ts`),
+       l'écran ne porte qu'une référence (`refus.panne`, catalogue i18n) — le
+       message brut ne s'y ajoute QUE sous `NODE_ENV==='development'`, jamais
+       en production, jamais en test.
+
+       CE QUE CE CHEMIN NE FAIT PAS ENCORE (règle 19) : `Refus.cle`/
+       `Refus.vars` existent mais ne sont pas encore consommés ici — tant que
+       le catalogue reste un passe-plat (`{detail}` identique en 'en'/'fr'),
+       `e.message` et `t(e.cle, e.vars)` rendraient la même chaîne ; le jour
+       où UN code précis porte une vraie traduction anglaise, ce chemin devra
+       lire `e.cle`/`e.vars` au lieu de `e.message` pour CE code-là (R151,
+       docs/BACKLOG_REPORTE.md). */
+    if (e instanceof Refus) {
+      erreur = e.message;
+    } else if (estUnePanneTechnique(e)) {
+      const message = e instanceof Error ? e.message : String(e);
+      const ref = `m-${empreinte(message)}`;
+      await ecrireErreur(e, { path: chemin, method: 'ACTION' }, { routePath: chemin });
+      const t = await tr();
+      let phrase = t('refus.panne', { ref });
+      if (process.env.NODE_ENV === 'development') phrase += ` [dev] ${message}`;
+      erreur = `PANNE : ${phrase}`;
+    } else {
+      // Un `new Error('phrase')` NI `Refus` NI technique (voir `estUnePanneTechnique`
+      // ci-dessus) — comportement inchangé depuis avant P1-09 : la phrase s'affiche
+      // telle quelle, `separerCode` n'y trouve pas de code (règle 17, cas connu déjà
+      // couvert par refus.test.ts : « un message SANS code en tête »).
+      erreur = e instanceof Error ? e.message : String(e);
+    }
   }
   revalidatePath(chemin);
   /* `redirect` lève, volontairement, et DOIT être hors du `try` : l'attraper

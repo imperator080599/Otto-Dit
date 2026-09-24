@@ -14,6 +14,7 @@ import { latestExtraction } from './extraction/ladder';
 import type { ExtractedField } from './extraction/fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 import { derniereDemandePopulationControle } from './requests';
+import { refus } from '@/lib/core/refus';
 
 // S8 — SOX OE cycle on the SAME engines (request, evidence, extraction, sampling,
 // exception/deviation, documentation) under the PCAOB/COSO pack. UI held to the four
@@ -472,7 +473,7 @@ export async function documenterProcedureTache(
      moi ». `assertMembreDe` tourne donc EN PREMIER, avant toute validation de valeur. */
   const engagementId = await assertMembreDe('control_task', taskId, userId, 'documenter une procédure de tâche');
   if (!PROCEDURES_DOCUMENTABLES.includes(procedure)) {
-    throw new Error(`CTRL-01 : « ${procedure} » n’est pas une procédure documentable ici — inspection, observation ou `
+    throw refus('CTRL-01', `« ${procedure} » n’est pas une procédure documentable ici — inspection, observation ou `
       + 'ré-exécution seulement (l’inquiry est posée automatiquement, une seule fois, à la création de la tâche).');
   }
   if (!notes.trim()) throw new Error('la procédure a besoin d’une note — ce qui a été inspecté, observé ou ré-exécuté, et ce qui en ressort');
@@ -588,7 +589,7 @@ export async function documenterFacteurDesign(
 ): Promise<void> {
   const engagementId = await assertMembreDe('control', controlId, userId, 'documenter un facteur de design');
   if (!FACTEURS_DESIGN.includes(factor)) {
-    throw new Error(`CTRL-02 : « ${factor} » n’est pas un facteur de design reconnu — réponse au risque, autorité et `
+    throw refus('CTRL-02', `« ${factor} » n’est pas un facteur de design reconnu — réponse au risque, autorité et `
       + 'compétence, fréquence et constance, ou seuil et critères d’investigation seulement.');
   }
   if (!conclusion.trim()) throw new Error('le facteur a besoin d’une conclusion écrite — le jugement de l’auditeur, pas seulement les faits bruts');
@@ -666,12 +667,12 @@ export async function declarerIuc(controlId: string, userId: string, utilisee: b
 export async function documenterIucPreuve(controlId: string, userId: string, volet: 'exactitude' | 'exhaustivite', conclusion: string, evidenceId?: string): Promise<void> {
   const engagementId = await assertMembreDe('control', controlId, userId, 'documenter une preuve IUC');
   if (volet !== 'exactitude' && volet !== 'exhaustivite') {
-    throw new Error(`CTRL-03 : « ${volet} » n’est pas un volet reconnu — exactitude ou exhaustivité seulement.`);
+    throw refus('CTRL-03', `« ${volet} » n’est pas un volet reconnu — exactitude ou exhaustivité seulement.`);
   }
   if (!conclusion.trim()) throw new Error('la preuve a besoin d’une conclusion écrite');
   const iuc = await q01<{ id: string; utilisee: boolean }>(`select id, utilisee from control_iuc where control_id = $1`, [controlId]);
-  if (!iuc) throw new Error('CTRL-03 : déclarez d’abord si une IUC est utilisée avant d’en documenter la preuve.');
-  if (!iuc.utilisee) throw new Error('CTRL-03 : ce contrôle est déclaré sans IUC utilisée — aucune preuve n’est requise ni attendue.');
+  if (!iuc) throw refus('CTRL-03', 'déclarez d’abord si une IUC est utilisée avant d’en documenter la preuve.');
+  if (!iuc.utilisee) throw refus('CTRL-03', 'ce contrôle est déclaré sans IUC utilisée — aucune preuve n’est requise ni attendue.');
   if (evidenceId) {
     const ev = await q1<{ engagement_id: string; quarantined: boolean }>(`select engagement_id, quarantined from evidence where id = $1`, [evidenceId]);
     if (ev.engagement_id !== engagementId) throw new Error('cette pièce n’appartient pas à ce dossier');
@@ -724,7 +725,7 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
     [controlId],
   );
   if (taches.length === 0) {
-    throw new Error('CTRL-01 : aucune tâche documentée — établissez la liste des tâches à partir du walkthrough avant de conclure le design et l’implémentation.');
+    throw refus('CTRL-01', 'aucune tâche documentée — établissez la liste des tâches à partir du walkthrough avant de conclure le design et l’implémentation.');
   }
   for (const t of taches) {
     const preuve = await q01(
@@ -741,21 +742,21 @@ export async function setDiStatus(controlId: string, userId: string, status: 'ef
   const facteurs = await q<{ factor: string }>(`select factor from control_design_factor where control_id = $1`, [controlId]);
   const facteursManquants = FACTEURS_DESIGN.filter((f) => !facteurs.some((x) => x.factor === f));
   if (facteursManquants.length > 0) {
-    throw new Error(`CTRL-02 : facteur(s) de design sans conclusion écrite — ${facteursManquants.join(', ')}.`);
+    throw refus('CTRL-02', `facteur(s) de design sans conclusion écrite — ${facteursManquants.join(', ')}.`);
   }
   const lienRisque = await q01(`select 1 from control_risk where control_id = $1`, [controlId]);
   if (!lienRisque) {
-    throw new Error('CTRL-02 : le facteur « réponse au risque » ne pointe aucun risque réel — un contrôle qui ne pointe aucun risque existant est un décor.');
+    throw refus('CTRL-02', 'le facteur « réponse au risque » ne pointe aucun risque réel — un contrôle qui ne pointe aucun risque existant est un décor.');
   }
   const iuc = await q01<{ id: string; utilisee: boolean }>(`select id, utilisee from control_iuc where control_id = $1`, [controlId]);
   if (!iuc) {
-    throw new Error('CTRL-03 : aucune déclaration IUC — indiquez si le contrôle utilise une information produite par l’entité avant de conclure.');
+    throw refus('CTRL-03', 'aucune déclaration IUC — indiquez si le contrôle utilise une information produite par l’entité avant de conclure.');
   }
   if (iuc.utilisee) {
     const preuves = await q<{ volet: string }>(`select volet from control_iuc_preuve where iuc_id = $1`, [iuc.id]);
     const voletsManquants = (['exactitude', 'exhaustivite'] as const).filter((v) => !preuves.some((p) => p.volet === v));
     if (voletsManquants.length > 0) {
-      throw new Error(`CTRL-03 : IUC déclarée utilisée sans ${voletsManquants.join(' ni ')} documentée(s).`);
+      throw refus('CTRL-03', `IUC déclarée utilisée sans ${voletsManquants.join(' ni ')} documentée(s).`);
     }
   }
   const ctx = await engagementCtx(c.engagement_id);
@@ -943,16 +944,16 @@ export async function rapprocherPopulationControle(controlId: string, userId: st
   const c = await q1<{ code: string }>(`select code from control where id = $1`, [controlId]);
   const motif = conclusion.trim();
   if (motif.length < 10) {
-    throw new Error('CTRL-04 : une conclusion de rapprochement se rédige — une case cochée sans texte ne dit rien à qui relit le dossier.');
+    throw refus('CTRL-04', 'une conclusion de rapprochement se rédige — une case cochée sans texte ne dit rien à qui relit le dossier.');
   }
   const rowCount = await q1<{ n: string }>(`select count(*)::text as n from control_instance where control_id = $1`, [controlId]);
   const n = Number(rowCount.n);
   if (n === 0) {
-    throw new Error(`CTRL-04 : ${c.code} n’a aucune population d’occurrences — dérivez-la ou importez le listing client avant de la rapprocher.`);
+    throw refus('CTRL-04', `${c.code} n’a aucune population d’occurrences — dérivez-la ou importez le listing client avant de la rapprocher.`);
   }
   const existant = await populationControleRapprochee(controlId);
   if (existant) {
-    throw new Error('CTRL-04 : ce rapprochement est déjà conclu, sur la même population — une décision se revoit, elle ne s’écrase pas.');
+    throw refus('CTRL-04', 'ce rapprochement est déjà conclu, sur la même population — une décision se revoit, elle ne s’écrase pas.');
   }
   const ctx = await engagementCtx(engagementId);
   const row = await q1<{ id: string }>(
@@ -1290,10 +1291,10 @@ export async function documenterProcedureOe(
       `select code, di_walkthrough_evidence_id from control where id = $1`, [controlId],
     );
     if (!evidenceId) {
-      throw new Error('CTRL-06 : l’inquiry de l’OE a besoin de sa PROPRE pièce — jamais l’enregistrement du D&I réutilisé sans preuve neuve.');
+      throw refus('CTRL-06', 'l’inquiry de l’OE a besoin de sa PROPRE pièce — jamais l’enregistrement du D&I réutilisé sans preuve neuve.');
     }
     if (c.di_walkthrough_evidence_id && evidenceId === c.di_walkthrough_evidence_id) {
-      throw new Error(`CTRL-06 : cette pièce est celle du walkthrough D&I de ${c.code} — l’inquiry de l’OE en a besoin d’une NEUVE, elle ne se réutilise jamais.`);
+      throw refus('CTRL-06', `cette pièce est celle du walkthrough D&I de ${c.code} — l’inquiry de l’OE en a besoin d’une NEUVE, elle ne se réutilise jamais.`);
     }
     /* « Sa propre date, postérieure » (mandat) se lit en JOUR CALENDAIRE, jamais en instant
        précis — cohérent avec la saisie elle-même (formulaire `<input type="date">`, `quand`
@@ -1368,10 +1369,10 @@ export async function runAttributeTesting(controlId: string, userId: string): Pr
      prouve rien sur les OCCURRENCES sélectionnées, seule la CONCLUSION du test le fait. */
   const oe = await proceduresOeDuControle(controlId);
   if (!oe.some((p) => p.procedure === 'inquiry')) {
-    throw new Error(`CTRL-06 : ${c.code} — aucune inquiry OE (neuve, distincte du D&I) n’est documentée — documentez-la avant de conclure le test d’attributs.`);
+    throw refus('CTRL-06', `${c.code} — aucune inquiry OE (neuve, distincte du D&I) n’est documentée — documentez-la avant de conclure le test d’attributs.`);
   }
   if (!oe.some((p) => p.procedure !== 'inquiry')) {
-    throw new Error(`CTRL-01 : ${c.code} — l’OE ne peut pas se conclure sur la seule inquiry — au moins une inspection, observation ou ré-exécution est requise (mandat §3.3, même règle qu'au D&I).`);
+    throw refus('CTRL-01', `${c.code} — l’OE ne peut pas se conclure sur la seule inquiry — au moins une inspection, observation ou ré-exécution est requise (mandat §3.3, même règle qu'au D&I).`);
   }
   const ctx = await engagementCtx(c.engagement_id);
   const test = await q1<{ id: string; sample_id: string }>(

@@ -40,6 +40,8 @@
     "dataset:balances-aux": "tsx scripts/dataset/balances-aux.ts",
     "langue": "tsx scripts/langue.ts",
     "langue:epreuve": "tsx scripts/langue-epreuve.ts",
+    "langue-refus": "tsx scripts/langue-refus.ts",
+    "langue-refus:figer": "tsx scripts/langue-refus.ts -- --figer",
     "lectures": "tsx scripts/lectures.ts",
     "lectures:epreuve": "tsx scripts/lectures-epreuve.ts",
     "lectures:figer": "tsx scripts/lectures.ts --figer",

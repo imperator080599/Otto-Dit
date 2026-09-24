@@ -10,6 +10,7 @@ import {
   justificatifs, executable,
 } from '@/lib/methodology/catalogue';
 import type { NatureDeTest, Catalogue } from '@/lib/methodology/types';
+import { refus } from '@/lib/core/refus';
 import type { WpSection } from './workpapers/draft';
 import { assertMembre } from '@/lib/core/membre';
 import { requiredProcedures, excludedProcedures, risksFor } from './risk';
@@ -91,16 +92,16 @@ export async function planifierProcedure(o: {
   const cat = await catalogueDeLaMission(o.engagementId);
   const p = procedureDuCatalogue(cat, o.code);
   if (!p) {
-    throw new Error(`PROG-01 : la procédure « ${o.code} » n’est pas au catalogue de la méthode — une procédure se planifie depuis la méthode, jamais depuis le code`);
+    throw refus('PROG-01', `la procédure « ${o.code} » n’est pas au catalogue de la méthode — une procédure se planifie depuis la méthode, jamais depuis le code`);
   }
   if (!proceduresDuCycle(cat, o.fsliCode).some((x) => x.code === o.code)) {
-    throw new Error(`PROG-02 : la méthode n’applique pas la procédure « ${o.code} » au poste « ${o.fsliCode} »`);
+    throw refus('PROG-02', `la méthode n’applique pas la procédure « ${o.code} » au poste « ${o.fsliCode} »`);
   }
   const poste = await q01<{ code: string }>(
     `select code from fsli where engagement_id = $1 and code = $2 and scoping in ('in_scope','in_scope_qualitative')`,
     [o.engagementId, o.fsliCode]);
   if (!poste) {
-    throw new Error(`PROG-03 : le poste « ${o.fsliCode} » n’est pas retenu au périmètre — on ne planifie pas de travaux sur un poste qu’on ne travaille pas`);
+    throw refus('PROG-03', `le poste « ${o.fsliCode} » n’est pas retenu au périmètre — on ne planifie pas de travaux sur un poste qu’on ne travaille pas`);
   }
   /* LOT 4, TRANCHE 1 : une ligne DÉPLANIFIÉE n'est plus « déjà existante » —
      replanifier la même procédure sur ce poste crée une ligne NEUVE,
@@ -168,7 +169,7 @@ export async function redigerPapierDeProcedure(o: {
   const pi = await q01<{ id: string; engagement_id: string; template_code: string; fsli_code: string | null; title: string }>(
     `select id::text, engagement_id::text, template_code, fsli_code, title from procedure_instance where id = $1`,
     [o.procedureId]);
-  if (!pi) throw new Error('PROG-01 : procédure inconnue');
+  if (!pi) throw refus('PROG-01', 'procédure inconnue');
   /* ETANCH-01 AVANT PROG-05, ET L'ORDRE EST LA RÈGLE (revue hostile n°9,
      constat 6). PROG-05 ne consulte que `engagement_member` : il distingue
      donc « procédure inconnue » de « pas membre du dossier », ce qui APPREND à
@@ -176,7 +177,7 @@ export async function redigerPapierDeProcedure(o: {
      divulgation qu'ETANCH-01-d'abord existe pour empêcher (ADR-069/ADR-082). */
   await assertMembre(pi.engagement_id, o.userId, 'rédiger le papier d’une procédure');
   if (!pi.fsli_code) {
-    throw new Error('PROG-04 : cette procédure n’est rattachée à aucun poste — le papier d’un contrôle se rédige depuis le contrôle');
+    throw refus('PROG-04', 'cette procédure n’est rattachée à aucun poste — le papier d’un contrôle se rédige depuis le contrôle');
   }
   /* QUI RÉDIGE (revue hostile n°7, constat 10). Le service prenait un
      identifiant de procédure et un identifiant de personne, sans jamais
@@ -196,11 +197,11 @@ export async function redigerPapierDeProcedure(o: {
      where engagement_id = $1 and user_id = $2 and exited_on is null`,
     [pi.engagement_id, o.userId]);
   if (Number(membre?.n ?? 0) === 0) {
-    throw new Error('PROG-05 : cette personne n’est pas membre du dossier — un papier de travail se rédige par l’équipe de la mission');
+    throw refus('PROG-05', 'cette personne n’est pas membre du dossier — un papier de travail se rédige par l’équipe de la mission');
   }
   const cat = await catalogueDeLaMission(pi.engagement_id);
   const p = procedureDuCatalogue(cat, pi.template_code);
-  if (!p) throw new Error(`PROG-01 : la procédure « ${pi.template_code} » n’est pas au catalogue de la méthode`);
+  if (!p) throw refus('PROG-01', `la procédure « ${pi.template_code} » n’est pas au catalogue de la méthode`);
   const ctx = await engagementCtx(pi.engagement_id);
   const fs = await frameworkSet(pi.engagement_id);
   const pack = primaryPack(fs as never);
@@ -246,7 +247,7 @@ export async function redigerPapierDeProcedure(o: {
     `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id
      where w.procedure_id = $1 and w.status <> 'outdated'`, [pi.id]);
   if (Number(dejaVise?.n ?? 0) > 0 && !o.motif?.trim()) {
-    throw new Error('PROG-06 : ce papier porte au moins un visa — une version nouvelle les périme, elle exige un motif écrit');
+    throw refus('PROG-06', 'ce papier porte au moins un visa — une version nouvelle les périme, elle exige un motif écrit');
   }
 
   const aRediger = fr ? '[à rédiger par le préparateur]' : '[to be written by the preparer]';
@@ -384,21 +385,21 @@ export async function deplanifierProcedure(o: {
     `select id::text, engagement_id::text, template_code, deplanned_at::text deplanned_at
      from procedure_instance where id = $1`,
     [o.procedureId]);
-  if (!pi) throw new Error('PROG-01 : procédure inconnue');
+  if (!pi) throw refus('PROG-01', 'procédure inconnue');
   await assertMembre(pi.engagement_id, o.userId, 'déplanifier une procédure');
   if (pi.deplanned_at) {
     const deja = await q01<{ qui: string; quand: string }>(
       `select u.name qui, p.deplanned_at::text quand from procedure_instance p
        join app_user u on u.id = p.deplanned_by where p.id = $1`,
       [o.procedureId]);
-    throw new Error(`PROG-08 : cette procédure est déjà déplanifiée, par ${deja?.qui ?? '(inconnu)'} `
+    throw refus('PROG-08', `cette procédure est déjà déplanifiée, par ${deja?.qui ?? '(inconnu)'} `
       + `le ${(deja?.quand ?? '').slice(0, 10)} — on ne récrit pas une décision en silence`);
   }
   const dejaVise = await q01<{ n: string }>(
     `select count(*)::text n from signoff s join workpaper w on w.id = s.workpaper_id
      where w.procedure_id = $1 and w.status <> 'outdated'`, [o.procedureId]);
   if (Number(dejaVise?.n ?? 0) > 0 && !o.motif?.trim()) {
-    throw new Error('PROG-07 : ce papier porte au moins un visa — le déplanifier exige un motif écrit');
+    throw refus('PROG-07', 'ce papier porte au moins un visa — le déplanifier exige un motif écrit');
   }
   await q(
     `update procedure_instance set deplanned_at = now(), deplanned_by = $2, deplanned_motif = $3 where id = $1`,

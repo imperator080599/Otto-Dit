@@ -40,6 +40,7 @@ export const CHAINE: Maillon[] = [
   { nom: 'semeur', commande: ['npm', 'run', 'semeur'] },
   { nom: 'langue', commande: ['npm', 'run', 'langue'] },
   { nom: 'langue:epreuve', commande: ['npm', 'run', 'langue:epreuve'] },
+  { nom: 'langue-refus', commande: ['npm', 'run', 'langue-refus'] },
   { nom: 'lectures', commande: ['npm', 'run', 'lectures'] },
   { nom: 'lectures:epreuve', commande: ['npm', 'run', 'lectures:epreuve'] },
   { nom: 'parcours', commande: ['npm', 'run', 'parcours'] },

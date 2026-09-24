@@ -2,6 +2,7 @@ import { q, q01, q1 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // L'INFORMATION PRODUITE PAR L'ENTITÉ — IPE (revue utilisateur n°2 §3.1).
 //
@@ -242,7 +243,7 @@ export async function utiliserRapport(
   const engPapier = await assertMembreDe('workpaper', workpaperId, userId, 'employer un rapport IPE dans un papier');
   const engRapport = await assertMembreDe('ipe_rapport', rapportId, userId, 'employer un rapport IPE dans un papier');
   if (engPapier !== engRapport) {
-    throw new Error('ETANCH-06 : employer un rapport IPE dans un papier — le papier et le rapport ne sont pas du même dossier');
+    throw refus('ETANCH-06', 'employer un rapport IPE dans un papier — le papier et le rapport ne sont pas du même dossier');
   }
   const wp = await q1<{ engagement_id: string; tenant_id: string; status: string }>(
     `select w.engagement_id::text, e.tenant_id::text, w.status

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { separerCode } from './refus';
+import { separerCode, estUnePanneTechnique } from './refus';
 
 // D.6 point 1 : le code technique ne doit jamais rester en première position
 // d'un message vu par un auditeur. `separerCode` est la seule chose qui le
@@ -64,5 +64,33 @@ describe('separerCode', () => {
     const { code, phrase } = separerCode(['a', 'b'] as any);
     expect(code).toBeNull();
     expect(phrase).toBe('a,b');
+  });
+});
+
+// P1-09 (AUD-14). `estUnePanneTechnique` décide, dans `executer()`, ce qui devient
+// une PANNE générique (message technique jamais montré) plutôt qu'un refus affiché
+// tel quel. RÈGLE 17 : éprouvée contre trois cas connus MAUVAIS (une vraie panne qui
+// doit être attrapée) ET contre le cas connu BON qui ne doit surtout PAS l'être — les
+// ~304 messages métier non codés qui s'affichaient déjà avant cette tranche (règle 19 :
+// le gap sur `q1()` « expected a row » est disclosed dans refus.ts, pas ici).
+describe('estUnePanneTechnique', () => {
+  it('cas connu mauvais : une erreur PostgreSQL (SQLSTATE 5 caractères) est une panne', () => {
+    const e = new Error('duplicate key value violates unique constraint "test_column_pkey"');
+    (e as unknown as { code: string }).code = '23505';
+    expect(estUnePanneTechnique(e)).toBe(true);
+  });
+
+  it('cas connu mauvais : un TypeError (un vrai bogue) est une panne', () => {
+    expect(estUnePanneTechnique(new TypeError("Cannot read properties of undefined (reading 'x')"))).toBe(true);
+  });
+
+  it('cas connu mauvais : une valeur jetée qui n’est même pas une Error est une panne', () => {
+    expect(estUnePanneTechnique('une chaîne jetée à la main')).toBe(true);
+    expect(estUnePanneTechnique(undefined)).toBe(true);
+  });
+
+  it('cas connu BON (règle 17, le régression-guard) : un `new Error` métier ordinaire n’est PAS une panne', () => {
+    expect(estUnePanneTechnique(new Error('cette proposition est déjà « acceptée » — une décision se revoit, elle ne s’écrase pas'))).toBe(false);
+    expect(estUnePanneTechnique(new Error('reviewer signs after the preparer/validator'))).toBe(false);
   });
 });

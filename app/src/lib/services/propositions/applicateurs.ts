@@ -5,6 +5,7 @@ import { statuerEcartWalkthrough } from '../walkthrough-analyse';
 import { verifyExtraction } from '../extraction/ladder';
 import type { ExtractedField } from '../extraction/fields';
 import type { ObjectType } from './types';
+import { refus } from '@/lib/core/refus';
 
 // P1-01 — UN APPLICATEUR PAR TYPE BRANCHÉ, JAMAIS UNE RÈGLE MÉTIER DUPLIQUÉE ICI : chaque
 // applicateur appelle la fonction de décision qui existait DÉJÀ avant `proposition`
@@ -69,7 +70,7 @@ export const APPLICATEURS: Partial<Record<ObjectType, Applicateur>> = {
         const row = await q01<{ severity_proposed: 'deficiency' | 'significant_deficiency' | 'material_weakness' }>(
           `select severity_proposed from deficiency where id = $1`, [objectId],
         );
-        if (!row) throw new Error('PROP-03B : déficience inconnue — la proposition pointe un objet disparu');
+        if (!row) throw refus('PROP-03B', 'déficience inconnue — la proposition pointe un objet disparu');
         await decideDeficiency(objectId, userId, row.severity_proposed);
         return;
       }

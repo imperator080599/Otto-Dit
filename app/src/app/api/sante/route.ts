@@ -232,6 +232,32 @@ async function corpsDeLaSonde() {
     return `${actifs.n} tb_snapshot actif(s) · 0 doublon sur les trois index`;
   }));
 
+  /* LE REGISTRE DES REFUS ET LE CATALOGUE I18N (P1-09, AUD-14) : `REGISTRE_REFUS`
+     (lib/core/refus.ts) et `LIBELLES` (lib/i18n/catalogue.ts) sont DEUX FICHIERS
+     TypeScript qui doivent rester synchronisés — chaque `def.cle` d'un code du
+     registre doit exister comme entrée du catalogue, sinon `traduire()` rend
+     `⟨cle⟩` au lieu du détail du refus (D.6 rompu en silence). Ce n'est pas un
+     invariant SQL comme les lectures voisines : rien ne l'empêche STRUCTURELLEMENT
+     de dériver (deux fichiers édités indépendamment) — cette lecture existe pour le
+     détecter en PRODUCTION, pas seulement dans `refus.test.ts` (même test, rejoué
+     ici contre le bundle réellement servi, pas contre le code source local).
+     CE QU'ELLE NE VÉRIFIE PAS (règle 19) : que chaque `throw refus('CODE', …)` du
+     dépôt utilise un code du registre — ça, c'est le TYPE de `refus()` et le
+     plafond `npm run langue-refus` (les throws NON migrés), pas une lecture
+     d'exécution ; ni que `executer()` (app/refus.ts) distingue correctement
+     panne/refus — hors de portée d'une lecture sans requête HTTP réelle. */
+  lectures.push(await essayer('registre des refus (P1-09, AUD-14) : chaque code a son entrée i18n', async () => {
+    const { REGISTRE_REFUS } = await import('@/lib/core/refus');
+    const { LIBELLES } = await import('@/lib/i18n/catalogue');
+    const manquants = Object.entries(REGISTRE_REFUS)
+      .filter(([, def]) => !Object.prototype.hasOwnProperty.call(LIBELLES, def.cle))
+      .map(([code]) => code);
+    if (manquants.length > 0) {
+      throw new Error(`${manquants.length} code(s) sans entrée de catalogue i18n : ${manquants.join(', ')}`);
+    }
+    return `${Object.keys(REGISTRE_REFUS).length} code(s) de refus catalogués · 0 entrée manquante`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {

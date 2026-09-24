@@ -12,6 +12,7 @@ import { populationDuDetailRapproche } from './account-detail';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { requiredProcedures } from './risk';
+import { refus } from '@/lib/core/refus';
 
 /**
  * SAMP-01 (AUD-11, P1-07) — la taille de la strate aléatoire du sondage
@@ -491,19 +492,19 @@ export async function statuerSortie(o: {
   const engagementId = await assertMembreDe('sample_item', o.sampleItemId, o.userId,
     'statuer une ligne sortie du tirage');
   if (!o.motif?.trim()) {
-    throw new Error('TIRAGE-03 : une ligne sortie du tirage se statue par écrit — le motif est la décision');
+    throw refus('TIRAGE-03', 'une ligne sortie du tirage se statue par écrit — le motif est la décision');
   }
   const sorties = await lignesSortiesDuTirage(engagementId);
   const ligne = sorties.find((l) => l.id === o.sampleItemId);
   if (!ligne) {
-    throw new Error('TIRAGE-02 : cette ligne n’est pas sortie du tirage courant — il n’y a rien à y statuer');
+    throw refus('TIRAGE-02', 'cette ligne n’est pas sortie du tirage courant — il n’y a rien à y statuer');
   }
   /* ON NE RÉCRIT PAS UNE DÉCISION EN SILENCE (revue hostile, constat 7). La
      première version laissait la seconde décision écraser la première : celle
      de Léa ne survivait que dans le journal, et l'écran ne montrait que la
      dernière — « une décision qu'on ne peut plus revoir », règle 13. */
   if (ligne.decision) {
-    throw new Error(`TIRAGE-04 : cette ligne est déjà statuée par ${ligne.decision.qui} le ${ligne.decision.quand} `
+    throw refus('TIRAGE-04', `cette ligne est déjà statuée par ${ligne.decision.qui} le ${ligne.decision.quand} `
       + '— revenir sur une décision écrite se fait par une note de revue, pas en la recouvrant');
   }
   await q(
