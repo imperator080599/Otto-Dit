@@ -132,6 +132,9 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   'EXTRAP-03': { cle: 'refus.EXTRAP-03', famille: 'extrapolation' },
   // Étanchéité de la connexion (db/sans-locataire.ts) — sécurité, filet le plus bas du dépôt.
   'LOC-01': { cle: 'refus.LOC-01', famille: 'etancheite' },
+  // P2-03a (AUD-07) : la remise à zéro du monde de démonstration — session requise,
+  // rôle admin/partner requis (demo/remise-a-zero/actions.ts).
+  'DEMO-01': { cle: 'refus.DEMO-01', famille: 'demo' },
   // Magasin de pièces adressé par contenu (core/storage.ts).
   'BLOB-01': { cle: 'refus.BLOB-01', famille: 'stockage' },
 };

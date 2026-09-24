@@ -2081,6 +2081,7 @@ export const LIBELLES = {
   'refus.EXTRAP-01': { en: '{detail}', fr: '{detail}' },
   'refus.EXTRAP-03': { en: '{detail}', fr: '{detail}' },
   'refus.LOC-01': { en: '{detail}', fr: '{detail}' },
+  'refus.DEMO-01': { en: '{detail}', fr: '{detail}' },
   'refus.BLOB-01': { en: '{detail}', fr: '{detail}' },
   // Générique : une PANNE (ni un code métier ni un refus catalogué) — le
   // message technique reste hors écran (D.6) ; `ref` identifie la ligne

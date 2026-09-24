@@ -21,6 +21,10 @@ export default async function RemiseAZero({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   if (!demoPublique()) notFound();
+  /* P2-03a (AUD-07) : le bouton reste offert à tout auditeur connecté, comme
+     avant — `remettreAZeroAction` refuse déjà (DEMO-01) tout acteur autre
+     qu'admin/partner. Le garder cliquable ici (plutôt que le cacher) est ce
+     qui permet au parcours cliqué d'observer le refus pour de vrai. */
   await requireUser();
   const { erreur } = await searchParams;
   const t = await tr();

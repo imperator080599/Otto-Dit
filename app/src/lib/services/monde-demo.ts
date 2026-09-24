@@ -1,6 +1,7 @@
 import { getDb, q, q01 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { logEvent } from '@/lib/core/events';
+import { refus } from '@/lib/core/refus';
 
 // REMETTRE LE MONDE DE DÉMONSTRATION À ZÉRO — un geste du produit, pas une
 // variable d'environnement (demande de Tuan, 2026-09-01).
@@ -191,6 +192,17 @@ export async function comparaison(): Promise<LigneComparee[]> {
     actuel: Number(actuels[o.table] ?? 0),
     instantane: Number(figes?.[o.table] ?? 0),
   }));
+}
+
+/** P2-03a (AUD-07) : SEUL un admin/partner remet le monde à zéro — extraite pour être éprouvée
+ *  directement (règle 17) : l'écran de confirmation ne dépend que de `etatInstantane()`, qui ne
+ *  rend jamais `aJour: true` en local/CI (l'instantané n'est posé QUE par `scripts/deploy/
+ *  reconstruire.ts`, jamais par `demo:seed`) — le bouton n'est donc jamais cliquable dans le
+ *  parcours cliqué local, et ce contrôle ne peut pas s'y prouver par un clic (disclosed, R162). */
+export function assertPeutRemettreAZero(firmRole: string): void {
+  if (!(firmRole === 'admin' || firmRole === 'partner')) {
+    throw refus('DEMO-01', 'la remise à zéro du monde de démonstration se réserve à un admin ou un partner du cabinet');
+  }
 }
 
 /**

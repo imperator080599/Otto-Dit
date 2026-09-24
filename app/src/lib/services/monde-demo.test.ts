@@ -10,7 +10,7 @@ import { q, q01 } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import {
   ordreDeDependance, instantanerLeMonde, etatInstantane, comparaison,
-  remettreLeMondeAZero, SCHEMA_INSTANTANE,
+  remettreLeMondeAZero, SCHEMA_INSTANTANE, assertPeutRemettreAZero,
 } from './monde-demo';
 
 const compte = async (table: string) =>
@@ -129,5 +129,32 @@ describe('instantané et remise à zéro, sur une vraie base', () => {
       `select privilege_type from information_schema.usage_privileges
        where object_schema = $1 and grantee = 'PUBLIC'`, [SCHEMA_INSTANTANE]);
     expect(droits).toEqual([]);
+  });
+});
+
+/**
+ * P2-03a (AUD-07) — DEMO-01, le cas connu MAUVAIS (règle 17). `remettreAZeroAction` ne
+ * gardait AUCUN rôle : n'importe quelle session (ou son absence) tronquait le monde entier.
+ * Éprouvé ICI, directement sur la garde extraite — la station clics ne peut pas l'exercer
+ * (R161 : le bouton de l'écran dépend d'un instantané que seul un déploiement pose).
+ */
+describe('P2-03a — assertPeutRemettreAZero refuse tout rôle autre qu’admin/partner (DEMO-01)', () => {
+  it('un partner peut', () => {
+    expect(() => assertPeutRemettreAZero('partner')).not.toThrow();
+  });
+
+  it('un admin peut', () => {
+    expect(() => assertPeutRemettreAZero('admin')).not.toThrow();
+  });
+
+  it('cas connu mauvais : un senior/manager/staff est refusé (DEMO-01)', () => {
+    expect(() => assertPeutRemettreAZero('senior')).toThrow(/DEMO-01/);
+    expect(() => assertPeutRemettreAZero('manager')).toThrow(/DEMO-01/);
+    expect(() => assertPeutRemettreAZero('staff')).toThrow(/DEMO-01/);
+  });
+
+  it('cas connu mauvais : une chaîne vide ou forgée est refusée', () => {
+    expect(() => assertPeutRemettreAZero('')).toThrow(/DEMO-01/);
+    expect(() => assertPeutRemettreAZero('superadmin')).toThrow(/DEMO-01/);
   });
 });
