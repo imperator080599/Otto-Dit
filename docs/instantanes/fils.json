@@ -823,6 +823,18 @@
       "etat": "reporté, gravité basse, NON causé par P1-09 — npm run verify a rougi une fois sur src/lib/client-serveur.test.ts (ENOENT sur src/app/_sonde-ai-flag-brut.tsx). Root-causé : scripts/audit/ia-flag-source.test.ts (R59/ADR-103, antérieur, ni lu ni modifié par P1-09) écrit une sonde directement dans src/app/ puis la supprime, pendant qu'un vitest run complet fait tourner client-serveur.test.ts en parallèle, qui balaie ce même dossier — une course rare entre readdirSync et readFileSync.",
       "depuis": "2026-09-24 (Phase 1, P1-09, AUD-14 — trouvé en vérifiant, pas causé)",
       "note": "confirmé comme course (pas un bogue déterministe) : trois relances isolées passent systématiquement, un second npm run verify complet sur le même arbre est passé vert sans reproduire. À reprendre : écrire les sondes de ia-flag-source.test.ts hors de src/app, ou faire ignorer par client-serveur.test.ts tout chemin _sonde-. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R154",
+      "etat": "reporté, gravité basse à moyenne — ecriture-nue.test.ts (P1-10) a trouvé 14 écritures sans logEvent dans lib/services (pas 24 comme l'estimait le mandat avant mesure). Douze sont du bootstrap idempotent ou de l'état d'interface (raison écrite pour chacune dans docs/instantanes/ecritures-nues.json) ; deux sont de vrais manques : extraction/ladder.ts::extractEvidence et team.ts::answerRubric.",
+      "depuis": "2026-09-24 (Phase 1, P1-10, AUD-12)",
+      "note": "disclosed par construction (règle 19), pas trouvé après coup. À reprendre : wirer logEvent sur extractEvidence et answerRubric en premier. Voir docs/BACKLOG_REPORTE.md et docs/instantanes/ecritures-nues.json."
+    },
+    {
+      "id": "R155",
+      "etat": "reporté, gravité basse — logEvent (lib/core/events.ts, P1-10) refuse un verbe hors du registre VERBES/ALIAS_VERBES en NODE_ENV=test, mais seulement console.warn en production : l'événement s'écrit quand même avec le verbe fautif, sans compteur ni lecture /api/sante pour le voir. Trouvé par la revue hostile voix 1 de P1-10 (rule 30), pas caché : le commentaire du registre l'assume déjà en toutes lettres.",
+      "depuis": "2026-09-24 (Phase 1, P1-10, AUD-12)",
+      "note": "disclosed par construction (règle 19), pas trouvé après coup. À reprendre : une lecture /api/sante qui compte les lignes event_log récentes au verbe hors registre, pour que ce silence rougisse (règle 22). Voir docs/BACKLOG_REPORTE.md."
     }
   ]
 }

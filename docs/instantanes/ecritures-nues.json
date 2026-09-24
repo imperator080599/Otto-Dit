@@ -1,0 +1,35 @@
+{
+  "_": "P1-10 (AUD-12). LE PLAFOND DES ÉCRITURES SANS logEvent DANS lib/services — l'INVERSE de docs/TESTS_PLANCHER.json (là, un compte qui monte est bon ; ici, un compte qui monte est le défaut à traquer, comme docs/instantanes/langue-refus.json). Chaque entrée est `fichier::fonction`, mesurée par src/lib/core/ecriture-nue.test.ts le jour de cette tranche (règle 31, jamais cité de mémoire ensuite) — 14 au départ, jamais 24 comme l'estimait le mandat avant mesure. NE PEUT QUE BAISSER : une entrée retirée l'est parce qu'un logEvent a été ajouté à la fonction, jamais parce qu'elle a cessé d'écrire sans qu'on l'ait remarqué (le test échouerait autrement : une fonction qui existe encore mais n'écrit plus ne casse rien, une fonction RENOMMÉE sans que son entrée le soit ferait grossir la liste des `nues`, pas la réduire). Chaque raison ci-dessous est écrite pour qu'une session future puisse juger si l'exception tient encore, pas pour la justifier une fois pour toutes.",
+  "exceptions": [
+    "acceptance.ts::assurerJalons",
+    "acceptance.ts::recalculerDerives",
+    "completion.ts::assurerAchevement",
+    "extraction/budget.ts::_reinitialiserGardeBudgetEnBasePourSonde",
+    "extraction/ladder.ts::extractEvidence",
+    "monde-demo.ts::instantanerLeMonde",
+    "replis.ts::memoriserRepli",
+    "requests.ts::ensureReminders",
+    "sampling.ts::ensureRevenueProcedure",
+    "sections.ts::assurerSections",
+    "sections.ts::cleDeSection",
+    "sections.ts::suivre",
+    "sections.ts::visiter",
+    "team.ts::answerRubric"
+  ],
+  "raisons": {
+    "acceptance.ts::assurerJalons": "bootstrap idempotent (INSERT … ON CONFLICT DO NOTHING) des jalons par défaut d'une mission — pose l'état initial, ne décide rien ; le geste qui MODIFIE un jalon (ailleurs dans ce fichier) journalise déjà.",
+    "acceptance.ts::recalculerDerives": "recalcule des valeurs DÉRIVÉES à partir de jalons déjà posés — pas un fait nouveau, une projection de faits déjà tracés.",
+    "completion.ts::assurerAchevement": "même patron qu'assurerJalons : bootstrap idempotent des items d'achèvement par nature, pas une décision.",
+    "extraction/budget.ts::_reinitialiserGardeBudgetEnBasePourSonde": "utilitaire de TEST (le nom le dit : « pour sonde ») qui réinitialise l'état du garde de budget IA entre deux tests — jamais un chemin de production.",
+    "extraction/ladder.ts::extractEvidence": "GAP RÉEL, pas une exception permanente — l'extraction d'une pièce est un fait d'audit (quel modèle, quelle pièce, quel résultat) qui mériterait probablement sa propre trace ; reporté faute de temps dans cette tranche d'infrastructure, à reprendre en premier si cette liste doit baisser.",
+    "monde-demo.ts::instantanerLeMonde": "infrastructure du SEMEUR (docs/SEMEUR_VS_CHEMIN.md, règle 20) — un instantané de schéma pour la démonstration, jamais un geste d'un auditeur réel.",
+    "replis.ts::memoriserRepli": "état d'INTERFACE (un panneau replié/ouvert, ui_repli) — pas un fait d'audit ; REPLI-01/REPLI-04 (refus) sont déjà couverts par P1-09, cette écriture-ci ne décide rien du dossier.",
+    "requests.ts::ensureReminders": "top-up idempotent de l'état des relances programmées — la RELANCE elle-même (quand elle part réellement) journalise ailleurs.",
+    "sampling.ts::ensureRevenueProcedure": "bootstrap idempotent de la procédure REV-SUBST si elle n'existe pas encore — pose l'état initial, pas une décision.",
+    "sections.ts::assurerSections": "bootstrap idempotent des sections par poste retenu — même patron qu'assurerJalons.",
+    "sections.ts::cleDeSection": "trouve-ou-crée idempotent (INSERT … ON CONFLICT DO UPDATE) pour une clé de section — infrastructure de rangement, le contenu qu'une section PORTE est journalisé par ce qui l'y dépose.",
+    "sections.ts::suivre": "état d'INTERFACE (« je suis cette section », un flag de suivi personnel) — pas un fait d'audit du dossier.",
+    "sections.ts::visiter": "marque la dernière visite d'une section par une personne (horodatage de confort) — pas un fait d'audit.",
+    "team.ts::answerRubric": "GAP RÉEL, pas une exception permanente — répondre à une rubrique d'indépendance est une décision documentée (ADR-028 le nomme pour les notes de revue) qui mériterait sa propre trace ; reporté faute de temps, à reprendre en second si cette liste doit baisser."
+  }
+}

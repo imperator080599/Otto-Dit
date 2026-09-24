@@ -2800,3 +2800,30 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   sondes de `ia-flag-source.test.ts` dans un dossier temporaire HORS de `src/app` (ou faire
   ignorer par `client-serveur.test.ts` tout chemin commençant par `_sonde-`), pour fermer la
   fenêtre de course plutôt que compter sur sa rareté.
+
+- **R154 — REPORTÉ, gravité basse à moyenne (deux entrées marquées « gap réel »), disclosed
+  par construction (règle 19) à P1-10 (AUD-12).** `src/lib/core/ecriture-nue.test.ts`
+  (nouveau balayage : toute fonction exportée de `lib/services` qui écrit — insert/update/
+  delete — doit appeler `logEvent` dans son propre corps, sinon figurer dans
+  `docs/instantanes/ecritures-nues.json`) a trouvé 14 écritures sans trace, pas 24 comme
+  l'estimait le mandat avant mesure (règle 31). Douze sont du bootstrap idempotent ou de
+  l'état d'interface (raison écrite pour chacune dans le fichier figé) ; deux sont de vrais
+  manques disclosed comme tels : `extraction/ladder.ts::extractEvidence` (l'extraction d'une
+  pièce est un fait d'audit — quel modèle, quelle pièce, quel résultat) et
+  `team.ts::answerRubric` (répondre à une rubrique d'indépendance est une décision
+  documentée, comme ADR-028 le fait déjà pour les notes de revue). À reprendre : wirer
+  `logEvent` sur ces deux fonctions en premier si la liste figée doit baisser ; les douze
+  autres restent des candidates à une exception PERMANENTE, à trancher au cas par cas.
+
+- **R155 — REPORTÉ, gravité basse, trouvé par la revue hostile voix 1 de P1-10 (AUD-12,
+  registre des verbes) — un choix assumé, pas un silence caché.** `lib/core/events.ts::logEvent`
+  refuse (lève) un verbe hors du registre `VERBES`/`ALIAS_VERBES`/`VERBES_SONDE_TEST` en
+  `NODE_ENV==='test'`, mais se contente d'un `console.warn` en production : l'événement
+  s'écrit quand même, avec le verbe fautif tel quel, et RIEN ne surveille ce cas en production
+  — ni compteur, ni lecture `/api/sante`. Le commentaire du registre le dit lui-même en toutes
+  lettres (« la faute se corrige au prochain déploiement, pas en bloquant l'auditeur ») : ce
+  n'est donc pas un défaut introduit sans le dire, mais un typo de registre en production
+  resterait invisible jusqu'à ce qu'une session le cherche à la main. À reprendre : une lecture
+  `/api/sante` qui compte les lignes `event_log` récentes dont le verbe n'est pas au registre
+  (une requête directe suffit, pas besoin de modifier `logEvent`), pour que ce silence-là
+  puisse ROUGIR (règle 22) au lieu de rester tacite.
