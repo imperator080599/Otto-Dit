@@ -108,8 +108,29 @@ export async function attachEvidenceToItem(evidenceId: string, requestItemId: st
   });
 }
 
+/** P2-01 (AUD-04) : GARDE PORTAIL — `requestId` doit appartenir à l'entité de `contactId`.
+ *  Nommée `assert*` à dessein (comme `assertMembreDe`) : `couverture-etancheite.test.ts`
+ *  saute les fonctions dont le nom commence par `assert` (une garde n'est pas un geste) et
+ *  reconnaît son appel comme la preuve qu'un appelant à acteur est bien gardé. */
+async function assertRequestDeLEntite(requestId: string, contactId: string): Promise<{ id: string; engagement_id: string }> {
+  const r = await q01<{ id: string; engagement_id: string }>(
+    `select r.id, r.engagement_id from request r
+     join engagement e on e.id = r.engagement_id
+     join client_contact c on c.id = $1
+     where r.id = $2 and e.entity_id = c.entity_id`,
+    [contactId, requestId],
+  );
+  if (!r) throw refus('PORTAIL-01', 'cette demande n’appartient pas à votre entité');
+  return r;
+}
+
+/** P2-01 (AUD-04) : même garde que `answerExplanation` — `contactId` doit appartenir à
+ *  l'entité du dossier de `requestId`, sinon PORTAIL-01 avant toute écriture. Trouvé par
+ *  le même balayage (élargissement du regex ACTEUR de `couverture-etancheite.test.ts`
+ *  à `contactId`) : la garde de l'appelant portail (`portalRequestGuard`) protège déjà
+ *  ce chemin, mais le service lui-même n'avait aucune défense en profondeur. */
 export async function markAllSubmitted(requestId: string, contactId: string): Promise<void> {
-  const r = await q1<{ id: string; engagement_id: string }>(`select id, engagement_id from request where id = $1`, [requestId]);
+  const r = await assertRequestDeLEntite(requestId, contactId);
   const ctx = await engagementCtx(r.engagement_id);
   await q(`update request_item set status = 'complete' where request_id = $1 and status = 'uploaded'`, [requestId]);
   const remaining = await q1<{ n: string }>(
@@ -127,14 +148,35 @@ export async function markAllSubmitted(requestId: string, contactId: string): Pr
   });
 }
 
-export async function answerExplanation(requestItemId: string, contactId: string, text: string): Promise<void> {
-  if (!text.trim()) throw new Error('empty answer');
-  const item = await q1<{ id: string; request_id: string; exception_id: string | null }>(
-    `select id, request_id, exception_id from request_item where id = $1`,
-    [requestItemId],
+/** P2-01 (AUD-04) : GARDE PORTAIL — `requestItemId` doit appartenir à `requestId`, ET
+ *  `requestId` à l'entité de `contactId`. Même doctrine de nommage que
+ *  `assertRequestDeLEntite` ci-dessus (préfixe `assert`, reconnue par le balayage). */
+async function assertItemDeLaDemandeEtDeLEntite(
+  requestId: string, requestItemId: string, contactId: string,
+): Promise<{ id: string; request_id: string; exception_id: string | null; engagement_id: string }> {
+  const item = await q01<{ id: string; request_id: string; exception_id: string | null; engagement_id: string }>(
+    `select ri.id, ri.request_id, ri.exception_id, e.id as engagement_id
+     from request_item ri
+     join request r on r.id = ri.request_id
+     join engagement e on e.id = r.engagement_id
+     join client_contact c on c.id = $1
+     where ri.id = $2 and r.id = $3 and e.entity_id = c.entity_id`,
+    [contactId, requestItemId, requestId],
   );
-  const r = await q1<{ engagement_id: string }>(`select engagement_id from request where id = $1`, [item.request_id]);
-  const ctx = await engagementCtx(r.engagement_id);
+  if (!item) throw refus('PORTAIL-01', 'cet élément de demande n’appartient pas à cette demande, ou pas à votre entité');
+  return item;
+}
+
+/** P2-01 (AUD-04) : `requestId` EST L'ANCRAGE, PAS UN SUPPLÉMENT. Avant cette tranche,
+ *  `requestItemId` était résolu par son seul id — n'importe quel item de n'importe quel
+ *  dossier, tant qu'on en connaissait l'id, était répondable par n'importe quel contact.
+ *  `assertItemDeLaDemandeEtDeLEntite` exige `request.id = requestId` ET `entity.id =
+ *  contact.entity_id` — un item qui n'appartient pas à CETTE demande, ou un contact d'une
+ *  autre entité, refuse PORTAIL-01 avant toute écriture. */
+export async function answerExplanation(requestId: string, requestItemId: string, contactId: string, text: string): Promise<void> {
+  if (!text.trim()) throw new Error('empty answer');
+  const item = await assertItemDeLaDemandeEtDeLEntite(requestId, requestItemId, contactId);
+  const ctx = await engagementCtx(item.engagement_id);
   await q(`update request_item set client_note = $2, status = 'complete' where id = $1`, [requestItemId, text]);
   if (item.exception_id) {
     // clarification answered → exception explained (auditor still resolves/escalates)
@@ -146,7 +188,7 @@ export async function answerExplanation(requestItemId: string, contactId: string
   }
   await refreshRequestStatus(requestItemId);
   await logEvent({
-    tenantId: ctx.tenant_id, engagementId: r.engagement_id, actorKind: 'system', actorId: null,
+    tenantId: ctx.tenant_id, engagementId: item.engagement_id, actorKind: 'system', actorId: null,
     verb: 'explanation_answered', objectType: 'request_item', objectId: requestItemId,
     payload: { byContact: contactId, length: text.length },
   });

@@ -120,6 +120,7 @@ export type ObjetFils =
   | 'proposition'
   | 'request' | 'request_item' | 'sample' | 'sample_evaluation' | 'sample_item'
   | 'transcript_gap'
+  | 'verification_run'
   | 'workpaper' | 'wp_extra_column';
 
 /**
@@ -161,6 +162,7 @@ const RESOLUTION: Record<ObjetFils, string> = {
      join sample s on s.id = i.sample_id where i.id = $1`,
   transcript_gap: `select i.engagement_id::text e from transcript_gap g
      join process_interview i on i.id = g.interview_id where g.id = $1`,
+  verification_run: `select engagement_id::text e from verification_run where id = $1`,
   workpaper: `select engagement_id::text e from workpaper where id = $1`,
   wp_extra_column: `select engagement_id::text e from wp_extra_column where id = $1`,
 };

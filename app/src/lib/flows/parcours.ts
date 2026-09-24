@@ -61,14 +61,14 @@ export async function etapeReponsesClient(engagementId = IDS.engNep): Promise<vo
      where e.id = $1 and c.active order by c.name limit 1`,
     [engagementId],
   );
-  const items = await q<{ id: string }>(
-    `select ri.id from request_item ri
+  const items = await q<{ id: string; request_id: string }>(
+    `select ri.id, ri.request_id from request_item ri
      join request r on r.id = ri.request_id
      where r.engagement_id = $1 and ri.kind = 'explanation' and ri.status <> 'complete'`,
     [engagementId],
   );
   for (const it of items) {
-    await answerExplanation(it.id, contact.id,
+    await answerExplanation(it.request_id, it.id, contact.id,
       'Écriture d’ajustement passée à la demande du contrôle de gestion ; le détail et l’autorisation figurent dans le dossier de clôture mensuel.');
   }
   note('reponses', 'Réponses du client', `${ouvertes.n} demande(s) d’explication répondue(s)`);

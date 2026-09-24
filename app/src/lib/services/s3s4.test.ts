@@ -15,7 +15,7 @@ import { generatePbcFromSample, approveSend, ensureReminders, requestDetail, lis
 import { reconcilierDetailRevenueSemeur } from '@/lib/flows/part1';
 import { populationDuDetailRapproche, attenduGlPourPoste } from './account-detail';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from './evidence';
-import { portalRequests, portalItems, portalRequestGuard, portalOutstandingItems } from './portal';
+import { portalRequests, portalItems, portalRequestGuard, portalItemGuard, portalOutstandingItems } from './portal';
 import { processInbound } from './inbound';
 import { warp, resetClock, DAY_MS } from '@/lib/core/clock';
 import { portalSession } from '@/lib/core/auth';
@@ -204,10 +204,25 @@ describe('S3/S4 — population, sampling, requests, portal', () => {
     expect(up2.duplicateOf).toBe(up1.evidenceId);
 
     const expl = items.find((i) => i.kind === 'explanation')!;
-    await answerExplanation(expl.id, session!.contact.id, 'Écriture d’ajustement de fin d’année validée par la direction.');
+    await answerExplanation(requestId, expl.id, session!.contact.id, 'Écriture d’ajustement de fin d’année validée par la direction.');
     await markAllSubmitted(requestId, session!.contact.id);
     const after = await requestDetail(requestId);
     expect(after!.request.status).toBe('partially_submitted'); // untouched items remain pending
+  });
+
+  /* P2-01 (AUD-04) : le formulaire du portail poste `item_id` en champ caché, jamais
+   * recroisé contre `rid` avant cette tranche — un POST forgé avec l'id d'un élément
+   * d'une AUTRE demande (même du même dossier) aurait été accepté tel quel. */
+  it('portal: portalItemGuard refuse un item forgé d’une AUTRE demande (P2-01, AUD-04)', async () => {
+    const session = await portalSession(PORTAL_TOKENS.sophie);
+    const requests = await portalRequests(session!.contact.entity_id);
+    const requestId = requests[0].id;
+    const items = await portalItems(requestId);
+    expect(items.length).toBeGreaterThan(0);
+    // une demande RÉELLE mais DIFFÉRENTE, du même dossier
+    const autreRequestId = await demanderDetailDeCompte(IDS.engNep, 'PURCHASES', IDS.users.karim);
+    expect(await portalItemGuard(requestId, items[0].id)).toBe(true);
+    expect(await portalItemGuard(autreRequestId, items[0].id)).toBe(false);
   });
 
   /* Lot 7, tranche 1 (REGISTRE_IDEES.md H-1) — « ce que vous me devez encore ». Fixture PROPRE

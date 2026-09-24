@@ -54,6 +54,12 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   'ETANCH-05': { cle: 'refus.ETANCH-05', famille: 'etancheite' },
   'ETANCH-06': { cle: 'refus.ETANCH-06', famille: 'etancheite' },
   'ETANCH-07': { cle: 'refus.ETANCH-07', famille: 'etancheite' },
+  // P2-01 (AUD-04) : le portail — un élément de demande qui n'appartient pas à la demande
+  // désignée par le jeton, ou dont l'entité ne correspond pas au contact du jeton.
+  'PORTAIL-01': { cle: 'refus.PORTAIL-01', famille: 'etancheite' },
+  // P2-01 (AUD-04) : le contrôle de fiabilité (ADR-012.3) — un item soumis à
+  // submitBlindCheck qui n'a jamais été tiré par CE run (verification_run.selected).
+  'VERIF-01': { cle: 'refus.VERIF-01', famille: 'etancheite' },
   // SOX / contrôle interne (sox.ts). CTRL-05/CTRL-07 et le second site de CTRL-01/CTRL-04
   // (`throw new Error(\n  \`CODE : ...\`)`, code et backtick sur des lignes séparées) ont été
   // RATÉS par le balayage d'origine de P1-09 — son regex exigeait la même ligne que

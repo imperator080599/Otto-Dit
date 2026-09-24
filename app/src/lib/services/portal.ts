@@ -1,4 +1,5 @@
 import { q } from '@/lib/db/client';
+import { refus } from '@/lib/core/refus';
 
 // Client-portal read surface — the WHITELIST (docs/04 §9.7, 06 §1): requests, own items,
 // reminders. No audit documentation is reachable through any function in this module;
@@ -70,4 +71,27 @@ export async function portalRequestGuard(requestId: string, entityId: string): P
     [requestId, entityId],
   );
   return rows.length > 0;
+}
+
+/** P2-01 (AUD-04) : GARDE : l'ÉLÉMENT doit appartenir à CETTE demande — pas seulement au
+ *  formulaire qui l'a posté. `uploadAction` recevait `item_id` d'un champ de formulaire caché,
+ *  jamais recroisé contre `rid` : un POST forgé avec l'id d'un élément d'une AUTRE demande
+ *  (même d'un autre dossier) aurait été accepté tel quel par `ingestEvidence`. */
+export async function portalItemGuard(requestId: string, itemId: string): Promise<boolean> {
+  const rows = await q<{ id: string }>(
+    `select id from request_item where id = $1 and request_id = $2`,
+    [itemId, requestId],
+  );
+  return rows.length > 0;
+}
+
+/** Même garde que `portalItemGuard`, mais qui REFUSE elle-même (PORTAIL-01) — le détail
+ *  français du refus vit ICI, dans un service, jamais dans une action d'écran (règle 6/9 :
+ *  la garde du catalogue `langue.ts` distingue les deux, un libellé en dur dans un .tsx est
+ *  une régression qu'elle attrape, un libellé en dur dans un service passant par `refus()`
+ *  ne l'est pas). */
+export async function assertPortalItem(requestId: string, itemId: string): Promise<void> {
+  if (!(await portalItemGuard(requestId, itemId))) {
+    throw refus('PORTAIL-01', 'cet élément de demande n’appartient pas à cette demande');
+  }
 }

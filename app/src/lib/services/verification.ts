@@ -6,7 +6,8 @@ import { centsToNum, numToCents } from '@/lib/util/num';
 import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import type { ExtractedField } from './extraction/fields';
-import { assertMembre } from '@/lib/core/membre';
+import { assertMembre, assertMembreDe } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // ADR-012.3 — the engagement-level tool-reliability control: a seeded, reproducible
 // subsample of machine-PASSED items is BLIND re-performed by a human (independent values
@@ -34,12 +35,13 @@ export async function startVerificationRun(engagementId: string, userId: string)
   );
   const run = await q1<{ id: string }>(
     `insert into verification_run (engagement_id, procedure_id, seed, rate, min_items,
-       machine_passed_population_hash, machine_passed_count, drawn_count)
-     values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
+       machine_passed_population_hash, machine_passed_count, drawn_count, selected)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
     [
       engagementId, passed[0].procedure_id, pack.verification.seedDefault,
       pack.verification.spotcheckPct, pack.verification.spotcheckMin,
       draw.machinePassedPopulationHash, passed.length, draw.selected.length,
+      JSON.stringify(draw.selected),
     ],
   );
   await logEvent({
@@ -51,17 +53,13 @@ export async function startVerificationRun(engagementId: string, userId: string)
 }
 
 export async function currentVerificationRun(engagementId: string) {
-  const run = await q01<{ id: string; procedure_id: string; seed: string; rate: number; drawn_count: number; machine_passed_count: number; created_at: string }>(
-    `select id, procedure_id, seed, rate::float, drawn_count, machine_passed_count, created_at::text
+  const run = await q01<{ id: string; procedure_id: string; seed: string; rate: number; drawn_count: number; machine_passed_count: number; created_at: string; selected: string[] }>(
+    `select id, procedure_id, seed, rate::float, drawn_count, machine_passed_count, created_at::text, selected
      from verification_run where engagement_id = $1 order by created_at desc limit 1`,
     [engagementId],
   );
   if (!run) return null;
-  const ev = await q<{ payload: { selected?: string[] } }>(
-    `select payload from event_log where object_type = 'verification_run' and object_id = $1 and verb = 'verification_run_started'`,
-    [run.id],
-  );
-  const selected = ev[0]?.payload?.selected ?? [];
+  const selected = run.selected ?? [];
   const items = await q<{
     sample_item_id: string; piece_ref: string | null; aux_label: string | null; amount: string;
     check_id: string | null; result: string | null; seconds_spent: number | null;
@@ -87,10 +85,19 @@ export async function submitBlindCheck(opts: {
   secondsSpent?: number;
   escalationOnDisagree?: 'expand_subsample' | 'reperform_procedure';
 }): Promise<{ result: 'agree' | 'disagree'; exceptionId: string | null }> {
-  const run = await q1<{ id: string; engagement_id: string; procedure_id: string }>(
-    `select id, engagement_id, procedure_id from verification_run where id = $1`,
+  /* P2-01 (AUD-04) : GARDE D'ÉTANCHÉITÉ + APPARTENANCE AU TIRAGE. Avant cette tranche, rien
+     ne vérifiait que `opts.verifierId` est membre du dossier du run, ni que
+     `opts.sampleItemId` fait bien partie des items TIRÉS par CE run — un vérificateur d'un
+     autre cabinet pouvait soumettre un contrôle sur n'importe quel item de sample_item
+     existant, tant qu'il en connaissait l'id. */
+  await assertMembreDe('verification_run', opts.verificationRunId, opts.verifierId, 'submitBlindCheck');
+  const run = await q1<{ id: string; engagement_id: string; procedure_id: string; selected: string[] }>(
+    `select id, engagement_id, procedure_id, selected from verification_run where id = $1`,
     [opts.verificationRunId],
   );
+  if (!(run.selected ?? []).includes(opts.sampleItemId)) {
+    throw refus('VERIF-01', 'cet item n’a jamais été tiré par ce run de contrôle de fiabilité');
+  }
   const ctx = await engagementCtx(run.engagement_id);
   // machine view: the extraction fields behind the matched invoice for this item
   const evRow = await q01<{ fields: ExtractedField[] }>(

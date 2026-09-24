@@ -337,7 +337,7 @@ export async function matchAndClarify(): Promise<void> {
   for (const item of detail!.items) {
     const nk = item.sample_item_id ? nkBySampleItem.get(item.sample_item_id) : undefined;
     const anomaly = manifest.substantiveAnomalies.find((a) => nk && a.units.includes(nk));
-    await answerExplanation(item.id, IDS.contacts.theo, answers[anomaly?.id ?? 'A1'] ?? 'Réponse du client (démo).');
+    await answerExplanation(clarifId, item.id, IDS.contacts.theo, answers[anomaly?.id ?? 'A1'] ?? 'Réponse du client (démo).');
   }
 }
 

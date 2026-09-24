@@ -1,7 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { portalSession } from '@/lib/core/auth';
-import { portalItems, portalRequestGuard, portalRequests } from '@/lib/services/portal';
+import { portalItems, portalRequestGuard, assertPortalItem, portalRequests } from '@/lib/services/portal';
 import { ingestEvidence, markAllSubmitted, answerExplanation } from '@/lib/services/evidence';
 import { executer } from '@/app/refus';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -67,6 +67,7 @@ async function PortalRequestPageCorps({
       if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
       const file = formData.get('file') as File;
       const itemId = String(formData.get('item_id'));
+      await assertPortalItem(rid, itemId);
       await ingestEvidence({
         engagementId: request!.engagement_id,
         requestItemId: itemId,
@@ -85,7 +86,7 @@ async function PortalRequestPageCorps({
     return executer(`/portal/${token}/${rid}`, async () => {
       const s = await portalSession(token);
       if (!s || !(await portalRequestGuard(rid, s.contact.entity_id))) throw new Error('unauthorized');
-      await answerExplanation(String(formData.get('item_id')), s.contact.id, String(formData.get('text') ?? ''));
+      await answerExplanation(rid, String(formData.get('item_id')), s.contact.id, String(formData.get('text') ?? ''));
       revalidatePath(`/portal/${token}/${rid}`);
     });
   }
