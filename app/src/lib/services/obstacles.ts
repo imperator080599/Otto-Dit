@@ -243,7 +243,7 @@ export async function obstaclesAuVisa(engagementId: string): Promise<Obstacle[]>
 
   // 10. Les jalons échus et non faits — le dernier, parce qu'un retard n'est pas
   //    un défaut de substance : c'est un défaut de tenue.
-  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const aujourdhui = (await now()).toISOString().slice(0, 10);
   const retard = await jalonsEnRetard(engagementId, aujourdhui);
   ajoute('jalons', retard.map((j) => motif('obst.jalonEnRetard', { libelle: j.label, date: j.due_date ?? '' })));
 

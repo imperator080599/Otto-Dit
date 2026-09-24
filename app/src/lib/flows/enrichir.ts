@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { q, q01, repoRoot } from '@/lib/db/client';
+import { now } from '@/lib/core/clock';
 import { IDS } from '@/lib/seed';
 import { catalogueDeLaMission } from '@/lib/methodology/depot';
 import { proceduresDuCycle } from '@/lib/methodology/catalogue';
@@ -343,7 +344,7 @@ export async function enrichirMondeDemo(): Promise<RapportEnrichissement> {
            (le semis, pas une personne). La date est REPOSÉE à chaque passage :
            sinon les âges de la démonstration dérivent de jour en jour et
            « la plus ancienne, 14 j » devient faux sans que rien ne le dise. */
-        const voulue = joursOuvresAvant(note.age);
+        const voulue = joursOuvresAvant(note.age, await now());
         const avant = deja?.created_at ?? null;
         if (!avant || Math.abs(new Date(avant).getTime() - voulue.getTime()) > 36e5) {
           await q(`update review_note set created_at = $2 where id = $1`, [id, voulue.toISOString()]);

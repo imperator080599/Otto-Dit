@@ -11,8 +11,14 @@
 
 const WEEKEND = new Set([0, 6]);
 
+/** LA DATE DE RÉFÉRENCE EST EXIGÉE, JAMAIS DEVINÉE (P1-10, AUD-12, « deux horloges »,
+ *  ADR-138) : un défaut `= new Date()` appellerait l'HORLOGE SYSTÈME, sourde au warp de
+ *  la démonstration (`lib/core/clock.ts::now()`) — deux fonctions du même dépôt
+ *  répondraient alors « quel jour sommes-nous » de deux façons différentes selon qu'un
+ *  temps de démo a été avancé ou non. L'appelant passe `await now()` explicitement. */
+
 /** La date d'il y a `n` jours ouvrés (samedi et dimanche sautés). */
-export function joursOuvresAvant(n: number, depuis: Date = new Date()): Date {
+export function joursOuvresAvant(n: number, depuis: Date): Date {
   const d = new Date(depuis);
   let reste = n;
   while (reste > 0) {
@@ -27,7 +33,7 @@ export function joursOuvresAvant(n: number, depuis: Date = new Date()): Date {
  * départ, incluses à l'arrivée) : l'inverse de `joursOuvresAvant`. Une date
  * dans le futur rend 0 — une note ne peut pas être posée demain.
  */
-export function joursOuvresEntre(depuis: Date | string, jusqua: Date = new Date()): number {
+export function joursOuvresEntre(depuis: Date | string, jusqua: Date): number {
   const a = new Date(depuis);
   const b = new Date(jusqua);
   if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime()) || a >= b) return 0;

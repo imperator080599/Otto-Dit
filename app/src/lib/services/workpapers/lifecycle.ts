@@ -3,6 +3,7 @@ import type { CleLibelle } from '@/lib/i18n/catalogue';
 import { type Ancre, assertAncrePosable, resoudreAncre, KINDS } from '../notes/ancres';
 import { logEvent } from '@/lib/core/events';
 import { joursOuvresEntre } from '@/lib/core/jours';
+import { now } from '@/lib/core/clock';
 import { hashObject } from '@/lib/core/hash';
 import { engagementCtx } from '../imports';
 import type { WpSection } from './draft';
@@ -302,6 +303,7 @@ export interface MarqueEcran {
 export async function notesPourEcran(engagementId: string): Promise<Record<string, MarqueEcran[]>> {
   const notes = await notesDeLaMission(engagementId);
   const parCible: Record<string, MarqueEcran[]> = {};
+  const t = await now();
   for (const n of notes) {
     if (!n.anchor_kind || n.status === 'closed') continue;
     const r = await resoudreAncre(engagementId, {
@@ -314,7 +316,7 @@ export async function notesPourEcran(engagementId: string): Promise<Record<strin
       destinataire: n.assignee_kind === 'otto' ? 'OTTO' : n.assignee_name,
       destinataireKind: n.assignee_kind,
       creeLe: n.created_at,
-      ageJoursOuvres: joursOuvresEntre(n.created_at),
+      ageJoursOuvres: joursOuvresEntre(n.created_at, t),
       reponses: fil.map((x) => ({ auteur: x.author_kind === 'otto' ? 'OTTO' : (x.author_name ?? ''), kind: x.author_kind, texte: x.text, quand: x.created_at })),
     };
     for (const cible of r.cibles) {

@@ -15,6 +15,7 @@ import type { ExtractedField } from './extraction/fields';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 import { derniereDemandePopulationControle } from './requests';
 import { refus } from '@/lib/core/refus';
+import { now } from '@/lib/core/clock';
 
 // S8 — SOX OE cycle on the SAME engines (request, evidence, extraction, sampling,
 // exception/deviation, documentation) under the PCAOB/COSO pack. UI held to the four
@@ -1284,7 +1285,7 @@ export async function documenterProcedureOe(
     throw new Error(`« ${procedure} » n’est pas une procédure OE documentable — inquiry, inspection, observation ou ré-exécution seulement.`);
   }
   if (!notes.trim()) throw new Error('la procédure a besoin d’une note — ce qui a été mené, et ce qui en ressort');
-  const quand = performedAt?.trim() || new Date().toISOString().slice(0, 10);
+  const quand = performedAt?.trim() || (await now()).toISOString().slice(0, 10);
   if (Number.isNaN(Date.parse(quand))) throw new Error('la date de la procédure OE n’est pas une date valide');
   const ctx = await engagementCtx(engagementId);
   if (evidenceId) {

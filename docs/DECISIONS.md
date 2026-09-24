@@ -5500,3 +5500,48 @@ CLAUDE.md §2 sur toute variable de production, respecté). Un déploiement de P
 (`dad1111`, `dpl_7Ka8QuxwJCUcDkTdpJxBxC7NbuVq`, READY, target production). La discipline règle 24
 (revue hostile avant le push, jamais après) reste la protection de PREMIER RANG ; ce garde
 Vercel est la seconde, mécanique, qui ne dépend plus de la discipline de la session.
+
+## ADR-138
+
+**Trois horloges vivent dans ce dépôt, une seule est sûre dans `lib/services` : `core/clock.ts::now()`
+(async) est la seule à connaître le warp de démonstration ; `new Date()` (JS, synchrone) et le
+`now()` SQL des colonnes par défaut en sont sourds.** (P1-10, AUD-12 ; plan Phase 1.)
+
+**LES TROIS HORLOGES, ET CE QU'ELLES RÉPONDENT.**
+- `lib/core/clock.ts::now(): Promise<Date>` — l'horloge de la DÉMONSTRATION : l'heure système
+  réelle PLUS un décalage persisté en base (`app_state.key = 'clock_offset'`), posé quand une
+  démonstration avance le temps pour simuler un jalon échu, une note vieille de dix jours, etc.
+  Async parce qu'elle lit ce décalage en base — c'est le PRIX à payer pour rester cohérente avec
+  le warp, jamais contournable par un raccourci synchrone.
+- Le `now()` SQL — l'horloge du SERVEUR POSTGRES, utilisée dans les valeurs par défaut de colonnes
+  (`created_at`, `updated_at`). Elle ne connaît RIEN du décalage de démonstration : un enregistrement
+  inséré pendant une démo avancée porte un horodatage réel, pas un horodatage warpé. C'est correct
+  et volontaire — l'horodatage d'écriture technique n'a pas à mentir sur QUAND l'écriture a
+  physiquement eu lieu ; seul le calcul MÉTIER (jours ouvrés, échéance, « aujourd'hui » affiché à
+  l'auditeur) a besoin de l'horloge de démonstration.
+- `new Date()` (JS, sans argument) — l'horloge SYSTÈME, synchrone, sourde au warp comme le `now()`
+  SQL, mais appelée depuis du code MÉTIER plutôt que depuis une valeur par défaut de colonne : c'est
+  là que la confusion est arrivée. Sept sites dans `lib/services` (et les deux écrans qui les
+  encadrent) calculaient une date métier avec `new Date()` au lieu de `await now()` : `core/jours.ts`
+  (`joursOuvresAvant`/`joursOuvresEntre`, tous deux avec un défaut `= new Date()` sur leur paramètre
+  de référence), `obstacles.ts`, `eng/[id]/acceptance/page.tsx`, `workpapers/lifecycle.ts`,
+  `flows/enrichir.ts`, `sox.ts::documenterProcedureOe`, `gouvernance.ts::syntheseComite`. Un temps de
+  démo avancé aurait laissé ces sept sites répondre « aujourd'hui » avec l'heure RÉELLE pendant que
+  le reste de l'écran (bâti sur `now()`) répondait avec l'heure WARPÉE — deux vérités différentes
+  sur le même dossier, au même instant.
+
+**LA DÉCISION.** `lib/services` (et les écrans qui appellent directement un calcul de date métier)
+n'appelle plus JAMAIS `new Date()` sans argument. `core/jours.ts::joursOuvresAvant`/`joursOuvresEntre`
+perdent leur défaut `= new Date()` sur le paramètre de référence — la date est désormais EXIGÉE,
+jamais devinée, l'appelant passe `await now()` explicitement. Un test structurel,
+`core/pas-de-new-date.test.ts`, balaie `lib/services` (commentaires et chaînes exclus, règle 19 sur
+ce qu'il ne fait pas) et fige ce zéro — construit et éprouvé contre un cas connu mauvais et un cas
+connu bon avant d'être considéré fiable (règle 17).
+
+**CE QUE ÇA NE CHANGE PAS.** Le `now()` SQL des colonnes par défaut n'est pas touché — il continue
+de porter l'heure RÉELLE d'écriture, ce qui reste le comportement voulu (règle 3 : la provenance
+technique ne se warpe pas). `new Date(argument)` (construire une date depuis une valeur déjà connue
+— un ISO string, un `.getTime()` déjà dérivé de `await now()`) reste légitime partout et n'est
+jamais signalé par le test structurel — seule la forme SANS ARGUMENT est interdite. Le reste du
+dépôt (scripts de harnais, `clock.ts` lui-même, qui doit forcément lire l'horloge système pour
+calculer son décalage) est hors du périmètre de ce test, volontairement.

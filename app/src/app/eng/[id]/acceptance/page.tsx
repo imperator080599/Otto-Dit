@@ -4,6 +4,7 @@ import { criteres } from '@/lib/methodology/catalogue';
 import {
   currentAcceptation, manquePourDecider, jalons, jalonsEnRetard,
 } from '@/lib/services/acceptance';
+import { now } from '@/lib/core/clock';
 import { ouvrirAction, repondreAction, deciderAction, jalonAction, jalonFaitAction } from './actions';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
@@ -38,7 +39,7 @@ export default async function AcceptancePage({
   const cat = await catalogueDeLaMission(id);
   const manque = a ? await manquePourDecider(id) : [];
   const liste = await jalons(id);
-  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const aujourdhui = (await now()).toISOString().slice(0, 10);
   const retard = await jalonsEnRetard(id, aujourdhui);
 
   return (

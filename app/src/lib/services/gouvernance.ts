@@ -2,6 +2,7 @@ import { q, q1 } from '@/lib/db/client';
 import { obstaclesAuVisa, type Famille } from './obstacles';
 import { travaux, type Achevement } from './completion';
 import { jalons, type Jalon } from './acceptance';
+import { now } from '@/lib/core/clock';
 
 /* Lot 7, H-4 tranche 1 (`docs/REGISTRE_IDEES.md` §H, ligne 272) : « le
  * reporting en trois périmètres d'audience — équipe, direction, comité ».
@@ -67,7 +68,7 @@ export async function syntheseComite(engagementId: string): Promise<SyntheseComi
     [engagementId],
   );
   const tousJalons = await jalons(engagementId);
-  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const aujourdhui = (await now()).toISOString().slice(0, 10);
   const enRetard = tousJalons.filter((j) => j.due_date && !j.done_at && j.due_date < aujourdhui);
   const prochain = tousJalons
     .filter((j) => j.due_date && !j.done_at && j.due_date >= aujourdhui)
