@@ -121,6 +121,14 @@
       "gabarit": false
     },
     {
+      "nom": "équipe : la case « may sign off » n’est rendue que pour un acteur manager/partner",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : un senior ne s’attribue pas le droit de signer — EQUIPE-01 refuse toute affectation par un acteur non manager/partner",
+      "gabarit": false
+    },
+    {
       "nom": "MAT-03 : avant le ré-import, REV-01 existe déjà, SIGNÉ (le papier réel dont la survie va être mesurée)",
       "gabarit": false
     },
@@ -1680,6 +1688,14 @@
     },
     {
       "nom": "équipe : un membre s’AFFECTE depuis l’écran (rôle, visa, date d’entrée)",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : la case « may sign off » n’est rendue que pour un acteur manager/partner",
+      "gabarit": false
+    },
+    {
+      "nom": "équipe : un senior ne s’attribue pas le droit de signer — EQUIPE-01 refuse toute affectation par un acteur non manager/partner",
       "gabarit": false
     },
     {

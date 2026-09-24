@@ -614,6 +614,32 @@ export async function conduire(
       refus(p) ?? (offertAffecter ? 'affectation enregistrée' : 'le formulaire d’affectation n’a jamais été offert'));
   });
 
+  /* EQUIPE-01 (P2-02, AUD-05) : L'ÉCRAN SUIT LE SERVICE. `assignMember` refuse déjà tout
+     changement de rôle/signature posé par un acteur autre que manager/partner — cette
+     station bascule sur le préparateur (senior/staff, jamais manager ni partner sur ce
+     dossier) et vérifie DEUX choses : la case « may sign off » n'est PAS rendue pour lui
+     (l'écran ne montre pas un contrôle qu'il ne peut de toute façon jamais exercer), ET une
+     tentative d'affectation ordinaire — sans rien forger, le formulaire tel qu'offert — est
+     refusée avant toute écriture. Rien à forger ici (contrairement à « ETANCH : portail ») :
+     le formulaire lui-même suffit, la garde est du côté du SERVICE, pas seulement de
+     l'écran. */
+  await station('équipe : un senior ne s’attribue pas le droit de signer (EQUIPE-01)', async () => {
+    await devenir(c.preparateur.id);
+    await aller(`${eng}/team`);
+    const caseSignature = await compte('input[name=can_sign]');
+    dire('équipe : la case « may sign off » n’est rendue que pour un acteur manager/partner',
+      caseSignature === 0, `${caseSignature} case(s) « can_sign » visible(s) pour un acteur senior/staff`);
+    const formeAffecter = p.locator('form:has(select[name=user_id])').first();
+    const offertAffecter = await formeAffecter.count();
+    if (offertAffecter) {
+      await formeAffecter.locator('select[name=user_id]').selectOption({ value: c.associe.id });
+      await soumettre(formeAffecter.locator('button').first(), 1200);
+    }
+    dire('équipe : un senior ne s’attribue pas le droit de signer — EQUIPE-01 refuse toute affectation par un acteur non manager/partner',
+      offertAffecter > 0 && Boolean(refus(p)),
+      refus(p) ?? (offertAffecter ? 'PASSÉ — défaut : l’affectation par un senior a été acceptée' : 'le formulaire d’affectation n’a jamais été offert'));
+  });
+
   // ── 3. IMPORT DU FEC DÉFINITIF (ADR-016 : un ré-import se confirme)
   /* MAT-03 (mandat 2026-09-09, §2.4, R87 de docs/instantanes/cloture.json) : LE RÉ-IMPORT
      LUI-MÊME était déjà cliqué, mais l'invariant (« le tirage, les papiers et les visas sont

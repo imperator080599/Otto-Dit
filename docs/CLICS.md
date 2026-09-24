@@ -1,7 +1,7 @@
 <!-- ENGENDRÉ par `cd app && npm run clics` — ne pas éditer à la main. -->
 # Clics comptés, geste par geste
 
-Parcours du 2026-09-24 · 71 gestes · **499 clics** au total.
+Parcours du 2026-09-24 · 72 gestes · **500 clics** au total.
 
 Le compteur est posé DANS la page et écoute les vrais événements de clic : il compte ce
 qu'un humain aurait cliqué (dépliages compris), jamais ce que le harnais fait sans souris
@@ -22,6 +22,7 @@ pas comme un record : le geste réel d'un auditeur coûte au plus cela.
 | tableau de bord : ce qui attend l’associé, hors rail, et le clic direct | 2 |
 | acceptation du dossier neuf | 9 |
 | équipe et indépendance | 12 |
+| équipe : un senior ne s’attribue pas le droit de signer (EQUIPE-01) | 1 |
 | import du grand livre définitif | 3 |
 | rapprochement balance / grand livre | 1 |
 | balances auxiliaires : concentration, apparus, vieillissement | 7 |
