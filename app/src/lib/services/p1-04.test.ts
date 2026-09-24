@@ -5,7 +5,7 @@ import { IDS } from '@/lib/seed';
 import { runPart1UpToWorkpaper } from '@/lib/flows/part1';
 import { draftRevenueWorkpaper } from '@/lib/services/workpapers/draft';
 import { signWorkpaper, etatDuVisa, editSection } from '@/lib/services/workpapers/lifecycle';
-import { assignMember, TeamRuleError, openDeclaration, answerRubric, signDeclaration } from '@/lib/services/team';
+import { assignMember, openDeclaration, answerRubric, signDeclaration } from '@/lib/services/team';
 import { closeFile } from '@/lib/services/retention';
 import { chargerCatalogue } from '@/lib/methodology/catalogue';
 
@@ -113,18 +113,32 @@ describe('P1-04 : visa (VISA-01..04, EQUIPE-01)', () => {
     // JAMAIS ENCORE MEMBRE en partner+can_sign. Fermé dans team.ts::assignMember : même contrôle
     // manager/partner que l'UPDATE, sauf le bootstrap d'un dossier ENCORE SANS AUCUN membre (où
     // la personne s'affecte elle-même — flows/prior-year.ts, jamais atteignable par l'écran
-    // puisque requireMember exige déjà une adhésion active).
+    // puisque requireMember exige déjà une adhésion active). P2-02 (AUD-05) : ce contrôle est
+    // désormais un `refus('EQUIPE-01', …)` enregistré (`Refus`), plus un `TeamRuleError` nu — le
+    // même code que le déclencheur SQL `equipe01_acteur_manager_partner`.
+    //
+    // CORRECTIF (P2-02) : le sonde a besoin d'une déclaration d'indépendance SIGNÉE — sans
+    // elle, `assignMember` refuse plus tôt (`independenceHolds`, un `TeamRuleError` sans
+    // rapport) et l'assertion `/EQUIPE-01/` ci-dessous échoue pour la MAUVAISE raison. L'ancienne
+    // assertion (`toThrow(TeamRuleError)`, avant P2-02) passait quand même : les deux refus sont
+    // de la même classe, donc le test ne prouvait pas ce que son propre énoncé affirmait
+    // (règle 18 : une assertion plausible n'est pas un diagnostic) — trouvé en migrant vers un
+    // contrôle plus précis, corrigé ici plutôt que la précision relâchée.
     const sonde = await q1<{ id: string }>(
       `insert into app_user (tenant_id, name, email, firm_role)
        values ($1, 'Sonde P1-04 (fictif)', 'sonde.p104@vermeil-audit.example', 'staff')
        returning id::text`,
       [IDS.tenant]);
+    const cat = await chargerCatalogue();
+    const decl = await openDeclaration(IDS.engNep, sonde.id);
+    for (const r of cat.independance.rubriques) await answerRubric(decl.id, sonde.id, r.code, 'non');
+    await signDeclaration(decl.id, sonde.id);
     await expect(
       assignMember({
         engagementId: IDS.engNep, userId: sonde.id, engRole: 'partner', canSign: true,
         actorUserId: IDS.users.karim,
       }),
-    ).rejects.toThrow(TeamRuleError);
+    ).rejects.toThrow(/EQUIPE-01/);
     const m = await q01<{ id: string }>(
       `select id from engagement_member where engagement_id = $1 and user_id = $2`, [IDS.engNep, sonde.id]);
     expect(m).toBeNull();
@@ -137,7 +151,7 @@ describe('P1-04 : visa (VISA-01..04, EQUIPE-01)', () => {
     await assignMember({ engagementId: IDS.engNep, userId: IDS.users.hugo, engRole: 'staff', canSign: false, actorUserId: IDS.users.lea });
     await expect(
       assignMember({ engagementId: IDS.engNep, userId: IDS.users.hugo, engRole: 'manager', canSign: false, actorUserId: IDS.users.karim }),
-    ).rejects.toThrow(TeamRuleError);
+    ).rejects.toThrow(/EQUIPE-01/);
   });
 
   it('EQUIPE-01 : un manager PEUT remanier un membre déjà affecté', async () => {
@@ -147,7 +161,7 @@ describe('P1-04 : visa (VISA-01..04, EQUIPE-01)', () => {
     expect(m.eng_role).toBe('senior');
   });
 
-  it('closeFile exige can_sign — karim (senior, can_sign=false) refusé', async () => {
-    await expect(closeFile(IDS.engNep, IDS.users.karim, '2026-03-31')).rejects.toThrow(/signing rights/);
+  it('closeFile exige can_sign — karim (senior, can_sign=false) refusé (EQUIPE-02)', async () => {
+    await expect(closeFile(IDS.engNep, IDS.users.karim, '2026-03-31')).rejects.toThrow(/EQUIPE-02/);
   });
 });

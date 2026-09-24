@@ -2028,6 +2028,8 @@ export const LIBELLES = {
   'refus.ETANCH-05': { en: '{detail}', fr: '{detail}' },
   'refus.ETANCH-06': { en: '{detail}', fr: '{detail}' },
   'refus.ETANCH-07': { en: '{detail}', fr: '{detail}' },
+  'refus.EQUIPE-01': { en: '{detail}', fr: '{detail}' },
+  'refus.EQUIPE-02': { en: '{detail}', fr: '{detail}' },
   'refus.PORTAIL-01': { en: '{detail}', fr: '{detail}' },
   'refus.VERIF-01': { en: '{detail}', fr: '{detail}' },
   'refus.CTRL-01': { en: '{detail}', fr: '{detail}' },

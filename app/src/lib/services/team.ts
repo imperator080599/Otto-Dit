@@ -23,6 +23,7 @@ import type { Catalogue } from '@/lib/methodology/types';
 import { motif, type Motif } from './motif';
 import { assertMembre, assertMembreDe } from '@/lib/core/membre';
 import { withActeur } from '@/lib/db/acteur';
+import { refus } from '@/lib/core/refus';
 
 export class TeamRuleError extends Error {
   constructor(message: string) {
@@ -439,7 +440,7 @@ export async function assignMember(input: AssignInput): Promise<{ id: string }> 
           [input.engagementId, input.actorUserId],
         );
         if (!acteur || (acteur.eng_role !== 'manager' && acteur.eng_role !== 'partner')) {
-          throw new TeamRuleError(
+          throw refus('EQUIPE-01',
             `seul un manager ou un partner du dossier peut modifier le rôle ou le droit de signature d’un membre déjà affecté`,
           );
         }
@@ -461,7 +462,7 @@ export async function assignMember(input: AssignInput): Promise<{ id: string }> 
             [input.engagementId, input.actorUserId],
           );
           if (!acteur || (acteur.eng_role !== 'manager' && acteur.eng_role !== 'partner')) {
-            throw new TeamRuleError(
+            throw refus('EQUIPE-01',
               `seul un manager ou un partner du dossier peut affecter un nouveau membre — sauf la toute première affectation d’un dossier encore sans équipe, que la personne pose elle-même`,
             );
           }

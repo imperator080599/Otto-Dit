@@ -10,6 +10,7 @@ import {
   independenceObstacles, recordNonAuditService, feeRatio, TeamRuleError,
   anciennetes, rotationSignataire,
 } from '@/lib/services/team';
+import { Refus } from '@/lib/core/refus';
 import { tr } from '@/lib/i18n';
 import { BandeauRefus } from '@/app/bandeau-refus';
 import { Repli } from '@/app/repli';
@@ -46,7 +47,11 @@ async function executer(id: string, fn: () => Promise<unknown>): Promise<never> 
   try {
     await fn();
   } catch (e) {
-    if (!(e instanceof TeamRuleError)) throw e;
+    /* P2-02 (AUD-05) : assignMember lève désormais aussi un `Refus` enregistré (EQUIPE-01,
+       migration 0176) — même contrat de forme (« CODE : phrase ») que `TeamRuleError`, la
+       même variable `erreur` porte les deux sans que `BandeauRefus`/`separerCode` n'aient
+       besoin de le savoir. */
+    if (!(e instanceof TeamRuleError) && !(e instanceof Refus)) throw e;
     erreur = e.message;
   }
   revalidatePath(`/eng/${id}/team`);
@@ -66,6 +71,12 @@ export default async function TeamPage({
   const { user } = await requireMember(id);
   const cat = await catalogueDeLaMission(id);
   const roster = await members(id);
+  /* P2-02 (AUD-05) : L'ÉCRAN SUIT LE SERVICE, JAMAIS L'INVERSE. `assignMember` refuse déjà
+     (EQUIPE-01) qu'un acteur autre que manager/partner pose `can_sign` — cette case ne se
+     rend donc que pour un acteur manager/partner, pour ne pas montrer un contrôle qu'un
+     senior ne peut de toute façon jamais exercer. */
+  const moi = roster.find((m) => m.user_id === user.id);
+  const peutAttribuerSignature = !!moi && !moi.exited_on && (moi.eng_role === 'manager' || moi.eng_role === 'partner');
   const mine = await currentDeclaration(id, user.id);
   const myStack = await declarations(id, user.id);
   const missing = missingForSignature(cat, mine);
@@ -359,7 +370,9 @@ export default async function TeamPage({
             <option value="senior">{t('mot.senior')}</option>
             <option value="staff">{t('mot.staff')}</option>
           </select>
-          <label className="row"><input type="checkbox" name="can_sign" /> {t('team.maySignOff')}</label>
+          {peutAttribuerSignature && (
+            <label className="row"><input type="checkbox" name="can_sign" /> {t('team.maySignOff')}</label>
+          )}
           <input type="text" name="entered_on" placeholder={t('team.joinedYyyyMmDd')} style={{ width: 130 }} />
           <button className="btn small">{t('mot.assign')}</button>
         </form>

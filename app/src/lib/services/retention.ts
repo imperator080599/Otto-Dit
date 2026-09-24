@@ -8,6 +8,7 @@ import { engagementCtx } from './imports';
 import { frameworkSet } from './fsli';
 import { sealFile } from './archive';
 import { assertMembre } from '@/lib/core/membre';
+import { refus } from '@/lib/core/refus';
 
 // ADR-014 rev. 2 — file deadlines are computed from the engagement's own facts and stored
 // with the provision that produced them. Nothing here is a hardcoded duration: the pack
@@ -53,7 +54,7 @@ export async function closeFile(engagementId: string, userId: string, reportDate
     `select can_sign from engagement_member where engagement_id = $1 and user_id = $2 and exited_on is null`,
     [engagementId, userId],
   );
-  if (!acteur?.can_sign) throw new Error('closeFile requires signing rights (can_sign)');
+  if (!acteur?.can_sign) throw refus('EQUIPE-02', 'clore le dossier revient à le signer — cela demande le droit de signature (can_sign) sur cette mission');
   const ctx = await engagementCtx(engagementId);
   const d = await fileDeadlines(engagementId, reportDate);
 

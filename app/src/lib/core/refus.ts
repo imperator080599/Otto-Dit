@@ -54,6 +54,12 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   'ETANCH-05': { cle: 'refus.ETANCH-05', famille: 'etancheite' },
   'ETANCH-06': { cle: 'refus.ETANCH-06', famille: 'etancheite' },
   'ETANCH-07': { cle: 'refus.ETANCH-07', famille: 'etancheite' },
+  // P2-02 (AUD-05) : équipe — un update de eng_role/can_sign hors acteur manager/partner
+  // (le même code que le déclencheur SQL equipe01_acteur_manager_partner, migration 0176).
+  'EQUIPE-01': { cle: 'refus.EQUIPE-01', famille: 'equipe' },
+  // P2-02 (AUD-05) : clore le dossier revient à le signer — seul un partner avec droit de
+  // signature (can_sign) le fait, jamais un membre ordinaire (retention.ts::closeFile).
+  'EQUIPE-02': { cle: 'refus.EQUIPE-02', famille: 'equipe' },
   // P2-01 (AUD-04) : le portail — un élément de demande qui n'appartient pas à la demande
   // désignée par le jeton, ou dont l'entité ne correspond pas au contact du jeton.
   'PORTAIL-01': { cle: 'refus.PORTAIL-01', famille: 'etancheite' },
