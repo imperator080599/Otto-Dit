@@ -68,6 +68,36 @@ describe('on pointe le montant PRÉSENTÉ, pas le sien', () => {
     expect(l.tied_at).toBeTruthy();
   });
 
+  /* P1-10 (AUD-12) : un rapprochement CALCULÉ n'est le jugement de PERSONNE — Léa a
+     cliqué « pointer », elle n'a rien additionné. Avant cette tranche, `tied_by`
+     portait quand même son identifiant : la même confusion « qui a cliqué » / « ce
+     qui a produit la valeur » que le mandat nomme ailleurs (deux horloges, AUTO-*). */
+  it('un rapprochement calculé porte engine_run_id, jamais tied_by (le calcul n’est pas un jugement)', async () => {
+    const total = await q1<{ t: string }>(
+      `select abs(sum(a.balance))::text t from account a
+       join tb_snapshot s on s.id = a.tb_snapshot_id
+       where s.engagement_id = $1 and s.period_kind = 'current' and s.status = 'active'
+         and a.number like '70%'`,
+      [IDS.engNep]);
+    await declarerLignes(IDS.engNep, IDS.users.lea, [{
+      statement: 'IS', ref: 'CA-P110', label: 'Chiffre d’affaires net (sonde P1-10)',
+      presented: Number(total.t), sortOrder: 1, nature: 'agregat_comptes',
+      accounts: (await q<{ number: string }>(
+        `select distinct a.number from account a join tb_snapshot s on s.id = a.tb_snapshot_id
+         where s.engagement_id = $1 and s.status = 'active' and s.period_kind = 'current'
+           and a.number like '70%'`, [IDS.engNep])).map((x) => x.number),
+    }]);
+    await pointer(IDS.engNep, IDS.users.lea);
+    const row = await q1<{ tied_by: string | null; engine_run_id: string | null; engine: string | null }>(
+      `select t.tied_by::text, t.engine_run_id::text, r.engine
+       from fs_tie t join fs_line l on l.id = t.fs_line_id left join engine_run r on r.id = t.engine_run_id
+       where l.engagement_id = $1 and l.ref = 'CA-P110'`,
+      [IDS.engNep]);
+    expect(row.tied_by).toBeNull();
+    expect(row.engine_run_id).toBeTruthy();
+    expect(row.engine).toBe('fs_tieout');
+  });
+
   it('un écart se voit tout seul, et la ligne reste OUVERTE tant qu’il n’est pas expliqué', async () => {
     const total = await q1<{ t: string }>(
       `select abs(sum(a.balance))::text t from account a

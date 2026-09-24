@@ -2,6 +2,7 @@ import { q, q1, q01 } from '@/lib/db/client';
 import { logEvent } from '@/lib/core/events';
 import { motif, type Motif } from './motif';
 import { assertMembre } from '@/lib/core/membre';
+import { engagementCtx } from './imports';
 
 // LE POINTAGE DES ÉTATS FINANCIERS (point 9).
 //
@@ -132,6 +133,18 @@ export async function declarerLignes(
  * documenter » n'est pas touché — il n'y a rien à calculer, et lui inventer un
  * calcul serait exactement la faute que sa nature existe pour éviter.
  */
+/**
+ * P1-10 (AUD-12) : LE CALCUL EST DU MOTEUR, PAS DE LA PERSONNE QUI A CLIQUÉ. Les deux
+ * natures calculées (`solde_balance`, `agregat_comptes`) ne demandent AUCUN jugement —
+ * le moteur additionne et compare, un point c'est tout. Avant cette tranche, chaque ligne
+ * ainsi rapprochée portait `tied_by = actorUserId` : la personne qui a cliqué « pointer »,
+ * confondue avec ce qui a PRODUIT le rapprochement — écrivait « Karim a pointé cette ligne »
+ * quand Karim n'a rien calculé, il a démarré le moteur. `engine_run` (migration 0006) existe
+ * EXACTEMENT pour cette distinction ailleurs dans ce dépôt (analytique.ts, matching.ts…) ;
+ * `fs_tie` n'avait pas la colonne pour la porter (migration 0181, ajoutée avec cette tranche).
+ * Une ligne machine-tied porte donc désormais `tied_by = null` (personne n'a jugé) et
+ * `engine_run_id` (ce qui a calculé) — la seule branche VRAIMENT humaine, `documenter()`
+ * ci-dessous (nature « calcul_documente »), continue de poser `tied_by`, inchangée. */
 export async function pointer(engagementId: string, actorUserId: string): Promise<LigneEtats[]> {
   await assertMembre(engagementId, actorUserId, 'pointer');
   const snap = await q01<{ id: string }>(
@@ -150,6 +163,13 @@ export async function pointer(engagementId: string, actorUserId: string): Promis
      where l.engagement_id = $1 and t.nature <> 'calcul_documente'`,
     [engagementId],
   );
+
+  const ctx = await engagementCtx(engagementId);
+  const run = await q1<{ id: string }>(
+    `insert into engine_run (tenant_id, engagement_id, engine, engine_version, config_hash, params, finished_at)
+     values ($1, $2, 'fs_tieout', 'v1', $3, $4, now()) returning id::text`,
+    [ctx.tenant_id, engagementId, snap.id, JSON.stringify({ lignes: aPointer.length })]);
+  let pointees = 0;
 
   for (const t of aPointer) {
     /* Le solde d'un compte de produit est créditeur : on rapproche en VALEUR
@@ -183,10 +203,20 @@ export async function pointer(engagementId: string, actorUserId: string): Promis
     }
     await q(
       `update fs_tie set computed = $2, difference = $3, status = $4,
-              tied_by = $5, tied_at = now()
+              tied_by = null, engine_run_id = $5, tied_at = now()
        where id = $1`,
-      [t.id, calc, ecart, statut, actorUserId],
+      [t.id, calc, ecart, statut, run.id],
     );
+    pointees++;
+  }
+  await q(`update engine_run set params = params || $2::jsonb where id = $1`,
+    [run.id, JSON.stringify({ pointees })]);
+  if (pointees > 0) {
+    await logEvent({
+      tenantId: ctx.tenant_id, engagementId, actorKind: 'user', actorId: actorUserId,
+      verb: 'fs.lines_tied', objectType: 'engine_run', objectId: run.id,
+      payload: { pointees },
+    });
   }
   return lignes(engagementId);
 }
