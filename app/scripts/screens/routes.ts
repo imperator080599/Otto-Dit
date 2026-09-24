@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { q, q01 } from '../../src/lib/db/client';
+import { signerIdentite } from '../../src/lib/core/session-jeton';
 
 // LA LISTE DES ROUTES SE DÉCOUVRE, ELLE NE S'ÉCRIT PAS.
 //
@@ -121,11 +122,12 @@ export async function parametres(): Promise<Record<string, string>> {
   };
 }
 
-/** L'utilisateur auditeur du cabinet, pour le cookie de session. */
+/** L'utilisateur auditeur du cabinet, DÉJÀ SIGNÉ (P2-03a, AUD-07) — la valeur
+ *  prête à poser telle quelle dans le cookie `otto_user`, jamais l'id nu. */
 export async function auditeur(): Promise<string> {
   const r = await q01<{ id: string }>(`select id::text id from app_user where firm_role = 'partner' limit 1`);
   if (!r) throw new Error('aucun associé en base : la base n’est pas semée');
-  return r.id;
+  return signerIdentite(r.id);
 }
 
 /**

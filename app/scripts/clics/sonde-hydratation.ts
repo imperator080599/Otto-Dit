@@ -11,6 +11,7 @@ import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 import { binaireDe, groupeDetache, tuerArbre, cheminChromium } from '../lib/portable.mjs';
 import { getDb, closeDb } from '../../src/lib/db/client';
+import { signerIdentite } from '../../src/lib/core/session-jeton';
 
 const PORT = 3399;
 async function main() {
@@ -35,7 +36,7 @@ async function main() {
   const pages = [`/eng/${eng.id}/workpapers/${wp.id}`, `/eng/${eng.id}/testing`, `/portal/demo-sophie-altiverre`];
   for (let i = 0; i < 45; i++) {
     const ctx = await nav.newContext();
-    if (i % 3 !== 2) await ctx.addCookies([{ name: 'otto_user', value: user.id, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    if (i % 3 !== 2) await ctx.addCookies([{ name: 'otto_user', value: await signerIdentite(user.id), domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
     const p = await ctx.newPage();
     p.on('pageerror', (e) => { erreurs++; console.log(`#${i} PAGEERROR:`, e.message.slice(0, 300), '\nSTACK:', (e.stack ?? '').split('\n').slice(0, 6).join('\n')); });
     p.on('console', (m) => { if (m.type() === 'error') console.log(`#${i} CONSOLE:`, m.text().slice(0, 400)); });

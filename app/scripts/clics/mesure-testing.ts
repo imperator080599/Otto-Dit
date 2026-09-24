@@ -5,6 +5,7 @@ import { closeDb } from '../../src/lib/db/client';
 import { IDS } from '../../src/lib/seed';
 import { bootstrapNep, samplingAndRequest, clientDeposits } from '../../src/lib/flows/part1';
 import { extractAll } from '../../src/lib/services/extraction/ladder';
+import { signerIdentite } from '../../src/lib/core/session-jeton';
 
 // LA MÉTRIQUE NORD APPLIQUÉE À UN ÉCRAN (point 10) : le temps pour traiter
 // UNE ligne d'échantillon, de son ouverture à son état complet, cas normal
@@ -83,7 +84,7 @@ async function main() {
     const nav = await chromium.launch({ executablePath: cheminChromium() });
     const ctx = await nav.newContext();
     await ctx.addCookies([{
-      name: 'otto_user', value: IDS.users.karim, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax',
+      name: 'otto_user', value: await signerIdentite(IDS.users.karim), domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax',
     }]);
     const p = await ctx.newPage();
     await p.goto(`${BASE}/eng/${IDS.engNep}/testing`, { waitUntil: 'networkidle' });

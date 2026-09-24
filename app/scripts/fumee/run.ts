@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { binaireDe, groupeDetache, tuerArbre } from '../lib/portable.mjs';
 import { motifs } from '../screens/routes';
+import { signerIdentite } from '../../src/lib/core/session-jeton';
 
 // npm run fumee [-- <url>] [--comme=<identifiant>]
 //
@@ -68,7 +69,11 @@ function lancerServeur(port: number): ChildProcess {
 async function lire(base: string, chemin: string, comme: string | null): Promise<{ statut: number; corps: string }> {
   const url = new URL(chemin, base);
   if (comme) url.searchParams.set('comme', comme);
-  const r = await fetch(url, { redirect: 'follow', headers: comme ? { cookie: `otto_user=${comme}` } : {} });
+  /* P2-03a (AUD-07) : le cookie posé DIRECTEMENT (sans passer par le middleware
+     `?comme=`, pour les routes qu'il ne couvre pas) doit porter la même
+     signature que celle que `session-jeton.ts` exige partout ailleurs. */
+  const headers: HeadersInit | undefined = comme ? { cookie: `otto_user=${await signerIdentite(comme)}` } : undefined;
+  const r = await fetch(url, { redirect: 'follow', headers });
   return { statut: r.status, corps: await r.text() };
 }
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { repoRoot } from '../../src/lib/db/client';
 import type { Contexte } from './contexte';
 import { LOCALES, traduire, type CleLibelle, type Locale } from '../../src/lib/i18n/catalogue';
+import { signerIdentite } from '../../src/lib/core/session-jeton';
 
 // LE PARCOURS CLIQUÉ — TOUT le chemin de démonstration, de l'import à l'export
 // scellé. C'est ce que le balayage ne peut pas voir.
@@ -241,7 +242,7 @@ export async function conduire(
   const devenir = async (id: string) => {
     await ctx.clearCookies();
     await ctx.addCookies([{
-      name: 'otto_user', value: id, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax',
+      name: 'otto_user', value: await signerIdentite(id), domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax',
     }]);
   };
 
@@ -639,6 +640,16 @@ export async function conduire(
       offertAffecter > 0 && Boolean(refus(p)),
       refus(p) ?? (offertAffecter ? 'PASSÉ — défaut : l’affectation par un senior a été acceptée' : 'le formulaire d’affectation n’a jamais été offert'));
   });
+
+  /* DEMO-01 (P2-03a, AUD-07) : PAS DE STATION CLICS ICI, et c'est une limite NOMMÉE, pas un
+     oubli (R162, docs/BACKLOG_REPORTE.md). L'écran de confirmation (`/demo/remise-a-zero`) ne
+     rend le bouton « remettre à zéro » que si `etatInstantane().aJour` — et cet indicateur ne
+     peut JAMAIS valoir `true` en local/CI : l'instantané n'est posé que par
+     `scripts/deploy/reconstruire.ts` (un script de DÉPLOIEMENT), jamais par `npm run
+     demo:seed`. Le bouton n'est donc atteignable par AUCUN parcours cliqué local, quel que
+     soit l'acteur — une station qui l'exigerait échouerait toujours, pour une raison qui n'a
+     rien à voir avec la garde. La garde elle-même (`assertPeutRemettreAZero`, monde-demo.ts)
+     est éprouvée directement par un cas connu mauvais (règle 17, monde-demo.test.ts). */
 
   // ── 3. IMPORT DU FEC DÉFINITIF (ADR-016 : un ré-import se confirme)
   /* MAT-03 (mandat 2026-09-09, §2.4, R87 de docs/instantanes/cloture.json) : LE RÉ-IMPORT
