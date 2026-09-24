@@ -2,6 +2,25 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 1, clôture (2026-09-24)
+
+Phase 1 (P1-01 à P1-10) livrée, chaque tranche poussée directement sur `main` par
+`git push origin HEAD:main` (le gate a laissé passer à chaque tentative cette session — jamais
+refusé). `main` et `claude/otto-session-resume-zimig9` sont IDENTIQUES, tous deux au SHA
+`a5fe39b` (confirmé par `git rev-parse` sur les deux refs distantes juste avant cette entrée,
+pas supposé). **Aucune pull request de clôture de phase n'est ouverte** : le mandat en demandait
+une « au cas où le gate refuserait » — il n'a jamais refusé cette session (PR #1, elle-même
+fermée sans fusion GitHub, en est la preuve : `main` l'avait déjà dépassée par push direct). Une
+PR entre deux branches identiques n'aurait aucun diff à montrer ; en ouvrir une quand même
+aurait été une PR vide, pas une preuve de plus. `/api/sante` porte désormais une lecture pour
+CHAQUE tranche P1-01 à P1-10 (règle 22) — audité juste avant cette entrée : `AUD-01` à `AUD-15`,
+`P1-01` à `P1-09` et `AUD-12` (P1-10, ajoutée par le correctif `876fa85` après que la revue
+hostile a trouvé le trou R155) apparaissent tous dans `route.ts`. `docs/04_DATA_MODEL.md` à jour
+avec la migration 0181 (régénéré ce jour). **SHA servi non confirmé** — à mesurer via
+`/api/sante` une fois le déploiement Vercel terminé (règle 27), pas supposé ici.
+
+---
+
 **2026-09-24** : PR #1 (P1-07, P1-08) fusionnée sur `main` par `git push origin HEAD:main`
 (le gate a laissé passer cette fois — pas de permission refusée). `main` à `e5fd721`. **SHA
 servi non confirmé** — à mesurer via `/api/sante` dès que le déploiement Vercel a eu le temps
