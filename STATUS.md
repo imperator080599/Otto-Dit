@@ -9,6 +9,69 @@ de tourner (règle 27), pas supposé ici.
 
 ---
 
+## Phase 1 — P1-10 Registre des verbes, écriture nue, deux horloges (2026-09-24, AUD-12)
+
+**`lib/core/verbes.ts`** (nouveau) : un registre fermé de 187 verbes d'événement (`VERBES`, `as
+const`) + `ALIAS_VERBES` (un doublon trouvé et corrigé : `engagement_created`/`engagement.created`
+désignaient le même fait, `seed.ts` émet désormais directement la forme canonique) + deux sondes de
+harnais séparées du registre métier. **Première mesure fausse, corrigée le jour même** (règle 13) :
+un premier balayage par littéral direct trouvait 158/159 verbes, ratait tout verbe choisi par
+ternaire ou construit par gabarit (`` `review_note_${to}` ``) — un second balayage (tout le texte
+entre `verb:` et le `objectType:` suivant) a trouvé les 187 réels. **`logEvent`** (`core/events.ts`)
+résout désormais le verbe UNE SEULE FOIS, avant le hash ET avant l'insertion SQL (jamais deux formes
+différentes du même verbe dans la chaîne) ; un verbe hors registre lève en test, `console.warn`
+seulement en production (disclosed R155, pas de lecture `/api/sante` sur ce cas — le commentaire du
+registre l'assume en toutes lettres).
+
+**`core/ecriture-nue.test.ts`** (nouveau, scanner brace-depth sans AST) : toute fonction exportée de
+`lib/services` qui écrit (insert/update/delete) doit appeler `logEvent` dans son propre corps, sinon
+figurer dans `docs/instantanes/ecritures-nues.json` avec sa raison. **14 sites trouvés, pas 24 comme
+l'estimait le mandat avant mesure** (règle 31) : douze bootstrap idempotent ou état d'interface,
+deux vrais manques disclosed (`extraction/ladder.ts::extractEvidence`, `team.ts::answerRubric`,
+R154). Trouvé EN CONSTRUISANT ce balayage, pas avant : `automatisation.ts::definirNiveauMission`
+écrivait sans tracer — corrigé dans la même tranche (garde de rôle AUTO-03 + `logEvent`, commit
+`a213a36`, déjà expédié).
+
+**Provenance du pointage automatique** (`services/tieout.ts::pointer`, migration
+`0181_fs_tie_engine_run.sql`) : une ligne rapprochée par le MOTEUR portait `tied_by = actorUserId`
+— la personne qui a cliqué « pointer », confondue avec ce qui a produit le calcul. Corrigé :
+`tied_by = null` + `engine_run_id` sur les deux natures calculées ; la seule branche vraiment
+humaine (`documenter()`, nature « calcul à documenter ») garde `tied_by`, inchangée.
+
+**Deux horloges, jamais une troisième** (ADR-138) : `core/clock.ts::now()` (async, warp de
+démonstration) est la seule horloge sûre pour un calcul métier dans `lib/services`. Sept sites
+`new Date()` nus corrigés (`core/jours.ts` ×2 défauts de paramètre — désormais EXIGÉ, jamais
+deviné —, `obstacles.ts`, `eng/[id]/acceptance/page.tsx`, `workpapers/lifecycle.ts`,
+`flows/enrichir.ts`, `sox.ts::documenterProcedureOe`, `gouvernance.ts::syntheseComite`). Test
+structurel `core/pas-de-new-date.test.ts` (cas connu mauvais/bon éprouvés, règle 17) fige ce
+zéro pour `lib/services`.
+
+**Revue hostile, deux voix indépendantes (règle 30 amendement — migration 0181, infrastructure
+event_log) — AUCUN CONSTAT BLOQUANT.** Voix 1 (logique) : contrainte SQL 0019 vérifiée ligne à
+ligne (ne s'applique pas à la branche `tied_by = null`), hash/insertion `event_log` cohérents,
+sondage de 8 verbes tous réels, un défaut cosmétique trouvé — une note de `semeur/registre.ts`
+devenue fausse par la normalisation du verbe (corrigée, `docs/SEMEUR_VS_CHEMIN.md` régénéré).
+Voix 2 (largeur) : 182 sites `logEvent` grep-és, tous les verbes ternaire/gabarit résolus contre
+le registre — aucun manquant ; tous les appelants de `joursOuvresAvant`/`joursOuvresEntre`
+fournissent leur second argument ; les 14 exceptions d'`ecritures-nues.json` lues une à une,
+aucun maquillage trouvé. Convergence : les deux voix confirment `documented_needs_explanation_
+and_evidence` (0019) indépendamment.
+
+**`npm run verify` : VERT, 21/21 maillons, arbre `a213a364f6b516776b96189f2476d6478e4ee641`.**
+Trois passages : le premier a rougi sur `docs:modele:epreuve` (docs/04 pas régénéré après la
+migration 0181), le second sur `semeur` (`docs/SEMEUR_VS_CHEMIN.md` pas régénéré après le
+correctif de `registre.ts`) — les deux corrigés par leur propre commande `-- --figer`, jamais
+édités à la main. Le troisième : **vitest 1412 tests · 182 fichiers** (588.6s) · `screens` 98
+routes 0 échec (116.0s) · `screens:test` 2/2 (462.0s) · `fumee` 55 routes 0 échec (10.1s) ·
+`densite` ok (82.4s) · `clics` **326 étapes · 0 échec · 498 clics sur 70 gestes · 325 stations
+figées vérifiées** (1074.7s) · `visuel` 356 vues · 0 défaut (203.6s) · `plancher` 1412 collectés,
+plancher 1328, aucune forme éteinte (56.3s).
+
+**Non commité au moment de cette entrée** — commit et push à suivre dans le même tour (règle 36 :
+ENCHAÎNER, pas d'attente entre le verify vert et le push).
+
+---
+
 ## Phase 1 — P1-09 Classe Refus, registre des codes, executer() panne vs refus (2026-09-24, AUD-14)
 
 **`lib/core/refus.ts`** : classe `Refus extends Error` + `REGISTRE_REFUS` (45 codes — mesuré par
