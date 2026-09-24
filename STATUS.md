@@ -69,7 +69,9 @@ seulement supposée : confirmée comme course rare (trois relances isolées pass
 complet, après le correctif de revue hostile et l'ajout des états R151/152/153 dans
 `docs/instantanes/fils.json`). Commande : `cd app && npm run verify` (budget 7200 s).
 
-**SHA servi non confirmé** — à mesurer via `/api/sante` une fois poussé et déployé (règle 27).
+**Poussée sur `main` par `git push origin HEAD:main`, `dc57213`** (le gate a laissé passer). **SHA
+servi non confirmé** — à mesurer via `/api/sante` une fois le déploiement Vercel terminé
+(règle 27), pas supposé ici.
 
 ---
 
