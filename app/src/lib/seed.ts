@@ -6,6 +6,7 @@ import {
 } from '@/lib/services/acceptance';
 import { demoId } from '@/lib/core/ids';
 import { logEvent } from '@/lib/core/events';
+import { hacherJetonPortail } from '@/lib/core/jeton-portail';
 
 // Base demo world (docs/07 §6 cast — all fictional, synthetic-only rule).
 // Idempotent: skips if the tenant already exists. Deterministic IDs via demoId().
@@ -43,13 +44,36 @@ export const IDS = {
   contacts: {
     sophie: demoId('contact:sophie'),
     theo: demoId('contact:theo'),
+    // P2-03b (AUD-07) : un TROISIÈME contact, dont la SEULE raison d'exister
+    // est de porter un jeton portail déjà expiré (expires_at fixé dans le
+    // passé, ci-dessous), pour que PORTAIL-02 (le cas connu mauvais, règle 17)
+    // se clique réellement plutôt que de se simuler par une mutation SQL au
+    // milieu du parcours (ce qui casserait les stations existantes sur
+    // sophie/théo). CORRIGÉ après revue hostile (V1-02) : ce contact reste
+    // `active` (une garde le REFUSE par expiration, pas par « active=false » —
+    // sinon PORTAIL-02 ne serait jamais réellement exercé), donc il APPARAÎT
+    // bel et bien dans les sélecteurs génériques de `reunions.ts`
+    // (`contactsDisponibles`) — jamais « lié depuis aucun écran » comme
+    // l'affirmait, à tort, une version antérieure de ce commentaire. Son
+    // `title` (ci-dessous) est donc un texte PLAUSIBLE, jamais une note
+    // d'implémentation : un auditeur qui le déclare contact clé le verrait
+    // rendu tel quel.
+    expire: demoId('contact:expire'),
   },
 } as const;
 
 export const PORTAL_TOKENS = {
   sophie: 'demo-sophie-altiverre',
   theo: 'demo-theo-altiverre',
+  expire: 'demo-expire-altiverre',
 } as const;
+
+/** P2-03b (AUD-07) : fixe, dans le passé, pour que le contact « expire » soit
+ *  DÉJÀ expiré à tout moment où la démonstration est semée — jamais relatif à
+ *  `now()` (règle 31 : un horodatage plausible n'est pas une mesure ; ici,
+ *  au contraire, un horodatage FIXE est exactement ce qu'il faut : il n'a
+ *  besoin d'aucune mesure, seulement d'être dans le passé pour toujours). */
+const JETON_EXPIRE_LE = '2020-01-01T00:00:00Z';
 
 export async function seedBase(): Promise<void> {
   const exists = await q01(`select id from tenant where id = $1`, [IDS.tenant]);
@@ -192,11 +216,30 @@ export async function seedBase(): Promise<void> {
     }
   }
 
+  /* LE NOM DU TROISIÈME CONTACT COMPTE, PAS SEULEMENT SA VALEUR (P2-03b).
+     `scripts/clics/contexte.ts` résout LE contact canonique du parcours cliqué
+     par `... where e.id = $1 and c.active order by c.name limit 1` : un nom
+     qui trierait AVANT « Sophie Marchand » (alphabétique) deviendrait ce
+     contact canonique à la place de Sophie — cassant en silence toutes les
+     stations « portail client »/« ETANCH : portail »/« réponses aux
+     clarifications » du parcours entier. D'où « Zoé », choisi pour trier
+     APRÈS Sophie (S) et Théo (T) — vérifié, pas supposé. Ne JAMAIS renommer
+     ce contact sans revérifier ce tri. */
   await q(
-    `insert into client_contact (id, entity_id, name, email, title, portal_token) values
-     ($1, $3, 'Sophie Marchand', 'sophie.marchand@altiverre.example', 'Directrice financière', $4),
-     ($2, $3, 'Théo Girard', 'theo.girard@altiverre.example', 'Chef comptable', $5)`,
-    [IDS.contacts.sophie, IDS.contacts.theo, IDS.entity, PORTAL_TOKENS.sophie, PORTAL_TOKENS.theo],
+    `insert into client_contact
+       (id, entity_id, name, email, title, portal_token, portal_token_hash, expires_at) values
+     ($1, $4, 'Sophie Marchand', 'sophie.marchand@altiverre.example', 'Directrice financière',
+      $5, $6, null),
+     ($2, $4, 'Théo Girard', 'theo.girard@altiverre.example', 'Chef comptable',
+      $7, $8, null),
+     ($3, $4, 'Zoé Lefebvre', 'zoe.lefebvre@altiverre.example', 'Assistante comptable',
+      $9, $10, $11)`,
+    [
+      IDS.contacts.sophie, IDS.contacts.theo, IDS.contacts.expire, IDS.entity,
+      PORTAL_TOKENS.sophie, hacherJetonPortail(PORTAL_TOKENS.sophie),
+      PORTAL_TOKENS.theo, hacherJetonPortail(PORTAL_TOKENS.theo),
+      PORTAL_TOKENS.expire, hacherJetonPortail(PORTAL_TOKENS.expire), JETON_EXPIRE_LE,
+    ],
   );
 
   await q(
