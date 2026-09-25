@@ -535,7 +535,7 @@
       "titre": "Session et surface publique non gardées",
       "epreuve": "POST remettreAZeroAction sans cookie sur l'URL publique → refus ; cookie forgé otto_user=<uuid d'un autre> sans signature → session absente ; jeton portail expiré → 404 ; 50 GET concurrents sur /api/sante → aucune erreur de pool sur les écrans.",
       "etat": "NON_OBSERVEE",
-      "manque": "non commencé — cookie otto_user non signé, remise à zéro sans session, jeton portail en clair et perpétuel, /api/sante public et non borné. Geste H-1/H-8 requis (OTTO_SESSION_SECRET, OTTO_SANTE_TOKEN, posés par le fondateur à P2-03). Deux réfutateurs requis (sécurité, refonte).",
+      "manque": "CODE COMPLET (P2-03a/b/c, 2026-09-24/25) mais l'épreuve de CETTE fiche (les quatre gestes ci-dessus, mesurés en un seul passage) n'a pas été rejouée comme telle : cookie signé (P2-03a), remise à zéro sous session+rôle (P2-03a, DEMO-01), jeton portail haché et expirant (P2-03b, PORTAIL-02), /api/sante et /api/erreur bornés derrière X-Otto-Sante avec corps public réduit à des comptes (P2-03c). etat reste NON_OBSERVEE tant que l'épreuve elle-même (POST sans cookie, cookie forgé, jeton expiré, 50 GET concurrents) n'a pas été conduite et consignée ici — ne pas confondre code expédié et épreuve observée (règle 13).",
       "tache": [
         "P2-03"
       ],
@@ -803,7 +803,7 @@
       "geste": "OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde",
       "quand": "Phase 2",
       "etat": "fait",
-      "note": "posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante derrière X-Otto-Sante reste à câbler (P2-03c, R161) : la variable existe sur Vercel, aucun code ne la consomme encore."
+      "note": "posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante et l'accès à /api/erreur derrière X-Otto-Sante sont câblés depuis P2-03c (core/sonde-token.ts) : la variable est CONSOMMÉE. Reste à confirmer que la valeur posée sur Vercel atteint bien l'instance déployée (SHA servi à mesurer, règle 27)."
     }
   ]
 }

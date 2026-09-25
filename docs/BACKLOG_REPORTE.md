@@ -2909,18 +2909,23 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   (`OTTO_DEMO_PUBLIC` prioritaire) romprait probablement ce même harnais local de la même
   façon — à rejouer `npm run fumee` avant de conclure, pas seulement relire le code.
 
-- **R161 — PARTIELLEMENT SOLDÉ : P2-03b LIVRÉE, P2-03c seule reste REPORTÉE** (gravité moyenne,
-  sécurité, périmètre déjà large pour une seule tranche). Le plan maître groupe SEPT surfaces
-  sous « P2-03 » (AUD-07) : session signée, remise à zéro gardée, mode démo explicite (P2-03a,
-  livrée) ; **jeton du portail client haché et expirant** (P2-03b, **livrée** : migration
-  `0183_portail_jeton_hache.sql`, `client_contact.portal_token_hash` + `expires_at` +
-  `rotated_at`, refus `PORTAIL-02`, `core/jeton-portail.ts`) ; et **`/api/sante`/`/api/erreur`
-  bornés** (P2-03c, **reste reporté** : pas de cache, pas de limite de fréquence, corps public non
-  réduit, pas de garde `X-Otto-Sante`/`OTTO_SANTE_TOKEN`). P2-03c reste scopée, prête à construire
-  séparément, son propre rituel verify + deux réfutateurs (règle 30 — sécurité) : cache mémoire +
-  `Cache-Control` sur `/api/sante`, corps public réduit, en-tête `X-Otto-Sante`/`OTTO_SANTE_TOKEN`
-  pour le détail (la variable existe déjà sur Vercel depuis le geste fondateur H-8, non encore
-  consommée par aucun code), même garde sur `/api/erreur`.
+- **R161 — SOLDÉ (2026-09-25) : P2-03a, P2-03b ET P2-03c toutes livrées.** Le plan maître groupe
+  trois volets sous « P2-03 » (AUD-07) : session signée, remise à zéro gardée, mode démo explicite
+  (P2-03a, livrée 2026-09-24) ; **jeton du portail client haché et expirant** (P2-03b, livrée
+  2026-09-25 : migration `0183_portail_jeton_hache.sql`, `client_contact.portal_token_hash` +
+  `expires_at` + `rotated_at`, refus `PORTAIL-02`, `core/jeton-portail.ts`) ; et
+  **`/api/sante`/`/api/erreur` bornés** (P2-03c, livrée 2026-09-25 : `core/sonde-token.ts`,
+  cache mémoire 60 s + `Cache-Control: max-age=60` sur `/api/sante`, corps public réduit à des
+  COMPTES seulement (aucun nom de lecture — corrigé après revue hostile, voix 1, qui avait
+  d'abord trouvé les noms de lecture encore publics et non couverts par une décision consignée),
+  détail complet derrière `?detail=1` + en-tête `X-Otto-Sante` = `OTTO_SANTE_TOKEN` (la variable,
+  posée sur Vercel par le geste fondateur H-8, est désormais CONSOMMÉE), `/api/erreur` derrière
+  la même garde, `OTTO_SANTE_TOKEN` absente ou vide ⇒ détail désactivé pour tout le monde).
+  Deux réfutateurs indépendants (règle 30, sécurité) : un constat bloquant sur le code (noms de
+  lecture publics, corrigé), un constat bloquant documentaire (cette même entrée + REVUE.md +
+  STATUS.md non mis à jour dans le même commit, corrigé). Deux points non bloquants reportés
+  séparément : voir R164 (double évaluation d'`obstaclesAuVisa`, engagement du mandat §11 non
+  tenu, PAS une régression de cette tranche).
 
 - **R162 — LIMITE STRUCTURELLE NOMMÉE (pas un manque à corriger), trouvée en construisant
   P2-03a (AUD-07).** Le code de refus `DEMO-01` (`monde-demo.ts::assertPeutRemettreAZero`)
@@ -2957,3 +2962,18 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   calculé côté serveur pour l'associé juste après la création du dossier pourrait courir en
   course avec l'écriture de création sous certaines conditions de charge — à instrumenter
   (logs temporels autour de `POST` de création et de la lecture de l'agrégat), pas à deviner.
+
+- **R164 — ENGAGEMENT DE MANDAT NON TENU, trouvé (voix 2, revue hostile) en construisant P2-03c
+  (AUD-07), PAS une régression de cette tranche — gravité basse, reporté.** Le mandat qui
+  autorise P2-03c (`docs/MANDATS/2026-09-20_plan_maitre_phase2.md` §11, ligne 335 et 492) dit
+  explicitement « **une seule évaluation d'`obstaclesAuVisa` par appel** » pour `/api/sante`.
+  Vérifié (pas supposé) : `app/src/app/api/sante/route.ts` appelle `obstaclesAuVisa()` DEUX FOIS,
+  indépendamment, dans deux lectures distinctes (ligne 428 et ligne 1645, via deux `import()`
+  dynamiques séparés) — donc une évaluation complète de la sonde le recalcule deux fois. Le
+  diff de P2-03c ne touche NI la ligne 428 NI la ligne 1645 : cet engagement du mandat n'a
+  jamais été tenu, dans AUCUNE tranche antérieure, et P2-03c ne l'a pas non plus corrigé (hors
+  périmètre de cette tranche, dont le mandat de shipping était le bornage HTTP, pas la
+  déduplication interne). Avec le cache mémoire 60 s posé par P2-03c, l'impact réel est borné
+  (au pire une double évaluation par minute par instance, jamais par requête individuelle) —
+  gravité basse. À reprendre : factoriser un seul calcul d'`obstaclesAuVisa(id)` par appel de
+  `corpsDeLaSonde()`, partagé entre les deux lectures qui en dépendent.

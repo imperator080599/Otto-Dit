@@ -90,7 +90,7 @@ Tâches livrées : `P1-04` `e85418a`
 Épreuve : POST remettreAZeroAction sans cookie sur l'URL publique → refus ; cookie forgé otto_user=<uuid d'un autre> sans signature → session absente ; jeton portail expiré → 404 ; 50 GET concurrents sur /api/sante → aucune erreur de pool sur les écrans.
 
 **NON OBSERVÉE**
-Manque : non commencé — cookie otto_user non signé, remise à zéro sans session, jeton portail en clair et perpétuel, /api/sante public et non borné. Geste H-1/H-8 requis (OTTO_SESSION_SECRET, OTTO_SANTE_TOKEN, posés par le fondateur à P2-03). Deux réfutateurs requis (sécurité, refonte).
+Manque : CODE COMPLET (P2-03a/b/c, 2026-09-24/25) mais l'épreuve de CETTE fiche (les quatre gestes ci-dessus, mesurés en un seul passage) n'a pas été rejouée comme telle : cookie signé (P2-03a), remise à zéro sous session+rôle (P2-03a, DEMO-01), jeton portail haché et expirant (P2-03b, PORTAIL-02), /api/sante et /api/erreur bornés derrière X-Otto-Sante avec corps public réduit à des comptes (P2-03c). etat reste NON_OBSERVEE tant que l'épreuve elle-même (POST sans cookie, cookie forgé, jeton expiré, 50 GET concurrents) n'a pas été conduite et consignée ici — ne pas confondre code expédié et épreuve observée (règle 13).
 
 ### AUD-08 — Le scellé du dossier ne couvre qu'un tiers des tables (AUDIT — tâche(s) `P1-05`, `P2-04`)
 
@@ -396,4 +396,4 @@ Ce que ce document ne peut ni prendre ni simuler (plan §20). Une ligne ici n'en
 - **H-5** (Phase 4, état : `en_attente`) — Verdict sur le contrôle Send (R-F3) et sur le mot exact du titre « Changes since N-1 » (R-F14). les formes du §6 sont livrées d'abord ; un mot du fondateur les change ensuite.
 - **H-6** (Phase 5, état : `tenu_pour_acquis`) — Décision de maintenir l'anglais de démonstration (réversible d'un mot, mandat R-F22). le plan le tient pour acquis par défaut.
 - **H-7** (jamais sans mandat, état : `hors_phase_2`) — Mandat écrit nommant l'étape 3 de PLAN_RLS, la RCM rcm/[cid], les postes du Lot 5 sans atelier (R98/R99/R100). préparés, consignés au registre, jamais exécutés sans mandat écrit qui les nomme.
-- **H-8** (Phase 2, état : `fait`) — OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde. posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante derrière X-Otto-Sante reste à câbler (P2-03c, R161) : la variable existe sur Vercel, aucun code ne la consomme encore.
+- **H-8** (Phase 2, état : `fait`) — OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde. posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante et l'accès à /api/erreur derrière X-Otto-Sante sont câblés depuis P2-03c (core/sonde-token.ts) : la variable est CONSOMMÉE. Reste à confirmer que la valeur posée sur Vercel atteint bien l'instance déployée (SHA servi à mesurer, règle 27).

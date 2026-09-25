@@ -868,9 +868,9 @@
     },
     {
       "id": "R161",
-      "etat": "partiellement soldé — P2-03b LIVRÉE (2026-09-25 : jeton portail haché + expirant, migration 0183_portail_jeton_hache.sql sur client_contact, refus PORTAIL-02, core/jeton-portail.ts). P2-03c (/api/sante et /api/erreur bornés : cache, corps public réduit, en-tête X-Otto-Sante) reste reportée, gravité moyenne (sécurité).",
+      "etat": "SOLDÉ (2026-09-25) — P2-03a, P2-03b et P2-03c toutes livrées. jeton portail haché + expirant (migration 0183, refus PORTAIL-02) ; /api/sante et /api/erreur bornés derrière X-Otto-Sante/OTTO_SANTE_TOKEN, corps public réduit à des comptes (core/sonde-token.ts). Deux voix hostiles sur P2-03c : un constat bloquant sur le code (noms de lecture publics, corrigé), un constat bloquant documentaire (cette entrée + REVUE.md + STATUS.md, corrigé dans le même commit).",
       "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
-      "note": "P2-03c reste scopée et prête à construire, son propre rituel verify + deux réfutateurs (règle 30, sécurité). OTTO_SANTE_TOKEN existe déjà sur Vercel (geste fondateur H-8) mais n'est consommé par aucun code avant P2-03c. Voir docs/BACKLOG_REPORTE.md."
+      "note": "Voir docs/BACKLOG_REPORTE.md pour le détail complet. Point non bloquant reporté séparément : R164 (double évaluation d'obstaclesAuVisa, engagement du mandat §11 non tenu, pas une régression de P2-03c)."
     },
     {
       "id": "R162",
@@ -883,6 +883,12 @@
       "etat": "flake intermittent trouvé en construisant P2-03b (AUD-07), NON causé par cette tranche (vérifié par test causal : git stash de P2-03b, retour au SHA f819871 déjà mesuré VERT 21/21, MÊME échec reproduit en isolation). Trois stations clics du bloc « tableau de bord, hors rail » (obstacles/sections/notes) rougissent à 0 dossier/0 famille/0 liste, sans divergence d'hydratation (sonde : aucun incident) — distinct du #418.",
       "depuis": "2026-09-25 (Phase 2, P2-03b, AUD-07)",
       "note": "Hypothèse de mécanisme non éprouvée : une course entre l'écriture de création du dossier et le calcul de l'agrégat associé. À instrumenter (logs temporels), pas à deviner. Voir docs/CHASSE.md et docs/BACKLOG_REPORTE.md R163."
+    },
+    {
+      "id": "R164",
+      "etat": "engagement de mandat non tenu, trouvé par voix 2 (revue hostile) en construisant P2-03c (AUD-07), PAS une régression de cette tranche — gravité basse. Le mandat (plan_maitre_phase2.md §11) exige « une seule évaluation d'obstaclesAuVisa par appel » pour /api/sante ; api/sante/route.ts l'appelle DEUX FOIS (lignes 428 et 1645, deux lectures distinctes), dans AUCUNE tranche antérieure et non corrigé par P2-03c (hors périmètre : le mandat de P2-03c était le bornage HTTP, pas la déduplication interne).",
+      "depuis": "2026-09-25 (Phase 2, P2-03c, AUD-07)",
+      "note": "Impact borné par le cache mémoire 60 s posé par P2-03c (au pire une double évaluation par minute par instance). À reprendre : factoriser un seul calcul d'obstaclesAuVisa(id) partagé entre les deux lectures. Voir docs/BACKLOG_REPORTE.md R164."
     }
   ]
 }
