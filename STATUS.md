@@ -2,6 +2,76 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 2 — P2-03c Bornage de /api/sante et /api/erreur (2026-09-25, AUD-07)
+
+**`/api/sante` et `/api/erreur` étaient publics, non authentifiés, et rendaient leur détail
+COMPLET à n'importe quel visiteur du déploiement** (tout déploiement Vercel EST la démonstration
+publique, DA-10) : `/api/sante` listait chaque lecture de sécurité par son NOM COMPLET et son
+message (référençant tables, déclencheurs, tranches — « fonctions à acteur sans garde
+d'étanchéité = 0 », « jeton portail : haché pour tout contact actif », …) ; `/api/erreur`
+rendait les vingt dernières erreurs serveur avec PILE COMPLÈTE, chemin de fichier et identifiant
+de dossier. Mandat `docs/MANDATS/2026-09-20_plan_maitre_phase2.md` §11 : cache 60 s, corps
+public réduit à « comptes et codes seulement », détail derrière `X-Otto-Sante: <OTTO_SANTE_TOKEN>`
+(variable optionnelle, posée sur Vercel par le geste fondateur H-8 — absente ⇒ détail désactivé
+pour tout le monde), même garde sur `/api/erreur`.
+
+**`core/sonde-token.ts`** (nouveau) : `detailAutorise(req)` compare l'en-tête `X-Otto-Sante` à
+`OTTO_SANTE_TOKEN` à temps constant (même motif que `session-jeton.ts`). Sans la variable posée,
+retourne `false` inconditionnellement — jamais un défaut ouvert.
+
+**`/api/erreur`** : 404 sauf `demoPublique() && detailAutorise(req)` — plus de pile ni de chemin
+de fonction pour un visiteur anonyme.
+
+**`/api/sante`** — la complication réelle de cette tranche : **161 tests existants, sur 49
+fichiers, appellent `GET()` SANS argument** (un handler Next.js est une fonction important
+directement ; ces tests contournent HTTP pour éprouver la LOGIQUE de chaque lecture, plusieurs
+mutant la base puis rappelant `GET()` dans la même seconde pour voir l'effet immédiat). Une
+surcharge TypeScript (`GET(): Promise<NextResponse>` / `GET(req: NextRequest): ...`) satisfait à
+la fois le typage de route généré par Next et ces 161 appels : `GET()` (interne, jamais
+atteignable par un vrai réseau — Next fournit TOUJOURS une `NextRequest` à un appel HTTP réel)
+rend le corps complet, NI caché NI borné, comportement inchangé ; `GET(req)` (le chemin HTTP réel)
+rend un corps PUBLIC pauvre par défaut, et le détail complet seulement avec `?detail=1` ET
+l'en-tête correct. Un cache mémoire 60 s (`Cache-Control: max-age=60`) évite de rejouer la
+batterie de lectures à chaque clic sur la démonstration publique — **le cache mémorise les
+lectures BRUTES, jamais la décision publique/détail** : celle-ci se recalcule à chaque requête à
+partir des en-têtes de CETTE requête (vérifié par la revue hostile, voix 1, le point qu'elle a
+tracé le plus soigneusement). Le chemin interne (`GET()`, tests) reste explicitement NON caché,
+pour ne pas mentir aux tests qui mutent puis relisent immédiatement.
+
+**Deux voix hostiles indépendantes (règle 30 — sécurité, surface publique)**, sans lecture
+partagée.
+- **Voix 1 (sécurité/profondeur)** : **constat BLOQUANT** — la première version de `corpsPublic()`
+  gardait `lectures[].nom` en public, en le lisant comme un « code » au sens du mandat ; faux, ce
+  sont des phrases complètes qui nomment tables/déclencheurs/tranches de sécurité, exactement ce
+  que « sans... noms » exclut. **Corrigé** : le corps public ne porte plus aucun nom de lecture,
+  seulement des comptes agrégés (`{total, ok, cassees}`). Le cache (vérifié le plus
+  soigneusement, sur ma demande) et la garde de temps constant sont sains ; RAS ailleurs.
+- **Voix 2 (largeur/compatibilité)** : tous les consommateurs réels de `/api/sante`/`/api/erreur`
+  recensés dans tout le dépôt et confirmés compatibles (`accept/run.ts`, `deploiement/atteint.ts`
+  ne lisent que `sha`/`version`, jamais `lectures[].detail`) ; les 161 tests + les 5 autres routes
+  `api/*` vérifiés par exécution, pas par lecture. **Constat BLOQUANT (documentaire)** : trois
+  documents (`docs/REVUE.md`, `docs/BACKLOG_REPORTE.md` R161, `STATUS.md`) affirmaient encore que
+  P2-03c n'existait pas — **corrigé dans ce même commit** (règle 5). Deux points non bloquants,
+  reportés séparément : R164 (`obstaclesAuVisa` évalué deux fois par appel — engagement du
+  mandat non tenu, ni causé ni corrigé par cette tranche) et un trou de couverture sur
+  `OTTO_SANTE_TOKEN=''` (code déjà sûr, test ajouté).
+
+**Corrections appliquées après les deux voix** : `corpsPublic()` réduit aux comptes seulement
+(voix 1) ; `docs/REVUE.md` régénéré depuis `docs/instantanes/revue.json` (AUD-07/H-8 mis à jour),
+`docs/BACKLOG_REPORTE.md` (R161 SOLDÉ, R164 nouveau), `docs/instantanes/fils.json` (voix 2) ;
+test `OTTO_SANTE_TOKEN=''` ajouté à `sonde-token.test.ts` (voix 2).
+
+**Mesuré, pas supposé** : `npx tsc --noEmit` propre ; `sonde-token.test.ts` (7 tests),
+`api/sante/bornage-p2-03c.test.ts` (8 tests), `api/erreur/bornage-p2-03c.test.ts` (4 tests) tous
+verts ; l'intégralité de `src/app/api/sante/` rejouée après le changement — **49 fichiers, 162
+tests, tous verts** (aucune régression sur les 161 appels `GET()` préexistants). Chaîne `verify`
+complète non rejouée pour cette tranche seule (le dernier `npm run verify` de bout en bout date
+de P2-03b, voir l'entrée précédente) — à faire à l'expédition suivante ou avant le prochain lot.
+
+**R161 SOLDÉ.** R164 nouveau, gravité basse, reporté.
+
+---
+
 ## Phase 2 — P2-03b Portail : jeton haché et expirant (2026-09-25, AUD-07)
 
 **Le jeton de portail était posé EN CLAIR dans `client_contact.portal_token`**, comparé en clair
