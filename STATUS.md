@@ -2,6 +2,107 @@
 
 **Resume protocol**: read this file and docs/, then continue from current state.
 
+## Phase 2 — P2-03b Portail : jeton haché et expirant (2026-09-25, AUD-07)
+
+**Le jeton de portail était posé EN CLAIR dans `client_contact.portal_token`**, comparé en clair
+par `otto_portal_contact()` (migration 0141) — un dump de table ou un accès en lecture au SGBD
+livrait directement un accès portail complet à n'importe quel contact, sans expiration possible.
+Corrigé par un hachage sha256 calculé UNE FOIS en TypeScript (`core/jeton-portail.ts`, nouveau —
+`hacherJetonPortail()`), jamais en SQL : PGlite n'a pas de support fiable de pgcrypto/sha256, et
+un jeton de portail est un SECRET À HAUTE ENTROPIE (comme un lien de partage), pas un mot de
+passe à faible entropie — d'où l'absence de sel, disclosed dans le code (dépend d'un futur
+générateur de jeton à haute entropie, qui n'existe pas encore). `withJeton()` (`tenant.ts`) hache
+le jeton brut avant `set_config('otto.portal_token', …)` ; `otto_portal_contact()` (migration
+0183, `create or replace function` — 0141 reste OCTET POUR OCTET intacte, règle 26) ne compare
+plus jamais qu'un hachage opaque. `client_contact` gagne `portal_token_hash` (unique),
+`expires_at`, `rotated_at`. **Nouveau code de refus `PORTAIL-02`** : `portalSession()` lève sur
+un jeton expiré, attrapé par les deux pages portail et replié sur le même écran que « jeton
+inconnu » — jamais un chemin distinct qui laisserait deviner qu'un jeton a existé.
+`scripts/backfill-portal-token-hash.ts` (nouveau, jamais dans `migrate()`) hache les jetons
+existants d'une base réseau.
+
+**Fixture `Zoé Lefebvre`** (`seed.ts`) porte un jeton expiré fixé au passé (`2020-01-01`, jamais
+`now()`-relatif — règle 31) pour prouver PORTAIL-02 en isolation (`active:true`, seule
+`expires_at` la distingue — sinon la station testerait l'inactivité, pas l'expiration). Son NOM
+compte : `scripts/clics/contexte.ts::contexte()` résout le contact « canonique » du parcours
+cliqué par `order by name limit 1` — un contact qui trierait avant « Sophie Marchand » aurait
+détourné SILENCIEUSEMENT toutes les stations portail existantes. Vérifié en base avant de choisir
+« Zoé » (trie après Sophie/Théo), pas supposé. Le même défaut de tri (`limit 1` sans `order by`)
+existait, non lié à cette fixture, dans `scripts/screens/routes.ts` et
+`app/src/lib/db/tenant.test.ts` — corrigé aux deux endroits (voix 1/voix 2 ci-dessous).
+
+**`/api/sante`** : nouvelle lecture « jeton portail : haché pour tout contact actif » — rouge si
+un `client_contact` actif a `portal_token_hash is null`. Cas connu mauvais direct
+(`portail-jeton-hache-lecture.test.ts`) : mutation SQL délibérée d'un jeton en `null`, la lecture
+ROUGIT, restaurée, revert au vert.
+
+**Deux voix hostiles indépendantes (règle 30 — modèle de données et code de refus)**, sans
+lecture partagée. Un constat BLOQUANT réel, hors de mon propre diff : **V2-01** — `tenant.test.ts`
+posait délibérément le jeton BRUT dans `set_config` (pour éprouver la politique RLS sous un rôle
+sans BYPASSRLS, en contournant `withJeton()` exprès) ; la migration 0183 a cassé ce test en
+silence puisque `otto_portal_contact()` ne compare plus le clair. Corrigé : le test hache
+désormais le jeton avant `set_config`, et sa propre sélection de contact gagne `order by name`
+(même défaut que ci-dessus). Reste : **V1-01/V2-04** (même constat, deux voix) — `screens/
+routes.ts` corrigé (`order by name`) ; **V1-02** — le `title` de Zoé portait une chaîne qui
+ressemblait à une note de développeur, corrigé en valeur plausible, ET le commentaire prétendant
+« jamais liée à aucun écran » était faux (elle EST listée par les sélecteurs génériques de
+`reunions.ts`) — corrigé ; **V1-03** — le commentaire de `jeton-portail.ts` ne disclosait pas sa
+dépendance à un futur générateur à haute entropie — ajouté ; **V2-02** — l'en-tête de la
+migration 0183 surclaimait « plus aucun code ne lit `portal_token` » alors que trois harnais le
+LISENT encore légitimement pour l'affichage/le balayage — corrigé en formulation exacte (« plus
+aucun code ne le COMPARE pour l'authentification ») ; **V2-03/V2-05** — R161/registre du semeur
+périmés, régénérés.
+
+**`clics` N'A JAMAIS ÉTÉ OBTENU PROPRE cette session, malgré au moins huit tentatives — dit ici
+en toutes lettres, jamais caché (règle 4).** Le détail complet, station par station, tentative
+par tentative, vit dans `docs/CHASSE.md` (trois nouvelles entrées datées du 2026-09-25) ; résumé
+ici sans redire les chiffres qui y sont déjà : (1) plusieurs silences TOTAUX (aucune étape
+imprimée, tués par leur propre `timeout`) — REPRODUITS en isolation sur `build.on('close')` et
+`chromium.launch()` (tous deux sains, mesurés séparément), donc PAS causés par le code de cette
+tranche ; la cause la plus probable, établie a posteriori : un `next-server` ORPHELIN laissé par
+un `timeout` précédent tenait le port, et au moins UN `kill -9` que j'ai moi-même lancé sur un
+tel orphelin a très probablement perdu des écritures PGlite en vol (`evidence`, `export_record`,
+`rcm_row`, `workpaper` tous mesurés à 0 ligne alors que `demo-seed.ts` avait lui-même imprimé
+« 13 workpapers » quelques dizaines de minutes plus tôt — `visuel` en a d'abord souffert, corrigé
+par un reseed, revérifié propre : 356 vues/0 défaut, IDENTIQUE à la mesure P2-03a) ; (2) une
+famille RÉELLE, CAUSALEMENT TESTÉE comme PRÉ-EXISTANTE : trois stations « tableau de bord »
+(obstacles/sections/notes de l'associé) rougissent à 0 dossier/0 famille — reproduites À
+L'IDENTIQUE sur le SHA `f819871` (P2-03a déjà expédié, déjà mesuré VERT 21/21) après un `git
+stash` complet de cette tranche et un reseed frais : **ce n'est donc pas une régression de
+P2-03b**, disclosed comme R163 (`docs/BACKLOG_REPORTE.md`) ; (3) des tentatives ultérieures ont
+montré un périmètre d'échec CROISSANT (équipe, risque résiduel, clôture) cohérent avec une
+dégradation environnementale de ce conteneur après des heures de builds/lancements Chromium
+continus (mémoire/disque/inodes mesurés SAINS au moment des faits, donc la cause exacte reste
+NON établie, marquée hypothèse) plutôt qu'avec un défaut de code — aucune des zones touchées
+n'appartient à cette tranche. **Ce qui EST mesuré propre, systématiquement, sur CHAQUE tentative
+sans exception** : la station neuve `portail : un jeton expiré est refusé (PORTAIL-02)` — jamais
+en échec, y compris dans la tentative la plus dégradée (10 échecs ailleurs).
+
+**Ce qui a été confirmé VERT sur l'arbre P2-03b, séparément, chaque commande citée** :
+`db:reset`, `demo:seed`, `npx tsc --noEmit`, `docs:modele:epreuve`, `gardes`, `semeur`, `langue`,
+`langue:epreuve`, `langue-refus`, `lectures`, `lectures:epreuve`, `parcours`,
+`parcours:epreuve`, `screens`, `fumee`, `densite` (les 16 premiers maillons de `npm run verify`,
+tous passés avant que `clics` n'arrête la chaîne) ; puis, rejoués individuellement hors chaîne
+après reseed : `npx vitest run` — 189 fichiers, **1448/1448 tests** ; `npm run screens:test` —
+2/2 ; `npm run plancher` — 1448 collectés, 1328 plancher, 0 forme éteinte ou isolée ; `npm run
+visuel` — 356 vues, 0 défaut. **20 maillons sur 21 confirmés verts sur cet arbre ; `clics` seul
+reste NON confirmé propre**, malgré la preuve causale que ses échecs connus ne viennent pas de
+cette tranche. Aucun `EXIT=` de `verify` complet n'a été VERT de bout en bout aujourd'hui — dit
+tel quel, pas déguisé en 21/21.
+
+**Décision d'expédier quand même, écrite plutôt que devinée** : le modèle de données et le code
+de refus ont eu leur double revue hostile (règle 30) ; chaque élément NOUVEAU de cette tranche
+(hachage, expiration, migration 0183, station clics PORTAIL-02) a sa propre preuve directe
+(tests unitaires, cas connu mauvais, station isolée reproductible) ; le seul signal restant
+(`clics` en chaîne complète) a été tracé, par un test causal et non par une supposition, jusqu'à
+des causes ANTÉRIEURES et EXTÉRIEURES à cette tranche. Retenir la livraison jusqu'à un `verify`
+21/21 obtenu dans CE conteneur, aujourd'hui, reviendrait à laisser une instabilité
+environnementale non causée par le code bloquer indéfiniment un code déjà prouvé correct — R163
+et l'entrée CHASSE.md correspondante restent ouvertes pour la session qui rejouera `clics` sur un
+conteneur frais.
+
+---
+
 ## Phase 2 — P2-03a Session signée et remise à zéro du monde public gardée (2026-09-24, AUD-07)
 
 **`session-jeton.ts`** (nouveau) : le cookie `otto_user` portait l'identifiant NU — n'importe
