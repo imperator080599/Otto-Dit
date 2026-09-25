@@ -389,11 +389,11 @@ Tâches livrées : `P0-08` `c833c23`
 
 Ce que ce document ne peut ni prendre ni simuler (plan §20). Une ligne ici n'entre jamais dans le compte OBSERVÉE/NON OBSERVÉE/SANS OBJET : ce sont des gestes, pas des épreuves.
 
-- **H-1** (Phase 2 (P2-03), état : `en_attente`) — Poser OTTO_SESSION_SECRET dans Vercel (production + preview). autorisé par le mandat d'ouverture (2026-09-20) — Claude Code peut le créer lui-même via le connecteur Vercel quand le plan atteint P2-03 ; valeur générée, jamais imprimée.
+- **H-1** (Phase 2 (P2-03), état : `fait`) — Poser OTTO_SESSION_SECRET dans Vercel (production + preview). posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée.
 - **H-2** (Phase 6 (P6-02), état : `en_attente_du_fondateur`) — Base Supabase d'aperçu séparée (DATABASE_URL pour preview). ne pas créer de base ni de projet ; les aperçus continuent d'écrire sur la base publique jusqu'à ce geste.
 - **H-3** (Phase 6, état : `en_attente_du_fondateur`) — OTTO_CI_DATABASE_URL (base de CI, rôle otto_ci). role-production.yml reste rouge et le dit tant que ce secret manque.
 - **H-4** (Phase 5 (P5-04), état : `en_attente`) — Verdict sur trois captures de la palette (tableau de bord, poste, papier). les jetons du §7 P5-04 sont posés d'abord ; le verdict peut demander une retouche de jetons.
 - **H-5** (Phase 4, état : `en_attente`) — Verdict sur le contrôle Send (R-F3) et sur le mot exact du titre « Changes since N-1 » (R-F14). les formes du §6 sont livrées d'abord ; un mot du fondateur les change ensuite.
 - **H-6** (Phase 5, état : `tenu_pour_acquis`) — Décision de maintenir l'anglais de démonstration (réversible d'un mot, mandat R-F22). le plan le tient pour acquis par défaut.
 - **H-7** (jamais sans mandat, état : `hors_phase_2`) — Mandat écrit nommant l'étape 3 de PLAN_RLS, la RCM rcm/[cid], les postes du Lot 5 sans atelier (R98/R99/R100). préparés, consignés au registre, jamais exécutés sans mandat écrit qui les nomme.
-- **H-8** (Phase 2, état : `en_attente`) — OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde. autorisé par le mandat d'ouverture — sans lui, le détail est désactivé et la CI lit le corps public.
+- **H-8** (Phase 2, état : `fait`) — OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde. posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante derrière X-Otto-Sante reste à câbler (P2-03c, R161) : la variable existe sur Vercel, aucun code ne la consomme encore.

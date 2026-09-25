@@ -753,8 +753,8 @@
       "id": "H-1",
       "geste": "Poser OTTO_SESSION_SECRET dans Vercel (production + preview)",
       "quand": "Phase 2 (P2-03)",
-      "etat": "en_attente",
-      "note": "autorisé par le mandat d'ouverture (2026-09-20) — Claude Code peut le créer lui-même via le connecteur Vercel quand le plan atteint P2-03 ; valeur générée, jamais imprimée."
+      "etat": "fait",
+      "note": "posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée."
     },
     {
       "id": "H-2",
@@ -802,8 +802,8 @@
       "id": "H-8",
       "geste": "OTTO_SANTE_TOKEN (optionnel) pour le détail de la sonde",
       "quand": "Phase 2",
-      "etat": "en_attente",
-      "note": "autorisé par le mandat d'ouverture — sans lui, le détail est désactivé et la CI lit le corps public."
+      "etat": "fait",
+      "note": "posé le 2026-09-25 via le connecteur Vercel (production + preview) — valeur générée par la session, jamais imprimée, jamais committée. Le détail de /api/sante derrière X-Otto-Sante reste à câbler (P2-03c, R161) : la variable existe sur Vercel, aucun code ne la consomme encore."
     }
   ]
 }
