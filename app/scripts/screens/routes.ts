@@ -102,8 +102,15 @@ export async function parametres(): Promise<Record<string, string>> {
                     and scoping in ('in_scope','in_scope_qualitative') order by code limit 1`),
     // /eng/[id]/workpapers/[wid]
     wid: await un(`select id::text v from workpaper where engagement_id = '${engId}' order by code limit 1`),
-    // /portal/[token]
-    token: await un(`select portal_token v from client_contact where active limit 1`),
+    /* /portal/[token] — TRIÉ, PAS UN `limit 1` NU (P2-03b, revue hostile V1-01).
+       Depuis P2-03b, tous les contacts actifs ne sont plus interchangeables :
+       « Zoé Lefebvre » (lib/seed.ts) porte un jeton TOUJOURS expiré, fixture de
+       PORTAIL-02. Un `limit 1` sans ordre est un pari sur le plan de requête —
+       même défaut déjà nommé plus haut dans ce fichier pour `engId`, et déjà
+       corrigé pour `scripts/clics/contexte.ts` (`order by c.name limit 1`) sans
+       l'être ici. Même tri, pour la même raison : ramener Sophie, jamais Zoé, au
+       balayage de production. */
+    token: await un(`select portal_token v from client_contact where active order by name limit 1`),
     // /api/blob/[evidenceId]
     evidenceId: await un(`select id::text v from evidence where engagement_id = '${engId}' order by id limit 1`),
     // /api/export-file/[exportId]

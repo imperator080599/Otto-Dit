@@ -4,6 +4,7 @@ import { q, q1, tx, _setDbForTests } from '@/lib/db/client';
 import { IDS } from '@/lib/seed';
 import { withTenant, locataireCourant, verifierLocataireVisible } from '@/lib/db/tenant';
 import { armerLeGarde, gardeArme, sansLocataire, CHEMINS_SANS_LOCATAIRE } from '@/lib/db/sans-locataire';
+import { hacherJetonPortail } from '@/lib/core/jeton-portail';
 
 /**
  * LA FUITE ENTRE CABINETS, ÉPROUVÉE SOUS UN RÔLE QUI NE CONTOURNE PAS LA RLS
@@ -316,11 +317,17 @@ describe('la fuite entre cabinets, sous un rôle sans BYPASSRLS', () => {
    */
   describe('le portail client, par jeton', () => {
     it('avec SON jeton : ses missions, et AUCUN papier de travail', async () => {
+      /* P2-03b (AUD-07, migration 0183, revue hostile V2-01) : `otto_portal_contact()`
+         compare désormais `portal_token_hash`, jamais `portal_token` en clair — poser le
+         jeton NU dans `otto.portal_token` (comme avant cette migration) ne matcherait plus
+         RIEN, et ce test échouerait pour une raison qui n'a rien à voir avec ce qu'il
+         éprouve. `order by name` : déterministe, jamais un contact au jeton PERMANENT
+         EXPIRÉ (« Zoé Lefebvre », seed.ts) par accident d'ordre physique. */
       const jeton = (await q<{ t: string }>(
-        `select portal_token t from client_contact where active limit 1`))[0]?.t;
+        `select portal_token t from client_contact where active order by name limit 1`))[0]?.t;
       expect(jeton, 'aucun contact actif dans le monde de démonstration').toBeTruthy();
       const vu = await sousLeRole(async (run) => {
-        await run(`select set_config('otto.portal_token', $1, true)`, [jeton]);
+        await run(`select set_config('otto.portal_token', $1, true)`, [hacherJetonPortail(jeton)]);
         const missions = await run(`select count(*)::text n from engagement`) as { n: string }[];
         const papiers = await run(`select count(*)::text n from workpaper`) as { n: string }[];
         const notes = await run(`select count(*)::text n from review_note`) as { n: string }[];

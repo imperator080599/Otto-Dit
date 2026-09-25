@@ -5,6 +5,7 @@ import { repoRoot } from '../../src/lib/db/client';
 import type { Contexte } from './contexte';
 import { LOCALES, traduire, type CleLibelle, type Locale } from '../../src/lib/i18n/catalogue';
 import { signerIdentite } from '../../src/lib/core/session-jeton';
+import { PORTAL_TOKENS } from '../../src/lib/seed';
 
 // LE PARCOURS CLIQUÉ — TOUT le chemin de démonstration, de l'import à l'export
 // scellé. C'est ce que le balayage ne peut pas voir.
@@ -2747,6 +2748,25 @@ export async function conduire(
     dire('portail : le client répond aux clarifications, et clôt sa demande',
       disponible === 0 || repondu === disponible,
       disponible === 0 ? 'aucune clarification en attente à ce point du parcours' : `${repondu}/${disponible} réponse(s)`);
+  });
+
+  /* ── 13ter. PORTAIL-02 (P2-03b, AUD-07) : UN JETON EXPIRÉ EST REFUSÉ, JAMAIS
+     SERVI. `Zoé Lefebvre` (lib/seed.ts) porte un jeton dont `expires_at` est
+     fixé dans le passé pour toujours — cas connu mauvais (règle 17), semé
+     plutôt que simulé par une mutation SQL au milieu du parcours (ce qui
+     aurait cassé les stations sophie/théo ci-dessus). `portalSession` lève
+     `refus('PORTAIL-02', …)`, attrapé par la page et replié sur le même écran
+     que « jeton inconnu » (portal.lienInvalide, déjà bilingue) — station
+     placée APRÈS toutes les stations qui dépendent du portail de Sophie,
+     jamais avant : elle ne mute rien, mais reste ordonnée par prudence. */
+  await station('portail : un jeton expiré est refusé (PORTAIL-02)', async () => {
+    await ctx.clearCookies();
+    await aller(`${base}/portal/${PORTAL_TOKENS.expire}`);
+    const titre = await p.locator('h1').first().innerText().catch(() => '');
+    const desservi = (await compte('table.data')) === 0 && (await compte('a[href*="/portal/"]')) === 0;
+    dire('portail : un jeton expiré rend le même écran que « jeton inconnu », jamais le tableau de bord client',
+      desservi && R('portal.lienInvalide').test(titre),
+      `titre observé : « ${titre}»`);
   });
 
   // ── 13bis. TESTING, SECOND PASSAGE : les pièces arrivées ENTRE-TEMPS
