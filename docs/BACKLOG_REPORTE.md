@@ -2909,19 +2909,18 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   (`OTTO_DEMO_PUBLIC` prioritaire) romprait probablement ce même harnais local de la même
   façon — à rejouer `npm run fumee` avant de conclure, pas seulement relire le code.
 
-- **R161 — REPORTÉ, gravité moyenne (sécurité, mais périmètre déjà large pour une seule
-  tranche), P2-03b/P2-03c non construites.** Le plan maître groupe SEPT surfaces sous « P2-03 »
-  (AUD-07) : session signée, remise à zéro gardée, mode démo explicite, **jeton du portail
-  client haché et expirant** (`client_contact.portal_token` reste en clair et perpétuel,
-  `supabase/migrations/0001_core.sql:104` — aucune colonne `expires_at`), et **`/api/sante`/
-  `/api/erreur` bornés** (pas de cache, pas de limite de fréquence, corps public non réduit, pas
-  de garde `X-Otto-Sante`). P2-03a (cette tranche) ferme le trou le plus grave nommé par l'audit
-  (la remise à zéro anonyme) et pose la session signée dont les deux autres dépendraient. Les
-  deux tranches restantes sont scopées, prêtes à construire séparément (chacune son propre
-  rituel verify + deux réfutateurs, règle 30 — sécurité) : **P2-03b** (migration nouvelle sur
-  `client_contact`, `portal_token_hash` + `expires_at`, refus `PORTAIL-02`) et **P2-03c**
-  (cache mémoire + `Cache-Control` sur `/api/sante`, corps public réduit, en-tête
-  `X-Otto-Sante`/`OTTO_SANTE_TOKEN` pour le détail, même garde sur `/api/erreur`).
+- **R161 — PARTIELLEMENT SOLDÉ : P2-03b LIVRÉE, P2-03c seule reste REPORTÉE** (gravité moyenne,
+  sécurité, périmètre déjà large pour une seule tranche). Le plan maître groupe SEPT surfaces
+  sous « P2-03 » (AUD-07) : session signée, remise à zéro gardée, mode démo explicite (P2-03a,
+  livrée) ; **jeton du portail client haché et expirant** (P2-03b, **livrée** : migration
+  `0183_portail_jeton_hache.sql`, `client_contact.portal_token_hash` + `expires_at` +
+  `rotated_at`, refus `PORTAIL-02`, `core/jeton-portail.ts`) ; et **`/api/sante`/`/api/erreur`
+  bornés** (P2-03c, **reste reporté** : pas de cache, pas de limite de fréquence, corps public non
+  réduit, pas de garde `X-Otto-Sante`/`OTTO_SANTE_TOKEN`). P2-03c reste scopée, prête à construire
+  séparément, son propre rituel verify + deux réfutateurs (règle 30 — sécurité) : cache mémoire +
+  `Cache-Control` sur `/api/sante`, corps public réduit, en-tête `X-Otto-Sante`/`OTTO_SANTE_TOKEN`
+  pour le détail (la variable existe déjà sur Vercel depuis le geste fondateur H-8, non encore
+  consommée par aucun code), même garde sur `/api/erreur`.
 
 - **R162 — LIMITE STRUCTURELLE NOMMÉE (pas un manque à corriger), trouvée en construisant
   P2-03a (AUD-07).** Le code de refus `DEMO-01` (`monde-demo.ts::assertPeutRemettreAZero`)
@@ -2938,3 +2937,23 @@ aucune phase, mais ne sont pas oubliés (règle 23).
   `monde-demo.test.ts`) : un partner/admin passe, un senior/manager/staff/chaîne vide/forgée
   est refusé (DEMO-01). À reprendre seulement si une future tranche fait exister un instantané
   en local (ex. un mode `--avec-instantane` de `demo:seed`) — hors périmètre ici.
+
+- **R163 — FLAKE INTERMITTENT trouvé en construisant P2-03b (AUD-07), NON causé par cette
+  tranche (vérifié par test causal, pas supposé) — gravité moyenne, reporté.** Trois stations
+  `npm run clics` (« tableau de bord : les obstacles de MES dossiers… », « … mes sections sur
+  tous mes dossiers… », « … les notes ouvertes par ancienneté… », toutes dans le bloc « 1 ter »
+  de `scripts/clics/scenario.ts`, juste après la création d'un dossier neuf) ont rougi à
+  0 dossier(s)/0 famille(s)/0 liste(s) sur DEUX chaînes `npm run verify` complètes d'affilée,
+  arbre P2-03b identique — un schéma jamais vu jusqu'ici (F63 documente le #418 comme variant
+  QUELLE station rougit d'une tentative à l'autre, pas la MÊME deux fois de suite). Distinct
+  du #418 : `sonde d'hydratation : aucun incident` dans les deux runs — pas de divergence
+  HTML, seulement des compteurs à zéro. **Testé causalement, pas supposé** : `git stash` de
+  TOUTE la tranche P2-03b (retour exact au SHA `f819871`, déjà mesuré VERT 21/21 sur cette
+  exacte station), `db:reset && demo:seed`, puis la station rejouée SEULE en isolation —
+  MÊME échec sur le code déjà expédié. Ce n'est donc PAS une régression de P2-03b ; c'est un
+  flake pré-existant, resté invisible faute d'avoir été rejoué assez de fois d'affilée avant
+  cette tranche. Détail dans `docs/CHASSE.md`, entrée « Suite (2026-09-25, même tranche) — un
+  SECOND défaut ». Hypothèse de mécanisme NON éprouvée pour une session future : un agrégat
+  calculé côté serveur pour l'associé juste après la création du dossier pourrait courir en
+  course avec l'écriture de création sous certaines conditions de charge — à instrumenter
+  (logs temporels autour de `POST` de création et de la lecture de l'agrégat), pas à deviner.

@@ -2207,3 +2207,105 @@ disjonction sur cette seule tranche — chaîne à relancer une quatrième fois.
   tentative valide a suffi). **Chaîne `verify` COMPLÈTE rejouée une dernière fois pour une mesure
   cohérente en un seul run (tentative j)** : **21/21 maillons VERTS**, `clics` compris (329
   étapes, 0 échec, 1079,9 s) — voir STATUS.md pour le SHA committé et l'heure exacte.
+
+  **Suite (2026-09-25, P2-03b/AUD-07) — un défaut DIFFÉRENT, jamais vu avant : un silence
+  TOTAL, pas une assertion qui rougit.** Deux tentatives `npm run clics` consécutives (arbre
+  identique, aucune édition entre elles) n'ont produit AUCUNE ligne après « build… » et ont été
+  tuées par leur propre `timeout 1200` (confirmé PAR LES HORODATAGES DE FICHIER : la première
+  08:46:13→09:06:09, la seconde 09:06:35→09:26:31, chacune ≈1200 s pile) — pas le schéma habituel
+  de F63 (328 étapes conduites, 4 échecs nommés) mais un arrêt qui n'atteint même pas la PREMIÈRE
+  station. Hypothèse plausible écartée AVANT d'être crue (règle 18) : ce n'était PAS un
+  redémarrage de conteneur pendant la compaction (le `.next` de la seconde tentative portait un
+  horodatage cohérent avec un build achevé en ~90 s après son lancement, donc le process a bien
+  tourné, juste sans progresser ENSUITE). Trois hypothèses de mécanisme testées SÉPARÉMENT, en
+  isolation, chacune bornée par un `timeout` propre : (1) `build.on('close', …)` ne se déclenche
+  jamais (le classique « des enfants gardent les tuyaux stdio ouverts ») — **réfutée** : `close`
+  arrive proprement à 90,4 s, code 0 ; (2) `chromium.launch()` bloque — **réfutée** : lancement en
+  225 ms, page créée, navigation testée ; (3) la station neuve de cette tranche (`portail : un
+  jeton expiré…`) bloque — **réfutée** : rejouée seule via `--station=`, verte en quelques
+  secondes, titre observé conforme. Une instrumentation TEMPORAIRE (`console.error` avant/après
+  chaque station dans `scenario.ts::station()`, jamais committée, retirée immédiatement après
+  mesure) a montré un `npm run clics` complet progressant PROPREMENT à travers 40+ stations
+  réelles (chacune avec son « ok » imprimé) avant d'être arrêté par un timeout de test de 400 s
+  que j'avais moi-même posé trop court — donc AUCUN blocage à aucun moment sur ce run-là, alors
+  que le même code avait bloqué deux fois d'affilée juste avant. **Cause retrouvée, pas
+  supposée** : la tentative `npm run verify` suivante a échoué au maillon `clics` avec un message
+  CLAIR (« le port 3211 est occupé — un serveur d'un lancement précédent, probablement »),
+  révélant un `next-server` (PID 18159) resté vivant après que MON PROPRE test d'instrumentation
+  (celui de 400 s) a été tué par son `timeout` — le groupe détaché (`detached: groupeDetache()`,
+  commenté dans `run.ts` comme protection justement contre ce cas) n'a pas été nettoyé parce que
+  `finally { tuer(serveur) }` ne s'exécute que si le process Node qui le contient survit assez
+  pour l'atteindre, ce que `timeout` (SIGTERM sur le PID de tête du pipe, pas sur le groupe
+  Playwright) ne garantit pas. Tué à la main (`kill -9`), port libéré, confirmé par
+  `curl` (connexion refusée). **Ce que ça n'explique PAS entièrement** : les DEUX premières
+  tentances silencieuses (avant toute instrumentation, donc avant que je tue quoi que ce soit
+  moi-même) restent sans serveur orphelin identifié comme cause directe — l'hypothèse la plus
+  probable, non éprouvée par manque de processus survivant à inspecter au moment des faits, est
+  qu'un résidu de LA TOUTE PREMIÈRE tentative de cette session (tuée par un événement externe au
+  conteneur — `EXIT=143`, ni un timeout de 1200 s ni un `pkill` de ma part — juste avant la
+  reprise de contexte) a occupé des ressources (CPU, ou un autre port/processus non identifié)
+  assez longtemps pour faire dépasser une attente non bornée quelque part dans la chaîne
+  build→serveur→navigateur — **marqué hypothèse, non diagnostic** (règle 18), faute d'un
+  processus survivant à inspecter. **Leçon retenue pour la suite** : un `timeout` sur `npm run
+  clics`/`verify` protège le TOUR, mais ne garantit pas le nettoyage du `next-server` détaché en
+  cas de coupure externe — après toute exécution tuée (par un `timeout`, ou par un `EXIT=143`
+  externe), vérifier `pgrep -af "next-server"` et le port `3211` AVANT de relancer, pas seulement
+  après un échec explicite « port occupé ». Sans rapport avec le code de P2-03b : la station
+  neuve, le hachage du jeton et la migration 0183 sont tous passés propres dans chaque test
+  isolé ci-dessus.
+
+  **Suite (2026-09-25, même tranche) — un SECOND défaut, distinct du premier ET du #418,
+  ÉLIMINÉ COMME CAUSE DE LA TRANCHE PAR UN TEST CAUSAL DIRECT (pas une hypothèse).** Une fois
+  le serveur orphelin nettoyé, deux chaînes `npm run verify` complètes (arbre P2-03b identique,
+  aucune édition entre elles) ont chacune atteint `clics` jusqu'au bout (≈1200–1228 s, pas de
+  nouveau silence) mais rougi sur EXACTEMENT les 4 mêmes stations les DEUX fois — ce qui n'est
+  PAS le schéma de F63 (la station qui rougit VARIE d'une tentative à l'autre) : `tableau de
+  bord : les obstacles de MES dossiers…` (0 dossier, 0 famille), `tableau de bord : mes sections
+  sur tous mes dossiers…` (0 liste), `tableau de bord : les notes ouvertes par ancienneté…`
+  (0 dossier), et la déjà-connue `mes travaux : le bandeau…`. **`sonde d'hydratation : aucun
+  incident` dans les deux runs** — donc, à la différence de F1-F63, PAS le #418 : ces trois
+  premières stations ne rapportent aucune divergence HTML, seulement des compteurs à zéro.
+  Une causalité par la tranche était une hypothèse RAISONNABLE (deux rougeurs IDENTIQUES
+  d'affilée, jamais vu dans l'historique F63) — donc ÉPROUVÉE, pas supposée (règle 18) : `git
+  stash` de TOUTES les modifications P2-03b (retour exact à `f819871`, le SHA P2-03a déjà
+  expédié et confirmé 21/21 en tentative j), `db:reset && demo:seed` sur cet arbre nu, puis
+  `npm run clics -- --station="tableau de bord : ce qui attend"` EN ISOLATION. **Résultat :
+  MÊME échec, mêmes trois compteurs à zéro, sur du code qui a déjà été mesuré VERT 21/21 sur
+  cette exacte station** (P2-03a, tentative j, `1079,9 s`, `clics` : 0 échec). Conclusion
+  ferme : ce N'EST PAS une régression de P2-03b — c'est un flake PRÉ-EXISTANT, indépendant de
+  cette tranche, qui n'avait simplement jamais été revisité assez de fois d'affilée pour se
+  répéter deux fois de suite jusqu'ici. `git stash pop` a restauré P2-03b intact (vérifié :
+  les 5 fichiers neufs et les 9 fichiers modifiés de la tranche sont tous revenus). **Hypothèse
+  de mécanisme, NON éprouvée, pour une session future** : les trois stations dépendent d'un
+  agrégat calculé côté serveur pour l'ASSOCIÉ juste après la création d'un dossier NEUF — un
+  ordre de dépendance entre l'écriture qui crée le dossier et la lecture qui l'agrège pourrait
+  courir plus vite que le calcul dans certaines conditions de charge machine (le run isolé
+  ci-dessus n'a PAS de charge concurrente connue au moment du test, donc « charge machine »
+  reste à confirmer, pas établi). **Reporté au registre, pas oublié (règle 23)** : voir
+  `docs/BACKLOG_REPORTE.md` R163. Sans effet sur la décision d'expédier P2-03b : la tranche
+  elle-même n'a produit AUCUN échec propre à elle dans ce test causal.
+
+  **Suite (2026-09-25, même tranche) — un TROISIÈME défaut, celui-ci de mon FAIT PROPRE
+  pendant l'investigation, jamais du code.** `npm run visuel` a échoué (« routes non résolues »)
+  sur DIX routes paramétrées (`/api/blob/[evidenceId]`, `/api/export-file/[exportId]`,
+  `/eng/[id]/rcm/[cid]`, `/eng/[id]/requests/[rid]`, `/eng/[id]/workpapers/[wid]`,
+  `/portal/[token]/[rid]`, `/eng/[id]/poste/[code]` et sa variante `/detail-compte`) —
+  alors que le PRÉCÉDENT run de cette même tranche (tentative j, P2-03a, même dépôt) avait
+  résolu ces mêmes routes proprement (« 356 vues/0 défaut »). Vérifié, pas supposé : une
+  requête directe sur la base locale a montré `evidence`, `export_record`, `rcm_row`,
+  `workpaper` tous à **0 ligne** — alors que `demo-seed.ts` lui-même avait imprimé
+  « 13 workpapers » à la fin de SON exécution, quelques dizaines de minutes plus tôt. Les
+  données existaient donc à la fin du seed et ont disparu ENTRE-TEMPS, sans qu'aucun
+  `db:reset` n'ait été relancé. Cause la plus probable, non éprouvée en isolation faute de
+  temps mais cohérente avec tout ce qui a été observé cette session : cette même fenêtre a vu
+  plusieurs `kill -9` directs sur des process `next-server` ORPHELINS (laissés par des
+  tentatives `npm run clics` tuées par leur propre `timeout`, cf. l'entrée « silence total »
+  ci-dessus) — un `SIGKILL` sur le serveur qui tient la connexion PGlite peut couper une
+  écriture en vol sans que le fichier ne se corrompe visiblement (aucune erreur au
+  redémarrage), mais avec des lignes perdues. **Nouvelle règle opérative pour cette session et
+  les suivantes** : après un `kill -9` sur `next-server` pour libérer un port, considérer la
+  base LOCALE comme potentiellement dégradée et refaire `db:reset && demo:seed` avant toute
+  mesure qui en dépend — ne jamais réutiliser une base qui a survécu à un `SIGKILL` de son
+  serveur sans la re-semer. Corrigé en resemant (`db:reset && demo:seed`) avant de rejouer
+  `visuel`. Sans rapport avec le code de P2-03b — aucune des dix routes non résolues ne touche
+  au portail ou au jeton haché.

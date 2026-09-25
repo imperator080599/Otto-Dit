@@ -868,15 +868,21 @@
     },
     {
       "id": "R161",
-      "etat": "reporté, gravité moyenne (sécurité) — P2-03b (jeton portail haché + expirant, migration nouvelle sur client_contact, refus PORTAIL-02) et P2-03c (/api/sante et /api/erreur bornés : cache, corps public réduit, en-tête X-Otto-Sante) non construites dans cette tranche. P2-03a (session signée + remise à zéro gardée + mode démo) ferme le trou le plus grave nommé par AUD-07 en premier.",
+      "etat": "partiellement soldé — P2-03b LIVRÉE (2026-09-25 : jeton portail haché + expirant, migration 0183_portail_jeton_hache.sql sur client_contact, refus PORTAIL-02, core/jeton-portail.ts). P2-03c (/api/sante et /api/erreur bornés : cache, corps public réduit, en-tête X-Otto-Sante) reste reportée, gravité moyenne (sécurité).",
       "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
-      "note": "Les deux tranches restantes sont scopées et prêtes à construire séparément, chacune son propre rituel verify + deux réfutateurs (règle 30, sécurité). Voir docs/BACKLOG_REPORTE.md."
+      "note": "P2-03c reste scopée et prête à construire, son propre rituel verify + deux réfutateurs (règle 30, sécurité). OTTO_SANTE_TOKEN existe déjà sur Vercel (geste fondateur H-8) mais n'est consommé par aucun code avant P2-03c. Voir docs/BACKLOG_REPORTE.md."
     },
     {
       "id": "R162",
       "etat": "limite structurelle nommée, pas un manque — DEMO-01 (monde-demo.ts::assertPeutRemettreAZero) n'a aucune station clics : le bouton de /demo/remise-a-zero ne se rend que si etatInstantane().aJour, qui vaut TOUJOURS false en local/CI (l'instantané n'est posé que par scripts/deploy/reconstruire.ts, jamais par demo:seed). Une première station a été construite puis retirée après avoir échoué pour cette raison structurelle.",
       "depuis": "2026-09-24 (Phase 2, P2-03a, AUD-07)",
       "note": "La garde reste éprouvée directement (règle 17, cas connu mauvais, monde-demo.test.ts). À reprendre seulement si une future tranche fait exister un instantané en local. Voir docs/BACKLOG_REPORTE.md."
+    },
+    {
+      "id": "R163",
+      "etat": "flake intermittent trouvé en construisant P2-03b (AUD-07), NON causé par cette tranche (vérifié par test causal : git stash de P2-03b, retour au SHA f819871 déjà mesuré VERT 21/21, MÊME échec reproduit en isolation). Trois stations clics du bloc « tableau de bord, hors rail » (obstacles/sections/notes) rougissent à 0 dossier/0 famille/0 liste, sans divergence d'hydratation (sonde : aucun incident) — distinct du #418.",
+      "depuis": "2026-09-25 (Phase 2, P2-03b, AUD-07)",
+      "note": "Hypothèse de mécanisme non éprouvée : une course entre l'écriture de création du dossier et le calcul de l'agrégat associé. À instrumenter (logs temporels), pas à deviner. Voir docs/CHASSE.md et docs/BACKLOG_REPORTE.md R163."
     }
   ]
 }
