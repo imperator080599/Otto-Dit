@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { q, q01, q1 } from '@/lib/db/client';
 import { demoPublique } from '@/lib/core/demo-public';
 import { dbKind } from '@/lib/db/client';
 import { versionServie } from '@/lib/version';
 import { sansLocataire } from '@/lib/db/sans-locataire';
+import { detailAutorise } from '@/lib/core/sonde-token';
 
 // LA SANTÉ DE L'INSTANCE DÉPLOYÉE — `/api/sante`.
 //
@@ -57,15 +58,45 @@ async function essayer(nom: string, fn: () => Promise<unknown>): Promise<Lecture
   }
 }
 
-export async function GET() {
+/* DEUX SIGNATURES POUR UNE SEULE IMPLÉMENTATION : Next.js exige `GET(req:
+   NextRequest)` pour son typage de route généré (`.next/types`), mais 161
+   appels « cas connu mauvais » existants (règle 4/17, une lecture par
+   tranche) appellent `GET()` SANS argument — ils testent la LOGIQUE de
+   lecture, jamais la surface HTTP. La surcharge sans paramètre satisfait ces
+   appels ; celle avec `NextRequest` satisfait Next ; l'implémentation seule
+   décide, au runtime, lequel des deux chemins s'est produit. */
+export function GET(): Promise<NextResponse>;
+export function GET(req: NextRequest): Promise<NextResponse>;
+export async function GET(req?: NextRequest) {
   if (!demoPublique()) {
     return new NextResponse('Ce chemin n’existe que sur la démonstration publique.', { status: 404 });
+  }
+  /* `req` EST ABSENT quand ce module est appelé DIRECTEMENT, en JavaScript,
+     PAS via une requête HTTP réelle — exactement ce que font les 161 appels
+     « cas connu mauvais » de chaque lecture (`GET()`, zéro argument, règle
+     4/17), dont plusieurs MUTENT la base puis rappellent `GET()` dans la
+     MÊME seconde pour voir l'effet — un cache de 60 s leur mentirait
+     (résultat PÉRIMÉ, règle 13). Un appel Next.js RÉEL porte TOUJOURS une
+     NextRequest ; aucun visiteur du réseau ne peut arriver ici sans `req`.
+     Le chemin interne reste donc NI caché NI borné — comportement inchangé
+     depuis avant P2-03c ; la garde et le cache ne s'appliquent qu'à un VRAI
+     appel HTTP. */
+  if (!req) {
+    const { corps, status } = await sansLocataire('sante', () => corpsDeLaSonde());
+    return NextResponse.json(corps, { status });
   }
   /* SONDE PUBLIQUE, SANS COOKIE — dérogation NOMMÉE (clé « sante »). Elle ne
      sert QUE la démonstration publique, et elle n'est JAMAIS le test
      d'isolation entre cabinets : celui-là se conduit par l'acceptation avec
      deux identités de deux cabinets (docs/PLAN_RLS.md, A.6). */
-  return sansLocataire('sante', () => corpsDeLaSonde());
+  const { corps, status } = await sansLocataire('sante', () => sondeCachee());
+  const headers = { 'Cache-Control': `max-age=${CACHE_MS / 1000}` };
+  /* `?detail=1` ET l'en-tête X-Otto-Sante (P2-03c) — les deux, pas l'un ou
+     l'autre : un visiteur qui devine le paramètre sans porter le jeton reste
+     sur le corps public. */
+  const veutDetail = req.nextUrl.searchParams.get('detail') === '1';
+  const corpsRendu = veutDetail && detailAutorise(req) ? corps : corpsPublic(corps);
+  return NextResponse.json(corpsRendu, { status, headers });
 }
 
 async function corpsDeLaSonde() {
@@ -2442,7 +2473,7 @@ async function corpsDeLaSonde() {
   const version = versionServie();
   const cassees = lectures.filter((l) => !l.ok);
   const vides = lectures.filter((l) => l.vide);
-  return NextResponse.json({
+  const corps = {
     instance: { base: dbKind(), demoPublique: demoPublique() },
     /* LE SHA QUE CE BUNDLE PORTE — cuit au build (§0.1), pas lu dans
        l'environnement qui répond ; la source est dite, et la divergence avec
@@ -2457,5 +2488,49 @@ async function corpsDeLaSonde() {
           + `la base rend zéro ligne SANS erreur (docs/PLAN_RLS.md).`
         : ' · aucune lecture vide'),
     lectures,
-  }, { status: cassees.length === 0 ? 200 : 500 });
+  };
+  return { corps, status: cassees.length === 0 ? 200 : 500 };
+}
+
+/* CACHE MÉMOIRE 60 s, PAR INSTANCE (P2-03c, mandat §11). `corpsDeLaSonde()`
+   conduit des dizaines de lectures — dont des écritures ANNULÉES (ETANCH-01) —
+   à chaque appel ; un visiteur qui rafraîchit la démonstration publique ne
+   doit pas reconduire cette batterie à chaque clic. Le TTL borne l'âge d'un
+   verdict vert qui ne l'est peut-être plus, jamais davantage : un incident
+   réel reste visible au plus 60 s après son apparition, pas caché
+   indéfiniment (règle 13). */
+const CACHE_MS = 60_000;
+let cache: { valeur: Awaited<ReturnType<typeof corpsDeLaSonde>>; quand: number } | null = null;
+
+async function sondeCachee(): Promise<Awaited<ReturnType<typeof corpsDeLaSonde>>> {
+  const maintenant = Date.now();
+  if (cache && maintenant - cache.quand < CACHE_MS) return cache.valeur;
+  const valeur = await corpsDeLaSonde();
+  cache = { valeur, quand: maintenant };
+  return valeur;
+}
+
+/* LE CORPS PUBLIC EST DÉLIBÉRÉMENT PAUVRE (P2-03c, mandat §11) : « comptes et
+   codes seulement », jamais le message de détail d'une lecture (qui peut
+   nommer un écran, une table, une cause précise — utile à qui exploite,
+   inutile et parfois RÉVÉLATEUR pour un visiteur anonyme). CORRIGÉ après la
+   revue hostile (voix 1, constat bloquant) : une première version gardait
+   `lectures[].nom` en public en le lisant comme un « code » au sens du
+   mandat — faux : ce sont des phrases descriptives complètes qui nomment des
+   tables, des déclencheurs et des tranches de sécurité (« jeton portail :
+   haché pour tout contact actif », « fonctions à acteur sans garde
+   d'étanchéité = 0 », …) — exactement les « noms » que le mandat exclut. Le
+   corps public ne porte donc plus AUCUN nom de lecture, seulement des
+   COMPTES agrégés. sha/version restent publics — l'acceptation cliquée et la
+   CI en dépendent (accept/run.ts, deploiement/atteint.ts) et ne lisent
+   jamais `lectures`. */
+function corpsPublic(corps: Awaited<ReturnType<typeof corpsDeLaSonde>>['corps']) {
+  const total = corps.lectures.length;
+  const cassees = corps.lectures.filter((l) => !l.ok).length;
+  return {
+    sha: corps.sha,
+    version: corps.version,
+    verdict: /toutes les lectures passent/.test(corps.verdict) ? 'vert' : 'rouge',
+    lectures: { total, ok: total - cassees, cassees },
+  };
 }
