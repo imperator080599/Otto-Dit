@@ -4,6 +4,7 @@ import { portalRequests, portalOutstandingItems } from '@/lib/services/portal';
 import { deuxLangues } from '@/app/portal/deux-langues';
 import { traduire, type CleLibelle } from '@/lib/i18n/catalogue';
 import { withJeton } from '@/lib/db/tenant';
+import { Refus } from '@/lib/core/refus';
 
 // Client portal (ADR-006 magic-link surface). Language follows the engagement (D10) —
 // the demo entity's engagements are FR (NEP) and EN (SOX component).
@@ -19,7 +20,16 @@ function langueDuPortail(reqs: { language?: string | null }[]): 'fr' | 'en' {
 
 async function PortalHomeCorps({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const session = await portalSession(token);
+  /* P2-03b (AUD-07) : un jeton EXPIRÉ lève `refus('PORTAIL-02', …)` plutôt que
+     de rendre `null` — attrapé ICI et replié sur le même écran que « jeton
+     inconnu », dont le texte (catalogue.ts, portal.lienInvalide) couvre déjà
+     les deux cas (« lien invalide ou expiré »). Un `Refus` non catché
+     tomberait en page 500 (règle 13) : c'est justement ce que cette tranche
+     ne doit pas faire. */
+  const session = await portalSession(token).catch((e) => {
+    if (e instanceof Refus && e.code === 'PORTAIL-02') return null;
+    throw e;
+  });
   // même famille que /portal/[token]/[rid] : un refus SANS <h1> ni contenu n'est pas un écran (règle 13).
   if (!session) {
     return (

@@ -8,6 +8,7 @@ import { BandeauRefus } from '@/app/bandeau-refus';
 import { deuxLangues } from '@/app/portal/deux-langues';
 import { traduire, type CleLibelle } from '@/lib/i18n/catalogue';
 import { withJeton } from '@/lib/db/tenant';
+import { Refus } from '@/lib/core/refus';
 
 
 async function PortalRequestPageCorps({
@@ -29,7 +30,13 @@ async function PortalRequestPageCorps({
      écran sans en-tête ni contenu n'est pas un écran, que son code HTTP soit
      200 ou 500. Le lien de retour n'est pas qu'un supplément de texte : un
      client qui reçoit ce refus doit pouvoir AGIR, pas seulement le lire. */
-  const session = await portalSession(token);
+  /* P2-03b (AUD-07) : un jeton EXPIRÉ lève `refus('PORTAIL-02', …)` plutôt que
+     de rendre `null` — attrapé ICI et replié sur le même écran que « jeton
+     inconnu » (même patron que /portal/[token]/page.tsx). */
+  const session = await portalSession(token).catch((e) => {
+    if (e instanceof Refus && e.code === 'PORTAIL-02') return null;
+    throw e;
+  });
   if (!session) {
     return (
       <div className="shell"><div className="panel">

@@ -2031,6 +2031,7 @@ export const LIBELLES = {
   'refus.EQUIPE-01': { en: '{detail}', fr: '{detail}' },
   'refus.EQUIPE-02': { en: '{detail}', fr: '{detail}' },
   'refus.PORTAIL-01': { en: '{detail}', fr: '{detail}' },
+  'refus.PORTAIL-02': { en: '{detail}', fr: '{detail}' },
   'refus.VERIF-01': { en: '{detail}', fr: '{detail}' },
   'refus.CTRL-01': { en: '{detail}', fr: '{detail}' },
   'refus.CTRL-02': { en: '{detail}', fr: '{detail}' },

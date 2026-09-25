@@ -63,6 +63,11 @@ export const REGISTRE_REFUS: Record<string, DefinitionRefus> = {
   // P2-01 (AUD-04) : le portail — un élément de demande qui n'appartient pas à la demande
   // désignée par le jeton, ou dont l'entité ne correspond pas au contact du jeton.
   'PORTAIL-01': { cle: 'refus.PORTAIL-01', famille: 'etancheite' },
+  // P2-03b (AUD-07) : un jeton portail connu mais dont expires_at est dépassé
+  // (core/auth.ts::portalSession) — distingué de « jeton inconnu » (null) pour
+  // les tests/stations ; l'écran affiche le même message que « lien invalide »
+  // (catalogue.ts, portal.lienInvalide), déjà formulé pour couvrir les deux cas.
+  'PORTAIL-02': { cle: 'refus.PORTAIL-02', famille: 'etancheite' },
   // P2-01 (AUD-04) : le contrôle de fiabilité (ADR-012.3) — un item soumis à
   // submitBlindCheck qui n'a jamais été tiré par CE run (verification_run.selected).
   'VERIF-01': { cle: 'refus.VERIF-01', famille: 'etancheite' },
