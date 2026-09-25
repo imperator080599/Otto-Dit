@@ -1,5 +1,6 @@
 import { tx, q } from '@/lib/db/client';
 import { sousLocataire, sousDerogation, locataireDuContexte } from '@/lib/db/sans-locataire';
+import { hacherJetonPortail } from '@/lib/core/jeton-portail';
 
 // POSER LE LOCATAIRE DANS LA TRANSACTION (docs/PLAN_RLS.md, étape 1).
 //
@@ -114,16 +115,23 @@ export async function verifierLocataireVisible(tenantId: string, engagementId: s
  * refuserait une transaction sans locataire — or ici l'absence de locataire est
  * la règle, pas l'oubli.
  *
+ * P2-03b (AUD-07, migration 0183) : le réglage posé porte le HACHAGE du jeton
+ * (`core/jeton-portail.ts::hacherJetonPortail`), jamais le jeton en clair —
+ * `otto_portal_contact()` compare désormais `portal_token_hash`, et exclut un
+ * jeton expiré (`client_contact.expires_at`). La fonction SQL n'a donc jamais
+ * besoin de calculer un sha256 elle-même (PGlite ne porte pas pgcrypto de façon
+ * fiable) : elle reste une égalité de chaîne pure, sur la colonne hachée.
+ *
  * OÙ ELLE CESSE DE REGARDER : elle ne vérifie pas que le jeton existe (la base
- * s'en charge : sans contact actif, `otto_portal_contact()` rend NULL et les
- * politiques ne laissent rien passer) ; et elle ne borne pas ce que le code du
- * portail fait de ce qu'il lit — la liste blanche (docs/04 §9.7) reste tenue en
- * application.
+ * s'en charge : sans contact actif ET non expiré, `otto_portal_contact()` rend
+ * NULL et les politiques ne laissent rien passer) ; et elle ne borne pas ce que
+ * le code du portail fait de ce qu'il lit — la liste blanche (docs/04 §9.7)
+ * reste tenue en application.
  */
 export async function withJeton<T>(token: string, fn: () => Promise<T>): Promise<T> {
   if (!token) throw new Error('withJeton : un jeton vide n’est pas un jeton');
   return sousDerogation('portail-client', () => tx(async (run) => {
-    await run(`select set_config('otto.portal_token', $1, true)`, [token]);
+    await run(`select set_config('otto.portal_token', $1, true)`, [hacherJetonPortail(token)]);
     return fn();
   }));
 }

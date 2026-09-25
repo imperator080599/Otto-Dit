@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { q01 } from '@/lib/db/client';
 import { sansLocataire, enregistrerPoseurDeLocataire } from '@/lib/db/sans-locataire';
 import { verifierIdentite } from '@/lib/core/session-jeton';
+import { hacherJetonPortail } from '@/lib/core/jeton-portail';
+import { refus } from '@/lib/core/refus';
 
 // Demo auth (ADR-006): auditor side = dev user switcher setting an httpOnly cookie;
 // client side = per-contact magic token in the portal URL. Authorization (engagement
@@ -85,24 +87,39 @@ export interface PortalSession {
 }
 
 /** Client-portal guard: resolves a magic token to contact + entity engagements.
- *  The portal surface reads ONLY the client-safe whitelist (docs/04 §9.7). */
+ *  The portal surface reads ONLY the client-safe whitelist (docs/04 §9.7).
+ *
+ *  P2-03b (AUD-07, migration 0183) : la comparaison se fait désormais sur
+ *  `portal_token_hash` (jamais le jeton en clair — `core/jeton-portail.ts`),
+ *  et un jeton dont `expires_at` est dépassé lève `refus('PORTAIL-02', …)`
+ *  plutôt que de rendre `null` : l'appelant (les deux pages `/portal`) DOIT
+ *  l'attraper — un `Refus` non catché ici tomberait en page 500, exactement ce
+ *  que règle 13 interdit (voir les deux sites d'appel, `portal/[token]/
+ *  page.tsx` et `portal/[token]/[rid]/page.tsx`). `null` reste réservé au
+ *  jeton INCONNU ou au contact désactivé — la distinction existe pour les
+ *  tests et les stations, l'écran, lui, affiche le même message accueillant
+ *  déjà les deux cas (« lien invalide ou expiré », `catalogue.ts`). */
 export async function portalSession(token: string): Promise<PortalSession | null> {
   /* LE PORTAIL N'A PAS DE CABINET : le contact client est authentifié PAR
      JETON. Chemin inscrit sous la clé « portail-client », avec sa dette —
      sa politique par jeton n'est pas écrite (docs/PLAN_RLS.md). */
   return sansLocataire('portail-client', async () => {
-    const contact = await q01<{ id: string; entity_id: string; name: string; email: string }>(
-      `select id, entity_id, name, email from client_contact where portal_token = $1 and active`,
-      [token],
+    const hash = hacherJetonPortail(token);
+    const contact = await q01<{ id: string; entity_id: string; name: string; email: string; expires_at: string | null }>(
+      `select id, entity_id, name, email, expires_at from client_contact where portal_token_hash = $1 and active`,
+      [hash],
     );
     if (!contact) return null;
+    if (contact.expires_at && new Date(contact.expires_at).getTime() <= Date.now()) {
+      throw refus('PORTAIL-02', 'ce lien a expiré — demandez à votre contact au cabinet d’audit de vous en renvoyer un');
+    }
     const { q } = await import('@/lib/db/client');
     const engagements = await q<{ id: string; name: string; language: string }>(
       `select id, name, framework_set->>'language' as language from engagement
        where entity_id = $1 and status <> 'archived' order by name`,
       [contact.entity_id],
     );
-    return { contact, engagements };
+    return { contact: { id: contact.id, entity_id: contact.entity_id, name: contact.name, email: contact.email }, engagements };
   });
 }
 
