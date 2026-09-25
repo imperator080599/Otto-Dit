@@ -362,6 +362,26 @@ async function corpsDeLaSonde() {
     return pose ? 'oui — OTTO_SESSION_SECRET posé' : 'non — secret absent (attendu en local, à corriger sur toute instance publique)';
   }));
 
+  /* JETON PORTAIL HACHÉ (P2-03b, AUD-07, migration 0183). `lib/seed.ts` pose
+     `portal_token_hash` pour CHAQUE contact qu'il crée — cette lecture ROUGIT
+     si un contact ACTIF s'en trouve dépourvu (une régression de seed.ts, ou
+     une base persistante jamais passée par `scripts/backfill-portal-token-
+     hash.ts`). CE QU'ELLE NE VÉRIFIE PAS (règle 19) : que le hachage
+     CORRESPOND au jeton en clair de la même ligne (`portal_token`) — un
+     calcul divergent entre `seed.ts` et `core/jeton-portail.ts` romprait le
+     portail (aucune session ne résoudrait plus), mais resterait invisible
+     ici tant que la colonne n'est pas NULLE ; c'est `npm run clics` (station
+     « portail client ») qui prouve la correspondance réelle, par l'usage. */
+  lectures.push(await essayer('jeton portail : haché pour tout contact actif (P2-03b, AUD-07)', async () => {
+    const sansHachage = await q1<{ n: string }>(
+      `select count(*)::text n from client_contact where active and portal_token_hash is null`);
+    if (Number(sansHachage.n) > 0) {
+      throw new Error(`${sansHachage.n} contact(s) ACTIF(S) sans portal_token_hash — leur lien portail ne résout plus rien`);
+    }
+    const total = await q1<{ n: string }>(`select count(*)::text n from client_contact where active`);
+    return `${total.n} contact(s) actif(s), tous hachés`;
+  }));
+
   if (eng) {
     const id = eng.id;
     lectures.push(await essayer('acceptation', async () => {
